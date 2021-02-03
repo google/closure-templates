@@ -23,6 +23,11 @@ goog.module.declareLegacyNamespace();
 
 const {assertString} = goog.require('goog.asserts');
 const {shuffle} = goog.require('goog.array');
+/**
+ * Required to fix declareLegacyNamespace, since soy is also declareLegacyNamespace.
+ * @suppress{extraRequire}
+ */
+goog.require('soy');
 
 /**
  * Structural interface for representing Soy `map`s in JavaScript.

@@ -40,7 +40,6 @@ import com.google.template.soy.testing.SharedTestUtils;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import com.google.template.soy.types.SoyTypeRegistryBuilder;
 import java.util.List;
-import java.util.Set;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -73,7 +72,7 @@ public final class GenJsCodeVisitorTest {
         }
 
         @Override
-        public Set<Integer> getValidArgsSizes() {
+        public ImmutableSet<Integer> getValidArgsSizes() {
           return ImmutableSet.of(0);
         }
 
@@ -134,7 +133,6 @@ public final class GenJsCodeVisitorTest {
             + "goog.require('boo.woo');\n"
             + "goog.require('goog.soy');\n"
             + "goog.require('soy');\n"
-            + "goog.require('soydata.VERY_UNSAFE');\n"
             + "\n";
 
     List<String> jsFilesContents =
@@ -176,7 +174,6 @@ public final class GenJsCodeVisitorTest {
             + "goog.require('boo.woo.aaa');\n"
             + "goog.require('goog.soy');\n"
             + "goog.require('soy');\n"
-            + "goog.require('soydata.VERY_UNSAFE');\n"
             + "\n";
 
     jsSrcOptions.setShouldProvideRequireSoyNamespaces(true);
@@ -221,7 +218,6 @@ public final class GenJsCodeVisitorTest {
             + "goog.require('goog.soy');\n"
             + "goog.require('some.function');\n"
             + "goog.require('soy');\n"
-            + "goog.require('soydata.VERY_UNSAFE');\n"
             + "\n";
 
     jsSrcOptions.setShouldProvideRequireSoyNamespaces(true);
@@ -305,7 +301,6 @@ public final class GenJsCodeVisitorTest {
             + "\n"
             + "goog.require('goog.soy');\n"
             + "goog.require('soy');\n"
-            + "goog.require('soydata.VERY_UNSAFE');\n"
             + "\n"
             + "\n"
             + "/**\n"
@@ -324,7 +319,7 @@ public final class GenJsCodeVisitorTest {
             + "  }\n"
             + "  opt_ijData = /** @type {!goog.soy.IjData} */ (opt_ijData);\n"
             + "  return"
-            + " soydata.VERY_UNSAFE.ordainSanitizedHtml(soy.$$getDelegateFn(soy.$$getDelTemplateId('myDelegates.soo'),"
+            + " soy.VERY_UNSAFE.ordainSanitizedHtml(soy.$$getDelegateFn(soy.$$getDelTemplateId('myDelegates.soo'),"
             + " '', false)(null, opt_ijData));\n"
             + "};\n"
             + "if (goog.DEBUG) {\n"
@@ -369,7 +364,6 @@ public final class GenJsCodeVisitorTest {
             + "\n"
             + "goog.require('goog.soy');\n"
             + "goog.require('soy');\n"
-            + "goog.require('soydata.VERY_UNSAFE');\n"
             + "\n"
             + "\n"
             + "/**\n"
@@ -387,7 +381,7 @@ public final class GenJsCodeVisitorTest {
             + "  }\n"
             + "  opt_ijData = /** @type {!goog.soy.IjData} */ (opt_ijData);\n"
             + "  return"
-            + " soydata.VERY_UNSAFE.ordainSanitizedHtml(soy.$$getDelegateFn(soy.$$getDelTemplateId('myDelegates.moo'),"
+            + " soy.VERY_UNSAFE.ordainSanitizedHtml(soy.$$getDelegateFn(soy.$$getDelTemplateId('myDelegates.moo'),"
             + " 'moomoo', false)(null, opt_ijData));\n"
             + "};\n"
             + "if (goog.DEBUG) {\n"
@@ -622,7 +616,7 @@ public final class GenJsCodeVisitorTest {
             + "    gamma__soy8 += i9Data + beta__soy6;\n"
             + "  }\n"
             + "  let delta__soy13 = 'Boop!';\n"
-            + "  const delta__wrapped13 = soydata.VERY_UNSAFE"
+            + "  const delta__wrapped13 = soy.VERY_UNSAFE"
             + ".$$ordainSanitizedHtmlForInternalBlocks(delta__soy13);\n"
             + "  output += alpha__soy5 + beta__soy6 + gamma__soy8 + delta__wrapped13;\n"
             + "}\n";
@@ -640,7 +634,7 @@ public final class GenJsCodeVisitorTest {
         genJsCodeVisitor
             .gen(parseResult.fileSet(), parseResult.registry(), ErrorReporter.exploding())
             .get(0);
-    assertThat(jsFilesContents).contains("goog.require('soydata.VERY_UNSAFE')");
+    assertThat(jsFilesContents).contains("goog.require('soy')");
   }
 
   @Test
@@ -746,8 +740,8 @@ public final class GenJsCodeVisitorTest {
 
     assertGeneratedJsCode(
         "{@param boo : ?}\n" + "{delcall my.delegate data=\"$boo.foo\" /}\n",
-        "output += soy.$$getDelegateFn(soy.$$getDelTemplateId('my.delegate'), '', false)"
-            + "(/** @type {?} */ (opt_data.boo.foo), opt_ijData);\n");
+        "output += soy.$$getDelegateFn(soy.$$getDelTemplateId('my.delegate'), '',"
+            + " false)(/** @type {?} */ (opt_data.boo.foo), opt_ijData);\n");
 
     assertGeneratedJsCode(
         "{@param boo : ?}\n"
@@ -760,8 +754,8 @@ public final class GenJsCodeVisitorTest {
     assertGeneratedJsCode(
         "{@param boo : ?}\n"
             + "{delcall my.delegate data=\"$boo.foo\" allowemptydefault=\"true\" /}\n",
-        "output += soy.$$getDelegateFn(soy.$$getDelTemplateId('my.delegate'), '', true)"
-            + "(/** @type {?} */ (opt_data.boo.foo), opt_ijData);\n");
+        "output += soy.$$getDelegateFn(soy.$$getDelTemplateId('my.delegate'), '',"
+            + " true)(/** @type {?} */ (opt_data.boo.foo), opt_ijData);\n");
   }
 
   @Test
@@ -1353,7 +1347,7 @@ public final class GenJsCodeVisitorTest {
             + "    return soy.$$stubsMap['boo.foo.goo'](opt_data, opt_ijData);\n"
             + "  }\n"
             + "  opt_ijData = /** @type {!goog.soy.IjData} */ (opt_ijData);\n"
-            + "  return soydata.VERY_UNSAFE.ordainSanitizedHtml('Blah');\n"
+            + "  return soy.VERY_UNSAFE.ordainSanitizedHtml('Blah');\n"
             + "};\n"
             + "if (goog.DEBUG) {\n"
             + "  /** @type {string} */\n"
@@ -1397,7 +1391,6 @@ public final class GenJsCodeVisitorTest {
             + "\n"
             + "const $googSoy = goog.require('goog.soy');\n"
             + "goog.require('soy');\n"
-            + "goog.require('soydata.VERY_UNSAFE');\n"
             + "const $soy$boo$bar = goog.require('boo.bar');\n"
             + "\n"
             + "\n"
@@ -1412,8 +1405,8 @@ public final class GenJsCodeVisitorTest {
             + "    return soy.$$stubsMap['boo.foo.goo'](opt_data, opt_ijData);\n"
             + "  }\n"
             + "  opt_ijData = /** @type {!$googSoy.IjData} */ (opt_ijData);\n"
-            + "  return soydata.VERY_UNSAFE.ordainSanitizedHtml($soy$boo$bar.one(null, opt_ijData)"
-            + " + $soy$boo$bar.two(null, opt_ijData));\n"
+            + "  return soy.VERY_UNSAFE.ordainSanitizedHtml($soy$boo$bar.one(null,"
+            + " opt_ijData) + $soy$boo$bar.two(null, opt_ijData));\n"
             + "};\n"
             + "exports.goo = $goo;\n"
             + "if (goog.DEBUG) {\n"
@@ -1456,7 +1449,6 @@ public final class GenJsCodeVisitorTest {
             + "goog.require('goog.soy');\n"
             + "goog.require('ns');\n"
             + "goog.require('soy');\n"
-            + "goog.require('soydata.VERY_UNSAFE');\n"
             + "\n"
             + "\n"
             + "/**\n"
@@ -1472,7 +1464,7 @@ public final class GenJsCodeVisitorTest {
             + "  }\n"
             + "  opt_ijData = /** @type {!goog.soy.IjData} */ (opt_ijData);\n"
             + "  return"
-            + " soydata.VERY_UNSAFE.ordainSanitizedHtml(soy.$$escapeHtml(ns.fakeTemplate(null,"
+            + " soy.VERY_UNSAFE.ordainSanitizedHtml(soy.$$escapeHtml(ns.fakeTemplate(null,"
             + " opt_ijData)));\n"
             + "};\n"
             + "if (goog.DEBUG) {\n"
@@ -1517,7 +1509,6 @@ public final class GenJsCodeVisitorTest {
             + "goog.require('goog.soy');\n"
             + "goog.require('ns');\n"
             + "goog.require('soy');\n"
-            + "goog.require('soydata.VERY_UNSAFE');\n"
             + "\n"
             + "\n"
             + "/**\n"
@@ -1533,7 +1524,7 @@ public final class GenJsCodeVisitorTest {
             + "  }\n"
             + "  opt_ijData = /** @type {!goog.soy.IjData} */ (opt_ijData);\n"
             + "  return"
-            + " soydata.VERY_UNSAFE.ordainSanitizedHtmlAttribute(soy.$$filterHtmlAttributes(ns.fakeTemplate(null,"
+            + " soy.VERY_UNSAFE.ordainSanitizedHtmlAttribute(soy.$$filterHtmlAttributes(ns.fakeTemplate(null,"
             + " opt_ijData)));\n"
             + "};\n"
             + "if (goog.DEBUG) {\n"
@@ -1578,7 +1569,6 @@ public final class GenJsCodeVisitorTest {
             + "goog.require('goog.soy');\n"
             + "goog.require('ns');\n"
             + "goog.require('soy');\n"
-            + "goog.require('soydata.VERY_UNSAFE');\n"
             + "\n"
             + "\n"
             + "/**\n"
@@ -1593,8 +1583,9 @@ public final class GenJsCodeVisitorTest {
             + " opt_ijData);\n"
             + "  }\n"
             + "  opt_ijData = /** @type {!goog.soy.IjData} */ (opt_ijData);\n"
-            + "  return soydata.VERY_UNSAFE.ordainSanitizedHtml('<div ' +"
-            + " soy.$$filterHtmlAttributes(ns.fakeTemplate(null, opt_ijData)) + '></div>');\n"
+            + "  return soy.VERY_UNSAFE.ordainSanitizedHtml('<div ' +"
+            + " soy.$$filterHtmlAttributes(ns.fakeTemplate(null, opt_ijData)) +"
+            + " '></div>');\n"
             + "};\n"
             + "if (goog.DEBUG) {\n"
             + "  /** @type {string} */\n"

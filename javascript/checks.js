@@ -2,31 +2,25 @@
  * @fileoverview Provides Soy runtime checks for safe types.
  */
 
-goog.provide('soy.checks');
+goog.module('soy.checks');
 
-goog.require('goog.asserts');
-goog.require('goog.soy.data.SanitizedContentKind');
-goog.require('goog.soy.data.SanitizedCss');
-goog.require('goog.soy.data.SanitizedHtml');
-goog.require('goog.soy.data.SanitizedHtmlAttribute');
-goog.require('goog.soy.data.SanitizedJs');
-goog.require('goog.soy.data.SanitizedTrustedResourceUri');
-goog.require('goog.soy.data.SanitizedUri');
+const asserts = goog.require('goog.asserts');
+
+const {SanitizedContentKind, SanitizedCss, SanitizedHtml, SanitizedHtmlAttribute, SanitizedJs, SanitizedTrustedResourceUri, SanitizedUri} = goog.require('goog.soy.data');
 
 /**
  * Checks whether a given value is of a given content kind.
  *
  * @param {?} value The value to be examined.
- * @param {!goog.soy.data.SanitizedContentKind} contentKind The desired content
+ * @param {!SanitizedContentKind} contentKind The desired content
  *     kind.
  * @param {!Object} constructor
  * @return {boolean} Whether the given value is of the given kind.
- * @private
  */
-soy.checks.isContentKind_ = function(value, contentKind, constructor) {
-  var ret = value != null && value.contentKind === contentKind;
+const isContentKind_ = function(value, contentKind, constructor) {
+  const ret = value != null && value.contentKind === contentKind;
   if (ret) {
-    goog.asserts.assert(value.constructor === constructor);
+    asserts.assert(value.constructor === constructor);
   }
   return ret;
 };
@@ -35,57 +29,49 @@ soy.checks.isContentKind_ = function(value, contentKind, constructor) {
  * @param {?} value
  * @return {boolean}
  */
-soy.checks.isHtml = function(value) {
-  return soy.checks.isContentKind_(
-      value, goog.soy.data.SanitizedContentKind.HTML,
-      goog.soy.data.SanitizedHtml);
+exports.isHtml = function(value) {
+  return isContentKind_(value, SanitizedContentKind.HTML, SanitizedHtml);
 };
 
 /**
  * @param {?} value
  * @return {boolean}
  */
-soy.checks.isCss = function(value) {
-  return soy.checks.isContentKind_(
-      value, goog.soy.data.SanitizedContentKind.CSS,
-      goog.soy.data.SanitizedCss);
+exports.isCss = function(value) {
+  return isContentKind_(value, SanitizedContentKind.CSS, SanitizedCss);
 };
 
 /**
  * @param {?} value
  * @return {boolean}
  */
-soy.checks.isAttribute = function(value) {
-  return soy.checks.isContentKind_(
-      value, goog.soy.data.SanitizedContentKind.ATTRIBUTES,
-      goog.soy.data.SanitizedHtmlAttribute);
+exports.isAttribute = function(value) {
+  return isContentKind_(
+      value, SanitizedContentKind.ATTRIBUTES, SanitizedHtmlAttribute);
 };
 
 /**
  * @param {?} value
  * @return {boolean}
  */
-soy.checks.isJS = function(value) {
-  return soy.checks.isContentKind_(
-      value, goog.soy.data.SanitizedContentKind.JS, goog.soy.data.SanitizedJs);
+exports.isJS = function(value) {
+  return isContentKind_(value, SanitizedContentKind.JS, SanitizedJs);
 };
 
 /**
  * @param {?} value
  * @return {boolean}
  */
-soy.checks.isTrustedResourceURI = function(value) {
-  return soy.checks.isContentKind_(
-      value, goog.soy.data.SanitizedContentKind.TRUSTED_RESOURCE_URI,
-      goog.soy.data.SanitizedTrustedResourceUri);
+exports.isTrustedResourceURI = function(value) {
+  return isContentKind_(
+      value, SanitizedContentKind.TRUSTED_RESOURCE_URI,
+      SanitizedTrustedResourceUri);
 };
 
 /**
  * @param {?} value
  * @return {boolean}
  */
-soy.checks.isURI = function(value) {
-  return soy.checks.isContentKind_(
-      value, goog.soy.data.SanitizedContentKind.URI,
-      goog.soy.data.SanitizedUri);
+exports.isURI = function(value) {
+  return isContentKind_(value, SanitizedContentKind.URI, SanitizedUri);
 };

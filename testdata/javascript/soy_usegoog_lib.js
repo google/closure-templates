@@ -23083,35 +23083,29 @@ goog.soy.data.SanitizedCss.prototype.toSafeStyleSheet = function() {
 };
 
 //javascript/template/soy/checks.js
-/**
+goog.loadModule(function(exports) {'use strict';/**
  * @fileoverview Provides Soy runtime checks for safe types.
  */
 
-goog.provide('soy.checks');
+goog.module('soy.checks');
 
-goog.require('goog.asserts');
-goog.require('goog.soy.data.SanitizedContentKind');
-goog.require('goog.soy.data.SanitizedCss');
-goog.require('goog.soy.data.SanitizedHtml');
-goog.require('goog.soy.data.SanitizedHtmlAttribute');
-goog.require('goog.soy.data.SanitizedJs');
-goog.require('goog.soy.data.SanitizedTrustedResourceUri');
-goog.require('goog.soy.data.SanitizedUri');
+const asserts = goog.require('goog.asserts');
+
+const {SanitizedContentKind, SanitizedCss, SanitizedHtml, SanitizedHtmlAttribute, SanitizedJs, SanitizedTrustedResourceUri, SanitizedUri} = goog.require('goog.soy.data');
 
 /**
  * Checks whether a given value is of a given content kind.
  *
  * @param {?} value The value to be examined.
- * @param {!goog.soy.data.SanitizedContentKind} contentKind The desired content
+ * @param {!SanitizedContentKind} contentKind The desired content
  *     kind.
  * @param {!Object} constructor
  * @return {boolean} Whether the given value is of the given kind.
- * @private
  */
-soy.checks.isContentKind_ = function(value, contentKind, constructor) {
-  var ret = value != null && value.contentKind === contentKind;
+const isContentKind_ = function(value, contentKind, constructor) {
+  const ret = value != null && value.contentKind === contentKind;
   if (ret) {
-    goog.asserts.assert(value.constructor === constructor);
+    asserts.assert(value.constructor === constructor);
   }
   return ret;
 };
@@ -23120,60 +23114,6905 @@ soy.checks.isContentKind_ = function(value, contentKind, constructor) {
  * @param {?} value
  * @return {boolean}
  */
-soy.checks.isHtml = function(value) {
-  return soy.checks.isContentKind_(
-      value, goog.soy.data.SanitizedContentKind.HTML,
-      goog.soy.data.SanitizedHtml);
+exports.isHtml = function(value) {
+  return isContentKind_(value, SanitizedContentKind.HTML, SanitizedHtml);
 };
 
 /**
  * @param {?} value
  * @return {boolean}
  */
-soy.checks.isCss = function(value) {
-  return soy.checks.isContentKind_(
-      value, goog.soy.data.SanitizedContentKind.CSS,
-      goog.soy.data.SanitizedCss);
+exports.isCss = function(value) {
+  return isContentKind_(value, SanitizedContentKind.CSS, SanitizedCss);
 };
 
 /**
  * @param {?} value
  * @return {boolean}
  */
-soy.checks.isAttribute = function(value) {
-  return soy.checks.isContentKind_(
-      value, goog.soy.data.SanitizedContentKind.ATTRIBUTES,
-      goog.soy.data.SanitizedHtmlAttribute);
+exports.isAttribute = function(value) {
+  return isContentKind_(
+      value, SanitizedContentKind.ATTRIBUTES, SanitizedHtmlAttribute);
 };
 
 /**
  * @param {?} value
  * @return {boolean}
  */
-soy.checks.isJS = function(value) {
-  return soy.checks.isContentKind_(
-      value, goog.soy.data.SanitizedContentKind.JS, goog.soy.data.SanitizedJs);
+exports.isJS = function(value) {
+  return isContentKind_(value, SanitizedContentKind.JS, SanitizedJs);
 };
 
 /**
  * @param {?} value
  * @return {boolean}
  */
-soy.checks.isTrustedResourceURI = function(value) {
-  return soy.checks.isContentKind_(
-      value, goog.soy.data.SanitizedContentKind.TRUSTED_RESOURCE_URI,
-      goog.soy.data.SanitizedTrustedResourceUri);
+exports.isTrustedResourceURI = function(value) {
+  return isContentKind_(
+      value, SanitizedContentKind.TRUSTED_RESOURCE_URI,
+      SanitizedTrustedResourceUri);
 };
 
 /**
  * @param {?} value
  * @return {boolean}
  */
-soy.checks.isURI = function(value) {
-  return soy.checks.isContentKind_(
-      value, goog.soy.data.SanitizedContentKind.URI,
-      goog.soy.data.SanitizedUri);
+exports.isURI = function(value) {
+  return isContentKind_(value, SanitizedContentKind.URI, SanitizedUri);
 };
+
+;return exports;});
+
+//third_party/javascript/closure/debug/errorcontext.js
+/**
+ * @license
+ * Copyright The Closure Library Authors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/**
+ * @fileoverview Provides methods dealing with context on error objects.
+ */
+
+goog.provide('goog.debug.errorcontext');
+
+
+/**
+ * Adds key-value context to the error.
+ * @param {!Error} err The error to add context to.
+ * @param {string} contextKey Key for the context to be added.
+ * @param {string} contextValue Value for the context to be added.
+ */
+goog.debug.errorcontext.addErrorContext = function(
+    err, contextKey, contextValue) {
+  'use strict';
+  if (!err[goog.debug.errorcontext.CONTEXT_KEY_]) {
+    err[goog.debug.errorcontext.CONTEXT_KEY_] = {};
+  }
+  err[goog.debug.errorcontext.CONTEXT_KEY_][contextKey] = contextValue;
+};
+
+
+/**
+ * @param {!Error} err The error to get context from.
+ * @return {!Object<string, string>} The context of the provided error.
+ */
+goog.debug.errorcontext.getErrorContext = function(err) {
+  'use strict';
+  return err[goog.debug.errorcontext.CONTEXT_KEY_] || {};
+};
+
+
+// TODO(user): convert this to a Symbol once goog.debug.ErrorReporter is
+// able to use ES6.
+/** @private @const {string} */
+goog.debug.errorcontext.CONTEXT_KEY_ = '__closure__error__context__984382';
+
+//third_party/javascript/closure/labs/useragent/engine.js
+/**
+ * @license
+ * Copyright The Closure Library Authors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/**
+ * @fileoverview Closure user agent detection.
+ * @see http://en.wikipedia.org/wiki/User_agent
+ * For more information on browser brand, platform, or device see the other
+ * sub-namespaces in goog.labs.userAgent (browser, platform, and device).
+ */
+
+goog.provide('goog.labs.userAgent.engine');
+
+goog.require('goog.array');
+goog.require('goog.labs.userAgent.util');
+goog.require('goog.string');
+
+
+/**
+ * @return {boolean} Whether the rendering engine is Presto.
+ */
+goog.labs.userAgent.engine.isPresto = function() {
+  'use strict';
+  return goog.labs.userAgent.util.matchUserAgent('Presto');
+};
+
+
+/**
+ * @return {boolean} Whether the rendering engine is Trident.
+ */
+goog.labs.userAgent.engine.isTrident = function() {
+  'use strict';
+  // IE only started including the Trident token in IE8.
+  return goog.labs.userAgent.util.matchUserAgent('Trident') ||
+      goog.labs.userAgent.util.matchUserAgent('MSIE');
+};
+
+
+/**
+ * @return {boolean} Whether the rendering engine is EdgeHTML.
+ */
+goog.labs.userAgent.engine.isEdge = function() {
+  'use strict';
+  return goog.labs.userAgent.util.matchUserAgent('Edge');
+};
+
+
+/**
+ * @return {boolean} Whether the rendering engine is WebKit. This will return
+ * true for Chrome, Blink-based Opera (15+), Edge Chromium and Safari.
+ */
+goog.labs.userAgent.engine.isWebKit = function() {
+  'use strict';
+  return goog.labs.userAgent.util.matchUserAgentIgnoreCase('WebKit') &&
+      !goog.labs.userAgent.engine.isEdge();
+};
+
+
+/**
+ * @return {boolean} Whether the rendering engine is Gecko.
+ */
+goog.labs.userAgent.engine.isGecko = function() {
+  'use strict';
+  return goog.labs.userAgent.util.matchUserAgent('Gecko') &&
+      !goog.labs.userAgent.engine.isWebKit() &&
+      !goog.labs.userAgent.engine.isTrident() &&
+      !goog.labs.userAgent.engine.isEdge();
+};
+
+
+/**
+ * @return {string} The rendering engine's version or empty string if version
+ *     can't be determined.
+ */
+goog.labs.userAgent.engine.getVersion = function() {
+  'use strict';
+  var userAgentString = goog.labs.userAgent.util.getUserAgent();
+  if (userAgentString) {
+    var tuples = goog.labs.userAgent.util.extractVersionTuples(userAgentString);
+
+    var engineTuple = goog.labs.userAgent.engine.getEngineTuple_(tuples);
+    if (engineTuple) {
+      // In Gecko, the version string is either in the browser info or the
+      // Firefox version.  See Gecko user agent string reference:
+      // http://goo.gl/mULqa
+      if (engineTuple[0] == 'Gecko') {
+        return goog.labs.userAgent.engine.getVersionForKey_(tuples, 'Firefox');
+      }
+
+      return engineTuple[1];
+    }
+
+    // MSIE has only one version identifier, and the Trident version is
+    // specified in the parenthetical. IE Edge is covered in the engine tuple
+    // detection.
+    var browserTuple = tuples[0];
+    var info;
+    if (browserTuple && (info = browserTuple[2])) {
+      var match = /Trident\/([^\s;]+)/.exec(info);
+      if (match) {
+        return match[1];
+      }
+    }
+  }
+  return '';
+};
+
+
+/**
+ * @param {!Array<!Array<string>>} tuples Extracted version tuples.
+ * @return {!Array<string>|undefined} The engine tuple or undefined if not
+ *     found.
+ * @private
+ */
+goog.labs.userAgent.engine.getEngineTuple_ = function(tuples) {
+  'use strict';
+  if (!goog.labs.userAgent.engine.isEdge()) {
+    return tuples[1];
+  }
+  for (var i = 0; i < tuples.length; i++) {
+    var tuple = tuples[i];
+    if (tuple[0] == 'Edge') {
+      return tuple;
+    }
+  }
+};
+
+
+/**
+ * @param {string|number} version The version to check.
+ * @return {boolean} Whether the rendering engine version is higher or the same
+ *     as the given version.
+ */
+goog.labs.userAgent.engine.isVersionOrHigher = function(version) {
+  'use strict';
+  return goog.string.compareVersions(
+             goog.labs.userAgent.engine.getVersion(), version) >= 0;
+};
+
+
+/**
+ * @param {!Array<!Array<string>>} tuples Version tuples.
+ * @param {string} key The key to look for.
+ * @return {string} The version string of the given key, if present.
+ *     Otherwise, the empty string.
+ * @private
+ */
+goog.labs.userAgent.engine.getVersionForKey_ = function(tuples, key) {
+  'use strict';
+  // TODO(nnaze): Move to util if useful elsewhere.
+
+  var pair = goog.array.find(tuples, function(pair) {
+    'use strict';
+    return key == pair[0];
+  });
+
+  return pair && pair[1] || '';
+};
+
+//third_party/javascript/closure/labs/useragent/platform.js
+/**
+ * @license
+ * Copyright The Closure Library Authors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/**
+ * @fileoverview Closure user agent platform detection.
+ * @see <a href="http://www.useragentstring.com/">User agent strings</a>
+ * For more information on browser brand, rendering engine, or device see the
+ * other sub-namespaces in goog.labs.userAgent (browser, engine, and device
+ * respectively).
+ */
+
+goog.provide('goog.labs.userAgent.platform');
+
+goog.require('goog.labs.userAgent.util');
+goog.require('goog.string');
+
+
+/**
+ * @return {boolean} Whether the platform is Android.
+ */
+goog.labs.userAgent.platform.isAndroid = function() {
+  'use strict';
+  return goog.labs.userAgent.util.matchUserAgent('Android');
+};
+
+
+/**
+ * @return {boolean} Whether the platform is iPod.
+ */
+goog.labs.userAgent.platform.isIpod = function() {
+  'use strict';
+  return goog.labs.userAgent.util.matchUserAgent('iPod');
+};
+
+
+/**
+ * @return {boolean} Whether the platform is iPhone.
+ */
+goog.labs.userAgent.platform.isIphone = function() {
+  'use strict';
+  return goog.labs.userAgent.util.matchUserAgent('iPhone') &&
+      !goog.labs.userAgent.util.matchUserAgent('iPod') &&
+      !goog.labs.userAgent.util.matchUserAgent('iPad');
+};
+
+
+/**
+ * @return {boolean} Whether the platform is iPad.
+ */
+goog.labs.userAgent.platform.isIpad = function() {
+  'use strict';
+  return goog.labs.userAgent.util.matchUserAgent('iPad');
+};
+
+
+/**
+ * @return {boolean} Whether the platform is iOS.
+ */
+goog.labs.userAgent.platform.isIos = function() {
+  'use strict';
+  return goog.labs.userAgent.platform.isIphone() ||
+      goog.labs.userAgent.platform.isIpad() ||
+      goog.labs.userAgent.platform.isIpod();
+};
+
+
+/**
+ * @return {boolean} Whether the platform is Mac.
+ */
+goog.labs.userAgent.platform.isMacintosh = function() {
+  'use strict';
+  return goog.labs.userAgent.util.matchUserAgent('Macintosh');
+};
+
+
+/**
+ * Note: ChromeOS is not considered to be Linux as it does not report itself
+ * as Linux in the user agent string.
+ * @return {boolean} Whether the platform is Linux.
+ */
+goog.labs.userAgent.platform.isLinux = function() {
+  'use strict';
+  return goog.labs.userAgent.util.matchUserAgent('Linux');
+};
+
+
+/**
+ * @return {boolean} Whether the platform is Windows.
+ */
+goog.labs.userAgent.platform.isWindows = function() {
+  'use strict';
+  return goog.labs.userAgent.util.matchUserAgent('Windows');
+};
+
+
+/**
+ * @return {boolean} Whether the platform is ChromeOS.
+ */
+goog.labs.userAgent.platform.isChromeOS = function() {
+  'use strict';
+  return goog.labs.userAgent.util.matchUserAgent('CrOS');
+};
+
+/**
+ * @return {boolean} Whether the platform is Chromecast.
+ */
+goog.labs.userAgent.platform.isChromecast = function() {
+  'use strict';
+  return goog.labs.userAgent.util.matchUserAgent('CrKey');
+};
+
+/**
+ * @return {boolean} Whether the platform is KaiOS.
+ */
+goog.labs.userAgent.platform.isKaiOS = function() {
+  'use strict';
+  return goog.labs.userAgent.util.matchUserAgentIgnoreCase('KaiOS');
+};
+
+/**
+ * The version of the platform. We only determine the version for Windows,
+ * Mac, and Chrome OS. It doesn't make much sense on Linux. For Windows, we only
+ * look at the NT version. Non-NT-based versions (e.g. 95, 98, etc.) are given
+ * version 0.0.
+ *
+ * @return {string} The platform version or empty string if version cannot be
+ *     determined.
+ */
+goog.labs.userAgent.platform.getVersion = function() {
+  'use strict';
+  var userAgentString = goog.labs.userAgent.util.getUserAgent();
+  var version = '', re;
+  if (goog.labs.userAgent.platform.isWindows()) {
+    re = /Windows (?:NT|Phone) ([0-9.]+)/;
+    var match = re.exec(userAgentString);
+    if (match) {
+      version = match[1];
+    } else {
+      version = '0.0';
+    }
+  } else if (goog.labs.userAgent.platform.isIos()) {
+    re = /(?:iPhone|iPod|iPad|CPU)\s+OS\s+(\S+)/;
+    var match = re.exec(userAgentString);
+    // Report the version as x.y.z and not x_y_z
+    version = match && match[1].replace(/_/g, '.');
+  } else if (goog.labs.userAgent.platform.isMacintosh()) {
+    re = /Mac OS X ([0-9_.]+)/;
+    var match = re.exec(userAgentString);
+    // Note: some old versions of Camino do not report an OSX version.
+    // Default to 10.
+    version = match ? match[1].replace(/_/g, '.') : '10';
+  } else if (goog.labs.userAgent.platform.isKaiOS()) {
+    re = /(?:KaiOS)\/(\S+)/i;
+    var match = re.exec(userAgentString);
+    version = match && match[1];
+  } else if (goog.labs.userAgent.platform.isAndroid()) {
+    re = /Android\s+([^\);]+)(\)|;)/;
+    var match = re.exec(userAgentString);
+    version = match && match[1];
+  } else if (goog.labs.userAgent.platform.isChromeOS()) {
+    re = /(?:CrOS\s+(?:i686|x86_64)\s+([0-9.]+))/;
+    var match = re.exec(userAgentString);
+    version = match && match[1];
+  }
+  return version || '';
+};
+
+
+/**
+ * @param {string|number} version The version to check.
+ * @return {boolean} Whether the browser version is higher or the same as the
+ *     given version.
+ */
+goog.labs.userAgent.platform.isVersionOrHigher = function(version) {
+  'use strict';
+  return goog.string.compareVersions(
+             goog.labs.userAgent.platform.getVersion(), version) >= 0;
+};
+
+//third_party/javascript/closure/reflect/reflect.js
+/**
+ * @license
+ * Copyright The Closure Library Authors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/**
+ * @fileoverview Useful compiler idioms.
+ */
+
+goog.provide('goog.reflect');
+
+
+/**
+ * Syntax for object literal casts.
+ * @see http://go/jscompiler-renaming
+ * @see https://goo.gl/CRs09P
+ *
+ * Use this if you have an object literal whose keys need to have the same names
+ * as the properties of some class even after they are renamed by the compiler.
+ *
+ * @param {!Function} type Type to cast to.
+ * @param {Object} object Object literal to cast.
+ * @return {Object} The object literal.
+ */
+goog.reflect.object = function(type, object) {
+  'use strict';
+  return object;
+};
+
+/**
+ * Syntax for renaming property strings.
+ * @see http://go/jscompiler-renaming
+ * @see https://goo.gl/CRs09P
+ *
+ * Use this if you have an need to access a property as a string, but want
+ * to also have the property renamed by the compiler. In contrast to
+ * goog.reflect.object, this method takes an instance of an object.
+ *
+ * Properties must be simple names (not qualified names).
+ *
+ * @param {string} prop Name of the property
+ * @param {!Object} object Instance of the object whose type will be used
+ *     for renaming
+ * @return {string} The renamed property.
+ */
+goog.reflect.objectProperty = function(prop, object) {
+  'use strict';
+  return prop;
+};
+
+/**
+ * To assert to the compiler that an operation is needed when it would
+ * otherwise be stripped. For example:
+ * <code>
+ *     // Force a layout
+ *     goog.reflect.sinkValue(dialog.offsetHeight);
+ * </code>
+ * @param {T} x
+ * @return {T}
+ * @template T
+ */
+goog.reflect.sinkValue = function(x) {
+  'use strict';
+  goog.reflect.sinkValue[' '](x);
+  return x;
+};
+
+
+/**
+ * The compiler should optimize this function away iff no one ever uses
+ * goog.reflect.sinkValue.
+ */
+goog.reflect.sinkValue[' '] = goog.nullFunction;
+
+
+/**
+ * Check if a property can be accessed without throwing an exception.
+ * @param {Object} obj The owner of the property.
+ * @param {string} prop The property name.
+ * @return {boolean} Whether the property is accessible. Will also return true
+ *     if obj is null.
+ */
+goog.reflect.canAccessProperty = function(obj, prop) {
+  'use strict';
+  try {
+    goog.reflect.sinkValue(obj[prop]);
+    return true;
+  } catch (e) {
+  }
+  return false;
+};
+
+
+/**
+ * Retrieves a value from a cache given a key. The compiler provides special
+ * consideration for this call such that it is generally considered side-effect
+ * free. However, if the `opt_keyFn` or `valueFn` have side-effects
+ * then the entire call is considered to have side-effects.
+ *
+ * Conventionally storing the value on the cache would be considered a
+ * side-effect and preclude unused calls from being pruned, ie. even if
+ * the value was never used, it would still always be stored in the cache.
+ *
+ * Providing a side-effect free `valueFn` and `opt_keyFn`
+ * allows unused calls to `goog.reflect.cache` to be pruned.
+ *
+ * @param {!Object<K, V>} cacheObj The object that contains the cached values.
+ * @param {?} key The key to lookup in the cache. If it is not string or number
+ *     then a `opt_keyFn` should be provided. The key is also used as the
+ *     parameter to the `valueFn`.
+ * @param {function(?):V} valueFn The value provider to use to calculate the
+ *     value to store in the cache. This function should be side-effect free
+ *     to take advantage of the optimization.
+ * @param {function(?):K=} opt_keyFn The key provider to determine the cache
+ *     map key. This should be used if the given key is not a string or number.
+ *     If not provided then the given key is used. This function should be
+ *     side-effect free to take advantage of the optimization.
+ * @return {V} The cached or calculated value.
+ * @template K
+ * @template V
+ */
+goog.reflect.cache = function(cacheObj, key, valueFn, opt_keyFn) {
+  'use strict';
+  const storedKey = opt_keyFn ? opt_keyFn(key) : key;
+
+  if (Object.prototype.hasOwnProperty.call(cacheObj, storedKey)) {
+    return cacheObj[storedKey];
+  }
+
+  return (cacheObj[storedKey] = valueFn(key));
+};
+
+//third_party/javascript/closure/useragent/useragent.js
+/**
+ * @license
+ * Copyright The Closure Library Authors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/**
+ * @fileoverview Rendering engine detection.
+ * @see <a href="http://www.useragentstring.com/">User agent strings</a>
+ * For information on the browser brand (such as Safari versus Chrome), see
+ * goog.userAgent.product.
+ * @see ../demos/useragent.html
+ */
+
+goog.provide('goog.userAgent');
+
+goog.require('goog.labs.userAgent.browser');
+goog.require('goog.labs.userAgent.engine');
+goog.require('goog.labs.userAgent.platform');
+goog.require('goog.labs.userAgent.util');
+goog.require('goog.reflect');
+goog.require('goog.string');
+
+
+/**
+ * @define {boolean} Whether we know at compile-time that the browser is IE.
+ */
+goog.userAgent.ASSUME_IE = goog.define('goog.userAgent.ASSUME_IE', false);
+
+
+/**
+ * @define {boolean} Whether we know at compile-time that the browser is EDGE,
+ * referring to EdgeHTML based Edge.
+ */
+goog.userAgent.ASSUME_EDGE = goog.define('goog.userAgent.ASSUME_EDGE', false);
+
+
+/**
+ * @define {boolean} Whether we know at compile-time that the browser is GECKO.
+ */
+goog.userAgent.ASSUME_GECKO = goog.define('goog.userAgent.ASSUME_GECKO', false);
+
+
+/**
+ * @define {boolean} Whether we know at compile-time that the browser is WEBKIT.
+ */
+goog.userAgent.ASSUME_WEBKIT =
+    goog.define('goog.userAgent.ASSUME_WEBKIT', false);
+
+
+/**
+ * @define {boolean} Whether we know at compile-time that the browser is a
+ *     mobile device running WebKit e.g. iPhone or Android.
+ */
+goog.userAgent.ASSUME_MOBILE_WEBKIT =
+    goog.define('goog.userAgent.ASSUME_MOBILE_WEBKIT', false);
+
+
+/**
+ * @define {boolean} Whether we know at compile-time that the browser is OPERA,
+ * referring to Presto-based Opera.
+ */
+goog.userAgent.ASSUME_OPERA = goog.define('goog.userAgent.ASSUME_OPERA', false);
+
+
+/**
+ * @define {boolean} Whether the
+ *     `goog.userAgent.isVersionOrHigher`
+ *     function will return true for any version.
+ */
+goog.userAgent.ASSUME_ANY_VERSION =
+    goog.define('goog.userAgent.ASSUME_ANY_VERSION', false);
+
+
+/**
+ * Whether we know the browser engine at compile-time.
+ * @type {boolean}
+ * @private
+ */
+goog.userAgent.BROWSER_KNOWN_ = goog.userAgent.ASSUME_IE ||
+    goog.userAgent.ASSUME_EDGE || goog.userAgent.ASSUME_GECKO ||
+    goog.userAgent.ASSUME_MOBILE_WEBKIT || goog.userAgent.ASSUME_WEBKIT ||
+    goog.userAgent.ASSUME_OPERA;
+
+
+/**
+ * Returns the userAgent string for the current browser.
+ *
+ * @return {string} The userAgent string.
+ */
+goog.userAgent.getUserAgentString = function() {
+  'use strict';
+  return goog.labs.userAgent.util.getUserAgent();
+};
+
+
+/**
+ * @return {?Navigator} The native navigator object.
+ */
+goog.userAgent.getNavigatorTyped = function() {
+  'use strict';
+  // Need a local navigator reference instead of using the global one,
+  // to avoid the rare case where they reference different objects.
+  // (in a WorkerPool, for example).
+  return goog.global['navigator'] || null;
+};
+
+
+/**
+ * TODO(nnaze): Change type to "Navigator" and update compilation targets.
+ * @return {?Object} The native navigator object.
+ */
+goog.userAgent.getNavigator = function() {
+  'use strict';
+  return goog.userAgent.getNavigatorTyped();
+};
+
+
+/**
+ * Whether the user agent is Presto-based Opera.
+ * @type {boolean}
+ */
+goog.userAgent.OPERA = goog.userAgent.BROWSER_KNOWN_ ?
+    goog.userAgent.ASSUME_OPERA :
+    goog.labs.userAgent.browser.isOpera();
+
+
+/**
+ * Whether the user agent is Internet Explorer.
+ * @type {boolean}
+ */
+goog.userAgent.IE = goog.userAgent.BROWSER_KNOWN_ ?
+    goog.userAgent.ASSUME_IE :
+    goog.labs.userAgent.browser.isIE();
+
+
+/**
+ * Whether the user agent is Microsoft Edge (EdgeHTML based).
+ * @type {boolean}
+ */
+goog.userAgent.EDGE = goog.userAgent.BROWSER_KNOWN_ ?
+    goog.userAgent.ASSUME_EDGE :
+    goog.labs.userAgent.engine.isEdge();
+
+
+/**
+ * Whether the user agent is MS Internet Explorer or MS Edge (EdgeHTML based).
+ * @type {boolean}
+ */
+goog.userAgent.EDGE_OR_IE = goog.userAgent.EDGE || goog.userAgent.IE;
+
+
+/**
+ * Whether the user agent is Gecko. Gecko is the rendering engine used by
+ * Mozilla, Firefox, and others.
+ * @type {boolean}
+ */
+goog.userAgent.GECKO = goog.userAgent.BROWSER_KNOWN_ ?
+    goog.userAgent.ASSUME_GECKO :
+    goog.labs.userAgent.engine.isGecko();
+
+
+/**
+ * Whether the user agent is WebKit. WebKit is the rendering engine that
+ * Safari, Edge Chromium, Opera Chromium, Android and others use.
+ * @type {boolean}
+ */
+goog.userAgent.WEBKIT = goog.userAgent.BROWSER_KNOWN_ ?
+    goog.userAgent.ASSUME_WEBKIT || goog.userAgent.ASSUME_MOBILE_WEBKIT :
+    goog.labs.userAgent.engine.isWebKit();
+
+
+/**
+ * Whether the user agent is running on a mobile device.
+ *
+ * This is a separate function so that the logic can be tested.
+ *
+ * TODO(nnaze): Investigate swapping in goog.labs.userAgent.device.isMobile().
+ *
+ * @return {boolean} Whether the user agent is running on a mobile device.
+ * @private
+ */
+goog.userAgent.isMobile_ = function() {
+  'use strict';
+  return goog.userAgent.WEBKIT &&
+      goog.labs.userAgent.util.matchUserAgent('Mobile');
+};
+
+
+/**
+ * Whether the user agent is running on a mobile device.
+ *
+ * TODO(nnaze): Consider deprecating MOBILE when labs.userAgent
+ *   is promoted as the gecko/webkit logic is likely inaccurate.
+ *
+ * @type {boolean}
+ */
+goog.userAgent.MOBILE =
+    goog.userAgent.ASSUME_MOBILE_WEBKIT || goog.userAgent.isMobile_();
+
+
+/**
+ * Used while transitioning code to use WEBKIT instead.
+ * @type {boolean}
+ * @deprecated Use {@link goog.userAgent.product.SAFARI} instead.
+ * TODO(nicksantos): Delete this from goog.userAgent.
+ */
+goog.userAgent.SAFARI = goog.userAgent.WEBKIT;
+
+
+/**
+ * @return {string} the platform (operating system) the user agent is running
+ *     on. Default to empty string because navigator.platform may not be defined
+ *     (on Rhino, for example).
+ * @private
+ */
+goog.userAgent.determinePlatform_ = function() {
+  'use strict';
+  var navigator = goog.userAgent.getNavigatorTyped();
+  return navigator && navigator.platform || '';
+};
+
+
+/**
+ * The platform (operating system) the user agent is running on. Default to
+ * empty string because navigator.platform may not be defined (on Rhino, for
+ * example).
+ * @type {string}
+ */
+goog.userAgent.PLATFORM = goog.userAgent.determinePlatform_();
+
+
+/**
+ * @define {boolean} Whether the user agent is running on a Macintosh operating
+ *     system.
+ */
+goog.userAgent.ASSUME_MAC = goog.define('goog.userAgent.ASSUME_MAC', false);
+
+
+/**
+ * @define {boolean} Whether the user agent is running on a Windows operating
+ *     system.
+ */
+goog.userAgent.ASSUME_WINDOWS =
+    goog.define('goog.userAgent.ASSUME_WINDOWS', false);
+
+
+/**
+ * @define {boolean} Whether the user agent is running on a Linux operating
+ *     system.
+ */
+goog.userAgent.ASSUME_LINUX = goog.define('goog.userAgent.ASSUME_LINUX', false);
+
+
+/**
+ * @define {boolean} Whether the user agent is running on a X11 windowing
+ *     system.
+ */
+goog.userAgent.ASSUME_X11 = goog.define('goog.userAgent.ASSUME_X11', false);
+
+
+/**
+ * @define {boolean} Whether the user agent is running on Android.
+ */
+goog.userAgent.ASSUME_ANDROID =
+    goog.define('goog.userAgent.ASSUME_ANDROID', false);
+
+
+/**
+ * @define {boolean} Whether the user agent is running on an iPhone.
+ */
+goog.userAgent.ASSUME_IPHONE =
+    goog.define('goog.userAgent.ASSUME_IPHONE', false);
+
+
+/**
+ * @define {boolean} Whether the user agent is running on an iPad.
+ */
+goog.userAgent.ASSUME_IPAD = goog.define('goog.userAgent.ASSUME_IPAD', false);
+
+
+/**
+ * @define {boolean} Whether the user agent is running on an iPod.
+ */
+goog.userAgent.ASSUME_IPOD = goog.define('goog.userAgent.ASSUME_IPOD', false);
+
+
+/**
+ * @define {boolean} Whether the user agent is running on KaiOS.
+ */
+goog.userAgent.ASSUME_KAIOS = goog.define('goog.userAgent.ASSUME_KAIOS', false);
+
+
+/**
+ * @type {boolean}
+ * @private
+ */
+goog.userAgent.PLATFORM_KNOWN_ = goog.userAgent.ASSUME_MAC ||
+    goog.userAgent.ASSUME_WINDOWS || goog.userAgent.ASSUME_LINUX ||
+    goog.userAgent.ASSUME_X11 || goog.userAgent.ASSUME_ANDROID ||
+    goog.userAgent.ASSUME_IPHONE || goog.userAgent.ASSUME_IPAD ||
+    goog.userAgent.ASSUME_IPOD;
+
+
+/**
+ * Whether the user agent is running on a Macintosh operating system.
+ * @type {boolean}
+ */
+goog.userAgent.MAC = goog.userAgent.PLATFORM_KNOWN_ ?
+    goog.userAgent.ASSUME_MAC :
+    goog.labs.userAgent.platform.isMacintosh();
+
+
+/**
+ * Whether the user agent is running on a Windows operating system.
+ * @type {boolean}
+ */
+goog.userAgent.WINDOWS = goog.userAgent.PLATFORM_KNOWN_ ?
+    goog.userAgent.ASSUME_WINDOWS :
+    goog.labs.userAgent.platform.isWindows();
+
+
+/**
+ * Whether the user agent is Linux per the legacy behavior of
+ * goog.userAgent.LINUX, which considered ChromeOS to also be
+ * Linux.
+ * @return {boolean}
+ * @private
+ */
+goog.userAgent.isLegacyLinux_ = function() {
+  'use strict';
+  return goog.labs.userAgent.platform.isLinux() ||
+      goog.labs.userAgent.platform.isChromeOS();
+};
+
+
+/**
+ * Whether the user agent is running on a Linux operating system.
+ *
+ * Note that goog.userAgent.LINUX considers ChromeOS to be Linux,
+ * while goog.labs.userAgent.platform considers ChromeOS and
+ * Linux to be different OSes.
+ *
+ * @type {boolean}
+ */
+goog.userAgent.LINUX = goog.userAgent.PLATFORM_KNOWN_ ?
+    goog.userAgent.ASSUME_LINUX :
+    goog.userAgent.isLegacyLinux_();
+
+
+/**
+ * @return {boolean} Whether the user agent is an X11 windowing system.
+ * @private
+ */
+goog.userAgent.isX11_ = function() {
+  'use strict';
+  var navigator = goog.userAgent.getNavigatorTyped();
+  return !!navigator &&
+      goog.string.contains(navigator['appVersion'] || '', 'X11');
+};
+
+
+/**
+ * Whether the user agent is running on a X11 windowing system.
+ * @type {boolean}
+ */
+goog.userAgent.X11 = goog.userAgent.PLATFORM_KNOWN_ ?
+    goog.userAgent.ASSUME_X11 :
+    goog.userAgent.isX11_();
+
+
+/**
+ * Whether the user agent is running on Android.
+ * @type {boolean}
+ */
+goog.userAgent.ANDROID = goog.userAgent.PLATFORM_KNOWN_ ?
+    goog.userAgent.ASSUME_ANDROID :
+    goog.labs.userAgent.platform.isAndroid();
+
+
+/**
+ * Whether the user agent is running on an iPhone.
+ * @type {boolean}
+ */
+goog.userAgent.IPHONE = goog.userAgent.PLATFORM_KNOWN_ ?
+    goog.userAgent.ASSUME_IPHONE :
+    goog.labs.userAgent.platform.isIphone();
+
+
+/**
+ * Whether the user agent is running on an iPad.
+ * @type {boolean}
+ */
+goog.userAgent.IPAD = goog.userAgent.PLATFORM_KNOWN_ ?
+    goog.userAgent.ASSUME_IPAD :
+    goog.labs.userAgent.platform.isIpad();
+
+
+/**
+ * Whether the user agent is running on an iPod.
+ * @type {boolean}
+ */
+goog.userAgent.IPOD = goog.userAgent.PLATFORM_KNOWN_ ?
+    goog.userAgent.ASSUME_IPOD :
+    goog.labs.userAgent.platform.isIpod();
+
+
+/**
+ * Whether the user agent is running on iOS.
+ * @type {boolean}
+ */
+goog.userAgent.IOS = goog.userAgent.PLATFORM_KNOWN_ ?
+    (goog.userAgent.ASSUME_IPHONE || goog.userAgent.ASSUME_IPAD ||
+     goog.userAgent.ASSUME_IPOD) :
+    goog.labs.userAgent.platform.isIos();
+
+/**
+ * Whether the user agent is running on KaiOS.
+ * @type {boolean}
+ */
+goog.userAgent.KAIOS = goog.userAgent.PLATFORM_KNOWN_ ?
+    goog.userAgent.ASSUME_KAIOS :
+    goog.labs.userAgent.platform.isKaiOS();
+
+
+/**
+ * @return {string} The string that describes the version number of the user
+ *     agent.
+ * @private
+ */
+goog.userAgent.determineVersion_ = function() {
+  'use strict';
+  // All browsers have different ways to detect the version and they all have
+  // different naming schemes.
+  // version is a string rather than a number because it may contain 'b', 'a',
+  // and so on.
+  var version = '';
+  var arr = goog.userAgent.getVersionRegexResult_();
+  if (arr) {
+    version = arr ? arr[1] : '';
+  }
+
+  if (goog.userAgent.IE) {
+    // IE9 can be in document mode 9 but be reporting an inconsistent user agent
+    // version.  If it is identifying as a version lower than 9 we take the
+    // documentMode as the version instead.  IE8 has similar behavior.
+    // It is recommended to set the X-UA-Compatible header to ensure that IE9
+    // uses documentMode 9.
+    var docMode = goog.userAgent.getDocumentMode_();
+    if (docMode != null && docMode > parseFloat(version)) {
+      return String(docMode);
+    }
+  }
+
+  return version;
+};
+
+
+/**
+ * @return {?IArrayLike<string>|undefined} The version regex matches from
+ *     parsing the user
+ *     agent string. These regex statements must be executed inline so they can
+ *     be compiled out by the closure compiler with the rest of the useragent
+ *     detection logic when ASSUME_* is specified.
+ * @private
+ */
+goog.userAgent.getVersionRegexResult_ = function() {
+  'use strict';
+  var userAgent = goog.userAgent.getUserAgentString();
+  if (goog.userAgent.GECKO) {
+    return /rv\:([^\);]+)(\)|;)/.exec(userAgent);
+  }
+  if (goog.userAgent.EDGE) {
+    return /Edge\/([\d\.]+)/.exec(userAgent);
+  }
+  if (goog.userAgent.IE) {
+    return /\b(?:MSIE|rv)[: ]([^\);]+)(\)|;)/.exec(userAgent);
+  }
+  if (goog.userAgent.WEBKIT) {
+    // WebKit/125.4
+    return /WebKit\/(\S+)/.exec(userAgent);
+  }
+  if (goog.userAgent.OPERA) {
+    // If none of the above browsers were detected but the browser is Opera, the
+    // only string that is of interest is 'Version/<number>'.
+    return /(?:Version)[ \/]?(\S+)/.exec(userAgent);
+  }
+  return undefined;
+};
+
+
+/**
+ * @return {number|undefined} Returns the document mode (for testing).
+ * @private
+ */
+goog.userAgent.getDocumentMode_ = function() {
+  'use strict';
+  // NOTE(user): goog.userAgent may be used in context where there is no DOM.
+  var doc = goog.global['document'];
+  return doc ? doc['documentMode'] : undefined;
+};
+
+
+/**
+ * The version of the user agent. This is a string because it might contain
+ * 'b' (as in beta) as well as multiple dots.
+ * @type {string}
+ */
+goog.userAgent.VERSION = goog.userAgent.determineVersion_();
+
+
+/**
+ * Compares two version numbers.
+ *
+ * @param {string} v1 Version of first item.
+ * @param {string} v2 Version of second item.
+ *
+ * @return {number}  1 if first argument is higher
+ *                   0 if arguments are equal
+ *                  -1 if second argument is higher.
+ * @deprecated Use goog.string.compareVersions.
+ */
+goog.userAgent.compare = function(v1, v2) {
+  'use strict';
+  return goog.string.compareVersions(v1, v2);
+};
+
+
+/**
+ * Cache for {@link goog.userAgent.isVersionOrHigher}.
+ * Calls to compareVersions are surprisingly expensive and, as a browser's
+ * version number is unlikely to change during a session, we cache the results.
+ * @const
+ * @private
+ */
+goog.userAgent.isVersionOrHigherCache_ = {};
+
+
+/**
+ * Whether the user agent version is higher or the same as the given version.
+ * NOTE: When checking the version numbers for Firefox and Safari, be sure to
+ * use the engine's version, not the browser's version number.  For example,
+ * Firefox 3.0 corresponds to Gecko 1.9 and Safari 3.0 to Webkit 522.11.
+ * Opera and Internet Explorer versions match the product release number.<br>
+ * @see <a href="http://en.wikipedia.org/wiki/Safari_version_history">
+ *     Webkit</a>
+ * @see <a href="http://en.wikipedia.org/wiki/Gecko_engine">Gecko</a>
+ *
+ * @param {string|number} version The version to check.
+ * @return {boolean} Whether the user agent version is higher or the same as
+ *     the given version.
+ */
+goog.userAgent.isVersionOrHigher = function(version) {
+  'use strict';
+  return goog.userAgent.ASSUME_ANY_VERSION ||
+      goog.reflect.cache(
+          goog.userAgent.isVersionOrHigherCache_, version, function() {
+            'use strict';
+            return goog.string.compareVersions(
+                       goog.userAgent.VERSION, version) >= 0;
+          });
+};
+
+
+/**
+ * Deprecated alias to `goog.userAgent.isVersionOrHigher`.
+ * @param {string|number} version The version to check.
+ * @return {boolean} Whether the user agent version is higher or the same as
+ *     the given version.
+ * @deprecated Use goog.userAgent.isVersionOrHigher().
+ */
+goog.userAgent.isVersion = goog.userAgent.isVersionOrHigher;
+
+
+/**
+ * Whether the IE effective document mode is higher or the same as the given
+ * document mode version.
+ * NOTE: Only for IE, return false for another browser.
+ *
+ * @param {number} documentMode The document mode version to check.
+ * @return {boolean} Whether the IE effective document mode is higher or the
+ *     same as the given version.
+ */
+goog.userAgent.isDocumentModeOrHigher = function(documentMode) {
+  'use strict';
+  return Number(goog.userAgent.DOCUMENT_MODE) >= documentMode;
+};
+
+
+/**
+ * Deprecated alias to `goog.userAgent.isDocumentModeOrHigher`.
+ * @param {number} version The version to check.
+ * @return {boolean} Whether the IE effective document mode is higher or the
+ *      same as the given version.
+ * @deprecated Use goog.userAgent.isDocumentModeOrHigher().
+ */
+goog.userAgent.isDocumentMode = goog.userAgent.isDocumentModeOrHigher;
+
+
+/**
+ * For IE version < 7, documentMode is undefined, so attempt to use the
+ * CSS1Compat property to see if we are in standards mode. If we are in
+ * standards mode, treat the browser version as the document mode. Otherwise,
+ * IE is emulating version 5.
+ *
+ * NOTE(2019/05/31): Support for IE < 7 is long gone, so this is now simplified.
+ * It returns document.documentMode for IE and undefined for everything else.
+ *
+ * @type {number|undefined}
+ * @const
+ */
+goog.userAgent.DOCUMENT_MODE = (function() {
+  'use strict';
+  var doc = goog.global['document'];
+  if (!doc || !goog.userAgent.IE) return undefined;
+  // This must be an IE user agent.
+  var documentMode = goog.userAgent.getDocumentMode_();
+  if (documentMode) return documentMode;
+  // The user agent version string begins with the major version.
+  // Parse the major version and truncate anything following.
+  var ieVersion = parseInt(goog.userAgent.VERSION, 10);
+  return ieVersion || undefined;
+})();
+
+//third_party/javascript/closure/debug/debug.js
+/**
+ * @license
+ * Copyright The Closure Library Authors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/**
+ * @fileoverview Logging and debugging utilities.
+ *
+ * @see ../demos/debug.html
+ */
+
+goog.provide('goog.debug');
+
+goog.require('goog.array');
+goog.require('goog.debug.errorcontext');
+goog.require('goog.userAgent');
+
+
+/** @define {boolean} Whether logging should be enabled. */
+goog.debug.LOGGING_ENABLED =
+    goog.define('goog.debug.LOGGING_ENABLED', goog.DEBUG);
+
+
+/** @define {boolean} Whether to force "sloppy" stack building. */
+goog.debug.FORCE_SLOPPY_STACKS =
+    goog.define('goog.debug.FORCE_SLOPPY_STACKS', false);
+
+
+/**
+ * @define {boolean} TODO(b/159435805): Remove this hack once bug is resolved.
+ */
+goog.debug.CHECK_FOR_THROWN_EVENT =
+    goog.define('goog.debug.CHECK_FOR_THROWN_EVENT', false);
+
+
+
+/**
+ * Catches onerror events fired by windows and similar objects.
+ * @param {function(Object)} logFunc The function to call with the error
+ *    information.
+ * @param {boolean=} opt_cancel Whether to stop the error from reaching the
+ *    browser.
+ * @param {Object=} opt_target Object that fires onerror events.
+ * @suppress {strictMissingProperties} onerror is not defined as a property
+ *    on Object.
+ */
+goog.debug.catchErrors = function(logFunc, opt_cancel, opt_target) {
+  'use strict';
+  var target = opt_target || goog.global;
+  var oldErrorHandler = target.onerror;
+  var retVal = !!opt_cancel;
+
+  // Chrome interprets onerror return value backwards (http://crbug.com/92062)
+  // until it was fixed in webkit revision r94061 (Webkit 535.3). This
+  // workaround still needs to be skipped in Safari after the webkit change
+  // gets pushed out in Safari.
+  // See https://bugs.webkit.org/show_bug.cgi?id=67119
+  if (goog.userAgent.WEBKIT && !goog.userAgent.isVersionOrHigher('535.3')) {
+    retVal = !retVal;
+  }
+
+  /**
+   * New onerror handler for this target. This onerror handler follows the spec
+   * according to
+   * http://www.whatwg.org/specs/web-apps/current-work/#runtime-script-errors
+   * The spec was changed in August 2013 to support receiving column information
+   * and an error object for all scripts on the same origin or cross origin
+   * scripts with the proper headers. See
+   * https://mikewest.org/2013/08/debugging-runtime-errors-with-window-onerror
+   *
+   * @param {string} message The error message. For cross-origin errors, this
+   *     will be scrubbed to just "Script error.". For new browsers that have
+   *     updated to follow the latest spec, errors that come from origins that
+   *     have proper cross origin headers will not be scrubbed.
+   * @param {string} url The URL of the script that caused the error. The URL
+   *     will be scrubbed to "" for cross origin scripts unless the script has
+   *     proper cross origin headers and the browser has updated to the latest
+   *     spec.
+   * @param {number} line The line number in the script that the error
+   *     occurred on.
+   * @param {number=} opt_col The optional column number that the error
+   *     occurred on. Only browsers that have updated to the latest spec will
+   *     include this.
+   * @param {Error=} opt_error The optional actual error object for this
+   *     error that should include the stack. Only browsers that have updated
+   *     to the latest spec will inlude this parameter.
+   * @return {boolean} Whether to prevent the error from reaching the browser.
+   */
+  target.onerror = function(message, url, line, opt_col, opt_error) {
+    'use strict';
+    if (oldErrorHandler) {
+      oldErrorHandler(message, url, line, opt_col, opt_error);
+    }
+    logFunc({
+      message: message,
+      fileName: url,
+      line: line,
+      lineNumber: line,
+      col: opt_col,
+      error: opt_error
+    });
+    return retVal;
+  };
+};
+
+
+/**
+ * Creates a string representing an object and all its properties.
+ * @param {Object|null|undefined} obj Object to expose.
+ * @param {boolean=} opt_showFn Show the functions as well as the properties,
+ *     default is false.
+ * @return {string} The string representation of `obj`.
+ */
+goog.debug.expose = function(obj, opt_showFn) {
+  'use strict';
+  if (typeof obj == 'undefined') {
+    return 'undefined';
+  }
+  if (obj == null) {
+    return 'NULL';
+  }
+  var str = [];
+
+  for (var x in obj) {
+    if (!opt_showFn && typeof obj[x] === 'function') {
+      continue;
+    }
+    var s = x + ' = ';
+
+    try {
+      s += obj[x];
+    } catch (e) {
+      s += '*** ' + e + ' ***';
+    }
+    str.push(s);
+  }
+  return str.join('\n');
+};
+
+
+/**
+ * Creates a string representing a given primitive or object, and for an
+ * object, all its properties and nested objects. NOTE: The output will include
+ * Uids on all objects that were exposed. Any added Uids will be removed before
+ * returning.
+ * @param {*} obj Object to expose.
+ * @param {boolean=} opt_showFn Also show properties that are functions (by
+ *     default, functions are omitted).
+ * @return {string} A string representation of `obj`.
+ */
+goog.debug.deepExpose = function(obj, opt_showFn) {
+  'use strict';
+  var str = [];
+
+  // Track any objects where deepExpose added a Uid, so they can be cleaned up
+  // before return. We do this globally, rather than only on ancestors so that
+  // if the same object appears in the output, you can see it.
+  var uidsToCleanup = [];
+  var ancestorUids = {};
+
+  var helper = function(obj, space) {
+    'use strict';
+    var nestspace = space + '  ';
+
+    var indentMultiline = function(str) {
+      'use strict';
+      return str.replace(/\n/g, '\n' + space);
+    };
+
+
+    try {
+      if (obj === undefined) {
+        str.push('undefined');
+      } else if (obj === null) {
+        str.push('NULL');
+      } else if (typeof obj === 'string') {
+        str.push('"' + indentMultiline(obj) + '"');
+      } else if (typeof obj === 'function') {
+        str.push(indentMultiline(String(obj)));
+      } else if (goog.isObject(obj)) {
+        // Add a Uid if needed. The struct calls implicitly adds them.
+        if (!goog.hasUid(obj)) {
+          uidsToCleanup.push(obj);
+        }
+        var uid = goog.getUid(obj);
+        if (ancestorUids[uid]) {
+          str.push('*** reference loop detected (id=' + uid + ') ***');
+        } else {
+          ancestorUids[uid] = true;
+          str.push('{');
+          for (var x in obj) {
+            if (!opt_showFn && typeof obj[x] === 'function') {
+              continue;
+            }
+            str.push('\n');
+            str.push(nestspace);
+            str.push(x + ' = ');
+            helper(obj[x], nestspace);
+          }
+          str.push('\n' + space + '}');
+          delete ancestorUids[uid];
+        }
+      } else {
+        str.push(obj);
+      }
+    } catch (e) {
+      str.push('*** ' + e + ' ***');
+    }
+  };
+
+  helper(obj, '');
+
+  // Cleanup any Uids that were added by the deepExpose.
+  for (var i = 0; i < uidsToCleanup.length; i++) {
+    goog.removeUid(uidsToCleanup[i]);
+  }
+
+  return str.join('');
+};
+
+
+/**
+ * Recursively outputs a nested array as a string.
+ * @param {Array<?>} arr The array.
+ * @return {string} String representing nested array.
+ */
+goog.debug.exposeArray = function(arr) {
+  'use strict';
+  var str = [];
+  for (var i = 0; i < arr.length; i++) {
+    if (Array.isArray(arr[i])) {
+      str.push(goog.debug.exposeArray(arr[i]));
+    } else {
+      str.push(arr[i]);
+    }
+  }
+  return '[ ' + str.join(', ') + ' ]';
+};
+
+
+/**
+ * Normalizes the error/exception object between browsers.
+ * @param {*} err Raw error object.
+ * @return {{
+ *    message: (?|undefined),
+ *    name: (?|undefined),
+ *    lineNumber: (?|undefined),
+ *    fileName: (?|undefined),
+ *    stack: (?|undefined)
+ * }} Normalized error object.
+ * @suppress {strictMissingProperties} properties not defined on err
+ */
+goog.debug.normalizeErrorObject = function(err) {
+  'use strict';
+  var href = goog.getObjectByName('window.location.href');
+  if (err == null) {
+    err = 'Unknown Error of type "null/undefined"';
+  }
+  if (typeof err === 'string') {
+    return {
+      'message': err,
+      'name': 'Unknown error',
+      'lineNumber': 'Not available',
+      'fileName': href,
+      'stack': 'Not available'
+    };
+  }
+
+  var lineNumber, fileName;
+  var threwError = false;
+
+  try {
+    lineNumber = err.lineNumber || err.line || 'Not available';
+  } catch (e) {
+    // Firefox 2 sometimes throws an error when accessing 'lineNumber':
+    // Message: Permission denied to get property UnnamedClass.lineNumber
+    lineNumber = 'Not available';
+    threwError = true;
+  }
+
+  try {
+    fileName = err.fileName || err.filename || err.sourceURL ||
+        // $googDebugFname may be set before a call to eval to set the filename
+        // that the eval is supposed to present.
+        goog.global['$googDebugFname'] || href;
+  } catch (e) {
+    // Firefox 2 may also throw an error when accessing 'filename'.
+    fileName = 'Not available';
+    threwError = true;
+  }
+
+  var stack = goog.debug.serializeErrorStack_(err);
+
+  // The IE Error object contains only the name and the message.
+  // The Safari Error object uses the line and sourceURL fields.
+  if (threwError || !err.lineNumber || !err.fileName || !err.stack ||
+      !err.message || !err.name) {
+    var message = err.message;
+    if (message == null) {
+      if (err.constructor && err.constructor instanceof Function) {
+        var ctorName = err.constructor.name ?
+            err.constructor.name :
+            goog.debug.getFunctionName(err.constructor);
+        message = 'Unknown Error of type "' + ctorName + '"';
+        // TODO(b/159435805): Remove this hack once bug is resolved.
+        if (goog.debug.CHECK_FOR_THROWN_EVENT && ctorName == 'Event') {
+          try {
+            message = message + ' with Event.type "' + (err.type || '') + '"';
+          } catch (e) {
+            // Just give up on getting more information out of the error object.
+          }
+        }
+      } else {
+        message = 'Unknown Error of unknown type';
+      }
+
+      // Avoid TypeError since toString could be missing from the instance
+      // (e.g. if created Object.create(null)).
+      if (typeof err.toString === 'function' &&
+          Object.prototype.toString !== err.toString) {
+        message += ': ' + err.toString();
+      }
+    }
+    return {
+      'message': message,
+      'name': err.name || 'UnknownError',
+      'lineNumber': lineNumber,
+      'fileName': fileName,
+      'stack': stack || 'Not available'
+    };
+  }
+  // Standards error object
+  // Typed !Object. Should be a subtype of the return type, but it's not.
+  err.stack = stack;
+  return /** @type {?} */ (err);
+};
+
+
+/**
+ * Serialize stack by including the cause chain of the exception if it exists.
+ *
+ *
+ * @param {*} e an exception that may have a cause
+ * @param {!Object=} seen set of cause that have already been serialized
+ * @return {string}
+ * @private
+ * @suppress {missingProperties} properties not defined on cause and e
+ */
+goog.debug.serializeErrorStack_ = function(e, seen) {
+  'use strict';
+  if (!seen) {
+    seen = {};
+  }
+  seen[goog.debug.serializeErrorAsKey_(e)] = true;
+
+  var stack = e['stack'] || '';
+
+  // Add cause if exists.
+  var cause = e.cause;
+  if (cause && !seen[goog.debug.serializeErrorAsKey_(cause)]) {
+    stack += '\nCaused by: ';
+    // Some browsers like Chrome add the error message as the first frame of the
+    // stack, In this case we don't need to add it. Note: we don't use
+    // String.startsWith method because it might have to be polyfilled.
+    if (!cause.stack || cause.stack.indexOf(cause.toString()) != 0) {
+      stack += (typeof cause === 'string') ? cause : cause.message + '\n';
+    }
+    stack += goog.debug.serializeErrorStack_(cause, seen);
+  }
+
+  return stack;
+};
+
+/**
+ * Serialize an error to a string key.
+ * @param {*} e an exception
+ * @return {string}
+ * @private
+ */
+goog.debug.serializeErrorAsKey_ = function(e) {
+  'use strict';
+  var keyPrefix = '';
+
+  if (typeof e.toString === 'function') {
+    keyPrefix = '' + e;
+  }
+
+  return keyPrefix + e['stack'];
+};
+
+
+/**
+ * Converts an object to an Error using the object's toString if it's not
+ * already an Error, adds a stacktrace if there isn't one, and optionally adds
+ * an extra message.
+ * @param {*} err The original thrown error, object, or string.
+ * @param {string=} opt_message  optional additional message to add to the
+ *     error.
+ * @return {!Error} If err is an Error, it is enhanced and returned. Otherwise,
+ *     it is converted to an Error which is enhanced and returned.
+ */
+goog.debug.enhanceError = function(err, opt_message) {
+  'use strict';
+  var error;
+  if (!(err instanceof Error)) {
+    error = Error(err);
+    if (Error.captureStackTrace) {
+      // Trim this function off the call stack, if we can.
+      Error.captureStackTrace(error, goog.debug.enhanceError);
+    }
+  } else {
+    error = err;
+  }
+
+  if (!error.stack) {
+    error.stack = goog.debug.getStacktrace(goog.debug.enhanceError);
+  }
+  if (opt_message) {
+    // find the first unoccupied 'messageX' property
+    var x = 0;
+    while (error['message' + x]) {
+      ++x;
+    }
+    error['message' + x] = String(opt_message);
+  }
+  return error;
+};
+
+
+/**
+ * Converts an object to an Error using the object's toString if it's not
+ * already an Error, adds a stacktrace if there isn't one, and optionally adds
+ * context to the Error, which is reported by the closure error reporter.
+ * @param {*} err The original thrown error, object, or string.
+ * @param {!Object<string, string>=} opt_context Key-value context to add to the
+ *     Error.
+ * @return {!Error} If err is an Error, it is enhanced and returned. Otherwise,
+ *     it is converted to an Error which is enhanced and returned.
+ */
+goog.debug.enhanceErrorWithContext = function(err, opt_context) {
+  'use strict';
+  var error = goog.debug.enhanceError(err);
+  if (opt_context) {
+    for (var key in opt_context) {
+      goog.debug.errorcontext.addErrorContext(error, key, opt_context[key]);
+    }
+  }
+  return error;
+};
+
+
+/**
+ * Gets the current stack trace. Simple and iterative - doesn't worry about
+ * catching circular references or getting the args.
+ * @param {number=} opt_depth Optional maximum depth to trace back to.
+ * @return {string} A string with the function names of all functions in the
+ *     stack, separated by \n.
+ * @suppress {es5Strict}
+ */
+goog.debug.getStacktraceSimple = function(opt_depth) {
+  'use strict';
+  if (!goog.debug.FORCE_SLOPPY_STACKS) {
+    var stack = goog.debug.getNativeStackTrace_(goog.debug.getStacktraceSimple);
+    if (stack) {
+      return stack;
+    }
+    // NOTE: browsers that have strict mode support also have native "stack"
+    // properties.  Fall-through for legacy browser support.
+  }
+
+  var sb = [];
+  var fn = arguments.callee.caller;
+  var depth = 0;
+
+  while (fn && (!opt_depth || depth < opt_depth)) {
+    sb.push(goog.debug.getFunctionName(fn));
+    sb.push('()\n');
+
+    try {
+      fn = fn.caller;
+    } catch (e) {
+      sb.push('[exception trying to get caller]\n');
+      break;
+    }
+    depth++;
+    if (depth >= goog.debug.MAX_STACK_DEPTH) {
+      sb.push('[...long stack...]');
+      break;
+    }
+  }
+  if (opt_depth && depth >= opt_depth) {
+    sb.push('[...reached max depth limit...]');
+  } else {
+    sb.push('[end]');
+  }
+
+  return sb.join('');
+};
+
+
+/**
+ * Max length of stack to try and output
+ * @type {number}
+ */
+goog.debug.MAX_STACK_DEPTH = 50;
+
+
+/**
+ * @param {Function} fn The function to start getting the trace from.
+ * @return {?string}
+ * @private
+ */
+goog.debug.getNativeStackTrace_ = function(fn) {
+  'use strict';
+  var tempErr = new Error();
+  if (Error.captureStackTrace) {
+    Error.captureStackTrace(tempErr, fn);
+    return String(tempErr.stack);
+  } else {
+    // IE10, only adds stack traces when an exception is thrown.
+    try {
+      throw tempErr;
+    } catch (e) {
+      tempErr = e;
+    }
+    var stack = tempErr.stack;
+    if (stack) {
+      return String(stack);
+    }
+  }
+  return null;
+};
+
+
+/**
+ * Gets the current stack trace, either starting from the caller or starting
+ * from a specified function that's currently on the call stack.
+ * @param {?Function=} fn If provided, when collecting the stack trace all
+ *     frames above the topmost call to this function, including that call,
+ *     will be left out of the stack trace.
+ * @return {string} Stack trace.
+ * @suppress {es5Strict}
+ */
+goog.debug.getStacktrace = function(fn) {
+  'use strict';
+  var stack;
+  if (!goog.debug.FORCE_SLOPPY_STACKS) {
+    // Try to get the stack trace from the environment if it is available.
+    var contextFn = fn || goog.debug.getStacktrace;
+    stack = goog.debug.getNativeStackTrace_(contextFn);
+  }
+  if (!stack) {
+    // NOTE: browsers that have strict mode support also have native "stack"
+    // properties. This function will throw in strict mode.
+    stack = goog.debug.getStacktraceHelper_(fn || arguments.callee.caller, []);
+  }
+  return stack;
+};
+
+
+/**
+ * Private helper for getStacktrace().
+ * @param {?Function} fn If provided, when collecting the stack trace all
+ *     frames above the topmost call to this function, including that call,
+ *     will be left out of the stack trace.
+ * @param {Array<!Function>} visited List of functions visited so far.
+ * @return {string} Stack trace starting from function fn.
+ * @suppress {es5Strict}
+ * @private
+ */
+goog.debug.getStacktraceHelper_ = function(fn, visited) {
+  'use strict';
+  var sb = [];
+
+  // Circular reference, certain functions like bind seem to cause a recursive
+  // loop so we need to catch circular references
+  if (goog.array.contains(visited, fn)) {
+    sb.push('[...circular reference...]');
+
+    // Traverse the call stack until function not found or max depth is reached
+  } else if (fn && visited.length < goog.debug.MAX_STACK_DEPTH) {
+    sb.push(goog.debug.getFunctionName(fn) + '(');
+    var args = fn.arguments;
+    // Args may be null for some special functions such as host objects or eval.
+    for (var i = 0; args && i < args.length; i++) {
+      if (i > 0) {
+        sb.push(', ');
+      }
+      var argDesc;
+      var arg = args[i];
+      switch (typeof arg) {
+        case 'object':
+          argDesc = arg ? 'object' : 'null';
+          break;
+
+        case 'string':
+          argDesc = arg;
+          break;
+
+        case 'number':
+          argDesc = String(arg);
+          break;
+
+        case 'boolean':
+          argDesc = arg ? 'true' : 'false';
+          break;
+
+        case 'function':
+          argDesc = goog.debug.getFunctionName(arg);
+          argDesc = argDesc ? argDesc : '[fn]';
+          break;
+
+        case 'undefined':
+        default:
+          argDesc = typeof arg;
+          break;
+      }
+
+      if (argDesc.length > 40) {
+        argDesc = argDesc.substr(0, 40) + '...';
+      }
+      sb.push(argDesc);
+    }
+    visited.push(fn);
+    sb.push(')\n');
+
+    try {
+      sb.push(goog.debug.getStacktraceHelper_(fn.caller, visited));
+    } catch (e) {
+      sb.push('[exception trying to get caller]\n');
+    }
+
+  } else if (fn) {
+    sb.push('[...long stack...]');
+  } else {
+    sb.push('[end]');
+  }
+  return sb.join('');
+};
+
+
+/**
+ * Gets a function name
+ * @param {Function} fn Function to get name of.
+ * @return {string} Function's name.
+ */
+goog.debug.getFunctionName = function(fn) {
+  'use strict';
+  if (goog.debug.fnNameCache_[fn]) {
+    return goog.debug.fnNameCache_[fn];
+  }
+
+  // Heuristically determine function name based on code.
+  var functionSource = String(fn);
+  if (!goog.debug.fnNameCache_[functionSource]) {
+    var matches = /function\s+([^\(]+)/m.exec(functionSource);
+    if (matches) {
+      var method = matches[1];
+      goog.debug.fnNameCache_[functionSource] = method;
+    } else {
+      goog.debug.fnNameCache_[functionSource] = '[Anonymous]';
+    }
+  }
+
+  return goog.debug.fnNameCache_[functionSource];
+};
+
+
+/**
+ * Makes whitespace visible by replacing it with printable characters.
+ * This is useful in finding diffrences between the expected and the actual
+ * output strings of a testcase.
+ * @param {string} string whose whitespace needs to be made visible.
+ * @return {string} string whose whitespace is made visible.
+ */
+goog.debug.makeWhitespaceVisible = function(string) {
+  'use strict';
+  return string.replace(/ /g, '[_]')
+      .replace(/\f/g, '[f]')
+      .replace(/\n/g, '[n]\n')
+      .replace(/\r/g, '[r]')
+      .replace(/\t/g, '[t]');
+};
+
+
+/**
+ * Returns the type of a value. If a constructor is passed, and a suitable
+ * string cannot be found, 'unknown type name' will be returned.
+ *
+ * <p>Forked rather than moved from {@link goog.asserts.getType_}
+ * to avoid adding a dependency to goog.asserts.
+ * @param {*} value A constructor, object, or primitive.
+ * @return {string} The best display name for the value, or 'unknown type name'.
+ */
+goog.debug.runtimeType = function(value) {
+  'use strict';
+  if (value instanceof Function) {
+    return value.displayName || value.name || 'unknown type name';
+  } else if (value instanceof Object) {
+    return /** @type {string} */ (value.constructor.displayName) ||
+        value.constructor.name || Object.prototype.toString.call(value);
+  } else {
+    return value === null ? 'null' : typeof value;
+  }
+};
+
+
+/**
+ * Hash map for storing function names that have already been looked up.
+ * @type {Object}
+ * @private
+ */
+goog.debug.fnNameCache_ = {};
+
+
+/**
+ * Private internal function to support goog.debug.freeze.
+ * @param {T} arg
+ * @return {T}
+ * @template T
+ * @private
+ */
+goog.debug.freezeInternal_ = goog.DEBUG && Object.freeze || function(arg) {
+  'use strict';
+  return arg;
+};
+
+
+/**
+ * Freezes the given object, but only in debug mode (and in browsers that
+ * support it).  Note that this is a shallow freeze, so for deeply nested
+ * objects it must be called at every level to ensure deep immutability.
+ * @param {T} arg
+ * @return {T}
+ * @template T
+ */
+goog.debug.freeze = function(arg) {
+  'use strict';
+  // NOTE: this compiles to nothing, but hides the possible side effect of
+  // freezeInternal_ from the compiler so that the entire call can be
+  // removed if the result is not used.
+  return {
+    valueOf: function() {
+      'use strict';
+      return goog.debug.freezeInternal_(arg);
+    }
+  }.valueOf();
+};
+
+//third_party/javascript/closure/i18n/uchar.js
+/**
+ * @license
+ * Copyright The Closure Library Authors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/**
+ * @fileoverview Collection of utility functions for Unicode character.
+ */
+
+goog.provide('goog.i18n.uChar');
+
+
+// Constants for handling Unicode supplementary characters (surrogate pairs).
+
+
+/**
+ * The minimum value for Supplementary code points.
+ * @type {number}
+ * @private
+ */
+goog.i18n.uChar.SUPPLEMENTARY_CODE_POINT_MIN_VALUE_ = 0x10000;
+
+
+/**
+ * The highest Unicode code point value (scalar value) according to the Unicode
+ * Standard.
+ * @type {number}
+ * @private
+ */
+goog.i18n.uChar.CODE_POINT_MAX_VALUE_ = 0x10FFFF;
+
+
+/**
+ * Lead surrogate minimum value.
+ * @type {number}
+ * @private
+ */
+goog.i18n.uChar.LEAD_SURROGATE_MIN_VALUE_ = 0xD800;
+
+
+/**
+ * Lead surrogate maximum value.
+ * @type {number}
+ * @private
+ */
+goog.i18n.uChar.LEAD_SURROGATE_MAX_VALUE_ = 0xDBFF;
+
+
+/**
+ * Trail surrogate minimum value.
+ * @type {number}
+ * @private
+ */
+goog.i18n.uChar.TRAIL_SURROGATE_MIN_VALUE_ = 0xDC00;
+
+
+/**
+ * Trail surrogate maximum value.
+ * @type {number}
+ * @private
+ */
+goog.i18n.uChar.TRAIL_SURROGATE_MAX_VALUE_ = 0xDFFF;
+
+
+/**
+ * The number of least significant bits of a supplementary code point that in
+ * UTF-16 become the least significant bits of the trail surrogate. The rest of
+ * the in-use bits of the supplementary code point become the least significant
+ * bits of the lead surrogate.
+ * @type {number}
+ * @private
+ */
+goog.i18n.uChar.TRAIL_SURROGATE_BIT_COUNT_ = 10;
+
+
+/**
+ * Gets the U+ notation string of a Unicode character. Ex: 'U+0041' for 'A'.
+ * @param {string} ch The given character.
+ * @return {string} The U+ notation of the given character.
+ */
+goog.i18n.uChar.toHexString = function(ch) {
+  'use strict';
+  const chCode = goog.i18n.uChar.toCharCode(ch);
+  const chCodeStr = 'U+' +
+      goog.i18n.uChar.padString_(chCode.toString(16).toUpperCase(), 4, '0');
+
+  return chCodeStr;
+};
+
+
+/**
+ * Gets a string padded with given character to get given size.
+ * @param {string} str The given string to be padded.
+ * @param {number} length The target size of the string.
+ * @param {string} ch The character to be padded with.
+ * @return {string} The padded string.
+ * @private
+ */
+goog.i18n.uChar.padString_ = function(str, length, ch) {
+  'use strict';
+  while (str.length < length) {
+    str = ch + str;
+  }
+  return str;
+};
+
+
+/**
+ * Gets Unicode value of the given character.
+ * @param {string} ch The given character, which in the case of a supplementary
+ * character is actually a surrogate pair. The remainder of the string is
+ * ignored.
+ * @return {number} The Unicode value of the character.
+ */
+goog.i18n.uChar.toCharCode = function(ch) {
+  'use strict';
+  return goog.i18n.uChar.getCodePointAround(ch, 0);
+};
+
+
+/**
+ * Gets a character from the given Unicode value. If the given code point is not
+ * a valid Unicode code point, null is returned.
+ * @param {number} code The Unicode value of the character.
+ * @return {?string} The character corresponding to the given Unicode value.
+ */
+goog.i18n.uChar.fromCharCode = function(code) {
+  'use strict';
+  if (code == null ||
+      !(code >= 0 && code <= goog.i18n.uChar.CODE_POINT_MAX_VALUE_)) {
+    return null;
+  }
+  if (goog.i18n.uChar.isSupplementaryCodePoint(code)) {
+    // First, we split the code point into the trail surrogate part (the
+    // TRAIL_SURROGATE_BIT_COUNT_ least significant bits) and the lead surrogate
+    // part (the rest of the bits, shifted down; note that for now this includes
+    // the supplementary offset, also shifted down, to be subtracted off below).
+    const leadBits = code >> goog.i18n.uChar.TRAIL_SURROGATE_BIT_COUNT_;
+    const trailBits = code &
+        // A bit-mask to get the TRAIL_SURROGATE_BIT_COUNT_ (i.e. 10) least
+        // significant bits. 1 << 10 = 0x0400. 0x0400 - 1 = 0x03FF.
+        ((1 << goog.i18n.uChar.TRAIL_SURROGATE_BIT_COUNT_) - 1);
+
+    // Now we calculate the code point of each surrogate by adding each offset
+    // to the corresponding base code point.
+    const leadCodePoint = leadBits +
+        (goog.i18n.uChar.LEAD_SURROGATE_MIN_VALUE_ -
+         // Subtract off the supplementary offset, which had been shifted down
+         // with the rest of leadBits. We do this here instead of before the
+         // shift in order to save a separate subtraction step.
+         (goog.i18n.uChar.SUPPLEMENTARY_CODE_POINT_MIN_VALUE_ >>
+          goog.i18n.uChar.TRAIL_SURROGATE_BIT_COUNT_));
+    const trailCodePoint =
+        trailBits + goog.i18n.uChar.TRAIL_SURROGATE_MIN_VALUE_;
+
+    // Convert the code points into a 2-character long string.
+    return String.fromCharCode(leadCodePoint) +
+        String.fromCharCode(trailCodePoint);
+  }
+  return String.fromCharCode(code);
+};
+
+
+/**
+ * Returns the Unicode code point at the specified index.
+ *
+ * If the char value specified at the given index is in the leading-surrogate
+ * range, and the following index is less than the length of `string`, and
+ * the char value at the following index is in the trailing-surrogate range,
+ * then the supplementary code point corresponding to this surrogate pair is
+ * returned.
+ *
+ * If the char value specified at the given index is in the trailing-surrogate
+ * range, and the preceding index is not before the start of `string`, and
+ * the char value at the preceding index is in the leading-surrogate range, then
+ * the negated supplementary code point corresponding to this surrogate pair is
+ * returned.
+ *
+ * The negation allows the caller to differentiate between the case where the
+ * given index is at the leading surrogate and the one where it is at the
+ * trailing surrogate, and thus deduce where the next character starts and
+ * preceding character ends.
+ *
+ * Otherwise, the char value at the given index is returned. Thus, a leading
+ * surrogate is returned when it is not followed by a trailing surrogate, and a
+ * trailing surrogate is returned when it is not preceded by a leading
+ * surrogate.
+ *
+ * @param {string} string The string.
+ * @param {number} index The index from which the code point is to be retrieved.
+ * @return {number} The code point at the given index. If the given index is
+ * that of the start (i.e. lead surrogate) of a surrogate pair, returns the code
+ * point encoded by the pair. If the given index is that of the end (i.e. trail
+ * surrogate) of a surrogate pair, returns the negated code pointed encoded by
+ * the pair.
+ */
+goog.i18n.uChar.getCodePointAround = function(string, index) {
+  'use strict';
+  const charCode = string.charCodeAt(index);
+  if (goog.i18n.uChar.isLeadSurrogateCodePoint(charCode) &&
+      index + 1 < string.length) {
+    const trail = string.charCodeAt(index + 1);
+    if (goog.i18n.uChar.isTrailSurrogateCodePoint(trail)) {
+      // Part of a surrogate pair.
+      return /** @type {number} */ (
+          goog.i18n.uChar.buildSupplementaryCodePoint(charCode, trail));
+    }
+  } else if (goog.i18n.uChar.isTrailSurrogateCodePoint(charCode) && index > 0) {
+    const lead = string.charCodeAt(index - 1);
+    if (goog.i18n.uChar.isLeadSurrogateCodePoint(lead)) {
+      // Part of a surrogate pair.
+      const codepoint = /** @type {number} */ (
+          goog.i18n.uChar.buildSupplementaryCodePoint(lead, charCode));
+      return -codepoint;
+    }
+  }
+  return charCode;
+};
+
+
+/**
+ * Determines the length of the string needed to represent the specified
+ * Unicode code point.
+ * @param {number} codePoint
+ * @return {number} 2 if codePoint is a supplementary character, 1 otherwise.
+ */
+goog.i18n.uChar.charCount = function(codePoint) {
+  'use strict';
+  return goog.i18n.uChar.isSupplementaryCodePoint(codePoint) ? 2 : 1;
+};
+
+
+/**
+ * Determines whether the specified Unicode code point is in the supplementary
+ * Unicode characters range.
+ * @param {number} codePoint
+ * @return {boolean} Whether then given code point is a supplementary character.
+ */
+goog.i18n.uChar.isSupplementaryCodePoint = function(codePoint) {
+  'use strict';
+  return codePoint >= goog.i18n.uChar.SUPPLEMENTARY_CODE_POINT_MIN_VALUE_ &&
+      codePoint <= goog.i18n.uChar.CODE_POINT_MAX_VALUE_;
+};
+
+
+/**
+ * Gets whether the given code point is a leading surrogate character.
+ * @param {number} codePoint
+ * @return {boolean} Whether the given code point is a leading surrogate
+ * character.
+ */
+goog.i18n.uChar.isLeadSurrogateCodePoint = function(codePoint) {
+  'use strict';
+  return codePoint >= goog.i18n.uChar.LEAD_SURROGATE_MIN_VALUE_ &&
+      codePoint <= goog.i18n.uChar.LEAD_SURROGATE_MAX_VALUE_;
+};
+
+
+/**
+ * Gets whether the given code point is a trailing surrogate character.
+ * @param {number} codePoint
+ * @return {boolean} Whether the given code point is a trailing surrogate
+ * character.
+ */
+goog.i18n.uChar.isTrailSurrogateCodePoint = function(codePoint) {
+  'use strict';
+  return codePoint >= goog.i18n.uChar.TRAIL_SURROGATE_MIN_VALUE_ &&
+      codePoint <= goog.i18n.uChar.TRAIL_SURROGATE_MAX_VALUE_;
+};
+
+
+/**
+ * Composes a supplementary Unicode code point from the given UTF-16 surrogate
+ * pair. If leadSurrogate isn't a leading surrogate code point or trailSurrogate
+ * isn't a trailing surrogate code point, null is returned.
+ * @param {number} lead The leading surrogate code point.
+ * @param {number} trail The trailing surrogate code point.
+ * @return {?number} The supplementary Unicode code point obtained by decoding
+ * the given UTF-16 surrogate pair.
+ */
+goog.i18n.uChar.buildSupplementaryCodePoint = function(lead, trail) {
+  'use strict';
+  if (goog.i18n.uChar.isLeadSurrogateCodePoint(lead) &&
+      goog.i18n.uChar.isTrailSurrogateCodePoint(trail)) {
+    const shiftedLeadOffset =
+        (lead << goog.i18n.uChar.TRAIL_SURROGATE_BIT_COUNT_) -
+        (goog.i18n.uChar.LEAD_SURROGATE_MIN_VALUE_
+         << goog.i18n.uChar.TRAIL_SURROGATE_BIT_COUNT_);
+    const trailOffset = trail - goog.i18n.uChar.TRAIL_SURROGATE_MIN_VALUE_ +
+        goog.i18n.uChar.SUPPLEMENTARY_CODE_POINT_MIN_VALUE_;
+    return shiftedLeadOffset + trailOffset;
+  }
+  return null;
+};
+
+//third_party/javascript/closure/structs/inversionmap.js
+/**
+ * @license
+ * Copyright The Closure Library Authors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/**
+ * @fileoverview Provides inversion and inversion map functionality for storing
+ * integer ranges and corresponding values.
+ */
+
+goog.provide('goog.structs.InversionMap');
+
+goog.require('goog.array');
+goog.require('goog.asserts');
+
+
+
+/**
+ * Maps ranges to values.
+ * @param {Array<number>} rangeArray An array of monotonically
+ *     increasing integer values, with at least one instance.
+ * @param {Array<T>} valueArray An array of corresponding values.
+ *     Length must be the same as rangeArray.
+ * @param {boolean=} opt_delta If true, saves only delta from previous value.
+ * @constructor
+ * @template T
+ */
+goog.structs.InversionMap = function(rangeArray, valueArray, opt_delta) {
+  'use strict';
+  /**
+   * @protected {?Array<number>}
+   */
+  this.rangeArray = null;
+
+  goog.asserts.assert(
+      rangeArray.length == valueArray.length,
+      'rangeArray and valueArray must have the same length.');
+  this.storeInversion_(rangeArray, opt_delta);
+
+  /** @protected {Array<T>} */
+  this.values = valueArray;
+};
+
+
+/**
+ * Stores the integers as ranges (half-open).
+ * If delta is true, the integers are delta from the previous value and
+ * will be restored to the absolute value.
+ * When used as a set, even indices are IN, and odd are OUT.
+ * @param {Array<number>} rangeArray An array of monotonically
+ *     increasing integer values, with at least one instance.
+ * @param {boolean=} opt_delta If true, saves only delta from previous value.
+ * @private
+ */
+goog.structs.InversionMap.prototype.storeInversion_ = function(
+    rangeArray, opt_delta) {
+  'use strict';
+  this.rangeArray = rangeArray;
+
+  for (var i = 1; i < rangeArray.length; i++) {
+    if (rangeArray[i] == null) {
+      rangeArray[i] = rangeArray[i - 1] + 1;
+    } else if (opt_delta) {
+      rangeArray[i] += rangeArray[i - 1];
+    }
+  }
+};
+
+
+/**
+ * Splices a range -> value map into this inversion map.
+ * @param {Array<number>} rangeArray An array of monotonically
+ *     increasing integer values, with at least one instance.
+ * @param {Array<T>} valueArray An array of corresponding values.
+ *     Length must be the same as rangeArray.
+ * @param {boolean=} opt_delta If true, saves only delta from previous value.
+ */
+goog.structs.InversionMap.prototype.spliceInversion = function(
+    rangeArray, valueArray, opt_delta) {
+  'use strict';
+  // By building another inversion map, we build the arrays that we need
+  // to splice in.
+  var otherMap =
+      new goog.structs.InversionMap(rangeArray, valueArray, opt_delta);
+
+  // Figure out where to splice those arrays.
+  var startRange = otherMap.rangeArray[0];
+  var endRange =
+      /** @type {number} */ (goog.array.peek(otherMap.rangeArray));
+  var startSplice = this.getLeast(startRange);
+  var endSplice = this.getLeast(endRange);
+
+  // The inversion map works by storing the start points of ranges...
+  if (startRange != this.rangeArray[startSplice]) {
+    // ...if we're splicing in a start point that isn't already here,
+    // then we need to insert it after the insertion point.
+    startSplice++;
+  }  // otherwise we overwrite the insertion point.
+
+  this.rangeArray = this.rangeArray.slice(0, startSplice)
+                        .concat(otherMap.rangeArray)
+                        .concat(this.rangeArray.slice(endSplice + 1));
+  this.values = this.values.slice(0, startSplice)
+                    .concat(otherMap.values)
+                    .concat(this.values.slice(endSplice + 1));
+};
+
+
+/**
+ * Gets the value corresponding to a number from the inversion map.
+ * @param {number} intKey The number for which value needs to be retrieved
+ *     from inversion map.
+ * @return {T|null} Value retrieved from inversion map; null if not found.
+ */
+goog.structs.InversionMap.prototype.at = function(intKey) {
+  'use strict';
+  var index = this.getLeast(intKey);
+  if (index < 0) {
+    return null;
+  }
+  return this.values[index];
+};
+
+
+/**
+ * Gets the largest index such that rangeArray[index] <= intKey from the
+ * inversion map.
+ * @param {number} intKey The probe for which rangeArray is searched.
+ * @return {number} Largest index such that rangeArray[index] <= intKey.
+ * @protected
+ */
+goog.structs.InversionMap.prototype.getLeast = function(intKey) {
+  'use strict';
+  var arr = this.rangeArray;
+  var low = 0;
+  var high = arr.length;
+  while (high - low > 8) {
+    var mid = (high + low) >> 1;
+    if (arr[mid] <= intKey) {
+      low = mid;
+    } else {
+      high = mid;
+    }
+  }
+  for (; low < high; ++low) {
+    if (intKey < arr[low]) {
+      break;
+    }
+  }
+  return low - 1;
+};
+
+//third_party/javascript/closure/i18n/graphemebreak.js
+/**
+ * @license
+ * Copyright The Closure Library Authors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/**
+ * @fileoverview Detect Grapheme Cluster Break in a pair of codepoints. Follows
+ * Unicode 10 UAX#29. Tailoring for Virama × Indic Letters is used.
+ *
+ * Reference: http://unicode.org/reports/tr29
+ */
+
+goog.provide('goog.i18n.GraphemeBreak');
+
+goog.require('goog.asserts');
+goog.require('goog.i18n.uChar');
+goog.require('goog.structs.InversionMap');
+
+/**
+ * Enum for all Grapheme Cluster Break properties.
+ * These enums directly corresponds to Grapheme_Cluster_Break property values
+ * mentioned in http://unicode.org/reports/tr29 table 2. VIRAMA and
+ * INDIC_LETTER are for the Virama × Base tailoring mentioned in the notes.
+ *
+ * @protected @enum {number}
+ */
+goog.i18n.GraphemeBreak.property = {
+  OTHER: 0,
+  CONTROL: 1,
+  EXTEND: 2,
+  PREPEND: 3,
+  SPACING_MARK: 4,
+  INDIC_LETTER: 5,
+  VIRAMA: 6,
+  L: 7,
+  V: 8,
+  T: 9,
+  LV: 10,
+  LVT: 11,
+  CR: 12,
+  LF: 13,
+  REGIONAL_INDICATOR: 14,
+  ZWJ: 15,
+  E_BASE: 16,
+  GLUE_AFTER_ZWJ: 17,
+  E_MODIFIER: 18,
+  E_BASE_GAZ: 19
+};
+
+
+/**
+ * Grapheme Cluster Break property values for all codepoints as inversion map.
+ * Constructed lazily.
+ *
+ * @private {?goog.structs.InversionMap}
+ */
+goog.i18n.GraphemeBreak.inversions_ = null;
+
+
+/**
+ * Indicates if a and b form a grapheme cluster.
+ *
+ * This implements the rules in:
+ * http://www.unicode.org/reports/tr29/#Grapheme_Cluster_Boundary_Rules
+ *
+ * @param {number|string} a Code point or string with the first side of
+ *     grapheme cluster.
+ * @param {number|string} b Code point or string with the second side of
+ *     grapheme cluster.
+ * @param {boolean} extended If true, indicates extended grapheme cluster;
+ *     If false, indicates legacy cluster.
+ * @return {boolean} True if a & b do not form a cluster; False otherwise.
+ * @private
+ */
+goog.i18n.GraphemeBreak.applyBreakRules_ = function(a, b, extended) {
+  'use strict';
+  var prop = goog.i18n.GraphemeBreak.property;
+
+  var aCode = (typeof a === 'string') ?
+      goog.i18n.GraphemeBreak.getCodePoint_(a, a.length - 1) :
+      a;
+  var bCode =
+      (typeof b === 'string') ? goog.i18n.GraphemeBreak.getCodePoint_(b, 0) : b;
+
+  var aProp = goog.i18n.GraphemeBreak.getBreakProp_(aCode);
+  var bProp = goog.i18n.GraphemeBreak.getBreakProp_(bCode);
+
+  var isString = (typeof a === 'string');
+
+  // GB3.
+  if (aProp === prop.CR && bProp === prop.LF) {
+    return false;
+  }
+
+  // GB4.
+  if (aProp === prop.CONTROL || aProp === prop.CR || aProp === prop.LF) {
+    return true;
+  }
+
+  // GB5.
+  if (bProp === prop.CONTROL || bProp === prop.CR || bProp === prop.LF) {
+    return true;
+  }
+
+  // GB6.
+  if (aProp === prop.L &&
+      (bProp === prop.L || bProp === prop.V || bProp === prop.LV ||
+       bProp === prop.LVT)) {
+    return false;
+  }
+
+  // GB7.
+  if ((aProp === prop.LV || aProp === prop.V) &&
+      (bProp === prop.V || bProp === prop.T)) {
+    return false;
+  }
+
+  // GB8.
+  if ((aProp === prop.LVT || aProp === prop.T) && bProp === prop.T) {
+    return false;
+  }
+
+  // GB9.
+  if (bProp === prop.EXTEND || bProp === prop.ZWJ || bProp === prop.VIRAMA) {
+    return false;
+  }
+
+  // GB9a, GB9b.
+  if (extended && (aProp === prop.PREPEND || bProp === prop.SPACING_MARK)) {
+    return false;
+  }
+
+  // Tailorings for basic aksara support.
+  if (extended && aProp === prop.VIRAMA && bProp === prop.INDIC_LETTER) {
+    return false;
+  }
+
+  var aStr, index, codePoint, codePointProp;
+
+  // GB10.
+  if (isString) {
+    if (bProp === prop.E_MODIFIER) {
+      // If using new API, consume the string's code points starting from the
+      // end and test the left side of: (E_Base | EBG) Extend* × E_Modifier.
+      aStr = /** @type {string} */ (a);
+      index = aStr.length - 1;
+      codePoint = aCode;
+      codePointProp = aProp;
+      while (index > 0 && codePointProp === prop.EXTEND) {
+        index -= goog.i18n.uChar.charCount(codePoint);
+        codePoint = goog.i18n.GraphemeBreak.getCodePoint_(aStr, index);
+        codePointProp = goog.i18n.GraphemeBreak.getBreakProp_(codePoint);
+      }
+      if (codePointProp === prop.E_BASE || codePointProp === prop.E_BASE_GAZ) {
+        return false;
+      }
+    }
+  } else {
+    // If using legacy API, return best effort by testing:
+    // (E_Base | EBG) × E_Modifier.
+    if ((aProp === prop.E_BASE || aProp === prop.E_BASE_GAZ) &&
+        bProp === prop.E_MODIFIER) {
+      return false;
+    }
+  }
+
+  // GB11.
+  if (aProp === prop.ZWJ &&
+      (bProp === prop.GLUE_AFTER_ZWJ || bProp === prop.E_BASE_GAZ)) {
+    return false;
+  }
+
+  // GB12, GB13.
+  if (isString) {
+    if (bProp === prop.REGIONAL_INDICATOR) {
+      // If using new API, consume the string's code points starting from the
+      // end and test the left side of these rules:
+      // - sot (RI RI)* RI × RI
+      // - [^RI] (RI RI)* RI × RI.
+      var numberOfRi = 0;
+      aStr = /** @type {string} */ (a);
+      index = aStr.length - 1;
+      codePoint = aCode;
+      codePointProp = aProp;
+      while (index > 0 && codePointProp === prop.REGIONAL_INDICATOR) {
+        numberOfRi++;
+        index -= goog.i18n.uChar.charCount(codePoint);
+        codePoint = goog.i18n.GraphemeBreak.getCodePoint_(aStr, index);
+        codePointProp = goog.i18n.GraphemeBreak.getBreakProp_(codePoint);
+      }
+      if (codePointProp === prop.REGIONAL_INDICATOR) {
+        numberOfRi++;
+      }
+      if (numberOfRi % 2 === 1) {
+        return false;
+      }
+    }
+  } else {
+    // If using legacy API, return best effort by testing: RI × RI.
+    if (aProp === prop.REGIONAL_INDICATOR &&
+        bProp === prop.REGIONAL_INDICATOR) {
+      return false;
+    }
+  }
+
+  // GB999.
+  return true;
+};
+
+
+/**
+ * Method to return property enum value of the code point. If it is Hangul LV or
+ * LVT, then it is computed; for the rest it is picked from the inversion map.
+ *
+ * @param {number} codePoint The code point value of the character.
+ * @return {number} Property enum value of code point.
+ * @private
+ */
+goog.i18n.GraphemeBreak.getBreakProp_ = function(codePoint) {
+  'use strict';
+  if (0xAC00 <= codePoint && codePoint <= 0xD7A3) {
+    var prop = goog.i18n.GraphemeBreak.property;
+    if (codePoint % 0x1C === 0x10) {
+      return prop.LV;
+    }
+    return prop.LVT;
+  } else {
+    if (!goog.i18n.GraphemeBreak.inversions_) {
+      goog.i18n.GraphemeBreak.inversions_ = new goog.structs.InversionMap(
+          [
+            0,      10,   1,     2,   1,    18,   95,    33,    13,  1,
+            594,    112,  275,   7,   263,  45,   1,     1,     1,   2,
+            1,      2,    1,     1,   56,   6,    10,    11,    1,   1,
+            46,     21,   16,    1,   101,  7,    1,     1,     6,   2,
+            2,      1,    4,     33,  1,    1,    1,     30,    27,  91,
+            11,     58,   9,     34,  4,    1,    9,     1,     3,   1,
+            5,      43,   3,     120, 14,   1,    32,    1,     17,  37,
+            1,      1,    1,     1,   3,    8,    4,     1,     2,   1,
+            7,      8,    2,     2,   21,   7,    1,     1,     2,   17,
+            39,     1,    1,     1,   2,    6,    6,     1,     9,   5,
+            4,      2,    2,     12,  2,    15,   2,     1,     17,  39,
+            2,      3,    12,    4,   8,    6,    17,    2,     3,   14,
+            1,      17,   39,    1,   1,    3,    8,     4,     1,   20,
+            2,      29,   1,     2,   17,   39,   1,     1,     2,   1,
+            6,      6,    9,     6,   4,    2,    2,     13,    1,   16,
+            1,      18,   41,    1,   1,    1,    12,    1,     9,   1,
+            40,     1,    3,     17,  31,   1,    5,     4,     3,   5,
+            7,      8,    3,     2,   8,    2,    29,    1,     2,   17,
+            39,     1,    1,     1,   1,    2,    1,     3,     1,   5,
+            1,      8,    9,     1,   3,    2,    29,    1,     2,   17,
+            38,     3,    1,     2,   5,    7,    1,     1,     8,   1,
+            10,     2,    30,    2,   22,   48,   5,     1,     2,   6,
+            7,      1,    18,    2,   13,   46,   2,     1,     1,   1,
+            6,      1,    12,    8,   50,   46,   2,     1,     1,   1,
+            9,      11,   6,     14,  2,    58,   2,     27,    1,   1,
+            1,      1,    1,     4,   2,    49,   14,    1,     4,   1,
+            1,      2,    5,     48,  9,    1,    57,    33,    12,  4,
+            1,      6,    1,     2,   2,    2,    1,     16,    2,   4,
+            2,      2,    4,     3,   1,    3,    2,     7,     3,   4,
+            13,     1,    1,     1,   2,    6,    1,     1,     14,  1,
+            98,     96,   72,    88,  349,  3,    931,   15,    2,   1,
+            14,     15,   2,     1,   14,   15,   2,     15,    15,  14,
+            35,     17,   2,     1,   7,    8,    1,     2,     9,   1,
+            1,      9,    1,     45,  3,    1,    118,   2,     34,  1,
+            87,     28,   3,     3,   4,    2,    9,     1,     6,   3,
+            20,     19,   29,    44,  84,   23,   2,     2,     1,   4,
+            45,     6,    2,     1,   1,    1,    8,     1,     1,   1,
+            2,      8,    6,     13,  48,   84,   1,     14,    33,  1,
+            1,      5,    1,     1,   5,    1,    1,     1,     7,   31,
+            9,      12,   2,     1,   7,    23,   1,     4,     2,   2,
+            2,      2,    2,     11,  3,    2,    36,    2,     1,   1,
+            2,      3,    1,     1,   3,    2,    12,    36,    8,   8,
+            2,      2,    21,    3,   128,  3,    1,     13,    1,   7,
+            4,      1,    4,     2,   1,    3,    2,     198,   64,  523,
+            1,      1,    1,     2,   24,   7,    49,    16,    96,  33,
+            1324,   1,    34,    1,   1,    1,    82,    2,     98,  1,
+            14,     1,    1,     4,   86,   1,    1418,  3,     141, 1,
+            96,     32,   554,   6,   105,  2,    30164, 4,     1,   10,
+            32,     2,    80,    2,   272,  1,    3,     1,     4,   1,
+            23,     2,    2,     1,   24,   30,   4,     4,     3,   8,
+            1,      1,    13,    2,   16,   34,   16,    1,     1,   26,
+            18,     24,   24,    4,   8,    2,    23,    11,    1,   1,
+            12,     32,   3,     1,   5,    3,    3,     36,    1,   2,
+            4,      2,    1,     3,   1,    36,   1,     32,    35,  6,
+            2,      2,    2,     2,   12,   1,    8,     1,     1,   18,
+            16,     1,    3,     6,   1,    1,    1,     3,     48,  1,
+            1,      3,    2,     2,   5,    2,    1,     1,     32,  9,
+            1,      2,    2,     5,   1,    1,    201,   14,    2,   1,
+            1,      9,    8,     2,   1,    2,    1,     2,     1,   1,
+            1,      18,   11184, 27,  49,   1028, 1024,  6942,  1,   737,
+            16,     16,   16,    207, 1,    158,  2,     89,    3,   513,
+            1,      226,  1,     149, 5,    1670, 15,    40,    7,   1,
+            165,    2,    1305,  1,   1,    1,    53,    14,    1,   56,
+            1,      2,    1,     45,  3,    4,    2,     1,     1,   2,
+            1,      66,   3,     36,  5,    1,    6,     2,     62,  1,
+            12,     2,    1,     48,  3,    9,    1,     1,     1,   2,
+            6,      3,    95,    3,   3,    2,    1,     1,     2,   6,
+            1,      160,  1,     3,   7,    1,    21,    2,     2,   56,
+            1,      1,    1,     1,   1,    12,   1,     9,     1,   10,
+            4,      15,   192,   3,   8,    2,    1,     2,     1,   1,
+            105,    1,    2,     6,   1,    1,    2,     1,     1,   2,
+            1,      1,    1,     235, 1,    2,    6,     4,     2,   1,
+            1,      1,    27,    2,   82,   3,    8,     2,     1,   1,
+            1,      1,    106,   1,   1,    1,    2,     6,     1,   1,
+            101,    3,    2,     4,   1,    4,    1,     1283,  1,   14,
+            1,      1,    82,    23,  1,    7,    1,     2,     1,   2,
+            20025,  5,    59,    7,   1050, 62,   4,     19722, 2,   1,
+            4,      5313, 1,     1,   3,    3,    1,     5,     8,   8,
+            2,      7,    30,    4,   148,  3,    1979,  55,    4,   50,
+            8,      1,    14,    1,   22,   1424, 2213,  7,     109, 7,
+            2203,   26,   264,   1,   53,   1,    52,    1,     17,  1,
+            13,     1,    16,    1,   3,    1,    25,    3,     2,   1,
+            2,      3,    30,    1,   1,    1,    13,    5,     66,  2,
+            2,      11,   21,    4,   4,    1,    1,     9,     3,   1,
+            4,      3,    1,     3,   3,    1,    30,    1,     16,  2,
+            106,    1,    4,     1,   71,   2,    4,     1,     21,  1,
+            4,      2,    81,    1,   92,   3,    3,     5,     48,  1,
+            17,     1,    16,    1,   16,   3,    9,     1,     11,  1,
+            587,    5,    1,     1,   7,    1,    9,     10,    3,   2,
+            788162, 31
+          ],
+          [
+            1,  13, 1,  12, 1,  0, 1,  0, 1,  0,  2,  0, 2,  0, 2,  0,  2,  0,
+            2,  0,  2,  0,  2,  0, 3,  0, 2,  0,  1,  0, 2,  0, 2,  0,  2,  3,
+            0,  2,  0,  2,  0,  2, 0,  3, 0,  2,  0,  2, 0,  2, 0,  2,  0,  2,
+            0,  2,  0,  2,  0,  2, 0,  2, 0,  2,  3,  2, 4,  0, 5,  2,  4,  2,
+            0,  4,  2,  4,  6,  4, 0,  2, 5,  0,  2,  0, 5,  0, 2,  4,  0,  5,
+            2,  0,  2,  4,  2,  4, 6,  0, 2,  5,  0,  2, 0,  5, 0,  2,  4,  0,
+            5,  2,  4,  2,  6,  2, 5,  0, 2,  0,  2,  4, 0,  5, 2,  0,  4,  2,
+            4,  6,  0,  2,  0,  2, 4,  0, 5,  2,  0,  2, 4,  2, 4,  6,  2,  5,
+            0,  2,  0,  5,  0,  2, 0,  5, 2,  4,  2,  4, 6,  0, 2,  0,  2,  4,
+            0,  5,  0,  5,  0,  2, 4,  2, 6,  2,  5,  0, 2,  0, 2,  4,  0,  5,
+            2,  0,  4,  2,  4,  2, 4,  2, 4,  2,  6,  2, 5,  0, 2,  0,  2,  4,
+            0,  5,  0,  2,  4,  2, 4,  6, 3,  0,  2,  0, 2,  0, 4,  0,  5,  6,
+            2,  4,  2,  4,  2,  0, 4,  0, 5,  0,  2,  0, 4,  2, 6,  0,  2,  0,
+            5,  0,  2,  0,  4,  2, 0,  2, 0,  5,  0,  2, 0,  2, 0,  2,  0,  2,
+            0,  4,  5,  2,  4,  2, 6,  0, 2,  0,  2,  0, 2,  0, 5,  0,  2,  4,
+            2,  0,  6,  4,  2,  5, 0,  5, 0,  4,  2,  5, 2,  5, 0,  5,  0,  5,
+            2,  5,  2,  0,  4,  2, 0,  2, 5,  0,  2,  0, 7,  8, 9,  0,  2,  0,
+            5,  2,  6,  0,  5,  2, 6,  0, 5,  2,  0,  5, 2,  5, 0,  2,  4,  2,
+            4,  2,  4,  2,  6,  2, 0,  2, 0,  2,  1,  0, 2,  0, 2,  0,  5,  0,
+            2,  4,  2,  4,  2,  4, 2,  0, 5,  0,  5,  0, 5,  2, 4,  2,  0,  5,
+            0,  5,  4,  2,  4,  2, 6,  0, 2,  0,  2,  4, 2,  0, 2,  4,  0,  5,
+            2,  4,  2,  4,  2,  4, 2,  4, 6,  5,  0,  2, 0,  2, 4,  0,  5,  4,
+            2,  4,  2,  6,  2,  5, 0,  5, 0,  5,  0,  2, 4,  2, 4,  2,  4,  2,
+            6,  0,  5,  4,  2,  4, 2,  0, 5,  0,  2,  0, 2,  4, 2,  0,  2,  0,
+            4,  2,  0,  2,  0,  2, 0,  1, 2,  15, 1,  0, 1,  0, 1,  0,  2,  0,
+            16, 0,  17, 0,  17, 0, 17, 0, 16, 0,  17, 0, 16, 0, 17, 0,  2,  0,
+            6,  0,  2,  0,  2,  0, 2,  0, 2,  0,  2,  0, 2,  0, 2,  0,  2,  0,
+            6,  5,  2,  5,  4,  2, 4,  0, 5,  0,  5,  0, 5,  0, 5,  0,  4,  0,
+            5,  4,  6,  2,  0,  2, 0,  5, 0,  2,  0,  5, 2,  4, 6,  0,  7,  2,
+            4,  0,  5,  0,  5,  2, 4,  2, 4,  2,  4,  6, 0,  2, 0,  5,  2,  4,
+            2,  4,  2,  0,  2,  0, 2,  4, 0,  5,  0,  5, 0,  5, 0,  2,  0,  5,
+            2,  0,  2,  0,  2,  0, 2,  0, 2,  0,  5,  4, 2,  4, 0,  4,  6,  0,
+            5,  0,  5,  0,  5,  0, 4,  2, 4,  2,  4,  0, 4,  6, 0,  11, 8,  9,
+            0,  2,  0,  2,  0,  2, 0,  2, 0,  1,  0,  2, 0,  1, 0,  2,  0,  2,
+            0,  2,  0,  2,  0,  2, 6,  0, 2,  0,  4,  2, 4,  0, 2,  6,  0,  6,
+            2,  4,  0,  4,  2,  4, 6,  2, 0,  3,  0,  2, 0,  2, 4,  2,  6,  0,
+            2,  0,  2,  4,  0,  4, 2,  4, 6,  0,  3,  0, 2,  0, 4,  2,  4,  2,
+            6,  2,  0,  2,  0,  2, 4,  2, 6,  0,  2,  4, 0,  2, 0,  2,  4,  2,
+            4,  6,  0,  2,  0,  4, 2,  0, 4,  2,  4,  6, 2,  4, 2,  0,  2,  4,
+            2,  4,  2,  4,  2,  4, 2,  4, 6,  2,  0,  2, 4,  2, 4,  2,  4,  6,
+            2,  0,  2,  0,  4,  2, 4,  2, 4,  6,  2,  0, 2,  4, 2,  4,  2,  6,
+            2,  0,  2,  4,  2,  4, 2,  6, 0,  4,  2,  4, 6,  0, 2,  4,  2,  4,
+            2,  4,  2,  0,  2,  0, 2,  0, 4,  2,  0,  2, 0,  1, 0,  2,  4,  2,
+            0,  4,  2,  1,  2,  0, 2,  0, 2,  0,  2,  0, 2,  0, 2,  0,  2,  0,
+            2,  0,  2,  0,  2,  0, 2,  0, 14, 0,  17, 0, 17, 0, 17, 0,  16, 0,
+            17, 0,  17, 0,  17, 0, 16, 0, 16, 0,  16, 0, 17, 0, 17, 0,  18, 0,
+            16, 0,  16, 0,  19, 0, 16, 0, 16, 0,  16, 0, 16, 0, 16, 0,  17, 0,
+            16, 0,  17, 0,  17, 0, 17, 0, 16, 0,  16, 0, 16, 0, 16, 0,  17, 0,
+            16, 0,  16, 0,  17, 0, 17, 0, 16, 0,  16, 0, 16, 0, 16, 0,  16, 0,
+            16, 0,  16, 0,  16, 0, 16, 0, 1,  2
+          ],
+          true);
+    }
+    return /** @type {number} */ (
+        goog.i18n.GraphemeBreak.inversions_.at(codePoint));
+  }
+};
+
+/**
+ * Extracts a code point from a string at the specified index.
+ *
+ * @param {string} str
+ * @param {number} index
+ * @return {number} Extracted code point.
+ * @private
+ */
+goog.i18n.GraphemeBreak.getCodePoint_ = function(str, index) {
+  'use strict';
+  var codePoint = goog.i18n.uChar.getCodePointAround(str, index);
+  return (codePoint < 0) ? -codePoint : codePoint;
+};
+
+/**
+ * Indicates if there is a grapheme cluster boundary between a and b.
+ *
+ * Legacy function. Does not cover cases where a sequence of code points is
+ * required in order to decide if there is a grapheme cluster boundary, such as
+ * emoji modifier sequences and emoji flag sequences. To cover all cases please
+ * use `hasGraphemeBreakStrings`.
+ *
+ * There are two kinds of grapheme clusters: 1) Legacy 2) Extended. This method
+ * is to check for both using a boolean flag to switch between them. If no flag
+ * is provided rules for the extended clusters will be used by default.
+ *
+ * @param {number} a The code point value of the first character.
+ * @param {number} b The code point value of the second character.
+ * @param {boolean=} opt_extended If true, indicates extended grapheme cluster;
+ *     If false, indicates legacy cluster. Default value is true.
+ * @return {boolean} True if there is a grapheme cluster boundary between
+ *     a and b; False otherwise.
+ */
+goog.i18n.GraphemeBreak.hasGraphemeBreak = function(a, b, opt_extended) {
+  'use strict';
+  return goog.i18n.GraphemeBreak.applyBreakRules_(a, b, opt_extended !== false);
+};
+
+/**
+ * Indicates if there is a grapheme cluster boundary between a and b.
+ *
+ * There are two kinds of grapheme clusters: 1) Legacy 2) Extended. This method
+ * is to check for both using a boolean flag to switch between them. If no flag
+ * is provided rules for the extended clusters will be used by default.
+ *
+ * @param {string} a String with the first sequence of characters.
+ * @param {string} b String with the second sequence of characters.
+ * @param {boolean=} opt_extended If true, indicates extended grapheme cluster;
+ *     If false, indicates legacy cluster. Default value is true.
+ * @return {boolean} True if there is a grapheme cluster boundary between
+ *     a and b; False otherwise.
+ */
+goog.i18n.GraphemeBreak.hasGraphemeBreakStrings = function(a, b, opt_extended) {
+  'use strict';
+  goog.asserts.assert(a !== undefined, 'First string should be defined.');
+  goog.asserts.assert(b !== undefined, 'Second string should be defined.');
+
+  // Break if any of the strings is empty.
+  if (a.length === 0 || b.length === 0) {
+    return true;
+  }
+
+  return goog.i18n.GraphemeBreak.applyBreakRules_(a, b, opt_extended !== false);
+};
+
+//third_party/javascript/closure/format/format.js
+/**
+ * @license
+ * Copyright The Closure Library Authors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/**
+ * @fileoverview Provides utility functions for formatting strings, numbers etc.
+ */
+
+goog.provide('goog.format');
+
+goog.require('goog.i18n.GraphemeBreak');
+goog.require('goog.string');
+goog.require('goog.userAgent');
+
+
+/**
+ * Formats a number of bytes in human readable form.
+ * 54, 450K, 1.3M, 5G etc.
+ * @param {number} bytes The number of bytes to show.
+ * @param {number=} opt_decimals The number of decimals to use.  Defaults to 2.
+ * @return {string} The human readable form of the byte size.
+ */
+goog.format.fileSize = function(bytes, opt_decimals) {
+  'use strict';
+  return goog.format.numBytesToString(bytes, opt_decimals, false);
+};
+
+
+/**
+ * Checks whether string value containing scaling units (K, M, G, T, P, m,
+ * u, n) can be converted to a number.
+ *
+ * Where there is a decimal, there must be a digit to the left of the
+ * decimal point.
+ *
+ * Negative numbers are valid.
+ *
+ * Examples:
+ *   0, 1, 1.0, 10.4K, 2.3M, -0.3P, 1.2m
+ *
+ * @param {string} val String value to check.
+ * @return {boolean} True if string could be converted to a numeric value.
+ */
+goog.format.isConvertableScaledNumber = function(val) {
+  'use strict';
+  return goog.format.SCALED_NUMERIC_RE_.test(val);
+};
+
+
+/**
+ * Converts a string to numeric value, taking into account the units.
+ * If string ends in 'B', use binary conversion.
+ * @param {string} stringValue String to be converted to numeric value.
+ * @return {number} Numeric value for string.
+ */
+goog.format.stringToNumericValue = function(stringValue) {
+  'use strict';
+  if (goog.string.endsWith(stringValue, 'B')) {
+    return goog.format.stringToNumericValue_(
+        stringValue, goog.format.NUMERIC_SCALES_BINARY_);
+  }
+  return goog.format.stringToNumericValue_(
+      stringValue, goog.format.NUMERIC_SCALES_SI_);
+};
+
+
+/**
+ * Converts a string to number of bytes, taking into account the units.
+ * Binary conversion.
+ * @param {string} stringValue String to be converted to numeric value.
+ * @return {number} Numeric value for string.
+ */
+goog.format.stringToNumBytes = function(stringValue) {
+  'use strict';
+  return goog.format.stringToNumericValue_(
+      stringValue, goog.format.NUMERIC_SCALES_BINARY_);
+};
+
+
+/**
+ * Converts a numeric value to string representation. SI conversion.
+ * @param {number} val Value to be converted.
+ * @param {number=} opt_decimals The number of decimals to use.  Defaults to 2.
+ * @return {string} String representation of number.
+ */
+goog.format.numericValueToString = function(val, opt_decimals) {
+  'use strict';
+  return goog.format.numericValueToString_(
+      val, goog.format.NUMERIC_SCALES_SI_, opt_decimals);
+};
+
+
+/**
+ * Converts number of bytes to string representation. Binary conversion.
+ * Default is to return the additional 'B' suffix only for scales greater than
+ * 1K, e.g. '10.5KB' to minimize confusion with counts that are scaled by powers
+ * of 1000. Otherwise, suffix is empty string.
+ * @param {number} val Value to be converted.
+ * @param {number=} opt_decimals The number of decimals to use.  Defaults to 2.
+ * @param {boolean=} opt_suffix If true, include trailing 'B' in returned
+ *     string.  Default is true.
+ * @param {boolean=} opt_useSeparator If true, number and scale will be
+ *     separated by a no break space. Default is false.
+ * @return {string} String representation of number of bytes.
+ */
+goog.format.numBytesToString = function(
+    val, opt_decimals, opt_suffix, opt_useSeparator) {
+  'use strict';
+  var suffix = '';
+  if (opt_suffix === undefined || opt_suffix) {
+    suffix = 'B';
+  }
+  return goog.format.numericValueToString_(
+      val, goog.format.NUMERIC_SCALES_BINARY_, opt_decimals, suffix,
+      opt_useSeparator);
+};
+
+
+/**
+ * Converts a string to numeric value, taking into account the units.
+ * @param {string} stringValue String to be converted to numeric value.
+ * @param {Object} conversion Dictionary of conversion scales.
+ * @return {number} Numeric value for string.  If it cannot be converted,
+ *    returns NaN.
+ * @private
+ */
+goog.format.stringToNumericValue_ = function(stringValue, conversion) {
+  'use strict';
+  var match = stringValue.match(goog.format.SCALED_NUMERIC_RE_);
+  if (!match) {
+    // Parse signed `Infinity`, `NaN`, or scientific notation.
+    return Number(stringValue);
+  }
+  var val = Number(match[1]) * conversion[match[2]];
+  return val;
+};
+
+
+/**
+ * Converts a numeric value to string, using specified conversion
+ * scales.
+ * @param {number} val Value to be converted.
+ * @param {Object} conversion Dictionary of scaling factors.
+ * @param {number=} opt_decimals The number of decimals to use.  Default is 2.
+ * @param {string=} opt_suffix Optional suffix to append.
+ * @param {boolean=} opt_useSeparator If true, number and scale will be
+ *     separated by a space. Default is false.
+ * @return {string} The human readable form of the byte size.
+ * @private
+ */
+goog.format.numericValueToString_ = function(
+    val, conversion, opt_decimals, opt_suffix, opt_useSeparator) {
+  'use strict';
+  var prefixes = goog.format.NUMERIC_SCALE_PREFIXES_;
+  var origVal = val;
+  var symbol = '';
+  var separator = '';
+  var scale = 1;
+  if (val < 0) {
+    val = -val;
+  }
+  if (val === Infinity) return (Infinity * Math.sign(origVal)).toString();
+  for (var i = 0; i < prefixes.length; i++) {
+    var unit = prefixes[i];
+    scale = conversion[unit];
+    if (val >= scale || (scale <= 1 && val > 0.1 * scale)) {
+      // Treat values less than 1 differently, allowing 0.5 to be "0.5" rather
+      // than "500m"
+      symbol = unit;
+      break;
+    }
+  }
+  if (!symbol) {
+    scale = 1;
+  } else {
+    if (opt_suffix) {
+      symbol += opt_suffix;
+    }
+    if (opt_useSeparator) {
+      separator = ' ';
+    }
+  }
+  var ex = Math.pow(10, opt_decimals !== undefined ? opt_decimals : 2);
+  return Math.round(origVal / scale * ex) / ex + separator + symbol;
+};
+
+
+/**
+ * Regular expression for detecting scaling units, such as K, M, G, etc. for
+ * converting a string representation to a numeric value.
+ *
+ * Also allow 'k' to be aliased to 'K'.  These could be used for SI (powers
+ * of 1000) or Binary (powers of 1024) conversions.
+ *
+ * Also allow final 'B' to be interpreted as byte-count, implicitly triggering
+ * binary conversion (e.g., '10.2MB').
+ *
+ * @type {RegExp}
+ * @private
+ */
+goog.format.SCALED_NUMERIC_RE_ = /^(-?\d+\.?\d*)([KMGTPEZYkmun]?)B?$/;
+
+
+/**
+ * Ordered list of scaling prefixes in decreasing order.
+ * @private {Array<string>}
+ */
+goog.format.NUMERIC_SCALE_PREFIXES_ =
+    ['Y', 'Z', 'E', 'P', 'T', 'G', 'M', 'K', '', 'm', 'u', 'n'];
+
+
+/**
+ * Scaling factors for conversion of numeric value to string.  SI conversion.
+ * @type {Object}
+ * @private
+ */
+goog.format.NUMERIC_SCALES_SI_ = {
+  '': 1,
+  'n': 1e-9,
+  'u': 1e-6,
+  'm': 1e-3,
+  'k': 1e3,
+  'K': 1e3,
+  'M': 1e6,
+  'G': 1e9,
+  'T': 1e12,
+  'P': 1e15,
+  'E': 1e18,
+  'Z': 1e21,
+  'Y': 1e24
+};
+
+
+/**
+ * Scaling factors for conversion of numeric value to string.  Binary
+ * conversion.
+ * @type {Object}
+ * @private
+ */
+goog.format.NUMERIC_SCALES_BINARY_ = {
+  '': 1,
+  'n': Math.pow(1024, -3),
+  'u': Math.pow(1024, -2),
+  'm': 1.0 / 1024,
+  'k': 1024,
+  'K': 1024,
+  'M': Math.pow(1024, 2),
+  'G': Math.pow(1024, 3),
+  'T': Math.pow(1024, 4),
+  'P': Math.pow(1024, 5),
+  'E': Math.pow(1024, 6),
+  'Z': Math.pow(1024, 7),
+  'Y': Math.pow(1024, 8)
+};
+
+
+/**
+ * First Unicode code point that has the Mark property.
+ * @type {number}
+ * @private
+ */
+goog.format.FIRST_GRAPHEME_EXTEND_ = 0x300;
+
+
+/**
+ * Returns true if and only if given character should be treated as a breaking
+ * space. All ASCII control characters, the main Unicode range of spacing
+ * characters (U+2000 to U+200B inclusive except for U+2007), and several other
+ * Unicode space characters are treated as breaking spaces.
+ * @param {number} charCode The character code under consideration.
+ * @return {boolean} True if the character is a breaking space.
+ * @private
+ */
+goog.format.isTreatedAsBreakingSpace_ = function(charCode) {
+  'use strict';
+  return (charCode <= goog.format.WbrToken_.SPACE) ||
+      (charCode >= 0x1000 &&
+       ((charCode >= 0x2000 && charCode <= 0x2006) ||
+        (charCode >= 0x2008 && charCode <= 0x200B) || charCode == 0x1680 ||
+        charCode == 0x180E || charCode == 0x2028 || charCode == 0x2029 ||
+        charCode == 0x205f || charCode == 0x3000));
+};
+
+
+/**
+ * Returns true if and only if given character is an invisible formatting
+ * character.
+ * @param {number} charCode The character code under consideration.
+ * @return {boolean} True if the character is an invisible formatting character.
+ * @private
+ */
+goog.format.isInvisibleFormattingCharacter_ = function(charCode) {
+  'use strict';
+  // See: http://unicode.org/charts/PDF/U2000.pdf
+  return (charCode >= 0x200C && charCode <= 0x200F) ||
+      (charCode >= 0x202A && charCode <= 0x202E);
+};
+
+
+/**
+ * Inserts word breaks into an HTML string at a given interval.  The counter is
+ * reset if a space or a character which behaves like a space is encountered,
+ * but it isn't incremented if an invisible formatting character is encountered.
+ * WBRs aren't inserted into HTML tags or entities.  Entities count towards the
+ * character count, HTML tags do not.
+ *
+ * With common strings aliased, objects allocations are constant based on the
+ * length of the string: N + 3. This guarantee does not hold if the string
+ * contains an element >= U+0300 and hasGraphemeBreak is non-trivial.
+ *
+ * @param {string} str HTML to insert word breaks into.
+ * @param {function(number, number, boolean): boolean} hasGraphemeBreak A
+ *     function determining if there is a grapheme break between two characters,
+ *     in the same signature as goog.i18n.GraphemeBreak.hasGraphemeBreak.
+ * @param {number=} opt_maxlen Maximum length after which to ensure
+ *     there is a break.  Default is 10 characters.
+ * @return {string} The string including word breaks.
+ * @private
+ */
+goog.format.insertWordBreaksGeneric_ = function(
+    str, hasGraphemeBreak, opt_maxlen) {
+  'use strict';
+  var maxlen = opt_maxlen || 10;
+  if (maxlen > str.length) return str;
+
+  var rv = [];
+  var n = 0;  // The length of the current token
+
+  // This will contain the ampersand or less-than character if one of the
+  // two has been seen; otherwise, the value is zero.
+  var nestingCharCode = 0;
+
+  // First character position from input string that has not been outputted.
+  var lastDumpPosition = 0;
+
+  var charCode = 0;
+  for (var i = 0; i < str.length; i++) {
+    // Using charCodeAt versus charAt avoids allocating new string objects.
+    var lastCharCode = charCode;
+    charCode = str.charCodeAt(i);
+
+    // Don't add a WBR before characters that might be grapheme extending.
+    var isPotentiallyGraphemeExtending =
+        charCode >= goog.format.FIRST_GRAPHEME_EXTEND_ &&
+        !hasGraphemeBreak(lastCharCode, charCode, true);
+
+    // Don't add a WBR at the end of a word. For the purposes of determining
+    // work breaks, all ASCII control characters and some commonly encountered
+    // Unicode spacing characters are treated as breaking spaces.
+    if (n >= maxlen && !goog.format.isTreatedAsBreakingSpace_(charCode) &&
+        !isPotentiallyGraphemeExtending) {
+      // Flush everything seen so far, and append a word break.
+      rv.push(str.substring(lastDumpPosition, i), goog.format.WORD_BREAK_HTML);
+      lastDumpPosition = i;
+      n = 0;
+    }
+
+    if (!nestingCharCode) {
+      // Not currently within an HTML tag or entity
+
+      if (charCode == goog.format.WbrToken_.LT ||
+          charCode == goog.format.WbrToken_.AMP) {
+        // Entering an HTML Entity '&' or open tag '<'
+        nestingCharCode = charCode;
+      } else if (goog.format.isTreatedAsBreakingSpace_(charCode)) {
+        // A space or control character -- reset the token length
+        n = 0;
+      } else if (!goog.format.isInvisibleFormattingCharacter_(charCode)) {
+        // A normal flow character - increment.  For grapheme extending
+        // characters, this is not *technically* a new character.  However,
+        // since the grapheme break detector might be overly conservative,
+        // we have to continue incrementing, or else we won't even be able
+        // to add breaks when we get to things like punctuation.  For the
+        // case where we have a full grapheme break detector, it is okay if
+        // we occasionally break slightly early.
+        n++;
+      }
+    } else if (
+        charCode == goog.format.WbrToken_.GT &&
+        nestingCharCode == goog.format.WbrToken_.LT) {
+      // Leaving an HTML tag, treat the tag as zero-length
+      nestingCharCode = 0;
+    } else if (
+        charCode == goog.format.WbrToken_.SEMI_COLON &&
+        nestingCharCode == goog.format.WbrToken_.AMP) {
+      // Leaving an HTML entity, treat it as length one
+      nestingCharCode = 0;
+      n++;
+    }
+  }
+
+  // Take care of anything we haven't flushed so far.
+  rv.push(str.substr(lastDumpPosition));
+
+  return rv.join('');
+};
+
+
+/**
+ * Inserts word breaks into an HTML string at a given interval.
+ *
+ * This method is as aggressive as possible, using a full table of Unicode
+ * characters where it is legal to insert word breaks; however, this table
+ * comes at a 2.5k pre-gzip (~1k post-gzip) size cost.  Consider using
+ * insertWordBreaksBasic to minimize the size impact.
+ *
+ * @param {string} str HTML to insert word breaks into.
+ * @param {number=} opt_maxlen Maximum length after which to ensure there is a
+ *     break.  Default is 10 characters.
+ * @return {string} The string including word breaks.
+ * @deprecated Prefer wrapping with CSS word-wrap: break-word.
+ */
+goog.format.insertWordBreaks = function(str, opt_maxlen) {
+  'use strict';
+  return goog.format.insertWordBreaksGeneric_(
+      str, goog.i18n.GraphemeBreak.hasGraphemeBreak, opt_maxlen);
+};
+
+
+/**
+ * Determines conservatively if a character has a Grapheme break.
+ *
+ * Conforms to a similar signature as goog.i18n.GraphemeBreak, but is overly
+ * conservative, returning true only for characters in common scripts that
+ * are simple to account for.
+ *
+ * @param {number} lastCharCode The previous character code.  Ignored.
+ * @param {number} charCode The character code under consideration.  It must be
+ *     at least \u0300 as a precondition -- this case is covered by
+ *     insertWordBreaksGeneric_.
+ * @param {boolean=} opt_extended Ignored, to conform with the interface.
+ * @return {boolean} Whether it is one of the recognized subsets of characters
+ *     with a grapheme break.
+ * @private
+ */
+goog.format.conservativelyHasGraphemeBreak_ = function(
+    lastCharCode, charCode, opt_extended) {
+  'use strict';
+  // Return false for everything except the most common Cyrillic characters.
+  // Don't worry about Latin characters, because insertWordBreaksGeneric_
+  // itself already handles those.
+  // TODO(gboyer): Also account for Greek, Armenian, and Georgian if it is
+  // simple to do so.
+  return charCode >= 0x400 && charCode < 0x523;
+};
+
+
+// TODO(gboyer): Consider using a compile-time flag to switch implementations
+// rather than relying on the developers to toggle implementations.
+/**
+ * Inserts word breaks into an HTML string at a given interval.
+ *
+ * This method is less aggressive than insertWordBreaks, only inserting
+ * breaks next to punctuation and between Latin or Cyrillic characters.
+ * However, this is good enough for the common case of URLs.  It also
+ * works for all Latin and Cyrillic languages, plus CJK has no need for word
+ * breaks.  When this method is used, goog.i18n.GraphemeBreak may be dead
+ * code eliminated.
+ *
+ * @param {string} str HTML to insert word breaks into.
+ * @param {number=} opt_maxlen Maximum length after which to ensure there is a
+ *     break.  Default is 10 characters.
+ * @return {string} The string including word breaks.
+ * @deprecated Prefer wrapping with CSS word-wrap: break-word.
+ */
+goog.format.insertWordBreaksBasic = function(str, opt_maxlen) {
+  'use strict';
+  return goog.format.insertWordBreaksGeneric_(
+      str, goog.format.conservativelyHasGraphemeBreak_, opt_maxlen);
+};
+
+
+/**
+ * True iff the current userAgent is IE8 or above.
+ * @type {boolean}
+ * @private
+ */
+goog.format.IS_IE8_OR_ABOVE_ =
+    goog.userAgent.IE && goog.userAgent.isVersionOrHigher(8);
+
+
+/**
+ * Constant for the WBR replacement used by insertWordBreaks.  Safari requires
+ * &lt;wbr&gt;&lt;/wbr&gt;, Opera needs the &shy; entity, though this will give
+ * a visible hyphen at breaks.  IE8 uses a zero width space. Other browsers just
+ * use &lt;wbr&gt;.
+ * @type {string}
+ */
+goog.format.WORD_BREAK_HTML = goog.userAgent.WEBKIT ? '<wbr></wbr>' :
+    goog.userAgent.OPERA                            ? '&shy;' :
+    goog.format.IS_IE8_OR_ABOVE_                    ? '&#8203;' :
+                                                      '<wbr>';
+
+
+/**
+ * Tokens used within insertWordBreaks.
+ * @private
+ * @enum {number}
+ */
+goog.format.WbrToken_ = {
+  LT: 60,          // '<'.charCodeAt(0)
+  GT: 62,          // '>'.charCodeAt(0)
+  AMP: 38,         // '&'.charCodeAt(0)
+  SEMI_COLON: 59,  // ';'.charCodeAt(0)
+  SPACE: 32        // ' '.charCodeAt(0)
+};
+
+//third_party/javascript/closure/i18n/bidiformatter.js
+/**
+ * @license
+ * Copyright The Closure Library Authors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/**
+ * @fileoverview Utility for formatting text for display in a potentially
+ * opposite-directionality context without garbling.
+ * Mostly a port of http://go/formatter.cc.
+ */
+
+
+goog.provide('goog.i18n.BidiFormatter');
+
+goog.require('goog.html.SafeHtml');
+goog.require('goog.i18n.bidi');
+goog.require('goog.i18n.bidi.Dir');
+goog.require('goog.i18n.bidi.Format');
+
+
+
+/**
+ * Utility class for formatting text for display in a potentially
+ * opposite-directionality context without garbling. Provides the following
+ * functionality:
+ *
+ * 1. BiDi Wrapping
+ * When text in one language is mixed into a document in another, opposite-
+ * directionality language, e.g. when an English business name is embedded in a
+ * Hebrew web page, both the inserted string and the text following it may be
+ * displayed incorrectly unless the inserted string is explicitly separated
+ * from the surrounding text in a "wrapper" that declares its directionality at
+ * the start and then resets it back at the end. This wrapping can be done in
+ * HTML mark-up (e.g. a 'span dir="rtl"' tag) or - only in contexts where
+ * mark-up can not be used - in Unicode BiDi formatting codes (LRE|RLE and PDF).
+ * Providing such wrapping services is the basic purpose of the BiDi formatter.
+ *
+ * 2. Directionality estimation
+ * How does one know whether a string about to be inserted into surrounding
+ * text has the same directionality? Well, in many cases, one knows that this
+ * must be the case when writing the code doing the insertion, e.g. when a
+ * localized message is inserted into a localized page. In such cases there is
+ * no need to involve the BiDi formatter at all. In the remaining cases, e.g.
+ * when the string is user-entered or comes from a database, the language of
+ * the string (and thus its directionality) is not known a priori, and must be
+ * estimated at run-time. The BiDi formatter does this automatically.
+ *
+ * 3. Escaping
+ * When wrapping plain text - i.e. text that is not already HTML or HTML-
+ * escaped - in HTML mark-up, the text must first be HTML-escaped to prevent XSS
+ * attacks and other nasty business. This of course is always true, but the
+ * escaping can not be done after the string has already been wrapped in
+ * mark-up, so the BiDi formatter also serves as a last chance and includes
+ * escaping services.
+ *
+ * Thus, in a single call, the formatter will escape the input string as
+ * specified, determine its directionality, and wrap it as necessary. It is
+ * then up to the caller to insert the return value in the output.
+ *
+ * See http://wiki/Main/TemplatesAndBiDi for more information.
+ *
+ * @param {goog.i18n.bidi.Dir|number|boolean|null} contextDir The context
+ *     directionality, in one of the following formats:
+ *     1. A goog.i18n.bidi.Dir constant. NEUTRAL is treated the same as null,
+ *        i.e. unknown, for backward compatibility with legacy calls.
+ *     2. A number (positive = LTR, negative = RTL, 0 = unknown).
+ *     3. A boolean (true = RTL, false = LTR).
+ *     4. A null for unknown directionality.
+ * @param {boolean=} opt_alwaysSpan Whether {@link #spanWrap} should always
+ *     use a 'span' tag, even when the input directionality is neutral or
+ *     matches the context, so that the DOM structure of the output does not
+ *     depend on the combination of directionalities. Default: false.
+ * @constructor
+ * @final
+ */
+goog.i18n.BidiFormatter = function(contextDir, opt_alwaysSpan) {
+  'use strict';
+  /**
+   * The overall directionality of the context in which the formatter is being
+   * used.
+   * @type {?goog.i18n.bidi.Dir}
+   * @private
+   */
+  this.contextDir_ = goog.i18n.bidi.toDir(contextDir, true /* opt_noNeutral */);
+
+  /**
+   * Whether {@link #spanWrap} and similar methods should always use the same
+   * span structure, regardless of the combination of directionalities, for a
+   * stable DOM structure.
+   * @type {boolean}
+   * @private
+   */
+  this.alwaysSpan_ = !!opt_alwaysSpan;
+};
+
+
+/**
+ * @return {?goog.i18n.bidi.Dir} The context directionality.
+ */
+goog.i18n.BidiFormatter.prototype.getContextDir = function() {
+  'use strict';
+  return this.contextDir_;
+};
+
+
+/**
+ * @return {boolean} Whether alwaysSpan is set.
+ */
+goog.i18n.BidiFormatter.prototype.getAlwaysSpan = function() {
+  'use strict';
+  return this.alwaysSpan_;
+};
+
+
+/**
+ * @param {goog.i18n.bidi.Dir|number|boolean|null} contextDir The context
+ *     directionality, in one of the following formats:
+ *     1. A goog.i18n.bidi.Dir constant. NEUTRAL is treated the same as null,
+ *        i.e. unknown.
+ *     2. A number (positive = LTR, negative = RTL, 0 = unknown).
+ *     3. A boolean (true = RTL, false = LTR).
+ *     4. A null for unknown directionality.
+ */
+goog.i18n.BidiFormatter.prototype.setContextDir = function(contextDir) {
+  'use strict';
+  this.contextDir_ = goog.i18n.bidi.toDir(contextDir, true /* opt_noNeutral */);
+};
+
+
+/**
+ * @param {boolean} alwaysSpan Whether {@link #spanWrap} should always use a
+ *     'span' tag, even when the input directionality is neutral or matches the
+ *     context, so that the DOM structure of the output does not depend on the
+ *     combination of directionalities.
+ */
+goog.i18n.BidiFormatter.prototype.setAlwaysSpan = function(alwaysSpan) {
+  'use strict';
+  this.alwaysSpan_ = alwaysSpan;
+};
+
+
+/**
+ * Returns the directionality of input argument `str`.
+ * Identical to {@link goog.i18n.bidi.estimateDirection}.
+ *
+ * @param {string} str The input text.
+ * @param {boolean=} opt_isHtml Whether `str` is HTML / HTML-escaped.
+ *     Default: false.
+ * @return {goog.i18n.bidi.Dir} Estimated overall directionality of `str`.
+ */
+goog.i18n.BidiFormatter.prototype.estimateDirection =
+    goog.i18n.bidi.estimateDirection;
+
+
+/**
+ * Returns true if two given directionalities are opposite.
+ * Note: the implementation is based on the numeric values of the Dir enum.
+ *
+ * @param {?goog.i18n.bidi.Dir} dir1 1st directionality.
+ * @param {?goog.i18n.bidi.Dir} dir2 2nd directionality.
+ * @return {boolean} Whether the directionalities are opposite.
+ * @private
+ */
+goog.i18n.BidiFormatter.prototype.areDirectionalitiesOpposite_ = function(
+    dir1, dir2) {
+  'use strict';
+  return Number(dir1) * Number(dir2) < 0;
+};
+
+
+/**
+ * Returns a unicode BiDi mark matching the context directionality (LRM or
+ * RLM) if `opt_dirReset`, and if either the directionality or the exit
+ * directionality of `str` is opposite to the context directionality.
+ * Otherwise returns the empty string.
+ *
+ * @param {string} str The input text.
+ * @param {goog.i18n.bidi.Dir} dir `str`'s overall directionality.
+ * @param {boolean=} opt_isHtml Whether `str` is HTML / HTML-escaped.
+ *     Default: false.
+ * @param {boolean=} opt_dirReset Whether to perform the reset. Default: false.
+ * @return {string} A unicode BiDi mark or the empty string.
+ * @private
+ */
+goog.i18n.BidiFormatter.prototype.dirResetIfNeeded_ = function(
+    str, dir, opt_isHtml, opt_dirReset) {
+  'use strict';
+  // endsWithRtl and endsWithLtr are called only if needed (short-circuit).
+  if (opt_dirReset &&
+      (this.areDirectionalitiesOpposite_(dir, this.contextDir_) ||
+       (this.contextDir_ == goog.i18n.bidi.Dir.LTR &&
+        goog.i18n.bidi.endsWithRtl(str, opt_isHtml)) ||
+       (this.contextDir_ == goog.i18n.bidi.Dir.RTL &&
+        goog.i18n.bidi.endsWithLtr(str, opt_isHtml)))) {
+    return this.contextDir_ == goog.i18n.bidi.Dir.LTR ?
+        goog.i18n.bidi.Format.LRM :
+        goog.i18n.bidi.Format.RLM;
+  } else {
+    return '';
+  }
+};
+
+
+/**
+ * Returns "rtl" if `str`'s estimated directionality is RTL, and "ltr" if
+ * it is LTR. In case it's NEUTRAL, returns "rtl" if the context directionality
+ * is RTL, and "ltr" otherwise.
+ * Needed for GXP, which can't handle dirAttr.
+ * Example use case:
+ * &lt;td expr:dir='bidiFormatter.dirAttrValue(foo)'&gt;
+ *   &lt;gxp:eval expr='foo'&gt;
+ * &lt;/td&gt;
+ *
+ * @param {string} str Text whose directionality is to be estimated.
+ * @param {boolean=} opt_isHtml Whether `str` is HTML / HTML-escaped.
+ *     Default: false.
+ * @return {string} "rtl" or "ltr", according to the logic described above.
+ */
+goog.i18n.BidiFormatter.prototype.dirAttrValue = function(str, opt_isHtml) {
+  'use strict';
+  return this.knownDirAttrValue(this.estimateDirection(str, opt_isHtml));
+};
+
+
+/**
+ * Returns "rtl" if the given directionality is RTL, and "ltr" if it is LTR. In
+ * case it's NEUTRAL, returns "rtl" if the context directionality is RTL, and
+ * "ltr" otherwise.
+ *
+ * @param {goog.i18n.bidi.Dir} dir A directionality.
+ * @return {string} "rtl" or "ltr", according to the logic described above.
+ */
+goog.i18n.BidiFormatter.prototype.knownDirAttrValue = function(dir) {
+  'use strict';
+  var resolvedDir = dir == goog.i18n.bidi.Dir.NEUTRAL ? this.contextDir_ : dir;
+  return resolvedDir == goog.i18n.bidi.Dir.RTL ? 'rtl' : 'ltr';
+};
+
+
+/**
+ * Returns 'dir="ltr"' or 'dir="rtl"', depending on `str`'s estimated
+ * directionality, if it is not the same as the context directionality.
+ * Otherwise, returns the empty string.
+ *
+ * @param {string} str Text whose directionality is to be estimated.
+ * @param {boolean=} opt_isHtml Whether `str` is HTML / HTML-escaped.
+ *     Default: false.
+ * @return {string} 'dir="rtl"' for RTL text in non-RTL context; 'dir="ltr"' for
+ *     LTR text in non-LTR context; else, the empty string.
+ */
+goog.i18n.BidiFormatter.prototype.dirAttr = function(str, opt_isHtml) {
+  'use strict';
+  return this.knownDirAttr(this.estimateDirection(str, opt_isHtml));
+};
+
+
+/**
+ * Returns 'dir="ltr"' or 'dir="rtl"', depending on the given directionality, if
+ * it is not the same as the context directionality. Otherwise, returns the
+ * empty string.
+ *
+ * @param {goog.i18n.bidi.Dir} dir A directionality.
+ * @return {string} 'dir="rtl"' for RTL text in non-RTL context; 'dir="ltr"' for
+ *     LTR text in non-LTR context; else, the empty string.
+ */
+goog.i18n.BidiFormatter.prototype.knownDirAttr = function(dir) {
+  'use strict';
+  if (dir != this.contextDir_) {
+    return dir == goog.i18n.bidi.Dir.RTL ?
+        'dir="rtl"' :
+        dir == goog.i18n.bidi.Dir.LTR ? 'dir="ltr"' : '';
+  }
+  return '';
+};
+
+
+/**
+ * Formats a string of unknown directionality for use in HTML output of the
+ * context directionality, so an opposite-directionality string is neither
+ * garbled nor garbles what follows it.
+ * The algorithm: estimates the directionality of input argument `html`.
+ * In case its directionality doesn't match the context directionality, wraps it
+ * with a 'span' tag and adds a "dir" attribute (either 'dir="rtl"' or
+ * 'dir="ltr"'). If setAlwaysSpan(true) was used, the input is always wrapped
+ * with 'span', skipping just the dir attribute when it's not needed.
+ *
+ * If `opt_dirReset`, and if the overall directionality or the exit
+ * directionality of `str` are opposite to the context directionality, a
+ * trailing unicode BiDi mark matching the context directionality is appened
+ * (LRM or RLM).
+ *
+ * @param {!goog.html.SafeHtml} html The input HTML.
+ * @param {boolean=} opt_dirReset Whether to append a trailing unicode bidi mark
+ *     matching the context directionality, when needed, to prevent the possible
+ *     garbling of whatever may follow `html`. Default: true.
+ * @return {!goog.html.SafeHtml} Input text after applying the processing.
+ */
+goog.i18n.BidiFormatter.prototype.spanWrapSafeHtml = function(
+    html, opt_dirReset) {
+  'use strict';
+  return this.spanWrapSafeHtmlWithKnownDir(null, html, opt_dirReset);
+};
+
+
+/**
+ * Formats a string of given directionality for use in HTML output of the
+ * context directionality, so an opposite-directionality string is neither
+ * garbled nor garbles what follows it.
+ * The algorithm: If `dir` doesn't match the context directionality, wraps
+ * `html` with a 'span' tag and adds a "dir" attribute (either 'dir="rtl"'
+ * or 'dir="ltr"'). If setAlwaysSpan(true) was used, the input is always wrapped
+ * with 'span', skipping just the dir attribute when it's not needed.
+ *
+ * If `opt_dirReset`, and if `dir` or the exit directionality of
+ * `html` are opposite to the context directionality, a trailing unicode
+ * BiDi mark matching the context directionality is appened (LRM or RLM).
+ *
+ * @param {?goog.i18n.bidi.Dir} dir `html`'s overall directionality, or
+ *     null if unknown and needs to be estimated.
+ * @param {!goog.html.SafeHtml} html The input HTML.
+ * @param {boolean=} opt_dirReset Whether to append a trailing unicode bidi mark
+ *     matching the context directionality, when needed, to prevent the possible
+ *     garbling of whatever may follow `html`. Default: true.
+ * @return {!goog.html.SafeHtml} Input text after applying the processing.
+ */
+goog.i18n.BidiFormatter.prototype.spanWrapSafeHtmlWithKnownDir = function(
+    dir, html, opt_dirReset) {
+  'use strict';
+  if (dir == null) {
+    dir = this.estimateDirection(goog.html.SafeHtml.unwrap(html), true);
+  }
+  return this.spanWrapWithKnownDir_(dir, html, opt_dirReset);
+};
+
+
+/**
+ * The internal implementation of spanWrapSafeHtmlWithKnownDir for non-null dir,
+ * to help the compiler optimize.
+ *
+ * @param {goog.i18n.bidi.Dir} dir `str`'s overall directionality.
+ * @param {!goog.html.SafeHtml} html The input HTML.
+ * @param {boolean=} opt_dirReset Whether to append a trailing unicode bidi mark
+ *     matching the context directionality, when needed, to prevent the possible
+ *     garbling of whatever may follow `str`. Default: true.
+ * @return {!goog.html.SafeHtml} Input text after applying the above processing.
+ * @private
+ */
+goog.i18n.BidiFormatter.prototype.spanWrapWithKnownDir_ = function(
+    dir, html, opt_dirReset) {
+  'use strict';
+  opt_dirReset = opt_dirReset || (opt_dirReset == undefined);
+
+  var result;
+  // Whether to add the "dir" attribute.
+  var dirCondition =
+      dir != goog.i18n.bidi.Dir.NEUTRAL && dir != this.contextDir_;
+  if (this.alwaysSpan_ || dirCondition) {  // Wrap is needed
+    var dirAttribute;
+    if (dirCondition) {
+      dirAttribute = dir == goog.i18n.bidi.Dir.RTL ? 'rtl' : 'ltr';
+    }
+    result = goog.html.SafeHtml.create('span', {'dir': dirAttribute}, html);
+  } else {
+    result = html;
+  }
+  var str = goog.html.SafeHtml.unwrap(html);
+  result = goog.html.SafeHtml.concatWithDir(
+      goog.i18n.bidi.Dir.NEUTRAL, result,
+      this.dirResetIfNeeded_(str, dir, true, opt_dirReset));
+  return result;
+};
+
+
+/**
+ * Formats a string of unknown directionality for use in plain-text output of
+ * the context directionality, so an opposite-directionality string is neither
+ * garbled nor garbles what follows it.
+ * As opposed to {@link #spanWrap}, this makes use of unicode BiDi formatting
+ * characters. In HTML, its *only* valid use is inside of elements that do not
+ * allow mark-up, e.g. an 'option' tag.
+ * The algorithm: estimates the directionality of input argument `str`.
+ * In case it doesn't match  the context directionality, wraps it with Unicode
+ * BiDi formatting characters: RLE`str`PDF for RTL text, and
+ * LRE`str`PDF for LTR text.
+ *
+ * If `opt_dirReset`, and if the overall directionality or the exit
+ * directionality of `str` are opposite to the context directionality, a
+ * trailing unicode BiDi mark matching the context directionality is appended
+ * (LRM or RLM).
+ *
+ * Does *not* do HTML-escaping regardless of the value of `opt_isHtml`.
+ * The return value can be HTML-escaped as necessary.
+ *
+ * @param {string} str The input text.
+ * @param {boolean=} opt_isHtml Whether `str` is HTML / HTML-escaped.
+ *     Default: false.
+ * @param {boolean=} opt_dirReset Whether to append a trailing unicode bidi mark
+ *     matching the context directionality, when needed, to prevent the possible
+ *     garbling of whatever may follow `str`. Default: true.
+ * @return {string} Input text after applying the above processing.
+ */
+goog.i18n.BidiFormatter.prototype.unicodeWrap = function(
+    str, opt_isHtml, opt_dirReset) {
+  'use strict';
+  return this.unicodeWrapWithKnownDir(null, str, opt_isHtml, opt_dirReset);
+};
+
+
+/**
+ * Formats a string of given directionality for use in plain-text output of the
+ * context directionality, so an opposite-directionality string is neither
+ * garbled nor garbles what follows it.
+ * As opposed to {@link #spanWrapWithKnownDir}, makes use of unicode BiDi
+ * formatting characters. In HTML, its *only* valid use is inside of elements
+ * that do not allow mark-up, e.g. an 'option' tag.
+ * The algorithm: If `dir` doesn't match the context directionality, wraps
+ * `str` with Unicode BiDi formatting characters: RLE`str`PDF for
+ * RTL text, and LRE`str`PDF for LTR text.
+ *
+ * If `opt_dirReset`, and if the overall directionality or the exit
+ * directionality of `str` are opposite to the context directionality, a
+ * trailing unicode BiDi mark matching the context directionality is appended
+ * (LRM or RLM).
+ *
+ * Does *not* do HTML-escaping regardless of the value of `opt_isHtml`.
+ * The return value can be HTML-escaped as necessary.
+ *
+ * @param {?goog.i18n.bidi.Dir} dir `str`'s overall directionality, or
+ *     null if unknown and needs to be estimated.
+ * @param {string} str The input text.
+ * @param {boolean=} opt_isHtml Whether `str` is HTML / HTML-escaped.
+ *     Default: false.
+ * @param {boolean=} opt_dirReset Whether to append a trailing unicode bidi mark
+ *     matching the context directionality, when needed, to prevent the possible
+ *     garbling of whatever may follow `str`. Default: true.
+ * @return {string} Input text after applying the above processing.
+ */
+goog.i18n.BidiFormatter.prototype.unicodeWrapWithKnownDir = function(
+    dir, str, opt_isHtml, opt_dirReset) {
+  'use strict';
+  if (dir == null) {
+    dir = this.estimateDirection(str, opt_isHtml);
+  }
+  return this.unicodeWrapWithKnownDir_(dir, str, opt_isHtml, opt_dirReset);
+};
+
+
+/**
+ * The internal implementation of unicodeWrapWithKnownDir for non-null dir, to
+ * help the compiler optimize.
+ *
+ * @param {goog.i18n.bidi.Dir} dir `str`'s overall directionality.
+ * @param {string} str The input text.
+ * @param {boolean=} opt_isHtml Whether `str` is HTML / HTML-escaped.
+ *     Default: false.
+ * @param {boolean=} opt_dirReset Whether to append a trailing unicode bidi mark
+ *     matching the context directionality, when needed, to prevent the possible
+ *     garbling of whatever may follow `str`. Default: true.
+ * @return {string} Input text after applying the above processing.
+ * @private
+ */
+goog.i18n.BidiFormatter.prototype.unicodeWrapWithKnownDir_ = function(
+    dir, str, opt_isHtml, opt_dirReset) {
+  'use strict';
+  opt_dirReset = opt_dirReset || (opt_dirReset == undefined);
+  var result = [];
+  if (dir != goog.i18n.bidi.Dir.NEUTRAL && dir != this.contextDir_) {
+    result.push(
+        dir == goog.i18n.bidi.Dir.RTL ? goog.i18n.bidi.Format.RLE :
+                                        goog.i18n.bidi.Format.LRE);
+    result.push(str);
+    result.push(goog.i18n.bidi.Format.PDF);
+  } else {
+    result.push(str);
+  }
+
+  result.push(this.dirResetIfNeeded_(str, dir, opt_isHtml, opt_dirReset));
+  return result.join('');
+};
+
+
+/**
+ * Returns a Unicode BiDi mark matching the context directionality (LRM or RLM)
+ * if the directionality or the exit directionality of `str` are opposite
+ * to the context directionality. Otherwise returns the empty string.
+ *
+ * @param {string} str The input text.
+ * @param {boolean=} opt_isHtml Whether `str` is HTML / HTML-escaped.
+ *     Default: false.
+ * @return {string} A Unicode bidi mark matching the global directionality or
+ *     the empty string.
+ */
+goog.i18n.BidiFormatter.prototype.markAfter = function(str, opt_isHtml) {
+  'use strict';
+  return this.markAfterKnownDir(null, str, opt_isHtml);
+};
+
+
+/**
+ * Returns a Unicode BiDi mark matching the context directionality (LRM or RLM)
+ * if the given directionality or the exit directionality of `str` are
+ * opposite to the context directionality. Otherwise returns the empty string.
+ *
+ * @param {?goog.i18n.bidi.Dir} dir `str`'s overall directionality, or
+ *     null if unknown and needs to be estimated.
+ * @param {string} str The input text.
+ * @param {boolean=} opt_isHtml Whether `str` is HTML / HTML-escaped.
+ *     Default: false.
+ * @return {string} A Unicode bidi mark matching the global directionality or
+ *     the empty string.
+ */
+goog.i18n.BidiFormatter.prototype.markAfterKnownDir = function(
+    dir, str, opt_isHtml) {
+  'use strict';
+  if (dir == null) {
+    dir = this.estimateDirection(str, opt_isHtml);
+  }
+  return this.dirResetIfNeeded_(str, dir, opt_isHtml, true);
+};
+
+
+/**
+ * Returns the Unicode BiDi mark matching the context directionality (LRM for
+ * LTR context directionality, RLM for RTL context directionality), or the
+ * empty string for neutral / unknown context directionality.
+ *
+ * @return {string} LRM for LTR context directionality and RLM for RTL context
+ *     directionality.
+ */
+goog.i18n.BidiFormatter.prototype.mark = function() {
+  'use strict';
+  switch (this.contextDir_) {
+    case (goog.i18n.bidi.Dir.LTR):
+      return goog.i18n.bidi.Format.LRM;
+    case (goog.i18n.bidi.Dir.RTL):
+      return goog.i18n.bidi.Format.RLM;
+    default:
+      return '';
+  }
+};
+
+
+/**
+ * Returns 'right' for RTL context directionality. Otherwise (LTR or neutral /
+ * unknown context directionality) returns 'left'.
+ *
+ * @return {string} 'right' for RTL context directionality and 'left' for other
+ *     context directionality.
+ */
+goog.i18n.BidiFormatter.prototype.startEdge = function() {
+  'use strict';
+  return this.contextDir_ == goog.i18n.bidi.Dir.RTL ? goog.i18n.bidi.RIGHT :
+                                                      goog.i18n.bidi.LEFT;
+};
+
+
+/**
+ * Returns 'left' for RTL context directionality. Otherwise (LTR or neutral /
+ * unknown context directionality) returns 'right'.
+ *
+ * @return {string} 'left' for RTL context directionality and 'right' for other
+ *     context directionality.
+ */
+goog.i18n.BidiFormatter.prototype.endEdge = function() {
+  'use strict';
+  return this.contextDir_ == goog.i18n.bidi.Dir.RTL ? goog.i18n.bidi.LEFT :
+                                                      goog.i18n.bidi.RIGHT;
+};
+
+//javascript/template/soy/soyutils_usegoog.js
+goog.loadModule(function(exports) {'use strict';/*
+ * Copyright 2008 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/**
+ * @fileoverview
+ * Utility functions and classes for Soy gencode
+ *
+ * <p>
+ * This file contains utilities that should only be called by Soy-generated
+ * JS code. Please do not use these functions directly from
+ * your hand-written code. Their names all start with '$$'
+ *
+ */
+goog.module('soy');
+goog.module.declareLegacyNamespace();
+
+const BidiFormatter = goog.require('goog.i18n.BidiFormatter');
+const Const = goog.require('goog.string.Const');
+const SafeHtml = goog.require('goog.html.SafeHtml');
+const SafeScript = goog.require('goog.html.SafeScript');
+const SafeStyle = goog.require('goog.html.SafeStyle');
+const SafeStyleSheet = goog.require('goog.html.SafeStyleSheet');
+const SafeUrl = goog.require('goog.html.SafeUrl');
+const TrustedResourceUrl = goog.require('goog.html.TrustedResourceUrl');
+const asserts = goog.require('goog.asserts');
+const bidi = goog.require('goog.i18n.bidi');
+const googArray = goog.require('goog.array');
+const googDebug = goog.require('goog.debug');
+const googFormat = goog.require('goog.format');
+const googString = goog.require('goog.string');
+const soyChecks = goog.require('soy.checks');
+const uncheckedconversions = goog.require('goog.html.uncheckedconversions');
+const {SanitizedContent, SanitizedContentKind, SanitizedCss, SanitizedHtml, SanitizedHtmlAttribute, SanitizedJs, SanitizedTrustedResourceUri, SanitizedUri} = goog.require('goog.soy.data');
+
+
+// -----------------------------------------------------------------------------
+// soydata: Defines typed strings, e.g. an HTML string `"a<b>c"` is
+// semantically distinct from the plain text string `"a<b>c"` and smart
+// templates can take that distinction into account.
+
+
+/** @typedef {!SanitizedContent|{isInvokableFn: boolean}} */
+let IdomFunction;
+
+/**
+ * Checks whether a given value is of a given content kind.
+ *
+ * @param {?} value The value to be examined.
+ * @param {!SanitizedContentKind} contentKind The desired content
+ *     kind.
+ * @return {boolean} Whether the given value is of the given kind.
+ * @package
+ */
+const isContentKind_ = function(value, contentKind) {
+  // TODO(user): This function should really include the assert on
+  // value.constructor that is currently sprinkled at most of the call sites.
+  // Unfortunately, that would require a (debug-mode-only) switch statement.
+  // TODO(user): Perhaps we should get rid of the contentKind property
+  // altogether and only at the constructor.
+  return value != null && value.contentKind === contentKind;
+};
+
+/**
+ * Returns a given value's contentDir property, constrained to a
+ * bidi.Dir value or null. Returns null if the value is null,
+ * undefined, a primitive or does not have a contentDir property, or the
+ * property's value is not 1 (for LTR), -1 (for RTL), or 0 (for neutral).
+ *
+ * @param {?} value The value whose contentDir property, if any, is to
+ *     be returned.
+ * @return {?bidi.Dir} The contentDir property.
+ */
+const getContentDir = function(value) {
+  if (value != null) {
+    switch (value.contentDir) {
+      case bidi.Dir.LTR:
+        return bidi.Dir.LTR;
+      case bidi.Dir.RTL:
+        return bidi.Dir.RTL;
+      case bidi.Dir.NEUTRAL:
+        return bidi.Dir.NEUTRAL;
+    }
+  }
+  return null;
+};
+
+/**
+ * Returns a SanitizedHtml object for a particular value. The content direction
+ * is preserved.
+ *
+ * This HTML-escapes the value unless it is already SanitizedHtml or SafeHtml.
+ *
+ * @param {?} value The value to convert. If it is already a SanitizedHtml
+ *     object, it is left alone.
+ * @return {!SanitizedHtml} A SanitizedHtml object derived from
+ *     the stringified value. It is escaped unless the input is SanitizedHtml or
+ *     SafeHtml.
+ */
+const createSanitizedHtml = function(value) {
+  // The check is isContentKind_() inlined for performance.
+  if (soyChecks.isHtml(value)) {
+    return /** @type {!SanitizedHtml} */ (value);
+  }
+  if (value instanceof SafeHtml) {
+    return VERY_UNSAFE.ordainSanitizedHtml(
+        SafeHtml.unwrap(value), value.getDirection());
+  }
+  return VERY_UNSAFE.ordainSanitizedHtml(
+      $$escapeHtmlHelper(String(value)), getContentDir(value));
+};
+
+
+/**
+ * Empty string, used as a type in Soy templates.
+ * TODO(lukes): this should not be private! it interferes with typechecking in
+ * typescript.
+ * @enum {string}
+ * @private
+ */
+const $$EMPTY_STRING_ = {
+  VALUE: '',
+};
+
+
+/**
+ * Creates a factory for SanitizedContent types.
+ *
+ * This is a hack so that the VERY_UNSAFE.ordainSanitized* can
+ * instantiate Sanitized* classes, without making the Sanitized* constructors
+ * publicly usable. Requiring all construction to use the VERY_UNSAFE names
+ * helps callers and their reviewers easily tell that creating SanitizedContent
+ * is not always safe and calls for careful review.
+ *
+ * @param {function(new: T)} ctor A constructor.
+ * @return {function(*, ?bidi.Dir=): T} A factory that takes
+ *     content and an optional content direction and returns a new instance. If
+ *     the content direction is undefined, ctor.prototype.contentDir is used.
+ * @template T
+ * @private
+ */
+const $$makeSanitizedContentFactory_ = function(ctor) {
+  /**
+   * @param {string} content
+   * @constructor
+   * @extends {SanitizedContent}
+   */
+  function InstantiableCtor(content) {
+    /** @override */
+    this.content = content;
+  }
+  InstantiableCtor.prototype = ctor.prototype;
+  /**
+   * Creates a ctor-type SanitizedContent instance.
+   *
+   * @param {?} content The content to put in the instance.
+   * @param {?bidi.Dir=} contentDir The content direction. If
+   *     undefined, ctor.prototype.contentDir is used.
+   * @return {!SanitizedContent} The new instance. It is actually
+   *     of type T above (ctor's type, a descendant of SanitizedContent), but
+   *     there is no way to express that here.
+   */
+  function sanitizedContentFactory(content, contentDir) {
+    const result = new InstantiableCtor(String(content));
+    if (contentDir !== undefined) {
+      result.contentDir = contentDir;
+    }
+    return result;
+  }
+  return sanitizedContentFactory;
+};
+
+
+/**
+ * Creates a factory for SanitizedContent types that should always have their
+ * default directionality.
+ *
+ * This is a hack so that the soydata.VERY_UNSAFE.ordainSanitized* can
+ * instantiate Sanitized* classes, without making the Sanitized* constructors
+ * publicly usable. Requiring all construction to use the VERY_UNSAFE names
+ * helps callers and their reviewers easily tell that creating SanitizedContent
+ * is not always safe and calls for careful review.
+ *
+ * @param {function(new: T, string)} ctor A constructor.
+ * @return {function(*): T} A factory that takes content and returns a new
+ *     instance (with default directionality, i.e. ctor.prototype.contentDir).
+ * @template T
+ */
+const $$makeSanitizedContentFactoryWithDefaultDirOnly_ = function(ctor) {
+  /**
+   * @param {string} content
+   * @constructor
+   * @extends {SanitizedContent}
+   */
+  function InstantiableCtor(content) {
+    /** @override */
+    this.content = content;
+  }
+  InstantiableCtor.prototype = ctor.prototype;
+  /**
+   * Creates a ctor-type SanitizedContent instance.
+   *
+   * @param {?} content The content to put in the instance.
+   * @return {!SanitizedContent} The new instance. It is actually
+   *     of type T above (ctor's type, a descendant of SanitizedContent), but
+   *     there is no way to express that here.
+   */
+  function sanitizedContentFactory(content) {
+    const result = new InstantiableCtor(String(content));
+    return result;
+  }
+  return sanitizedContentFactory;
+};
+
+
+// -----------------------------------------------------------------------------
+// Sanitized content ordainers. Please use these with extreme caution. A good
+// recommendation is to limit usage of these to just a handful of files in your
+// source tree where usages can be carefully audited.
+
+/** @struct */
+const VERY_UNSAFE = {};
+
+/**
+ * Takes a leap of faith that the provided content is "safe" HTML.
+ *
+ * @param {?} content A string of HTML that can safely be embedded in
+ *     a PCDATA context in your app. If you would be surprised to find that an
+ *     HTML sanitizer produced `s` (e.g. it runs code or fetches bad URLs)
+ *     and you wouldn't write a template that produces `s` on security or
+ *     privacy grounds, then don't pass `s` here.
+ * @param {?bidi.Dir=} contentDir The content direction; null if
+ *     unknown and thus to be estimated when necessary. Default: null.
+ * @return {!SanitizedHtml} Sanitized content wrapper that
+ *     indicates to Soy not to escape when printed as HTML.
+ */
+VERY_UNSAFE.ordainSanitizedHtml = $$makeSanitizedContentFactory_(SanitizedHtml);
+
+
+/**
+ * Takes a leap of faith that the provided content is "safe" (non-attacker-
+ * controlled, XSS-free) Javascript.
+ *
+ * @param {?} content Javascript source that when evaluated does not
+ *     execute any attacker-controlled scripts.
+ * @return {!SanitizedJs} Sanitized content wrapper that indicates
+ *     to Soy not to escape when printed as Javascript source.
+ */
+VERY_UNSAFE.ordainSanitizedJs =
+    $$makeSanitizedContentFactoryWithDefaultDirOnly_(SanitizedJs);
+
+
+/**
+ * Takes a leap of faith that the provided content is "safe" to use as a URI
+ * in a Soy template.
+ *
+ * This creates a Soy SanitizedContent object which indicates to Soy there is
+ * no need to escape it when printed as a URI (e.g. in an href or src
+ * attribute), such as if it's already been encoded or  if it's a Javascript:
+ * URI.
+ *
+ * @param {?} content A chunk of URI that the caller knows is safe to
+ *     emit in a template.
+ * @return {!SanitizedUri} Sanitized content wrapper that
+ *     indicates to Soy not to escape or filter when printed in URI context.
+ */
+VERY_UNSAFE.ordainSanitizedUri =
+    $$makeSanitizedContentFactoryWithDefaultDirOnly_(SanitizedUri);
+
+
+/**
+ * Takes a leap of faith that the provided content is "safe" to use as a
+ * TrustedResourceUri in a Soy template.
+ *
+ * This creates a Soy SanitizedContent object which indicates to Soy there is
+ * no need to filter it when printed as a TrustedResourceUri.
+ *
+ * @param {?} content A chunk of TrustedResourceUri such as that the caller
+ *     knows is safe to emit in a template.
+ * @return {!SanitizedTrustedResourceUri} Sanitized content
+ *     wrapper that indicates to Soy not to escape or filter when printed in
+ *     TrustedResourceUri context.
+ */
+VERY_UNSAFE.ordainSanitizedTrustedResourceUri =
+    $$makeSanitizedContentFactoryWithDefaultDirOnly_(
+        SanitizedTrustedResourceUri);
+
+
+/**
+ * Takes a leap of faith that the provided content is "safe" to use as an
+ * HTML attribute.
+ *
+ * @param {?} content An attribute name and value, such as
+ *     `dir="ltr"`.
+ * @return {!SanitizedHtmlAttribute} Sanitized content wrapper
+ *     that indicates to Soy not to escape when printed as an HTML attribute.
+ */
+VERY_UNSAFE.ordainSanitizedHtmlAttribute =
+    $$makeSanitizedContentFactoryWithDefaultDirOnly_(SanitizedHtmlAttribute);
+
+
+/**
+ * Takes a leap of faith that the provided content is "safe" to use as CSS
+ * in a style block.
+ *
+ * @param {?} content CSS, such as `color:#c3d9ff`.
+ * @return {!SanitizedCss} Sanitized CSS wrapper that indicates to
+ *     Soy there is no need to escape or filter when printed in CSS context.
+ */
+VERY_UNSAFE.ordainSanitizedCss =
+    $$makeSanitizedContentFactoryWithDefaultDirOnly_(SanitizedCss);
+
+// Utilities related to defining and stubbing soy templates
+
+
+/**
+ * A map that allows us to dynamically replace templates.
+ *
+ * The key is the fully qualified template name and the value is a replacement
+ * to call instead.
+ *
+ * @type {?Object<string, !Function>}
+ * @const
+ */
+const $$stubsMap = goog.DEBUG ? {} : null;
+
+
+// -----------------------------------------------------------------------------
+// Soy-generated utilities in the soy namespace.  Contains implementations for
+// common soyfunctions (e.g. keys()) and escaping/print directives.
+
+
+/**
+ * Provides a compact serialization format for the key structure.
+ * @param {?} item
+ * @return {string}
+ */
+const $$serializeKey = function(item) {
+  const stringified = String(item);
+  let delimiter;
+  if (item == null) {
+    delimiter = '_';
+  } else if (typeof item === 'number') {
+    delimiter = '#';
+  } else {
+    delimiter = ':';
+  }
+  return `${stringified.length}${delimiter}${stringified}`;
+};
+
+
+
+/**
+ * Whether the locale is right-to-left.
+ *
+ * @type {boolean}
+ */
+const $$IS_LOCALE_RTL = bidi.IS_RTL;
+
+
+
+/**
+ * Copies extra properties into an object if they do not already exist. The
+ * destination object is mutated in the process.
+ *
+ * @param {?} obj The destination object to update.
+ * @param {?} defaults An object with default properties to apply.
+ * @return {?} The destination object for convenience.
+ */
+const $$assignDefaults = function(obj, defaults) {
+  for (let key in defaults) {
+    if (!(key in obj)) {
+      obj[key] = defaults[key];
+    }
+  }
+
+  return obj;
+};
+
+
+/**
+ * Gets the keys in a map as an array. There are no guarantees on the order.
+ * @param {!Object} map The map to get the keys of.
+ * @return {!Array<string>} The array of keys in the given map.
+ */
+const $$getMapKeys = function(map) {
+  const mapKeys = [];
+  for (let key in map) {
+    mapKeys.push(key);
+  }
+  return mapKeys;
+};
+
+
+/**
+ * Returns the argument if it is not null.
+ *
+ * @param {T} val The value to check
+ * @return {T} val if is isn't null
+ * @template T
+ */
+const $$checkNotNull = function(val) {
+  if (val == null) {
+    throw Error('unexpected null value');
+  }
+  return val;
+};
+
+
+/**
+ * Parses the given string into a base 10 integer. Returns null if parse is
+ * unsuccessful.
+ * @param {?string} str The string to parse
+ * @return {?number} The string parsed as a base 10 integer, or null if
+ * unsuccessful
+ */
+const $$parseInt = function(str) {
+  const parsed = parseInt(String(str), 10);
+  return isNaN(parsed) ? null : parsed;
+};
+
+/**
+ * When equals comparison cannot be expressed using JS runtime semantics for ==,
+ * bail out to a runtime function. In practice, this only means comparisons
+ * of boolean, string and number are valid for equals, and everything else needs
+ * this function. Some sanitized content may be functions or objects that need
+ * to be coerced to a string.
+ * @param {?} valueOne
+ * @param {?} valueTwo
+ * @return {boolean}
+ */
+const $$equals = function(valueOne, valueTwo) {
+  // Incremental DOM functions have to be coerced to a string. At runtime
+  // they are tagged with a type for ATTR or HTML. They both need to be
+  // the same to be considered structurally equal. Beware, as this is a
+  // very expensive function.
+  if ((valueOne && valueTwo) &&
+      (valueOne.isInvokableFn && valueTwo.isInvokableFn)) {
+    if ((/** @type {?} */ (valueOne)).contentKind !==
+        (/** @type {?} */ (valueTwo)).contentKind) {
+      return false;
+    } else {
+      return valueOne.toString() === valueTwo.toString();
+    }
+  }
+
+  // Likewise for sanitized content.
+  if (valueOne instanceof SanitizedContent &&
+      valueTwo instanceof SanitizedContent) {
+    if (valueOne.contentKind != valueTwo.contentKind) {
+      return false;
+    } else {
+      return valueOne.toString() == valueTwo.toString();
+    }
+  }
+
+  // Rely on javascript semantics for comparing two objects.
+  return valueOne == valueTwo;
+};
+
+
+/**
+ * @param {?} value
+ * @return {boolean}
+ */
+const $$isFunction = function(value) {
+  return typeof value === 'function';
+};
+
+/**
+ * Parses the given string into a float. Returns null if parse is unsuccessful.
+ * @param {?string} str The string to parse
+ * @return {?number} The string parsed as a float, or null if unsuccessful.
+ */
+const $$parseFloat = function(str) {
+  const parsed = parseFloat(str);
+  return isNaN(parsed) ? null : parsed;
+};
+
+/**
+ * Returns a random integer.
+ * @return {number} a random integer between 0 and num
+ */
+const $$randomInt = function(/** number */ num) {
+  return Math.floor(Math.random() * num);
+};
+
+/**
+ * Rounds the given value to the closest decimal point left (negative numbers)
+ * or right (positive numbers) of the decimal point
+ *
+ * TODO(b/112835292): This is probably not something that anyone should use,
+ * instead they should use an i18n friendly number formatting routine.
+ *
+ * @return {number} the rounded value
+ */
+const $$round = function(/** number */ num, /** number */ numDigitsAfterPt) {
+  const shift = Math.pow(10, numDigitsAfterPt);
+  return Math.round(num * shift) / shift;
+};
+
+/** @return {boolean} returns whether the needle was found in the haystack */
+const $$strContains = function(/** string */ haystack, /** string */ needle) {
+  return haystack.indexOf(needle) != -1;
+};
+
+/**
+ * Coerce the given value into a bool.
+ *
+ * For objects of type `SanitizedContent`, the contents are used to determine
+ * the boolean value; this is because the outer `SanitizedContent` object
+ * instance is always truthy (unless it's null).
+ *
+ * @param {*} arg The argument to coerce.
+ * @return {boolean}
+ */
+const $$coerceToBoolean = function(arg) {
+  if (arg instanceof SanitizedContent) {
+    return !!arg.getContent();
+  }
+  return !!arg;
+};
+
+
+/**
+ * Gets a consistent unique id for the given delegate template name. Two calls
+ * to this function will return the same id if and only if the input names are
+ * the same.
+ *
+ * <p> Important: This function must always be called with a string constant.
+ *
+ * <p> If Closure Compiler is not being used, then this is just this identity
+ * function. If Closure Compiler is being used, then each call to this function
+ * will be replaced with a short string constant, which will be consistent per
+ * input name.
+ *
+ * @param {string} delTemplateName The delegate template name for which to get a
+ *     consistent unique id.
+ * @return {string} A unique id that is consistent per input name.
+ *
+ * @idGenerator {consistent}
+ */
+const $$getDelTemplateId = function(delTemplateName) {
+  return delTemplateName;
+};
+
+
+/**
+ * Map from registered delegate template key to the priority of the
+ * implementation.
+ * @const {!Object<number>}
+ */
+const DELEGATE_REGISTRY_PRIORITIES_ = {};
+
+/**
+ * Map from registered delegate template key to the implementation function.
+ * @const {!Object<!Function>}
+ */
+const DELEGATE_REGISTRY_FUNCTIONS_ = {};
+
+
+/**
+ * Registers a delegate implementation. If the same delegate template key (id
+ * and variant) has been registered previously, then priority values are
+ * compared and only the higher priority implementation is stored (if
+ * priorities are equal, an error is thrown).
+ *
+ * @param {string} delTemplateId The delegate template id.
+ * @param {string} delTemplateVariant The delegate template variant (can be
+ *     empty string).
+ * @param {number} delPriority The implementation's priority value.
+ * @param {!Function} delFn The implementation function.
+ */
+const $$registerDelegateFn = function(
+    delTemplateId, delTemplateVariant, delPriority, delFn) {
+  const mapKey = 'key_' + delTemplateId + ':' + delTemplateVariant;
+  const currPriority = DELEGATE_REGISTRY_PRIORITIES_[mapKey];
+  if (currPriority === undefined || delPriority > currPriority) {
+    // Registering new or higher-priority function: replace registry entry.
+    DELEGATE_REGISTRY_PRIORITIES_[mapKey] = delPriority;
+    DELEGATE_REGISTRY_FUNCTIONS_[mapKey] = delFn;
+  } else if (delPriority == currPriority) {
+    // Registering same-priority function: error.
+    throw Error(
+        'Encountered two active delegates with the same priority ("' +
+        delTemplateId + ':' + delTemplateVariant + '").');
+  } else {
+    // Registering lower-priority function: do nothing.
+  }
+};
+
+
+/**
+ * Retrieves the (highest-priority) implementation that has been registered for
+ * a given delegate template key (id and variant). If no implementation has
+ * been registered for the key, then the fallback is the same id with empty
+ * variant. If the fallback is also not registered, and allowsEmptyDefault is
+ * true, then returns an implementation that is equivalent to an empty template
+ * (i.e. rendered output would be empty string).
+ *
+ * @param {string} delTemplateId The delegate template id.
+ * @param {string} delTemplateVariant The delegate template variant (can be
+ *     empty string).
+ * @param {boolean} allowsEmptyDefault Whether to default to the empty template
+ *     function if there's no active implementation.
+ * @return {!Function} The retrieved implementation function.
+ */
+const $$getDelegateFn = function(
+    delTemplateId, delTemplateVariant, allowsEmptyDefault) {
+  let delFn =
+      DELEGATE_REGISTRY_FUNCTIONS_['key_' + delTemplateId + ':' + delTemplateVariant];
+  if (!delFn && delTemplateVariant != '') {
+    // Fallback to empty variant.
+    delFn = DELEGATE_REGISTRY_FUNCTIONS_['key_' + delTemplateId + ':'];
+  }
+
+  if (delFn) {
+    return delFn;
+  } else if (allowsEmptyDefault) {
+    return $$EMPTY_TEMPLATE_FN_;
+  } else {
+    throw Error(
+        'Found no active impl for delegate call to "' + delTemplateId +
+        (delTemplateVariant ? ':' + delTemplateVariant : '') +
+        '" (and delcall does not set allowemptydefault="true").');
+  }
+};
+
+
+/**
+ * Private helper soy.$$getDelegateFn(). This is the empty template function
+ * that is returned whenever there's no delegate implementation found.
+ *
+ * Note: This is also used for idom.
+ *
+ * @return {string}
+ */
+const $$EMPTY_TEMPLATE_FN_ = function() {
+  return '';
+};
+
+
+// -----------------------------------------------------------------------------
+// Internal sanitized content wrappers.
+
+
+/**
+ * Creates a SanitizedContent factory for SanitizedContent types for internal
+ * Soy let and param blocks.
+ *
+ * This is a hack within Soy so that SanitizedContent objects created via let
+ * and param blocks will truth-test as false if they are empty string.
+ * Tricking the Javascript runtime to treat empty SanitizedContent as falsey is
+ * not possible, and changing the Soy compiler to wrap every boolean statement
+ * for just this purpose is impractical.  Instead, we just avoid wrapping empty
+ * string as SanitizedContent, since it's a no-op for empty strings anyways.
+ *
+ * @param {function(new: T)} ctor A constructor.
+ * @return {function(*, ?bidi.Dir=): (T|!$$EMPTY_STRING_)}
+ *     A factory that takes content and an optional content direction and
+ *     returns a new instance, or an empty string. If the content direction is
+ *     undefined, ctor.prototype.contentDir is used.
+ * @template T
+ */
+const $$makeSanitizedContentFactoryForInternalBlocks_ = function(ctor) {
+  /**
+   * @param {string} content
+   * @constructor
+   * @extends {SanitizedContent}
+   */
+  function InstantiableCtor(content) {
+    /** @override */
+    this.content = content;
+  }
+  InstantiableCtor.prototype = ctor.prototype;
+  /**
+   * Creates a ctor-type SanitizedContent instance.
+   *
+   * @param {?} content The content to put in the instance.
+   * @param {?bidi.Dir=} contentDir The content direction. If
+   *     undefined, ctor.prototype.contentDir is used.
+   * @return {!SanitizedContent|!$$EMPTY_STRING_} The new
+   *     instance, or an empty string. A new instance is actually of type T
+   *     above (ctor's type, a descendant of SanitizedContent), but there's no
+   *     way to express that here.
+   */
+  function sanitizedContentFactory(content, contentDir) {
+    const contentString = String(content);
+    if (!contentString) {
+      return $$EMPTY_STRING_.VALUE;
+    }
+    const result = new InstantiableCtor(contentString);
+    if (contentDir !== undefined) {
+      result.contentDir = contentDir;
+    }
+    return result;
+  }
+  return sanitizedContentFactory;
+};
+
+
+/**
+ * Creates a SanitizedContent factory for SanitizedContent types that should
+ * always have their default directionality for internal Soy let and param
+ * blocks.
+ *
+ * This is a hack within Soy so that SanitizedContent objects created via let
+ * and param blocks will truth-test as false if they are empty string.
+ * Tricking the Javascript runtime to treat empty SanitizedContent as falsey is
+ * not possible, and changing the Soy compiler to wrap every boolean statement
+ * for just this purpose is impractical.  Instead, we just avoid wrapping empty
+ * string as SanitizedContent, since it's a no-op for empty strings anyways.
+ *
+ * @param {function(new: T)} ctor A constructor.
+ * @return {function(*): (T|!$$EMPTY_STRING_)} A
+ *     factory that takes content and returns a
+ *     new instance (with default directionality, i.e.
+ *     ctor.prototype.contentDir), or an empty string.
+ * @template T
+ */
+const $$makeSanitizedContentFactoryWithDefaultDirOnlyForInternalBlocks_ =
+    function(ctor) {
+  /**
+   * @param {string} content
+   * @constructor
+   * @extends {SanitizedContent}
+   */
+  function InstantiableCtor(content) {
+    /** @override */
+    this.content = content;
+  }
+  InstantiableCtor.prototype = ctor.prototype;
+  /**
+   * Creates a ctor-type SanitizedContent instance.
+   *
+   * @param {?} content The content to put in the instance.
+   * @return {!SanitizedContent|!$$EMPTY_STRING_} The new
+   *     instance, or an empty string. A new instance is actually of type T
+   *     above (ctor's type, a descendant of SanitizedContent), but there's no
+   *     way to express that here.
+   */
+  function sanitizedContentFactory(content) {
+    const contentString = String(content);
+    if (!contentString) {
+      return $$EMPTY_STRING_.VALUE;
+    }
+    const result = new InstantiableCtor(contentString);
+    return result;
+  }
+  return sanitizedContentFactory;
+};
+
+
+/**
+ * Creates kind="html" block contents (internal use only).
+ *
+ * @param {?} content Text.
+ * @param {?bidi.Dir=} contentDir The content direction; null if
+ *     unknown and thus to be estimated when necessary. Default: null.
+ * @return {!SanitizedHtml|!$$EMPTY_STRING_} Wrapped
+ *     result.
+ */
+VERY_UNSAFE.$$ordainSanitizedHtmlForInternalBlocks =
+    $$makeSanitizedContentFactoryForInternalBlocks_(SanitizedHtml);
+
+
+/**
+ * Creates kind="js" block contents (internal use only).
+ *
+ * @param {?} content Text.
+ * @return {!SanitizedJs|!$$EMPTY_STRING_} Wrapped result.
+ */
+VERY_UNSAFE.$$ordainSanitizedJsForInternalBlocks =
+    $$makeSanitizedContentFactoryWithDefaultDirOnlyForInternalBlocks_(
+        SanitizedJs);
+
+
+/**
+ * Creates kind="trustedResourceUri" block contents (internal use only).
+ *
+ * @param {?} content Text.
+ * @return {!SanitizedTrustedResourceUri|!$$EMPTY_STRING_}
+ *     Wrapped result.
+ */
+VERY_UNSAFE.$$ordainSanitizedTrustedResourceUriForInternalBlocks =
+    $$makeSanitizedContentFactoryWithDefaultDirOnlyForInternalBlocks_(
+        SanitizedTrustedResourceUri);
+
+
+/**
+ * Creates kind="uri" block contents (internal use only).
+ *
+ * @param {?} content Text.
+ * @return {!SanitizedUri|!$$EMPTY_STRING_} Wrapped
+ *     result.
+ */
+VERY_UNSAFE.$$ordainSanitizedUriForInternalBlocks =
+    $$makeSanitizedContentFactoryWithDefaultDirOnlyForInternalBlocks_(
+        SanitizedUri);
+
+
+/**
+ * Creates kind="attributes" block contents (internal use only).
+ *
+ * @param {?} content Text.
+ * @return {!SanitizedHtmlAttribute|!$$EMPTY_STRING_}
+ *     Wrapped result.
+ */
+VERY_UNSAFE.$$ordainSanitizedAttributesForInternalBlocks =
+    $$makeSanitizedContentFactoryWithDefaultDirOnlyForInternalBlocks_(
+        SanitizedHtmlAttribute);
+
+
+/**
+ * Creates kind="css" block contents (internal use only).
+ *
+ * @param {?} content Text.
+ * @return {!SanitizedCss|!$$EMPTY_STRING_} Wrapped
+ *     result.
+ */
+VERY_UNSAFE.$$ordainSanitizedCssForInternalBlocks =
+    $$makeSanitizedContentFactoryWithDefaultDirOnlyForInternalBlocks_(
+        SanitizedCss);
+
+
+// -----------------------------------------------------------------------------
+// Escape/filter/normalize.
+
+
+/**
+ * Returns a SanitizedHtml object for a particular value. The content direction
+ * is preserved.
+ *
+ * This HTML-escapes the value unless it is already SanitizedHtml. Escapes
+ * double quote '"' in addition to '&', '<', and '>' so that a string can be
+ * included in an HTML tag attribute value within double quotes.
+ *
+ * @param {?} value The value to convert. If it is already a SanitizedHtml
+ *     object, it is left alone.
+ * @return {!SanitizedHtml} An escaped version of value.
+ */
+const $$escapeHtml = function(value) {
+  return createSanitizedHtml(value);
+};
+
+
+/**
+ * Strips unsafe tags to convert a string of untrusted HTML into HTML that
+ * is safe to embed. The content direction is preserved.
+ *
+ * @param {?} value The string-like value to be escaped. May not be a string,
+ *     but the value will be coerced to a string.
+ * @param {?Array<string>=} safeTags Additional tag names to whitelist.
+ * @return {!SanitizedHtml} A sanitized and normalized version of
+ *     value.
+ */
+const $$cleanHtml = function(value, safeTags) {
+  if (soyChecks.isHtml(value)) {
+    return /** @type {!SanitizedHtml} */ (value);
+  }
+  let tagWhitelist;
+  if (safeTags) {
+    tagWhitelist = Object.fromEntries(safeTags.map((tag) => [tag, true]));
+    Object.assign(tagWhitelist, $$SAFE_TAG_WHITELIST_);
+  } else {
+    tagWhitelist = $$SAFE_TAG_WHITELIST_;
+  }
+  return VERY_UNSAFE.ordainSanitizedHtml(
+      $$stripHtmlTags(value, tagWhitelist), getContentDir(value));
+};
+
+
+// LINT.IfChange(htmlToText)
+/**
+ * Converts HTML to plain text by removing tags, normalizing spaces and
+ * converting entities.
+ *
+ * The last two parameters are idom functions.
+ * @param {string|?SanitizedHtml|?SafeHtml|
+ *     ?IdomFunction|?Function|undefined} value
+ * @return {string}
+ */
+const $$htmlToText = function(value) {
+  if (value == null) {
+    return '';
+  }
+  let html;
+  if (value instanceof SafeHtml) {
+    html = SafeHtml.unwrap(value);
+  } else if (isContentKind_(value, SanitizedContentKind.HTML)) {
+    html = value.toString();
+  } else {
+    return asserts.assertString(value);
+  }
+  let text = '';
+  let start = 0;
+  // Tag name to stop removing contents, e.g. '/script'.
+  let removingUntil = '';
+  // Tag name to stop preserving whitespace, e.g. '/pre'.
+  let wsPreservingUntil = '';
+  const tagRe =
+      /<(?:!--.*?--|(?:!|(\/?[a-z][\w:-]*))(?:[^>'"]|"[^"]*"|'[^']*')*)>|$/gi;
+  for (let match; match = tagRe.exec(html);) {
+    const tag = match[1];
+    const offset = match.index;
+    if (!removingUntil) {
+      let chunk = html.substring(start, offset);
+      chunk = googString.unescapeEntities(chunk);
+      if (!wsPreservingUntil) {
+        // We are not inside <pre>, normalize spaces.
+        chunk = chunk.replace(/\s+/g, ' ');
+        if (!/\S$/.test(text)) {
+          // Strip leading space unless after non-whitespace.
+          chunk = chunk.replace(/^ /, '');
+        }
+      }
+      text += chunk;
+      if (/^(script|style|textarea|title)$/i.test(tag)) {
+        removingUntil = '/' + tag.toLowerCase();
+      } else if (/^br$/i.test(tag)) {
+        // <br> adds newline even after newline.
+        text += '\n';
+      } else if (BLOCK_TAGS_RE_.test(tag)) {
+        if (/[^\n]$/.test(text)) {
+          // Block tags don't add more consecutive newlines.
+          text += '\n';
+        }
+        if (/^pre$/i.test(tag)) {
+          wsPreservingUntil = '/' + tag.toLowerCase();
+        } else if (tag.toLowerCase() == wsPreservingUntil) {
+          wsPreservingUntil = '';
+        }
+      } else if (/^(td|th)$/i.test(tag)) {
+        // We add \t even after newline to support more leading <td>.
+        text += '\t';
+      }
+    } else if (removingUntil == tag.toLowerCase()) {
+      removingUntil = '';
+    }
+    if (!match[0]) {
+      break;
+    }
+    start = offset + match[0].length;
+  }
+  return text;
+};
+
+
+/** @const */
+const BLOCK_TAGS_RE_ =
+    /^\/?(address|blockquote|dd|div|dl|dt|h[1-6]|hr|li|ol|p|pre|table|tr|ul)$/i;
+// LINT.ThenChange(
+//     ../../../third_party/java_src/soy/java/com/google/template/soy/basicfunctions/HtmlToText.java,
+//     ../../../third_party/java_src/soy/python/runtime/sanitize.py:htmlToText)
+
+
+/**
+ * Escapes HTML, except preserves entities.
+ *
+ * Used mainly internally for escaping message strings in attribute and rcdata
+ * context, where we explicitly want to preserve any existing entities.
+ *
+ * @param {?} value Value to normalize.
+ * @return {string} A value safe to insert in HTML without any quotes or angle
+ *     brackets.
+ */
+const $$normalizeHtml = function(value) {
+  return $$normalizeHtmlHelper(value);
+};
+
+
+/**
+ * Escapes HTML special characters in a string so that it can be embedded in
+ * RCDATA.
+ * <p>
+ * Escapes HTML special characters so that the value will not prematurely end
+ * the body of a tag like `<textarea>` or `<title>`. RCDATA tags
+ * cannot contain other HTML entities, so it is not strictly necessary to escape
+ * HTML special characters except when part of that text looks like an HTML
+ * entity or like a close tag : `</textarea>`.
+ * <p>
+ * Will normalize known safe HTML to make sure that sanitized HTML (which could
+ * contain an innocuous `</textarea>` don't prematurely end an RCDATA
+ * element.
+ *
+ * @param {?} value The string-like value to be escaped. May not be a string,
+ *     but the value will be coerced to a string.
+ * @return {string} An escaped version of value.
+ */
+const $$escapeHtmlRcdata = function(value) {
+  if (soyChecks.isHtml(value)) {
+    return $$normalizeHtmlHelper(value.getContent());
+  }
+  return $$escapeHtmlHelper(value);
+};
+
+
+/**
+ * Matches any/only HTML5 void elements' start tags.
+ * See http://www.w3.org/TR/html-markup/syntax.html#syntax-elements
+ * @const {!RegExp}
+ */
+const $$HTML5_VOID_ELEMENTS_ = new RegExp(
+    '^<(?:area|base|br|col|command|embed|hr|img|input' +
+    '|keygen|link|meta|param|source|track|wbr)\\b');
+
+
+/**
+ * Removes HTML tags from a string of known safe HTML.
+ * If opt_tagWhitelist is not specified or is empty, then
+ * the result can be used as an attribute value.
+ *
+ * @param {?} value The HTML to be escaped. May not be a string, but the
+ *     value will be coerced to a string.
+ * @param {?Object<string, boolean>=} tagWhitelist Has an own property whose
+ *     name is a lower-case tag name and whose value is `1` for
+ *     each element that is allowed in the output.
+ * @return {string} A representation of value without disallowed tags,
+ *     HTML comments, or other non-text content.
+ */
+const $$stripHtmlTags = function(value, tagWhitelist) {
+  if (!tagWhitelist) {
+    // If we have no white-list, then use a fast track which elides all tags.
+    return String(value)
+        .replace($$HTML_TAG_REGEX_, '')
+        // This is just paranoia since callers should normalize the result
+        // anyway, but if they didn't, it would be necessary to ensure that
+        // after the first replace non-tag uses of < do not recombine into
+        // tags as in "<<foo>script>alert(1337)</<foo>script>".
+        .replace($$LT_REGEX_, '&lt;');
+  }
+
+  // Escapes '[' so that we can use [123] below to mark places where tags
+  // have been removed.
+  let html = String(value).replace(/\[/g, '&#91;');
+
+  // Consider all uses of '<' and replace whitelisted tags with markers like
+  // [1] which are indices into a list of approved tag names.
+  // Replace all other uses of < and > with entities.
+  const tags = [];
+  const attrs = [];
+  html = html.replace($$HTML_TAG_REGEX_, function(tok, tagName) {
+    if (tagName) {
+      tagName = tagName.toLowerCase();
+      if (tagWhitelist.hasOwnProperty(tagName) && tagWhitelist[tagName]) {
+        const isClose = tok.charAt(1) == '/';
+        const index = tags.length;
+        let start = '</';
+        let attributes = '';
+        if (!isClose) {
+          start = '<';
+          let match;
+          while ((match = $$HTML_ATTRIBUTE_REGEX_.exec(tok))) {
+            if (match[1] && match[1].toLowerCase() == 'dir') {
+              let dir = match[2];
+              if (dir) {
+                if (dir.charAt(0) == '\'' || dir.charAt(0) == '"') {
+                  dir = dir.substr(1, dir.length - 2);
+                }
+                dir = dir.toLowerCase();
+                if (dir == 'ltr' || dir == 'rtl' || dir == 'auto') {
+                  attributes = ' dir="' + dir + '"';
+                }
+              }
+              break;
+            }
+          }
+          $$HTML_ATTRIBUTE_REGEX_.lastIndex = 0;
+        }
+        tags[index] = start + tagName + '>';
+        attrs[index] = attributes;
+        return '[' + index + ']';
+      }
+    }
+    return '';
+  });
+
+  // Escape HTML special characters. Now there are no '<' in html that could
+  // start a tag.
+  html = $$normalizeHtmlHelper(html);
+
+  const finalCloseTags = $$balanceTags_(tags);
+
+  // Now html contains no tags or less-than characters that could become
+  // part of a tag via a replacement operation and tags only contains
+  // approved tags.
+  // Reinsert the white-listed tags.
+  html = html.replace(/\[(\d+)\]/g, function(_, index) {
+    if (attrs[index] && tags[index]) {
+      return tags[index].substr(0, tags[index].length - 1) + attrs[index] + '>';
+    }
+    return tags[index];
+  });
+
+  // Close any still open tags.
+  // This prevents unclosed formatting elements like <ol> and <table> from
+  // breaking the layout of containing HTML.
+  return html + finalCloseTags;
+};
+
+
+/**
+ * Make sure that tag boundaries are not broken by Safe CSS when embedded in a
+ * `<style>` element.
+ * @param {string} css
+ * @return {string}
+ */
+const $$embedCssIntoHtml_ = function(css) {
+  // Port of a method of the same name in
+  // com.google.template.soy.shared.restricted.Sanitizers
+  return css.replace(/<\//g, '<\\/').replace(/\]\]>/g, ']]\\>');
+};
+
+
+/**
+ * Throw out any close tags that don't correspond to start tags.
+ * If `<table>` is used for formatting, embedded HTML shouldn't be able
+ * to use a mismatched `</table>` to break page layout.
+ *
+ * @param {!Array<string>} tags Array of open/close tags (e.g. '<p>', '</p>')
+ *    that will be modified in place to be either an open tag, one or more close
+ *    tags concatenated, or the empty string.
+ * @return {string} zero or more closed tags that close all elements that are
+ *    opened in tags but not closed.
+ * @package
+ */
+const $$balanceTags_ = function(tags) {
+  const open = [];
+  for (let i = 0, n = tags.length; i < n; ++i) {
+    const tag = tags[i];
+    if (tag.charAt(1) == '/') {
+      const openTagIndex = open.lastIndexOf(tag);
+      if (openTagIndex < 0) {
+        tags[i] = '';  // Drop close tag with no corresponding open tag.
+      } else {
+        tags[i] = open.slice(openTagIndex).reverse().join('');
+        open.length = openTagIndex;
+      }
+    } else if (
+        tag == '<li>' && open.lastIndexOf('</ol>') < 0 &&
+        open.lastIndexOf('</ul>') < 0) {
+      // Drop <li> if it isn't nested in a parent <ol> or <ul>.
+      tags[i] = '';
+    } else if (!$$HTML5_VOID_ELEMENTS_.test(tag)) {
+      open.push('</' + tag.substring(1));
+    }
+  }
+  return open.reverse().join('');
+};
+
+
+/**
+ * Escapes HTML special characters in an HTML attribute value.
+ *
+ * @param {?} value The HTML to be escaped. May not be a string, but the
+ *     value will be coerced to a string.
+ * @return {string} An escaped version of value.
+ */
+const $$escapeHtmlAttribute = function(value) {
+  // NOTE: We don't accept ATTRIBUTES here because ATTRIBUTES is actually not
+  // the attribute value context, but instead k/v pairs.
+  if (soyChecks.isHtml(value)) {
+    // NOTE: After removing tags, we also escape quotes ("normalize") so that
+    // the HTML can be embedded in attribute context.
+    return $$normalizeHtmlHelper($$stripHtmlTags(value.getContent()));
+  }
+  return $$escapeHtmlHelper(value);
+};
+
+
+/**
+ * Escapes HTML special characters in an HTML attribute value containing HTML
+ * code, such as <iframe srcdoc>.
+ *
+ * @param {?} value The HTML to be escaped. May not be a string, but the
+ *     value will be coerced to a string.
+ * @return {string} An escaped version of value.
+ */
+const $$escapeHtmlHtmlAttribute = function(value) {
+  return String($$escapeHtml(value));
+};
+
+
+/**
+ * Escapes HTML special characters in a string including space and other
+ * characters that can end an unquoted HTML attribute value.
+ *
+ * @param {?} value The HTML to be escaped. May not be a string, but the
+ *     value will be coerced to a string.
+ * @return {string} An escaped version of value.
+ */
+const $$escapeHtmlAttributeNospace = function(value) {
+  if (soyChecks.isHtml(value)) {
+    return $$normalizeHtmlNospaceHelper($$stripHtmlTags(value.getContent()));
+  }
+  return $$escapeHtmlNospaceHelper(value);
+};
+
+/**
+ * Filters out strings that cannot be valid content in a <script> tag with
+ * non-JS content.
+ *
+ * This disallows `<script`, `</script`, and `<!--` as substrings as well as
+ * prefixes of those strings that occur at the end of the value.  This combined
+ * with a similar rule enforced in the parser ensures that these substrings
+ * cannot occur.
+ *
+ * @param {?} value The value to escape. May not be a string, but the value
+ *     will be coerced to a string.
+ * @return {string} The value coerced to a string or `"zSoyz"` if the input is
+ *    invalid.
+ */
+const $$filterHtmlScriptPhrasingData = function(value) {
+  const valueAsString = String(value);
+  /**
+   * Returns whether there is a case insensitive match for needle within
+   * haystack starting at offset, or if haystack ends with a non empty prefix of
+   * needle.
+   * @return {boolean}
+   */
+  const matchPrefixIgnoreCasePastEnd =
+      (/** string */ needle, /** string */ haystack, /** number */ offset) => {
+        asserts.assert(
+            offset >= 0 && offset < haystack.length,
+            'offset must point at a valid character of haystack');
+        asserts.assert(
+            needle === $$strToAsciiLowerCase(needle),
+            'needle must be lowercase');
+        const charsLeft = haystack.length - offset;
+        const charsToScan = Math.min(charsLeft, needle.length);
+        for (let i = 0; i < charsToScan; i++) {
+          if (needle[i] !== $$charToAsciiLowerCase_(haystack[offset + i])) {
+            return false;
+          }
+        }
+        return true;
+      };
+  let start = 0;
+  let indexOfLt;
+  while ((indexOfLt = valueAsString.indexOf('<', start)) != -1) {
+    if (matchPrefixIgnoreCasePastEnd('<script', valueAsString, indexOfLt) ||
+        matchPrefixIgnoreCasePastEnd('</script', valueAsString, indexOfLt) ||
+        matchPrefixIgnoreCasePastEnd('<!--', valueAsString, indexOfLt)) {
+      asserts.fail(
+          'Bad value `%s` for |filterHtmlScriptPhrasingData', [valueAsString]);
+      return 'zSoyz';
+    }
+    start = indexOfLt + 1;
+  }
+  return valueAsString;
+};
+
+/**
+ * Filters out strings that cannot be a substring of a valid HTML attribute.
+ *
+ * Note the input is expected to be key=value pairs.
+ *
+ * @param {?} value The value to escape. May not be a string, but the value
+ *     will be coerced to a string.
+ * @return {string} A valid HTML attribute name part or name/value pair.
+ *     `"zSoyz"` if the input is invalid.
+ */
+const $$filterHtmlAttributes = function(value) {
+  // NOTE: Explicitly no support for SanitizedContentKind.HTML, since that is
+  // meaningless in this context, which is generally *between* html attributes.
+  if (soyChecks.isAttribute(value)) {
+    // Add a space at the end to ensure this won't get merged into following
+    // attributes, unless the interpretation is unambiguous (ending with quotes
+    // or a space).
+    return value.getContent().replace(/([^"'\s])$/, '$1 ');
+  }
+  // TODO: Dynamically inserting attributes that aren't marked as trusted is
+  // probably unnecessary.  Any filtering done here will either be inadequate
+  // for security or not flexible enough.  Having clients use kind="attributes"
+  // in parameters seems like a wiser idea.
+  return $$filterHtmlAttributesHelper(value);
+};
+
+
+/**
+ * Allows only decimal and floating-point numbers.
+ * @param {?} value
+ * @return {number} The number.
+ */
+const $$filterNumber = function(value) {
+  return /^\d*\.?\d+$/.test(value) ? value : 'zSoyz';
+};
+
+
+/**
+ * Filters out strings that cannot be a substring of a valid HTML element name.
+ *
+ * @param {?} value The value to escape. May not be a string, but the value
+ *     will be coerced to a string.
+ * @return {string} A valid HTML element name part.
+ *     `"zSoyz"` if the input is invalid.
+ */
+const $$filterHtmlElementName = function(value) {
+  // NOTE: We don't accept any SanitizedContent here. HTML indicates valid
+  // PCDATA, not tag names. A sloppy developer shouldn't be able to cause an
+  // exploit:
+  // ... {let userInput}script src=http://evil.com/evil.js{/let} ...
+  // ... {param tagName kind="html"}{$userInput}{/param} ...
+  // ... <{$tagName}>Hello World</{$tagName}>
+  return $$filterHtmlElementNameHelper(value);
+};
+
+
+/**
+ * Escapes characters in the value to make it valid content for a JS string
+ * literal.
+ *
+ * @param {?} value The value to escape. May not be a string, but the value
+ *     will be coerced to a string.
+ * @return {string} An escaped version of value.
+ */
+const $$escapeJsString = function(value) {
+  return $$escapeJsStringHelper(value);
+};
+
+
+/**
+ * Encodes a value as a JavaScript literal.
+ *
+ * @param {?} value The value to escape. May not be a string, but the value
+ *     will be coerced to a string.
+ * @return {string} A JavaScript code representation of the input.
+ */
+const $$escapeJsValue = function(value) {
+  // We surround values with spaces so that they can't be interpolated into
+  // identifiers by accident.
+  // We could use parentheses but those might be interpreted as a function call.
+  if (value == null) {  // Intentionally matches undefined.
+    // Java returns null from maps where there is no corresponding key while
+    // JS returns undefined.
+    // We always output null for compatibility with Java which does not have a
+    // distinct undefined value.
+    return ' null ';
+  }
+  if (soyChecks.isJS(value)) {
+    return value.getContent();
+  }
+  if (value instanceof SafeScript) {
+    return SafeScript.unwrap(value);
+  }
+  switch (typeof value) {
+    case 'boolean':
+    case 'number':
+      return ' ' + value + ' ';
+    default:
+      return '\'' + $$escapeJsStringHelper(String(value)) + '\'';
+  }
+};
+
+
+/**
+ * Escapes characters in the string to make it valid content for a JS regular
+ * expression literal.
+ *
+ * @param {?} value The value to escape. May not be a string, but the value
+ *     will be coerced to a string.
+ * @return {string} An escaped version of value.
+ */
+const $$escapeJsRegex = function(value) {
+  return $$escapeJsRegexHelper(value);
+};
+
+
+/**
+ * Matches all URI mark characters that conflict with HTML attribute delimiters
+ * or that cannot appear in a CSS uri.
+ * From <a href="http://www.w3.org/TR/CSS2/grammar.html">G.2: CSS grammar</a>
+ * <pre>
+ *     url        ([!#$%&*-~]|{nonascii}|{escape})*
+ * </pre>
+ *
+ * @const {!RegExp}
+ */
+const $$problematicUriMarks_ = /['()]/g;
+
+/**
+ * @param {string} ch A single character in {@link $$problematicUriMarks_}.
+ * @return {string}
+ */
+const $$pctEncode_ = function(ch) {
+  return '%' + ch.charCodeAt(0).toString(16);
+};
+
+/**
+ * Escapes a string so that it can be safely included in a URI.
+ *
+ * @param {?} value The value to escape. May not be a string, but the value
+ *     will be coerced to a string.
+ * @return {string} An escaped version of value.
+ */
+const $$escapeUri = function(value) {
+  // NOTE: We don't check for SanitizedUri or SafeUri, because just because
+  // something is already a valid complete URL doesn't mean we don't want to
+  // encode it as a component.  For example, it would be bad if
+  // ?redirect={$url} didn't escape ampersands, because in that template, the
+  // continue URL should be treated as a single unit.
+
+  // Apostophes and parentheses are not matched by encodeURIComponent.
+  // They are technically special in URIs, but only appear in the obsolete mark
+  // production in Appendix D.2 of RFC 3986, so can be encoded without changing
+  // semantics.
+  const encoded = $$escapeUriHelper(value);
+  $$problematicUriMarks_.lastIndex = 0;
+  if ($$problematicUriMarks_.test(encoded)) {
+    return encoded.replace($$problematicUriMarks_, $$pctEncode_);
+  }
+  return encoded;
+};
+
+
+/**
+ * Removes rough edges from a URI by escaping any raw HTML/JS string delimiters.
+ *
+ * @param {?} value The value to escape. May not be a string, but the value
+ *     will be coerced to a string.
+ * @return {string} An escaped version of value.
+ */
+const $$normalizeUri = function(value) {
+  return $$normalizeUriHelper(value);
+};
+
+
+/**
+ * Vets a URI's protocol and removes rough edges from a URI by escaping
+ * any raw HTML/JS string delimiters.
+ *
+ * @param {?} value The value to escape. May not be a string, but the value
+ *     will be coerced to a string.
+ * @return {string} An escaped version of value.
+ */
+const $$filterNormalizeUri = function(value) {
+  if (soyChecks.isURI(value)) {
+    return $$normalizeUri(value);
+  }
+  if (soyChecks.isTrustedResourceURI(value)) {
+    return $$normalizeUri(value);
+  }
+  if (value instanceof SafeUrl) {
+    return $$normalizeUri(SafeUrl.unwrap(value));
+  }
+  if (value instanceof TrustedResourceUrl) {
+    return $$normalizeUri(TrustedResourceUrl.unwrap(value));
+  }
+  return $$filterNormalizeUriHelper(value);
+};
+
+
+/**
+ * Vets a URI for usage as an image source.
+ *
+ * @param {?} value The value to filter. Might not be a string, but the value
+ *     will be coerced to a string.
+ * @return {string} An escaped version of value.
+ */
+const $$filterNormalizeMediaUri = function(value) {
+  // Image URIs are filtered strictly more loosely than other types of URIs.
+  // TODO(shwetakarwa): Add tests for this in soyutils_test_helper while adding
+  // tests for filterTrustedResourceUri.
+  if (soyChecks.isURI(value)) {
+    return $$normalizeUri(value);
+  }
+  if (soyChecks.isTrustedResourceURI(value)) {
+    return $$normalizeUri(value);
+  }
+  if (value instanceof SafeUrl) {
+    return $$normalizeUri(SafeUrl.unwrap(value));
+  }
+  if (value instanceof TrustedResourceUrl) {
+    return $$normalizeUri(TrustedResourceUrl.unwrap(value));
+  }
+  return $$filterNormalizeMediaUriHelper(value);
+};
+
+
+/**
+ * Like filterNormalizeUri but also escapes ';'.
+ * @param {?} value The value to filter.
+ * @return {string} An escaped version of value.
+ */
+const $$filterNormalizeRefreshUri = function(value) {
+  return $$filterNormalizeUri(value).replace(/;/g, '%3B');
+};
+
+
+/**
+ * Vets a URI for usage as a resource. Makes sure the input value is a compile
+ * time constant or a TrustedResource not in attacker's control.
+ *
+ * @param {?} value The value to filter.
+ * @return {string} The value content.
+ */
+const $$filterTrustedResourceUri = function(value) {
+  if (soyChecks.isTrustedResourceURI(value)) {
+    return value.getContent();
+  }
+  if (value instanceof TrustedResourceUrl) {
+    return TrustedResourceUrl.unwrap(value);
+  }
+  asserts.fail('Bad value `%s` for |filterTrustedResourceUri', [String(value)]);
+  return 'about:invalid#zSoyz';
+};
+
+
+/**
+ * Allows only data-protocol image URI's.
+ *
+ * @param {?} value The value to process. May not be a string, but the value
+ *     will be coerced to a string.
+ * @return {!SanitizedUri} An escaped version of value.
+ */
+const $$filterImageDataUri = function(value) {
+  // NOTE: Even if it's a SanitizedUri, we will still filter it.
+  return VERY_UNSAFE.ordainSanitizedUri($$filterImageDataUriHelper(value));
+};
+
+
+/**
+ * Allows only sip URIs.
+ *
+ * @param {?} value The value to process. May not be a string, but the value
+ *     will be coerced to a string.
+ * @return {!SanitizedUri} An escaped version of value.
+ */
+const $$filterSipUri = function(value) {
+  // NOTE: Even if it's a SanitizedUri, we will still filter it.
+  return VERY_UNSAFE.ordainSanitizedUri($$filterSipUriHelper(value));
+};
+
+/**
+ * Function that converts sms uri string to a sanitized uri
+ *
+ * @param {string} value sms uri
+ * @return {!SanitizedUri} An sanitized version of the sms uri.
+ */
+const $$strSmsUriToUri = function(value) {
+  // NOTE: Even if it's a SanitizedUri, we will still filter it.
+  return VERY_UNSAFE.ordainSanitizedUri($$filterSmsUriHelper(value));
+};
+
+
+/**
+ * Allows only tel URIs.
+ *
+ * @param {?} value The value to process. May not be a string, but the value
+ *     will be coerced to a string.
+ * @return {!SanitizedUri} An escaped version of value.
+ */
+const $$filterTelUri = function(value) {
+  // NOTE: Even if it's a SanitizedUri, we will still filter it.
+  return VERY_UNSAFE.ordainSanitizedUri($$filterTelUriHelper(value));
+};
+
+
+/**
+ * Escapes a string so it can safely be included inside a quoted CSS string.
+ *
+ * @param {?} value The value to escape. May not be a string, but the value
+ *     will be coerced to a string.
+ * @return {string} An escaped version of value.
+ */
+const $$escapeCssString = function(value) {
+  return $$escapeCssStringHelper(value);
+};
+
+
+/**
+ * Encodes a value as a CSS identifier part, keyword, or quantity.
+ *
+ * @param {?} value The value to escape. May not be a string, but the value
+ *     will be coerced to a string.
+ * @return {string} A safe CSS identifier part, keyword, or quanitity.
+ */
+const $$filterCssValue = function(value) {
+  if (soyChecks.isCss(value)) {
+    return $$embedCssIntoHtml_(value.getContent());
+  }
+  // Uses == to intentionally match null and undefined for Java compatibility.
+  if (value == null) {
+    return '';
+  }
+  if (value instanceof SafeStyle) {
+    return $$embedCssIntoHtml_(SafeStyle.unwrap(value));
+  }
+  // Note: SoyToJsSrcCompiler uses $$filterCssValue both for the contents of
+  // <style> (list of rules) and for the contents of style="" (one set of
+  // declarations). We support SafeStyleSheet here to be used inside <style> but
+  // it also wrongly allows it inside style="". We should instead change
+  // SoyToJsSrcCompiler to use a different function inside <style>.
+  if (value instanceof SafeStyleSheet) {
+    return $$embedCssIntoHtml_(SafeStyleSheet.unwrap(value));
+  }
+  return $$filterCssValueHelper(value);
+};
+
+/**
+ * Encodes a value as a CSP nonce value.
+ *
+ * @param {?} value The value to escape. Does not have to be a string, but the
+ *     value will be coerced to a string.
+ * @return {string} A safe CSP nonce value.
+ */
+const $$filterCspNonceValue = function(value) {
+  return $$filterCspNonceValueHelper(value);
+};
+
+
+// -----------------------------------------------------------------------------
+// Basic directives/functions.
+
+
+/**
+ * Converts \r\n, \r, and \n to <br>s
+ * @param {?} value The string in which to convert newlines.
+ * @return {string|!SanitizedHtml} A copy of `value` with
+ *     converted newlines. If `value` is SanitizedHtml, the return value
+ *     is also SanitizedHtml, of the same known directionality.
+ */
+const $$changeNewlineToBr = function(value) {
+  const result = googString.newLineToBr(String(value), false);
+  if (isContentKind_(value, SanitizedContentKind.HTML)) {
+    return VERY_UNSAFE.ordainSanitizedHtml(result, getContentDir(value));
+  }
+  return result;
+};
+
+
+/**
+ * Inserts word breaks ('wbr' tags) into a HTML string at a given interval. The
+ * counter is reset if a space is encountered. Word breaks aren't inserted into
+ * HTML tags or entities. Entities count towards the character count; HTML tags
+ * do not.
+ *
+ * @param {?} value The HTML string to insert word breaks into. Can be other
+ *     types, but the value will be coerced to a string.
+ * @param {number} maxCharsBetweenWordBreaks Maximum number of non-space
+ *     characters to allow before adding a word break.
+ * @return {string|!SanitizedHtml} The string including word
+ *     breaks. If `value` is SanitizedHtml, the return value
+ *     is also SanitizedHtml, of the same known directionality.
+ * @deprecated The |insertWordBreaks directive is deprecated.
+ *     Prefer wrapping with CSS white-space: break-word.
+ */
+const $$insertWordBreaks = function(value, maxCharsBetweenWordBreaks) {
+  const result =
+      googFormat.insertWordBreaks(String(value), maxCharsBetweenWordBreaks);
+  if (isContentKind_(value, SanitizedContentKind.HTML)) {
+    return VERY_UNSAFE.ordainSanitizedHtml(result, getContentDir(value));
+  }
+  return result;
+};
+
+/**
+ * Conditionally concatenates two attribute values with a delimiter if they are
+ * both non-empty.
+ *
+ * @param {string} l
+ * @param {string} r
+ * @param {string} delimiter
+ * @return {string}
+ */
+const $$concatAttributeValues = function(l, r, delimiter) {
+  if (!l) {
+    return r;
+  }
+  if (!r) {
+    return l;
+  }
+  return l + delimiter + r;
+};
+
+
+/**
+ * Conditionally concatenates two attribute values with a delimiter if they are
+ * both non-empty.
+ *
+ * @param {string} l
+ * @param {string} r
+ * @return {!SanitizedCss|!$$EMPTY_STRING_}
+ */
+const $$concatCssValues = function(l, r) {
+  if (l !== $$EMPTY_STRING_.VALUE) {
+    asserts.assertInstanceof(l, SanitizedCss);
+  }
+  if (r !== $$EMPTY_STRING_.VALUE) {
+    asserts.assertInstanceof(r, SanitizedCss);
+  }
+  return VERY_UNSAFE.$$ordainSanitizedCssForInternalBlocks(
+      $$concatAttributeValues(l, r, ';'));
+};
+
+
+/**
+ * Truncates a string to a given max length (if it's currently longer),
+ * optionally adding ellipsis at the end.
+ *
+ * @param {?} str The string to truncate. Can be other types, but the value will
+ *     be coerced to a string.
+ * @param {number} maxLen The maximum length of the string after truncation
+ *     (including ellipsis, if applicable).
+ * @param {boolean} doAddEllipsis Whether to add ellipsis if the string needs
+ *     truncation.
+ * @return {string} The string after truncation.
+ */
+const $$truncate = function(str, maxLen, doAddEllipsis) {
+  str = String(str);
+  if (str.length <= maxLen) {
+    return str;  // no need to truncate
+  }
+
+  // If doAddEllipsis, either reduce maxLen to compensate, or else if maxLen is
+  // too small, just turn off doAddEllipsis.
+  if (doAddEllipsis) {
+    if (maxLen > 3) {
+      maxLen -= 3;
+    } else {
+      doAddEllipsis = false;
+    }
+  }
+
+  // Make sure truncating at maxLen doesn't cut up a unicode surrogate pair.
+  if ($$isHighSurrogate_(str.charCodeAt(maxLen - 1)) &&
+      $$isLowSurrogate_(str.charCodeAt(maxLen))) {
+    maxLen -= 1;
+  }
+
+  // Truncate.
+  str = str.substring(0, maxLen);
+
+  // Add ellipsis.
+  if (doAddEllipsis) {
+    str += '...';
+  }
+
+  return str;
+};
+
+/**
+ * Private helper for $$truncate() to check whether a char is a high surrogate.
+ * @param {number} cc The codepoint to check.
+ * @return {boolean} Whether the given codepoint is a unicode high surrogate.
+ */
+const $$isHighSurrogate_ = function(cc) {
+  return 0xD800 <= cc && cc <= 0xDBFF;
+};
+
+/**
+ * Private helper for $$truncate() to check whether a char is a low surrogate.
+ * @param {number} cc The codepoint to check.
+ * @return {boolean} Whether the given codepoint is a unicode low surrogate.
+ */
+const $$isLowSurrogate_ = function(cc) {
+  return 0xDC00 <= cc && cc <= 0xDFFF;
+};
+
+
+/**
+ * Checks if the list contains the given element.
+ * @param {!Array<?>} list
+ * @param {*} val
+ * @return {boolean}
+ */
+const $$listContains = function(list, val) {
+  return $$listIndexOf(list, val) >= 0;
+};
+
+
+/**
+ * Returns the index of val in list or -1
+ * @param {!Array<?>} list
+ * @param {*} val
+ * @return {number}
+ */
+const $$listIndexOf = function(list, val) {
+  return googArray.findIndex(list, (el) => $$equals(val, el));
+};
+
+
+/**
+ * Returns an array slice of list.
+ * @param {!Array<T>} list
+ * @param {number} from
+ * @param {?number} to
+ * @return {!Array<T>}
+ * @template T
+ */
+const $$listSlice = function(list, from, to) {
+  return to == null ? list.slice(from) : list.slice(from, to);
+};
+
+/**
+ * A helper function to provide tight type inference on array literals.
+ * @param {...T} args
+ * @return {!Array<T>}
+ * @template T
+ */
+const $$makeArray = function(...args) {
+  return args;
+};
+
+/**
+ * A helper for list comprehension.
+ * @param {!IArrayLike<T>} list
+ * @param {function(T,number):boolean} filter
+ * @param {function(T,number):V} map
+ * @return {!IArrayLike<V>}
+ * @template T, V
+ */
+const $$filterAndMap = function(list, filter, map) {
+  let array = [];
+  for (let i = 0; i < list.length; i++) {
+    if (filter(list[i], i)) {
+      array.push(map(list[i], i));
+    }
+  }
+  return array;
+};
+
+/**
+ * Sorts a list of numbers in numerical order.
+ * @param {!IArrayLike<T>} list
+ * @return {!Array<T>}
+ * @template T extends number
+ */
+const $$numberListSort = function(list) {
+  return googArray.toArray(list).sort((a, b) => a - b);
+};
+
+
+/**
+ * Sorts a list of strings in lexicographic order.
+ * @param {!IArrayLike<string>} list
+ * @return {!Array<string>}
+ */
+const $$stringListSort = function(list) {
+  return googArray.toArray(list).sort();
+};
+
+
+/**
+ * Converts the ASCII characters in the given string to lower case.
+ * @param {string} s
+ * @return {string}
+ */
+const $$strToAsciiLowerCase = function(s) {
+  return googArray.map(s, $$charToAsciiLowerCase_).join('');
+};
+
+/**
+ * Lowercases a single character string.
+ * @return {string}
+ */
+const $$charToAsciiLowerCase_ = (/** string */ c) => {
+  asserts.assert(c.length === 1);
+  return 'A' <= c && c <= 'Z' ? c.toLowerCase() : c;
+};
+
+/**
+ * Uppercases a single character string.
+ * @return {string}
+ */
+const $$charToAsciiUpperCase_ = (/** string */ c) => {
+  asserts.assert(c.length === 1);
+  return 'a' <= c && c <= 'z' ? c.toUpperCase() : c;
+};
+
+/**
+ * Converts the ASCII characters in the given string to upper case.
+ * @param {string} s
+ * @return {string}
+ */
+const $$strToAsciiUpperCase = function(s) {
+  return googArray.map(s, $$charToAsciiUpperCase_).join('');
+};
+
+
+/**
+ * Trims a string.
+ * @param {string} s
+ * @return {string}
+ */
+const $$strTrim = function(s) {
+  return s.trim();
+};
+
+/**
+ * Returns whether s starts with val.
+ * @param {string} s
+ * @param {string} val
+ * @return {boolean}
+ */
+const $$strStartsWith = function(s, val) {
+  return s.length >= val.length && s.substring(0, val.length) === val;
+};
+
+
+/**
+ * Returns whether s ends with val.
+ * @param {string} s
+ * @param {string} val
+ * @return {boolean}
+ */
+const $$strEndsWith = function(s, val) {
+  return s.length >= val.length && s.substring(s.length - val.length) === val;
+};
+
+
+/**
+ * Splits a string.
+ * @param {string} s
+ * @param {string} sep
+ * @return {!Array<string>}
+ */
+const $$strSplit = function(s, sep) {
+  return s.split(sep);
+};
+
+
+/**
+ * Replaces all occurrences in s of match with token.
+ * @param {string} s
+ * @param {string} match
+ * @param {string} token
+ * @return {string}
+ */
+const $$strReplaceAll = function(s, match, token) {
+  return googString.replaceAll(s, match, token);
+};
+
+
+// -----------------------------------------------------------------------------
+// Bidi directives/functions.
+
+
+/**
+ * Cache of bidi formatter by context directionality, so we don't keep on
+ * creating new objects.
+ * @type {!Object<!BidiFormatter>}
+ */
+const bidiFormatterCache_ = {};
+
+
+/**
+ * Returns cached bidi formatter for bidiGlobalDir, or creates a new one.
+ * @param {number} bidiGlobalDir The global directionality context: 1 if ltr, -1
+ *     if rtl, 0 if unknown.
+ * @return {!BidiFormatter} A formatter for bidiGlobalDir.
+ */
+const getBidiFormatterInstance_ = function(bidiGlobalDir) {
+  return bidiFormatterCache_[bidiGlobalDir] ||
+      (bidiFormatterCache_[bidiGlobalDir] = new BidiFormatter(bidiGlobalDir));
+};
+
+
+/**
+ * Estimate the overall directionality of text. If opt_isHtml, makes sure to
+ * ignore the LTR nature of the mark-up and escapes in text, making the logic
+ * suitable for HTML and HTML-escaped text.
+ * If text has a bidi.Dir-valued contentDir, this is used instead of
+ * estimating the directionality.
+ *
+ * @param {?} text The content whose directionality is to be estimated.
+ * @param {boolean=} isHtml Whether text is HTML/HTML-escaped.
+ *     Default: false.
+ * @return {number} 1 if text is LTR, -1 if it is RTL, and 0 if it is neutral.
+ */
+const $$bidiTextDir = function(text, isHtml) {
+  const contentDir = getContentDir(text);
+  if (contentDir != null) {
+    return contentDir;
+  }
+  isHtml = isHtml || isContentKind_(text, SanitizedContentKind.HTML);
+  return bidi.estimateDirection(text + '', isHtml);
+};
+
+
+/**
+ * Returns 'dir="ltr"' or 'dir="rtl"', depending on text's estimated
+ * directionality, if it is not the same as bidiGlobalDir.
+ * Otherwise, returns the empty string.
+ * If opt_isHtml, makes sure to ignore the LTR nature of the mark-up and escapes
+ * in text, making the logic suitable for HTML and HTML-escaped text.
+ * If text has a bidi.Dir-valued contentDir, this is used instead of
+ * estimating the directionality.
+ *
+ * @param {number} bidiGlobalDir The global directionality context: 1 if ltr, -1
+ *     if rtl, 0 if unknown.
+ * @param {?} text The content whose directionality is to be estimated.
+ * @param {boolean=} isHtml Whether text is HTML/HTML-escaped.
+ *     Default: false.
+ * @return {!SanitizedHtmlAttribute} 'dir="rtl"' for RTL text in
+ *     non-RTL context; 'dir="ltr"' for LTR text in non-LTR context;
+ *     else, the empty string.
+ */
+const $$bidiDirAttr = function(bidiGlobalDir, text, isHtml) {
+  const formatter = getBidiFormatterInstance_(bidiGlobalDir);
+  let contentDir = getContentDir(text);
+  if (contentDir == null) {
+    isHtml = isHtml || isContentKind_(text, SanitizedContentKind.HTML);
+    contentDir = bidi.estimateDirection(text + '', isHtml);
+  }
+  return VERY_UNSAFE.ordainSanitizedHtmlAttribute(
+      formatter.knownDirAttr(contentDir));
+};
+
+/**
+ * Returns the name of the start edge ('left' or 'right') for the current global
+ * bidi directionality.
+ *
+ * @return {string}
+ */
+const $$bidiStartEdge = function(/** number */ dir) {
+  return dir < 0 ? 'right' : 'left';
+};
+
+/**
+ * Returns the name of the end edge ('left' or 'right') for the current global
+ * bidi directionality.
+ *
+ * @return {string}
+ */
+const $$bidiEndEdge = function(/** number */ dir) {
+  return dir < 0 ? 'left' : 'right';
+};
+
+/**
+ * Returns a bidi mark character (LRM or RLM) for the given bidi directionality.
+ *
+ * @return {string}
+ */
+const $$bidiMark = function(/** number */ dir) {
+  return dir < 0 ? '\u200F' /*RLM*/ : '\u200E' /*LRM*/;
+};
+
+
+/**
+ * Returns a Unicode BiDi mark matching bidiGlobalDir (LRM or RLM) if the
+ * directionality or the exit directionality of text are opposite to
+ * bidiGlobalDir. Otherwise returns the empty string.
+ * If opt_isHtml, makes sure to ignore the LTR nature of the mark-up and escapes
+ * in text, making the logic suitable for HTML and HTML-escaped text.
+ * If text has a bidi.Dir-valued contentDir, this is used instead of
+ * estimating the directionality.
+ *
+ * @param {number} bidiGlobalDir The global directionality context: 1 if ltr, -1
+ *     if rtl, 0 if unknown.
+ * @param {?} text The content whose directionality is to be estimated.
+ * @param {boolean=} isHtml Whether text is HTML/HTML-escaped.
+ *     Default: false.
+ * @return {string} A Unicode bidi mark matching bidiGlobalDir, or the empty
+ *     string when text's overall and exit directionalities both match
+ *     bidiGlobalDir, or bidiGlobalDir is 0 (unknown).
+ */
+const $$bidiMarkAfter = function(bidiGlobalDir, text, isHtml) {
+  const formatter = getBidiFormatterInstance_(bidiGlobalDir);
+  isHtml = isHtml || isContentKind_(text, SanitizedContentKind.HTML);
+  return formatter.markAfterKnownDir(getContentDir(text), text + '', isHtml);
+};
+
+
+/**
+ * Returns text wrapped in a <span dir="ltr|rtl"> according to its
+ * directionality - but only if that is neither neutral nor the same as the
+ * global context. Otherwise, returns text unchanged.
+ * Always treats text as HTML/HTML-escaped, i.e. ignores mark-up and escapes
+ * when estimating text's directionality.
+ * If text has a bidi.Dir-valued contentDir, this is used instead of
+ * estimating the directionality.
+ *
+ * @param {number} bidiGlobalDir The global directionality context: 1 if ltr, -1
+ *     if rtl, 0 if unknown.
+ * @param {?} text The string to be wrapped. Can be other types, but the value
+ *     will be coerced to a string.
+ * @return {string} The wrapped text.
+ */
+const $$bidiSpanWrap = function(bidiGlobalDir, text) {
+  const formatter = getBidiFormatterInstance_(bidiGlobalDir);
+
+  // We always treat the value as HTML, because span-wrapping is only useful
+  // when its output will be treated as HTML (without escaping), and because
+  // |bidiSpanWrap is not itself specified to do HTML escaping in Soy. (Both
+  // explicit and automatic HTML escaping, if any, is done before calling
+  // |bidiSpanWrap because the BidiSpanWrapDirective Java class implements
+  // SanitizedContentOperator, but this does not mean that the input has to be
+  // HTML SanitizedContent.
+  const html =
+      uncheckedconversions.safeHtmlFromStringKnownToSatisfyTypeContract(
+          Const.from('Soy |bidiSpanWrap is applied on an autoescaped text.'),
+          String(text));
+  const wrappedHtml =
+      formatter.spanWrapSafeHtmlWithKnownDir(getContentDir(text), html);
+
+  // Like other directives whose Java class implements SanitizedContentOperator,
+  // |bidiSpanWrap is called after the escaping (if any) has already been done,
+  // and thus there is no need for it to produce actual SanitizedContent.
+  return SafeHtml.unwrap(wrappedHtml);
+};
+
+
+/**
+ * Returns text wrapped in Unicode BiDi formatting characters according to its
+ * directionality, i.e. either LRE or RLE at the beginning and PDF at the end -
+ * but only if text's directionality is neither neutral nor the same as the
+ * global context. Otherwise, returns text unchanged.
+ * Only treats SanitizedHtml as HTML/HTML-escaped, i.e. ignores mark-up
+ * and escapes when estimating text's directionality.
+ * If text has a bidi.Dir-valued contentDir, this is used instead of
+ * estimating the directionality.
+ *
+ * @param {number} bidiGlobalDir The global directionality context: 1 if ltr, -1
+ *     if rtl, 0 if unknown.
+ * @param {?} text The string to be wrapped. Can be other types, but the value
+ *     will be coerced to a string.
+ * @return {!SanitizedHtml|string} The wrapped string.
+ */
+const $$bidiUnicodeWrap = function(bidiGlobalDir, text) {
+  const formatter = getBidiFormatterInstance_(bidiGlobalDir);
+
+  // We treat the value as HTML if and only if it says it's HTML.
+  const isHtml = isContentKind_(text, SanitizedContentKind.HTML);
+  const wrappedText =
+      formatter.unicodeWrapWithKnownDir(getContentDir(text), text + '', isHtml);
+
+  // Bidi-wrapping a value converts it to the context directionality. Since it
+  // does not cost us anything, we will indicate this known direction in the
+  // output SanitizedContent, even though the intended consumer of that
+  // information - a bidi wrapping directive - has already been run.
+  const wrappedTextDir = formatter.getContextDir();
+
+  // Unicode-wrapping safe HTML string data gives valid, safe HTML string data.
+  // ATTENTION: Do these need to be ...ForInternalBlocks()?
+  if (isHtml) {
+    return VERY_UNSAFE.ordainSanitizedHtml(wrappedText, wrappedTextDir);
+  }
+
+  // Unicode-wrapping does not conform to the syntax of the other types of
+  // content. For lack of anything better to do, we do not declare a content
+  // kind at all by falling through to the non-SanitizedContent case below.
+  // TODO(user): Consider throwing a runtime error on receipt of
+  // SanitizedContent other than HTML.
+
+  // The input was not SanitizedContent, so our output isn't SanitizedContent
+  // either.
+  return wrappedText;
+};
+
+// -----------------------------------------------------------------------------
+// Assertion methods used by runtime.
+
+/**
+ * Checks if the type assertion is true if asserts.ENABLE_ASSERTS is
+ * true. Report errors on runtime types if goog.DEBUG is true.
+ * @param {boolean} condition The type check condition.
+ * @param {string} paramName The Soy name of the parameter.
+ * @param {?} param The JS object for the parameter.
+ * @param {string} jsDocTypeStr SoyDoc type str.
+ * @return {?} the param value
+ * @throws {!asserts.AssertionError} When the condition evaluates to false.
+ */
+const assertType = function(condition, paramName, param, jsDocTypeStr) {
+  if (asserts.ENABLE_ASSERTS && !condition) {
+    const msg = 'expected param ' + paramName + ' of type ' + jsDocTypeStr +
+        (goog.DEBUG ? (', but got ' + googDebug.runtimeType(param)) : '') + '.';
+    asserts.fail(msg);
+  }
+  return param;
+};
+
+
+// -----------------------------------------------------------------------------
+// Used for inspecting Soy template information from rendered pages.
+
+/**
+ * Whether we should generate additional HTML comments.
+ * @type {boolean}
+ */
+let $$debugSoyTemplateInfo = false;
+
+/**
+ * Configures whether we should generate additional HTML comments for
+ * inspecting Soy template information from rendered pages.
+ */
+function setDebugSoyTemplateInfo(/** boolean */ debugSoyTemplateInfo) {
+  $$debugSoyTemplateInfo = debugSoyTemplateInfo;
+}
+
+/** @return {boolean}  Whether we should generate additional debugging data */
+function $$getDebugSoyTemplateInfo() {
+  return $$debugSoyTemplateInfo;
+}
+
+// -----------------------------------------------------------------------------
+// Generated code.
+
+
+// START GENERATED CODE FOR ESCAPERS.
+
+/**
+ * @type {function (*) : string}
+ */
+const $$escapeUriHelper = function(v) {
+  return encodeURIComponent(String(v));
+};
+
+/**
+ * Maps characters to the escaped versions for the named escape directives.
+ * @type {!Object<string, string>}
+ */
+const $$ESCAPE_MAP_FOR_ESCAPE_HTML__AND__NORMALIZE_HTML__AND__ESCAPE_HTML_NOSPACE__AND__NORMALIZE_HTML_NOSPACE_ = {
+  '\x00': '\x26#0;',
+  '\x09': '\x26#9;',
+  '\x0a': '\x26#10;',
+  '\x0b': '\x26#11;',
+  '\x0c': '\x26#12;',
+  '\x0d': '\x26#13;',
+  ' ': '\x26#32;',
+  '\x22': '\x26quot;',
+  '\x26': '\x26amp;',
+  '\x27': '\x26#39;',
+  '-': '\x26#45;',
+  '\/': '\x26#47;',
+  '\x3c': '\x26lt;',
+  '\x3d': '\x26#61;',
+  '\x3e': '\x26gt;',
+  '`': '\x26#96;',
+  '\x85': '\x26#133;',
+  '\xa0': '\x26#160;',
+  '\u2028': '\x26#8232;',
+  '\u2029': '\x26#8233;',
+};
+
+/**
+ * A function that can be used with String.replace.
+ * @param {string} ch A single character matched by a compatible matcher.
+ * @return {string} A token in the output language.
+ */
+const $$REPLACER_FOR_ESCAPE_HTML__AND__NORMALIZE_HTML__AND__ESCAPE_HTML_NOSPACE__AND__NORMALIZE_HTML_NOSPACE_ = function(ch) {
+  return $$ESCAPE_MAP_FOR_ESCAPE_HTML__AND__NORMALIZE_HTML__AND__ESCAPE_HTML_NOSPACE__AND__NORMALIZE_HTML_NOSPACE_[ch];
+};
+
+/**
+ * Maps characters to the escaped versions for the named escape directives.
+ * @type {!Object<string, string>}
+ */
+const $$ESCAPE_MAP_FOR_ESCAPE_JS_STRING__AND__ESCAPE_JS_REGEX_ = {
+  '\x00': '\\x00',
+  '\x08': '\\x08',
+  '\x09': '\\t',
+  '\x0a': '\\n',
+  '\x0b': '\\x0b',
+  '\x0c': '\\f',
+  '\x0d': '\\r',
+  '\x22': '\\x22',
+  '$': '\\x24',
+  '\x26': '\\x26',
+  '\x27': '\\x27',
+  '(': '\\x28',
+  ')': '\\x29',
+  '*': '\\x2a',
+  '+': '\\x2b',
+  ',': '\\x2c',
+  '-': '\\x2d',
+  '.': '\\x2e',
+  '\/': '\\\/',
+  ':': '\\x3a',
+  '\x3c': '\\x3c',
+  '\x3d': '\\x3d',
+  '\x3e': '\\x3e',
+  '?': '\\x3f',
+  '\x5b': '\\x5b',
+  '\\': '\\\\',
+  '\x5d': '\\x5d',
+  '^': '\\x5e',
+  '\x7b': '\\x7b',
+  '|': '\\x7c',
+  '\x7d': '\\x7d',
+  '\x85': '\\x85',
+  '\u2028': '\\u2028',
+  '\u2029': '\\u2029',
+};
+
+/**
+ * A function that can be used with String.replace.
+ * @param {string} ch A single character matched by a compatible matcher.
+ * @return {string} A token in the output language.
+ */
+const $$REPLACER_FOR_ESCAPE_JS_STRING__AND__ESCAPE_JS_REGEX_ = function(ch) {
+  return $$ESCAPE_MAP_FOR_ESCAPE_JS_STRING__AND__ESCAPE_JS_REGEX_[ch];
+};
+
+/**
+ * Maps characters to the escaped versions for the named escape directives.
+ * @type {!Object<string, string>}
+ */
+const $$ESCAPE_MAP_FOR_ESCAPE_CSS_STRING_ = {
+  '\x00': '\\0 ',
+  '\x08': '\\8 ',
+  '\x09': '\\9 ',
+  '\x0a': '\\a ',
+  '\x0b': '\\b ',
+  '\x0c': '\\c ',
+  '\x0d': '\\d ',
+  '\x22': '\\22 ',
+  '\x26': '\\26 ',
+  '\x27': '\\27 ',
+  '(': '\\28 ',
+  ')': '\\29 ',
+  '*': '\\2a ',
+  '\/': '\\2f ',
+  ':': '\\3a ',
+  ';': '\\3b ',
+  '\x3c': '\\3c ',
+  '\x3d': '\\3d ',
+  '\x3e': '\\3e ',
+  '@': '\\40 ',
+  '\\': '\\5c ',
+  '\x7b': '\\7b ',
+  '\x7d': '\\7d ',
+  '\x85': '\\85 ',
+  '\xa0': '\\a0 ',
+  '\u2028': '\\2028 ',
+  '\u2029': '\\2029 ',
+};
+
+/**
+ * A function that can be used with String.replace.
+ * @param {string} ch A single character matched by a compatible matcher.
+ * @return {string} A token in the output language.
+ */
+const $$REPLACER_FOR_ESCAPE_CSS_STRING_ = function(ch) {
+  return $$ESCAPE_MAP_FOR_ESCAPE_CSS_STRING_[ch];
+};
+
+/**
+ * Maps characters to the escaped versions for the named escape directives.
+ * @type {!Object<string, string>}
+ */
+const $$ESCAPE_MAP_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI_ = {
+  '\x00': '%00',
+  '\x01': '%01',
+  '\x02': '%02',
+  '\x03': '%03',
+  '\x04': '%04',
+  '\x05': '%05',
+  '\x06': '%06',
+  '\x07': '%07',
+  '\x08': '%08',
+  '\x09': '%09',
+  '\x0a': '%0A',
+  '\x0b': '%0B',
+  '\x0c': '%0C',
+  '\x0d': '%0D',
+  '\x0e': '%0E',
+  '\x0f': '%0F',
+  '\x10': '%10',
+  '\x11': '%11',
+  '\x12': '%12',
+  '\x13': '%13',
+  '\x14': '%14',
+  '\x15': '%15',
+  '\x16': '%16',
+  '\x17': '%17',
+  '\x18': '%18',
+  '\x19': '%19',
+  '\x1a': '%1A',
+  '\x1b': '%1B',
+  '\x1c': '%1C',
+  '\x1d': '%1D',
+  '\x1e': '%1E',
+  '\x1f': '%1F',
+  ' ': '%20',
+  '\x22': '%22',
+  '\x27': '%27',
+  '(': '%28',
+  ')': '%29',
+  '\x3c': '%3C',
+  '\x3e': '%3E',
+  '\\': '%5C',
+  '\x7b': '%7B',
+  '\x7d': '%7D',
+  '\x7f': '%7F',
+  '\x85': '%C2%85',
+  '\xa0': '%C2%A0',
+  '\u2028': '%E2%80%A8',
+  '\u2029': '%E2%80%A9',
+  '\uff01': '%EF%BC%81',
+  '\uff03': '%EF%BC%83',
+  '\uff04': '%EF%BC%84',
+  '\uff06': '%EF%BC%86',
+  '\uff07': '%EF%BC%87',
+  '\uff08': '%EF%BC%88',
+  '\uff09': '%EF%BC%89',
+  '\uff0a': '%EF%BC%8A',
+  '\uff0b': '%EF%BC%8B',
+  '\uff0c': '%EF%BC%8C',
+  '\uff0f': '%EF%BC%8F',
+  '\uff1a': '%EF%BC%9A',
+  '\uff1b': '%EF%BC%9B',
+  '\uff1d': '%EF%BC%9D',
+  '\uff1f': '%EF%BC%9F',
+  '\uff20': '%EF%BC%A0',
+  '\uff3b': '%EF%BC%BB',
+  '\uff3d': '%EF%BC%BD',
+};
+
+/**
+ * A function that can be used with String.replace.
+ * @param {string} ch A single character matched by a compatible matcher.
+ * @return {string} A token in the output language.
+ */
+const $$REPLACER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI_ = function(ch) {
+  return $$ESCAPE_MAP_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI_[ch];
+};
+
+/**
+ * Matches characters that need to be escaped for the named directives.
+ * @type {!RegExp}
+ */
+const $$MATCHER_FOR_ESCAPE_HTML_ = /[\x00\x22\x26\x27\x3c\x3e]/g;
+
+/**
+ * Matches characters that need to be escaped for the named directives.
+ * @type {!RegExp}
+ */
+const $$MATCHER_FOR_NORMALIZE_HTML_ = /[\x00\x22\x27\x3c\x3e]/g;
+
+/**
+ * Matches characters that need to be escaped for the named directives.
+ * @type {!RegExp}
+ */
+const $$MATCHER_FOR_ESCAPE_HTML_NOSPACE_ = /[\x00\x09-\x0d \x22\x26\x27\x2d\/\x3c-\x3e`\x85\xa0\u2028\u2029]/g;
+
+/**
+ * Matches characters that need to be escaped for the named directives.
+ * @type {!RegExp}
+ */
+const $$MATCHER_FOR_NORMALIZE_HTML_NOSPACE_ = /[\x00\x09-\x0d \x22\x27\x2d\/\x3c-\x3e`\x85\xa0\u2028\u2029]/g;
+
+/**
+ * Matches characters that need to be escaped for the named directives.
+ * @type {!RegExp}
+ */
+const $$MATCHER_FOR_ESCAPE_JS_STRING_ = /[\x00\x08-\x0d\x22\x26\x27\/\x3c-\x3e\x5b-\x5d\x7b\x7d\x85\u2028\u2029]/g;
+
+/**
+ * Matches characters that need to be escaped for the named directives.
+ * @type {!RegExp}
+ */
+const $$MATCHER_FOR_ESCAPE_JS_REGEX_ = /[\x00\x08-\x0d\x22\x24\x26-\/\x3a\x3c-\x3f\x5b-\x5e\x7b-\x7d\x85\u2028\u2029]/g;
+
+/**
+ * Matches characters that need to be escaped for the named directives.
+ * @type {!RegExp}
+ */
+const $$MATCHER_FOR_ESCAPE_CSS_STRING_ = /[\x00\x08-\x0d\x22\x26-\x2a\/\x3a-\x3e@\\\x7b\x7d\x85\xa0\u2028\u2029]/g;
+
+/**
+ * Matches characters that need to be escaped for the named directives.
+ * @type {!RegExp}
+ */
+const $$MATCHER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI_ = /[\x00- \x22\x27-\x29\x3c\x3e\\\x7b\x7d\x7f\x85\xa0\u2028\u2029\uff01\uff03\uff04\uff06-\uff0c\uff0f\uff1a\uff1b\uff1d\uff1f\uff20\uff3b\uff3d]/g;
+
+/**
+ * A pattern that vets values produced by the named directives.
+ * @type {!RegExp}
+ */
+const $$FILTER_FOR_FILTER_CSS_VALUE_ = /^(?!-*(?:expression|(?:moz-)?binding))(?:(?:[.#]?-?(?:[_a-z0-9-]+)(?:-[_a-z0-9-]+)*-?|(?:rgb|hsl)a?\([0-9.%,\u0020]+\)|-?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[a-z]{1,4}|%)?|!important)(?:\s*[,\u0020]\s*|$))*$/i;
+
+/**
+ * A pattern that vets values produced by the named directives.
+ * @type {!RegExp}
+ */
+const $$FILTER_FOR_FILTER_NORMALIZE_URI_ = /^(?![^#?]*\/(?:\.|%2E){2}(?:[\/?#]|$))(?:(?:https?|mailto):|[^&:\/?#]*(?:[\/?#]|$))/i;
+
+/**
+ * A pattern that vets values produced by the named directives.
+ * @type {!RegExp}
+ */
+const $$FILTER_FOR_FILTER_NORMALIZE_MEDIA_URI_ = /^[^&:\/?#]*(?:[\/?#]|$)|^https?:|^data:image\/[a-z0-9+]+;base64,[a-z0-9+\/]+=*$|^blob:/i;
+
+/**
+ * A pattern that vets values produced by the named directives.
+ * @type {!RegExp}
+ */
+const $$FILTER_FOR_FILTER_IMAGE_DATA_URI_ = /^data:image\/(?:bmp|gif|jpe?g|png|tiff|webp);base64,[a-z0-9+\/]+=*$/i;
+
+/**
+ * A pattern that vets values produced by the named directives.
+ * @type {!RegExp}
+ */
+const $$FILTER_FOR_FILTER_SIP_URI_ = /^sip:[0-9a-z;=\-+._!~*'\u0020\/():&$#?@,]+$/i;
+
+/**
+ * A pattern that vets values produced by the named directives.
+ * @type {!RegExp}
+ */
+const $$FILTER_FOR_FILTER_SMS_URI_ = /^sms:[0-9a-z;=\-+._!~*'\u0020\/():&$#?@,]+$/i;
+
+/**
+ * A pattern that vets values produced by the named directives.
+ * @type {!RegExp}
+ */
+const $$FILTER_FOR_FILTER_TEL_URI_ = /^tel:[0-9a-z;=\-+._!~*'\u0020\/():&$#?@,]+$/i;
+
+/**
+ * A pattern that vets values produced by the named directives.
+ * @type {!RegExp}
+ */
+const $$FILTER_FOR_FILTER_HTML_ATTRIBUTES_ = /^(?!on|src|(?:action|archive|background|cite|classid|codebase|content|data|dsync|href|http-equiv|longdesc|style|usemap)\s*$)(?:[a-z0-9_$:-]*)$/i;
+
+/**
+ * A pattern that vets values produced by the named directives.
+ * @type {!RegExp}
+ */
+const $$FILTER_FOR_FILTER_HTML_ELEMENT_NAME_ = /^(?!base|iframe|link|no|object|script|style|textarea|title|xmp)[a-z0-9_$:-]*$/i;
+
+/**
+ * A pattern that vets values produced by the named directives.
+ * @type {!RegExp}
+ */
+const $$FILTER_FOR_FILTER_CSP_NONCE_VALUE_ = /^[a-zA-Z0-9+\/_-]+={0,2}$/;
+
+/**
+ * A helper for the Soy directive |escapeHtml
+ * @param {?} value Can be of any type but will be coerced to a string.
+ * @return {string} The escaped text.
+ */
+const $$escapeHtmlHelper = function(value) {
+  const str = String(value);
+  return str.replace(
+      $$MATCHER_FOR_ESCAPE_HTML_,
+      $$REPLACER_FOR_ESCAPE_HTML__AND__NORMALIZE_HTML__AND__ESCAPE_HTML_NOSPACE__AND__NORMALIZE_HTML_NOSPACE_);
+};
+
+/**
+ * A helper for the Soy directive |normalizeHtml
+ * @param {?} value Can be of any type but will be coerced to a string.
+ * @return {string} The escaped text.
+ */
+const $$normalizeHtmlHelper = function(value) {
+  const str = String(value);
+  return str.replace(
+      $$MATCHER_FOR_NORMALIZE_HTML_,
+      $$REPLACER_FOR_ESCAPE_HTML__AND__NORMALIZE_HTML__AND__ESCAPE_HTML_NOSPACE__AND__NORMALIZE_HTML_NOSPACE_);
+};
+
+/**
+ * A helper for the Soy directive |escapeHtmlNospace
+ * @param {?} value Can be of any type but will be coerced to a string.
+ * @return {string} The escaped text.
+ */
+const $$escapeHtmlNospaceHelper = function(value) {
+  const str = String(value);
+  return str.replace(
+      $$MATCHER_FOR_ESCAPE_HTML_NOSPACE_,
+      $$REPLACER_FOR_ESCAPE_HTML__AND__NORMALIZE_HTML__AND__ESCAPE_HTML_NOSPACE__AND__NORMALIZE_HTML_NOSPACE_);
+};
+
+/**
+ * A helper for the Soy directive |normalizeHtmlNospace
+ * @param {?} value Can be of any type but will be coerced to a string.
+ * @return {string} The escaped text.
+ */
+const $$normalizeHtmlNospaceHelper = function(value) {
+  const str = String(value);
+  return str.replace(
+      $$MATCHER_FOR_NORMALIZE_HTML_NOSPACE_,
+      $$REPLACER_FOR_ESCAPE_HTML__AND__NORMALIZE_HTML__AND__ESCAPE_HTML_NOSPACE__AND__NORMALIZE_HTML_NOSPACE_);
+};
+
+/**
+ * A helper for the Soy directive |escapeJsString
+ * @param {?} value Can be of any type but will be coerced to a string.
+ * @return {string} The escaped text.
+ */
+const $$escapeJsStringHelper = function(value) {
+  const str = String(value);
+  return str.replace(
+      $$MATCHER_FOR_ESCAPE_JS_STRING_,
+      $$REPLACER_FOR_ESCAPE_JS_STRING__AND__ESCAPE_JS_REGEX_);
+};
+
+/**
+ * A helper for the Soy directive |escapeJsRegex
+ * @param {?} value Can be of any type but will be coerced to a string.
+ * @return {string} The escaped text.
+ */
+const $$escapeJsRegexHelper = function(value) {
+  const str = String(value);
+  return str.replace(
+      $$MATCHER_FOR_ESCAPE_JS_REGEX_,
+      $$REPLACER_FOR_ESCAPE_JS_STRING__AND__ESCAPE_JS_REGEX_);
+};
+
+/**
+ * A helper for the Soy directive |escapeCssString
+ * @param {?} value Can be of any type but will be coerced to a string.
+ * @return {string} The escaped text.
+ */
+const $$escapeCssStringHelper = function(value) {
+  const str = String(value);
+  return str.replace(
+      $$MATCHER_FOR_ESCAPE_CSS_STRING_,
+      $$REPLACER_FOR_ESCAPE_CSS_STRING_);
+};
+
+/**
+ * A helper for the Soy directive |filterCssValue
+ * @param {?} value Can be of any type but will be coerced to a string.
+ * @return {string} The escaped text.
+ */
+const $$filterCssValueHelper = function(value) {
+  const str = String(value);
+  if (!$$FILTER_FOR_FILTER_CSS_VALUE_.test(str)) {
+    asserts.fail('Bad value `%s` for |filterCssValue', [str]);
+    return 'zSoyz';
+  }
+  return str;
+};
+
+/**
+ * A helper for the Soy directive |normalizeUri
+ * @param {?} value Can be of any type but will be coerced to a string.
+ * @return {string} The escaped text.
+ */
+const $$normalizeUriHelper = function(value) {
+  const str = String(value);
+  return str.replace(
+      $$MATCHER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI_,
+      $$REPLACER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI_);
+};
+
+/**
+ * A helper for the Soy directive |filterNormalizeUri
+ * @param {?} value Can be of any type but will be coerced to a string.
+ * @return {string} The escaped text.
+ */
+const $$filterNormalizeUriHelper = function(value) {
+  const str = String(value);
+  if (!$$FILTER_FOR_FILTER_NORMALIZE_URI_.test(str)) {
+    asserts.fail('Bad value `%s` for |filterNormalizeUri', [str]);
+    return 'about:invalid#zSoyz';
+  }
+  return str.replace(
+      $$MATCHER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI_,
+      $$REPLACER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI_);
+};
+
+/**
+ * A helper for the Soy directive |filterNormalizeMediaUri
+ * @param {?} value Can be of any type but will be coerced to a string.
+ * @return {string} The escaped text.
+ */
+const $$filterNormalizeMediaUriHelper = function(value) {
+  const str = String(value);
+  if (!$$FILTER_FOR_FILTER_NORMALIZE_MEDIA_URI_.test(str)) {
+    asserts.fail('Bad value `%s` for |filterNormalizeMediaUri', [str]);
+    return 'about:invalid#zSoyz';
+  }
+  return str.replace(
+      $$MATCHER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI_,
+      $$REPLACER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI_);
+};
+
+/**
+ * A helper for the Soy directive |filterImageDataUri
+ * @param {?} value Can be of any type but will be coerced to a string.
+ * @return {string} The escaped text.
+ */
+const $$filterImageDataUriHelper = function(value) {
+  const str = String(value);
+  if (!$$FILTER_FOR_FILTER_IMAGE_DATA_URI_.test(str)) {
+    asserts.fail('Bad value `%s` for |filterImageDataUri', [str]);
+    return 'data:image/gif;base64,zSoyz';
+  }
+  return str;
+};
+
+/**
+ * A helper for the Soy directive |filterSipUri
+ * @param {?} value Can be of any type but will be coerced to a string.
+ * @return {string} The escaped text.
+ */
+const $$filterSipUriHelper = function(value) {
+  const str = String(value);
+  if (!$$FILTER_FOR_FILTER_SIP_URI_.test(str)) {
+    asserts.fail('Bad value `%s` for |filterSipUri', [str]);
+    return 'about:invalid#zSoyz';
+  }
+  return str;
+};
+
+/**
+ * A helper for the Soy directive |filterSmsUri
+ * @param {?} value Can be of any type but will be coerced to a string.
+ * @return {string} The escaped text.
+ */
+const $$filterSmsUriHelper = function(value) {
+  const str = String(value);
+  if (!$$FILTER_FOR_FILTER_SMS_URI_.test(str)) {
+    asserts.fail('Bad value `%s` for |filterSmsUri', [str]);
+    return 'about:invalid#zSoyz';
+  }
+  return str;
+};
+
+/**
+ * A helper for the Soy directive |filterTelUri
+ * @param {?} value Can be of any type but will be coerced to a string.
+ * @return {string} The escaped text.
+ */
+const $$filterTelUriHelper = function(value) {
+  const str = String(value);
+  if (!$$FILTER_FOR_FILTER_TEL_URI_.test(str)) {
+    asserts.fail('Bad value `%s` for |filterTelUri', [str]);
+    return 'about:invalid#zSoyz';
+  }
+  return str;
+};
+
+/**
+ * A helper for the Soy directive |filterHtmlAttributes
+ * @param {?} value Can be of any type but will be coerced to a string.
+ * @return {string} The escaped text.
+ */
+const $$filterHtmlAttributesHelper = function(value) {
+  const str = String(value);
+  if (!$$FILTER_FOR_FILTER_HTML_ATTRIBUTES_.test(str)) {
+    asserts.fail('Bad value `%s` for |filterHtmlAttributes', [str]);
+    return 'zSoyz';
+  }
+  return str;
+};
+
+/**
+ * A helper for the Soy directive |filterHtmlElementName
+ * @param {?} value Can be of any type but will be coerced to a string.
+ * @return {string} The escaped text.
+ */
+const $$filterHtmlElementNameHelper = function(value) {
+  const str = String(value);
+  if (!$$FILTER_FOR_FILTER_HTML_ELEMENT_NAME_.test(str)) {
+    asserts.fail('Bad value `%s` for |filterHtmlElementName', [str]);
+    return 'zSoyz';
+  }
+  return str;
+};
+
+/**
+ * A helper for the Soy directive |filterCspNonceValue
+ * @param {?} value Can be of any type but will be coerced to a string.
+ * @return {string} The escaped text.
+ */
+const $$filterCspNonceValueHelper = function(value) {
+  const str = String(value);
+  if (!$$FILTER_FOR_FILTER_CSP_NONCE_VALUE_.test(str)) {
+    asserts.fail('Bad value `%s` for |filterCspNonceValue', [str]);
+    return 'zSoyz';
+  }
+  return str;
+};
+
+/**
+ * Matches all tags, HTML comments, and DOCTYPEs in tag soup HTML.
+ * By removing these, and replacing any '<' or '>' characters with
+ * entities we guarantee that the result can be embedded into a
+ * an attribute without introducing a tag boundary.
+ *
+ * @type {!RegExp}
+ */
+const $$HTML_TAG_REGEX_ = /<(?:!|\/?([a-zA-Z][a-zA-Z0-9:\-]*))(?:[^>'"]|"[^"]*"|'[^']*')*>/g;
+
+/**
+ * Matches all occurrences of '<'.
+ *
+ * @type {!RegExp}
+ */
+const $$LT_REGEX_ = /</g;
+
+/**
+ * Maps lower-case names of innocuous tags to true.
+ *
+ * @type {!Object<string, boolean>}
+ */
+const $$SAFE_TAG_WHITELIST_ = {'b': true, 'br': true, 'em': true, 'i': true, 's': true, 'strong': true, 'sub': true, 'sup': true, 'u': true};
+
+/**
+ * Pattern for matching attribute name and value, where value is single-quoted
+ * or double-quoted.
+ * See http://www.w3.org/TR/2011/WD-html5-20110525/syntax.html#attributes-0
+ *
+ * @type {!RegExp}
+ */
+const $$HTML_ATTRIBUTE_REGEX_ = /([a-zA-Z][a-zA-Z0-9:\-]*)[\t\n\r\u0020]*=[\t\n\r\u0020]*("[^"]*"|'[^']*')/g;
+
+// END GENERATED CODE
+
+
+exports = {
+  $$serializeKey,
+  $$IS_LOCALE_RTL,
+  $$assignDefaults,
+  $$getMapKeys,
+  $$checkNotNull,
+  $$parseInt,
+  $$equals,
+  $$isFunction,
+  $$parseFloat,
+  $$randomInt,
+  $$round,
+  $$strContains,
+  $$coerceToBoolean,
+  $$registerDelegateFn,
+  $$getDelTemplateId,
+  $$getDelegateFn,
+  $$escapeHtml,
+  $$cleanHtml,
+  $$htmlToText,
+  $$normalizeHtml,
+  $$escapeHtmlRcdata,
+  $$stripHtmlTags,
+  $$escapeHtmlAttribute,
+  $$escapeHtmlHtmlAttribute,
+  $$escapeHtmlAttributeNospace,
+  $$filterHtmlScriptPhrasingData,
+  $$filterHtmlAttributes,
+  $$filterNumber,
+  $$filterHtmlElementName,
+  $$escapeJsString,
+  $$escapeJsValue,
+  $$escapeJsRegex,
+  $$escapeUri,
+  $$normalizeUri,
+  $$filterNormalizeUri,
+  $$filterNormalizeMediaUri,
+  $$filterNormalizeRefreshUri,
+  $$filterTrustedResourceUri,
+  $$filterImageDataUri,
+  $$filterSipUri,
+  $$strSmsUriToUri,
+  $$filterTelUri,
+  $$escapeCssString,
+  $$filterCssValue,
+  $$filterCspNonceValue,
+  $$changeNewlineToBr,
+  $$insertWordBreaks,
+  $$concatAttributeValues,
+  $$concatCssValues,
+  $$truncate,
+  $$listContains,
+  $$listIndexOf,
+  $$listSlice,
+  $$makeArray,
+  $$filterAndMap,
+  $$numberListSort,
+  $$stringListSort,
+  $$strToAsciiLowerCase,
+  $$strToAsciiUpperCase,
+  $$strTrim,
+  $$strStartsWith,
+  $$strEndsWith,
+  $$strSplit,
+  $$strReplaceAll,
+  $$bidiDirAttr,
+  $$bidiTextDir,
+  $$bidiStartEdge,
+  $$bidiEndEdge,
+  $$bidiMark,
+  $$bidiMarkAfter,
+  $$bidiSpanWrap,
+  $$bidiUnicodeWrap,
+  assertType,
+  setDebugSoyTemplateInfo,
+  $$getDebugSoyTemplateInfo,
+  $$EMPTY_STRING_,
+  getContentDir,
+  VERY_UNSAFE,
+  IdomFunction,
+  createSanitizedHtml,
+  $$stubsMap,
+  // The following are exported just for tests
+  $$balanceTags_,
+  isContentKind_,
+};
+
+;return exports;});
+
+//javascript/template/soy/soydata_aliases.js
+/**
+ * @fileoverview Legacy aliases for the soy namespace
+ */
+
+goog.provide('soy.asserts');
+goog.provide('soy.esc');
+goog.provide('soydata');
+goog.provide('soydata.SanitizedHtml');
+goog.provide('soydata.VERY_UNSAFE');
+
+goog.require('goog.soy.data.SanitizedHtml');
+goog.require('soy');
+goog.requireType('goog.i18n.bidi.Dir');
+goog.requireType('goog.soy.data.SanitizedCss');
+goog.requireType('goog.soy.data.SanitizedHtmlAttribute');
+goog.requireType('goog.soy.data.SanitizedJs');
+goog.requireType('goog.soy.data.SanitizedTrustedResourceUri');
+goog.requireType('goog.soy.data.SanitizedUri');
+
+/**
+ * This class is only a holder for `soydata.SanitizedHtml.from`. Do not
+ * instantiate or extend it. Use `goog.soy.data.SanitizedHtml` instead.
+ *
+ * @deprecated Avoid this symbol, use soy.createSanitizedHtml instead.
+ * @constructor
+ * @extends {goog.soy.data.SanitizedHtml}
+ * @abstract
+ */
+soydata.SanitizedHtml = function() {
+  soydata.SanitizedHtml.base(this, 'constructor');  // Throws an exception.
+};
+goog.inherits(soydata.SanitizedHtml, goog.soy.data.SanitizedHtml);
+
+
+/**
+ * This object is only a holder for `from`. Do not
+ * instantiate or extend it. Use `goog.soy.data.SanitizedHtml` instead.
+ *
+ * @deprecated Avoid this symbol, use soy.createSanitizedHtml instead.
+ * @type {function(?):!goog.soy.data.SanitizedHtml}
+ */
+soydata.SanitizedHtml.from = soy.createSanitizedHtml;
+
+/**
+ * Sanitized content ordainers. Please use these with extreme caution. A good
+ * recommendation is to limit usage of these to just a handful of files in your
+ * source tree where usages can be carefully audited.
+ *
+ * @deprecated use soy.VERY_UNSAFE instead
+ * @const
+ * @type {
+ *    {
+ *      ordainSanitizedHtml: function(?,
+ * ?goog.i18n.bidi.Dir=):!goog.soy.data.SanitizedHtml,
+ *      ordainSanitizedJs:
+ * function(?):!goog.soy.data.SanitizedJs,
+ *      ordainSanitizedUri:
+ * function(?):!goog.soy.data.SanitizedUri, ordainSanitizedTrustedResourceUri:
+ * function(?):!goog.soy.data.SanitizedTrustedResourceUri,
+ *      ordainSanitizedHtmlAttribute:
+ * function(?):!goog.soy.data.SanitizedHtmlAttribute, ordainSanitizedCss:
+ * function(?):!goog.soy.data.SanitizedCss,
+ *    }
+ * }
+ */
+soydata.VERY_UNSAFE = soy.VERY_UNSAFE;
 
 //third_party/javascript/closure/i18n/compactnumberformatsymbols.js
 /**
@@ -36905,6 +43744,11 @@ goog.module('soy.i18n');
 goog.module.declareLegacyNamespace();
 
 const NumberFormat = goog.require('goog.i18n.NumberFormat');
+/**
+ * Required to fix declareLegacyNamespace, since soy is also declareLegacyNamespace.
+ * @suppress{extraRequire}
+ */
+goog.require('soy');
 
 /**
  * Formats a number with goog.i18n.NumberFormat.
@@ -36962,6 +43806,11 @@ goog.module.declareLegacyNamespace();
 
 const {assertString} = goog.require('goog.asserts');
 const {shuffle} = goog.require('goog.array');
+/**
+ * Required to fix declareLegacyNamespace, since soy is also declareLegacyNamespace.
+ * @suppress{extraRequire}
+ */
+goog.require('soy');
 
 /**
  * Structural interface for representing Soy `map`s in JavaScript.
@@ -37198,6756 +44047,6 @@ exports = {
 };
 
 ;return exports;});
-
-//third_party/javascript/closure/debug/errorcontext.js
-/**
- * @license
- * Copyright The Closure Library Authors.
- * SPDX-License-Identifier: Apache-2.0
- */
-
-/**
- * @fileoverview Provides methods dealing with context on error objects.
- */
-
-goog.provide('goog.debug.errorcontext');
-
-
-/**
- * Adds key-value context to the error.
- * @param {!Error} err The error to add context to.
- * @param {string} contextKey Key for the context to be added.
- * @param {string} contextValue Value for the context to be added.
- */
-goog.debug.errorcontext.addErrorContext = function(
-    err, contextKey, contextValue) {
-  'use strict';
-  if (!err[goog.debug.errorcontext.CONTEXT_KEY_]) {
-    err[goog.debug.errorcontext.CONTEXT_KEY_] = {};
-  }
-  err[goog.debug.errorcontext.CONTEXT_KEY_][contextKey] = contextValue;
-};
-
-
-/**
- * @param {!Error} err The error to get context from.
- * @return {!Object<string, string>} The context of the provided error.
- */
-goog.debug.errorcontext.getErrorContext = function(err) {
-  'use strict';
-  return err[goog.debug.errorcontext.CONTEXT_KEY_] || {};
-};
-
-
-// TODO(user): convert this to a Symbol once goog.debug.ErrorReporter is
-// able to use ES6.
-/** @private @const {string} */
-goog.debug.errorcontext.CONTEXT_KEY_ = '__closure__error__context__984382';
-
-//third_party/javascript/closure/labs/useragent/engine.js
-/**
- * @license
- * Copyright The Closure Library Authors.
- * SPDX-License-Identifier: Apache-2.0
- */
-
-/**
- * @fileoverview Closure user agent detection.
- * @see http://en.wikipedia.org/wiki/User_agent
- * For more information on browser brand, platform, or device see the other
- * sub-namespaces in goog.labs.userAgent (browser, platform, and device).
- */
-
-goog.provide('goog.labs.userAgent.engine');
-
-goog.require('goog.array');
-goog.require('goog.labs.userAgent.util');
-goog.require('goog.string');
-
-
-/**
- * @return {boolean} Whether the rendering engine is Presto.
- */
-goog.labs.userAgent.engine.isPresto = function() {
-  'use strict';
-  return goog.labs.userAgent.util.matchUserAgent('Presto');
-};
-
-
-/**
- * @return {boolean} Whether the rendering engine is Trident.
- */
-goog.labs.userAgent.engine.isTrident = function() {
-  'use strict';
-  // IE only started including the Trident token in IE8.
-  return goog.labs.userAgent.util.matchUserAgent('Trident') ||
-      goog.labs.userAgent.util.matchUserAgent('MSIE');
-};
-
-
-/**
- * @return {boolean} Whether the rendering engine is EdgeHTML.
- */
-goog.labs.userAgent.engine.isEdge = function() {
-  'use strict';
-  return goog.labs.userAgent.util.matchUserAgent('Edge');
-};
-
-
-/**
- * @return {boolean} Whether the rendering engine is WebKit. This will return
- * true for Chrome, Blink-based Opera (15+), Edge Chromium and Safari.
- */
-goog.labs.userAgent.engine.isWebKit = function() {
-  'use strict';
-  return goog.labs.userAgent.util.matchUserAgentIgnoreCase('WebKit') &&
-      !goog.labs.userAgent.engine.isEdge();
-};
-
-
-/**
- * @return {boolean} Whether the rendering engine is Gecko.
- */
-goog.labs.userAgent.engine.isGecko = function() {
-  'use strict';
-  return goog.labs.userAgent.util.matchUserAgent('Gecko') &&
-      !goog.labs.userAgent.engine.isWebKit() &&
-      !goog.labs.userAgent.engine.isTrident() &&
-      !goog.labs.userAgent.engine.isEdge();
-};
-
-
-/**
- * @return {string} The rendering engine's version or empty string if version
- *     can't be determined.
- */
-goog.labs.userAgent.engine.getVersion = function() {
-  'use strict';
-  var userAgentString = goog.labs.userAgent.util.getUserAgent();
-  if (userAgentString) {
-    var tuples = goog.labs.userAgent.util.extractVersionTuples(userAgentString);
-
-    var engineTuple = goog.labs.userAgent.engine.getEngineTuple_(tuples);
-    if (engineTuple) {
-      // In Gecko, the version string is either in the browser info or the
-      // Firefox version.  See Gecko user agent string reference:
-      // http://goo.gl/mULqa
-      if (engineTuple[0] == 'Gecko') {
-        return goog.labs.userAgent.engine.getVersionForKey_(tuples, 'Firefox');
-      }
-
-      return engineTuple[1];
-    }
-
-    // MSIE has only one version identifier, and the Trident version is
-    // specified in the parenthetical. IE Edge is covered in the engine tuple
-    // detection.
-    var browserTuple = tuples[0];
-    var info;
-    if (browserTuple && (info = browserTuple[2])) {
-      var match = /Trident\/([^\s;]+)/.exec(info);
-      if (match) {
-        return match[1];
-      }
-    }
-  }
-  return '';
-};
-
-
-/**
- * @param {!Array<!Array<string>>} tuples Extracted version tuples.
- * @return {!Array<string>|undefined} The engine tuple or undefined if not
- *     found.
- * @private
- */
-goog.labs.userAgent.engine.getEngineTuple_ = function(tuples) {
-  'use strict';
-  if (!goog.labs.userAgent.engine.isEdge()) {
-    return tuples[1];
-  }
-  for (var i = 0; i < tuples.length; i++) {
-    var tuple = tuples[i];
-    if (tuple[0] == 'Edge') {
-      return tuple;
-    }
-  }
-};
-
-
-/**
- * @param {string|number} version The version to check.
- * @return {boolean} Whether the rendering engine version is higher or the same
- *     as the given version.
- */
-goog.labs.userAgent.engine.isVersionOrHigher = function(version) {
-  'use strict';
-  return goog.string.compareVersions(
-             goog.labs.userAgent.engine.getVersion(), version) >= 0;
-};
-
-
-/**
- * @param {!Array<!Array<string>>} tuples Version tuples.
- * @param {string} key The key to look for.
- * @return {string} The version string of the given key, if present.
- *     Otherwise, the empty string.
- * @private
- */
-goog.labs.userAgent.engine.getVersionForKey_ = function(tuples, key) {
-  'use strict';
-  // TODO(nnaze): Move to util if useful elsewhere.
-
-  var pair = goog.array.find(tuples, function(pair) {
-    'use strict';
-    return key == pair[0];
-  });
-
-  return pair && pair[1] || '';
-};
-
-//third_party/javascript/closure/labs/useragent/platform.js
-/**
- * @license
- * Copyright The Closure Library Authors.
- * SPDX-License-Identifier: Apache-2.0
- */
-
-/**
- * @fileoverview Closure user agent platform detection.
- * @see <a href="http://www.useragentstring.com/">User agent strings</a>
- * For more information on browser brand, rendering engine, or device see the
- * other sub-namespaces in goog.labs.userAgent (browser, engine, and device
- * respectively).
- */
-
-goog.provide('goog.labs.userAgent.platform');
-
-goog.require('goog.labs.userAgent.util');
-goog.require('goog.string');
-
-
-/**
- * @return {boolean} Whether the platform is Android.
- */
-goog.labs.userAgent.platform.isAndroid = function() {
-  'use strict';
-  return goog.labs.userAgent.util.matchUserAgent('Android');
-};
-
-
-/**
- * @return {boolean} Whether the platform is iPod.
- */
-goog.labs.userAgent.platform.isIpod = function() {
-  'use strict';
-  return goog.labs.userAgent.util.matchUserAgent('iPod');
-};
-
-
-/**
- * @return {boolean} Whether the platform is iPhone.
- */
-goog.labs.userAgent.platform.isIphone = function() {
-  'use strict';
-  return goog.labs.userAgent.util.matchUserAgent('iPhone') &&
-      !goog.labs.userAgent.util.matchUserAgent('iPod') &&
-      !goog.labs.userAgent.util.matchUserAgent('iPad');
-};
-
-
-/**
- * @return {boolean} Whether the platform is iPad.
- */
-goog.labs.userAgent.platform.isIpad = function() {
-  'use strict';
-  return goog.labs.userAgent.util.matchUserAgent('iPad');
-};
-
-
-/**
- * @return {boolean} Whether the platform is iOS.
- */
-goog.labs.userAgent.platform.isIos = function() {
-  'use strict';
-  return goog.labs.userAgent.platform.isIphone() ||
-      goog.labs.userAgent.platform.isIpad() ||
-      goog.labs.userAgent.platform.isIpod();
-};
-
-
-/**
- * @return {boolean} Whether the platform is Mac.
- */
-goog.labs.userAgent.platform.isMacintosh = function() {
-  'use strict';
-  return goog.labs.userAgent.util.matchUserAgent('Macintosh');
-};
-
-
-/**
- * Note: ChromeOS is not considered to be Linux as it does not report itself
- * as Linux in the user agent string.
- * @return {boolean} Whether the platform is Linux.
- */
-goog.labs.userAgent.platform.isLinux = function() {
-  'use strict';
-  return goog.labs.userAgent.util.matchUserAgent('Linux');
-};
-
-
-/**
- * @return {boolean} Whether the platform is Windows.
- */
-goog.labs.userAgent.platform.isWindows = function() {
-  'use strict';
-  return goog.labs.userAgent.util.matchUserAgent('Windows');
-};
-
-
-/**
- * @return {boolean} Whether the platform is ChromeOS.
- */
-goog.labs.userAgent.platform.isChromeOS = function() {
-  'use strict';
-  return goog.labs.userAgent.util.matchUserAgent('CrOS');
-};
-
-/**
- * @return {boolean} Whether the platform is Chromecast.
- */
-goog.labs.userAgent.platform.isChromecast = function() {
-  'use strict';
-  return goog.labs.userAgent.util.matchUserAgent('CrKey');
-};
-
-/**
- * @return {boolean} Whether the platform is KaiOS.
- */
-goog.labs.userAgent.platform.isKaiOS = function() {
-  'use strict';
-  return goog.labs.userAgent.util.matchUserAgentIgnoreCase('KaiOS');
-};
-
-/**
- * The version of the platform. We only determine the version for Windows,
- * Mac, and Chrome OS. It doesn't make much sense on Linux. For Windows, we only
- * look at the NT version. Non-NT-based versions (e.g. 95, 98, etc.) are given
- * version 0.0.
- *
- * @return {string} The platform version or empty string if version cannot be
- *     determined.
- */
-goog.labs.userAgent.platform.getVersion = function() {
-  'use strict';
-  var userAgentString = goog.labs.userAgent.util.getUserAgent();
-  var version = '', re;
-  if (goog.labs.userAgent.platform.isWindows()) {
-    re = /Windows (?:NT|Phone) ([0-9.]+)/;
-    var match = re.exec(userAgentString);
-    if (match) {
-      version = match[1];
-    } else {
-      version = '0.0';
-    }
-  } else if (goog.labs.userAgent.platform.isIos()) {
-    re = /(?:iPhone|iPod|iPad|CPU)\s+OS\s+(\S+)/;
-    var match = re.exec(userAgentString);
-    // Report the version as x.y.z and not x_y_z
-    version = match && match[1].replace(/_/g, '.');
-  } else if (goog.labs.userAgent.platform.isMacintosh()) {
-    re = /Mac OS X ([0-9_.]+)/;
-    var match = re.exec(userAgentString);
-    // Note: some old versions of Camino do not report an OSX version.
-    // Default to 10.
-    version = match ? match[1].replace(/_/g, '.') : '10';
-  } else if (goog.labs.userAgent.platform.isKaiOS()) {
-    re = /(?:KaiOS)\/(\S+)/i;
-    var match = re.exec(userAgentString);
-    version = match && match[1];
-  } else if (goog.labs.userAgent.platform.isAndroid()) {
-    re = /Android\s+([^\);]+)(\)|;)/;
-    var match = re.exec(userAgentString);
-    version = match && match[1];
-  } else if (goog.labs.userAgent.platform.isChromeOS()) {
-    re = /(?:CrOS\s+(?:i686|x86_64)\s+([0-9.]+))/;
-    var match = re.exec(userAgentString);
-    version = match && match[1];
-  }
-  return version || '';
-};
-
-
-/**
- * @param {string|number} version The version to check.
- * @return {boolean} Whether the browser version is higher or the same as the
- *     given version.
- */
-goog.labs.userAgent.platform.isVersionOrHigher = function(version) {
-  'use strict';
-  return goog.string.compareVersions(
-             goog.labs.userAgent.platform.getVersion(), version) >= 0;
-};
-
-//third_party/javascript/closure/reflect/reflect.js
-/**
- * @license
- * Copyright The Closure Library Authors.
- * SPDX-License-Identifier: Apache-2.0
- */
-
-/**
- * @fileoverview Useful compiler idioms.
- */
-
-goog.provide('goog.reflect');
-
-
-/**
- * Syntax for object literal casts.
- * @see http://go/jscompiler-renaming
- * @see https://goo.gl/CRs09P
- *
- * Use this if you have an object literal whose keys need to have the same names
- * as the properties of some class even after they are renamed by the compiler.
- *
- * @param {!Function} type Type to cast to.
- * @param {Object} object Object literal to cast.
- * @return {Object} The object literal.
- */
-goog.reflect.object = function(type, object) {
-  'use strict';
-  return object;
-};
-
-/**
- * Syntax for renaming property strings.
- * @see http://go/jscompiler-renaming
- * @see https://goo.gl/CRs09P
- *
- * Use this if you have an need to access a property as a string, but want
- * to also have the property renamed by the compiler. In contrast to
- * goog.reflect.object, this method takes an instance of an object.
- *
- * Properties must be simple names (not qualified names).
- *
- * @param {string} prop Name of the property
- * @param {!Object} object Instance of the object whose type will be used
- *     for renaming
- * @return {string} The renamed property.
- */
-goog.reflect.objectProperty = function(prop, object) {
-  'use strict';
-  return prop;
-};
-
-/**
- * To assert to the compiler that an operation is needed when it would
- * otherwise be stripped. For example:
- * <code>
- *     // Force a layout
- *     goog.reflect.sinkValue(dialog.offsetHeight);
- * </code>
- * @param {T} x
- * @return {T}
- * @template T
- */
-goog.reflect.sinkValue = function(x) {
-  'use strict';
-  goog.reflect.sinkValue[' '](x);
-  return x;
-};
-
-
-/**
- * The compiler should optimize this function away iff no one ever uses
- * goog.reflect.sinkValue.
- */
-goog.reflect.sinkValue[' '] = goog.nullFunction;
-
-
-/**
- * Check if a property can be accessed without throwing an exception.
- * @param {Object} obj The owner of the property.
- * @param {string} prop The property name.
- * @return {boolean} Whether the property is accessible. Will also return true
- *     if obj is null.
- */
-goog.reflect.canAccessProperty = function(obj, prop) {
-  'use strict';
-  try {
-    goog.reflect.sinkValue(obj[prop]);
-    return true;
-  } catch (e) {
-  }
-  return false;
-};
-
-
-/**
- * Retrieves a value from a cache given a key. The compiler provides special
- * consideration for this call such that it is generally considered side-effect
- * free. However, if the `opt_keyFn` or `valueFn` have side-effects
- * then the entire call is considered to have side-effects.
- *
- * Conventionally storing the value on the cache would be considered a
- * side-effect and preclude unused calls from being pruned, ie. even if
- * the value was never used, it would still always be stored in the cache.
- *
- * Providing a side-effect free `valueFn` and `opt_keyFn`
- * allows unused calls to `goog.reflect.cache` to be pruned.
- *
- * @param {!Object<K, V>} cacheObj The object that contains the cached values.
- * @param {?} key The key to lookup in the cache. If it is not string or number
- *     then a `opt_keyFn` should be provided. The key is also used as the
- *     parameter to the `valueFn`.
- * @param {function(?):V} valueFn The value provider to use to calculate the
- *     value to store in the cache. This function should be side-effect free
- *     to take advantage of the optimization.
- * @param {function(?):K=} opt_keyFn The key provider to determine the cache
- *     map key. This should be used if the given key is not a string or number.
- *     If not provided then the given key is used. This function should be
- *     side-effect free to take advantage of the optimization.
- * @return {V} The cached or calculated value.
- * @template K
- * @template V
- */
-goog.reflect.cache = function(cacheObj, key, valueFn, opt_keyFn) {
-  'use strict';
-  const storedKey = opt_keyFn ? opt_keyFn(key) : key;
-
-  if (Object.prototype.hasOwnProperty.call(cacheObj, storedKey)) {
-    return cacheObj[storedKey];
-  }
-
-  return (cacheObj[storedKey] = valueFn(key));
-};
-
-//third_party/javascript/closure/useragent/useragent.js
-/**
- * @license
- * Copyright The Closure Library Authors.
- * SPDX-License-Identifier: Apache-2.0
- */
-
-/**
- * @fileoverview Rendering engine detection.
- * @see <a href="http://www.useragentstring.com/">User agent strings</a>
- * For information on the browser brand (such as Safari versus Chrome), see
- * goog.userAgent.product.
- * @see ../demos/useragent.html
- */
-
-goog.provide('goog.userAgent');
-
-goog.require('goog.labs.userAgent.browser');
-goog.require('goog.labs.userAgent.engine');
-goog.require('goog.labs.userAgent.platform');
-goog.require('goog.labs.userAgent.util');
-goog.require('goog.reflect');
-goog.require('goog.string');
-
-
-/**
- * @define {boolean} Whether we know at compile-time that the browser is IE.
- */
-goog.userAgent.ASSUME_IE = goog.define('goog.userAgent.ASSUME_IE', false);
-
-
-/**
- * @define {boolean} Whether we know at compile-time that the browser is EDGE,
- * referring to EdgeHTML based Edge.
- */
-goog.userAgent.ASSUME_EDGE = goog.define('goog.userAgent.ASSUME_EDGE', false);
-
-
-/**
- * @define {boolean} Whether we know at compile-time that the browser is GECKO.
- */
-goog.userAgent.ASSUME_GECKO = goog.define('goog.userAgent.ASSUME_GECKO', false);
-
-
-/**
- * @define {boolean} Whether we know at compile-time that the browser is WEBKIT.
- */
-goog.userAgent.ASSUME_WEBKIT =
-    goog.define('goog.userAgent.ASSUME_WEBKIT', false);
-
-
-/**
- * @define {boolean} Whether we know at compile-time that the browser is a
- *     mobile device running WebKit e.g. iPhone or Android.
- */
-goog.userAgent.ASSUME_MOBILE_WEBKIT =
-    goog.define('goog.userAgent.ASSUME_MOBILE_WEBKIT', false);
-
-
-/**
- * @define {boolean} Whether we know at compile-time that the browser is OPERA,
- * referring to Presto-based Opera.
- */
-goog.userAgent.ASSUME_OPERA = goog.define('goog.userAgent.ASSUME_OPERA', false);
-
-
-/**
- * @define {boolean} Whether the
- *     `goog.userAgent.isVersionOrHigher`
- *     function will return true for any version.
- */
-goog.userAgent.ASSUME_ANY_VERSION =
-    goog.define('goog.userAgent.ASSUME_ANY_VERSION', false);
-
-
-/**
- * Whether we know the browser engine at compile-time.
- * @type {boolean}
- * @private
- */
-goog.userAgent.BROWSER_KNOWN_ = goog.userAgent.ASSUME_IE ||
-    goog.userAgent.ASSUME_EDGE || goog.userAgent.ASSUME_GECKO ||
-    goog.userAgent.ASSUME_MOBILE_WEBKIT || goog.userAgent.ASSUME_WEBKIT ||
-    goog.userAgent.ASSUME_OPERA;
-
-
-/**
- * Returns the userAgent string for the current browser.
- *
- * @return {string} The userAgent string.
- */
-goog.userAgent.getUserAgentString = function() {
-  'use strict';
-  return goog.labs.userAgent.util.getUserAgent();
-};
-
-
-/**
- * @return {?Navigator} The native navigator object.
- */
-goog.userAgent.getNavigatorTyped = function() {
-  'use strict';
-  // Need a local navigator reference instead of using the global one,
-  // to avoid the rare case where they reference different objects.
-  // (in a WorkerPool, for example).
-  return goog.global['navigator'] || null;
-};
-
-
-/**
- * TODO(nnaze): Change type to "Navigator" and update compilation targets.
- * @return {?Object} The native navigator object.
- */
-goog.userAgent.getNavigator = function() {
-  'use strict';
-  return goog.userAgent.getNavigatorTyped();
-};
-
-
-/**
- * Whether the user agent is Presto-based Opera.
- * @type {boolean}
- */
-goog.userAgent.OPERA = goog.userAgent.BROWSER_KNOWN_ ?
-    goog.userAgent.ASSUME_OPERA :
-    goog.labs.userAgent.browser.isOpera();
-
-
-/**
- * Whether the user agent is Internet Explorer.
- * @type {boolean}
- */
-goog.userAgent.IE = goog.userAgent.BROWSER_KNOWN_ ?
-    goog.userAgent.ASSUME_IE :
-    goog.labs.userAgent.browser.isIE();
-
-
-/**
- * Whether the user agent is Microsoft Edge (EdgeHTML based).
- * @type {boolean}
- */
-goog.userAgent.EDGE = goog.userAgent.BROWSER_KNOWN_ ?
-    goog.userAgent.ASSUME_EDGE :
-    goog.labs.userAgent.engine.isEdge();
-
-
-/**
- * Whether the user agent is MS Internet Explorer or MS Edge (EdgeHTML based).
- * @type {boolean}
- */
-goog.userAgent.EDGE_OR_IE = goog.userAgent.EDGE || goog.userAgent.IE;
-
-
-/**
- * Whether the user agent is Gecko. Gecko is the rendering engine used by
- * Mozilla, Firefox, and others.
- * @type {boolean}
- */
-goog.userAgent.GECKO = goog.userAgent.BROWSER_KNOWN_ ?
-    goog.userAgent.ASSUME_GECKO :
-    goog.labs.userAgent.engine.isGecko();
-
-
-/**
- * Whether the user agent is WebKit. WebKit is the rendering engine that
- * Safari, Edge Chromium, Opera Chromium, Android and others use.
- * @type {boolean}
- */
-goog.userAgent.WEBKIT = goog.userAgent.BROWSER_KNOWN_ ?
-    goog.userAgent.ASSUME_WEBKIT || goog.userAgent.ASSUME_MOBILE_WEBKIT :
-    goog.labs.userAgent.engine.isWebKit();
-
-
-/**
- * Whether the user agent is running on a mobile device.
- *
- * This is a separate function so that the logic can be tested.
- *
- * TODO(nnaze): Investigate swapping in goog.labs.userAgent.device.isMobile().
- *
- * @return {boolean} Whether the user agent is running on a mobile device.
- * @private
- */
-goog.userAgent.isMobile_ = function() {
-  'use strict';
-  return goog.userAgent.WEBKIT &&
-      goog.labs.userAgent.util.matchUserAgent('Mobile');
-};
-
-
-/**
- * Whether the user agent is running on a mobile device.
- *
- * TODO(nnaze): Consider deprecating MOBILE when labs.userAgent
- *   is promoted as the gecko/webkit logic is likely inaccurate.
- *
- * @type {boolean}
- */
-goog.userAgent.MOBILE =
-    goog.userAgent.ASSUME_MOBILE_WEBKIT || goog.userAgent.isMobile_();
-
-
-/**
- * Used while transitioning code to use WEBKIT instead.
- * @type {boolean}
- * @deprecated Use {@link goog.userAgent.product.SAFARI} instead.
- * TODO(nicksantos): Delete this from goog.userAgent.
- */
-goog.userAgent.SAFARI = goog.userAgent.WEBKIT;
-
-
-/**
- * @return {string} the platform (operating system) the user agent is running
- *     on. Default to empty string because navigator.platform may not be defined
- *     (on Rhino, for example).
- * @private
- */
-goog.userAgent.determinePlatform_ = function() {
-  'use strict';
-  var navigator = goog.userAgent.getNavigatorTyped();
-  return navigator && navigator.platform || '';
-};
-
-
-/**
- * The platform (operating system) the user agent is running on. Default to
- * empty string because navigator.platform may not be defined (on Rhino, for
- * example).
- * @type {string}
- */
-goog.userAgent.PLATFORM = goog.userAgent.determinePlatform_();
-
-
-/**
- * @define {boolean} Whether the user agent is running on a Macintosh operating
- *     system.
- */
-goog.userAgent.ASSUME_MAC = goog.define('goog.userAgent.ASSUME_MAC', false);
-
-
-/**
- * @define {boolean} Whether the user agent is running on a Windows operating
- *     system.
- */
-goog.userAgent.ASSUME_WINDOWS =
-    goog.define('goog.userAgent.ASSUME_WINDOWS', false);
-
-
-/**
- * @define {boolean} Whether the user agent is running on a Linux operating
- *     system.
- */
-goog.userAgent.ASSUME_LINUX = goog.define('goog.userAgent.ASSUME_LINUX', false);
-
-
-/**
- * @define {boolean} Whether the user agent is running on a X11 windowing
- *     system.
- */
-goog.userAgent.ASSUME_X11 = goog.define('goog.userAgent.ASSUME_X11', false);
-
-
-/**
- * @define {boolean} Whether the user agent is running on Android.
- */
-goog.userAgent.ASSUME_ANDROID =
-    goog.define('goog.userAgent.ASSUME_ANDROID', false);
-
-
-/**
- * @define {boolean} Whether the user agent is running on an iPhone.
- */
-goog.userAgent.ASSUME_IPHONE =
-    goog.define('goog.userAgent.ASSUME_IPHONE', false);
-
-
-/**
- * @define {boolean} Whether the user agent is running on an iPad.
- */
-goog.userAgent.ASSUME_IPAD = goog.define('goog.userAgent.ASSUME_IPAD', false);
-
-
-/**
- * @define {boolean} Whether the user agent is running on an iPod.
- */
-goog.userAgent.ASSUME_IPOD = goog.define('goog.userAgent.ASSUME_IPOD', false);
-
-
-/**
- * @define {boolean} Whether the user agent is running on KaiOS.
- */
-goog.userAgent.ASSUME_KAIOS = goog.define('goog.userAgent.ASSUME_KAIOS', false);
-
-
-/**
- * @type {boolean}
- * @private
- */
-goog.userAgent.PLATFORM_KNOWN_ = goog.userAgent.ASSUME_MAC ||
-    goog.userAgent.ASSUME_WINDOWS || goog.userAgent.ASSUME_LINUX ||
-    goog.userAgent.ASSUME_X11 || goog.userAgent.ASSUME_ANDROID ||
-    goog.userAgent.ASSUME_IPHONE || goog.userAgent.ASSUME_IPAD ||
-    goog.userAgent.ASSUME_IPOD;
-
-
-/**
- * Whether the user agent is running on a Macintosh operating system.
- * @type {boolean}
- */
-goog.userAgent.MAC = goog.userAgent.PLATFORM_KNOWN_ ?
-    goog.userAgent.ASSUME_MAC :
-    goog.labs.userAgent.platform.isMacintosh();
-
-
-/**
- * Whether the user agent is running on a Windows operating system.
- * @type {boolean}
- */
-goog.userAgent.WINDOWS = goog.userAgent.PLATFORM_KNOWN_ ?
-    goog.userAgent.ASSUME_WINDOWS :
-    goog.labs.userAgent.platform.isWindows();
-
-
-/**
- * Whether the user agent is Linux per the legacy behavior of
- * goog.userAgent.LINUX, which considered ChromeOS to also be
- * Linux.
- * @return {boolean}
- * @private
- */
-goog.userAgent.isLegacyLinux_ = function() {
-  'use strict';
-  return goog.labs.userAgent.platform.isLinux() ||
-      goog.labs.userAgent.platform.isChromeOS();
-};
-
-
-/**
- * Whether the user agent is running on a Linux operating system.
- *
- * Note that goog.userAgent.LINUX considers ChromeOS to be Linux,
- * while goog.labs.userAgent.platform considers ChromeOS and
- * Linux to be different OSes.
- *
- * @type {boolean}
- */
-goog.userAgent.LINUX = goog.userAgent.PLATFORM_KNOWN_ ?
-    goog.userAgent.ASSUME_LINUX :
-    goog.userAgent.isLegacyLinux_();
-
-
-/**
- * @return {boolean} Whether the user agent is an X11 windowing system.
- * @private
- */
-goog.userAgent.isX11_ = function() {
-  'use strict';
-  var navigator = goog.userAgent.getNavigatorTyped();
-  return !!navigator &&
-      goog.string.contains(navigator['appVersion'] || '', 'X11');
-};
-
-
-/**
- * Whether the user agent is running on a X11 windowing system.
- * @type {boolean}
- */
-goog.userAgent.X11 = goog.userAgent.PLATFORM_KNOWN_ ?
-    goog.userAgent.ASSUME_X11 :
-    goog.userAgent.isX11_();
-
-
-/**
- * Whether the user agent is running on Android.
- * @type {boolean}
- */
-goog.userAgent.ANDROID = goog.userAgent.PLATFORM_KNOWN_ ?
-    goog.userAgent.ASSUME_ANDROID :
-    goog.labs.userAgent.platform.isAndroid();
-
-
-/**
- * Whether the user agent is running on an iPhone.
- * @type {boolean}
- */
-goog.userAgent.IPHONE = goog.userAgent.PLATFORM_KNOWN_ ?
-    goog.userAgent.ASSUME_IPHONE :
-    goog.labs.userAgent.platform.isIphone();
-
-
-/**
- * Whether the user agent is running on an iPad.
- * @type {boolean}
- */
-goog.userAgent.IPAD = goog.userAgent.PLATFORM_KNOWN_ ?
-    goog.userAgent.ASSUME_IPAD :
-    goog.labs.userAgent.platform.isIpad();
-
-
-/**
- * Whether the user agent is running on an iPod.
- * @type {boolean}
- */
-goog.userAgent.IPOD = goog.userAgent.PLATFORM_KNOWN_ ?
-    goog.userAgent.ASSUME_IPOD :
-    goog.labs.userAgent.platform.isIpod();
-
-
-/**
- * Whether the user agent is running on iOS.
- * @type {boolean}
- */
-goog.userAgent.IOS = goog.userAgent.PLATFORM_KNOWN_ ?
-    (goog.userAgent.ASSUME_IPHONE || goog.userAgent.ASSUME_IPAD ||
-     goog.userAgent.ASSUME_IPOD) :
-    goog.labs.userAgent.platform.isIos();
-
-/**
- * Whether the user agent is running on KaiOS.
- * @type {boolean}
- */
-goog.userAgent.KAIOS = goog.userAgent.PLATFORM_KNOWN_ ?
-    goog.userAgent.ASSUME_KAIOS :
-    goog.labs.userAgent.platform.isKaiOS();
-
-
-/**
- * @return {string} The string that describes the version number of the user
- *     agent.
- * @private
- */
-goog.userAgent.determineVersion_ = function() {
-  'use strict';
-  // All browsers have different ways to detect the version and they all have
-  // different naming schemes.
-  // version is a string rather than a number because it may contain 'b', 'a',
-  // and so on.
-  var version = '';
-  var arr = goog.userAgent.getVersionRegexResult_();
-  if (arr) {
-    version = arr ? arr[1] : '';
-  }
-
-  if (goog.userAgent.IE) {
-    // IE9 can be in document mode 9 but be reporting an inconsistent user agent
-    // version.  If it is identifying as a version lower than 9 we take the
-    // documentMode as the version instead.  IE8 has similar behavior.
-    // It is recommended to set the X-UA-Compatible header to ensure that IE9
-    // uses documentMode 9.
-    var docMode = goog.userAgent.getDocumentMode_();
-    if (docMode != null && docMode > parseFloat(version)) {
-      return String(docMode);
-    }
-  }
-
-  return version;
-};
-
-
-/**
- * @return {?IArrayLike<string>|undefined} The version regex matches from
- *     parsing the user
- *     agent string. These regex statements must be executed inline so they can
- *     be compiled out by the closure compiler with the rest of the useragent
- *     detection logic when ASSUME_* is specified.
- * @private
- */
-goog.userAgent.getVersionRegexResult_ = function() {
-  'use strict';
-  var userAgent = goog.userAgent.getUserAgentString();
-  if (goog.userAgent.GECKO) {
-    return /rv\:([^\);]+)(\)|;)/.exec(userAgent);
-  }
-  if (goog.userAgent.EDGE) {
-    return /Edge\/([\d\.]+)/.exec(userAgent);
-  }
-  if (goog.userAgent.IE) {
-    return /\b(?:MSIE|rv)[: ]([^\);]+)(\)|;)/.exec(userAgent);
-  }
-  if (goog.userAgent.WEBKIT) {
-    // WebKit/125.4
-    return /WebKit\/(\S+)/.exec(userAgent);
-  }
-  if (goog.userAgent.OPERA) {
-    // If none of the above browsers were detected but the browser is Opera, the
-    // only string that is of interest is 'Version/<number>'.
-    return /(?:Version)[ \/]?(\S+)/.exec(userAgent);
-  }
-  return undefined;
-};
-
-
-/**
- * @return {number|undefined} Returns the document mode (for testing).
- * @private
- */
-goog.userAgent.getDocumentMode_ = function() {
-  'use strict';
-  // NOTE(user): goog.userAgent may be used in context where there is no DOM.
-  var doc = goog.global['document'];
-  return doc ? doc['documentMode'] : undefined;
-};
-
-
-/**
- * The version of the user agent. This is a string because it might contain
- * 'b' (as in beta) as well as multiple dots.
- * @type {string}
- */
-goog.userAgent.VERSION = goog.userAgent.determineVersion_();
-
-
-/**
- * Compares two version numbers.
- *
- * @param {string} v1 Version of first item.
- * @param {string} v2 Version of second item.
- *
- * @return {number}  1 if first argument is higher
- *                   0 if arguments are equal
- *                  -1 if second argument is higher.
- * @deprecated Use goog.string.compareVersions.
- */
-goog.userAgent.compare = function(v1, v2) {
-  'use strict';
-  return goog.string.compareVersions(v1, v2);
-};
-
-
-/**
- * Cache for {@link goog.userAgent.isVersionOrHigher}.
- * Calls to compareVersions are surprisingly expensive and, as a browser's
- * version number is unlikely to change during a session, we cache the results.
- * @const
- * @private
- */
-goog.userAgent.isVersionOrHigherCache_ = {};
-
-
-/**
- * Whether the user agent version is higher or the same as the given version.
- * NOTE: When checking the version numbers for Firefox and Safari, be sure to
- * use the engine's version, not the browser's version number.  For example,
- * Firefox 3.0 corresponds to Gecko 1.9 and Safari 3.0 to Webkit 522.11.
- * Opera and Internet Explorer versions match the product release number.<br>
- * @see <a href="http://en.wikipedia.org/wiki/Safari_version_history">
- *     Webkit</a>
- * @see <a href="http://en.wikipedia.org/wiki/Gecko_engine">Gecko</a>
- *
- * @param {string|number} version The version to check.
- * @return {boolean} Whether the user agent version is higher or the same as
- *     the given version.
- */
-goog.userAgent.isVersionOrHigher = function(version) {
-  'use strict';
-  return goog.userAgent.ASSUME_ANY_VERSION ||
-      goog.reflect.cache(
-          goog.userAgent.isVersionOrHigherCache_, version, function() {
-            'use strict';
-            return goog.string.compareVersions(
-                       goog.userAgent.VERSION, version) >= 0;
-          });
-};
-
-
-/**
- * Deprecated alias to `goog.userAgent.isVersionOrHigher`.
- * @param {string|number} version The version to check.
- * @return {boolean} Whether the user agent version is higher or the same as
- *     the given version.
- * @deprecated Use goog.userAgent.isVersionOrHigher().
- */
-goog.userAgent.isVersion = goog.userAgent.isVersionOrHigher;
-
-
-/**
- * Whether the IE effective document mode is higher or the same as the given
- * document mode version.
- * NOTE: Only for IE, return false for another browser.
- *
- * @param {number} documentMode The document mode version to check.
- * @return {boolean} Whether the IE effective document mode is higher or the
- *     same as the given version.
- */
-goog.userAgent.isDocumentModeOrHigher = function(documentMode) {
-  'use strict';
-  return Number(goog.userAgent.DOCUMENT_MODE) >= documentMode;
-};
-
-
-/**
- * Deprecated alias to `goog.userAgent.isDocumentModeOrHigher`.
- * @param {number} version The version to check.
- * @return {boolean} Whether the IE effective document mode is higher or the
- *      same as the given version.
- * @deprecated Use goog.userAgent.isDocumentModeOrHigher().
- */
-goog.userAgent.isDocumentMode = goog.userAgent.isDocumentModeOrHigher;
-
-
-/**
- * For IE version < 7, documentMode is undefined, so attempt to use the
- * CSS1Compat property to see if we are in standards mode. If we are in
- * standards mode, treat the browser version as the document mode. Otherwise,
- * IE is emulating version 5.
- *
- * NOTE(2019/05/31): Support for IE < 7 is long gone, so this is now simplified.
- * It returns document.documentMode for IE and undefined for everything else.
- *
- * @type {number|undefined}
- * @const
- */
-goog.userAgent.DOCUMENT_MODE = (function() {
-  'use strict';
-  var doc = goog.global['document'];
-  if (!doc || !goog.userAgent.IE) return undefined;
-  // This must be an IE user agent.
-  var documentMode = goog.userAgent.getDocumentMode_();
-  if (documentMode) return documentMode;
-  // The user agent version string begins with the major version.
-  // Parse the major version and truncate anything following.
-  var ieVersion = parseInt(goog.userAgent.VERSION, 10);
-  return ieVersion || undefined;
-})();
-
-//third_party/javascript/closure/debug/debug.js
-/**
- * @license
- * Copyright The Closure Library Authors.
- * SPDX-License-Identifier: Apache-2.0
- */
-
-/**
- * @fileoverview Logging and debugging utilities.
- *
- * @see ../demos/debug.html
- */
-
-goog.provide('goog.debug');
-
-goog.require('goog.array');
-goog.require('goog.debug.errorcontext');
-goog.require('goog.userAgent');
-
-
-/** @define {boolean} Whether logging should be enabled. */
-goog.debug.LOGGING_ENABLED =
-    goog.define('goog.debug.LOGGING_ENABLED', goog.DEBUG);
-
-
-/** @define {boolean} Whether to force "sloppy" stack building. */
-goog.debug.FORCE_SLOPPY_STACKS =
-    goog.define('goog.debug.FORCE_SLOPPY_STACKS', false);
-
-
-/**
- * @define {boolean} TODO(b/159435805): Remove this hack once bug is resolved.
- */
-goog.debug.CHECK_FOR_THROWN_EVENT =
-    goog.define('goog.debug.CHECK_FOR_THROWN_EVENT', false);
-
-
-
-/**
- * Catches onerror events fired by windows and similar objects.
- * @param {function(Object)} logFunc The function to call with the error
- *    information.
- * @param {boolean=} opt_cancel Whether to stop the error from reaching the
- *    browser.
- * @param {Object=} opt_target Object that fires onerror events.
- * @suppress {strictMissingProperties} onerror is not defined as a property
- *    on Object.
- */
-goog.debug.catchErrors = function(logFunc, opt_cancel, opt_target) {
-  'use strict';
-  var target = opt_target || goog.global;
-  var oldErrorHandler = target.onerror;
-  var retVal = !!opt_cancel;
-
-  // Chrome interprets onerror return value backwards (http://crbug.com/92062)
-  // until it was fixed in webkit revision r94061 (Webkit 535.3). This
-  // workaround still needs to be skipped in Safari after the webkit change
-  // gets pushed out in Safari.
-  // See https://bugs.webkit.org/show_bug.cgi?id=67119
-  if (goog.userAgent.WEBKIT && !goog.userAgent.isVersionOrHigher('535.3')) {
-    retVal = !retVal;
-  }
-
-  /**
-   * New onerror handler for this target. This onerror handler follows the spec
-   * according to
-   * http://www.whatwg.org/specs/web-apps/current-work/#runtime-script-errors
-   * The spec was changed in August 2013 to support receiving column information
-   * and an error object for all scripts on the same origin or cross origin
-   * scripts with the proper headers. See
-   * https://mikewest.org/2013/08/debugging-runtime-errors-with-window-onerror
-   *
-   * @param {string} message The error message. For cross-origin errors, this
-   *     will be scrubbed to just "Script error.". For new browsers that have
-   *     updated to follow the latest spec, errors that come from origins that
-   *     have proper cross origin headers will not be scrubbed.
-   * @param {string} url The URL of the script that caused the error. The URL
-   *     will be scrubbed to "" for cross origin scripts unless the script has
-   *     proper cross origin headers and the browser has updated to the latest
-   *     spec.
-   * @param {number} line The line number in the script that the error
-   *     occurred on.
-   * @param {number=} opt_col The optional column number that the error
-   *     occurred on. Only browsers that have updated to the latest spec will
-   *     include this.
-   * @param {Error=} opt_error The optional actual error object for this
-   *     error that should include the stack. Only browsers that have updated
-   *     to the latest spec will inlude this parameter.
-   * @return {boolean} Whether to prevent the error from reaching the browser.
-   */
-  target.onerror = function(message, url, line, opt_col, opt_error) {
-    'use strict';
-    if (oldErrorHandler) {
-      oldErrorHandler(message, url, line, opt_col, opt_error);
-    }
-    logFunc({
-      message: message,
-      fileName: url,
-      line: line,
-      lineNumber: line,
-      col: opt_col,
-      error: opt_error
-    });
-    return retVal;
-  };
-};
-
-
-/**
- * Creates a string representing an object and all its properties.
- * @param {Object|null|undefined} obj Object to expose.
- * @param {boolean=} opt_showFn Show the functions as well as the properties,
- *     default is false.
- * @return {string} The string representation of `obj`.
- */
-goog.debug.expose = function(obj, opt_showFn) {
-  'use strict';
-  if (typeof obj == 'undefined') {
-    return 'undefined';
-  }
-  if (obj == null) {
-    return 'NULL';
-  }
-  var str = [];
-
-  for (var x in obj) {
-    if (!opt_showFn && typeof obj[x] === 'function') {
-      continue;
-    }
-    var s = x + ' = ';
-
-    try {
-      s += obj[x];
-    } catch (e) {
-      s += '*** ' + e + ' ***';
-    }
-    str.push(s);
-  }
-  return str.join('\n');
-};
-
-
-/**
- * Creates a string representing a given primitive or object, and for an
- * object, all its properties and nested objects. NOTE: The output will include
- * Uids on all objects that were exposed. Any added Uids will be removed before
- * returning.
- * @param {*} obj Object to expose.
- * @param {boolean=} opt_showFn Also show properties that are functions (by
- *     default, functions are omitted).
- * @return {string} A string representation of `obj`.
- */
-goog.debug.deepExpose = function(obj, opt_showFn) {
-  'use strict';
-  var str = [];
-
-  // Track any objects where deepExpose added a Uid, so they can be cleaned up
-  // before return. We do this globally, rather than only on ancestors so that
-  // if the same object appears in the output, you can see it.
-  var uidsToCleanup = [];
-  var ancestorUids = {};
-
-  var helper = function(obj, space) {
-    'use strict';
-    var nestspace = space + '  ';
-
-    var indentMultiline = function(str) {
-      'use strict';
-      return str.replace(/\n/g, '\n' + space);
-    };
-
-
-    try {
-      if (obj === undefined) {
-        str.push('undefined');
-      } else if (obj === null) {
-        str.push('NULL');
-      } else if (typeof obj === 'string') {
-        str.push('"' + indentMultiline(obj) + '"');
-      } else if (typeof obj === 'function') {
-        str.push(indentMultiline(String(obj)));
-      } else if (goog.isObject(obj)) {
-        // Add a Uid if needed. The struct calls implicitly adds them.
-        if (!goog.hasUid(obj)) {
-          uidsToCleanup.push(obj);
-        }
-        var uid = goog.getUid(obj);
-        if (ancestorUids[uid]) {
-          str.push('*** reference loop detected (id=' + uid + ') ***');
-        } else {
-          ancestorUids[uid] = true;
-          str.push('{');
-          for (var x in obj) {
-            if (!opt_showFn && typeof obj[x] === 'function') {
-              continue;
-            }
-            str.push('\n');
-            str.push(nestspace);
-            str.push(x + ' = ');
-            helper(obj[x], nestspace);
-          }
-          str.push('\n' + space + '}');
-          delete ancestorUids[uid];
-        }
-      } else {
-        str.push(obj);
-      }
-    } catch (e) {
-      str.push('*** ' + e + ' ***');
-    }
-  };
-
-  helper(obj, '');
-
-  // Cleanup any Uids that were added by the deepExpose.
-  for (var i = 0; i < uidsToCleanup.length; i++) {
-    goog.removeUid(uidsToCleanup[i]);
-  }
-
-  return str.join('');
-};
-
-
-/**
- * Recursively outputs a nested array as a string.
- * @param {Array<?>} arr The array.
- * @return {string} String representing nested array.
- */
-goog.debug.exposeArray = function(arr) {
-  'use strict';
-  var str = [];
-  for (var i = 0; i < arr.length; i++) {
-    if (Array.isArray(arr[i])) {
-      str.push(goog.debug.exposeArray(arr[i]));
-    } else {
-      str.push(arr[i]);
-    }
-  }
-  return '[ ' + str.join(', ') + ' ]';
-};
-
-
-/**
- * Normalizes the error/exception object between browsers.
- * @param {*} err Raw error object.
- * @return {{
- *    message: (?|undefined),
- *    name: (?|undefined),
- *    lineNumber: (?|undefined),
- *    fileName: (?|undefined),
- *    stack: (?|undefined)
- * }} Normalized error object.
- * @suppress {strictMissingProperties} properties not defined on err
- */
-goog.debug.normalizeErrorObject = function(err) {
-  'use strict';
-  var href = goog.getObjectByName('window.location.href');
-  if (err == null) {
-    err = 'Unknown Error of type "null/undefined"';
-  }
-  if (typeof err === 'string') {
-    return {
-      'message': err,
-      'name': 'Unknown error',
-      'lineNumber': 'Not available',
-      'fileName': href,
-      'stack': 'Not available'
-    };
-  }
-
-  var lineNumber, fileName;
-  var threwError = false;
-
-  try {
-    lineNumber = err.lineNumber || err.line || 'Not available';
-  } catch (e) {
-    // Firefox 2 sometimes throws an error when accessing 'lineNumber':
-    // Message: Permission denied to get property UnnamedClass.lineNumber
-    lineNumber = 'Not available';
-    threwError = true;
-  }
-
-  try {
-    fileName = err.fileName || err.filename || err.sourceURL ||
-        // $googDebugFname may be set before a call to eval to set the filename
-        // that the eval is supposed to present.
-        goog.global['$googDebugFname'] || href;
-  } catch (e) {
-    // Firefox 2 may also throw an error when accessing 'filename'.
-    fileName = 'Not available';
-    threwError = true;
-  }
-
-  var stack = goog.debug.serializeErrorStack_(err);
-
-  // The IE Error object contains only the name and the message.
-  // The Safari Error object uses the line and sourceURL fields.
-  if (threwError || !err.lineNumber || !err.fileName || !err.stack ||
-      !err.message || !err.name) {
-    var message = err.message;
-    if (message == null) {
-      if (err.constructor && err.constructor instanceof Function) {
-        var ctorName = err.constructor.name ?
-            err.constructor.name :
-            goog.debug.getFunctionName(err.constructor);
-        message = 'Unknown Error of type "' + ctorName + '"';
-        // TODO(b/159435805): Remove this hack once bug is resolved.
-        if (goog.debug.CHECK_FOR_THROWN_EVENT && ctorName == 'Event') {
-          try {
-            message = message + ' with Event.type "' + (err.type || '') + '"';
-          } catch (e) {
-            // Just give up on getting more information out of the error object.
-          }
-        }
-      } else {
-        message = 'Unknown Error of unknown type';
-      }
-
-      // Avoid TypeError since toString could be missing from the instance
-      // (e.g. if created Object.create(null)).
-      if (typeof err.toString === 'function' &&
-          Object.prototype.toString !== err.toString) {
-        message += ': ' + err.toString();
-      }
-    }
-    return {
-      'message': message,
-      'name': err.name || 'UnknownError',
-      'lineNumber': lineNumber,
-      'fileName': fileName,
-      'stack': stack || 'Not available'
-    };
-  }
-  // Standards error object
-  // Typed !Object. Should be a subtype of the return type, but it's not.
-  err.stack = stack;
-  return /** @type {?} */ (err);
-};
-
-
-/**
- * Serialize stack by including the cause chain of the exception if it exists.
- *
- *
- * @param {*} e an exception that may have a cause
- * @param {!Object=} seen set of cause that have already been serialized
- * @return {string}
- * @private
- * @suppress {missingProperties} properties not defined on cause and e
- */
-goog.debug.serializeErrorStack_ = function(e, seen) {
-  'use strict';
-  if (!seen) {
-    seen = {};
-  }
-  seen[goog.debug.serializeErrorAsKey_(e)] = true;
-
-  var stack = e['stack'] || '';
-
-  // Add cause if exists.
-  var cause = e.cause;
-  if (cause && !seen[goog.debug.serializeErrorAsKey_(cause)]) {
-    stack += '\nCaused by: ';
-    // Some browsers like Chrome add the error message as the first frame of the
-    // stack, In this case we don't need to add it. Note: we don't use
-    // String.startsWith method because it might have to be polyfilled.
-    if (!cause.stack || cause.stack.indexOf(cause.toString()) != 0) {
-      stack += (typeof cause === 'string') ? cause : cause.message + '\n';
-    }
-    stack += goog.debug.serializeErrorStack_(cause, seen);
-  }
-
-  return stack;
-};
-
-/**
- * Serialize an error to a string key.
- * @param {*} e an exception
- * @return {string}
- * @private
- */
-goog.debug.serializeErrorAsKey_ = function(e) {
-  'use strict';
-  var keyPrefix = '';
-
-  if (typeof e.toString === 'function') {
-    keyPrefix = '' + e;
-  }
-
-  return keyPrefix + e['stack'];
-};
-
-
-/**
- * Converts an object to an Error using the object's toString if it's not
- * already an Error, adds a stacktrace if there isn't one, and optionally adds
- * an extra message.
- * @param {*} err The original thrown error, object, or string.
- * @param {string=} opt_message  optional additional message to add to the
- *     error.
- * @return {!Error} If err is an Error, it is enhanced and returned. Otherwise,
- *     it is converted to an Error which is enhanced and returned.
- */
-goog.debug.enhanceError = function(err, opt_message) {
-  'use strict';
-  var error;
-  if (!(err instanceof Error)) {
-    error = Error(err);
-    if (Error.captureStackTrace) {
-      // Trim this function off the call stack, if we can.
-      Error.captureStackTrace(error, goog.debug.enhanceError);
-    }
-  } else {
-    error = err;
-  }
-
-  if (!error.stack) {
-    error.stack = goog.debug.getStacktrace(goog.debug.enhanceError);
-  }
-  if (opt_message) {
-    // find the first unoccupied 'messageX' property
-    var x = 0;
-    while (error['message' + x]) {
-      ++x;
-    }
-    error['message' + x] = String(opt_message);
-  }
-  return error;
-};
-
-
-/**
- * Converts an object to an Error using the object's toString if it's not
- * already an Error, adds a stacktrace if there isn't one, and optionally adds
- * context to the Error, which is reported by the closure error reporter.
- * @param {*} err The original thrown error, object, or string.
- * @param {!Object<string, string>=} opt_context Key-value context to add to the
- *     Error.
- * @return {!Error} If err is an Error, it is enhanced and returned. Otherwise,
- *     it is converted to an Error which is enhanced and returned.
- */
-goog.debug.enhanceErrorWithContext = function(err, opt_context) {
-  'use strict';
-  var error = goog.debug.enhanceError(err);
-  if (opt_context) {
-    for (var key in opt_context) {
-      goog.debug.errorcontext.addErrorContext(error, key, opt_context[key]);
-    }
-  }
-  return error;
-};
-
-
-/**
- * Gets the current stack trace. Simple and iterative - doesn't worry about
- * catching circular references or getting the args.
- * @param {number=} opt_depth Optional maximum depth to trace back to.
- * @return {string} A string with the function names of all functions in the
- *     stack, separated by \n.
- * @suppress {es5Strict}
- */
-goog.debug.getStacktraceSimple = function(opt_depth) {
-  'use strict';
-  if (!goog.debug.FORCE_SLOPPY_STACKS) {
-    var stack = goog.debug.getNativeStackTrace_(goog.debug.getStacktraceSimple);
-    if (stack) {
-      return stack;
-    }
-    // NOTE: browsers that have strict mode support also have native "stack"
-    // properties.  Fall-through for legacy browser support.
-  }
-
-  var sb = [];
-  var fn = arguments.callee.caller;
-  var depth = 0;
-
-  while (fn && (!opt_depth || depth < opt_depth)) {
-    sb.push(goog.debug.getFunctionName(fn));
-    sb.push('()\n');
-
-    try {
-      fn = fn.caller;
-    } catch (e) {
-      sb.push('[exception trying to get caller]\n');
-      break;
-    }
-    depth++;
-    if (depth >= goog.debug.MAX_STACK_DEPTH) {
-      sb.push('[...long stack...]');
-      break;
-    }
-  }
-  if (opt_depth && depth >= opt_depth) {
-    sb.push('[...reached max depth limit...]');
-  } else {
-    sb.push('[end]');
-  }
-
-  return sb.join('');
-};
-
-
-/**
- * Max length of stack to try and output
- * @type {number}
- */
-goog.debug.MAX_STACK_DEPTH = 50;
-
-
-/**
- * @param {Function} fn The function to start getting the trace from.
- * @return {?string}
- * @private
- */
-goog.debug.getNativeStackTrace_ = function(fn) {
-  'use strict';
-  var tempErr = new Error();
-  if (Error.captureStackTrace) {
-    Error.captureStackTrace(tempErr, fn);
-    return String(tempErr.stack);
-  } else {
-    // IE10, only adds stack traces when an exception is thrown.
-    try {
-      throw tempErr;
-    } catch (e) {
-      tempErr = e;
-    }
-    var stack = tempErr.stack;
-    if (stack) {
-      return String(stack);
-    }
-  }
-  return null;
-};
-
-
-/**
- * Gets the current stack trace, either starting from the caller or starting
- * from a specified function that's currently on the call stack.
- * @param {?Function=} fn If provided, when collecting the stack trace all
- *     frames above the topmost call to this function, including that call,
- *     will be left out of the stack trace.
- * @return {string} Stack trace.
- * @suppress {es5Strict}
- */
-goog.debug.getStacktrace = function(fn) {
-  'use strict';
-  var stack;
-  if (!goog.debug.FORCE_SLOPPY_STACKS) {
-    // Try to get the stack trace from the environment if it is available.
-    var contextFn = fn || goog.debug.getStacktrace;
-    stack = goog.debug.getNativeStackTrace_(contextFn);
-  }
-  if (!stack) {
-    // NOTE: browsers that have strict mode support also have native "stack"
-    // properties. This function will throw in strict mode.
-    stack = goog.debug.getStacktraceHelper_(fn || arguments.callee.caller, []);
-  }
-  return stack;
-};
-
-
-/**
- * Private helper for getStacktrace().
- * @param {?Function} fn If provided, when collecting the stack trace all
- *     frames above the topmost call to this function, including that call,
- *     will be left out of the stack trace.
- * @param {Array<!Function>} visited List of functions visited so far.
- * @return {string} Stack trace starting from function fn.
- * @suppress {es5Strict}
- * @private
- */
-goog.debug.getStacktraceHelper_ = function(fn, visited) {
-  'use strict';
-  var sb = [];
-
-  // Circular reference, certain functions like bind seem to cause a recursive
-  // loop so we need to catch circular references
-  if (goog.array.contains(visited, fn)) {
-    sb.push('[...circular reference...]');
-
-    // Traverse the call stack until function not found or max depth is reached
-  } else if (fn && visited.length < goog.debug.MAX_STACK_DEPTH) {
-    sb.push(goog.debug.getFunctionName(fn) + '(');
-    var args = fn.arguments;
-    // Args may be null for some special functions such as host objects or eval.
-    for (var i = 0; args && i < args.length; i++) {
-      if (i > 0) {
-        sb.push(', ');
-      }
-      var argDesc;
-      var arg = args[i];
-      switch (typeof arg) {
-        case 'object':
-          argDesc = arg ? 'object' : 'null';
-          break;
-
-        case 'string':
-          argDesc = arg;
-          break;
-
-        case 'number':
-          argDesc = String(arg);
-          break;
-
-        case 'boolean':
-          argDesc = arg ? 'true' : 'false';
-          break;
-
-        case 'function':
-          argDesc = goog.debug.getFunctionName(arg);
-          argDesc = argDesc ? argDesc : '[fn]';
-          break;
-
-        case 'undefined':
-        default:
-          argDesc = typeof arg;
-          break;
-      }
-
-      if (argDesc.length > 40) {
-        argDesc = argDesc.substr(0, 40) + '...';
-      }
-      sb.push(argDesc);
-    }
-    visited.push(fn);
-    sb.push(')\n');
-
-    try {
-      sb.push(goog.debug.getStacktraceHelper_(fn.caller, visited));
-    } catch (e) {
-      sb.push('[exception trying to get caller]\n');
-    }
-
-  } else if (fn) {
-    sb.push('[...long stack...]');
-  } else {
-    sb.push('[end]');
-  }
-  return sb.join('');
-};
-
-
-/**
- * Gets a function name
- * @param {Function} fn Function to get name of.
- * @return {string} Function's name.
- */
-goog.debug.getFunctionName = function(fn) {
-  'use strict';
-  if (goog.debug.fnNameCache_[fn]) {
-    return goog.debug.fnNameCache_[fn];
-  }
-
-  // Heuristically determine function name based on code.
-  var functionSource = String(fn);
-  if (!goog.debug.fnNameCache_[functionSource]) {
-    var matches = /function\s+([^\(]+)/m.exec(functionSource);
-    if (matches) {
-      var method = matches[1];
-      goog.debug.fnNameCache_[functionSource] = method;
-    } else {
-      goog.debug.fnNameCache_[functionSource] = '[Anonymous]';
-    }
-  }
-
-  return goog.debug.fnNameCache_[functionSource];
-};
-
-
-/**
- * Makes whitespace visible by replacing it with printable characters.
- * This is useful in finding diffrences between the expected and the actual
- * output strings of a testcase.
- * @param {string} string whose whitespace needs to be made visible.
- * @return {string} string whose whitespace is made visible.
- */
-goog.debug.makeWhitespaceVisible = function(string) {
-  'use strict';
-  return string.replace(/ /g, '[_]')
-      .replace(/\f/g, '[f]')
-      .replace(/\n/g, '[n]\n')
-      .replace(/\r/g, '[r]')
-      .replace(/\t/g, '[t]');
-};
-
-
-/**
- * Returns the type of a value. If a constructor is passed, and a suitable
- * string cannot be found, 'unknown type name' will be returned.
- *
- * <p>Forked rather than moved from {@link goog.asserts.getType_}
- * to avoid adding a dependency to goog.asserts.
- * @param {*} value A constructor, object, or primitive.
- * @return {string} The best display name for the value, or 'unknown type name'.
- */
-goog.debug.runtimeType = function(value) {
-  'use strict';
-  if (value instanceof Function) {
-    return value.displayName || value.name || 'unknown type name';
-  } else if (value instanceof Object) {
-    return /** @type {string} */ (value.constructor.displayName) ||
-        value.constructor.name || Object.prototype.toString.call(value);
-  } else {
-    return value === null ? 'null' : typeof value;
-  }
-};
-
-
-/**
- * Hash map for storing function names that have already been looked up.
- * @type {Object}
- * @private
- */
-goog.debug.fnNameCache_ = {};
-
-
-/**
- * Private internal function to support goog.debug.freeze.
- * @param {T} arg
- * @return {T}
- * @template T
- * @private
- */
-goog.debug.freezeInternal_ = goog.DEBUG && Object.freeze || function(arg) {
-  'use strict';
-  return arg;
-};
-
-
-/**
- * Freezes the given object, but only in debug mode (and in browsers that
- * support it).  Note that this is a shallow freeze, so for deeply nested
- * objects it must be called at every level to ensure deep immutability.
- * @param {T} arg
- * @return {T}
- * @template T
- */
-goog.debug.freeze = function(arg) {
-  'use strict';
-  // NOTE: this compiles to nothing, but hides the possible side effect of
-  // freezeInternal_ from the compiler so that the entire call can be
-  // removed if the result is not used.
-  return {
-    valueOf: function() {
-      'use strict';
-      return goog.debug.freezeInternal_(arg);
-    }
-  }.valueOf();
-};
-
-//third_party/javascript/closure/i18n/uchar.js
-/**
- * @license
- * Copyright The Closure Library Authors.
- * SPDX-License-Identifier: Apache-2.0
- */
-
-/**
- * @fileoverview Collection of utility functions for Unicode character.
- */
-
-goog.provide('goog.i18n.uChar');
-
-
-// Constants for handling Unicode supplementary characters (surrogate pairs).
-
-
-/**
- * The minimum value for Supplementary code points.
- * @type {number}
- * @private
- */
-goog.i18n.uChar.SUPPLEMENTARY_CODE_POINT_MIN_VALUE_ = 0x10000;
-
-
-/**
- * The highest Unicode code point value (scalar value) according to the Unicode
- * Standard.
- * @type {number}
- * @private
- */
-goog.i18n.uChar.CODE_POINT_MAX_VALUE_ = 0x10FFFF;
-
-
-/**
- * Lead surrogate minimum value.
- * @type {number}
- * @private
- */
-goog.i18n.uChar.LEAD_SURROGATE_MIN_VALUE_ = 0xD800;
-
-
-/**
- * Lead surrogate maximum value.
- * @type {number}
- * @private
- */
-goog.i18n.uChar.LEAD_SURROGATE_MAX_VALUE_ = 0xDBFF;
-
-
-/**
- * Trail surrogate minimum value.
- * @type {number}
- * @private
- */
-goog.i18n.uChar.TRAIL_SURROGATE_MIN_VALUE_ = 0xDC00;
-
-
-/**
- * Trail surrogate maximum value.
- * @type {number}
- * @private
- */
-goog.i18n.uChar.TRAIL_SURROGATE_MAX_VALUE_ = 0xDFFF;
-
-
-/**
- * The number of least significant bits of a supplementary code point that in
- * UTF-16 become the least significant bits of the trail surrogate. The rest of
- * the in-use bits of the supplementary code point become the least significant
- * bits of the lead surrogate.
- * @type {number}
- * @private
- */
-goog.i18n.uChar.TRAIL_SURROGATE_BIT_COUNT_ = 10;
-
-
-/**
- * Gets the U+ notation string of a Unicode character. Ex: 'U+0041' for 'A'.
- * @param {string} ch The given character.
- * @return {string} The U+ notation of the given character.
- */
-goog.i18n.uChar.toHexString = function(ch) {
-  'use strict';
-  const chCode = goog.i18n.uChar.toCharCode(ch);
-  const chCodeStr = 'U+' +
-      goog.i18n.uChar.padString_(chCode.toString(16).toUpperCase(), 4, '0');
-
-  return chCodeStr;
-};
-
-
-/**
- * Gets a string padded with given character to get given size.
- * @param {string} str The given string to be padded.
- * @param {number} length The target size of the string.
- * @param {string} ch The character to be padded with.
- * @return {string} The padded string.
- * @private
- */
-goog.i18n.uChar.padString_ = function(str, length, ch) {
-  'use strict';
-  while (str.length < length) {
-    str = ch + str;
-  }
-  return str;
-};
-
-
-/**
- * Gets Unicode value of the given character.
- * @param {string} ch The given character, which in the case of a supplementary
- * character is actually a surrogate pair. The remainder of the string is
- * ignored.
- * @return {number} The Unicode value of the character.
- */
-goog.i18n.uChar.toCharCode = function(ch) {
-  'use strict';
-  return goog.i18n.uChar.getCodePointAround(ch, 0);
-};
-
-
-/**
- * Gets a character from the given Unicode value. If the given code point is not
- * a valid Unicode code point, null is returned.
- * @param {number} code The Unicode value of the character.
- * @return {?string} The character corresponding to the given Unicode value.
- */
-goog.i18n.uChar.fromCharCode = function(code) {
-  'use strict';
-  if (code == null ||
-      !(code >= 0 && code <= goog.i18n.uChar.CODE_POINT_MAX_VALUE_)) {
-    return null;
-  }
-  if (goog.i18n.uChar.isSupplementaryCodePoint(code)) {
-    // First, we split the code point into the trail surrogate part (the
-    // TRAIL_SURROGATE_BIT_COUNT_ least significant bits) and the lead surrogate
-    // part (the rest of the bits, shifted down; note that for now this includes
-    // the supplementary offset, also shifted down, to be subtracted off below).
-    const leadBits = code >> goog.i18n.uChar.TRAIL_SURROGATE_BIT_COUNT_;
-    const trailBits = code &
-        // A bit-mask to get the TRAIL_SURROGATE_BIT_COUNT_ (i.e. 10) least
-        // significant bits. 1 << 10 = 0x0400. 0x0400 - 1 = 0x03FF.
-        ((1 << goog.i18n.uChar.TRAIL_SURROGATE_BIT_COUNT_) - 1);
-
-    // Now we calculate the code point of each surrogate by adding each offset
-    // to the corresponding base code point.
-    const leadCodePoint = leadBits +
-        (goog.i18n.uChar.LEAD_SURROGATE_MIN_VALUE_ -
-         // Subtract off the supplementary offset, which had been shifted down
-         // with the rest of leadBits. We do this here instead of before the
-         // shift in order to save a separate subtraction step.
-         (goog.i18n.uChar.SUPPLEMENTARY_CODE_POINT_MIN_VALUE_ >>
-          goog.i18n.uChar.TRAIL_SURROGATE_BIT_COUNT_));
-    const trailCodePoint =
-        trailBits + goog.i18n.uChar.TRAIL_SURROGATE_MIN_VALUE_;
-
-    // Convert the code points into a 2-character long string.
-    return String.fromCharCode(leadCodePoint) +
-        String.fromCharCode(trailCodePoint);
-  }
-  return String.fromCharCode(code);
-};
-
-
-/**
- * Returns the Unicode code point at the specified index.
- *
- * If the char value specified at the given index is in the leading-surrogate
- * range, and the following index is less than the length of `string`, and
- * the char value at the following index is in the trailing-surrogate range,
- * then the supplementary code point corresponding to this surrogate pair is
- * returned.
- *
- * If the char value specified at the given index is in the trailing-surrogate
- * range, and the preceding index is not before the start of `string`, and
- * the char value at the preceding index is in the leading-surrogate range, then
- * the negated supplementary code point corresponding to this surrogate pair is
- * returned.
- *
- * The negation allows the caller to differentiate between the case where the
- * given index is at the leading surrogate and the one where it is at the
- * trailing surrogate, and thus deduce where the next character starts and
- * preceding character ends.
- *
- * Otherwise, the char value at the given index is returned. Thus, a leading
- * surrogate is returned when it is not followed by a trailing surrogate, and a
- * trailing surrogate is returned when it is not preceded by a leading
- * surrogate.
- *
- * @param {string} string The string.
- * @param {number} index The index from which the code point is to be retrieved.
- * @return {number} The code point at the given index. If the given index is
- * that of the start (i.e. lead surrogate) of a surrogate pair, returns the code
- * point encoded by the pair. If the given index is that of the end (i.e. trail
- * surrogate) of a surrogate pair, returns the negated code pointed encoded by
- * the pair.
- */
-goog.i18n.uChar.getCodePointAround = function(string, index) {
-  'use strict';
-  const charCode = string.charCodeAt(index);
-  if (goog.i18n.uChar.isLeadSurrogateCodePoint(charCode) &&
-      index + 1 < string.length) {
-    const trail = string.charCodeAt(index + 1);
-    if (goog.i18n.uChar.isTrailSurrogateCodePoint(trail)) {
-      // Part of a surrogate pair.
-      return /** @type {number} */ (
-          goog.i18n.uChar.buildSupplementaryCodePoint(charCode, trail));
-    }
-  } else if (goog.i18n.uChar.isTrailSurrogateCodePoint(charCode) && index > 0) {
-    const lead = string.charCodeAt(index - 1);
-    if (goog.i18n.uChar.isLeadSurrogateCodePoint(lead)) {
-      // Part of a surrogate pair.
-      const codepoint = /** @type {number} */ (
-          goog.i18n.uChar.buildSupplementaryCodePoint(lead, charCode));
-      return -codepoint;
-    }
-  }
-  return charCode;
-};
-
-
-/**
- * Determines the length of the string needed to represent the specified
- * Unicode code point.
- * @param {number} codePoint
- * @return {number} 2 if codePoint is a supplementary character, 1 otherwise.
- */
-goog.i18n.uChar.charCount = function(codePoint) {
-  'use strict';
-  return goog.i18n.uChar.isSupplementaryCodePoint(codePoint) ? 2 : 1;
-};
-
-
-/**
- * Determines whether the specified Unicode code point is in the supplementary
- * Unicode characters range.
- * @param {number} codePoint
- * @return {boolean} Whether then given code point is a supplementary character.
- */
-goog.i18n.uChar.isSupplementaryCodePoint = function(codePoint) {
-  'use strict';
-  return codePoint >= goog.i18n.uChar.SUPPLEMENTARY_CODE_POINT_MIN_VALUE_ &&
-      codePoint <= goog.i18n.uChar.CODE_POINT_MAX_VALUE_;
-};
-
-
-/**
- * Gets whether the given code point is a leading surrogate character.
- * @param {number} codePoint
- * @return {boolean} Whether the given code point is a leading surrogate
- * character.
- */
-goog.i18n.uChar.isLeadSurrogateCodePoint = function(codePoint) {
-  'use strict';
-  return codePoint >= goog.i18n.uChar.LEAD_SURROGATE_MIN_VALUE_ &&
-      codePoint <= goog.i18n.uChar.LEAD_SURROGATE_MAX_VALUE_;
-};
-
-
-/**
- * Gets whether the given code point is a trailing surrogate character.
- * @param {number} codePoint
- * @return {boolean} Whether the given code point is a trailing surrogate
- * character.
- */
-goog.i18n.uChar.isTrailSurrogateCodePoint = function(codePoint) {
-  'use strict';
-  return codePoint >= goog.i18n.uChar.TRAIL_SURROGATE_MIN_VALUE_ &&
-      codePoint <= goog.i18n.uChar.TRAIL_SURROGATE_MAX_VALUE_;
-};
-
-
-/**
- * Composes a supplementary Unicode code point from the given UTF-16 surrogate
- * pair. If leadSurrogate isn't a leading surrogate code point or trailSurrogate
- * isn't a trailing surrogate code point, null is returned.
- * @param {number} lead The leading surrogate code point.
- * @param {number} trail The trailing surrogate code point.
- * @return {?number} The supplementary Unicode code point obtained by decoding
- * the given UTF-16 surrogate pair.
- */
-goog.i18n.uChar.buildSupplementaryCodePoint = function(lead, trail) {
-  'use strict';
-  if (goog.i18n.uChar.isLeadSurrogateCodePoint(lead) &&
-      goog.i18n.uChar.isTrailSurrogateCodePoint(trail)) {
-    const shiftedLeadOffset =
-        (lead << goog.i18n.uChar.TRAIL_SURROGATE_BIT_COUNT_) -
-        (goog.i18n.uChar.LEAD_SURROGATE_MIN_VALUE_
-         << goog.i18n.uChar.TRAIL_SURROGATE_BIT_COUNT_);
-    const trailOffset = trail - goog.i18n.uChar.TRAIL_SURROGATE_MIN_VALUE_ +
-        goog.i18n.uChar.SUPPLEMENTARY_CODE_POINT_MIN_VALUE_;
-    return shiftedLeadOffset + trailOffset;
-  }
-  return null;
-};
-
-//third_party/javascript/closure/structs/inversionmap.js
-/**
- * @license
- * Copyright The Closure Library Authors.
- * SPDX-License-Identifier: Apache-2.0
- */
-
-/**
- * @fileoverview Provides inversion and inversion map functionality for storing
- * integer ranges and corresponding values.
- */
-
-goog.provide('goog.structs.InversionMap');
-
-goog.require('goog.array');
-goog.require('goog.asserts');
-
-
-
-/**
- * Maps ranges to values.
- * @param {Array<number>} rangeArray An array of monotonically
- *     increasing integer values, with at least one instance.
- * @param {Array<T>} valueArray An array of corresponding values.
- *     Length must be the same as rangeArray.
- * @param {boolean=} opt_delta If true, saves only delta from previous value.
- * @constructor
- * @template T
- */
-goog.structs.InversionMap = function(rangeArray, valueArray, opt_delta) {
-  'use strict';
-  /**
-   * @protected {?Array<number>}
-   */
-  this.rangeArray = null;
-
-  goog.asserts.assert(
-      rangeArray.length == valueArray.length,
-      'rangeArray and valueArray must have the same length.');
-  this.storeInversion_(rangeArray, opt_delta);
-
-  /** @protected {Array<T>} */
-  this.values = valueArray;
-};
-
-
-/**
- * Stores the integers as ranges (half-open).
- * If delta is true, the integers are delta from the previous value and
- * will be restored to the absolute value.
- * When used as a set, even indices are IN, and odd are OUT.
- * @param {Array<number>} rangeArray An array of monotonically
- *     increasing integer values, with at least one instance.
- * @param {boolean=} opt_delta If true, saves only delta from previous value.
- * @private
- */
-goog.structs.InversionMap.prototype.storeInversion_ = function(
-    rangeArray, opt_delta) {
-  'use strict';
-  this.rangeArray = rangeArray;
-
-  for (var i = 1; i < rangeArray.length; i++) {
-    if (rangeArray[i] == null) {
-      rangeArray[i] = rangeArray[i - 1] + 1;
-    } else if (opt_delta) {
-      rangeArray[i] += rangeArray[i - 1];
-    }
-  }
-};
-
-
-/**
- * Splices a range -> value map into this inversion map.
- * @param {Array<number>} rangeArray An array of monotonically
- *     increasing integer values, with at least one instance.
- * @param {Array<T>} valueArray An array of corresponding values.
- *     Length must be the same as rangeArray.
- * @param {boolean=} opt_delta If true, saves only delta from previous value.
- */
-goog.structs.InversionMap.prototype.spliceInversion = function(
-    rangeArray, valueArray, opt_delta) {
-  'use strict';
-  // By building another inversion map, we build the arrays that we need
-  // to splice in.
-  var otherMap =
-      new goog.structs.InversionMap(rangeArray, valueArray, opt_delta);
-
-  // Figure out where to splice those arrays.
-  var startRange = otherMap.rangeArray[0];
-  var endRange =
-      /** @type {number} */ (goog.array.peek(otherMap.rangeArray));
-  var startSplice = this.getLeast(startRange);
-  var endSplice = this.getLeast(endRange);
-
-  // The inversion map works by storing the start points of ranges...
-  if (startRange != this.rangeArray[startSplice]) {
-    // ...if we're splicing in a start point that isn't already here,
-    // then we need to insert it after the insertion point.
-    startSplice++;
-  }  // otherwise we overwrite the insertion point.
-
-  this.rangeArray = this.rangeArray.slice(0, startSplice)
-                        .concat(otherMap.rangeArray)
-                        .concat(this.rangeArray.slice(endSplice + 1));
-  this.values = this.values.slice(0, startSplice)
-                    .concat(otherMap.values)
-                    .concat(this.values.slice(endSplice + 1));
-};
-
-
-/**
- * Gets the value corresponding to a number from the inversion map.
- * @param {number} intKey The number for which value needs to be retrieved
- *     from inversion map.
- * @return {T|null} Value retrieved from inversion map; null if not found.
- */
-goog.structs.InversionMap.prototype.at = function(intKey) {
-  'use strict';
-  var index = this.getLeast(intKey);
-  if (index < 0) {
-    return null;
-  }
-  return this.values[index];
-};
-
-
-/**
- * Gets the largest index such that rangeArray[index] <= intKey from the
- * inversion map.
- * @param {number} intKey The probe for which rangeArray is searched.
- * @return {number} Largest index such that rangeArray[index] <= intKey.
- * @protected
- */
-goog.structs.InversionMap.prototype.getLeast = function(intKey) {
-  'use strict';
-  var arr = this.rangeArray;
-  var low = 0;
-  var high = arr.length;
-  while (high - low > 8) {
-    var mid = (high + low) >> 1;
-    if (arr[mid] <= intKey) {
-      low = mid;
-    } else {
-      high = mid;
-    }
-  }
-  for (; low < high; ++low) {
-    if (intKey < arr[low]) {
-      break;
-    }
-  }
-  return low - 1;
-};
-
-//third_party/javascript/closure/i18n/graphemebreak.js
-/**
- * @license
- * Copyright The Closure Library Authors.
- * SPDX-License-Identifier: Apache-2.0
- */
-
-/**
- * @fileoverview Detect Grapheme Cluster Break in a pair of codepoints. Follows
- * Unicode 10 UAX#29. Tailoring for Virama × Indic Letters is used.
- *
- * Reference: http://unicode.org/reports/tr29
- */
-
-goog.provide('goog.i18n.GraphemeBreak');
-
-goog.require('goog.asserts');
-goog.require('goog.i18n.uChar');
-goog.require('goog.structs.InversionMap');
-
-/**
- * Enum for all Grapheme Cluster Break properties.
- * These enums directly corresponds to Grapheme_Cluster_Break property values
- * mentioned in http://unicode.org/reports/tr29 table 2. VIRAMA and
- * INDIC_LETTER are for the Virama × Base tailoring mentioned in the notes.
- *
- * @protected @enum {number}
- */
-goog.i18n.GraphemeBreak.property = {
-  OTHER: 0,
-  CONTROL: 1,
-  EXTEND: 2,
-  PREPEND: 3,
-  SPACING_MARK: 4,
-  INDIC_LETTER: 5,
-  VIRAMA: 6,
-  L: 7,
-  V: 8,
-  T: 9,
-  LV: 10,
-  LVT: 11,
-  CR: 12,
-  LF: 13,
-  REGIONAL_INDICATOR: 14,
-  ZWJ: 15,
-  E_BASE: 16,
-  GLUE_AFTER_ZWJ: 17,
-  E_MODIFIER: 18,
-  E_BASE_GAZ: 19
-};
-
-
-/**
- * Grapheme Cluster Break property values for all codepoints as inversion map.
- * Constructed lazily.
- *
- * @private {?goog.structs.InversionMap}
- */
-goog.i18n.GraphemeBreak.inversions_ = null;
-
-
-/**
- * Indicates if a and b form a grapheme cluster.
- *
- * This implements the rules in:
- * http://www.unicode.org/reports/tr29/#Grapheme_Cluster_Boundary_Rules
- *
- * @param {number|string} a Code point or string with the first side of
- *     grapheme cluster.
- * @param {number|string} b Code point or string with the second side of
- *     grapheme cluster.
- * @param {boolean} extended If true, indicates extended grapheme cluster;
- *     If false, indicates legacy cluster.
- * @return {boolean} True if a & b do not form a cluster; False otherwise.
- * @private
- */
-goog.i18n.GraphemeBreak.applyBreakRules_ = function(a, b, extended) {
-  'use strict';
-  var prop = goog.i18n.GraphemeBreak.property;
-
-  var aCode = (typeof a === 'string') ?
-      goog.i18n.GraphemeBreak.getCodePoint_(a, a.length - 1) :
-      a;
-  var bCode =
-      (typeof b === 'string') ? goog.i18n.GraphemeBreak.getCodePoint_(b, 0) : b;
-
-  var aProp = goog.i18n.GraphemeBreak.getBreakProp_(aCode);
-  var bProp = goog.i18n.GraphemeBreak.getBreakProp_(bCode);
-
-  var isString = (typeof a === 'string');
-
-  // GB3.
-  if (aProp === prop.CR && bProp === prop.LF) {
-    return false;
-  }
-
-  // GB4.
-  if (aProp === prop.CONTROL || aProp === prop.CR || aProp === prop.LF) {
-    return true;
-  }
-
-  // GB5.
-  if (bProp === prop.CONTROL || bProp === prop.CR || bProp === prop.LF) {
-    return true;
-  }
-
-  // GB6.
-  if (aProp === prop.L &&
-      (bProp === prop.L || bProp === prop.V || bProp === prop.LV ||
-       bProp === prop.LVT)) {
-    return false;
-  }
-
-  // GB7.
-  if ((aProp === prop.LV || aProp === prop.V) &&
-      (bProp === prop.V || bProp === prop.T)) {
-    return false;
-  }
-
-  // GB8.
-  if ((aProp === prop.LVT || aProp === prop.T) && bProp === prop.T) {
-    return false;
-  }
-
-  // GB9.
-  if (bProp === prop.EXTEND || bProp === prop.ZWJ || bProp === prop.VIRAMA) {
-    return false;
-  }
-
-  // GB9a, GB9b.
-  if (extended && (aProp === prop.PREPEND || bProp === prop.SPACING_MARK)) {
-    return false;
-  }
-
-  // Tailorings for basic aksara support.
-  if (extended && aProp === prop.VIRAMA && bProp === prop.INDIC_LETTER) {
-    return false;
-  }
-
-  var aStr, index, codePoint, codePointProp;
-
-  // GB10.
-  if (isString) {
-    if (bProp === prop.E_MODIFIER) {
-      // If using new API, consume the string's code points starting from the
-      // end and test the left side of: (E_Base | EBG) Extend* × E_Modifier.
-      aStr = /** @type {string} */ (a);
-      index = aStr.length - 1;
-      codePoint = aCode;
-      codePointProp = aProp;
-      while (index > 0 && codePointProp === prop.EXTEND) {
-        index -= goog.i18n.uChar.charCount(codePoint);
-        codePoint = goog.i18n.GraphemeBreak.getCodePoint_(aStr, index);
-        codePointProp = goog.i18n.GraphemeBreak.getBreakProp_(codePoint);
-      }
-      if (codePointProp === prop.E_BASE || codePointProp === prop.E_BASE_GAZ) {
-        return false;
-      }
-    }
-  } else {
-    // If using legacy API, return best effort by testing:
-    // (E_Base | EBG) × E_Modifier.
-    if ((aProp === prop.E_BASE || aProp === prop.E_BASE_GAZ) &&
-        bProp === prop.E_MODIFIER) {
-      return false;
-    }
-  }
-
-  // GB11.
-  if (aProp === prop.ZWJ &&
-      (bProp === prop.GLUE_AFTER_ZWJ || bProp === prop.E_BASE_GAZ)) {
-    return false;
-  }
-
-  // GB12, GB13.
-  if (isString) {
-    if (bProp === prop.REGIONAL_INDICATOR) {
-      // If using new API, consume the string's code points starting from the
-      // end and test the left side of these rules:
-      // - sot (RI RI)* RI × RI
-      // - [^RI] (RI RI)* RI × RI.
-      var numberOfRi = 0;
-      aStr = /** @type {string} */ (a);
-      index = aStr.length - 1;
-      codePoint = aCode;
-      codePointProp = aProp;
-      while (index > 0 && codePointProp === prop.REGIONAL_INDICATOR) {
-        numberOfRi++;
-        index -= goog.i18n.uChar.charCount(codePoint);
-        codePoint = goog.i18n.GraphemeBreak.getCodePoint_(aStr, index);
-        codePointProp = goog.i18n.GraphemeBreak.getBreakProp_(codePoint);
-      }
-      if (codePointProp === prop.REGIONAL_INDICATOR) {
-        numberOfRi++;
-      }
-      if (numberOfRi % 2 === 1) {
-        return false;
-      }
-    }
-  } else {
-    // If using legacy API, return best effort by testing: RI × RI.
-    if (aProp === prop.REGIONAL_INDICATOR &&
-        bProp === prop.REGIONAL_INDICATOR) {
-      return false;
-    }
-  }
-
-  // GB999.
-  return true;
-};
-
-
-/**
- * Method to return property enum value of the code point. If it is Hangul LV or
- * LVT, then it is computed; for the rest it is picked from the inversion map.
- *
- * @param {number} codePoint The code point value of the character.
- * @return {number} Property enum value of code point.
- * @private
- */
-goog.i18n.GraphemeBreak.getBreakProp_ = function(codePoint) {
-  'use strict';
-  if (0xAC00 <= codePoint && codePoint <= 0xD7A3) {
-    var prop = goog.i18n.GraphemeBreak.property;
-    if (codePoint % 0x1C === 0x10) {
-      return prop.LV;
-    }
-    return prop.LVT;
-  } else {
-    if (!goog.i18n.GraphemeBreak.inversions_) {
-      goog.i18n.GraphemeBreak.inversions_ = new goog.structs.InversionMap(
-          [
-            0,      10,   1,     2,   1,    18,   95,    33,    13,  1,
-            594,    112,  275,   7,   263,  45,   1,     1,     1,   2,
-            1,      2,    1,     1,   56,   6,    10,    11,    1,   1,
-            46,     21,   16,    1,   101,  7,    1,     1,     6,   2,
-            2,      1,    4,     33,  1,    1,    1,     30,    27,  91,
-            11,     58,   9,     34,  4,    1,    9,     1,     3,   1,
-            5,      43,   3,     120, 14,   1,    32,    1,     17,  37,
-            1,      1,    1,     1,   3,    8,    4,     1,     2,   1,
-            7,      8,    2,     2,   21,   7,    1,     1,     2,   17,
-            39,     1,    1,     1,   2,    6,    6,     1,     9,   5,
-            4,      2,    2,     12,  2,    15,   2,     1,     17,  39,
-            2,      3,    12,    4,   8,    6,    17,    2,     3,   14,
-            1,      17,   39,    1,   1,    3,    8,     4,     1,   20,
-            2,      29,   1,     2,   17,   39,   1,     1,     2,   1,
-            6,      6,    9,     6,   4,    2,    2,     13,    1,   16,
-            1,      18,   41,    1,   1,    1,    12,    1,     9,   1,
-            40,     1,    3,     17,  31,   1,    5,     4,     3,   5,
-            7,      8,    3,     2,   8,    2,    29,    1,     2,   17,
-            39,     1,    1,     1,   1,    2,    1,     3,     1,   5,
-            1,      8,    9,     1,   3,    2,    29,    1,     2,   17,
-            38,     3,    1,     2,   5,    7,    1,     1,     8,   1,
-            10,     2,    30,    2,   22,   48,   5,     1,     2,   6,
-            7,      1,    18,    2,   13,   46,   2,     1,     1,   1,
-            6,      1,    12,    8,   50,   46,   2,     1,     1,   1,
-            9,      11,   6,     14,  2,    58,   2,     27,    1,   1,
-            1,      1,    1,     4,   2,    49,   14,    1,     4,   1,
-            1,      2,    5,     48,  9,    1,    57,    33,    12,  4,
-            1,      6,    1,     2,   2,    2,    1,     16,    2,   4,
-            2,      2,    4,     3,   1,    3,    2,     7,     3,   4,
-            13,     1,    1,     1,   2,    6,    1,     1,     14,  1,
-            98,     96,   72,    88,  349,  3,    931,   15,    2,   1,
-            14,     15,   2,     1,   14,   15,   2,     15,    15,  14,
-            35,     17,   2,     1,   7,    8,    1,     2,     9,   1,
-            1,      9,    1,     45,  3,    1,    118,   2,     34,  1,
-            87,     28,   3,     3,   4,    2,    9,     1,     6,   3,
-            20,     19,   29,    44,  84,   23,   2,     2,     1,   4,
-            45,     6,    2,     1,   1,    1,    8,     1,     1,   1,
-            2,      8,    6,     13,  48,   84,   1,     14,    33,  1,
-            1,      5,    1,     1,   5,    1,    1,     1,     7,   31,
-            9,      12,   2,     1,   7,    23,   1,     4,     2,   2,
-            2,      2,    2,     11,  3,    2,    36,    2,     1,   1,
-            2,      3,    1,     1,   3,    2,    12,    36,    8,   8,
-            2,      2,    21,    3,   128,  3,    1,     13,    1,   7,
-            4,      1,    4,     2,   1,    3,    2,     198,   64,  523,
-            1,      1,    1,     2,   24,   7,    49,    16,    96,  33,
-            1324,   1,    34,    1,   1,    1,    82,    2,     98,  1,
-            14,     1,    1,     4,   86,   1,    1418,  3,     141, 1,
-            96,     32,   554,   6,   105,  2,    30164, 4,     1,   10,
-            32,     2,    80,    2,   272,  1,    3,     1,     4,   1,
-            23,     2,    2,     1,   24,   30,   4,     4,     3,   8,
-            1,      1,    13,    2,   16,   34,   16,    1,     1,   26,
-            18,     24,   24,    4,   8,    2,    23,    11,    1,   1,
-            12,     32,   3,     1,   5,    3,    3,     36,    1,   2,
-            4,      2,    1,     3,   1,    36,   1,     32,    35,  6,
-            2,      2,    2,     2,   12,   1,    8,     1,     1,   18,
-            16,     1,    3,     6,   1,    1,    1,     3,     48,  1,
-            1,      3,    2,     2,   5,    2,    1,     1,     32,  9,
-            1,      2,    2,     5,   1,    1,    201,   14,    2,   1,
-            1,      9,    8,     2,   1,    2,    1,     2,     1,   1,
-            1,      18,   11184, 27,  49,   1028, 1024,  6942,  1,   737,
-            16,     16,   16,    207, 1,    158,  2,     89,    3,   513,
-            1,      226,  1,     149, 5,    1670, 15,    40,    7,   1,
-            165,    2,    1305,  1,   1,    1,    53,    14,    1,   56,
-            1,      2,    1,     45,  3,    4,    2,     1,     1,   2,
-            1,      66,   3,     36,  5,    1,    6,     2,     62,  1,
-            12,     2,    1,     48,  3,    9,    1,     1,     1,   2,
-            6,      3,    95,    3,   3,    2,    1,     1,     2,   6,
-            1,      160,  1,     3,   7,    1,    21,    2,     2,   56,
-            1,      1,    1,     1,   1,    12,   1,     9,     1,   10,
-            4,      15,   192,   3,   8,    2,    1,     2,     1,   1,
-            105,    1,    2,     6,   1,    1,    2,     1,     1,   2,
-            1,      1,    1,     235, 1,    2,    6,     4,     2,   1,
-            1,      1,    27,    2,   82,   3,    8,     2,     1,   1,
-            1,      1,    106,   1,   1,    1,    2,     6,     1,   1,
-            101,    3,    2,     4,   1,    4,    1,     1283,  1,   14,
-            1,      1,    82,    23,  1,    7,    1,     2,     1,   2,
-            20025,  5,    59,    7,   1050, 62,   4,     19722, 2,   1,
-            4,      5313, 1,     1,   3,    3,    1,     5,     8,   8,
-            2,      7,    30,    4,   148,  3,    1979,  55,    4,   50,
-            8,      1,    14,    1,   22,   1424, 2213,  7,     109, 7,
-            2203,   26,   264,   1,   53,   1,    52,    1,     17,  1,
-            13,     1,    16,    1,   3,    1,    25,    3,     2,   1,
-            2,      3,    30,    1,   1,    1,    13,    5,     66,  2,
-            2,      11,   21,    4,   4,    1,    1,     9,     3,   1,
-            4,      3,    1,     3,   3,    1,    30,    1,     16,  2,
-            106,    1,    4,     1,   71,   2,    4,     1,     21,  1,
-            4,      2,    81,    1,   92,   3,    3,     5,     48,  1,
-            17,     1,    16,    1,   16,   3,    9,     1,     11,  1,
-            587,    5,    1,     1,   7,    1,    9,     10,    3,   2,
-            788162, 31
-          ],
-          [
-            1,  13, 1,  12, 1,  0, 1,  0, 1,  0,  2,  0, 2,  0, 2,  0,  2,  0,
-            2,  0,  2,  0,  2,  0, 3,  0, 2,  0,  1,  0, 2,  0, 2,  0,  2,  3,
-            0,  2,  0,  2,  0,  2, 0,  3, 0,  2,  0,  2, 0,  2, 0,  2,  0,  2,
-            0,  2,  0,  2,  0,  2, 0,  2, 0,  2,  3,  2, 4,  0, 5,  2,  4,  2,
-            0,  4,  2,  4,  6,  4, 0,  2, 5,  0,  2,  0, 5,  0, 2,  4,  0,  5,
-            2,  0,  2,  4,  2,  4, 6,  0, 2,  5,  0,  2, 0,  5, 0,  2,  4,  0,
-            5,  2,  4,  2,  6,  2, 5,  0, 2,  0,  2,  4, 0,  5, 2,  0,  4,  2,
-            4,  6,  0,  2,  0,  2, 4,  0, 5,  2,  0,  2, 4,  2, 4,  6,  2,  5,
-            0,  2,  0,  5,  0,  2, 0,  5, 2,  4,  2,  4, 6,  0, 2,  0,  2,  4,
-            0,  5,  0,  5,  0,  2, 4,  2, 6,  2,  5,  0, 2,  0, 2,  4,  0,  5,
-            2,  0,  4,  2,  4,  2, 4,  2, 4,  2,  6,  2, 5,  0, 2,  0,  2,  4,
-            0,  5,  0,  2,  4,  2, 4,  6, 3,  0,  2,  0, 2,  0, 4,  0,  5,  6,
-            2,  4,  2,  4,  2,  0, 4,  0, 5,  0,  2,  0, 4,  2, 6,  0,  2,  0,
-            5,  0,  2,  0,  4,  2, 0,  2, 0,  5,  0,  2, 0,  2, 0,  2,  0,  2,
-            0,  4,  5,  2,  4,  2, 6,  0, 2,  0,  2,  0, 2,  0, 5,  0,  2,  4,
-            2,  0,  6,  4,  2,  5, 0,  5, 0,  4,  2,  5, 2,  5, 0,  5,  0,  5,
-            2,  5,  2,  0,  4,  2, 0,  2, 5,  0,  2,  0, 7,  8, 9,  0,  2,  0,
-            5,  2,  6,  0,  5,  2, 6,  0, 5,  2,  0,  5, 2,  5, 0,  2,  4,  2,
-            4,  2,  4,  2,  6,  2, 0,  2, 0,  2,  1,  0, 2,  0, 2,  0,  5,  0,
-            2,  4,  2,  4,  2,  4, 2,  0, 5,  0,  5,  0, 5,  2, 4,  2,  0,  5,
-            0,  5,  4,  2,  4,  2, 6,  0, 2,  0,  2,  4, 2,  0, 2,  4,  0,  5,
-            2,  4,  2,  4,  2,  4, 2,  4, 6,  5,  0,  2, 0,  2, 4,  0,  5,  4,
-            2,  4,  2,  6,  2,  5, 0,  5, 0,  5,  0,  2, 4,  2, 4,  2,  4,  2,
-            6,  0,  5,  4,  2,  4, 2,  0, 5,  0,  2,  0, 2,  4, 2,  0,  2,  0,
-            4,  2,  0,  2,  0,  2, 0,  1, 2,  15, 1,  0, 1,  0, 1,  0,  2,  0,
-            16, 0,  17, 0,  17, 0, 17, 0, 16, 0,  17, 0, 16, 0, 17, 0,  2,  0,
-            6,  0,  2,  0,  2,  0, 2,  0, 2,  0,  2,  0, 2,  0, 2,  0,  2,  0,
-            6,  5,  2,  5,  4,  2, 4,  0, 5,  0,  5,  0, 5,  0, 5,  0,  4,  0,
-            5,  4,  6,  2,  0,  2, 0,  5, 0,  2,  0,  5, 2,  4, 6,  0,  7,  2,
-            4,  0,  5,  0,  5,  2, 4,  2, 4,  2,  4,  6, 0,  2, 0,  5,  2,  4,
-            2,  4,  2,  0,  2,  0, 2,  4, 0,  5,  0,  5, 0,  5, 0,  2,  0,  5,
-            2,  0,  2,  0,  2,  0, 2,  0, 2,  0,  5,  4, 2,  4, 0,  4,  6,  0,
-            5,  0,  5,  0,  5,  0, 4,  2, 4,  2,  4,  0, 4,  6, 0,  11, 8,  9,
-            0,  2,  0,  2,  0,  2, 0,  2, 0,  1,  0,  2, 0,  1, 0,  2,  0,  2,
-            0,  2,  0,  2,  0,  2, 6,  0, 2,  0,  4,  2, 4,  0, 2,  6,  0,  6,
-            2,  4,  0,  4,  2,  4, 6,  2, 0,  3,  0,  2, 0,  2, 4,  2,  6,  0,
-            2,  0,  2,  4,  0,  4, 2,  4, 6,  0,  3,  0, 2,  0, 4,  2,  4,  2,
-            6,  2,  0,  2,  0,  2, 4,  2, 6,  0,  2,  4, 0,  2, 0,  2,  4,  2,
-            4,  6,  0,  2,  0,  4, 2,  0, 4,  2,  4,  6, 2,  4, 2,  0,  2,  4,
-            2,  4,  2,  4,  2,  4, 2,  4, 6,  2,  0,  2, 4,  2, 4,  2,  4,  6,
-            2,  0,  2,  0,  4,  2, 4,  2, 4,  6,  2,  0, 2,  4, 2,  4,  2,  6,
-            2,  0,  2,  4,  2,  4, 2,  6, 0,  4,  2,  4, 6,  0, 2,  4,  2,  4,
-            2,  4,  2,  0,  2,  0, 2,  0, 4,  2,  0,  2, 0,  1, 0,  2,  4,  2,
-            0,  4,  2,  1,  2,  0, 2,  0, 2,  0,  2,  0, 2,  0, 2,  0,  2,  0,
-            2,  0,  2,  0,  2,  0, 2,  0, 14, 0,  17, 0, 17, 0, 17, 0,  16, 0,
-            17, 0,  17, 0,  17, 0, 16, 0, 16, 0,  16, 0, 17, 0, 17, 0,  18, 0,
-            16, 0,  16, 0,  19, 0, 16, 0, 16, 0,  16, 0, 16, 0, 16, 0,  17, 0,
-            16, 0,  17, 0,  17, 0, 17, 0, 16, 0,  16, 0, 16, 0, 16, 0,  17, 0,
-            16, 0,  16, 0,  17, 0, 17, 0, 16, 0,  16, 0, 16, 0, 16, 0,  16, 0,
-            16, 0,  16, 0,  16, 0, 16, 0, 1,  2
-          ],
-          true);
-    }
-    return /** @type {number} */ (
-        goog.i18n.GraphemeBreak.inversions_.at(codePoint));
-  }
-};
-
-/**
- * Extracts a code point from a string at the specified index.
- *
- * @param {string} str
- * @param {number} index
- * @return {number} Extracted code point.
- * @private
- */
-goog.i18n.GraphemeBreak.getCodePoint_ = function(str, index) {
-  'use strict';
-  var codePoint = goog.i18n.uChar.getCodePointAround(str, index);
-  return (codePoint < 0) ? -codePoint : codePoint;
-};
-
-/**
- * Indicates if there is a grapheme cluster boundary between a and b.
- *
- * Legacy function. Does not cover cases where a sequence of code points is
- * required in order to decide if there is a grapheme cluster boundary, such as
- * emoji modifier sequences and emoji flag sequences. To cover all cases please
- * use `hasGraphemeBreakStrings`.
- *
- * There are two kinds of grapheme clusters: 1) Legacy 2) Extended. This method
- * is to check for both using a boolean flag to switch between them. If no flag
- * is provided rules for the extended clusters will be used by default.
- *
- * @param {number} a The code point value of the first character.
- * @param {number} b The code point value of the second character.
- * @param {boolean=} opt_extended If true, indicates extended grapheme cluster;
- *     If false, indicates legacy cluster. Default value is true.
- * @return {boolean} True if there is a grapheme cluster boundary between
- *     a and b; False otherwise.
- */
-goog.i18n.GraphemeBreak.hasGraphemeBreak = function(a, b, opt_extended) {
-  'use strict';
-  return goog.i18n.GraphemeBreak.applyBreakRules_(a, b, opt_extended !== false);
-};
-
-/**
- * Indicates if there is a grapheme cluster boundary between a and b.
- *
- * There are two kinds of grapheme clusters: 1) Legacy 2) Extended. This method
- * is to check for both using a boolean flag to switch between them. If no flag
- * is provided rules for the extended clusters will be used by default.
- *
- * @param {string} a String with the first sequence of characters.
- * @param {string} b String with the second sequence of characters.
- * @param {boolean=} opt_extended If true, indicates extended grapheme cluster;
- *     If false, indicates legacy cluster. Default value is true.
- * @return {boolean} True if there is a grapheme cluster boundary between
- *     a and b; False otherwise.
- */
-goog.i18n.GraphemeBreak.hasGraphemeBreakStrings = function(a, b, opt_extended) {
-  'use strict';
-  goog.asserts.assert(a !== undefined, 'First string should be defined.');
-  goog.asserts.assert(b !== undefined, 'Second string should be defined.');
-
-  // Break if any of the strings is empty.
-  if (a.length === 0 || b.length === 0) {
-    return true;
-  }
-
-  return goog.i18n.GraphemeBreak.applyBreakRules_(a, b, opt_extended !== false);
-};
-
-//third_party/javascript/closure/format/format.js
-/**
- * @license
- * Copyright The Closure Library Authors.
- * SPDX-License-Identifier: Apache-2.0
- */
-
-/**
- * @fileoverview Provides utility functions for formatting strings, numbers etc.
- */
-
-goog.provide('goog.format');
-
-goog.require('goog.i18n.GraphemeBreak');
-goog.require('goog.string');
-goog.require('goog.userAgent');
-
-
-/**
- * Formats a number of bytes in human readable form.
- * 54, 450K, 1.3M, 5G etc.
- * @param {number} bytes The number of bytes to show.
- * @param {number=} opt_decimals The number of decimals to use.  Defaults to 2.
- * @return {string} The human readable form of the byte size.
- */
-goog.format.fileSize = function(bytes, opt_decimals) {
-  'use strict';
-  return goog.format.numBytesToString(bytes, opt_decimals, false);
-};
-
-
-/**
- * Checks whether string value containing scaling units (K, M, G, T, P, m,
- * u, n) can be converted to a number.
- *
- * Where there is a decimal, there must be a digit to the left of the
- * decimal point.
- *
- * Negative numbers are valid.
- *
- * Examples:
- *   0, 1, 1.0, 10.4K, 2.3M, -0.3P, 1.2m
- *
- * @param {string} val String value to check.
- * @return {boolean} True if string could be converted to a numeric value.
- */
-goog.format.isConvertableScaledNumber = function(val) {
-  'use strict';
-  return goog.format.SCALED_NUMERIC_RE_.test(val);
-};
-
-
-/**
- * Converts a string to numeric value, taking into account the units.
- * If string ends in 'B', use binary conversion.
- * @param {string} stringValue String to be converted to numeric value.
- * @return {number} Numeric value for string.
- */
-goog.format.stringToNumericValue = function(stringValue) {
-  'use strict';
-  if (goog.string.endsWith(stringValue, 'B')) {
-    return goog.format.stringToNumericValue_(
-        stringValue, goog.format.NUMERIC_SCALES_BINARY_);
-  }
-  return goog.format.stringToNumericValue_(
-      stringValue, goog.format.NUMERIC_SCALES_SI_);
-};
-
-
-/**
- * Converts a string to number of bytes, taking into account the units.
- * Binary conversion.
- * @param {string} stringValue String to be converted to numeric value.
- * @return {number} Numeric value for string.
- */
-goog.format.stringToNumBytes = function(stringValue) {
-  'use strict';
-  return goog.format.stringToNumericValue_(
-      stringValue, goog.format.NUMERIC_SCALES_BINARY_);
-};
-
-
-/**
- * Converts a numeric value to string representation. SI conversion.
- * @param {number} val Value to be converted.
- * @param {number=} opt_decimals The number of decimals to use.  Defaults to 2.
- * @return {string} String representation of number.
- */
-goog.format.numericValueToString = function(val, opt_decimals) {
-  'use strict';
-  return goog.format.numericValueToString_(
-      val, goog.format.NUMERIC_SCALES_SI_, opt_decimals);
-};
-
-
-/**
- * Converts number of bytes to string representation. Binary conversion.
- * Default is to return the additional 'B' suffix only for scales greater than
- * 1K, e.g. '10.5KB' to minimize confusion with counts that are scaled by powers
- * of 1000. Otherwise, suffix is empty string.
- * @param {number} val Value to be converted.
- * @param {number=} opt_decimals The number of decimals to use.  Defaults to 2.
- * @param {boolean=} opt_suffix If true, include trailing 'B' in returned
- *     string.  Default is true.
- * @param {boolean=} opt_useSeparator If true, number and scale will be
- *     separated by a no break space. Default is false.
- * @return {string} String representation of number of bytes.
- */
-goog.format.numBytesToString = function(
-    val, opt_decimals, opt_suffix, opt_useSeparator) {
-  'use strict';
-  var suffix = '';
-  if (opt_suffix === undefined || opt_suffix) {
-    suffix = 'B';
-  }
-  return goog.format.numericValueToString_(
-      val, goog.format.NUMERIC_SCALES_BINARY_, opt_decimals, suffix,
-      opt_useSeparator);
-};
-
-
-/**
- * Converts a string to numeric value, taking into account the units.
- * @param {string} stringValue String to be converted to numeric value.
- * @param {Object} conversion Dictionary of conversion scales.
- * @return {number} Numeric value for string.  If it cannot be converted,
- *    returns NaN.
- * @private
- */
-goog.format.stringToNumericValue_ = function(stringValue, conversion) {
-  'use strict';
-  var match = stringValue.match(goog.format.SCALED_NUMERIC_RE_);
-  if (!match) {
-    // Parse signed `Infinity`, `NaN`, or scientific notation.
-    return Number(stringValue);
-  }
-  var val = Number(match[1]) * conversion[match[2]];
-  return val;
-};
-
-
-/**
- * Converts a numeric value to string, using specified conversion
- * scales.
- * @param {number} val Value to be converted.
- * @param {Object} conversion Dictionary of scaling factors.
- * @param {number=} opt_decimals The number of decimals to use.  Default is 2.
- * @param {string=} opt_suffix Optional suffix to append.
- * @param {boolean=} opt_useSeparator If true, number and scale will be
- *     separated by a space. Default is false.
- * @return {string} The human readable form of the byte size.
- * @private
- */
-goog.format.numericValueToString_ = function(
-    val, conversion, opt_decimals, opt_suffix, opt_useSeparator) {
-  'use strict';
-  var prefixes = goog.format.NUMERIC_SCALE_PREFIXES_;
-  var origVal = val;
-  var symbol = '';
-  var separator = '';
-  var scale = 1;
-  if (val < 0) {
-    val = -val;
-  }
-  if (val === Infinity) return (Infinity * Math.sign(origVal)).toString();
-  for (var i = 0; i < prefixes.length; i++) {
-    var unit = prefixes[i];
-    scale = conversion[unit];
-    if (val >= scale || (scale <= 1 && val > 0.1 * scale)) {
-      // Treat values less than 1 differently, allowing 0.5 to be "0.5" rather
-      // than "500m"
-      symbol = unit;
-      break;
-    }
-  }
-  if (!symbol) {
-    scale = 1;
-  } else {
-    if (opt_suffix) {
-      symbol += opt_suffix;
-    }
-    if (opt_useSeparator) {
-      separator = ' ';
-    }
-  }
-  var ex = Math.pow(10, opt_decimals !== undefined ? opt_decimals : 2);
-  return Math.round(origVal / scale * ex) / ex + separator + symbol;
-};
-
-
-/**
- * Regular expression for detecting scaling units, such as K, M, G, etc. for
- * converting a string representation to a numeric value.
- *
- * Also allow 'k' to be aliased to 'K'.  These could be used for SI (powers
- * of 1000) or Binary (powers of 1024) conversions.
- *
- * Also allow final 'B' to be interpreted as byte-count, implicitly triggering
- * binary conversion (e.g., '10.2MB').
- *
- * @type {RegExp}
- * @private
- */
-goog.format.SCALED_NUMERIC_RE_ = /^(-?\d+\.?\d*)([KMGTPEZYkmun]?)B?$/;
-
-
-/**
- * Ordered list of scaling prefixes in decreasing order.
- * @private {Array<string>}
- */
-goog.format.NUMERIC_SCALE_PREFIXES_ =
-    ['Y', 'Z', 'E', 'P', 'T', 'G', 'M', 'K', '', 'm', 'u', 'n'];
-
-
-/**
- * Scaling factors for conversion of numeric value to string.  SI conversion.
- * @type {Object}
- * @private
- */
-goog.format.NUMERIC_SCALES_SI_ = {
-  '': 1,
-  'n': 1e-9,
-  'u': 1e-6,
-  'm': 1e-3,
-  'k': 1e3,
-  'K': 1e3,
-  'M': 1e6,
-  'G': 1e9,
-  'T': 1e12,
-  'P': 1e15,
-  'E': 1e18,
-  'Z': 1e21,
-  'Y': 1e24
-};
-
-
-/**
- * Scaling factors for conversion of numeric value to string.  Binary
- * conversion.
- * @type {Object}
- * @private
- */
-goog.format.NUMERIC_SCALES_BINARY_ = {
-  '': 1,
-  'n': Math.pow(1024, -3),
-  'u': Math.pow(1024, -2),
-  'm': 1.0 / 1024,
-  'k': 1024,
-  'K': 1024,
-  'M': Math.pow(1024, 2),
-  'G': Math.pow(1024, 3),
-  'T': Math.pow(1024, 4),
-  'P': Math.pow(1024, 5),
-  'E': Math.pow(1024, 6),
-  'Z': Math.pow(1024, 7),
-  'Y': Math.pow(1024, 8)
-};
-
-
-/**
- * First Unicode code point that has the Mark property.
- * @type {number}
- * @private
- */
-goog.format.FIRST_GRAPHEME_EXTEND_ = 0x300;
-
-
-/**
- * Returns true if and only if given character should be treated as a breaking
- * space. All ASCII control characters, the main Unicode range of spacing
- * characters (U+2000 to U+200B inclusive except for U+2007), and several other
- * Unicode space characters are treated as breaking spaces.
- * @param {number} charCode The character code under consideration.
- * @return {boolean} True if the character is a breaking space.
- * @private
- */
-goog.format.isTreatedAsBreakingSpace_ = function(charCode) {
-  'use strict';
-  return (charCode <= goog.format.WbrToken_.SPACE) ||
-      (charCode >= 0x1000 &&
-       ((charCode >= 0x2000 && charCode <= 0x2006) ||
-        (charCode >= 0x2008 && charCode <= 0x200B) || charCode == 0x1680 ||
-        charCode == 0x180E || charCode == 0x2028 || charCode == 0x2029 ||
-        charCode == 0x205f || charCode == 0x3000));
-};
-
-
-/**
- * Returns true if and only if given character is an invisible formatting
- * character.
- * @param {number} charCode The character code under consideration.
- * @return {boolean} True if the character is an invisible formatting character.
- * @private
- */
-goog.format.isInvisibleFormattingCharacter_ = function(charCode) {
-  'use strict';
-  // See: http://unicode.org/charts/PDF/U2000.pdf
-  return (charCode >= 0x200C && charCode <= 0x200F) ||
-      (charCode >= 0x202A && charCode <= 0x202E);
-};
-
-
-/**
- * Inserts word breaks into an HTML string at a given interval.  The counter is
- * reset if a space or a character which behaves like a space is encountered,
- * but it isn't incremented if an invisible formatting character is encountered.
- * WBRs aren't inserted into HTML tags or entities.  Entities count towards the
- * character count, HTML tags do not.
- *
- * With common strings aliased, objects allocations are constant based on the
- * length of the string: N + 3. This guarantee does not hold if the string
- * contains an element >= U+0300 and hasGraphemeBreak is non-trivial.
- *
- * @param {string} str HTML to insert word breaks into.
- * @param {function(number, number, boolean): boolean} hasGraphemeBreak A
- *     function determining if there is a grapheme break between two characters,
- *     in the same signature as goog.i18n.GraphemeBreak.hasGraphemeBreak.
- * @param {number=} opt_maxlen Maximum length after which to ensure
- *     there is a break.  Default is 10 characters.
- * @return {string} The string including word breaks.
- * @private
- */
-goog.format.insertWordBreaksGeneric_ = function(
-    str, hasGraphemeBreak, opt_maxlen) {
-  'use strict';
-  var maxlen = opt_maxlen || 10;
-  if (maxlen > str.length) return str;
-
-  var rv = [];
-  var n = 0;  // The length of the current token
-
-  // This will contain the ampersand or less-than character if one of the
-  // two has been seen; otherwise, the value is zero.
-  var nestingCharCode = 0;
-
-  // First character position from input string that has not been outputted.
-  var lastDumpPosition = 0;
-
-  var charCode = 0;
-  for (var i = 0; i < str.length; i++) {
-    // Using charCodeAt versus charAt avoids allocating new string objects.
-    var lastCharCode = charCode;
-    charCode = str.charCodeAt(i);
-
-    // Don't add a WBR before characters that might be grapheme extending.
-    var isPotentiallyGraphemeExtending =
-        charCode >= goog.format.FIRST_GRAPHEME_EXTEND_ &&
-        !hasGraphemeBreak(lastCharCode, charCode, true);
-
-    // Don't add a WBR at the end of a word. For the purposes of determining
-    // work breaks, all ASCII control characters and some commonly encountered
-    // Unicode spacing characters are treated as breaking spaces.
-    if (n >= maxlen && !goog.format.isTreatedAsBreakingSpace_(charCode) &&
-        !isPotentiallyGraphemeExtending) {
-      // Flush everything seen so far, and append a word break.
-      rv.push(str.substring(lastDumpPosition, i), goog.format.WORD_BREAK_HTML);
-      lastDumpPosition = i;
-      n = 0;
-    }
-
-    if (!nestingCharCode) {
-      // Not currently within an HTML tag or entity
-
-      if (charCode == goog.format.WbrToken_.LT ||
-          charCode == goog.format.WbrToken_.AMP) {
-        // Entering an HTML Entity '&' or open tag '<'
-        nestingCharCode = charCode;
-      } else if (goog.format.isTreatedAsBreakingSpace_(charCode)) {
-        // A space or control character -- reset the token length
-        n = 0;
-      } else if (!goog.format.isInvisibleFormattingCharacter_(charCode)) {
-        // A normal flow character - increment.  For grapheme extending
-        // characters, this is not *technically* a new character.  However,
-        // since the grapheme break detector might be overly conservative,
-        // we have to continue incrementing, or else we won't even be able
-        // to add breaks when we get to things like punctuation.  For the
-        // case where we have a full grapheme break detector, it is okay if
-        // we occasionally break slightly early.
-        n++;
-      }
-    } else if (
-        charCode == goog.format.WbrToken_.GT &&
-        nestingCharCode == goog.format.WbrToken_.LT) {
-      // Leaving an HTML tag, treat the tag as zero-length
-      nestingCharCode = 0;
-    } else if (
-        charCode == goog.format.WbrToken_.SEMI_COLON &&
-        nestingCharCode == goog.format.WbrToken_.AMP) {
-      // Leaving an HTML entity, treat it as length one
-      nestingCharCode = 0;
-      n++;
-    }
-  }
-
-  // Take care of anything we haven't flushed so far.
-  rv.push(str.substr(lastDumpPosition));
-
-  return rv.join('');
-};
-
-
-/**
- * Inserts word breaks into an HTML string at a given interval.
- *
- * This method is as aggressive as possible, using a full table of Unicode
- * characters where it is legal to insert word breaks; however, this table
- * comes at a 2.5k pre-gzip (~1k post-gzip) size cost.  Consider using
- * insertWordBreaksBasic to minimize the size impact.
- *
- * @param {string} str HTML to insert word breaks into.
- * @param {number=} opt_maxlen Maximum length after which to ensure there is a
- *     break.  Default is 10 characters.
- * @return {string} The string including word breaks.
- * @deprecated Prefer wrapping with CSS word-wrap: break-word.
- */
-goog.format.insertWordBreaks = function(str, opt_maxlen) {
-  'use strict';
-  return goog.format.insertWordBreaksGeneric_(
-      str, goog.i18n.GraphemeBreak.hasGraphemeBreak, opt_maxlen);
-};
-
-
-/**
- * Determines conservatively if a character has a Grapheme break.
- *
- * Conforms to a similar signature as goog.i18n.GraphemeBreak, but is overly
- * conservative, returning true only for characters in common scripts that
- * are simple to account for.
- *
- * @param {number} lastCharCode The previous character code.  Ignored.
- * @param {number} charCode The character code under consideration.  It must be
- *     at least \u0300 as a precondition -- this case is covered by
- *     insertWordBreaksGeneric_.
- * @param {boolean=} opt_extended Ignored, to conform with the interface.
- * @return {boolean} Whether it is one of the recognized subsets of characters
- *     with a grapheme break.
- * @private
- */
-goog.format.conservativelyHasGraphemeBreak_ = function(
-    lastCharCode, charCode, opt_extended) {
-  'use strict';
-  // Return false for everything except the most common Cyrillic characters.
-  // Don't worry about Latin characters, because insertWordBreaksGeneric_
-  // itself already handles those.
-  // TODO(gboyer): Also account for Greek, Armenian, and Georgian if it is
-  // simple to do so.
-  return charCode >= 0x400 && charCode < 0x523;
-};
-
-
-// TODO(gboyer): Consider using a compile-time flag to switch implementations
-// rather than relying on the developers to toggle implementations.
-/**
- * Inserts word breaks into an HTML string at a given interval.
- *
- * This method is less aggressive than insertWordBreaks, only inserting
- * breaks next to punctuation and between Latin or Cyrillic characters.
- * However, this is good enough for the common case of URLs.  It also
- * works for all Latin and Cyrillic languages, plus CJK has no need for word
- * breaks.  When this method is used, goog.i18n.GraphemeBreak may be dead
- * code eliminated.
- *
- * @param {string} str HTML to insert word breaks into.
- * @param {number=} opt_maxlen Maximum length after which to ensure there is a
- *     break.  Default is 10 characters.
- * @return {string} The string including word breaks.
- * @deprecated Prefer wrapping with CSS word-wrap: break-word.
- */
-goog.format.insertWordBreaksBasic = function(str, opt_maxlen) {
-  'use strict';
-  return goog.format.insertWordBreaksGeneric_(
-      str, goog.format.conservativelyHasGraphemeBreak_, opt_maxlen);
-};
-
-
-/**
- * True iff the current userAgent is IE8 or above.
- * @type {boolean}
- * @private
- */
-goog.format.IS_IE8_OR_ABOVE_ =
-    goog.userAgent.IE && goog.userAgent.isVersionOrHigher(8);
-
-
-/**
- * Constant for the WBR replacement used by insertWordBreaks.  Safari requires
- * &lt;wbr&gt;&lt;/wbr&gt;, Opera needs the &shy; entity, though this will give
- * a visible hyphen at breaks.  IE8 uses a zero width space. Other browsers just
- * use &lt;wbr&gt;.
- * @type {string}
- */
-goog.format.WORD_BREAK_HTML = goog.userAgent.WEBKIT ? '<wbr></wbr>' :
-    goog.userAgent.OPERA                            ? '&shy;' :
-    goog.format.IS_IE8_OR_ABOVE_                    ? '&#8203;' :
-                                                      '<wbr>';
-
-
-/**
- * Tokens used within insertWordBreaks.
- * @private
- * @enum {number}
- */
-goog.format.WbrToken_ = {
-  LT: 60,          // '<'.charCodeAt(0)
-  GT: 62,          // '>'.charCodeAt(0)
-  AMP: 38,         // '&'.charCodeAt(0)
-  SEMI_COLON: 59,  // ';'.charCodeAt(0)
-  SPACE: 32        // ' '.charCodeAt(0)
-};
-
-//third_party/javascript/closure/i18n/bidiformatter.js
-/**
- * @license
- * Copyright The Closure Library Authors.
- * SPDX-License-Identifier: Apache-2.0
- */
-
-/**
- * @fileoverview Utility for formatting text for display in a potentially
- * opposite-directionality context without garbling.
- * Mostly a port of http://go/formatter.cc.
- */
-
-
-goog.provide('goog.i18n.BidiFormatter');
-
-goog.require('goog.html.SafeHtml');
-goog.require('goog.i18n.bidi');
-goog.require('goog.i18n.bidi.Dir');
-goog.require('goog.i18n.bidi.Format');
-
-
-
-/**
- * Utility class for formatting text for display in a potentially
- * opposite-directionality context without garbling. Provides the following
- * functionality:
- *
- * 1. BiDi Wrapping
- * When text in one language is mixed into a document in another, opposite-
- * directionality language, e.g. when an English business name is embedded in a
- * Hebrew web page, both the inserted string and the text following it may be
- * displayed incorrectly unless the inserted string is explicitly separated
- * from the surrounding text in a "wrapper" that declares its directionality at
- * the start and then resets it back at the end. This wrapping can be done in
- * HTML mark-up (e.g. a 'span dir="rtl"' tag) or - only in contexts where
- * mark-up can not be used - in Unicode BiDi formatting codes (LRE|RLE and PDF).
- * Providing such wrapping services is the basic purpose of the BiDi formatter.
- *
- * 2. Directionality estimation
- * How does one know whether a string about to be inserted into surrounding
- * text has the same directionality? Well, in many cases, one knows that this
- * must be the case when writing the code doing the insertion, e.g. when a
- * localized message is inserted into a localized page. In such cases there is
- * no need to involve the BiDi formatter at all. In the remaining cases, e.g.
- * when the string is user-entered or comes from a database, the language of
- * the string (and thus its directionality) is not known a priori, and must be
- * estimated at run-time. The BiDi formatter does this automatically.
- *
- * 3. Escaping
- * When wrapping plain text - i.e. text that is not already HTML or HTML-
- * escaped - in HTML mark-up, the text must first be HTML-escaped to prevent XSS
- * attacks and other nasty business. This of course is always true, but the
- * escaping can not be done after the string has already been wrapped in
- * mark-up, so the BiDi formatter also serves as a last chance and includes
- * escaping services.
- *
- * Thus, in a single call, the formatter will escape the input string as
- * specified, determine its directionality, and wrap it as necessary. It is
- * then up to the caller to insert the return value in the output.
- *
- * See http://wiki/Main/TemplatesAndBiDi for more information.
- *
- * @param {goog.i18n.bidi.Dir|number|boolean|null} contextDir The context
- *     directionality, in one of the following formats:
- *     1. A goog.i18n.bidi.Dir constant. NEUTRAL is treated the same as null,
- *        i.e. unknown, for backward compatibility with legacy calls.
- *     2. A number (positive = LTR, negative = RTL, 0 = unknown).
- *     3. A boolean (true = RTL, false = LTR).
- *     4. A null for unknown directionality.
- * @param {boolean=} opt_alwaysSpan Whether {@link #spanWrap} should always
- *     use a 'span' tag, even when the input directionality is neutral or
- *     matches the context, so that the DOM structure of the output does not
- *     depend on the combination of directionalities. Default: false.
- * @constructor
- * @final
- */
-goog.i18n.BidiFormatter = function(contextDir, opt_alwaysSpan) {
-  'use strict';
-  /**
-   * The overall directionality of the context in which the formatter is being
-   * used.
-   * @type {?goog.i18n.bidi.Dir}
-   * @private
-   */
-  this.contextDir_ = goog.i18n.bidi.toDir(contextDir, true /* opt_noNeutral */);
-
-  /**
-   * Whether {@link #spanWrap} and similar methods should always use the same
-   * span structure, regardless of the combination of directionalities, for a
-   * stable DOM structure.
-   * @type {boolean}
-   * @private
-   */
-  this.alwaysSpan_ = !!opt_alwaysSpan;
-};
-
-
-/**
- * @return {?goog.i18n.bidi.Dir} The context directionality.
- */
-goog.i18n.BidiFormatter.prototype.getContextDir = function() {
-  'use strict';
-  return this.contextDir_;
-};
-
-
-/**
- * @return {boolean} Whether alwaysSpan is set.
- */
-goog.i18n.BidiFormatter.prototype.getAlwaysSpan = function() {
-  'use strict';
-  return this.alwaysSpan_;
-};
-
-
-/**
- * @param {goog.i18n.bidi.Dir|number|boolean|null} contextDir The context
- *     directionality, in one of the following formats:
- *     1. A goog.i18n.bidi.Dir constant. NEUTRAL is treated the same as null,
- *        i.e. unknown.
- *     2. A number (positive = LTR, negative = RTL, 0 = unknown).
- *     3. A boolean (true = RTL, false = LTR).
- *     4. A null for unknown directionality.
- */
-goog.i18n.BidiFormatter.prototype.setContextDir = function(contextDir) {
-  'use strict';
-  this.contextDir_ = goog.i18n.bidi.toDir(contextDir, true /* opt_noNeutral */);
-};
-
-
-/**
- * @param {boolean} alwaysSpan Whether {@link #spanWrap} should always use a
- *     'span' tag, even when the input directionality is neutral or matches the
- *     context, so that the DOM structure of the output does not depend on the
- *     combination of directionalities.
- */
-goog.i18n.BidiFormatter.prototype.setAlwaysSpan = function(alwaysSpan) {
-  'use strict';
-  this.alwaysSpan_ = alwaysSpan;
-};
-
-
-/**
- * Returns the directionality of input argument `str`.
- * Identical to {@link goog.i18n.bidi.estimateDirection}.
- *
- * @param {string} str The input text.
- * @param {boolean=} opt_isHtml Whether `str` is HTML / HTML-escaped.
- *     Default: false.
- * @return {goog.i18n.bidi.Dir} Estimated overall directionality of `str`.
- */
-goog.i18n.BidiFormatter.prototype.estimateDirection =
-    goog.i18n.bidi.estimateDirection;
-
-
-/**
- * Returns true if two given directionalities are opposite.
- * Note: the implementation is based on the numeric values of the Dir enum.
- *
- * @param {?goog.i18n.bidi.Dir} dir1 1st directionality.
- * @param {?goog.i18n.bidi.Dir} dir2 2nd directionality.
- * @return {boolean} Whether the directionalities are opposite.
- * @private
- */
-goog.i18n.BidiFormatter.prototype.areDirectionalitiesOpposite_ = function(
-    dir1, dir2) {
-  'use strict';
-  return Number(dir1) * Number(dir2) < 0;
-};
-
-
-/**
- * Returns a unicode BiDi mark matching the context directionality (LRM or
- * RLM) if `opt_dirReset`, and if either the directionality or the exit
- * directionality of `str` is opposite to the context directionality.
- * Otherwise returns the empty string.
- *
- * @param {string} str The input text.
- * @param {goog.i18n.bidi.Dir} dir `str`'s overall directionality.
- * @param {boolean=} opt_isHtml Whether `str` is HTML / HTML-escaped.
- *     Default: false.
- * @param {boolean=} opt_dirReset Whether to perform the reset. Default: false.
- * @return {string} A unicode BiDi mark or the empty string.
- * @private
- */
-goog.i18n.BidiFormatter.prototype.dirResetIfNeeded_ = function(
-    str, dir, opt_isHtml, opt_dirReset) {
-  'use strict';
-  // endsWithRtl and endsWithLtr are called only if needed (short-circuit).
-  if (opt_dirReset &&
-      (this.areDirectionalitiesOpposite_(dir, this.contextDir_) ||
-       (this.contextDir_ == goog.i18n.bidi.Dir.LTR &&
-        goog.i18n.bidi.endsWithRtl(str, opt_isHtml)) ||
-       (this.contextDir_ == goog.i18n.bidi.Dir.RTL &&
-        goog.i18n.bidi.endsWithLtr(str, opt_isHtml)))) {
-    return this.contextDir_ == goog.i18n.bidi.Dir.LTR ?
-        goog.i18n.bidi.Format.LRM :
-        goog.i18n.bidi.Format.RLM;
-  } else {
-    return '';
-  }
-};
-
-
-/**
- * Returns "rtl" if `str`'s estimated directionality is RTL, and "ltr" if
- * it is LTR. In case it's NEUTRAL, returns "rtl" if the context directionality
- * is RTL, and "ltr" otherwise.
- * Needed for GXP, which can't handle dirAttr.
- * Example use case:
- * &lt;td expr:dir='bidiFormatter.dirAttrValue(foo)'&gt;
- *   &lt;gxp:eval expr='foo'&gt;
- * &lt;/td&gt;
- *
- * @param {string} str Text whose directionality is to be estimated.
- * @param {boolean=} opt_isHtml Whether `str` is HTML / HTML-escaped.
- *     Default: false.
- * @return {string} "rtl" or "ltr", according to the logic described above.
- */
-goog.i18n.BidiFormatter.prototype.dirAttrValue = function(str, opt_isHtml) {
-  'use strict';
-  return this.knownDirAttrValue(this.estimateDirection(str, opt_isHtml));
-};
-
-
-/**
- * Returns "rtl" if the given directionality is RTL, and "ltr" if it is LTR. In
- * case it's NEUTRAL, returns "rtl" if the context directionality is RTL, and
- * "ltr" otherwise.
- *
- * @param {goog.i18n.bidi.Dir} dir A directionality.
- * @return {string} "rtl" or "ltr", according to the logic described above.
- */
-goog.i18n.BidiFormatter.prototype.knownDirAttrValue = function(dir) {
-  'use strict';
-  var resolvedDir = dir == goog.i18n.bidi.Dir.NEUTRAL ? this.contextDir_ : dir;
-  return resolvedDir == goog.i18n.bidi.Dir.RTL ? 'rtl' : 'ltr';
-};
-
-
-/**
- * Returns 'dir="ltr"' or 'dir="rtl"', depending on `str`'s estimated
- * directionality, if it is not the same as the context directionality.
- * Otherwise, returns the empty string.
- *
- * @param {string} str Text whose directionality is to be estimated.
- * @param {boolean=} opt_isHtml Whether `str` is HTML / HTML-escaped.
- *     Default: false.
- * @return {string} 'dir="rtl"' for RTL text in non-RTL context; 'dir="ltr"' for
- *     LTR text in non-LTR context; else, the empty string.
- */
-goog.i18n.BidiFormatter.prototype.dirAttr = function(str, opt_isHtml) {
-  'use strict';
-  return this.knownDirAttr(this.estimateDirection(str, opt_isHtml));
-};
-
-
-/**
- * Returns 'dir="ltr"' or 'dir="rtl"', depending on the given directionality, if
- * it is not the same as the context directionality. Otherwise, returns the
- * empty string.
- *
- * @param {goog.i18n.bidi.Dir} dir A directionality.
- * @return {string} 'dir="rtl"' for RTL text in non-RTL context; 'dir="ltr"' for
- *     LTR text in non-LTR context; else, the empty string.
- */
-goog.i18n.BidiFormatter.prototype.knownDirAttr = function(dir) {
-  'use strict';
-  if (dir != this.contextDir_) {
-    return dir == goog.i18n.bidi.Dir.RTL ?
-        'dir="rtl"' :
-        dir == goog.i18n.bidi.Dir.LTR ? 'dir="ltr"' : '';
-  }
-  return '';
-};
-
-
-/**
- * Formats a string of unknown directionality for use in HTML output of the
- * context directionality, so an opposite-directionality string is neither
- * garbled nor garbles what follows it.
- * The algorithm: estimates the directionality of input argument `html`.
- * In case its directionality doesn't match the context directionality, wraps it
- * with a 'span' tag and adds a "dir" attribute (either 'dir="rtl"' or
- * 'dir="ltr"'). If setAlwaysSpan(true) was used, the input is always wrapped
- * with 'span', skipping just the dir attribute when it's not needed.
- *
- * If `opt_dirReset`, and if the overall directionality or the exit
- * directionality of `str` are opposite to the context directionality, a
- * trailing unicode BiDi mark matching the context directionality is appened
- * (LRM or RLM).
- *
- * @param {!goog.html.SafeHtml} html The input HTML.
- * @param {boolean=} opt_dirReset Whether to append a trailing unicode bidi mark
- *     matching the context directionality, when needed, to prevent the possible
- *     garbling of whatever may follow `html`. Default: true.
- * @return {!goog.html.SafeHtml} Input text after applying the processing.
- */
-goog.i18n.BidiFormatter.prototype.spanWrapSafeHtml = function(
-    html, opt_dirReset) {
-  'use strict';
-  return this.spanWrapSafeHtmlWithKnownDir(null, html, opt_dirReset);
-};
-
-
-/**
- * Formats a string of given directionality for use in HTML output of the
- * context directionality, so an opposite-directionality string is neither
- * garbled nor garbles what follows it.
- * The algorithm: If `dir` doesn't match the context directionality, wraps
- * `html` with a 'span' tag and adds a "dir" attribute (either 'dir="rtl"'
- * or 'dir="ltr"'). If setAlwaysSpan(true) was used, the input is always wrapped
- * with 'span', skipping just the dir attribute when it's not needed.
- *
- * If `opt_dirReset`, and if `dir` or the exit directionality of
- * `html` are opposite to the context directionality, a trailing unicode
- * BiDi mark matching the context directionality is appened (LRM or RLM).
- *
- * @param {?goog.i18n.bidi.Dir} dir `html`'s overall directionality, or
- *     null if unknown and needs to be estimated.
- * @param {!goog.html.SafeHtml} html The input HTML.
- * @param {boolean=} opt_dirReset Whether to append a trailing unicode bidi mark
- *     matching the context directionality, when needed, to prevent the possible
- *     garbling of whatever may follow `html`. Default: true.
- * @return {!goog.html.SafeHtml} Input text after applying the processing.
- */
-goog.i18n.BidiFormatter.prototype.spanWrapSafeHtmlWithKnownDir = function(
-    dir, html, opt_dirReset) {
-  'use strict';
-  if (dir == null) {
-    dir = this.estimateDirection(goog.html.SafeHtml.unwrap(html), true);
-  }
-  return this.spanWrapWithKnownDir_(dir, html, opt_dirReset);
-};
-
-
-/**
- * The internal implementation of spanWrapSafeHtmlWithKnownDir for non-null dir,
- * to help the compiler optimize.
- *
- * @param {goog.i18n.bidi.Dir} dir `str`'s overall directionality.
- * @param {!goog.html.SafeHtml} html The input HTML.
- * @param {boolean=} opt_dirReset Whether to append a trailing unicode bidi mark
- *     matching the context directionality, when needed, to prevent the possible
- *     garbling of whatever may follow `str`. Default: true.
- * @return {!goog.html.SafeHtml} Input text after applying the above processing.
- * @private
- */
-goog.i18n.BidiFormatter.prototype.spanWrapWithKnownDir_ = function(
-    dir, html, opt_dirReset) {
-  'use strict';
-  opt_dirReset = opt_dirReset || (opt_dirReset == undefined);
-
-  var result;
-  // Whether to add the "dir" attribute.
-  var dirCondition =
-      dir != goog.i18n.bidi.Dir.NEUTRAL && dir != this.contextDir_;
-  if (this.alwaysSpan_ || dirCondition) {  // Wrap is needed
-    var dirAttribute;
-    if (dirCondition) {
-      dirAttribute = dir == goog.i18n.bidi.Dir.RTL ? 'rtl' : 'ltr';
-    }
-    result = goog.html.SafeHtml.create('span', {'dir': dirAttribute}, html);
-  } else {
-    result = html;
-  }
-  var str = goog.html.SafeHtml.unwrap(html);
-  result = goog.html.SafeHtml.concatWithDir(
-      goog.i18n.bidi.Dir.NEUTRAL, result,
-      this.dirResetIfNeeded_(str, dir, true, opt_dirReset));
-  return result;
-};
-
-
-/**
- * Formats a string of unknown directionality for use in plain-text output of
- * the context directionality, so an opposite-directionality string is neither
- * garbled nor garbles what follows it.
- * As opposed to {@link #spanWrap}, this makes use of unicode BiDi formatting
- * characters. In HTML, its *only* valid use is inside of elements that do not
- * allow mark-up, e.g. an 'option' tag.
- * The algorithm: estimates the directionality of input argument `str`.
- * In case it doesn't match  the context directionality, wraps it with Unicode
- * BiDi formatting characters: RLE`str`PDF for RTL text, and
- * LRE`str`PDF for LTR text.
- *
- * If `opt_dirReset`, and if the overall directionality or the exit
- * directionality of `str` are opposite to the context directionality, a
- * trailing unicode BiDi mark matching the context directionality is appended
- * (LRM or RLM).
- *
- * Does *not* do HTML-escaping regardless of the value of `opt_isHtml`.
- * The return value can be HTML-escaped as necessary.
- *
- * @param {string} str The input text.
- * @param {boolean=} opt_isHtml Whether `str` is HTML / HTML-escaped.
- *     Default: false.
- * @param {boolean=} opt_dirReset Whether to append a trailing unicode bidi mark
- *     matching the context directionality, when needed, to prevent the possible
- *     garbling of whatever may follow `str`. Default: true.
- * @return {string} Input text after applying the above processing.
- */
-goog.i18n.BidiFormatter.prototype.unicodeWrap = function(
-    str, opt_isHtml, opt_dirReset) {
-  'use strict';
-  return this.unicodeWrapWithKnownDir(null, str, opt_isHtml, opt_dirReset);
-};
-
-
-/**
- * Formats a string of given directionality for use in plain-text output of the
- * context directionality, so an opposite-directionality string is neither
- * garbled nor garbles what follows it.
- * As opposed to {@link #spanWrapWithKnownDir}, makes use of unicode BiDi
- * formatting characters. In HTML, its *only* valid use is inside of elements
- * that do not allow mark-up, e.g. an 'option' tag.
- * The algorithm: If `dir` doesn't match the context directionality, wraps
- * `str` with Unicode BiDi formatting characters: RLE`str`PDF for
- * RTL text, and LRE`str`PDF for LTR text.
- *
- * If `opt_dirReset`, and if the overall directionality or the exit
- * directionality of `str` are opposite to the context directionality, a
- * trailing unicode BiDi mark matching the context directionality is appended
- * (LRM or RLM).
- *
- * Does *not* do HTML-escaping regardless of the value of `opt_isHtml`.
- * The return value can be HTML-escaped as necessary.
- *
- * @param {?goog.i18n.bidi.Dir} dir `str`'s overall directionality, or
- *     null if unknown and needs to be estimated.
- * @param {string} str The input text.
- * @param {boolean=} opt_isHtml Whether `str` is HTML / HTML-escaped.
- *     Default: false.
- * @param {boolean=} opt_dirReset Whether to append a trailing unicode bidi mark
- *     matching the context directionality, when needed, to prevent the possible
- *     garbling of whatever may follow `str`. Default: true.
- * @return {string} Input text after applying the above processing.
- */
-goog.i18n.BidiFormatter.prototype.unicodeWrapWithKnownDir = function(
-    dir, str, opt_isHtml, opt_dirReset) {
-  'use strict';
-  if (dir == null) {
-    dir = this.estimateDirection(str, opt_isHtml);
-  }
-  return this.unicodeWrapWithKnownDir_(dir, str, opt_isHtml, opt_dirReset);
-};
-
-
-/**
- * The internal implementation of unicodeWrapWithKnownDir for non-null dir, to
- * help the compiler optimize.
- *
- * @param {goog.i18n.bidi.Dir} dir `str`'s overall directionality.
- * @param {string} str The input text.
- * @param {boolean=} opt_isHtml Whether `str` is HTML / HTML-escaped.
- *     Default: false.
- * @param {boolean=} opt_dirReset Whether to append a trailing unicode bidi mark
- *     matching the context directionality, when needed, to prevent the possible
- *     garbling of whatever may follow `str`. Default: true.
- * @return {string} Input text after applying the above processing.
- * @private
- */
-goog.i18n.BidiFormatter.prototype.unicodeWrapWithKnownDir_ = function(
-    dir, str, opt_isHtml, opt_dirReset) {
-  'use strict';
-  opt_dirReset = opt_dirReset || (opt_dirReset == undefined);
-  var result = [];
-  if (dir != goog.i18n.bidi.Dir.NEUTRAL && dir != this.contextDir_) {
-    result.push(
-        dir == goog.i18n.bidi.Dir.RTL ? goog.i18n.bidi.Format.RLE :
-                                        goog.i18n.bidi.Format.LRE);
-    result.push(str);
-    result.push(goog.i18n.bidi.Format.PDF);
-  } else {
-    result.push(str);
-  }
-
-  result.push(this.dirResetIfNeeded_(str, dir, opt_isHtml, opt_dirReset));
-  return result.join('');
-};
-
-
-/**
- * Returns a Unicode BiDi mark matching the context directionality (LRM or RLM)
- * if the directionality or the exit directionality of `str` are opposite
- * to the context directionality. Otherwise returns the empty string.
- *
- * @param {string} str The input text.
- * @param {boolean=} opt_isHtml Whether `str` is HTML / HTML-escaped.
- *     Default: false.
- * @return {string} A Unicode bidi mark matching the global directionality or
- *     the empty string.
- */
-goog.i18n.BidiFormatter.prototype.markAfter = function(str, opt_isHtml) {
-  'use strict';
-  return this.markAfterKnownDir(null, str, opt_isHtml);
-};
-
-
-/**
- * Returns a Unicode BiDi mark matching the context directionality (LRM or RLM)
- * if the given directionality or the exit directionality of `str` are
- * opposite to the context directionality. Otherwise returns the empty string.
- *
- * @param {?goog.i18n.bidi.Dir} dir `str`'s overall directionality, or
- *     null if unknown and needs to be estimated.
- * @param {string} str The input text.
- * @param {boolean=} opt_isHtml Whether `str` is HTML / HTML-escaped.
- *     Default: false.
- * @return {string} A Unicode bidi mark matching the global directionality or
- *     the empty string.
- */
-goog.i18n.BidiFormatter.prototype.markAfterKnownDir = function(
-    dir, str, opt_isHtml) {
-  'use strict';
-  if (dir == null) {
-    dir = this.estimateDirection(str, opt_isHtml);
-  }
-  return this.dirResetIfNeeded_(str, dir, opt_isHtml, true);
-};
-
-
-/**
- * Returns the Unicode BiDi mark matching the context directionality (LRM for
- * LTR context directionality, RLM for RTL context directionality), or the
- * empty string for neutral / unknown context directionality.
- *
- * @return {string} LRM for LTR context directionality and RLM for RTL context
- *     directionality.
- */
-goog.i18n.BidiFormatter.prototype.mark = function() {
-  'use strict';
-  switch (this.contextDir_) {
-    case (goog.i18n.bidi.Dir.LTR):
-      return goog.i18n.bidi.Format.LRM;
-    case (goog.i18n.bidi.Dir.RTL):
-      return goog.i18n.bidi.Format.RLM;
-    default:
-      return '';
-  }
-};
-
-
-/**
- * Returns 'right' for RTL context directionality. Otherwise (LTR or neutral /
- * unknown context directionality) returns 'left'.
- *
- * @return {string} 'right' for RTL context directionality and 'left' for other
- *     context directionality.
- */
-goog.i18n.BidiFormatter.prototype.startEdge = function() {
-  'use strict';
-  return this.contextDir_ == goog.i18n.bidi.Dir.RTL ? goog.i18n.bidi.RIGHT :
-                                                      goog.i18n.bidi.LEFT;
-};
-
-
-/**
- * Returns 'left' for RTL context directionality. Otherwise (LTR or neutral /
- * unknown context directionality) returns 'right'.
- *
- * @return {string} 'left' for RTL context directionality and 'right' for other
- *     context directionality.
- */
-goog.i18n.BidiFormatter.prototype.endEdge = function() {
-  'use strict';
-  return this.contextDir_ == goog.i18n.bidi.Dir.RTL ? goog.i18n.bidi.LEFT :
-                                                      goog.i18n.bidi.RIGHT;
-};
-
-//javascript/template/soy/soyutils_usegoog.js
-/*
- * Copyright 2008 Google Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-/**
- * @fileoverview
- * Utility functions and classes for Soy gencode
- *
- * <p>
- * This file contains utilities that should only be called by Soy-generated
- * JS code. Please do not use these functions directly from
- * your hand-written code. Their names all start with '$$', or exist within the
- * soydata.VERY_UNSAFE namespace.
- *
- * <p>TODO(lukes): ensure that the above pattern is actually followed
- * consistently.
- *
- */
-goog.provide('soy');
-goog.provide('soy.asserts');
-goog.provide('soy.esc');
-goog.provide('soydata');
-goog.provide('soydata.SanitizedHtml');
-goog.provide('soydata.VERY_UNSAFE');
-
-goog.require('goog.array');
-goog.require('goog.asserts');
-goog.require('goog.debug');
-goog.require('goog.format');
-goog.require('goog.html.SafeHtml');
-goog.require('goog.html.SafeScript');
-goog.require('goog.html.SafeStyle');
-goog.require('goog.html.SafeStyleSheet');
-goog.require('goog.html.SafeUrl');
-goog.require('goog.html.TrustedResourceUrl');
-goog.require('goog.html.uncheckedconversions');
-goog.require('goog.i18n.BidiFormatter');
-goog.require('goog.i18n.bidi');
-goog.require('goog.object');
-goog.require('goog.soy.data.SanitizedContent');
-goog.require('goog.soy.data.SanitizedContentKind');
-goog.require('goog.soy.data.SanitizedCss');
-goog.require('goog.soy.data.SanitizedHtml');
-goog.require('goog.soy.data.SanitizedHtmlAttribute');
-goog.require('goog.soy.data.SanitizedJs');
-goog.require('goog.soy.data.SanitizedTrustedResourceUri');
-goog.require('goog.soy.data.SanitizedUri');
-goog.require('goog.string');
-goog.require('goog.string.Const');
-goog.require('soy.checks');
-goog.requireType('goog.soy');
-
-
-// -----------------------------------------------------------------------------
-// soydata: Defines typed strings, e.g. an HTML string `"a<b>c"` is
-// semantically distinct from the plain text string `"a<b>c"` and smart
-// templates can take that distinction into account.
-
-
-/** @typedef {!goog.soy.data.SanitizedContent|{isInvokableFn: boolean}} */
-soydata.IdomFunction;
-
-/**
- * Checks whether a given value is of a given content kind.
- *
- * @param {?} value The value to be examined.
- * @param {!goog.soy.data.SanitizedContentKind} contentKind The desired content
- *     kind.
- * @return {boolean} Whether the given value is of the given kind.
- * @private
- */
-soydata.isContentKind_ = function(value, contentKind) {
-  // TODO(user): This function should really include the assert on
-  // value.constructor that is currently sprinkled at most of the call sites.
-  // Unfortunately, that would require a (debug-mode-only) switch statement.
-  // TODO(user): Perhaps we should get rid of the contentKind property
-  // altogether and only at the constructor.
-  return value != null && value.contentKind === contentKind;
-};
-
-/**
- * Returns a given value's contentDir property, constrained to a
- * goog.i18n.bidi.Dir value or null. Returns null if the value is null,
- * undefined, a primitive or does not have a contentDir property, or the
- * property's value is not 1 (for LTR), -1 (for RTL), or 0 (for neutral).
- *
- * @param {?} value The value whose contentDir property, if any, is to
- *     be returned.
- * @return {?goog.i18n.bidi.Dir} The contentDir property.
- */
-soydata.getContentDir = function(value) {
-  if (value != null) {
-    switch (value.contentDir) {
-      case goog.i18n.bidi.Dir.LTR:
-        return goog.i18n.bidi.Dir.LTR;
-      case goog.i18n.bidi.Dir.RTL:
-        return goog.i18n.bidi.Dir.RTL;
-      case goog.i18n.bidi.Dir.NEUTRAL:
-        return goog.i18n.bidi.Dir.NEUTRAL;
-    }
-  }
-  return null;
-};
-
-/**
- * This class is only a holder for `soydata.SanitizedHtml.from`. Do not
- * instantiate or extend it. Use `goog.soy.data.SanitizedHtml` instead.
- *
- * @constructor
- * @extends {goog.soy.data.SanitizedHtml}
- * @abstract
- */
-soydata.SanitizedHtml = function() {
-  soydata.SanitizedHtml.base(this, 'constructor');  // Throws an exception.
-};
-goog.inherits(soydata.SanitizedHtml, goog.soy.data.SanitizedHtml);
-
-/**
- * Returns a SanitizedHtml object for a particular value. The content direction
- * is preserved.
- *
- * This HTML-escapes the value unless it is already SanitizedHtml or SafeHtml.
- *
- * @param {?} value The value to convert. If it is already a SanitizedHtml
- *     object, it is left alone.
- * @return {!goog.soy.data.SanitizedHtml} A SanitizedHtml object derived from
- *     the stringified value. It is escaped unless the input is SanitizedHtml or
- *     SafeHtml.
- */
-soydata.SanitizedHtml.from = function(value) {
-  // The check is soydata.isContentKind_() inlined for performance.
-  if (soy.checks.isHtml(value)) {
-    return /** @type {!goog.soy.data.SanitizedHtml} */ (value);
-  }
-  if (value instanceof goog.html.SafeHtml) {
-    return soydata.VERY_UNSAFE.ordainSanitizedHtml(
-        goog.html.SafeHtml.unwrap(value), value.getDirection());
-  }
-  return soydata.VERY_UNSAFE.ordainSanitizedHtml(
-      soy.esc.$$escapeHtmlHelper(String(value)), soydata.getContentDir(value));
-};
-
-
-/**
- * Empty string, used as a type in Soy templates.
- * @enum {string}
- * @private
- */
-soydata.$$EMPTY_STRING_ = {
-  VALUE: '',
-};
-
-
-/**
- * Creates a factory for SanitizedContent types.
- *
- * This is a hack so that the soydata.VERY_UNSAFE.ordainSanitized* can
- * instantiate Sanitized* classes, without making the Sanitized* constructors
- * publicly usable. Requiring all construction to use the VERY_UNSAFE names
- * helps callers and their reviewers easily tell that creating SanitizedContent
- * is not always safe and calls for careful review.
- *
- * @param {function(new: T)} ctor A constructor.
- * @return {function(*, ?goog.i18n.bidi.Dir=): T} A factory that takes
- *     content and an optional content direction and returns a new instance. If
- *     the content direction is undefined, ctor.prototype.contentDir is used.
- * @template T
- * @private
- */
-soydata.$$makeSanitizedContentFactory_ = function(ctor) {
-  /**
-   * @param {string} content
-   * @constructor
-   * @extends {goog.soy.data.SanitizedContent}
-   */
-  function InstantiableCtor(content) {
-    /** @override */
-    this.content = content;
-  }
-  InstantiableCtor.prototype = ctor.prototype;
-  /**
-   * Creates a ctor-type SanitizedContent instance.
-   *
-   * @param {?} content The content to put in the instance.
-   * @param {?goog.i18n.bidi.Dir=} opt_contentDir The content direction. If
-   *     undefined, ctor.prototype.contentDir is used.
-   * @return {!goog.soy.data.SanitizedContent} The new instance. It is actually
-   *     of type T above (ctor's type, a descendant of SanitizedContent), but
-   *     there is no way to express that here.
-   */
-  function sanitizedContentFactory(content, opt_contentDir) {
-    var result = new InstantiableCtor(String(content));
-    if (opt_contentDir !== undefined) {
-      result.contentDir = opt_contentDir;
-    }
-    return result;
-  }
-  return sanitizedContentFactory;
-};
-
-
-/**
- * Creates a factory for SanitizedContent types that should always have their
- * default directionality.
- *
- * This is a hack so that the soydata.VERY_UNSAFE.ordainSanitized* can
- * instantiate Sanitized* classes, without making the Sanitized* constructors
- * publicly usable. Requiring all construction to use the VERY_UNSAFE names
- * helps callers and their reviewers easily tell that creating SanitizedContent
- * is not always safe and calls for careful review.
- *
- * @param {function(new: T, string)} ctor A constructor.
- * @return {function(*): T} A factory that takes content and returns a new
- *     instance (with default directionality, i.e. ctor.prototype.contentDir).
- * @template T
- * @private
- */
-soydata.$$makeSanitizedContentFactoryWithDefaultDirOnly_ = function(ctor) {
-  /**
-   * @param {string} content
-   * @constructor
-   * @extends {goog.soy.data.SanitizedContent}
-   */
-  function InstantiableCtor(content) {
-    /** @override */
-    this.content = content;
-  }
-  InstantiableCtor.prototype = ctor.prototype;
-  /**
-   * Creates a ctor-type SanitizedContent instance.
-   *
-   * @param {?} content The content to put in the instance.
-   * @return {!goog.soy.data.SanitizedContent} The new instance. It is actually
-   *     of type T above (ctor's type, a descendant of SanitizedContent), but
-   *     there is no way to express that here.
-   */
-  function sanitizedContentFactory(content) {
-    var result = new InstantiableCtor(String(content));
-    return result;
-  }
-  return sanitizedContentFactory;
-};
-
-
-// -----------------------------------------------------------------------------
-// Sanitized content ordainers. Please use these with extreme caution. A good
-// recommendation is to limit usage of these to just a handful of files in your
-// source tree where usages can be carefully audited.
-
-
-/**
- * Takes a leap of faith that the provided content is "safe" HTML.
- *
- * @param {?} content A string of HTML that can safely be embedded in
- *     a PCDATA context in your app. If you would be surprised to find that an
- *     HTML sanitizer produced `s` (e.g. it runs code or fetches bad URLs)
- *     and you wouldn't write a template that produces `s` on security or
- *     privacy grounds, then don't pass `s` here.
- * @param {?goog.i18n.bidi.Dir=} opt_contentDir The content direction; null if
- *     unknown and thus to be estimated when necessary. Default: null.
- * @return {!goog.soy.data.SanitizedHtml} Sanitized content wrapper that
- *     indicates to Soy not to escape when printed as HTML.
- */
-soydata.VERY_UNSAFE.ordainSanitizedHtml =
-    soydata.$$makeSanitizedContentFactory_(goog.soy.data.SanitizedHtml);
-
-
-/**
- * Takes a leap of faith that the provided content is "safe" (non-attacker-
- * controlled, XSS-free) Javascript.
- *
- * @param {?} content Javascript source that when evaluated does not
- *     execute any attacker-controlled scripts.
- * @return {!goog.soy.data.SanitizedJs} Sanitized content wrapper that indicates
- *     to Soy not to escape when printed as Javascript source.
- */
-soydata.VERY_UNSAFE.ordainSanitizedJs =
-    soydata.$$makeSanitizedContentFactoryWithDefaultDirOnly_(
-        goog.soy.data.SanitizedJs);
-
-
-/**
- * Takes a leap of faith that the provided content is "safe" to use as a URI
- * in a Soy template.
- *
- * This creates a Soy SanitizedContent object which indicates to Soy there is
- * no need to escape it when printed as a URI (e.g. in an href or src
- * attribute), such as if it's already been encoded or  if it's a Javascript:
- * URI.
- *
- * @param {?} content A chunk of URI that the caller knows is safe to
- *     emit in a template.
- * @return {!goog.soy.data.SanitizedUri} Sanitized content wrapper that
- *     indicates to Soy not to escape or filter when printed in URI context.
- */
-soydata.VERY_UNSAFE.ordainSanitizedUri =
-    soydata.$$makeSanitizedContentFactoryWithDefaultDirOnly_(
-        goog.soy.data.SanitizedUri);
-
-
-/**
- * Takes a leap of faith that the provided content is "safe" to use as a
- * TrustedResourceUri in a Soy template.
- *
- * This creates a Soy SanitizedContent object which indicates to Soy there is
- * no need to filter it when printed as a TrustedResourceUri.
- *
- * @param {?} content A chunk of TrustedResourceUri such as that the caller
- *     knows is safe to emit in a template.
- * @return {!goog.soy.data.SanitizedTrustedResourceUri} Sanitized content
- *     wrapper that indicates to Soy not to escape or filter when printed in
- *     TrustedResourceUri context.
- */
-soydata.VERY_UNSAFE.ordainSanitizedTrustedResourceUri =
-    soydata.$$makeSanitizedContentFactoryWithDefaultDirOnly_(
-        goog.soy.data.SanitizedTrustedResourceUri);
-
-
-/**
- * Takes a leap of faith that the provided content is "safe" to use as an
- * HTML attribute.
- *
- * @param {?} content An attribute name and value, such as
- *     `dir="ltr"`.
- * @return {!goog.soy.data.SanitizedHtmlAttribute} Sanitized content wrapper
- *     that indicates to Soy not to escape when printed as an HTML attribute.
- */
-soydata.VERY_UNSAFE.ordainSanitizedHtmlAttribute =
-    soydata.$$makeSanitizedContentFactoryWithDefaultDirOnly_(
-        goog.soy.data.SanitizedHtmlAttribute);
-
-
-/**
- * Takes a leap of faith that the provided content is "safe" to use as CSS
- * in a style block.
- *
- * @param {?} content CSS, such as `color:#c3d9ff`.
- * @return {!goog.soy.data.SanitizedCss} Sanitized CSS wrapper that indicates to
- *     Soy there is no need to escape or filter when printed in CSS context.
- */
-soydata.VERY_UNSAFE.ordainSanitizedCss =
-    soydata.$$makeSanitizedContentFactoryWithDefaultDirOnly_(
-        goog.soy.data.SanitizedCss);
-
-// Utilities related to defining and stubbing soy templates
-
-
-/**
- * A map that allows us to dynamically replace templates.
- *
- * The key is the fully qualified template name and the value is a replacement
- * to call instead.
- *
- * @type {?Object<string, !Function>}
- * @const
- * @public
- */
-soy.$$stubsMap = goog.DEBUG ? {} : null;
-
-
-// -----------------------------------------------------------------------------
-// Soy-generated utilities in the soy namespace.  Contains implementations for
-// common soyfunctions (e.g. keys()) and escaping/print directives.
-
-
-/**
- * Provides a compact serialization format for the key structure.
- * @param {?} item
- * @return {string}
- */
-soy.$$serializeKey = function(item) {
-  const stringified = String(item);
-  let delimiter;
-  if (item == null) {
-    delimiter = '_';
-  } else if (typeof item === 'number') {
-    delimiter = '#';
-  } else {
-    delimiter = ':';
-  }
-  return `${stringified.length}${delimiter}${stringified}`;
-};
-
-
-
-/**
- * Whether the locale is right-to-left.
- *
- * @type {boolean}
- */
-soy.$$IS_LOCALE_RTL = goog.i18n.bidi.IS_RTL;
-
-
-
-/**
- * Copies extra properties into an object if they do not already exist. The
- * destination object is mutated in the process.
- *
- * @param {?} obj The destination object to update.
- * @param {?} defaults An object with default properties to apply.
- * @return {?} The destination object for convenience.
- */
-soy.$$assignDefaults = function(obj, defaults) {
-  for (var key in defaults) {
-    if (!(key in obj)) {
-      obj[key] = defaults[key];
-    }
-  }
-
-  return obj;
-};
-
-
-/**
- * Gets the keys in a map as an array. There are no guarantees on the order.
- * @param {!Object} map The map to get the keys of.
- * @return {!Array<string>} The array of keys in the given map.
- */
-soy.$$getMapKeys = function(map) {
-  var mapKeys = [];
-  for (var key in map) {
-    mapKeys.push(key);
-  }
-  return mapKeys;
-};
-
-
-/**
- * Returns the argument if it is not null.
- *
- * @param {T} val The value to check
- * @return {T} val if is isn't null
- * @template T
- */
-soy.$$checkNotNull = function(val) {
-  if (val == null) {
-    throw Error('unexpected null value');
-  }
-  return val;
-};
-
-
-/**
- * Parses the given string into a base 10 integer. Returns null if parse is
- * unsuccessful.
- * @param {?string} str The string to parse
- * @return {?number} The string parsed as a base 10 integer, or null if
- * unsuccessful
- */
-soy.$$parseInt = function(str) {
-  var parsed = parseInt(String(str), 10);
-  return isNaN(parsed) ? null : parsed;
-};
-
-/**
- * When equals comparison cannot be expressed using JS runtime semantics for ==,
- * bail out to a runtime function. In practice, this only means comparisons
- * of boolean, string and number are valid for equals, and everything else needs
- * this function. Some sanitized content may be functions or objects that need
- * to be coerced to a string.
- * @param {?} valueOne
- * @param {?} valueTwo
- * @return {boolean}
- */
-soy.$$equals = function(valueOne, valueTwo) {
-  // Incremental DOM functions have to be coerced to a string. At runtime
-  // they are tagged with a type for ATTR or HTML. They both need to be
-  // the same to be considered structurally equal. Beware, as this is a
-  // very expensive function.
-  if ((valueOne && valueTwo) &&
-      (valueOne.isInvokableFn && valueTwo.isInvokableFn)) {
-    if ((/** @type {?} */ (valueOne)).contentKind !==
-        (/** @type {?} */ (valueTwo)).contentKind) {
-      return false;
-    } else {
-      return valueOne.toString() === valueTwo.toString();
-    }
-  }
-
-  // Likewise for sanitized content.
-  if (valueOne instanceof goog.soy.data.SanitizedContent &&
-      valueTwo instanceof goog.soy.data.SanitizedContent) {
-    if (valueOne.contentKind != valueTwo.contentKind) {
-      return false;
-    } else {
-      return valueOne.toString() == valueTwo.toString();
-    }
-  }
-
-  // Rely on javascript semantics for comparing two objects.
-  return valueOne == valueTwo;
-};
-
-
-/**
- * @param {?} value
- * @return {boolean}
- */
-soy.$$isFunction = function(value) {
-  return typeof value === 'function';
-};
-
-/**
- * Parses the given string into a float. Returns null if parse is unsuccessful.
- * @param {?string} str The string to parse
- * @return {?number} The string parsed as a float, or null if unsuccessful.
- */
-soy.$$parseFloat = function(str) {
-  var parsed = parseFloat(str);
-  return isNaN(parsed) ? null : parsed;
-};
-
-/**
- * Returns a random integer.
- * @return {number} a random integer between 0 and num
- */
-soy.$$randomInt = function(/** number */ num) {
-  return Math.floor(Math.random() * num);
-};
-
-/**
- * Rounds the given value to the closest decimal point left (negative numbers)
- * or right (positive numbers) of the decimal point
- *
- * TODO(b/112835292): This is probably not something that anyone should use,
- * instead they should use an i18n friendly number formatting routine.
- *
- * @return {number} the rounded value
- */
-soy.$$round = function(/** number */ num, /** number */ numDigitsAfterPt) {
-  const shift = Math.pow(10, numDigitsAfterPt);
-  return Math.round(num * shift) / shift;
-};
-
-/** @return {boolean} returns whether the needle was found in the haystack */
-soy.$$strContains = function(/** string */ haystack, /** string */ needle) {
-  return haystack.indexOf(needle) != -1;
-};
-
-/**
- * Coerce the given value into a bool.
- *
- * For objects of type `SanitizedContent`, the contents are used to determine
- * the boolean value; this is because the outer `SanitizedContent` object
- * instance is always truthy (unless it's null).
- *
- * @param {*} arg The argument to coerce.
- * @return {boolean}
- */
-soy.$$coerceToBoolean = function(arg) {
-  if (arg instanceof goog.soy.data.SanitizedContent) {
-    return !!arg.getContent();
-  }
-  return !!arg;
-};
-
-
-/**
- * Gets a consistent unique id for the given delegate template name. Two calls
- * to this function will return the same id if and only if the input names are
- * the same.
- *
- * <p> Important: This function must always be called with a string constant.
- *
- * <p> If Closure Compiler is not being used, then this is just this identity
- * function. If Closure Compiler is being used, then each call to this function
- * will be replaced with a short string constant, which will be consistent per
- * input name.
- *
- * @param {string} delTemplateName The delegate template name for which to get a
- *     consistent unique id.
- * @return {string} A unique id that is consistent per input name.
- *
- * @idGenerator {consistent}
- */
-soy.$$getDelTemplateId = function(delTemplateName) {
-  return delTemplateName;
-};
-
-
-/**
- * Map from registered delegate template key to the priority of the
- * implementation.
- * @const {!Object<number>}
- * @private
- */
-soy.$$DELEGATE_REGISTRY_PRIORITIES_ = {};
-
-/**
- * Map from registered delegate template key to the implementation function.
- * @const {!Object<!Function>}
- * @private
- */
-soy.$$DELEGATE_REGISTRY_FUNCTIONS_ = {};
-
-
-/**
- * Registers a delegate implementation. If the same delegate template key (id
- * and variant) has been registered previously, then priority values are
- * compared and only the higher priority implementation is stored (if
- * priorities are equal, an error is thrown).
- *
- * @param {string} delTemplateId The delegate template id.
- * @param {string} delTemplateVariant The delegate template variant (can be
- *     empty string).
- * @param {number} delPriority The implementation's priority value.
- * @param {!Function} delFn The implementation function.
- */
-soy.$$registerDelegateFn = function(
-    delTemplateId, delTemplateVariant, delPriority, delFn) {
-
-  var mapKey = 'key_' + delTemplateId + ':' + delTemplateVariant;
-  var currPriority = soy.$$DELEGATE_REGISTRY_PRIORITIES_[mapKey];
-  if (currPriority === undefined || delPriority > currPriority) {
-    // Registering new or higher-priority function: replace registry entry.
-    soy.$$DELEGATE_REGISTRY_PRIORITIES_[mapKey] = delPriority;
-    soy.$$DELEGATE_REGISTRY_FUNCTIONS_[mapKey] = delFn;
-  } else if (delPriority == currPriority) {
-    // Registering same-priority function: error.
-    throw Error(
-        'Encountered two active delegates with the same priority ("' +
-            delTemplateId + ':' + delTemplateVariant + '").');
-  } else {
-    // Registering lower-priority function: do nothing.
-  }
-};
-
-
-/**
- * Retrieves the (highest-priority) implementation that has been registered for
- * a given delegate template key (id and variant). If no implementation has
- * been registered for the key, then the fallback is the same id with empty
- * variant. If the fallback is also not registered, and allowsEmptyDefault is
- * true, then returns an implementation that is equivalent to an empty template
- * (i.e. rendered output would be empty string).
- *
- * @param {string} delTemplateId The delegate template id.
- * @param {string} delTemplateVariant The delegate template variant (can be
- *     empty string).
- * @param {boolean} allowsEmptyDefault Whether to default to the empty template
- *     function if there's no active implementation.
- * @return {!Function} The retrieved implementation function.
- */
-soy.$$getDelegateFn = function(
-    delTemplateId, delTemplateVariant, allowsEmptyDefault) {
-
-  var delFn = soy.$$DELEGATE_REGISTRY_FUNCTIONS_[
-      'key_' + delTemplateId + ':' + delTemplateVariant];
-  if (! delFn && delTemplateVariant != '') {
-    // Fallback to empty variant.
-    delFn = soy.$$DELEGATE_REGISTRY_FUNCTIONS_['key_' + delTemplateId + ':'];
-  }
-
-  if (delFn) {
-    return delFn;
-  } else if (allowsEmptyDefault) {
-    return soy.$$EMPTY_TEMPLATE_FN_;
-  } else {
-    throw Error(
-        'Found no active impl for delegate call to "' + delTemplateId +
-        (delTemplateVariant ? ':' + delTemplateVariant : '') +
-        '" (and delcall does not set allowemptydefault="true").');
-  }
-};
-
-
-/**
- * Private helper soy.$$getDelegateFn(). This is the empty template function
- * that is returned whenever there's no delegate implementation found.
- *
- * Note: This is also used for idom.
- *
- * @return {string}
- * @private
- */
-soy.$$EMPTY_TEMPLATE_FN_ = function() {
-  return '';
-};
-
-
-// -----------------------------------------------------------------------------
-// Internal sanitized content wrappers.
-
-
-/**
- * Creates a SanitizedContent factory for SanitizedContent types for internal
- * Soy let and param blocks.
- *
- * This is a hack within Soy so that SanitizedContent objects created via let
- * and param blocks will truth-test as false if they are empty string.
- * Tricking the Javascript runtime to treat empty SanitizedContent as falsey is
- * not possible, and changing the Soy compiler to wrap every boolean statement
- * for just this purpose is impractical.  Instead, we just avoid wrapping empty
- * string as SanitizedContent, since it's a no-op for empty strings anyways.
- *
- * @param {function(new: T)} ctor A constructor.
- * @return {function(*, ?goog.i18n.bidi.Dir=): (T|!soydata.$$EMPTY_STRING_)}
- *     A factory that takes content and an optional content direction and
- *     returns a new instance, or an empty string. If the content direction is
- *     undefined, ctor.prototype.contentDir is used.
- * @template T
- * @private
- */
-soydata.$$makeSanitizedContentFactoryForInternalBlocks_ = function(ctor) {
-  /**
-   * @param {string} content
-   * @constructor
-   * @extends {goog.soy.data.SanitizedContent}
-   */
-  function InstantiableCtor(content) {
-    /** @override */
-    this.content = content;
-  }
-  InstantiableCtor.prototype = ctor.prototype;
-  /**
-   * Creates a ctor-type SanitizedContent instance.
-   *
-   * @param {?} content The content to put in the instance.
-   * @param {?goog.i18n.bidi.Dir=} opt_contentDir The content direction. If
-   *     undefined, ctor.prototype.contentDir is used.
-   * @return {!goog.soy.data.SanitizedContent|!soydata.$$EMPTY_STRING_} The new
-   *     instance, or an empty string. A new instance is actually of type T
-   *     above (ctor's type, a descendant of SanitizedContent), but there's no
-   *     way to express that here.
-   */
-  function sanitizedContentFactory(content, opt_contentDir) {
-    var contentString = String(content);
-    if (!contentString) {
-      return soydata.$$EMPTY_STRING_.VALUE;
-    }
-    var result = new InstantiableCtor(contentString);
-    if (opt_contentDir !== undefined) {
-      result.contentDir = opt_contentDir;
-    }
-    return result;
-  }
-  return sanitizedContentFactory;
-};
-
-
-/**
- * Creates a SanitizedContent factory for SanitizedContent types that should
- * always have their default directionality for internal Soy let and param
- * blocks.
- *
- * This is a hack within Soy so that SanitizedContent objects created via let
- * and param blocks will truth-test as false if they are empty string.
- * Tricking the Javascript runtime to treat empty SanitizedContent as falsey is
- * not possible, and changing the Soy compiler to wrap every boolean statement
- * for just this purpose is impractical.  Instead, we just avoid wrapping empty
- * string as SanitizedContent, since it's a no-op for empty strings anyways.
- *
- * @param {function(new: T)} ctor A constructor.
- * @return {function(*): (T|!soydata.$$EMPTY_STRING_)} A
- *     factory that takes content and returns a
- *     new instance (with default directionality, i.e.
- *     ctor.prototype.contentDir), or an empty string.
- * @template T
- * @private
- */
-soydata.$$makeSanitizedContentFactoryWithDefaultDirOnlyForInternalBlocks_ =
-    function(ctor) {
-  /**
-   * @param {string} content
-   * @constructor
-   * @extends {goog.soy.data.SanitizedContent}
-   */
-  function InstantiableCtor(content) {
-    /** @override */
-    this.content = content;
-  }
-  InstantiableCtor.prototype = ctor.prototype;
-  /**
-   * Creates a ctor-type SanitizedContent instance.
-   *
-   * @param {?} content The content to put in the instance.
-   * @return {!goog.soy.data.SanitizedContent|!soydata.$$EMPTY_STRING_} The new
-   *     instance, or an empty string. A new instance is actually of type T
-   *     above (ctor's type, a descendant of SanitizedContent), but there's no
-   *     way to express that here.
-   */
-  function sanitizedContentFactory(content) {
-    var contentString = String(content);
-    if (!contentString) {
-      return soydata.$$EMPTY_STRING_.VALUE;
-    }
-    var result = new InstantiableCtor(contentString);
-    return result;
-  }
-  return sanitizedContentFactory;
-};
-
-
-/**
- * Creates kind="html" block contents (internal use only).
- *
- * @param {?} content Text.
- * @param {?goog.i18n.bidi.Dir=} opt_contentDir The content direction; null if
- *     unknown and thus to be estimated when necessary. Default: null.
- * @return {!goog.soy.data.SanitizedHtml|!soydata.$$EMPTY_STRING_} Wrapped
- *     result.
- */
-soydata.VERY_UNSAFE.$$ordainSanitizedHtmlForInternalBlocks =
-    soydata.$$makeSanitizedContentFactoryForInternalBlocks_(
-        goog.soy.data.SanitizedHtml);
-
-
-/**
- * Creates kind="js" block contents (internal use only).
- *
- * @param {?} content Text.
- * @return {!goog.soy.data.SanitizedJs|!soydata.$$EMPTY_STRING_} Wrapped result.
- */
-soydata.VERY_UNSAFE.$$ordainSanitizedJsForInternalBlocks =
-    soydata.$$makeSanitizedContentFactoryWithDefaultDirOnlyForInternalBlocks_(
-        goog.soy.data.SanitizedJs);
-
-
-/**
- * Creates kind="trustedResourceUri" block contents (internal use only).
- *
- * @param {?} content Text.
- * @return {!goog.soy.data.SanitizedTrustedResourceUri|!soydata.$$EMPTY_STRING_}
- *     Wrapped result.
- */
-soydata.VERY_UNSAFE.$$ordainSanitizedTrustedResourceUriForInternalBlocks =
-    soydata.$$makeSanitizedContentFactoryWithDefaultDirOnlyForInternalBlocks_(
-        goog.soy.data.SanitizedTrustedResourceUri);
-
-
-/**
- * Creates kind="uri" block contents (internal use only).
- *
- * @param {?} content Text.
- * @return {!goog.soy.data.SanitizedUri|!soydata.$$EMPTY_STRING_} Wrapped
- *     result.
- */
-soydata.VERY_UNSAFE.$$ordainSanitizedUriForInternalBlocks =
-    soydata.$$makeSanitizedContentFactoryWithDefaultDirOnlyForInternalBlocks_(
-        goog.soy.data.SanitizedUri);
-
-
-/**
- * Creates kind="attributes" block contents (internal use only).
- *
- * @param {?} content Text.
- * @return {!goog.soy.data.SanitizedHtmlAttribute|!soydata.$$EMPTY_STRING_}
- *     Wrapped result.
- */
-soydata.VERY_UNSAFE.$$ordainSanitizedAttributesForInternalBlocks =
-    soydata.$$makeSanitizedContentFactoryWithDefaultDirOnlyForInternalBlocks_(
-        goog.soy.data.SanitizedHtmlAttribute);
-
-
-/**
- * Creates kind="css" block contents (internal use only).
- *
- * @param {?} content Text.
- * @return {!goog.soy.data.SanitizedCss|!soydata.$$EMPTY_STRING_} Wrapped
- *     result.
- */
-soydata.VERY_UNSAFE.$$ordainSanitizedCssForInternalBlocks =
-    soydata.$$makeSanitizedContentFactoryWithDefaultDirOnlyForInternalBlocks_(
-        goog.soy.data.SanitizedCss);
-
-
-// -----------------------------------------------------------------------------
-// Escape/filter/normalize.
-
-
-/**
- * Returns a SanitizedHtml object for a particular value. The content direction
- * is preserved.
- *
- * This HTML-escapes the value unless it is already SanitizedHtml. Escapes
- * double quote '"' in addition to '&', '<', and '>' so that a string can be
- * included in an HTML tag attribute value within double quotes.
- *
- * @param {?} value The value to convert. If it is already a SanitizedHtml
- *     object, it is left alone.
- * @return {!goog.soy.data.SanitizedHtml} An escaped version of value.
- */
-soy.$$escapeHtml = function(value) {
-  return soydata.SanitizedHtml.from(value);
-};
-
-
-/**
- * Strips unsafe tags to convert a string of untrusted HTML into HTML that
- * is safe to embed. The content direction is preserved.
- *
- * @param {?} value The string-like value to be escaped. May not be a string,
- *     but the value will be coerced to a string.
- * @param {?Array<string>=} opt_safeTags Additional tag names to whitelist.
- * @return {!goog.soy.data.SanitizedHtml} A sanitized and normalized version of
- *     value.
- */
-soy.$$cleanHtml = function(value, opt_safeTags) {
-  if (soy.checks.isHtml(value)) {
-    return /** @type {!goog.soy.data.SanitizedHtml} */ (value);
-  }
-  var tagWhitelist;
-  if (opt_safeTags) {
-    tagWhitelist = goog.object.createSet(opt_safeTags);
-    goog.object.extend(tagWhitelist, soy.esc.$$SAFE_TAG_WHITELIST_);
-  } else {
-    tagWhitelist = soy.esc.$$SAFE_TAG_WHITELIST_;
-  }
-  return soydata.VERY_UNSAFE.ordainSanitizedHtml(
-      soy.$$stripHtmlTags(value, tagWhitelist), soydata.getContentDir(value));
-};
-
-
-// LINT.IfChange(htmlToText)
-/**
- * Converts HTML to plain text by removing tags, normalizing spaces and
- * converting entities.
- *
- * The last two parameters are idom functions.
- * @param {string|?goog.soy.data.SanitizedHtml|?goog.html.SafeHtml|
- *     ?soydata.IdomFunction|?Function|undefined} value
- * @return {string}
- */
-soy.$$htmlToText = function(value) {
-  if (value == null) {
-    return '';
-  }
-  var html;
-  if (value instanceof goog.html.SafeHtml) {
-    html = goog.html.SafeHtml.unwrap(value);
-  } else if (soydata.isContentKind_(
-                 value, goog.soy.data.SanitizedContentKind.HTML)) {
-    html = value.toString();
-  } else {
-    return goog.asserts.assertString(value);
-  }
-  var text = '';
-  var start = 0;
-  // Tag name to stop removing contents, e.g. '/script'.
-  var removingUntil = '';
-  // Tag name to stop preserving whitespace, e.g. '/pre'.
-  var wsPreservingUntil = '';
-  var tagRe =
-      /<(?:!--.*?--|(?:!|(\/?[a-z][\w:-]*))(?:[^>'"]|"[^"]*"|'[^']*')*)>|$/gi;
-  for (var match; match = tagRe.exec(html);) {
-    var tag = match[1];
-    var offset = match.index;
-    if (!removingUntil) {
-      var chunk = html.substring(start, offset);
-      chunk = goog.string.unescapeEntities(chunk);
-      if (!wsPreservingUntil) {
-        // We are not inside <pre>, normalize spaces.
-        chunk = chunk.replace(/\s+/g, ' ');
-        if (!/\S$/.test(text)) {
-          // Strip leading space unless after non-whitespace.
-          chunk = chunk.replace(/^ /, '');
-        }
-      }
-      text += chunk;
-      if (/^(script|style|textarea|title)$/i.test(tag)) {
-        removingUntil = '/' + tag.toLowerCase();
-      } else if (/^br$/i.test(tag)) {
-        // <br> adds newline even after newline.
-        text += '\n';
-      } else if (soy.BLOCK_TAGS_RE_.test(tag)) {
-        if (/[^\n]$/.test(text)) {
-          // Block tags don't add more consecutive newlines.
-          text += '\n';
-        }
-        if (/^pre$/i.test(tag)) {
-          wsPreservingUntil = '/' + tag.toLowerCase();
-        } else if (tag.toLowerCase() == wsPreservingUntil) {
-          wsPreservingUntil = '';
-        }
-      } else if (/^(td|th)$/i.test(tag)) {
-        // We add \t even after newline to support more leading <td>.
-        text += '\t';
-      }
-    } else if (removingUntil == tag.toLowerCase()) {
-      removingUntil = '';
-    }
-    if (!match[0]) {
-      break;
-    }
-    start = offset + match[0].length;
-  }
-  return text;
-};
-
-
-/** @private @const */
-soy.BLOCK_TAGS_RE_ =
-    /^\/?(address|blockquote|dd|div|dl|dt|h[1-6]|hr|li|ol|p|pre|table|tr|ul)$/i;
-// LINT.ThenChange(
-//     ../../../third_party/java_src/soy/java/com/google/template/soy/basicfunctions/HtmlToText.java,
-//     ../../../third_party/java_src/soy/python/runtime/sanitize.py:htmlToText)
-
-
-/**
- * Escapes HTML, except preserves entities.
- *
- * Used mainly internally for escaping message strings in attribute and rcdata
- * context, where we explicitly want to preserve any existing entities.
- *
- * @param {?} value Value to normalize.
- * @return {string} A value safe to insert in HTML without any quotes or angle
- *     brackets.
- */
-soy.$$normalizeHtml = function(value) {
-  return soy.esc.$$normalizeHtmlHelper(value);
-};
-
-
-/**
- * Escapes HTML special characters in a string so that it can be embedded in
- * RCDATA.
- * <p>
- * Escapes HTML special characters so that the value will not prematurely end
- * the body of a tag like `<textarea>` or `<title>`. RCDATA tags
- * cannot contain other HTML entities, so it is not strictly necessary to escape
- * HTML special characters except when part of that text looks like an HTML
- * entity or like a close tag : `</textarea>`.
- * <p>
- * Will normalize known safe HTML to make sure that sanitized HTML (which could
- * contain an innocuous `</textarea>` don't prematurely end an RCDATA
- * element.
- *
- * @param {?} value The string-like value to be escaped. May not be a string,
- *     but the value will be coerced to a string.
- * @return {string} An escaped version of value.
- */
-soy.$$escapeHtmlRcdata = function(value) {
-  if (soy.checks.isHtml(value)) {
-    return soy.esc.$$normalizeHtmlHelper(value.getContent());
-  }
-  return soy.esc.$$escapeHtmlHelper(value);
-};
-
-
-/**
- * Matches any/only HTML5 void elements' start tags.
- * See http://www.w3.org/TR/html-markup/syntax.html#syntax-elements
- * @const {!RegExp}
- * @private
- */
-soy.$$HTML5_VOID_ELEMENTS_ = new RegExp(
-    '^<(?:area|base|br|col|command|embed|hr|img|input' +
-    '|keygen|link|meta|param|source|track|wbr)\\b');
-
-
-/**
- * Removes HTML tags from a string of known safe HTML.
- * If opt_tagWhitelist is not specified or is empty, then
- * the result can be used as an attribute value.
- *
- * @param {?} value The HTML to be escaped. May not be a string, but the
- *     value will be coerced to a string.
- * @param {?Object<string, boolean>=} opt_tagWhitelist Has an own property whose
- *     name is a lower-case tag name and whose value is `1` for
- *     each element that is allowed in the output.
- * @return {string} A representation of value without disallowed tags,
- *     HTML comments, or other non-text content.
- */
-soy.$$stripHtmlTags = function(value, opt_tagWhitelist) {
-  if (!opt_tagWhitelist) {
-    // If we have no white-list, then use a fast track which elides all tags.
-    return String(value).replace(soy.esc.$$HTML_TAG_REGEX_, '')
-        // This is just paranoia since callers should normalize the result
-        // anyway, but if they didn't, it would be necessary to ensure that
-        // after the first replace non-tag uses of < do not recombine into
-        // tags as in "<<foo>script>alert(1337)</<foo>script>".
-        .replace(soy.esc.$$LT_REGEX_, '&lt;');
-  }
-
-  // Escapes '[' so that we can use [123] below to mark places where tags
-  // have been removed.
-  var html = String(value).replace(/\[/g, '&#91;');
-
-  // Consider all uses of '<' and replace whitelisted tags with markers like
-  // [1] which are indices into a list of approved tag names.
-  // Replace all other uses of < and > with entities.
-  var tags = [];
-  var attrs = [];
-  html = html.replace(
-    soy.esc.$$HTML_TAG_REGEX_,
-    function(tok, tagName) {
-      if (tagName) {
-        tagName = tagName.toLowerCase();
-        if (opt_tagWhitelist.hasOwnProperty(tagName) &&
-            opt_tagWhitelist[tagName]) {
-          var isClose = tok.charAt(1) == '/';
-          var index = tags.length;
-          var start = '</';
-          var attributes = '';
-          if (!isClose) {
-            start = '<';
-            var match;
-            while ((match = soy.esc.$$HTML_ATTRIBUTE_REGEX_.exec(tok))) {
-              if (match[1] && match[1].toLowerCase() == 'dir') {
-                var dir = match[2];
-                if (dir) {
-                  if (dir.charAt(0) == '\'' || dir.charAt(0) == '"') {
-                    dir = dir.substr(1, dir.length - 2);
-                  }
-                  dir = dir.toLowerCase();
-                  if (dir == 'ltr' || dir == 'rtl' || dir == 'auto') {
-                    attributes = ' dir="' + dir + '"';
-                  }
-                }
-                break;
-              }
-            }
-            soy.esc.$$HTML_ATTRIBUTE_REGEX_.lastIndex = 0;
-          }
-          tags[index] = start + tagName + '>';
-          attrs[index] = attributes;
-          return '[' + index + ']';
-        }
-      }
-      return '';
-    });
-
-  // Escape HTML special characters. Now there are no '<' in html that could
-  // start a tag.
-  html = soy.esc.$$normalizeHtmlHelper(html);
-
-  var finalCloseTags = soy.$$balanceTags_(tags);
-
-  // Now html contains no tags or less-than characters that could become
-  // part of a tag via a replacement operation and tags only contains
-  // approved tags.
-  // Reinsert the white-listed tags.
-  html = html.replace(/\[(\d+)\]/g, function(_, index) {
-    if (attrs[index] && tags[index]) {
-      return tags[index].substr(0, tags[index].length - 1) + attrs[index] + '>';
-    }
-    return tags[index];
-  });
-
-  // Close any still open tags.
-  // This prevents unclosed formatting elements like <ol> and <table> from
-  // breaking the layout of containing HTML.
-  return html + finalCloseTags;
-};
-
-
-/**
- * Make sure that tag boundaries are not broken by Safe CSS when embedded in a
- * `<style>` element.
- * @param {string} css
- * @return {string}
- * @private
- */
-soy.$$embedCssIntoHtml_ = function(css) {
-  // Port of a method of the same name in
-  // com.google.template.soy.shared.restricted.Sanitizers
-  return css.replace(/<\//g, '<\\/').replace(/\]\]>/g, ']]\\>');
-};
-
-
-/**
- * Throw out any close tags that don't correspond to start tags.
- * If `<table>` is used for formatting, embedded HTML shouldn't be able
- * to use a mismatched `</table>` to break page layout.
- *
- * @param {!Array<string>} tags Array of open/close tags (e.g. '<p>', '</p>')
- *    that will be modified in place to be either an open tag, one or more close
- *    tags concatenated, or the empty string.
- * @return {string} zero or more closed tags that close all elements that are
- *    opened in tags but not closed.
- * @private
- */
-soy.$$balanceTags_ = function(tags) {
-  var open = [];
-  for (var i = 0, n = tags.length; i < n; ++i) {
-    var tag = tags[i];
-    if (tag.charAt(1) == '/') {
-      var openTagIndex = goog.array.lastIndexOf(open, tag);
-      if (openTagIndex < 0) {
-        tags[i] = '';  // Drop close tag with no corresponding open tag.
-      } else {
-        tags[i] = open.slice(openTagIndex).reverse().join('');
-        open.length = openTagIndex;
-      }
-    } else if (tag == '<li>' &&
-        goog.array.lastIndexOf(open, '</ol>') < 0 &&
-        goog.array.lastIndexOf(open, '</ul>') < 0) {
-      // Drop <li> if it isn't nested in a parent <ol> or <ul>.
-      tags[i] = '';
-    } else if (!soy.$$HTML5_VOID_ELEMENTS_.test(tag)) {
-      open.push('</' + tag.substring(1));
-    }
-  }
-  return open.reverse().join('');
-};
-
-
-/**
- * Escapes HTML special characters in an HTML attribute value.
- *
- * @param {?} value The HTML to be escaped. May not be a string, but the
- *     value will be coerced to a string.
- * @return {string} An escaped version of value.
- */
-soy.$$escapeHtmlAttribute = function(value) {
-  // NOTE: We don't accept ATTRIBUTES here because ATTRIBUTES is actually not
-  // the attribute value context, but instead k/v pairs.
-  if (soy.checks.isHtml(value)) {
-    // NOTE: After removing tags, we also escape quotes ("normalize") so that
-    // the HTML can be embedded in attribute context.
-    return soy.esc.$$normalizeHtmlHelper(
-        soy.$$stripHtmlTags(value.getContent()));
-  }
-  return soy.esc.$$escapeHtmlHelper(value);
-};
-
-
-/**
- * Escapes HTML special characters in an HTML attribute value containing HTML
- * code, such as <iframe srcdoc>.
- *
- * @param {?} value The HTML to be escaped. May not be a string, but the
- *     value will be coerced to a string.
- * @return {string} An escaped version of value.
- */
-soy.$$escapeHtmlHtmlAttribute = function(value) {
-  return String(soy.$$escapeHtml(value));
-};
-
-
-/**
- * Escapes HTML special characters in a string including space and other
- * characters that can end an unquoted HTML attribute value.
- *
- * @param {?} value The HTML to be escaped. May not be a string, but the
- *     value will be coerced to a string.
- * @return {string} An escaped version of value.
- */
-soy.$$escapeHtmlAttributeNospace = function(value) {
-  if (soy.checks.isHtml(value)) {
-    return soy.esc.$$normalizeHtmlNospaceHelper(
-        soy.$$stripHtmlTags(value.getContent()));
-  }
-  return soy.esc.$$escapeHtmlNospaceHelper(value);
-};
-
-/**
- * Filters out strings that cannot be valid content in a <script> tag with
- * non-JS content.
- *
- * This disallows `<script`, `</script`, and `<!--` as substrings as well as
- * prefixes of those strings that occur at the end of the value.  This combined
- * with a similar rule enforced in the parser ensures that these substrings
- * cannot occur.
- *
- * @param {?} value The value to escape. May not be a string, but the value
- *     will be coerced to a string.
- * @return {string} The value coerced to a string or `"zSoyz"` if the input is
- *    invalid.
- */
-soy.$$filterHtmlScriptPhrasingData = function(value) {
-  const valueAsString = String(value);
-  /**
-   * Returns whether there is a case insensitive match for needle within
-   * haystack starting at offset, or if haystack ends with a non empty prefix of
-   * needle.
-   * @return {boolean}
-   */
-  const matchPrefixIgnoreCasePastEnd =
-      (/** string */ needle, /** string */ haystack, /** number */ offset) => {
-        goog.asserts.assert(
-            offset >= 0 && offset < haystack.length,
-            'offset must point at a valid character of haystack');
-        goog.asserts.assert(
-            needle === soy.$$strToAsciiLowerCase(needle),
-            'needle must be lowercase');
-        const charsLeft = haystack.length - offset;
-        const charsToScan = Math.min(charsLeft, needle.length);
-        for (let i = 0; i < charsToScan; i++) {
-          if (needle[i] !== soy.$$charToAsciiLowerCase_(haystack[offset + i])) {
-            return false;
-          }
-        }
-        return true;
-      };
-  let start = 0;
-  let indexOfLt;
-  while ((indexOfLt = valueAsString.indexOf('<', start)) != -1) {
-    if (matchPrefixIgnoreCasePastEnd('<script', valueAsString, indexOfLt) ||
-        matchPrefixIgnoreCasePastEnd('</script', valueAsString, indexOfLt) ||
-        matchPrefixIgnoreCasePastEnd('<!--', valueAsString, indexOfLt)) {
-      goog.asserts.fail(
-          'Bad value `%s` for |filterHtmlScriptPhrasingData', [valueAsString]);
-      return 'zSoyz';
-    }
-    start = indexOfLt + 1;
-  }
-  return valueAsString;
-};
-
-/**
- * Filters out strings that cannot be a substring of a valid HTML attribute.
- *
- * Note the input is expected to be key=value pairs.
- *
- * @param {?} value The value to escape. May not be a string, but the value
- *     will be coerced to a string.
- * @return {string} A valid HTML attribute name part or name/value pair.
- *     `"zSoyz"` if the input is invalid.
- */
-soy.$$filterHtmlAttributes = function(value) {
-  // NOTE: Explicitly no support for SanitizedContentKind.HTML, since that is
-  // meaningless in this context, which is generally *between* html attributes.
-  if (soy.checks.isAttribute(value)) {
-    // Add a space at the end to ensure this won't get merged into following
-    // attributes, unless the interpretation is unambiguous (ending with quotes
-    // or a space).
-    return value.getContent().replace(/([^"'\s])$/, '$1 ');
-  }
-  // TODO: Dynamically inserting attributes that aren't marked as trusted is
-  // probably unnecessary.  Any filtering done here will either be inadequate
-  // for security or not flexible enough.  Having clients use kind="attributes"
-  // in parameters seems like a wiser idea.
-  return soy.esc.$$filterHtmlAttributesHelper(value);
-};
-
-
-/**
- * Allows only decimal and floating-point numbers.
- * @param {?} value
- * @return {number} The number.
- */
-soy.$$filterNumber = function(value) {
-  return /^\d*\.?\d+$/.test(value) ? value : 'zSoyz';
-};
-
-
-/**
- * Filters out strings that cannot be a substring of a valid HTML element name.
- *
- * @param {?} value The value to escape. May not be a string, but the value
- *     will be coerced to a string.
- * @return {string} A valid HTML element name part.
- *     `"zSoyz"` if the input is invalid.
- */
-soy.$$filterHtmlElementName = function(value) {
-  // NOTE: We don't accept any SanitizedContent here. HTML indicates valid
-  // PCDATA, not tag names. A sloppy developer shouldn't be able to cause an
-  // exploit:
-  // ... {let userInput}script src=http://evil.com/evil.js{/let} ...
-  // ... {param tagName kind="html"}{$userInput}{/param} ...
-  // ... <{$tagName}>Hello World</{$tagName}>
-  return soy.esc.$$filterHtmlElementNameHelper(value);
-};
-
-
-/**
- * Escapes characters in the value to make it valid content for a JS string
- * literal.
- *
- * @param {?} value The value to escape. May not be a string, but the value
- *     will be coerced to a string.
- * @return {string} An escaped version of value.
- */
-soy.$$escapeJsString = function(value) {
-  return soy.esc.$$escapeJsStringHelper(value);
-};
-
-
-/**
- * Encodes a value as a JavaScript literal.
- *
- * @param {?} value The value to escape. May not be a string, but the value
- *     will be coerced to a string.
- * @return {string} A JavaScript code representation of the input.
- */
-soy.$$escapeJsValue = function(value) {
-  // We surround values with spaces so that they can't be interpolated into
-  // identifiers by accident.
-  // We could use parentheses but those might be interpreted as a function call.
-  if (value == null) {  // Intentionally matches undefined.
-    // Java returns null from maps where there is no corresponding key while
-    // JS returns undefined.
-    // We always output null for compatibility with Java which does not have a
-    // distinct undefined value.
-    return ' null ';
-  }
-  if (soy.checks.isJS(value)) {
-    return value.getContent();
-  }
-  if (value instanceof goog.html.SafeScript) {
-    return goog.html.SafeScript.unwrap(value);
-  }
-  switch (typeof value) {
-    case 'boolean': case 'number':
-      return ' ' + value + ' ';
-    default:
-      return "'" + soy.esc.$$escapeJsStringHelper(String(value)) + "'";
-  }
-};
-
-
-/**
- * Escapes characters in the string to make it valid content for a JS regular
- * expression literal.
- *
- * @param {?} value The value to escape. May not be a string, but the value
- *     will be coerced to a string.
- * @return {string} An escaped version of value.
- */
-soy.$$escapeJsRegex = function(value) {
-  return soy.esc.$$escapeJsRegexHelper(value);
-};
-
-
-/**
- * Matches all URI mark characters that conflict with HTML attribute delimiters
- * or that cannot appear in a CSS uri.
- * From <a href="http://www.w3.org/TR/CSS2/grammar.html">G.2: CSS grammar</a>
- * <pre>
- *     url        ([!#$%&*-~]|{nonascii}|{escape})*
- * </pre>
- *
- * @const {!RegExp}
- * @private
- */
-soy.$$problematicUriMarks_ = /['()]/g;
-
-/**
- * @param {string} ch A single character in {@link soy.$$problematicUriMarks_}.
- * @return {string}
- * @private
- */
-soy.$$pctEncode_ = function(ch) {
-  return '%' + ch.charCodeAt(0).toString(16);
-};
-
-/**
- * Escapes a string so that it can be safely included in a URI.
- *
- * @param {?} value The value to escape. May not be a string, but the value
- *     will be coerced to a string.
- * @return {string} An escaped version of value.
- */
-soy.$$escapeUri = function(value) {
-  // NOTE: We don't check for SanitizedUri or SafeUri, because just because
-  // something is already a valid complete URL doesn't mean we don't want to
-  // encode it as a component.  For example, it would be bad if
-  // ?redirect={$url} didn't escape ampersands, because in that template, the
-  // continue URL should be treated as a single unit.
-
-  // Apostophes and parentheses are not matched by encodeURIComponent.
-  // They are technically special in URIs, but only appear in the obsolete mark
-  // production in Appendix D.2 of RFC 3986, so can be encoded without changing
-  // semantics.
-  var encoded = soy.esc.$$escapeUriHelper(value);
-  soy.$$problematicUriMarks_.lastIndex = 0;
-  if (soy.$$problematicUriMarks_.test(encoded)) {
-    return encoded.replace(soy.$$problematicUriMarks_, soy.$$pctEncode_);
-  }
-  return encoded;
-};
-
-
-/**
- * Removes rough edges from a URI by escaping any raw HTML/JS string delimiters.
- *
- * @param {?} value The value to escape. May not be a string, but the value
- *     will be coerced to a string.
- * @return {string} An escaped version of value.
- */
-soy.$$normalizeUri = function(value) {
-  return soy.esc.$$normalizeUriHelper(value);
-};
-
-
-/**
- * Vets a URI's protocol and removes rough edges from a URI by escaping
- * any raw HTML/JS string delimiters.
- *
- * @param {?} value The value to escape. May not be a string, but the value
- *     will be coerced to a string.
- * @return {string} An escaped version of value.
- */
-soy.$$filterNormalizeUri = function(value) {
-  if (soy.checks.isURI(value)) {
-    return soy.$$normalizeUri(value);
-  }
-  if (soy.checks.isTrustedResourceURI(value)) {
-    return soy.$$normalizeUri(value);
-  }
-  if (value instanceof goog.html.SafeUrl) {
-    return soy.$$normalizeUri(goog.html.SafeUrl.unwrap(value));
-  }
-  if (value instanceof goog.html.TrustedResourceUrl) {
-    return soy.$$normalizeUri(goog.html.TrustedResourceUrl.unwrap(value));
-  }
-  return soy.esc.$$filterNormalizeUriHelper(value);
-};
-
-
-/**
- * Vets a URI for usage as an image source.
- *
- * @param {?} value The value to filter. Might not be a string, but the value
- *     will be coerced to a string.
- * @return {string} An escaped version of value.
- */
-soy.$$filterNormalizeMediaUri = function(value) {
-  // Image URIs are filtered strictly more loosely than other types of URIs.
-  // TODO(shwetakarwa): Add tests for this in soyutils_test_helper while adding
-  // tests for filterTrustedResourceUri.
-  if (soy.checks.isURI(value)) {
-    return soy.$$normalizeUri(value);
-  }
-  if (soy.checks.isTrustedResourceURI(value)) {
-    return soy.$$normalizeUri(value);
-  }
-  if (value instanceof goog.html.SafeUrl) {
-    return soy.$$normalizeUri(goog.html.SafeUrl.unwrap(value));
-  }
-  if (value instanceof goog.html.TrustedResourceUrl) {
-    return soy.$$normalizeUri(goog.html.TrustedResourceUrl.unwrap(value));
-  }
-  return soy.esc.$$filterNormalizeMediaUriHelper(value);
-};
-
-
-/**
- * Like filterNormalizeUri but also escapes ';'.
- * @param {?} value The value to filter.
- * @return {string} An escaped version of value.
- */
-soy.$$filterNormalizeRefreshUri = function(value) {
-  return soy.$$filterNormalizeUri(value).replace(/;/g, '%3B');
-};
-
-
-/**
- * Vets a URI for usage as a resource. Makes sure the input value is a compile
- * time constant or a TrustedResouce not in attacker's control.
- *
- * @param {?} value The value to filter.
- * @return {string} The value content.
- */
-soy.$$filterTrustedResourceUri = function(value) {
-  if (soy.checks.isTrustedResourceURI(value)) {
-    return value.getContent();
-  }
-  if (value instanceof goog.html.TrustedResourceUrl) {
-    return goog.html.TrustedResourceUrl.unwrap(value);
-  }
-  goog.asserts.fail('Bad value `%s` for |filterTrustedResourceUri',
-      [String(value)]);
-  return 'about:invalid#zSoyz';
-};
-
-
-/**
- * Allows only data-protocol image URI's.
- *
- * @param {?} value The value to process. May not be a string, but the value
- *     will be coerced to a string.
- * @return {!goog.soy.data.SanitizedUri} An escaped version of value.
- */
-soy.$$filterImageDataUri = function(value) {
-  // NOTE: Even if it's a SanitizedUri, we will still filter it.
-  return soydata.VERY_UNSAFE.ordainSanitizedUri(
-      soy.esc.$$filterImageDataUriHelper(value));
-};
-
-
-/**
- * Allows only sip URIs.
- *
- * @param {?} value The value to process. May not be a string, but the value
- *     will be coerced to a string.
- * @return {!goog.soy.data.SanitizedUri} An escaped version of value.
- */
-soy.$$filterSipUri = function(value) {
-  // NOTE: Even if it's a SanitizedUri, we will still filter it.
-  return soydata.VERY_UNSAFE.ordainSanitizedUri(
-      soy.esc.$$filterSipUriHelper(value));
-};
-
-/**
- * Function that converts sms uri string to a sanitized uri
- *
- * @param {string} value sms uri
- * @return {!goog.soy.data.SanitizedUri} An sanitized version of the sms uri.
- */
-soy.$$strSmsUriToUri = function(value) {
-  // NOTE: Even if it's a SanitizedUri, we will still filter it.
-  return soydata.VERY_UNSAFE.ordainSanitizedUri(
-      soy.esc.$$filterSmsUriHelper(value));
-};
-
-
-/**
- * Allows only tel URIs.
- *
- * @param {?} value The value to process. May not be a string, but the value
- *     will be coerced to a string.
- * @return {!goog.soy.data.SanitizedUri} An escaped version of value.
- */
-soy.$$filterTelUri = function(value) {
-  // NOTE: Even if it's a SanitizedUri, we will still filter it.
-  return soydata.VERY_UNSAFE.ordainSanitizedUri(
-      soy.esc.$$filterTelUriHelper(value));
-};
-
-
-/**
- * Escapes a string so it can safely be included inside a quoted CSS string.
- *
- * @param {?} value The value to escape. May not be a string, but the value
- *     will be coerced to a string.
- * @return {string} An escaped version of value.
- */
-soy.$$escapeCssString = function(value) {
-  return soy.esc.$$escapeCssStringHelper(value);
-};
-
-
-/**
- * Encodes a value as a CSS identifier part, keyword, or quantity.
- *
- * @param {?} value The value to escape. May not be a string, but the value
- *     will be coerced to a string.
- * @return {string} A safe CSS identifier part, keyword, or quanitity.
- */
-soy.$$filterCssValue = function(value) {
-  if (soy.checks.isCss(value)) {
-    return soy.$$embedCssIntoHtml_(value.getContent());
-  }
-  // Uses == to intentionally match null and undefined for Java compatibility.
-  if (value == null) {
-    return '';
-  }
-  if (value instanceof goog.html.SafeStyle) {
-    return soy.$$embedCssIntoHtml_(goog.html.SafeStyle.unwrap(value));
-  }
-  // Note: SoyToJsSrcCompiler uses soy.$$filterCssValue both for the contents of
-  // <style> (list of rules) and for the contents of style="" (one set of
-  // declarations). We support SafeStyleSheet here to be used inside <style> but
-  // it also wrongly allows it inside style="". We should instead change
-  // SoyToJsSrcCompiler to use a different function inside <style>.
-  if (value instanceof goog.html.SafeStyleSheet) {
-    return soy.$$embedCssIntoHtml_(goog.html.SafeStyleSheet.unwrap(value));
-  }
-  return soy.esc.$$filterCssValueHelper(value);
-};
-
-/**
- * Encodes a value as a CSP nonce value.
- *
- * @param {?} value The value to escape. Does not have to be a string, but the
- *     value will be coerced to a string.
- * @return {string} A safe CSP nonce value.
- */
-soy.$$filterCspNonceValue = function(value) {
-  return soy.esc.$$filterCspNonceValueHelper(value);
-};
-
-
-// -----------------------------------------------------------------------------
-// Basic directives/functions.
-
-
-/**
- * Converts \r\n, \r, and \n to <br>s
- * @param {?} value The string in which to convert newlines.
- * @return {string|!goog.soy.data.SanitizedHtml} A copy of `value` with
- *     converted newlines. If `value` is SanitizedHtml, the return value
- *     is also SanitizedHtml, of the same known directionality.
- */
-soy.$$changeNewlineToBr = function(value) {
-  var result = goog.string.newLineToBr(String(value), false);
-  if (soydata.isContentKind_(value, goog.soy.data.SanitizedContentKind.HTML)) {
-    return soydata.VERY_UNSAFE.ordainSanitizedHtml(
-        result, soydata.getContentDir(value));
-  }
-  return result;
-};
-
-
-/**
- * Inserts word breaks ('wbr' tags) into a HTML string at a given interval. The
- * counter is reset if a space is encountered. Word breaks aren't inserted into
- * HTML tags or entities. Entites count towards the character count; HTML tags
- * do not.
- *
- * @param {?} value The HTML string to insert word breaks into. Can be other
- *     types, but the value will be coerced to a string.
- * @param {number} maxCharsBetweenWordBreaks Maximum number of non-space
- *     characters to allow before adding a word break.
- * @return {string|!goog.soy.data.SanitizedHtml} The string including word
- *     breaks. If `value` is SanitizedHtml, the return value
- *     is also SanitizedHtml, of the same known directionality.
- * @deprecated The |insertWordBreaks directive is deprecated.
- *     Prefer wrapping with CSS white-space: break-word.
- */
-soy.$$insertWordBreaks = function(value, maxCharsBetweenWordBreaks) {
-  var result = goog.format.insertWordBreaks(
-      String(value), maxCharsBetweenWordBreaks);
-  if (soydata.isContentKind_(value, goog.soy.data.SanitizedContentKind.HTML)) {
-    return soydata.VERY_UNSAFE.ordainSanitizedHtml(
-        result, soydata.getContentDir(value));
-  }
-  return result;
-};
-
-/**
- * Conditionally concatenates two attribute values with a delimiter if they are
- * both non-empty.
- *
- * @param {string} l
- * @param {string} r
- * @param {string} delimiter
- * @return {string}
- */
-soy.$$concatAttributeValues = function(l, r, delimiter) {
-  if (!l) {
-    return r;
-  }
-  if (!r) {
-    return l;
-  }
-  return l + delimiter + r;
-};
-
-
-/**
- * Conditionally concatenates two attribute values with a delimiter if they are
- * both non-empty.
- *
- * @param {string} l
- * @param {string} r
- * @return {!goog.soy.data.SanitizedCss|!soydata.$$EMPTY_STRING_}
- */
-soy.$$concatCssValues = function(l, r) {
-  if (l !== soydata.$$EMPTY_STRING_.VALUE) {
-    goog.asserts.assertInstanceof(l, goog.soy.data.SanitizedCss);
-  }
-  if (r !== soydata.$$EMPTY_STRING_.VALUE) {
-    goog.asserts.assertInstanceof(r, goog.soy.data.SanitizedCss);
-  }
-  return soydata.VERY_UNSAFE.$$ordainSanitizedCssForInternalBlocks(
-      soy.$$concatAttributeValues(l, r, ';'));
-};
-
-
-/**
- * Truncates a string to a given max length (if it's currently longer),
- * optionally adding ellipsis at the end.
- *
- * @param {?} str The string to truncate. Can be other types, but the value will
- *     be coerced to a string.
- * @param {number} maxLen The maximum length of the string after truncation
- *     (including ellipsis, if applicable).
- * @param {boolean} doAddEllipsis Whether to add ellipsis if the string needs
- *     truncation.
- * @return {string} The string after truncation.
- */
-soy.$$truncate = function(str, maxLen, doAddEllipsis) {
-
-  str = String(str);
-  if (str.length <= maxLen) {
-    return str;  // no need to truncate
-  }
-
-  // If doAddEllipsis, either reduce maxLen to compensate, or else if maxLen is
-  // too small, just turn off doAddEllipsis.
-  if (doAddEllipsis) {
-    if (maxLen > 3) {
-      maxLen -= 3;
-    } else {
-      doAddEllipsis = false;
-    }
-  }
-
-  // Make sure truncating at maxLen doesn't cut up a unicode surrogate pair.
-  if (soy.$$isHighSurrogate_(str.charCodeAt(maxLen - 1)) &&
-      soy.$$isLowSurrogate_(str.charCodeAt(maxLen))) {
-    maxLen -= 1;
-  }
-
-  // Truncate.
-  str = str.substring(0, maxLen);
-
-  // Add ellipsis.
-  if (doAddEllipsis) {
-    str += '...';
-  }
-
-  return str;
-};
-
-/**
- * Private helper for $$truncate() to check whether a char is a high surrogate.
- * @param {number} cc The codepoint to check.
- * @return {boolean} Whether the given codepoint is a unicode high surrogate.
- * @private
- */
-soy.$$isHighSurrogate_ = function(cc) {
-  return 0xD800 <= cc && cc <= 0xDBFF;
-};
-
-/**
- * Private helper for $$truncate() to check whether a char is a low surrogate.
- * @param {number} cc The codepoint to check.
- * @return {boolean} Whether the given codepoint is a unicode low surrogate.
- * @private
- */
-soy.$$isLowSurrogate_ = function(cc) {
-  return 0xDC00 <= cc && cc <= 0xDFFF;
-};
-
-
-/**
- * Checks if the list contains the given element.
- * @param {!IArrayLike<?>} list
- * @param {*} val
- * @return {boolean}
- */
-soy.$$listContains = function(list, val) {
-  return soy.$$listIndexOf(list, val) >= 0;
-};
-
-
-/**
- * Returns the index of val in list or -1
- * @param {!IArrayLike<?>} list
- * @param {*} val
- * @return {number}
- */
-soy.$$listIndexOf = function(list, val) {
-  return goog.array.findIndex(list, function(el) {
-    return soy.$$equals(val, el);
-  });
-};
-
-
-/**
- * Returns an array slice of list.
- * @param {!IArrayLike<T>} list
- * @param {number} from
- * @param {?number} to
- * @return {!IArrayLike<T>}
- * @template T
- */
-soy.$$listSlice = function(list, from, to) {
-  return to == null ? goog.array.slice(list, from) :
-                      goog.array.slice(list, from, to);
-};
-
-/**
- * @param {...T} args
- * @return {!Array<T>}
- * @template T
- */
-soy.$$makeArray = function(...args) {
-  return args;
-};
-
-/**
- * A helper for list comprehension.
- * @param {!IArrayLike<T>} list
- * @param {function(T,number):boolean} filter
- * @param {function(T,number):V} map
- * @return {!IArrayLike<V>}
- * @template T, V
- */
-soy.$$filterAndMap = function(list, filter, map) {
-  let array = [];
-  for (let i = 0; i < list.length; i++) {
-    if (filter(list[i], i)) {
-      array.push(map(list[i], i));
-    }
-  }
-  return array;
-};
-
-/**
- * Sorts a list of numbers in numerical order.
- * @param {!IArrayLike<T>} list
- * @return {!Array<T>}
- * @template T extends number
- */
-soy.$$numberListSort = function(list) {
-  return goog.array.toArray(list).sort((a, b) => a - b);
-};
-
-
-/**
- * Sorts a list of strings in lexicographic order.
- * @param {!IArrayLike<string>} list
- * @return {!Array<string>}
- */
-soy.$$stringListSort = function(list) {
-  return goog.array.toArray(list).sort();
-};
-
-
-/**
- * Converts the ASCII characters in the given string to lower case.
- * @param {string} s
- * @return {string}
- */
-soy.$$strToAsciiLowerCase = function(s) {
-  return goog.array.map(s, soy.$$charToAsciiLowerCase_).join('');
-};
-
-/**
- * Lowercases a single character string.
- * @private
- * @return {string}
- */
-soy.$$charToAsciiLowerCase_ = (/** string */ c) => {
-  goog.asserts.assert(c.length === 1);
-  return 'A' <= c && c <= 'Z' ? c.toLowerCase() : c;
-};
-
-
-/**
- * Converts the ASCII characters in the given string to upper case.
- * @param {string} s
- * @return {string}
- */
-soy.$$strToAsciiUpperCase = function(s) {
-  return goog.array.map(s, function(c) {
-    return 'a' <= c && c <= 'z' ? c.toUpperCase() : c;
-  }).join('');
-};
-
-
-/**
- * Trims a string.
- * @param {string} s
- * @return {string}
- */
-soy.$$strTrim = function(s) {
-  return s.trim();
-};
-
-/**
- * Returns whether s starts with val.
- * @param {string} s
- * @param {string} val
- * @return {boolean}
- */
-soy.$$strStartsWith = function(s, val) {
-  return s.length >= val.length && s.substring(0, val.length) === val;
-};
-
-
-/**
- * Returns whether s ends with val.
- * @param {string} s
- * @param {string} val
- * @return {boolean}
- */
-soy.$$strEndsWith = function(s, val) {
-  return s.length >= val.length && s.substring(s.length - val.length) === val;
-};
-
-
-/**
- * Splits a string.
- * @param {string} s
- * @param {string} sep
- * @return {!Array<string>}
- */
-soy.$$strSplit = function(s, sep) {
-  return s.split(sep);
-};
-
-
-/**
- * Replaces all occurrences in s of match with token.
- * @param {string} s
- * @param {string} match
- * @param {string} token
- * @return {string}
- */
-soy.$$strReplaceAll = function(s, match, token) {
-  return goog.string.replaceAll(s, match, token);
-};
-
-
-// -----------------------------------------------------------------------------
-// Bidi directives/functions.
-
-
-/**
- * Cache of bidi formatter by context directionality, so we don't keep on
- * creating new objects.
- * @type {!Object<!goog.i18n.BidiFormatter>}
- * @private
- */
-soy.$$bidiFormatterCache_ = {};
-
-
-/**
- * Returns cached bidi formatter for bidiGlobalDir, or creates a new one.
- * @param {number} bidiGlobalDir The global directionality context: 1 if ltr, -1
- *     if rtl, 0 if unknown.
- * @return {!goog.i18n.BidiFormatter} A formatter for bidiGlobalDir.
- * @private
- */
-soy.$$getBidiFormatterInstance_ = function(bidiGlobalDir) {
-  return soy.$$bidiFormatterCache_[bidiGlobalDir] ||
-         (soy.$$bidiFormatterCache_[bidiGlobalDir] =
-             new goog.i18n.BidiFormatter(bidiGlobalDir));
-};
-
-
-/**
- * Estimate the overall directionality of text. If opt_isHtml, makes sure to
- * ignore the LTR nature of the mark-up and escapes in text, making the logic
- * suitable for HTML and HTML-escaped text.
- * If text has a goog.i18n.bidi.Dir-valued contentDir, this is used instead of
- * estimating the directionality.
- *
- * @param {?} text The content whose directionality is to be estimated.
- * @param {boolean=} opt_isHtml Whether text is HTML/HTML-escaped.
- *     Default: false.
- * @return {number} 1 if text is LTR, -1 if it is RTL, and 0 if it is neutral.
- */
-soy.$$bidiTextDir = function(text, opt_isHtml) {
-  var contentDir = soydata.getContentDir(text);
-  if (contentDir != null) {
-    return contentDir;
-  }
-  var isHtml = opt_isHtml ||
-      soydata.isContentKind_(text, goog.soy.data.SanitizedContentKind.HTML);
-  return goog.i18n.bidi.estimateDirection(text + '', isHtml);
-};
-
-
-/**
- * Returns 'dir="ltr"' or 'dir="rtl"', depending on text's estimated
- * directionality, if it is not the same as bidiGlobalDir.
- * Otherwise, returns the empty string.
- * If opt_isHtml, makes sure to ignore the LTR nature of the mark-up and escapes
- * in text, making the logic suitable for HTML and HTML-escaped text.
- * If text has a goog.i18n.bidi.Dir-valued contentDir, this is used instead of
- * estimating the directionality.
- *
- * @param {number} bidiGlobalDir The global directionality context: 1 if ltr, -1
- *     if rtl, 0 if unknown.
- * @param {?} text The content whose directionality is to be estimated.
- * @param {boolean=} opt_isHtml Whether text is HTML/HTML-escaped.
- *     Default: false.
- * @return {!goog.soy.data.SanitizedHtmlAttribute} 'dir="rtl"' for RTL text in
- *     non-RTL context; 'dir="ltr"' for LTR text in non-LTR context;
- *     else, the empty string.
- */
-soy.$$bidiDirAttr = function(bidiGlobalDir, text, opt_isHtml) {
-  var formatter = soy.$$getBidiFormatterInstance_(bidiGlobalDir);
-  var contentDir = soydata.getContentDir(text);
-  if (contentDir == null) {
-    var isHtml = opt_isHtml ||
-        soydata.isContentKind_(text, goog.soy.data.SanitizedContentKind.HTML);
-    contentDir = goog.i18n.bidi.estimateDirection(text + '', isHtml);
-  }
-  return soydata.VERY_UNSAFE.ordainSanitizedHtmlAttribute(
-      formatter.knownDirAttr(contentDir));
-};
-
-/**
- * Returns the name of the start edge ('left' or 'right') for the current global
- * bidi directionality.
- *
- * @return {string}
- */
-soy.$$bidiStartEdge = function(/** number */ dir) {
-  return dir < 0 ? 'right' : 'left';
-};
-
-/**
- * Returns the name of the end edge ('left' or 'right') for the current global
- * bidi directionality.
- *
- * @return {string}
- */
-soy.$$bidiEndEdge = function(/** number */ dir) {
-  return dir < 0 ? 'left' : 'right';
-};
-
-/**
- * Returns a bidi mark character (LRM or RLM) for the given bidi directionality.
- *
- * @return {string}
- */
-soy.$$bidiMark = function(/** number */ dir) {
-  return dir < 0 ? '\u200F' /*RLM*/ : '\u200E' /*LRM*/;
-};
-
-
-/**
- * Returns a Unicode BiDi mark matching bidiGlobalDir (LRM or RLM) if the
- * directionality or the exit directionality of text are opposite to
- * bidiGlobalDir. Otherwise returns the empty string.
- * If opt_isHtml, makes sure to ignore the LTR nature of the mark-up and escapes
- * in text, making the logic suitable for HTML and HTML-escaped text.
- * If text has a goog.i18n.bidi.Dir-valued contentDir, this is used instead of
- * estimating the directionality.
- *
- * @param {number} bidiGlobalDir The global directionality context: 1 if ltr, -1
- *     if rtl, 0 if unknown.
- * @param {?} text The content whose directionality is to be estimated.
- * @param {boolean=} opt_isHtml Whether text is HTML/HTML-escaped.
- *     Default: false.
- * @return {string} A Unicode bidi mark matching bidiGlobalDir, or the empty
- *     string when text's overall and exit directionalities both match
- *     bidiGlobalDir, or bidiGlobalDir is 0 (unknown).
- */
-soy.$$bidiMarkAfter = function(bidiGlobalDir, text, opt_isHtml) {
-  var formatter = soy.$$getBidiFormatterInstance_(bidiGlobalDir);
-  var isHtml = opt_isHtml ||
-      soydata.isContentKind_(text, goog.soy.data.SanitizedContentKind.HTML);
-  return formatter.markAfterKnownDir(soydata.getContentDir(text), text + '',
-      isHtml);
-};
-
-
-/**
- * Returns text wrapped in a <span dir="ltr|rtl"> according to its
- * directionality - but only if that is neither neutral nor the same as the
- * global context. Otherwise, returns text unchanged.
- * Always treats text as HTML/HTML-escaped, i.e. ignores mark-up and escapes
- * when estimating text's directionality.
- * If text has a goog.i18n.bidi.Dir-valued contentDir, this is used instead of
- * estimating the directionality.
- *
- * @param {number} bidiGlobalDir The global directionality context: 1 if ltr, -1
- *     if rtl, 0 if unknown.
- * @param {?} text The string to be wrapped. Can be other types, but the value
- *     will be coerced to a string.
- * @return {string} The wrapped text.
- */
-soy.$$bidiSpanWrap = function(bidiGlobalDir, text) {
-  var formatter = soy.$$getBidiFormatterInstance_(bidiGlobalDir);
-
-  // We always treat the value as HTML, because span-wrapping is only useful
-  // when its output will be treated as HTML (without escaping), and because
-  // |bidiSpanWrap is not itself specified to do HTML escaping in Soy. (Both
-  // explicit and automatic HTML escaping, if any, is done before calling
-  // |bidiSpanWrap because the BidiSpanWrapDirective Java class implements
-  // SanitizedContentOperator, but this does not mean that the input has to be
-  // HTML SanitizedContent.
-  var html = goog.html.uncheckedconversions.
-      safeHtmlFromStringKnownToSatisfyTypeContract(
-          goog.string.Const.from(
-              'Soy |bidiSpanWrap is applied on an autoescaped text.'),
-          String(text));
-  var wrappedHtml = formatter.spanWrapSafeHtmlWithKnownDir(
-      soydata.getContentDir(text), html);
-
-  // Like other directives whose Java class implements SanitizedContentOperator,
-  // |bidiSpanWrap is called after the escaping (if any) has already been done,
-  // and thus there is no need for it to produce actual SanitizedContent.
-  return goog.html.SafeHtml.unwrap(wrappedHtml);
-};
-
-
-/**
- * Returns text wrapped in Unicode BiDi formatting characters according to its
- * directionality, i.e. either LRE or RLE at the beginning and PDF at the end -
- * but only if text's directionality is neither neutral nor the same as the
- * global context. Otherwise, returns text unchanged.
- * Only treats SanitizedHtml as HTML/HTML-escaped, i.e. ignores mark-up
- * and escapes when estimating text's directionality.
- * If text has a goog.i18n.bidi.Dir-valued contentDir, this is used instead of
- * estimating the directionality.
- *
- * @param {number} bidiGlobalDir The global directionality context: 1 if ltr, -1
- *     if rtl, 0 if unknown.
- * @param {?} text The string to be wrapped. Can be other types, but the value
- *     will be coerced to a string.
- * @return {!goog.soy.data.SanitizedHtml|string} The wrapped string.
- */
-soy.$$bidiUnicodeWrap = function(bidiGlobalDir, text) {
-  var formatter = soy.$$getBidiFormatterInstance_(bidiGlobalDir);
-
-  // We treat the value as HTML if and only if it says it's HTML.
-  var isHtml =
-      soydata.isContentKind_(text, goog.soy.data.SanitizedContentKind.HTML);
-  var wrappedText = formatter.unicodeWrapWithKnownDir(
-      soydata.getContentDir(text), text + '', isHtml);
-
-  // Bidi-wrapping a value converts it to the context directionality. Since it
-  // does not cost us anything, we will indicate this known direction in the
-  // output SanitizedContent, even though the intended consumer of that
-  // information - a bidi wrapping directive - has already been run.
-  var wrappedTextDir = formatter.getContextDir();
-
-  // Unicode-wrapping safe HTML string data gives valid, safe HTML string data.
-  // ATTENTION: Do these need to be ...ForInternalBlocks()?
-  if (isHtml) {
-    return soydata.VERY_UNSAFE.ordainSanitizedHtml(wrappedText, wrappedTextDir);
-  }
-
-  // Unicode-wrapping does not conform to the syntax of the other types of
-  // content. For lack of anything better to do, we do not declare a content
-  // kind at all by falling through to the non-SanitizedContent case below.
-  // TODO(user): Consider throwing a runtime error on receipt of
-  // SanitizedContent other than HTML.
-
-  // The input was not SanitizedContent, so our output isn't SanitizedContent
-  // either.
-  return wrappedText;
-};
-
-// -----------------------------------------------------------------------------
-// Assertion methods used by runtime.
-
-/**
- * Checks if the type assertion is true if goog.asserts.ENABLE_ASSERTS is
- * true. Report errors on runtime types if goog.DEBUG is true.
- * @param {boolean} condition The type check condition.
- * @param {string} paramName The Soy name of the parameter.
- * @param {?} param The JS object for the parameter.
- * @param {string} jsDocTypeStr SoyDoc type str.
- * @return {?} the param value
- * @throws {!goog.asserts.AssertionError} When the condition evaluates to false.
- */
-soy.asserts.assertType = function(condition, paramName, param, jsDocTypeStr) {
-  if (goog.asserts.ENABLE_ASSERTS && !condition) {
-    var msg = 'expected param ' + paramName + ' of type ' + jsDocTypeStr +
-        (goog.DEBUG ? (', but got ' + goog.debug.runtimeType(param)) : '') +
-        '.';
-    goog.asserts.fail(msg);
-  }
-  return param;
-};
-
-
-// -----------------------------------------------------------------------------
-// Used for inspecting Soy template information from rendered pages.
-
-/**
- * Whether we should generate additional HTML comments.
- * @type {boolean}
- */
-soy.$$debugSoyTemplateInfo = false;
-
-if (goog.DEBUG) {
-  /**
-   * Configures whether we should generate additional HTML comments for
-   * inspecting Soy template information from rendered pages.
-   * @param {boolean} debugSoyTemplateInfo
-   */
-  soy.setDebugSoyTemplateInfo = function(debugSoyTemplateInfo) {
-    soy.$$debugSoyTemplateInfo = debugSoyTemplateInfo;
-  };
-}
-
-// -----------------------------------------------------------------------------
-// Generated code.
-
-
-// START GENERATED CODE FOR ESCAPERS.
-
-/**
- * @type {function (*) : string}
- */
-soy.esc.$$escapeHtmlHelper = function(v) {
-  return goog.string.htmlEscape(String(v));
-};
-
-/**
- * @type {function (*) : string}
- */
-soy.esc.$$escapeUriHelper = function(v) {
-  return goog.string.urlEncode(String(v));
-};
-
-/**
- * Maps characters to the escaped versions for the named escape directives.
- * @private {!Object<string, string>}
- */
-soy.esc.$$ESCAPE_MAP_FOR_NORMALIZE_HTML__AND__ESCAPE_HTML_NOSPACE__AND__NORMALIZE_HTML_NOSPACE_ = {
-  '\x00': '\x26#0;',
-  '\x09': '\x26#9;',
-  '\x0a': '\x26#10;',
-  '\x0b': '\x26#11;',
-  '\x0c': '\x26#12;',
-  '\x0d': '\x26#13;',
-  ' ': '\x26#32;',
-  '\x22': '\x26quot;',
-  '\x26': '\x26amp;',
-  '\x27': '\x26#39;',
-  '-': '\x26#45;',
-  '\/': '\x26#47;',
-  '\x3c': '\x26lt;',
-  '\x3d': '\x26#61;',
-  '\x3e': '\x26gt;',
-  '`': '\x26#96;',
-  '\x85': '\x26#133;',
-  '\xa0': '\x26#160;',
-  '\u2028': '\x26#8232;',
-  '\u2029': '\x26#8233;',
-};
-
-/**
- * A function that can be used with String.replace.
- * @param {string} ch A single character matched by a compatible matcher.
- * @return {string} A token in the output language.
- * @private
- */
-soy.esc.$$REPLACER_FOR_NORMALIZE_HTML__AND__ESCAPE_HTML_NOSPACE__AND__NORMALIZE_HTML_NOSPACE_ = function(ch) {
-  return soy.esc.$$ESCAPE_MAP_FOR_NORMALIZE_HTML__AND__ESCAPE_HTML_NOSPACE__AND__NORMALIZE_HTML_NOSPACE_[ch];
-};
-
-/**
- * Maps characters to the escaped versions for the named escape directives.
- * @private {!Object<string, string>}
- */
-soy.esc.$$ESCAPE_MAP_FOR_ESCAPE_JS_STRING__AND__ESCAPE_JS_REGEX_ = {
-  '\x00': '\\x00',
-  '\x08': '\\x08',
-  '\x09': '\\t',
-  '\x0a': '\\n',
-  '\x0b': '\\x0b',
-  '\x0c': '\\f',
-  '\x0d': '\\r',
-  '\x22': '\\x22',
-  '$': '\\x24',
-  '\x26': '\\x26',
-  '\x27': '\\x27',
-  '(': '\\x28',
-  ')': '\\x29',
-  '*': '\\x2a',
-  '+': '\\x2b',
-  ',': '\\x2c',
-  '-': '\\x2d',
-  '.': '\\x2e',
-  '\/': '\\\/',
-  ':': '\\x3a',
-  '\x3c': '\\x3c',
-  '\x3d': '\\x3d',
-  '\x3e': '\\x3e',
-  '?': '\\x3f',
-  '\x5b': '\\x5b',
-  '\\': '\\\\',
-  '\x5d': '\\x5d',
-  '^': '\\x5e',
-  '\x7b': '\\x7b',
-  '|': '\\x7c',
-  '\x7d': '\\x7d',
-  '\x85': '\\x85',
-  '\u2028': '\\u2028',
-  '\u2029': '\\u2029',
-};
-
-/**
- * A function that can be used with String.replace.
- * @param {string} ch A single character matched by a compatible matcher.
- * @return {string} A token in the output language.
- * @private
- */
-soy.esc.$$REPLACER_FOR_ESCAPE_JS_STRING__AND__ESCAPE_JS_REGEX_ = function(ch) {
-  return soy.esc.$$ESCAPE_MAP_FOR_ESCAPE_JS_STRING__AND__ESCAPE_JS_REGEX_[ch];
-};
-
-/**
- * Maps characters to the escaped versions for the named escape directives.
- * @private {!Object<string, string>}
- */
-soy.esc.$$ESCAPE_MAP_FOR_ESCAPE_CSS_STRING_ = {
-  '\x00': '\\0 ',
-  '\x08': '\\8 ',
-  '\x09': '\\9 ',
-  '\x0a': '\\a ',
-  '\x0b': '\\b ',
-  '\x0c': '\\c ',
-  '\x0d': '\\d ',
-  '\x22': '\\22 ',
-  '\x26': '\\26 ',
-  '\x27': '\\27 ',
-  '(': '\\28 ',
-  ')': '\\29 ',
-  '*': '\\2a ',
-  '\/': '\\2f ',
-  ':': '\\3a ',
-  ';': '\\3b ',
-  '\x3c': '\\3c ',
-  '\x3d': '\\3d ',
-  '\x3e': '\\3e ',
-  '@': '\\40 ',
-  '\\': '\\5c ',
-  '\x7b': '\\7b ',
-  '\x7d': '\\7d ',
-  '\x85': '\\85 ',
-  '\xa0': '\\a0 ',
-  '\u2028': '\\2028 ',
-  '\u2029': '\\2029 ',
-};
-
-/**
- * A function that can be used with String.replace.
- * @param {string} ch A single character matched by a compatible matcher.
- * @return {string} A token in the output language.
- * @private
- */
-soy.esc.$$REPLACER_FOR_ESCAPE_CSS_STRING_ = function(ch) {
-  return soy.esc.$$ESCAPE_MAP_FOR_ESCAPE_CSS_STRING_[ch];
-};
-
-/**
- * Maps characters to the escaped versions for the named escape directives.
- * @private {!Object<string, string>}
- */
-soy.esc.$$ESCAPE_MAP_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI_ = {
-  '\x00': '%00',
-  '\x01': '%01',
-  '\x02': '%02',
-  '\x03': '%03',
-  '\x04': '%04',
-  '\x05': '%05',
-  '\x06': '%06',
-  '\x07': '%07',
-  '\x08': '%08',
-  '\x09': '%09',
-  '\x0a': '%0A',
-  '\x0b': '%0B',
-  '\x0c': '%0C',
-  '\x0d': '%0D',
-  '\x0e': '%0E',
-  '\x0f': '%0F',
-  '\x10': '%10',
-  '\x11': '%11',
-  '\x12': '%12',
-  '\x13': '%13',
-  '\x14': '%14',
-  '\x15': '%15',
-  '\x16': '%16',
-  '\x17': '%17',
-  '\x18': '%18',
-  '\x19': '%19',
-  '\x1a': '%1A',
-  '\x1b': '%1B',
-  '\x1c': '%1C',
-  '\x1d': '%1D',
-  '\x1e': '%1E',
-  '\x1f': '%1F',
-  ' ': '%20',
-  '\x22': '%22',
-  '\x27': '%27',
-  '(': '%28',
-  ')': '%29',
-  '\x3c': '%3C',
-  '\x3e': '%3E',
-  '\\': '%5C',
-  '\x7b': '%7B',
-  '\x7d': '%7D',
-  '\x7f': '%7F',
-  '\x85': '%C2%85',
-  '\xa0': '%C2%A0',
-  '\u2028': '%E2%80%A8',
-  '\u2029': '%E2%80%A9',
-  '\uff01': '%EF%BC%81',
-  '\uff03': '%EF%BC%83',
-  '\uff04': '%EF%BC%84',
-  '\uff06': '%EF%BC%86',
-  '\uff07': '%EF%BC%87',
-  '\uff08': '%EF%BC%88',
-  '\uff09': '%EF%BC%89',
-  '\uff0a': '%EF%BC%8A',
-  '\uff0b': '%EF%BC%8B',
-  '\uff0c': '%EF%BC%8C',
-  '\uff0f': '%EF%BC%8F',
-  '\uff1a': '%EF%BC%9A',
-  '\uff1b': '%EF%BC%9B',
-  '\uff1d': '%EF%BC%9D',
-  '\uff1f': '%EF%BC%9F',
-  '\uff20': '%EF%BC%A0',
-  '\uff3b': '%EF%BC%BB',
-  '\uff3d': '%EF%BC%BD',
-};
-
-/**
- * A function that can be used with String.replace.
- * @param {string} ch A single character matched by a compatible matcher.
- * @return {string} A token in the output language.
- * @private
- */
-soy.esc.$$REPLACER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI_ = function(ch) {
-  return soy.esc.$$ESCAPE_MAP_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI_[ch];
-};
-
-/**
- * Matches characters that need to be escaped for the named directives.
- * @private {!RegExp}
- */
-soy.esc.$$MATCHER_FOR_NORMALIZE_HTML_ = /[\x00\x22\x27\x3c\x3e]/g;
-
-/**
- * Matches characters that need to be escaped for the named directives.
- * @private {!RegExp}
- */
-soy.esc.$$MATCHER_FOR_ESCAPE_HTML_NOSPACE_ = /[\x00\x09-\x0d \x22\x26\x27\x2d\/\x3c-\x3e`\x85\xa0\u2028\u2029]/g;
-
-/**
- * Matches characters that need to be escaped for the named directives.
- * @private {!RegExp}
- */
-soy.esc.$$MATCHER_FOR_NORMALIZE_HTML_NOSPACE_ = /[\x00\x09-\x0d \x22\x27\x2d\/\x3c-\x3e`\x85\xa0\u2028\u2029]/g;
-
-/**
- * Matches characters that need to be escaped for the named directives.
- * @private {!RegExp}
- */
-soy.esc.$$MATCHER_FOR_ESCAPE_JS_STRING_ = /[\x00\x08-\x0d\x22\x26\x27\/\x3c-\x3e\x5b-\x5d\x7b\x7d\x85\u2028\u2029]/g;
-
-/**
- * Matches characters that need to be escaped for the named directives.
- * @private {!RegExp}
- */
-soy.esc.$$MATCHER_FOR_ESCAPE_JS_REGEX_ = /[\x00\x08-\x0d\x22\x24\x26-\/\x3a\x3c-\x3f\x5b-\x5e\x7b-\x7d\x85\u2028\u2029]/g;
-
-/**
- * Matches characters that need to be escaped for the named directives.
- * @private {!RegExp}
- */
-soy.esc.$$MATCHER_FOR_ESCAPE_CSS_STRING_ = /[\x00\x08-\x0d\x22\x26-\x2a\/\x3a-\x3e@\\\x7b\x7d\x85\xa0\u2028\u2029]/g;
-
-/**
- * Matches characters that need to be escaped for the named directives.
- * @private {!RegExp}
- */
-soy.esc.$$MATCHER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI_ = /[\x00- \x22\x27-\x29\x3c\x3e\\\x7b\x7d\x7f\x85\xa0\u2028\u2029\uff01\uff03\uff04\uff06-\uff0c\uff0f\uff1a\uff1b\uff1d\uff1f\uff20\uff3b\uff3d]/g;
-
-/**
- * A pattern that vets values produced by the named directives.
- * @private {!RegExp}
- */
-soy.esc.$$FILTER_FOR_FILTER_CSS_VALUE_ = /^(?!-*(?:expression|(?:moz-)?binding))(?:(?:[.#]?-?(?:[_a-z0-9-]+)(?:-[_a-z0-9-]+)*-?|(?:rgb|hsl)a?\([0-9.%,\u0020]+\)|-?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[a-z]{1,4}|%)?|!important)(?:\s*[,\u0020]\s*|$))*$/i;
-
-/**
- * A pattern that vets values produced by the named directives.
- * @private {!RegExp}
- */
-soy.esc.$$FILTER_FOR_FILTER_NORMALIZE_URI_ = /^(?![^#?]*\/(?:\.|%2E){2}(?:[\/?#]|$))(?:(?:https?|mailto):|[^&:\/?#]*(?:[\/?#]|$))/i;
-
-/**
- * A pattern that vets values produced by the named directives.
- * @private {!RegExp}
- */
-soy.esc.$$FILTER_FOR_FILTER_NORMALIZE_MEDIA_URI_ = /^[^&:\/?#]*(?:[\/?#]|$)|^https?:|^data:image\/[a-z0-9+]+;base64,[a-z0-9+\/]+=*$|^blob:/i;
-
-/**
- * A pattern that vets values produced by the named directives.
- * @private {!RegExp}
- */
-soy.esc.$$FILTER_FOR_FILTER_IMAGE_DATA_URI_ = /^data:image\/(?:bmp|gif|jpe?g|png|tiff|webp);base64,[a-z0-9+\/]+=*$/i;
-
-/**
- * A pattern that vets values produced by the named directives.
- * @private {!RegExp}
- */
-soy.esc.$$FILTER_FOR_FILTER_SIP_URI_ = /^sip:[0-9a-z;=\-+._!~*'\u0020\/():&$#?@,]+$/i;
-
-/**
- * A pattern that vets values produced by the named directives.
- * @private {!RegExp}
- */
-soy.esc.$$FILTER_FOR_FILTER_SMS_URI_ = /^sms:[0-9a-z;=\-+._!~*'\u0020\/():&$#?@,]+$/i;
-
-/**
- * A pattern that vets values produced by the named directives.
- * @private {!RegExp}
- */
-soy.esc.$$FILTER_FOR_FILTER_TEL_URI_ = /^tel:[0-9a-z;=\-+._!~*'\u0020\/():&$#?@,]+$/i;
-
-/**
- * A pattern that vets values produced by the named directives.
- * @private {!RegExp}
- */
-soy.esc.$$FILTER_FOR_FILTER_HTML_ATTRIBUTES_ = /^(?!on|src|(?:action|archive|background|cite|classid|codebase|content|data|dsync|href|http-equiv|longdesc|style|usemap)\s*$)(?:[a-z0-9_$:-]*)$/i;
-
-/**
- * A pattern that vets values produced by the named directives.
- * @private {!RegExp}
- */
-soy.esc.$$FILTER_FOR_FILTER_HTML_ELEMENT_NAME_ = /^(?!base|iframe|link|no|object|script|style|textarea|title|xmp)[a-z0-9_$:-]*$/i;
-
-/**
- * A pattern that vets values produced by the named directives.
- * @private {!RegExp}
- */
-soy.esc.$$FILTER_FOR_FILTER_CSP_NONCE_VALUE_ = /^[a-zA-Z0-9+\/_-]+={0,2}$/;
-
-/**
- * A helper for the Soy directive |normalizeHtml
- * @param {?} value Can be of any type but will be coerced to a string.
- * @return {string} The escaped text.
- */
-soy.esc.$$normalizeHtmlHelper = function(value) {
-  var str = String(value);
-  return str.replace(
-      soy.esc.$$MATCHER_FOR_NORMALIZE_HTML_,
-      soy.esc.$$REPLACER_FOR_NORMALIZE_HTML__AND__ESCAPE_HTML_NOSPACE__AND__NORMALIZE_HTML_NOSPACE_);
-};
-
-/**
- * A helper for the Soy directive |escapeHtmlNospace
- * @param {?} value Can be of any type but will be coerced to a string.
- * @return {string} The escaped text.
- */
-soy.esc.$$escapeHtmlNospaceHelper = function(value) {
-  var str = String(value);
-  return str.replace(
-      soy.esc.$$MATCHER_FOR_ESCAPE_HTML_NOSPACE_,
-      soy.esc.$$REPLACER_FOR_NORMALIZE_HTML__AND__ESCAPE_HTML_NOSPACE__AND__NORMALIZE_HTML_NOSPACE_);
-};
-
-/**
- * A helper for the Soy directive |normalizeHtmlNospace
- * @param {?} value Can be of any type but will be coerced to a string.
- * @return {string} The escaped text.
- */
-soy.esc.$$normalizeHtmlNospaceHelper = function(value) {
-  var str = String(value);
-  return str.replace(
-      soy.esc.$$MATCHER_FOR_NORMALIZE_HTML_NOSPACE_,
-      soy.esc.$$REPLACER_FOR_NORMALIZE_HTML__AND__ESCAPE_HTML_NOSPACE__AND__NORMALIZE_HTML_NOSPACE_);
-};
-
-/**
- * A helper for the Soy directive |escapeJsString
- * @param {?} value Can be of any type but will be coerced to a string.
- * @return {string} The escaped text.
- */
-soy.esc.$$escapeJsStringHelper = function(value) {
-  var str = String(value);
-  return str.replace(
-      soy.esc.$$MATCHER_FOR_ESCAPE_JS_STRING_,
-      soy.esc.$$REPLACER_FOR_ESCAPE_JS_STRING__AND__ESCAPE_JS_REGEX_);
-};
-
-/**
- * A helper for the Soy directive |escapeJsRegex
- * @param {?} value Can be of any type but will be coerced to a string.
- * @return {string} The escaped text.
- */
-soy.esc.$$escapeJsRegexHelper = function(value) {
-  var str = String(value);
-  return str.replace(
-      soy.esc.$$MATCHER_FOR_ESCAPE_JS_REGEX_,
-      soy.esc.$$REPLACER_FOR_ESCAPE_JS_STRING__AND__ESCAPE_JS_REGEX_);
-};
-
-/**
- * A helper for the Soy directive |escapeCssString
- * @param {?} value Can be of any type but will be coerced to a string.
- * @return {string} The escaped text.
- */
-soy.esc.$$escapeCssStringHelper = function(value) {
-  var str = String(value);
-  return str.replace(
-      soy.esc.$$MATCHER_FOR_ESCAPE_CSS_STRING_,
-      soy.esc.$$REPLACER_FOR_ESCAPE_CSS_STRING_);
-};
-
-/**
- * A helper for the Soy directive |filterCssValue
- * @param {?} value Can be of any type but will be coerced to a string.
- * @return {string} The escaped text.
- */
-soy.esc.$$filterCssValueHelper = function(value) {
-  var str = String(value);
-  if (!soy.esc.$$FILTER_FOR_FILTER_CSS_VALUE_.test(str)) {
-    goog.asserts.fail('Bad value `%s` for |filterCssValue', [str]);
-    return 'zSoyz';
-  }
-  return str;
-};
-
-/**
- * A helper for the Soy directive |normalizeUri
- * @param {?} value Can be of any type but will be coerced to a string.
- * @return {string} The escaped text.
- */
-soy.esc.$$normalizeUriHelper = function(value) {
-  var str = String(value);
-  return str.replace(
-      soy.esc.$$MATCHER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI_,
-      soy.esc.$$REPLACER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI_);
-};
-
-/**
- * A helper for the Soy directive |filterNormalizeUri
- * @param {?} value Can be of any type but will be coerced to a string.
- * @return {string} The escaped text.
- */
-soy.esc.$$filterNormalizeUriHelper = function(value) {
-  var str = String(value);
-  if (!soy.esc.$$FILTER_FOR_FILTER_NORMALIZE_URI_.test(str)) {
-    goog.asserts.fail('Bad value `%s` for |filterNormalizeUri', [str]);
-    return 'about:invalid#zSoyz';
-  }
-  return str.replace(
-      soy.esc.$$MATCHER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI_,
-      soy.esc.$$REPLACER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI_);
-};
-
-/**
- * A helper for the Soy directive |filterNormalizeMediaUri
- * @param {?} value Can be of any type but will be coerced to a string.
- * @return {string} The escaped text.
- */
-soy.esc.$$filterNormalizeMediaUriHelper = function(value) {
-  var str = String(value);
-  if (!soy.esc.$$FILTER_FOR_FILTER_NORMALIZE_MEDIA_URI_.test(str)) {
-    goog.asserts.fail('Bad value `%s` for |filterNormalizeMediaUri', [str]);
-    return 'about:invalid#zSoyz';
-  }
-  return str.replace(
-      soy.esc.$$MATCHER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI_,
-      soy.esc.$$REPLACER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI_);
-};
-
-/**
- * A helper for the Soy directive |filterImageDataUri
- * @param {?} value Can be of any type but will be coerced to a string.
- * @return {string} The escaped text.
- */
-soy.esc.$$filterImageDataUriHelper = function(value) {
-  var str = String(value);
-  if (!soy.esc.$$FILTER_FOR_FILTER_IMAGE_DATA_URI_.test(str)) {
-    goog.asserts.fail('Bad value `%s` for |filterImageDataUri', [str]);
-    return 'data:image/gif;base64,zSoyz';
-  }
-  return str;
-};
-
-/**
- * A helper for the Soy directive |filterSipUri
- * @param {?} value Can be of any type but will be coerced to a string.
- * @return {string} The escaped text.
- */
-soy.esc.$$filterSipUriHelper = function(value) {
-  var str = String(value);
-  if (!soy.esc.$$FILTER_FOR_FILTER_SIP_URI_.test(str)) {
-    goog.asserts.fail('Bad value `%s` for |filterSipUri', [str]);
-    return 'about:invalid#zSoyz';
-  }
-  return str;
-};
-
-/**
- * A helper for the Soy directive |filterSmsUri
- * @param {?} value Can be of any type but will be coerced to a string.
- * @return {string} The escaped text.
- */
-soy.esc.$$filterSmsUriHelper = function(value) {
-  var str = String(value);
-  if (!soy.esc.$$FILTER_FOR_FILTER_SMS_URI_.test(str)) {
-    goog.asserts.fail('Bad value `%s` for |filterSmsUri', [str]);
-    return 'about:invalid#zSoyz';
-  }
-  return str;
-};
-
-/**
- * A helper for the Soy directive |filterTelUri
- * @param {?} value Can be of any type but will be coerced to a string.
- * @return {string} The escaped text.
- */
-soy.esc.$$filterTelUriHelper = function(value) {
-  var str = String(value);
-  if (!soy.esc.$$FILTER_FOR_FILTER_TEL_URI_.test(str)) {
-    goog.asserts.fail('Bad value `%s` for |filterTelUri', [str]);
-    return 'about:invalid#zSoyz';
-  }
-  return str;
-};
-
-/**
- * A helper for the Soy directive |filterHtmlAttributes
- * @param {?} value Can be of any type but will be coerced to a string.
- * @return {string} The escaped text.
- */
-soy.esc.$$filterHtmlAttributesHelper = function(value) {
-  var str = String(value);
-  if (!soy.esc.$$FILTER_FOR_FILTER_HTML_ATTRIBUTES_.test(str)) {
-    goog.asserts.fail('Bad value `%s` for |filterHtmlAttributes', [str]);
-    return 'zSoyz';
-  }
-  return str;
-};
-
-/**
- * A helper for the Soy directive |filterHtmlElementName
- * @param {?} value Can be of any type but will be coerced to a string.
- * @return {string} The escaped text.
- */
-soy.esc.$$filterHtmlElementNameHelper = function(value) {
-  var str = String(value);
-  if (!soy.esc.$$FILTER_FOR_FILTER_HTML_ELEMENT_NAME_.test(str)) {
-    goog.asserts.fail('Bad value `%s` for |filterHtmlElementName', [str]);
-    return 'zSoyz';
-  }
-  return str;
-};
-
-/**
- * A helper for the Soy directive |filterCspNonceValue
- * @param {?} value Can be of any type but will be coerced to a string.
- * @return {string} The escaped text.
- */
-soy.esc.$$filterCspNonceValueHelper = function(value) {
-  var str = String(value);
-  if (!soy.esc.$$FILTER_FOR_FILTER_CSP_NONCE_VALUE_.test(str)) {
-    goog.asserts.fail('Bad value `%s` for |filterCspNonceValue', [str]);
-    return 'zSoyz';
-  }
-  return str;
-};
-
-/**
- * Matches all tags, HTML comments, and DOCTYPEs in tag soup HTML.
- * By removing these, and replacing any '<' or '>' characters with
- * entities we guarantee that the result can be embedded into a
- * an attribute without introducing a tag boundary.
- *
- * @private {!RegExp}
- */
-soy.esc.$$HTML_TAG_REGEX_ = /<(?:!|\/?([a-zA-Z][a-zA-Z0-9:\-]*))(?:[^>'"]|"[^"]*"|'[^']*')*>/g;
-
-/**
- * Matches all occurrences of '<'.
- *
- * @private {!RegExp}
- */
-soy.esc.$$LT_REGEX_ = /</g;
-
-/**
- * Maps lower-case names of innocuous tags to true.
- *
- * @private {!Object<string, boolean>}
- */
-soy.esc.$$SAFE_TAG_WHITELIST_ = {'b': true, 'br': true, 'em': true, 'i': true, 's': true, 'strong': true, 'sub': true, 'sup': true, 'u': true};
-
-/**
- * Pattern for matching attribute name and value, where value is single-quoted
- * or double-quoted.
- * See http://www.w3.org/TR/2011/WD-html5-20110525/syntax.html#attributes-0
- *
- * @private {!RegExp}
- */
-soy.esc.$$HTML_ATTRIBUTE_REGEX_ = /([a-zA-Z][a-zA-Z0-9:\-]*)[\t\n\r\u0020]*=[\t\n\r\u0020]*("[^"]*"|'[^']*')/g;
-
-// END GENERATED CODE
 
 //third_party/javascript/closure/dom/browserfeature.js
 /**

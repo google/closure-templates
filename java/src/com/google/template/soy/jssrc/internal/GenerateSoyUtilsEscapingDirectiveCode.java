@@ -128,9 +128,9 @@ public final class GenerateSoyUtilsEscapingDirectiveCode
         .append('\n')
         .append("/**\n")
         .append(" * Maps characters to the escaped versions for the named escape directives.\n")
-        .append(" * @private {!Object<string, string>}\n")
+        .append(" * @type {!Object<string, string>}\n")
         .append(" */\n")
-        .append("soy.esc.$$ESCAPE_MAP_FOR_")
+        .append("const $$ESCAPE_MAP_FOR_")
         .append(mapName)
         .append("_");
   }
@@ -141,9 +141,9 @@ public final class GenerateSoyUtilsEscapingDirectiveCode
         .append('\n')
         .append("/**\n")
         .append(" * Matches characters that need to be escaped for the named directives.\n")
-        .append(" * @private {!RegExp}\n")
+        .append(" * @type {!RegExp}\n")
         .append(" */\n")
-        .append("soy.esc.$$MATCHER_FOR_")
+        .append("const $$MATCHER_FOR_")
         .append(name)
         .append("_ = ")
         .append(matcher)
@@ -156,9 +156,9 @@ public final class GenerateSoyUtilsEscapingDirectiveCode
         .append('\n')
         .append("/**\n")
         .append(" * A pattern that vets values produced by the named directives.\n")
-        .append(" * @private {!RegExp}\n")
+        .append(" * @type {!RegExp}\n")
         .append(" */\n")
-        .append("soy.esc.$$FILTER_FOR_")
+        .append("const $$FILTER_FOR_")
         .append(name)
         .append("_ = ")
         .append(filter)
@@ -177,9 +177,9 @@ public final class GenerateSoyUtilsEscapingDirectiveCode
         .append(" * entities we guarantee that the result can be embedded into a\n")
         .append(" * an attribute without introducing a tag boundary.\n")
         .append(" *\n")
-        .append(" * @private {!RegExp}\n")
+        .append(" * @type {!RegExp}\n")
         .append(" */\n")
-        .append("soy.esc.$$HTML_TAG_REGEX_ = ")
+        .append("const $$HTML_TAG_REGEX_ = ")
         .append(convertFromJavaRegex(EscapingConventions.HTML_TAG_CONTENT))
         .append("g;\n");
 
@@ -188,18 +188,18 @@ public final class GenerateSoyUtilsEscapingDirectiveCode
         .append("/**\n")
         .append(" * Matches all occurrences of '<'.\n")
         .append(" *\n")
-        .append(" * @private {!RegExp}\n")
+        .append(" * @type {!RegExp}\n")
         .append(" */\n")
-        .append("soy.esc.$$LT_REGEX_ = /</g;\n");
+        .append("const $$LT_REGEX_ = /</g;\n");
 
     outputCode
         .append('\n')
         .append("/**\n")
         .append(" * Maps lower-case names of innocuous tags to true.\n")
         .append(" *\n")
-        .append(" * @private {!Object<string, boolean>}\n")
+        .append(" * @type {!Object<string, boolean>}\n")
         .append(" */\n")
-        .append("soy.esc.$$SAFE_TAG_WHITELIST_ = ")
+        .append("const $$SAFE_TAG_WHITELIST_ = ")
         .append(toJsStringSet(TagWhitelist.FORMATTING.asSet()))
         .append(";\n");
 
@@ -210,9 +210,9 @@ public final class GenerateSoyUtilsEscapingDirectiveCode
         .append(" * or double-quoted.\n")
         .append(" * See http://www.w3.org/TR/2011/WD-html5-20110525/syntax.html#attributes-0\n")
         .append(" *\n")
-        .append(" * @private {!RegExp}\n")
+        .append(" * @type {!RegExp}\n")
         .append(" */\n")
-        .append("soy.esc.$$HTML_ATTRIBUTE_REGEX_ = ")
+        .append("const $$HTML_ATTRIBUTE_REGEX_ = ")
         .append(convertFromJavaRegex(Sanitizers.HTML_ATTRIBUTE_PATTERN))
         .append("g;\n");
   }
@@ -225,12 +225,11 @@ public final class GenerateSoyUtilsEscapingDirectiveCode
         .append(" * A function that can be used with String.replace.\n")
         .append(" * @param {string} ch A single character matched by a compatible matcher.\n")
         .append(" * @return {string} A token in the output language.\n")
-        .append(" * @private\n")
         .append(" */\n")
-        .append("soy.esc.$$REPLACER_FOR_")
+        .append("const $$REPLACER_FOR_")
         .append(mapName)
         .append("_ = function(ch) {\n")
-        .append("  return soy.esc.$$ESCAPE_MAP_FOR_")
+        .append("  return $$ESCAPE_MAP_FOR_")
         .append(mapName)
         .append("_[ch];\n")
         .append("};\n");
@@ -244,7 +243,7 @@ public final class GenerateSoyUtilsEscapingDirectiveCode
         .append("/**\n")
         .append(" * @type {function (*) : string}\n")
         .append(" */\n")
-        .append("soy.esc.$$")
+        .append("const $$")
         .append(identifier)
         .append("Helper = function(v) {\n")
         .append("  return ")
@@ -265,19 +264,16 @@ public final class GenerateSoyUtilsEscapingDirectiveCode
         .append(" * @param {?} value Can be of any type but will be coerced to a string.\n")
         .append(" * @return {string} The escaped text.\n")
         .append(" */\n")
-        .append("soy.esc.$$")
+        .append("const $$")
         .append(name)
         .append("Helper = function(value) {\n")
-        .append("  var str = String(value);\n");
+        .append("  const str = String(value);\n");
     if (digest.getFilterName() != null) {
       String filterName = digest.getFilterName();
-      outputCode
-          .append("  if (!soy.esc.$$FILTER_FOR_")
-          .append(filterName)
-          .append("_.test(str)) {\n");
-      if (availableIdentifiers.test("goog.asserts.fail")) {
+      outputCode.append("  if (!$$FILTER_FOR_").append(filterName).append("_.test(str)) {\n");
+      if (availableIdentifiers.test("asserts.fail")) {
         outputCode
-            .append("    goog.asserts.fail('Bad value `%s` for |")
+            .append("    asserts.fail('Bad value `%s` for |")
             .append(name)
             .append("', [str]);\n");
       }
@@ -297,10 +293,10 @@ public final class GenerateSoyUtilsEscapingDirectiveCode
       String matcherName = digest.getMatcherName();
       outputCode
           .append("  return str.replace(\n")
-          .append("      soy.esc.$$MATCHER_FOR_")
+          .append("      $$MATCHER_FOR_")
           .append(matcherName)
           .append("_,\n")
-          .append("      soy.esc.$$REPLACER_FOR_")
+          .append("      $$REPLACER_FOR_")
           .append(escapeMapName)
           .append("_);\n");
     } else {

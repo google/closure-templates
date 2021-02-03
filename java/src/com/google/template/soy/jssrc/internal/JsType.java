@@ -25,7 +25,7 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_HTML_SAFE_HT
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_IS_FUNCTION;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_IS_OBJECT;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_SOY_DATA_SANITIZED_CONTENT;
-import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_ASSERTS_ASSERT_TYPE;
+import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_ASSERT_TYPE;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_MAP_IS_SOY_MAP;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_VELOG;
 import static com.google.template.soy.jssrc.internal.JsRuntime.sanitizedContentType;
@@ -592,7 +592,7 @@ public final class JsType {
     }
 
     return Optional.of(
-        SOY_ASSERTS_ASSERT_TYPE.call(
+        SOY_ASSERT_TYPE.call(
             typeAssertion.get(), stringLiteral(valueName), value, stringLiteral(typeExpr())));
   }
 
@@ -620,7 +620,8 @@ public final class JsType {
     // consumed by an escaper function.
     // TODO(lukes): maybe we should define typedefs for these?
     Builder builder = builder();
-    builder.addType("!soydata.$$EMPTY_STRING_");
+    builder.addType("!soy.$$EMPTY_STRING_");
+    builder.addRequire(JsRuntime.SOY);
     builder.addType("!" + type);
     builder.addRequire(GoogRequire.create(type));
     if (!isStrict) {
@@ -631,7 +632,8 @@ public final class JsType {
       // be escaped.
       builder.addType("string");
     } else {
-      builder.addType("!soydata.$$EMPTY_STRING_");
+      builder.addType("!soy.$$EMPTY_STRING_");
+      builder.addRequire(JsRuntime.SOY);
       builder.addType("!" + type);
       builder.addRequire(GoogRequire.create(type));
       if (!isStrict) {

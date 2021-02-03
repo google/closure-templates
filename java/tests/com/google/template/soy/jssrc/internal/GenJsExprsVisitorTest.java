@@ -103,7 +103,8 @@ public final class GenJsExprsVisitorTest {
 
     String soyNodeCode = JOINER.join("{@param boo : string}", "{map('a': 'b', $boo: 'c')[$boo]}");
     String expectedGenCode =
-        "/** @type {!soy.map.Map<string,string>} */ (new Map()).set(soy.$$checkNotNull('a'),"
+        "/** @type {!soy.map.Map<string,string>} */ (new"
+            + " Map()).set(soy.$$checkNotNull('a'),"
             + " 'b').set(soy.$$checkNotNull(opt_data.boo), 'c').get(opt_data.boo);";
     assertGeneratedChunks(soyNodeCode, expectedGenCode);
   }

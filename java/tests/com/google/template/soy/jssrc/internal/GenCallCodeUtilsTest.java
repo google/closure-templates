@@ -94,7 +94,7 @@ public final class GenCallCodeUtilsTest {
                 "{/call}"))
         .isEqualTo(
             "some.func(soy.$$assignDefaults("
-                + "{goo: soydata.VERY_UNSAFE.$$ordainSanitizedHtmlForInternalBlocks('Blah')}, "
+                + "{goo: soy.VERY_UNSAFE.$$ordainSanitizedHtmlForInternalBlocks('Blah')}, "
                 + "boo), opt_ijData);");
 
     final String callExprText =
@@ -109,7 +109,7 @@ public final class GenCallCodeUtilsTest {
         .that(
             callExprText.matches(
                 "some[.]func[(]/[*][*] @type [{?}]{3} [*]/ [(][{]goo:"
-                    + " soydata.VERY_UNSAFE.[$][$]ordainSanitizedHtmlForInternalBlocks[(]param[0-9]+[)][}][)],"
+                    + " soy.VERY_UNSAFE.[$][$]ordainSanitizedHtmlForInternalBlocks[(]param[0-9]+[)][}][)],"
                     + " opt_ijData[)];"))
         .isTrue();
   }
@@ -118,16 +118,14 @@ public final class GenCallCodeUtilsTest {
   public void testGenCallExprForDelegateCalls() {
     assertThat(getCallExprTextHelper("{delcall myDelegate data=\"all\" /}"))
         .isEqualTo(
-            "soy.$$getDelegateFn("
-                + "soy.$$getDelTemplateId('myDelegate'), '', false)(/** @type {?} */ (opt_data), "
-                + "opt_ijData);");
+            "soy.$$getDelegateFn(soy.$$getDelTemplateId('myDelegate'), '',"
+                + " false)(/** @type {?} */ (opt_data), opt_ijData);");
 
     assertThat(
             getCallExprTextHelper("{delcall myDelegate data=\"all\" allowemptydefault=\"true\" /}"))
         .isEqualTo(
-            "soy.$$getDelegateFn("
-                + "soy.$$getDelTemplateId('myDelegate'), '', true)(/** @type {?} */ (opt_data), "
-                + "opt_ijData);");
+            "soy.$$getDelegateFn(soy.$$getDelTemplateId('myDelegate'), '',"
+                + " true)(/** @type {?} */ (opt_data), opt_ijData);");
 
     assertThat(
             getCallExprTextHelper(
@@ -145,16 +143,16 @@ public final class GenCallCodeUtilsTest {
   public void testGenCallExprForDelegateVariantCalls() {
     assertThat(getCallExprTextHelper("{delcall myDelegate variant=\"'voo'\" data=\"all\" /}"))
         .isEqualTo(
-            "soy.$$getDelegateFn(soy.$$getDelTemplateId('myDelegate'), 'voo', false)"
-                + "(/** @type {?} */ (opt_data), opt_ijData);");
+            "soy.$$getDelegateFn(soy.$$getDelTemplateId('myDelegate'), 'voo',"
+                + " false)(/** @type {?} */ (opt_data), opt_ijData);");
 
     assertThat(
             getCallExprTextHelper(
                 "{@param voo : ?}",
                 "{delcall myDelegate variant=\"$voo\" data=\"all\" allowemptydefault=\"true\" /}"))
         .isEqualTo(
-            "soy.$$getDelegateFn(soy.$$getDelTemplateId('myDelegate'), opt_data.voo, true)"
-                + "(/** @type {?} */ (opt_data), opt_ijData);");
+            "soy.$$getDelegateFn(soy.$$getDelTemplateId('myDelegate'),"
+                + " opt_data.voo, true)(/** @type {?} */ (opt_data), opt_ijData);");
   }
 
   @Test
@@ -165,9 +163,9 @@ public final class GenCallCodeUtilsTest {
                 "  {param goo kind=\"html\"}Blah{/param}",
                 "{/delcall}"))
         .isEqualTo(
-            "soy.$$getDelegateFn(soy.$$getDelTemplateId('my.other.delegate'), '', false)("
-                + "/** @type {?} */ ({goo: soydata.VERY_UNSAFE"
-                + ".$$ordainSanitizedHtmlForInternalBlocks('Blah')}), "
+            "soy.$$getDelegateFn(soy.$$getDelTemplateId('my.other.delegate'), '',"
+                + " false)(/** @type {?} */ ({goo:"
+                + " soy.VERY_UNSAFE.$$ordainSanitizedHtmlForInternalBlocks('Blah')}), "
                 + "opt_ijData);");
 
     String callExprText =
@@ -182,7 +180,7 @@ public final class GenCallCodeUtilsTest {
             callExprText.matches(
                 "soy.\\$\\$getDelegateFn\\("
                     + "soy.\\$\\$getDelTemplateId\\('my.other.delegate'\\), '', false\\)"
-                    + "[(]/[*][*] @type [{?}]{3} [*]/ [(][{]goo: soydata.VERY_UNSAFE"
+                    + "[(]/[*][*] @type [{?}]{3} [*]/ [(][{]goo: soy.VERY_UNSAFE"
                     + ".[$][$]ordainSanitizedHtmlForInternalBlocks"
                     + "[(]param[0-9]+[)][}][)], opt_ijData[)];"))
         .isTrue();

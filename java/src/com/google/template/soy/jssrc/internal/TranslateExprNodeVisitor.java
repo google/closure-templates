@@ -840,7 +840,8 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
           // this is a no-op in js
           return visit(node.getChild(0));
         case DEBUG_SOY_TEMPLATE_INFO:
-          return GOOG_DEBUG.and(JsRuntime.SOY_DEBUG_SOY_TEMPLATE_INFO, codeGenerator);
+          // TODO(lukes): does this need a goog.debug guard? it exists in the runtime
+          return GOOG_DEBUG.and(JsRuntime.SOY_DEBUG_SOY_TEMPLATE_INFO.call(), codeGenerator);
         case VE_DATA:
           return visitVeDataFunction(node);
         case LEGACY_DYNAMIC_TAG:

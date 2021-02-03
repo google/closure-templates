@@ -566,9 +566,8 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
    *   /**
    *    * Maps characters to the escaped versions for the named escape directives.\n")
    *    * @type {Object<string, string>}\n")
-   *    * @private\n")
    *    *\/
-   *     soy.esc.$$ESCAPE_MAP_FOR_&lt;NAME&gt;_
+   *     const $$ESCAPE_MAP_FOR_&lt;NAME&gt;_
    * </pre>
    *
    * @param outputCode The StringBuilder where generated code should be appended.

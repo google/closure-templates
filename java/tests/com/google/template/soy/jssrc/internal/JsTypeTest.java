@@ -77,23 +77,22 @@ public final class JsTypeTest {
 
     // Sanitized types
     assertThatTypeExpr(HtmlType.getInstance())
-        .isEqualTo(
-            "!goog.html.SafeHtml|!goog.soy.data.SanitizedHtml|!soydata.$$EMPTY_STRING_|string");
+        .isEqualTo("!goog.html.SafeHtml|!goog.soy.data.SanitizedHtml|!soy.$$EMPTY_STRING_|string");
     assertThatTypeExpr(makeNullable(HtmlType.getInstance()))
         .isEqualTo(
-            "!goog.html.SafeHtml|!goog.soy.data.SanitizedHtml|!soydata.$$EMPTY_STRING_|null"
+            "!goog.html.SafeHtml|!goog.soy.data.SanitizedHtml|!soy.$$EMPTY_STRING_|null"
                 + "|string|undefined");
     assertThatTypeExpr(UnionType.of(HtmlType.getInstance(), UriType.getInstance()))
         .isEqualTo(
             "!goog.Uri|!goog.html.SafeHtml|!goog.html.SafeUrl|!goog.html.TrustedResourceUrl"
                 + "|!goog.soy.data.SanitizedHtml|!goog.soy.data.SanitizedUri"
-                + "|!soydata.$$EMPTY_STRING_|string");
+                + "|!soy.$$EMPTY_STRING_|string");
 
     // Arrays
     assertThatTypeExpr(LIST_OF_HTML)
         .isEqualTo(
             "!Array<!goog.html.SafeHtml|!goog.soy.data.SanitizedHtml"
-                + "|!soydata.$$EMPTY_STRING_|string>");
+                + "|!soy.$$EMPTY_STRING_|string>");
 
     // Nullable types
     assertThatTypeExpr(NULLABLE_STRING).isEqualTo("null|string|undefined");
@@ -101,31 +100,31 @@ public final class JsTypeTest {
     assertThatTypeExpr(NULLABLE_LIST_OF_HTML)
         .isEqualTo(
             "!Array<!goog.html.SafeHtml|!goog.soy.data.SanitizedHtml"
-                + "|!soydata.$$EMPTY_STRING_|string>|null|undefined");
+                + "|!soy.$$EMPTY_STRING_|string>|null|undefined");
 
     // Records
     assertThatTypeExpr(
             RecordType.of(ImmutableMap.of("foo", IntType.getInstance(), "bar", LIST_OF_HTML)))
         .isEqualTo(
             "{foo: number, bar: !Array<!goog.html.SafeHtml|!goog.soy.data.SanitizedHtml"
-                + "|!soydata.$$EMPTY_STRING_|string>,}");
+                + "|!soy.$$EMPTY_STRING_|string>,}");
     assertThatTypeExpr(
             RecordType.of(ImmutableMap.of("foo", IntType.getInstance(), "bar", LIST_OF_HTML)))
         .isEqualTo(
             "{foo: number, bar: !Array<!goog.html.SafeHtml|!goog.soy.data.SanitizedHtml"
-                + "|!soydata.$$EMPTY_STRING_|string>,}");
+                + "|!soy.$$EMPTY_STRING_|string>,}");
     assertThatTypeExpr(
             RecordType.of(
                 ImmutableMap.of("foo", IntType.getInstance(), "bar", NULLABLE_LIST_OF_HTML)))
         .isEqualTo(
             "{foo: number, bar: (!Array<!goog.html.SafeHtml|!goog.soy.data.SanitizedHtml"
-                + "|!soydata.$$EMPTY_STRING_|string>|null|undefined),}");
+                + "|!soy.$$EMPTY_STRING_|string>|null|undefined),}");
 
     assertThatTypeExpr(MapType.of(StringType.getInstance(), HtmlType.getInstance()))
         .isEqualTo(
             "!soy.map.Map<"
                 + "string,!goog.html.SafeHtml|!goog.soy.data.SanitizedHtml"
-                + "|!soydata.$$EMPTY_STRING_|string>");
+                + "|!soy.$$EMPTY_STRING_|string>");
   }
 
   @Test
@@ -171,7 +170,7 @@ public final class JsTypeTest {
             getSoyTypeAssertionStrict(
                 UnionType.of(BoolType.getInstance(), IntType.getInstance()), "x"))
         .isEqualTo(
-            "soy.asserts.assertType("
+            "soy.assertType("
                 + "typeof x === 'boolean' || typeof x === 'number', 'x', x, 'boolean|number')");
   }
 

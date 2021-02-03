@@ -57,22 +57,22 @@ public class NodeContentKindsTest {
   @Test
   public void testToJsSanitizedContentOrdainer() {
     assertEquals(
-        "soydata.VERY_UNSAFE.ordainSanitizedHtml",
+        "soy.VERY_UNSAFE.ordainSanitizedHtml",
         NodeContentKinds.toJsSanitizedContentOrdainer(SanitizedContentKind.HTML));
     assertEquals(
-        "soydata.VERY_UNSAFE.ordainSanitizedHtmlAttribute",
+        "soy.VERY_UNSAFE.ordainSanitizedHtmlAttribute",
         NodeContentKinds.toJsSanitizedContentOrdainer(SanitizedContentKind.ATTRIBUTES));
     assertEquals(
-        "soydata.VERY_UNSAFE.ordainSanitizedCss",
+        "soy.VERY_UNSAFE.ordainSanitizedCss",
         NodeContentKinds.toJsSanitizedContentOrdainer(SanitizedContentKind.CSS));
     assertEquals(
-        "soydata.VERY_UNSAFE.ordainSanitizedUri",
+        "soy.VERY_UNSAFE.ordainSanitizedUri",
         NodeContentKinds.toJsSanitizedContentOrdainer(SanitizedContentKind.URI));
     assertEquals(
-        "soydata.VERY_UNSAFE.ordainSanitizedTrustedResourceUri",
+        "soy.VERY_UNSAFE.ordainSanitizedTrustedResourceUri",
         NodeContentKinds.toJsSanitizedContentOrdainer(SanitizedContentKind.TRUSTED_RESOURCE_URI));
     assertEquals(
-        "soydata.VERY_UNSAFE.ordainSanitizedJs",
+        "soy.VERY_UNSAFE.ordainSanitizedJs",
         NodeContentKinds.toJsSanitizedContentOrdainer(SanitizedContentKind.JS));
     assertEquals("", NodeContentKinds.toJsSanitizedContentOrdainer(SanitizedContentKind.TEXT));
   }
@@ -80,24 +80,24 @@ public class NodeContentKindsTest {
   @Test
   public void testToJsSanitizedContentOrdainerForInternalBlocks() {
     assertEquals(
-        "soydata.VERY_UNSAFE.$$ordainSanitizedHtmlForInternalBlocks",
+        "soy.VERY_UNSAFE.$$ordainSanitizedHtmlForInternalBlocks",
         NodeContentKinds.toJsSanitizedContentOrdainerForInternalBlocks(SanitizedContentKind.HTML));
     assertEquals(
-        "soydata.VERY_UNSAFE.$$ordainSanitizedAttributesForInternalBlocks",
+        "soy.VERY_UNSAFE.$$ordainSanitizedAttributesForInternalBlocks",
         NodeContentKinds.toJsSanitizedContentOrdainerForInternalBlocks(
             SanitizedContentKind.ATTRIBUTES));
     assertEquals(
-        "soydata.VERY_UNSAFE.$$ordainSanitizedCssForInternalBlocks",
+        "soy.VERY_UNSAFE.$$ordainSanitizedCssForInternalBlocks",
         NodeContentKinds.toJsSanitizedContentOrdainerForInternalBlocks(SanitizedContentKind.CSS));
     assertEquals(
-        "soydata.VERY_UNSAFE.$$ordainSanitizedUriForInternalBlocks",
+        "soy.VERY_UNSAFE.$$ordainSanitizedUriForInternalBlocks",
         NodeContentKinds.toJsSanitizedContentOrdainerForInternalBlocks(SanitizedContentKind.URI));
     assertEquals(
-        "soydata.VERY_UNSAFE.$$ordainSanitizedTrustedResourceUriForInternalBlocks",
+        "soy.VERY_UNSAFE.$$ordainSanitizedTrustedResourceUriForInternalBlocks",
         NodeContentKinds.toJsSanitizedContentOrdainerForInternalBlocks(
             SanitizedContentKind.TRUSTED_RESOURCE_URI));
     assertEquals(
-        "soydata.VERY_UNSAFE.$$ordainSanitizedJsForInternalBlocks",
+        "soy.VERY_UNSAFE.$$ordainSanitizedJsForInternalBlocks",
         NodeContentKinds.toJsSanitizedContentOrdainerForInternalBlocks(SanitizedContentKind.JS));
     assertEquals(
         "",

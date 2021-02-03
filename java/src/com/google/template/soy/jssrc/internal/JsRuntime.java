@@ -18,6 +18,7 @@ package com.google.template.soy.jssrc.internal;
 import static com.google.template.soy.jssrc.dsl.Expression.dottedIdNoRequire;
 import static com.google.template.soy.jssrc.dsl.Expression.id;
 
+import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.html.types.SafeHtmlProto;
 import com.google.common.html.types.SafeScriptProto;
@@ -47,10 +48,9 @@ public final class JsRuntime {
   private static final GoogRequire GOOG_ASSERTS = GoogRequire.create("goog.asserts");
   private static final GoogRequire GOOG_STRING = GoogRequire.create("goog.string");
 
-  private static final GoogRequire SOY = GoogRequire.create("soy");
+  static final GoogRequire SOY = GoogRequire.create("soy");
   private static final GoogRequire SOY_MAP = GoogRequire.create("soy.map");
   private static final GoogRequire SOY_NEWMAPS = GoogRequire.create("soy.newmaps");
-  private static final GoogRequire SOY_ASSERTS = GoogRequire.create("soy.asserts");
   public static final GoogRequire SOY_VELOG = GoogRequire.create("soy.velog");
   public static final GoogRequire GOOG_SOY_ALIAS =
       GoogRequire.createWithAlias("goog.soy", "$googSoy");
@@ -104,7 +104,7 @@ public final class JsRuntime {
   public static final Expression GOOG_I18N_MESSAGE_FORMAT =
       GoogRequire.create("goog.i18n.MessageFormat").reference();
 
-  public static final Expression SOY_ASSERTS_ASSERT_TYPE = SOY_ASSERTS.dotAccess("assertType");
+  public static final Expression SOY_ASSERT_TYPE = SOY.dotAccess("assertType");
 
   public static final Expression SOY_ASSIGN_DEFAULTS = SOY.dotAccess("$$assignDefaults");
 
@@ -125,7 +125,7 @@ public final class JsRuntime {
   public static final Expression SOY_IS_LOCALE_RTL = SOY.dotAccess("$$IS_LOCALE_RTL");
 
   public static final Expression SOY_DEBUG_SOY_TEMPLATE_INFO =
-      SOY.dotAccess("$$debugSoyTemplateInfo");
+      SOY.dotAccess("$$getDebugSoyTemplateInfo");
 
   public static final Expression SOY_MAP_POPULATE = SOY_MAP.dotAccess("$$populateMap");
 
@@ -159,34 +159,32 @@ public final class JsRuntime {
   public static final Expression BIND_TEMPLATE_PARAMS_FOR_IDOM =
       SOY_TEMPLATES.googModuleGet().dotAccess("$$bindTemplateParamsForIdom");
 
+  private static final Expression SOY_CONVERTERS = GoogRequire.create("soy.converters").reference();
   /** The JavaScript method to pack a sanitized object into a safe proto. */
   public static final ImmutableMap<String, Expression> JS_TO_PROTO_PACK_FN_BASE =
       ImmutableMap.<String, Expression>builder()
           .put(
               SafeScriptProto.getDescriptor().getFullName(),
-              GoogRequire.create("soydata.packSanitizedJsToProtoSoyRuntimeOnly").reference())
+              SOY_CONVERTERS.dotAccess("packSanitizedJsToProtoSoyRuntimeOnly"))
           .put(
               SafeUrlProto.getDescriptor().getFullName(),
-              GoogRequire.create("soydata.packSanitizedUriToProtoSoyRuntimeOnly").reference())
+              SOY_CONVERTERS.dotAccess("packSanitizedUriToProtoSoyRuntimeOnly"))
           .put(
               SafeStyleProto.getDescriptor().getFullName(),
-              GoogRequire.create("soydata.packSanitizedCssToSafeStyleProtoSoyRuntimeOnly")
-                  .reference())
+              SOY_CONVERTERS.dotAccess("packSanitizedCssToSafeStyleProtoSoyRuntimeOnly"))
           .put(
               SafeStyleSheetProto.getDescriptor().getFullName(),
-              GoogRequire.create("soydata.packSanitizedCssToSafeStyleSheetProtoSoyRuntimeOnly")
-                  .reference())
+              SOY_CONVERTERS.dotAccess("packSanitizedCssToSafeStyleSheetProtoSoyRuntimeOnly"))
           .put(
               TrustedResourceUrlProto.getDescriptor().getFullName(),
-              GoogRequire.create("soydata.packSanitizedTrustedResourceUriToProtoSoyRuntimeOnly")
-                  .reference())
+              SOY_CONVERTERS.dotAccess("packSanitizedTrustedResourceUriToProtoSoyRuntimeOnly"))
           .build();
 
   public static final ImmutableMap<String, Expression> JS_TO_PROTO_PACK_FN =
       ImmutableMap.<String, Expression>builder()
           .put(
               SafeHtmlProto.getDescriptor().getFullName(),
-              GoogRequire.create("soydata.packSanitizedHtmlToProtoSoyRuntimeOnly").reference())
+              SOY_CONVERTERS.dotAccess("packSanitizedHtmlToProtoSoyRuntimeOnly"))
           .putAll(JS_TO_PROTO_PACK_FN_BASE)
           .build();
 
@@ -199,7 +197,7 @@ public final class JsRuntime {
 
   /** Returns a function that can 'unpack' safe proto types into sanitized content types.. */
   public static Expression protoToSanitizedContentConverterFunction(Descriptor messageType) {
-    return GoogRequire.create(NodeContentKinds.toJsUnpackFunction(messageType)).reference();
+    return symbolWithNamespace("soy.converters", NodeContentKinds.toJsUnpackFunction(messageType));
   }
 
   /**
@@ -246,7 +244,11 @@ public final class JsRuntime {
     if (fullyQualifiedSymbol.equals(require.symbol())) {
       return require.reference();
     }
-    String ident = fullyQualifiedSymbol.substring(require.symbol().length() + 1);
-    return require.dotAccess(ident);
+    String suffix = fullyQualifiedSymbol.substring(require.symbol().length() + 1);
+    Expression e = require.reference();
+    for (String ident : Splitter.on('.').splitToList(suffix)) {
+      e = e.dotAccess(ident);
+    }
+    return e;
   }
 }
