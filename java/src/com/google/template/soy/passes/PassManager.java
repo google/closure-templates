@@ -383,6 +383,7 @@ public final class PassManager {
       addPass(
           new ResolveTemplateImportsPass(options, errorReporter),
           partialTemplateRegistryPassesBuilder);
+      addPass(new OtherImportsPass(errorReporter), partialTemplateRegistryPassesBuilder);
       addPass(new RestoreGlobalsPass(), partialTemplateRegistryPassesBuilder);
       addPass(new RestoreCompilerChecksPass(errorReporter), partialTemplateRegistryPassesBuilder);
       // needs to come early since it is necessary to create template metadata objects for

@@ -25,6 +25,7 @@ import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.SoyNode.LocalVarNode;
 import com.google.template.soy.soytree.defn.ConstVar;
+import com.google.template.soy.soytree.defn.ImportedVar;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 
@@ -71,6 +72,7 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
       case CONST:
         return visitConstVar(node, (ConstVar) defn);
       case IMPORT_VAR:
+        return visitImportedVar(node, (ImportedVar) defn);
       case TEMPLATE:
       case UNDECLARED:
         throw new RuntimeException(defn.kind() + " are not supported by jbcsrc");
@@ -130,6 +132,10 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
   }
 
   T visitConstVar(VarRefNode node, ConstVar c) {
+    return visitExprNode(node);
+  }
+
+  T visitImportedVar(VarRefNode node, ImportedVar c) {
     return visitExprNode(node);
   }
 
