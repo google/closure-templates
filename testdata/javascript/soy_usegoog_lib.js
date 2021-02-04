@@ -43741,14 +43741,8 @@ goog.loadModule(function(exports) {'use strict';/*
  * @fileoverview I18n helper functions  for Soy gencode.
  */
 goog.module('soy.i18n');
-goog.module.declareLegacyNamespace();
 
 const NumberFormat = goog.require('goog.i18n.NumberFormat');
-/**
- * Required to fix declareLegacyNamespace, since soy is also declareLegacyNamespace.
- * @suppress{extraRequire}
- */
-goog.require('soy');
 
 /**
  * Formats a number with goog.i18n.NumberFormat.
