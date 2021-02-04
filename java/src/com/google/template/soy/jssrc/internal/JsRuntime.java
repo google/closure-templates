@@ -162,7 +162,8 @@ public final class JsRuntime {
   public static final Expression BIND_TEMPLATE_PARAMS_FOR_IDOM =
       SOY_TEMPLATES.googModuleGet().dotAccess("$$bindTemplateParamsForIdom");
 
-  private static final Expression SOY_CONVERTERS = GoogRequire.create("soy.converters").reference();
+  private static final Expression SOY_CONVERTERS =
+      GoogRequire.create("soy.converters").googModuleGet();
   /** The JavaScript method to pack a sanitized object into a safe proto. */
   public static final ImmutableMap<String, Expression> JS_TO_PROTO_PACK_FN_BASE =
       ImmutableMap.<String, Expression>builder()
@@ -200,7 +201,7 @@ public final class JsRuntime {
 
   /** Returns a function that can 'unpack' safe proto types into sanitized content types.. */
   public static Expression protoToSanitizedContentConverterFunction(Descriptor messageType) {
-    return symbolWithNamespace("soy.converters", NodeContentKinds.toJsUnpackFunction(messageType));
+    return SOY_CONVERTERS.dotAccess(NodeContentKinds.toJsUnpackFunction(messageType));
   }
 
   /**

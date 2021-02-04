@@ -102,24 +102,14 @@ public final class NodeContentKinds {
   /** The JavaScript method to unpack a safe proto to sanitized object. */
   private static final ImmutableMap<String, String> PROTO_TO_JS_UNPACK_FN =
       ImmutableMap.<String, String>builder()
-          .put(
-              SafeHtmlProto.getDescriptor().getFullName(),
-              "soy.converters.unpackProtoToSanitizedHtml")
-          .put(
-              SafeScriptProto.getDescriptor().getFullName(),
-              "soy.converters.unpackProtoToSanitizedJs")
-          .put(
-              SafeUrlProto.getDescriptor().getFullName(),
-              "soy.converters.unpackProtoToSanitizedUri")
-          .put(
-              SafeStyleProto.getDescriptor().getFullName(),
-              "soy.converters.unpackProtoToSanitizedCss")
-          .put(
-              SafeStyleSheetProto.getDescriptor().getFullName(),
-              "soy.converters.unpackProtoToSanitizedCss")
+          .put(SafeHtmlProto.getDescriptor().getFullName(), "unpackProtoToSanitizedHtml")
+          .put(SafeScriptProto.getDescriptor().getFullName(), "unpackProtoToSanitizedJs")
+          .put(SafeUrlProto.getDescriptor().getFullName(), "unpackProtoToSanitizedUri")
+          .put(SafeStyleProto.getDescriptor().getFullName(), "unpackProtoToSanitizedCss")
+          .put(SafeStyleSheetProto.getDescriptor().getFullName(), "unpackProtoToSanitizedCss")
           .put(
               TrustedResourceUrlProto.getDescriptor().getFullName(),
-              "soy.converters.unpackProtoToSanitizedTrustedResourceUri")
+              "unpackProtoToSanitizedTrustedResourceUri")
           .build();
 
   /** The Python sanitized classes. */

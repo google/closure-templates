@@ -25,7 +25,6 @@
  */
 
 goog.module('soy.converters');
-goog.module.declareLegacyNamespace();
 
 const Const = goog.require('goog.string.Const');
 const SafeHtml = goog.require('goog.html.SafeHtml');
