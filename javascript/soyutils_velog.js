@@ -26,17 +26,12 @@
  */
 
 goog.module('soy.velog');
-goog.module.declareLegacyNamespace();
 
 const LoggableElementMetadata = goog.require('proto.soy.LoggableElementMetadata');
 const Message = goog.require('jspb.Message');
 const {assert} = goog.require('goog.asserts');
 const {startsWith} = goog.require('goog.string');
-/**
- * Required to fix declareLegacyNamespace, since soy is also declareLegacyNamespace.
- * @suppress{extraRequire}
- */
-goog.require('soy');
+
 
 /** @final */
 class ElementMetadata {

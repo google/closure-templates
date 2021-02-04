@@ -225,9 +225,9 @@ public final class TranslateExprNodeVisitorTest {
             LoggingConfigs.createLoggingConfig(
                 LoggableElement.newBuilder().setId(8675309).setName("MyVe").build()))
         .generatesCode(
-            "goog.DEBUG "
-                + "? new soy.velog.$$VisualElement(8675309, undefined, 'MyVe') "
-                + ": new soy.velog.$$VisualElement(8675309, undefined);");
+            "goog.DEBUG ? new (goog.module.get('soy.velog').$$VisualElement)(8675309, undefined,"
+                + " 'MyVe') : new (goog.module.get('soy.velog').$$VisualElement)(8675309,"
+                + " undefined);");
   }
 
   @Test
@@ -242,9 +242,9 @@ public final class TranslateExprNodeVisitorTest {
                     .setJsPackage("root.this.is.a.package.logging_config")
                     .build()))
         .generatesCode(
-            "goog.DEBUG ? new soy.velog.$$VisualElement(2383,"
-                + " goog.module.get('root.this.is.a.package.logging_config').MyTestLoggingConfig"
-                + ".v2383(), 'MyMetadataVe') : new soy.velog.$$VisualElement(2383,"
+            "goog.DEBUG ? new (goog.module.get('soy.velog').$$VisualElement)(2383,"
+                + " goog.module.get('root.this.is.a.package.logging_config').MyTestLoggingConfig.v2383(),"
+                + " 'MyMetadataVe') : new (goog.module.get('soy.velog').$$VisualElement)(2383,"
                 + " goog.module.get('root.this.is.a.package.logging_config').MyTestLoggingConfig"
                 + ".v2383());");
   }

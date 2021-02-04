@@ -134,9 +134,12 @@ public final class JsRuntime {
   public static final Expression SOY_NEWMAPS_TRANSFORM_VALUES =
       SOY_NEWMAPS.dotAccess("$$transformValues");
 
-  public static final Expression SOY_VISUAL_ELEMENT = SOY_VELOG.dotAccess("$$VisualElement");
+  // Explicitly group() these calls because they return constructors and the new operator has
+  // curious precedence semantics if the constructor expression contains parens.
+  public static final Expression SOY_VISUAL_ELEMENT =
+      Expression.group(SOY_VELOG.googModuleGet().dotAccess("$$VisualElement"));
   public static final Expression SOY_VISUAL_ELEMENT_DATA =
-      SOY_VELOG.dotAccess("$$VisualElementData");
+      Expression.group(SOY_VELOG.googModuleGet().dotAccess("$$VisualElementData"));
 
   public static final Expression WINDOW_CONSOLE_LOG = dottedIdNoRequire("window.console.log");
 

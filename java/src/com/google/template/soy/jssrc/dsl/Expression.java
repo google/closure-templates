@@ -254,6 +254,9 @@ public abstract class Expression extends CodeChunk {
     return Group.create(fromExpr(couldHaveWrongPrecedence, requires));
   }
 
+  public static Expression group(Expression e) {
+    return Group.create(e);
+  }
   /** Formats this expression as a statement. */
   public final Statement asStatement() {
     return ExpressionStatement.of(this);
