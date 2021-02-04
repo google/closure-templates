@@ -132,7 +132,7 @@ public final class JsRuntime {
   public static final Expression SOY_MAP_IS_SOY_MAP = SOY_MAP.dotAccess("$$isSoyMap");
 
   public static final Expression SOY_NEWMAPS_TRANSFORM_VALUES =
-      SOY_NEWMAPS.dotAccess("$$transformValues");
+      SOY_NEWMAPS.googModuleGet().dotAccess("$$transformValues");
 
   // Explicitly group() these calls because they return constructors and the new operator has
   // curious precedence semantics if the constructor expression contains parens.

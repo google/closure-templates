@@ -8,9 +8,8 @@
 // these functions. As a workaround, put these functions into their own file so
 // that they are DCE'd by AJD instead of JSCompiler.
 goog.module('soy.newmaps');
-goog.module.declareLegacyNamespace();
 
-const {Map: SoyMap} = goog.require('soy.map');
+const {Map: SoyMap} = goog.requireType('soy.map');
 
 /**
  * Converts a legacy object map with string keys into an equivalent SoyMap.
