@@ -59,6 +59,7 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TagName;
+import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.AttrParam;
 import com.google.template.soy.soytree.defn.TemplateParam;
@@ -94,6 +95,9 @@ import java.util.stream.Collectors;
   AutoescaperPass.class // since it inserts print directives
 })
 final class ElementAttributePass implements CompilerFileSetPass {
+
+  private static final SoyErrorKind DELTEMPLATE_USING_ELEMENT_CONTENT_KIND =
+      SoyErrorKind.of("Deltemplates cannot set kind=\"html<...>\".");
 
   private static final SoyErrorKind UNUSED_ATTRIBUTE =
       SoyErrorKind.of("Declared @attribute unused in template element.");
@@ -160,6 +164,11 @@ final class ElementAttributePass implements CompilerFileSetPass {
                     && t.getHtmlElementMetadata() != null)
         .forEach(
             t -> {
+              if (t instanceof TemplateDelegateNode) {
+                errorReporter.report(
+                    t.getOpenTagLocation(), DELTEMPLATE_USING_ELEMENT_CONTENT_KIND);
+                return;
+              }
               allElementsThisCompile.put(t.getTemplateName(), t);
               processTemplate(
                   t, nodeIdGen::genId, delegatingElementsWithAllAttrs, file.getTemplateRegistry());
