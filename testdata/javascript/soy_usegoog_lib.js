@@ -29957,19 +29957,29 @@ goog.provide('soydata');
 goog.provide('soydata.SanitizedHtml');
 goog.provide('soydata.VERY_UNSAFE');
 
+goog.require('goog.soy.data.SanitizedHtml');
 goog.require('soy');
 goog.requireType('goog.i18n.bidi.Dir');
 goog.requireType('goog.soy.data.SanitizedCss');
-goog.requireType('goog.soy.data.SanitizedHtml');
 goog.requireType('goog.soy.data.SanitizedHtmlAttribute');
 goog.requireType('goog.soy.data.SanitizedJs');
 goog.requireType('goog.soy.data.SanitizedTrustedResourceUri');
 goog.requireType('goog.soy.data.SanitizedUri');
 
 /**
- * This object is only a holder for `soydata.SanitizedHtml.from`.
+ * This class is only a holder for `soydata.SanitizedHtml.from`. Do not
+ * instantiate or extend it. Use `goog.soy.data.SanitizedHtml` instead.
+ *
+ * @deprecated Avoid this symbol, use soy.createSanitizedHtml instead.
+ * @constructor
+ * @extends {goog.soy.data.SanitizedHtml}
+ * @abstract
  */
-soydata.SanitizedHtml = {};
+soydata.SanitizedHtml = function() {
+  soydata.SanitizedHtml.base(this, 'constructor');  // Throws an exception.
+};
+goog.inherits(soydata.SanitizedHtml, goog.soy.data.SanitizedHtml);
+
 
 /**
  * This object is only a holder for `from`. Do not
