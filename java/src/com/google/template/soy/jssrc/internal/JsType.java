@@ -598,7 +598,7 @@ public final class JsType {
 
   /** Generates code to coerce the value, returns {@code null} if no coercion is necessary. */
   @Nullable
-  final Expression getValueCoercion(Expression value, Generator codeGenerator, boolean hasDefault) {
+  final Expression getValueCoercion(Expression value, Generator codeGenerator) {
     boolean needsProtoCoercion = coercionStrategies.contains(ValueCoercionStrategy.PROTO);
     if (!needsProtoCoercion) {
       return null;

@@ -2182,6 +2182,26 @@ const assertType = function(condition, paramName, param, jsDocTypeStr) {
   return param;
 };
 
+/**
+ * An object to mark internal callsites with, this should make accidentally
+ * calling these things less likely.
+ * @const
+ * @type {!Object}
+ */
+const $$internalCallMarkerDoNotUse = {};
+
+/**
+ * A debug time check that our internal call sites are only called by other soy
+ * templates.
+ *
+ * @param {?} marker
+ * @return {void}
+ */
+const $$areYouAnInternalCaller = (marker) =>{
+  asserts.assert(
+      marker === $$internalCallMarkerDoNotUse,
+      'found an incorrect call marker, was an internal function called from the top level?');
+};
 
 // -----------------------------------------------------------------------------
 // Used for inspecting Soy template information from rendered pages.
@@ -2894,6 +2914,8 @@ exports = {
   IdomFunction,
   createSanitizedHtml,
   $$stubsMap,
+  $$internalCallMarkerDoNotUse,
+  $$areYouAnInternalCaller,
   // The following are exported just for tests
   $$balanceTags_,
   isContentKind_,

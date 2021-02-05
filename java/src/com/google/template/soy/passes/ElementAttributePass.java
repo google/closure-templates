@@ -390,10 +390,11 @@ final class ElementAttributePass implements CompilerFileSetPass {
 
       TemplateParam attrsParam =
           new TemplateParam(
-              TemplateType.ATTRIBUTES_HIDDEN_PARAM,
+              TemplateType.ATTRIBUTES_HIDDEN_PARAM_NAME,
               SourceLocation.UNKNOWN,
               SourceLocation.UNKNOWN,
-              NamedTypeNode.create(SourceLocation.UNKNOWN, TemplateType.ATTRIBUTES_HIDDEN_PARAM),
+              NamedTypeNode.create(
+                  SourceLocation.UNKNOWN, TemplateType.ATTRIBUTES_HIDDEN_PARAM_NAME),
               /* isInjected= */ false,
               /* isImplicit= */ true,
               /* optional= */ true,

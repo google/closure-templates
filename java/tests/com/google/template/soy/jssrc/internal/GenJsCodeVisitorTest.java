@@ -36,6 +36,7 @@ import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.testing.SharedTestUtils;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import com.google.template.soy.types.SoyTypeRegistryBuilder;
@@ -96,6 +97,7 @@ public final class GenJsCodeVisitorTest {
     genJsCodeVisitor =
         JsSrcMain.createVisitor(
             jsSrcOptions,
+            TemplateRegistry.EMPTY,
             SoyTypeRegistryBuilder.create(),
             BidiGlobalDir.LTR,
             ErrorReporter.exploding());
@@ -311,16 +313,16 @@ public final class GenJsCodeVisitorTest {
             + " */\n"
             + "boo.foo.__deltemplate_MySecretFeature_myDelegates_goo_ = function(opt_data,"
             + " opt_ijData) {\n"
+            + "  const $ijData = /** @type {!goog.soy.IjData} */ (opt_ijData);\n"
             + "  if (goog.DEBUG &&"
             + " soy.$$stubsMap['boo.foo.__deltemplate_MySecretFeature_myDelegates_goo_']) {\n"
             + "    return"
             + " soy.$$stubsMap['boo.foo.__deltemplate_MySecretFeature_myDelegates_goo_'](opt_data,"
-            + " opt_ijData);\n"
+            + " $ijData);\n"
             + "  }\n"
-            + "  opt_ijData = /** @type {!goog.soy.IjData} */ (opt_ijData);\n"
             + "  return"
             + " soy.VERY_UNSAFE.ordainSanitizedHtml(soy.$$getDelegateFn(soy.$$getDelTemplateId('myDelegates.soo'),"
-            + " '', false)(null, opt_ijData));\n"
+            + " '', false)(null, $ijData));\n"
             + "};\n"
             + "if (goog.DEBUG) {\n"
             + "  /** @type {string} */\n"
@@ -373,16 +375,16 @@ public final class GenJsCodeVisitorTest {
             + " * @suppress {checkTypes}\n"
             + " */\n"
             + "boo.foo.__deltemplate__myDelegates_goo_googoo = function(opt_data, opt_ijData) {\n"
+            + "  const $ijData = /** @type {!goog.soy.IjData} */ (opt_ijData);\n"
             + "  if (goog.DEBUG &&"
             + " soy.$$stubsMap['boo.foo.__deltemplate__myDelegates_goo_googoo']) {\n"
             + "    return"
             + " soy.$$stubsMap['boo.foo.__deltemplate__myDelegates_goo_googoo'](opt_data,"
-            + " opt_ijData);\n"
+            + " $ijData);\n"
             + "  }\n"
-            + "  opt_ijData = /** @type {!goog.soy.IjData} */ (opt_ijData);\n"
             + "  return"
             + " soy.VERY_UNSAFE.ordainSanitizedHtml(soy.$$getDelegateFn(soy.$$getDelTemplateId('myDelegates.moo'),"
-            + " 'moomoo', false)(null, opt_ijData));\n"
+            + " 'moomoo', false)(null, $ijData));\n"
             + "};\n"
             + "if (goog.DEBUG) {\n"
             + "  /** @type {string} */\n"
@@ -706,12 +708,12 @@ public final class GenJsCodeVisitorTest {
 
     assertGeneratedJsCode(
         "{call some.func data=\"all\" /}\n",
-        "output += some.func(/** @type {?} */ (opt_data), opt_ijData);\n");
+        "output += some.func(/** @type {?} */ (opt_data), $ijData);\n");
 
     String soyNodeCode =
         "{@param moo : ?}\n" + "{call some.func}\n" + "  {param goo : $moo /}\n" + "{/call}\n";
     assertGeneratedJsCode(
-        soyNodeCode, "output += some.func(/** @type {?} */ ({goo: opt_data.moo}), opt_ijData);\n");
+        soyNodeCode, "output += some.func(/** @type {?} */ ({goo: opt_data.moo}), $ijData);\n");
 
     soyNodeCode =
         "{@param boo : ?}\n"
@@ -731,7 +733,7 @@ public final class GenJsCodeVisitorTest {
             + "  param4 += i5Data;\n"
             + "}\n"
             + "output += some.func(soy.$$assignDefaults({goo: param4}, opt_data.boo),"
-            + " opt_ijData);\n";
+            + " $ijData);\n";
     assertGeneratedJsCode(soyNodeCode, expectedJsCode);
   }
 
@@ -740,8 +742,8 @@ public final class GenJsCodeVisitorTest {
 
     assertGeneratedJsCode(
         "{@param boo : ?}\n" + "{delcall my.delegate data=\"$boo.foo\" /}\n",
-        "output += soy.$$getDelegateFn(soy.$$getDelTemplateId('my.delegate'), '',"
-            + " false)(/** @type {?} */ (opt_data.boo.foo), opt_ijData);\n");
+        "output += soy.$$getDelegateFn(soy.$$getDelTemplateId('my.delegate'), '', false)"
+            + "(/** @type {?} */ (opt_data.boo.foo), $ijData);\n");
 
     assertGeneratedJsCode(
         "{@param boo : ?}\n"
@@ -749,13 +751,13 @@ public final class GenJsCodeVisitorTest {
             + "{delcall my.delegate variant=\"$voo\" data=\"$boo.foo\" /}\n",
         "output += soy.$$getDelegateFn("
             + "soy.$$getDelTemplateId('my.delegate'), opt_data.voo, false)"
-            + "(/** @type {?} */ (opt_data.boo.foo), opt_ijData);\n");
+            + "(/** @type {?} */ (opt_data.boo.foo), $ijData);\n");
 
     assertGeneratedJsCode(
         "{@param boo : ?}\n"
             + "{delcall my.delegate data=\"$boo.foo\" allowemptydefault=\"true\" /}\n",
-        "output += soy.$$getDelegateFn(soy.$$getDelTemplateId('my.delegate'), '',"
-            + " true)(/** @type {?} */ (opt_data.boo.foo), opt_ijData);\n");
+        "output += soy.$$getDelegateFn(soy.$$getDelTemplateId('my.delegate'), '', true)"
+            + "(/** @type {?} */ (opt_data.boo.foo), $ijData);\n");
   }
 
   @Test
@@ -1339,14 +1341,14 @@ public final class GenJsCodeVisitorTest {
             + " * @param {?Object<string, *>=} opt_data\n"
             + " * @param {(?goog.soy.IjData|?Object<string, *>)=} opt_ijData\n"
             + " * @return {!goog.soy.data.SanitizedHtml}\n"
-            + " * @suppress {checkTypes}\n"
             + " * @private\n"
+            + " * @suppress {checkTypes}\n"
             + " */\n"
             + "boo.foo.goo = function(opt_data, opt_ijData) {\n"
+            + "  const $ijData = /** @type {!goog.soy.IjData} */ (opt_ijData);\n"
             + "  if (goog.DEBUG && soy.$$stubsMap['boo.foo.goo']) {\n"
-            + "    return soy.$$stubsMap['boo.foo.goo'](opt_data, opt_ijData);\n"
+            + "    return soy.$$stubsMap['boo.foo.goo'](opt_data, $ijData);\n"
             + "  }\n"
-            + "  opt_ijData = /** @type {!goog.soy.IjData} */ (opt_ijData);\n"
             + "  return soy.VERY_UNSAFE.ordainSanitizedHtml('Blah');\n"
             + "};\n"
             + "if (goog.DEBUG) {\n"
@@ -1401,12 +1403,12 @@ public final class GenJsCodeVisitorTest {
             + " * @suppress {checkTypes}\n"
             + " */\n"
             + "const $goo = function(opt_data, opt_ijData) {\n"
+            + "  const $ijData = /** @type {!$googSoy.IjData} */ (opt_ijData);\n"
             + "  if (goog.DEBUG && soy.$$stubsMap['boo.foo.goo']) {\n"
-            + "    return soy.$$stubsMap['boo.foo.goo'](opt_data, opt_ijData);\n"
+            + "    return soy.$$stubsMap['boo.foo.goo'](opt_data, $ijData);\n"
             + "  }\n"
-            + "  opt_ijData = /** @type {!$googSoy.IjData} */ (opt_ijData);\n"
-            + "  return soy.VERY_UNSAFE.ordainSanitizedHtml($soy$boo$bar.one(null,"
-            + " opt_ijData) + $soy$boo$bar.two(null, opt_ijData));\n"
+            + "  return soy.VERY_UNSAFE.ordainSanitizedHtml($soy$boo$bar.one(null, $ijData)"
+            + " + $soy$boo$bar.two(null, $ijData));\n"
             + "};\n"
             + "exports.goo = $goo;\n"
             + "if (goog.DEBUG) {\n"
@@ -1458,14 +1460,13 @@ public final class GenJsCodeVisitorTest {
             + " * @suppress {checkTypes}\n"
             + " */\n"
             + "ns.callWithUnknownHTMLTemplate = function(opt_data, opt_ijData) {\n"
+            + "  const $ijData = /** @type {!goog.soy.IjData} */ (opt_ijData);\n"
             + "  if (goog.DEBUG && soy.$$stubsMap['ns.callWithUnknownHTMLTemplate']) {\n"
-            + "    return soy.$$stubsMap['ns.callWithUnknownHTMLTemplate'](opt_data,"
-            + " opt_ijData);\n"
+            + "    return soy.$$stubsMap['ns.callWithUnknownHTMLTemplate'](opt_data, $ijData);\n"
             + "  }\n"
-            + "  opt_ijData = /** @type {!goog.soy.IjData} */ (opt_ijData);\n"
             + "  return"
             + " soy.VERY_UNSAFE.ordainSanitizedHtml(soy.$$escapeHtml(ns.fakeTemplate(null,"
-            + " opt_ijData)));\n"
+            + " $ijData)));\n"
             + "};\n"
             + "if (goog.DEBUG) {\n"
             + "  /** @type {string} */\n"
@@ -1518,14 +1519,14 @@ public final class GenJsCodeVisitorTest {
             + " * @suppress {checkTypes}\n"
             + " */\n"
             + "ns.callWithUnknownAttributeTemplate = function(opt_data, opt_ijData) {\n"
+            + "  const $ijData = /** @type {!goog.soy.IjData} */ (opt_ijData);\n"
             + "  if (goog.DEBUG && soy.$$stubsMap['ns.callWithUnknownAttributeTemplate']) {\n"
             + "    return soy.$$stubsMap['ns.callWithUnknownAttributeTemplate'](opt_data,"
-            + " opt_ijData);\n"
+            + " $ijData);\n"
             + "  }\n"
-            + "  opt_ijData = /** @type {!goog.soy.IjData} */ (opt_ijData);\n"
             + "  return"
-            + " soy.VERY_UNSAFE.ordainSanitizedHtmlAttribute(soy.$$filterHtmlAttributes(ns.fakeTemplate(null,"
-            + " opt_ijData)));\n"
+            + " soy.VERY_UNSAFE.ordainSanitizedHtmlAttribute(soy.$$filterHtmlAttributes("
+            + "ns.fakeTemplate(null, $ijData)));\n"
             + "};\n"
             + "if (goog.DEBUG) {\n"
             + "  /** @type {string} */\n"
@@ -1578,14 +1579,13 @@ public final class GenJsCodeVisitorTest {
             + " * @suppress {checkTypes}\n"
             + " */\n"
             + "ns.callWithUnknownAttributeTemplateInHTML = function(opt_data, opt_ijData) {\n"
+            + "  const $ijData = /** @type {!goog.soy.IjData} */ (opt_ijData);\n"
             + "  if (goog.DEBUG && soy.$$stubsMap['ns.callWithUnknownAttributeTemplateInHTML']) {\n"
             + "    return soy.$$stubsMap['ns.callWithUnknownAttributeTemplateInHTML'](opt_data,"
-            + " opt_ijData);\n"
+            + " $ijData);\n"
             + "  }\n"
-            + "  opt_ijData = /** @type {!goog.soy.IjData} */ (opt_ijData);\n"
             + "  return soy.VERY_UNSAFE.ordainSanitizedHtml('<div ' +"
-            + " soy.$$filterHtmlAttributes(ns.fakeTemplate(null, opt_ijData)) +"
-            + " '></div>');\n"
+            + " soy.$$filterHtmlAttributes(ns.fakeTemplate(null, $ijData)) + '></div>');\n"
             + "};\n"
             + "if (goog.DEBUG) {\n"
             + "  /** @type {string} */\n"

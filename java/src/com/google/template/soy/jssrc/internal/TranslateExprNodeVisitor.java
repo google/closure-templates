@@ -33,10 +33,10 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.BIND_TEMPLATE_PAR
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_ARRAY_MAP;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_DEBUG;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_GET_CSS_NAME;
+import static com.google.template.soy.jssrc.internal.JsRuntime.IJ_DATA;
 import static com.google.template.soy.jssrc.internal.JsRuntime.JS_TO_PROTO_PACK_FN;
 import static com.google.template.soy.jssrc.internal.JsRuntime.MARK_TEMPLATE;
 import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_DATA;
-import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_IJ_DATA;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SERIALIZE_KEY;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_CHECK_NOT_NULL;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_COERCE_TO_BOOLEAN;
@@ -117,6 +117,7 @@ import com.google.template.soy.shared.restricted.SoySourceFunctionMethod;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.defn.LocalVar;
+import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.MapType;
@@ -130,7 +131,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Set;
 
 /**
  * Visitor for translating a Soy expression (in the form of an {@code ExprNode}) into an equivalent
@@ -230,11 +230,16 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
       // opt_ij_data.csp_nonce.
       // TODO(lukes): we only need to generate this logic if there aren't any other ij params
       if (paramName.equals(CSP_NONCE_VARIABLE_NAME)) {
-        return OPT_IJ_DATA.and(OPT_IJ_DATA.dotAccess(paramName), codeGenerator);
+        return IJ_DATA.and(IJ_DATA.dotAccess(paramName), codeGenerator);
       }
-      source = OPT_IJ_DATA;
+      source = IJ_DATA;
     } else if (varDefn.kind() == VarDefn.Kind.STATE) {
       return genCodeForStateAccess(paramName, (TemplateStateVar) varDefn);
+    }
+    if (varDefn instanceof TemplateParam && ((TemplateParam) varDefn).isImplicit()) {
+      // implicit params are not in the type declaration for the opt_data parameter, so we need to
+      // cast as ? to access implicit params
+      source = source.castAs("?");
     }
     return source.dotAccess(paramName);
   }
@@ -409,6 +414,8 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
       return translation;
     } else {
       // Case 2: Data reference.
+      // TODO(lukes): I believe this case is only present for state vars in jssrc, everything else
+      // should hit the above.
       return genCodeForParamAccess(node.getNameWithoutLeadingDollar(), node.getDefnDecl());
     }
   }
@@ -974,7 +981,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
       }
 
       @Override
-      public Set<Integer> getValidArgsSizes() {
+      public ImmutableSet<Integer> getValidArgsSizes() {
         return ImmutableSet.of(argSize);
       }
     };

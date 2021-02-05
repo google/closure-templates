@@ -118,7 +118,7 @@ public class IncrementalDomSrcMain {
       @Override
       public IncrementalDomGenCallCodeUtils get() {
         return new IncrementalDomGenCallCodeUtils(
-            delTemplateNamer, isComputableAsJsExprsVisitor, factory);
+            registry, delTemplateNamer, isComputableAsJsExprsVisitor, factory);
       }
     }
     GenCallCodeUtilsSupplier supplier = new GenCallCodeUtilsSupplier();

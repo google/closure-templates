@@ -20,6 +20,7 @@ import com.google.common.base.Supplier;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jssrc.internal.GenJsExprsVisitor.GenJsExprsVisitorFactory;
+import com.google.template.soy.soytree.TemplateRegistry;
 
 /**
  * Utilities for unit tests in the Js Src backend.
@@ -48,7 +49,8 @@ final class JsSrcTestUtils {
 
       @Override
       public GenCallCodeUtils get() {
-        return new GenCallCodeUtils(delTemplateNamer, isComputableAsJsExprsVisitor, factory);
+        return new GenCallCodeUtils(
+            TemplateRegistry.EMPTY, delTemplateNamer, isComputableAsJsExprsVisitor, factory);
       }
     }
     GenCallCodeUtilsSupplier supplier = new GenCallCodeUtilsSupplier();

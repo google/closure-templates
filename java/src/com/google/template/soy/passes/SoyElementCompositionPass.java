@@ -176,7 +176,7 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
                 nodeIdGen.genId(),
                 location,
                 UNKNOWN,
-                Identifier.create(TemplateType.ATTRIBUTES_HIDDEN_PARAM, UNKNOWN),
+                Identifier.create(TemplateType.ATTRIBUTES_HIDDEN_PARAM_NAME, UNKNOWN),
                 new CommandTagAttribute(
                     Identifier.create("kind", UNKNOWN),
                     QuoteStyle.SINGLE,

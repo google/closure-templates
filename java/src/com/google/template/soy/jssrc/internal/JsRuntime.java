@@ -127,6 +127,11 @@ public final class JsRuntime {
   public static final Expression SOY_DEBUG_SOY_TEMPLATE_INFO =
       SOY.dotAccess("$$getDebugSoyTemplateInfo");
 
+  public static final Expression SOY_ARE_YOU_AND_INTERNAL_CALLER =
+      SOY.dotAccess("$$areYouAnInternalCaller");
+  public static final Expression SOY_INTERNAL_CALL_MARKER =
+      SOY.dotAccess("$$internalCallMarkerDoNotUse");
+
   public static final Expression SOY_MAP_POPULATE = SOY_MAP.dotAccess("$$populateMap");
 
   public static final Expression SOY_MAP_IS_SOY_MAP = SOY_MAP.dotAccess("$$isSoyMap");
@@ -145,11 +150,15 @@ public final class JsRuntime {
 
   public static final Expression XID = XID_REQUIRE.reference();
 
-  /** A constant for the template parameter {@code opt_data}. */
-  public static final Expression OPT_DATA = id("opt_data");
+  /**
+   * A constant for the template parameter {@code opt_data}.
+   *
+   * <p>TODO(b/177856412): rename to something that doesn't begin with {@code opt_}
+   */
+  public static final Expression OPT_DATA = id(StandardNames.OPT_DATA);
 
-  /** A constant for the template parameter {@code opt_ijData}. */
-  public static final Expression OPT_IJ_DATA = id("opt_ijData");
+  /** A constant for the template parameter {@code $ijData}. */
+  public static final Expression IJ_DATA = id(StandardNames.DOLLAR_IJDATA);
 
   public static final Expression EXPORTS = id("exports");
 

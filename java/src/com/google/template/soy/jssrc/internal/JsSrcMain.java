@@ -91,13 +91,19 @@ public class JsSrcMain {
       }
       // Combine raw text nodes before codegen.
       new CombineConsecutiveRawTextNodesPass().run(soyTree);
-      return createVisitor(jsSrcOptions, typeRegistry, inScope.getBidiGlobalDir(), errorReporter)
+      return createVisitor(
+              jsSrcOptions,
+              templateRegistry,
+              typeRegistry,
+              inScope.getBidiGlobalDir(),
+              errorReporter)
           .gen(soyTree, templateRegistry, errorReporter);
     }
   }
 
   static GenJsCodeVisitor createVisitor(
       final SoyJsSrcOptions options,
+      TemplateRegistry templateRegistry,
       SoyTypeRegistry typeRegistry,
       BidiGlobalDir dir,
       ErrorReporter errorReporter) {
@@ -117,7 +123,8 @@ public class JsSrcMain {
 
       @Override
       public GenCallCodeUtils get() {
-        return new GenCallCodeUtils(delTemplateNamer, isComputableAsJsExprsVisitor, factory);
+        return new GenCallCodeUtils(
+            templateRegistry, delTemplateNamer, isComputableAsJsExprsVisitor, factory);
       }
     }
     GenCallCodeUtilsSupplier supplier = new GenCallCodeUtilsSupplier();

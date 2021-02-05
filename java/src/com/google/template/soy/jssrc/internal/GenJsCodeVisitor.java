@@ -18,6 +18,8 @@ package com.google.template.soy.jssrc.internal;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static com.google.template.soy.jssrc.dsl.Expression.EMPTY_OBJECT_LITERAL;
 import static com.google.template.soy.jssrc.dsl.Expression.dottedIdNoRequire;
 import static com.google.template.soy.jssrc.dsl.Expression.id;
@@ -102,6 +104,7 @@ import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateElementNode;
+import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.VeLogNode;
@@ -114,6 +117,7 @@ import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.StringType;
+import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.UnknownType;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -182,6 +186,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   protected TranslationContext templateTranslationContext;
 
   protected List<Statement> staticVarDeclarations;
+  protected boolean generatePositionalParamsSignature;
 
   /**
    * Used for looking up the local name for a given template call to a fully qualified template
@@ -668,6 +673,8 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    */
   @Override
   protected void visitTemplateNode(TemplateNode node) {
+    generatePositionalParamsSignature =
+        GenCallCodeUtils.hasPositionalSignature(templateRegistry.getMetadata(node));
     String templateName = node.getTemplateName();
     String partialName = node.getLocalTemplateSymbol();
     String alias;
@@ -690,18 +697,56 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         genJsExprsVisitorFactory.create(templateTranslationContext, templateAliases, errorReporter);
     assistantForMsgs = null;
 
-    JsDoc jsDoc = generateFunctionJsDoc(node, alias);
-    Expression function = Expression.function(jsDoc, generateFunctionBody(node, alias));
     ImmutableList.Builder<Statement> declarations = ImmutableList.builder();
+    if (generatePositionalParamsSignature) {
+      JsDoc jsDoc = generateFunctionJsDoc(node, alias, /*isDelegate=*/ true);
+      Expression publicFunction = Expression.function(jsDoc, generateDelegateFunction(node, alias));
+      JsDoc positionalFunctionDoc = generatePositionalFunctionJsDoc(node);
+      Expression positionalFunction =
+          Expression.function(
+              positionalFunctionDoc,
+              generateFunctionBody(node, alias, /*isPositionalStyle=*/ true));
 
-    if (jsSrcOptions.shouldGenerateGoogModules()) {
-      declarations.add(VariableDeclaration.builder(alias).setJsDoc(jsDoc).setRhs(function).build());
-      // don't export deltemplates or private templates
-      if (!(node instanceof TemplateDelegateNode) && node.getVisibility() == Visibility.PUBLIC) {
-        declarations.add(assign(JsRuntime.EXPORTS.dotAccess(partialName), aliasExp));
+      if (jsSrcOptions.shouldGenerateGoogModules()) {
+        VariableDeclaration publicDeclaration =
+            VariableDeclaration.builder(alias).setJsDoc(jsDoc).setRhs(publicFunction).build();
+        declarations.add(publicDeclaration);
+        VariableDeclaration positionalDeclaration =
+            VariableDeclaration.builder(alias + "$")
+                .setJsDoc(positionalFunctionDoc)
+                .setRhs(positionalFunction)
+                .build();
+        declarations.add(positionalDeclaration);
+        // don't export deltemplates or private templates
+        if (!(node instanceof TemplateDelegateNode) && node.getVisibility() == Visibility.PUBLIC) {
+          declarations.add(
+              assign(JsRuntime.EXPORTS.dotAccess(partialName), publicDeclaration.ref()));
+          declarations.add(
+              assign(JsRuntime.EXPORTS.dotAccess(partialName + "$"), positionalDeclaration.ref()));
+        }
+      } else {
+        declarations.add(Statement.assign(aliasExp, publicFunction, jsDoc));
+        declarations.add(
+            Statement.assign(
+                dottedIdNoRequire(alias + "$"), positionalFunction, positionalFunctionDoc));
       }
     } else {
-      declarations.add(Statement.assign(aliasExp, function, jsDoc));
+      JsDoc jsDoc = generateFunctionJsDoc(node, alias, /*isDelegate=*/ false);
+
+      Expression function =
+          Expression.function(
+              jsDoc, generateFunctionBody(node, alias, /*isPositionalStyle=*/ false));
+
+      if (jsSrcOptions.shouldGenerateGoogModules()) {
+        declarations.add(
+            VariableDeclaration.builder(alias).setJsDoc(jsDoc).setRhs(function).build());
+        // don't export deltemplates or private templates
+        if (!(node instanceof TemplateDelegateNode) && node.getVisibility() == Visibility.PUBLIC) {
+          declarations.add(assign(JsRuntime.EXPORTS.dotAccess(partialName), aliasExp));
+        }
+      } else {
+        declarations.add(Statement.assign(aliasExp, function, jsDoc));
+      }
     }
 
     // ------ Add the @typedef of opt_data. ------
@@ -740,6 +785,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     }
 
     jsCodeBuilder.append(Statement.of(declarations.build()));
+    this.generatePositionalParamsSignature = false;
   }
 
   protected boolean hasOnlyImplicitParams(TemplateNode node) {
@@ -751,39 +797,85 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     return true;
   }
 
-  protected JsDoc generateFunctionJsDoc(TemplateNode node, String alias) {
-    JsDoc.Builder jsDocBuilder = JsDoc.builder();
+  protected final ImmutableList<TemplateParam> paramsInOrder(TemplateNode node) {
+    Map<String, TemplateParam> paramsByName =
+        node.getParams().stream().collect(toImmutableMap(TemplateParam::name, param -> param));
+    // Use the templatemetadata so we generate parameters in the correct order as
+    // expected by callers, this is defined by TemplateMetadata.
+    TemplateMetadata metadata = templateRegistry.getMetadata(node);
+    return metadata.getTemplateType().getActualParameters().stream()
+        .map(p -> paramsByName.get(p.getName()))
+        .collect(toImmutableList());
+  }
 
+  protected final void addInternalCallerParam(JsDoc.Builder jsDocBuilder) {
+    jsDocBuilder.addParam(StandardNames.ARE_YOU_AN_INTERNAL_CALLER, "!Object");
+  }
+
+  protected JsDoc generatePositionalFunctionJsDoc(TemplateNode node) {
+    JsDoc.Builder jsDocBuilder = JsDoc.builder();
+    addInternalCallerParam(jsDocBuilder);
+    addIjDataParam(jsDocBuilder, /*forPositionalSignature=*/ true);
+    for (TemplateParam param : paramsInOrder(node)) {
+      JsType jsType = getJsTypeForParamForDeclaration(param.type());
+      jsDocBuilder.addParam(
+          genParamAlias(param.name()), jsType.typeExpr() + (param.isRequired() ? "" : "="));
+    }
+
+    addReturnTypeAndAnnotations(node, jsDocBuilder);
+    // TODO(b/11787791): make the checkTypes suppression more fine grained.
+    jsDocBuilder.addParameterizedAnnotation("suppress", "checkTypes");
+    return jsDocBuilder.build();
+  }
+
+  protected JsDoc generateFunctionJsDoc(TemplateNode node, String alias, boolean isDelegate) {
+    JsDoc.Builder jsDocBuilder = JsDoc.builder();
+    // TODO(b/177856412): rename to something that doesn't begin with {@code opt_}
     if (hasOnlyImplicitParams(node)) {
-      jsDocBuilder.addParam("opt_data", "?Object<string, *>=");
+      jsDocBuilder.addParam(StandardNames.OPT_DATA, "?Object<string, *>=");
     } else if (new ShouldEnsureDataIsDefinedVisitor().exec(node)) {
       // All parameters are optional or only owned by an indirect callee; caller doesn't need to
       // pass an object.
-      jsDocBuilder.addParam("opt_data", "?" + alias + ".Params=");
+      jsDocBuilder.addParam(StandardNames.OPT_DATA, "?" + alias + ".Params=");
     } else {
-      jsDocBuilder.addParam("opt_data", "!" + alias + ".Params");
+      jsDocBuilder.addParam(StandardNames.OPT_DATA, "!" + alias + ".Params");
     }
-
-    // TODO(lukes): remove |Object<string, *> and only add the '=/?' if ij data is truly optional
-    GoogRequire googSoy = jsSrcOptions.shouldGenerateGoogModules() ? GOOG_SOY_ALIAS : GOOG_SOY;
-    jsDocBuilder.addGoogRequire(googSoy);
-    jsDocBuilder.addParam("opt_ijData", "(?" + googSoy.alias() + ".IjData|?Object<string, *>)=");
-
-    String returnType = getTemplateReturnType(node);
-    jsDocBuilder.addParameterizedAnnotation("return", returnType);
-    // TODO(b/11787791): make the checkTypes suppression more fine grained.
-    jsDocBuilder.addParameterizedAnnotation("suppress", "checkTypes");
-    if (node.getVisibility() == Visibility.PRIVATE) {
-      jsDocBuilder.addAnnotation("private");
+    addIjDataParam(jsDocBuilder, /*forPositionalSignature=*/ false);
+    addReturnTypeAndAnnotations(node, jsDocBuilder);
+    if (!isDelegate) {
+      // TODO(b/11787791): make the checkTypes suppression more fine grained.
+      jsDocBuilder.addParameterizedAnnotation("suppress", "checkTypes");
+    } else {
+      if (templateRegistry.getMetadata(node).getTemplateType().getActualParameters().stream()
+          .anyMatch(TemplateType.Parameter::isImplicit)) {
+        jsDocBuilder.addParameterizedAnnotation("suppress", "missingProperties");
+      }
     }
     return jsDocBuilder.build();
   }
 
-  protected ImmutableList<Expression> templateArguments(TemplateNode node) {
-    return ImmutableList.of(JsRuntime.OPT_DATA, JsRuntime.OPT_IJ_DATA);
+  protected final void addReturnTypeAndAnnotations(TemplateNode node, JsDoc.Builder jsDocBuilder) {
+    String returnType = getTemplateReturnType(node);
+    jsDocBuilder.addParameterizedAnnotation("return", returnType);
+    if (node.getVisibility() == Visibility.PRIVATE) {
+      jsDocBuilder.addAnnotation("private");
+    }
   }
 
-  protected final Statement generateStubbingTest(TemplateNode node, String alias) {
+  protected ImmutableList<Expression> templateArguments(
+      TemplateNode node, boolean isPositionalStyle) {
+    if (isPositionalStyle) {
+      return ImmutableList.of(
+          Expression.objectLiteral(
+              node.getParams().stream()
+                  .collect(toImmutableMap(TemplateParam::name, p -> id(genParamAlias(p.name()))))),
+          JsRuntime.IJ_DATA);
+    }
+    return ImmutableList.of(JsRuntime.OPT_DATA, JsRuntime.IJ_DATA);
+  }
+
+  protected final Statement generateStubbingTest(
+      TemplateNode node, String alias, boolean isPositionalStyle) {
     return Statement.ifStatement(
             JsRuntime.GOOG_DEBUG.and(
                 JsRuntime.SOY_STUBS_MAP.bracketAccess(stringLiteral(node.getTemplateName())),
@@ -791,20 +883,75 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
             Statement.returnValue(
                 JsRuntime.SOY_STUBS_MAP
                     .bracketAccess(stringLiteral(node.getTemplateName()))
-                    .call(templateArguments(node))))
+                    .call(templateArguments(node, isPositionalStyle))))
+        .build();
+  }
+
+  protected void addIjDataParam(JsDoc.Builder jsDocBuilder, boolean forPositionalSignature) {
+    GoogRequire googSoy = jsSrcOptions.shouldGenerateGoogModules() ? GOOG_SOY_ALIAS : GOOG_SOY;
+    jsDocBuilder.addGoogRequire(googSoy);
+    if (forPositionalSignature) {
+      jsDocBuilder.addParam(StandardNames.DOLLAR_IJDATA, "!" + googSoy.alias() + ".IjData");
+    } else {
+      // TODO(b/177856412): rename to something that doesn't begin with {@code opt_}
+      jsDocBuilder.addParam(
+          StandardNames.OPT_IJDATA, "(?" + googSoy.alias() + ".IjData|?Object<string, *>)=");
+    }
+  }
+
+  /**
+   * Generates a function that simply unpacks the opt_data object and calls the positional function
+   */
+  @CheckReturnValue
+  protected Statement generateDelegateFunction(TemplateNode templateNode, String alias) {
+    ImmutableList.Builder<Statement> bodyStatements = ImmutableList.builder();
+    // Generate statement to ensure data is defined, if necessary.
+    if (new ShouldEnsureDataIsDefinedVisitor().exec(templateNode)) {
+      bodyStatements.add(
+          assign(
+              OPT_DATA,
+              OPT_DATA.or(EMPTY_OBJECT_LITERAL, templateTranslationContext.codeGenerator())));
+    }
+    bodyStatements.add(redeclareIjData());
+    List<Expression> callParams = new ArrayList<>();
+    callParams.addAll(getFixedParamsToPositionalCall(templateNode));
+    for (TemplateParam param : paramsInOrder(templateNode)) {
+      callParams.add(genCodeForParamAccess(param.name(), param));
+    }
+    String returnType = getTemplateReturnType(templateNode);
+    Expression callExpr = dottedIdNoRequire(alias + "$").call(callParams);
+    bodyStatements.add(returnType.equals("void") ? callExpr.asStatement() : returnValue(callExpr));
+    return Statement.of(bodyStatements.build());
+  }
+
+  protected ImmutableList<Expression> getFixedParamsToPositionalCall(TemplateNode node) {
+    return ImmutableList.of(JsRuntime.SOY_INTERNAL_CALL_MARKER, JsRuntime.IJ_DATA);
+  }
+
+  /**
+   * Generates a statement that that assigns {@code opt_ijData} to {@code $ijData} to adjust types.
+   */
+  protected final Statement redeclareIjData() {
+    GoogRequire googSoy = jsSrcOptions.shouldGenerateGoogModules() ? GOOG_SOY_ALIAS : GOOG_SOY;
+    return VariableDeclaration.builder(StandardNames.DOLLAR_IJDATA)
+        .setRhs(id(StandardNames.OPT_IJDATA).castAs("!" + googSoy.alias() + ".IjData"))
         .build();
   }
 
   /** Generates the function body. */
   @CheckReturnValue
-  protected Statement generateFunctionBody(TemplateNode node, String alias) {
+  protected Statement generateFunctionBody(
+      TemplateNode node, String alias, boolean isPositionalStyle) {
     ImmutableList.Builder<Statement> bodyStatements = ImmutableList.builder();
-    bodyStatements.add(generateStubbingTest(node, alias));
-    GoogRequire googSoy = jsSrcOptions.shouldGenerateGoogModules() ? GOOG_SOY_ALIAS : GOOG_SOY;
-    bodyStatements.add(
-        Statement.assign(
-            JsRuntime.OPT_IJ_DATA,
-            JsRuntime.OPT_IJ_DATA.castAs("!" + googSoy.alias() + ".IjData")));
+    if (!isPositionalStyle) {
+      bodyStatements.add(redeclareIjData());
+    } else {
+      bodyStatements.add(
+          JsRuntime.SOY_ARE_YOU_AND_INTERNAL_CALLER
+              .call(id(StandardNames.ARE_YOU_AN_INTERNAL_CALLER))
+              .asStatement());
+    }
+    bodyStatements.add(generateStubbingTest(node, alias, isPositionalStyle));
     if (node instanceof TemplateElementNode) {
       TemplateElementNode elementNode = (TemplateElementNode) node;
       for (TemplateStateVar stateVar : elementNode.getStateVars()) {
@@ -818,8 +965,9 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         bodyStatements.add(VariableDeclaration.builder(stateVar.name()).setRhs(expr).build());
       }
     }
-    // Generate statement to ensure data is defined, if necessary.
-    if (new ShouldEnsureDataIsDefinedVisitor().exec(node)) {
+    // Generate statement to ensure data is defined, if necessary and this is not a positional style
+    // method, if this is a positional style then we don't have an opt_data field
+    if (!isPositionalStyle && new ShouldEnsureDataIsDefinedVisitor().exec(node)) {
       bodyStatements.add(
           assign(
               OPT_DATA,
@@ -827,7 +975,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     }
 
     // Type check parameters.
-    bodyStatements.add(genParamTypeChecks(node, alias));
+    bodyStatements.add(genParamTypeChecks(node, alias, isPositionalStyle));
 
     SanitizedContentKind kind = node.getContentKind();
     if (isComputableAsJsExprsVisitor.exec(node)) {
@@ -1151,15 +1299,15 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    *
    * might generate
    *
-   * <pre>
-   *   var foo2List = opt_data.boo.foos;
-   *   var foo2ListLen = foo2List.length;
-   *   if (foo2ListLen > 0) {
-   *     ...
-   *   } else {
-   *     ...
-   *   }
-   * </pre>
+   * <pre>{@code
+   * var foo2List = opt_data.boo.foos;
+   * var foo2ListLen = foo2List.length;
+   * if (foo2ListLen > 0) {
+   *   ...
+   * } else {
+   *   ...
+   * }
+   * }</pre>
    */
   @Override
   protected void visitForNode(ForNode node) {
@@ -1545,9 +1693,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   protected final Statement genParamDefault(
       TemplateParam param,
       Expression paramTempVar,
-      String alias,
-      JsType defaultType,
-      boolean declareStatic,
+      JsType typeForCast,
       CodeChunk.Generator codeGenerator) {
     checkArgument(param.hasDefault());
 
@@ -1558,7 +1704,8 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
                 paramTempVar.tripleEquals(Expression.LITERAL_UNDEFINED),
                 translateExpr(param.defaultValue()))
             .setElse(paramTempVar)
-            .build(codeGenerator));
+            .build(codeGenerator)
+            .castAs(typeForCast.typeExpr(), typeForCast.getGoogRequires()));
   }
 
   /**
@@ -1568,50 +1715,58 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    * @param node the template node.
    */
   @CheckReturnValue
-  protected Statement genParamTypeChecks(TemplateNode node, String alias) {
+  protected Statement genParamTypeChecks(
+      TemplateNode node, String alias, boolean isPositionalStyle) {
     ImmutableList.Builder<Statement> declarations = ImmutableList.builder();
     for (TemplateParam param : node.getAllParams()) {
       String paramName = param.name();
       SoyType paramType = param.type();
+      // injected params are always referenced from the opt_ijData parameter
+      boolean isThisParamPositional = isPositionalStyle && !param.isInjected();
       CodeChunk.Generator generator = templateTranslationContext.codeGenerator();
-      Expression paramChunk = genCodeForParamAccess(paramName, param);
+      String paramAlias = genParamAlias(paramName);
+      Expression paramChunk =
+          isThisParamPositional ? id(paramAlias) : genCodeForParamAccess(paramName, param);
       JsType jsType = getJsTypeForParamTypeCheck(paramType);
       // The opt_param.name value that will be type-tested.
-      String paramAlias = genParamAlias(paramName);
-      Expression coerced =
-          jsType.getValueCoercion(paramChunk, generator, /* hasDefault=*/ param.hasDefault());
+      Expression coerced = jsType.getValueCoercion(paramChunk, generator);
       if (coerced != null) {
-        // since we have coercion logic, dump into a temporary
-        paramChunk = generator.declarationBuilder().setMutable().setRhs(coerced).build().ref();
+        if (isThisParamPositional) {
+          // reassign, post coercion
+          // add a cast to maintain the type of our parameter
+          declarations.add(Statement.assign(id(paramAlias), coerced.castAs(jsType.typeExpr())));
+        } else {
+          // since we have coercion logic, dump into a temporary
+          paramChunk = generator.declarationBuilder().setMutable().setRhs(coerced).build().ref();
+        }
       }
+      // TODO(lukes): for positional style params we should switch to inline defaults in the
+      // declaration and let the JS VM handle this.
       if (param.hasDefault()) {
-        if (coerced == null) {
+        if (coerced == null && !isThisParamPositional) {
+          // if we haven't captured the param into a mutable temporary allocate one now.
           paramChunk = generator.declarationBuilder().setMutable().setRhs(paramChunk).build().ref();
         }
         declarations.add(
             genParamDefault(
-                param,
-                paramChunk,
-                alias,
-                getJsTypeForParamForDeclaration(paramType),
-                /* declareStatic= */ true,
-                generator));
+                param, paramChunk, getJsTypeForParamTypeCheck(param.type()), generator));
       }
-      // The param value to assign with an optional runtime type check
-      Expression value =
-          jsType.getSoyTypeAssertion(paramChunk, paramName, generator).orElse(paramChunk);
-
-      VariableDeclaration.Builder declarationBuilder =
-          VariableDeclaration.builder(paramAlias)
-              .setRhs(value)
-              .setGoogRequires(jsType.getGoogRequires());
-      declarationBuilder.setJsDoc(
-          JsDoc.builder()
-              .addParameterizedAnnotation(
-                  "type", getJsTypeForParamForDeclaration(paramType).typeExpr())
-              .build());
-      VariableDeclaration declaration = declarationBuilder.build();
-      declarations.add(declaration);
+      Optional<Expression> soyTypeAssertion =
+          jsType.getSoyTypeAssertion(paramChunk, paramName, generator);
+      if (isThisParamPositional) {
+        if (soyTypeAssertion.isPresent()) {
+          declarations.add(soyTypeAssertion.get().asStatement());
+        }
+      } else {
+        VariableDeclaration.Builder declarationBuilder =
+            VariableDeclaration.builder(paramAlias)
+                .setRhs(soyTypeAssertion.orElse(paramChunk))
+                .setGoogRequires(jsType.getGoogRequires());
+        declarationBuilder.setJsDoc(
+            JsDoc.builder().addParameterizedAnnotation("type", jsType.typeExpr()).build());
+        VariableDeclaration declaration = declarationBuilder.build();
+        declarations.add(declaration);
+      }
 
       templateTranslationContext
           .soyToJsVariableMappings()
@@ -1636,7 +1791,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    * Generate a name for the local variable which will store the value of a parameter, avoiding
    * collision with JavaScript reserved words.
    */
-  private String genParamAlias(String paramName) {
+  protected final String genParamAlias(String paramName) {
     return JsSrcUtils.isReservedWord(paramName) ? "param$" + paramName : paramName;
   }
 

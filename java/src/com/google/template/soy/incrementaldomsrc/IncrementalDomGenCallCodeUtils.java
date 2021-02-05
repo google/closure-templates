@@ -22,6 +22,7 @@ import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.internal.GenCallCodeUtils;
 import com.google.template.soy.soytree.CallParamContentNode;
+import com.google.template.soy.soytree.TemplateRegistry;
 
 /**
  * Extends {@link GenCallCodeUtils} to not wrap function arguments as sanitized content, which is
@@ -30,10 +31,12 @@ import com.google.template.soy.soytree.CallParamContentNode;
  */
 final class IncrementalDomGenCallCodeUtils extends GenCallCodeUtils {
   IncrementalDomGenCallCodeUtils(
+      TemplateRegistry templateRegistry,
       IncrementalDomDelTemplateNamer incrementalDomDelTemplateNamer,
       IsComputableAsIncrementalDomExprsVisitor isComputableAsIncrementalDomExprsVisitor,
       GenIncrementalDomExprsVisitorFactory genIncrementalDomExprsVisitorFactory) {
     super(
+        templateRegistry,
         incrementalDomDelTemplateNamer,
         isComputableAsIncrementalDomExprsVisitor,
         genIncrementalDomExprsVisitorFactory);
@@ -45,8 +48,8 @@ final class IncrementalDomGenCallCodeUtils extends GenCallCodeUtils {
       CodeChunk.Generator generator, CallParamContentNode node, Expression content) {
     SanitizedContentKind kind = node.getContentKind();
     if (kind.isHtml() || kind == SanitizedContentKind.ATTRIBUTES) {
-    return content;
-  }
+      return content;
+    }
     return super.maybeWrapContent(generator, node, content);
   }
 }

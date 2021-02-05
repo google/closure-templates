@@ -16,7 +16,10 @@
 package com.google.template.soy.soytree;
 
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
+import static com.google.common.primitives.Booleans.trueFirst;
+import static java.util.Comparator.comparing;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
@@ -91,12 +94,18 @@ public abstract class TemplateMetadata {
     return new AutoValue_TemplateMetadata.Builder();
   }
 
+  /**
+   * Transforms the parameters of the template into their proto forms, also sorts them in a
+   * consistent ordering.
+   *
+   * <p>The ordering is simply required parameters followed by optional parameters in declaration
+   * order.
+   */
   private static ImmutableList<Parameter> directParametersFromTemplate(TemplateNode node) {
-    ImmutableList.Builder<Parameter> params = ImmutableList.builder();
-    for (TemplateParam param : node.getParams()) {
-      params.add(parameterFromTemplateParam(param));
-    }
-    return params.build();
+    return node.getParams().stream()
+        .sorted(comparing(TemplateParam::isRequired, trueFirst()))
+        .map(TemplateMetadata::parameterFromTemplateParam)
+        .collect(toImmutableList());
   }
 
   public static Parameter parameterFromTemplateParam(TemplateParam param) {

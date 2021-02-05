@@ -20,6 +20,7 @@ import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static java.util.stream.Collectors.joining;
 
 import com.google.auto.value.AutoValue;
+import com.google.auto.value.extension.memoized.Memoized;
 import com.google.common.base.CaseFormat;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
@@ -41,7 +42,15 @@ import javax.annotation.Nullable;
 @AutoValue
 public abstract class TemplateType extends SoyType {
 
-  public static final String ATTRIBUTES_HIDDEN_PARAM = "__soyInternalAttributes";
+  public static final String ATTRIBUTES_HIDDEN_PARAM_NAME = "__soyInternalAttributes";
+  private static final Parameter ATTRIBUTES_HIDDEN_PARAM =
+      Parameter.builder()
+          .setName(ATTRIBUTES_HIDDEN_PARAM_NAME)
+          .setType(SanitizedType.AttributesType.getInstance())
+          .setKind(ParameterKind.PARAM)
+          .setRequired(false)
+          .setImplicit(true)
+          .build();
 
   /** The kind of template. */
   public enum TemplateKind {
@@ -78,6 +87,18 @@ public abstract class TemplateType extends SoyType {
   public abstract boolean isStrictHtml();
 
   public abstract ImmutableList<Parameter> getParameters();
+
+  /** The same as {@link #getParameters} but also includes hidden parameters. */
+  @Memoized
+  public ImmutableList<Parameter> getActualParameters() {
+    if (getAllowExtraAttributes()) {
+      return ImmutableList.<Parameter>builder()
+          .addAll(getParameters())
+          .add(ATTRIBUTES_HIDDEN_PARAM)
+          .build();
+    }
+    return getParameters();
+  }
 
   public final ImmutableMap<String, SoyType> getParameterMap() {
     return getParameters().stream().collect(toImmutableMap(Parameter::getName, Parameter::getType));
@@ -399,7 +420,7 @@ public abstract class TemplateType extends SoyType {
         sb.append(", ");
       }
       String name = parameter.getName();
-      if (name.equals(ATTRIBUTES_HIDDEN_PARAM)) {
+      if (name.equals(ATTRIBUTES_HIDDEN_PARAM_NAME)) {
         continue;
       }
       if (parameter.getKind() == ParameterKind.ATTRIBUTE) {
