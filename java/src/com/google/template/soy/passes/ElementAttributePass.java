@@ -282,7 +282,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
                     attrNode.getSourceLocation(), ATTRIBUTE_NOT_REQUIRED, attr.getAttrName());
               }
 
-              if (!attrNode.hasValue() && iAmAnElementCallingAnElement) {
+              if (!attrNode.hasValue() && iAmAnElementCallingAnElement && !isSoyAttr) {
                 // Pass through and handle in SoyElementCompositionPass since we cannot encode
                 // null/absent in an HtmlAttributeNode.
                 return;
