@@ -42,7 +42,7 @@ import com.google.template.soy.types.TemplateImportType;
  * such calls are allowed.
  */
 @RunAfter({
-  ResolveTemplateImportsPass.class,
+  ImportsPass.class,
   ResolveDottedImportsPass.class, // So that all names are VarRefs.
 })
 @RunBefore({ResolveTemplateNamesPass.class})

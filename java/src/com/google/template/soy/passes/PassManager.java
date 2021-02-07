@@ -44,6 +44,7 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Configures all compiler passes.
@@ -89,14 +90,20 @@ public final class PassManager {
   @VisibleForTesting final ImmutableList<CompilerFilePass> parsePasses;
   @VisibleForTesting final ImmutableList<CompilerFileSetPass> partialTemplateRegistryPasses;
   @VisibleForTesting final ImmutableList<CompilerFileSetPass> crossTemplateCheckingPasses;
+  private final AtomicReference<TemplateNameRegistry> templateNameRegistrySupplier;
+  private final AtomicReference<TemplateRegistry> fileSetRegistrySupplier;
 
   private PassManager(
       ImmutableList<CompilerFilePass> parsePasses,
       ImmutableList<CompilerFileSetPass> partialTemplateRegistryPasses,
-      ImmutableList<CompilerFileSetPass> crossTemplateCheckingPasses) {
+      ImmutableList<CompilerFileSetPass> crossTemplateCheckingPasses,
+      AtomicReference<TemplateNameRegistry> templateNameRegistrySupplier,
+      AtomicReference<TemplateRegistry> fileSetRegistrySupplier) {
     this.parsePasses = parsePasses;
     this.partialTemplateRegistryPasses = partialTemplateRegistryPasses;
     this.crossTemplateCheckingPasses = crossTemplateCheckingPasses;
+    this.templateNameRegistrySupplier = templateNameRegistrySupplier;
+    this.fileSetRegistrySupplier = fileSetRegistrySupplier;
     checkOrdering();
   }
 
@@ -118,12 +125,14 @@ public final class PassManager {
       SoyFileSetNode soyTree,
       TemplateNameRegistry templateNameRegistry,
       TemplateRegistry partialTemplateRegistryWithJustDeps) {
+    templateNameRegistrySupplier.set(templateNameRegistry);
+    fileSetRegistrySupplier.set(partialTemplateRegistryWithJustDeps);
+
     ImmutableList<SoyFileNode> sourceFiles = ImmutableList.copyOf(soyTree.getChildren());
     IdGenerator idGenerator = soyTree.getNodeIdGenerator();
     for (CompilerFileSetPass pass : partialTemplateRegistryPasses) {
       CompilerFileSetPass.Result result =
-          pass.run(
-              sourceFiles, idGenerator, templateNameRegistry, partialTemplateRegistryWithJustDeps);
+          pass.run(sourceFiles, idGenerator, partialTemplateRegistryWithJustDeps);
       if (!result.equals(CompilerFileSetPass.Result.CONTINUE)) {
         return result;
       }
@@ -135,9 +144,12 @@ public final class PassManager {
    * Runs all the fileset passes including the autoescaper and optimization passes if configured.
    */
   public void runWholeFilesetPasses(SoyFileSetNode soyTree, TemplateRegistry templateRegistry) {
+    fileSetRegistrySupplier.set(templateRegistry);
+
     ImmutableList<SoyFileNode> sourceFiles = ImmutableList.copyOf(soyTree.getChildren());
     IdGenerator idGenerator = soyTree.getNodeIdGenerator();
     for (CompilerFileSetPass pass : crossTemplateCheckingPasses) {
+      // TODO(user): Update all passes to use supplier and remove templateRegistry from params.
       CompilerFileSetPass.Result result = pass.run(sourceFiles, idGenerator, templateRegistry);
       if (result == CompilerFileSetPass.Result.STOP) {
         break;
@@ -221,6 +233,10 @@ public final class PassManager {
     private final Map<Class<? extends CompilerPass>, PassContinuationRule>
         passContinuationRegistry = Maps.newHashMap();
     private boolean building;
+    private final AtomicReference<TemplateNameRegistry> templateNameRegistrySupplier =
+        new AtomicReference<>();
+    private final AtomicReference<TemplateRegistry> fileSetRegistrySupplier =
+        new AtomicReference<>();
 
     public Builder setErrorReporter(ErrorReporter errorReporter) {
       this.errorReporter = checkNotNull(errorReporter);
@@ -378,12 +394,13 @@ public final class PassManager {
             new CheckEscapingSanityFilePass(errorReporter), partialTemplateRegistryPassesBuilder);
       }
       addPass(
-          new ResolveProtoImportsPass(registry, options, errorReporter, disableAllTypeChecking),
+          new ImportsPass(
+              errorReporter,
+              options,
+              disableAllTypeChecking,
+              new ProtoImportProcessor(registry, errorReporter, disableAllTypeChecking),
+              new TemplateImportProcessor(errorReporter, templateNameRegistrySupplier::get)),
           partialTemplateRegistryPassesBuilder);
-      addPass(
-          new ResolveTemplateImportsPass(options, errorReporter),
-          partialTemplateRegistryPassesBuilder);
-      addPass(new OtherImportsPass(errorReporter), partialTemplateRegistryPassesBuilder);
       addPass(new RestoreGlobalsPass(), partialTemplateRegistryPassesBuilder);
       addPass(new RestoreCompilerChecksPass(errorReporter), partialTemplateRegistryPassesBuilder);
       // needs to come early since it is necessary to create template metadata objects for
@@ -576,7 +593,9 @@ public final class PassManager {
       return new PassManager(
           createParsePasses(errorReporter),
           partialTemplateRegistryPassesBuilder.build(),
-          crossTemplateCheckingPassesBuilder.build());
+          crossTemplateCheckingPassesBuilder.build(),
+          templateNameRegistrySupplier,
+          fileSetRegistrySupplier);
     }
 
     /**

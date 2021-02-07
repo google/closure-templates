@@ -259,8 +259,7 @@ public final class SoyFileNode extends AbstractParentSoyNode<SoyNode>
 
   public SoyTypeRegistry getSoyTypeRegistry() {
     Preconditions.checkState(
-        importsContext != null,
-        "Called getSoyTypeRegistry() before ResolveProtoImportsPass was run.");
+        importsContext != null, "Called getSoyTypeRegistry() before ImportsPass was run.");
     return importsContext.getTypeRegistry();
   }
 

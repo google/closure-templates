@@ -40,7 +40,7 @@ public final class ImportNode extends AbstractSoyNode {
 
   private final StringNode path;
 
-  private final ImportType importType;
+  private ImportType importType;
 
   /** Only Proto is supported right now. */
   public enum ImportType {
@@ -53,7 +53,7 @@ public final class ImportNode extends AbstractSoyNode {
     super(id, location);
     this.identifiers = ImmutableList.copyOf(defns);
     this.path = path;
-    this.importType = importTypeForPath(path.getValue());
+    this.importType = ImportType.UNKNOWN;
   }
 
   /**
@@ -90,17 +90,12 @@ public final class ImportNode extends AbstractSoyNode {
     return identifiers.isEmpty();
   }
 
-  public ImportType getImportType() {
-    return importType;
+  public void setImportType(ImportType importType) {
+    this.importType = importType;
   }
 
-  private static ImportType importTypeForPath(String path) {
-    if (path.endsWith(".proto") || path.endsWith(".protodevel")) {
-      return ImportType.PROTO;
-    } else if (path.endsWith(".soy")) {
-      return ImportType.TEMPLATE;
-    }
-    return ImportType.UNKNOWN;
+  public ImportType getImportType() {
+    return importType;
   }
 
   public String getPath() {

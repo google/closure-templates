@@ -41,7 +41,7 @@ import javax.annotation.Nullable;
 
 /** Resolves template names in calls, checking against template names & imports. */
 @RunAfter({
-  ResolveTemplateImportsPass.class,
+  ImportsPass.class,
   ResolvePluginsPass.class, // Needs TEMPLATE function resolved.
   ResolveNamesPass.class, // Needs VarRef.defn defined.
   ResolveDottedImportsPass.class, // Needs dotted template imports to be inlined.

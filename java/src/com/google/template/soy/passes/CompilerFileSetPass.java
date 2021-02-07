@@ -19,7 +19,6 @@ package com.google.template.soy.passes;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.soytree.SoyFileNode;
-import com.google.template.soy.soytree.TemplateNameRegistry;
 import com.google.template.soy.soytree.TemplateRegistry;
 
 /**
@@ -75,16 +74,5 @@ public interface CompilerFileSetPass extends CompilerPass {
       IdGenerator idGenerator,
       TemplateRegistry fileSetRegistry) {
     return run(sourceFiles, idGenerator);
-  }
-
-  default Result run(
-      ImmutableList<SoyFileNode> sourceFiles,
-      IdGenerator idGenerator,
-      // A complete, lightweight registry of template names in each file.
-      TemplateNameRegistry templateNameRegistry,
-      // Either a partial (just deps) or complete registry of template metadata, depending on which
-      // round of passes you're in.
-      TemplateRegistry fileSetRegistry) {
-    return run(sourceFiles, idGenerator, fileSetRegistry);
   }
 }
