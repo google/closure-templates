@@ -38,6 +38,7 @@ import com.google.template.soy.soytree.SoyTreeUtils;
  * between $ var refs and non-$ globals was removed.
  */
 @RunAfter(RestoreGlobalsPass.class)
+@RunBefore(ResolveTemplateNamesPass.class)
 public final class RestoreCompilerChecksPass implements CompilerFilePass {
 
   private static final SoyErrorKind MUST_BE_DOLLAR_IDENT =
@@ -64,12 +65,7 @@ public final class RestoreCompilerChecksPass implements CompilerFilePass {
         .forEach(
             callNode -> {
               GlobalNode global = (GlobalNode) callNode.getCalleeExpr().getRoot();
-              callNode.setCalleeExpr(
-                  new ExprRootNode(
-                      new TemplateLiteralNode(
-                          global.getIdentifier(),
-                          global.getSourceLocation(),
-                          /* isSynthetic= */ true)));
+              callNode.setCalleeExpr(new ExprRootNode(TemplateLiteralNode.forGlobal(global)));
             });
 
     // Enforce certain symbols start with $, to match previous parser rules.

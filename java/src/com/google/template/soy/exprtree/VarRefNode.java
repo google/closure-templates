@@ -33,6 +33,10 @@ public final class VarRefNode extends AbstractExprNode {
     return new VarRefNode("$error", location, null);
   }
 
+  // As long as templates can be called with a leading "." we need to keep track of whether the
+  // original source was prefixed.
+  private final String originalName;
+
   /** The name of the variable, without the preceding dollar sign. */
   private final String name;
 
@@ -52,12 +56,14 @@ public final class VarRefNode extends AbstractExprNode {
    */
   public VarRefNode(String name, SourceLocation sourceLocation, @Nullable VarDefn defn) {
     super(sourceLocation);
-    this.name = name;
+    this.originalName = name;
+    this.name = name.startsWith(".") ? name.substring(1) : name;
     this.defn = defn;
   }
 
   private VarRefNode(VarRefNode orig, CopyState copyState) {
     super(orig, copyState);
+    this.originalName = orig.originalName;
     this.name = orig.name;
     this.substituteType = orig.substituteType;
     if (orig.defn != null) {
@@ -142,7 +148,7 @@ public final class VarRefNode extends AbstractExprNode {
 
   @Override
   public String toSourceString() {
-    return name;
+    return originalName;
   }
 
   @Override

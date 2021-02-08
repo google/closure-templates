@@ -1835,6 +1835,11 @@ final class ExpressionCompiler {
     }
 
     @Override
+    protected Boolean visitTemplateLiteralNode(TemplateLiteralNode node) {
+      return false;
+    }
+
+    @Override
     protected Boolean visitExprNode(ExprNode node) {
       if (node instanceof ParentExprNode) {
         for (Boolean i : visitChildren((ParentExprNode) node)) {

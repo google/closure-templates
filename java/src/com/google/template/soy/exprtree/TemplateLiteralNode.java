@@ -17,82 +17,118 @@ package com.google.template.soy.exprtree;
 
 import static com.google.common.base.Preconditions.checkState;
 
+import com.google.common.base.Preconditions;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.types.NamedTemplateType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.TemplateImportType;
-import java.util.Optional;
 import javax.annotation.Nullable;
 
 /** Node representing a template literal. */
-public final class TemplateLiteralNode extends AbstractExprNode {
+public final class TemplateLiteralNode extends AbstractParentExprNode {
+
+  private static final NamedTemplateType VARREF_PLACEHOLDER =
+      NamedTemplateType.create("__varref__");
 
   // True for 'synthetic' template literal nodes that are the direct children of {call} statements.
   // These are exempt from some checks around the explicit template() expressions.
   private final boolean isSynthetic;
-
-  private Identifier templateIdentifier;
-  private Optional<String> resolvedName;
-
+  private String templateFqn;
   private SoyType type;
 
-  public TemplateLiteralNode(
-      Identifier templateIdentifier, SourceLocation sourceLocation, boolean isSynthetic) {
-    super(sourceLocation);
-    this.templateIdentifier = templateIdentifier;
-    this.resolvedName = Optional.empty();
-    this.type = NamedTemplateType.create(templateIdentifier.identifier());
-    this.isSynthetic = isSynthetic;
+  // This goes away when template call FQN goes away.
+  public static TemplateLiteralNode forGlobal(GlobalNode global) {
+    return forGlobal(global, /* isSynthetic= */ true);
   }
 
-  public TemplateLiteralNode(
-      Identifier templateIdentifier,
-      SourceLocation sourceLocation,
-      boolean isSynthetic,
-      TemplateImportType type) {
-    this(templateIdentifier, sourceLocation, isSynthetic);
-    resolveTemplateName(
-        Identifier.create(
-            type.getName(), templateIdentifier.identifier(), templateIdentifier.location()));
+  public static TemplateLiteralNode forGlobal(GlobalNode global, boolean isSynthetic) {
+    TemplateLiteralNode node = new TemplateLiteralNode(global.getSourceLocation(), isSynthetic);
+    node.addChild(global);
+    node.type = NamedTemplateType.create(global.getName());
+    return node;
+  }
+
+  public static TemplateLiteralNode forVarRef(VarRefNode varRef) {
+    return forVarRef(varRef, varRef.getSourceLocation(), /* isSynthetic= */ true);
+  }
+
+  public static TemplateLiteralNode forVarRef(
+      VarRefNode varRef, SourceLocation sourceLocation, boolean isSynthetic) {
+    TemplateLiteralNode node = new TemplateLiteralNode(sourceLocation, isSynthetic);
+    node.addChild(varRef);
+    if (varRef.hasType() && varRef.getType().getKind() == SoyType.Kind.TEMPLATE_TYPE) {
+      node.resolveTemplateName();
+    } else {
+      node.type = VARREF_PLACEHOLDER;
+    }
+    return node;
+  }
+
+  private TemplateLiteralNode(SourceLocation sourceLocation, boolean isSynthetic) {
+    super(sourceLocation);
+    this.isSynthetic = isSynthetic;
   }
 
   private TemplateLiteralNode(TemplateLiteralNode orig, CopyState copyState) {
     super(orig, copyState);
-    this.templateIdentifier = orig.templateIdentifier;
-    this.resolvedName = orig.resolvedName;
-    this.type = orig.type;
     this.isSynthetic = orig.isSynthetic;
+    this.templateFqn = orig.templateFqn;
+    this.type = orig.type;
+  }
+
+  /**
+   * Whether this node references a template by its fully qualified name. If true then the only
+   * child of this node is a GlobalNode.
+   */
+  public boolean isGlobalName() {
+    return getChild(0).getKind() == Kind.GLOBAL_NODE;
   }
 
   public boolean isSynthetic() {
     return isSynthetic;
   }
 
-  public void resolveTemplateName(Identifier resolvedIdent) {
-    checkState(!resolvedName.isPresent(), "Template identifier has already been resolved.");
-    this.templateIdentifier = resolvedIdent;
-    this.resolvedName = Optional.of(resolvedIdent.identifier());
+  public void resolveTemplateName() {
+    checkState(!isResolved(), "Template identifier has already been resolved.");
 
-    // Only set the type if it hasn't been upgraded already.
-    if (type instanceof NamedTemplateType) {
-      type = NamedTemplateType.create(resolvedIdent.identifier());
+    if (isGlobalName()) {
+      GlobalNode existingGlobal = (GlobalNode) getChild(0);
+      templateFqn = existingGlobal.getIdentifier().identifier();
+      existingGlobal.resolve(
+          NamedTemplateType.create(templateFqn), new NullNode(existingGlobal.getSourceLocation()));
+
+      // Only set the type if it hasn't been upgraded already.
+      if (getType() instanceof NamedTemplateType) {
+        type = NamedTemplateType.create(templateFqn);
+      }
+    } else {
+      SoyType type = getChild(0).getType();
+      switch (type.getKind()) {
+        case TEMPLATE_TYPE:
+          templateFqn = ((TemplateImportType) type).getName();
+          this.type = type;
+          break;
+        default:
+          throw new IllegalStateException("type: " + type.getKind() + " / " + type);
+      }
     }
   }
 
   public boolean isResolved() {
-    return resolvedName.isPresent();
+    return templateFqn != null;
   }
 
   /** Returns the resolved template name, or null if not resolved yet. */
   @Nullable
   public String getResolvedName() {
-    return resolvedName.orElse(null);
+    return templateFqn;
   }
 
   public Identifier getIdentifier() {
-    return templateIdentifier;
+    Preconditions.checkArgument(isGlobalName(), "Only global node literals have identifiers.");
+    return ((GlobalNode) getChild(0)).getIdentifier();
   }
 
   @Override
@@ -101,7 +137,7 @@ public final class TemplateLiteralNode extends AbstractExprNode {
   }
 
   public void setType(SoyType type) {
-    this.type = type;
+    this.type = Preconditions.checkNotNull(type);
   }
 
   @Override
@@ -112,8 +148,8 @@ public final class TemplateLiteralNode extends AbstractExprNode {
   @Override
   public String toSourceString() {
     return isSynthetic
-        ? templateIdentifier.originalName()
-        : "template(" + templateIdentifier.originalName() + ")";
+        ? getChild(0).toSourceString()
+        : "template(" + getChild(0).toSourceString() + ")";
   }
 
   @Override

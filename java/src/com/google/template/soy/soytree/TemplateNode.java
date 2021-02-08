@@ -192,10 +192,9 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
       String alias = aliasToNamespaceMap.get(firstIdent);
       if (alias != null) {
         usedAliases.add(firstIdent);
+        return Identifier.create(alias + remainder, fullName, sourceLocation);
       }
-      return alias == null
-          ? Identifier.create(fullName, sourceLocation)
-          : Identifier.create(alias + remainder, fullName, sourceLocation);
+      return identifier;
     }
 
     public boolean hasAlias(String alias) {
@@ -313,6 +312,9 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
 
   private final boolean component;
 
+  // Lazy init.
+  private TemplateVarDefn varDefn;
+
   /**
    * Main constructor. This is package-private because Template*Node instances should be built using
    * the Template*NodeBuilder classes.
@@ -378,6 +380,10 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     this.allowExtraAttributesLoc = orig.allowExtraAttributesLoc;
     this.reservedAttributes = orig.reservedAttributes;
     this.component = orig.component;
+    if (orig.varDefn != null) {
+      this.asVarDefn();
+      copyState.updateRefs(orig.varDefn, this.varDefn);
+    }
   }
 
   private static ImmutableList<TemplateHeaderVarDefn> copyParams(
@@ -710,10 +716,16 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
   }
 
   public VarDefn asVarDefn() {
-    return new TemplateVarDefn(
-        getLocalTemplateSymbol(),
-        getTemplateNameLocation(),
-        TemplateImportType.create(getTemplateName()));
+    TemplateVarDefn tmp = varDefn;
+    if (tmp == null) {
+      tmp =
+          new TemplateVarDefn(
+              getLocalTemplateSymbol(),
+              getTemplateNameLocation(),
+              TemplateImportType.create(getTemplateName()));
+      varDefn = tmp;
+    }
+    return tmp;
   }
 
   private static class TemplateVarDefn extends AbstractVarDefn {

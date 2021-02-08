@@ -86,6 +86,9 @@ public final class StrictDepsPass implements CompilerFileSetPass {
 
   private void reportUndefinedTemplateErrors(
       TemplateLiteralNode node, ImportsTemplateRegistry registry) {
+    if (!node.isGlobalName()) {
+      return;
+    }
     Identifier ident = node.getIdentifier();
     // Cross-check the called template's name against the list of imported symbols and the list of
     // known fully-namespaced file names, and report suggestions for the undefined template.

@@ -21,10 +21,12 @@ import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.data.internalutils.InternalValueUtils;
 import com.google.template.soy.data.restricted.PrimitiveData;
+import com.google.template.soy.exprtree.ExprNode.Kind;
 import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
+import com.google.template.soy.soytree.TemplateNodeBuilder;
 
 /** A {@link CompilerFilePass} that searches for compile time globals and substitutes values. */
 @RunAfter({
@@ -50,10 +52,20 @@ final class RewriteGlobalsPass implements CompilerFilePass {
     // the type registry have better type information and for applications with legacy globals
     // configs there is often overlap, so the order in which we check is actually important.
     // proto enums are dotted identifiers
+    Identifier original = global.getIdentifier();
     Identifier alias = file.resolveAlias(global.getIdentifier());
-    if (alias != null) {
+    if (!alias.equals(original)) {
       global.setName(alias.identifier());
+    } else if (global.getParent().getKind() == Kind.TEMPLATE_LITERAL_NODE) {
+      // This is needed to support calling templates in another file with the same namespace by
+      // their unprefixed name. This should go away with template call FQNs.
+      Identifier.Type idType = original.type();
+      if (idType == Identifier.Type.DOT_IDENT || idType == Identifier.Type.SINGLE_IDENT) {
+        global.setName(
+            TemplateNodeBuilder.combineNsAndName(file.getNamespace(), original.identifier()));
+      }
     }
+
     String name = global.getName();
     // if that doesn't work, see if it was registered in the globals file.
     PrimitiveData value = compileTimeGlobals.get(name);

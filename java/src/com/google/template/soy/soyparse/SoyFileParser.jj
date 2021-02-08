@@ -72,6 +72,7 @@ import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FloatNode;
+import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
@@ -3425,17 +3426,17 @@ private CallNode CallStmt() :
     } catch (ParseException e) {
       tagClose = reportTemplateBodyErrorAndSkipTo(e, CMD_SELF_CLOSE, CMD_CLOSE_CALL);
       if (calleeExpr == null && calleeName == null) {
-        calleeExpr = new TemplateLiteralNode(Identifier.create(".error", createSrcLoc(tagBegin)),  createSrcLoc(tagBegin), false /* isSynthetic */);
+        calleeExpr = TemplateLiteralNode.forGlobal(new GlobalNode(Identifier.create(".error", createSrcLoc(tagBegin))));
       }
     }
 
     {
       SourceLocation loc = createSrcLoc(tagBegin, tagClose);
       if (calleeExpr == null) {
-        calleeExpr = new TemplateLiteralNode(
-            calleeName,
-            calleeName.location(),
-            true /* isSynthetic */);
+        // This branch only executes for template names beginning with ".",
+        // which should always be references to local templates.
+        calleeExpr = TemplateLiteralNode.forVarRef(
+           new VarRefNode(calleeName.identifier(), calleeName.location(), null));
       }
       CallBasicNode node = new CallBasicNode(
           nodeIdGen.genId(),

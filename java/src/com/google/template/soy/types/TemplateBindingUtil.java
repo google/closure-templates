@@ -26,8 +26,8 @@ import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.error.SoyErrors;
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
+import javax.annotation.Nullable;
 
 /**
  * Utility for generating the return type of a template-type expression after the bind() method is
@@ -54,7 +54,9 @@ public final class TemplateBindingUtil {
       ErrorReporter.LocationBound errorReporter) {
     checkArgument(
         SoyTypes.isKindOrUnionOfKinds(
-            base, ImmutableSet.of(SoyType.Kind.TEMPLATE, SoyType.Kind.NAMED_TEMPLATE)));
+            base,
+            ImmutableSet.of(
+                SoyType.Kind.TEMPLATE, SoyType.Kind.NAMED_TEMPLATE, SoyType.Kind.TEMPLATE_TYPE)));
     Set<SoyType> types = new HashSet<>();
     for (SoyType baseType : SoyTypes.expandUnions(base)) {
       switch (baseType.getKind()) {
@@ -67,6 +69,15 @@ public final class TemplateBindingUtil {
           types.add(
               bindParametersToNamedTemplate(
                   (NamedTemplateType) baseType, parameterType, typeRegistry, errorReporter));
+          break;
+        case TEMPLATE_TYPE:
+          types.add(
+              bindParametersToNamedTemplate(
+                  ((TemplateImportType) baseType).getName(),
+                  null,
+                  parameterType,
+                  typeRegistry,
+                  errorReporter));
           break;
         default:
           throw new AssertionError();
@@ -125,12 +136,25 @@ public final class TemplateBindingUtil {
       RecordType parameters,
       SoyTypeRegistry typeRegistry,
       ErrorReporter.LocationBound errorReporter) {
-    Optional<RecordType> alreadyBound = base.getBoundParameters();
+    return bindParametersToNamedTemplate(
+        base.getTemplateName(),
+        base.getBoundParameters().orElse(null),
+        parameters,
+        typeRegistry,
+        errorReporter);
+  }
+
+  private static SoyType bindParametersToNamedTemplate(
+      String templateName,
+      @Nullable RecordType alreadyBound,
+      RecordType parameters,
+      SoyTypeRegistry typeRegistry,
+      ErrorReporter.LocationBound errorReporter) {
     RecordType mergedParameters = null;
     boolean reportedErrors = false;
-    if (alreadyBound.isPresent()) {
+    if (alreadyBound != null) {
       for (String name : parameters.getMemberNames()) {
-        if (alreadyBound.get().getMemberType(name) != null) {
+        if (alreadyBound.getMemberType(name) != null) {
           errorReporter.report(PARAMETER_ALREADY_BOUND, name);
           reportedErrors = true;
         }
@@ -138,7 +162,7 @@ public final class TemplateBindingUtil {
       if (!reportedErrors) {
         mergedParameters =
             typeRegistry.getOrCreateRecordType(
-                Iterables.concat(alreadyBound.get().getMembers(), parameters.getMembers()));
+                Iterables.concat(alreadyBound.getMembers(), parameters.getMembers()));
       }
     } else {
       mergedParameters = parameters;
@@ -146,7 +170,7 @@ public final class TemplateBindingUtil {
     if (reportedErrors) {
       return UnknownType.getInstance();
     }
-    return NamedTemplateType.createWithBoundParameters(base.getTemplateName(), mergedParameters);
+    return NamedTemplateType.createWithBoundParameters(templateName, mergedParameters);
   }
 
   /** Non-instantiable. */

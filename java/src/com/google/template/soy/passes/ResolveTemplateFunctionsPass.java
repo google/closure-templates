@@ -35,7 +35,6 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.types.ProtoImportType;
 import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.TemplateImportType;
 
 /**
  * Resolves function calls to template names inside of the dynamic names of HTML open tags, where
@@ -77,16 +76,7 @@ final class ResolveTemplateFunctionsPass implements CompilerFilePass {
     if (varRefNode.hasType() && varRefNode.getType().getKind() == SoyType.Kind.TEMPLATE_TYPE) {
       // If the function is a template symbol modify AST like:
       // {tmp(...)} -> {template(tmp).bind(...)}
-      TemplateImportType type = (TemplateImportType) varRefNode.getType();
-
-      // Create a template(foo) literal from function node foo()
-      bindTarget =
-          new TemplateLiteralNode(
-              Identifier.create(varRefNode.getName(), varRefNode.getSourceLocation()),
-              varRefNode.getSourceLocation(),
-              /* isSynthetic= */ true,
-              type);
-
+      bindTarget = TemplateLiteralNode.forVarRef(varRefNode);
     } else {
       // Otherwise modify AST like:
       // {$tmp(...)} -> {$tmp.bind(...)}

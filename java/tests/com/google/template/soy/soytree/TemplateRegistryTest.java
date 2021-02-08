@@ -32,6 +32,7 @@ import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
@@ -448,8 +449,8 @@ public final class TemplateRegistryTest {
             0,
             SourceLocation.UNKNOWN,
             SourceLocation.UNKNOWN,
-            new TemplateLiteralNode(
-                Identifier.create("ns.foo", SourceLocation.UNKNOWN), SourceLocation.UNKNOWN, false),
+            TemplateLiteralNode.forGlobal(
+                new GlobalNode(Identifier.create("ns.foo", SourceLocation.UNKNOWN)), false),
             NO_ATTRS,
             false,
             FAIL);
@@ -474,8 +475,8 @@ public final class TemplateRegistryTest {
             0,
             SourceLocation.UNKNOWN,
             SourceLocation.UNKNOWN,
-            new TemplateLiteralNode(
-                Identifier.create("ns.moo", SourceLocation.UNKNOWN), SourceLocation.UNKNOWN, false),
+            TemplateLiteralNode.forGlobal(
+                new GlobalNode(Identifier.create("ns.moo", SourceLocation.UNKNOWN)), false),
             NO_ATTRS,
             false,
             FAIL);

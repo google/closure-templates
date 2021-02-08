@@ -17,7 +17,6 @@ package com.google.template.soy.types;
 
 import com.google.auto.value.AutoValue;
 import com.google.template.soy.soytree.SoyTypeP;
-import com.google.template.soy.types.SoyType.Kind;
 import java.util.Optional;
 
 /**

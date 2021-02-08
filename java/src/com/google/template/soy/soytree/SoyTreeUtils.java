@@ -39,6 +39,7 @@ import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.ListComprehensionNode;
+import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
@@ -468,6 +469,19 @@ public final class SoyTreeUtils {
   private static boolean isNonConstant(ExprNode expr) {
     switch (expr.getKind()) {
       case VAR_REF_NODE:
+        VarRefNode refNode = (VarRefNode) expr;
+        if (refNode.hasType()) {
+          switch (refNode.getType().getKind()) {
+            case TEMPLATE_TYPE:
+            case TEMPLATE_MODULE:
+            case PROTO_TYPE:
+            case PROTO_ENUM_TYPE:
+            case PROTO_MODULE:
+              return false;
+            default:
+              return true;
+          }
+        }
         return true;
       case FUNCTION_NODE:
         return !((FunctionNode) expr).isPure();

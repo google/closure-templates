@@ -29,4 +29,10 @@ public abstract class ImportType extends SoyType {
   void doToProto(SoyTypeP.Builder builder) {
     throw new UnsupportedOperationException();
   }
+
+  @Override
+  boolean doIsAssignableFromNonUnionType(SoyType srcType) {
+    // Nothing is assignable to this placeholder type.
+    return false;
+  }
 }

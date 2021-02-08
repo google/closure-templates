@@ -19,7 +19,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
-import com.google.template.soy.base.internal.Identifier;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
@@ -33,10 +33,7 @@ import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
-import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
-import com.google.template.soy.soytree.TemplateNodeBuilder;
 import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.TemplateImportType;
 import javax.annotation.Nullable;
 
 /** Resolves template names in calls, checking against template names & imports. */
@@ -96,12 +93,13 @@ public final class ResolveTemplateNamesPass implements CompilerFileSetPass {
     SoyTreeUtils.allNodesOfType(file, CallBasicNode.class)
         .forEach(ResolveTemplateNamesPass::importedVarRefToTemplateLiteral);
 
-    // Change all function() calls to TemplateLiteralNode.
+    // Change all template() calls to TemplateLiteralNode.
     SoyTreeUtils.allFunctionInvocations(file, BuiltinFunction.TEMPLATE)
-        .forEach(node -> resolveTemplateFunction(node, file.getHeaderInfo()));
+        .forEach(this::resolveTemplateFunction);
 
     // Change all varrefs of type TEMPLATE_TYPE to TemplateLiteralNode.
     SoyTreeUtils.allNodesOfType(file, VarRefNode.class)
+        .filter(n -> n.getParent().getKind() != Kind.TEMPLATE_LITERAL_NODE)
         .forEach(
             v -> {
               TemplateLiteralNode converted =
@@ -111,10 +109,19 @@ public final class ResolveTemplateNamesPass implements CompilerFileSetPass {
               }
             });
 
+    if (requireTemplateImports && !isFileExemptedFromTemplateImports) {
+      SoyTreeUtils.allNodesOfType(file, TemplateLiteralNode.class)
+          .filter(TemplateLiteralNode::isGlobalName)
+          .forEach(
+              n ->
+                  errorReporter.report(
+                      n.getChild(0).getSourceLocation(), UNIMPORTED_TEMPLATE_CALL));
+    }
+
     // Resolve all unresolved TemplateLiteralNodes. Remove this along with template FQN support.
     SoyTreeUtils.allNodesOfType(file, TemplateLiteralNode.class)
         .filter(n -> !n.isResolved())
-        .forEach(node -> resolveTemplateName(node, file.getHeaderInfo()));
+        .forEach(TemplateLiteralNode::resolveTemplateName);
 
     // Validate CallBasicNode data="expr". This previously happened in the CallBasicNode
     // constructor but now must happen after Visitor runs.
@@ -135,7 +142,7 @@ public final class ResolveTemplateNamesPass implements CompilerFileSetPass {
     }
   }
 
-  private void resolveTemplateFunction(FunctionNode functionNode, SoyFileHeaderInfo header) {
+  private void resolveTemplateFunction(FunctionNode functionNode) {
     if (functionNode.numChildren() != 1) {
       // Error reported elsewhere.
       return;
@@ -151,11 +158,8 @@ public final class ResolveTemplateNamesPass implements CompilerFileSetPass {
       // Remove this branch along with template FQN support. These are template() literals that
       // aren't imported, but #resolveTemplateName will throw an UNIMPORTED_TEMPLATE_CALL for us (if
       // the error is enabled), so no need to report it here.
-      Identifier unresolved = ((GlobalNode) param).getIdentifier();
-      Identifier fqn = resolveTemplateName(((GlobalNode) param).getIdentifier(), header);
-      TemplateLiteralNode template =
-          new TemplateLiteralNode(unresolved, param.getSourceLocation(), false);
-      template.resolveTemplateName(fqn);
+      GlobalNode global = ((GlobalNode) param);
+      TemplateLiteralNode template = TemplateLiteralNode.forGlobal(global, false);
       functionNode.getParent().replaceChild(functionNode, template);
     } else {
       errorReporter.report(param.getSourceLocation(), INVALID_TEMPLATE_FUNCT_PARAM);
@@ -174,42 +178,10 @@ public final class ResolveTemplateNamesPass implements CompilerFileSetPass {
     }
     VarRefNode varRef = (VarRefNode) expr;
     if (varRef.hasType() && expr.getType().getKind() == SoyType.Kind.TEMPLATE_TYPE) {
-      return new TemplateLiteralNode(
-          Identifier.create(varRef.getName(), varRef.getSourceLocation()),
-          sourceLocation,
-          isSynthetic,
-          (TemplateImportType) expr.getType());
+      return TemplateLiteralNode.forVarRef(
+          varRef.copy(new CopyState()), sourceLocation, isSynthetic);
     }
     return null;
-  }
-
-  private Identifier resolveTemplateName(Identifier unresolvedIdent, SoyFileHeaderInfo header) {
-
-    switch (unresolvedIdent.type()) {
-      case SINGLE_IDENT:
-      case DOT_IDENT:
-        // Case 1: ".foo" and "foo" Source callee name is partial.
-        return Identifier.create(
-            TemplateNodeBuilder.combineNsAndName(
-                header.getNamespace(), unresolvedIdent.identifier()),
-            unresolvedIdent.identifier(),
-            unresolvedIdent.location());
-      case DOTTED_IDENT:
-        // Case 2: "foo.bar.baz" Source callee name is a proper dotted ident, which might start with
-        // an alias.
-        if (requireTemplateImports && !isFileExemptedFromTemplateImports) {
-          errorReporter.report(unresolvedIdent.location(), UNIMPORTED_TEMPLATE_CALL);
-        }
-        return header.resolveAlias(unresolvedIdent);
-    }
-    throw new AssertionError(unresolvedIdent.type());
-  }
-
-  /** Attempts to resolve a template name, checking against aliases & imports. */
-  private void resolveTemplateName(
-      TemplateLiteralNode templateLiteralNode, SoyFileHeaderInfo header) {
-    templateLiteralNode.resolveTemplateName(
-        resolveTemplateName(templateLiteralNode.getIdentifier(), header));
   }
 
   private static boolean isFileExemptedFromTemplateImports(SoyFileNode file) {

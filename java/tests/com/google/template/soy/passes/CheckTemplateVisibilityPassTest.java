@@ -73,7 +73,7 @@ public final class CheckTemplateVisibilityPassTest {
   }
 
   @Test
-  public void testBindPrivateTemplateFromSameNamespaceButDifferentFile() {
+  public void testImportPrivateTemplateFromSameNamespaceButDifferentFile() {
     ErrorReporter errorReporter = ErrorReporter.createForTest();
     SoyFileSetParserBuilder.forFileContents(
             "{namespace ns}\n"
@@ -82,10 +82,10 @@ public final class CheckTemplateVisibilityPassTest {
                 + "oops!\n"
                 + "{/template}",
             "{namespace ns}\n"
+                + "import {foo} from 'no-path';"
                 + "/** Public template. */\n"
                 + "{template .bar}\n"
-                + "{let $foo: template(foo) /}\n"
-                + "{call $foo /}\n"
+                + "{call foo /}\n"
                 + "{/template}")
         .errorReporter(errorReporter)
         .parse();
