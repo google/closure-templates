@@ -117,10 +117,15 @@ java_library(
 java_library(
     name = "escaping_library",
     srcs = ESCAPING_SRCS,
+    runtime_deps = [
+        "@maven//:com_google_flogger_flogger_system_backend",
+    ],
     deps = [
         "//java/src/com/google/template/soy/data",
         "//java/src/com/google/template/soy/data:unsafesanitizedcontentordainer",
         "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:com_google_flogger_flogger",
+        "@maven//:com_google_flogger_google_extensions",
         "@maven//:com_google_guava_guava",
     ],
 )

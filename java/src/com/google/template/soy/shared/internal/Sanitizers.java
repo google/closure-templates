@@ -16,6 +16,7 @@
 
 package com.google.template.soy.shared.internal;
 
+import static com.google.common.flogger.StackSize.MEDIUM;
 import static java.lang.Math.min;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -27,6 +28,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.escape.Escaper;
+import com.google.common.flogger.GoogleLogger;
 import com.google.common.net.PercentEscaper;
 import com.google.common.primitives.Chars;
 import com.google.template.soy.data.Dir;
@@ -44,8 +46,6 @@ import com.google.template.soy.shared.internal.TagWhitelist.OptionalSafeTag;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
@@ -59,7 +59,7 @@ import javax.annotation.Nullable;
 public final class Sanitizers {
 
   /** Receives messages about unsafe values that were filtered out. */
-  private static final Logger logger = Logger.getLogger(Sanitizers.class.getName());
+  private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 
   private Sanitizers() {
     // Not instantiable.
@@ -511,7 +511,7 @@ public final class Sanitizers {
     if (EscapingConventions.FilterCssValue.INSTANCE.getValueFilter().matcher(value).find()) {
       return value;
     }
-    logger.log(Level.WARNING, "|filterCssValue received bad value ''{0}''", value);
+    logger.atWarning().withStackTrace(MEDIUM).log("|filterCssValue received bad value '%s'", value);
     return EscapingConventions.FilterCssValue.INSTANCE.getInnocuousOutput();
   }
 
@@ -572,7 +572,8 @@ public final class Sanitizers {
     if (EscapingConventions.FilterNormalizeUri.INSTANCE.getValueFilter().matcher(value).find()) {
       return EscapingConventions.FilterNormalizeUri.INSTANCE.escape(value);
     }
-    logger.log(Level.WARNING, "|filterNormalizeUri received bad value ''{0}''", value);
+    logger.atWarning().withStackTrace(MEDIUM).log(
+        "|filterNormalizeUri received bad value '%s'", value);
     return EscapingConventions.FilterNormalizeUri.INSTANCE.getInnocuousOutput();
   }
 
@@ -602,7 +603,8 @@ public final class Sanitizers {
         .find()) {
       return EscapingConventions.FilterNormalizeMediaUri.INSTANCE.escape(value);
     }
-    logger.log(Level.WARNING, "|filterNormalizeMediaUri received bad value ''{0}''", value);
+    logger.atWarning().withStackTrace(MEDIUM).log(
+        "|filterNormalizeMediaUri received bad value '%s'", value);
     return EscapingConventions.FilterNormalizeMediaUri.INSTANCE.getInnocuousOutput();
   }
 
@@ -630,7 +632,8 @@ public final class Sanitizers {
 
   /** For string inputs this function just returns the input string itself. */
   public static String filterTrustedResourceUri(String value) {
-    logger.log(Level.WARNING, "|filterTrustedResourceUri received bad value ''{0}''", value);
+    logger.atWarning().withStackTrace(MEDIUM).log(
+        "|filterTrustedResourceUri received bad value '%s'", value);
     return "about:invalid#" + EscapingConventions.INNOCUOUS_OUTPUT;
   }
 
@@ -659,9 +662,8 @@ public final class Sanitizers {
       if (matchPrefixIgnoreCasePastEnd("<script", value, start)
           || matchPrefixIgnoreCasePastEnd("</script", value, start)
           || matchPrefixIgnoreCasePastEnd("<!--", value, start)) {
-        logger.log(
-            Level.WARNING,
-            "|filterHtmlScriptPhrasingData received bad value ''{0}''. Cannot contain an script"
+        logger.atWarning().withStackTrace(MEDIUM).log(
+            "|filterHtmlScriptPhrasingData received bad value '%s'. Cannot contain an script"
                 + " tag, and html comment, or end with a prefix of either",
             value);
         return EscapingConventions.INNOCUOUS_OUTPUT;
@@ -701,7 +703,8 @@ public final class Sanitizers {
       // NOTE: No need to escape.
       return UnsafeSanitizedContentOrdainer.ordainAsSafe(value, ContentKind.URI);
     }
-    logger.log(Level.WARNING, "|filterImageDataUri received bad value ''{0}''", value);
+    logger.atWarning().withStackTrace(MEDIUM).log(
+        "|filterImageDataUri received bad value '%s'", value);
     return UnsafeSanitizedContentOrdainer.ordainAsSafe(
         EscapingConventions.FilterImageDataUri.INSTANCE.getInnocuousOutput(),
         SanitizedContent.ContentKind.URI);
@@ -719,7 +722,7 @@ public final class Sanitizers {
       // NOTE: No need to escape. Escaping for other contexts (e.g. HTML) happen after this.
       return UnsafeSanitizedContentOrdainer.ordainAsSafe(value, ContentKind.URI);
     }
-    logger.log(Level.WARNING, "|filterSipUri received bad value ''{0}''", value);
+    logger.atWarning().withStackTrace(MEDIUM).log("|filterSipUri received bad value '%s'", value);
     return UnsafeSanitizedContentOrdainer.ordainAsSafe(
         EscapingConventions.FilterSipUri.INSTANCE.getInnocuousOutput(),
         SanitizedContent.ContentKind.URI);
@@ -737,7 +740,7 @@ public final class Sanitizers {
       // NOTE: No need to escape. Escaping for other contexts (e.g. HTML) happen after this.
       return UnsafeSanitizedContentOrdainer.ordainAsSafe(value, ContentKind.URI);
     }
-    logger.log(Level.WARNING, "|filterSmsUri received bad value ''{0}''", value);
+    logger.atWarning().withStackTrace(MEDIUM).log("|filterSmsUri received bad value '%s'", value);
     return UnsafeSanitizedContentOrdainer.ordainAsSafe(
         EscapingConventions.FilterSmsUri.INSTANCE.getInnocuousOutput(),
         SanitizedContent.ContentKind.URI);
@@ -755,7 +758,7 @@ public final class Sanitizers {
       // NOTE: No need to escape. Escaping for other contexts (e.g. HTML) happen after this.
       return UnsafeSanitizedContentOrdainer.ordainAsSafe(value, ContentKind.URI);
     }
-    logger.log(Level.WARNING, "|filterTelUri received bad value ''{0}''", value);
+    logger.atWarning().withStackTrace(MEDIUM).log("|filterTelUri received bad value '%s'", value);
     return UnsafeSanitizedContentOrdainer.ordainAsSafe(
         EscapingConventions.FilterTelUri.INSTANCE.getInnocuousOutput(),
         SanitizedContent.ContentKind.URI);
@@ -796,7 +799,8 @@ public final class Sanitizers {
     if (EscapingConventions.FilterHtmlAttributes.INSTANCE.getValueFilter().matcher(value).find()) {
       return value;
     }
-    logger.log(Level.WARNING, "|filterHtmlAttributes received bad value ''{0}''", value);
+    logger.atWarning().withStackTrace(MEDIUM).log(
+        "|filterHtmlAttributes received bad value '%s'", value);
     return EscapingConventions.FilterHtmlAttributes.INSTANCE.getInnocuousOutput();
   }
 
@@ -852,10 +856,9 @@ public final class Sanitizers {
 
     @Override
     public LoggingAdvisingAppendable enterLoggableElement(LogStatement statement) {
-      logger.log(
-          Level.WARNING,
+      logger.atWarning().withStackTrace(MEDIUM).log(
           "Visual element logging behavior is undefined when used with the |filterHtmlAttributes "
-              + "directive. This logging call has been dropped: {0}",
+              + "directive. This logging call has been dropped: %s",
           statement);
       return this;
     }
@@ -914,7 +917,8 @@ public final class Sanitizers {
     if (EscapingConventions.FilterHtmlElementName.INSTANCE.getValueFilter().matcher(value).find()) {
       return value;
     }
-    logger.log(Level.WARNING, "|filterHtmlElementName received bad value ''{0}''", value);
+    logger.atWarning().withStackTrace(MEDIUM).log(
+        "|filterHtmlElementName received bad value '%s'", value);
     return EscapingConventions.FilterHtmlElementName.INSTANCE.getInnocuousOutput();
   }
 
@@ -928,7 +932,8 @@ public final class Sanitizers {
     if (EscapingConventions.FilterCspNonceValue.INSTANCE.getValueFilter().matcher(value).find()) {
       return value;
     }
-    logger.log(Level.WARNING, "|filterCspNonceValue received bad value ''{0}''", value);
+    logger.atWarning().withStackTrace(MEDIUM).log(
+        "|filterCspNonceValue received bad value '%s'", value);
     return EscapingConventions.FilterCspNonceValue.INSTANCE.getInnocuousOutput();
   }
 

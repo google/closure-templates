@@ -84,6 +84,7 @@
     <autovalue.version>1.7.4</autovalue.version>
     <proto.version>3.3.0</proto.version>
     <truth.version>0.45</truth.version>
+    <flogger.version>0.5.1</flogger.version>
     <soy.examples.path>examples</soy.examples.path>
     <soy.examples>${project.basedir}/examples</soy.examples>
     <soy.examples.out>${project.build.directory}/examples</soy.examples.out>
@@ -356,6 +357,30 @@
       </exclusions>
     </dependency>
 
+    <dependency>
+      <groupId>com.google.flogger</groupId>
+      <artifactId>flogger</artifactId>
+      <version>${flogger.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>com.google.flogger</groupId>
+      <artifactId>google-extensions</artifactId>
+      <version>${flogger.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>com.google.flogger</groupId>
+      <artifactId>flogger-system-backend</artifactId>
+      <version>${flogger.version}</version>
+      <scope>runtime</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>org.checkerframework</groupId>
+          <artifactId>checker-compat-qual</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
   </dependencies>
 
   <profiles>
