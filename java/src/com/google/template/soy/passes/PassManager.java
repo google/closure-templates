@@ -17,7 +17,6 @@
 package com.google.template.soy.passes;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.template.soy.passes.CompilerFilePassToFileSetPassShim.filePassAsFileSetPass;
 import static java.util.stream.Collectors.joining;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -131,8 +130,7 @@ public final class PassManager {
     ImmutableList<SoyFileNode> sourceFiles = ImmutableList.copyOf(soyTree.getChildren());
     IdGenerator idGenerator = soyTree.getNodeIdGenerator();
     for (CompilerFileSetPass pass : partialTemplateRegistryPasses) {
-      CompilerFileSetPass.Result result =
-          pass.run(sourceFiles, idGenerator, partialTemplateRegistryWithJustDeps);
+      CompilerFileSetPass.Result result = pass.run(sourceFiles, idGenerator);
       if (!result.equals(CompilerFileSetPass.Result.CONTINUE)) {
         return result;
       }
@@ -150,7 +148,7 @@ public final class PassManager {
     IdGenerator idGenerator = soyTree.getNodeIdGenerator();
     for (CompilerFileSetPass pass : crossTemplateCheckingPasses) {
       // TODO(user): Update all passes to use supplier and remove templateRegistry from params.
-      CompilerFileSetPass.Result result = pass.run(sourceFiles, idGenerator, templateRegistry);
+      CompilerFileSetPass.Result result = pass.run(sourceFiles, idGenerator);
       if (result == CompilerFileSetPass.Result.STOP) {
         break;
       }
@@ -192,7 +190,7 @@ public final class PassManager {
               + ").\n Passes executed so far: "
               + executed.stream().map(Class::getSimpleName).collect(joining(", ")));
     }
-    executed.add(getPassClass(pass));
+    executed.add(pass.getClass());
   }
 
   /** @see Builder#astRewrites */
@@ -553,7 +551,9 @@ public final class PassManager {
       }
       addPass(new CallAnnotationPass(), crossTemplateCheckingPassesBuilder);
       addPass(new CheckTemplateVisibilityPass(errorReporter), crossTemplateCheckingPassesBuilder);
-      addPass(new CheckDelegatesPass(errorReporter), crossTemplateCheckingPassesBuilder);
+      addPass(
+          new CheckDelegatesPass(errorReporter, fileSetRegistrySupplier::get),
+          crossTemplateCheckingPassesBuilder);
       // If disallowing external calls, perform the check.
       if (options.allowExternalCalls() == TriState.DISABLED) {
         addPass(new StrictDepsPass(errorReporter), crossTemplateCheckingPassesBuilder);
@@ -598,31 +598,9 @@ public final class PassManager {
           fileSetRegistrySupplier);
     }
 
-    /**
-     * Adds the pass as a file set pass; if {@code pass} is a {@link CompilerFilePass} and doesn't
-     * also implement {@link CompilerFileSetPass}, this manually wraps it as a file set pass.
-     *
-     * <p>The structure of the two overloads & {@code addPassInternal} is because we need a way to
-     * do filePassAsFileSetPass without having ambgious method references for addPassInternal (when
-     * a pass implements both the file set & file pass interfaces).
-     */
-    void addPass(CompilerPass pass, ImmutableList.Builder<CompilerFileSetPass> passBuilder) {
-      // casts in this method.
-      if (pass instanceof CompilerFileSetPass) {
-        addPassInternal((CompilerFileSetPass) pass, passBuilder);
-        return;
-      }
-      addPassInternal(filePassAsFileSetPass((CompilerFilePass) pass), passBuilder);
-    }
-
-    void addPass(CompilerFilePass pass, ImmutableList.Builder<CompilerFilePass> passBuilder) {
-      addPassInternal(pass, passBuilder);
-    }
-
-    private <T extends CompilerPass> void addPassInternal(
-        T pass, ImmutableList.Builder<T> builder) {
-
-      Class<?> passClass = getPassClass(pass);
+    /** Adds the pass as a file set pass. */
+    <T extends CompilerPass> void addPass(T pass, ImmutableList.Builder<T> builder) {
+      Class<?> passClass = pass.getClass();
       PassContinuationRule rule = passContinuationRegistry.remove(passClass);
       if (!building) {
         return;
@@ -655,11 +633,5 @@ public final class PassManager {
         new DesugarGroupNodesPass(),
         new BasicHtmlValidationPass(reporter),
         new InsertMsgPlaceholderNodesPass(reporter));
-  }
-
-  private static Class<? extends CompilerPass> getPassClass(CompilerPass pass) {
-    return pass instanceof CompilerFilePassToFileSetPassShim
-        ? ((CompilerFilePassToFileSetPassShim) pass).getDelegateClass()
-        : pass.getClass();
   }
 }

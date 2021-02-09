@@ -24,7 +24,6 @@ import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
-import com.google.template.soy.soytree.TemplateRegistry;
 import java.util.List;
 
 /**
@@ -43,8 +42,7 @@ public final class CombineConsecutiveRawTextNodesPass
    * file set passes).
    */
   @Override
-  public Result run(
-      ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator, TemplateRegistry registry) {
+  public Result run(ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator) {
     for (SoyFileNode file : sourceFiles) {
       run(file, idGenerator);
     }

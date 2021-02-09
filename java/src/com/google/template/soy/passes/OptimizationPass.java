@@ -19,13 +19,11 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.sharedpasses.opti.SimplifyVisitor;
 import com.google.template.soy.soytree.SoyFileNode;
-import com.google.template.soy.soytree.TemplateRegistry;
 
 /** Runs the optimizer on the whole file set. */
 final class OptimizationPass implements CompilerFileSetPass {
   @Override
-  public Result run(
-      ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator, TemplateRegistry registry) {
+  public Result run(ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator) {
     SimplifyVisitor visitor = SimplifyVisitor.create(idGenerator, sourceFiles);
     for (SoyFileNode file : sourceFiles) {
       visitor.simplify(file);

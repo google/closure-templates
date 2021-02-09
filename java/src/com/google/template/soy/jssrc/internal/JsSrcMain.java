@@ -73,7 +73,7 @@ public class JsSrcMain {
 
     // VeLogInstrumentationVisitor add html attributes for {velog} commands and also run desugaring
     // pass since code generator does not understand html nodes (yet).
-    new VeLogInstrumentationVisitor(templateRegistry).exec(soyTree);
+    new VeLogInstrumentationVisitor().exec(soyTree);
     BidiGlobalDir bidiGlobalDir =
         SoyBidiUtils.decodeBidiGlobalDirFromJsOptions(
             jsSrcOptions.getBidiGlobalDir(), jsSrcOptions.getUseGoogIsRtlForBidiGlobalDir());

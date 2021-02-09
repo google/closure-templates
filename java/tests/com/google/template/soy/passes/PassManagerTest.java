@@ -114,7 +114,6 @@ public final class PassManagerTest {
                   manager.parsePasses.stream(),
                   manager.partialTemplateRegistryPasses.stream(),
                   manager.crossTemplateCheckingPasses.stream())
-              .map(this::unwrapPassIfShimClass)
               .filter(pass -> pass.runBefore().isEmpty() && pass.runAfter().isEmpty())
               .map(pass -> pass.getClass())
               .forEach(passesWithoutAnnotations::add);
@@ -202,12 +201,6 @@ public final class PassManagerTest {
         }
       }
     }
-  }
-
-  private CompilerPass unwrapPassIfShimClass(CompilerPass pass) {
-    return pass instanceof CompilerFilePassToFileSetPassShim
-        ? ((CompilerFilePassToFileSetPassShim) pass).getDelegate()
-        : pass;
   }
 
   private static Iterable<Boolean> bools() {

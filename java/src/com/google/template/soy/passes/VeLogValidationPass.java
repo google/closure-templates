@@ -42,7 +42,6 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.VeLogNode;
 import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.SoyType;
@@ -118,8 +117,7 @@ final class VeLogValidationPass implements CompilerFileSetPass {
   }
 
   @Override
-  public Result run(
-      ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator, TemplateRegistry registry) {
+  public Result run(ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator) {
     for (SoyFileNode file : sourceFiles) {
       for (TemplateNode template : file.getTemplates()) {
         run(template);

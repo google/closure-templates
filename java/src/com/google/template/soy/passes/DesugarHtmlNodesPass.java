@@ -54,7 +54,6 @@ import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.types.StringType;
 import java.util.List;
 import java.util.Optional;
@@ -68,8 +67,7 @@ import java.util.Optional;
 public final class DesugarHtmlNodesPass implements CompilerFileSetPass {
 
   @Override
-  public Result run(
-      ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator, TemplateRegistry registry) {
+  public Result run(ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator) {
     for (SoyFileNode fileNode : sourceFiles) {
       run(fileNode, idGenerator);
     }

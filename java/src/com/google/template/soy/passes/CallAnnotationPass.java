@@ -26,7 +26,6 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.TemplateRegistry;
 import java.util.ArrayDeque;
 
 /**
@@ -36,8 +35,7 @@ import java.util.ArrayDeque;
 final class CallAnnotationPass implements CompilerFileSetPass {
 
   @Override
-  public Result run(
-      ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator, TemplateRegistry registry) {
+  public Result run(ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator) {
     for (SoyFileNode file : sourceFiles) {
       for (TemplateNode template : file.getTemplates()) {
         new KeyGenerator(template.getTemplateName()).exec(template);

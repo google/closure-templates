@@ -16,6 +16,7 @@
 
 package com.google.template.soy.passes;
 
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.soytree.SoyFileNode;
 
@@ -29,7 +30,15 @@ import com.google.template.soy.soytree.SoyFileNode;
  * not. Making the ASTs immutable probably isn't worth it, but we could consider adding a
  * 'freeze/unfreeze' API.
  */
-public interface CompilerFilePass extends CompilerPass {
+public interface CompilerFilePass extends CompilerFileSetPass {
 
   void run(SoyFileNode file, IdGenerator nodeIdGen);
+
+  @Override
+  default Result run(ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator) {
+    for (SoyFileNode file : sourceFiles) {
+      run(file, idGenerator);
+    }
+    return Result.CONTINUE;
+  }
 }

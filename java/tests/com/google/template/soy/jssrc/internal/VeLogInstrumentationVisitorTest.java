@@ -30,7 +30,6 @@ import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.testing.Foo;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import org.junit.Test;
@@ -276,9 +275,8 @@ public final class VeLogInstrumentationVisitorTest {
             .addSoySourceFunction(new TestLoggingFunction())
             .errorReporter(ErrorReporter.exploding())
             .parse();
-    TemplateRegistry templateRegistry = result.registry();
     SoyFileSetNode soyTree = result.fileSet();
-    new VeLogInstrumentationVisitor(templateRegistry).exec(soyTree);
+    new VeLogInstrumentationVisitor().exec(soyTree);
     return soyTree;
   }
 

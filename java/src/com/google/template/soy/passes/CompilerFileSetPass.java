@@ -19,7 +19,6 @@ package com.google.template.soy.passes;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.soytree.SoyFileNode;
-import com.google.template.soy.soytree.TemplateRegistry;
 
 /**
  * A pass that runs over all {@link SoyFileKind#SRC source} files.
@@ -50,29 +49,10 @@ public interface CompilerFileSetPass extends CompilerPass {
    * <p>Result.STOP should be used if things are so broken that the compiler might actually crash if
    * we continue.
    */
-  public enum Result {
+  enum Result {
     CONTINUE,
     STOP;
   }
 
-  default Result run(ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator) {
-    throw new UnsupportedOperationException(
-        "run(  ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator) is not"
-            + " implemented.");
-  }
-
-  /**
-   * Runs the pass and returns whether or not compilation should abort.
-   *
-   * @param fileSetRegistry This can either be a complete registry (for crossTemplateCheckingPasses)
-   *     for a registry containing metadata about dependencies (for
-   *     templateReturnTypeInferencePasses). The latter is for modifying template node information
-   *     (such as whether the template is a Soy element) based off of its callees.
-   */
-  default Result run(
-      ImmutableList<SoyFileNode> sourceFiles,
-      IdGenerator idGenerator,
-      TemplateRegistry fileSetRegistry) {
-    return run(sourceFiles, idGenerator);
-  }
+  Result run(ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator);
 }

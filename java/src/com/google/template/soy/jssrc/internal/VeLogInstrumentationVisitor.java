@@ -51,7 +51,6 @@ import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
-import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.VeLogNode;
 
 /**
@@ -59,13 +58,8 @@ import com.google.template.soy.soytree.VeLogNode;
  * tags with logging functions.
  */
 final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
-  private final TemplateRegistry templateRegistry;
   /** The node id generator for the parse tree. Retrieved from the root SoyFileSetNode. */
   private IdGenerator nodeIdGen;
-
-  VeLogInstrumentationVisitor(TemplateRegistry templateRegistry) {
-    this.templateRegistry = templateRegistry;
-  }
 
   @Override
   protected void visitSoyFileSetNode(SoyFileSetNode node) {
@@ -76,7 +70,7 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
       visitSoyFileNode(fileNode);
     }
     // Run the desugaring pass and combine raw text nodes after we instrument velog node.
-    new DesugarHtmlNodesPass().run(sourceFiles, nodeIdGen, templateRegistry);
+    new DesugarHtmlNodesPass().run(sourceFiles, nodeIdGen);
   }
 
   private static FunctionNode getLoggingFunction(CallParamNode paramNode) {

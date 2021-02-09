@@ -39,6 +39,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
@@ -76,19 +77,19 @@ final class CheckDelegatesPass implements CompilerFileSetPass {
               + "compared to the definition at {1}.");
 
   private final ErrorReporter errorReporter;
+  private final Supplier<TemplateRegistry> fileSetTemplateRegistry;
 
-  CheckDelegatesPass(ErrorReporter errorReporter) {
+  CheckDelegatesPass(
+      ErrorReporter errorReporter, Supplier<TemplateRegistry> fileSetTemplateRegistry) {
     this.errorReporter = errorReporter;
+    this.fileSetTemplateRegistry = fileSetTemplateRegistry;
   }
 
   @Override
-  public Result run(
-      ImmutableList<SoyFileNode> sourceFiles,
-      IdGenerator idGenerator,
-      TemplateRegistry fileSetTemplateRegistry) {
+  public Result run(ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator) {
     // Perform checks that only involve templates (uses fileset templateRegistry only, no traversal
     // and no imports context needed).
-    checkTemplates(fileSetTemplateRegistry.getDelTemplateSelector());
+    checkTemplates(fileSetTemplateRegistry.get().getDelTemplateSelector());
 
     for (SoyFileNode fileNode : sourceFiles) {
       for (TemplateNode template : fileNode.getTemplates()) {
