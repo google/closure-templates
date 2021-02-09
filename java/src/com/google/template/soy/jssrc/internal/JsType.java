@@ -161,6 +161,14 @@ public final class JsType {
           .googModuleGet()
           .dotAccess("$$isIdomFunctionType");
 
+  private static final JsType LIT_HTML =
+      builder()
+          // Always require a thunk to simulate CallParamContent nodes.
+          .addType("function():lit_element.TemplateResult")
+          .addRequire(GoogRequire.createWithAlias("litElement", "lit_element"))
+          .setPredicate(TypePredicate.NO_OP)
+          .build();
+
   private static final JsType IDOM_HTML =
       builder()
           .addType("!goog.soy.data.SanitizedHtml")
@@ -213,22 +221,33 @@ public final class JsType {
 
   /** Returns a JS type with looser rules, allowing 1/0 for bools or nullable protos. */
   public static JsType forJsSrc(SoyType soyType) {
-    return forSoyType(soyType, /* isIncrementalDom= */ false, /* isStrict= */ false);
+    return forSoyType(soyType, JsTypeKind.JSSRC, /* isStrict= */ false);
   }
 
   /** Returns a JS type with strict rules. */
   public static JsType forJsSrcStrict(SoyType soyType) {
-    return forSoyType(soyType, /* isIncrementalDom= */ false, /* isStrict= */ true);
+    return forSoyType(soyType, JsTypeKind.JSSRC, /* isStrict= */ true);
   }
 
   /** Returns a JS type for idom with looser rules, allowing 1/0 for bools or nullable protos. */
   public static JsType forIncrementalDom(SoyType soyType) {
-    return forSoyType(soyType, /* isIncrementalDom= */ true, /* isStrict= */ false);
+    return forSoyType(soyType, JsTypeKind.IDOMSRC, /* isStrict= */ false);
   }
 
   /** Returns a JS type for idom with strict rules. */
   public static JsType forIncrementalDomState(SoyType soyType) {
-    return forSoyType(soyType, /* isIncrementalDom= */ true, /* isStrict= */ true);
+    return forSoyType(soyType, JsTypeKind.IDOMSRC, /* isStrict= */ true);
+  }
+
+  /** Returns a JS type for lit-html with strict rules. */
+  public static JsType forLitSrc(SoyType soyType) {
+    return forSoyType(soyType, JsTypeKind.LITSRC, /* isStrict= */ true);
+  }
+
+  private enum JsTypeKind {
+    JSSRC,
+    IDOMSRC,
+    LITSRC
   }
 
   /**
@@ -238,11 +257,11 @@ public final class JsType {
    * accessed many many times.
    *
    * @param soyType the soy type
-   * @param isIncrementalDom whether or not this is for incremental dom.
+   * @param kind JS backend type
    * @param isStrict If true, generates stricter types than default (e.g. boolean values cannot be 0
    *     or 1).
    */
-  private static JsType forSoyType(SoyType soyType, boolean isIncrementalDom, boolean isStrict) {
+  private static JsType forSoyType(SoyType soyType, JsTypeKind kind, boolean isStrict) {
     switch (soyType.getKind()) {
       case NULL:
         return NULL_OR_UNDEFINED_TYPE;
@@ -278,16 +297,19 @@ public final class JsType {
         return STRING_TYPE;
 
       case ATTRIBUTES:
-        if (isIncrementalDom) {
+        if (kind == JsTypeKind.IDOMSRC) {
           // idom has a different strategy for handling these
           return IDOM_ATTRIBUTES;
         }
         // fall through
       case HTML:
       case ELEMENT:
-        if (isIncrementalDom) {
+        if (kind == JsTypeKind.IDOMSRC) {
           // idom has a different strategy for handling these
           return IDOM_HTML;
+        }
+        if (kind == JsTypeKind.LITSRC) {
+          return LIT_HTML;
         }
         // fall-through
       case CSS:
@@ -303,7 +325,7 @@ public final class JsType {
         if (listType.getElementType().getKind() == SoyType.Kind.ANY) {
           return RAW_ARRAY_TYPE;
         }
-        JsType element = forSoyType(listType.getElementType(), isIncrementalDom, isStrict);
+        JsType element = forSoyType(listType.getElementType(), kind, isStrict);
         return builder()
             .addType("!Array<" + element.typeExpr() + ">")
             .addRequires(element.getGoogRequires())
@@ -317,8 +339,8 @@ public final class JsType {
               && mapType.getValueType().getKind() == SoyType.Kind.ANY) {
             return RAW_OBJECT_TYPE;
           }
-          JsType keyTypeName = forSoyType(mapType.getKeyType(), isIncrementalDom, isStrict);
-          JsType valueTypeName = forSoyType(mapType.getValueType(), isIncrementalDom, isStrict);
+          JsType keyTypeName = forSoyType(mapType.getKeyType(), kind, isStrict);
+          JsType valueTypeName = forSoyType(mapType.getValueType(), kind, isStrict);
           return builder()
               .addType(
                   String.format("!Object<%s,%s>", keyTypeName.typeExpr(), valueTypeName.typeExpr()))
@@ -339,10 +361,8 @@ public final class JsType {
           // lookups. Using UnsanitizedText instances as keys in Soy maps would cause unexpected
           // behavior (usually a failed map lookup), so don't generate signatures that allow it.
           JsType keyTypeName =
-              keyKind == SoyType.Kind.STRING
-                  ? STRING_TYPE
-                  : forSoyType(keyType, isIncrementalDom, isStrict);
-          JsType valueTypeName = forSoyType(mapType.getValueType(), isIncrementalDom, isStrict);
+              keyKind == SoyType.Kind.STRING ? STRING_TYPE : forSoyType(keyType, kind, isStrict);
+          JsType valueTypeName = forSoyType(mapType.getValueType(), kind, isStrict);
           return builder()
               .addType(
                   String.format(
@@ -379,7 +399,7 @@ public final class JsType {
           Builder builder = builder();
           Map<String, String> members = new LinkedHashMap<>();
           for (RecordType.Member member : recordType.getMembers()) {
-            JsType forSoyType = forSoyType(member.type(), isIncrementalDom, isStrict);
+            JsType forSoyType = forSoyType(member.type(), kind, isStrict);
             builder.addRequires(forSoyType.getGoogRequires());
             members.put(member.name(), forSoyType.typeExprForRecordMember(/* isOptional= */ false));
           }
@@ -406,7 +426,7 @@ public final class JsType {
             if (member.getKind() == Kind.NULL) {
               continue; // handled above
             }
-            JsType memberType = forSoyType(member, isIncrementalDom, isStrict);
+            JsType memberType = forSoyType(member, kind, isStrict);
             builder.addRequires(memberType.extraRequires);
             builder.addTypes(memberType.typeExpressions);
             builder.addCoercionStrategies(memberType.coercionStrategies);
@@ -445,14 +465,13 @@ public final class JsType {
           Builder builder = builder();
           Map<String, String> parameters = new LinkedHashMap<>();
           for (TemplateType.Parameter parameter : templateType.getParameters()) {
-            JsType forSoyType = forSoyType(parameter.getType(), isIncrementalDom, isStrict);
+            JsType forSoyType = forSoyType(parameter.getType(), kind, isStrict);
             builder.addRequires(forSoyType.getGoogRequires());
             parameters.put(
                 parameter.getName(),
                 forSoyType.typeExprForRecordMember(!parameter.isRequired() /* isOptional */));
           }
-          JsType forReturnType =
-              templateReturnType(templateType.getContentKind(), isIncrementalDom);
+          JsType forReturnType = templateReturnType(templateType.getContentKind(), kind);
           builder.addRequires(forReturnType.getGoogRequires());
           // Trailing comma is important to prevent parsing ambiguity for the unknown type
           String parametersType =
@@ -461,7 +480,7 @@ public final class JsType {
                   : "{" + Joiner.on(", ").withKeyValueSeparator(": ").join(parameters) + ",}";
           String ijType = "?goog.soy.IjData";
           String returnType = forReturnType.typeExpr();
-          if (isIncrementalDom) {
+          if (kind == JsTypeKind.IDOMSRC) {
             builder.addRequire(
                 GoogRequire.createWithAlias(
                     "google3.javascript.template.soy.api_idom", "incrementaldomlib"));
@@ -487,8 +506,18 @@ public final class JsType {
     throw new AssertionError("unhandled soytype: " + soyType);
   }
 
+  public static String toRecord(Map<String, String> record) {
+    StringBuilder sb = new StringBuilder();
+    sb.append("{\n *  ");
+    Joiner.on(",\n *  ").withKeyValueSeparator(": ").appendTo(sb, record);
+    // trailing comma in record is important in case the last record member is the
+    // unknown type
+    sb.append(",\n * }");
+    return sb.toString();
+  }
+
   private static JsType templateReturnType(
-      TemplateContentKind templateReturnType, boolean isIncrementalDom) {
+      TemplateContentKind templateReturnType, JsTypeKind kind) {
     SanitizedContentKind contentKind = templateReturnType.getSanitizedContentKind();
     switch (contentKind) {
       case TEXT:
@@ -502,9 +531,11 @@ public final class JsType {
       case TRUSTED_RESOURCE_URI:
         Builder builder = builder();
         String type = NodeContentKinds.toJsSanitizedContentCtorName(contentKind);
-        if (isIncrementalDom
+        if (kind == JsTypeKind.IDOMSRC
             && (contentKind.isHtml() || contentKind == SanitizedContentKind.ATTRIBUTES)) {
           builder.addType("void");
+        } else if (kind == JsTypeKind.LITSRC && contentKind.isHtml()) {
+          builder.addType("lit_element.TemplateResult");
         } else {
           builder.addType("!" + type);
         }

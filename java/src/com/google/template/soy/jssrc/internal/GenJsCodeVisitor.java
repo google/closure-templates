@@ -44,7 +44,6 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.sanitizedContentO
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
-import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.TreeMultimap;
@@ -1681,13 +1680,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         record.put(indirectParamName, jsType.typeExprForRecordMember(/* isOptional= */ true));
       }
     }
-    StringBuilder sb = new StringBuilder();
-    sb.append("{\n *  ");
-    Joiner.on(",\n *  ").withKeyValueSeparator(": ").appendTo(sb, record);
-    // trailing comma in record is important in case the last record member is the
-    // unknown type
-    sb.append(",\n * }");
-    return sb.toString();
+    return JsType.toRecord(record);
   }
 
   protected final Statement genParamDefault(
