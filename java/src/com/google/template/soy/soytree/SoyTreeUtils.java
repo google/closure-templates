@@ -24,6 +24,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
@@ -45,8 +46,16 @@ import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.Kind;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+import com.google.template.soy.soytree.SoyTreeUtils.VisitDirective;
 import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.UnknownType;
+import com.google.template.soy.types.ast.GenericTypeNode;
+import com.google.template.soy.types.ast.NamedTypeNode;
+import com.google.template.soy.types.ast.RecordTypeNode;
+import com.google.template.soy.types.ast.TemplateTypeNode;
+import com.google.template.soy.types.ast.TypeNode;
+import com.google.template.soy.types.ast.TypeNodeVisitor;
+import com.google.template.soy.types.ast.UnionTypeNode;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -54,6 +63,7 @@ import java.util.List;
 import java.util.Spliterator;
 import java.util.Spliterators.AbstractSpliterator;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -155,37 +165,23 @@ public final class SoyTreeUtils {
    */
   public static Stream<? extends Node> allNodes(
       Node root, NodeVisitor<? super Node, VisitDirective> visitor) {
-    Deque<Node> generations = new ArrayDeque<>();
-    generations.add(root);
-    return StreamSupport.stream(
-        new AbstractSpliterator<Node>(
-            // Our Baseclass says to pass MAX_VALUE for unsized streams
-            Long.MAX_VALUE,
-            // The order is meaningfull and every item returned is unique.
-            Spliterator.ORDERED | Spliterator.DISTINCT) {
-          @Override
-          public boolean tryAdvance(Consumer<? super Node> action) {
-            Node next = generations.poll();
-            if (next == null) {
-              return false;
+    return bfs(
+        root,
+        next -> {
+          if (visitor.exec(next) == VisitDirective.CONTINUE) {
+            if (next instanceof ParentNode<?>) {
+              if (next instanceof ExprHolderNode) {
+                return Iterables.concat(
+                    ((ParentNode<?>) next).getChildren(), ((ExprHolderNode) next).getExprList());
+              }
+              return ((ParentNode<?>) next).getChildren();
             }
-            switch (visitor.exec(next)) {
-              case SKIP_CHILDREN:
-                break;
-              case CONTINUE:
-                if (next instanceof ParentNode<?>) {
-                  generations.addAll(((ParentNode<?>) next).getChildren());
-                }
-                if (next instanceof ExprHolderNode) {
-                  generations.addAll(((ExprHolderNode) next).getExprList());
-                }
-                break;
+            if (next instanceof ExprHolderNode) {
+              return ((ExprHolderNode) next).getExprList();
             }
-            action.accept(next);
-            return true;
           }
-        },
-        /* parallel= */ false);
+          return ImmutableList.of();
+        });
   }
 
   /**
@@ -543,5 +539,64 @@ public final class SoyTreeUtils {
       }
     }
     return null;
+  }
+
+  private static final TypeNodeVisitor<List<? extends TypeNode>> TRAVERSING =
+      new TypeNodeVisitor<List<? extends TypeNode>>() {
+        @Override
+        public ImmutableList<? extends TypeNode> visit(NamedTypeNode node) {
+          return ImmutableList.of();
+        }
+
+        @Override
+        public ImmutableList<? extends TypeNode> visit(GenericTypeNode node) {
+          return node.arguments();
+        }
+
+        @Override
+        public ImmutableList<? extends TypeNode> visit(UnionTypeNode node) {
+          return node.candidates();
+        }
+
+        @Override
+        public ImmutableList<? extends TypeNode> visit(RecordTypeNode node) {
+          return node.properties().stream().map(p -> p.type()).collect(toImmutableList());
+        }
+
+        @Override
+        public ImmutableList<? extends TypeNode> visit(TemplateTypeNode node) {
+          ImmutableList.Builder<TypeNode> types = ImmutableList.builder();
+          types.add(node.returnType());
+          node.parameters().forEach(p -> types.add(p.type()));
+          return types.build();
+        }
+      };
+
+  public static Stream<? extends TypeNode> allTypeNodes(TypeNode root) {
+    return bfs(root, next -> next.accept(TRAVERSING));
+  }
+
+  private static <T> Stream<? extends T> bfs(
+      T root, Function<T, Iterable<? extends T>> successors) {
+    Deque<T> generations = new ArrayDeque<>();
+    generations.add(root);
+    return StreamSupport.stream(
+        new AbstractSpliterator<T>(
+            // Our Baseclass says to pass MAX_VALUE for unsized streams
+            Long.MAX_VALUE,
+            // The order is meaningfull and every item returned is unique.
+            Spliterator.ORDERED | Spliterator.DISTINCT) {
+          @Override
+          public boolean tryAdvance(Consumer<? super T> action) {
+            T next = generations.poll();
+            if (next == null) {
+              return false;
+            }
+            Iterables.addAll(generations, successors.apply(next));
+            action.accept(next);
+            return true;
+          }
+        },
+        /* parallel= */ false);
   }
 }

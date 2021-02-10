@@ -42,6 +42,7 @@ java_library(
         "//java/src/com/google/template/soy/shared/restricted:restricted_internal",
         "//java/src/com/google/template/soy/soytree/defn",
         "//java/src/com/google/template/soy/types",
+        "//java/src/com/google/template/soy/types/ast",
         "//src/main/protobuf:template_metadata_java_proto",
         "@com_google_auto_value_auto_value",
         "@maven//:com_google_code_findbugs_jsr305",
