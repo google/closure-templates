@@ -16,11 +16,11 @@ Syntax for rendering to string ("block form"):
 ```
 
 `let` defines a name for an intermediate value. The name is defined only within
-the immediate code block containing the `let` command, and the value of the name
-is not modifiable.
+the immediate code block containing the `let` command, and the value is not
+modifiable.
 
-`kind` is an optional attribute, and the default is "html". See the security
-guide for other [content kinds](../dev/security.md#content_kinds).
+The `kind` attribute specifies the
+[content kind](../dev/security.md#content_kinds).
 
 You might use `let` because you need to reuse the intermediate value multiple
 times, or you need to print a rendered value using a directive, or you feel it
