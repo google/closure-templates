@@ -73,12 +73,16 @@ public final class ContextualAutoescaperTest {
             "{namespace ns}\n\n",
             "{template .foo}\n",
             "<a href={call .uri /} title={call .title /}></a>\n",
-            "{/template}"),
+            "{/template}",
+            "\n\n{template uri kind='trusted_resource_uri'}\n/\n{/template}",
+            "\n\n{template title kind='text'}\ntitle\n{/template}"),
         join(
             "{namespace ns}\n\n",
             "{template .foo}\n",
             "<a href={call .uri /} title={call .title /}></a>\n",
-            "{/template}"));
+            "{/template}",
+            "\n\n{template uri kind='trusted_resource_uri'}\n/\n{/template}",
+            "\n\n{template title kind='text'}\ntitle\n{/template}"));
   }
 
   @Test
@@ -1076,29 +1080,6 @@ public final class ContextualAutoescaperTest {
   }
 
   @Test
-  public void testExternTemplates() throws Exception {
-    assertContextualRewriting(
-        join(
-            "{namespace ns}\n\n",
-            "{template .foo}\n",
-            "  {@param y: ?}\n",
-            "<script>",
-            "var x = {call .bar /},", // Not defined in this compilation unit.
-            "y = {$y |escapeJsValue};",
-            "</script>\n",
-            "{/template}"),
-        join(
-            "{namespace ns}\n\n",
-            "{template .foo}\n",
-            "  {@param y: ?}\n",
-            "<script>",
-            "var x = {call .bar /},", // Not defined in this compilation unit.
-            "y = {$y};",
-            "</script>\n",
-            "{/template}"));
-  }
-
-  @Test
   public void testUnquotedAttributes() throws Exception {
     assertContextualRewriting(
         join(
@@ -1703,7 +1684,8 @@ public final class ContextualAutoescaperTest {
             "<script>",
             "{call .bar /}/{$x |escapeJsValue}+/{$x |escapeJsRegex}/g",
             "</script>",
-            "\n{/template}"),
+            "\n{/template}",
+            "\n\n{template bar kind='text'}\n\n{/template}"),
         join(
             "{namespace ns}\n\n",
             "{template .foo}\n",
@@ -1711,7 +1693,8 @@ public final class ContextualAutoescaperTest {
             "<script>",
             "{call .bar /}/{$x}+/{$x}/g",
             "</script>",
-            "\n{/template}"));
+            "\n{/template}",
+            "\n\n{template bar kind='text'}\n\n{/template}"));
   }
 
   @Test
@@ -1721,7 +1704,6 @@ public final class ContextualAutoescaperTest {
             + "{template .main}\n"
             + "{call .htmltemplate /}"
             + "<script>var x={call .jstemplate /};</script>\n"
-            + "{call .externtemplate /}"
             + "\n{/template}\n\n"
             + "{template .htmltemplate}\n"
             + "Hello World"
@@ -1733,14 +1715,11 @@ public final class ContextualAutoescaperTest {
     TemplateNode mainTemplate = (TemplateNode) rewrite(source).getChild(0);
     assertWithMessage("Sanity check").that(mainTemplate.getTemplateName()).isEqualTo("ns.main");
     final List<CallNode> callNodes = SoyTreeUtils.getAllNodesOfType(mainTemplate, CallNode.class);
-    assertThat(callNodes).hasSize(3);
+    assertThat(callNodes).hasSize(2);
     assertWithMessage("HTML->HTML escaping should be pruned")
         .that(callNodes.get(0).getEscapingDirectives())
         .isEmpty();
     assertWithMessage("JS -> JS pruned").that(callNodes.get(1).getEscapingDirectives()).isEmpty();
-    assertWithMessage("HTML -> extern call should be escaped")
-        .that(getDirectiveNames(callNodes.get(2).getEscapingDirectives()))
-        .containsExactly("|escapeHtml");
   }
 
   @Test

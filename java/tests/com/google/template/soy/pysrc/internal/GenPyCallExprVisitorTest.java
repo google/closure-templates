@@ -54,19 +54,6 @@ public final class GenPyCallExprVisitorTest {
   }
 
   @Test
-  public void testBasicCall_external() {
-    String soyCode = "{call external.library.boo data=\"all\" /}";
-    String expectedPyCode = "library.boo(data, ijData)";
-
-    assertThatSoyFile(String.format(SOY_BASE, soyCode)).compilesToSourceContaining(expectedPyCode);
-
-    soyCode = "{@param bar : ?}\n" + "{call external.library.boo data=\"$bar\" /}";
-    expectedPyCode = "library.boo(data.get('bar'), ijData)";
-
-    assertThatSoyFile(String.format(SOY_BASE, soyCode)).compilesToSourceContaining(expectedPyCode);
-  }
-
-  @Test
   public void testBasicCall_params() {
     String soyCode =
         "{@param moo : ?}\n" + "{call .goo}\n" + "  {param goo: $moo /}\n" + "{/call}\n";

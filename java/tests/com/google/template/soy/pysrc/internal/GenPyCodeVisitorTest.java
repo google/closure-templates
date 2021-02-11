@@ -19,7 +19,6 @@ package com.google.template.soy.pysrc.internal;
 import static com.google.template.soy.pysrc.internal.SoyCodeForPySubject.assertThatSoyCode;
 import static com.google.template.soy.pysrc.internal.SoyCodeForPySubject.assertThatSoyFile;
 
-import com.google.common.collect.ImmutableMap;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -76,69 +75,6 @@ public final class GenPyCodeVisitorTest {
     assertThatSoyFile(DUMMY_SOY_FILE).compilesToSourceContaining(EXPECTED_PYFILE_START);
 
     // TODO(dcphillips): Add external template dependency import test once templates are supported.
-  }
-
-  @Test
-  public void testNamespacedImport() {
-    String soyFile =
-        SOY_NAMESPACE
-            + "{template .helloWorld}\n"
-            + "  {call foo.bar.baz.quz /}\n"
-            + "{/template}\n";
-    String expectedImport = "namespaced_import('baz', namespace='foo.bar')";
-
-    assertThatSoyFile(soyFile).compilesToSourceContaining(expectedImport);
-  }
-
-  @Test
-  public void testAbsoluteImport() {
-    String soyFile =
-        SOY_NAMESPACE
-            + "{template .helloWorld}\n"
-            + "  {call foo.bar.baz.quz /}\n"
-            + "{/template}\n";
-    String expectedImport = "import google.foo.bar.baz as baz";
-
-    ImmutableMap.Builder<String, String> namespaceManifest = new ImmutableMap.Builder<>();
-    namespaceManifest.put("foo.bar.baz", "google.foo.bar.baz");
-
-    assertThatSoyFile(soyFile)
-        .withNamespaceManifest(namespaceManifest.build())
-        .compilesToSourceContaining(expectedImport);
-  }
-
-  @Test
-  public void testNamespaceManifest() {
-    String soyFile =
-        SOY_NAMESPACE
-            + "{template .helloWorld}\n"
-            + "  {call foo.bar.baz.quz /}\n"
-            + "{/template}\n";
-    String expectedManifest =
-        "NAMESPACE_MANIFEST = {\n" + "    'foo.bar.baz': 'google.foo.bar.baz',\n" + "}\n";
-
-    ImmutableMap.Builder<String, String> namespaceManifest = new ImmutableMap.Builder<>();
-    namespaceManifest.put("foo.bar.baz", "google.foo.bar.baz");
-
-    assertThatSoyFile(soyFile)
-        .withNamespaceManifest(namespaceManifest.build())
-        .compilesToSourceContaining(expectedManifest);
-  }
-
-  @Test
-  public void testEnvironmentConfiguration() {
-    String soyFile =
-        SOY_NAMESPACE
-            + "{template .helloWorld}\n"
-            + "  {call foo.bar.baz.quz /}\n"
-            + "{/template}\n";
-    String expectedEnviromentConfirmation =
-        "namespaced_import('baz', namespace='foo.bar', "
-            + "environment_path='runtime.custom_environment')";
-
-    assertThatSoyFile(soyFile)
-        .withEnvironmentModule("runtime.custom_environment")
-        .compilesToSourceContaining(expectedEnviromentConfirmation);
   }
 
   @Test
@@ -448,15 +384,6 @@ public final class GenPyCodeVisitorTest {
     String soyCode = "{debugger}";
 
     String expectedPyCode = "pdb.set_trace()\n";
-
-    assertThatSoyCode(soyCode).compilesTo(expectedPyCode);
-  }
-
-  @Test
-  public void testCallReturnsString() {
-    String soyCode = "{call .foo data=\"all\" /}";
-
-    String expectedPyCode = "output.append(str(ns.foo(data, ijData)))\n";
 
     assertThatSoyCode(soyCode).compilesTo(expectedPyCode);
   }

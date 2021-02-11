@@ -22,7 +22,6 @@ import static com.google.common.truth.Truth.assertWithMessage;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 import com.google.protobuf.Descriptors.GenericDescriptor;
 import com.google.template.soy.base.internal.UniqueNameGenerator;
 import com.google.template.soy.error.ErrorReporter;
@@ -51,35 +50,35 @@ public final class GenCallCodeUtilsTest {
 
   @Test
   public void testGenCallExprForBasicCalls() {
-    assertThat(getCallExprTextHelper("{call some.func data=\"all\" /}"))
-        .isEqualTo("some.func(/** @type {?} */ (opt_data), $ijData);");
+    assertThat(getCallExprTextHelper("{call someFunc data=\"all\" /}"))
+        .isEqualTo("ns.someFunc(/** @type {?} */ (opt_data), $ijData);");
 
-    assertThat(getCallExprTextHelper("{@param boo : ?}", "{call some.func data=\"$boo.foo\" /}"))
-        .isEqualTo("some.func(/** @type {?} */ (boo.foo), $ijData);");
+    assertThat(getCallExprTextHelper("{@param boo : ?}", "{call someFunc data=\"$boo.foo\" /}"))
+        .isEqualTo("ns.someFunc(/** @type {?} */ (boo.foo), $ijData);");
 
     assertThat(
             getCallExprTextHelper(
-                "{@param moo : ?}", "{call some.func}", "  {param goo: $moo /}", "{/call}"))
-        .isEqualTo("some.func(/** @type {?} */ ({goo: opt_data.moo}), $ijData);");
+                "{@param moo : ?}", "{call someFunc}", "  {param goo: $moo /}", "{/call}"))
+        .isEqualTo("ns.someFunc(/** @type {?} */ ({goo: opt_data.moo}), $ijData);");
 
     assertThat(
             getCallExprTextHelper(
                 "{@param boo : ?}",
-                "{call some.func data=\"$boo\"}",
+                "{call someFunc data=\"$boo\"}",
                 "  {param goo kind=\"text\"}Blah{/param}",
                 "{/call}"))
-        .isEqualTo("some.func(soy.$$assignDefaults({goo: 'Blah'}, boo), $ijData);");
+        .isEqualTo("ns.someFunc(soy.$$assignDefaults({goo: 'Blah'}, boo), $ijData);");
 
     String callExprText =
         getCallExprTextHelper(
-            "{call some.func}\n"
+            "{call someFunc}\n"
                 + "  {param goo kind=\"text\"}\n"
                 + "    {for $i in range(3)}{$i}{/for}\n"
                 + "  {/param}\n"
                 + "{/call}\n");
     assertThat(callExprText)
         .matches(
-            Pattern.quote("some.func(/** @type {?} */ ({goo: param")
+            Pattern.quote("ns.someFunc(/** @type {?} */ ({goo: param")
                 + "[0-9]+"
                 + Pattern.quote("}), $ijData);"));
   }
@@ -89,17 +88,17 @@ public final class GenCallCodeUtilsTest {
     assertThat(
             getCallExprTextHelper(
                 "{@param boo : ?}",
-                "{call some.func data=\"$boo\"}",
+                "{call someFunc data=\"$boo\"}",
                 "  {param goo kind=\"html\"}Blah{/param}",
                 "{/call}"))
         .isEqualTo(
-            "some.func(soy.$$assignDefaults("
+            "ns.someFunc(soy.$$assignDefaults("
                 + "{goo: soy.VERY_UNSAFE.$$ordainSanitizedHtmlForInternalBlocks('Blah')}, "
                 + "boo), $ijData);");
 
     final String callExprText =
         getCallExprTextHelper(
-            "{call some.func}\n"
+            "{call someFunc}\n"
                 + "  {param goo kind=\"html\"}\n"
                 + "    {for $i in range(3)}{$i}{/for}\n"
                 + "  {/param}\n"
@@ -109,7 +108,7 @@ public final class GenCallCodeUtilsTest {
         .that(callExprText)
         .matches(
             Pattern.quote(
-                    "some.func(/** @type {?} */ ({goo:"
+                    "ns.someFunc(/** @type {?} */ ({goo:"
                         + " soy.VERY_UNSAFE.$$ordainSanitizedHtmlForInternalBlocks(param")
                 + "[0-9]+"
                 + Pattern.quote(")}), $ijData);"));
@@ -195,16 +194,16 @@ public final class GenCallCodeUtilsTest {
             getCallExprTextHelper(
                 "{@param boo:= 'default'}",
                 "{@param goo:= 12}",
-                "{call some.func data='all'}",
+                "{call someFunc data='all'}",
                 "  {param goo: 59 /}",
                 "{/call}"))
-        .isEqualTo("some.func(soy.$$assignDefaults({boo: boo, goo: 59}, opt_data), $ijData);");
+        .isEqualTo("ns.someFunc(soy.$$assignDefaults({boo: boo, goo: 59}, opt_data), $ijData);");
   }
 
   @Test
   public void testGenCallExprForStrictCall() {
-    assertThat(getCallExprTextHelper("{call some.func /}\n", ImmutableSet.of("|escapeHtml")))
-        .isEqualTo("soy.$$escapeHtml(some.func(null, $ijData));");
+    assertThat(getCallExprTextHelper("{call someFunc /}\n", ImmutableSet.of("|escapeHtml")))
+        .isEqualTo("soy.$$escapeHtml(ns.someFunc(null, $ijData));");
   }
 
   private static String getCallExprTextHelper(String... callSourceLines) {
@@ -219,14 +218,14 @@ public final class GenCallCodeUtilsTest {
 
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forTemplateAndImports(
-                SharedTestUtils.buildTestTemplateContent(false, callSource), desc)
+                SharedTestUtils.buildTestTemplateContent(false, callSource)
+                    + "\n{template someFunc}{@param? goo: ?}{/template}",
+                desc)
             .parse()
             .fileSet();
 
     CallNode callNode =
-        (CallNode)
-            Iterables.getOnlyElement(SoyTreeUtils.getAllNodesOfType(soyTree, TemplateNode.class))
-                .getChild(0);
+        (CallNode) SoyTreeUtils.getAllNodesOfType(soyTree, TemplateNode.class).get(0).getChild(0);
     // Manually setting the escaping directives.
     callNode.setEscapingDirectives(
         InternalPlugins.internalDirectives(new NoOpScopedData()).stream()

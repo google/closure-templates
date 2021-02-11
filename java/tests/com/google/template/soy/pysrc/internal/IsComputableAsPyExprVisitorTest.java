@@ -57,28 +57,6 @@ public class IsComputableAsPyExprVisitorTest {
         "{@param goo:?}\n{@param moose:?}\n{if $goo}{for $moo in $moose}{$moo}{/for}{/if}", false);
   }
 
-  @Test
-  public void testCallNode() {
-    runTestHelper("{call .foo data=\"all\" /}", true);
-    runTestHelper(
-        "{@param boo:?}\n{@param moo:?}\n{call .foo data=\"$boo\"}{param goo : $moo /}{/call}",
-        true);
-    runTestHelper(
-        "{@param boo:?}\n{call .foo data=\"$boo\"}{param goo kind=\"text\"}Blah{/param}{/call}",
-        true);
-    runTestHelper(
-        "{@param boo:?}\n"
-            + "{@param moose:?}\n"
-            + "{call .foo data=\"$boo\"}"
-            + "  {param goo kind=\"text\"}"
-            + "    {for $moo in $moose}"
-            + "      {$moo}"
-            + "    {/for}"
-            + "  {/param}"
-            + "{/call}",
-        false);
-  }
-
   private static void runTestHelper(String soyNodeCode, boolean expectedResult) {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forTemplateContents(soyNodeCode).parse().fileSet();

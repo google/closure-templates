@@ -187,45 +187,10 @@ public final class GenJsExprsVisitorTest {
   }
 
   @Test
-  public void testCall() {
-    assertGeneratedChunks(
-        "{call some.func data=\"all\" /}", "some.func(/** @type {?} */ (opt_data), $ijData);");
-
-    String soyNodeCode = JOINER.join("{@param boo : ?}", "{call some.func data=\"$boo.foo\" /}");
-    assertGeneratedChunks(soyNodeCode, "some.func(/** @type {?} */ (opt_data.boo.foo), $ijData);");
-
-    soyNodeCode =
-        JOINER.join("{@param moo : ?}", "{call some.func}", "  {param goo: $moo /}", "{/call}");
-    assertGeneratedChunks(
-        soyNodeCode, "some.func(/** @type {?} */ ({goo: opt_data.moo}), $ijData);");
-
-    soyNodeCode =
-        JOINER.join(
-            "{@param boo : ?}",
-            "{call some.func data=\"$boo\"}",
-            "  {param goo kind=\"text\"}Blah{/param}",
-            "{/call}");
-    assertGeneratedChunks(
-        soyNodeCode, "some.func(soy.$$assignDefaults({goo: 'Blah'}, opt_data.boo), $ijData);");
-  }
-
-  @Test
   public void testBlocks() {
-
     String soyNodeCode =
         JOINER.join("{@param boo : ?}", "{if $boo}", "  Blah {$boo} bleh.", "{/if}");
     String expectedJsExprText = "opt_data.boo ? 'Blah ' + opt_data.boo + ' bleh.' : '';";
-    assertGeneratedChunks(soyNodeCode, expectedJsExprText);
-
-    soyNodeCode =
-        JOINER.join(
-            "{@param goo : ?}",
-            "{call some.func}",
-            "  {param goo kind=\"text\"}{lb}{isNonnull($goo)}{rb} is {$goo.moo}{/param}",
-            "{/call}");
-    expectedJsExprText =
-        "some.func(/** @type {?} */ ({goo: "
-            + "'{' + (gooData8 != null) + '} is ' + gooData8.moo}), $ijData);";
     assertGeneratedChunks(soyNodeCode, expectedJsExprText);
   }
 
