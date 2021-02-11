@@ -314,7 +314,7 @@ function callDynamicJs<TParams>(
     incrementaldom: IncrementalDomRenderer, expr: Template<TParams>,
     data: TParams, ij: IjData) {
   const val = callDynamicText<TParams>(expr, data, ij, soy.$$escapeJsValue);
-  incrementaldom.text(String(val));
+  return String(val);
 }
 
 /**

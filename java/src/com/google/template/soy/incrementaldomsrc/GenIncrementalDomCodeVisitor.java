@@ -106,6 +106,7 @@ import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.HtmlAttributeValueNode;
 import com.google.template.soy.soytree.HtmlCloseTagNode;
 import com.google.template.soy.soytree.HtmlCommentNode;
+import com.google.template.soy.soytree.HtmlContext;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.KeyNode;
@@ -939,7 +940,11 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     // TODO: In reality, the CALL_X functions are really just IDOM versions of the related
     // escaping directives. Consider doing a replace instead of not using escaping directives
     // at all.
-    getJsCodeBuilder().append(call);
+    if (node.getHtmlContext() == HtmlContext.JS) {
+      getJsCodeBuilder().addChunkToOutputVar(call);
+    } else {
+      getJsCodeBuilder().append(call);
+    }
     if (shouldPushKey) {
       if (node.getKeyExpr() != null) {
         getJsCodeBuilder().append(INCREMENTAL_DOM_POP_MANUAL_KEY.call());
@@ -1307,7 +1312,16 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       }
     }
     jsCodeBuilder.append(getAttributeAndCloseCalls(node));
+    String tagName = node.getTagName().getTagString();
+    if (tagName != null && Ascii.toLowerCase(tagName).equals("script")) {
+      scriptOutputVar = "script_" + staticsCounter++;
+      jsCodeBuilder.pushOutputVar(scriptOutputVar).setOutputVarInited();
+      jsCodeBuilder.appendLine("let ", scriptOutputVar, " = '';");
+      jsCodeBuilder.setContentKind(SanitizedContentKind.JS);
+    }
   }
+
+  private String scriptOutputVar;
 
   private Statement getAttributeAndCloseCalls(HtmlOpenTagNode node) {
     List<Statement> statements = new ArrayList<>();
@@ -1346,6 +1360,18 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     // mapped to this close tag contains a key node, pop the keyCounterStack to return
     // to the state before entering the keyed node.
     getJsCodeBuilder().appendLine("// " + node.getSourceLocation());
+    String tagName = node.getTagName().getTagString();
+    if (tagName != null && Ascii.toLowerCase(tagName).equals("script")) {
+      getJsCodeBuilder().popOutputVar();
+      Expression ordainer = id("soy").dotAccess("VERY_UNSAFE").dotAccess("ordainSanitizedJs");
+      Expression safeScript = ordainer.call(id(scriptOutputVar)).dotAccess("toSafeScript").call();
+      GoogRequire require = GoogRequire.createWithAlias("goog.html.SafeScript", "SafeScript");
+      Expression unwrapped = require.dotAccess("unwrapTrustedScript").call(safeScript);
+      Expression currentElement = INCREMENTAL_DOM.dotAccess("currentElement").call();
+      getJsCodeBuilder().append(currentElement.dotAccess("textContent").assign(unwrapped));
+      getJsCodeBuilder().append(INCREMENTAL_DOM.dotAccess("skipNode").call());
+      getJsCodeBuilder().setContentKind(SanitizedContentKind.HTML);
+    }
     if (node.getTaggedPairs().size() == 1) {
       HtmlOpenTagNode openTag = (HtmlOpenTagNode) node.getTaggedPairs().get(0);
       if (openTag.getKeyNode() != null && !(openTag.getParent() instanceof SkipNode)) {
@@ -1385,7 +1411,6 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     Expression textArg = stringLiteral(node.getRawText());
     JsCodeBuilder jsCodeBuilder = getJsCodeBuilder();
     switch (node.getHtmlContext()) {
-      case JS:
       case CSS:
       case HTML_RCDATA:
       case HTML_PCDATA:
@@ -1422,7 +1447,8 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
                     INCREMENTAL_DOM, CodeChunkUtils.concatChunks(chunks)));
         break;
       case JS:
-        // fall through
+        getJsCodeBuilder().addChunkToOutputVar(CodeChunkUtils.concatChunks(chunks));
+        break;
       case CSS:
         // fall through
       case HTML_PCDATA:
