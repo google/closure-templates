@@ -69,6 +69,8 @@ import org.junit.Test;
  */
 public final class SharedTestUtils {
 
+  public static final String NS = "{namespace brittle.test.ns}\n";
+
   private SharedTestUtils() {}
 
   /**
@@ -91,7 +93,7 @@ public final class SharedTestUtils {
    * @return The test Soy file's content.
    */
   public static String buildTestSoyFileContent(boolean strictHtml, String soyCode) {
-    return "{namespace brittle.test.ns}\n" + buildTestTemplateContent(strictHtml, soyCode);
+    return NS + buildTestTemplateContent(strictHtml, soyCode);
   }
 
   public static String buildTestTemplateContent(boolean strictHtml, String soyCode) {

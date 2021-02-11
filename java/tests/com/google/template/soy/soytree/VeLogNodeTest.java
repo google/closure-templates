@@ -89,7 +89,7 @@ public final class VeLogNodeTest {
     return Iterables.getOnlyElement(
         SoyTreeUtils.getAllNodesOfType(
             SoyFileSetParserBuilder.forFileAndImports(
-                    "{namespace brittle.test.ns}",
+                    SharedTestUtils.NS,
                     SharedTestUtils.buildTestTemplateContent(true, veLog),
                     Foo.getDescriptor())
                 .setLoggingConfig(

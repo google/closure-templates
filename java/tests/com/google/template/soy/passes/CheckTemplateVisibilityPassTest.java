@@ -61,9 +61,10 @@ public final class CheckTemplateVisibilityPassTest {
                 + "oops!\n"
                 + "{/template}",
             "{namespace ns}\n"
+                + "import {foo} from 'no-path';"
                 + "/** Public template. */\n"
                 + "{template .bar}\n"
-                + "{call .foo /}\n"
+                + "{call foo /}\n"
                 + "{/template}")
         .errorReporter(errorReporter)
         .parse();
@@ -104,9 +105,10 @@ public final class CheckTemplateVisibilityPassTest {
                 + "oops!\n"
                 + "{/template}",
             "{namespace ns2}\n"
+                + "import {foo} from 'no-path';"
                 + "/** Public template. */\n"
                 + "{template .bar}\n"
-                + "{call ns.foo /}\n"
+                + "{call foo /}\n"
                 + "{/template}")
         .errorReporter(errorReporter)
         .parse();
@@ -125,9 +127,10 @@ public final class CheckTemplateVisibilityPassTest {
                 + "oops!\n"
                 + "{/template}",
             "{namespace ns2}\n"
+                + "import {foo} from 'no-path';"
                 + "/** Public template. */\n"
                 + "{template .bar}\n"
-                + "{let $foo: template(ns.foo) /}\n"
+                + "{let $foo: template(foo) /}\n"
                 + "{call $foo /}\n"
                 + "{/template}")
         .errorReporter(errorReporter)
@@ -152,9 +155,10 @@ public final class CheckTemplateVisibilityPassTest {
                 SourceFilePath.create("foo/bar.soy")),
             SoyFileSupplier.Factory.create(
                 "{namespace ns2}\n"
+                    + "import {foo} from 'foo/bar.soy';"
                     + "/** Public template. */\n"
                     + "{template .bar}\n"
-                    + "{call ns.foo /}\n"
+                    + "{call foo /}\n"
                     + "{/template}",
                 SourceFilePath.create("baz/bar.soy")))
         .errorReporter(errorReporter)
@@ -177,9 +181,10 @@ public final class CheckTemplateVisibilityPassTest {
                 SourceFilePath.create("foo/bar.soy")),
             SoyFileSupplier.Factory.create(
                 "{namespace ns2}\n"
+                    + "import {foo} from 'foo/bar.soy';"
                     + "/** Public template. */\n"
                     + "{template .bar}\n"
-                    + "{let $foo: template(ns.foo) /}\n"
+                    + "{let $foo: template(foo) /}\n"
                     + "{call $foo /}\n"
                     + "{/template}",
                 SourceFilePath.create("baz/bar.soy")))

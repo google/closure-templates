@@ -118,9 +118,13 @@ public class CanInitOutputVarVisitorTest {
   /** @param indicesToNode Series of indices for walking down to the node we want to test. */
   private static void runTestHelper(
       String soyCode, boolean isSameValueAsIsComputableAsJsExprsVisitor, int... indicesToNode) {
+    String fileContents = SharedTestUtils.buildTestSoyFileContent(soyCode);
+    if (soyCode.contains("{call .foo")) {
+      fileContents += "{template foo}{@param? goo: ?}{/template}";
+    }
     ErrorReporter boom = ErrorReporter.exploding();
     SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forTemplateContents(soyCode).errorReporter(boom).parse().fileSet();
+        SoyFileSetParserBuilder.forFileContents(fileContents).errorReporter(boom).parse().fileSet();
     SoyNode node = SharedTestUtils.getNode(soyTree, indicesToNode);
 
     IsComputableAsJsExprsVisitor icajev = new IsComputableAsJsExprsVisitor();

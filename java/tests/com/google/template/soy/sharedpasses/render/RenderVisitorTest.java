@@ -1086,11 +1086,11 @@ public class RenderVisitorTest {
     String soyFileContent3 =
         "{delpackage AlternateSecretFeature}\n"
             + "{namespace ns3}\n"
-            + "\n"
+            + "import {helper} from 'no-path-4';\n"
             + "{deltemplate myApp.myDelegate}\n"
             + "  {@param boo: ?}\n"
             + // implementation in AlternateSecretFeature
-            "  222 {call .helper data=\"all\" /}\n"
+            "  222 {call helper data=\"all\" /}\n"
             + "{/deltemplate}\n";
 
     String soyFileContent4 =

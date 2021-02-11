@@ -18,19 +18,19 @@ package com.google.template.soy.soytree;
 
 import static com.google.common.base.Strings.lenientFormat;
 import static com.google.common.truth.Fact.simpleFact;
+import static com.google.common.truth.Truth.assertAbout;
+import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.truth.FailureMetadata;
 import com.google.common.truth.Subject;
-import com.google.common.truth.Truth;
-import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyError;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.testing.SharedTestUtils;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import javax.annotation.Nullable;
 
@@ -42,16 +42,30 @@ import javax.annotation.Nullable;
 public final class TemplateSubject extends Subject {
 
   private final String actual;
+  private final boolean isTemplateContent;
   private SourceLocation actualSourceLocation;
   private SoyFileNode fileNode;
 
-  TemplateSubject(FailureMetadata failureMetadata, String s) {
+  static TemplateSubject newForTemplate(FailureMetadata failureMetadata, String s) {
+    return new TemplateSubject(failureMetadata, s, true);
+  }
+
+  static TemplateSubject newForFile(FailureMetadata failureMetadata, String s) {
+    return new TemplateSubject(failureMetadata, s, false);
+  }
+
+  private TemplateSubject(FailureMetadata failureMetadata, String s, boolean isTemplateContent) {
     super(failureMetadata, s);
     this.actual = s;
+    this.isTemplateContent = isTemplateContent;
   }
 
   public static TemplateSubject assertThatTemplateContent(String input) {
-    return Truth.assertAbout(TemplateSubject::new).that(input);
+    return assertAbout(TemplateSubject::newForTemplate).that(input);
+  }
+
+  public static TemplateSubject assertThatFileContent(String input) {
+    return assertAbout(TemplateSubject::newForFile).that(input);
   }
 
   public TemplateSubject causesError(SoyErrorKind error) {
@@ -83,7 +97,7 @@ public final class TemplateSubject extends Subject {
   }
 
   public void at(int expectedLine, int expectedColumn) {
-    expectedLine += 2; // Compensate for the extra lines of template wrapper
+    expectedLine += 3; // Compensate for the extra lines of template wrapper
     if (expectedLine != actualSourceLocation.getBeginLine()
         || expectedColumn != actualSourceLocation.getBeginColumn()) {
       failWithoutActual(
@@ -98,10 +112,13 @@ public final class TemplateSubject extends Subject {
   }
 
   public TemplateNode getTemplateNode() {
+    return getTemplateNode(0);
+  }
+
+  public TemplateNode getTemplateNode(int index) {
     isWellFormed();
     Preconditions.checkNotNull(fileNode);
-    Preconditions.checkArgument(fileNode.numChildren() == 1);
-    return (TemplateNode) fileNode.getChild(0);
+    return fileNode.getTemplates().get(index);
   }
 
   public void isWellFormed() {
@@ -111,18 +128,17 @@ public final class TemplateSubject extends Subject {
 
   public void isNotWellFormed() {
     ErrorReporter errorReporter = doParse();
-    Truth.assertThat(errorReporter.hasErrors()).isTrue();
+    assertThat(errorReporter.hasErrors()).isTrue();
   }
 
   private ErrorReporter doParse() {
-    SoyFileSupplier sourceFile =
-        SoyFileSupplier.Factory.create(
-            "{namespace test}\n" + "{template .foo}\n" + actual + "\n" + "{/template}",
-            SourceFilePath.create("example.soy"));
-    ErrorReporter errorReporter =
-        ErrorReporter.create(ImmutableMap.of(sourceFile.getFilePath(), sourceFile));
+    String content =
+        isTemplateContent
+            ? SharedTestUtils.buildTestSoyFileContent(actual)
+            : (actual.contains("{namespace ") ? actual : SharedTestUtils.NS + actual);
+    ErrorReporter errorReporter = ErrorReporter.create(ImmutableMap.of());
     SoyFileSetNode fileSet =
-        SoyFileSetParserBuilder.forSuppliers(sourceFile)
+        SoyFileSetParserBuilder.forFileContents(content)
             .errorReporter(errorReporter)
             .parse()
             .fileSet();

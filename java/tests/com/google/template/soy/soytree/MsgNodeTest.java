@@ -17,6 +17,7 @@
 package com.google.template.soy.soytree;
 
 import static com.google.template.soy.soytree.SoyTreeUtils.getAllNodesOfType;
+import static com.google.template.soy.soytree.TemplateSubject.assertThatFileContent;
 import static com.google.template.soy.soytree.TemplateSubject.assertThatTemplateContent;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -79,7 +80,8 @@ public class MsgNodeTest {
     // 3. However, since GOO_2 is already used for {$goo2}, we use GOO_1 and GOO_3 instead.
 
     String template =
-        "{@param url1 : ?}"
+        "{template .brittleTestTemplate}"
+            + "{@param url1 : ?}"
             + "{@param boo : ?}"
             + "{@param foo : ?}"
             + "{@param url2 : ?}"
@@ -102,8 +104,11 @@ public class MsgNodeTest {
             + "  {$foo.zoo phname=\"ZOO_4\"}\n"
             + "  {call .helper phname=\"ZOO_5\" /}\n"
             + "  {call .helper phname=\"ZOO_6\" /}\n"
-            + "{/msg}";
-    TemplateNode templateNode = assertThatTemplateContent(template).getTemplateNode();
+            + "{/msg}"
+            + "{/template}"
+            + "{template helper}"
+            + "{/template}";
+    TemplateNode templateNode = assertThatFileContent(template).getTemplateNode();
     MsgNode msg = getAllNodesOfType(templateNode, MsgFallbackGroupNode.class).get(0).getMsg();
     assertSubstUnitInfo(msg);
 
@@ -391,13 +396,17 @@ public class MsgNodeTest {
   @Test
   public void testGenPlaceholdersForGenders() {
     String template =
-        "{@param gender : ?}"
+        "{template .brittleTestTemplate}"
+            + "{@param gender : ?}"
             + "{@param person : ?}"
             + "{msg desc=\"\" genders=\"$gender\"}\n"
             + "  {$person} invited you to a group conversation with {call .everyoneElse /}"
-            + "{/msg}";
+            + "{/msg}"
+            + "{/template}"
+            + "{template everyoneElse}"
+            + "{/template}";
 
-    TemplateNode templateNode = assertThatTemplateContent(template).getTemplateNode();
+    TemplateNode templateNode = assertThatFileContent(template).getTemplateNode();
     MsgNode msg = getAllNodesOfType(templateNode, MsgFallbackGroupNode.class).get(0).getMsg();
     assertSubstUnitInfo(msg);
 

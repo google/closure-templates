@@ -248,12 +248,12 @@ final class CheckDelegatesPass implements CompilerFileSetPass {
   }
 
   private void checkCallDelegateNode(CallDelegateNode node, TemplateRegistry templateRegistry) {
-
     String delCalleeName = node.getDelCalleeName();
-
+    TemplateMetadata metadata = templateRegistry.getBasicTemplateOrElement(delCalleeName);
     // Check that the callee name is not a basic template name.
-    if (templateRegistry.getBasicTemplateOrElement(delCalleeName) != null) {
-      errorReporter.report(node.getSourceLocation(), DELCALL_TO_BASIC_TEMPLATE, delCalleeName);
+    if (metadata != null) {
+      errorReporter.report(
+          node.getSourceLocation(), DELCALL_TO_BASIC_TEMPLATE, metadata.getTemplateName());
     }
   }
 

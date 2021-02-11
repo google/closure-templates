@@ -269,10 +269,10 @@ public final class CheckDelegatesPassTest {
         "Found illegal call from 'ns1.boo' to 'ns2.foo', which is in a different delegate package.",
         ""
             + "{namespace ns1}\n"
-            + "\n"
+            + "import {foo} from 'no-path-2';\n"
             + "/***/\n"
             + "{template .boo}\n"
-            + "  {call ns2.foo /}\n"
+            + "  {call foo /}\n"
             + // call to ns2.foo, which is public
             "{/template}\n",
         ""
@@ -292,10 +292,10 @@ public final class CheckDelegatesPassTest {
         ""
             + "{delpackage NotQuiteSoSecretFeature}\n"
             + "{namespace ns1}\n"
-            + "\n"
+            + "import {foo} from 'no-path-2';\n"
             + "/***/\n"
             + "{template .boo}\n"
-            + "  {call ns2.foo /}\n"
+            + "  {call foo /}\n"
             + // call to ns2.foo, which is public
             "{/template}\n",
         ""
@@ -314,10 +314,10 @@ public final class CheckDelegatesPassTest {
         "'delcall' to basic template 'ns2.foo' (expected 'call').",
         ""
             + "{namespace ns1}\n"
-            + "\n"
+            + "import {foo} from 'no-path-2';\n"
             + "/***/\n"
             + "{template .boo}\n"
-            + "  {delcall ns2.foo /}\n"
+            + "  {delcall foo /}\n"
             + // delegate call (should be basic call)
             "{/template}\n",
         ""

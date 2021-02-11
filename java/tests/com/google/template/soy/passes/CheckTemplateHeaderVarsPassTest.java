@@ -101,7 +101,7 @@ public final class CheckTemplateHeaderVarsPassTest {
   public void testCalls() {
     String fileContent1 =
         "{namespace boo}\n"
-            + "\n"
+            + "import * as baa from 'no-path-2';\n"
             + "{template .foo}\n"
             + "  {@param? goo: ?}\n"
             + "  {@param too: ?}\n"

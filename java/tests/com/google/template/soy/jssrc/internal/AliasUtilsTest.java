@@ -18,6 +18,7 @@ package com.google.template.soy.jssrc.internal;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import com.google.common.base.Joiner;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import org.junit.Test;
@@ -59,12 +60,18 @@ public class AliasUtilsTest {
   @Test
   public void testNonLocalFunctionAliasing() {
     String fileBody =
-        "{namespace foo.bar.baz}\n"
-            + "{template .bam}\n"
-            + "  {call other.name.space.bam /}\n"
-            + "{/template}\n";
+        Joiner.on('\n')
+            .join(
+                "{namespace foo.bar.baz}",
+                "import {bam as spaceBam} from 'no-path-2';",
+                "{template .bam}",
+                "  {call spaceBam /}",
+                "{/template}");
+    String otherBody =
+        Joiner.on('\n').join("{namespace other.name.space}", "{template .bam}", "{/template}");
 
-    SoyFileSetNode n = SoyFileSetParserBuilder.forFileContents(fileBody).parse().fileSet();
+    SoyFileSetNode n =
+        SoyFileSetParserBuilder.forFileContents(fileBody, otherBody).parse().fileSet();
     TemplateAliases templateAliases = AliasUtils.createTemplateAliases(n.getChild(0));
 
     String alias = templateAliases.get("other.name.space.bam");
@@ -78,13 +85,19 @@ public class AliasUtilsTest {
   @Test
   public void testMultipleCallAliasing() {
     String fileBody =
-        "{namespace foo.bar.baz}\n"
-            + "{template .bam}\n"
-            + "  {call other.name.space.bam /}\n"
-            + "  {call other.name.space.bam /}\n"
-            + "{/template}\n";
+        Joiner.on('\n')
+            .join(
+                "{namespace foo.bar.baz}",
+                "import {bam as spaceBam} from 'no-path-2';",
+                "{template .bam}",
+                "  {call spaceBam /}",
+                "  {call spaceBam /}",
+                "{/template}");
+    String otherBody =
+        Joiner.on('\n').join("{namespace other.name.space}", "{template .bam}", "{/template}");
 
-    SoyFileSetNode n = SoyFileSetParserBuilder.forFileContents(fileBody).parse().fileSet();
+    SoyFileSetNode n =
+        SoyFileSetParserBuilder.forFileContents(fileBody, otherBody).parse().fileSet();
     TemplateAliases templateAliases = AliasUtils.createTemplateAliases(n.getChild(0));
 
     String alias = templateAliases.get("other.name.space.bam");

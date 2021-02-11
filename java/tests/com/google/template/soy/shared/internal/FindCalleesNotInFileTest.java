@@ -40,22 +40,22 @@ public final class FindCalleesNotInFileTest {
     String testFileContent =
         ""
             + "{namespace boo.foo}\n"
-            + "\n"
+            + "import * as booHooTmp from 'no-path-2';\n"
             + "/** Test template 1. */\n"
             + "{template .goo}\n"
             + "  {call .goo data=\"all\" /}\n"
             + "  {call .moo data=\"all\" /}\n"
-            + "  {call boo.woo.hoo data=\"all\" /}\n" // not defined in this file
+            + "  {call booHooTmp.hoo data=\"all\" /}\n"
             + "{/template}\n"
             + "\n"
             + "/** Test template 2. */\n"
             + "{template .moo}\n"
             + "  {for $i in range(8)}\n"
-            + "    {call boo.foo.goo data=\"all\" /}\n"
-            + "    {call .too data=\"all\" /}\n" // not defined in this file
+            + "    {call .goo data=\"all\" /}\n"
+            + "    {call booHooTmp.too data=\"all\" /}\n"
             + "    {call .goo}"
             + "      {param a kind=\"text\"}{call .moo /}{/param}"
-            + "      {param b kind=\"text\"}{call .zoo /}{/param}" // not defined in this file
+            + "      {param b kind=\"text\"}{call booHooTmp.zoo /}{/param}"
             + "    {/call}"
             + "  {/for}\n"
             + "{/template}\n"
@@ -64,12 +64,21 @@ public final class FindCalleesNotInFileTest {
             + "{deltemplate booHoo}\n"
             + "  {call .goo data=\"all\" /}\n"
             + "  {call .moo data=\"all\" /}\n"
-            + "  {call boo.hoo.roo data=\"all\" /}\n" // not defined in this file
+            + "  {call booHooTmp.roo data=\"all\" /}\n"
             + "{/deltemplate}\n";
+
+    String includesContent =
+        ""
+            + "{namespace boo.hoo}\n"
+            + "\n"
+            + "{template .hoo}{@param a: ?}{@param b: ?}{/template}\n"
+            + "{template .too}{/template}\n"
+            + "{template .zoo}{/template}\n"
+            + "{template .roo}{/template}\n";
 
     ErrorReporter boom = ErrorReporter.exploding();
     SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forFileContents(testFileContent)
+        SoyFileSetParserBuilder.forFileContents(testFileContent, includesContent)
             .errorReporter(boom)
             .parse()
             .fileSet();
@@ -80,6 +89,6 @@ public final class FindCalleesNotInFileTest {
             FindCalleesNotInFile.findCalleesNotInFile(soyFile),
             TemplateLiteralNode::getResolvedName);
     assertThat(calleesNotInFile)
-        .containsExactly("boo.woo.hoo", "boo.foo.too", "boo.foo.zoo", "boo.hoo.roo");
+        .containsExactly("boo.hoo.hoo", "boo.hoo.too", "boo.hoo.zoo", "boo.hoo.roo");
   }
 }

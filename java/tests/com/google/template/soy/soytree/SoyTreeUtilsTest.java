@@ -200,6 +200,9 @@ public final class SoyTreeUtilsTest {
               "  </ol>",
               "  {let $local : 'foo' /}",
               "  {$local}",
+              "{/template}",
+              "{template foo}",
+              "{@param? x: ?}",
               "{/template}");
 
   @Test

@@ -41,14 +41,13 @@ public final class IndirectParamsCalculatorTest {
 
     String alpha =
         "{namespace alpha}\n"
-            + "\n"
+            + "import * as beta from 'no-path-2';\n"
             + "{template .zero}\n"
             + "  {@param? a0: ?}\n"
             + "  {@param? b3: ?}\n" // 'b3' listed by alpha.zero
             + "  {call .zero data=\"all\" /}\n"
             + "  {call .one data=\"all\" /}\n" // recursive call should not cause 'a0' to be added
             + "  {call .two /}\n"
-            + "  {call beta.zero /}\n"
             + "  {call .five data=\"all\"}\n"
             + "    {param a5: $a0 /}\n"
             + "    {param b2: 88 /}\n"
@@ -75,7 +74,6 @@ public final class IndirectParamsCalculatorTest {
             + "\n"
             + "{template .four}\n"
             + "  {@param? a4: ?}\n"
-            + "  {call external.one /}\n"
             + "  {$a4}\n"
             + "{/template}\n"
             + "\n"
@@ -96,7 +94,7 @@ public final class IndirectParamsCalculatorTest {
 
     String beta =
         "{namespace beta}\n"
-            + "\n"
+            + "import * as alpha from 'no-path';\n"
             + "{template .zero}\n"
             + "  {@param? b0: ?}\n"
             + "  {$b0}\n"
@@ -133,7 +131,6 @@ public final class IndirectParamsCalculatorTest {
     // TemplateMetadata a4 = registry.getBasicTemplateOrElement("alpha.four");
     TemplateMetadata a5 = registry.getBasicTemplateOrElement("alpha.five");
     TemplateMetadata a6 = registry.getBasicTemplateOrElement("alpha.six");
-    // TemplateMetadata b0 = registry.getBasicTemplateOrElement("beta.zero");
     TemplateMetadata b1 = registry.getBasicTemplateOrElement("beta.one");
     // TemplateMetadata b2 = registry.getBasicTemplateOrElement("beta.two");
     TemplateMetadata b3 = registry.getBasicTemplateOrElement("beta.three");

@@ -129,7 +129,7 @@ public final class ExpressionParser {
 
     SoyFileSetNode fileSet =
         SoyFileSetParserBuilder.forFileAndImports(
-                "{namespace brittle.test.ns}",
+                SharedTestUtils.NS,
                 SharedTestUtils.buildTestTemplateContent(false, contents),
                 protos.toArray(new GenericDescriptor[0]))
             .runOptimizer(true)

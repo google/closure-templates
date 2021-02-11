@@ -40,6 +40,7 @@ import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.TemplateMetadataSerializer;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.internal.SoyFileKind;
+import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.coredirectives.EscapeHtmlDirective;
 import com.google.template.soy.css.CssRegistry;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
@@ -88,6 +89,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -100,66 +102,75 @@ public class BytecodeCompilerTest {
 
   @Test
   public void testDelCall_delPackageSelections() throws IOException {
-    String soyFileContent1 =
-        Joiner.on("\n")
-            .join(
-                "{namespace ns1}",
-                "",
-                "/***/",
-                "{template .callerTemplate}",
-                "  {delcall myApp.myDelegate}",
-                "    {param boo: 'aaaaaah' /}",
-                "  {/delcall}",
-                "{/template}",
-                "",
-                "/** */",
-                "{deltemplate myApp.myDelegate requirecss=\"ns.default\"}", // default
-                // implementation
-                // (doesn't use $boo)
-                "  {@param boo : string}",
-                "  default",
-                "{/deltemplate}",
-                "");
+    SoyFileSupplier soyFileContent1 =
+        SoyFileSupplier.Factory.create(
+            Joiner.on("\n")
+                .join(
+                    "{namespace ns1}",
+                    "",
+                    "/***/",
+                    "{template .callerTemplate}",
+                    "  {delcall myApp.myDelegate}",
+                    "    {param boo: 'aaaaaah' /}",
+                    "  {/delcall}",
+                    "{/template}",
+                    "",
+                    "/** */",
+                    "{deltemplate myApp.myDelegate requirecss=\"ns.default\"}", // default
+                    // implementation
+                    // (doesn't use $boo)
+                    "  {@param boo : string}",
+                    "  default",
+                    "{/deltemplate}",
+                    ""),
+            SourceFilePath.create("ns1.soy"));
 
-    String soyFileContent2 =
-        Joiner.on("\n")
-            .join(
-                "{delpackage SecretFeature}",
-                "{namespace ns2 requirecss=\"ns.foo\"}",
-                "",
-                "/** */",
-                "{deltemplate myApp.myDelegate}", // implementation in SecretFeature
-                "  {@param boo : string}",
-                "  SecretFeature {$boo}",
-                "{/deltemplate}",
-                "");
+    SoyFileSupplier soyFileContent2 =
+        SoyFileSupplier.Factory.create(
+            Joiner.on("\n")
+                .join(
+                    "{delpackage SecretFeature}",
+                    "{namespace ns2 requirecss=\"ns.foo\"}",
+                    "",
+                    "/** */",
+                    "{deltemplate myApp.myDelegate}", // implementation in SecretFeature
+                    "  {@param boo : string}",
+                    "  SecretFeature {$boo}",
+                    "{/deltemplate}",
+                    ""),
+            SourceFilePath.create("ns2-dp.soy"));
 
-    String soyFileContent3 =
-        Joiner.on("\n")
-            .join(
-                "{delpackage AlternateSecretFeature}",
-                "{namespace ns3 requirecss=\"ns.bar\"}",
-                "",
-                "/** */",
-                "{deltemplate myApp.myDelegate}", // implementation in AlternateSecretFeature
-                "  {@param boo : string}",
-                "  AlternateSecretFeature {call .helper data=\"all\" /}",
-                "{/deltemplate}",
-                "");
+    SoyFileSupplier soyFileContent3 =
+        SoyFileSupplier.Factory.create(
+            Joiner.on("\n")
+                .join(
+                    "{delpackage AlternateSecretFeature}",
+                    "{namespace ns3 requirecss=\"ns.bar\"}",
+                    "import {helper} from 'ns3.soy';",
+                    "",
+                    "/** */",
+                    "{deltemplate myApp.myDelegate}", // implementation in AlternateSecretFeature
+                    "  {@param boo : string}",
+                    "  AlternateSecretFeature {call helper data=\"all\" /}",
+                    "{/deltemplate}",
+                    ""),
+            SourceFilePath.create("ns3-dp.soy"));
 
-    String soyFileContent4 =
-        Joiner.on("\n")
-            .join(
-                "{namespace ns3}",
-                "",
-                "/** */",
-                "{template .helper}",
-                "  {@param boo : string}",
-                "  {$boo}",
-                "{/template}",
-                "");
+    SoyFileSupplier soyFileContent4 =
+        SoyFileSupplier.Factory.create(
+            Joiner.on("\n")
+                .join(
+                    "{namespace ns3}",
+                    "",
+                    "/** */",
+                    "{template .helper}",
+                    "  {@param boo : string}",
+                    "  {$boo}",
+                    "{/template}",
+                    ""),
+            SourceFilePath.create("ns3.soy"));
     SoyFileSetParser parser =
-        SoyFileSetParserBuilder.forFileContents(
+        SoyFileSetParserBuilder.forSuppliers(
                 soyFileContent1, soyFileContent2, soyFileContent3, soyFileContent4)
             .cssRegistry(
                 CssRegistry.create(
@@ -1349,19 +1360,22 @@ public class BytecodeCompilerTest {
   public void testRenderingWithMultipleCompilationSteps() {
     SoyFileSetParser parser1 =
         createParserForFileContents(
-            ImmutableList.of(
+            ImmutableMap.of(
+                "loader1.soy",
                 Joiner.on("\n")
                     .join(
                         "{namespace loader1}",
+                        "import {publicTemplate2} from 'loader2.soy';",
                         "{template .publicTemplate1}",
                         "L1T1",
                         "{sp}{call .privateTemplate_ /}",
-                        "{sp}{call .publicTemplate2 /}",
+                        "{sp}{call publicTemplate2 /}",
                         "{/template}",
                         "",
                         "{template .privateTemplate_ visibility=\"private\"}",
                         "PVT",
                         "{/template}"),
+                "loader2.soy",
                 Joiner.on("\n")
                     .join(
                         "{namespace loader1}",
@@ -1379,7 +1393,8 @@ public class BytecodeCompilerTest {
 
     SoyFileSetParser parser1Recompiled =
         createParserForFileContents(
-            ImmutableList.of(
+            ImmutableMap.of(
+                "loader1.soy",
                 Joiner.on("\n")
                     .join(
                         "{namespace loader1}",
@@ -1392,14 +1407,16 @@ public class BytecodeCompilerTest {
 
     SoyFileSetParser parser2 =
         createParserForFileContentsWithDependencies(
-            ImmutableList.of(
+            ImmutableMap.of(
+                "loader2.soy",
                 Joiner.on("\n")
                     .join(
                         "{namespace loader2}",
+                        "import {publicTemplate1} from 'loader1.soy';",
                         "{template .publicTemplate}",
                         "L2T",
-                        "{sp}{call loader1.publicTemplate1 /}",
-                        "{sp}{call loader1.publicTemplate1 /}",
+                        "{sp}{call publicTemplate1 /}",
+                        "{sp}{call publicTemplate1 /}",
                         "{/template}")),
             ImmutableList.of(dependency1));
     ParseResult parseResult2 = parser2.parse();
@@ -1433,22 +1450,25 @@ public class BytecodeCompilerTest {
   public void testRenderingWithMultipleCompilationStepsAndDynamicTemplateCalls() {
     SoyFileSetParser parser1 =
         createParserForFileContents(
-            ImmutableList.of(
+            ImmutableMap.of(
+                "loader1.soy",
                 Joiner.on("\n")
                     .join(
                         "{namespace loader1}",
+                        "import {publicTemplate2} from 'loader2.soy';",
                         "{template .publicTemplate1}",
                         "L1T1",
                         "{sp}{call .privateTemplate_ /}",
-                        "{sp}{call .publicTemplate2 /}",
+                        "{sp}{call publicTemplate2 /}",
                         "{/template}",
                         "",
                         "{template .privateTemplate_ visibility=\"private\"}",
                         "PVT",
                         "{/template}"),
+                "loader2.soy",
                 Joiner.on("\n")
                     .join(
-                        "{namespace loader1}",
+                        "{namespace loader2}",
                         "{template .publicTemplate2}",
                         "L1T2",
                         "{/template}")));
@@ -1463,7 +1483,8 @@ public class BytecodeCompilerTest {
 
     SoyFileSetParser parser1Recompiled =
         createParserForFileContents(
-            ImmutableList.of(
+            ImmutableMap.of(
+                "loader1.soy",
                 Joiner.on("\n")
                     .join(
                         "{namespace loader1}",
@@ -1476,13 +1497,15 @@ public class BytecodeCompilerTest {
 
     SoyFileSetParser parser2 =
         createParserForFileContentsWithDependencies(
-            ImmutableList.of(
+            ImmutableMap.of(
+                "loader2.soy",
                 Joiner.on("\n")
                     .join(
                         "{namespace loader2}",
+                        "import {publicTemplate1} from 'loader1.soy';",
                         "{template .publicTemplate}",
                         "{@param renderTemplate: bool = true}",
-                        "{let $tpl: $renderTemplate ? template(loader1.publicTemplate1) :"
+                        "{let $tpl: $renderTemplate ? template(publicTemplate1) :"
                             + " dummyTemplate /}",
                         "L2T",
                         "{sp}{call $tpl /}",
@@ -1548,13 +1571,19 @@ public class BytecodeCompilerTest {
     }
   }
 
-  private static SoyFileSetParser createParserForFileContents(Iterable<String> soyFileContents) {
+  private static SoyFileSetParser createParserForFileContents(Map<String, String> soyFileContents) {
     return createParserForFileContentsWithDependencies(soyFileContents, ImmutableList.of());
   }
 
   private static SoyFileSetParser createParserForFileContentsWithDependencies(
-      Iterable<String> soyFileContents, Iterable<CompilationUnitAndKind> dependencies) {
-    return SoyFileSetParserBuilder.forFileContents(Iterables.toArray(soyFileContents, String.class))
+      Map<String, String> soyFileContents, Iterable<CompilationUnitAndKind> dependencies) {
+    List<SoyFileSupplier> files =
+        soyFileContents.entrySet().stream()
+            .map(
+                e ->
+                    SoyFileSupplier.Factory.create(e.getValue(), SourceFilePath.create(e.getKey())))
+            .collect(Collectors.toList());
+    return SoyFileSetParserBuilder.forSuppliers(files)
         .addCompilationUnits(dependencies)
         .options(new SoyGeneralOptions().setAllowExternalCalls(false))
         .build();
@@ -1563,8 +1592,6 @@ public class BytecodeCompilerTest {
   private static CompilingClassLoader createCompilingClassLoader(
       SoyFileSetParser parser, ParseResult parseResult) {
     return new CompilingClassLoader(
-        parseResult.fileSet(),
-        parser.soyFileSuppliers(),
-        parser.typeRegistry());
+        parseResult.fileSet(), parser.soyFileSuppliers(), parser.typeRegistry());
   }
 }
