@@ -55,7 +55,7 @@ public final class SoyParseInfoGenerator extends AbstractSoyCompiler {
               + "  --generateInvocationBuilders is true), this flag will be ignored and external"
               + " calls will NOT be allowed. For *SoyInfo files, this currently defaults to true"
               + " for backward compatibility. ")
-  private boolean allowExternalCalls = true;
+  private boolean allowExternalCalls = false;
 
   @Option(
       name = "--outputDirectory",
