@@ -359,7 +359,7 @@ For example,
 {template .foo}
   {@param m: map<int, string>}
   <ul>
-    {for $key in mapKeys($m)}
+    {for $key in $m.keys()}
       <li>{$key}: {$m[$key]}</li>
       <li>{$key} * 2 = {$key * 2}</li> // arithmetic on numeric keys in map
     {/for}
