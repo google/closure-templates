@@ -217,7 +217,7 @@ public final class PassManager {
     private ImmutableList<? extends SoyPrintDirective> soyPrintDirectives;
     private ErrorReporter errorReporter;
     private SoyGeneralOptions options;
-    private Optional<CssRegistry> cssRegistry;
+    private Optional<CssRegistry> cssRegistry = Optional.empty();
     private boolean allowUnknownGlobals;
     private boolean allowUnknownJsGlobals;
     private boolean disableAllTypeChecking;

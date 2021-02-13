@@ -352,7 +352,7 @@ public class BytecodeCompilerTest {
   public void testCallBasicNode() throws IOException {
     CompiledTemplates templates =
         TemplateTester.compileFileWithCss(
-            CssRegistry.create(ImmutableSet.of("ns.foo"), ImmutableMap.of()),
+            CssRegistry.create(ImmutableSet.of("ns.foo", "ns.bar"), ImmutableMap.of()),
             "{namespace ns requirecss=\"ns.foo\"}",
             "",
             "/** */",
