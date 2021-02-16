@@ -328,10 +328,11 @@ For example,
 Using a constant expression for the `or` operator produces a compiler warning.
 Using a boolean constant renders the `or` expression meaningless; using a
 constant of another type means the expression does not evaluate to a boolean
-type. Further, the falsy rules are different in Java and JavaScript (`''` in
-Java is truthy; but in JavaScript it is falsy). Using non-boolean constants
-might produce slightly different results when rendering in Java versus
-JavaScript.
+type.
+
+WARNING: While `''` is falsy is all backends, it does not compare to `true` and `false`
+equivalently in all backends. It is therefore safe to use a string as the first
+argument of a ternary statement but not safe to compare strings to booleans.
 
 Rather than using the short-circuit property of the `or` operator, you should
 use `?:`, the [null coalescing operator](#null-coalescing-operator). This more
