@@ -39,10 +39,17 @@ message TemplateCallMetadata {
   }
 
   message ParamArg {
-    string param_name = 1;
-    string param_val = 2;
+    // Name or key of param used by dest template
+    string key = 1;
 
-    repeated TemplateCall calls = 3;  // Calls made within html type params.
+    // If val is derived from a header param in src template, alias of param
+    //
+    // For example, given template that contains the following statements
+    // {@param foo: any}
+    // {let $bar: $foo /}
+    // {call template}{param baz: $bar}{/call}
+    // The header_param_alias field for param w/ key $baz will be set to "foo"
+    string header_param_alias = 2;
   }
 
   repeated Template templates = 1;
