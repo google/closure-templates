@@ -238,29 +238,34 @@ public final class CheckDelegatesPassTest {
 
   @Test
   public void testErrorBasicCallToDelegateTemplate() {
-    assertInvalidSoyFiles(
-        "'call' to delegate template 'ns1.MagicButton' (expected 'delcall').",
-        ""
-            + "{namespace ns1}\n"
-            + "\n"
-            + "/***/\n"
-            + "{template .boo}\n"
-            + "  {call .MagicButton /}\n"
-            + // basic call (should be delegate call)
-            "{/template}\n"
-            + "\n"
-            + "{deltemplate ns1.MagicButton}\n"
-            + "  {@param foo: ?}\n"
-            + "  000\n"
-            + "{/deltemplate}\n",
-        ""
-            + "{delpackage SecretFeature}\n"
-            + "{namespace ns1}\n"
-            + "\n"
-            + "{deltemplate ns1.MagicButton}\n"
-            + "  {@param foo: ?}\n"
-            + "  111 {$foo}\n"
-            + "{/deltemplate}\n");
+    ErrorReporter errorReporter = ErrorReporter.createForTest();
+    SoyFileSetParserBuilder.forFileContents(
+            ""
+                + "{namespace ns1}\n"
+                + "\n"
+                + "/***/\n"
+                + "{template .boo}\n"
+                + "  {call .MagicButton /}\n"
+                + // basic call (should be delegate call)
+                "{/template}\n"
+                + "\n"
+                + "{deltemplate ns1.MagicButton}\n"
+                + "  {@param foo: ?}\n"
+                + "  000\n"
+                + "{/deltemplate}\n",
+            ""
+                + "{delpackage SecretFeature}\n"
+                + "{namespace ns1}\n"
+                + "\n"
+                + "{deltemplate ns1.MagicButton}\n"
+                + "  {@param foo: ?}\n"
+                + "  111 {$foo}\n"
+                + "{/deltemplate}\n")
+        .errorReporter(errorReporter)
+        .parse();
+    assertThat(errorReporter.getErrors()).hasSize(2);
+    assertThat(errorReporter.getErrors().get(0).message())
+        .contains("'call' to delegate template 'ns1.MagicButton' (expected 'delcall').");
   }
 
   @Test

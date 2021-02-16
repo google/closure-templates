@@ -210,14 +210,11 @@ public final class PassManagerTest {
   private static Iterable<SoyGeneralOptions> allOptions() {
     List<SoyGeneralOptions> allOptions = new ArrayList<>();
     for (boolean enableNonNullAssertionOperator : bools()) {
-      for (boolean allowExternalCalls : bools()) {
-        SoyGeneralOptions options = new SoyGeneralOptions();
-        if (enableNonNullAssertionOperator) {
-          options.setExperimentalFeatures(Arrays.asList("enableNonNullAssertionOperator"));
-        }
-        options.setAllowExternalCalls(allowExternalCalls);
-        allOptions.add(options);
+      SoyGeneralOptions options = new SoyGeneralOptions();
+      if (enableNonNullAssertionOperator) {
+        options.setExperimentalFeatures(Arrays.asList("enableNonNullAssertionOperator"));
       }
+      allOptions.add(options);
     }
     return allOptions;
   }

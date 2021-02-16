@@ -34,7 +34,6 @@ import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
-import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -119,7 +118,6 @@ public final class TemplateRegistryTest {
                         + "{/deltemplate}",
                     FILE_PATH))
             .addCompilationUnits(ImmutableList.of(dependencyCompilationUnit))
-            .options(new SoyGeneralOptions().setAllowExternalCalls(false))
             .build()
             .parse()
             .registry();

@@ -34,10 +34,6 @@ to call `SoyFileSet.compileTemplates()` instead.
 
 This may reveal a few issues:
 
-*   `compileTemplates()` implies
-    `SoyGeneralOptions.setAllowExternalCalls(false)`, so if you have any
-    unresolved `{call ...}` statements (most likely in dead templates), you will
-    need to fix those.
 *   `compileTemplates()` requires that there are Java implementations of all the
     referenced plugins function/directives at compile time. (In Tofu this is
     only required at runtime.) Such calls are most likely in dead code so the

@@ -47,17 +47,6 @@ public final class SoyParseInfoGenerator extends AbstractSoyCompiler {
   private boolean generateInvocationBuilders = false;
 
   @Option(
-      name = "--allowExternalCalls",
-      usage =
-          "Whether to allow external calls. New projects should set this to false, and existing"
-              + " projects should remove existing external calls and then set this to false. It"
-              + " will save you a lot of headaches.  For the new java invocation builders (i.e. if"
-              + "  --generateInvocationBuilders is true), this flag will be ignored and external"
-              + " calls will NOT be allowed. For *SoyInfo files, this currently defaults to true"
-              + " for backward compatibility. ")
-  private boolean allowExternalCalls = false;
-
-  @Option(
       name = "--outputDirectory",
       usage =
           "[Optional] The path to the output directory. If files with the same names already exist"
@@ -130,8 +119,6 @@ public final class SoyParseInfoGenerator extends AbstractSoyCompiler {
 
   @Override
   protected void compile(SoyFileSet.Builder sfsBuilder) throws IOException {
-    sfsBuilder.setAllowExternalCalls(allowExternalCalls);
-
     SoyFileSet sfs = sfsBuilder.build();
 
     ImmutableList<GeneratedFile> genFiles =
