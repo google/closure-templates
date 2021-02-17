@@ -16,7 +16,10 @@
 package com.google.template.soy.types;
 
 import com.google.auto.value.AutoValue;
+import com.google.common.collect.ImmutableCollection;
+import com.google.common.collect.ImmutableSet;
 import com.google.protobuf.Descriptors.Descriptor;
+import com.google.template.soy.internal.proto.Field;
 
 /** Representing an imported proto message type. */
 @AutoValue
@@ -36,5 +39,14 @@ public abstract class ProtoImportType extends ImportType {
   @Override
   public Kind getKind() {
     return Kind.PROTO_TYPE;
+  }
+
+  @Override
+  public ImmutableCollection<String> getNestedSymbolNames() {
+    ImmutableSet.Builder<String> allNames = ImmutableSet.builder();
+    getDescriptor().getNestedTypes().forEach(t -> allNames.add(t.getName()));
+    getDescriptor().getEnumTypes().forEach(t -> allNames.add(t.getName()));
+    getDescriptor().getExtensions().forEach(t -> allNames.add(Field.computeSoyName(t)));
+    return allNames.build();
   }
 }

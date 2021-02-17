@@ -15,6 +15,8 @@
  */
 package com.google.template.soy.types;
 
+import com.google.common.collect.ImmutableCollection;
+import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.soytree.SoyTypeP;
 
 /** Base type for all imported symbol types. */
@@ -34,5 +36,10 @@ public abstract class ImportType extends SoyType {
   boolean doIsAssignableFromNonUnionType(SoyType srcType) {
     // Nothing is assignable to this placeholder type.
     return false;
+  }
+
+  /** Returns the full list of any valid nested symbols, of any type, within this type. */
+  public ImmutableCollection<String> getNestedSymbolNames() {
+    return ImmutableSet.of();
   }
 }

@@ -16,6 +16,7 @@
 package com.google.template.soy.types;
 
 import com.google.auto.value.AutoValue;
+import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.SourceFilePath;
 
@@ -42,5 +43,10 @@ public abstract class TemplateModuleImportType extends ImportType {
   @Override
   public Kind getKind() {
     return Kind.TEMPLATE_MODULE;
+  }
+
+  @Override
+  public ImmutableCollection<String> getNestedSymbolNames() {
+    return getTemplateNames();
   }
 }

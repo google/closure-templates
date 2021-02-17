@@ -242,7 +242,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
           "Undefined field ''{0}'' for record type {1}.{2}", StyleAllowance.NO_PUNCTUATION);
   private static final SoyErrorKind PROTO_FIELD_DOES_NOT_EXIST =
       SoyErrorKind.of(
-          "Proto field ''{0}'' does not exist on {1}.{2}", StyleAllowance.NO_PUNCTUATION);
+          "Proto field ''{0}'' does not exist in {1}.{2}", StyleAllowance.NO_PUNCTUATION);
   private static final SoyErrorKind PROTO_MISSING_REQUIRED_FIELD =
       SoyErrorKind.of("Missing required proto field ''{0}''.");
   private static final SoyErrorKind PROTO_NULL_ARG_TYPE =
@@ -1873,14 +1873,14 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
         case VE:
         case VE_DATA:
         case MESSAGE:
-        case TEMPLATE_TYPE:
-        case TEMPLATE_MODULE:
           errorReporter.report(sourceLocation, DOT_ACCESS_NOT_SUPPORTED, baseType);
           return UnknownType.getInstance();
+        case TEMPLATE_TYPE:
+        case TEMPLATE_MODULE:
         case PROTO_TYPE:
+        case PROTO_EXTENSION:
           // May not be erased if other errors are present.
           return UnknownType.getInstance();
-        case PROTO_EXTENSION:
         case PROTO_MODULE:
         case PROTO_ENUM_TYPE:
       }

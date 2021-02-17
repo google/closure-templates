@@ -16,7 +16,10 @@
 package com.google.template.soy.types;
 
 import com.google.auto.value.AutoValue;
+import com.google.common.collect.ImmutableCollection;
+import com.google.common.collect.ImmutableSet;
 import com.google.protobuf.Descriptors.FileDescriptor;
+import com.google.template.soy.internal.proto.Field;
 
 /** Representing an imported proto module/file type, i.e. "import * as p from 'p.proto'; */
 @AutoValue
@@ -36,5 +39,14 @@ public abstract class ProtoModuleImportType extends ImportType {
   @Override
   public Kind getKind() {
     return Kind.PROTO_MODULE;
+  }
+
+  @Override
+  public ImmutableCollection<String> getNestedSymbolNames() {
+    ImmutableSet.Builder<String> allNames = ImmutableSet.builder();
+    getDescriptor().getMessageTypes().forEach(t -> allNames.add(t.getName()));
+    getDescriptor().getEnumTypes().forEach(t -> allNames.add(t.getName()));
+    getDescriptor().getExtensions().forEach(t -> allNames.add(Field.computeSoyName(t)));
+    return allNames.build();
   }
 }

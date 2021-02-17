@@ -23,6 +23,8 @@ import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
+import com.google.template.soy.error.SoyErrors;
 import com.google.template.soy.exprtree.CallableExprBuilder;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.Kind;
@@ -63,7 +65,8 @@ import javax.annotation.Nullable;
 public final class ResolveDottedImportsPass implements CompilerFilePass {
 
   private static final SoyErrorKind NO_SUCH_NESTED_TYPE =
-      SoyErrorKind.of("Nested type ''{0}'' does not exist on type {1}.");
+      SoyErrorKind.of(
+          "Nested type ''{0}'' does not exist in {1} {2}.{3}", StyleAllowance.NO_PUNCTUATION);
 
   private static final SoyErrorKind ENUM_MEMBERSHIP_ERROR =
       SoyErrorKind.of("''{0}'' is not a member of enum ''{1}''.");
@@ -188,14 +191,40 @@ public final class ResolveDottedImportsPass implements CompilerFilePass {
     }
 
     if (nestedType == UnknownType.getInstance()) {
-      // Unknown methods will be reported later.a
+      // Unknown methods will be reported later.
       if (kind != Kind.METHOD_CALL_NODE) {
-        errorReporter.report(fullLocation, NO_SUCH_NESTED_TYPE, fieldName, type);
+        String didYouMean = "";
+        if (type instanceof ImportType) {
+          didYouMean =
+              SoyErrors.getDidYouMeanMessage(((ImportType) type).getNestedSymbolNames(), fieldName);
+        }
+
+        errorReporter.report(
+            fullLocation, NO_SUCH_NESTED_TYPE, fieldName, englishForType(type), type, didYouMean);
       }
       return null;
     }
 
     VarDefn newDefn = ImportedVar.nested(defn, nestedType);
     return new VarRefNode(refn.getName() + "." + fieldName, fullLocation, newDefn);
+  }
+
+  private static String englishForType(SoyType type) {
+    switch (type.getKind()) {
+      case PROTO_TYPE:
+        return "proto message";
+      case PROTO_ENUM_TYPE:
+        return "proto enum";
+      case PROTO_EXTENSION:
+        return "proto extension";
+      case PROTO_MODULE:
+        return "proto module";
+      case TEMPLATE_TYPE:
+        return "template";
+      case TEMPLATE_MODULE:
+        return "template module";
+      default:
+        return "type";
+    }
   }
 }
