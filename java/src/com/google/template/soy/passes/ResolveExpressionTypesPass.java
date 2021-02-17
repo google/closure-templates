@@ -221,8 +221,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
   private static final SoyErrorKind INVALID_TYPE_SUBSTITUTION =
       SoyErrorKind.of("Expected expression of type ''{0}'', found ''{1}''.");
   private static final SoyErrorKind LIST_LENGTH_ERROR =
-      SoyErrorKind.of(
-          "Soy lists do not have a ''length'' field. Use function length(...) instead.");
+      SoyErrorKind.of("Soy lists do not have a ''length'' field. Use function length() instead.");
   private static final SoyErrorKind MISSING_SOY_TYPE =
       SoyErrorKind.of("Missing Soy type for node {0}.");
   private static final SoyErrorKind NOT_PROTO_INIT =
@@ -234,8 +233,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
               + "go/soy/reference/expressions.md#logical-operators",
           StyleAllowance.NO_PUNCTUATION);
   private static final SoyErrorKind STRING_LENGTH_ERROR =
-      SoyErrorKind.of(
-          "Soy strings do not have a ''length'' field. Use function strLen(...) instead.");
+      SoyErrorKind.of("Soy strings do not have a ''length'' field. Use function length() instead.");
   private static final SoyErrorKind UNDEFINED_FIELD_FOR_PROTO_TYPE =
       SoyErrorKind.of(
           "Undefined field ''{0}'' for proto type {1}.{2}", StyleAllowance.NO_PUNCTUATION);
