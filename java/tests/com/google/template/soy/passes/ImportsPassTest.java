@@ -28,6 +28,7 @@ import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import org.junit.Before;
 import org.junit.Test;
@@ -201,6 +202,7 @@ public final class ImportsPassTest {
     return SoyFileSetParserBuilder.forSuppliers(soyFiles)
         .addCompilationUnits(dependencies)
         .errorReporter(errorReporter)
+        .options(new SoyGeneralOptions().setAllowExternalCalls(false))
         .build();
   }
 }

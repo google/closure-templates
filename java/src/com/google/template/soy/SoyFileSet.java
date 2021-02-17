@@ -38,6 +38,7 @@ import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
+import com.google.template.soy.base.internal.TriState;
 import com.google.template.soy.conformance.ValidatedConformanceConfig;
 import com.google.template.soy.css.CssRegistry;
 import com.google.template.soy.error.ErrorReporter;
@@ -378,6 +379,17 @@ public final class SoyFileSet {
      */
     public Builder setSoyAstCache(SoyAstCache cache) {
       this.cache = cache;
+      return this;
+    }
+
+    /**
+     * Sets whether to allow external calls (calls to undefined templates).
+     *
+     * @param allowExternalCalls Whether to allow external calls (calls to undefined templates).
+     * @return This builder.
+     */
+    public Builder setAllowExternalCalls(boolean allowExternalCalls) {
+      getGeneralOptions().setAllowExternalCalls(allowExternalCalls);
       return this;
     }
 
@@ -962,6 +974,7 @@ public final class SoyFileSet {
   public SoySauce compileTemplates(Map<String, Supplier<Object>> pluginInstances) {
     return entryPoint(
         () -> {
+          disallowExternalCalls();
           ServerCompilationPrimitives primitives = compileForServerRendering();
           throwIfErrorsPresent();
           return doCompileSoySauce(primitives, pluginInstances);
@@ -978,6 +991,7 @@ public final class SoyFileSet {
   void compileToJar(ByteSink jarTarget, Optional<ByteSink> srcJarTarget) {
     entryPointVoid(
         () -> {
+          disallowExternalCalls();
           ServerCompilationPrimitives primitives = compileForServerRendering();
           try {
             BytecodeCompiler.compileToJar(
@@ -1038,6 +1052,17 @@ public final class SoyFileSet {
 
     throwIfErrorsPresent();
     return new ServerCompilationPrimitives(registry, soyTree);
+  }
+
+  private void disallowExternalCalls() {
+    TriState allowExternalCalls = generalOptions.allowExternalCalls();
+    if (allowExternalCalls == TriState.UNSET) {
+      generalOptions.setAllowExternalCalls(false);
+    } else if (allowExternalCalls == TriState.ENABLED) {
+      throw new IllegalStateException(
+          "SoyGeneralOptions.setAllowExternalCalls(true) is not supported with this method");
+    }
+    // otherwise, it was already explicitly set to false which is what we want.
   }
 
   /**
@@ -1135,6 +1160,7 @@ public final class SoyFileSet {
   HeaderResult compileMinimallyForHeaders() {
     return entryPoint(
         () -> {
+          disallowExternalCalls();
           ParseResult parseResult =
               parse(
                   passManagerBuilder()
@@ -1175,6 +1201,7 @@ public final class SoyFileSet {
   public AnalysisResult compileForAnalysis(boolean treatErrorsAsWarnings, AstRewrites astRewrites) {
     return entryPoint(
         () -> {
+          disallowExternalCalls();
           ParseResult result =
               parse(
                   passManagerBuilder()

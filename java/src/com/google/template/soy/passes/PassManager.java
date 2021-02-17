@@ -25,6 +25,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.base.internal.TriState;
 import com.google.template.soy.conformance.ValidatedConformanceConfig;
 import com.google.template.soy.css.CssRegistry;
 import com.google.template.soy.error.ErrorReporter;
@@ -553,7 +554,10 @@ public final class PassManager {
       addPass(
           new CheckDelegatesPass(errorReporter, fileSetRegistrySupplier::get),
           crossTemplateCheckingPassesBuilder);
-      addPass(new StrictDepsPass(errorReporter), crossTemplateCheckingPassesBuilder);
+      // If disallowing external calls, perform the check.
+      if (options.allowExternalCalls() == TriState.DISABLED) {
+        addPass(new StrictDepsPass(errorReporter), crossTemplateCheckingPassesBuilder);
+      }
 
       addPass(new CombineConsecutiveRawTextNodesPass(), crossTemplateCheckingPassesBuilder);
       addPass(

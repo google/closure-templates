@@ -25,6 +25,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
 import com.google.template.soy.SoyUtils;
+import com.google.template.soy.base.internal.TriState;
 import com.google.template.soy.data.internalutils.InternalValueUtils;
 import com.google.template.soy.data.restricted.PrimitiveData;
 import java.io.File;
@@ -37,6 +38,9 @@ import java.util.Map;
  *
  */
 public final class SoyGeneralOptions implements Cloneable {
+
+  /** Whether to allow external calls (calls to undefined templates). Null if not explicitly set. */
+  private TriState allowExternalCalls = TriState.UNSET;
 
   /**
    * Whether to require external templates to be imported (rather than referenced via fqn or aliased
@@ -53,6 +57,7 @@ public final class SoyGeneralOptions implements Cloneable {
   public SoyGeneralOptions() {}
 
   private SoyGeneralOptions(SoyGeneralOptions orig) {
+    this.allowExternalCalls = orig.allowExternalCalls;
     this.requireTemplateImports = orig.requireTemplateImports;
     this.compileTimeGlobals = orig.compileTimeGlobals;
     this.experimentalFeatures = ImmutableSet.copyOf(orig.experimentalFeatures);
@@ -67,6 +72,24 @@ public final class SoyGeneralOptions implements Cloneable {
   /** Returns the set of enabled experimental features. */
   public ImmutableSet<String> getExperimentalFeatures() {
     return experimentalFeatures;
+  }
+
+  /**
+   * Sets whether to allow external calls (calls to undefined templates).
+   *
+   * @param allowExternalCalls The value to set.
+   */
+  public SoyGeneralOptions setAllowExternalCalls(boolean allowExternalCalls) {
+    this.allowExternalCalls = TriState.from(allowExternalCalls);
+    return this;
+  }
+
+  /**
+   * Returns whether to allow external calls (calls to undefined templates). If this option was
+   * never explicitly set, then returns {@link TriState#UNSET}.
+   */
+  public TriState allowExternalCalls() {
+    return allowExternalCalls;
   }
 
   /**
@@ -180,6 +203,7 @@ public final class SoyGeneralOptions implements Cloneable {
   @Override
   public final String toString() {
     return MoreObjects.toStringHelper(this)
+        .add("allowExternalCalls", allowExternalCalls)
         .add("compileTimeGlobals", compileTimeGlobals)
         .add("experimentalFeatures", experimentalFeatures)
         .toString();
