@@ -16,10 +16,14 @@
 
 package com.google.template.soy.msgs.restricted;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.restricted.SoyMsgPart.Case;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * Utility to compact message bundles.
@@ -45,7 +49,7 @@ public final class SoyMsgBundleCompactor {
   /** The default case spec for select blocks. */
   private static final String DEFAULT_SELECT_CASE_SPEC = null;
 
-  private final CompactInterner interner = new CompactInterner();
+  private final ConcurrentMap<Object, Object> interner = new ConcurrentHashMap<>();
 
   /**
    * Returns a more memory-efficient version of the internal message bundle.
@@ -160,6 +164,16 @@ public final class SoyMsgBundleCompactor {
    * input.
    */
   private <T> T intern(T input) {
-    return interner.intern(input);
+    checkNotNull(input); // sanity
+    Object result = interner.putIfAbsent(input, input);
+    if (result == null) {
+      return input;
+    }
+    if (result.getClass() != input.getClass()) {
+      throw new IllegalStateException();
+    }
+    @SuppressWarnings("unchecked") // safe due to the class check above
+    T typedResult = (T) result;
+    return typedResult;
   }
 }
