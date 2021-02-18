@@ -17,8 +17,6 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkState;
-import static com.google.template.soy.jbcsrc.StandardNames.COMPILED_TEMPLATE;
-import static com.google.template.soy.jbcsrc.StandardNames.RENDER_CONTEXT_FIELD;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.LOGGING_ADVISING_APPENDABLE_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.NULLARY_INIT;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_PROVIDER_TYPE;
@@ -40,6 +38,7 @@ import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.exprtree.AbstractLocalVarDefn;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.jbcsrc.ExpressionCompiler.BasicExpressionCompiler;
 import com.google.template.soy.jbcsrc.ExpressionDetacher.BasicDetacher;
 import com.google.template.soy.jbcsrc.SoyNodeCompiler.CompiledMethodBody;
@@ -545,7 +544,6 @@ final class LazyClosureCompiler {
           SoyNodeCompiler.create(
               analysis,
               parent.innerClasses,
-              thisVar,
               AppendableExpression.forExpression(appendableVar),
               variableSet,
               lookup,
@@ -668,23 +666,24 @@ final class LazyClosureCompiler {
    *       necessary.
    * </ul>
    */
-  private static final class LazyClosureParameterLookup extends AbstractTemplateParameterLookup {
+  private static final class LazyClosureParameterLookup implements TemplateParameterLookup {
     private final CompilationUnit params;
-    private final AbstractTemplateParameterLookup parentParameterLookup;
+    private final TemplateParameterLookup parentParameterLookup;
     private final TemplateVariableManager variableSet;
     private final Expression thisVar;
 
     // These fields track all the parent captures that we need to generate.
     // NOTE: TemplateParam and LocalVar have identity semantics.  But the AST is guaranteed to not
     // have multiple copies.
-    private final Map<AbstractLocalVarDefn<?>, ParentCapture> localFields = new LinkedHashMap<>();
+    private final Map<VarDefn, ParentCapture> localFields = new LinkedHashMap<>();
     private final Map<SyntheticVarName, ParentCapture> syntheticFields = new LinkedHashMap<>();
     private ParentCapture renderContextCapture;
-    private ParentCapture templateCapture;
+    private ParentCapture ijCapture;
+    private ParentCapture paramsCapture;
 
     LazyClosureParameterLookup(
         CompilationUnit params,
-        AbstractTemplateParameterLookup parentParameterLookup,
+        TemplateParameterLookup parentParameterLookup,
         TemplateVariableManager variableSet,
         Expression thisVar) {
       this.params = params;
@@ -694,8 +693,39 @@ final class LazyClosureCompiler {
     }
 
     @Override
-    public FieldRef getParamField(TemplateParam param) {
-      return parentParameterLookup.getParamField(param);
+    public Expression getParam(TemplateParam param) {
+      ParentCapture capturedField = localFields.get(param);
+      if (capturedField == null) {
+        Expression expression = parentParameterLookup.getParam(param);
+        FieldRef field =
+            params.fields.addGeneratedFinalField(param.name(), expression.resultType());
+        capturedField = ParentCapture.create(field, expression);
+        localFields.put(param, capturedField);
+      }
+      return capturedField.field().accessor(thisVar);
+    }
+
+    @Override
+    public Expression getIjRecord() {
+      if (ijCapture == null) {
+        ijCapture =
+            ParentCapture.create(
+                params.fields.addFinalField(StandardNames.IJ_FIELD, BytecodeUtils.SOY_RECORD_TYPE),
+                parentParameterLookup.getIjRecord());
+      }
+      return ijCapture.field().accessor(thisVar);
+    }
+
+    @Override
+    public Expression getParamsRecord() {
+      if (paramsCapture == null) {
+        paramsCapture =
+            ParentCapture.create(
+                params.fields.addFinalField(
+                    StandardNames.PARAMS_FIELD, BytecodeUtils.SOY_RECORD_TYPE),
+                parentParameterLookup.getParamsRecord());
+      }
+      return paramsCapture.field().accessor(thisVar);
     }
 
     @Override
@@ -736,7 +766,8 @@ final class LazyClosureCompiler {
 
     Iterable<ParentCapture> getCapturedFields() {
       return Iterables.concat(
-          Iterables.filter(asList(renderContextCapture, templateCapture), Objects::nonNull),
+          Iterables.filter(
+              asList(renderContextCapture, ijCapture, paramsCapture), Objects::nonNull),
           localFields.values(),
           syntheticFields.values());
     }
@@ -747,32 +778,10 @@ final class LazyClosureCompiler {
         renderContextCapture =
             ParentCapture.create(
                 params.fields.addFinalField(
-                    RENDER_CONTEXT_FIELD, BytecodeUtils.RENDER_CONTEXT_TYPE),
+                    StandardNames.RENDER_CONTEXT_FIELD, BytecodeUtils.RENDER_CONTEXT_TYPE),
                 parentParameterLookup.getRenderContext());
       }
       return new RenderContextExpression(renderContextCapture.field().accessor(thisVar));
-    }
-
-    @Override
-    Expression getCompiledTemplate() {
-      if (templateCapture == null) {
-        Expression compiledTemplate = parentParameterLookup.getCompiledTemplate();
-        templateCapture =
-            ParentCapture.create(
-                params.fields.addFinalField(COMPILED_TEMPLATE, compiledTemplate.resultType()),
-                compiledTemplate);
-      }
-      return templateCapture.field().accessor(thisVar);
-    }
-
-    @Override
-    FieldRef getParamsRecordField() {
-      return parentParameterLookup.getParamsRecordField();
-    }
-
-    @Override
-    FieldRef getIjRecordField() {
-      return parentParameterLookup.getIjRecordField();
     }
   }
 }

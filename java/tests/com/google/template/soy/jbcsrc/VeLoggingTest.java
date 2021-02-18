@@ -342,9 +342,8 @@ public final class VeLoggingTest {
         TemplateTester.getDefaultContext(templates).toBuilder().withLogger(logger).build();
     RenderResult result =
         templates
-            .getTemplateFactory("ns.foo")
-            .create(TemplateTester.asRecord(params), ParamStore.EMPTY_INSTANCE)
-            .render(output, ctx);
+            .getTemplate("ns.foo")
+            .render(TemplateTester.asRecord(params), ParamStore.EMPTY_INSTANCE, output, ctx);
     assertThat(result).isEqualTo(RenderResult.done());
   }
 }

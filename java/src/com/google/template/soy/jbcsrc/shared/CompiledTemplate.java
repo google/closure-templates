@@ -24,40 +24,30 @@ import com.google.template.soy.jbcsrc.api.RenderResult;
 import java.io.IOException;
 
 /** A compiled Soy template. Each instance is suitable for being rendered exactly once. */
+@Immutable
 public interface CompiledTemplate {
-  /** A factory interface for constructing a {@link CompiledTemplate}. */
-  @FunctionalInterface
-  @Immutable
-  interface Factory {
-    /** Returns a new {@link CompiledTemplate} with the given {@link SoyRecord params}. */
-    CompiledTemplate create(SoyRecord params, SoyRecord ij);
-  }
 
   // TODO(lukes): move to the runtime package?
   /** A factory subtype for representing factories as SoyValues. */
-  final class FactoryValue extends SoyAbstractValue {
-    public static FactoryValue create(String templateName, Factory factory) {
-      return new FactoryValue(templateName, factory);
+  final class TemplateValue extends SoyAbstractValue {
+    public static TemplateValue create(String templateName, CompiledTemplate template) {
+      return new TemplateValue(templateName, template);
     }
 
     private final String templateName;
-    private final Factory delegate;
+    private final CompiledTemplate delegate;
 
-    private FactoryValue(String templateName, Factory delegate) {
+    private TemplateValue(String templateName, CompiledTemplate delegate) {
       this.templateName = templateName;
       this.delegate = delegate;
     }
 
-    public Factory getFactory() {
+    public CompiledTemplate getTemplate() {
       return delegate;
     }
 
     public String getTemplateName() {
       return templateName;
-    }
-
-    public CompiledTemplate createTemplate(SoyRecord params, SoyRecord ij) {
-      return delegate.create(params, ij);
     }
 
     @Override
@@ -94,6 +84,8 @@ public interface CompiledTemplate {
   /**
    * Renders the template.
    *
+   * @param params the explicit params of the template
+   * @param ij the explicit injected params of the template
    * @param appendable The output target
    * @param context The rendering context
    * @return {@link RenderResult#done()} if rendering has completed successfully, {@link
@@ -104,7 +96,7 @@ public interface CompiledTemplate {
    * @throws IOException If the output stream throws an exception. This is a fatal error and
    *     rendering cannot be continued.
    */
-  RenderResult render(LoggingAdvisingAppendable appendable, RenderContext context)
+  RenderResult render(
+      SoyRecord params, SoyRecord ij, LoggingAdvisingAppendable appendable, RenderContext context)
       throws IOException;
-
 }

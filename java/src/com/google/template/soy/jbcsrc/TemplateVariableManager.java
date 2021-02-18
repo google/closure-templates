@@ -196,13 +196,11 @@ final class TemplateVariableManager implements LocalVariableManager {
 
   private final SimpleLocalVariableManager delegate;
   private final Map<VarKey, AbstractVariable> variablesByKey = new LinkedHashMap<>();
-  private final LocalVariable stackFrameVariable;
+  private LocalVariable stackFrameVariable;
 
   /** @param method The method being generated */
   TemplateVariableManager(Method method, boolean isStatic) {
     this.delegate = new SimpleLocalVariableManager(method, /*isStatic=*/ isStatic);
-    this.stackFrameVariable =
-        delegate.unsafeBorrowSlot(StandardNames.STACK_FRAME, BytecodeUtils.STACK_FRAME_TYPE);
   }
 
   /** Enters a new scope. Variables may only be defined within a scope. */
@@ -297,6 +295,10 @@ final class TemplateVariableManager implements LocalVariableManager {
   }
 
   LocalVariable getStackFrameVar() {
+    if (stackFrameVariable == null) {
+      this.stackFrameVariable =
+          delegate.unsafeBorrowSlot(StandardNames.STACK_FRAME, BytecodeUtils.STACK_FRAME_TYPE);
+    }
     return stackFrameVariable;
   }
 
@@ -316,9 +318,9 @@ final class TemplateVariableManager implements LocalVariableManager {
 
     abstract Optional<Statement> restore();
   }
-  
+
   void assertSaveRestoreStateIsEmpty() {
-    checkState(variablesByKey.isEmpty());
+    checkState(variablesByKey.values().stream().noneMatch(v -> v instanceof Variable));
   }
 
   private static final Handle BOOTSTRAP_SAVE_HANDLE =
@@ -417,7 +419,7 @@ final class TemplateVariableManager implements LocalVariableManager {
                 new Statement() {
                   @Override
                   protected void doGen(CodeBuilder cb) {
-                    stackFrameVariable.gen(cb);
+                    getStackFrameVar().gen(cb);
                     for (int i = 0; i < variablesToRestoreFromStorage.size(); i++) {
                       if (i < variablesToRestoreFromStorage.size() - 1) {
                         // duplicate the reference to the stack frame at the top of the stack

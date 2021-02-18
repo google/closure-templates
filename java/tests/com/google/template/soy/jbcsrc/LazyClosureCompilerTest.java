@@ -86,6 +86,11 @@ public class LazyClosureCompilerTest {
         .rendersAs("foo bar baz");
   }
 
+  @FunctionalInterface
+  interface TemplateRenderer {
+    RenderResult render() throws IOException;
+  }
+
   @Test
   public void testLetContentNode_detaching() throws IOException {
     SettableFuture<String> bar = SettableFuture.create();
@@ -96,24 +101,26 @@ public class LazyClosureCompilerTest {
             "  hello {$bar}",
             "{/let}",
             "{$foo}");
-    CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.foo");
+    CompiledTemplate template = templates.getTemplate("ns.foo");
     RenderContext context = getDefaultContext(templates);
-    CompiledTemplate template =
-        factory.create(asRecord(ImmutableMap.of("bar", bar)), ParamStore.EMPTY_INSTANCE);
     BufferingAppendable output = LoggingAdvisingAppendable.buffering();
-    RenderResult result = template.render(output, context);
+    TemplateRenderer renderer =
+        () ->
+            template.render(
+                asRecord(ImmutableMap.of("bar", bar)), ParamStore.EMPTY_INSTANCE, output, context);
+    RenderResult result = renderer.render();
     assertThat(result.type()).isEqualTo(RenderResult.Type.DETACH);
     assertThat(result.future()).isSameInstanceAs(bar); // we found bar!
     assertThat(output.toString()).isEqualTo("hello ");
 
     // make sure no progress is made
-    result = template.render(output, context);
+    result = renderer.render();
     assertThat(result.type()).isEqualTo(RenderResult.Type.DETACH);
     assertThat(result.future()).isSameInstanceAs(bar);
     assertThat(output.toString()).isEqualTo("hello ");
     bar.set("bar");
 
-    assertThat(template.render(output, context)).isEqualTo(RenderResult.done());
+    assertThat(renderer.render()).isEqualTo(RenderResult.done());
     assertThat(output.toString()).isEqualTo("hello bar");
   }
 
@@ -146,11 +153,8 @@ public class LazyClosureCompilerTest {
             "  {let $bar : index($s) + index($s) /}",
             "  {$bar}",
             "{/for}");
-    CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.foo");
-    CompiledTemplate template =
-        factory.create(ParamStore.EMPTY_INSTANCE, ParamStore.EMPTY_INSTANCE);
-    List<Class<?>> innerClasses = Lists.newArrayList(template.getClass().getDeclaredClasses());
-    innerClasses.remove(factory.getClass());
+    Class<?> clazz = templates.getTemplateData("ns.foo").templateClass();
+    List<Class<?>> innerClasses = Lists.newArrayList(clazz.getDeclaredClasses());
     Class<?> let = Iterables.getOnlyElement(innerClasses);
     assertThat(let.getSimpleName()).isEqualTo("let_bar");
     // the closures capture variables as constructor parameters.
@@ -208,10 +212,8 @@ public class LazyClosureCompilerTest {
     CompiledTemplates templates =
         compileTemplateBody(
             "{let $fancyList: [$a + 1 for $a in range(100)] /}", "{join($fancyList,',')}");
-    CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.foo");
-    Class<? extends CompiledTemplate> templateClass =
-        factory.create(ParamStore.EMPTY_INSTANCE, ParamStore.EMPTY_INSTANCE).getClass();
-    Field fancyListField = templateClass.getDeclaredField("let_fancyList");
+    Class<?> fileClass = templates.getTemplateData("ns.foo").templateClass();
+    Field fancyListField = fileClass.getDeclaredField("let_fancyList");
     assertThat(Modifier.toString(fancyListField.getModifiers())).isEqualTo("private static final");
     assertThat(fancyListField.getType()).isAssignableTo(SoyList.class);
     fancyListField.setAccessible(true);
@@ -229,24 +231,26 @@ public class LazyClosureCompilerTest {
     CompiledTemplates templates =
         compileTemplateBody(
             "{@param bar : string }", "{let $foo : $bar + $bar /}", "before use", "{$foo}");
-    CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.foo");
+    CompiledTemplate template = templates.getTemplate("ns.foo");
     RenderContext context = getDefaultContext(templates);
-    CompiledTemplate template =
-        factory.create(asRecord(ImmutableMap.of("bar", bar)), ParamStore.EMPTY_INSTANCE);
     BufferingAppendable output = LoggingAdvisingAppendable.buffering();
-    RenderResult result = template.render(output, context);
+    TemplateRenderer renderer =
+        () ->
+            template.render(
+                asRecord(ImmutableMap.of("bar", bar)), ParamStore.EMPTY_INSTANCE, output, context);
+    RenderResult result = renderer.render();
     assertThat(result.type()).isEqualTo(RenderResult.Type.DETACH);
     assertThat(result.future()).isSameInstanceAs(bar); // we found bar!
     assertThat(output.toString()).isEqualTo("before use");
 
     // make sure no progress is made
-    result = template.render(output, context);
+    result = renderer.render();
     assertThat(result.type()).isEqualTo(RenderResult.Type.DETACH);
     assertThat(result.future()).isSameInstanceAs(bar);
     assertThat(output.toString()).isEqualTo("before use");
     bar.set(" bar");
 
-    assertThat(template.render(output, context)).isEqualTo(RenderResult.done());
+    assertThat(renderer.render()).isEqualTo(RenderResult.done());
     assertThat(output.toString()).isEqualTo("before use bar bar");
   }
 
@@ -255,15 +259,14 @@ public class LazyClosureCompilerTest {
     // make sure we don't break normal reflection apis
     CompiledTemplates templates =
         compileTemplateBody("{let $bar : 'a' /}", "{let $foo : $bar + 1 /}");
-    CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.foo");
-    CompiledTemplate template =
-        factory.create(ParamStore.EMPTY_INSTANCE, ParamStore.EMPTY_INSTANCE);
 
-    assertThat(template.getClass().getDeclaredClasses()).hasLength(1);
-    List<Class<?>> innerClasses = Lists.newArrayList(template.getClass().getDeclaredClasses());
+    Class<?> fileClass = templates.getTemplateData("ns.foo").templateClass();
+
+    assertThat(fileClass.getDeclaredClasses()).hasLength(1);
+    List<Class<?>> innerClasses = Lists.newArrayList(fileClass.getDeclaredClasses());
     Class<?> let = Iterables.getOnlyElement(innerClasses);
     assertThat(let.getSimpleName()).isEqualTo("let_foo");
-    assertThat(let.getDeclaringClass()).isEqualTo(template.getClass());
+    assertThat(let.getDeclaringClass()).isEqualTo(fileClass);
   }
 
   private static final class IdentityJavaFunction implements SoyJavaFunction {
@@ -330,14 +333,12 @@ public class LazyClosureCompilerTest {
   public void testTrivialLetClassStructure() throws Exception {
     CompiledTemplates templates =
         compileTemplateBody("{let $bar : 'a' /}", "{let $foo : $bar /} {$foo}");
-    CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.foo");
-    Class<?> template =
-        factory.create(ParamStore.EMPTY_INSTANCE, ParamStore.EMPTY_INSTANCE).getClass();
+    Class<?> fileClass = templates.getTemplateData("ns.foo").templateClass();
     // no inner classes besides the factory
-    assertThat(asList(template.getDeclaredClasses())).isEmpty();
+    assertThat(asList(fileClass.getDeclaredClasses())).isEmpty();
     // we only store bar in a private static field
-    Field barField = template.getDeclaredField("let_bar");
-    assertThat(asList(template.getDeclaredFields())).containsExactly(barField);
+    Field barField = fileClass.getDeclaredField("let_bar");
+    assertThat(asList(fileClass.getDeclaredFields())).containsExactly(barField);
     assertThat(barField.getType()).isEqualTo(StringData.class);
     assertThat(barField.getModifiers())
         .isEqualTo(Modifier.PRIVATE | Modifier.STATIC | Modifier.FINAL);

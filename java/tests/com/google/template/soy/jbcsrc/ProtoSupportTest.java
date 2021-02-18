@@ -445,6 +445,11 @@ public final class ProtoSupportTest {
         .rendersAs("[]");
   }
 
+  @FunctionalInterface
+  interface TemplateRenderer {
+    RenderResult render() throws IOException;
+  }
+
   private CompiledTemplateSubject assertThatTemplateBody(String... body) {
     try {
       SoyFileSetParserBuilder builder =
@@ -461,11 +466,11 @@ public final class ProtoSupportTest {
   }
 
   private String render(CompiledTemplates templates, String name, SoyRecord params) {
-    CompiledTemplate caller =
-        templates.getTemplateFactory(name).create(params, ParamStore.EMPTY_INSTANCE);
+    CompiledTemplate caller = templates.getTemplate(name);
     BufferingAppendable sb = LoggingAdvisingAppendable.buffering();
     try {
-      assertThat(caller.render(sb, getDefaultContext(templates))).isEqualTo(RenderResult.done());
+      assertThat(caller.render(params, ParamStore.EMPTY_INSTANCE, sb, getDefaultContext(templates)))
+          .isEqualTo(RenderResult.done());
     } catch (IOException e) {
       throw new RuntimeException(e);
     }

@@ -158,7 +158,7 @@ public final class TemplateTester {
     private final List<SoySourceFunction> soySourceFunctions = new ArrayList<>();
 
     private Iterable<ClassData> classData;
-    private CompiledTemplate.Factory factory;
+    private CompiledTemplate template;
     private SoyTypeRegistry typeRegistry = SoyTypeRegistryBuilder.create();
     private ImmutableList<String> experimentalFeatures = ImmutableList.of();
     private SoyCssRenamingMap cssRenamingMap = SoyCssRenamingMap.EMPTY;
@@ -172,7 +172,7 @@ public final class TemplateTester {
 
     CompiledTemplateSubject withTypeRegistry(SoyTypeRegistry typeRegistry) {
       classData = null;
-      factory = null;
+      template = null;
       this.typeRegistry = typeRegistry;
       return this;
     }
@@ -184,14 +184,14 @@ public final class TemplateTester {
 
     CompiledTemplateSubject withLegacySoyFunction(SoyFunction soyFunction) {
       classData = null;
-      factory = null;
+      template = null;
       this.soyFunctions.add(checkNotNull(soyFunction));
       return this;
     }
 
     CompiledTemplateSubject withSoySourceFunction(SoySourceFunction soySourceFunction) {
       classData = null;
-      factory = null;
+      template = null;
       this.soySourceFunctions.add(checkNotNull(soySourceFunction));
       return this;
     }
@@ -238,7 +238,7 @@ public final class TemplateTester {
       BufferingAppendable builder = LoggingAdvisingAppendable.buffering();
       compile();
       try {
-        factory.create(asRecord(params), ParamStore.EMPTY_INSTANCE).render(builder, defaultContext);
+        template.render(asRecord(params), ParamStore.EMPTY_INSTANCE, builder, defaultContext);
         failWithoutActual(
             simpleFact(
                 String.format(
@@ -260,7 +260,7 @@ public final class TemplateTester {
       BufferingAppendable builder = LoggingAdvisingAppendable.buffering();
       compile();
       try {
-        factory.create(asRecord(params), ParamStore.EMPTY_INSTANCE).render(builder, defaultContext);
+        template.render(asRecord(params), ParamStore.EMPTY_INSTANCE, builder, defaultContext);
         failWithoutActual(
             simpleFact(
                 String.format(
@@ -313,12 +313,11 @@ public final class TemplateTester {
         SoyRecord params,
         SoyRecord ij,
         RenderContext context) {
-      CompiledTemplate template = factory.create(params, ij);
       BufferingAppendable builder = LoggingAdvisingAppendable.buffering();
       LogCapturer logOutput = new LogCapturer();
       RenderResult result;
       try (SystemOutRestorer restorer = logOutput.enter()) {
-        result = template.render(builder, context);
+        result = template.render(params, ij, builder, context);
       } catch (Throwable e) {
         // TODO(lukes): the fact that we are catching an exception means we have structured
         // this subject poorly.  The subject should be responsible for asserting, not actually
@@ -375,12 +374,13 @@ public final class TemplateTester {
         // intermediate data structures.
         TemplateRegistry registry = parseResult.registry();
 
-        TemplateNode template = SoyTreeUtils.getAllNodesOfType(fileSet, TemplateNode.class).get(0);
-        String templateName = template.getTemplateName();
+        TemplateNode templateNode =
+            SoyTreeUtils.getAllNodesOfType(fileSet, TemplateNode.class).get(0);
+        String templateName = templateNode.getTemplateName();
         classData =
             new TemplateCompiler(
                     CompiledTemplateMetadata.create(templateName),
-                    template,
+                    templateNode,
                     new JavaSourceFunctionCompiler(typeRegistry, ErrorReporter.exploding()))
                 .compile();
         checkClasses(classData);
@@ -394,7 +394,7 @@ public final class TemplateTester {
                     .map(TemplateMetadata::getTemplateName)
                     .collect(toImmutableSet()),
                 new MemoryClassLoader(classData));
-        factory = compiledTemplates.getTemplateFactory(templateName);
+        this.template = compiledTemplates.getTemplate(templateName);
         defaultContext =
             createDefaultBuilder(compiledTemplates)
                 .withPluginInstances(pluginInstances.build())

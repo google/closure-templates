@@ -19,6 +19,7 @@ package com.google.template.soy.jbcsrc.runtime;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
+import static java.lang.invoke.MethodType.methodType;
 
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
@@ -63,6 +64,7 @@ import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.LegacyFunctionAdapter;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
+import com.google.template.soy.jbcsrc.shared.SaveStateMetaFactory;
 import com.google.template.soy.jbcsrc.shared.StackFrame;
 import com.google.template.soy.logging.SoyLogger;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
@@ -74,6 +76,9 @@ import com.google.template.soy.msgs.restricted.SoyMsgSelectPart;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.ibm.icu.util.ULocale;
 import java.io.IOException;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -710,13 +715,35 @@ public final class JbcSrcRuntime {
   }
 
   /** Wraps a compiled template to apply escaping directives. */
+  @Immutable
   private static final class EscapedCompiledTemplate implements CompiledTemplate {
     private final CompiledTemplate delegate;
+    // these directives are builtin escaping directives which are all pure
+    // functions but not annotated.
+    @SuppressWarnings("Immutable")
     private final ImmutableList<SoyJavaPrintDirective> directives;
 
-    // Note: render() may be called multiple times as part of a render operation that detaches
-    // halfway through.  So we need to store the buffer in a field, but we never need to reset it.
-    private final BufferingAppendable buffer = LoggingAdvisingAppendable.buffering();
+    static class SaveRestoreState {
+      static final MethodHandle saveStateMethodHandle;
+      static final MethodHandle restoreAppendableHandle;
+
+      static {
+        MethodHandles.Lookup lookup = MethodHandles.lookup();
+        MethodType saveMethodType =
+            methodType(void.class, RenderContext.class, BufferingAppendable.class);
+        saveStateMethodHandle =
+            SaveStateMetaFactory.bootstrapSaveState(lookup, "saveState", saveMethodType, 1)
+                .getTarget();
+        restoreAppendableHandle =
+            SaveStateMetaFactory.bootstrapRestoreState(
+                    lookup,
+                    "restoreLocal",
+                    methodType(BufferingAppendable.class, StackFrame.class),
+                    saveMethodType,
+                    0)
+                .getTarget();
+      }
+    }
 
     EscapedCompiledTemplate(CompiledTemplate delegate, List<SoyJavaPrintDirective> directives) {
       this.delegate = checkNotNull(delegate);
@@ -724,15 +751,39 @@ public final class JbcSrcRuntime {
     }
 
     @Override
-    public RenderResult render(LoggingAdvisingAppendable appendable, RenderContext context)
+    public RenderResult render(
+        SoyRecord params, SoyRecord ij, LoggingAdvisingAppendable appendable, RenderContext context)
         throws IOException {
-      RenderResult result = delegate.render(buffer, context);
+      StackFrame frame = context.popFrame();
+      BufferingAppendable buffer;
+      switch (frame.stateNumber) {
+        case 0:
+          buffer = LoggingAdvisingAppendable.buffering();
+          break;
+        case 1:
+          try {
+            buffer =
+                (BufferingAppendable) SaveRestoreState.restoreAppendableHandle.invokeExact(frame);
+          } catch (Throwable t) {
+            throw new AssertionError(t);
+          }
+          break;
+        default:
+          throw unexpectedStateError(frame);
+      }
+      RenderResult result = delegate.render(params, ij, buffer, context);
       if (result.isDone()) {
         SoyValue resultData = buffer.getAsSoyValue();
         for (SoyJavaPrintDirective directive : directives) {
           resultData = directive.applyForJava(resultData, ImmutableList.of());
         }
         appendable.append(resultData.coerceToString());
+      } else {
+        try {
+          SaveRestoreState.saveStateMethodHandle.invokeExact(context, buffer);
+        } catch (Throwable t) {
+          throw new AssertionError(t);
+        }
       }
       return result;
     }
@@ -823,20 +874,21 @@ public final class JbcSrcRuntime {
     return LazyProtoToSoyValueList.forList(list.build(), protoFieldInterpreter);
   }
 
-  public static CompiledTemplate.FactoryValue bindTemplateParams(
-      CompiledTemplate.FactoryValue template, SoyRecord boundParams) {
-    return CompiledTemplate.FactoryValue.create(
-        template.getTemplateName(), new PartiallyBoundTemplate(boundParams, template.getFactory()));
+  public static CompiledTemplate.TemplateValue bindTemplateParams(
+      CompiledTemplate.TemplateValue template, SoyRecord boundParams) {
+    return CompiledTemplate.TemplateValue.create(
+        template.getTemplateName(),
+        new PartiallyBoundTemplate(boundParams, template.getTemplate()));
   }
 
   @Immutable
-  private static final class PartiallyBoundTemplate implements CompiledTemplate.Factory {
+  private static final class PartiallyBoundTemplate implements CompiledTemplate {
     @SuppressWarnings("Immutable") // this is never mutated
     private final SoyRecord boundParams;
 
-    private final CompiledTemplate.Factory delegate;
+    private final CompiledTemplate delegate;
 
-    PartiallyBoundTemplate(SoyRecord boundParams, CompiledTemplate.Factory delegate) {
+    PartiallyBoundTemplate(SoyRecord boundParams, CompiledTemplate delegate) {
       if (delegate instanceof PartiallyBoundTemplate) {
         PartiallyBoundTemplate partiallyBoundTemplate = (PartiallyBoundTemplate) delegate;
         boundParams = SoyRecords.merge(partiallyBoundTemplate.boundParams, boundParams);
@@ -847,10 +899,12 @@ public final class JbcSrcRuntime {
     }
 
     @Override
-    public CompiledTemplate create(SoyRecord params, SoyRecord ij) {
+    public RenderResult render(
+        SoyRecord params, SoyRecord ij, LoggingAdvisingAppendable appendable, RenderContext context)
+        throws IOException {
       // Internally SoyRecords.merge uses an AugmentedParamStore.  This is probably not the best
       // choice.
-      return delegate.create(SoyRecords.merge(boundParams, params), ij);
+      return delegate.render(SoyRecords.merge(boundParams, params), ij, appendable, context);
     }
   }
 

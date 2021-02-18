@@ -92,8 +92,8 @@ public class CompiledTemplates {
   }
 
   /** Returns a factory for the given fully qualified template name. */
-  public CompiledTemplate.Factory getTemplateFactory(String name) {
-    return getTemplateData(name).factory();
+  public CompiledTemplate getTemplate(String name) {
+    return getTemplateData(name).template();
   }
 
   /**
@@ -146,21 +146,21 @@ public class CompiledTemplates {
 
   /** Returns an active delegate for the given name, variant and active package selector. */
   @Nullable
-  CompiledTemplate.Factory selectDelTemplate(
+  CompiledTemplate selectDelTemplate(
       String delTemplateName, String variant, Predicate<String> activeDelPackageSelector) {
     TemplateData selectedTemplate =
         selector.selectTemplate(delTemplateName, variant, activeDelPackageSelector);
     if (selectedTemplate == null) {
       return null;
     }
-    return selectedTemplate.factory();
+    return selectedTemplate.template();
   }
 
   public TemplateData getTemplateData(String name) {
     checkNotNull(name);
     TemplateData template = templateNameToFactory.get(name);
     if (template == null) {
-      template = loadFactory(name, loader);
+      template = loadTemplate(name, loader);
       TemplateData old = templateNameToFactory.putIfAbsent(name, template);
       if (old != null) {
         return old;
@@ -169,13 +169,11 @@ public class CompiledTemplates {
     return template;
   }
 
-  private static TemplateData loadFactory(String name, ClassLoader loader) {
-    Class<? extends CompiledTemplate> templateClass;
+  private static TemplateData loadTemplate(String name, ClassLoader loader) {
+    Class<?> templateClass;
     try {
       String templateName = Names.javaClassNameFromSoyTemplateName(name);
-      templateClass =
-          Class.forName(templateName, /* initialize= */ true, loader)
-              .asSubclass(CompiledTemplate.class);
+      templateClass = Class.forName(templateName, /* initialize= */ true, loader);
     } catch (ClassNotFoundException e) {
       String format = "No class was compiled for template: %s.";
       throw new IllegalArgumentException(String.format(format, name), e);
@@ -249,9 +247,9 @@ public class CompiledTemplates {
   /** This is mostly a copy of the {@link TemplateMetadata} annotation. */
   @Immutable
   public static final class TemplateData {
-    final Class<? extends CompiledTemplate> templateClass;
+    final Class<?> templateClass;
     // lazily initialized since it is not always needed
-    @LazyInit CompiledTemplate.Factory factory;
+    @LazyInit CompiledTemplate template;
 
     // many of these fields should probably be only lazily calculated
     final ContentKind kind;
@@ -269,7 +267,7 @@ public class CompiledTemplates {
     // general this is only needed for relatively few templates.
     @LazyInit ImmutableSortedSet<String> transitiveIjParams;
 
-    public TemplateData(Class<? extends CompiledTemplate> template) {
+    public TemplateData(Class<?> template) {
       this.templateClass = template;
       // We pull the content kind off the templatemetadata eagerly since the parsing+reflection each
       // time is expensive.
@@ -294,7 +292,7 @@ public class CompiledTemplates {
     }
 
     @VisibleForTesting
-    public Class<? extends CompiledTemplate> templateClass() {
+    public Class<?> templateClass() {
       return templateClass;
     }
 
@@ -303,16 +301,16 @@ public class CompiledTemplates {
     }
 
     @VisibleForTesting
-    public void setFactory(CompiledTemplate.Factory factory) {
-      this.factory = factory;
+    public void setTemplate(CompiledTemplate template) {
+      this.template = template;
     }
 
-    public CompiledTemplate.Factory factory() {
-      CompiledTemplate.Factory local = factory;
+    public CompiledTemplate template() {
+      CompiledTemplate local = template;
       if (local == null) {
         Method method;
         try {
-          method = templateClass.getMethod("factory");
+          method = templateClass.getMethod("template");
         } catch (NoSuchMethodException nsme) {
           // for private templates the factory() method is package private and so getMethod will
           // fail.
@@ -320,7 +318,7 @@ public class CompiledTemplates {
               "cannot get a factory for the private template: " + soyTemplateName(), nsme);
         }
         try {
-          local = (CompiledTemplate.Factory) method.invoke(null);
+          local = (CompiledTemplate) method.invoke(null);
         } catch (ReflectiveOperationException e) {
           // this should be impossible since our factories are public with a default constructor.
           // TODO(lukes): failures of bytecode verification will propagate as Errors, we should
@@ -329,7 +327,7 @@ public class CompiledTemplates {
           // class trace and a pointer on how to file a soy bug)
           throw new AssertionError(e);
         }
-        factory = local;
+        template = local;
       }
       return local;
     }

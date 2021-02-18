@@ -38,10 +38,6 @@ abstract class SyntheticVarName {
     return new AutoValue_SyntheticVarName(StandardNames.CURRENT_APPENDABLE, null);
   }
 
-  static SyntheticVarName callee() {
-    return new AutoValue_SyntheticVarName(StandardNames.CURRENT_CALLEE, null);
-  }
-
   static SyntheticVarName params() {
     return new AutoValue_SyntheticVarName(StandardNames.CURRENT_PARAMS, null);
   }

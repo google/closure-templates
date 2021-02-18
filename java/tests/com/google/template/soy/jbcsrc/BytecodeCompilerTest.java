@@ -82,7 +82,6 @@ import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -185,7 +184,7 @@ public class BytecodeCompilerTest {
                 parser.soyFileSuppliers(),
                 parser.typeRegistry())
             .get();
-    CompiledTemplate.Factory factory = templates.getTemplateFactory("ns1.callerTemplate");
+    CompiledTemplate template = templates.getTemplate("ns1.callerTemplate");
     Predicate<String> activePackages = arg -> false;
     assertThat(templates.getAllRequiredCssNamespaces("ns1.callerTemplate", activePackages, false))
         .containsExactly("ns.default");
@@ -207,19 +206,19 @@ public class BytecodeCompilerTest {
                 "ns1.callerTemplate", arg -> arg.equals("AlternateSecretFeature"), false))
         .containsExactly("ns.bar");
 
-    assertThat(renderWithContext(factory, getDefaultContext(templates, activePackages)))
+    assertThat(renderWithContext(template, getDefaultContext(templates, activePackages)))
         .isEqualTo("default");
 
     activePackages = "SecretFeature"::equals;
-    assertThat(renderWithContext(factory, getDefaultContext(templates, activePackages)))
+    assertThat(renderWithContext(template, getDefaultContext(templates, activePackages)))
         .isEqualTo("SecretFeature aaaaaah");
 
     activePackages = "AlternateSecretFeature"::equals;
-    assertThat(renderWithContext(factory, getDefaultContext(templates, activePackages)))
+    assertThat(renderWithContext(template, getDefaultContext(templates, activePackages)))
         .isEqualTo("AlternateSecretFeature aaaaaah");
 
     activePackages = "NonexistentFeature"::equals;
-    assertThat(renderWithContext(factory, getDefaultContext(templates, activePackages)))
+    assertThat(renderWithContext(template, getDefaultContext(templates, activePackages)))
         .isEqualTo("default");
   }
 
@@ -256,32 +255,30 @@ public class BytecodeCompilerTest {
             .get();
 
     // HTML templates
-    CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.html");
-    assertThat(renderWithContext(factory, getDefaultContext(templates)))
+    CompiledTemplate template = templates.getTemplate("ns.html");
+    assertThat(renderWithContext(template, getDefaultContext(templates)))
         .isEqualTo("<div>foo</div>");
     // If debugSoyTemplateInfo is enabled, we should render additional HTML comments.
-    assertThat(renderWithContext(factory, getDefaultContextWithDebugInfo(templates)))
+    assertThat(renderWithContext(template, getDefaultContextWithDebugInfo(templates)))
         .isEqualTo("<div data-debug-soy=\"ns.html no-path:4\">foo</div>");
 
     // We should never render these comments for templates with kind="text".
-    factory = templates.getTemplateFactory("ns.text");
-    assertThat(renderWithContext(factory, getDefaultContext(templates))).isEqualTo("foo");
-    assertThat(renderWithContext(factory, getDefaultContextWithDebugInfo(templates)))
+    template = templates.getTemplate("ns.text");
+    assertThat(renderWithContext(template, getDefaultContext(templates))).isEqualTo("foo");
+    assertThat(renderWithContext(template, getDefaultContextWithDebugInfo(templates)))
         .isEqualTo("foo");
 
-    factory = templates.getTemplateFactory("ns.htmlNoTag");
-    assertThat(renderWithContext(factory, getDefaultContext(templates))).isEqualTo("foo");
-    assertThat(renderWithContext(factory, getDefaultContextWithDebugInfo(templates)))
+    template = templates.getTemplate("ns.htmlNoTag");
+    assertThat(renderWithContext(template, getDefaultContext(templates))).isEqualTo("foo");
+    assertThat(renderWithContext(template, getDefaultContextWithDebugInfo(templates)))
         .isEqualTo("foo");
   }
 
-  private static String renderWithContext(CompiledTemplate.Factory factory, RenderContext context)
+  private static String renderWithContext(CompiledTemplate template, RenderContext context)
       throws IOException {
     BufferingAppendable builder = LoggingAdvisingAppendable.buffering();
     assertThat(
-            factory
-                .create(ParamStore.EMPTY_INSTANCE, ParamStore.EMPTY_INSTANCE)
-                .render(builder, context))
+            template.render(ParamStore.EMPTY_INSTANCE, ParamStore.EMPTY_INSTANCE, builder, context))
         .isEqualTo(RenderResult.done());
     return builder.toString();
   }
@@ -313,33 +310,33 @@ public class BytecodeCompilerTest {
     CompiledTemplates templates = compileFiles(soyFileContent1);
     assertThat(templates.getAllRequiredCssNamespaces("ns1.callerTemplate", (arg) -> false, false))
         .isEmpty();
-    CompiledTemplate.Factory factory = templates.getTemplateFactory("ns1.callerTemplate");
+    CompiledTemplate template = templates.getTemplate("ns1.callerTemplate");
     RenderContext context = getDefaultContext(templates);
     BufferingAppendable builder = LoggingAdvisingAppendable.buffering();
     assertThat(
-            factory
-                .create(
-                    TemplateTester.asRecord(ImmutableMap.of("variant", "v1")),
-                    ParamStore.EMPTY_INSTANCE)
-                .render(builder, context))
+            template.render(
+                TemplateTester.asRecord(ImmutableMap.of("variant", "v1")),
+                ParamStore.EMPTY_INSTANCE,
+                builder,
+                context))
         .isEqualTo(RenderResult.done());
     assertThat(builder.getAndClearBuffer()).isEqualTo("v1");
 
     assertThat(
-            factory
-                .create(
-                    TemplateTester.asRecord(ImmutableMap.of("variant", "v2")),
-                    ParamStore.EMPTY_INSTANCE)
-                .render(builder, context))
+            template.render(
+                TemplateTester.asRecord(ImmutableMap.of("variant", "v2")),
+                ParamStore.EMPTY_INSTANCE,
+                builder,
+                context))
         .isEqualTo(RenderResult.done());
     assertThat(builder.getAndClearBuffer()).isEqualTo("v2");
 
     assertThat(
-            factory
-                .create(
-                    TemplateTester.asRecord(ImmutableMap.of("variant", "unknown")),
-                    ParamStore.EMPTY_INSTANCE)
-                .render(builder, context))
+            template.render(
+                TemplateTester.asRecord(ImmutableMap.of("variant", "unknown")),
+                ParamStore.EMPTY_INSTANCE,
+                builder,
+                context))
         .isEqualTo(RenderResult.done());
     assertThat(builder.toString()).isEmpty();
 
@@ -474,14 +471,11 @@ public class BytecodeCompilerTest {
             "    <a href='/'>Hello {$name + '' phname='FOO'}</a>",
             "  {/msg}",
             "{/template}");
-    Class<? extends CompiledTemplate> templateClass =
-        templates.getTemplateData("ns.msg").templateClass();
+    Class<?> templateClass = templates.getTemplateData("ns.msg").templateClass();
     Class<?> innerClass =
         Iterables.getOnlyElement(Arrays.asList(templateClass.getDeclaredClasses()));
     assertThat(innerClass.getSimpleName()).isEqualTo("ph_FOO");
     assertThat(innerClass.getDeclaredFields()).hasLength(2);
-    assertThat(innerClass.getDeclaredField("$template").getType())
-        .isAssignableTo(CompiledTemplate.class);
     templates =
         TemplateTester.compileFile(
             "{namespace ns}",
@@ -506,10 +500,11 @@ public class BytecodeCompilerTest {
 
   private String render(CompiledTemplates templates, SoyRecord params, String name)
       throws IOException {
-    CompiledTemplate caller =
-        templates.getTemplateFactory(name).create(params, ParamStore.EMPTY_INSTANCE);
+    CompiledTemplate caller = templates.getTemplate(name);
     BufferingAppendable builder = LoggingAdvisingAppendable.buffering();
-    assertThat(caller.render(builder, getDefaultContext(templates))).isEqualTo(RenderResult.done());
+    assertThat(
+            caller.render(params, ParamStore.EMPTY_INSTANCE, builder, getDefaultContext(templates)))
+        .isEqualTo(RenderResult.done());
     return builder.toString();
   }
 
@@ -879,65 +874,27 @@ public class BytecodeCompilerTest {
   public void testParamValidation() throws Exception {
     CompiledTemplates templates =
         TemplateTester.compileTemplateBody("{@param foo : int}", "{$foo ?: -1}");
-    CompiledTemplate.Factory singleParam = templates.getTemplateFactory("ns.foo");
+    CompiledTemplate singleParam = templates.getTemplate("ns.foo");
     RenderContext context = getDefaultContext(templates);
     BufferingAppendable builder = LoggingAdvisingAppendable.buffering();
 
     SoyDict params = SoyValueConverterUtility.newDict("foo", IntegerData.forValue(1));
-    singleParam.create(params, ParamStore.EMPTY_INSTANCE).render(builder, context);
+    singleParam.render(params, ParamStore.EMPTY_INSTANCE, builder, context);
     assertThat(builder.getAndClearBuffer()).isEqualTo("1");
 
-    singleParam
-        .create(ParamStore.EMPTY_INSTANCE, ParamStore.EMPTY_INSTANCE)
-        .render(builder, context);
+    singleParam.render(ParamStore.EMPTY_INSTANCE, ParamStore.EMPTY_INSTANCE, builder, context);
     assertThat(builder.getAndClearBuffer()).isEqualTo("-1");
 
     templates = TemplateTester.compileTemplateBody("{@inject foo : int}", "{$foo}");
-    CompiledTemplate.Factory singleIj = templates.getTemplateFactory("ns.foo");
+    CompiledTemplate singleIj = templates.getTemplate("ns.foo");
     context = getDefaultContext(templates);
 
     params = SoyValueConverterUtility.newDict("foo", IntegerData.forValue(1));
-    singleIj.create(ParamStore.EMPTY_INSTANCE, params).render(builder, context);
+    singleIj.render(ParamStore.EMPTY_INSTANCE, params, builder, context);
     assertThat(builder.getAndClearBuffer()).isEqualTo("1");
 
-    singleIj.create(ParamStore.EMPTY_INSTANCE, ParamStore.EMPTY_INSTANCE).render(builder, context);
+    singleIj.render(ParamStore.EMPTY_INSTANCE, ParamStore.EMPTY_INSTANCE, builder, context);
     assertThat(builder.getAndClearBuffer()).isEqualTo("null");
-  }
-
-  @Test
-  public void testParamFields() throws Exception {
-    CompiledTemplate.Factory multipleParams =
-        TemplateTester.compileTemplateBody(
-                "{@param foo : string}",
-                "{@param baz : string}",
-                "{@inject bar : string}",
-                "{@param defaultP:= 'orange'}",
-                "{$foo + $baz + $bar + $defaultP}")
-            .getTemplateFactory("ns.foo");
-    SoyDict params =
-        SoyValueConverterUtility.newDict(
-            "foo", StringData.forValue("foo"),
-            "bar", StringData.forValue("bar"),
-            "baz", StringData.forValue("baz"));
-    CompiledTemplate template = multipleParams.create(params, params);
-    assertThat(getField("foo", template)).isEqualTo(StringData.forValue("foo"));
-    assertThat(getField("bar", template)).isEqualTo(StringData.forValue("bar"));
-    assertThat(getField("baz", template)).isEqualTo(StringData.forValue("baz"));
-    assertThat(getField("defaultP", template)).isEqualTo(StringData.forValue("orange"));
-
-    SoyDict overrideParam =
-        SoyValueConverterUtility.newDict(
-            "foo", StringData.forValue("foo"),
-            "bar", StringData.forValue("bar"),
-            "baz", StringData.forValue("baz"),
-            "defaultP", StringData.forValue("green"));
-    template = multipleParams.create(overrideParam, overrideParam);
-    assertThat(getField("defaultP", template)).isEqualTo(StringData.forValue("green"));
-
-    TemplateMetadata templateMetadata = template.getClass().getAnnotation(TemplateMetadata.class);
-    assertThat(templateMetadata.injectedParams()).asList().containsExactly("bar");
-    assertThat(templateMetadata.callees()).isEmpty();
-    assertThat(templateMetadata.delCallees()).isEmpty();
   }
 
   @Test
@@ -989,21 +946,12 @@ public class BytecodeCompilerTest {
         "<b>hello</b>", ImmutableMap.of("content", SanitizedContents.constantHtml("<b>hello</b>")));
   }
 
-  private Object getField(String name, CompiledTemplate template) throws Exception {
-    Field declaredField = template.getClass().getDeclaredField(name);
-    declaredField.setAccessible(true);
-    return declaredField.get(template);
-  }
-
   @Test
   public void testBasicFunctionality() {
     // make sure we don't break standard reflection access
-    CompiledTemplate.Factory factory =
-        TemplateTester.compileTemplateBody("hello world").getTemplateFactory("ns.foo");
+    Class<?> templateClass =
+        TemplateTester.compileTemplateBody("hello world").getTemplateData("ns.foo").templateClass();
 
-    CompiledTemplate templateInstance =
-        factory.create(ParamStore.EMPTY_INSTANCE, ParamStore.EMPTY_INSTANCE);
-    Class<? extends CompiledTemplate> templateClass = templateInstance.getClass();
     assertThat(templateClass.getName()).isEqualTo("com.google.template.soy.jbcsrc.gen.ns.foo");
     assertThat(templateClass.getSimpleName()).isEqualTo("foo");
 
@@ -1020,14 +968,13 @@ public class BytecodeCompilerTest {
   public void factoryReturnsSameInstanceEachTime() throws Exception {
     // CompiledTemplates returns the same factory each time
     CompiledTemplates templates = TemplateTester.compileTemplateBody("hello world");
-    CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.foo");
-    assertThat(factory).isSameInstanceAs(templates.getTemplateFactory("ns.foo"));
+    CompiledTemplates.TemplateData templateData = templates.getTemplateData("ns.foo");
+    CompiledTemplate template = templateData.template();
+    assertThat(template).isSameInstanceAs(templates.getTemplate("ns.foo"));
 
-    CompiledTemplate template =
-        factory.create(ParamStore.EMPTY_INSTANCE, ParamStore.EMPTY_INSTANCE);
-    Method factoryMethod = template.getClass().getMethod("factory");
-    assertThat(factory).isSameInstanceAs(factoryMethod.invoke(null));
-    assertThat(factory).isSameInstanceAs(factoryMethod.invoke(null));
+    Method templateMethod = templateData.templateClass().getMethod("template");
+    assertThat(template).isSameInstanceAs(templateMethod.invoke(null));
+    assertThat(template).isSameInstanceAs(templateMethod.invoke(null));
   }
 
   @Test
@@ -1037,7 +984,7 @@ public class BytecodeCompilerTest {
         TemplateTester.compileFile(
             "{namespace ns}{template .foo visibility=\"private\"}hello world{/template}");
     try {
-      templates.getTemplateFactory("ns.foo");
+      templates.getTemplate("ns.foo");
       fail();
     } catch (IllegalArgumentException expected) {
     }
@@ -1146,7 +1093,7 @@ public class BytecodeCompilerTest {
                 parser.soyFileSuppliers(),
                 parser.typeRegistry())
             .get();
-    CompiledTemplate.Factory caller = templates.getTemplateFactory("ns.callerTemplate");
+    CompiledTemplate caller = templates.getTemplate("ns.callerTemplate");
     try {
       renderWithContext(caller, getDefaultContext(templates));
       fail();

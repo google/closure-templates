@@ -46,7 +46,7 @@ import javax.annotation.Nullable;
  */
 public final class RenderContext {
   private static RenderResult emptyTemplate(
-      LoggingAdvisingAppendable appendable, RenderContext context) {
+      SoyRecord params, SoyRecord ij, LoggingAdvisingAppendable appendable, RenderContext context) {
     return RenderResult.done();
   }
 
@@ -174,13 +174,12 @@ public final class RenderContext {
     return logger;
   }
 
-  public CompiledTemplate.Factory getTemplateFactory(String calleeName) {
-    return templates.getTemplateFactory(calleeName);
+  public CompiledTemplate getTemplate(String calleeName) {
+    return templates.getTemplate(calleeName);
   }
 
-  public CompiledTemplate getDelTemplate(
-      String calleeName, String variant, boolean allowEmpty, SoyRecord params, SoyRecord ij) {
-    CompiledTemplate.Factory callee =
+  public CompiledTemplate getDelTemplate(String calleeName, String variant, boolean allowEmpty) {
+    CompiledTemplate callee =
         templates.selectDelTemplate(calleeName, variant, activeDelPackageSelector);
     if (callee == null) {
       if (allowEmpty) {
@@ -192,7 +191,7 @@ public final class RenderContext {
               + (variant.isEmpty() ? "" : ":" + variant)
               + "\" (and delcall does not set allowemptydefault=\"true\").");
     }
-    return callee.create(params, ij);
+    return callee;
   }
 
   /** Returns {@code true} if the primary msg should be used instead of the fallback. */

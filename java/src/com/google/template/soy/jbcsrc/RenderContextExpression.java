@@ -18,7 +18,6 @@ package com.google.template.soy.jbcsrc;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
@@ -35,13 +34,7 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
 
   private static final MethodRef GET_DELTEMPLATE =
       MethodRef.create(
-          RenderContext.class,
-          "getDelTemplate",
-          String.class,
-          String.class,
-          boolean.class,
-          SoyRecord.class,
-          SoyRecord.class);
+          RenderContext.class, "getDelTemplate", String.class, String.class, boolean.class);
 
   private static final MethodRef GET_PLUGIN_INSTANCE =
       MethodRef.create(RenderContext.class, "getPluginInstance", String.class);
@@ -153,18 +146,9 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
   }
 
   Expression getDeltemplate(
-      String delCalleeName,
-      Expression variantExpr,
-      boolean allowEmptyDefault,
-      Expression params,
-      Expression ijRecord) {
+      String delCalleeName, Expression variantExpr, boolean allowEmptyDefault) {
     return delegate.invoke(
-        GET_DELTEMPLATE,
-        constant(delCalleeName),
-        variantExpr,
-        constant(allowEmptyDefault),
-        params,
-        ijRecord);
+        GET_DELTEMPLATE, constant(delCalleeName), variantExpr, constant(allowEmptyDefault));
   }
 
   @Override

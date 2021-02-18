@@ -16,12 +16,10 @@
 
 package com.google.template.soy.jbcsrc;
 
-import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.COMPILED_TEMPLATE_FACTORY_TYPE;
-import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_RECORD_TYPE;
 
 import com.google.auto.value.AutoValue;
-import com.google.template.soy.data.LoggingAdvisingAppendable;
-import com.google.template.soy.jbcsrc.restricted.ConstructorRef;
+import com.google.template.soy.data.SoyRecord;
+import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.TypeInfo;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
@@ -39,61 +37,41 @@ import org.objectweb.asm.commons.Method;
 @AutoValue
 abstract class CompiledTemplateMetadata {
   /**
-   * The {@link Method} signature of all generated constructors for the {@link CompiledTemplate}
-   * classes.
+   * The {@link Method} signature of the {@link
+   * CompiledTemplate#render(SoyRecord,SoyRecord,AdvisingAppendable, RenderContext)} method.
    */
-  private static final Method GENERATED_CONSTRUCTOR =
+  static final Method RENDER_METHOD =
       new Method(
-          "<init>", Type.getMethodDescriptor(Type.VOID_TYPE, SOY_RECORD_TYPE, SOY_RECORD_TYPE));
+          "render",
+          Type.getMethodDescriptor(
+              BytecodeUtils.RENDER_RESULT_TYPE,
+              BytecodeUtils.SOY_RECORD_TYPE,
+              BytecodeUtils.SOY_RECORD_TYPE,
+              BytecodeUtils.LOGGING_ADVISING_APPENDABLE_TYPE,
+              BytecodeUtils.RENDER_CONTEXT_TYPE));
 
-  /**
-   * The {@link Method} signature of the {@link CompiledTemplate#render(AdvisingAppendable,
-   * RenderContext)} method.
-   */
-  private static final Method RENDER_METHOD;
-
-
-  /**
-   * The {@link Method} signature of the {@code static CompiledTemplate.Factory factory()} method.
-   */
-  private static final Method FACTORY_METHOD =
-      new Method("factory", Type.getMethodDescriptor(COMPILED_TEMPLATE_FACTORY_TYPE));
-
-  static {
-    try {
-      RENDER_METHOD =
-          Method.getMethod(
-              CompiledTemplate.class.getMethod(
-                  "render", LoggingAdvisingAppendable.class, RenderContext.class));
-    } catch (NoSuchMethodException | SecurityException e) {
-      throw new RuntimeException(e);
-    }
-  }
+  /** The {@link Method} signature of the {@code static CompiledTemplate template()} method. */
+  private static final Method TEMPLATE_METHOD =
+      new Method("template", Type.getMethodDescriptor(BytecodeUtils.COMPILED_TEMPLATE_TYPE));
 
   static CompiledTemplateMetadata create(String templateName) {
     String className = Names.javaClassNameFromSoyTemplateName(templateName);
     TypeInfo type = TypeInfo.createClass(className);
     return new AutoValue_CompiledTemplateMetadata(
-        ConstructorRef.create(type, GENERATED_CONSTRUCTOR),
-        MethodRef.createInstanceMethod(type, RENDER_METHOD).asNonNullable(),
-        MethodRef.createStaticMethod(type, FACTORY_METHOD).asCheap(),
+        MethodRef.createStaticMethod(type, RENDER_METHOD).asNonNullable(),
+        MethodRef.createStaticMethod(type, TEMPLATE_METHOD).asCheap().asNonNullable(),
         type);
   }
 
   /**
-   * The template constructor.
-   *
-   * <p>The constructor has the same interface as {@link
-   * com.google.template.soy.jbcsrc.shared.CompiledTemplate.Factory#create}
+   * The {@link static RenderResult render(SoyRecord,SoyRecord, LoggingAdvisingAppendable,
+   * RenderContext)} method.
    */
-  abstract ConstructorRef constructor();
-
-  /** The {@link CompiledTemplate#render(AdvisingAppendable, RenderContext)} method. */
   abstract MethodRef renderMethod();
 
-  /** The {@code static CompiledTemplate.Factory factory()} method. */
-  abstract MethodRef factoryMethod();
+  /** The {@code static CompiledTemplate template()} method. */
+  abstract MethodRef templateMethod();
 
-  /** The name of the compiled template. */
+  /** The name of the compiled template class. */
   abstract TypeInfo typeInfo();
 }

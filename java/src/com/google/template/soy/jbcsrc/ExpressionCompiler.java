@@ -196,29 +196,24 @@ final class ExpressionCompiler {
     return new BasicExpressionCompiler(
         new CompilerVisitor(
             analysis,
-            new AbstractTemplateParameterLookup() {
+            new TemplateParameterLookup() {
               UnsupportedOperationException unsupported() {
                 return new UnsupportedOperationException(
                     "This method isn't supported in constant context");
               }
 
               @Override
-              FieldRef getParamField(TemplateParam param) {
+              public Expression getParam(TemplateParam param) {
                 throw unsupported();
               }
 
               @Override
-              FieldRef getParamsRecordField() {
+              public Expression getParamsRecord() {
                 throw unsupported();
               }
 
               @Override
-              FieldRef getIjRecordField() {
-                throw unsupported();
-              }
-
-              @Override
-              Expression getCompiledTemplate() {
+              public Expression getIjRecord() {
                 throw unsupported();
               }
 
@@ -1571,31 +1566,34 @@ final class ExpressionCompiler {
       return SoyExpression.forSoyValue(node.getType(), visualElement);
     }
 
-    private static final Handle GETFACTORY_HANDLE =
+    private static final Handle GET_TEMPLATE_VALUE_HANDLE =
         MethodRef.create(
                 ClassLoaderFallbackCallFactory.class,
-                "bootstrapFactoryValueLookup",
+                "bootstrapTemplateValueLookup",
                 MethodHandles.Lookup.class,
                 String.class,
                 MethodType.class,
                 String.class)
             .asHandle();
 
-    private static final String TEMPLATE_FACTORY_SIGNATURE =
+    private static final String TEMPLATE_VALUE_SIGNATURE =
         Type.getMethodDescriptor(
-            BytecodeUtils.COMPILED_TEMPLATE_FACTORY_VALUE_TYPE, BytecodeUtils.RENDER_CONTEXT_TYPE);
+            BytecodeUtils.COMPILED_TEMPLATE_TEMPLATE_VALUE_TYPE, BytecodeUtils.RENDER_CONTEXT_TYPE);
 
     @Override
     protected SoyExpression visitTemplateLiteralNode(TemplateLiteralNode node) {
       Expression renderContext = parameters.getRenderContext();
       return SoyExpression.forSoyValue(
           node.getType(),
-          new Expression(BytecodeUtils.COMPILED_TEMPLATE_FACTORY_VALUE_TYPE) {
+          new Expression(BytecodeUtils.COMPILED_TEMPLATE_TEMPLATE_VALUE_TYPE) {
             @Override
             protected void doGen(CodeBuilder adapter) {
               renderContext.gen(adapter);
               adapter.visitInvokeDynamicInsn(
-                  "create", TEMPLATE_FACTORY_SIGNATURE, GETFACTORY_HANDLE, node.getResolvedName());
+                  "create",
+                  TEMPLATE_VALUE_SIGNATURE,
+                  GET_TEMPLATE_VALUE_HANDLE,
+                  node.getResolvedName());
             }
           });
     }

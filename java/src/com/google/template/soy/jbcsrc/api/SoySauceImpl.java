@@ -30,7 +30,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
-import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyRecord;
@@ -117,7 +116,7 @@ public final class SoySauceImpl implements SoySauce {
   @Override
   public boolean hasTemplate(String template) {
     try {
-      templates.getTemplateFactory(template);
+      templates.getTemplate(template);
       return true;
     } catch (IllegalArgumentException iae) {
       return false;
@@ -127,19 +126,19 @@ public final class SoySauceImpl implements SoySauce {
   @Override
   public RendererImpl renderTemplate(String template) {
     CompiledTemplates.TemplateData data = templates.getTemplateData(template);
-    return new RendererImpl(template, data.factory(), data.kind(), /* data=*/ null);
+    return new RendererImpl(template, data.template(), data.kind(), /* data=*/ null);
   }
 
   @Override
   public RendererImpl newRenderer(SoyTemplate params) {
     String template = params.getTemplateName();
     CompiledTemplates.TemplateData data = templates.getTemplateData(template);
-    return new RendererImpl(template, data.factory(), data.kind(), params.getParamsAsMap());
+    return new RendererImpl(template, data.template(), data.kind(), params.getParamsAsMap());
   }
 
   final class RendererImpl implements Renderer {
     private final String templateName;
-    private final CompiledTemplate.Factory templateFactory;
+    private final CompiledTemplate template;
     private final ContentKind contentKind;
     private final RenderContext.Builder contextBuilder =
         new RenderContext.Builder(templates, printDirectives, SoySauceImpl.this.pluginInstances);
@@ -150,11 +149,11 @@ public final class SoySauceImpl implements SoySauce {
 
     RendererImpl(
         String templateName,
-        CompiledTemplate.Factory templateFactory,
+        CompiledTemplate template,
         ContentKind contentKind,
         @Nullable Map<String, ?> data) {
       this.templateName = templateName;
-      this.templateFactory = checkNotNull(templateFactory);
+      this.template = checkNotNull(template);
       this.contentKind = contentKind;
       if (data != null) {
         this.data = soyValueProviderMapAsParamStore(data);
@@ -345,14 +344,14 @@ public final class SoySauceImpl implements SoySauce {
     private <T> WriteContinuation startRender(AdvisingAppendable out, ContentKind contentKind)
         throws IOException {
       enforceContentKind(contentKind);
-      RenderContext context = contextBuilder.build();
 
-      Scoper scoper = new Scoper(apiCallScope, context.getBidiGlobalDir());
-      CompiledTemplate template =
-          templateFactory.create(
-              data == null ? ParamStore.EMPTY_INSTANCE : data,
-              ij == null ? ParamStore.EMPTY_INSTANCE : ij);
-      return doRender(template, scoper, OutputAppendable.create(out, context.getLogger()), context);
+      SoyRecord params = data == null ? ParamStore.EMPTY_INSTANCE : data;
+      SoyRecord injectedParams = ij == null ? ParamStore.EMPTY_INSTANCE : ij;
+      RenderContext context = contextBuilder.build();
+      OutputAppendable output = OutputAppendable.create(out, context.getLogger());
+      RendererClosure renderer = () -> template.render(params, injectedParams, output, context);
+
+      return doRender(renderer, new Scoper(apiCallScope, context.getBidiGlobalDir()));
     }
 
     private void enforceContentKind(ContentKind expectedContentKind) {
@@ -373,15 +372,16 @@ public final class SoySauceImpl implements SoySauce {
     }
   }
 
-  private static WriteContinuation doRender(
-      CompiledTemplate template,
-      Scoper scoper,
-      LoggingAdvisingAppendable out,
-      RenderContext context)
+  @FunctionalInterface
+  private interface RendererClosure {
+    RenderResult render() throws IOException;
+  }
+
+  private static WriteContinuation doRender(RendererClosure renderer, Scoper scoper)
       throws IOException {
     RenderResult result;
     try (SoyScopedData.InScope scope = scoper.enter()) {
-      result = template.render(out, context);
+      result = renderer.render();
     } catch (Throwable t) {
       rewriteStackTrace(t);
       Throwables.throwIfInstanceOf(t, IOException.class);
@@ -390,7 +390,7 @@ public final class SoySauceImpl implements SoySauce {
     if (result.isDone()) {
       return Continuations.done();
     }
-    return new WriteContinuationImpl(result, scoper, context, out, template);
+    return new WriteContinuationImpl(result, renderer, scoper);
   }
 
   private static final class WriteContinuationImpl implements WriteContinuation {
@@ -401,29 +401,16 @@ public final class SoySauceImpl implements SoySauce {
     final Scoper scoper;
 
     @GuardedBy("lock")
-    final RenderContext context;
-
-    @GuardedBy("lock")
-    final LoggingAdvisingAppendable out;
-
-    @GuardedBy("lock")
-    final CompiledTemplate template;
+    final RendererClosure renderer;
 
     @GuardedBy("lock")
     boolean hasContinueBeenCalled;
 
-    WriteContinuationImpl(
-        RenderResult result,
-        Scoper scoper,
-        RenderContext context,
-        LoggingAdvisingAppendable out,
-        CompiledTemplate template) {
+    WriteContinuationImpl(RenderResult result, RendererClosure renderer, Scoper scoper) {
       checkArgument(!result.isDone());
       this.result = checkNotNull(result);
+      this.renderer = checkNotNull(renderer);
       this.scoper = checkNotNull(scoper);
-      this.context = checkNotNull(context);
-      this.out = checkNotNull(out);
-      this.template = checkNotNull(template);
     }
 
     @Override
@@ -438,7 +425,7 @@ public final class SoySauceImpl implements SoySauce {
           throw new IllegalStateException("continueRender() has already been called.");
         }
         hasContinueBeenCalled = true;
-        return doRender(template, scoper, out, context);
+        return doRender(renderer, scoper);
       }
     }
   }
