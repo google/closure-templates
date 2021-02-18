@@ -49,6 +49,7 @@ import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.LargeStringConstantFactory;
 import com.google.template.soy.jbcsrc.shared.Names;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
+import com.google.template.soy.jbcsrc.shared.StackFrame;
 import com.google.template.soy.logging.LoggableElementMetadata;
 import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
@@ -119,6 +120,7 @@ public final class BytecodeUtils {
   public static final Type BOXED_BOOLEAN_TYPE = Type.getType(Boolean.class);
   public static final Type LOGGABLE_ELEMENT_METADATA_TYPE =
       Type.getType(LoggableElementMetadata.class);
+  public static final Type STACK_FRAME_TYPE = Type.getType(StackFrame.class);
 
   public static final Method CLASS_INIT = Method.getMethod("void <clinit>()");
   public static final Method NULLARY_INIT = Method.getMethod("void <init>()");

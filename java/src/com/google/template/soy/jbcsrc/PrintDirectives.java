@@ -66,12 +66,13 @@ final class PrintDirectives {
 
   @AutoValue
   abstract static class AppendableAndFlushBuffersDepth {
-    static AppendableAndFlushBuffersDepth create(Expression appendableExpression, int flushDepth) {
+    static AppendableAndFlushBuffersDepth create(
+        AppendableExpression appendableExpression, int flushDepth) {
       return new AutoValue_PrintDirectives_AppendableAndFlushBuffersDepth(
           appendableExpression, flushDepth);
     }
 
-    abstract Expression appendable();
+    abstract AppendableExpression appendable();
 
     abstract int flushBuffersDepth();
   }
@@ -86,7 +87,9 @@ final class PrintDirectives {
    * @return The wrapped appendable
    */
   static AppendableAndFlushBuffersDepth applyStreamingEscapingDirectives(
-      List<SoyPrintDirective> directives, Expression appendable, JbcSrcPluginContext context) {
+      List<SoyPrintDirective> directives,
+      AppendableExpression appendable,
+      JbcSrcPluginContext context) {
     checkArgument(!directives.isEmpty());
     List<StreamingDirectiveWithArgs> directivesToApply = new ArrayList<>();
     for (SoyPrintDirective directive : directives) {
@@ -108,7 +111,7 @@ final class PrintDirectives {
    */
   static AppendableAndFlushBuffersDepth applyStreamingPrintDirectives(
       List<PrintDirectiveNode> directives,
-      Expression appendable,
+      AppendableExpression appendable,
       BasicExpressionCompiler basic,
       JbcSrcPluginContext renderContext) {
     checkArgument(!directives.isEmpty());
@@ -124,7 +127,7 @@ final class PrintDirectives {
 
   private static AppendableAndFlushBuffersDepth applyStreamingPrintDirectivesTo(
       List<StreamingDirectiveWithArgs> directivesToApply,
-      Expression appendable,
+      AppendableExpression appendable,
       JbcSrcPluginContext context) {
 
     Expression currAppendable = appendable;
@@ -142,7 +145,10 @@ final class PrintDirectives {
         flushBuffersDepth++;
       }
     }
-    return AppendableAndFlushBuffersDepth.create(currAppendable, flushBuffersDepth);
+    // mark the appendable as non-nullable.  If any of the wrappers are ever null it is a logical
+    // error and we should fail with an NPE.
+    return AppendableAndFlushBuffersDepth.create(
+        AppendableExpression.forExpression(currAppendable.asNonNullable()), flushBuffersDepth);
   }
 
   @AutoValue

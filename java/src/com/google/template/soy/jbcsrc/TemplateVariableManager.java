@@ -17,19 +17,31 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.common.collect.ImmutableMap.toImmutableMap;
+import static java.util.Comparator.comparing;
 
 import com.google.auto.value.AutoValue;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.jbcsrc.TemplateVariableManager.VarKey.Kind;
+import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.Expression;
-import com.google.template.soy.jbcsrc.restricted.FieldRef;
 import com.google.template.soy.jbcsrc.restricted.LocalVariable;
+import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.Statement;
+import com.google.template.soy.jbcsrc.shared.SaveStateMetaFactory;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.IntStream;
+import org.objectweb.asm.Handle;
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
 
@@ -39,9 +51,9 @@ import org.objectweb.asm.commons.Method;
  */
 final class TemplateVariableManager implements LocalVariableManager {
   enum SaveStrategy {
-    /** Means that the value of the variable should be recalculated rather than saved to a field. */
+    /** Means that the value of the variable should be recalculated rather than saved. */
     DERIVED,
-    /** Means that the value of the variable should be saved to a field. */
+    /** Means that the value of the variable should be saved . */
     STORE;
   }
 
@@ -125,10 +137,6 @@ final class TemplateVariableManager implements LocalVariableManager {
   }
 
   private abstract static class AbstractVariable {
-    abstract Statement save();
-
-    abstract Statement restore();
-
     abstract Expression accessor();
   }
 
@@ -140,41 +148,36 @@ final class TemplateVariableManager implements LocalVariableManager {
     }
 
     @Override
-    Statement save() {
-      return Statement.NULL_STATEMENT;
-    }
-
-    @Override
-    Statement restore() {
-      return Statement.NULL_STATEMENT;
-    }
-
-    @Override
     Expression accessor() {
       return accessor;
     }
   }
+
   /**
    * A variable that needs to be saved/restored.
    *
    * <p>Each variable has:
    *
    * <ul>
-   *   <li>A {@link FieldRef} that can be used to define the field.
-   *   <li>A {@link Statement} that can be used to save the field.
-   *   <li>A {@link Statement} that can be used to restore the field.
+   *   <li>A {@link Expresion} that can be used to save the field.
+   *   <li>A {@link Expresion} that can be used to restore the field.
    *   <li>A {@link LocalVariable} that can be used to read the value.
    * </ul>
    */
-  abstract static class Variable extends AbstractVariable {
-    protected final Expression initExpression;
-    protected final LocalVariable local;
+  static final class Variable extends AbstractVariable {
+    private final Expression initExpression;
+    private final LocalVariable local;
+    private final SaveStrategy strategy;
     private final Statement initializer;
 
-    private Variable(Expression initExpression, LocalVariable local) {
+    private Variable(Expression initExpression, LocalVariable local, SaveStrategy strategy) {
       this.initExpression = initExpression;
+      if (initExpression.isNonNullable()) {
+        local = local.asNonNullable();
+      }
       this.local = local;
       this.initializer = local.store(initExpression, local.start());
+      this.strategy = strategy;
     }
 
     final Statement initializer() {
@@ -191,65 +194,15 @@ final class TemplateVariableManager implements LocalVariableManager {
     }
   }
 
-  private final class FieldSavedVariable extends Variable {
-    final String originalProposedName;
-    FieldRef field;
-
-    private FieldSavedVariable(
-        String originalProposedName, Expression initExpression, LocalVariable local) {
-      super(initExpression, local);
-      this.originalProposedName = originalProposedName;
-    }
-
-    FieldRef getField() {
-      if (field == null) {
-        field = fields.addGeneratedField(originalProposedName, local.resultType());
-      }
-      return field;
-    }
-
-    @Override
-    Statement save() {
-      return getField().putInstanceField(thisVar, local);
-    }
-
-    @Override
-    Statement restore() {
-      Expression fieldValue = getField().accessor(thisVar);
-      return local.store(fieldValue);
-    }
-  }
-
-  private static final class DerivedVariable extends Variable {
-    private DerivedVariable(Expression initExpression, LocalVariable local) {
-      super(initExpression, local);
-    }
-
-    @Override
-    Statement save() {
-      return Statement.NULL_STATEMENT;
-    }
-
-    @Override
-    Statement restore() {
-      return local.store(initExpression);
-    }
-  }
-
-  private final FieldManager fields;
   private final SimpleLocalVariableManager delegate;
   private final Map<VarKey, AbstractVariable> variablesByKey = new LinkedHashMap<>();
-  private final LocalVariable thisVar;
+  private final LocalVariable stackFrameVariable;
 
-  /**
-   * @param fields The field manager for the current class.
-   * @param thisVar An expression returning the current 'this' reference
-   * @param method The method being generated
-   */
-  TemplateVariableManager(FieldManager fields, LocalVariable thisVar, Method method) {
-    this.fields = fields;
-    this.thisVar = thisVar;
-    this.delegate = new SimpleLocalVariableManager(method, /*isStatic=*/ false);
+  /** @param method The method being generated */
+  TemplateVariableManager(Method method, boolean isStatic) {
+    this.delegate = new SimpleLocalVariableManager(method, /*isStatic=*/ isStatic);
+    this.stackFrameVariable =
+        delegate.unsafeBorrowSlot(StandardNames.STACK_FRAME, BytecodeUtils.STACK_FRAME_TYPE);
   }
 
   /** Enters a new scope. Variables may only be defined within a scope. */
@@ -302,23 +255,11 @@ final class TemplateVariableManager implements LocalVariableManager {
 
       private Variable doCreate(
           String proposedName, Expression initExpr, VarKey key, SaveStrategy strategy) {
-        Variable var;
-        switch (strategy) {
-          case DERIVED:
-            var =
-                new DerivedVariable(
-                    initExpr, delegateScope.createTemporary(proposedName, initExpr.resultType()));
-            break;
-          case STORE:
-            var =
-                new FieldSavedVariable(
-                    proposedName,
-                    initExpr,
-                    delegateScope.createTemporary(proposedName, initExpr.resultType()));
-            break;
-          default:
-            throw new AssertionError();
-        }
+        Variable var =
+            new Variable(
+                initExpr,
+                delegateScope.createTemporary(proposedName, initExpr.resultType()),
+                strategy);
         putVariable(key, var);
         return var;
       }
@@ -355,6 +296,10 @@ final class TemplateVariableManager implements LocalVariableManager {
     return getVariable(VarKey.create(name));
   }
 
+  LocalVariable getStackFrameVar() {
+    return stackFrameVariable;
+  }
+
   private Expression getVariable(VarKey varKey) {
     AbstractVariable var = variablesByKey.get(varKey);
     if (var != null) {
@@ -367,25 +312,147 @@ final class TemplateVariableManager implements LocalVariableManager {
   /** Statements for saving and restoring local variables in class fields. */
   @AutoValue
   abstract static class SaveRestoreState {
-    abstract Optional<Statement> save();
+    abstract Statement save();
 
     abstract Optional<Statement> restore();
   }
-
+  
   void assertSaveRestoreStateIsEmpty() {
     checkState(variablesByKey.isEmpty());
   }
+
+  private static final Handle BOOTSTRAP_SAVE_HANDLE =
+      MethodRef.create(
+              SaveStateMetaFactory.class,
+              "bootstrapSaveState",
+              MethodHandles.Lookup.class,
+              String.class,
+              MethodType.class,
+              int.class)
+          .asHandle();
+  private static final Handle BOOTSTRAP_RESTORE_HANDLE =
+      MethodRef.create(
+              SaveStateMetaFactory.class,
+              "bootstrapRestoreState",
+              MethodHandles.Lookup.class,
+              String.class,
+              MethodType.class,
+              MethodType.class,
+              int.class)
+          .asHandle();
+
   /** Returns a {@link SaveRestoreState} for the current state of the variable set. */
-  SaveRestoreState saveRestoreState() {
-    List<Statement> saves = new ArrayList<>();
-    List<Statement> restores = new ArrayList<>();
-    // The map is in insertion order.  This is important since it means derived variables will work
-    for (AbstractVariable var : variablesByKey.values()) {
-      saves.add(var.save());
-      restores.add(var.restore());
+  SaveRestoreState saveRestoreState(
+      RenderContextExpression renderContextExpression, int stateNumber) {
+    // The map is in insertion order.  This is important since it means derived variables will work.
+    // we save in reverse order and then reverse again to restore so derived variables work.  The
+    // save and restore logic need to be in opposite orders because we are pushing and popping onto
+    // a stack.
+    // The map is in insertion order.  This is important since it means derived variables will work.
+    // So our restore logic needs to be executed in the same order in order to restore derived
+    // variable directly.
+    List<Variable> restoresInOrder =
+        variablesByKey.values().stream()
+            .filter(v -> !(v instanceof TrivialVariable))
+            .map(v -> (Variable) v)
+            .collect(toImmutableList());
+
+    // Save order is not necessarily important, but we are saving into a synthetically created
+    // StackFrame class generated by our bootstrap method.  To reduce the number of classes
+    // generated and avoid boxing primitives we store a simplified set of field types. See
+    // SaveStateMetaFactory.simplifyType.
+    // So imagine we have 3 locals in scope with the following types (CompiledTemplate, long,
+    // LoggingAdvisingAppendable), this will simplify to (Object, long, Object).
+    // Now imagine another saveRestoreState with the followwing 3 locals (SoyValueProvider,
+    // LoggingAdvisingAppendable, long), this will simplify to (Object, Object, long).
+    // Ideally these two states would share a stack frame class, this would allow us to generate
+    // fewer classes and should shorten bootstrap time.
+
+    // in order to do this, we need to canonicalize the order of the save operations.  The order
+    // itself doesn't really matter, just that all save restore sites perform the same operation.
+    List<Variable> storesToPerform =
+        restoresInOrder.stream()
+            .filter(v -> v.strategy == SaveStrategy.STORE)
+            // sort based on the 'sort' of the local, getSort() returns a unique integer for every
+            // primitive type and object/array.
+            .sorted(comparing(v -> v.accessor().resultType().getSort()))
+            .collect(toImmutableList());
+    List<Type> methodTypeParams = new ArrayList<>();
+    methodTypeParams.add(BytecodeUtils.RENDER_CONTEXT_TYPE);
+    for (Variable variable : storesToPerform) {
+      methodTypeParams.add(variable.accessor().resultType());
     }
+
+    Type methodType = Type.getMethodType(Type.VOID_TYPE, methodTypeParams.toArray(new Type[0]));
+    Statement saveState =
+        new Statement() {
+          @Override
+          protected void doGen(CodeBuilder cb) {
+            renderContextExpression.gen(cb);
+            // load all variables onto the stack
+            for (Variable var : storesToPerform) {
+              var.accessor().gen(cb);
+            }
+            cb.visitInvokeDynamicInsn(
+                "save", methodType.getDescriptor(), BOOTSTRAP_SAVE_HANDLE, stateNumber);
+          }
+        };
+    // Restore instructions
+    // A side effect of save logic is that StackFrame type is created
+    // So we can predict its name and generate direct references to it.
+    // for each store, we use invokedynamic to retrieve the value from our generated StackFrame
+    // To do this we need to know the index of the variable in the 'storesToPerform' list
+    ImmutableMap<Variable, Integer> storeToSlotIndex =
+        IntStream.range(0, storesToPerform.size())
+            .boxed()
+            .collect(toImmutableMap(storesToPerform::get, index -> index));
+    ImmutableList<Variable> variablesToRestoreFromStorage =
+        restoresInOrder.stream()
+            .filter(v -> v.strategy == SaveStrategy.STORE)
+            .collect(toImmutableList());
+    Optional<Statement> restoreFromFrame =
+        variablesToRestoreFromStorage.isEmpty()
+            ? Optional.empty()
+            : Optional.of(
+                new Statement() {
+                  @Override
+                  protected void doGen(CodeBuilder cb) {
+                    stackFrameVariable.gen(cb);
+                    for (int i = 0; i < variablesToRestoreFromStorage.size(); i++) {
+                      if (i < variablesToRestoreFromStorage.size() - 1) {
+                        // duplicate the reference to the stack frame at the top of the stack
+                        // for all but the last restore operation
+                        cb.dup();
+                      }
+                      Variable variableToRestore = variablesToRestoreFromStorage.get(i);
+                      Type varType = variableToRestore.accessor().resultType();
+                      cb.visitInvokeDynamicInsn(
+                          "restoreLocal",
+                          Type.getMethodType(
+                                  variableToRestore.accessor().resultType(),
+                                  BytecodeUtils.STACK_FRAME_TYPE)
+                              .getDescriptor(),
+                          BOOTSTRAP_RESTORE_HANDLE,
+                          methodType,
+                          storeToSlotIndex.get(variableToRestore));
+                      cb.visitVarInsn(
+                          varType.getOpcode(Opcodes.ISTORE), variableToRestore.local.index());
+                    }
+                  }
+                });
+
+    List<Statement> restoreDerivedVariables =
+        restoresInOrder.stream()
+            .filter(var -> var.strategy == SaveStrategy.DERIVED)
+            .map(v -> v.local.store(v.initExpression))
+            .collect(toImmutableList());
     return new AutoValue_TemplateVariableManager_SaveRestoreState(
-        saves.isEmpty() ? Optional.empty() : Optional.of(Statement.concat(saves)),
-        restores.isEmpty() ? Optional.empty() : Optional.of(Statement.concat(restores)));
+        saveState,
+        !restoreFromFrame.isPresent() && restoreDerivedVariables.isEmpty()
+            ? Optional.empty()
+            : Optional.of(
+                Statement.concat(
+                    restoreFromFrame.orElse(Statement.NULL_STATEMENT),
+                    Statement.concat(restoreDerivedVariables))));
   }
 }

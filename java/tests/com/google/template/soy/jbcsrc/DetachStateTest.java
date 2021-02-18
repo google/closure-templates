@@ -244,12 +244,11 @@ public final class DetachStateTest {
     SoyRecord params = asRecord(ImmutableMap.of("callerParam", param));
     CompiledTemplate template = factory.create(params, ParamStore.EMPTY_INSTANCE);
     BufferingAppendable output = LoggingAdvisingAppendable.buffering();
-    assertThat(template.render(output, getDefaultContext(templates)))
-        .isEqualTo(RenderResult.continueAfter(param));
+    RenderContext context = getDefaultContext(templates);
+    assertThat(template.render(output, context)).isEqualTo(RenderResult.continueAfter(param));
     assertThat(output.toString()).isEqualTo("prefix ");
     param.set("foo");
-    assertThat(template.render(output, getDefaultContext(templates)))
-        .isEqualTo(RenderResult.done());
+    assertThat(template.render(output, context)).isEqualTo(RenderResult.done());
     assertThat(output.toString()).isEqualTo("prefix foo suffix");
   }
 

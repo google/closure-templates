@@ -355,19 +355,16 @@ public class BytecodeCompilerTest {
             CssRegistry.create(ImmutableSet.of("ns.foo", "ns.bar"), ImmutableMap.of()),
             "{namespace ns requirecss=\"ns.foo\"}",
             "",
-            "/** */",
             "{template .callerDataAll requirecss=\"ns.bar\"}",
             "  {@param foo : string}",
             "  {call .callee data=\"all\" /}",
             "{/template}",
             "",
-            "/** */",
             "{template .callerDataExpr}",
             "  {@param rec : [foo : string]}",
             "  {call .callee data=\"$rec\" /}",
             "{/template}",
             "",
-            "/** */",
             "{template .callerParams}",
             "  {@param p1 : string}",
             "  {call .callee}",
@@ -376,7 +373,6 @@ public class BytecodeCompilerTest {
             "  {/call}",
             "{/template}",
             "",
-            "/** */",
             "{template .callerParamsAndData}",
             "  {@param p1 : string}",
             "  {call .callee data=\"all\"}",
@@ -384,7 +380,6 @@ public class BytecodeCompilerTest {
             "  {/call}",
             "{/template}",
             "",
-            "/** */",
             "{template .callee}",
             "  {@param foo : string}",
             "  {@param? boo : string}",
@@ -485,9 +480,6 @@ public class BytecodeCompilerTest {
         Iterables.getOnlyElement(Arrays.asList(templateClass.getDeclaredClasses()));
     assertThat(innerClass.getSimpleName()).isEqualTo("ph_FOO");
     assertThat(innerClass.getDeclaredFields()).hasLength(2);
-    // The placeholder inner class requires a `$state` field because `$name` may not be resolved
-    // yet.
-    assertThat(innerClass.getDeclaredField("$state").getType()).isEqualTo(int.class);
     assertThat(innerClass.getDeclaredField("$template").getType())
         .isAssignableTo(CompiledTemplate.class);
     templates =

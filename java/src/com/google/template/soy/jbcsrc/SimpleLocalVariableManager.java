@@ -72,6 +72,25 @@ final class SimpleLocalVariableManager implements LocalVariableManager {
     return var;
   }
 
+  /**
+   * This is a tricky mechanism whereby a local variable will be created using the first free slot,
+   * but that slot will not be claimed. This variable will likely get stomped on by the next defined
+   * variable.
+   *
+   * <p>This is rarely useful as most variables have well defined scopes, however it may be used if
+   * the scope of the variable does not neatly match any lexical lifetime.
+   *
+   * <p>Like other methods in the class, it is the responsibility of the caller to ensure that
+   * {@link LocalVariable#start} is visited prior to the first use of this variable.
+   */
+  LocalVariable unsafeBorrowSlot(String name, Type type) {
+    int slot = reserveSlotFor(type);
+    LocalVariable var =
+        LocalVariable.createLocal(name, slot, type, /* start=*/ new Label(), /* end=*/ new Label());
+    returnSlotFor(var);
+    return var;
+  }
+
   @Override
   public void generateTableEntries(CodeBuilder cb) {
     generated = true;
@@ -120,7 +139,7 @@ final class SimpleLocalVariableManager implements LocalVariableManager {
         checkState(!exited);
         exited = true;
         for (LocalVariable var : frame) {
-          availableSlots.clear(var.index(), var.index() + var.resultType().getSize());
+          returnSlotFor(var);
           activeVariables.remove(var.variableName());
         }
         return new Statement() {
@@ -131,6 +150,10 @@ final class SimpleLocalVariableManager implements LocalVariableManager {
         };
       }
     };
+  }
+
+  private void returnSlotFor(LocalVariable var) {
+    availableSlots.clear(var.index(), var.index() + var.resultType().getSize());
   }
 
   private int reserveSlotFor(Type type) {

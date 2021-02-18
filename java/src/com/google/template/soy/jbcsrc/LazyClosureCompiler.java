@@ -449,7 +449,7 @@ final class LazyClosureCompiler {
       final Label end = new Label();
       final LocalVariable thisVar = createThisVar(type, start, end);
       TemplateVariableManager variableSet =
-          new TemplateVariableManager(fields, thisVar, DO_RESOLVE);
+          new TemplateVariableManager(DO_RESOLVE, /* isStatic=*/ false);
       LazyClosureParameterLookup lookup =
           new LazyClosureParameterLookup(this, parent.parameterLookup, variableSet, thisVar);
       SoyExpression compile =
@@ -485,7 +485,7 @@ final class LazyClosureCompiler {
       final Label end = new Label();
       final LocalVariable thisVar = createThisVar(type, start, end);
       TemplateVariableManager variableSet =
-          new TemplateVariableManager(fields, thisVar, DO_RESOLVE_DELEGATE);
+          new TemplateVariableManager(DO_RESOLVE_DELEGATE, /*isStatic=*/ false);
       LazyClosureParameterLookup lookup =
           new LazyClosureParameterLookup(this, parent.parameterLookup, variableSet, thisVar);
       ExpressionCompiler expressionCompiler =
@@ -538,7 +538,7 @@ final class LazyClosureCompiler {
               new SimpleLocalVariableManager(BytecodeUtils.CLASS_INIT, /* isStatic=*/ true),
               parent.javaSourceFunctionCompiler);
       final TemplateVariableManager variableSet =
-          new TemplateVariableManager(fields, thisVar, DO_RENDER);
+          new TemplateVariableManager(DO_RENDER, /* isStatic=*/ false);
       LazyClosureParameterLookup lookup =
           new LazyClosureParameterLookup(this, parent.parameterLookup, variableSet, thisVar);
       SoyNodeCompiler soyNodeCompiler =

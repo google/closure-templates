@@ -27,6 +27,7 @@ import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jbcsrc.restricted.Expression.Feature;
 import com.google.template.soy.jbcsrc.restricted.Expression.Features;
 import com.google.template.soy.jbcsrc.runtime.JbcSrcRuntime;
+import com.google.template.soy.jbcsrc.shared.StackFrame;
 import java.lang.reflect.Modifier;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Opcodes;
@@ -36,16 +37,21 @@ import org.objectweb.asm.Type;
 @AutoValue
 public abstract class FieldRef {
   public static final FieldRef BOOLEAN_DATA_FALSE =
-      staticFieldReference(BooleanData.class, "FALSE");
-  public static final FieldRef BOOLEAN_DATA_TRUE = staticFieldReference(BooleanData.class, "TRUE");
+      staticFieldReference(BooleanData.class, "FALSE").asNonNull();
+  public static final FieldRef BOOLEAN_DATA_TRUE =
+      staticFieldReference(BooleanData.class, "TRUE").asNonNull();
   public static final FieldRef NULL_PROVIDER =
-      staticFieldReference(JbcSrcRuntime.class, "NULL_PROVIDER");
-  public static final FieldRef EMPTY_MAP = staticFieldReference(SoyMapImpl.class, "EMPTY");
+      staticFieldReference(JbcSrcRuntime.class, "NULL_PROVIDER").asNonNull();
+  public static final FieldRef EMPTY_MAP =
+      staticFieldReference(SoyMapImpl.class, "EMPTY").asNonNull();
   public static final FieldRef EMPTY_STRING_DATA =
-      staticFieldReference(StringData.class, "EMPTY_STRING");
+      staticFieldReference(StringData.class, "EMPTY_STRING").asNonNull();
 
   public static final FieldRef EMPTY_PARAMS =
-      staticFieldReference(ParamStore.class, "EMPTY_INSTANCE");
+      staticFieldReference(ParamStore.class, "EMPTY_INSTANCE").asNonNull();
+
+  public static final FieldRef STACK_FRAME_STATE_NUMBER =
+      instanceFieldReference(StackFrame.class, "stateNumber");
 
   public static FieldRef create(
       TypeInfo owner, String name, Type type, int modifiers, boolean isNullable) {

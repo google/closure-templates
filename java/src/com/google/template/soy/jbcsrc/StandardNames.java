@@ -21,11 +21,12 @@ final class StandardNames {
   static final String PARAMS_FIELD = "$params";
   static final String IJ_FIELD = "$ij";
   static final String COMPILED_TEMPLATE = "$template";
-  static final String STATE_FIELD = "$state";
   static final String RENDER_CONTEXT_FIELD = "$renderContext";
-  static final String CURRENT_CALLEE_FIELD = "$currentCallee";
-  static final String CURRENT_RENDEREE_FIELD = "$currentRenderee";
-  static final String CURRENT_APPENDABLE_FIELD = "$currentAppendable";
+  static final String CURRENT_CALLEE = "$currentCallee";
+  static final String CURRENT_RENDEREE = "$currentRenderee";
+  static final String CURRENT_APPENDABLE = "$currentAppendable";
+  static final String CURRENT_PARAMS = "$currentParams";
+  static final String STACK_FRAME = "$stackFrame";
 
   private StandardNames() {}
 }

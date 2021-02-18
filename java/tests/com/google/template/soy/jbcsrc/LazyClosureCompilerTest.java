@@ -337,8 +337,7 @@ public class LazyClosureCompilerTest {
     assertThat(asList(template.getDeclaredClasses())).isEmpty();
     // we only store bar in a private static field
     Field barField = template.getDeclaredField("let_bar");
-    assertThat(asList(template.getDeclaredFields()))
-        .containsExactly(template.getDeclaredField("$state"), barField);
+    assertThat(asList(template.getDeclaredFields())).containsExactly(barField);
     assertThat(barField.getType()).isEqualTo(StringData.class);
     assertThat(barField.getModifiers())
         .isEqualTo(Modifier.PRIVATE | Modifier.STATIC | Modifier.FINAL);

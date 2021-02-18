@@ -47,10 +47,8 @@ import com.google.template.soy.jbcsrc.TemplateTester.CompiledTemplateSubject;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
-import com.google.template.soy.jbcsrc.restricted.LocalVariable;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
-import com.google.template.soy.jbcsrc.restricted.TypeInfo;
 import com.google.template.soy.jbcsrc.restricted.testing.ExpressionSubject;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
@@ -86,7 +84,6 @@ import org.objectweb.asm.commons.Method;
 @RunWith(JUnit4.class)
 public class ExpressionCompilerTest {
   private final Map<String, SoyExpression> variables = new HashMap<>();
-  private final FieldManager fields = new FieldManager(null);
 
   private static Method getRenderMethod() {
     try {
@@ -628,11 +625,7 @@ public class ExpressionCompilerTest {
                 throw new UnsupportedOperationException();
               }
             },
-            new TemplateVariableManager(
-                fields,
-                LocalVariable.createThisVar(
-                    TypeInfo.create(Object.class), new Label(), new Label()),
-                getRenderMethod()),
+            new TemplateVariableManager(getRenderMethod(), /*isStatic=*/ false),
             new JavaSourceFunctionCompiler(
                 SoyTypeRegistryBuilder.create(), ErrorReporter.exploding()));
 

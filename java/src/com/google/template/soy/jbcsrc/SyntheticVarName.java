@@ -20,6 +20,7 @@ import com.google.auto.value.AutoValue;
 import com.google.template.soy.basetree.Node;
 import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.SwitchNode;
+import javax.annotation.Nullable;
 
 /**
  * A simple representation of a synthetic variable name.
@@ -28,6 +29,23 @@ import com.google.template.soy.soytree.SwitchNode;
  */
 @AutoValue
 abstract class SyntheticVarName {
+
+  static SyntheticVarName renderee() {
+    return new AutoValue_SyntheticVarName(StandardNames.CURRENT_RENDEREE, null);
+  }
+
+  static SyntheticVarName appendable() {
+    return new AutoValue_SyntheticVarName(StandardNames.CURRENT_APPENDABLE, null);
+  }
+
+  static SyntheticVarName callee() {
+    return new AutoValue_SyntheticVarName(StandardNames.CURRENT_CALLEE, null);
+  }
+
+  static SyntheticVarName params() {
+    return new AutoValue_SyntheticVarName(StandardNames.CURRENT_PARAMS, null);
+  }
+
   static SyntheticVarName forSwitch(SwitchNode node) {
     return new AutoValue_SyntheticVarName("switch", node);
   }
@@ -58,5 +76,6 @@ abstract class SyntheticVarName {
 
   abstract String name();
 
+  @Nullable
   abstract Node declaringNode();
 }

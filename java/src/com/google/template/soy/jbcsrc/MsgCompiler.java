@@ -19,7 +19,6 @@ package com.google.template.soy.jbcsrc;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.template.soy.jbcsrc.PrintDirectives.applyStreamingEscapingDirectives;
 import static com.google.template.soy.jbcsrc.PrintDirectives.areAllPrintDirectivesStreamable;
-import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.LOGGING_ADVISING_APPENDABLE_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_STRING_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_PROVIDER_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.STRING_TYPE;
@@ -128,24 +127,24 @@ final class MsgCompiler {
         String phname, StandaloneNode node, ExtraCodeCompiler prefix, ExtraCodeCompiler suffix);
   }
 
-  private final Expression thisVar;
   private final DetachState detachState;
   private final TemplateParameterLookup parameterLookup;
   private final FieldManager fields;
+  private final TemplateVariableManager variableManager;
   private final AppendableExpression appendableExpression;
   private final PlaceholderCompiler placeholderCompiler;
 
   MsgCompiler(
-      Expression thisVar,
       DetachState detachState,
       TemplateParameterLookup parameterLookup,
       FieldManager fields,
+      TemplateVariableManager variableManager,
       AppendableExpression appendableExpression,
       PlaceholderCompiler placeholderCompiler) {
-    this.thisVar = checkNotNull(thisVar);
     this.detachState = checkNotNull(detachState);
     this.parameterLookup = checkNotNull(parameterLookup);
     this.fields = checkNotNull(fields);
+    this.variableManager = checkNotNull(variableManager);
     this.appendableExpression = checkNotNull(appendableExpression);
     this.placeholderCompiler = checkNotNull(placeholderCompiler);
   }
@@ -274,6 +273,8 @@ final class MsgCompiler {
     return appendableExpression.appendString(text.coerceToString()).toStatement();
   }
 
+  // TODO(lukes): this is really similar to SoyNodeCompiler.visitPrintNode
+
   /** Handles a complex message with placeholders. */
   private Statement handleTranslationWithPlaceholders(
       MsgNode msg,
@@ -311,38 +312,35 @@ final class MsgCompiler {
                 MethodRef.MSG_RENDERER_SET_PLACEHOLDER, constant(phName), placeholder.expression());
       }
     }
-
-    Statement initMsgRenderer =
-        fields.getCurrentRenderee().putInstanceField(thisVar, renderer).labelStart(reattachPoint);
+    TemplateVariableManager.Scope scope = variableManager.enterScope();
+    TemplateVariableManager.Variable msgRendererVar =
+        scope.createSynthetic(
+            SyntheticVarName.renderee(), renderer, TemplateVariableManager.SaveStrategy.STORE);
+    Statement initMsgRenderer = msgRendererVar.initializer().labelStart(reattachPoint);
 
     Statement render;
     if (areAllPrintDirectivesStreamable(escapingDirectives)) {
       Statement initAppendable = Statement.NULL_STATEMENT;
       Statement clearAppendable = Statement.NULL_STATEMENT;
-      Expression appendable = appendableExpression;
+      AppendableExpression appendable = appendableExpression;
       if (!escapingDirectives.isEmpty()) {
         PrintDirectives.AppendableAndFlushBuffersDepth wrappedAppendable =
             applyStreamingEscapingDirectives(
                 escapingDirectives, appendable, parameterLookup.getPluginContext());
-        FieldRef currentAppendableField = fields.getCurrentAppendable();
-        initAppendable =
-            currentAppendableField.putInstanceField(thisVar, wrappedAppendable.appendable());
-        appendable = currentAppendableField.accessor(thisVar).asNonNullable();
-        clearAppendable =
-            currentAppendableField.putInstanceField(
-                thisVar, constantNull(LOGGING_ADVISING_APPENDABLE_TYPE));
+        TemplateVariableManager.Variable appendableVar =
+            scope.createSynthetic(
+                SyntheticVarName.appendable(),
+                wrappedAppendable.appendable(),
+                TemplateVariableManager.SaveStrategy.STORE);
+        initAppendable = appendableVar.initializer();
+        appendable = AppendableExpression.forExpression(appendableVar.accessor());
         if (wrappedAppendable.flushBuffersDepth() >= 0) {
-          clearAppendable =
-              Statement.concat(
-                  AppendableExpression.forExpression(appendable)
-                      .flushBuffers(wrappedAppendable.flushBuffersDepth()),
-                  clearAppendable);
+          clearAppendable = appendable.flushBuffers(wrappedAppendable.flushBuffersDepth());
         }
       }
       Expression callRenderAndResolve =
-          fields
-              .getCurrentRenderee()
-              .accessor(thisVar)
+          msgRendererVar
+              .accessor()
               .invoke(
                   MethodRef.SOY_VALUE_PROVIDER_RENDER_AND_RESOLVE,
                   appendable,
@@ -364,11 +362,8 @@ final class MsgCompiler {
               (requiresDetachLogic
                       ? detachState
                           .createExpressionDetacher(start)
-                          .resolveSoyValueProvider(fields.getCurrentRenderee().accessor(thisVar))
-                      : fields
-                          .getCurrentRenderee()
-                          .accessor(thisVar)
-                          .invoke(MethodRef.SOY_VALUE_PROVIDER_RESOLVE))
+                          .resolveSoyValueProvider(msgRendererVar.accessor())
+                      : msgRendererVar.accessor().invoke(MethodRef.SOY_VALUE_PROVIDER_RESOLVE))
                   .checkedCast(SOY_STRING_TYPE));
       for (SoyPrintDirective directive : escapingDirectives) {
         value = parameterLookup.getRenderContext().applyPrintDirective(directive, value);
@@ -376,15 +371,7 @@ final class MsgCompiler {
       render =
           appendableExpression.appendString(value.unboxAsString()).toStatement().labelStart(start);
     }
-    return Statement.concat(
-        initMsgRenderer,
-        render,
-        // clear the field
-        fields
-            .getCurrentRenderee()
-            .putInstanceField(
-                thisVar,
-                BytecodeUtils.constantNull(ConstructorRef.MSG_RENDERER.instanceClass().type())));
+    return Statement.concat(initMsgRenderer, render, scope.exitScope());
   }
 
   @AutoValue

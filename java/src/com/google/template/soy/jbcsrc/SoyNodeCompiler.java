@@ -23,12 +23,9 @@ import static com.google.template.soy.jbcsrc.PrintDirectives.applyStreamingPrint
 import static com.google.template.soy.jbcsrc.PrintDirectives.areAllPrintDirectivesStreamable;
 import static com.google.template.soy.jbcsrc.TemplateVariableManager.SaveStrategy.DERIVED;
 import static com.google.template.soy.jbcsrc.TemplateVariableManager.SaveStrategy.STORE;
-import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.COMPILED_TEMPLATE_TYPE;
-import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.LOGGING_ADVISING_APPENDABLE_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_PROVIDER_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.compareSoyEquals;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
-import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constantNull;
 import static org.objectweb.asm.commons.GeneratorAdapter.EQ;
 
 import com.google.auto.value.AutoValue;
@@ -146,7 +143,9 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       FieldManager fields,
       BasicExpressionCompiler constantCompiler,
       JavaSourceFunctionCompiler javaSourceFunctionCompiler) {
-    DetachState detachState = new DetachState(variables, thisVar, fields);
+    // We pass a lazy supplier of render context so that lazy closure compiler classes that don't
+    // generate detach logic don't trigger capturing this value into a field.
+    DetachState detachState = new DetachState(variables, parameterLookup::getRenderContext);
     ExpressionCompiler expressionCompiler =
         ExpressionCompiler.create(analysis, parameterLookup, variables, javaSourceFunctionCompiler);
     ExpressionToSoyValueProviderCompiler soyValueProviderCompiler =
@@ -772,19 +771,22 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     // enable incremental rendering of parameters for lazy transclusions!
     // This actually ends up looking a lot like how calls work so we use the same strategy.
     Statement initRenderee = Statement.NULL_STATEMENT;
-    Statement clearRenderee = Statement.NULL_STATEMENT;
+
+    TemplateVariableManager.Scope renderScope = variables.enterScope();
     if (!soyValueProvider.isCheap()) {
-      FieldRef currentRendereeField = fields.getCurrentRenderee();
-      initRenderee = currentRendereeField.putInstanceField(thisVar, soyValueProvider);
-      clearRenderee =
-          currentRendereeField.putInstanceField(thisVar, constantNull(SOY_VALUE_PROVIDER_TYPE));
-      soyValueProvider = currentRendereeField.accessor(thisVar);
+      TemplateVariableManager.Variable variable =
+          renderScope.createSynthetic(
+              SyntheticVarName.renderee(),
+              soyValueProvider,
+              TemplateVariableManager.SaveStrategy.STORE);
+      initRenderee = variable.initializer();
+      soyValueProvider = variable.accessor();
     }
     initRenderee = initRenderee.labelStart(reattachPoint);
 
     Statement initAppendable = Statement.NULL_STATEMENT;
     Statement clearAppendable = Statement.NULL_STATEMENT;
-    Expression appendable = appendableExpression;
+    AppendableExpression appendable = appendableExpression;
     if (!directives.isEmpty()) {
       Label printDirectiveArgumentReattachPoint = new Label();
       PrintDirectives.AppendableAndFlushBuffersDepth wrappedAppendable =
@@ -794,22 +796,16 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
               exprCompiler.asBasicCompiler(
                   detachState.createExpressionDetacher(printDirectiveArgumentReattachPoint)),
               parameterLookup.getPluginContext());
-      FieldRef currentAppendableField = fields.getCurrentAppendable();
-      initAppendable =
-          currentAppendableField
-              .putInstanceField(thisVar, wrappedAppendable.appendable())
-              .labelStart(printDirectiveArgumentReattachPoint);
-      appendable = currentAppendableField.accessor(thisVar).asNonNullable();
-      clearAppendable =
-          currentAppendableField.putInstanceField(
-              thisVar, constantNull(LOGGING_ADVISING_APPENDABLE_TYPE));
+      TemplateVariableManager.Variable variable =
+          renderScope.createSynthetic(
+              SyntheticVarName.appendable(),
+              wrappedAppendable.appendable(),
+              TemplateVariableManager.SaveStrategy.STORE);
+      initAppendable = variable.initializer().labelStart(printDirectiveArgumentReattachPoint);
+      appendable = AppendableExpression.forExpression(variable.accessor());
       if (wrappedAppendable.flushBuffersDepth() >= 0) {
         // make sure to call close before clearing
-        clearAppendable =
-            Statement.concat(
-                AppendableExpression.forExpression(appendable)
-                    .flushBuffers(wrappedAppendable.flushBuffersDepth()),
-                clearAppendable);
+        clearAppendable = appendable.flushBuffers(wrappedAppendable.flushBuffersDepth());
       }
     }
     Expression callRenderAndResolve =
@@ -823,7 +819,8 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         requiresDetachLogic
             ? detachState.detachForRender(callRenderAndResolve)
             : detachState.assertFullyRenderered(callRenderAndResolve);
-    return Statement.concat(initRenderee, initAppendable, doCall, clearAppendable, clearRenderee);
+    return Statement.concat(
+        initRenderee, initAppendable, doCall, clearAppendable, renderScope.exitScope());
   }
 
   @Override
@@ -1120,55 +1117,52 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   private Statement renderCallNode(
       Label parametersReattachPoint, CallNode node, Expression calleeExpression) {
     Statement initAppendable = Statement.NULL_STATEMENT;
-    Statement clearAppendable = Statement.NULL_STATEMENT;
-    Expression appendable = appendableExpression;
-    FieldRef currentCalleeField = fields.getCurrentCalleeField();
-    // TODO(lukes): for CallBasicNodes, we could take advantage of the ShortCircuitable interface to
-    // statically remove directives based on the callee kind.  Note, we can't do this for
-    // CallDelegateNodes because there is no guarantee that we can tell what the kind is.
+    Statement flushAppendable = Statement.NULL_STATEMENT;
+    AppendableExpression appendable = appendableExpression;
+
+    TemplateVariableManager.Scope renderScope = variables.enterScope();
+    TemplateVariableManager.Variable calleeVariable =
+        renderScope.createSynthetic(
+            SyntheticVarName.renderee(),
+            calleeExpression,
+            TemplateVariableManager.SaveStrategy.STORE);
+    Statement initCallee = calleeVariable.initializer().labelStart(parametersReattachPoint);
+    calleeExpression = calleeVariable.accessor();
     if (!areAllPrintDirectivesStreamable(node)) {
       calleeExpression =
           MethodRef.RUNTIME_APPLY_ESCAPERS.invoke(
               calleeExpression, getEscapingDirectivesList(node));
+      initCallee = Statement.concat(initCallee, calleeVariable.local().store(calleeExpression));
+      calleeExpression = calleeVariable.accessor();
     } else {
       if (!node.getEscapingDirectives().isEmpty()) {
         PrintDirectives.AppendableAndFlushBuffersDepth wrappedAppendable =
             applyStreamingEscapingDirectives(
                 node.getEscapingDirectives(), appendable, parameterLookup.getPluginContext());
-        FieldRef currentAppendableField = fields.getCurrentAppendable();
-        initAppendable =
-            currentAppendableField.putInstanceField(thisVar, wrappedAppendable.appendable());
-        appendable = currentAppendableField.accessor(thisVar).asNonNullable();
-        clearAppendable =
-            currentAppendableField.putInstanceField(
-                thisVar, constantNull(LOGGING_ADVISING_APPENDABLE_TYPE));
+        TemplateVariableManager.Variable variable =
+            renderScope.createSynthetic(
+                SyntheticVarName.appendable(),
+                wrappedAppendable.appendable(),
+                // TODO(lukes): this could be STORE or derive depending on whether or not flush
+                // logic is required.
+                TemplateVariableManager.SaveStrategy.STORE);
+        initAppendable = variable.initializer();
+        appendable = AppendableExpression.forExpression(variable.accessor());
         if (wrappedAppendable.flushBuffersDepth() >= 0) {
-          // make sure to call close before clearing
-          clearAppendable =
-              Statement.concat(
-                  AppendableExpression.forExpression(appendable)
-                      .flushBuffers(wrappedAppendable.flushBuffersDepth()),
-                  clearAppendable);
+          flushAppendable = appendable.flushBuffers(wrappedAppendable.flushBuffersDepth());
         }
       }
     }
-    Statement initCallee =
-        currentCalleeField
-            .putInstanceField(thisVar, calleeExpression)
-            .labelStart(parametersReattachPoint);
     Expression callRender =
-        currentCalleeField
-            .accessor(thisVar)
+        calleeExpression
             .invoke(
                 MethodRef.COMPILED_TEMPLATE_RENDER, appendable, parameterLookup.getRenderContext())
             .withSourceLocation(node.getSourceLocation());
     Statement callCallee = detachState.detachForRender(callRender);
-    Statement clearCallee =
-        currentCalleeField.putInstanceField(
-            thisVar, BytecodeUtils.constantNull(COMPILED_TEMPLATE_TYPE));
     // We need to init the appendable after the callee because initializing the callee may require
     // rendering params into temporary buffers which may themselves use the currentAppendable field.
-    return Statement.concat(initCallee, initAppendable, callCallee, clearAppendable, clearCallee);
+    return Statement.concat(
+        initCallee, initAppendable, callCallee, flushAppendable, renderScope.exitScope());
   }
 
   private Expression getEscapingDirectivesList(CallNode node) {
@@ -1319,10 +1313,10 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
 
   private MsgCompiler getMsgCompiler() {
     return new MsgCompiler(
-        thisVar,
         detachState,
         parameterLookup,
         fields,
+        variables,
         appendableExpression,
         new PlaceholderCompiler() {
           @Override

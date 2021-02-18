@@ -63,6 +63,7 @@ import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.LegacyFunctionAdapter;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
+import com.google.template.soy.jbcsrc.shared.StackFrame;
 import com.google.template.soy.logging.SoyLogger;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPlaceholderPart;
@@ -119,8 +120,8 @@ public final class JbcSrcRuntime {
         }
       };
 
-  public static AssertionError unexpectedStateError(int state) {
-    return new AssertionError("Unexpected state requested: " + state);
+  public static AssertionError unexpectedStateError(StackFrame frame) {
+    return new AssertionError("Unexpected state requested: " + frame.stateNumber);
   }
 
   /**

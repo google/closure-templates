@@ -122,7 +122,7 @@ public abstract class Statement extends BytecodeProducer {
    * @param visitor The class visitor to write it to
    */
   public final void writeMethod(int access, Method method, ClassVisitor visitor) {
-    writeMethodTo(new CodeBuilder(access, method, null, visitor));
+    writeMethodTo(new CodeBuilder(access, method, /* exceptions=*/ null, visitor));
   }
 
   /**

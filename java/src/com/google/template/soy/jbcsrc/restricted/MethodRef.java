@@ -63,6 +63,7 @@ import com.google.template.soy.jbcsrc.runtime.JbcSrcRuntime;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.LegacyFunctionAdapter;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
+import com.google.template.soy.jbcsrc.shared.StackFrame;
 import com.google.template.soy.logging.SoyLogger;
 import com.google.template.soy.shared.internal.SharedRuntime;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
@@ -410,7 +411,7 @@ public abstract class MethodRef {
       create(SharedRuntime.class, "times", SoyValue.class, SoyValue.class).asNonNullable();
 
   public static final MethodRef RUNTIME_UNEXPECTED_STATE_ERROR =
-      create(JbcSrcRuntime.class, "unexpectedStateError", int.class).asNonNullable();
+      create(JbcSrcRuntime.class, "unexpectedStateError", StackFrame.class).asNonNullable();
 
   public static final MethodRef SOY_LIST_AS_JAVA_LIST =
       create(SoyList.class, "asJavaList").asNonNullable();

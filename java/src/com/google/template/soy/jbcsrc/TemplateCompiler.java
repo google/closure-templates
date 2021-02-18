@@ -326,7 +326,7 @@ final class TemplateCompiler {
     final LocalVariable contextVar =
         createLocal("context", 2, RENDER_CONTEXT_TYPE, start, end).asNonNullable();
     final TemplateVariableManager variableSet =
-        new TemplateVariableManager(fields, thisVar, template.renderMethod().method());
+        new TemplateVariableManager(template.renderMethod().method(), /*isStatic=*/ false);
     TemplateVariables variables =
         new TemplateVariables(variableSet, thisVar, new RenderContextExpression(contextVar));
     // We skipped resolving default values for template-type parameters earlier, but now we have
