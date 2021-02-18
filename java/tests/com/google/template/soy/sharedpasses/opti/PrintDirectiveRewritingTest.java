@@ -21,6 +21,7 @@ import static org.junit.Assert.assertThrows;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
@@ -75,7 +76,9 @@ public class PrintDirectiveRewritingTest {
             .fileSet();
     SimplifyVisitor simplifyVisitor =
         SimplifyVisitor.create(
-            fileSet.getNodeIdGenerator(), ImmutableList.copyOf(fileSet.getChildren()));
+            fileSet.getNodeIdGenerator(),
+            ImmutableList.copyOf(fileSet.getChildren()),
+            ErrorReporter.exploding());
     simplifyVisitor.simplify(fileSet.getChild(0));
     return ((TemplateNode) fileSet.getChild(0).getChild(0)).getChild(0).toSourceString();
   }

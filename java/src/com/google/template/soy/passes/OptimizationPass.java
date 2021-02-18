@@ -17,14 +17,22 @@ package com.google.template.soy.passes;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.sharedpasses.opti.SimplifyVisitor;
 import com.google.template.soy.soytree.SoyFileNode;
 
 /** Runs the optimizer on the whole file set. */
 final class OptimizationPass implements CompilerFileSetPass {
+
+  private final ErrorReporter errorReporter;
+
+  public OptimizationPass(ErrorReporter errorReporter) {
+    this.errorReporter = errorReporter;
+  }
+
   @Override
   public Result run(ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator) {
-    SimplifyVisitor visitor = SimplifyVisitor.create(idGenerator, sourceFiles);
+    SimplifyVisitor visitor = SimplifyVisitor.create(idGenerator, sourceFiles, errorReporter);
     for (SoyFileNode file : sourceFiles) {
       visitor.simplify(file);
     }

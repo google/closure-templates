@@ -21,6 +21,7 @@ import static com.google.common.truth.Truth.assertThat;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.truth.StringSubject;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
@@ -285,7 +286,10 @@ public class SimplifyVisitorTest {
 
   private static StringSubject assertSimplification(String... input) {
     SoyFileSetNode node = parse(join(input));
-    SimplifyVisitor.create(node.getNodeIdGenerator(), ImmutableList.copyOf(node.getChildren()))
+    SimplifyVisitor.create(
+            node.getNodeIdGenerator(),
+            ImmutableList.copyOf(node.getChildren()),
+            ErrorReporter.exploding())
         .simplify(node.getChild(0));
     return assertThat(toString(node.getChild(0).getChild(0)));
   }
@@ -293,7 +297,10 @@ public class SimplifyVisitorTest {
   private static void assertNoOp(String... input) {
     SoyFileSetNode node = parse(join(input));
     String original = toString(node.getChild(0).getChild(0));
-    SimplifyVisitor.create(node.getNodeIdGenerator(), ImmutableList.copyOf(node.getChildren()))
+    SimplifyVisitor.create(
+            node.getNodeIdGenerator(),
+            ImmutableList.copyOf(node.getChildren()),
+            ErrorReporter.exploding())
         .simplify(node.getChild(0));
     String rewritten = toString(node.getChild(0).getChild(0));
     assertThat(rewritten).isEqualTo(original);
@@ -326,7 +333,9 @@ public class SimplifyVisitorTest {
         SoyFileSetParserBuilder.forFileContents(soyFileContents).parse().fileSet();
     SimplifyVisitor simplifyVisitor =
         SimplifyVisitor.create(
-            fileSet.getNodeIdGenerator(), ImmutableList.copyOf(fileSet.getChildren()));
+            fileSet.getNodeIdGenerator(),
+            ImmutableList.copyOf(fileSet.getChildren()),
+            ErrorReporter.exploding());
     for (SoyFileNode file : fileSet.getChildren()) {
       simplifyVisitor.simplify(file);
     }

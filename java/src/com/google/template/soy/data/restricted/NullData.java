@@ -17,6 +17,7 @@
 package com.google.template.soy.data.restricted;
 
 import com.google.errorprone.annotations.Immutable;
+import com.google.template.soy.data.SoyDataException;
 
 /**
  * Null data.
@@ -53,6 +54,26 @@ public final class NullData extends PrimitiveData {
   @Override
   public String coerceToString() {
     return toString();
+  }
+
+  @Override
+  public int integerValue() {
+    throw new SoyDataException("'null' cannot be coerced to integer");
+  }
+
+  @Override
+  public long longValue() {
+    throw new SoyDataException("'null' cannot be coerced to long");
+  }
+
+  @Override
+  public double floatValue() {
+    throw new SoyDataException("'null' cannot be coerced to float");
+  }
+
+  @Override
+  public double numberValue() {
+    throw new SoyDataException("'null' cannot be coerced to number");
   }
 
   @Override

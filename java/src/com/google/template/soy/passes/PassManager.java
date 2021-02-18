@@ -579,7 +579,7 @@ public final class PassManager {
         addPass(new DesugarStateNodesPass(), crossTemplateCheckingPassesBuilder);
       }
       if (optimize) {
-        addPass(new OptimizationPass(), crossTemplateCheckingPassesBuilder);
+        addPass(new OptimizationPass(errorReporter), crossTemplateCheckingPassesBuilder);
       }
       // DesugarHtmlNodesPass may chop up RawTextNodes, and OptimizationPass may produce additional
       // RawTextNodes. Stich them back together here.

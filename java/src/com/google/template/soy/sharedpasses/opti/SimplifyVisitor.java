@@ -29,6 +29,7 @@ import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.Kind;
 import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
@@ -90,9 +91,14 @@ public final class SimplifyVisitor {
 
   /** Creates a new simplify visitor. */
   public static SimplifyVisitor create(
-      IdGenerator idGenerator, ImmutableList<SoyFileNode> sourceFiles) {
+      IdGenerator idGenerator,
+      ImmutableList<SoyFileNode> sourceFiles,
+      ErrorReporter errorReporter) {
     return new SimplifyVisitor(
-        idGenerator, sourceFiles, new SimplifyExprVisitor(), new PreevalVisitorFactory());
+        idGenerator,
+        sourceFiles,
+        new SimplifyExprVisitor(errorReporter),
+        new PreevalVisitorFactory());
   }
 
   private final Impl impl;

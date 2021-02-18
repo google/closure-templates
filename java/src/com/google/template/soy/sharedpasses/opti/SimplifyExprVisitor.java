@@ -16,6 +16,7 @@
 
 package com.google.template.soy.sharedpasses.opti;
 
+import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.internalutils.InternalValueUtils;
 import com.google.template.soy.data.restricted.BooleanData;
@@ -24,6 +25,8 @@ import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.PrimitiveData;
 import com.google.template.soy.data.restricted.StringData;
+import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.DataAccessNode;
@@ -64,11 +67,16 @@ import javax.annotation.Nullable;
  */
 final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
 
+  private static final SoyErrorKind SOY_DATA_ERROR = SoyErrorKind.of("Invalid value: {0}.");
+
   /** The PreevalVisitor for this instance (can reuse). */
   private final PreevalVisitor preevalVisitor;
 
-  SimplifyExprVisitor() {
+  private final ErrorReporter errorReporter;
+
+  SimplifyExprVisitor(ErrorReporter errorReporter) {
     this.preevalVisitor = new PreevalVisitor(Environment.prerenderingEnvironment());
+    this.errorReporter = errorReporter;
   }
 
   // -----------------------------------------------------------------------------------------------
@@ -432,6 +440,9 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
       preevalResult = preevalVisitor.exec(node);
     } catch (RenderException e) {
       return; // failed to preevaluate
+    } catch (SoyDataException e) {
+      errorReporter.report(node.getSourceLocation(), SOY_DATA_ERROR, e.getMessage());
+      return;
     }
 
     // It is possible for this to be an arbitrary SoyValue if the exprNode calls a pure soy function
