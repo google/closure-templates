@@ -139,7 +139,16 @@ public abstract class TemplateType extends SoyType {
 
     public abstract Builder setInferredType(boolean isInferredType);
 
-    public abstract TemplateType build();
+    abstract TemplateType autoBuild();
+
+    public TemplateType build() {
+      TemplateType built = autoBuild();
+      if (built.getParameters().stream()
+          .anyMatch(p -> p.getName().equals(ATTRIBUTES_HIDDEN_PARAM_NAME))) {
+        throw new IllegalStateException();
+      }
+      return built;
+    }
   }
 
   /**
@@ -420,9 +429,6 @@ public abstract class TemplateType extends SoyType {
         sb.append(", ");
       }
       String name = parameter.getName();
-      if (name.equals(ATTRIBUTES_HIDDEN_PARAM_NAME)) {
-        continue;
-      }
       if (parameter.getKind() == ParameterKind.ATTRIBUTE) {
         name = "@" + Parameter.paramToAttrName(name);
       }

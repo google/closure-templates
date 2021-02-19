@@ -104,6 +104,7 @@ public abstract class TemplateMetadata {
   private static ImmutableList<Parameter> directParametersFromTemplate(TemplateNode node) {
     return node.getParams().stream()
         .sorted(comparing(TemplateParam::isRequired, trueFirst()))
+        .filter(p -> !p.isImplicit())
         .map(TemplateMetadata::parameterFromTemplateParam)
         .collect(toImmutableList());
   }
