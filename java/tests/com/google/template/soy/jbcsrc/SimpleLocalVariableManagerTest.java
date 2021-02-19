@@ -17,11 +17,14 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import com.google.common.collect.ImmutableList;
+import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.LocalVariable;
 import com.google.template.soy.jbcsrc.restricted.Statement;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
+import org.objectweb.asm.Label;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
 
@@ -32,6 +35,7 @@ public final class SimpleLocalVariableManagerTest {
   public void testReserveSlots() throws Exception {
     SimpleLocalVariableManager vars =
         new SimpleLocalVariableManager(
+            BytecodeUtils.OBJECT.type(),
             new Method("foo", /*returnType=*/ Type.INT_TYPE, /*arguments=*/ new Type[] {}),
             /* isStatic=*/ true);
 
@@ -60,5 +64,31 @@ public final class SimpleLocalVariableManagerTest {
     LocalVariable quux = outer.createTemporary("qux", Type.INT_TYPE);
     assertThat(quux.index()).isEqualTo(0);
     assertThat(quux.resultType().getSize()).isEqualTo(1);
+  }
+
+  @Test
+  public void testParameters() {
+    SimpleLocalVariableManager vars =
+        new SimpleLocalVariableManager(
+            BytecodeUtils.OBJECT.type(),
+            new Method(
+                "foo",
+                /*returnType=*/ Type.INT_TYPE,
+                /*arguments=*/ new Type[] {Type.getType(String.class), Type.getType(int.class)}),
+            ImmutableList.of("baz", "quux"),
+            new Label(),
+            new Label(),
+            /* isStatic=*/ false);
+    LocalVariable thisVar = (LocalVariable) vars.getVariable("this");
+    assertThat(thisVar.index()).isEqualTo(0);
+    assertThat(thisVar.variableName()).isEqualTo("this");
+
+    LocalVariable baz = (LocalVariable) vars.getVariable("baz");
+    assertThat(baz.index()).isEqualTo(1);
+    assertThat(baz.variableName()).isEqualTo("baz");
+
+    LocalVariable quux = (LocalVariable) vars.getVariable("quux");
+    assertThat(quux.index()).isEqualTo(2);
+    assertThat(quux.variableName()).isEqualTo("quux");
   }
 }

@@ -18,10 +18,11 @@ package com.google.template.soy.jbcsrc;
 
 /** Constants for standard names used by the compiler. */
 final class StandardNames {
-  static final String PARAMS_FIELD = "$params";
-  static final String IJ_FIELD = "$ij";
+  static final String PARAMS = "$params";
+  static final String IJ = "$ij";
   static final String COMPILED_TEMPLATE = "$template";
-  static final String RENDER_CONTEXT_FIELD = "$renderContext";
+  static final String APPENDABLE = "$appendable";
+  static final String RENDER_CONTEXT = "$renderContext";
   static final String CURRENT_CALLEE = "$currentCallee";
   static final String CURRENT_RENDEREE = "$currentRenderee";
   static final String CURRENT_APPENDABLE = "$currentAppendable";

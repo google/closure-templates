@@ -16,7 +16,6 @@
 
 package com.google.template.soy.jbcsrc.restricted;
 
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.base.MoreObjects;
@@ -56,7 +55,6 @@ public final class LocalVariable extends Expression {
 
   public static LocalVariable createLocal(
       String name, int index, Type type, Label start, Label end) {
-    checkArgument(!name.equals("this"));
     return new LocalVariable(name, type, index, start, end);
   }
 

@@ -25,7 +25,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.internal.SanitizedContentKind;
-import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SanitizedContents;
@@ -33,7 +32,6 @@ import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyDict;
 import com.google.template.soy.data.SoyLegacyObjectMap;
 import com.google.template.soy.data.SoyList;
-import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.internal.DictImpl;
 import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
@@ -51,8 +49,6 @@ import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.testing.ExpressionSubject;
-import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
-import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.TemplateNode;
@@ -79,26 +75,11 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.commons.Method;
 
 /** Tests for {@link ExpressionCompiler} */
 @RunWith(JUnit4.class)
 public class ExpressionCompilerTest {
   private final Map<String, SoyExpression> variables = new HashMap<>();
-
-  private static Method getRenderMethod() {
-    try {
-      return Method.getMethod(
-          CompiledTemplate.class.getMethod(
-              "render",
-              SoyRecord.class,
-              SoyRecord.class,
-              LoggingAdvisingAppendable.class,
-              RenderContext.class));
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
-  }
 
   @Before
   public void setUp() {
@@ -630,7 +611,13 @@ public class ExpressionCompilerTest {
                 throw new UnsupportedOperationException();
               }
             },
-            new TemplateVariableManager(getRenderMethod(), /*isStatic=*/ true),
+            new TemplateVariableManager(
+                BytecodeUtils.OBJECT.type(),
+                BytecodeUtils.CLASS_INIT,
+                ImmutableList.of(),
+                null,
+                null,
+                /*isStatic=*/ true),
             new JavaSourceFunctionCompiler(
                 SoyTypeRegistryBuilder.create(), ErrorReporter.exploding()));
 

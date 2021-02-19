@@ -19,16 +19,17 @@ package com.google.template.soy.jbcsrc;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.internal.UniqueNameGenerator;
 import com.google.template.soy.jbcsrc.internal.JbcSrcNameGenerators;
-import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.LocalVariable;
 import com.google.template.soy.jbcsrc.restricted.Statement;
 import java.util.ArrayList;
 import java.util.BitSet;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.objectweb.asm.Label;
@@ -45,18 +46,44 @@ final class SimpleLocalVariableManager implements LocalVariableManager {
   private final UniqueNameGenerator localNames = JbcSrcNameGenerators.forFieldNames();
   private final List<LocalVariable> allVariables = new ArrayList<>();
   private final BitSet availableSlots = new BitSet();
-  private final Map<String, LocalVariable> activeVariables = new HashMap<>();
+  private final Map<String, LocalVariable> activeVariables = new LinkedHashMap<>();
   private boolean generated;
 
-  SimpleLocalVariableManager(Method method, boolean isStatic) {
+  SimpleLocalVariableManager(Type ownerType, Method method, boolean isStatic) {
+    this(ownerType, method, ImmutableList.of(), null, null, isStatic);
+  }
+
+  SimpleLocalVariableManager(
+      Type ownerType,
+      Method method,
+      ImmutableList<String> parameterNames,
+      Label methodBegin,
+      Label methodEnd,
+      boolean isStatic) {
+    Type[] argumentTypes = method.getArgumentTypes();
+    checkArgument(
+        argumentTypes.length == parameterNames.size(),
+        "expected %s args, got %s paramNames: %s",
+        argumentTypes.length,
+        parameterNames.size(),
+        parameterNames);
     if (!isStatic) {
-      // for 'this'
-      reserveSlotFor(BytecodeUtils.OBJECT.type());
-      localNames.claimName("this");
+      reserveParameter("this", ownerType, methodBegin, methodEnd);
     }
-    for (Type type : method.getArgumentTypes()) {
-      reserveSlotFor(type);
+    int parameterIndex = 0;
+    for (Type type : argumentTypes) {
+      reserveParameter(parameterNames.get(parameterIndex), type, methodBegin, methodEnd);
+      parameterIndex++;
     }
+  }
+
+  private void reserveParameter(String name, Type type, Label methodBegin, Label methodEnd) {
+    int slot = reserveSlotFor(type);
+    localNames.claimName(name);
+    LocalVariable var =
+        LocalVariable.createLocal(name, slot, type, /* start=*/ methodBegin, /* end=*/ methodEnd);
+    allVariables.add(var);
+    activeVariables.put(name, var);
   }
 
   @Override
@@ -70,6 +97,10 @@ final class SimpleLocalVariableManager implements LocalVariableManager {
               + activeVariables.keySet());
     }
     return var;
+  }
+
+  ImmutableMap<String, LocalVariable> allActiveVariables() {
+    return ImmutableMap.copyOf(activeVariables);
   }
 
   /**

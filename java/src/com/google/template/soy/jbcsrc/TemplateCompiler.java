@@ -19,13 +19,10 @@ package com.google.template.soy.jbcsrc;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.base.Strings.nullToEmpty;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
-import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.LOGGING_ADVISING_APPENDABLE_TYPE;
-import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.RENDER_CONTEXT_TYPE;
-import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_RECORD_TYPE;
-import static com.google.template.soy.jbcsrc.restricted.LocalVariable.createLocal;
 import static com.google.template.soy.soytree.SoyTreeUtils.allNodesOfType;
 
 import com.google.auto.value.AutoAnnotation;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.internal.Converters;
@@ -76,6 +73,7 @@ import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
+import org.objectweb.asm.commons.Method;
 
 /**
  * Compiles the top level {@link CompiledTemplate} class for a single template and all related
@@ -277,27 +275,37 @@ final class TemplateCompiler {
     BasicExpressionCompiler constantCompiler =
         ExpressionCompiler.createConstantCompiler(
             analysis,
-            new SimpleLocalVariableManager(BytecodeUtils.CLASS_INIT, /* isStatic=*/ true),
+            new SimpleLocalVariableManager(
+                template.typeInfo().type(), BytecodeUtils.CLASS_INIT, /* isStatic=*/ true),
             javaSourceFunctionCompiler);
     final Label start = new Label();
     final Label end = new Label();
-    final LocalVariable paramsVar =
-        createLocal("params", 0, SOY_RECORD_TYPE, start, end).asNonNullable();
-    final LocalVariable ijVar = createLocal("ij", 1, SOY_RECORD_TYPE, start, end).asNonNullable();
-    final LocalVariable appendableVar =
-        createLocal("appendable", 2, LOGGING_ADVISING_APPENDABLE_TYPE, start, end).asNonNullable();
-    final LocalVariable contextVar =
-        createLocal("context", 3, RENDER_CONTEXT_TYPE, start, end).asNonNullable();
+    ImmutableList<String> paramNames =
+        ImmutableList.of(
+            StandardNames.PARAMS,
+            StandardNames.IJ,
+            StandardNames.APPENDABLE,
+            StandardNames.RENDER_CONTEXT);
+    Method method = template.renderMethod().method();
     final TemplateVariableManager variableSet =
-        new TemplateVariableManager(template.renderMethod().method(), /*isStatic=*/ true);
+        new TemplateVariableManager(
+            template.typeInfo().type(), method, paramNames, start, end, /*isStatic=*/ true);
+    Expression paramsVar = variableSet.getVariable(StandardNames.PARAMS);
+    Expression ijVar = variableSet.getVariable(StandardNames.IJ);
     TemplateVariables variables =
         new TemplateVariables(
-            variableSet, paramsVar, ijVar, new RenderContextExpression(contextVar));
+            variableSet,
+            paramsVar,
+            ijVar,
+            new RenderContextExpression(variableSet.getVariable(StandardNames.RENDER_CONTEXT)));
+    AppendableExpression appendable =
+        AppendableExpression.forExpression(
+            variableSet.getVariable(StandardNames.APPENDABLE).asNonNullable());
     SoyNodeCompiler nodeCompiler =
         SoyNodeCompiler.create(
             analysis,
             innerClasses,
-            AppendableExpression.forExpression(appendableVar),
+            appendable,
             variableSet,
             variables,
             fields,
@@ -328,7 +336,7 @@ final class TemplateCompiler {
         SoyNodeCompiler.create(
                 analysis,
                 innerClasses,
-                AppendableExpression.forExpression(appendableVar),
+                appendable,
                 variableSet,
                 variables,
                 fields,
@@ -352,13 +360,9 @@ final class TemplateCompiler {
         adapter.mark(end);
         returnDone.gen(adapter);
 
-        paramsVar.tableEntry(adapter);
-        ijVar.tableEntry(adapter);
-        appendableVar.tableEntry(adapter);
-        contextVar.tableEntry(adapter);
         variableSet.generateTableEntries(adapter);
       }
-    }.writeIOExceptionMethod(methodAccess(), template.renderMethod().method(), writer);
+    }.writeIOExceptionMethod(methodAccess(), method, writer);
     writer.setNumDetachStates(methodBody.numberOfDetachStates());
   }
 

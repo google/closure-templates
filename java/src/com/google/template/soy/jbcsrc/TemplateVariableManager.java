@@ -41,6 +41,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.IntStream;
 import org.objectweb.asm.Handle;
+import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
@@ -199,8 +200,24 @@ final class TemplateVariableManager implements LocalVariableManager {
   private LocalVariable stackFrameVariable;
 
   /** @param method The method being generated */
-  TemplateVariableManager(Method method, boolean isStatic) {
-    this.delegate = new SimpleLocalVariableManager(method, /*isStatic=*/ isStatic);
+  TemplateVariableManager(
+      Type owner,
+      Method method,
+      ImmutableList<String> parameterNames,
+      Label methodBegin,
+      Label methodEnd,
+      boolean isStatic) {
+    this.delegate =
+        new SimpleLocalVariableManager(
+            owner, method, parameterNames, methodBegin, methodEnd, /*isStatic=*/ isStatic);
+    // seed our map with all the method parameters from our delegate.
+    delegate
+        .allActiveVariables()
+        .entrySet()
+        .forEach(
+            entry ->
+                variablesByKey.put(
+                    VarKey.create(entry.getKey()), new TrivialVariable(entry.getValue())));
   }
 
   /** Enters a new scope. Variables may only be defined within a scope. */
