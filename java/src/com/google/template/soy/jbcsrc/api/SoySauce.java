@@ -19,7 +19,6 @@ package com.google.template.soy.jbcsrc.api;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.jbcsrc.api.AppendableAsAdvisingAppendable.asAdvisingAppendable;
 
-import com.google.common.annotations.Beta;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -40,14 +39,18 @@ import javax.annotation.CheckReturnValue;
  * Main entry point for rendering Soy templates on the server.
  */
 public interface SoySauce {
-  /** Returns a new {@link Renderer} for configuring and rendering the given template. */
+  /**
+   * Returns a new {@link Renderer} for configuring and rendering the given template.
+   *
+   * @deprecated Use {@link #newRenderer(SoyTemplate)} instead.
+   */
+  @Deprecated
   Renderer renderTemplate(String template);
 
   /**
    * Returns a new {@link Renderer} for configuring and rendering the given template. The returned
    * renderer will have its data set and may not allow additional calls to {@link Renderer#setData}.
    */
-  @Beta
   default Renderer newRenderer(SoyTemplate params) {
     return renderTemplate(params.getTemplateName()).setData(params.getParamsAsMap());
   }
