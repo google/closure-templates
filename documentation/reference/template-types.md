@@ -60,9 +60,7 @@ parameter named `s`.
 
 ## How do you pass in a template?
 
-To pass a template as a parameter, directly use a template as a value. If a
-template is locally declared in the file, wrap the reference in a `template()`
-call.
+To pass a template as a parameter, directly use a template as a value.
 
 <section class="polyglot">
 
