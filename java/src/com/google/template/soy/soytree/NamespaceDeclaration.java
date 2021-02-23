@@ -105,6 +105,10 @@ public final class NamespaceDeclaration {
     return namespace.identifier();
   }
 
+  public SourceLocation getNamespaceLocation() {
+    return namespace.location();
+  }
+
   ImmutableList<String> getRequiredCssNamespaces() {
     return requiredCssNamespaces;
   }
