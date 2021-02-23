@@ -554,7 +554,7 @@ public class SoyConformanceTest {
                     + "{/template}"),
             SourceFilePath.create("foo/bar/baz.soy")),
         new StableSoyFileSupplier(
-            CharSource.wrap("{namespace ns}\n" + "{template .noViolation}{/template}"),
+            CharSource.wrap("{namespace ns2}\n" + "{template .noViolation}{/template}"),
             SourceFilePath.create("foo/bar/quux.soy")));
   }
 

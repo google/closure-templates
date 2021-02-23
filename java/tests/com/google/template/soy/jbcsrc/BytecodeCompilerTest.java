@@ -145,7 +145,7 @@ public class BytecodeCompilerTest {
                 .join(
                     "{delpackage AlternateSecretFeature}",
                     "{namespace ns3 requirecss=\"ns.bar\"}",
-                    "import {helper} from 'ns3.soy';",
+                    "import {helper} from 'ns4.soy';",
                     "",
                     "/** */",
                     "{deltemplate myApp.myDelegate}", // implementation in AlternateSecretFeature
@@ -159,7 +159,7 @@ public class BytecodeCompilerTest {
         SoyFileSupplier.Factory.create(
             Joiner.on("\n")
                 .join(
-                    "{namespace ns3}",
+                    "{namespace ns4}",
                     "",
                     "/** */",
                     "{template .helper}",
@@ -167,7 +167,7 @@ public class BytecodeCompilerTest {
                     "  {$boo}",
                     "{/template}",
                     ""),
-            SourceFilePath.create("ns3.soy"));
+            SourceFilePath.create("ns4.soy"));
     SoyFileSetParser parser =
         SoyFileSetParserBuilder.forSuppliers(
                 soyFileContent1, soyFileContent2, soyFileContent3, soyFileContent4)
@@ -1317,7 +1317,7 @@ public class BytecodeCompilerTest {
                 "loader2.soy",
                 Joiner.on("\n")
                     .join(
-                        "{namespace loader1}",
+                        "{namespace loader1.b}",
                         "{template .publicTemplate2}",
                         "L1T2",
                         "{/template}")));

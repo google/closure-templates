@@ -584,7 +584,9 @@ public final class PassManager {
       // DesugarHtmlNodesPass may chop up RawTextNodes, and OptimizationPass may produce additional
       // RawTextNodes. Stich them back together here.
       addPass(new CombineConsecutiveRawTextNodesPass(), crossTemplateCheckingPassesBuilder);
-
+      addPass(
+          new BanDuplicateNamespacesPass(errorReporter, fileSetRegistrySupplier::get),
+          crossTemplateCheckingPassesBuilder);
       building = false;
       if (!passContinuationRegistry.isEmpty()) {
         throw new IllegalStateException(

@@ -181,7 +181,7 @@ public final class TemplateRegistryTest {
                     SourceFilePath.create("foo.soy")),
                 SoyFileSupplier.Factory.create(
                     "{delpackage foo}\n"
-                        + "{namespace ns}\n"
+                        + "{namespace ns2}\n"
                         + "/** Deltemplate. */\n"
                         + "{deltemplate foo.bar}\n"
                         + "{/deltemplate}",

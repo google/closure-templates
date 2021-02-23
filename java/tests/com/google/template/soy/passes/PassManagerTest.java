@@ -124,6 +124,7 @@ public final class PassManagerTest {
     ImmutableList<Class<? extends CompilerPass>> unannotatedAllowList =
         ImmutableList.of(
             AutoescaperPass.class,
+            BanDuplicateNamespacesPass.class,
             BasicHtmlValidationPass.class,
             CheckBadContextualUsagePass.class,
             CheckDeclaredTypesPass.class,

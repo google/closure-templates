@@ -1095,7 +1095,7 @@ public class RenderVisitorTest {
 
     String soyFileContent4 =
         "{delpackage AlternateSecretFeature}\n"
-            + "{namespace ns3}\n"
+            + "{namespace ns4}\n"
             + "\n"
             + "{template .helper}\n"
             + "  {@param boo: ?}\n"
