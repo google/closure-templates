@@ -52,7 +52,6 @@ import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueConverterUtility;
-import com.google.template.soy.data.internal.BasicParamStore;
 import com.google.template.soy.data.internal.ListImpl;
 import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.data.restricted.IntegerData;
@@ -384,7 +383,7 @@ public class BytecodeCompilerTest {
             "Boo: {$boo}{\\n}",
             "{/template}",
             "");
-    ParamStore params = new BasicParamStore(2);
+    ParamStore params = new ParamStore(2);
     params.setField("foo", StringData.forValue("foo"));
     assertThat(render(templates, params, "ns.callerDataAll")).isEqualTo("Foo: foo\nBoo: null\n");
     params.setField("boo", StringData.forValue("boo"));
@@ -394,8 +393,8 @@ public class BytecodeCompilerTest {
         .asList()
         .containsExactly("ns.callee");
 
-    params = new BasicParamStore(2);
-    params.setField("rec", new BasicParamStore(2).setField("foo", StringData.forValue("foo")));
+    params = new ParamStore(2);
+    params.setField("rec", new ParamStore(2).setField("foo", StringData.forValue("foo")));
     assertThat(render(templates, params, "ns.callerDataExpr")).isEqualTo("Foo: foo\nBoo: null\n");
     ((ParamStore) params.getField("rec")).setField("boo", StringData.forValue("boo"));
     assertThat(render(templates, params, "ns.callerDataExpr")).isEqualTo("Foo: foo\nBoo: boo\n");
@@ -403,14 +402,14 @@ public class BytecodeCompilerTest {
         .asList()
         .containsExactly("ns.callee");
 
-    params = new BasicParamStore(2);
+    params = new ParamStore(2);
     params.setField("p1", StringData.forValue("foo"));
     assertThat(render(templates, params, "ns.callerParams")).isEqualTo("Foo: foo\nBoo: a1b\n");
     assertThat(getTemplateMetadata(templates, "ns.callerParams").callees())
         .asList()
         .containsExactly("ns.callee");
 
-    params = new BasicParamStore(2);
+    params = new ParamStore(2);
     params.setField("p1", StringData.forValue("foo"));
     params.setField("boo", StringData.forValue("boo"));
     assertThat(render(templates, params, "ns.callerParamsAndData"))

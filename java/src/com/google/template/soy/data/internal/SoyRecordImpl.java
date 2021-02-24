@@ -25,6 +25,7 @@ import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
 import java.io.IOException;
 import java.util.Map;
+import java.util.function.BiConsumer;
 
 /**
  * A record implementation.
@@ -42,6 +43,16 @@ public final class SoyRecordImpl extends SoyAbstractValue implements SoyRecord {
   @Override
   public ImmutableMap<String, SoyValueProvider> recordAsMap() {
     return map;
+  }
+
+  @Override
+  public void forEach(BiConsumer<String, ? super SoyValueProvider> action) {
+    map.forEach(action);
+  }
+
+  @Override
+  public int recordSize() {
+    return map.size();
   }
 
   @Override

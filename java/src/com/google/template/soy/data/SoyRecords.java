@@ -15,21 +15,15 @@
  */
 package com.google.template.soy.data;
 
-import static com.google.common.base.Preconditions.checkArgument;
 
-import com.google.template.soy.data.internal.AugmentedParamStore;
 import com.google.template.soy.data.internal.ParamStore;
 
 /** Utility methods dealing with {@link SoyRecord}s. */
 public final class SoyRecords {
   /** Merges two soy records into one. Throws an exception in the case of a key conflict. */
   public static SoyRecord merge(SoyRecord a, SoyRecord b) {
-    ParamStore merged = new AugmentedParamStore(a, b.recordAsMap().size());
-    for (String key : b.recordAsMap().keySet()) {
-      checkArgument(!merged.hasField(key));
-      merged.setField(key, b.getFieldProvider(key));
-    }
-
+    ParamStore merged = new ParamStore(a, b.recordSize());
+    b.forEach(merged::setFieldCritical);
     return merged;
   }
 

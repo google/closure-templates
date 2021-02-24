@@ -32,6 +32,7 @@ import com.google.template.soy.data.restricted.StringData;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import javax.annotation.Nonnull;
 import javax.annotation.ParametersAreNonnullByDefault;
 
@@ -129,6 +130,18 @@ public final class DictImpl extends SoyAbstractValue implements SoyDict, SoyMap 
   public final ImmutableMap<String, SoyValueProvider> recordAsMap() {
     typeTracker.maybeSetLegacyObjectMapOrRecordType();
     return ImmutableMap.copyOf(providerMap);
+  }
+
+  @Override
+  public void forEach(BiConsumer<String, ? super SoyValueProvider> action) {
+    typeTracker.maybeSetLegacyObjectMapOrRecordType();
+    providerMap.forEach(action);
+  }
+
+  @Override
+  public int recordSize() {
+    typeTracker.maybeSetLegacyObjectMapOrRecordType();
+    return providerMap.size();
   }
 
   @Override

@@ -37,8 +37,6 @@ import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.TofuTemplateValue;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
-import com.google.template.soy.data.internal.AugmentedParamStore;
-import com.google.template.soy.data.internal.BasicParamStore;
 import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
@@ -601,7 +599,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       for (TemplateParam param : params) {
         if (param.hasDefault() && data.getField(param.name()) == null) {
           if (dataWithDefaults == null) {
-            dataWithDefaults = new AugmentedParamStore(data, params.size());
+            dataWithDefaults = new ParamStore(data, params.size());
           }
           // This could be made more performant by precalculating the default value, but Tofu is
           // legacy so don't worry about.
@@ -620,7 +618,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       } else {
         dataRecord = getDataRecord(node);
       }
-      params = new AugmentedParamStore(dataRecord, node.numChildren());
+      params = new ParamStore(dataRecord, node.numChildren());
       if (node.isPassingAllData()) {
         for (TemplateParam param : node.getNearestAncestor(TemplateNode.class).getParams()) {
           // If this is a data="all" call and the caller has default parameters we need to augment
@@ -633,7 +631,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       }
     } else {
       // Case 4: Not passing data and passing params.
-      params = new BasicParamStore(node.numChildren());
+      params = new ParamStore(node.numChildren());
     }
 
     // --- Cases 3 and 4: Passing params. ---

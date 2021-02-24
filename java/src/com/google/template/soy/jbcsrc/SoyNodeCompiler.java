@@ -1268,7 +1268,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       Expression paramsRecord = parameterLookup.getParamsRecord();
       return maybeAddDefaultParams(
               node,
-              ConstructorRef.AUGMENTED_PARAM_STORE.construct(
+              ConstructorRef.PARAM_STORE_AUGMENT.construct(
                   paramsRecord, constant(node.numChildren())))
           .orElse(paramsRecord);
     }
@@ -1303,7 +1303,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
    */
   private Expression getParamStoreExpression(CallNode node) {
     if (!node.isPassingData()) {
-      return ConstructorRef.BASIC_PARAM_STORE.construct(constant(node.numChildren()));
+      return ConstructorRef.PARAM_STORE_SIZE.construct(constant(node.numChildren()));
     }
 
     Label reattachDataLabel = new Label();
@@ -1314,7 +1314,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       dataExpression = getDataRecordExpression(node, reattachDataLabel);
     }
     Expression paramStoreExpression =
-        ConstructorRef.AUGMENTED_PARAM_STORE
+        ConstructorRef.PARAM_STORE_AUGMENT
             .construct(dataExpression, constant(node.numChildren()))
             .labelStart(reattachDataLabel);
     if (node.isPassingAllData()) {

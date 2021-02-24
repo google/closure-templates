@@ -16,13 +16,19 @@
 
 package com.google.template.soy.data.internal;
 
+import static com.google.common.base.Preconditions.checkState;
+
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SoyAbstractValue;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
 import java.io.IOException;
+import java.util.Map;
+import java.util.function.BiConsumer;
 import javax.annotation.Nonnull;
 
 /**
@@ -30,10 +36,25 @@ import javax.annotation.Nonnull;
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
- * <p>TODO(lukes): there is no need for this class to implement SoyRecord...
- *
  */
-public abstract class ParamStore extends SoyAbstractValue implements SoyRecord {
+public final class ParamStore extends SoyAbstractValue implements SoyRecord {
+
+  /** The internal map holding the fields (params). */
+  private final Map<String, SoyValueProvider> localStore;
+
+  public ParamStore(SoyRecord backingStore, int size) {
+    this.localStore = Maps.newHashMapWithExpectedSize(backingStore.recordSize() + size);
+    backingStore.forEach(localStore::put);
+  }
+
+  // private constructor for the empty instance
+  private ParamStore(boolean unused) {
+    this.localStore = ImmutableMap.of();
+  }
+
+  public ParamStore(int size) {
+    this.localStore = Maps.newHashMapWithExpectedSize(size);
+  }
 
   /**
    * Sets a field (i.e. param) in this ParamStore.
@@ -41,7 +62,51 @@ public abstract class ParamStore extends SoyAbstractValue implements SoyRecord {
    * @param name The field name to set.
    * @param valueProvider A provider of the field value.
    */
-  public abstract ParamStore setField(String name, @Nonnull SoyValueProvider valueProvider);
+  public ParamStore setField(String name, @Nonnull SoyValueProvider valueProvider) {
+    Preconditions.checkNotNull(valueProvider);
+    localStore.put(name, valueProvider);
+    return this;
+  }
+
+  /**
+   * Sets a field (i.e. param) in this ParamStore. Failing if it is already present.
+   *
+   * <p>This is implemented for {@code bind()} calls
+   *
+   * @param name The field name to set.
+   * @param valueProvider A provider of the field value.
+   */
+  public ParamStore setFieldCritical(String name, @Nonnull SoyValueProvider valueProvider) {
+    Preconditions.checkNotNull(valueProvider);
+    SoyValueProvider previous = localStore.put(name, valueProvider);
+    checkState(previous == null, "value already set for param %s", name);
+    return this;
+  }
+
+  @Override
+  public boolean hasField(String name) {
+    return localStore.containsKey(name);
+  }
+
+  @Override
+  public SoyValueProvider getFieldProvider(String name) {
+    return localStore.get(name);
+  }
+
+  @Override
+  public ImmutableMap<String, SoyValueProvider> recordAsMap() {
+    return ImmutableMap.copyOf(localStore);
+  }
+
+  @Override
+  public void forEach(BiConsumer<String, ? super SoyValueProvider> action) {
+    localStore.forEach(action);
+  }
+
+  @Override
+  public int recordSize() {
+    return localStore.size();
+  }
 
   @Override
   public SoyValue getField(String name) {
@@ -89,31 +154,5 @@ public abstract class ParamStore extends SoyAbstractValue implements SoyRecord {
   // -----------------------------------------------------------------------------------------------
   // Empty instance.
 
-  public static final ParamStore EMPTY_INSTANCE =
-      new ParamStore() {
-        @Override
-        public ParamStore setField(String name, @Nonnull SoyValueProvider valueProvider) {
-          throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public boolean hasField(String name) {
-          return false;
-        }
-
-        @Override
-        public SoyValueProvider getFieldProvider(String name) {
-          return null;
-        }
-
-        @Override
-        public SoyValue getField(String name) {
-          return null;
-        }
-
-        @Override
-        public ImmutableMap<String, SoyValueProvider> recordAsMap() {
-          return ImmutableMap.<String, SoyValueProvider>of();
-        }
-      };
+  public static final ParamStore EMPTY_INSTANCE = new ParamStore(true);
 }

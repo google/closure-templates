@@ -38,7 +38,6 @@ import com.google.template.soy.data.SoyTemplateData;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
-import com.google.template.soy.data.internal.BasicParamStore;
 import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
@@ -162,16 +161,16 @@ public final class SoySauceImpl implements SoySauce {
       }
     }
 
-    private BasicParamStore soyValueProviderMapAsParamStore(Map<String, ?> source) {
-      BasicParamStore dest = new BasicParamStore(source.size());
+    private ParamStore soyValueProviderMapAsParamStore(Map<String, ?> source) {
+      ParamStore dest = new ParamStore(source.size());
       for (Map.Entry<String, ?> entry : source.entrySet()) {
         dest.setField(entry.getKey(), (SoyValueProvider) entry.getValue());
       }
       return dest;
     }
 
-    private BasicParamStore mapAsParamStore(Map<String, ?> source) {
-      BasicParamStore dest = new BasicParamStore(source.size());
+    private ParamStore mapAsParamStore(Map<String, ?> source) {
+      ParamStore dest = new ParamStore(source.size());
       for (Map.Entry<String, ?> entry : source.entrySet()) {
         String key = entry.getKey();
         SoyValueProvider value;

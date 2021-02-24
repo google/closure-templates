@@ -29,6 +29,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import javax.annotation.Nonnull;
 
 /**
@@ -242,6 +243,16 @@ public class SoyMapData extends CollectionData implements SoyDict, SoyMap {
   @Override
   public ImmutableMap<String, SoyValueProvider> recordAsMap() {
     return ImmutableMap.copyOf(map);
+  }
+
+  @Override
+  public void forEach(BiConsumer<String, ? super SoyValueProvider> action) {
+    map.forEach(action);
+  }
+
+  @Override
+  public int recordSize() {
+    return map.size();
   }
 
   // -----------------------------------------------------------------------------------------------

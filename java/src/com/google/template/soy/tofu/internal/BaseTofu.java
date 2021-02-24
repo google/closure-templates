@@ -32,7 +32,6 @@ import com.google.template.soy.data.SoyTemplate;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
-import com.google.template.soy.data.internal.BasicParamStore;
 import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.msgs.SoyMsgBundle;
@@ -369,8 +368,8 @@ public final class BaseTofu implements SoyTofu {
       }
     }
 
-    private static BasicParamStore mapAsParamStore(Map<String, ?> source) {
-      BasicParamStore dest = new BasicParamStore(source.size());
+    private static ParamStore mapAsParamStore(Map<String, ?> source) {
+      ParamStore dest = new ParamStore(source.size());
       for (Map.Entry<String, ?> entry : source.entrySet()) {
         String key = entry.getKey();
         SoyValueProvider value;

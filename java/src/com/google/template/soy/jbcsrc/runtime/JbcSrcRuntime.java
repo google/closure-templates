@@ -889,6 +889,8 @@ public final class JbcSrcRuntime {
     private final CompiledTemplate delegate;
 
     PartiallyBoundTemplate(SoyRecord boundParams, CompiledTemplate delegate) {
+      // unwrap delegation by eagerly merging params, this removes layers of indirection at call
+      // time
       if (delegate instanceof PartiallyBoundTemplate) {
         PartiallyBoundTemplate partiallyBoundTemplate = (PartiallyBoundTemplate) delegate;
         boundParams = SoyRecords.merge(partiallyBoundTemplate.boundParams, boundParams);
@@ -902,8 +904,6 @@ public final class JbcSrcRuntime {
     public RenderResult render(
         SoyRecord params, SoyRecord ij, LoggingAdvisingAppendable appendable, RenderContext context)
         throws IOException {
-      // Internally SoyRecords.merge uses an AugmentedParamStore.  This is probably not the best
-      // choice.
       return delegate.render(SoyRecords.merge(boundParams, params), ij, appendable, context);
     }
   }

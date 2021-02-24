@@ -39,6 +39,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -273,6 +274,17 @@ public final class SoyProtoValue extends SoyAbstractValue implements SoyLegacyOb
   public final ImmutableMap<String, SoyValueProvider> recordAsMap() {
     throw new UnsupportedOperationException();
   }
+
+  @Override
+  public void forEach(BiConsumer<String, ? super SoyValueProvider> action) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public int recordSize() {
+    throw new UnsupportedOperationException();
+  }
+
   // -----------------------------------------------------------------------------------------------
   // SoyMap.
 
