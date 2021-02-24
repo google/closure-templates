@@ -2169,13 +2169,17 @@ const $$bidiUnicodeWrap = function(bidiGlobalDir, text) {
  * @param {boolean} condition The type check condition.
  * @param {string} paramName The Soy name of the parameter.
  * @param {?} param The JS object for the parameter.
+ * @param {string} paramKind Whether it is a normal parameter, an injected
+ *     parameter, or a state variable.
  * @param {string} jsDocTypeStr SoyDoc type str.
  * @return {?} the param value
  * @throws {!asserts.AssertionError} When the condition evaluates to false.
  */
-const assertType = function(condition, paramName, param, jsDocTypeStr) {
+const assertParamType = function(
+    condition, paramName, param, paramKind, jsDocTypeStr) {
   if (asserts.ENABLE_ASSERTS && !condition) {
-    const msg = 'expected param ' + paramName + ' of type ' + jsDocTypeStr +
+    const msg = 'expected ' + paramKind + ' ' + paramName + ' of type ' +
+        jsDocTypeStr +
         (goog.DEBUG ? (', but got ' + googDebug.runtimeType(param)) : '') + '.';
     asserts.fail(msg);
   }
@@ -2905,7 +2909,7 @@ exports = {
   $$bidiMarkAfter,
   $$bidiSpanWrap,
   $$bidiUnicodeWrap,
-  assertType,
+  assertParamType,
   setDebugSoyTemplateInfo,
   $$getDebugSoyTemplateInfo,
   $$EMPTY_STRING_,

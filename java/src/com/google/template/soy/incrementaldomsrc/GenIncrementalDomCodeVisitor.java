@@ -670,8 +670,11 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     jsType = JsType.forIncrementalDomState(stateVar.type());
     ImmutableList.Builder<Statement> setStateMethodStatements = ImmutableList.builder();
     Optional<Expression> typeAssertion =
-        jsType.getSoyTypeAssertion(
-            id(stateVar.name()), stateVar.name(), templateTranslationContext.codeGenerator());
+        jsType.getSoyParamTypeAssertion(
+            id(stateVar.name()),
+            stateVar.name(),
+            /* paramKind= */ "@state",
+            templateTranslationContext.codeGenerator());
     if (typeAssertion.isPresent()) {
       setStateMethodStatements.add(typeAssertion.get().asStatement());
     }
@@ -722,8 +725,11 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     // We can assert the presence of the injected param if it being called.
     Optional<Expression> typeAssertion =
         isInjected
-            ? jsType.getSoyTypeAssertion(
-                value, param.name(), templateTranslationContext.codeGenerator())
+            ? jsType.getSoyParamTypeAssertion(
+                value,
+                param.name(),
+                /* paramKind= */ "@inject",
+                templateTranslationContext.codeGenerator())
             : Optional.empty();
     return MethodDeclaration.create(
         "get" + accessorSuffix,

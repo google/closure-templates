@@ -1745,7 +1745,11 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
                 param, paramChunk, getJsTypeForParamTypeCheck(param.type()), generator));
       }
       Optional<Expression> soyTypeAssertion =
-          jsType.getSoyTypeAssertion(paramChunk, paramName, generator);
+          jsType.getSoyParamTypeAssertion(
+              paramChunk,
+              paramName,
+              /* paramKind= */ param.isInjected() ? "@inject" : "@param",
+              generator);
       if (isThisParamPositional) {
         if (soyTypeAssertion.isPresent()) {
           declarations.add(soyTypeAssertion.get().asStatement());

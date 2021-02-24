@@ -104,7 +104,7 @@ public final class JsRuntime {
   public static final Expression GOOG_I18N_MESSAGE_FORMAT =
       GoogRequire.create("goog.i18n.MessageFormat").reference();
 
-  public static final Expression SOY_ASSERT_TYPE = SOY.dotAccess("assertType");
+  public static final Expression SOY_ASSERT_PARAM_TYPE = SOY.dotAccess("assertParamType");
 
   public static final Expression SOY_ASSIGN_DEFAULTS = SOY.dotAccess("$$assignDefaults");
 

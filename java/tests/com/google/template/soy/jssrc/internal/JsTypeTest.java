@@ -170,8 +170,8 @@ public final class JsTypeTest {
             getSoyTypeAssertionStrict(
                 UnionType.of(BoolType.getInstance(), IntType.getInstance()), "x"))
         .isEqualTo(
-            "soy.assertType("
-                + "typeof x === 'boolean' || typeof x === 'number', 'x', x, 'boolean|number')");
+            "soy.assertParamType(typeof x === 'boolean' || typeof x === 'number', 'x', x, '@param',"
+                + " 'boolean|number')");
   }
 
   private static String getTypeAssertion(SoyType instance, String varName) {
@@ -185,9 +185,10 @@ public final class JsTypeTest {
 
   private String getSoyTypeAssertionStrict(SoyType instance, String varName) {
     return forIncrementalDomState(instance)
-        .getSoyTypeAssertion(
+        .getSoyParamTypeAssertion(
             id(varName),
             varName,
+            "@param",
             CodeChunk.Generator.create(JsSrcNameGenerators.forLocalVariables()))
         .get()
         .assertExprAndCollectRequires(r -> {})

@@ -25,7 +25,7 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_HTML_SAFE_HT
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_IS_FUNCTION;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_IS_OBJECT;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_SOY_DATA_SANITIZED_CONTENT;
-import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_ASSERT_TYPE;
+import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_ASSERT_PARAM_TYPE;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_MAP_IS_SOY_MAP;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_VELOG;
 import static com.google.template.soy.jssrc.internal.JsRuntime.sanitizedContentType;
@@ -615,16 +615,20 @@ public final class JsType {
    * Returns a Soy assertion expression that asserts that the given value has this type, or {@link
    * Optional#absent()} if no assertion is necessary.
    */
-  public final Optional<Expression> getSoyTypeAssertion(
-      Expression value, String valueName, Generator codeGenerator) {
+  public final Optional<Expression> getSoyParamTypeAssertion(
+      Expression value, String valueName, String paramKind, Generator codeGenerator) {
     Optional<Expression> typeAssertion = getTypeAssertion(value, codeGenerator);
     if (!typeAssertion.isPresent()) {
       return Optional.empty();
     }
 
     return Optional.of(
-        SOY_ASSERT_TYPE.call(
-            typeAssertion.get(), stringLiteral(valueName), value, stringLiteral(typeExpr())));
+        SOY_ASSERT_PARAM_TYPE.call(
+            typeAssertion.get(),
+            stringLiteral(valueName),
+            value,
+            stringLiteral(paramKind),
+            stringLiteral(typeExpr())));
   }
 
   /** Generates code to coerce the value, returns {@code null} if no coercion is necessary. */
