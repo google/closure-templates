@@ -68,7 +68,7 @@ final class ResolveTemplateFunctionsPass implements CompilerFilePass {
   }
 
   private static void convertToBind(FunctionNode fct) {
-    ExprNode bindTarget;
+    ExprNode replacementExpr;
     VarRefNode varRefNode = (VarRefNode) fct.getNameExpr();
     if (varRefNode.hasType() && varRefNode.getType() instanceof ProtoImportType) {
       return;
@@ -76,29 +76,32 @@ final class ResolveTemplateFunctionsPass implements CompilerFilePass {
     if (varRefNode.hasType() && varRefNode.getType().getKind() == SoyType.Kind.TEMPLATE_TYPE) {
       // If the function is a template symbol modify AST like:
       // {tmp(...)} -> {template(tmp).bind(...)}
-      bindTarget = TemplateLiteralNode.forVarRef(varRefNode);
+      replacementExpr = TemplateLiteralNode.forVarRef(varRefNode);
     } else {
       // Otherwise modify AST like:
       // {$tmp(...)} -> {$tmp.bind(...)}
-      bindTarget = varRefNode;
+      replacementExpr = varRefNode;
     }
 
-    // Move original function's parameters into a record() literal.
-    RecordLiteralNode record =
-        new RecordLiteralNode(
-            Identifier.create("record", fct.getSourceLocation()),
-            fct.getParamNames(),
-            fct.getSourceLocation());
-    record.addChildren(fct.getChildren());
+    if (fct.numParams() > 0) {
+      // Move original function's parameters into a record() literal.
+      RecordLiteralNode record =
+          new RecordLiteralNode(
+              Identifier.create("record", fct.getSourceLocation()),
+              fct.getParamNames(),
+              fct.getSourceLocation());
+      record.addChildren(fct.getChildren());
 
-    // Bind and replace.
-    MethodCallNode bind =
-        MethodCallNode.newWithPositionalArgs(
-            bindTarget,
-            ImmutableList.of(record),
-            Identifier.create("bind", UNKNOWN),
-            UNKNOWN,
-            false);
-    fct.getParent().replaceChild(fct, bind);
+      // Bind and replace.
+      replacementExpr =
+          MethodCallNode.newWithPositionalArgs(
+              replacementExpr,
+              ImmutableList.of(record),
+              Identifier.create("bind", UNKNOWN),
+              UNKNOWN,
+              false);
+    }
+
+    fct.getParent().replaceChild(fct, replacementExpr);
   }
 }
