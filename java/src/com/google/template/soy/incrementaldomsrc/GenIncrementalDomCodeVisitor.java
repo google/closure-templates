@@ -922,19 +922,29 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     }
 
     String keyVariable = "_keyVariable" + staticsCounter++;
+    RenderUnitNode renderUnitNode = node.getNearestAncestor(RenderUnitNode.class);
+    boolean delegatesToTemplate = false;
+    if (renderUnitNode instanceof TemplateNode) {
+      TemplateNode template = (TemplateNode) renderUnitNode;
+      delegatesToTemplate =
+          template.getHtmlElementMetadata().getIsHtmlElement()
+              && !template.getHtmlElementMetadata().getFinalCallee().isEmpty();
+    }
     if (shouldPushKey) {
       if (node.getKeyExpr() != null) {
         getJsCodeBuilder()
             .append(INCREMENTAL_DOM_PUSH_MANUAL_KEY.call(translateExpr(node.getKeyExpr())));
       } else {
-        getJsCodeBuilder()
-            .append(
-                VariableDeclaration.builder(keyVariable)
-                    .setRhs(
-                        INCREMENTAL_DOM_PUSH_KEY.call(
-                            JsRuntime.XID.call(
-                                Expression.stringLiteral(node.getTemplateCallKey()))))
-                    .build());
+        if (!delegatesToTemplate) {
+          getJsCodeBuilder()
+              .append(
+                  VariableDeclaration.builder(keyVariable)
+                      .setRhs(
+                          INCREMENTAL_DOM_PUSH_KEY.call(
+                              JsRuntime.XID.call(
+                                  Expression.stringLiteral(node.getTemplateCallKey()))))
+                      .build());
+        }
       }
     }
     // TODO: In reality, the CALL_X functions are really just IDOM versions of the related
@@ -948,7 +958,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     if (shouldPushKey) {
       if (node.getKeyExpr() != null) {
         getJsCodeBuilder().append(INCREMENTAL_DOM_POP_MANUAL_KEY.call());
-      } else {
+      } else if (!delegatesToTemplate) {
         getJsCodeBuilder().append(INCREMENTAL_DOM_POP_KEY.call(Expression.id(keyVariable)));
       }
     }

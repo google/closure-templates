@@ -180,6 +180,9 @@ message HtmlElementMetadataP {
     // its FQN.
     string delegate_callee = 6;
   }
+  // The FQN of the final underlying template for a chain of delegating calls.
+  // If the template does not delegate, this is empty.
+  string final_callee = 7;
 }
 
 // Metadata around whether the template is a Soy element or not.

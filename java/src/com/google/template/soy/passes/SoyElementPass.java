@@ -23,6 +23,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.TemplateContentKind;
 import com.google.template.soy.base.internal.TemplateContentKind.ElementContentKind;
@@ -176,7 +177,12 @@ public final class SoyElementPass implements CompilerFileSetPass {
           errorReporter.report(child.getSourceLocation(), ELEMENT_TEMPLATE_EXACTLY_ONE_TAG);
         }
         return getTemplateMetadataForStaticCall(
-            template, (CallBasicNode) child, templatesInLibrary, registry, visited);
+            template,
+            ((CallBasicNode) child).getCalleeName(),
+            child.getSourceLocation(),
+            templatesInLibrary,
+            registry,
+            visited);
       } else if (openTag == null && child instanceof HtmlOpenTagNode) {
         closeTag = checkHtmlOpenTag(template, (HtmlOpenTagNode) child, errorReporter, isSoyElement);
         if (closeTag == null) {
@@ -213,7 +219,7 @@ public final class SoyElementPass implements CompilerFileSetPass {
     // openTag being null means that the template isn't kind HTML.
     boolean isValid = openTag != null && closeTag != null;
     boolean hasSkipNode = false;
-    String delegateTemplate = "";
+    String delegateTemplate = null;
     String tagName = "";
     if (isValid) {
       for (StandaloneNode child : openTag.getChildren()) {
@@ -221,20 +227,29 @@ public final class SoyElementPass implements CompilerFileSetPass {
           hasSkipNode = true;
         }
       }
-      delegateTemplate = getDelegateCall(openTag);
+      delegateTemplate = getStaticDelegateCall(openTag);
       tagName =
           openTag.getTagName().isStatic()
               ? openTag.getTagName().getStaticTagName()
               : tryGetDelegateTagName(delegateTemplate, templatesInLibrary, registry);
-      if (delegateTemplate != null
-          && !openTag.getTagName().isStatic()
-          && !openTag.getTagName().isLegacyDynamicTagName()
-          && calleeMightBeASoyElement(delegateTemplate, templatesInLibrary, registry)
-          && isSoyElement) {
-        errorReporter.report(openTag.getSourceLocation(), SOYELEMENT_CANNOT_WRAP_SOY_ELEMENT);
-      }
       if (hasSkipNode && template instanceof TemplateElementNode) {
         errorReporter.report(openTag.getSourceLocation(), SOYELEMENT_CANNOT_BE_SKIPPED);
+      }
+    }
+    String finalCallee = "";
+    if (delegateTemplate != null) {
+      HtmlElementMetadataP htmlMetadata =
+          getTemplateMetadataForStaticCall(
+              template,
+              delegateTemplate,
+              openTag.getSourceLocation(),
+              templatesInLibrary,
+              registry,
+              visited);
+      if (htmlMetadata.getFinalCallee().isEmpty()) {
+        finalCallee = delegateTemplate;
+      } else {
+        finalCallee = htmlMetadata.getFinalCallee();
       }
     }
     HtmlElementMetadataP info =
@@ -244,22 +259,10 @@ public final class SoyElementPass implements CompilerFileSetPass {
             .setIsVelogged(veLogNode != null)
             .setIsSkip(hasSkipNode)
             .setDelegateElement(nullToEmpty(delegateTemplate))
+            .setFinalCallee(finalCallee)
             .build();
     template.setHtmlElementMetadata(info);
     return info;
-  }
-
-  private static boolean calleeMightBeASoyElement(
-      String delegateName, Map<String, TemplateNode> templates, ImportsTemplateRegistry registry) {
-    if (delegateName.isEmpty()) {
-      return true;
-    }
-
-    TemplateNode callee = templates.get(delegateName);
-    if (callee != null) {
-      return callee instanceof TemplateElementNode;
-    }
-    return registry.getBasicTemplateOrElement(delegateName).getSoyElement().getIsSoyElement();
   }
 
   private static String tryGetDelegateTagName(
@@ -289,7 +292,7 @@ public final class SoyElementPass implements CompilerFileSetPass {
    * Returns the FQN template name of the template to which this element delegates, or null if this
    * template does not delegate.
    */
-  private static String getDelegateCall(HtmlOpenTagNode openTag) {
+  private static String getStaticDelegateCall(HtmlOpenTagNode openTag) {
     // The normal TagName.isTemplateCall() doesn't work before ResolveExpressionTypesPass.
     TagName tagName = openTag.getTagName();
     if (tagName.isStatic()) {
@@ -319,12 +322,12 @@ public final class SoyElementPass implements CompilerFileSetPass {
    */
   private HtmlElementMetadataP getTemplateMetadataForStaticCall(
       TemplateNode template,
-      CallBasicNode call,
+      String callee,
+      SourceLocation calleeSourceLocation,
       Map<String, TemplateNode> templatesInLibrary,
       ImportsTemplateRegistry registry,
       Set<TemplateNode> visited) {
 
-    String callee = call.getCalleeName();
     HtmlElementMetadataP calleeMetadata = null;
     boolean isCalleeSoyElement = false;
     TemplateMetadata templateMetadata = registry.getBasicTemplateOrElement(callee);
@@ -349,19 +352,28 @@ public final class SoyElementPass implements CompilerFileSetPass {
       isCalleeSoyElement = false;
       calleeMetadata = DEFAULT_HTML_METADATA;
     }
-
+    String finalCallee;
+    if (calleeMetadata.getFinalCallee().isEmpty()) {
+      finalCallee = callee;
+    } else {
+      finalCallee = calleeMetadata.getFinalCallee();
+    }
     calleeMetadata =
-        calleeMetadata.toBuilder().clearDelegateElement().setDelegateCallee(callee).build();
+        calleeMetadata.toBuilder()
+            .clearDelegateElement()
+            .setDelegateCallee(callee)
+            .setFinalCallee(finalCallee)
+            .build();
     template.setHtmlElementMetadata(calleeMetadata);
     if (template instanceof TemplateElementNode) {
       if (calleeMetadata.getIsSkip()) {
-        errorReporter.report(call.getSourceLocation(), SOYELEMENT_CANNOT_BE_SKIPPED);
+        errorReporter.report(calleeSourceLocation, SOYELEMENT_CANNOT_BE_SKIPPED);
       }
       if (isCalleeSoyElement) {
-        errorReporter.report(call.getSourceLocation(), SOYELEMENT_CANNOT_WRAP_SOY_ELEMENT);
+        errorReporter.report(calleeSourceLocation, SOYELEMENT_CANNOT_WRAP_SOY_ELEMENT);
       }
       if (!calleeMetadata.getIsHtmlElement()) {
-        errorReporter.report(call.getSourceLocation(), SOY_ELEMENT_EXACTLY_ONE_TAG);
+        errorReporter.report(calleeSourceLocation, SOY_ELEMENT_EXACTLY_ONE_TAG);
       }
     }
     return calleeMetadata;
