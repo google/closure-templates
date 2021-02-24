@@ -41,7 +41,7 @@ public abstract class TofuTemplateValue extends SoyAbstractValue {
 
   @Override
   public final String coerceToString() {
-    return String.format("** FOR DEBUGGING ONLY: template(%s) **", getTemplateName());
+    return String.format("** FOR DEBUGGING ONLY: %s **", getTemplateName());
   }
 
   @Override

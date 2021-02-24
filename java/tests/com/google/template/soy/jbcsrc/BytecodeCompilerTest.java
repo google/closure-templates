@@ -1444,8 +1444,7 @@ public class BytecodeCompilerTest {
                         "import {publicTemplate1} from 'loader1.soy';",
                         "{template .publicTemplate}",
                         "{@param renderTemplate: bool = true}",
-                        "{let $tpl: $renderTemplate ? template(publicTemplate1) :"
-                            + " dummyTemplate /}",
+                        "{let $tpl: $renderTemplate ? publicTemplate1 : dummyTemplate /}",
                         "L2T",
                         "{sp}{call $tpl /}",
                         "{sp}{call $tpl /}",

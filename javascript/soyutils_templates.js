@@ -42,7 +42,7 @@ exports.$$markTemplate = function(fn, name = undefined) {
   if (goog.DEBUG) {
     fn.isTemplateLiteral = marker;
     fn.toString = function() {
-      return '** FOR DEBUGGING ONLY: template(' + name + ') **';
+      return '** FOR DEBUGGING ONLY: ' + name + ' **';
     };
   } else {
     fn.toString = function() {

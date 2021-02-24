@@ -130,7 +130,7 @@ public final class CheckTemplateVisibilityPassTest {
                 + "import {foo} from 'no-path';"
                 + "/** Public template. */\n"
                 + "{template .bar}\n"
-                + "{let $foo: template(foo) /}\n"
+                + "{let $foo: foo /}\n"
                 + "{call $foo /}\n"
                 + "{/template}")
         .errorReporter(errorReporter)
@@ -184,7 +184,7 @@ public final class CheckTemplateVisibilityPassTest {
                     + "import {foo} from 'foo/bar.soy';"
                     + "/** Public template. */\n"
                     + "{template .bar}\n"
-                    + "{let $foo: template(foo) /}\n"
+                    + "{let $foo: foo /}\n"
                     + "{call $foo /}\n"
                     + "{/template}",
                 SourceFilePath.create("baz/bar.soy")))

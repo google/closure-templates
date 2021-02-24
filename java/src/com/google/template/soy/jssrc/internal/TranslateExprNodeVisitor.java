@@ -854,7 +854,6 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
         case LEGACY_DYNAMIC_TAG:
         case REMAINDER:
         case MSG_WITH_ID:
-        case TEMPLATE:
           // should have been removed earlier in the compiler
           throw new AssertionError();
       }

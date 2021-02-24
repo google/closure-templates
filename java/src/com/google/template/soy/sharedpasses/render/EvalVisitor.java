@@ -805,7 +805,6 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
           return UNDEFINED_VE_DATA;
         case MSG_WITH_ID:
         case REMAINDER:
-        case TEMPLATE:
           // should have been removed earlier in the compiler
           throw new AssertionError();
       }

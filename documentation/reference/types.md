@@ -261,10 +261,10 @@ to a `css` object.
 
 ### `template` {#template}
 
-The `template` type represents a Soy template or element. Templates may be
-instantiated using the `template()` built-in. Only basic templates or elements
-may be created in expressions; deltemplates are not allowed. Additionally, for
-HTML templates, strict HTML is required for templates used in expressions.
+The `template` type represents a Soy template or element. Only basic templates
+or elements may be created in expressions; deltemplates are not allowed.
+Additionally, for HTML templates, strict HTML is required for templates used in
+expressions.
 
 Parameters may be bound to template-type expressions using the
 [`.bind()`](functions.md#bind) method.

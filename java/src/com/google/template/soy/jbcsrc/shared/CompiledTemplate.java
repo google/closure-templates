@@ -57,7 +57,7 @@ public interface CompiledTemplate {
 
     @Override
     public final String coerceToString() {
-      return String.format("** FOR DEBUGGING ONLY: template(%s) **", templateName);
+      return String.format("** FOR DEBUGGING ONLY: %s **", templateName);
     }
 
     @Override

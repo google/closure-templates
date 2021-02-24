@@ -118,7 +118,6 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
           // should have been removed earlier in the compiler
         case UNKNOWN_JS_GLOBAL:
         case LEGACY_DYNAMIC_TAG:
-        case TEMPLATE:
           // unknownJsGlobals should not exist in jbcsrc
           throw new AssertionError();
       }

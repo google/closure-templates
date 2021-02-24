@@ -534,7 +534,7 @@ already bound to the template type may not be bound again.
 
 {template example}
   {call foo}
-    {param fn: template(bar).bind(record(i2: 'Hello')) /}
+    {param fn: bar.bind(record(i2: 'Hello')) /}
   {/call}
 {/template}
 ```
@@ -553,7 +553,7 @@ already bound to the template type may not be bound again.
 {/template}
 
 {template example}
-  <{foo(fn: template(bar).bind(record(i2: 'Hello')))} />
+  <{foo(fn: bar.bind(record(i2: 'Hello')))} />
 {/template}
 ```
 

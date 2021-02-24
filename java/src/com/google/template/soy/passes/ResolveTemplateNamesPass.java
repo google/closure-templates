@@ -25,11 +25,8 @@ import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.Kind;
 import com.google.template.soy.exprtree.ExprRootNode;
-import com.google.template.soy.exprtree.FunctionNode;
-import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.exprtree.VarRefNode;
-import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
@@ -50,11 +47,6 @@ public final class ResolveTemplateNamesPass implements CompilerFileSetPass {
 
   private static final SoyErrorKind DATA_ATTRIBUTE_ONLY_ALLOWED_ON_STATIC_CALLS =
       SoyErrorKind.of("The `data` attribute is only allowed on static calls.");
-
-  private static final SoyErrorKind INVALID_TEMPLATE_FUNCT_PARAM =
-      SoyErrorKind.of(
-          "The argument to the template() function must be a local, imported, or global template"
-              + " name.");
 
   private static final SoyErrorKind UNIMPORTED_TEMPLATE_CALL =
       SoyErrorKind.of("Template must be imported. See go/soy-external-calls.");
@@ -92,10 +84,6 @@ public final class ResolveTemplateNamesPass implements CompilerFileSetPass {
     // Change all callee expr of CallBasicNode to TemplateLiteralNode.
     SoyTreeUtils.allNodesOfType(file, CallBasicNode.class)
         .forEach(ResolveTemplateNamesPass::importedVarRefToTemplateLiteral);
-
-    // Change all template() calls to TemplateLiteralNode.
-    SoyTreeUtils.allFunctionInvocations(file, BuiltinFunction.TEMPLATE)
-        .forEach(this::resolveTemplateFunction);
 
     // Change all varrefs of type TEMPLATE_TYPE to TemplateLiteralNode.
     SoyTreeUtils.allNodesOfType(file, VarRefNode.class)
@@ -139,30 +127,6 @@ public final class ResolveTemplateNamesPass implements CompilerFileSetPass {
         varRefToLiteral(templateExpr, templateExpr.getSourceLocation(), /* isSynthetic= */ true);
     if (converted != null) {
       callNode.setCalleeExpr(new ExprRootNode(converted));
-    }
-  }
-
-  private void resolveTemplateFunction(FunctionNode functionNode) {
-    if (functionNode.numChildren() != 1) {
-      // Error reported elsewhere.
-      return;
-    }
-
-    ExprNode param = functionNode.getParams().get(0);
-    TemplateLiteralNode converted =
-        varRefToLiteral(param, functionNode.getSourceLocation(), /* isSynthetic= */ false);
-
-    if (converted != null) {
-      functionNode.getParent().replaceChild(functionNode, converted);
-    } else if (param.getKind() == Kind.GLOBAL_NODE) {
-      // Remove this branch along with template FQN support. These are template() literals that
-      // aren't imported, but #resolveTemplateName will throw an UNIMPORTED_TEMPLATE_CALL for us (if
-      // the error is enabled), so no need to report it here.
-      GlobalNode global = ((GlobalNode) param);
-      TemplateLiteralNode template = TemplateLiteralNode.forGlobal(global, false);
-      functionNode.getParent().replaceChild(functionNode, template);
-    } else {
-      errorReporter.report(param.getSourceLocation(), INVALID_TEMPLATE_FUNCT_PARAM);
     }
   }
 

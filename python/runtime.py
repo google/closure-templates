@@ -756,4 +756,4 @@ class _TemplateWrapper:
     return self.template(*args)
 
   def __str__(self):
-    return '** FOR DEBUGGING ONLY: template(%s) **' % self.name
+    return '** FOR DEBUGGING ONLY: %s **' % self.name

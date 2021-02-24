@@ -147,9 +147,7 @@ public final class TemplateLiteralNode extends AbstractParentExprNode {
 
   @Override
   public String toSourceString() {
-    return isSynthetic
-        ? getChild(0).toSourceString()
-        : "template(" + getChild(0).toSourceString() + ")";
+    return getChild(0).toSourceString();
   }
 
   @Override
