@@ -1804,6 +1804,18 @@ const $$listSlice = function(list, from, to) {
   return to == null ? list.slice(from) : list.slice(from, to);
 };
 
+
+/**
+ * Reverses a list and returns it. The original list passed is unaffected.
+ * @param {!Array<T>} list
+ * @return {!Array<T>}
+ * @template T
+ */
+const $$listReverse = function(list) {
+  let listCopy = [...list];
+  return listCopy.reverse();
+};
+
 /**
  * A helper function to provide tight type inference on array literals.
  * @param {...T} args
@@ -2890,6 +2902,7 @@ exports = {
   $$listContains,
   $$listIndexOf,
   $$listSlice,
+  $$listReverse,
   $$makeArray,
   $$filterAndMap,
   $$numberListSort,

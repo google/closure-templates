@@ -40,6 +40,7 @@ public class BasicFunctions {
         new ListContainsFunction(),
         new ListIndexOfFunction(),
         new ListSliceMethod(),
+        new ListReverseMethod(),
         new MapEntriesMethod(),
         new MapKeysFunction(),
         new MapLengthMethod(),

@@ -162,6 +162,11 @@ Returns a sublist of a list from index `from` inclusive to index `to` exclusive.
 Negative indices are supported and match the
 [JavaScript spec](https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/Array/slice).
 
+### `list.reverse()` {#list-any_reverse}
+
+Reverses a shallow copy of the list and returns it. The original list passed is
+not modified.
+
 ### `list.join(separator)` {#join} {#list-string|int_join}
 
 Joins a list of strings or integers with a string separator.

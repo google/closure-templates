@@ -46,6 +46,7 @@ import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -153,6 +154,13 @@ public final class BasicFunctionsRuntime {
       return ImmutableList.of();
     }
     return list.asJavaList().subList(from, to);
+  }
+
+  /** Reverses an array. The original list passed is not modified. */
+  public static List<? extends SoyValueProvider> listReverse(SoyList list) {
+    List<? extends SoyValueProvider> javaList = new ArrayList<>(list.asJavaList());
+    Collections.reverse(javaList);
+    return javaList;
   }
 
   /**

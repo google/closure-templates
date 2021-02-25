@@ -143,9 +143,9 @@ def get_delegate_fn(template_id, variant, allow_empty_default):
   Args:
     template_id: The delegate template id.
     variant: The delegate template variant (can be an empty string, or a number
-        when a global is used).
+      when a global is used).
     allow_empty_default: Whether to default to the empty template function if
-        there's no active implementation.
+      there's no active implementation.
 
   Returns:
     The retrieved implementation function.
@@ -242,7 +242,7 @@ def namespaced_import(name, namespace=None, environment_path=None):
     name: The name of the module to import.
     namespace: The namespace of the module to import.
     environment_path: A custom environment module path for interacting with the
-        runtime environment.
+      runtime environment.
 
   Returns:
     The Module object.
@@ -291,8 +291,7 @@ def namespaced_import(name, namespace=None, environment_path=None):
 
 
 def manifest_import(namespace, manifest):
-  """Imports a module using a namespace manifest to find the module.
-  """
+  """Imports a module using a namespace manifest to find the module."""
   if not manifest:
     raise ImportError('No manifest provided')
   elif namespace not in manifest:
@@ -434,6 +433,11 @@ def map_entries(m):
 def list_slice(l, start, stop):
   """Equivalent of JavaScript Array.prototype.slice."""
   return l[slice(start, stop)]
+
+
+def list_reverse(l):
+  """Reverses a list. The original list passed is not modified."""
+  return l[::-1]
 
 
 def number_list_sort(l):
@@ -638,8 +642,8 @@ def soy_round(num, precision=0):
     a rounded number
   """
   float_breakdown = math.frexp(num)
-  tweaked_number = (
-      (float_breakdown[0] + sys.float_info.epsilon) * 2**float_breakdown[1])
+  tweaked_number = ((float_breakdown[0] + sys.float_info.epsilon) *
+                    2**float_breakdown[1])
   rounded_number = round(tweaked_number, precision)
   if not precision or precision < 0:
     return int(rounded_number)
@@ -679,6 +683,7 @@ def _convert_to_js_string(value):
 
   Args:
     value: The value to stringify.
+
   Returns:
     A string representation of value. For primitives, ensure that the result
     matches the string value of their JS counterparts.
@@ -701,6 +706,7 @@ def _find_modules(name):
 
   Args:
     name: The name to match against the beginning of the module name.
+
   Yields:
     A tuple containing the path, the base system path, and the file name.
   """
