@@ -19,16 +19,15 @@ package com.google.template.soy.msgs.restricted;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.primitives.ImmutableIntArray;
 import com.google.common.primitives.ImmutableLongArray;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.ibm.icu.util.ULocale;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
-import java.util.Objects;
-import java.util.SortedMap;
-import java.util.TreeMap;
 import javax.annotation.Nullable;
 
 /**
@@ -57,8 +56,20 @@ final class RenderOnlySoyMsgBundleImpl extends SoyMsgBundle {
   /** Sorted array of message ID's that can be binary searched. */
   private final ImmutableLongArray ids;
 
-  /** List containing the message parts in the same order as ids. */
-  private final ImmutableList<ImmutableList<SoyMsgPart>> values;
+  /**
+   * List containing the message parts. See {@link #partRanges} for an explanation for how they
+   * correspond to {@link #ids}.
+   */
+  private final ImmutableList<SoyMsgPart> values;
+
+  /**
+   * Contains index-ranges for parts belonging to messages.
+   *
+   * <p>For instance, for a message with ID {@code ids[n]}, the SoyMsgPart values belonging to that
+   * message are the sublist of {@code values} from {@code partRanges[n]} (inclusive} to {@code
+   * partRanges[n+1]} (exclusive).
+   */
+  private final ImmutableIntArray partRanges;
 
   /**
    * Constructs a map of render-only soy messages. This implementation saves memory but doesn't
@@ -76,25 +87,35 @@ final class RenderOnlySoyMsgBundleImpl extends SoyMsgBundle {
     this.locale = localeString == null ? null : new ULocale(localeString);
     this.isRtl = BidiGlobalDir.forStaticLocale(localeString) == BidiGlobalDir.RTL;
 
-    // First, build a sorted map from message ID to the message representation.
-    SortedMap<Long, ImmutableList<SoyMsgPart>> partsMap = new TreeMap<>();
-    for (SoyMsg msg : msgs) {
-      checkArgument(Objects.equals(msg.getLocaleString(), localeString));
-      long msgId = msg.getId();
-      checkArgument(
-          !partsMap.containsKey(msgId),
-          "Duplicate messages are not permitted in the render-only impl.");
+    ImmutableList<SoyMsg> sortedMsgs =
+        ImmutableList.sortedCopyOf(Comparator.comparingLong(SoyMsg::getId), msgs);
 
+    ImmutableLongArray.Builder idsBuilder = ImmutableLongArray.builder(sortedMsgs.size());
+    ImmutableList.Builder<SoyMsgPart> partsBuilder = ImmutableList.builder();
+    ImmutableIntArray.Builder partRangesBuilder = ImmutableIntArray.builder(sortedMsgs.size() + 1);
+    partRangesBuilder.add(0); // The first range always starts at the beginning of the list.
+    long priorId = sortedMsgs.isEmpty() ? -1L : sortedMsgs.get(0).getId() - 1L;
+    int runningPartCount = 0;
+    for (SoyMsg msg : sortedMsgs) {
       ImmutableList<SoyMsgPart> parts = msg.getParts();
+
+      checkArgument(
+          msg.getId() != priorId, "Duplicate messages are not permitted in the render-only impl.");
       checkArgument(
           MsgPartUtils.hasPlrselPart(parts) == msg.isPlrselMsg(),
           "Message's plural/select status is inconsistent -- internal compiler bug.");
-      partsMap.put(msgId, parts);
+
+      priorId = msg.getId();
+      idsBuilder.add(msg.getId());
+      partsBuilder.addAll(parts);
+      runningPartCount += parts.size();
+      partRangesBuilder.add(runningPartCount);
     }
 
     // This will build the collections in the same order as the sorted map.
-    ids = ImmutableLongArray.copyOf(partsMap.keySet());
-    values = ImmutableList.copyOf(partsMap.values());
+    ids = idsBuilder.build();
+    values = partsBuilder.build();
+    partRanges = partRangesBuilder.build();
   }
 
   /** Brings a message back to life from only its ID and parts. */
@@ -124,16 +145,22 @@ final class RenderOnlySoyMsgBundleImpl extends SoyMsgBundle {
     return isRtl;
   }
 
+  private ImmutableList<SoyMsgPart> partsForIndex(int index) {
+    int startInclusive = partRanges.get(index);
+    int endExclusive = partRanges.get(index + 1);
+    return values.subList(startInclusive, endExclusive);
+  }
+
   @Override
   public SoyMsg getMsg(long msgId) {
     int index = binarySearch(msgId);
-    return index >= 0 ? resurrectMsg(msgId, values.get(index)) : null;
+    return index >= 0 ? resurrectMsg(msgId, partsForIndex(index)) : null;
   }
 
   @Override
   public ImmutableList<SoyMsgPart> getMsgParts(long msgId) {
     int index = binarySearch(msgId);
-    return index >= 0 ? values.get(index) : ImmutableList.of();
+    return index >= 0 ? partsForIndex(index) : ImmutableList.of();
   }
 
   private int binarySearch(long key) {
@@ -175,7 +202,7 @@ final class RenderOnlySoyMsgBundleImpl extends SoyMsgBundle {
         if (!hasNext()) {
           throw new NoSuchElementException();
         }
-        SoyMsg result = resurrectMsg(ids.get(index), values.get(index));
+        SoyMsg result = resurrectMsg(ids.get(index), partsForIndex(index));
         index++;
         return result;
       }
