@@ -2,7 +2,7 @@
 
 ## Advanced Migration strategies
 
-Soemtimes when migrating to the type safe API you will come across templates
+Sometimes when migrating to the type safe API you will come across templates
 with complex parameters that are not well supported. Over time we hope to expand
 the number of supported usecases in the invocation builder API, but in the mean
 time here are some workarounds.
@@ -129,6 +129,25 @@ that could be considered
 
     Now there is a single template that will be called from java and therefore
     migrating to the type safe parameter api should be more straightforward.
+
+1.  use reflective APIs in SoyTemplate
+
+    ```java
+    soySauce.newRenderer(
+        SoyTemplates.getBuilder(calculateTemplateClass(...))
+            .setParam(Template1.PARAM1, ...)
+            .setParam(Template1.PARAM2, ...)
+            .build());
+    ```
+
+    Instead of calculating the fully qualified template name you calculate the
+    fully qualified java class name of the SoyTemplate subclass, and pass it to
+    `SoyTemplates#getBuilder`. Now you can call `Builder#setParam` once for each
+    shared parameter. The first argument to `setParam` is an instance of
+    `SoyTemplateParam`. Each `SoyTemplate` subclass has a public static
+    `SoyTemplateParam` field for every public param in the template. And as long
+    as the `SoyTemplateParam` instances are identical it doesn't matter that you
+    pass `Template1.PARAM1` to `Template2.Builder#setParam`.
 
 1.  turn off type checking with `data="..."`
 
