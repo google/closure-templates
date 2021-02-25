@@ -29,6 +29,7 @@ import com.google.template.soy.jbcsrc.shared.Names;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.Collections;
 import java.util.HashMap;
@@ -47,9 +48,11 @@ final class CompilingClassLoader extends AbstractMemoryClassLoader {
 
   private final ImmutableMap<SourceFilePath, SoyFileSupplier> filePathsToSuppliers;
   private final ImmutableMap<String, TemplateNode> templateNameToTemplateNode;
+  private final TemplateRegistry templateRegistry;
   private final SoyTypeRegistry typeRegistry;
 
   CompilingClassLoader(
+      TemplateRegistry templateRegistry,
       SoyFileSetNode fileSet,
       ImmutableMap<SourceFilePath, SoyFileSupplier> filePathsToSuppliers,
       SoyTypeRegistry typeRegistry) {
@@ -61,6 +64,7 @@ final class CompilingClassLoader extends AbstractMemoryClassLoader {
     }
     this.templateNameToTemplateNode = templateNameToTemplateNode.build();
     this.typeRegistry = typeRegistry;
+    this.templateRegistry = templateRegistry;
     this.filePathsToSuppliers = filePathsToSuppliers;
   }
 
@@ -84,11 +88,16 @@ final class CompilingClassLoader extends AbstractMemoryClassLoader {
     if (node == null) {
       return null;
     }
-    CompiledTemplateMetadata meta = CompiledTemplateMetadata.create(templateName);
+    CompiledTemplateMetadata meta =
+        CompiledTemplateMetadata.create(templateRegistry.getMetadata(node));
     ClassData clazzToLoad = null;
     ErrorReporter reporter = ErrorReporter.create(filePathsToSuppliers);
     for (ClassData clazz :
-        new TemplateCompiler(meta, node, new JavaSourceFunctionCompiler(typeRegistry, reporter))
+        new TemplateCompiler(
+                templateRegistry,
+                meta,
+                node,
+                new JavaSourceFunctionCompiler(typeRegistry, reporter))
             .compile()) {
       String className = clazz.type().className();
       if (className.equals(name)) {

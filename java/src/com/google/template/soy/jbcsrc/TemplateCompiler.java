@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.base.Strings.nullToEmpty;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.template.soy.soytree.SoyTreeUtils.allNodesOfType;
+import static java.util.stream.Collectors.toList;
 
 import com.google.auto.value.AutoAnnotation;
 import com.google.common.collect.ImmutableList;
@@ -47,6 +48,7 @@ import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyRuntimeType;
 import com.google.template.soy.jbcsrc.restricted.Statement;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
+import com.google.template.soy.jbcsrc.shared.RecordToPositionalCallFactory;
 import com.google.template.soy.jbcsrc.shared.TemplateMetadata;
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallParamContentNode;
@@ -56,10 +58,12 @@ import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.NullType;
+import com.google.template.soy.types.TemplateType;
 import java.lang.invoke.LambdaMetafactory;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
@@ -68,6 +72,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
@@ -83,6 +88,7 @@ final class TemplateCompiler {
   private static final AnnotationRef<TemplateMetadata> TEMPLATE_METADATA_REF =
       AnnotationRef.forType(TemplateMetadata.class);
 
+  private final TemplateRegistry registry;
   private final FieldManager fields;
   private final CompiledTemplateMetadata template;
   private final TemplateNode templateNode;
@@ -92,9 +98,11 @@ final class TemplateCompiler {
   private final JavaSourceFunctionCompiler javaSourceFunctionCompiler;
 
   TemplateCompiler(
+      TemplateRegistry registry,
       CompiledTemplateMetadata template,
       TemplateNode templateNode,
       JavaSourceFunctionCompiler javaSourceFunctionCompiler) {
+    this.registry = registry;
     this.template = template;
     this.templateNode = templateNode;
     this.innerClasses = new InnerClasses(template.typeInfo());
@@ -133,6 +141,7 @@ final class TemplateCompiler {
             .build();
     generateTemplateMetadata();
 
+    generateDelegateRenderMethod();
     generateRenderMethod();
 
     innerClasses.registerAllInnerClasses(writer);
@@ -158,6 +167,17 @@ final class TemplateCompiler {
               MethodType.class,
               MethodHandle.class,
               MethodType.class)
+          .asHandle();
+
+  private static final Handle DELEGATE_FACTORY_HANDLE =
+      MethodRef.create(
+              RecordToPositionalCallFactory.class,
+              "bootstrapDelegate",
+              MethodHandles.Lookup.class,
+              String.class,
+              MethodType.class,
+              MethodHandle.class,
+              String[].class)
           .asHandle();
 
   private static final String COMPILED_TEMPLATE_INIT_DESCRIPTOR =
@@ -271,6 +291,53 @@ final class TemplateCompiler {
     return new AutoAnnotation_TemplateCompiler_createDelTemplateMetadata(delPackage, name, variant);
   }
 
+  /**
+   * Generate a static method that has the same signature as CompiledTemplate.render if we are
+   * generating a render method with a positional signature.
+   *
+   * <p>Generally this method will be rarely called, it will only be used if
+   *
+   * <ul>
+   *   <li>This template is used as a template literal
+   *   <li>This template is called directly by {@code SoySauceImpl}
+   *   <li>This template is called with a {@code data=...} expression
+   * </ul>
+   *
+   * The first two are generally rare and will not likely become common and the latter is
+   * increasingly discouraged. So ideally, we would not generate these methods. Some possible ideas
+   *
+   * <ul>
+   *   <li>use {@code invokedynamic} to fully construct {@code CompiledTemplate} classes. Then we
+   *       could avoid the {@code template()} and {@code render()} methods completely. This is a bit
+   *       complex but would likely be a code size win.
+   *   <li>Switch some of these usecases to use the {@code MethodHandle} API directly. This may or
+   *       may not actually work (I am not sure if it is safe to pass method handles around).
+   * </ul>
+   */
+  private void generateDelegateRenderMethod() {
+    if (!template.hasPositionalSignature()) {
+      return;
+    }
+    Handle renderHandle = template.positionalRenderMethod().get().asHandle();
+    Statement.returnExpression(
+            new Expression(BytecodeUtils.COMPILED_TEMPLATE_TYPE) {
+              @Override
+              protected void doGen(CodeBuilder cb) {
+                cb.loadArgs();
+                cb.visitInvokeDynamicInsn(
+                    "delegate",
+                    COMPILED_TEMPLATE_RENDER_DESCRIPTOR.getDescriptor(),
+                    DELEGATE_FACTORY_HANDLE,
+                    Stream.concat(
+                            Stream.of(renderHandle),
+                            template.templateType().getActualParameters().stream()
+                                .map(TemplateType.Parameter::getName))
+                        .toArray(Object[]::new));
+              }
+            })
+        .writeMethod(methodAccess(), template.renderMethod().method(), writer);
+  }
+
   private void generateRenderMethod() {
     BasicExpressionCompiler constantCompiler =
         ExpressionCompiler.createConstantCompiler(
@@ -280,17 +347,26 @@ final class TemplateCompiler {
             javaSourceFunctionCompiler);
     final Label start = new Label();
     final Label end = new Label();
-    ImmutableList<String> paramNames =
-        ImmutableList.of(
-            StandardNames.PARAMS,
-            StandardNames.IJ,
-            StandardNames.APPENDABLE,
-            StandardNames.RENDER_CONTEXT);
-    Method method = template.renderMethod().method();
+    ImmutableList.Builder<String> paramNames = ImmutableList.builder();
+    if (template.hasPositionalSignature()) {
+      paramNames.addAll(
+          template.templateType().getActualParameters().stream()
+              .map(p -> p.getName())
+              .collect(toList()));
+    } else {
+      paramNames.add(StandardNames.PARAMS);
+    }
+    paramNames.add(StandardNames.IJ);
+    paramNames.add(StandardNames.APPENDABLE);
+    paramNames.add(StandardNames.RENDER_CONTEXT);
+    Method method = template.positionalRenderMethod().orElse(template.renderMethod()).method();
     final TemplateVariableManager variableSet =
         new TemplateVariableManager(
-            template.typeInfo().type(), method, paramNames, start, end, /*isStatic=*/ true);
-    Expression paramsVar = variableSet.getVariable(StandardNames.PARAMS);
+            template.typeInfo().type(), method, paramNames.build(), start, end, /*isStatic=*/ true);
+    Optional<Expression> paramsVar =
+        template.hasPositionalSignature()
+            ? Optional.empty()
+            : Optional.of(variableSet.getVariable(StandardNames.PARAMS));
     Expression ijVar = variableSet.getVariable(StandardNames.IJ);
     TemplateVariables variables =
         new TemplateVariables(
@@ -303,6 +379,7 @@ final class TemplateCompiler {
             variableSet.getVariable(StandardNames.APPENDABLE).asNonNullable());
     SoyNodeCompiler nodeCompiler =
         SoyNodeCompiler.create(
+            registry,
             analysis,
             innerClasses,
             appendable,
@@ -319,21 +396,35 @@ final class TemplateCompiler {
     TemplateVariableManager.Scope templateScope = variableSet.enterScope();
     List<Statement> paramInitStatements = new ArrayList<>();
     for (TemplateParam param : templateNode.getAllParams()) {
-      Expression paramProvider =
-          getParam(
-                  paramsVar,
-                  ijVar,
-                  param,
-                  /* defaultValue=*/ param.hasDefault()
-                      ? getDefaultValue(param, nodeCompiler.exprCompiler, constantCompiler)
-                      : null)
-              .withSourceLocation(param.getSourceLocation());
-      LocalVariable variable =
-          templateScope.createNamedLocal(param.name(), paramProvider.resultType());
-      paramInitStatements.add(variable.store(paramProvider).labelStart(variable.start()));
+      SoyExpression defaultValue =
+          param.hasDefault()
+              ? getDefaultValue(param, nodeCompiler.exprCompiler, constantCompiler)
+              : null;
+      Expression initialValue;
+      LocalVariable localVariable;
+      if (param.isInjected()) {
+        initialValue = getFieldProviderOrDefault(param.name(), ijVar, defaultValue);
+        localVariable = templateScope.createNamedLocal(param.name(), initialValue.resultType());
+        paramInitStatements.add(
+            localVariable.store(initialValue).labelStart(localVariable.start()));
+      } else if (paramsVar.isPresent()) {
+        initialValue = getFieldProviderOrDefault(param.name(), paramsVar.get(), defaultValue);
+        localVariable = templateScope.createNamedLocal(param.name(), initialValue.resultType());
+        paramInitStatements.add(
+            localVariable.store(initialValue).labelStart(localVariable.start()));
+      } else {
+        localVariable = (LocalVariable) variableSet.getVariable(param.name());
+        paramInitStatements.add(
+            localVariable.store(
+                defaultValue == null
+                    ? MethodRef.RUNTIME_PARAM.invoke(localVariable)
+                    : MethodRef.RUNTIME_PARAM_OR_DEFAULT.invoke(
+                        localVariable, defaultValue.box())));
+      }
     }
     final CompiledMethodBody methodBody =
         SoyNodeCompiler.create(
+                registry,
                 analysis,
                 innerClasses,
                 appendable,
@@ -402,37 +493,27 @@ final class TemplateCompiler {
     }
   }
 
-  /**
-   * Returns an expression that fetches the given param from the params record or the ij record and
-   * enforces the {@link TemplateParam#isRequired()} flag, throwing SoyDataException if a required
-   * parameter is missing.
-   */
-  private static Expression getParam(
-      Expression paramsVar,
-      Expression ijVar,
-      TemplateParam param,
-      @Nullable SoyExpression defaultValue) {
-    Expression fieldName = BytecodeUtils.constant(param.name());
-    Expression record = param.isInjected() ? ijVar : paramsVar;
+  private static Expression getFieldProviderOrDefault(
+      String name, Expression record, @Nullable SoyExpression defaultValue) {
     // NOTE: for compatibility with Tofu and jssrc we do not check for missing required parameters
     // here instead they will just turn into null.  Existing templates depend on this.
     if (defaultValue == null) {
-      return MethodRef.RUNTIME_GET_FIELD_PROVIDER.invoke(record, fieldName);
+      return MethodRef.RUNTIME_GET_FIELD_PROVIDER.invoke(record, BytecodeUtils.constant(name));
     } else {
       return MethodRef.RUNTIME_GET_FIELD_PROVIDER_DEFAULT.invoke(
-          record, fieldName, defaultValue.box());
+          record, BytecodeUtils.constant(name), defaultValue.box());
     }
   }
 
   private static final class TemplateVariables implements TemplateParameterLookup {
     private final TemplateVariableManager variableSet;
-    private final Expression paramsRecord;
+    private final Optional<? extends Expression> paramsRecord;
     private final Expression ijRecord;
     private final RenderContextExpression renderContext;
 
     TemplateVariables(
         TemplateVariableManager variableSet,
-        Expression paramsRecord,
+        Optional<? extends Expression> paramsRecord,
         Expression ijRecord,
         RenderContextExpression renderContext) {
       this.variableSet = variableSet;
@@ -448,7 +529,7 @@ final class TemplateCompiler {
 
     @Override
     public Expression getParamsRecord() {
-      return paramsRecord;
+      return paramsRecord.get();
     }
 
     @Override

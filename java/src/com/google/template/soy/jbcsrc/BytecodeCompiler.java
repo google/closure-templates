@@ -80,7 +80,7 @@ public final class BytecodeCompiler {
                             == TemplateType.TemplateKind.DELTEMPLATE)
                 .map(TemplateMetadata::getTemplateName)
                 .collect(toImmutableSet()),
-            new CompilingClassLoader(fileSet, filePathsToSuppliers, typeRegistry));
+            new CompilingClassLoader(registry, fileSet, filePathsToSuppliers, typeRegistry));
     if (reporter.errorsSince(checkpoint)) {
       return Optional.empty();
     }
@@ -113,6 +113,7 @@ public final class BytecodeCompiler {
       Map<String, PluginRuntimeInstanceInfo.Builder> pluginInstances = new TreeMap<>();
 
       compileTemplates(
+          registry,
           fileSet,
           reporter,
           typeRegistry,
@@ -237,6 +238,7 @@ public final class BytecodeCompiler {
   }
 
   private static <T, E extends Throwable> T compileTemplates(
+      TemplateRegistry templateRegistry,
       SoyFileSetNode fileSet,
       ErrorReporter errorReporter,
       SoyTypeRegistry typeRegistry,
@@ -248,7 +250,8 @@ public final class BytecodeCompiler {
       for (TemplateNode template : file.getTemplates()) {
         TemplateCompiler templateCompiler =
             new TemplateCompiler(
-                CompiledTemplateMetadata.create(template.getTemplateName()),
+                templateRegistry,
+                CompiledTemplateMetadata.create(templateRegistry.getMetadata(template)),
                 template,
                 javaSourceFunctionCompiler);
         for (ClassData clazz : templateCompiler.compile()) {

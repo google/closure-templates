@@ -1338,9 +1338,7 @@ final class ExpressionCompiler {
     SoyExpression visitIsSetFunction(FunctionNode node) {
       VarRefNode varRef = (VarRefNode) node.getChild(0);
       return SoyExpression.forBool(
-          parameters
-              .getParamsRecord()
-              .invoke(MethodRef.RUNTIME_HAS_FIELD, constant(varRef.getNameWithoutLeadingDollar())));
+          MethodRef.IS_PARAM_SET.invoke(parameters.getParam((TemplateParam) varRef.getDefnDecl())));
     }
 
     @Override

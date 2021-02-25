@@ -100,30 +100,45 @@ import javax.annotation.Nullable;
 @SuppressWarnings("ShortCircuitBoolean")
 public final class JbcSrcRuntime {
   private static final Logger logger = Logger.getLogger(JbcSrcRuntime.class.getName());
-  public static final SoyValueProvider NULL_PROVIDER =
-      new SoyValueProvider() {
-        @Override
-        public RenderResult status() {
-          return RenderResult.done();
-        }
 
-        @Override
-        public SoyValue resolve() {
-          return null;
-        }
+  private static final class NullProvider implements SoyValueProvider {
+    private final String nameForDebugging;
 
-        @Override
-        public RenderResult renderAndResolve(LoggingAdvisingAppendable appendable, boolean isLast)
-            throws IOException {
-          appendable.append("null");
-          return RenderResult.done();
-        }
+    NullProvider(String nameForDebugging) {
+      this.nameForDebugging = nameForDebugging;
+    }
 
-        @Override
-        public String toString() {
-          return "NULL_PROVIDER";
-        }
-      };
+    @Override
+    public RenderResult status() {
+      return RenderResult.done();
+    }
+
+    @Override
+    public SoyValue resolve() {
+      return null;
+    }
+
+    @Override
+    public RenderResult renderAndResolve(LoggingAdvisingAppendable appendable, boolean isLast)
+        throws IOException {
+      appendable.append("null");
+      return RenderResult.done();
+    }
+
+    @Override
+    public String toString() {
+      return nameForDebugging;
+    }
+  }
+
+  /** Represents a provider for the value {@code null} in jbcsrc. */
+  public static final SoyValueProvider NULL_PROVIDER = new NullProvider("NULL_PROVIDER");
+
+  /**
+   * Represents a provider for the value {@code null} in jbcsrc, but is a special value that can be
+   * used to tell if the value is null because the parameter was not passed.
+   */
+  private static final SoyValueProvider MISSING_PARAMETER = new NullProvider("MISSING_PARAMETER");
 
   public static AssertionError unexpectedStateError(StackFrame frame) {
     return new AssertionError("Unexpected state requested: " + frame.stateNumber);
@@ -195,12 +210,31 @@ public final class JbcSrcRuntime {
   public static SoyValueProvider getFieldProvider(
       SoyRecord record, String field, @Nullable SoyValue defaultValue) {
     checkNotNull(record, "Attempted to access field '%s' of null", field);
+    return paramOrDefault(record.getFieldProvider(field), defaultValue);
+  }
+
+  public static SoyValueProvider getFieldProvider(SoyRecord record, String field) {
+    return getFieldProvider(record, field, /* defaultValue= */ null);
+  }
+
+  /**
+   * Interprets a passed parameter. Handling tofu null and reinterpreting null as MISSING_PARAMETER
+   */
+  public static SoyValueProvider param(SoyValueProvider provider) {
+    return paramOrDefault(provider, null);
+  }
+
+  /**
+   * Interprets a passed parameter with an optional default. Handling tofu null and reinterpreting
+   * null as MISSING_PARAMETER
+   */
+  public static SoyValueProvider paramOrDefault(
+      SoyValueProvider provider, @Nullable SoyValue defaultValue) {
     // TODO(lukes): ideally this would be the behavior of getFieldProvider, but Tofu relies on it
     // returning null to interpret it as 'undefined'. http://b/20537225 describes the issues in Tofu
-    SoyValueProvider provider = record.getFieldProvider(field);
     if (provider == null) {
       if (defaultValue == null) {
-        return NULL_PROVIDER;
+        return MISSING_PARAMETER;
       }
       return defaultValue;
     } else if (provider instanceof NullData) {
@@ -209,8 +243,9 @@ public final class JbcSrcRuntime {
     return provider;
   }
 
-  public static SoyValueProvider getFieldProvider(SoyRecord record, String field) {
-    return getFieldProvider(record, field, /* defaultValue= */ null);
+  /** Returns true if the value is derived from a missing parameter */
+  public static boolean isParamSet(SoyValueProvider provider) {
+    return provider != MISSING_PARAMETER;
   }
 
   /**

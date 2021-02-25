@@ -16,13 +16,16 @@
 package com.google.template.soy.jbcsrc.shared;
 
 import static java.lang.invoke.MethodHandles.collectArguments;
+import static java.lang.invoke.MethodHandles.constant;
 import static java.lang.invoke.MethodHandles.dropArguments;
 import static java.lang.invoke.MethodHandles.insertArguments;
 import static java.lang.invoke.MethodType.methodType;
 
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SoyRecord;
+import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.SoyVisualElement;
+import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.logging.LoggableElementMetadata;
 import java.io.IOException;
@@ -73,6 +76,8 @@ public final class ClassLoaderFallbackCallFactory {
           SoyRecord.class,
           LoggingAdvisingAppendable.class,
           RenderContext.class);
+  private static final MethodType POSITIONAL_TO_RECORD_TYPE =
+      methodType(SoyRecord.class, String[].class, SoyValueProvider[].class);
 
   private static final MethodType SLOWPATH_TEMPLATE_TYPE =
       methodType(CompiledTemplate.class, String.class, RenderContext.class);
@@ -93,6 +98,8 @@ public final class ClassLoaderFallbackCallFactory {
 
   private static final MethodType CREATE_VE_TYPE =
       methodType(SoyVisualElement.class, long.class, String.class, LoggableElementMetadata.class);
+
+  private static final MethodType TEMPLATE_ACCESSOR_TYPE = methodType(CompiledTemplate.class);
 
   private ClassLoaderFallbackCallFactory() {}
 
@@ -129,16 +136,13 @@ public final class ClassLoaderFallbackCallFactory {
         template =
             (CompiledTemplate)
                 lookup
-                    .findStatic(
-                        targetTemplateClass,
-                        "template",
-                        MethodType.methodType(CompiledTemplate.class))
+                    .findStatic(targetTemplateClass, "template", TEMPLATE_ACCESSOR_TYPE)
                     .invokeExact();
       } catch (Throwable t) {
         throw new AssertionError(t);
       }
       // the initial renderContext is ignored in this case
-      MethodHandle getter = MethodHandles.constant(CompiledTemplate.class, template);
+      MethodHandle getter = constant(CompiledTemplate.class, template);
       getter = dropArguments(getter, 0, RenderContext.class);
       return new ConstantCallSite(getter);
     } catch (ClassNotFoundException classNotFoundException) {
@@ -187,10 +191,7 @@ public final class ClassLoaderFallbackCallFactory {
         template =
             (CompiledTemplate)
                 lookup
-                    .findStatic(
-                        targetTemplateClass,
-                        "template",
-                        MethodType.methodType(CompiledTemplate.class))
+                    .findStatic(targetTemplateClass, "template", TEMPLATE_ACCESSOR_TYPE)
                     .invokeExact();
       } catch (Throwable t) {
         throw new AssertionError(t);
@@ -198,7 +199,7 @@ public final class ClassLoaderFallbackCallFactory {
       CompiledTemplate.TemplateValue value =
           CompiledTemplate.TemplateValue.create(templateName, template);
       // the initial renderContext is ignored in this case
-      MethodHandle getter = MethodHandles.constant(CompiledTemplate.TemplateValue.class, value);
+      MethodHandle getter = constant(CompiledTemplate.TemplateValue.class, value);
       getter = dropArguments(getter, 0, RenderContext.class);
       return new ConstantCallSite(getter);
     } catch (ClassNotFoundException classNotFoundException) {
@@ -236,27 +237,51 @@ public final class ClassLoaderFallbackCallFactory {
    *     template name of the template being referenced.
    */
   public static CallSite bootstrapCall(
-      MethodHandles.Lookup lookup, String name, MethodType type, String templateName) {
+      MethodHandles.Lookup lookup,
+      String name,
+      MethodType type,
+      String templateName,
+      String... paramNames)
+      throws IllegalAccessException, NoSuchMethodException {
     ClassLoader callerClassLoader = lookup.lookupClass().getClassLoader();
     String className = Names.javaClassNameFromSoyTemplateName(templateName);
     try {
       Class<?> templateClass = callerClassLoader.loadClass(className);
-      MethodHandle handle = lookup.findStatic(templateClass, "render", RENDER_TYPE);
-      return new ConstantCallSite(handle);
-    } catch (NoSuchMethodException | IllegalAccessException nsme) {
-      throw new AssertionError(nsme);
+      return new ConstantCallSite(lookup.findStatic(templateClass, "render", type));
     } catch (ClassNotFoundException classNotFoundException) {
       // expected if this happens we need to resolve by dispatching through rendercontext
     }
-    try {
-      MethodHandle handle =
+    MethodHandle slowPathRenderHandle =
+        lookup.findStatic(
+            ClassLoaderFallbackCallFactory.class, "slowPathRender", SLOWPATH_RENDER_TYPE);
+    slowPathRenderHandle = insertArguments(slowPathRenderHandle, 0, templateName);
+
+    // This means we must be being called using positional style.  To satisfy a cross classloader
+    // call we will pack all arguments into a SoyRecord using the positionalToRecord helper and
+    // then pass along to the slowpathRender
+    // If we are interested in avoiding this overhead, we could take a number of approaches. For
+    // example,
+    // 1. we know in this case that the callee is using positional style, which means it is using
+    // the adapter generated by the MapToPositionalCallFactory.  So we can rely on it calling
+    // `getFieldProvider` in a particular order and create a SoyRecord that just returns values
+    // from the set of parameters
+    // 2. we could create a second method on CompileTemplate that accepts an Array/list
+
+    // However, this is of course the 'slowPath' so it probably isn't very important.
+    if (!type.equals(RENDER_TYPE)) {
+      MethodHandle positionalToRecordHandle =
           lookup.findStatic(
-              ClassLoaderFallbackCallFactory.class, "slowPathRender", SLOWPATH_RENDER_TYPE);
-      handle = insertArguments(handle, 0, templateName);
-      return new ConstantCallSite(handle);
-    } catch (ReflectiveOperationException roe) {
-      throw new AssertionError("impossible, can't find our slowPathRender method", roe);
+              ClassLoaderFallbackCallFactory.class,
+              "positionalToRecord",
+              POSITIONAL_TO_RECORD_TYPE);
+      positionalToRecordHandle = insertArguments(positionalToRecordHandle, 0, (Object) paramNames);
+      // collect trailing arguments into an array
+      positionalToRecordHandle =
+          positionalToRecordHandle.asCollector(SoyValueProvider[].class, paramNames.length);
+      slowPathRenderHandle =
+          MethodHandles.collectArguments(slowPathRenderHandle, 0, positionalToRecordHandle);
     }
+    return new ConstantCallSite(slowPathRenderHandle);
   }
 
   /**
@@ -295,9 +320,7 @@ public final class ClassLoaderFallbackCallFactory {
       Class<?> metadataClass = callerClassLoader.loadClass(metadataClassName);
       MethodHandle handle =
           lookup.findStatic(
-              metadataClass,
-              "getMetadata",
-              MethodType.methodType(LoggableElementMetadata.class, long.class));
+              metadataClass, "getMetadata", methodType(LoggableElementMetadata.class, long.class));
       // the initial renderContext is ignored in this case
       return dropArguments(handle, 0, RenderContext.class);
     } catch (ClassNotFoundException classNotFoundException) {
@@ -340,6 +363,17 @@ public final class ClassLoaderFallbackCallFactory {
                   0)
               .getTarget();
     }
+  }
+
+  /** Adapts a set of positional parameters to a SoyRecord */
+  public static SoyRecord positionalToRecord(String[] names, SoyValueProvider[] values) {
+    ParamStore paramStore = new ParamStore(names.length);
+    for (int i = 0; i < names.length; i++) {
+      if (values[i] != null) {
+        paramStore.setField(names[i], values[i]);
+      }
+    }
+    return paramStore;
   }
 
   /** The slow path for a call. */

@@ -27,10 +27,13 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.RENDER_RES
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_PROVIDER_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.compareSoyEquals;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
+import static java.util.stream.Collectors.toMap;
 import static org.objectweb.asm.commons.GeneratorAdapter.EQ;
 
 import com.google.auto.value.AutoValue;
+import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.primitives.Ints;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.basetree.Node;
@@ -102,13 +105,19 @@ import com.google.template.soy.soytree.SwitchCaseNode;
 import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.VeLogNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
+import com.google.template.soy.types.TemplateType;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
@@ -134,6 +143,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
    * @param parameterLookup The variable lookup table for reading locals.
    */
   static SoyNodeCompiler create(
+      TemplateRegistry registry,
       TemplateAnalysis analysis,
       InnerClasses innerClasses,
       AppendableExpression appendableVar,
@@ -150,6 +160,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     ExpressionToSoyValueProviderCompiler soyValueProviderCompiler =
         ExpressionToSoyValueProviderCompiler.create(analysis, expressionCompiler, parameterLookup);
     return new SoyNodeCompiler(
+        registry,
         analysis,
         innerClasses,
         detachState,
@@ -163,6 +174,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         javaSourceFunctionCompiler);
   }
 
+  final TemplateRegistry registry;
   final TemplateAnalysis analysis;
   final InnerClasses innerClasses;
   final DetachState detachState;
@@ -177,6 +189,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   private Scope currentScope;
 
   SoyNodeCompiler(
+      TemplateRegistry registry,
       TemplateAnalysis analysis,
       InnerClasses innerClasses,
       DetachState detachState,
@@ -188,6 +201,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       ExpressionToSoyValueProviderCompiler expressionToSoyValueProviderCompiler,
       BasicExpressionCompiler constantCompiler,
       JavaSourceFunctionCompiler javaSourceFunctionCompiler) {
+    this.registry = registry;
     this.analysis = checkNotNull(analysis);
     this.innerClasses = innerClasses;
     this.detachState = checkNotNull(detachState);
@@ -997,6 +1011,18 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     default Optional<DirectCallGenerator> asDirectCall() {
       return Optional.empty();
     }
+
+    default Optional<DirectPositionalCallGenerator> asDirectPositionalCall() {
+      return Optional.empty();
+    }
+  }
+
+  @FunctionalInterface
+  private interface BoundCallGenerator {
+    Expression call(
+        Expression ijParams,
+        AppendableExpression appendable,
+        RenderContextExpression renderContext);
   }
 
   @FunctionalInterface
@@ -1006,6 +1032,16 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         Expression ijParams,
         AppendableExpression appendable,
         RenderContextExpression renderContext);
+  }
+
+  private interface DirectPositionalCallGenerator {
+    Expression call(
+        List<Expression> params,
+        Expression ijParams,
+        AppendableExpression appendable,
+        RenderContextExpression renderContext);
+
+    TemplateType calleeType();
   }
 
   /**
@@ -1057,7 +1093,8 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
               MethodHandles.Lookup.class,
               String.class,
               MethodType.class,
-              String.class)
+              String.class,
+              String[].class)
           .asHandle();
 
   private static final Handle STATIC_TEMPLATE_HANDLE =
@@ -1100,6 +1137,49 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
             }
 
             @Override
+            public Optional<DirectPositionalCallGenerator> asDirectPositionalCall() {
+              CompiledTemplateMetadata metadata =
+                  CompiledTemplateMetadata.create(
+                      registry.getBasicTemplateOrElement(node.getCalleeName()));
+              if (metadata.hasPositionalSignature()) {
+                return Optional.of(
+                    new DirectPositionalCallGenerator() {
+                      @Override
+                      public TemplateType calleeType() {
+                        return metadata.templateType();
+                      }
+
+                      @Override
+                      public Expression call(
+                          List<Expression> params,
+                          Expression ij,
+                          AppendableExpression appendable,
+                          RenderContextExpression renderContext) {
+                        return new Expression(RENDER_RESULT_TYPE) {
+                          @Override
+                          protected void doGen(CodeBuilder adapter) {
+                            params.forEach(p -> p.gen(adapter));
+                            ij.gen(adapter);
+                            appendable.gen(adapter);
+                            renderContext.gen(adapter);
+                            adapter.visitInvokeDynamicInsn(
+                                "call",
+                                metadata.positionalRenderMethod().get().method().getDescriptor(),
+                                STATIC_CALL_HANDLE,
+                                Stream.concat(
+                                        Stream.of(node.getCalleeName()),
+                                        metadata.templateType().getActualParameters().stream()
+                                            .map(p -> p.getName()))
+                                    .toArray(n -> new Object[n]));
+                          }
+                        };
+                      }
+                    });
+              }
+              return Optional.empty();
+            }
+
+            @Override
             public Optional<DirectCallGenerator> asDirectCall() {
               return Optional.of(
                   (params, ij, appendable, renderContext) ->
@@ -1130,10 +1210,21 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     }
   }
 
-  private static DirectCallGenerator simpleCall(Expression compiledTemplateExpression) {
+  private static DirectCallGenerator directCallFromTemplateExpression(
+      Expression compiledTemplateExpression) {
     return (params, ij, output, context) ->
         compiledTemplateExpression.invoke(
             MethodRef.COMPILED_TEMPLATE_RENDER, params, ij, output, context);
+  }
+
+  private static BoundCallGenerator simpleCall(
+      Expression compiledTemplateExpression, Expression params) {
+    return simpleCall(directCallFromTemplateExpression(compiledTemplateExpression), params);
+  }
+
+  private static BoundCallGenerator simpleCall(
+      DirectCallGenerator callGenerator, Expression params) {
+    return (ij, output, context) -> callGenerator.call(params, ij, output, context);
   }
 
   /**
@@ -1165,24 +1256,17 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     Statement flushAppendable = Statement.NULL_STATEMENT;
     AppendableExpression appendable = appendableExpression;
 
-    DirectCallGenerator directCallGenerator;
-    Expression paramsExpression = prepareParamsHelper(node);
-    Statement initParams = Statement.NULL_STATEMENT;
+    final BoundCallGenerator boundCall;
+    final Statement initParams;
+
     TemplateVariableManager.Scope renderScope = variables.enterScope();
-    // params will only be 'cheap' if they are something trivial like the empty constant
-    // or data="all", in those cases we don't need to save/restore anything.
-    if (!paramsExpression.isCheap()) {
-      TemplateVariableManager.Variable paramsVariable =
-          renderScope.createSynthetic(
-              SyntheticVarName.params(),
-              paramsExpression,
-              TemplateVariableManager.SaveStrategy.STORE);
-      paramsExpression = paramsVariable.accessor();
-      initParams = paramsVariable.initializer();
-    }
+    RecordOrPositional paramsExpression = prepareParamsHelper(node);
     Statement initCallee = Statement.NULL_STATEMENT;
     if (!areAllPrintDirectivesStreamable(node)) {
-      // in this case we need to wrap a CompiledTemplate to apply escaping directives
+      // in this case we need to wrap a CompiledTemplate to apply escaping directives, so we
+      // definitely need a record style call.
+      ExpressionAndInitializer expressionAndInitializer = paramsExpression.asRecord(renderScope);
+      initParams = expressionAndInitializer.initializer();
       Expression calleeExpression =
           MethodRef.RUNTIME_APPLY_ESCAPERS.invoke(
               callGenerator.asCompiledTemplate(), getEscapingDirectivesList(node));
@@ -1192,19 +1276,37 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
               calleeExpression,
               TemplateVariableManager.SaveStrategy.STORE);
       initCallee = calleeVariable.initializer();
-      directCallGenerator = simpleCall(calleeVariable.accessor());
+      boundCall = simpleCall(calleeVariable.accessor(), expressionAndInitializer.expression());
     } else {
-      Optional<DirectCallGenerator> asDirectCall = callGenerator.asDirectCall();
-      if (asDirectCall.isPresent()) {
-        directCallGenerator = asDirectCall.get();
+      Optional<DirectPositionalCallGenerator> asDirectPositionalCall =
+          callGenerator.asDirectPositionalCall();
+      Optional<ListOfExpressionsAndInitializer> explicitParams;
+      if (asDirectPositionalCall.isPresent()
+          && (explicitParams =
+                  paramsExpression.asPositionalParams(
+                      renderScope, asDirectPositionalCall.get().calleeType()))
+              .isPresent()) {
+        initParams = explicitParams.get().initializer();
+        boundCall =
+            (ij, output, context) ->
+                asDirectPositionalCall
+                    .get()
+                    .call(explicitParams.get().expressions(), ij, output, context);
       } else {
-        TemplateVariableManager.Variable calleeVariable =
-            renderScope.createSynthetic(
-                SyntheticVarName.renderee(),
-                callGenerator.asCompiledTemplate(),
-                TemplateVariableManager.SaveStrategy.STORE);
-        initCallee = calleeVariable.initializer();
-        directCallGenerator = simpleCall(calleeVariable.accessor());
+        Optional<DirectCallGenerator> asDirectCall = callGenerator.asDirectCall();
+        ExpressionAndInitializer expressionAndInitializer = paramsExpression.asRecord(renderScope);
+        initParams = expressionAndInitializer.initializer();
+        if (asDirectCall.isPresent()) {
+          boundCall = simpleCall(asDirectCall.get(), expressionAndInitializer.expression());
+        } else {
+          TemplateVariableManager.Variable calleeVariable =
+              renderScope.createSynthetic(
+                  SyntheticVarName.renderee(),
+                  callGenerator.asCompiledTemplate(),
+                  TemplateVariableManager.SaveStrategy.STORE);
+          initCallee = calleeVariable.initializer();
+          boundCall = simpleCall(calleeVariable.accessor(), expressionAndInitializer.expression());
+        }
       }
       if (!node.getEscapingDirectives().isEmpty()) {
         PrintDirectives.AppendableAndFlushBuffersDepth wrappedAppendable =
@@ -1226,12 +1328,8 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     }
 
     Expression callRender =
-        directCallGenerator
-            .call(
-                paramsExpression,
-                parameterLookup.getIjRecord(),
-                appendable,
-                parameterLookup.getRenderContext())
+        boundCall
+            .call(parameterLookup.getIjRecord(), appendable, parameterLookup.getRenderContext())
             // make sure to tag this expression with the source location to ensure stack traces are
             // accurate.
             .withSourceLocation(node.getSourceLocation());
@@ -1256,45 +1354,160 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     return BytecodeUtils.asImmutableList(directiveExprs);
   }
 
-  private Expression prepareParamsHelper(CallNode node) {
+  @AutoValue
+  abstract static class ExpressionAndInitializer {
+    static ExpressionAndInitializer create(Expression expression, Statement initializer) {
+      return new AutoValue_SoyNodeCompiler_ExpressionAndInitializer(expression, initializer);
+    }
+
+    abstract Expression expression();
+
+    abstract Statement initializer();
+  }
+
+  @AutoValue
+  abstract static class ListOfExpressionsAndInitializer {
+    static ListOfExpressionsAndInitializer create(
+        ImmutableList<Expression> expressions, Statement initializer) {
+      return new AutoValue_SoyNodeCompiler_ListOfExpressionsAndInitializer(
+          expressions, initializer);
+    }
+
+    abstract ImmutableList<Expression> expressions();
+
+    abstract Statement initializer();
+  }
+
+  @AutoValue
+  abstract static class RecordOrPositional {
+    static RecordOrPositional create(Expression record) {
+      return create(Suppliers.ofInstance(record), Optional.empty());
+    }
+
+    static RecordOrPositional create(
+        Supplier<Expression> record,
+        Optional<ImmutableMap<CallParamNode, Supplier<Expression>>> explicit) {
+      return new AutoValue_SoyNodeCompiler_RecordOrPositional(record, explicit);
+    }
+
+    ExpressionAndInitializer asRecord(TemplateVariableManager.Scope scope) {
+      // params will only be 'cheap' if they are something trivial like the empty constant
+      // or data="all", in those cases we don't need to save/restore anything.
+      Expression record = record().get();
+      Statement initialize = Statement.NULL_STATEMENT;
+      if (!record.isCheap()) {
+        TemplateVariableManager.Variable paramsVariable =
+            scope.createSynthetic(
+                SyntheticVarName.params(), record, TemplateVariableManager.SaveStrategy.STORE);
+        record = paramsVariable.accessor();
+        initialize = paramsVariable.initializer();
+      }
+      return ExpressionAndInitializer.create(record, initialize);
+    }
+
+    Optional<ListOfExpressionsAndInitializer> asPositionalParams(
+        TemplateVariableManager.Scope scope, TemplateType calleeType) {
+      if (!explicit().isPresent()) {
+        return Optional.empty();
+      }
+
+      List<Statement> initStatements = new ArrayList<>();
+      ImmutableList.Builder<Expression> builder = ImmutableList.builder();
+      Map<String, CallParamNode> nameToNode =
+          explicit().get().keySet().stream().collect(toMap(n -> n.getKey().identifier(), n -> n));
+      Map<CallParamNode, Supplier<Expression>> explicit = new HashMap<>(explicit().get());
+      for (TemplateType.Parameter param : calleeType.getActualParameters()) {
+        CallParamNode paramNode = nameToNode.get(param.getName());
+        Supplier<Expression> supplier = explicit.remove(paramNode);
+        Expression value =
+            supplier == null ? BytecodeUtils.constantNull(SOY_VALUE_PROVIDER_TYPE) : supplier.get();
+        if (!value.isCheap()) {
+          TemplateVariableManager.Variable variable =
+              scope.createSynthetic(
+                  SyntheticVarName.forParam(paramNode),
+                  value,
+                  TemplateVariableManager.SaveStrategy.STORE);
+          value = variable.accessor();
+          initStatements.add(variable.initializer());
+        }
+        builder.add(value);
+      }
+      if (!explicit.isEmpty()) {
+        // sanity check
+        throw new AssertionError("failed to use: " + explicit);
+      }
+      return Optional.of(
+          ListOfExpressionsAndInitializer.create(
+              builder.build(), Statement.concat(initStatements)));
+    }
+
+    abstract Supplier<Expression> record();
+
+    abstract Optional<ImmutableMap<CallParamNode, Supplier<Expression>>> explicit();
+  }
+
+  private RecordOrPositional prepareParamsHelper(CallNode node) {
     if (node.numChildren() == 0) {
       if (!node.isPassingData()) {
-        return FieldRef.EMPTY_PARAMS.accessor();
+        return RecordOrPositional.create(
+            Suppliers.ofInstance(FieldRef.EMPTY_PARAMS.accessor()), Optional.of(ImmutableMap.of()));
       } else if (!node.isPassingAllData()) {
         Label reattachLabel = new Label();
-        return getDataRecordExpression(node, reattachLabel).labelStart(reattachLabel);
+        return RecordOrPositional.create(
+            getDataRecordExpression(node, reattachLabel).labelStart(reattachLabel));
       }
 
       Expression paramsRecord = parameterLookup.getParamsRecord();
-      return maybeAddDefaultParams(
-              node,
-              ConstructorRef.PARAM_STORE_AUGMENT.construct(
-                  paramsRecord, constant(node.numChildren())))
-          .orElse(paramsRecord);
+      return RecordOrPositional.create(
+          maybeAddDefaultParams(
+                  node,
+                  ConstructorRef.PARAM_STORE_AUGMENT.construct(
+                      paramsRecord, constant(node.numChildren())))
+              .orElse(paramsRecord));
     }
 
-    Expression paramStoreExpression = getParamStoreExpression(node);
+    ImmutableMap<CallParamNode, Supplier<Expression>> explicitParams = compileExplicitParams(node);
+    Supplier<Expression> recordExpression =
+        () -> {
+          Expression paramStoreExpression = getParamStoreExpression(node);
+          for (Map.Entry<CallParamNode, Supplier<Expression>> explicit :
+              explicitParams.entrySet()) {
+            String paramKey = explicit.getKey().getKey().identifier();
+            // ParamStore.setField return 'this' so we can just chain the invocations together.
+            paramStoreExpression =
+                MethodRef.PARAM_STORE_SET_FIELD.invoke(
+                    paramStoreExpression,
+                    BytecodeUtils.constant(paramKey),
+                    explicit.getValue().get());
+          }
+          return paramStoreExpression;
+        };
+    return RecordOrPositional.create(
+        recordExpression, node.isPassingData() ? Optional.empty() : Optional.of(explicitParams));
+  }
+
+  private ImmutableMap<CallParamNode, Supplier<Expression>> compileExplicitParams(CallNode node) {
+    ImmutableMap.Builder<CallParamNode, Supplier<Expression>> builder = ImmutableMap.builder();
     for (CallParamNode child : node.getChildren()) {
       String paramKey = child.getKey().identifier();
-      Expression valueExpr;
+      Supplier<Expression> valueExpr;
       if (child instanceof CallParamContentNode) {
         valueExpr =
-            new LazyClosureCompiler(this)
-                .compileLazyContent("param", (CallParamContentNode) child, paramKey)
-                .soyValueProvider();
+            () ->
+                new LazyClosureCompiler(this)
+                    .compileLazyContent("param", (CallParamContentNode) child, paramKey)
+                    .soyValueProvider();
       } else {
         valueExpr =
-            new LazyClosureCompiler(this)
-                .compileLazyExpression(
-                    "param", child, paramKey, ((CallParamValueNode) child).getExpr())
-                .soyValueProvider();
+            () ->
+                new LazyClosureCompiler(this)
+                    .compileLazyExpression(
+                        "param", child, paramKey, ((CallParamValueNode) child).getExpr())
+                    .soyValueProvider();
       }
-      // ParamStore.setField return 'this' so we can just chain the invocations together.
-      paramStoreExpression =
-          MethodRef.PARAM_STORE_SET_FIELD.invoke(
-              paramStoreExpression, BytecodeUtils.constant(paramKey), valueExpr);
+      builder.put(child, valueExpr);
     }
-    return paramStoreExpression;
+    return builder.build();
   }
 
   /**
@@ -1449,6 +1662,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   /** Returns a {@link SoyNodeCompiler} identical to this one but with an alternate appendable. */
   SoyNodeCompiler compilerWithNewAppendable(AppendableExpression appendable) {
     return new SoyNodeCompiler(
+        registry,
         analysis,
         innerClasses,
         detachState,

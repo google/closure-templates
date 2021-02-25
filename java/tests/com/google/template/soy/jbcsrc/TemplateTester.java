@@ -379,7 +379,8 @@ public final class TemplateTester {
         String templateName = templateNode.getTemplateName();
         classData =
             new TemplateCompiler(
-                    CompiledTemplateMetadata.create(templateName),
+                    registry,
+                    CompiledTemplateMetadata.create(TemplateMetadata.fromTemplate(templateNode)),
                     templateNode,
                     new JavaSourceFunctionCompiler(typeRegistry, ErrorReporter.exploding()))
                 .compile();

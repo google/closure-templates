@@ -330,9 +330,18 @@ public abstract class MethodRef {
       create(JbcSrcRuntime.class, "getFieldProvider", SoyRecord.class, String.class)
           .asNonNullable();
 
+  public static final MethodRef RUNTIME_PARAM_OR_DEFAULT =
+      create(JbcSrcRuntime.class, "paramOrDefault", SoyValueProvider.class, SoyValue.class)
+          .asNonNullable()
+          .asCheap();
+  public static final MethodRef RUNTIME_PARAM =
+      create(JbcSrcRuntime.class, "param", SoyValueProvider.class).asNonNullable().asCheap();
   public static final MethodRef RUNTIME_GET_FIELD_PROVIDER_DEFAULT =
       create(JbcSrcRuntime.class, "getFieldProvider", SoyRecord.class, String.class, SoyValue.class)
           .asNonNullable();
+
+  public static final MethodRef IS_PARAM_SET =
+      create(JbcSrcRuntime.class, "isParamSet", SoyValueProvider.class).asCheap();
 
   public static final MethodRef RUNTIME_GET_LIST_ITEM =
       create(JbcSrcRuntime.class, "getSoyListItem", List.class, long.class);
@@ -544,6 +553,9 @@ public abstract class MethodRef {
               ProtoFieldInterpreter.class)
           .asNonNullable();
 
+  public static final MethodRef SOY_RECORD_GET_FIELD_PROVIDER =
+      MethodRef.create(SoyRecord.class, "getFieldProvider", String.class);
+
   public static MethodRef create(Class<?> clazz, String methodName, Class<?>... params) {
     java.lang.reflect.Method m;
     try {
@@ -674,7 +686,7 @@ public abstract class MethodRef {
     return invoke(Arrays.asList(args));
   }
 
-  Expression invoke(final Iterable<? extends Expression> args) {
+  public Expression invoke(final Iterable<? extends Expression> args) {
     // void methods violate the expression contract of pushing a result onto the runtime stack.
     checkState(
         !Type.VOID_TYPE.equals(returnType()), "Cannot produce an expression from a void method.");

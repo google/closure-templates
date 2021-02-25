@@ -558,6 +558,7 @@ final class LazyClosureCompiler {
               this, parent.parameterLookup, variableSet, variableSet.getVariable("this"));
       SoyNodeCompiler soyNodeCompiler =
           SoyNodeCompiler.create(
+              parent.registry,
               analysis,
               parent.innerClasses,
               AppendableExpression.forExpression(

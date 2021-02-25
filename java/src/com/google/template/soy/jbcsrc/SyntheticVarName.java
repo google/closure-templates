@@ -18,6 +18,7 @@ package com.google.template.soy.jbcsrc;
 
 import com.google.auto.value.AutoValue;
 import com.google.template.soy.basetree.Node;
+import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.SwitchNode;
 import javax.annotation.Nullable;
@@ -68,6 +69,10 @@ abstract class SyntheticVarName {
 
   static SyntheticVarName foreachLoopLength(ForNonemptyNode forNode) {
     return new AutoValue_SyntheticVarName(forNode.getVarName() + "_length", forNode);
+  }
+
+  static SyntheticVarName forParam(CallParamNode param) {
+    return new AutoValue_SyntheticVarName(param.getKey().identifier(), param);
   }
 
   abstract String name();

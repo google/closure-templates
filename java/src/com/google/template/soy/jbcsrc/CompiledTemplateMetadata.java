@@ -25,6 +25,10 @@ import com.google.template.soy.jbcsrc.restricted.TypeInfo;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.Names;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
+import com.google.template.soy.soytree.TemplateMetadata;
+import com.google.template.soy.types.TemplateType;
+import java.util.Optional;
+import java.util.stream.Stream;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
 
@@ -50,27 +54,74 @@ abstract class CompiledTemplateMetadata {
               BytecodeUtils.LOGGING_ADVISING_APPENDABLE_TYPE,
               BytecodeUtils.RENDER_CONTEXT_TYPE));
 
+  /** Generates a method signature for a positional style call to the given template. */
+  private static Method createPositionalRenderMethod(TemplateType templateType) {
+    return new Method(
+        "render",
+        Type.getMethodDescriptor(
+            BytecodeUtils.RENDER_RESULT_TYPE,
+            Stream.concat(
+                    templateType.getActualParameters().stream()
+                        .map(i -> BytecodeUtils.SOY_VALUE_PROVIDER_TYPE),
+                    Stream.of(
+                        BytecodeUtils.SOY_RECORD_TYPE,
+                        BytecodeUtils.LOGGING_ADVISING_APPENDABLE_TYPE,
+                        BytecodeUtils.RENDER_CONTEXT_TYPE))
+                .toArray(Type[]::new)));
+  }
+
   /** The {@link Method} signature of the {@code static CompiledTemplate template()} method. */
   private static final Method TEMPLATE_METHOD =
       new Method("template", Type.getMethodDescriptor(BytecodeUtils.COMPILED_TEMPLATE_TYPE));
 
-  static CompiledTemplateMetadata create(String templateName) {
-    String className = Names.javaClassNameFromSoyTemplateName(templateName);
+  static CompiledTemplateMetadata create(TemplateMetadata metadata) {
+    String className = Names.javaClassNameFromSoyTemplateName(metadata.getTemplateName());
     TypeInfo type = TypeInfo.createClass(className);
+    TemplateType templateType = metadata.getTemplateType();
+    // Decide whether or not to use a positional style call signature.
+    // Positional parameters are not possible to do if there are indirect calls since those may
+    // require parameters not declared in our signature.
+    // If there are no parameters, then there is no value in exploding into multiple functions
+    // If the template is a Soy element, then we also need the `opt_data` object.
+    boolean hasPositionalSignature =
+        templateType.getDataAllCallSituations().isEmpty()
+            // only basic/element templates are supported for now.
+            // deltemplates require the object style to support the relatively weak type checking we
+            // perform on them.
+            && templateType.getTemplateKind() != TemplateType.TemplateKind.DELTEMPLATE;
+
     return new AutoValue_CompiledTemplateMetadata(
         MethodRef.createStaticMethod(type, RENDER_METHOD).asNonNullable(),
+        Optional.ofNullable(
+            hasPositionalSignature
+                ? MethodRef.createStaticMethod(type, createPositionalRenderMethod(templateType))
+                    .asNonNullable()
+                : null),
         MethodRef.createStaticMethod(type, TEMPLATE_METHOD).asCheap().asNonNullable(),
+        templateType,
         type);
   }
 
   /**
-   * The {@link static RenderResult render(SoyRecord,SoyRecord, LoggingAdvisingAppendable,
+   * The {@code static RenderResult render(SoyRecord,SoyRecord, LoggingAdvisingAppendable,
    * RenderContext)} method.
    */
   abstract MethodRef renderMethod();
 
+  /**
+   * The {@code static RenderResult render(SoyValueProvider,...,SoyValueProvider,SoyRecord,
+   * LoggingAdvisingAppendable, RenderContext)} overload method.
+   */
+  abstract Optional<MethodRef> positionalRenderMethod();
+
   /** The {@code static CompiledTemplate template()} method. */
   abstract MethodRef templateMethod();
+
+  boolean hasPositionalSignature() {
+    return positionalRenderMethod().isPresent();
+  }
+
+  abstract TemplateType templateType();
 
   /** The name of the compiled template class. */
   abstract TypeInfo typeInfo();
