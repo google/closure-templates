@@ -27,13 +27,13 @@ import com.google.common.collect.Iterables;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.ErrorReporter.LocationBound;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.error.SoyErrors;
 import com.google.template.soy.exprtree.AbstractParentExprNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.Kind;
-import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.MethodCallNode;
@@ -198,17 +198,10 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
                 return;
               }
 
-              boolean isTemplateLiteral = exprNode.getKind() == ExprNode.Kind.TEMPLATE_LITERAL_NODE;
-              // Template literal nodes and expr root nodes directly wrapping a
-              // TemplateLiteralNode are
-              // exempt from some checks.
-              boolean isSynthetic =
-                  (isTemplateLiteral && ((TemplateLiteralNode) exprNode).isSynthetic())
-                      || (exprNode.getKind() == ExprNode.Kind.EXPR_ROOT_NODE
-                          && ((ExprRootNode) exprNode).getRoot().getKind()
-                              == ExprNode.Kind.TEMPLATE_LITERAL_NODE
-                          && ((TemplateLiteralNode) ((ExprRootNode) exprNode).getRoot())
-                              .isSynthetic());
+              boolean requireStrictHtml =
+                  exprNode.getKind() == Kind.TEMPLATE_LITERAL_NODE
+                      && !((TemplateLiteralNode) exprNode).isStaticCall();
+
               SoyType resolvedType =
                   exprNode
                       .getType()
@@ -216,8 +209,7 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
                           new TemplateTypeUpgrader(
                               errorReporter.bindIgnoringUnknown(exprNode.getSourceLocation()),
                               templateRegistry,
-                              isTemplateLiteral,
-                              isSynthetic));
+                              requireStrictHtml));
 
               switch (exprNode.getKind()) {
                 case VAR_REF_NODE:
@@ -515,18 +507,13 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
   private class TemplateTypeUpgrader implements SoyTypeVisitor<SoyType> {
     private final ErrorReporter.LocationBound errorReporter;
     private final TemplateRegistry templateRegistry;
-    private final boolean isTemplateLiteral;
-    private final boolean isSynthetic;
+    private final boolean requireStrictHtml;
 
     private TemplateTypeUpgrader(
-        ErrorReporter.LocationBound errorReporter,
-        TemplateRegistry templateRegistry,
-        boolean isTemplateLiteral,
-        boolean isSynthetic) {
+        LocationBound errorReporter, TemplateRegistry templateRegistry, boolean requireStrictHtml) {
       this.errorReporter = errorReporter;
       this.templateRegistry = templateRegistry;
-      this.isTemplateLiteral = isTemplateLiteral;
-      this.isSynthetic = isSynthetic;
+      this.requireStrictHtml = requireStrictHtml;
     }
 
     @Override
@@ -572,14 +559,13 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
       TemplateType templateType = basicTemplateOrElement.getTemplateType();
       if (templateType.getContentKind().getSanitizedContentKind().isHtml()
           && !templateType.isStrictHtml()
-          && !isSynthetic) {
+          && requireStrictHtml) {
         // Only report errors for template literal nodes, to avoid reporting errors multiple times
         // (ie., once for everywhere the 'named' template type has propagated in the expression
         // tree).
-        if (isTemplateLiteral) {
-          errorReporter.report(
-              ONLY_STRICT_HTML_TEMPLATES_ALLOWED, basicTemplateOrElement.getTemplateName());
-        }
+        // TODO(b/180151169) Is this check necessary?
+        errorReporter.report(
+            ONLY_STRICT_HTML_TEMPLATES_ALLOWED, basicTemplateOrElement.getTemplateName());
         return UnknownType.getInstance();
       }
       TemplateType internTemplateType = typeRegistry.internTemplateType(templateType);

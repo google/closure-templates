@@ -214,7 +214,7 @@ final class CheckDelegatesPass implements CompilerFileSetPass {
 
     // Check that the callee name is not a delegate template name.
     if (templateRegistry.getDelTemplateSelector().hasDelTemplateNamed(calleeName)) {
-      if (node.isSynthetic()) {
+      if (node.isStaticCall()) {
         errorReporter.report(node.getSourceLocation(), CALL_TO_DELTEMPLATE, calleeName);
       } else {
         errorReporter.report(node.getSourceLocation(), DELTEMPLATE_IN_EXPRESSION, calleeName);
