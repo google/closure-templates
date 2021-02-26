@@ -46,10 +46,6 @@ final class BanDuplicateNamespacesPass implements CompilerFileSetPass {
   private final ErrorReporter errorReporter;
   private final Supplier<TemplateRegistry> fileSetTemplateRegistry;
 
-  private static final ImmutableSet<String> ALLOWED_DUPLICATE_NAMESPACES =
-      ImmutableSet.of(
-          );
-
   BanDuplicateNamespacesPass(
       ErrorReporter errorReporter, Supplier<TemplateRegistry> fileSetTemplateRegistry) {
     this.errorReporter = errorReporter;
@@ -70,17 +66,10 @@ final class BanDuplicateNamespacesPass implements CompilerFileSetPass {
         String filePath = sourceFile.getFilePath().path();
         String otherFiles =
             filePaths.stream().filter(path -> !path.equals(filePath)).collect(joining(", "));
-        if (ALLOWED_DUPLICATE_NAMESPACES.contains(sourceFile.getNamespace())) {
-          errorReporter.warn(
-              sourceFile.getNamespaceDeclaration().getSourceLocation(),
-              DUPLICATE_NAMESPACE_WARNING,
-              otherFiles);
-        } else {
-          errorReporter.report(
-              sourceFile.getNamespaceDeclaration().getSourceLocation(),
-              DUPLICATE_NAMESPACE,
-              otherFiles);
-        }
+        errorReporter.report(
+            sourceFile.getNamespaceDeclaration().getSourceLocation(),
+            DUPLICATE_NAMESPACE,
+            otherFiles);
       }
     }
     return Result.CONTINUE;
