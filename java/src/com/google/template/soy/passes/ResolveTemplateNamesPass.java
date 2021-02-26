@@ -28,9 +28,7 @@ import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.CallBasicNode;
-import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.SoyFileNode;
-import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.types.SoyType;
 import javax.annotation.Nullable;
@@ -79,9 +77,6 @@ public final class ResolveTemplateNamesPass implements CompilerFileSetPass {
       visitFile(file);
     }
     isFileExemptedFromTemplateImports = false;
-    for (SoyFileNode file : sourceFiles) {
-      updateTemplateLiteralsStaticCallProperty(file);
-    }
     return Result.CONTINUE;
   }
 
@@ -95,7 +90,8 @@ public final class ResolveTemplateNamesPass implements CompilerFileSetPass {
         .filter(n -> n.getParent().getKind() != Kind.TEMPLATE_LITERAL_NODE)
         .forEach(
             v -> {
-              TemplateLiteralNode converted = varRefToLiteral(v, v.getSourceLocation());
+              TemplateLiteralNode converted =
+                  varRefToLiteral(v, v.getSourceLocation(), /* isSynthetic= */ false);
               if (converted != null) {
                 v.getParent().replaceChild(v, converted);
               }
@@ -127,7 +123,8 @@ public final class ResolveTemplateNamesPass implements CompilerFileSetPass {
 
   private static void importedVarRefToTemplateLiteral(CallBasicNode callNode) {
     ExprNode templateExpr = callNode.getCalleeExpr().getRoot();
-    TemplateLiteralNode converted = varRefToLiteral(templateExpr, templateExpr.getSourceLocation());
+    TemplateLiteralNode converted =
+        varRefToLiteral(templateExpr, templateExpr.getSourceLocation(), /* isSynthetic= */ true);
     if (converted != null) {
       callNode.setCalleeExpr(new ExprRootNode(converted));
     }
@@ -138,13 +135,15 @@ public final class ResolveTemplateNamesPass implements CompilerFileSetPass {
    * equivalent TemplateLiteralNode, otherwise null.
    */
   @Nullable
-  private static TemplateLiteralNode varRefToLiteral(ExprNode expr, SourceLocation sourceLocation) {
+  private static TemplateLiteralNode varRefToLiteral(
+      ExprNode expr, SourceLocation sourceLocation, boolean isSynthetic) {
     if (expr.getKind() != Kind.VAR_REF_NODE) {
       return null;
     }
     VarRefNode varRef = (VarRefNode) expr;
     if (varRef.hasType() && expr.getType().getKind() == SoyType.Kind.TEMPLATE_TYPE) {
-      return TemplateLiteralNode.forVarRef(varRef.copy(new CopyState()), sourceLocation);
+      return TemplateLiteralNode.forVarRef(
+          varRef.copy(new CopyState()), sourceLocation, isSynthetic);
     }
     return null;
   }
@@ -155,13 +154,5 @@ public final class ResolveTemplateNamesPass implements CompilerFileSetPass {
         // can't easily know the namespaces to exempt.
         // TODO(user): Remove this after Jesse migrates them with his superpowers.
         || file.getFilePath().toString().contains("recaptcha/");
-  }
-
-  static void updateTemplateLiteralsStaticCallProperty(SoyNode root) {
-    SoyTreeUtils.visitExprNodesWithHolder(
-        root,
-        TemplateLiteralNode.class,
-        (exprHolder, templateLiteralNode) ->
-            templateLiteralNode.setStaticCall(exprHolder instanceof CallNode));
   }
 }

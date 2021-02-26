@@ -46,6 +46,7 @@ import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.Kind;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+import com.google.template.soy.soytree.SoyTreeUtils.VisitDirective;
 import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.UnknownType;
 import com.google.template.soy.types.ast.GenericTypeNode;
@@ -61,7 +62,6 @@ import java.util.Deque;
 import java.util.List;
 import java.util.Spliterator;
 import java.util.Spliterators.AbstractSpliterator;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -202,21 +202,6 @@ public final class SoyTreeUtils {
     return allNodesOfType(rootSoyNode, FunctionNode.class)
         .filter(
             function -> function.isResolved() && functionToMatch.equals(function.getSoyFunction()));
-  }
-
-  public static void visitExprNodesWithHolder(
-      SoyNode root, BiConsumer<ExprHolderNode, ExprNode> visitor) {
-    visitExprNodesWithHolder(root, ExprNode.class, visitor);
-  }
-
-  public static <T extends ExprNode> void visitExprNodesWithHolder(
-      SoyNode root, Class<T> exprType, BiConsumer<ExprHolderNode, T> visitor) {
-    SoyTreeUtils.allNodesOfType(root, ExprHolderNode.class)
-        .forEach(
-            exprHolder ->
-                exprHolder.getExprList().stream()
-                    .flatMap(rootExpr -> SoyTreeUtils.allNodesOfType(rootExpr, exprType))
-                    .forEach(expr -> visitor.accept(exprHolder, expr)));
   }
 
   /**

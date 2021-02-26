@@ -199,7 +199,7 @@ final class Rewriter {
       if (SoyTreeUtils.allNodesOfType(template.getParent(), TemplateLiteralNode.class)
           .anyMatch(
               (templateLiteral) ->
-                  !templateLiteral.isStaticCall()
+                  !templateLiteral.isSynthetic()
                       && templateLiteral.getResolvedName().equals(template.getTemplateName()))) {
         // If a template is passed around into other templates, we cannot be sure of the trusted
         // content kind.

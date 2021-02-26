@@ -1019,7 +1019,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     Expression templateLiteral =
         Expression.dottedIdNoRequire(templateAliases.get(node.getResolvedName()));
     // Skip checks for the common case of synthetic template literals.
-    return node.isStaticCall()
+    return node.isSynthetic()
         ? templateLiteral
         : MARK_TEMPLATE.call(templateLiteral, Expression.stringLiteral(node.getResolvedName()));
   }

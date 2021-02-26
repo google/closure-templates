@@ -837,7 +837,7 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
       name = resolvedName.substring(secondToLastDotIndex + 1);
     }
     PyExpr calleeExpr = new PyExpr(name, Integer.MAX_VALUE);
-    return node.isStaticCall()
+    return node.isSynthetic()
         ? calleeExpr
         : new PyFunctionExprBuilder("runtime.create_template_type")
             .addArg(calleeExpr)

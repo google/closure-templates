@@ -450,7 +450,7 @@ public final class TemplateRegistryTest {
             SourceLocation.UNKNOWN,
             SourceLocation.UNKNOWN,
             TemplateLiteralNode.forGlobal(
-                new GlobalNode(Identifier.create("ns.foo", SourceLocation.UNKNOWN))),
+                new GlobalNode(Identifier.create("ns.foo", SourceLocation.UNKNOWN)), false),
             NO_ATTRS,
             false,
             FAIL);
@@ -476,7 +476,7 @@ public final class TemplateRegistryTest {
             SourceLocation.UNKNOWN,
             SourceLocation.UNKNOWN,
             TemplateLiteralNode.forGlobal(
-                new GlobalNode(Identifier.create("ns.moo", SourceLocation.UNKNOWN))),
+                new GlobalNode(Identifier.create("ns.moo", SourceLocation.UNKNOWN)), false),
             NO_ATTRS,
             false,
             FAIL);

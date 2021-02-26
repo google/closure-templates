@@ -20,7 +20,6 @@ import static com.google.common.base.Preconditions.checkState;
 import com.google.common.base.Preconditions;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
-import com.google.template.soy.base.internal.TriState;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.types.NamedTemplateType;
 import com.google.template.soy.types.SoyType;
@@ -33,24 +32,31 @@ public final class TemplateLiteralNode extends AbstractParentExprNode {
   private static final NamedTemplateType VARREF_PLACEHOLDER =
       NamedTemplateType.create("__varref__");
 
-  private TriState isStaticCall = TriState.UNSET;
+  // True for 'synthetic' template literal nodes that are the direct children of {call} statements.
+  // These are exempt from some checks around the explicit template() expressions.
+  private final boolean isSynthetic;
   private String templateFqn;
   private SoyType type;
 
   // This goes away when template call FQN goes away.
   public static TemplateLiteralNode forGlobal(GlobalNode global) {
-    TemplateLiteralNode node = new TemplateLiteralNode(global.getSourceLocation());
+    return forGlobal(global, /* isSynthetic= */ true);
+  }
+
+  public static TemplateLiteralNode forGlobal(GlobalNode global, boolean isSynthetic) {
+    TemplateLiteralNode node = new TemplateLiteralNode(global.getSourceLocation(), isSynthetic);
     node.addChild(global);
     node.type = NamedTemplateType.create(global.getName());
     return node;
   }
 
   public static TemplateLiteralNode forVarRef(VarRefNode varRef) {
-    return forVarRef(varRef, varRef.getSourceLocation());
+    return forVarRef(varRef, varRef.getSourceLocation(), /* isSynthetic= */ true);
   }
 
-  public static TemplateLiteralNode forVarRef(VarRefNode varRef, SourceLocation sourceLocation) {
-    TemplateLiteralNode node = new TemplateLiteralNode(sourceLocation);
+  public static TemplateLiteralNode forVarRef(
+      VarRefNode varRef, SourceLocation sourceLocation, boolean isSynthetic) {
+    TemplateLiteralNode node = new TemplateLiteralNode(sourceLocation, isSynthetic);
     node.addChild(varRef);
     if (varRef.hasType() && varRef.getType().getKind() == SoyType.Kind.TEMPLATE_TYPE) {
       node.resolveTemplateName();
@@ -60,13 +66,14 @@ public final class TemplateLiteralNode extends AbstractParentExprNode {
     return node;
   }
 
-  private TemplateLiteralNode(SourceLocation sourceLocation) {
+  private TemplateLiteralNode(SourceLocation sourceLocation, boolean isSynthetic) {
     super(sourceLocation);
+    this.isSynthetic = isSynthetic;
   }
 
   private TemplateLiteralNode(TemplateLiteralNode orig, CopyState copyState) {
     super(orig, copyState);
-    this.isStaticCall = orig.isStaticCall;
+    this.isSynthetic = orig.isSynthetic;
     this.templateFqn = orig.templateFqn;
     this.type = orig.type;
   }
@@ -79,14 +86,8 @@ public final class TemplateLiteralNode extends AbstractParentExprNode {
     return getChild(0).getKind() == Kind.GLOBAL_NODE;
   }
 
-  /** Returns whether this node is the root expression of a CallNode. */
-  public boolean isStaticCall() {
-    Preconditions.checkState(isStaticCall.isSet(), "May not call before setStaticCall()");
-    return isStaticCall == TriState.ENABLED;
-  }
-
-  public void setStaticCall(boolean isStaticCall) {
-    this.isStaticCall = TriState.from(isStaticCall);
+  public boolean isSynthetic() {
+    return isSynthetic;
   }
 
   public void resolveTemplateName() {
