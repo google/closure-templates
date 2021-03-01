@@ -16,7 +16,6 @@
 package com.google.template.soy.passes;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.basetree.CopyState;
@@ -49,34 +48,19 @@ public final class ResolveTemplateNamesPass implements CompilerFileSetPass {
       SoyErrorKind.of("The `data` attribute is only allowed on static calls.");
 
   private static final SoyErrorKind UNIMPORTED_TEMPLATE_CALL =
-      SoyErrorKind.of("Template must be imported. See go/soy-external-calls.");
-
-  private static final ImmutableSet<String> TEMPLATE_IMPORT_EXEMPTIONS_BY_NAMESPACE =
-      ImmutableSet.of(
-          );
+      SoyErrorKind.of("Template ''{0}'' is not recognized. See go/soy-external-calls.");
 
   private final ErrorReporter errorReporter;
 
-  // Whether to require external templates to be imported (rather than referenced via fqn or aliased
-  // namespaces).
-  private final boolean requireTemplateImports;
-
-  // Whether the current file should be exempted from template imports (only applies if
-  // requireTemplateImports is enabled).
-  private boolean isFileExemptedFromTemplateImports = false;
-
-  public ResolveTemplateNamesPass(ErrorReporter errorReporter, boolean requireTemplateImports) {
+  public ResolveTemplateNamesPass(ErrorReporter errorReporter) {
     this.errorReporter = errorReporter;
-    this.requireTemplateImports = requireTemplateImports;
   }
 
   @Override
   public Result run(ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator) {
     for (SoyFileNode file : sourceFiles) {
-      isFileExemptedFromTemplateImports = isFileExemptedFromTemplateImports(file);
       visitFile(file);
     }
-    isFileExemptedFromTemplateImports = false;
     return Result.CONTINUE;
   }
 
@@ -97,14 +81,14 @@ public final class ResolveTemplateNamesPass implements CompilerFileSetPass {
               }
             });
 
-    if (requireTemplateImports && !isFileExemptedFromTemplateImports) {
-      SoyTreeUtils.allNodesOfType(file, TemplateLiteralNode.class)
-          .filter(TemplateLiteralNode::isGlobalName)
-          .forEach(
-              n ->
-                  errorReporter.report(
-                      n.getChild(0).getSourceLocation(), UNIMPORTED_TEMPLATE_CALL));
-    }
+    SoyTreeUtils.allNodesOfType(file, TemplateLiteralNode.class)
+        .filter(TemplateLiteralNode::isGlobalName)
+        .forEach(
+            n ->
+                errorReporter.report(
+                    n.getChild(0).getSourceLocation(),
+                    UNIMPORTED_TEMPLATE_CALL,
+                    n.getIdentifier().identifier()));
 
     // Resolve all unresolved TemplateLiteralNodes. Remove this along with template FQN support.
     SoyTreeUtils.allNodesOfType(file, TemplateLiteralNode.class)
@@ -146,13 +130,5 @@ public final class ResolveTemplateNamesPass implements CompilerFileSetPass {
           varRef.copy(new CopyState()), sourceLocation, isSynthetic);
     }
     return null;
-  }
-
-  private static boolean isFileExemptedFromTemplateImports(SoyFileNode file) {
-    return TEMPLATE_IMPORT_EXEMPTIONS_BY_NAMESPACE.contains(file.getNamespace())
-        // Temporary recaptcha hack. They've got these private soy files that we can't access so we
-        // can't easily know the namespaces to exempt.
-        // TODO(user): Remove this after Jesse migrates them with his superpowers.
-        || file.getFilePath().toString().contains("recaptcha/");
   }
 }
