@@ -42,6 +42,7 @@ export abstract class SoyElement<TData extends {}|null, TInterface extends {}> {
   // Marker so that future element accesses can find this Soy element from the
   // DOM
   key: string = '';
+  private logGraft = true;
 
   constructor(protected data: TData, protected ijData?: IjData) {}
 
@@ -65,6 +66,10 @@ export abstract class SoyElement<TData extends {}|null, TInterface extends {}> {
 
   protected shouldSyncState() {
     return this.syncState;
+  }
+
+  setLogGraft(logGraft: boolean) {
+    this.logGraft = logGraft;
   }
 
   /**
@@ -93,7 +98,7 @@ export abstract class SoyElement<TData extends {}|null, TInterface extends {}> {
     this.skipHandler = null;
     try {
       patchOuter(this.node!, () => {
-        if (this.logger) {
+        if (this.logger && this.logGraft) {
           this.logger.logGraft(this.node!, () => {
             this.renderInternal(renderer, this.data!);
           });
