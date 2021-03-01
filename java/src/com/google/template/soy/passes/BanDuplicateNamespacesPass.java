@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableSetMultimap;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.internal.exemptions.NamespaceExemptions;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateRegistry;
@@ -66,10 +67,17 @@ final class BanDuplicateNamespacesPass implements CompilerFileSetPass {
         String filePath = sourceFile.getFilePath().path();
         String otherFiles =
             filePaths.stream().filter(path -> !path.equals(filePath)).collect(joining(", "));
-        errorReporter.report(
-            sourceFile.getNamespaceDeclaration().getSourceLocation(),
-            DUPLICATE_NAMESPACE,
-            otherFiles);
+        if (NamespaceExemptions.isKnownDuplicateNamespace(sourceFile.getNamespace())) {
+          errorReporter.warn(
+              sourceFile.getNamespaceDeclaration().getSourceLocation(),
+              DUPLICATE_NAMESPACE_WARNING,
+              otherFiles);
+        } else {
+          errorReporter.report(
+              sourceFile.getNamespaceDeclaration().getSourceLocation(),
+              DUPLICATE_NAMESPACE,
+              otherFiles);
+        }
       }
     }
     return Result.CONTINUE;
