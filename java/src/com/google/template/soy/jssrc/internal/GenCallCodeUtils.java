@@ -293,10 +293,14 @@ public class GenCallCodeUtils {
     if (callNode instanceof CallBasicNode) {
       // Case 1: Basic call.
       CallBasicNode callBasicNode = (CallBasicNode) callNode;
-      Expression calleeExpression = exprTranslator.exec(callBasicNode.getCalleeExpr());
-      // Skip checks for the common case of static calls.
-      callee =
-          callBasicNode.isStaticCall() ? calleeExpression : ASSERT_TEMPLATE.call(calleeExpression);
+      if (callBasicNode.isStaticCall()) {
+        // Skip checks for the common case of synthetic template literals.
+        callee = Expression.dottedIdNoRequire(templateAliases.get(callBasicNode.getCalleeName()));
+      } else {
+        Expression calleeExpression = exprTranslator.exec(callBasicNode.getCalleeExpr());
+        // Skip checks for the common case of static calls.
+        callee = ASSERT_TEMPLATE.call(calleeExpression);
+      }
     } else {
       // Case 2: Delegate call.
       CallDelegateNode callDelegateNode = (CallDelegateNode) callNode;

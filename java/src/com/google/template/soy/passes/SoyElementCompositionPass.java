@@ -286,6 +286,8 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
     if (attributesNode != null && attributesNode.numChildren() > 0) {
       call.addChild(attributesNode);
     }
+
+    ResolveTemplateNamesPass.updateTemplateLiteralsStaticCallProperty(call);
   }
 
   private void maybeConsumeAttribute(

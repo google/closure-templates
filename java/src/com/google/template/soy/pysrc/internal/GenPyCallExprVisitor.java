@@ -20,6 +20,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.pysrc.internal.GenPyExprsVisitor.GenPyExprsVisitorFactory;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyExprUtils;
@@ -127,7 +128,10 @@ final class GenPyCallExprVisitor extends AbstractReturningSoyNodeVisitor<PyExpr>
   protected PyExpr visitCallBasicNode(CallBasicNode node) {
     TranslateToPyExprVisitor translator =
         new TranslateToPyExprVisitor(localVarStack, pluginValueFactory, node, errorReporter);
-    PyExpr calleeExpr = translator.exec(node.getCalleeExpr());
+    PyExpr calleeExpr =
+        node.isStaticCall()
+            ? translator.getCalleeExpr((TemplateLiteralNode) node.getCalleeExpr().getRoot())
+            : translator.exec(node.getCalleeExpr());
     String calleeExprText = calleeExpr.getText();
     if (calleeExpr.getPrecedence() < Integer.MAX_VALUE) {
       calleeExprText = "(" + calleeExprText + ")";
