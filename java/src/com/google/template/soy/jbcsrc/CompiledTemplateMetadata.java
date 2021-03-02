@@ -85,6 +85,10 @@ abstract class CompiledTemplateMetadata {
     // If the template is a Soy element, then we also need the `opt_data` object.
     boolean hasPositionalSignature =
         templateType.getDataAllCallSituations().isEmpty()
+            // Skip positional signatures when there are no parameters.  This is not necessary for
+            // correctness however in this case there is very little benefit in the positional
+            // overload and so we can generate one fewer method by just not generating it.
+            && !templateType.getActualParameters().isEmpty()
             // only basic/element templates are supported for now.
             // deltemplates require the object style to support the relatively weak type checking we
             // perform on them.
