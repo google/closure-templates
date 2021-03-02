@@ -49,11 +49,6 @@ final class FieldManager {
     return doAddField(name, type, Opcodes.ACC_PRIVATE + Opcodes.ACC_FINAL);
   }
 
-  FieldRef addField(String name, Type type) {
-    fieldNames.claimName(name);
-    return doAddField(name, type, Opcodes.ACC_PRIVATE);
-  }
-
   FieldRef addFinalField(String name, Type type) {
     fieldNames.claimName(name);
     return doAddField(name, type, Opcodes.ACC_PRIVATE | Opcodes.ACC_FINAL);
