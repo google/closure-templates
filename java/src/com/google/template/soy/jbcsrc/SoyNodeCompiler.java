@@ -1114,9 +1114,8 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   protected Statement visitCallBasicNode(CallBasicNode node) {
     if (node.isStaticCall()) {
       // Use invokedynamic to bind to the method.  This allows applications using complex
-      // classloader setups to have {call} commands cross classloader boundaries.
-      // TODO(lukes): we could use invokestatic for templates within the same compilation unit which
-      // would require less code and should be easier for the JVM to optimize.
+      // classloader setups to have {call} commands cross classloader boundaries.  It also enables
+      // our stubbing library to intercept all calls.
       return renderCallNode(
           node,
           new CallGenerator() {
@@ -1170,7 +1169,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
                                         Stream.of(node.getCalleeName()),
                                         metadata.templateType().getActualParameters().stream()
                                             .map(p -> p.getName()))
-                                    .toArray(n -> new Object[n]));
+                                    .toArray(Object[]::new));
                           }
                         };
                       }

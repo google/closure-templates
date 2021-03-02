@@ -21,6 +21,7 @@ import static java.lang.invoke.MethodHandles.dropArguments;
 import static java.lang.invoke.MethodHandles.insertArguments;
 import static java.lang.invoke.MethodType.methodType;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueProvider;
@@ -34,6 +35,9 @@ import java.lang.invoke.ConstantCallSite;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.Optional;
 
 /**
  * Bootstrap methods for handling calls that should fallback to a ClassLoader if necessary.
@@ -67,6 +71,12 @@ import java.lang.invoke.MethodType;
  * </ul>
  */
 public final class ClassLoaderFallbackCallFactory {
+  /**
+   * A testonly marker interface that may be implemented by classloaders to force this class to
+   * always select slowpaths.
+   */
+  @VisibleForTesting
+  public interface AlwaysSlowPath {}
 
   private static final MethodType SLOWPATH_RENDER_TYPE =
       methodType(
@@ -123,40 +133,21 @@ public final class ClassLoaderFallbackCallFactory {
    *     template name of the template being referenced.
    */
   public static CallSite bootstrapTemplateLookup(
-      MethodHandles.Lookup lookup, String name, MethodType type, String templateName) {
-    ClassLoader callerClassLoader = lookup.lookupClass().getClassLoader();
-    String className = Names.javaClassNameFromSoyTemplateName(templateName);
-    try {
-      Class<?> targetTemplateClass = callerClassLoader.loadClass(className);
-      CompiledTemplate template;
-      try {
-        // Use the lookup to find and invoke the method.  This ensures that we can access the
-        // factory using the permissions of the caller instead of the permissions of this class.
-        // This is needed because factory() methods for private templates are package private.
-        template =
-            (CompiledTemplate)
-                lookup
-                    .findStatic(targetTemplateClass, "template", TEMPLATE_ACCESSOR_TYPE)
-                    .invokeExact();
-      } catch (Throwable t) {
-        throw new AssertionError(t);
-      }
+      MethodHandles.Lookup lookup, String name, MethodType type, String templateName)
+      throws NoSuchMethodException, IllegalAccessException {
+    Optional<Class<?>> templateClass = findTemplateClass(lookup, templateName);
+    if (templateClass.isPresent()) {
+      CompiledTemplate template = getTemplate(lookup, templateClass.get());
       // the initial renderContext is ignored in this case
       MethodHandle getter = constant(CompiledTemplate.class, template);
       getter = dropArguments(getter, 0, RenderContext.class);
       return new ConstantCallSite(getter);
-    } catch (ClassNotFoundException classNotFoundException) {
-      // expected if this happens we need to resolve by dispatching through rendercontext
     }
-    try {
-      MethodHandle handle =
-          lookup.findStatic(
-              ClassLoaderFallbackCallFactory.class, "slowpathTemplate", SLOWPATH_TEMPLATE_TYPE);
-      handle = insertArguments(handle, 0, templateName);
-      return new ConstantCallSite(handle);
-    } catch (ReflectiveOperationException roe) {
-      throw new AssertionError("impossible, can't find our slowPathTemplateValue method", roe);
-    }
+    MethodHandle handle =
+        lookup.findStatic(
+            ClassLoaderFallbackCallFactory.class, "slowpathTemplate", SLOWPATH_TEMPLATE_TYPE);
+    handle = insertArguments(handle, 0, templateName);
+    return new ConstantCallSite(handle);
   }
 
   /**
@@ -178,43 +169,38 @@ public final class ClassLoaderFallbackCallFactory {
    *     template name of the template being referenced.
    */
   public static CallSite bootstrapTemplateValueLookup(
-      MethodHandles.Lookup lookup, String name, MethodType type, String templateName) {
-    ClassLoader callerClassLoader = lookup.lookupClass().getClassLoader();
-    String className = Names.javaClassNameFromSoyTemplateName(templateName);
-    try {
-      Class<?> targetTemplateClass = callerClassLoader.loadClass(className);
-      CompiledTemplate template;
-      try {
-        // Use the lookup to find and invoke the method.  This ensures that we can access the
-        // factory using the permissions of the caller instead of the permissions of this class.
-        // This is needed because factory() methods for private templates are package private.
-        template =
-            (CompiledTemplate)
-                lookup
-                    .findStatic(targetTemplateClass, "template", TEMPLATE_ACCESSOR_TYPE)
-                    .invokeExact();
-      } catch (Throwable t) {
-        throw new AssertionError(t);
-      }
+      MethodHandles.Lookup lookup, String name, MethodType type, String templateName)
+      throws NoSuchMethodException, IllegalAccessException {
+    Optional<Class<?>> templateClass = findTemplateClass(lookup, templateName);
+    if (templateClass.isPresent()) {
+      CompiledTemplate template = getTemplate(lookup, templateClass.get());
       CompiledTemplate.TemplateValue value =
           CompiledTemplate.TemplateValue.create(templateName, template);
       // the initial renderContext is ignored in this case
       MethodHandle getter = constant(CompiledTemplate.TemplateValue.class, value);
       getter = dropArguments(getter, 0, RenderContext.class);
       return new ConstantCallSite(getter);
-    } catch (ClassNotFoundException classNotFoundException) {
-      // expected if this happens we need to resolve by dispatching through rendercontext
     }
+    MethodHandle handle =
+        lookup.findStatic(
+            ClassLoaderFallbackCallFactory.class,
+            "slowPathTemplateValue",
+            SLOWPATH_TEMPLATE_VALUE_TYPE);
+    handle = insertArguments(handle, 0, templateName);
+    return new ConstantCallSite(handle);
+  }
+
+  private static CompiledTemplate getTemplate(MethodHandles.Lookup lookup, Class<?> templateClass)
+      throws NoSuchMethodException, IllegalAccessException {
+    // Use the lookup to find and invoke the method.  This ensures that we can access the
+    // factory using the permissions of the caller instead of the permissions of this class.
+    // This is needed because template() methods for private templates are package private.
+    MethodHandle templateAccessor =
+        lookup.findStatic(templateClass, "template", TEMPLATE_ACCESSOR_TYPE);
     try {
-      MethodHandle handle =
-          lookup.findStatic(
-              ClassLoaderFallbackCallFactory.class,
-              "slowPathTemplateValue",
-              SLOWPATH_TEMPLATE_VALUE_TYPE);
-      handle = insertArguments(handle, 0, templateName);
-      return new ConstantCallSite(handle);
-    } catch (ReflectiveOperationException roe) {
-      throw new AssertionError("impossible, can't find our slowPathTemplateValue method", roe);
+      return (CompiledTemplate) templateAccessor.invokeExact();
+    } catch (Throwable t) {
+      throw new AssertionError(t);
     }
   }
 
@@ -243,13 +229,9 @@ public final class ClassLoaderFallbackCallFactory {
       String templateName,
       String... paramNames)
       throws IllegalAccessException, NoSuchMethodException {
-    ClassLoader callerClassLoader = lookup.lookupClass().getClassLoader();
-    String className = Names.javaClassNameFromSoyTemplateName(templateName);
-    try {
-      Class<?> templateClass = callerClassLoader.loadClass(className);
-      return new ConstantCallSite(lookup.findStatic(templateClass, "render", type));
-    } catch (ClassNotFoundException classNotFoundException) {
-      // expected if this happens we need to resolve by dispatching through rendercontext
+    Optional<Class<?>> templateClass = findTemplateClass(lookup, templateName);
+    if (templateClass.isPresent()) {
+      return new ConstantCallSite(lookup.findStatic(templateClass.get(), "render", type));
     }
     MethodHandle slowPathRenderHandle =
         lookup.findStatic(
@@ -301,20 +283,18 @@ public final class ClassLoaderFallbackCallFactory {
    *     class containing the VE metadata.
    */
   public static CallSite bootstrapVeWithMetadata(
-      MethodHandles.Lookup lookup, String name, MethodType type, String metadataClassName) {
-    try {
-      MethodHandle metadataGetter = getMetadataGetter(lookup, metadataClassName);
-      MethodHandle createVe = lookup.findStatic(SoyVisualElement.class, "create", CREATE_VE_TYPE);
-      // Pass the metadata (returned from metadataGetter) to createVe.
-      MethodHandle handle = collectArguments(createVe, 2, metadataGetter);
-      return new ConstantCallSite(handle);
-    } catch (ReflectiveOperationException e) {
-      throw new AssertionError(e);
-    }
+      MethodHandles.Lookup lookup, String name, MethodType type, String metadataClassName)
+      throws NoSuchMethodException, IllegalAccessException {
+    MethodHandle metadataGetter = getMetadataGetter(lookup, metadataClassName);
+    MethodHandle createVe = lookup.findStatic(SoyVisualElement.class, "create", CREATE_VE_TYPE);
+    // Pass the metadata (returned from metadataGetter) to createVe.
+    MethodHandle handle = collectArguments(createVe, 2, metadataGetter);
+    return new ConstantCallSite(handle);
   }
 
   private static MethodHandle getMetadataGetter(
-      MethodHandles.Lookup lookup, String metadataClassName) throws ReflectiveOperationException {
+      MethodHandles.Lookup lookup, String metadataClassName)
+      throws NoSuchMethodException, IllegalAccessException {
     ClassLoader callerClassLoader = lookup.lookupClass().getClassLoader();
     try {
       Class<?> metadataClass = callerClassLoader.loadClass(metadataClassName);
@@ -330,6 +310,30 @@ public final class ClassLoaderFallbackCallFactory {
         lookup.findStatic(
             ClassLoaderFallbackCallFactory.class, "veMetadataSlowPath", VE_METADATA_SLOW_PATH_TYPE);
     return insertArguments(handle, 0, metadataClassName);
+  }
+
+  private static Optional<Class<?>> findTemplateClass(
+      MethodHandles.Lookup lookup, String templateName) throws NoSuchMethodException {
+    ClassLoader callerClassLoader = lookup.lookupClass().getClassLoader();
+    String className = Names.javaClassNameFromSoyTemplateName(templateName);
+    Class<?> clazz;
+    try {
+      clazz = callerClassLoader.loadClass(className);
+    } catch (ClassNotFoundException classNotFoundException) {
+      // expected, if this happens we need to resolve by falling back to one of our slowpaths
+      // which typically disptach the call through RenderContext
+      return Optional.empty();
+    }
+    // Test if we should send this class through the slowpath anyway
+    if (clazz.getClassLoader() instanceof AlwaysSlowPath) {
+      Method method = clazz.getDeclaredMethod("template");
+      // We can't take the slowpath for private templates.  Private templates are represented as
+      // default access methods.
+      if (Modifier.isPublic(method.getModifiers())) {
+        return Optional.empty();
+      }
+    }
+    return Optional.of(clazz);
   }
 
   /** The slow path for resolving template. */
