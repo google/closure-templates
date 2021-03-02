@@ -566,7 +566,7 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
     private SoyType forFqn(String fqn, @Nullable RecordType recordType) {
       TemplateMetadata basicTemplateOrElement = templateRegistry.getBasicTemplateOrElement(fqn);
       if (basicTemplateOrElement == null) {
-        // Error reporting here should be handled by StrictDepsPass and CheckDelegatesPass.
+        // Error reporting here should be handled by CheckDelegatesPass.
         return UnknownType.getInstance();
       }
       TemplateType templateType = basicTemplateOrElement.getTemplateType();

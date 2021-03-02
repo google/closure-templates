@@ -71,7 +71,6 @@ import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.shared.SoyCssRenamingMap;
-import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
@@ -1522,7 +1521,6 @@ public class BytecodeCompilerTest {
             .collect(Collectors.toList());
     return SoyFileSetParserBuilder.forSuppliers(files)
         .addCompilationUnits(dependencies)
-        .options(new SoyGeneralOptions().setAllowExternalCalls(false))
         .build();
   }
 

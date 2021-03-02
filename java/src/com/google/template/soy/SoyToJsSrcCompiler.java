@@ -36,16 +36,6 @@ import org.kohsuke.args4j.Option;
 public final class SoyToJsSrcCompiler extends AbstractSoyCompiler {
 
   @Option(
-    name = "--allowExternalCalls",
-    usage =
-        "Whether to allow external calls. New projects should set this to false, and"
-            + " existing projects should remove existing external calls and then set this"
-            + " to false. It will save you a lot of headaches. Currently defaults to true"
-            + " for backward compatibility."
-  )
-  private boolean allowExternalCalls = true;
-
-  @Option(
     name = "--locales",
     usage =
         "[Required for generating localized JS] Comma-delimited list of locales for"
@@ -157,8 +147,6 @@ public final class SoyToJsSrcCompiler extends AbstractSoyCompiler {
 
   @Override
   protected void compile(SoyFileSet.Builder sfsBuilder) throws IOException {
-    sfsBuilder.setAllowExternalCalls(allowExternalCalls);
-
     SoyFileSet sfs = sfsBuilder.build();
 
     // Create SoyJsSrcOptions.
