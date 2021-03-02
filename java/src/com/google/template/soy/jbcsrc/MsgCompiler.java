@@ -21,29 +21,21 @@ import static com.google.template.soy.jbcsrc.PrintDirectives.applyStreamingEscap
 import static com.google.template.soy.jbcsrc.PrintDirectives.areAllPrintDirectivesStreamable;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_STRING_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_PROVIDER_TYPE;
-import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.STRING_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
-import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constantNull;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
+import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.ConstructorRef;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.FieldRef;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.Statement;
+import com.google.template.soy.jbcsrc.shared.MsgDefaultConstantFactory;
 import com.google.template.soy.msgs.internal.MsgUtils.MsgPartsAndIds;
-import com.google.template.soy.msgs.restricted.SoyMsgPart;
-import com.google.template.soy.msgs.restricted.SoyMsgPart.Case;
-import com.google.template.soy.msgs.restricted.SoyMsgPlaceholderPart;
-import com.google.template.soy.msgs.restricted.SoyMsgPluralCaseSpec;
-import com.google.template.soy.msgs.restricted.SoyMsgPluralPart;
-import com.google.template.soy.msgs.restricted.SoyMsgPluralRemainderPart;
-import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
-import com.google.template.soy.msgs.restricted.SoyMsgSelectPart;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.EscapingMode;
 import com.google.template.soy.soytree.MsgHtmlTagNode;
@@ -56,11 +48,14 @@ import com.google.template.soy.soytree.SoyNode.MsgSubstUnitNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.VeLogNode;
 import com.google.template.soy.types.StringType;
-import java.util.ArrayList;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
+import org.objectweb.asm.Type;
 
 /**
  * A helper for compiling {@link MsgNode messages}.
@@ -76,23 +71,19 @@ import org.objectweb.asm.Label;
  * </ul>
  */
 final class MsgCompiler {
-  private static final ConstructorRef SOY_MSG_PLACEHOLDER_PART =
-      ConstructorRef.create(SoyMsgPlaceholderPart.class, String.class);
-  private static final ConstructorRef SOY_MSG_PLURAL_REMAINDER_PART =
-      ConstructorRef.create(SoyMsgPluralRemainderPart.class, String.class);
-  private static final ConstructorRef SOY_MSG_PURAL_PART =
-      ConstructorRef.create(SoyMsgPluralPart.class, String.class, int.class, Iterable.class);
-  private static final ConstructorRef SOY_MSG_SELECT_PART =
-      ConstructorRef.create(SoyMsgSelectPart.class, String.class, Iterable.class);
-  private static final MethodRef SOY_MSG_RAW_TEXT_PART_OF =
-      MethodRef.create(SoyMsgRawTextPart.class, "of", String.class);
-  private static final MethodRef CASE_CREATE =
-      MethodRef.create(Case.class, "create", Object.class, Iterable.class);
-  private static final ConstructorRef SOY_MSG_PLURAL_CASE_SPEC_TYPE =
-      ConstructorRef.create(SoyMsgPluralCaseSpec.class, SoyMsgPluralCaseSpec.Type.class);
-  private static final ConstructorRef SOY_MSG_PLURAL_CASE_SPEC_LONG =
-      ConstructorRef.create(SoyMsgPluralCaseSpec.class, long.class);
+  public static final Type IMMUTABLE_LIST_TYPE = Type.getType(ImmutableList.class);
+  private static final Handle MESSAGE_FACTORY_HANDLE =
+      MethodRef.create(
+              MsgDefaultConstantFactory.class,
+              "bootstrapMsgConstant",
+              MethodHandles.Lookup.class,
+              String.class,
+              MethodType.class,
+              Object[].class)
+          .asHandle();
 
+  private static final String MSG_DEFAULT_DESCRIPTOR =
+      Type.getMethodDescriptor(IMMUTABLE_LIST_TYPE);
 
   /**
    * A helper interface that allows the MsgCompiler to interact with the SoyNodeCompiler in a
@@ -129,7 +120,6 @@ final class MsgCompiler {
 
   private final DetachState detachState;
   private final TemplateParameterLookup parameterLookup;
-  private final FieldManager fields;
   private final TemplateVariableManager variableManager;
   private final AppendableExpression appendableExpression;
   private final PlaceholderCompiler placeholderCompiler;
@@ -137,13 +127,11 @@ final class MsgCompiler {
   MsgCompiler(
       DetachState detachState,
       TemplateParameterLookup parameterLookup,
-      FieldManager fields,
       TemplateVariableManager variableManager,
       AppendableExpression appendableExpression,
       PlaceholderCompiler placeholderCompiler) {
     this.detachState = checkNotNull(detachState);
     this.parameterLookup = checkNotNull(parameterLookup);
-    this.fields = checkNotNull(fields);
     this.variableManager = checkNotNull(variableManager);
     this.appendableExpression = checkNotNull(appendableExpression);
     this.placeholderCompiler = checkNotNull(placeholderCompiler);
@@ -196,62 +184,15 @@ final class MsgCompiler {
    * java serialization, but just invoking the SoyMsgPart constructors isn't too hard.
    */
   private Expression compileDefaultMessagePartsConstant(MsgPartsAndIds partsAndId) {
-    return fields
-        .addStaticField("msg_parts_" + partsAndId.id, partsToPartsList(partsAndId.parts))
-        .accessor();
-  }
-
-  private Expression partsToPartsList(ImmutableList<SoyMsgPart> parts) {
-    List<Expression> partsExprs = new ArrayList<>(parts.size());
-    for (SoyMsgPart part : parts) {
-      partsExprs.add(partToPartExpression(part));
-    }
-    // ensure that the runtime type is immutablelist, ensures monomorphism
-    return BytecodeUtils.asImmutableList(partsExprs);
-  }
-
-  /** Returns an {@link Expression} that evaluates to an equivalent SoyMsgPart as the argument. */
-  private Expression partToPartExpression(SoyMsgPart part) {
-    if (part instanceof SoyMsgPlaceholderPart) {
-      return SOY_MSG_PLACEHOLDER_PART.construct(
-          constant(((SoyMsgPlaceholderPart) part).getPlaceholderName()));
-    } else if (part instanceof SoyMsgPluralPart) {
-      SoyMsgPluralPart pluralPart = (SoyMsgPluralPart) part;
-      List<Expression> caseExprs = new ArrayList<>(pluralPart.getCases().size());
-      for (Case<SoyMsgPluralCaseSpec> item : pluralPart.getCases()) {
-        Expression spec;
-        if (item.spec().getType() == SoyMsgPluralCaseSpec.Type.EXPLICIT) {
-          spec = SOY_MSG_PLURAL_CASE_SPEC_LONG.construct(constant(item.spec().getExplicitValue()));
-        } else {
-          spec =
-              SOY_MSG_PLURAL_CASE_SPEC_TYPE.construct(
-                  FieldRef.enumReference(item.spec().getType()).accessor());
-        }
-        caseExprs.add(CASE_CREATE.invoke(spec, partsToPartsList(item.parts())));
+    List<Object> constantParts = MsgDefaultConstantFactory.msgToPartsList(partsAndId.parts);
+    return new Expression(
+        IMMUTABLE_LIST_TYPE, Expression.Feature.NON_NULLABLE, Expression.Feature.CHEAP) {
+      @Override
+      protected void doGen(CodeBuilder cb) {
+        cb.visitInvokeDynamicInsn(
+            "default", MSG_DEFAULT_DESCRIPTOR, MESSAGE_FACTORY_HANDLE, constantParts.toArray());
       }
-      return SOY_MSG_PURAL_PART.construct(
-          constant(pluralPart.getPluralVarName()),
-          constant(pluralPart.getOffset()),
-          BytecodeUtils.asList(caseExprs));
-    } else if (part instanceof SoyMsgPluralRemainderPart) {
-      return SOY_MSG_PLURAL_REMAINDER_PART.construct(
-          constant(((SoyMsgPluralRemainderPart) part).getPluralVarName()));
-    } else if (part instanceof SoyMsgRawTextPart) {
-      return SOY_MSG_RAW_TEXT_PART_OF.invoke(constant(((SoyMsgRawTextPart) part).getRawText()));
-    } else if (part instanceof SoyMsgSelectPart) {
-      SoyMsgSelectPart selectPart = (SoyMsgSelectPart) part;
-      List<Expression> caseExprs = new ArrayList<>(selectPart.getCases().size());
-      for (Case<String> item : selectPart.getCases()) {
-        caseExprs.add(
-            CASE_CREATE.invoke(
-                item.spec() == null ? constantNull(STRING_TYPE) : constant(item.spec()),
-                partsToPartsList(item.parts())));
-      }
-      return SOY_MSG_SELECT_PART.construct(
-          constant(selectPart.getSelectVarName()), BytecodeUtils.asList(caseExprs));
-    } else {
-      throw new AssertionError("unrecognized part: " + part);
-    }
+    };
   }
 
   /** Handles a translation consisting of a single raw text node. */

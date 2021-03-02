@@ -1612,7 +1612,6 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     return new MsgCompiler(
         detachState,
         parameterLookup,
-        fields,
         variables,
         appendableExpression,
         new PlaceholderCompiler() {
