@@ -1276,10 +1276,7 @@ const $$filterHtmlAttributes = function(value) {
   // NOTE: Explicitly no support for SanitizedContentKind.HTML, since that is
   // meaningless in this context, which is generally *between* html attributes.
   if (soyChecks.isAttribute(value)) {
-    // Add a space at the end to ensure this won't get merged into following
-    // attributes, unless the interpretation is unambiguous (ending with quotes
-    // or a space).
-    return value.getContent().replace(/([^"'\s])$/, '$1 ');
+    return value.getContent();
   }
   // TODO: Dynamically inserting attributes that aren't marked as trusted is
   // probably unnecessary.  Any filtering done here will either be inadequate
@@ -1288,6 +1285,18 @@ const $$filterHtmlAttributes = function(value) {
   return $$filterHtmlAttributesHelper(value);
 };
 
+/**
+ * Conditionally prepends a single space if value is not empty.
+ *
+ * @param {?} value The value.
+ * @return {string} value, possibly with an extra leading space.
+ */
+const $$whitespaceHtmlAttributes = function(value) {
+  if (soyChecks.isAttribute(value)) {
+    value = value.getContent();
+  }
+  return (value && !$$strStartsWith(value, ' ') ? ' ' : '') + value;
+};
 
 /**
  * Allows only decimal and floating-point numbers.
@@ -2876,6 +2885,7 @@ exports = {
   $$escapeHtmlAttributeNospace,
   $$filterHtmlScriptPhrasingData,
   $$filterHtmlAttributes,
+  $$whitespaceHtmlAttributes,
   $$filterNumber,
   $$filterHtmlElementName,
   $$escapeJsString,

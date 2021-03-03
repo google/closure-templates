@@ -114,6 +114,7 @@ public final class InternalPluginsTest {
             "|insertWordBreaks",
             "|truncate",
             "|cleanHtml",
+            "|whitespaceHtmlAttributes",
             "|filterHtmlAttributes");
     assertThat(nonStreamingPrintDirectives.build())
         .containsExactly(

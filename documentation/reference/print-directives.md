@@ -136,3 +136,8 @@ This directives is used internally by the compiler as part of its support for
 ContentSecurityPolicy nonces. See our
 [security guide](/third_party/java_src/soy/g3doc/dev/security.md#content_security_policy)
 for more information.
+
+### `|whitespaceHtmlAttributes` {#whitespaceHtmlAttributes}
+
+This directive is used internally by the compiler to optimize whitespace inside
+of Html tags.

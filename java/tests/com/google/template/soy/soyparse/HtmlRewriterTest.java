@@ -226,7 +226,8 @@ public final class HtmlRewriterTest {
   @Test
   public void testDynamicAttribute() {
     TemplateNode node = runPass("{let $t : 'x' /}<div {$t}>content</div>");
-    assertThatSourceString(node).isEqualTo("{let $t : 'x' /}<div {$t}>content</div>");
+    assertThatSourceString(node)
+        .isEqualTo("{let $t : 'x' /}<div{$t |whitespaceHtmlAttributes}>content</div>");
     assertThatASTString(node)
         .isEqualTo(
             ""
@@ -377,7 +378,8 @@ public final class HtmlRewriterTest {
   @Test
   public void testConditionalQuotedAttributeValues() {
     TemplateNode node = runPass("{@param p : ?}<div x={if $p}'foo'{else}'bar'{/if} {$p}>");
-    assertThatSourceString(node).isEqualTo("<div x={if $p}'foo'{else}'bar'{/if} {$p}>");
+    assertThatSourceString(node)
+        .isEqualTo("<div x={if $p}'foo'{else}'bar'{/if}{$p |whitespaceHtmlAttributes}>");
     assertThatASTString(node)
         .isEqualTo(
             ""
@@ -403,7 +405,7 @@ public final class HtmlRewriterTest {
     assertThatSourceString(node)
         .isEqualTo(
             "<div x={if $p}{if $p2}'foo'{else}'bar'{/if}{else}{if $p2}'foo'{else}'bar'{/if}{/if}"
-                + " {$p}>");
+                + "{$p |whitespaceHtmlAttributes}>");
     assertThatASTString(node)
         .isEqualTo(
             ""

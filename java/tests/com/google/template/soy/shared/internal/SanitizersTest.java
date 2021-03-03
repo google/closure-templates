@@ -228,18 +228,6 @@ public class SanitizersTest {
                 UnsafeSanitizedContentOrdainer.ordainAsSafe(
                     "a=1 b=2 dir=\"ltr\"", SanitizedContent.ContentKind.ATTRIBUTES)))
         .isEqualTo("a=1 b=2 dir=\"ltr\"");
-    assertWithMessage("Should append a space to parse correctly")
-        .that(
-            Sanitizers.filterHtmlAttributes(
-                UnsafeSanitizedContentOrdainer.ordainAsSafe(
-                    "foo=\"bar\" dir=ltr", SanitizedContent.ContentKind.ATTRIBUTES)))
-        .isEqualTo("foo=\"bar\" dir=ltr ");
-    assertWithMessage("Should append a space to parse correctly")
-        .that(
-            Sanitizers.filterHtmlAttributes(
-                UnsafeSanitizedContentOrdainer.ordainAsSafe(
-                    "foo=\"bar\" checked", SanitizedContent.ContentKind.ATTRIBUTES)))
-        .isEqualTo("foo=\"bar\" checked ");
     assertWithMessage("No duplicate space should be added")
         .that(
             Sanitizers.filterHtmlAttributes(

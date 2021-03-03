@@ -234,7 +234,7 @@ public final class VeLogInstrumentationVisitorTest {
         .isEqualTo(
             "{velog ve_data(ve(Bar), null)}"
                 + "<div{$$velog(ve_data(ve(Bar), null))}>"
-                + "<span {call .attr}{param foo: 'data-ved' /}{/call}>"
+                + "<span{call .attr}{param foo: 'data-ved' /}{/call}>"
                 + "</span>"
                 + "</div>"
                 + "{/velog}");

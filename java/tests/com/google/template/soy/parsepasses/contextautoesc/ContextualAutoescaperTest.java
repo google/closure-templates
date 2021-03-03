@@ -1288,7 +1288,7 @@ public final class ContextualAutoescaperTest {
             "{namespace ns}\n\n",
             "{template .foo}\n",
             "  {@param baz: ?}\n",
-            "<img src=\"bar\" {$baz |filterHtmlAttributes}>\n",
+            "<img src=\"bar\"{$baz |filterHtmlAttributes |whitespaceHtmlAttributes}>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",

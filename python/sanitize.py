@@ -296,10 +296,7 @@ def filter_html_attributes(value):
   # NOTE: Explicitly no support for SanitizedContentKind.HTML, since that is
   # meaningless in this context, which is generally *between* html attributes.
   if is_content_kind(value, CONTENT_KIND.ATTRIBUTES):
-    # Add a space at the end to ensure this won't get merged into following
-    # attributes, unless the interpretation is unambiguous (ending with quotes
-    # or a space).
-    return _AMBIGUOUS_ATTR_END_RE.sub(r'\1 ', value.content)
+    return value.content
 
   # TODO(gboyer): Replace this with a runtime exception along with other
   # backends. http://b/19795203.
@@ -416,6 +413,16 @@ def filter_html_script_phrasing_data(value):
 
 def filter_csp_nonce_value(value):
   return generated_sanitize.filter_csp_nonce_value_helper(value)
+
+
+def whitespace_html_attributes(value):
+  """Prepends value with a single space if it is not empty."""
+  if isinstance(value, SanitizedHtmlAttribute):
+    string_val = value.content
+  else:
+    string_val = value
+  return (' '
+          if string_val and not string_val.startswith(' ') else '') + string_val
 
 
 ############################

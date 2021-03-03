@@ -537,4 +537,24 @@ public abstract class BasicEscapeDirective
       return Sanitizers.filterCspNonceValue(value);
     }
   }
+
+  /** Implements the |whitespaceHtmlAttributes directive. */
+  @SoyPurePrintDirective
+  public static final class WhitespaceHtmlAttributesDirective extends BasicEscapeDirective
+      implements Streamable {
+
+    public WhitespaceHtmlAttributesDirective() {
+      super("|whitespaceHtmlAttributes");
+    }
+
+    @Override
+    protected String escape(SoyValue value) {
+      return Sanitizers.whitespaceHtmlAttributes(value);
+    }
+
+    @Override
+    protected boolean isCloseable() {
+      return true;
+    }
+  }
 }

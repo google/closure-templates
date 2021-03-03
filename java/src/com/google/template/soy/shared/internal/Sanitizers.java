@@ -23,6 +23,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Ascii;
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
+import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -769,27 +770,11 @@ public final class Sanitizers {
    * known safe attribute content.
    */
   public static String filterHtmlAttributes(SoyValue value) {
-    value = normalizeNull(value);
+    String str = normalizeNull(value).coerceToString();
     if (isSanitizedContentOfKind(value, SanitizedContent.ContentKind.ATTRIBUTES)) {
-      // We're guaranteed to be in a case where key=value pairs are expected. However, if it would
-      // cause issues to directly abut this with more attributes, add a space. For example:
-      // {$a}{$b} where $a is foo=bar and $b is boo=baz requires a space in between to be parsed
-      // correctly, but not in the case where $a is foo="bar".
-      // TODO: We should be able to get rid of this if the compiler can guarantee spaces between
-      // adjacent print statements in attribute context at compile time.
-      String content = value.coerceToString();
-      if (content.length() > 0) {
-        if (shouldAppendSpace(content.charAt(content.length() - 1))) {
-          content += ' ';
-        }
-      }
-      return content;
+      return str;
     }
-    return filterHtmlAttributes(value.coerceToString());
-  }
-
-  private static boolean shouldAppendSpace(char lastChar) {
-    return lastChar != '"' && lastChar != '\'' && !Character.isWhitespace(lastChar);
+    return filterHtmlAttributes(str);
   }
 
   /**
@@ -812,11 +797,16 @@ public final class Sanitizers {
   private static final class FilterHtmlAttributesAppendable extends LoggingAdvisingAppendable {
     private final LoggingAdvisingAppendable delegate;
     private Appendable activeAppendable;
-    private char lastChar;
 
     FilterHtmlAttributesAppendable(LoggingAdvisingAppendable delegate) {
       this.delegate = delegate;
-      activeAppendable = new StringBuilder();
+    }
+
+    private Appendable getActiveAppendable() {
+      if (activeAppendable == null) {
+        activeAppendable = new StringBuilder();
+      }
+      return activeAppendable;
     }
 
     @Override
@@ -830,27 +820,20 @@ public final class Sanitizers {
 
     @Override
     public LoggingAdvisingAppendable append(CharSequence csq) throws IOException {
-      activeAppendable.append(csq);
-      if (csq.length() > 0) {
-        lastChar = csq.charAt(csq.length() - 1);
-      }
+      getActiveAppendable().append(csq);
       return this;
     }
 
     @Override
     public LoggingAdvisingAppendable append(CharSequence csq, int start, int end)
         throws IOException {
-      activeAppendable.append(csq, start, end);
-      if (end - start > 0) {
-        lastChar = csq.charAt(end - 1);
-      }
+      getActiveAppendable().append(csq, start, end);
       return this;
     }
 
     @Override
     public LoggingAdvisingAppendable append(char c) throws IOException {
-      activeAppendable.append(c);
-      lastChar = c;
+      getActiveAppendable().append(c);
       return this;
     }
 
@@ -874,14 +857,9 @@ public final class Sanitizers {
         throws IOException {
       if (getSanitizedContentKind() == ContentKind.ATTRIBUTES) {
         delegate.appendLoggingFunctionInvocation(funCall, escapers);
-        // Reset lastChar to a dummy character so that we add a space after.
-        lastChar = 'a';
       } else {
         String placeholder = escapePlaceholder(funCall.placeholderValue(), escapers);
-        activeAppendable.append(placeholder);
-        if (placeholder.length() > 0) {
-          lastChar = placeholder.charAt(placeholder.length() - 1);
-        }
+        getActiveAppendable().append(placeholder);
       }
       return this;
     }
@@ -893,12 +871,8 @@ public final class Sanitizers {
 
     @Override
     public void flushBuffers(int depth) throws IOException {
-      if (getSanitizedContentKind() == ContentKind.ATTRIBUTES) {
-        if (lastChar != 0 && shouldAppendSpace(lastChar)) {
-          delegate.append(' ');
-        }
-      } else {
-        delegate.append(filterHtmlAttributes(activeAppendable.toString()));
+      if (getSanitizedContentKind() != ContentKind.ATTRIBUTES) {
+        delegate.append(filterHtmlAttributes(getActiveAppendable().toString()));
       }
       if (depth > 0) {
         delegate.flushBuffers(depth - 1);
@@ -935,6 +909,124 @@ public final class Sanitizers {
     logger.atWarning().withStackTrace(MEDIUM).log(
         "|filterCspNonceValue received bad value '%s'", value);
     return EscapingConventions.FilterCspNonceValue.INSTANCE.getInnocuousOutput();
+  }
+
+  public static String whitespaceHtmlAttributes(SoyValue value) {
+    return whitespaceHtmlAttributes(normalizeNull(value).coerceToString());
+  }
+
+  public static String whitespaceHtmlAttributes(String value) {
+    return ((!value.isEmpty() && !value.startsWith(" ")) ? " " : "") + value;
+  }
+
+  public static LoggingAdvisingAppendable whitespaceHtmlAttributesStreaming(
+      LoggingAdvisingAppendable appendable) {
+    return new WhitespaceHtmlAttributesAppendable(appendable);
+  }
+
+  private static final class WhitespaceHtmlAttributesAppendable extends LoggingAdvisingAppendable {
+    private final LoggingAdvisingAppendable delegate;
+    private Appendable activeAppendable;
+    private boolean first;
+
+    WhitespaceHtmlAttributesAppendable(LoggingAdvisingAppendable delegate) {
+      this.delegate = delegate;
+      this.first = true;
+    }
+
+    private Appendable getActiveAppendable() {
+      if (activeAppendable == null) {
+        Preconditions.checkState(first);
+        activeAppendable = new StringBuilder();
+      }
+      return activeAppendable;
+    }
+
+    @Override
+    protected void notifyKindAndDirectionality(ContentKind kind, @Nullable Dir dir)
+        throws IOException {
+      if (kind == ContentKind.ATTRIBUTES) {
+        activeAppendable = delegate;
+      }
+      delegate.setKindAndDirectionality(kind, dir);
+    }
+
+    @Override
+    public LoggingAdvisingAppendable append(CharSequence csq) throws IOException {
+      if (first && csq.length() > 0 && getSanitizedContentKind() == ContentKind.ATTRIBUTES) {
+        if (csq.charAt(0) != ' ') {
+          getActiveAppendable().append(" ");
+        }
+        first = false;
+      }
+      getActiveAppendable().append(csq);
+      return this;
+    }
+
+    @Override
+    public LoggingAdvisingAppendable append(CharSequence csq, int start, int end)
+        throws IOException {
+      if (first && csq.length() > 0 && getSanitizedContentKind() == ContentKind.ATTRIBUTES) {
+        if (csq.charAt(0) != ' ') {
+          getActiveAppendable().append(" ");
+        }
+        first = false;
+      }
+      getActiveAppendable().append(csq, start, end);
+      return this;
+    }
+
+    @Override
+    public LoggingAdvisingAppendable append(char c) throws IOException {
+      if (first && c != ' ' && getSanitizedContentKind() == ContentKind.ATTRIBUTES) {
+        getActiveAppendable().append(" ");
+        first = false;
+      }
+      getActiveAppendable().append(c);
+      return this;
+    }
+
+    @Override
+    public LoggingAdvisingAppendable enterLoggableElement(LogStatement statement) {
+      logger.atWarning().withStackTrace(MEDIUM).log(
+          "Visual element logging behavior is undefined when used with the"
+              + " |whitespaceHtmlAttributes directive. This logging call has been dropped: %s",
+          statement);
+      return this;
+    }
+
+    @Override
+    public LoggingAdvisingAppendable exitLoggableElement() {
+      return this;
+    }
+
+    @Override
+    public LoggingAdvisingAppendable appendLoggingFunctionInvocation(
+        LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
+        throws IOException {
+      if (getSanitizedContentKind() == ContentKind.ATTRIBUTES) {
+        delegate.appendLoggingFunctionInvocation(funCall, escapers);
+      } else {
+        String placeholder = escapePlaceholder(funCall.placeholderValue(), escapers);
+        getActiveAppendable().append(placeholder);
+      }
+      return this;
+    }
+
+    @Override
+    public boolean softLimitReached() {
+      return delegate.softLimitReached();
+    }
+
+    @Override
+    public void flushBuffers(int depth) throws IOException {
+      if (getSanitizedContentKind() != ContentKind.ATTRIBUTES) {
+        delegate.append(whitespaceHtmlAttributes(getActiveAppendable().toString()));
+      }
+      if (depth > 0) {
+        delegate.flushBuffers(depth - 1);
+      }
+    }
   }
 
   /** True iff the given value is sanitized content of the given kind. */

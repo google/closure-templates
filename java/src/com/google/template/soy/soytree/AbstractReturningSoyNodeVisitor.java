@@ -366,6 +366,19 @@ public abstract class AbstractReturningSoyNodeVisitor<R>
 
   /** @param node the visited node. */
   protected R visitSoyNode(SoyNode node) {
-    throw new UnsupportedOperationException("no implementation for: " + node);
+    throw new UnsupportedOperationException(
+        "no implementation for: "
+            + node
+            + "'"
+            + node.toSourceString()
+            + "'\nwith parent: "
+            + node.getParent()
+            + "'"
+            + node.getParent().toSourceString()
+            + "'\nwith grandparent: "
+            + node.getParent().getParent()
+            + "'"
+            + node.getParent().getParent().toSourceString()
+            + "'");
   }
 }
