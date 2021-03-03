@@ -17,6 +17,7 @@ java_library(
         "//java/src/com/google/template/soy/error:error_reporter",
         "//java/src/com/google/template/soy/msgs",
         "//java/src/com/google/template/soy/msgs:msg_id_converter",
+        "//src/test/protobuf:test_protos_java_proto",
         "@maven//:com_google_guava_guava",
         "@maven//:com_google_truth_truth",
         "@maven//:com_ibm_icu_icu4j",

@@ -841,32 +841,14 @@ public final class SoyFileSet {
 
   /** Performs the parsing and extraction logic. */
   private SoyMsgBundle doExtractMsgs() {
-    // extractMsgs disables a bunch of passes since it is typically not configured with things
-    // like global definitions, type definitions, plugins, etc.
     SoyFileSetNode soyTree =
         parse(
                 passManagerBuilder()
                     .allowUnknownGlobals()
                     .allowUnknownJsGlobals()
-                    // necessary because we are using an invalid type registry, also we don't really
-                    // need to run the optimizer anyway.
+                    // Skip optimization, we could run it but it seems to be a waste of time
                     .optimize(false)
-                    .desugarHtmlAndStateNodes(false)
-                    .setTypeRegistry(SoyTypeRegistry.DEFAULT_UNKNOWN)
-                    // TODO(lukes): consider changing this to pass a null resolver instead of the
-                    // ALLOW_UNDEFINED mode
-                    .setPluginResolver(
-                        new PluginResolver(
-                            PluginResolver.Mode.ALLOW_UNDEFINED,
-                            printDirectives,
-                            soyFunctions,
-                            soySourceFunctions,
-                            soyMethods,
-                            errorReporter))
-                    .disableAllTypeChecking(),
-                // override the type registry so that the parser doesn't report errors when it
-                // can't resolve strict types
-                SoyTypeRegistry.DEFAULT_UNKNOWN)
+                    .desugarHtmlAndStateNodes(false))
             .fileSet();
     throwIfErrorsPresent();
     SoyMsgBundle bundle = new ExtractMsgsVisitor(errorReporter).exec(soyTree);

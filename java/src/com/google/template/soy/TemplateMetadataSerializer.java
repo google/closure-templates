@@ -366,9 +366,7 @@ public final class TemplateMetadataSerializer {
                 new SourceLocation(filePath), UNABLE_TO_FIND_TYPE, "proto", proto.getProto());
             return UnknownType.getInstance();
           }
-          // allow unknown to support message extraction which configures the DEFAULT_UNKNOWN type
-          // registry
-          if (type instanceof SoyProtoType || type == UnknownType.getInstance()) {
+          if (type instanceof SoyProtoType) {
             return type;
           }
           errorReporter.report(
@@ -390,9 +388,7 @@ public final class TemplateMetadataSerializer {
                 proto.getProtoEnum());
             return UnknownType.getInstance();
           }
-          // allow unknown to support message extraction which configures the DEFAULT_UNKNOWN type
-          // registry
-          if (type instanceof SoyProtoEnumType || type == UnknownType.getInstance()) {
+          if (type instanceof SoyProtoEnumType) {
             return type;
           }
           errorReporter.report(

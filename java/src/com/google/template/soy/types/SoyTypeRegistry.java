@@ -24,7 +24,13 @@ import javax.annotation.Nullable;
 /** Registry of types which can be looked up by name. */
 public interface SoyTypeRegistry extends TypeRegistry, TypeInterner {
 
-  /** A type registry that defaults all unknown types to the 'unknown' type. */
+  /**
+   * A type registry that defaults all unknown types to the 'unknown' type.
+   *
+   * @deprecated Do not use. Either avoid running passes that depend on type information or supply a
+   *     proper type registry.
+   */
+  @Deprecated
   SoyTypeRegistry DEFAULT_UNKNOWN =
       new DelegatingSoyTypeRegistry(SoyTypeRegistryBuilder.create()) {
         @Nullable
