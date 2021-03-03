@@ -49,9 +49,6 @@ public final class ResolveTemplateNamesPass implements CompilerFileSetPass {
   private static final SoyErrorKind DATA_ATTRIBUTE_ONLY_ALLOWED_ON_STATIC_CALLS =
       SoyErrorKind.of("The `data` attribute is only allowed on static calls.");
 
-  private static final SoyErrorKind UNIMPORTED_TEMPLATE_CALL =
-      SoyErrorKind.of("Template ''{0}'' is not recognized. See go/soy-external-calls.");
-
   private final ErrorReporter errorReporter;
 
   public ResolveTemplateNamesPass(ErrorReporter errorReporter) {
@@ -85,16 +82,7 @@ public final class ResolveTemplateNamesPass implements CompilerFileSetPass {
               }
             });
 
-    SoyTreeUtils.allNodesOfType(file, TemplateLiteralNode.class)
-        .filter(TemplateLiteralNode::isGlobalName)
-        .forEach(
-            n ->
-                errorReporter.report(
-                    n.getChild(0).getSourceLocation(),
-                    UNIMPORTED_TEMPLATE_CALL,
-                    n.getIdentifier().identifier()));
-
-    // Resolve all unresolved TemplateLiteralNodes. Remove this along with template FQN support.
+    // Resolve all unresolved TemplateLiteralNodes.
     SoyTreeUtils.allNodesOfType(file, TemplateLiteralNode.class)
         .filter(n -> !n.isResolved())
         .forEach(TemplateLiteralNode::resolveTemplateName);

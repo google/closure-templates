@@ -50,22 +50,20 @@ public final class ResolveNamesPass implements CompilerFilePass {
 
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-    new LocalVariablesNodeVisitor(new Visitor()).exec(file);
-  }
+    ResolveNamesExprVisitor exprVisitor = new ResolveNamesExprVisitor();
+    new LocalVariablesNodeVisitor(
+            new LocalVariablesNodeVisitor.NodeVisitor() {
+              @Override
+              protected ExprVisitor getExprVisitor() {
+                return exprVisitor;
+              }
 
-  private final class Visitor extends LocalVariablesNodeVisitor.NodeVisitor {
-
-    private final ResolveNamesExprVisitor exprVisitor = new ResolveNamesExprVisitor();
-
-    @Override
-    protected ExprVisitor getExprVisitor() {
-      return exprVisitor;
-    }
-
-    @Override
-    protected ErrorReporter getErrorReporter() {
-      return errorReporter;
-    }
+              @Override
+              protected ErrorReporter getErrorReporter() {
+                return errorReporter;
+              }
+            })
+        .exec(file);
   }
 
   // -----------------------------------------------------------------------------------------------

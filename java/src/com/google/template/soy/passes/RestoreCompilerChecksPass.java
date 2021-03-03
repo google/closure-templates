@@ -20,14 +20,9 @@ import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.AbstractLocalVarDefn;
-import com.google.template.soy.exprtree.ExprNode.Kind;
-import com.google.template.soy.exprtree.ExprRootNode;
-import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.ListComprehensionNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
-import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.exprtree.VeLiteralNode;
-import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.LetNode;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -58,16 +53,6 @@ public final class RestoreCompilerChecksPass implements CompilerFilePass {
 
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-    // Turn unresolved global nodes into template literal nodes. This previously happened
-    // in the parser but now must happen after Visitor runs.
-    SoyTreeUtils.allNodesOfType(file, CallBasicNode.class)
-        .filter(callNode -> callNode.getCalleeExpr().getRoot().getKind() == Kind.GLOBAL_NODE)
-        .forEach(
-            callNode -> {
-              GlobalNode global = (GlobalNode) callNode.getCalleeExpr().getRoot();
-              callNode.setCalleeExpr(new ExprRootNode(TemplateLiteralNode.forGlobal(global)));
-            });
-
     // Enforce certain symbols start with $, to match previous parser rules.
     SoyTreeUtils.allNodesOfType(file, LetNode.class)
         .map(LetNode::getVar)

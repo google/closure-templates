@@ -94,8 +94,8 @@ public final class TemplateParserTest {
   public void testRecognizeSoyTag() throws Exception {
 
     assertValidTemplate("{sp}");
-    assertInvalidTemplate("{space}", "Unbound global 'space'");
-    assertInvalidTemplate("{ sp }", "Unbound global 'sp'");
+    assertInvalidTemplate("{space}", "Undefined symbol 'space'");
+    assertInvalidTemplate("{ sp }", "Undefined symbol 'sp'");
 
     assertThatTemplateContent("{{sp}}")
         .causesError("Soy {{command}} syntax is no longer supported. Use single braces.");

@@ -62,6 +62,16 @@ final class LocalVariablesNodeVisitor {
 
   private final NodeVisitor nodeVisitor;
 
+  public LocalVariablesNodeVisitor(ExprVisitor exprVisitor) {
+    this(
+        new NodeVisitor() {
+          @Override
+          protected ExprVisitor getExprVisitor() {
+            return exprVisitor;
+          }
+        });
+  }
+
   public LocalVariablesNodeVisitor(NodeVisitor nodeVisitor) {
     this.nodeVisitor = nodeVisitor;
   }

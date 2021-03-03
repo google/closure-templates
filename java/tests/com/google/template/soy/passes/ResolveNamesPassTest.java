@@ -176,7 +176,7 @@ public final class ResolveNamesPassTest {
         "Found global reference aliasing a local variable 'group', did you mean '$group'?",
         constructTemplateSource("{let $group: 'foo' /}", "{if group}{$group}{/if}"));
     assertResolveNamesFails(
-        "Unbound global 'global'.",
+        "Undefined symbol 'global'. Did you mean '$local'?",
         constructTemplateSource("{let $local: 'foo' /}", "{if global}{$local}{/if}"));
   }
 

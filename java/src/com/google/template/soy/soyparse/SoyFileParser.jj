@@ -72,7 +72,6 @@ import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FloatNode;
-import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
@@ -3426,7 +3425,9 @@ private CallNode CallStmt() :
     } catch (ParseException e) {
       tagClose = reportTemplateBodyErrorAndSkipTo(e, CMD_SELF_CLOSE, CMD_CLOSE_CALL);
       if (calleeExpr == null && calleeName == null) {
-        calleeExpr = TemplateLiteralNode.forGlobal(new GlobalNode(Identifier.create(".error", createSrcLoc(tagBegin))));
+        SourceLocation loc = createSrcLoc(tagBegin);
+        calleeExpr = TemplateLiteralNode.forVarRef(
+           new VarRefNode("$error", loc, null));
       }
     }
 

@@ -50,12 +50,6 @@ import javax.annotation.Nullable;
  */
 final class CheckDelegatesPass implements CompilerFileSetPass {
 
-  private static final SoyErrorKind CALL_TO_DELTEMPLATE =
-      SoyErrorKind.of("''call'' to delegate template ''{0}'' (expected ''delcall'').");
-  private static final SoyErrorKind DELTEMPLATE_IN_EXPRESSION =
-      SoyErrorKind.of(
-          "Delegate template `{0}` not allowed in expression; only basic templates may be used in"
-              + " expressions.");
   private static final SoyErrorKind CROSS_PACKAGE_DELCALL =
       SoyErrorKind.of(
           "Found illegal call from ''{0}'' to ''{1}'', which is in a different delegate package.");
@@ -211,14 +205,6 @@ final class CheckDelegatesPass implements CompilerFileSetPass {
       @Nullable String currDelPackageName,
       String currTemplateNameForUserMsgs) {
     String calleeName = node.getResolvedName();
-
-    // Check that the callee name is not a delegate template name.
-    if (templateRegistry.getDelTemplateSelector().hasDelTemplateNamed(calleeName)) {
-      errorReporter.report(
-          node.getSourceLocation(),
-          node.isStaticCall() ? CALL_TO_DELTEMPLATE : DELTEMPLATE_IN_EXPRESSION,
-          calleeName);
-    }
 
     // Check that the callee is either not in a delegate package or in the same delegate package.
     TemplateMetadata callee = templateRegistry.getBasicTemplateOrElement(calleeName);

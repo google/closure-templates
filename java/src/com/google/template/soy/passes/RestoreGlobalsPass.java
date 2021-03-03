@@ -28,7 +28,6 @@ import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.VarRefNode;
-import com.google.template.soy.passes.LocalVariablesNodeVisitor.ExprVisitor;
 import com.google.template.soy.soytree.SoyFileNode;
 
 /**
@@ -41,15 +40,7 @@ public final class RestoreGlobalsPass implements CompilerFilePass {
   private final LocalVariablesNodeVisitor nodeVisitor;
 
   public RestoreGlobalsPass() {
-    Visitor exprVisitor = new Visitor();
-    nodeVisitor =
-        new LocalVariablesNodeVisitor(
-            new LocalVariablesNodeVisitor.NodeVisitor() {
-              @Override
-              protected ExprVisitor getExprVisitor() {
-                return exprVisitor;
-              }
-            });
+    nodeVisitor = new LocalVariablesNodeVisitor(new Visitor());
   }
 
   @Override
