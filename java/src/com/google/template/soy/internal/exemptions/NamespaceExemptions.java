@@ -25,7 +25,6 @@ public final class NamespaceExemptions {
     return ALLOWED_DUPLICATE_NAMESPACES.contains(namespace);
   }
 
-  // TODO(b/180904763): burn this down!
   private static final ImmutableSet<String> ALLOWED_DUPLICATE_NAMESPACES =
       ImmutableSet.of(
           );
