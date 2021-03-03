@@ -26,7 +26,7 @@ import {isAttribute} from 'goog:soy.checks';  // from //javascript/template/soy:
 import {ordainSanitizedHtml} from 'goog:soydata.VERY_UNSAFE';  // from //javascript/template/soy:soy_usegoog_js
 import * as incrementaldom from 'incrementaldom';  // from //third_party/javascript/incremental_dom:incrementaldom
 
-import {FalsinessRenderer, IncrementalDomRenderer, isMatchingKey, patch, patchOuter} from './api_idom';
+import {FalsinessRenderer, IncrementalDomRenderer, patch, patchOuter} from './api_idom';
 import {splitAttributes} from './attributes';
 import {IdomFunction, PatchFunction, SoyElement} from './element_lib_idom';
 import {getSoyUntyped} from './global';
@@ -34,38 +34,41 @@ import {IdomTemplate, IjData, SoyTemplate, Template} from './templates';
 
 // Declare properties that need to be applied not as attributes but as
 // actual DOM properties.
-const {attributes, currentContext} = incrementaldom;
 
 const defaultIdomRenderer = new IncrementalDomRenderer();
+const htmlToStringRenderer = new IncrementalDomRenderer();
 
 type LetFunction = (idom: IncrementalDomRenderer) => void;
 
-// tslint:disable-next-line:no-any
-attributes['checked'] = (el: Element, name: string, value: any) => {
-  // We don't use !!value because:
-  // 1. If value is '' (this is the case where a user uses <div checked />),
-  //    the checked value should be true, but '' is falsy.
-  // 2. If value is 'false', the checked value should be false, but
-  //    'false' is truthy.
-  if (value == null) {
-    el.removeAttribute('checked');
-    (el as HTMLInputElement).checked = false;
-  } else {
-    el.setAttribute('checked', value);
-    (el as HTMLInputElement).checked = !(value === false || value === 'false');
-  }
-};
+incrementaldom.attributes['checked'] =
+    // tslint:disable-next-line:no-any
+    (el: Element, name: string, value: any) => {
+      // We don't use !!value because:
+      // 1. If value is '' (this is the case where a user uses <div checked />),
+      //    the checked value should be true, but '' is falsy.
+      // 2. If value is 'false', the checked value should be false, but
+      //    'false' is truthy.
+      if (value == null) {
+        el.removeAttribute('checked');
+        (el as HTMLInputElement).checked = false;
+      } else {
+        el.setAttribute('checked', value);
+        (el as HTMLInputElement).checked =
+            !(value === false || value === 'false');
+      }
+    };
 
-// tslint:disable-next-line:no-any
-attributes['value'] = (el: Element, name: string, value: any) => {
-  if (value == null) {
-    el.removeAttribute('value');
-    (el as HTMLInputElement).value = '';
-  } else {
-    el.setAttribute('value', value);
-    (el as HTMLInputElement).value = value;
-  }
-};
+incrementaldom.attributes['value'] =
+    // tslint:disable-next-line:no-any
+    (el: Element, name: string, value: any) => {
+      if (value == null) {
+        el.removeAttribute('value');
+        (el as HTMLInputElement).value = '';
+      } else {
+        el.setAttribute('value', value);
+        (el as HTMLInputElement).value = value;
+      }
+    };
 
 // Soy uses the {key} command syntax, rather than HTML attributes, to
 // indicate element keys.
@@ -79,7 +82,7 @@ incrementaldom.setKeyAttributeName('soy-server-key');
 function handleSoyElement<DATA, T extends SoyElement<DATA, {}>>(
     incrementaldom: IncrementalDomRenderer,
     elementClassCtor: new (data: DATA, ij: unknown) => T,
-    firstElementKey: string, data: DATA, ijData: unknown) {
+    firstElementKey: string, tagName: string, data: DATA, ijData: unknown) {
   // If we're just testing truthiness, record an element but don't do anythng.
   if (incrementaldom instanceof FalsinessRenderer) {
     incrementaldom.open('div');
@@ -87,35 +90,36 @@ function handleSoyElement<DATA, T extends SoyElement<DATA, {}>>(
     return null;
   }
   const soyElementKey = firstElementKey + incrementaldom.getCurrentKeyStack();
-  let currentPointer = incrementaldom.currentPointer();
-  let el: T|null = null;
-  while (currentPointer != null) {
-    const maybeSoyEl = getSoyUntyped(currentPointer) as T;
-    // We cannot use the current key of the element because many layers
-    // of template calls may have happened. We can only be sure that the Soy
-    // element was the same if the key constructed is matching the key current
-    // when the {element} command was created.
-    if (maybeSoyEl instanceof elementClassCtor &&
-        isMatchingKey(soyElementKey, maybeSoyEl.key)) {
-      el = maybeSoyEl;
-      break;
+
+  const element = incrementaldom.open(tagName, firstElementKey);
+  const oldOpen = incrementaldom.open;
+  incrementaldom.open = (tagName, soyElementKey) => {
+    if (tagName !== tagName || soyElementKey !== firstElementKey) {
+      throw new Error('Expected tag name and key to match.');
     }
-    // If we extend beyond the current scope of the patch, we may reach an
-    // element of an already hydrated element.
-    if (currentContext()?.node === currentPointer) {
-      break;
-    }
-    currentPointer = currentPointer.nextSibling;
-  }
-  if (!el) {
-    el = new elementClassCtor(data, ijData);
-    el.key = soyElementKey;
+    incrementaldom.open = oldOpen;
+    return element;
+  };
+  let soyElement: T;
+  if (!(getSoyUntyped(element as HTMLElement) instanceof elementClassCtor)) {
+    soyElement = new elementClassCtor(data, ijData);
+    soyElement.key = soyElementKey;
     // NOTE(b/166257386): Without this, SoyElement re-renders don't have logging
-    el.setLogger(incrementaldom.getLogger());
+    soyElement.setLogger(incrementaldom.getLogger());
+  } else {
+    soyElement = getSoyUntyped(element as HTMLElement) as T;
   }
-  el.queueSoyElement(incrementaldom, data);
-  el.renderInternal(incrementaldom, data);
-  return el;
+  const maybeSkip =
+      soyElement.handleSoyElementRuntime(element as HTMLElement, data);
+  if (maybeSkip) {
+    incrementaldom.skip();
+    incrementaldom.close();
+    incrementaldom.open = oldOpen;
+    return element;
+  }
+  incrementaldom.visit(element);
+  soyElement.renderInternal(incrementaldom, data);
+  return soyElement;
 }
 
 // tslint:disable-next-line:no-any Attaching arbitrary attributes to function.
@@ -127,7 +131,7 @@ function makeHtml(idomFn: any): IdomFunction {
   (fn as any).prototype = SanitizedHtml;
   fn.invoke = (renderer: IncrementalDomRenderer = defaultIdomRenderer) =>
       idomFn(renderer);
-  fn.toString = (renderer: IncrementalDomRenderer = defaultIdomRenderer) =>
+  fn.toString = (renderer: IncrementalDomRenderer = htmlToStringRenderer) =>
       htmlToString(idomFn, renderer);
   fn.getContent = fn.toString;
   fn.toBoolean = () => isTruthy(idomFn);
@@ -158,7 +162,7 @@ function makeAttributes(idomFn: any): IdomFunction&SanitizedHtmlAttribute {
  * expensive behavior is happening.
  */
 function htmlToString(
-    fn: LetFunction, renderer: IncrementalDomRenderer = defaultIdomRenderer) {
+    fn: LetFunction, renderer: IncrementalDomRenderer = htmlToStringRenderer) {
   const el = document.createElement('div');
   patch(el, () => {
     fn(renderer);

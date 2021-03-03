@@ -17,6 +17,7 @@
 package com.google.template.soy.passes;
 
 import static com.google.common.base.Strings.nullToEmpty;
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 
 import com.google.common.base.Preconditions;
@@ -52,6 +53,7 @@ import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.VeLogNode;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.annotation.Nullable;
@@ -62,6 +64,9 @@ public final class SoyElementPass implements CompilerFileSetPass {
 
   private static final SoyErrorKind SOYELEMENT_CANNOT_BE_SKIPPED =
       SoyErrorKind.of("Soy elements cannot be skipped.");
+
+  private static final SoyErrorKind SOY_ELEMENT_MUST_HAVE_STATIC_TAG =
+      SoyErrorKind.of("Soy elements must have static tags.");
 
   private static final SoyErrorKind SOYELEMENT_CANNOT_WRAP_ITSELF_RECURSIVELY =
       SoyErrorKind.of(
@@ -176,6 +181,10 @@ public final class SoyElementPass implements CompilerFileSetPass {
         if (template.getTemplateContentKind() instanceof ElementContentKind) {
           errorReporter.report(child.getSourceLocation(), ELEMENT_TEMPLATE_EXACTLY_ONE_TAG);
         }
+        if (isSoyElement && ((CallBasicNode) child).getKeyExpr() != null) {
+          this.errorReporter.report(
+              ((CallBasicNode) child).getSourceCalleeLocation(), ROOT_HAS_KEY_NODE);
+        }
         return getTemplateMetadataForStaticCall(
             template,
             ((CallBasicNode) child).getCalleeName(),
@@ -200,6 +209,26 @@ public final class SoyElementPass implements CompilerFileSetPass {
             break; // skip reporting additional errors
           }
           openTag = maybeOpenTagNode;
+        } else {
+          List<CallBasicNode> callNodes =
+              veLogNode.getChildren().stream()
+                  .filter(p -> p instanceof CallBasicNode)
+                  .map(CallBasicNode.class::cast)
+                  .collect(toImmutableList());
+          if (callNodes.size() == 1 && callNodes.get(0).isStaticCall()) {
+            if (isSoyElement && callNodes.get(0).getKeyExpr() != null) {
+              this.errorReporter.report(callNodes.get(0).getSourceLocation(), ROOT_HAS_KEY_NODE);
+            }
+            return getTemplateMetadataForStaticCall(
+                template,
+                callNodes.get(0).getCalleeName(),
+                callNodes.get(0).getSourceLocation(),
+                templatesInLibrary,
+                registry,
+                visited);
+          } else if (isSoyElement) {
+            this.errorReporter.report(veLogNode.getSourceLocation(), SOY_ELEMENT_EXACTLY_ONE_TAG);
+          }
         }
       } else {
         openTag = null;
@@ -235,6 +264,8 @@ public final class SoyElementPass implements CompilerFileSetPass {
       if (hasSkipNode && template instanceof TemplateElementNode) {
         errorReporter.report(openTag.getSourceLocation(), SOYELEMENT_CANNOT_BE_SKIPPED);
       }
+    } else if (isSoyElement) {
+      this.errorReporter.report(template.getSourceLocation(), ELEMENT_TEMPLATE_EXACTLY_ONE_TAG);
     }
     String finalCallee = "";
     if (delegateTemplate != null) {
@@ -386,7 +417,7 @@ public final class SoyElementPass implements CompilerFileSetPass {
       ErrorReporter errorReporter,
       boolean isSoyElement) {
     if (isSoyElement) {
-      validateNoKey(openTagNode, errorReporter);
+      validateOpenTagProperties(openTagNode, errorReporter);
     }
     if (openTagNode.isSelfClosing()
         || (openTagNode.getTagName().isDefinitelyVoid()
@@ -419,7 +450,11 @@ public final class SoyElementPass implements CompilerFileSetPass {
   }
 
   // See go/soy-element-keyed-roots for reasoning on why this is disallowed.
-  private static void validateNoKey(HtmlOpenTagNode firstTagNode, ErrorReporter errorReporter) {
+  private static void validateOpenTagProperties(
+      HtmlOpenTagNode firstTagNode, ErrorReporter errorReporter) {
+    if (firstTagNode.getTagName().isLegacyDynamicTagName()) {
+      errorReporter.report(firstTagNode.getSourceLocation(), SOY_ELEMENT_MUST_HAVE_STATIC_TAG);
+    }
     for (SoyNode child : firstTagNode.getChildren()) {
       if (child instanceof KeyNode) {
         errorReporter.report(firstTagNode.getSourceLocation(), ROOT_HAS_KEY_NODE);

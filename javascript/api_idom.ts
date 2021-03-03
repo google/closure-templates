@@ -24,9 +24,6 @@ const patchConfig: incrementaldom.PatchConfig = {
       isMatchingKey(proposedKey, currentPointerKey)
 };
 
-/** Token for skipping the element. This is returned in open calls. */
-export const SKIP_TOKEN = {};
-
 /** PatchInner using Soy-IDOM semantics. */
 export const patchInner = incrementaldom.createPatchInner(patchConfig);
 /** PatchOuter using Soy-IDOM semantics. */
@@ -38,7 +35,6 @@ interface IdomRendererApi {
   open(nameOrCtor: string, key?: string): void|HTMLElement;
   openSSR(nameOrCtor: string, key?: string, data?: unknown): boolean;
   visit(el: void|HTMLElement): void;
-  maybeSkip(renderer: IdomRendererApi, val: unknown): boolean;
   pushManualKey(key: incrementaldom.Key): void;
   popManualKey(): void;
   pushKey(key: string): string;
@@ -131,19 +127,6 @@ export class IncrementalDomRenderer implements IdomRendererApi {
 
   // For users extending IncrementalDomRenderer
   visit(el: HTMLElement|void) {}
-
-  /**
-   * Called on the return value of open. This is only true if it is exactly
-   * the skip token. This has the side effect of performing the skip.
-   */
-  maybeSkip(renderer: IncrementalDomRenderer, val: unknown) {
-    if (val === SKIP_TOKEN) {
-      renderer.skip();
-      renderer.close();
-      return true;
-    }
-    return false;
-  }
 
   /**
    * Called (from generated template render function) before OPENING
@@ -318,7 +301,9 @@ export class NullRenderer extends IncrementalDomRenderer {
     this.setLogger(renderer.getLogger());
   }
 
-  open(nameOrCtor: string, key?: string) {}
+  open(nameOrCtor: string, key?: string) {
+    return undefined;
+  }
 
   openSSR(nameOrCtor: string, key?: string) {
     return true;
@@ -460,18 +445,13 @@ export class FalsinessRenderer implements IdomRendererApi {
 
   open(nameOrCtor: string, key?: string) {
     this.rendered = true;
+    return undefined;
   }
 
   openSSR(nameOrCtor: string, key?: string) {
     this.rendered = true;
     // Always skip, since we already know that we rendered things.
     return false;
-  }
-
-  maybeSkip() {
-    this.rendered = true;
-    // Always skip, since we already know that we rendered things.
-    return true;
   }
 
   close() {

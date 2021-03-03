@@ -46,9 +46,6 @@ final class IncrementalDomRuntime {
 
   public static final Expression INCREMENTAL_DOM_OPEN = INCREMENTAL_DOM.dotAccess("open");
 
-  public static final Expression INCREMENTAL_DOM_MAYBE_SKIP =
-      INCREMENTAL_DOM.dotAccess("maybeSkip");
-
   public static final Expression INCREMENTAL_DOM_OPEN_SSR = INCREMENTAL_DOM.dotAccess("openSSR");
 
   public static final Expression INCREMENTAL_DOM_ELEMENT_CLOSE =

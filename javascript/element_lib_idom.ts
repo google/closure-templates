@@ -9,9 +9,8 @@ import {assert} from 'goog:goog.asserts';  // from //third_party/javascript/clos
 import {IjData} from 'goog:goog.soy';  // from //third_party/javascript/closure/soy
 import SanitizedContentKind from 'goog:goog.soy.data.SanitizedContentKind'; // from //third_party/javascript/closure/soy:data
 import {Logger} from 'goog:soy.velog';  // from //javascript/template/soy:soyutils_velog
-import * as incrementaldom from 'incrementaldom';  // from //third_party/javascript/incremental_dom:incrementaldom
 
-import {IncrementalDomRenderer, patchOuter, SKIP_TOKEN} from './api_idom';
+import {IncrementalDomRenderer, patchOuter} from './api_idom';
 import {isTaggedForSkip} from './global';
 
 /** Function that executes Idom instructions */
@@ -67,10 +66,11 @@ export abstract class SoyElement<TData extends {}|null, TInterface extends {}> {
   protected shouldSyncState() {
     return this.syncState;
   }
-
   setLogGraft(logGraft: boolean) {
     this.logGraft = logGraft;
   }
+
+  protected syncStateFromData(data: TData) {}
 
   /**
    * Patches the current dom node.
@@ -116,32 +116,11 @@ export abstract class SoyElement<TData extends {}|null, TInterface extends {}> {
   }
 
   /**
-   * Replaces the next open call such that it executes Soy element runtime
-   * and then replaces itself with the old variant. This relies on compile
-   * time validation that the Soy element contains a single open/close tag.
-   */
-  queueSoyElement(renderer: IncrementalDomRenderer, data: TData) {
-    const oldOpen = renderer.open;
-    renderer.open = (nameOrCtor: string, key = ''): HTMLElement|void => {
-      const el = incrementaldom.open(nameOrCtor, renderer.getNewKey(key));
-      renderer.open = oldOpen;
-      const maybeSkip = this.handleSoyElementRuntime(el, data);
-      if (!maybeSkip) {
-        renderer.visit(el);
-        return el;
-      }
-      // This token is passed to ./api_idom.maybeSkip to indicate skipping.
-      return SKIP_TOKEN as HTMLElement;
-    };
-  }
-
-  /**
    * Handles synchronization between the Soy element stashed in the DOM and
    * new data to decide if skipping should happen. Invoked when rendering the
    * open element of a template.
    */
-  protected handleSoyElementRuntime(node: HTMLElement|undefined, data: TData):
-      boolean {
+  handleSoyElementRuntime(node: HTMLElement|undefined, data: TData): boolean {
     /**
      * This is null because it is possible that no DOM has been generated
      * for this Soy element
@@ -152,6 +131,9 @@ export abstract class SoyElement<TData extends {}|null, TInterface extends {}> {
     }
     this.node = node;
     node.__soy = this as unknown as SoyElement<{}, {}>;
+    if (this.shouldSyncState()) {
+      this.syncStateFromData(data);
+    }
     const maybeSkipHandler = this.skipHandler || getSkipHandler(node);
     const newNode = new (
         this.constructor as
