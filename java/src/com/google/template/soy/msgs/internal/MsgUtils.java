@@ -20,7 +20,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPlaceholderPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPluralCaseSpec;
-import com.google.template.soy.msgs.restricted.SoyMsgPluralCaseSpec.Type;
 import com.google.template.soy.msgs.restricted.SoyMsgPluralPart;
 import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
 import com.google.template.soy.msgs.restricted.SoyMsgSelectPart;
@@ -221,7 +220,7 @@ public class MsgUtils {
         caseSpec = new SoyMsgPluralCaseSpec(((MsgPluralCaseNode) child).getCaseNumber());
 
       } else if (child instanceof MsgPluralDefaultNode) {
-        caseSpec = new SoyMsgPluralCaseSpec(Type.OTHER);
+        caseSpec = SoyMsgPluralCaseSpec.forType(SoyMsgPluralCaseSpec.Type.OTHER);
 
       } else {
         throw new AssertionError("Unidentified node under a plural node.");

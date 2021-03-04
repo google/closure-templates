@@ -219,7 +219,7 @@ public final class MsgDefaultConstantFactory {
                       if (spec instanceof Number) {
                         return new SoyMsgPluralCaseSpec(((Number) spec).longValue());
                       } else {
-                        return new SoyMsgPluralCaseSpec((String) spec);
+                        return SoyMsgPluralCaseSpec.forType((String) spec);
                       }
                     });
             parts.add(new SoyMsgPluralPart(pluralVarName, offset, cases));

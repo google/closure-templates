@@ -107,7 +107,8 @@ public final class SoyMsgPluralPart extends SoyMsgPart {
     if (caseParts == null && hasNonExplicitCases) {
       // Didn't match any numeric value.  Check which plural rule it matches.
       String pluralKeyword = PluralRules.forLocale(locale).select(pluralValue - offset);
-      SoyMsgPluralCaseSpec.Type correctCaseType = new SoyMsgPluralCaseSpec(pluralKeyword).getType();
+      SoyMsgPluralCaseSpec.Type correctCaseType =
+          SoyMsgPluralCaseSpec.forType(pluralKeyword).getType();
 
       // Iterate the cases once again for non-numeric keywords.
       for (Case<SoyMsgPluralCaseSpec> case0 : getCases()) {

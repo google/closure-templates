@@ -60,11 +60,11 @@ public class SoyMsgIdComputerTest {
                       new SoyMsgPluralCaseSpec(1),
                       ImmutableList.<SoyMsgPart>of(SoyMsgRawTextPart.of("Once"))),
                   SoyMsgPluralPart.Case.create(
-                      new SoyMsgPluralCaseSpec(SoyMsgPluralCaseSpec.Type.FEW),
+                      SoyMsgPluralCaseSpec.forType(SoyMsgPluralCaseSpec.Type.FEW),
                       ImmutableList.of(
                           new SoyMsgPlaceholderPart("NUM_1"), SoyMsgRawTextPart.of(" times"))),
                   SoyMsgPluralPart.Case.create(
-                      new SoyMsgPluralCaseSpec(SoyMsgPluralCaseSpec.Type.OTHER),
+                      SoyMsgPluralCaseSpec.forType(SoyMsgPluralCaseSpec.Type.OTHER),
                       ImmutableList.<SoyMsgPart>of(SoyMsgRawTextPart.of("Lots"))))));
 
   @Test
