@@ -30,6 +30,7 @@ import java.util.Arrays;
 import java.util.Map;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
 
 /**
@@ -94,6 +95,11 @@ public final class AnnotationRef<T extends Annotation> {
 
   /** Writes the given annotation to the visitor. */
   public void write(T instance, ClassVisitor visitor) {
+    doWrite(instance, visitor.visitAnnotation(typeDescriptor, isRuntimeVisible));
+  }
+
+  /** Writes the given annotation to the visitor. */
+  public void write(T instance, MethodVisitor visitor) {
     doWrite(instance, visitor.visitAnnotation(typeDescriptor, isRuntimeVisible));
   }
 

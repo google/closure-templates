@@ -137,7 +137,7 @@ public final class ClassLoaderFallbackCallFactory {
       throws NoSuchMethodException, IllegalAccessException {
     Optional<Class<?>> templateClass = findTemplateClass(lookup, templateName);
     if (templateClass.isPresent()) {
-      CompiledTemplate template = getTemplate(lookup, templateClass.get());
+      CompiledTemplate template = getTemplate(lookup, templateClass.get(), templateName);
       // the initial renderContext is ignored in this case
       MethodHandle getter = constant(CompiledTemplate.class, template);
       getter = dropArguments(getter, 0, RenderContext.class);
@@ -173,7 +173,7 @@ public final class ClassLoaderFallbackCallFactory {
       throws NoSuchMethodException, IllegalAccessException {
     Optional<Class<?>> templateClass = findTemplateClass(lookup, templateName);
     if (templateClass.isPresent()) {
-      CompiledTemplate template = getTemplate(lookup, templateClass.get());
+      CompiledTemplate template = getTemplate(lookup, templateClass.get(), templateName);
       CompiledTemplate.TemplateValue value =
           CompiledTemplate.TemplateValue.create(templateName, template);
       // the initial renderContext is ignored in this case
@@ -190,13 +190,16 @@ public final class ClassLoaderFallbackCallFactory {
     return new ConstantCallSite(handle);
   }
 
-  private static CompiledTemplate getTemplate(MethodHandles.Lookup lookup, Class<?> templateClass)
+  private static CompiledTemplate getTemplate(
+      MethodHandles.Lookup lookup, Class<?> templateClass, String templateName)
       throws NoSuchMethodException, IllegalAccessException {
     // Use the lookup to find and invoke the method.  This ensures that we can access the
     // factory using the permissions of the caller instead of the permissions of this class.
     // This is needed because template() methods for private templates are package private.
+    String methodName = Names.renderMethodNameFromSoyTemplateName(templateName);
+
     MethodHandle templateAccessor =
-        lookup.findStatic(templateClass, "template", TEMPLATE_ACCESSOR_TYPE);
+        lookup.findStatic(templateClass, methodName, TEMPLATE_ACCESSOR_TYPE);
     try {
       return (CompiledTemplate) templateAccessor.invokeExact();
     } catch (Throwable t) {
@@ -230,8 +233,9 @@ public final class ClassLoaderFallbackCallFactory {
       String... paramNames)
       throws IllegalAccessException, NoSuchMethodException {
     Optional<Class<?>> templateClass = findTemplateClass(lookup, templateName);
+    String methodName = Names.renderMethodNameFromSoyTemplateName(templateName);
     if (templateClass.isPresent()) {
-      return new ConstantCallSite(lookup.findStatic(templateClass.get(), "render", type));
+      return new ConstantCallSite(lookup.findStatic(templateClass.get(), methodName, type));
     }
     MethodHandle slowPathRenderHandle =
         lookup.findStatic(
@@ -326,7 +330,8 @@ public final class ClassLoaderFallbackCallFactory {
     }
     // Test if we should send this class through the slowpath anyway
     if (clazz.getClassLoader() instanceof AlwaysSlowPath) {
-      Method method = clazz.getDeclaredMethod("template");
+      Method method =
+          clazz.getDeclaredMethod(Names.renderMethodNameFromSoyTemplateName(templateName));
       // We can't take the slowpath for private templates.  Private templates are represented as
       // default access methods.
       if (Modifier.isPublic(method.getModifiers())) {

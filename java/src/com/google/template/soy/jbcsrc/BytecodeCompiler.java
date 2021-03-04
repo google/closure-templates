@@ -247,19 +247,14 @@ public final class BytecodeCompiler {
     JavaSourceFunctionCompiler javaSourceFunctionCompiler =
         new JavaSourceFunctionCompiler(typeRegistry, errorReporter);
     for (SoyFileNode file : fileSet.getChildren()) {
-      for (TemplateNode template : file.getTemplates()) {
-        TemplateCompiler templateCompiler =
-            new TemplateCompiler(
-                templateRegistry,
-                CompiledTemplateMetadata.create(templateRegistry.getMetadata(template)),
-                template,
-                javaSourceFunctionCompiler);
-        for (ClassData clazz : templateCompiler.compile()) {
-          if (Flags.DEBUG) {
-            clazz.checkClass();
-          }
-          listener.onCompile(clazz);
+      for (ClassData clazz :
+          new SoyFileCompiler(file, templateRegistry, javaSourceFunctionCompiler).compile()) {
+        if (Flags.DEBUG) {
+          clazz.checkClass();
         }
+        listener.onCompile(clazz);
+      }
+      for (TemplateNode template : file.getTemplates()) {
         if (template instanceof TemplateDelegateNode) {
           listener.onCompileDelTemplate(template.getTemplateName());
         } else {

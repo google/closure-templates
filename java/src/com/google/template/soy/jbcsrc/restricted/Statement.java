@@ -137,7 +137,7 @@ public abstract class Statement extends BytecodeProducer {
   }
 
   /** Writes this statement as the complete method body to {@code ga}. */
-  private final void writeMethodTo(CodeBuilder builder) {
+  public final void writeMethodTo(CodeBuilder builder) {
     try {
       builder.visitCode();
       gen(builder);

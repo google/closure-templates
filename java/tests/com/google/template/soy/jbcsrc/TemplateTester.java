@@ -62,10 +62,10 @@ import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
+import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateMetadata;
-import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import com.google.template.soy.types.SoyTypeRegistry;
@@ -374,14 +374,12 @@ public final class TemplateTester {
         // intermediate data structures.
         TemplateRegistry registry = parseResult.registry();
 
-        TemplateNode templateNode =
-            SoyTreeUtils.getAllNodesOfType(fileSet, TemplateNode.class).get(0);
-        String templateName = templateNode.getTemplateName();
+        SoyFileNode fileNode = fileSet.getChild(0);
+        String templateName = fileNode.getTemplates().get(0).getTemplateName();
         classData =
-            new TemplateCompiler(
+            new SoyFileCompiler(
+                    fileNode,
                     registry,
-                    CompiledTemplateMetadata.create(TemplateMetadata.fromTemplate(templateNode)),
-                    templateNode,
                     new JavaSourceFunctionCompiler(typeRegistry, ErrorReporter.exploding()))
                 .compile();
         checkClasses(classData);

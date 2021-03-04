@@ -34,7 +34,6 @@ import com.google.template.soy.exprtree.VarDefn.Kind;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.jbcsrc.ExpressionCompiler.BasicExpressionCompiler;
 import com.google.template.soy.jbcsrc.SoyNodeCompiler.CompiledMethodBody;
-import com.google.template.soy.jbcsrc.internal.ClassData;
 import com.google.template.soy.jbcsrc.internal.InnerClasses;
 import com.google.template.soy.jbcsrc.internal.SoyClassWriter;
 import com.google.template.soy.jbcsrc.restricted.AnnotationRef;
@@ -93,20 +92,24 @@ final class TemplateCompiler {
   private final CompiledTemplateMetadata template;
   private final TemplateNode templateNode;
   private final InnerClasses innerClasses;
-  private SoyClassWriter writer;
-  private TemplateAnalysis analysis;
+  private final SoyClassWriter writer;
+  private final TemplateAnalysis analysis;
   private final JavaSourceFunctionCompiler javaSourceFunctionCompiler;
 
   TemplateCompiler(
       TemplateRegistry registry,
-      CompiledTemplateMetadata template,
       TemplateNode templateNode,
+      SoyClassWriter writer,
+      FieldManager fields,
+      InnerClasses innerClasses,
       JavaSourceFunctionCompiler javaSourceFunctionCompiler) {
     this.registry = registry;
-    this.template = template;
+    this.template = CompiledTemplateMetadata.create(registry.getMetadata(templateNode));
     this.templateNode = templateNode;
-    this.innerClasses = new InnerClasses(template.typeInfo());
-    this.fields = new FieldManager(template.typeInfo());
+    this.writer = writer;
+    this.fields = fields;
+    this.innerClasses = innerClasses;
+    this.analysis = TemplateAnalysis.analyze(templateNode);
     this.javaSourceFunctionCompiler = javaSourceFunctionCompiler;
   }
 
@@ -127,34 +130,15 @@ final class TemplateCompiler {
    *       ensure that all referenced templates are generated and available in the classloader that
    *       ultimately loads the returned classes.
    */
-  Iterable<ClassData> compile() {
-    analysis = TemplateAnalysis.analyze(templateNode);
-    List<ClassData> classes = new ArrayList<>();
+  void compile() {
 
     // TODO(lukes): change the flow of this method so these methods return method bodies and we only
     // write the methods to the writer after generating everything.
     // this should make the order of operations clearer and limit access to the writer.
-    writer =
-        SoyClassWriter.builder(template.typeInfo())
-            .setAccess(Opcodes.ACC_PUBLIC + Opcodes.ACC_SUPER + Opcodes.ACC_FINAL)
-            .sourceFileName(templateNode.getSourceLocation().getFileName())
-            .build();
-    generateTemplateMetadata();
-
-    generateDelegateRenderMethod();
-    generateRenderMethod();
-
-    innerClasses.registerAllInnerClasses(writer);
-    fields.defineFields(writer);
-    fields.defineStaticInitializer(writer);
 
     generateTemplateMethod();
-    writer.visitEnd();
-
-    classes.add(writer.toClassData());
-    classes.addAll(innerClasses.getInnerClassData());
-    writer = null;
-    return classes;
+    generateDelegateRenderMethod();
+    generateRenderMethod();
   }
 
   private static final Handle METAFACTORY_HANDLE =
@@ -205,7 +189,8 @@ final class TemplateCompiler {
     // }
     // assuming foo is the name of the template class.
     Handle renderHandle = template.renderMethod().asHandle();
-    Statement.returnExpression(
+    Statement methodBody =
+        Statement.returnExpression(
             new Expression(BytecodeUtils.COMPILED_TEMPLATE_TYPE) {
               @Override
               protected void doGen(CodeBuilder cb) {
@@ -217,16 +202,24 @@ final class TemplateCompiler {
                     renderHandle,
                     COMPILED_TEMPLATE_RENDER_DESCRIPTOR);
               }
-            })
-        .writeMethod(methodAccess(), template.templateMethod().method(), writer);
+            });
+    CodeBuilder methodWriter =
+        new CodeBuilder(
+            methodAccess(), template.templateMethod().method(), /* exceptions=*/ null, writer);
+    generateTemplateMetadata(methodWriter);
+    methodBody.writeMethodTo(methodWriter);
   }
 
   private int methodAccess() {
+    // TODO(lukes): private templates need to have default access so they can be called by our
+    // generated inner classes (e.g. a let).  Once jdk11 has landed we could workaround by declaring
+    // our inner classes as 'nestmates' see https://openjdk.java.net/jeps/181
     return (templateNode.getVisibility() == Visibility.PUBLIC ? Opcodes.ACC_PUBLIC : 0)
         | Opcodes.ACC_STATIC;
   }
-  /** Writes a {@link TemplateMetadata} to the generated class. */
-  private void generateTemplateMetadata() {
+
+  /** Writes a {@link TemplateMetadata} to the generated {@code template()} method. */
+  private void generateTemplateMetadata(CodeBuilder builder) {
     ContentKind kind =
         Converters.contentKindfromSanitizedContentKind(templateNode.getContentKind());
 
@@ -265,7 +258,7 @@ final class TemplateCompiler {
     TemplateMetadata metadata =
         createTemplateMetadata(
             kind, namespaces, uniqueIjs, callees, delCallees, deltemplateMetadata);
-    TEMPLATE_METADATA_REF.write(metadata, writer);
+    TEMPLATE_METADATA_REF.write(metadata, builder);
   }
 
   @AutoAnnotation

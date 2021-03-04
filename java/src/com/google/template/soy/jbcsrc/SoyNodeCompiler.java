@@ -1116,6 +1116,8 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       // Use invokedynamic to bind to the method.  This allows applications using complex
       // classloader setups to have {call} commands cross classloader boundaries.  It also enables
       // our stubbing library to intercept all calls.
+      CompiledTemplateMetadata metadata =
+          CompiledTemplateMetadata.create(registry.getBasicTemplateOrElement(node.getCalleeName()));
       return renderCallNode(
           node,
           new CallGenerator() {
@@ -1137,9 +1139,6 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
 
             @Override
             public Optional<DirectPositionalCallGenerator> asDirectPositionalCall() {
-              CompiledTemplateMetadata metadata =
-                  CompiledTemplateMetadata.create(
-                      registry.getBasicTemplateOrElement(node.getCalleeName()));
               if (metadata.hasPositionalSignature()) {
                 return Optional.of(
                     new DirectPositionalCallGenerator() {
@@ -1191,7 +1190,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
                           renderContext.gen(adapter);
                           adapter.visitInvokeDynamicInsn(
                               "call",
-                              CompiledTemplateMetadata.RENDER_METHOD.getDescriptor(),
+                              metadata.renderMethod().method().getDescriptor(),
                               STATIC_CALL_HANDLE,
                               node.getCalleeName());
                         }

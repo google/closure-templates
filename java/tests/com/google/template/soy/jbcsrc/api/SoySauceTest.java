@@ -335,12 +335,10 @@ public class SoySauceTest {
     } catch (ClassCastException cce) {
       // we get an CCE because we passed an int but it expected a string
       StackTraceElement[] stackTrace = cce.getStackTrace();
-      assertThat(stackTrace[0].toString())
-          .isEqualTo("strict_test.callsItself.render(strict.soy:52)");
+      assertThat(stackTrace[0].toString()).isEqualTo("strict_test.callsItself(strict.soy:52)");
 
       for (int i = 1; i < 11; i++) {
-        assertThat(stackTrace[i].toString())
-            .isEqualTo("strict_test.callsItself.render(strict.soy:54)");
+        assertThat(stackTrace[i].toString()).isEqualTo("strict_test.callsItself(strict.soy:54)");
       }
     }
   }

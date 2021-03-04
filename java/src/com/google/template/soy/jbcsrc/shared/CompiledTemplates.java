@@ -178,7 +178,7 @@ public class CompiledTemplates {
       String format = "No class was compiled for template: %s.";
       throw new IllegalArgumentException(String.format(format, name), e);
     }
-    return new TemplateData(templateClass);
+    return new TemplateData(templateClass, name);
   }
 
   /**
@@ -247,7 +247,10 @@ public class CompiledTemplates {
   /** This is mostly a copy of the {@link TemplateMetadata} annotation. */
   @Immutable
   public static final class TemplateData {
-    final Class<?> templateClass;
+    @SuppressWarnings("Immutable")
+    final Method templateMethod;
+
+    final String soyTemplateName;
     // lazily initialized since it is not always needed
     @LazyInit CompiledTemplate template;
 
@@ -267,11 +270,18 @@ public class CompiledTemplates {
     // general this is only needed for relatively few templates.
     @LazyInit ImmutableSortedSet<String> transitiveIjParams;
 
-    public TemplateData(Class<?> template) {
-      this.templateClass = template;
+    public TemplateData(Class<?> fileClass, String soyTemplateName) {
+      this(getTemplateMethod(fileClass, soyTemplateName), soyTemplateName);
+    }
+
+    @VisibleForTesting
+    public TemplateData(Method templateMethod, String soyTemplateName) {
+      this.templateMethod = templateMethod;
+      this.soyTemplateName = soyTemplateName;
+
       // We pull the content kind off the templatemetadata eagerly since the parsing+reflection each
       // time is expensive.
-      TemplateMetadata annotation = template.getAnnotation(TemplateMetadata.class);
+      TemplateMetadata annotation = templateMethod.getAnnotation(TemplateMetadata.class);
       this.kind = annotation.contentKind();
       this.callees = ImmutableSet.copyOf(annotation.callees());
       this.delCallees = ImmutableSet.copyOf(annotation.delCallees());
@@ -291,13 +301,40 @@ public class CompiledTemplates {
       }
     }
 
+    private static Method getTemplateMethod(Class<?> fileClass, String soyTemplateName) {
+      String templateMethodName = Names.renderMethodNameFromSoyTemplateName(soyTemplateName);
+      try {
+        return fileClass.getDeclaredMethod(templateMethodName);
+      } catch (NoSuchMethodException nsme) {
+        // for private templates the factory() method is package private and so getMethod will
+        // fail.
+        throw new IllegalArgumentException(
+            "cannot find the " + templateMethodName + "() method for " + soyTemplateName, nsme);
+      }
+    }
+
     @VisibleForTesting
     public Class<?> templateClass() {
-      return templateClass;
+      return templateMethod.getDeclaringClass();
+    }
+
+    @VisibleForTesting
+    public Method templateMethod() {
+      return templateMethod;
     }
 
     public ContentKind kind() {
       return kind;
+    }
+
+    @VisibleForTesting
+    public boolean isPublicTemplate() {
+      try {
+        template();
+        return false;
+      } catch (IllegalArgumentException expected) {
+        return false;
+      }
     }
 
     @VisibleForTesting
@@ -308,17 +345,11 @@ public class CompiledTemplates {
     public CompiledTemplate template() {
       CompiledTemplate local = template;
       if (local == null) {
-        Method method;
         try {
-          method = templateClass.getMethod("template");
-        } catch (NoSuchMethodException nsme) {
-          // for private templates the factory() method is package private and so getMethod will
-          // fail.
+          local = (CompiledTemplate) templateMethod.invoke(null);
+        } catch (IllegalAccessException iae) {
           throw new IllegalArgumentException(
-              "cannot get a factory for the private template: " + soyTemplateName(), nsme);
-        }
-        try {
-          local = (CompiledTemplate) method.invoke(null);
+              "cannot get a factory for the private template: " + soyTemplateName(), iae);
         } catch (ReflectiveOperationException e) {
           // this should be impossible since our factories are public with a default constructor.
           // TODO(lukes): failures of bytecode verification will propagate as Errors, we should
@@ -333,7 +364,7 @@ public class CompiledTemplates {
     }
 
     String soyTemplateName() {
-      return Names.soyTemplateNameFromJavaClassName(templateClass.getName());
+      return soyTemplateName;
     }
   }
 }

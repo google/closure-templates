@@ -27,7 +27,8 @@ public final class NamespaceExemptions {
 
   private static final ImmutableSet<String> ALLOWED_DUPLICATE_NAMESPACES =
       ImmutableSet.of(
-          );
+          "testing.duplicate.namespaces",
+          "_I_LIKE_TRAILING_COMMAS_");
 
   private NamespaceExemptions() {}
 }

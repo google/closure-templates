@@ -33,6 +33,7 @@ import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /** A classloader that can compile templates on demand. */
@@ -47,7 +48,7 @@ final class CompilingClassLoader extends AbstractMemoryClassLoader {
   private final Map<String, ClassData> classesByName = Collections.synchronizedMap(new HashMap<>());
 
   private final ImmutableMap<SourceFilePath, SoyFileSupplier> filePathsToSuppliers;
-  private final ImmutableMap<String, TemplateNode> templateNameToTemplateNode;
+  private final ImmutableMap<String, SoyFileNode> javaClassNameToFile;
   private final TemplateRegistry templateRegistry;
   private final SoyTypeRegistry typeRegistry;
 
@@ -56,13 +57,16 @@ final class CompilingClassLoader extends AbstractMemoryClassLoader {
       SoyFileSetNode fileSet,
       ImmutableMap<SourceFilePath, SoyFileSupplier> filePathsToSuppliers,
       SoyTypeRegistry typeRegistry) {
-    ImmutableMap.Builder<String, TemplateNode> templateNameToTemplateNode = ImmutableMap.builder();
+    Map<String, SoyFileNode> javaClassNameToFile = new LinkedHashMap<>();
     for (SoyFileNode file : fileSet.getChildren()) {
+      // TODO(b/180904763):For the vast majority of files all templates share the same class, but
+      // there are some exceptions due to this bug.  Remove this loop when that is cleaned up.
       for (TemplateNode template : file.getTemplates()) {
-        templateNameToTemplateNode.put(template.getTemplateName(), template);
+        javaClassNameToFile.put(
+            Names.javaClassNameFromSoyTemplateName(template.getTemplateName()), file);
       }
     }
-    this.templateNameToTemplateNode = templateNameToTemplateNode.build();
+    this.javaClassNameToFile = ImmutableMap.copyOf(javaClassNameToFile);
     this.typeRegistry = typeRegistry;
     this.templateRegistry = templateRegistry;
     this.filePathsToSuppliers = filePathsToSuppliers;
@@ -83,21 +87,15 @@ final class CompilingClassLoader extends AbstractMemoryClassLoader {
     if (!name.startsWith(Names.CLASS_PREFIX)) {
       return null;
     }
-    String templateName = Names.soyTemplateNameFromJavaClassName(name);
-    TemplateNode node = templateNameToTemplateNode.get(templateName);
+    SoyFileNode node = javaClassNameToFile.get(name);
     if (node == null) {
       return null;
     }
-    CompiledTemplateMetadata meta =
-        CompiledTemplateMetadata.create(templateRegistry.getMetadata(node));
     ClassData clazzToLoad = null;
     ErrorReporter reporter = ErrorReporter.create(filePathsToSuppliers);
     for (ClassData clazz :
-        new TemplateCompiler(
-                templateRegistry,
-                meta,
-                node,
-                new JavaSourceFunctionCompiler(typeRegistry, reporter))
+        new SoyFileCompiler(
+                node, templateRegistry, new JavaSourceFunctionCompiler(typeRegistry, reporter))
             .compile()) {
       String className = clazz.type().className();
       if (className.equals(name)) {
