@@ -5,6 +5,8 @@
  * runtime cost for requiring incrementaldom directly.
  */
 
+import './skiphandler';
+
 import {assert, assertInstanceof} from 'goog:goog.asserts';  // from //third_party/javascript/closure/asserts
 import {IjData} from 'goog:goog.soy';  // from //third_party/javascript/closure/soy
 import {isDataInitialized} from 'incrementaldom';  // from //third_party/javascript/incremental_dom:incrementaldom
@@ -84,4 +86,14 @@ export function isTaggedForSkip(node: Node) {
 /** Retrieves an untyped Soy element, or null if it doesn't exist. */
 export function getSoyUntyped(node: Node) {
   return node.__soy;
+}
+
+/** Disposes lifecycle hooks from element. */
+export function unsetLifecycleHooks(node: Node) {
+  const soyEl = getSoyUntyped(node);
+  if (soyEl) {
+    soyEl.unsetLifecycleHooks();
+  }
+  node.__soy_skip_handler = undefined;
+  node.__soy_patch_handler = undefined;
 }

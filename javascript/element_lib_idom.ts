@@ -176,6 +176,11 @@ export abstract class SoyElement<TData extends {}|null, TInterface extends {}> {
     return false;
   }
 
+  unsetLifecycleHooks() {
+    this.skipHandler = null;
+    this.patchHandler = null;
+  }
+
   /**
    * Sets the skip handler.
    *
