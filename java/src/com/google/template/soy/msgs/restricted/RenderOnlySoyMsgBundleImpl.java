@@ -40,10 +40,11 @@ import javax.annotation.Nullable;
  *
  */
 @Immutable
-final class RenderOnlySoyMsgBundleImpl extends SoyMsgBundle {
+public final class RenderOnlySoyMsgBundleImpl extends SoyMsgBundle {
 
   /** The language/locale string of this bundle's messages. */
   private final String localeString;
+
   private final ULocale locale;
   private final boolean isRtl;
 
@@ -116,6 +117,18 @@ final class RenderOnlySoyMsgBundleImpl extends SoyMsgBundle {
     ids = idsBuilder.build();
     values = partsBuilder.build();
     partRanges = partRangesBuilder.build();
+  }
+
+  /** Copies a RenderOnlySoyMsgBundleImpl, replacing only the localeString. */
+  public RenderOnlySoyMsgBundleImpl(
+      @Nullable String localeString, RenderOnlySoyMsgBundleImpl exemplar) {
+
+    this.localeString = localeString;
+    this.locale = localeString == null ? null : new ULocale(localeString);
+    this.isRtl = BidiGlobalDir.forStaticLocale(localeString) == BidiGlobalDir.RTL;
+    this.ids = exemplar.ids;
+    this.values = exemplar.values;
+    this.partRanges = exemplar.partRanges;
   }
 
   /** Brings a message back to life from only its ID and parts. */
