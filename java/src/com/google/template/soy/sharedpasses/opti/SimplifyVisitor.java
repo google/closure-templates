@@ -331,6 +331,7 @@ public final class SimplifyVisitor {
         RecordLiteralNode record = (RecordLiteralNode) methodCallNode.getParams().get(0);
         ExprNode bindCallee = methodCallNode.getBaseExprChild();
         node.getCalleeExpr().replaceChild(calleeRoot, bindCallee);
+        node.getCalleeExpr().setType(bindCallee.getType());
 
         List<ExprNode> children = new ArrayList<>(record.getChildren());
         for (int i = 0; i < children.size(); i++) {

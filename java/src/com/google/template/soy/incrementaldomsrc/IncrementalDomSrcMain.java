@@ -89,18 +89,13 @@ public class IncrementalDomSrcMain {
       // some of the above passes may slice up raw text nodes, recombine them.
       new CombineConsecutiveRawTextNodesPass().run(soyTree);
       return createVisitor(
-              incrementalJSSrcOptions,
-              registry,
-              typeRegistry,
-              inScope.getBidiGlobalDir(),
-              errorReporter)
+              incrementalJSSrcOptions, typeRegistry, inScope.getBidiGlobalDir(), errorReporter)
           .gen(soyTree, registry, errorReporter);
     }
   }
 
   static GenIncrementalDomCodeVisitor createVisitor(
       final SoyJsSrcOptions options,
-      final TemplateRegistry registry,
       SoyTypeRegistry typeRegistry,
       BidiGlobalDir dir,
       ErrorReporter errorReporter) {
@@ -118,7 +113,7 @@ public class IncrementalDomSrcMain {
       @Override
       public IncrementalDomGenCallCodeUtils get() {
         return new IncrementalDomGenCallCodeUtils(
-            registry, delTemplateNamer, isComputableAsJsExprsVisitor, factory);
+            delTemplateNamer, isComputableAsJsExprsVisitor, factory);
       }
     }
     GenCallCodeUtilsSupplier supplier = new GenCallCodeUtilsSupplier();

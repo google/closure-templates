@@ -46,7 +46,6 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.testing.SharedTestUtils;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import com.google.template.soy.types.SoyTypeRegistryBuilder;
@@ -190,7 +189,6 @@ abstract class JsSrcSubject<T extends Subject> extends Subject {
     private final GenJsCodeVisitor visitor =
         JsSrcMain.createVisitor(
             jsSrcOptions,
-            TemplateRegistry.EMPTY,
             SoyTypeRegistryBuilder.create(),
             BidiGlobalDir.LTR,
             ErrorReporter.exploding());

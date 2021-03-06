@@ -144,7 +144,7 @@ public final class ImportsContext {
     }
 
     @Override
-    public FileSetTemplateRegistry getDelegate() {
+    protected FileSetTemplateRegistry getDelegate() {
       return fileSetRegistry();
     }
 

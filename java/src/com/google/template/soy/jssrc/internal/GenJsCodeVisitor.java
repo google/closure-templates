@@ -673,7 +673,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   @Override
   protected void visitTemplateNode(TemplateNode node) {
     generatePositionalParamsSignature =
-        GenCallCodeUtils.hasPositionalSignature(templateRegistry.getMetadata(node));
+        GenCallCodeUtils.hasPositionalSignature(TemplateMetadata.buildTemplateType(node));
     String templateName = node.getTemplateName();
     String partialName = node.getLocalTemplateSymbol();
     String alias;
@@ -801,8 +801,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         node.getParams().stream().collect(toImmutableMap(TemplateParam::name, param -> param));
     // Use the templatemetadata so we generate parameters in the correct order as
     // expected by callers, this is defined by TemplateMetadata.
-    TemplateMetadata metadata = templateRegistry.getMetadata(node);
-    return metadata.getTemplateType().getActualParameters().stream()
+    return TemplateMetadata.buildTemplateType(node).getActualParameters().stream()
         .map(p -> paramsByName.get(p.getName()))
         .collect(toImmutableList());
   }
@@ -845,7 +844,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       // TODO(b/11787791): make the checkTypes suppression more fine grained.
       jsDocBuilder.addParameterizedAnnotation("suppress", "checkTypes");
     } else {
-      if (templateRegistry.getMetadata(node).getTemplateType().getActualParameters().stream()
+      if (TemplateMetadata.buildTemplateType(node).getActualParameters().stream()
           .anyMatch(TemplateType.Parameter::isImplicit)) {
         jsDocBuilder.addParameterizedAnnotation("suppress", "missingProperties");
       }

@@ -28,7 +28,6 @@ import com.google.template.soy.jbcsrc.restricted.TypeInfo;
 import com.google.template.soy.jbcsrc.shared.Names;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.TemplateRegistry;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
@@ -41,16 +40,13 @@ import org.objectweb.asm.Opcodes;
 final class SoyFileCompiler {
 
   private final SoyFileNode fileNode;
-  private final TemplateRegistry registry;
   private final JavaSourceFunctionCompiler javaSourceFunctionCompiler;
   private final List<TypeWriter> writers = new ArrayList<>();
 
   SoyFileCompiler(
       SoyFileNode fileNode,
-      TemplateRegistry registry,
       JavaSourceFunctionCompiler javaSourceFunctionCompiler) {
     this.fileNode = fileNode;
-    this.registry = registry;
     this.javaSourceFunctionCompiler = javaSourceFunctionCompiler;
   }
 
@@ -58,7 +54,6 @@ final class SoyFileCompiler {
     for (TemplateNode templateNode : fileNode.getTemplates()) {
       TypeWriter typeWriter = forTemplate(templateNode);
       new TemplateCompiler(
-              registry,
               templateNode,
               typeWriter.writer(),
               typeWriter.fields(),

@@ -25,7 +25,9 @@ import com.google.template.soy.jbcsrc.restricted.TypeInfo;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.Names;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
+import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.TemplateMetadata;
+import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.types.TemplateType;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -76,10 +78,17 @@ abstract class CompiledTemplateMetadata {
     return new Method(methodName, Type.getMethodDescriptor(BytecodeUtils.COMPILED_TEMPLATE_TYPE));
   }
 
-  static CompiledTemplateMetadata create(TemplateMetadata metadata) {
-    String className = Names.javaClassNameFromSoyTemplateName(metadata.getTemplateName());
+  static CompiledTemplateMetadata create(TemplateNode node) {
+    return create(node.getTemplateName(), TemplateMetadata.buildTemplateType(node));
+  }
+
+  static CompiledTemplateMetadata create(CallBasicNode callNode) {
+    return create(callNode.getCalleeName(), callNode.getStaticType());
+  }
+
+  private static CompiledTemplateMetadata create(String templateName, TemplateType templateType) {
+    String className = Names.javaClassNameFromSoyTemplateName(templateName);
     TypeInfo type = TypeInfo.createClass(className);
-    TemplateType templateType = metadata.getTemplateType();
     // Decide whether or not to use a positional style call signature.
     // Positional parameters are not possible to do if there are indirect calls since those may
     // require parameters not declared in our signature.
@@ -95,7 +104,7 @@ abstract class CompiledTemplateMetadata {
             // deltemplates require the object style to support the relatively weak type checking we
             // perform on them.
             && templateType.getTemplateKind() != TemplateType.TemplateKind.DELTEMPLATE;
-    String methodName = Names.renderMethodNameFromSoyTemplateName(metadata.getTemplateName());
+    String methodName = Names.renderMethodNameFromSoyTemplateName(templateName);
     return new AutoValue_CompiledTemplateMetadata(
         MethodRef.createStaticMethod(type, createRenderMethod(methodName)).asNonNullable(),
         Optional.ofNullable(

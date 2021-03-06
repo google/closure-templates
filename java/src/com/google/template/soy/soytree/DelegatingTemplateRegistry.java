@@ -33,7 +33,7 @@ public abstract class DelegatingTemplateRegistry implements TemplateRegistry {
 
   protected DelegatingTemplateRegistry() {}
 
-  abstract TemplateRegistry getDelegate();
+  protected abstract TemplateRegistry getDelegate();
 
   @Override
   public ImmutableMap<SourceFilePath, TemplatesPerFile> getTemplatesPerFile() {

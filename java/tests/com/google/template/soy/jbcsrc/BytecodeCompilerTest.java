@@ -1534,7 +1534,6 @@ public class BytecodeCompilerTest {
   private static CompilingClassLoader createCompilingClassLoader(
       SoyFileSetParser parser, ParseResult parseResult) {
     return new CompilingClassLoader(
-        parseResult.registry(),
         parseResult.fileSet(),
         parser.soyFileSuppliers(),
         parser.typeRegistry());

@@ -29,7 +29,6 @@ import com.google.template.soy.jbcsrc.shared.Names;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.Collections;
 import java.util.HashMap;
@@ -49,11 +48,9 @@ final class CompilingClassLoader extends AbstractMemoryClassLoader {
 
   private final ImmutableMap<SourceFilePath, SoyFileSupplier> filePathsToSuppliers;
   private final ImmutableMap<String, SoyFileNode> javaClassNameToFile;
-  private final TemplateRegistry templateRegistry;
   private final SoyTypeRegistry typeRegistry;
 
   CompilingClassLoader(
-      TemplateRegistry templateRegistry,
       SoyFileSetNode fileSet,
       ImmutableMap<SourceFilePath, SoyFileSupplier> filePathsToSuppliers,
       SoyTypeRegistry typeRegistry) {
@@ -68,7 +65,6 @@ final class CompilingClassLoader extends AbstractMemoryClassLoader {
     }
     this.javaClassNameToFile = ImmutableMap.copyOf(javaClassNameToFile);
     this.typeRegistry = typeRegistry;
-    this.templateRegistry = templateRegistry;
     this.filePathsToSuppliers = filePathsToSuppliers;
   }
 
@@ -94,8 +90,7 @@ final class CompilingClassLoader extends AbstractMemoryClassLoader {
     ClassData clazzToLoad = null;
     ErrorReporter reporter = ErrorReporter.create(filePathsToSuppliers);
     for (ClassData clazz :
-        new SoyFileCompiler(
-                node, templateRegistry, new JavaSourceFunctionCompiler(typeRegistry, reporter))
+        new SoyFileCompiler(node, new JavaSourceFunctionCompiler(typeRegistry, reporter))
             .compile()) {
       String className = clazz.type().className();
       if (className.equals(name)) {

@@ -98,6 +98,7 @@ import com.google.template.soy.jssrc.internal.TranslateExprNodeVisitor;
 import com.google.template.soy.jssrc.internal.TranslationContext;
 import com.google.template.soy.passes.ShouldEnsureDataIsDefinedVisitor;
 import com.google.template.soy.shared.internal.BuiltinFunction;
+import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamNode;
@@ -884,7 +885,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
           Optional.of(
               () ->
                   genCallCodeUtils.getPositionalParams(
-                      node,
+                      (CallBasicNode) node,
                       templateAliases,
                       templateTranslationContext,
                       errorReporter,

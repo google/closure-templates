@@ -57,7 +57,6 @@ import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.soytree.defn.TemplateParam;
@@ -87,7 +86,6 @@ final class TemplateCompiler {
   private static final AnnotationRef<TemplateMetadata> TEMPLATE_METADATA_REF =
       AnnotationRef.forType(TemplateMetadata.class);
 
-  private final TemplateRegistry registry;
   private final FieldManager fields;
   private final CompiledTemplateMetadata template;
   private final TemplateNode templateNode;
@@ -97,14 +95,12 @@ final class TemplateCompiler {
   private final JavaSourceFunctionCompiler javaSourceFunctionCompiler;
 
   TemplateCompiler(
-      TemplateRegistry registry,
       TemplateNode templateNode,
       SoyClassWriter writer,
       FieldManager fields,
       InnerClasses innerClasses,
       JavaSourceFunctionCompiler javaSourceFunctionCompiler) {
-    this.registry = registry;
-    this.template = CompiledTemplateMetadata.create(registry.getMetadata(templateNode));
+    this.template = CompiledTemplateMetadata.create(templateNode);
     this.templateNode = templateNode;
     this.writer = writer;
     this.fields = fields;
@@ -372,7 +368,6 @@ final class TemplateCompiler {
             variableSet.getVariable(StandardNames.APPENDABLE).asNonNullable());
     SoyNodeCompiler nodeCompiler =
         SoyNodeCompiler.create(
-            registry,
             analysis,
             innerClasses,
             appendable,
@@ -417,7 +412,6 @@ final class TemplateCompiler {
     }
     final CompiledMethodBody methodBody =
         SoyNodeCompiler.create(
-                registry,
                 analysis,
                 innerClasses,
                 appendable,

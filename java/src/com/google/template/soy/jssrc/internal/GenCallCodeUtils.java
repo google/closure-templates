@@ -54,7 +54,6 @@ import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.TemplateType;
 import java.util.ArrayList;
@@ -73,11 +72,14 @@ public class GenCallCodeUtils {
    * declarations are exploded into explicit parameters.
    */
   static boolean hasPositionalSignature(TemplateMetadata metadata) {
+    return hasPositionalSignature(metadata.getTemplateType());
+  }
+
+  static boolean hasPositionalSignature(TemplateType type) {
     // This signature style is not possible to do if there are indirect calls, since those require
     // the whole `opt_data` parameter
     // If there are no parameters, then there is no value in exploding into multiple functions
     // If the template is a Soy element, then we also need the `opt_data` object.
-    TemplateType type = metadata.getTemplateType();
     return type.getDataAllCallSituations().isEmpty()
         && !type.getActualParameters().isEmpty()
         // only basic templates are supported for now.
@@ -89,8 +91,6 @@ public class GenCallCodeUtils {
   /** Instance of DelTemplateNamer to use. */
   private final DelTemplateNamer delTemplateNamer;
 
-  private final TemplateRegistry templateRegistry;
-
   /** The IsComputableAsJsExprsVisitor used by this instance. */
   private final IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor;
 
@@ -98,11 +98,9 @@ public class GenCallCodeUtils {
   private final GenJsExprsVisitorFactory genJsExprsVisitorFactory;
 
   protected GenCallCodeUtils(
-      TemplateRegistry templateRegistry,
       DelTemplateNamer delTemplateNamer,
       IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor,
       GenJsExprsVisitorFactory genJsExprsVisitorFactory) {
-    this.templateRegistry = templateRegistry;
     this.delTemplateNamer = delTemplateNamer;
     this.isComputableAsJsExprsVisitor = isComputableAsJsExprsVisitor;
     this.genJsExprsVisitorFactory = genJsExprsVisitorFactory;
@@ -168,7 +166,11 @@ public class GenCallCodeUtils {
       params.add(JsRuntime.IJ_DATA);
       params.addAll(
           getPositionalParams(
-              callNode, templateAliases, translationContext, errorReporter, exprTranslator));
+              (CallBasicNode) callNode,
+              templateAliases,
+              translationContext,
+              errorReporter,
+              exprTranslator));
       call = callee.positionalStyle().get().call(params);
     } else {
       Expression objToPass =
@@ -184,7 +186,7 @@ public class GenCallCodeUtils {
   }
 
   public List<Expression> getPositionalParams(
-      CallNode callNode,
+      CallBasicNode callNode,
       TemplateAliases templateAliases,
       TranslationContext translationContext,
       ErrorReporter errorReporter,
@@ -193,12 +195,9 @@ public class GenCallCodeUtils {
         getExplicitParams(
             callNode, templateAliases, translationContext, errorReporter, exprTranslator);
     // to perform the call we need to pass these params in the correct order
-    TemplateMetadata calleeMetadata =
-        templateRegistry.getBasicTemplateOrElement(((CallBasicNode) callNode).getCalleeName());
     List<Expression> params = new ArrayList<>();
     int numTrailingUndefineds = 0;
-    for (TemplateType.Parameter calleeParam :
-        calleeMetadata.getTemplateType().getActualParameters()) {
+    for (TemplateType.Parameter calleeParam : callNode.getStaticType().getActualParameters()) {
       Expression explicitParam = explicitParams.remove(calleeParam.getName());
       if (explicitParam == null) {
         numTrailingUndefineds++;
@@ -234,12 +233,7 @@ public class GenCallCodeUtils {
         || !((CallBasicNode) callNode).isStaticCall()) {
       return false;
     }
-    TemplateMetadata calleeMetadata =
-        templateRegistry.getBasicTemplateOrElement(((CallBasicNode) callNode).getCalleeName());
-    if (calleeMetadata == null) {
-      return false;
-    }
-    return hasPositionalSignature(calleeMetadata);
+    return hasPositionalSignature(((CallBasicNode) callNode).getStaticType());
   }
 
   public static Expression applyEscapingDirectives(Expression call, CallNode callNode) {

@@ -22,7 +22,6 @@ import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.internal.GenCallCodeUtils;
 import com.google.template.soy.soytree.CallParamContentNode;
-import com.google.template.soy.soytree.TemplateRegistry;
 
 /**
  * Extends {@link GenCallCodeUtils} to not wrap function arguments as sanitized content, which is
@@ -31,12 +30,10 @@ import com.google.template.soy.soytree.TemplateRegistry;
  */
 final class IncrementalDomGenCallCodeUtils extends GenCallCodeUtils {
   IncrementalDomGenCallCodeUtils(
-      TemplateRegistry templateRegistry,
       IncrementalDomDelTemplateNamer incrementalDomDelTemplateNamer,
       IsComputableAsIncrementalDomExprsVisitor isComputableAsIncrementalDomExprsVisitor,
       GenIncrementalDomExprsVisitorFactory genIncrementalDomExprsVisitorFactory) {
     super(
-        templateRegistry,
         incrementalDomDelTemplateNamer,
         isComputableAsIncrementalDomExprsVisitor,
         genIncrementalDomExprsVisitorFactory);

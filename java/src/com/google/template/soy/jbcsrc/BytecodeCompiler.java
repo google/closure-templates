@@ -80,7 +80,7 @@ public final class BytecodeCompiler {
                             == TemplateType.TemplateKind.DELTEMPLATE)
                 .map(TemplateMetadata::getTemplateName)
                 .collect(toImmutableSet()),
-            new CompilingClassLoader(registry, fileSet, filePathsToSuppliers, typeRegistry));
+            new CompilingClassLoader(fileSet, filePathsToSuppliers, typeRegistry));
     if (reporter.errorsSince(checkpoint)) {
       return Optional.empty();
     }
@@ -94,12 +94,10 @@ public final class BytecodeCompiler {
    * <p>If errors are encountered, the error reporter will be updated and we will return. The
    * contents of any data written to the sink at that point are undefined.
    *
-   * @param registry All the templates to compile
    * @param reporter The error reporter
    * @param sink The output sink to write the JAR to.
    */
   public static void compileToJar(
-      TemplateRegistry registry,
       SoyFileSetNode fileSet,
       ErrorReporter reporter,
       SoyTypeRegistry typeRegistry,
@@ -113,7 +111,6 @@ public final class BytecodeCompiler {
       Map<String, PluginRuntimeInstanceInfo.Builder> pluginInstances = new TreeMap<>();
 
       compileTemplates(
-          registry,
           fileSet,
           reporter,
           typeRegistry,
@@ -238,7 +235,6 @@ public final class BytecodeCompiler {
   }
 
   private static <T, E extends Throwable> T compileTemplates(
-      TemplateRegistry templateRegistry,
       SoyFileSetNode fileSet,
       ErrorReporter errorReporter,
       SoyTypeRegistry typeRegistry,
@@ -247,8 +243,7 @@ public final class BytecodeCompiler {
     JavaSourceFunctionCompiler javaSourceFunctionCompiler =
         new JavaSourceFunctionCompiler(typeRegistry, errorReporter);
     for (SoyFileNode file : fileSet.getChildren()) {
-      for (ClassData clazz :
-          new SoyFileCompiler(file, templateRegistry, javaSourceFunctionCompiler).compile()) {
+      for (ClassData clazz : new SoyFileCompiler(file, javaSourceFunctionCompiler).compile()) {
         if (Flags.DEBUG) {
           clazz.checkClass();
         }

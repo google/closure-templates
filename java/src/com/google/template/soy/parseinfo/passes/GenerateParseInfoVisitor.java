@@ -185,7 +185,7 @@ public final class GenerateParseInfoVisitor
                 + "\""
                 + " (valid values are \"filename\", \"namespace\", and \"generic\").");
     }
-    soyFileNodeTransformer = new SoyFileNodeTransformer(javaPackage, templateRegistry);
+    soyFileNodeTransformer = new SoyFileNodeTransformer(javaPackage);
   }
 
   @Override

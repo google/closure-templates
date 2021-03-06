@@ -59,7 +59,7 @@ public final class GenCallCodeUtilsTest {
     assertThat(
             getCallExprTextHelper(
                 "{@param moo : ?}", "{call someFunc}", "  {param goo: $moo /}", "{/call}"))
-        .isEqualTo("ns.someFunc(/** @type {?} */ ({goo: opt_data.moo}), $ijData);");
+        .isEqualTo("ns.someFunc$(soy.$$internalCallMarkerDoNotUse, $ijData, opt_data.moo);");
 
     assertThat(
             getCallExprTextHelper(
@@ -78,9 +78,9 @@ public final class GenCallCodeUtilsTest {
                 + "{/call}\n");
     assertThat(callExprText)
         .matches(
-            Pattern.quote("ns.someFunc(/** @type {?} */ ({goo: param")
+            Pattern.quote("ns.someFunc$(soy.$$internalCallMarkerDoNotUse, $ijData, param")
                 + "[0-9]+"
-                + Pattern.quote("}), $ijData);"));
+                + Pattern.quote(");"));
   }
 
   @Test
@@ -108,10 +108,10 @@ public final class GenCallCodeUtilsTest {
         .that(callExprText)
         .matches(
             Pattern.quote(
-                    "ns.someFunc(/** @type {?} */ ({goo:"
+                    "ns.someFunc$(soy.$$internalCallMarkerDoNotUse, $ijData,"
                         + " soy.VERY_UNSAFE.$$ordainSanitizedHtmlForInternalBlocks(param")
                 + "[0-9]+"
-                + Pattern.quote(")}), $ijData);"));
+                + Pattern.quote("));"));
   }
 
   @Test
@@ -203,7 +203,7 @@ public final class GenCallCodeUtilsTest {
   @Test
   public void testGenCallExprForStrictCall() {
     assertThat(getCallExprTextHelper("{call someFunc /}\n", ImmutableSet.of("|escapeHtml")))
-        .isEqualTo("soy.$$escapeHtml(ns.someFunc(null, $ijData));");
+        .isEqualTo("soy.$$escapeHtml(ns.someFunc$(soy.$$internalCallMarkerDoNotUse, $ijData));");
   }
 
   private static String getCallExprTextHelper(String... callSourceLines) {

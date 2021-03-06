@@ -62,18 +62,7 @@ public abstract class TemplateMetadata {
                 SoyElementMetadataP.newBuilder()
                     .setIsSoyElement(template instanceof TemplateElementNode)
                     .build())
-            .setTemplateType(
-                TemplateType.builder()
-                    .setTemplateKind(convertKind(template.getKind()))
-                    .setAllowExtraAttributes(template.getAllowExtraAttributes())
-                    .setReservedAttributes(template.getReservedAttributes())
-                    .setContentKind(template.getTemplateContentKind())
-                    .setStrictHtml(template.isStrictHtml())
-                    .setParameters(directParametersFromTemplate(template))
-                    .setDataAllCallSituations(dataAllCallSituationFromTemplate(template))
-                    .setIdentifierForDebugging(template.getTemplateName())
-                    .setInferredType(true)
-                    .build())
+            .setTemplateType(buildTemplateType(template))
             .setComponent(template.getComponent())
             .setDelPackageName(template.getDelPackageName())
             .setVisibility(template.getVisibility());
@@ -88,6 +77,20 @@ public abstract class TemplateMetadata {
       builder.setDelTemplateVariant(deltemplate.getDelTemplateVariant());
     }
     return builder.build();
+  }
+
+  public static TemplateType buildTemplateType(TemplateNode template) {
+    return TemplateType.builder()
+        .setTemplateKind(convertKind(template.getKind()))
+        .setAllowExtraAttributes(template.getAllowExtraAttributes())
+        .setReservedAttributes(template.getReservedAttributes())
+        .setContentKind(template.getTemplateContentKind())
+        .setStrictHtml(template.isStrictHtml())
+        .setParameters(directParametersFromTemplate(template))
+        .setDataAllCallSituations(dataAllCallSituationFromTemplate(template))
+        .setIdentifierForDebugging(template.getTemplateName())
+        .setInferredType(true)
+        .build();
   }
 
   public static TemplateMetadata.Builder builder() {

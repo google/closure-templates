@@ -686,12 +686,10 @@ public final class SoyFileSet {
         () -> {
           ParseResult result = parseForGenJava();
           throwIfErrorsPresent();
-          TemplateRegistry registry = result.registry();
           SoyFileSetNode soyTree = result.fileSet();
 
           // Generate template invocation builders for the soy tree.
-          return new GenInvocationBuildersVisitor(errorReporter, javaPackage, registry)
-              .exec(soyTree);
+          return new GenInvocationBuildersVisitor(errorReporter, javaPackage).exec(soyTree);
         });
   }
 
@@ -952,7 +950,7 @@ public final class SoyFileSet {
           ServerCompilationPrimitives primitives = compileForServerRendering();
           try {
             BytecodeCompiler.compileToJar(
-                primitives.registry, primitives.soyTree, errorReporter, typeRegistry, jarTarget);
+                primitives.soyTree, errorReporter, typeRegistry, jarTarget);
             if (srcJarTarget.isPresent()) {
               BytecodeCompiler.writeSrcJar(
                   primitives.soyTree, soyFileSuppliers, srcJarTarget.get());

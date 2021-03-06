@@ -51,7 +51,6 @@ import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -122,10 +121,9 @@ public final class GenInvocationBuildersVisitor
   private IndentedLinesBuilder ilb; // Line formatter for the generated code.
   private ImmutableList.Builder<GeneratedFile> generatedFiles; // The generated Java files to write.
 
-  public GenInvocationBuildersVisitor(
-      ErrorReporter errorReporter, String javaPackage, TemplateRegistry templateRegistry) {
+  public GenInvocationBuildersVisitor(ErrorReporter errorReporter, String javaPackage) {
     this.errorReporter = errorReporter;
-    this.transformer = new SoyFileNodeTransformer(javaPackage, templateRegistry);
+    this.transformer = new SoyFileNodeTransformer(javaPackage);
   }
 
   @Override

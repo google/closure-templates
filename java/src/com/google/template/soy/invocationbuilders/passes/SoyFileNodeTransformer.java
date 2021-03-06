@@ -32,7 +32,6 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.invocationbuilders.javatypes.JavaType;
 import com.google.template.soy.invocationbuilders.javatypes.JavaTypeUtils;
-import com.google.template.soy.invocationbuilders.passes.SoyFileNodeTransformer.ParamStatus;
 import com.google.template.soy.passes.IndirectParamsCalculator;
 import com.google.template.soy.passes.IndirectParamsCalculator.IndirectParamsInfo;
 import com.google.template.soy.shared.internal.gencode.JavaGenerationUtils;
@@ -40,7 +39,6 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.SoyType;
@@ -298,7 +296,7 @@ public class SoyFileNodeTransformer {
 
   private final String javaPackage;
 
-  public SoyFileNodeTransformer(String javaPackage, TemplateRegistry templateRegistry) {
+  public SoyFileNodeTransformer(String javaPackage) {
     this.javaPackage = javaPackage;
   }
 

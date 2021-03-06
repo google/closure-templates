@@ -21,6 +21,7 @@ import static com.google.template.soy.soytree.CommandTagAttribute.UNSUPPORTED_AT
 import static com.google.template.soy.soytree.MessagePlaceholder.PHEX_ATTR;
 import static com.google.template.soy.soytree.MessagePlaceholder.PHNAME_ATTR;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
@@ -28,6 +29,7 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
+import com.google.template.soy.types.TemplateType;
 import java.util.List;
 
 /**
@@ -114,6 +116,11 @@ public final class CallBasicNode extends CallNode {
 
   public ExprRootNode getCalleeExpr() {
     return calleeExpr;
+  }
+
+  public TemplateType getStaticType() {
+    Preconditions.checkArgument(isStaticCall());
+    return (TemplateType) getCalleeExpr().getType();
   }
 
   public void setCalleeExpr(ExprRootNode calleeExpr) {

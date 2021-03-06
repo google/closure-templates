@@ -105,7 +105,6 @@ import com.google.template.soy.soytree.SwitchCaseNode;
 import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.VeLogNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.TemplateType;
@@ -143,7 +142,6 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
    * @param parameterLookup The variable lookup table for reading locals.
    */
   static SoyNodeCompiler create(
-      TemplateRegistry registry,
       TemplateAnalysis analysis,
       InnerClasses innerClasses,
       AppendableExpression appendableVar,
@@ -160,7 +158,6 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     ExpressionToSoyValueProviderCompiler soyValueProviderCompiler =
         ExpressionToSoyValueProviderCompiler.create(analysis, expressionCompiler, parameterLookup);
     return new SoyNodeCompiler(
-        registry,
         analysis,
         innerClasses,
         detachState,
@@ -174,7 +171,6 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         javaSourceFunctionCompiler);
   }
 
-  final TemplateRegistry registry;
   final TemplateAnalysis analysis;
   final InnerClasses innerClasses;
   final DetachState detachState;
@@ -189,7 +185,6 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   private Scope currentScope;
 
   SoyNodeCompiler(
-      TemplateRegistry registry,
       TemplateAnalysis analysis,
       InnerClasses innerClasses,
       DetachState detachState,
@@ -201,7 +196,6 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       ExpressionToSoyValueProviderCompiler expressionToSoyValueProviderCompiler,
       BasicExpressionCompiler constantCompiler,
       JavaSourceFunctionCompiler javaSourceFunctionCompiler) {
-    this.registry = registry;
     this.analysis = checkNotNull(analysis);
     this.innerClasses = innerClasses;
     this.detachState = checkNotNull(detachState);
@@ -1116,8 +1110,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       // Use invokedynamic to bind to the method.  This allows applications using complex
       // classloader setups to have {call} commands cross classloader boundaries.  It also enables
       // our stubbing library to intercept all calls.
-      CompiledTemplateMetadata metadata =
-          CompiledTemplateMetadata.create(registry.getBasicTemplateOrElement(node.getCalleeName()));
+      CompiledTemplateMetadata metadata = CompiledTemplateMetadata.create(node);
       return renderCallNode(
           node,
           new CallGenerator() {
@@ -1659,7 +1652,6 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   /** Returns a {@link SoyNodeCompiler} identical to this one but with an alternate appendable. */
   SoyNodeCompiler compilerWithNewAppendable(AppendableExpression appendable) {
     return new SoyNodeCompiler(
-        registry,
         analysis,
         innerClasses,
         detachState,

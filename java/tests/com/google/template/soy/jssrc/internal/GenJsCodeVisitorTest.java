@@ -33,7 +33,6 @@ import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.testing.SharedTestUtils;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import com.google.template.soy.types.SoyTypeRegistryBuilder;
@@ -71,7 +70,6 @@ public final class GenJsCodeVisitorTest {
     genJsCodeVisitor =
         JsSrcMain.createVisitor(
             jsSrcOptions,
-            TemplateRegistry.EMPTY,
             SoyTypeRegistryBuilder.create(),
             BidiGlobalDir.LTR,
             ErrorReporter.exploding());
