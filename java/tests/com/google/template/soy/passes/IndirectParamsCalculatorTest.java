@@ -85,16 +85,11 @@ public final class IndirectParamsCalculatorTest {
             + "  {call beta.four data=\"all\" /}\n"
             + "  {$b4}\n"
             + "  {$a5}\n"
-            + "{/template}\n"
-            + "\n"
-            + "{template .six}\n"
-            + "  {@param? a6: ?}\n"
-            + "  {$a6}\n"
             + "{/template}\n";
 
     String beta =
         "{namespace beta}\n"
-            + "import * as alpha from 'no-path';\n"
+            + "import * as gamma from 'no-path-3';\n"
             + "{template .zero}\n"
             + "  {@param? b0: ?}\n"
             + "  {$b0}\n"
@@ -102,7 +97,7 @@ public final class IndirectParamsCalculatorTest {
             + "\n"
             + "{template .one}\n"
             + "  {@param? b1: ?}\n"
-            + "  {call alpha.six data=\"all\" /}\n"
+            + "  {call gamma.six data=\"all\" /}\n"
             + "  {$b1}\n"
             + "{/template}\n"
             + "\n"
@@ -121,8 +116,15 @@ public final class IndirectParamsCalculatorTest {
             + "  {$b4}\n"
             + "{/template}\n";
 
+    String gamma =
+        "{namespace gamma}\n"
+            + "{template .six}\n"
+            + "  {@param? a6: ?}\n"
+            + "  {$a6}\n"
+            + "{/template}\n";
+
     TemplateRegistry registry =
-        SoyFileSetParserBuilder.forFileContents(alpha, beta).parse().registry();
+        SoyFileSetParserBuilder.forFileContents(alpha, beta, gamma).parse().registry();
 
     TemplateMetadata a0 = registry.getBasicTemplateOrElement("alpha.zero");
     TemplateMetadata a1 = registry.getBasicTemplateOrElement("alpha.one");
@@ -130,7 +132,7 @@ public final class IndirectParamsCalculatorTest {
     TemplateMetadata a3 = registry.getBasicTemplateOrElement("alpha.three");
     // TemplateMetadata a4 = registry.getBasicTemplateOrElement("alpha.four");
     TemplateMetadata a5 = registry.getBasicTemplateOrElement("alpha.five");
-    TemplateMetadata a6 = registry.getBasicTemplateOrElement("alpha.six");
+    TemplateMetadata a6 = registry.getBasicTemplateOrElement("gamma.six");
     TemplateMetadata b1 = registry.getBasicTemplateOrElement("beta.one");
     // TemplateMetadata b2 = registry.getBasicTemplateOrElement("beta.two");
     TemplateMetadata b3 = registry.getBasicTemplateOrElement("beta.three");

@@ -21,7 +21,7 @@ import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.soytree.SoyFileNode;
 
 /**
- * A pass that runs over all {@link SoyFileKind#SRC source} files.
+ * A pass that runs over all {@link SoyFileNode source} files.
  *
  * <p>Prefer implementing {@link CompilerFilePass} whenever possible. This should only be used for
  * passes that need to access transitive callee information.
@@ -37,6 +37,12 @@ import com.google.template.soy.soytree.SoyFileNode;
  * registyr is needed for the pass.
  */
 public interface CompilerFileSetPass extends CompilerPass {
+
+  /**
+   * Marker interface for passes that would like to receive {@code sourceFiles} topologically
+   * sorted. Such passes must run after {@link FileDependencyOrderPass}.
+   */
+  interface TopologicallyOrdered extends CompilerFileSetPass {}
 
   /**
    * Result after running this pass, indicating whether it's "safe" to continue compiling.

@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.stream.Collectors.joining;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
@@ -29,6 +30,8 @@ import com.google.template.soy.conformance.ValidatedConformanceConfig;
 import com.google.template.soy.css.CssRegistry;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
+import com.google.template.soy.passes.CompilerFileSetPass.Result;
+import com.google.template.soy.passes.CompilerFileSetPass.TopologicallyOrdered;
 import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -42,7 +45,6 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Configures all compiler passes.
@@ -85,23 +87,27 @@ public final class PassManager {
     STOP_AFTER_PASS,
   }
 
+  /** State used for inter-pass communication, without modifying the AST. */
+  private static class AccumulatedState {
+    private TemplateNameRegistry templateNameRegistry;
+    private TemplateRegistry fileSetTemplateRegistry;
+    private ImmutableList<SoyFileNode> topologicallyOrderedFiles;
+  }
+
   @VisibleForTesting final ImmutableList<CompilerFilePass> parsePasses;
   @VisibleForTesting final ImmutableList<CompilerFileSetPass> partialTemplateRegistryPasses;
   @VisibleForTesting final ImmutableList<CompilerFileSetPass> crossTemplateCheckingPasses;
-  private final AtomicReference<TemplateNameRegistry> templateNameRegistrySupplier;
-  private final AtomicReference<TemplateRegistry> fileSetRegistrySupplier;
+  private final AccumulatedState accumulatedState;
 
   private PassManager(
       ImmutableList<CompilerFilePass> parsePasses,
       ImmutableList<CompilerFileSetPass> partialTemplateRegistryPasses,
       ImmutableList<CompilerFileSetPass> crossTemplateCheckingPasses,
-      AtomicReference<TemplateNameRegistry> templateNameRegistrySupplier,
-      AtomicReference<TemplateRegistry> fileSetRegistrySupplier) {
+      AccumulatedState accumulatedState) {
     this.parsePasses = parsePasses;
     this.partialTemplateRegistryPasses = partialTemplateRegistryPasses;
     this.crossTemplateCheckingPasses = crossTemplateCheckingPasses;
-    this.templateNameRegistrySupplier = templateNameRegistrySupplier;
-    this.fileSetRegistrySupplier = fileSetRegistrySupplier;
+    this.accumulatedState = accumulatedState;
     checkOrdering();
   }
 
@@ -119,39 +125,37 @@ public final class PassManager {
    * @param partialTemplateRegistryWithJustDeps registry of {@link TemplatesPerFile} for just the
    *     deps (we don't have enough info yet to create the metadata for the current fileset).
    */
-  public CompilerFileSetPass.Result runPartialTemplateRegistryPasses(
+  public Result runPartialTemplateRegistryPasses(
       SoyFileSetNode soyTree,
       TemplateNameRegistry templateNameRegistry,
       TemplateRegistry partialTemplateRegistryWithJustDeps) {
-    templateNameRegistrySupplier.set(templateNameRegistry);
-    fileSetRegistrySupplier.set(partialTemplateRegistryWithJustDeps);
-
-    ImmutableList<SoyFileNode> sourceFiles = ImmutableList.copyOf(soyTree.getChildren());
-    IdGenerator idGenerator = soyTree.getNodeIdGenerator();
-    for (CompilerFileSetPass pass : partialTemplateRegistryPasses) {
-      CompilerFileSetPass.Result result = pass.run(sourceFiles, idGenerator);
-      if (!result.equals(CompilerFileSetPass.Result.CONTINUE)) {
-        return result;
-      }
-    }
-    return CompilerFileSetPass.Result.CONTINUE;
+    accumulatedState.templateNameRegistry = templateNameRegistry;
+    accumulatedState.fileSetTemplateRegistry = partialTemplateRegistryWithJustDeps;
+    return runSomePasses(soyTree, partialTemplateRegistryPasses);
   }
 
   /**
    * Runs all the fileset passes including the autoescaper and optimization passes if configured.
    */
   public void runWholeFilesetPasses(SoyFileSetNode soyTree, TemplateRegistry templateRegistry) {
-    fileSetRegistrySupplier.set(templateRegistry);
+    accumulatedState.fileSetTemplateRegistry = templateRegistry;
+    runSomePasses(soyTree, crossTemplateCheckingPasses);
+  }
 
+  private Result runSomePasses(SoyFileSetNode soyTree, Iterable<CompilerFileSetPass> passes) {
     ImmutableList<SoyFileNode> sourceFiles = ImmutableList.copyOf(soyTree.getChildren());
     IdGenerator idGenerator = soyTree.getNodeIdGenerator();
-    for (CompilerFileSetPass pass : crossTemplateCheckingPasses) {
-      // TODO(user): Update all passes to use supplier and remove templateRegistry from params.
-      CompilerFileSetPass.Result result = pass.run(sourceFiles, idGenerator);
-      if (result == CompilerFileSetPass.Result.STOP) {
-        break;
+    for (CompilerFileSetPass pass : passes) {
+      ImmutableList<SoyFileNode> sourceFilesThisPass = sourceFiles;
+      if (pass instanceof TopologicallyOrdered) {
+        sourceFilesThisPass =
+            Preconditions.checkNotNull(accumulatedState.topologicallyOrderedFiles);
+      }
+      if (pass.run(sourceFilesThisPass, idGenerator) == Result.STOP) {
+        return Result.STOP;
       }
     }
+    return Result.CONTINUE;
   }
 
   /** Enforces that the current set of passes doesn't violate any annotated ordering constraints. */
@@ -230,10 +234,7 @@ public final class PassManager {
     private final Map<Class<? extends CompilerPass>, PassContinuationRule>
         passContinuationRegistry = Maps.newHashMap();
     private boolean building;
-    private final AtomicReference<TemplateNameRegistry> templateNameRegistrySupplier =
-        new AtomicReference<>();
-    private final AtomicReference<TemplateRegistry> fileSetRegistrySupplier =
-        new AtomicReference<>();
+    private final AccumulatedState accumulatedState = new AccumulatedState();
 
     public Builder setErrorReporter(ErrorReporter errorReporter) {
       this.errorReporter = checkNotNull(errorReporter);
@@ -396,7 +397,12 @@ public final class PassManager {
               options,
               disableAllTypeChecking,
               new ProtoImportProcessor(registry, errorReporter, disableAllTypeChecking),
-              new TemplateImportProcessor(errorReporter, templateNameRegistrySupplier::get)),
+              new TemplateImportProcessor(
+                  errorReporter, () -> accumulatedState.templateNameRegistry)),
+          partialTemplateRegistryPassesBuilder);
+      addPass(
+          new FileDependencyOrderPass(
+              errorReporter, v -> accumulatedState.topologicallyOrderedFiles = v),
           partialTemplateRegistryPassesBuilder);
       addPass(new RestoreGlobalsPass(), partialTemplateRegistryPassesBuilder);
       addPass(new RestoreCompilerChecksPass(errorReporter), partialTemplateRegistryPassesBuilder);
@@ -549,7 +555,7 @@ public final class PassManager {
       addPass(new CallAnnotationPass(), crossTemplateCheckingPassesBuilder);
       addPass(new CheckTemplateVisibilityPass(errorReporter), crossTemplateCheckingPassesBuilder);
       addPass(
-          new CheckDelegatesPass(errorReporter, fileSetRegistrySupplier::get),
+          new CheckDelegatesPass(errorReporter, () -> accumulatedState.fileSetTemplateRegistry),
           crossTemplateCheckingPassesBuilder);
 
       addPass(new CombineConsecutiveRawTextNodesPass(), crossTemplateCheckingPassesBuilder);
@@ -578,7 +584,8 @@ public final class PassManager {
       // RawTextNodes. Stich them back together here.
       addPass(new CombineConsecutiveRawTextNodesPass(), crossTemplateCheckingPassesBuilder);
       addPass(
-          new BanDuplicateNamespacesPass(errorReporter, fileSetRegistrySupplier::get),
+          new BanDuplicateNamespacesPass(
+              errorReporter, () -> accumulatedState.fileSetTemplateRegistry),
           crossTemplateCheckingPassesBuilder);
       building = false;
       if (!passContinuationRegistry.isEmpty()) {
@@ -589,8 +596,7 @@ public final class PassManager {
           createParsePasses(errorReporter),
           partialTemplateRegistryPassesBuilder.build(),
           crossTemplateCheckingPassesBuilder.build(),
-          templateNameRegistrySupplier,
-          fileSetRegistrySupplier);
+          accumulatedState);
     }
 
     /** Adds the pass as a file set pass. */
