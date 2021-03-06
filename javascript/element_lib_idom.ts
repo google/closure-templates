@@ -41,7 +41,7 @@ export abstract class SoyElement<TData extends {}|null, TInterface extends {}> {
   // Marker so that future element accesses can find this Soy element from the
   // DOM
   key: string = '';
-  private logGraft = true;
+  private logGraft = false;
 
   constructor(protected data: TData, protected ijData?: IjData) {}
 
