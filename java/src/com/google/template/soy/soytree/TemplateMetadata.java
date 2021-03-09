@@ -89,7 +89,6 @@ public abstract class TemplateMetadata {
         .setParameters(directParametersFromTemplate(template))
         .setDataAllCallSituations(dataAllCallSituationFromTemplate(template))
         .setIdentifierForDebugging(template.getTemplateName())
-        .setInferredType(true)
         .build();
   }
 
