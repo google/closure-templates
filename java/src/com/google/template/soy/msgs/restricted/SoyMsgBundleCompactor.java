@@ -120,6 +120,44 @@ public final class SoyMsgBundleCompactor {
   }
 
   /**
+   * Filters cases to remove unnecessary cases that can easily fall back to the default.
+   *
+   * <p>This method does not recursively intern.
+   *
+   * @param cases Mapping (as pairs) from case spec to the message parts for that case.
+   * @param defaultCaseSpec The default or "other" case specification value.
+   */
+  public static <T> Iterable<SoyMsgPart.Case<T>> pruneRedundantCases(
+      ImmutableList<SoyMsgPart.Case<T>> cases, T defaultCaseSpec) {
+
+    // Determine the fallback/other case value.
+    ImmutableList<SoyMsgPart> defaultValue = null;
+    for (SoyMsgPart.Case<T> caseAndValue : cases) {
+      if (Objects.equals(caseAndValue.spec(), defaultCaseSpec)) {
+        defaultValue = caseAndValue.parts();
+        break;
+      }
+    }
+
+    // If there's no default, no equivalent-to-default case-dropping will occur.
+    if (defaultValue == null) {
+      return cases;
+    }
+
+    ImmutableList.Builder<SoyMsgPart.Case<T>> builder = ImmutableList.builder();
+    for (SoyMsgPart.Case<T> caseAndValue : cases) {
+      // See if this case is the same as the default/other case, but isn't itself the default/other
+      // case, and can be pruned.
+      if (!Objects.equals(caseAndValue.spec(), defaultCaseSpec)
+          && defaultValue.equals(caseAndValue.parts())) {
+        continue;
+      }
+      builder.add(caseAndValue);
+    }
+    return builder.build();
+  }
+
+  /**
    * Recursively compacts plural/select cases.
    *
    * <p>This will attempt to remove unnecessary cases that can easily fall back to the default.
@@ -128,26 +166,8 @@ public final class SoyMsgBundleCompactor {
    * @param defaultCaseSpec The default or "other" case specification value.
    */
   private <T> ImmutableList<Case<T>> compactCases(ImmutableList<Case<T>> cases, T defaultCaseSpec) {
-    // Determine the fallback/other case value.
-    ImmutableList<SoyMsgPart> defaultValue = null;
-    for (Case<T> caseAndValue : cases) {
-      if (Objects.equals(caseAndValue.spec(), defaultCaseSpec)) {
-        defaultValue = caseAndValue.parts();
-        break;
-      }
-    }
-
     ImmutableList.Builder<Case<T>> builder = ImmutableList.builder();
-    for (Case<T> caseAndValue : cases) {
-
-      // See if this case is the same as the default/other case, but isn't itself the default/other
-      // case, and can be pruned.
-      if (defaultValue != null
-          && !Objects.equals(caseAndValue.spec(), defaultCaseSpec)
-          && defaultValue.equals(caseAndValue.parts())) {
-        continue;
-      }
-
+    for (Case<T> caseAndValue : pruneRedundantCases(cases, defaultCaseSpec)) {
       // Intern the case value, since they tend to be very common among templates. For select,
       // they tend to be strings like "male" or "female", and for plurals, it tends to be one
       // of the few in the enum.
