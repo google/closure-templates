@@ -21,10 +21,8 @@ import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.Streams.stream;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Streams;
 import com.google.template.soy.base.internal.Identifier;
-import com.google.template.soy.soytree.TemplatesPerFile.TemplateName;
 import com.google.template.soy.types.DelegatingSoyTypeRegistry;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
@@ -131,45 +129,21 @@ public final class ImportsContext {
    * A {@link TemplateRegistry} that includes imported symbols (possibly aliased) in a given file.
    */
   public static final class ImportsTemplateRegistry extends DelegatingTemplateRegistry {
-    // Map of import symbol (possibly aliased) to the template it refers to.
-    private final ImmutableMap<String, TemplateName> symbolToTemplateMap;
 
     // Which file this registry is for. Used to get the delegate file set registry.
     private final SoyFileNode file;
 
-    public ImportsTemplateRegistry(
-        SoyFileNode file, ImmutableMap<String, TemplateName> symbolToTemplateMap) {
-      this.symbolToTemplateMap = symbolToTemplateMap;
+    public ImportsTemplateRegistry(SoyFileNode file) {
       this.file = file;
     }
 
     @Override
-    protected FileSetTemplateRegistry getDelegate() {
+    protected TemplateRegistry getDelegate() {
       return fileSetRegistry();
     }
 
     public void updateTemplate(TemplateNode node) {
       fileSetRegistry().updateTemplate(node);
-    }
-
-    @Override
-    public TemplateMetadata getBasicTemplateOrElement(String callTmplName) {
-      // If the template name matches an imported template symbol, return the symbol's corresponding
-      // template info.
-      if (symbolToTemplateMap.containsKey(callTmplName)) {
-        return fileSetRegistry()
-            .getBasicTemplateOrElement(symbolToTemplateMap.get(callTmplName).fullyQualifiedName());
-      }
-      // Otherwise, check the file set's template registry (which uses fully qualified names).
-      return fileSetRegistry().getBasicTemplateOrElement(callTmplName);
-    }
-
-    public ImmutableMap<String, TemplateName> getSymbolsToTemplateNamesMap() {
-      return symbolToTemplateMap;
-    }
-
-    public ImmutableSet<String> getImportedSymbols() {
-      return symbolToTemplateMap.keySet();
     }
 
     private FileSetTemplateRegistry fileSetRegistry() {

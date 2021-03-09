@@ -284,7 +284,7 @@ public final class CheckDelegatesPassTest {
   @Test
   public void testErrorDelegateCallToBasicTemplate() {
     assertInvalidSoyFiles(
-        "'delcall' to basic template 'ns2.foo' (expected 'call').",
+        "'delcall' to basic template defined at '2:9-2:11' (expected 'call').",
         ""
             + "{namespace ns1}\n"
             + "import {foo} from 'no-path-2';\n"

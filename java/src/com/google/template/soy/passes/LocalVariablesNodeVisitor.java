@@ -20,6 +20,7 @@ import static com.google.template.soy.soytree.TemplateDelegateNodeBuilder.isDelt
 import static java.util.stream.Collectors.toList;
 
 import com.google.common.base.Preconditions;
+import com.google.errorprone.annotations.ForOverride;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.Node;
 import com.google.template.soy.error.ErrorReporter;
@@ -155,7 +156,7 @@ final class LocalVariablesNodeVisitor {
     /** Scope for injected params. */
     private LocalVariables localVariables;
 
-    protected abstract ExprVisitor getExprVisitor();
+    protected abstract LocalVariableExprVisitor getExprVisitor();
 
     @Nullable
     protected ErrorReporter getErrorReporter() {
@@ -180,9 +181,15 @@ final class LocalVariablesNodeVisitor {
       }
 
       super.visitSoyFileNode(node);
-      localVariables.exitScope();
+      if (cleanUpFileScope()) {
+        localVariables.exitScope();
+        localVariables = null;
+      }
+    }
 
-      localVariables = null;
+    @ForOverride
+    protected boolean cleanUpFileScope() {
+      return true;
     }
 
     @Override
@@ -280,6 +287,32 @@ final class LocalVariablesNodeVisitor {
     }
   }
 
+  private static final class GetFileScopeVisitor extends NodeVisitor {
+    private final LocalVariableExprVisitor exprVisitor = (node, localVariables) -> null;
+
+    @Override
+    protected void visitTemplateNode(TemplateNode node) {}
+
+    @Override
+    protected boolean cleanUpFileScope() {
+      return false;
+    }
+
+    @Override
+    protected LocalVariableExprVisitor getExprVisitor() {
+      return exprVisitor;
+    }
+  }
+
+  /**
+   * Returns the local variable state that exists just before entering any template in {@code node}.
+   */
+  public static LocalVariables getFileScopeVariables(SoyFileNode node) {
+    GetFileScopeVisitor visitor = new GetFileScopeVisitor();
+    visitor.exec(node);
+    return visitor.getLocalVariables();
+  }
+
   /** Better error messages exist for deltemplate duplicates. */
   private static boolean shouldSkipError(VarDefn defn, VarDefn preexisting) {
     return defn.kind() == Kind.TEMPLATE
@@ -311,14 +344,20 @@ final class LocalVariablesNodeVisitor {
   // -----------------------------------------------------------------------------------------------
   // Expr visitor.
 
+  interface LocalVariableExprVisitor {
+    Void exec(ExprNode node, LocalVariables localVariables);
+  }
+
   /**
    * Visitor which resolves all variable and parameter references in expressions to point to the
    * corresponding declaration object.
    */
-  abstract static class ExprVisitor extends AbstractExprNodeVisitor<Void> {
+  abstract static class ExprVisitor extends AbstractExprNodeVisitor<Void>
+      implements LocalVariableExprVisitor {
 
     private LocalVariables localVariables;
 
+    @Override
     public final Void exec(ExprNode node, LocalVariables localVariables) {
       this.localVariables = localVariables;
       exec(node);
