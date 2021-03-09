@@ -37,6 +37,7 @@ import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.ListComprehensionNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
+import com.google.template.soy.exprtree.MapLiteralFromListNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.NullNode;
@@ -293,6 +294,13 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
       dict.put(key, visit(valueNode));
     }
 
+    return PyExprUtils.convertMapToPyExpr(dict);
+  }
+
+  @Override
+  protected PyExpr visitMapLiteralFromListNode(MapLiteralFromListNode node) {
+    // Unimplemented. Return an empty map for now.
+    Map<PyExpr, PyExpr> dict = new LinkedHashMap<>();
     return PyExprUtils.convertMapToPyExpr(dict);
   }
 

@@ -53,6 +53,7 @@ import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.ListComprehensionNode;
 import com.google.template.soy.exprtree.ListComprehensionNode.ComprehensionVarDefn;
 import com.google.template.soy.exprtree.ListLiteralNode;
+import com.google.template.soy.exprtree.MapLiteralFromListNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.NullNode;
@@ -564,6 +565,16 @@ final class ExpressionCompiler {
         keys.add(visit(node.getChild(2 * i)).box());
         values.add(visit(node.getChild(2 * i + 1)).box());
       }
+      Expression soyDict =
+          MethodRef.MAP_IMPL_FOR_PROVIDER_MAP.invoke(BytecodeUtils.newHashMap(keys, values));
+      return SoyExpression.forSoyValue(node.getType(), soyDict);
+    }
+
+    @Override
+    protected final SoyExpression visitMapLiteralFromListNode(MapLiteralFromListNode node) {
+      // Unimplemented. Return an empty map for now.
+      List<Expression> keys = new ArrayList<>();
+      List<Expression> values = new ArrayList<>();
       Expression soyDict =
           MethodRef.MAP_IMPL_FOR_PROVIDER_MAP.invoke(BytecodeUtils.newHashMap(keys, values));
       return SoyExpression.forSoyValue(node.getType(), soyDict);
@@ -1686,6 +1697,11 @@ final class ExpressionCompiler {
     }
 
     @Override
+    protected Boolean visitMapLiteralFromListNode(MapLiteralFromListNode node) {
+      return areAllChildrenConstant(node);
+    }
+
+    @Override
     protected Boolean visitMethodCallNode(MethodCallNode node) {
       if (node.getMethodName().toString().equals("bind")) {
         return areAllChildrenConstant(node);
@@ -1772,6 +1788,11 @@ final class ExpressionCompiler {
 
     @Override
     protected Boolean visitListComprehensionNode(ListComprehensionNode node) {
+      return true;
+    }
+
+    @Override
+    protected Boolean visitMapLiteralFromListNode(MapLiteralFromListNode node) {
       return true;
     }
 

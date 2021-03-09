@@ -77,6 +77,7 @@ import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.ListComprehensionNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
+import com.google.template.soy.exprtree.MapLiteralFromListNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.NullNode;
@@ -397,6 +398,12 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
       map = map.dotAccess("set").call(key, value);
     }
     return map;
+  }
+
+  @Override
+  protected Expression visitMapLiteralFromListNode(MapLiteralFromListNode node) {
+    // Unimplemented. Return an empty map for now.
+    return Expression.constructMap();
   }
 
   private Expression genMapKeyCode(ExprNode keyNode) {

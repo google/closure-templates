@@ -76,6 +76,7 @@ import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.ListComprehensionNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
+import com.google.template.soy.exprtree.MapLiteralFromListNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.NullNode;
@@ -187,6 +188,10 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
   private static final SoyErrorKind BAD_KEY_TYPE = SoyErrorKind.of("Bad key type {0} for {1}.");
   private static final SoyErrorKind BAD_LIST_COMP_TYPE =
       SoyErrorKind.of("Bad list comprehension type. {0} has type: {1}, but should be a list.");
+  private static final SoyErrorKind BAD_MAP_LITERAL_FROM_LIST_TYPE =
+      SoyErrorKind.of(
+          "Bad list to map constructor. {0} has type: {1}, but should be a list of records with 2"
+              + " fields named key and value.");
 
   private static final SoyErrorKind BRACKET_ACCESS_NOT_SUPPORTED =
       SoyErrorKind.of("Type {0} does not support bracket access.");
@@ -305,6 +310,11 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
               + " names are not allowed.");
   private static final SoyErrorKind NOT_PROTO_MESSAGE =
       SoyErrorKind.of("Only proto messages may be instantiated.");
+
+  private static final String KEY_STRING = "key";
+  private static final String VALUE_STRING = "value";
+  private static final ImmutableList<String> MAP_RECORD_FIELDS =
+      ImmutableList.of(KEY_STRING, VALUE_STRING);
 
   private final ErrorReporter errorReporter;
 
@@ -882,6 +892,50 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
       SoyType commonValueType = SoyTypes.computeLowestCommonType(typeRegistry, valueTypes);
       node.setType(typeRegistry.getOrCreateMapType(commonKeyType, commonValueType));
 
+      tryApplySubstitution(node);
+    }
+
+    private boolean isListOfKeyValueRecords(SoyType type) {
+      if (!(type instanceof ListType)) {
+        return false;
+      }
+      ListType listType = (ListType) type;
+
+      if (!(listType.getElementType() instanceof RecordType)) {
+        return false;
+      }
+      RecordType recordType = (RecordType) listType.getElementType();
+
+      return ImmutableList.sortedCopyOf(recordType.getMemberNames()).equals(MAP_RECORD_FIELDS);
+    }
+
+    @Override
+    protected void visitMapLiteralFromListNode(MapLiteralFromListNode node) {
+      // Resolve the listExpr in "map(listExpr)".
+      visit(node.getListExpr());
+
+      if (!isListOfKeyValueRecords(node.getListExpr().getType())) {
+        errorReporter.report(
+            node.getListExpr().getSourceLocation(),
+            BAD_MAP_LITERAL_FROM_LIST_TYPE,
+            node.getListExpr().toSourceString(),
+            node.getListExpr().getType());
+        node.setType(MapType.EMPTY_MAP);
+        return;
+      }
+
+      SoyType keyType =
+          ((RecordType) ((ListType) node.getListExpr().getType()).getElementType())
+              .getMemberType(KEY_STRING);
+      SoyType valueType =
+          ((RecordType) ((ListType) node.getListExpr().getType()).getElementType())
+              .getMemberType(VALUE_STRING);
+      if (!MapType.isAllowedKeyType(keyType)) {
+        errorReporter.report(node.getSourceLocation(), MapType.BAD_MAP_KEY_TYPE, keyType);
+      }
+      // TODO: Catch duplicate keys whenever possible. This is important to support when we make the
+      // map from list constructor syntax less clunky (e.g. by supporting tuples, see b/182212609).
+      node.setType(typeRegistry.getOrCreateMapType(keyType, valueType));
       tryApplySubstitution(node);
     }
 

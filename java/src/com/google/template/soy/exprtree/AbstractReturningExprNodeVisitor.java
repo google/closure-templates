@@ -96,6 +96,8 @@ public abstract class AbstractReturningExprNodeVisitor<R>
         return visitListComprehensionNode((ListComprehensionNode) node);
       case MAP_LITERAL_NODE:
         return visitMapLiteralNode((MapLiteralNode) node);
+      case MAP_LITERAL_FROM_LIST_NODE:
+        return visitMapLiteralFromListNode((MapLiteralFromListNode) node);
       case RECORD_LITERAL_NODE:
         return visitRecordLiteralNode((RecordLiteralNode) node);
 
@@ -231,6 +233,10 @@ public abstract class AbstractReturningExprNodeVisitor<R>
   }
 
   protected R visitMapLiteralNode(MapLiteralNode node) {
+    return visitExprNode(node);
+  }
+
+  protected R visitMapLiteralFromListNode(MapLiteralFromListNode node) {
     return visitExprNode(node);
   }
 

@@ -148,6 +148,11 @@ public final class ExprEquivalence {
           return mapLiteralFields(node).hashCode();
         }
 
+        @Override
+        protected Integer visitMapLiteralFromListNode(MapLiteralFromListNode node) {
+          return hashChildren(node);
+        }
+
         // literals
 
         @Override
@@ -313,6 +318,11 @@ public final class ExprEquivalence {
     @Override
     protected Boolean visitListComprehensionNode(ListComprehensionNode node) {
       return node == other;
+    }
+
+    @Override
+    protected Boolean visitMapLiteralFromListNode(MapLiteralFromListNode node) {
+      return compareChildren(node);
     }
 
     // literals

@@ -74,6 +74,7 @@ import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.ListComprehensionNode;
 import com.google.template.soy.exprtree.ListComprehensionNode.ComprehensionVarDefn;
 import com.google.template.soy.exprtree.ListLiteralNode;
+import com.google.template.soy.exprtree.MapLiteralFromListNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.NullNode;
@@ -339,6 +340,12 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       map.put(key, value);
     }
     return SoyMapImpl.forProviderMap(map);
+  }
+
+  @Override
+  protected SoyValue visitMapLiteralFromListNode(MapLiteralFromListNode node) {
+    // Unimplemented. Return an empty map for now.
+    return SoyMapImpl.forProviderMap(new HashMap<>());
   }
 
   // -----------------------------------------------------------------------------------------------

@@ -56,6 +56,7 @@ public interface ExprNode extends Node {
     LIST_LITERAL_NODE,
     LIST_COMPREHENSION_NODE,
     MAP_LITERAL_NODE,
+    MAP_LITERAL_FROM_LIST_NODE,
     RECORD_LITERAL_NODE,
 
     VAR_REF_NODE,

@@ -40,6 +40,7 @@ import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ListComprehensionNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
+import com.google.template.soy.exprtree.MapLiteralFromListNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.NullSafeAccessNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
@@ -741,6 +742,11 @@ final class TemplateAnalysis {
 
     @Override
     protected void visitMapLiteralNode(MapLiteralNode node) {
+      visitChildren(node);
+    }
+
+    @Override
+    protected void visitMapLiteralFromListNode(MapLiteralFromListNode node) {
       visitChildren(node);
     }
 
