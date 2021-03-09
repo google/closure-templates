@@ -239,6 +239,7 @@ public final class TemplateMetadataSerializer {
                         filePath,
                         errorReporter))
                 .setIdentifierForDebugging(templateName)
+                .setInferredType(true)
                 .build())
         .setSourceLocation(new SourceLocation(SourceFilePath.create(fileProto.getFilePath())))
         .setVisibility(VISIBILITY_CONVERTER.convert(templateProto.getVisibility()))

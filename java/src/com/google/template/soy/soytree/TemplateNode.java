@@ -718,8 +718,11 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
   public VarDefn asVarDefn() {
     TemplateVarDefn tmp = varDefn;
     if (tmp == null) {
-      TemplateImportType importType = TemplateImportType.create(getTemplateName());
-      tmp = new TemplateVarDefn(getLocalTemplateSymbol(), getTemplateNameLocation(), importType);
+      tmp =
+          new TemplateVarDefn(
+              getLocalTemplateSymbol(),
+              getTemplateNameLocation(),
+              TemplateImportType.create(getTemplateName()));
       varDefn = tmp;
     }
     return tmp;

@@ -21,6 +21,7 @@ import com.google.common.base.Preconditions;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.TriState;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.types.NamedTemplateType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.TemplateImportType;
 import com.google.template.soy.types.UnknownType;
@@ -28,6 +29,9 @@ import javax.annotation.Nullable;
 
 /** Node representing a template literal. */
 public final class TemplateLiteralNode extends AbstractParentExprNode {
+
+  private static final NamedTemplateType VARREF_PLACEHOLDER =
+      NamedTemplateType.create("__varref__");
 
   private TriState isStaticCall = TriState.UNSET;
   private String templateFqn;
@@ -42,6 +46,8 @@ public final class TemplateLiteralNode extends AbstractParentExprNode {
     node.addChild(varRef);
     if (varRef.hasType() && varRef.getType().getKind() == SoyType.Kind.TEMPLATE_TYPE) {
       node.resolveTemplateName();
+    } else {
+      node.type = VARREF_PLACEHOLDER;
     }
     return node;
   }
@@ -95,7 +101,6 @@ public final class TemplateLiteralNode extends AbstractParentExprNode {
     return type;
   }
 
-  @Override
   public void setType(SoyType type) {
     this.type = Preconditions.checkNotNull(type);
   }

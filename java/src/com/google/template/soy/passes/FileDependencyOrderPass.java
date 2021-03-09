@@ -78,7 +78,6 @@ public class FileDependencyOrderPass implements CompilerFileSetPass {
   @Override
   public Result run(ImmutableList<SoyFileNode> files, IdGenerator idGenerator) {
     if (files.size() < 2) {
-      stateSetter.accept(files);
       return Result.CONTINUE;
     }
 
@@ -103,7 +102,6 @@ public class FileDependencyOrderPass implements CompilerFileSetPass {
           sorter.cyclicKeys.stream().map(fn -> fn.getFilePath().path()).collect(joining("\n--> "));
       if (allowedCyclical(sorter.allNonLeafKeys)) {
         errorReporter.warn(SourceLocation.UNKNOWN, CYCLE, cycleText);
-        stateSetter.accept(files);
         return Result.CONTINUE;
       } else {
         errorReporter.report(SourceLocation.UNKNOWN, CYCLE, cycleText);

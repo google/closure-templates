@@ -108,6 +108,8 @@ public abstract class TemplateType extends SoyType {
 
   public abstract String getIdentifierForDebugging();
 
+  public abstract boolean isInferredType();
+
   public abstract Builder toBuilder();
 
   public static Builder builder() {
@@ -134,6 +136,8 @@ public abstract class TemplateType extends SoyType {
         ImmutableList<DataAllCallSituation> dataAllCallSituations);
 
     public abstract Builder setIdentifierForDebugging(String identifierForDebugging);
+
+    public abstract Builder setInferredType(boolean isInferredType);
 
     abstract TemplateType autoBuild();
 
@@ -337,6 +341,7 @@ public abstract class TemplateType extends SoyType {
         .setDataAllCallSituations(ImmutableList.of())
         .setIdentifierForDebugging(
             stringRepresentation(parameters, templateContentKind, ImmutableSet.of()))
+        .setInferredType(false)
         .setAllowExtraAttributes(false)
         .setReservedAttributes(ImmutableSet.of())
         .build();

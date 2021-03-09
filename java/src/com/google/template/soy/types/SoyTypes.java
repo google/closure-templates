@@ -315,6 +315,11 @@ public final class SoyTypes {
           }
 
           @Override
+          public Boolean visit(NamedTemplateType type) {
+            return kindTest.test(type);
+          }
+
+          @Override
           public Boolean visit(PrimitiveType type) {
             return kindTest.test(type);
           }

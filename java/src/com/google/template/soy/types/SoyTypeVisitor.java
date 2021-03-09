@@ -24,6 +24,8 @@ public interface SoyTypeVisitor<T> {
 
   T visit(MapType type);
 
+  T visit(NamedTemplateType type);
+
   T visit(PrimitiveType type);
 
   T visit(RecordType type);

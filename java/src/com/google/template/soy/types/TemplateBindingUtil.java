@@ -20,12 +20,14 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.error.SoyErrors;
 import java.util.HashSet;
 import java.util.Set;
+import javax.annotation.Nullable;
 
 /**
  * Utility for generating the return type of a template-type expression after the bind() method is
@@ -41,6 +43,9 @@ public final class TemplateBindingUtil {
       SoyErrorKind.of(
           "Cannot bind parameter named `{0}` to template of type `{1}`; expected `{2}` but found"
               + " `{3}`.");
+
+  private static final SoyErrorKind PARAMETER_ALREADY_BOUND =
+      SoyErrorKind.of("Parameter named `{0}` already bound to template.");
 
   public static SoyType bindParameters(
       SoyType base,
@@ -59,6 +64,20 @@ public final class TemplateBindingUtil {
           types.add(
               bindParametersToTemplate(
                   (TemplateType) baseType, parameterType, typeRegistry, errorReporter));
+          break;
+        case NAMED_TEMPLATE:
+          types.add(
+              bindParametersToNamedTemplate(
+                  (NamedTemplateType) baseType, parameterType, typeRegistry, errorReporter));
+          break;
+        case TEMPLATE_TYPE:
+          types.add(
+              bindParametersToNamedTemplate(
+                  ((TemplateImportType) baseType).getName(),
+                  null,
+                  parameterType,
+                  typeRegistry,
+                  errorReporter));
           break;
         default:
           throw new AssertionError();
@@ -110,6 +129,48 @@ public final class TemplateBindingUtil {
         TemplateType.stringRepresentation(newParameters, base.getContentKind(), ImmutableSet.of()));
     builder.setParameters(newParameters);
     return typeRegistry.internTemplateType(builder.build());
+  }
+
+  private static SoyType bindParametersToNamedTemplate(
+      NamedTemplateType base,
+      RecordType parameters,
+      SoyTypeRegistry typeRegistry,
+      ErrorReporter.LocationBound errorReporter) {
+    return bindParametersToNamedTemplate(
+        base.getTemplateName(),
+        base.getBoundParameters().orElse(null),
+        parameters,
+        typeRegistry,
+        errorReporter);
+  }
+
+  private static SoyType bindParametersToNamedTemplate(
+      String templateName,
+      @Nullable RecordType alreadyBound,
+      RecordType parameters,
+      SoyTypeRegistry typeRegistry,
+      ErrorReporter.LocationBound errorReporter) {
+    RecordType mergedParameters = null;
+    boolean reportedErrors = false;
+    if (alreadyBound != null) {
+      for (String name : parameters.getMemberNames()) {
+        if (alreadyBound.getMemberType(name) != null) {
+          errorReporter.report(PARAMETER_ALREADY_BOUND, name);
+          reportedErrors = true;
+        }
+      }
+      if (!reportedErrors) {
+        mergedParameters =
+            typeRegistry.getOrCreateRecordType(
+                Iterables.concat(alreadyBound.getMembers(), parameters.getMembers()));
+      }
+    } else {
+      mergedParameters = parameters;
+    }
+    if (reportedErrors) {
+      return UnknownType.getInstance();
+    }
+    return NamedTemplateType.createWithBoundParameters(templateName, mergedParameters);
   }
 
   /** Non-instantiable. */
