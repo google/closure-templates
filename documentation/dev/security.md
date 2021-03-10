@@ -304,6 +304,18 @@ becomes
 <script{if $csp_nonce} nonce="{$csp_nonce}"{/if}>...</script>
 ```
 
+Stylesheets use their own nonce if it is set:
+
+```html
+<style>...</style>
+```
+
+becomes
+
+```soy
+<style{if $csp_style_nonce} nonce="{$csp_style_nonce}"{/if}>...</style>
+```
+
 ### Configuring CSP nonces
 
 To configure CSP nonces with Soy:
