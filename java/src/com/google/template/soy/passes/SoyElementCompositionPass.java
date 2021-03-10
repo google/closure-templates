@@ -90,7 +90,7 @@ import javax.annotation.Nullable;
  * nodes that name HTML tags.
  */
 @RunBefore(AutoescaperPass.class /* Creates trusted_resource_uri params. */)
-@RunAfter(ResolveExpressionTypesPass.class)
+@RunAfter({ResolveExpressionTypesPass.class, FinalizeTemplateRegistryPass.class})
 final class SoyElementCompositionPass implements CompilerFileSetPass {
 
   private static final SoyErrorKind ILLEGAL_CHILD =

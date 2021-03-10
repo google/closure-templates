@@ -43,6 +43,7 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 /** Checks if HTML is printed only from HTML context. */
+@RunAfter(FinalizeTemplateRegistryPass.class)
 final class CheckBadContextualUsagePass implements CompilerFileSetPass {
 
   private static final SoyErrorKind CALLS_HTML_FROM_NON_HTML =

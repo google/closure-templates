@@ -16,14 +16,18 @@
 
 package com.google.template.soy.soytree;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
+
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.shared.internal.DelTemplateSelector;
+import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.TemplateType;
+import com.google.template.soy.types.TemplateType.TemplateKind;
+import com.google.template.soy.types.UnionType;
 import java.util.Optional;
 import javax.annotation.Nullable;
 
@@ -31,46 +35,75 @@ import javax.annotation.Nullable;
  * A registry or index of all in-scope templates.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public interface TemplateRegistry {
 
   TemplateRegistry EMPTY = FileSetTemplateRegistry.builder(ErrorReporter.exploding()).build();
 
-  /** Returns all basic template names. */
-  ImmutableSet<String> getBasicTemplateOrElementNames();
-
   /** Look up possible targets for a call. */
-  ImmutableList<TemplateType> getTemplates(CallNode node);
+  default ImmutableList<TemplateType> getTemplates(CallNode node) {
+    if (node instanceof CallBasicNode) {
+      SoyType calleeType = ((CallBasicNode) node).getCalleeExpr().getType();
+      if (calleeType == null) {
+        return ImmutableList.of();
+      }
+      if (calleeType.getKind() == SoyType.Kind.TEMPLATE) {
+        return ImmutableList.of((TemplateType) calleeType);
+      } else if (calleeType.getKind() == SoyType.Kind.UNION) {
+        ImmutableList.Builder<TemplateType> signatures = ImmutableList.builder();
+        for (SoyType member : ((UnionType) calleeType).getMembers()) {
+          // Rely on CheckTemplateCallsPass to catch this with nice error messages.
+          Preconditions.checkState(member.getKind() == SoyType.Kind.TEMPLATE);
+          signatures.add((TemplateType) member);
+        }
+        return signatures.build();
+      } else if (calleeType.getKind() == SoyType.Kind.UNKNOWN) {
+        // We may end up with UNKNOWN here for external calls.
+        return ImmutableList.of();
+      } else {
+        // Rely on previous passes to catch this with nice error messages.
+        throw new IllegalStateException(
+            "Unexpected type in call: " + calleeType.getClass() + " - " + node.toSourceString());
+      }
+    } else {
+      String calleeName = ((CallDelegateNode) node).getDelCalleeName();
+      return getDelTemplateSelector().delTemplateNameToValues().get(calleeName).stream()
+          .map(TemplateMetadata::getTemplateType)
+          .collect(toImmutableList());
+    }
+  }
 
-  /** Gets a map of file paths to templates defined in each file. */
-  ImmutableMap<SourceFilePath, TemplatesPerFile> getTemplatesPerFile();
+  @Nullable
+  TemplateMetadata getMetadata(String templateFqn);
 
-  /** Gets the templates in the given file. */
-  TemplatesPerFile getTemplatesPerFile(SourceFilePath fileName);
+  default TemplateMetadata getMetadata(TemplateNode node) {
+    return Preconditions.checkNotNull(getMetadata(node.getTemplateName()));
+  }
 
   /**
    * Retrieves a template or element given the template name.
    *
-   * @param templateName The basic template name to retrieve.
+   * @param templateFqn The basic template name to retrieve.
    * @return The corresponding template/element, or null if the name is not defined.
    */
   @Nullable
-  TemplateMetadata getBasicTemplateOrElement(String templateName);
+  default TemplateMetadata getBasicTemplateOrElement(String templateFqn) {
+    TemplateMetadata metadata = getMetadata(templateFqn);
+    if (metadata == null) {
+      return null;
+    }
+    TemplateKind kind = metadata.getTemplateType().getTemplateKind();
+    return kind == TemplateKind.BASIC || kind == TemplateKind.ELEMENT ? metadata : null;
+  }
 
   /** Returns a multimap from delegate template name to set of keys. */
   DelTemplateSelector<TemplateMetadata> getDelTemplateSelector();
-
-  TemplateMetadata getMetadata(TemplateNode node);
 
   /**
    * Returns all registered templates ({@link TemplateBasicNode basic} and {@link
    * TemplateDelegateNode delegate} nodes), in no particular order.
    */
-  ImmutableList<TemplateMetadata> getAllTemplates();
-
-  /** Returns the full file paths for all files in the registry. */
-  ImmutableSet<SourceFilePath> getAllFileNames();
+  ImmutableCollection<TemplateMetadata> getAllTemplates();
 
   /**
    * Gets the content kind that a call results in. If used with delegate calls, the delegate
@@ -80,5 +113,14 @@ public interface TemplateRegistry {
    * @param node The {@link CallBasicNode} or {@link CallDelegateNode}.
    * @return The kind of content that the call results in.
    */
-  Optional<SanitizedContentKind> getCallContentKind(CallNode node);
+  default Optional<SanitizedContentKind> getCallContentKind(CallNode node) {
+    ImmutableList<TemplateType> templateNodes = getTemplates(node);
+    // For per-file compilation, we may not have any of the delegate templates in the compilation
+    // unit.
+    if (!templateNodes.isEmpty()) {
+      return Optional.of(templateNodes.get(0).getContentKind().getSanitizedContentKind());
+    }
+    // The template node may be null if the template is being compiled in isolation.
+    return Optional.empty();
+  }
 }

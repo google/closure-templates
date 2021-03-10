@@ -75,6 +75,7 @@ import java.util.function.Supplier;
  *
  * <p>Note: This pass requires that the ResolveExpressionTypesPass has already been run.
  */
+@RunAfter(FinalizeTemplateRegistryPass.class)
 final class CheckTemplateCallsPass implements CompilerFileSetPass {
 
   static final SoyErrorKind ARGUMENT_TYPE_MISMATCH =

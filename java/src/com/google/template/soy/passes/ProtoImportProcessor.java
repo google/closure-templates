@@ -20,6 +20,7 @@ import static com.google.common.collect.ImmutableMap.toImmutableMap;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableCollection;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
@@ -87,6 +88,9 @@ final class ProtoImportProcessor implements ImportsPass.ImportProcessor {
     }
     updateImportsContext(file);
   }
+
+  @Override
+  public void init(ImmutableList<SoyFileNode> sourceFiles) {}
 
   private void processImportedSymbols(ImportNode node) {
     if (disableAllTypeChecking) {

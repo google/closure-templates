@@ -35,6 +35,7 @@ import java.util.function.Supplier;
  *
  * <p>This is a limited check since conflicts may be in completely separate compilation units.
  */
+@RunAfter(FinalizeTemplateRegistryPass.class)
 final class BanDuplicateNamespacesPass implements CompilerFileSetPass {
   private static final SoyErrorKind DUPLICATE_NAMESPACE =
       SoyErrorKind.of(

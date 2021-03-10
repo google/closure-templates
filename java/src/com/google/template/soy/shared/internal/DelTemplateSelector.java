@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableTable;
 import com.google.common.collect.Table;
+import com.google.common.collect.Table.Cell;
 import com.google.common.collect.Tables;
 import com.google.errorprone.annotations.Immutable;
 import java.util.LinkedHashMap;
@@ -108,6 +109,15 @@ public final class DelTemplateSelector<T> {
     return null;
   }
 
+  public Builder<T> toBuilder() {
+    Builder<T> builder = new Builder<>();
+    for (Cell<String, String, Group<T>> cell : nameAndVariantToGroup.cellSet()) {
+      builder.nameAndVariantToGroup.put(
+          cell.getRowKey(), cell.getColumnKey(), cell.getValue().toBuilder());
+    }
+    return builder;
+  }
+
   /** A Builder for DelTemplateSelector. */
   public static final class Builder<T> {
     private final Table<String, String, Group.Builder<T>> nameAndVariantToGroup =
@@ -183,6 +193,13 @@ public final class DelTemplateSelector<T> {
         return selected.getValue();
       }
       return defaultValue;
+    }
+
+    Builder<T> toBuilder() {
+      Builder<T> builder = new Builder<>(formattedName);
+      builder.defaultValue = defaultValue;
+      builder.delpackageToValue.putAll(delpackageToValue);
+      return builder;
     }
 
     static final class Builder<T> {

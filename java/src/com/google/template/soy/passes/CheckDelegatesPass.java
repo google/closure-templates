@@ -52,6 +52,7 @@ import javax.annotation.Nullable;
  * templates, and delegate calls).
  *
  */
+@RunAfter(FinalizeTemplateRegistryPass.class)
 final class CheckDelegatesPass implements CompilerFileSetPass {
 
   private static final SoyErrorKind CROSS_PACKAGE_DELCALL =

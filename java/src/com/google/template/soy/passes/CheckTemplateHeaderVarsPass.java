@@ -34,6 +34,7 @@ import java.util.function.Supplier;
  *
  * <p>TODO(lukes): rename this pass? find another place for this functionality
  */
+@RunAfter(FinalizeTemplateRegistryPass.class)
 public final class CheckTemplateHeaderVarsPass implements CompilerFileSetPass {
 
   private static final SoyErrorKind INJECTED_PARAM_COLLISION =

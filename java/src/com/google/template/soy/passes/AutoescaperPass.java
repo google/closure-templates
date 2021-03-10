@@ -26,6 +26,7 @@ import com.google.template.soy.soytree.TemplateRegistry;
 import java.util.function.Supplier;
 
 /** A shim around ContextualAutoescaper to make it conform to the pass interface. */
+@RunAfter(FinalizeTemplateRegistryPass.class)
 final class AutoescaperPass implements CompilerFileSetPass {
 
   private final ErrorReporter errorReporter;

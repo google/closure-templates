@@ -291,8 +291,7 @@ public final class JavaGenerationUtils {
 
     return Streams.concat(
             fromImports,
-            SoyTreeUtils.allNodesOfType(node, TemplateNode.class)
-                .flatMap(template -> getProtoTypes(template, typeRegistry)))
+            node.getTemplates().stream().flatMap(template -> getProtoTypes(template, typeRegistry)))
         .collect(toSet());
   }
 

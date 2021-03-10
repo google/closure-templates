@@ -281,7 +281,7 @@ public final class TemplateRegistryTest {
   @Test
   public void testDelTemplateHasSameNameAsTemplate_differentFiles() {
     String file =
-        "{namespace ns}\n" + "/** Foo. */\n" + "{deltemplate ns.foo}\n" + "{/deltemplate}\n";
+        "{namespace ns1}\n" + "/** Foo. */\n" + "{deltemplate ns.foo}\n" + "{/deltemplate}\n";
 
     String file2 = "{namespace ns}\n" + "/** Foo. */\n" + "{template .foo}\n" + "{/template}\n";
 

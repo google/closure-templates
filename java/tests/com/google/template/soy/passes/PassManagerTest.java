@@ -77,13 +77,11 @@ public final class PassManagerTest {
             .addPassContinuationRule(ResolvePluginsPass.class, PassContinuationRule.STOP_AFTER_PASS)
             .build();
 
-    ImmutableList<String> passes = names(manager.partialTemplateRegistryPasses);
+    ImmutableList<String> passes = names(manager.passes);
     assertThat(Iterables.getLast(passes)).isEqualTo("ResolvePlugins");
 
     // CheckNonEmptyMsgNodesPass is a pass installed right after ResolvePluginsPass.
-    assertThat(names(manager.partialTemplateRegistryPasses))
-        .doesNotContain("CheckNonEmptyMsgNodes");
-    assertThat(names(manager.crossTemplateCheckingPasses)).isEmpty();
+    assertThat(names(manager.passes)).doesNotContain("CheckNonEmptyMsgNodes");
   }
 
   @Test
@@ -94,8 +92,7 @@ public final class PassManagerTest {
                 ResolvePluginsPass.class, PassContinuationRule.STOP_BEFORE_PASS)
             .build();
 
-    assertThat(names(manager.partialTemplateRegistryPasses)).doesNotContain("ResolvePlugins");
-    assertThat(names(manager.crossTemplateCheckingPasses)).isEmpty();
+    assertThat(names(manager.passes)).doesNotContain("ResolvePlugins");
   }
 
   @Test
@@ -109,31 +106,20 @@ public final class PassManagerTest {
   public void testPassesAreAnnotated() {
     Set<Class<? extends CompilerPass>> passesWithoutAnnotations = new LinkedHashSet<>();
     forAllPassManagers(
-        manager -> {
-          Streams.<CompilerPass>concat(
-                  manager.parsePasses.stream(),
-                  manager.partialTemplateRegistryPasses.stream(),
-                  manager.crossTemplateCheckingPasses.stream())
-              .filter(pass -> pass.runBefore().isEmpty() && pass.runAfter().isEmpty())
-              .map(pass -> pass.getClass())
-              .forEach(passesWithoutAnnotations::add);
-        });
+        manager ->
+            Streams.<CompilerPass>concat(manager.parsePasses.stream(), manager.passes.stream())
+                .filter(pass -> pass.runBefore().isEmpty() && pass.runAfter().isEmpty())
+                .map(pass -> pass.getClass())
+                .forEach(passesWithoutAnnotations::add));
     // Over time this list should decrease in size, it is, however,  reasonable that some passes may
     // never be removed for example if they could really run at any time or need to run at multiple
     // times (e.g. CombineConsecutiveRawTextNodesPass)
     ImmutableList<Class<? extends CompilerPass>> unannotatedAllowList =
         ImmutableList.of(
-            AutoescaperPass.class,
-            BanDuplicateNamespacesPass.class,
             BasicHtmlValidationPass.class,
-            CheckBadContextualUsagePass.class,
             CheckDeclaredTypesPass.class,
-            CheckDelegatesPass.class,
             CheckGlobalsPass.class,
             CheckNonEmptyMsgNodesPass.class,
-            CheckTemplateCallsPass.class,
-            CheckTemplateHeaderVarsPass.class,
-            CheckTemplateVisibilityPass.class,
             CombineConsecutiveRawTextNodesPass.class,
             DesugarGroupNodesPass.class,
             DesugarHtmlNodesPass.class,

@@ -92,6 +92,7 @@ import java.util.stream.Collectors;
   SoyElementPass.class // Uses HtmlElementMetadataP
 })
 @RunBefore({
+  FinalizeTemplateRegistryPass.class, // Mutates template metadata
   SoyElementCompositionPass.class,
   AutoescaperPass.class // since it inserts print directives
 })
@@ -180,7 +181,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
     ImmutableSet.Builder<TemplateNode> delegatingElementsWithAllAttrs = ImmutableSet.builder();
 
     // Rewrite all @attribute values in root elements.
-    SoyTreeUtils.allNodesOfType(file, TemplateNode.class)
+    file.getTemplates().stream()
         .filter(
             t ->
                 t.getTemplateContentKind() instanceof ElementContentKind
@@ -196,7 +197,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
             });
 
     // All other @attributes (outside of root elements) are illegal.
-    SoyTreeUtils.allNodesOfType(file, TemplateNode.class)
+    file.getTemplates().stream()
         .filter(t -> t.getHtmlElementMetadata() != null && getDelegateCall(t).isEmpty())
         .forEach(
             t ->
@@ -215,7 +216,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
   }
 
   private <T extends Node> void checkAttributeTypes(SoyFileNode file) {
-    SoyTreeUtils.allNodesOfType(file, TemplateNode.class)
+    file.getTemplates().stream()
         .flatMap(t -> t.getHeaderParams().stream())
         .filter(p -> p instanceof AttrParam)
         .map(AttrParam.class::cast)

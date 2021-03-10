@@ -33,6 +33,7 @@ import java.util.function.Supplier;
  *
  * @author brndn@google.com (Brendan Linn)
  */
+@RunAfter(FinalizeTemplateRegistryPass.class)
 final class CheckTemplateVisibilityPass implements CompilerFileSetPass {
 
   private static final SoyErrorKind CALLEE_NOT_VISIBLE =

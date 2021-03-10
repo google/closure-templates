@@ -53,7 +53,7 @@ import java.util.TreeSet;
   RewriteGlobalsPass.class, // To resolve extensions.
   ResolveTemplateNamesPass.class,
 })
-public final class ImportsPass implements CompilerFilePass {
+public final class ImportsPass implements CompilerFileSetPass {
 
   private static final SoyErrorKind IMPORT_NOT_IN_DEPS =
       SoyErrorKind.of(
@@ -81,6 +81,8 @@ public final class ImportsPass implements CompilerFilePass {
     void handle(SoyFileNode file, ImmutableCollection<ImportNode> imports);
 
     ImmutableCollection<String> getAllPaths();
+
+    void init(ImmutableList<SoyFileNode> sourceFiles);
   }
 
   private final ErrorReporter errorReporter;
@@ -103,7 +105,17 @@ public final class ImportsPass implements CompilerFilePass {
   }
 
   @Override
-  public void run(SoyFileNode file, IdGenerator nodeIdGen) {
+  public Result run(ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator) {
+    for (ImportProcessor processor : processors) {
+      processor.init(sourceFiles);
+    }
+    for (SoyFileNode sourceFile : sourceFiles) {
+      run(sourceFile);
+    }
+    return Result.CONTINUE;
+  }
+
+  private void run(SoyFileNode file) {
     ImmutableMultimap.Builder<ImportProcessor, ImportNode> builder = ImmutableMultimap.builder();
     OUTER:
     for (ImportNode importNode : file.getImports()) {
