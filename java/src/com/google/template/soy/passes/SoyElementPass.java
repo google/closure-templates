@@ -117,18 +117,25 @@ public final class SoyElementPass implements CompilerFileSetPass {
   @Override
   public Result run(ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator) {
     Map<String, TemplateNode> templatesInLibrary = new LinkedHashMap<>();
+    Set<TemplateNode> delegateTemplates = new HashSet<>();
     for (SoyFileNode file : sourceFiles) {
       // Create an intermediatary data structure for template name -> template node so that
       // we can use it like a TemplateRegistry, but for templates in the immediate compilation unit.
       for (TemplateNode template : file.getTemplates()) {
-        if (!(template instanceof TemplateDelegateNode) && template.getContentKind().isHtml()) {
-          templatesInLibrary.put(template.getTemplateName(), template);
-        } else {
+        if (!template.getContentKind().isHtml()) {
           template.setHtmlElementMetadata(DEFAULT_HTML_METADATA);
+        } else if (template instanceof TemplateDelegateNode) {
+          delegateTemplates.add(template);
+        } else {
+          templatesInLibrary.put(template.getTemplateName(), template);
         }
       }
     }
     for (TemplateNode template : templatesInLibrary.values()) {
+      Set<TemplateNode> visited = new HashSet<>();
+      getTemplateMetadata(template, templatesInLibrary, visited);
+    }
+    for (TemplateNode template : delegateTemplates) {
       Set<TemplateNode> visited = new HashSet<>();
       getTemplateMetadata(template, templatesInLibrary, visited);
     }
