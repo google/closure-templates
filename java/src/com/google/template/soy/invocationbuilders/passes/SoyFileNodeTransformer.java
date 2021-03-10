@@ -70,7 +70,6 @@ public class SoyFileNodeTransformer {
   private static final ImmutableSet<SoyType.Kind> UNSUPPORTED_SOY_TYPES =
       ImmutableSet.of(
           SoyType.Kind.TEMPLATE,
-          SoyType.Kind.NAMED_TEMPLATE,
           SoyType.Kind.VE,
           SoyType.Kind.VE_DATA);
 

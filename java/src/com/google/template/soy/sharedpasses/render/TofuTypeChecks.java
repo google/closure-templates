@@ -156,8 +156,6 @@ public final class TofuTypeChecks {
         return CheckResult.fromBool(value instanceof SoyRecord);
       case STRING:
         return CheckResult.fromBool(value instanceof StringData);
-      case NAMED_TEMPLATE:
-        throw new AssertionError("Named template types should be resolved in the compiler.");
       case TEMPLATE:
         return CheckResult.fromBool(value instanceof TofuTemplateValue);
       case TRUSTED_RESOURCE_URI:

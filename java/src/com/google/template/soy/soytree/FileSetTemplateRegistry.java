@@ -260,11 +260,6 @@ public final class FileSetTemplateRegistry implements TemplateRegistry {
     return basicTemplatesOrElementsMap.get(templateName);
   }
 
-  public void updateTemplate(TemplateNode templateNode) {
-    basicTemplatesOrElementsMap.put(
-        templateNode.getTemplateName(), TemplateMetadata.fromTemplate(templateNode));
-  }
-
   /** Returns a multimap from delegate template name to set of keys. */
   @Override
   public DelTemplateSelector<TemplateMetadata> getDelTemplateSelector() {

@@ -165,7 +165,6 @@ public abstract class SoyRuntimeType {
       case LEGACY_OBJECT_MAP:
       case MAP:
       case RECORD:
-      case NAMED_TEMPLATE:
       case TEMPLATE:
       case VE:
       case VE_DATA:

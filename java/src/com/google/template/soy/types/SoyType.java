@@ -104,7 +104,6 @@ public abstract class SoyType {
     RECORD,
     LEGACY_OBJECT_MAP,
     MAP,
-    NAMED_TEMPLATE,
     MESSAGE,
     PROTO,
     PROTO_ENUM,

@@ -468,6 +468,12 @@ public final class PassManager {
       }
       addPass(
           new CheckAllFunctionsResolvedPass(pluginResolver), partialTemplateRegistryPassesBuilder);
+      if (astRewrites.atLeast(AstRewrites.ALL)) {
+        addPass(
+            new ElementAttributePass(
+                errorReporter, pluginResolver, () -> accumulatedState.fileSetTemplateRegistry),
+            partialTemplateRegistryPassesBuilder);
+      }
       if (!disableAllTypeChecking) {
         addPass(new CheckDeclaredTypesPass(errorReporter), partialTemplateRegistryPassesBuilder);
         // Run before ResolveExpressionTypesPass since this makes type analysis on null safe
@@ -475,7 +481,11 @@ public final class PassManager {
         addPass(new NullSafeAccessPass(), partialTemplateRegistryPassesBuilder);
 
         addPass(
-            new ResolveExpressionTypesPass(errorReporter, loggingConfig, pluginResolver),
+            new ResolveExpressionTypesPass(
+                errorReporter,
+                loggingConfig,
+                pluginResolver,
+                () -> accumulatedState.fileSetTemplateRegistry),
             partialTemplateRegistryPassesBuilder);
         // After ResolveExpressionTypesPass because ResolveExpressionTypesPass verifies usage and
         // types of non-null assertion operators.
@@ -522,18 +532,13 @@ public final class PassManager {
       // Because conformance exits abruptly after this pass we must ensure that the AST is left in a
       // complete state. Therefore this pass should come after ResolveExpressionTypesPass and
       // others.
-      if (astRewrites.atLeast(AstRewrites.ALL)) {
-        addPass(
-            new ElementAttributePass(errorReporter, pluginResolver),
-            crossTemplateCheckingPassesBuilder);
-      }
       addPass(
           new SoyConformancePass(conformanceConfig, errorReporter),
           crossTemplateCheckingPassesBuilder);
       if (!disableAllTypeChecking) {
         addPass(
             new ResolveExpressionTypesCrossTemplatePass(
-                registry, errorReporter, astRewrites.atLeast(AstRewrites.ALL)),
+                errorReporter, astRewrites.atLeast(AstRewrites.ALL)),
             crossTemplateCheckingPassesBuilder);
       }
       addPass(new CheckTemplateHeaderVarsPass(errorReporter), crossTemplateCheckingPassesBuilder);

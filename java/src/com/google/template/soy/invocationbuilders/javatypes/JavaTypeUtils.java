@@ -148,7 +148,6 @@ public final class JavaTypeUtils {
       case RECORD:
         types = trySimpleRecordType((RecordType) soyType, /* list= */ false, skipSoyTypes);
         break;
-      case NAMED_TEMPLATE:
       case TEMPLATE:
         types = ImmutableList.of(new TemplateJavaType());
         break;

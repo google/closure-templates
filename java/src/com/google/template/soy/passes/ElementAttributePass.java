@@ -21,6 +21,7 @@ import static com.google.template.soy.base.SourceLocation.Point.UNKNOWN_POINT;
 import static com.google.template.soy.error.ErrorReporter.exploding;
 import static java.util.stream.Collectors.toMap;
 
+import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -49,7 +50,6 @@ import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
-import com.google.template.soy.soytree.ImportsContext.ImportsTemplateRegistry;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.PrintNode;
@@ -61,6 +61,7 @@ import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TagName;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.defn.AttrParam;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.BoolType;
@@ -70,13 +71,13 @@ import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.ast.NamedTypeNode;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -136,25 +137,47 @@ final class ElementAttributePass implements CompilerFileSetPass {
 
   private final ErrorReporter errorReporter;
   private final PluginResolver pluginResolver;
+  private final Supplier<TemplateRegistry> libRegistry;
 
-  ElementAttributePass(ErrorReporter errorReporter, PluginResolver pluginResolver) {
+  ElementAttributePass(
+      ErrorReporter errorReporter,
+      PluginResolver pluginResolver,
+      Supplier<TemplateRegistry> libRegistry) {
     this.errorReporter = errorReporter;
     this.pluginResolver = pluginResolver;
+    this.libRegistry = libRegistry;
   }
 
   @Override
   public Result run(ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator) {
+    // Collect all elements in this compilation first. This cache will be used to look up elements,
+    // followed by the secondary cache libRegistry, which includes all elements from deps.
+    ImmutableMap<String, TemplateNode> allElementsThisCompile =
+        sourceFiles.stream()
+            .flatMap(fn -> fn.getTemplates().stream())
+            .filter(
+                t ->
+                    !(t instanceof TemplateDelegateNode)
+                        && t.getTemplateContentKind() instanceof ElementContentKind
+                        && t.getHtmlElementMetadata() != null)
+            .collect(toImmutableMap(TemplateNode::getTemplateName, t -> t));
+
     for (SoyFileNode file : sourceFiles) {
-      run(file, idGenerator);
+      run(file, allElementsThisCompile, idGenerator);
     }
+
+    checkRootElementTagNames(allElementsThisCompile.values());
+
     return Result.CONTINUE;
   }
 
-  public void run(SoyFileNode file, IdGenerator nodeIdGen) {
+  private void run(
+      SoyFileNode file,
+      ImmutableMap<String, TemplateNode> allElementsThisCompile,
+      IdGenerator nodeIdGen) {
     checkAttributeTypes(file);
 
-    Set<TemplateNode> delegatingElementsWithAllAttrs = new HashSet<>();
-    Map<String, TemplateNode> allElementsThisCompile = new HashMap<>();
+    ImmutableSet.Builder<TemplateNode> delegatingElementsWithAllAttrs = ImmutableSet.builder();
 
     // Rewrite all @attribute values in root elements.
     SoyTreeUtils.allNodesOfType(file, TemplateNode.class)
@@ -169,9 +192,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
                     t.getOpenTagLocation(), DELTEMPLATE_USING_ELEMENT_CONTENT_KIND);
                 return;
               }
-              allElementsThisCompile.put(t.getTemplateName(), t);
-              processTemplate(
-                  t, nodeIdGen::genId, delegatingElementsWithAllAttrs, file.getTemplateRegistry());
+              processTemplate(t, nodeIdGen::genId, delegatingElementsWithAllAttrs::add);
             });
 
     // All other @attributes (outside of root elements) are illegal.
@@ -189,12 +210,8 @@ final class ElementAttributePass implements CompilerFileSetPass {
                                 ATTRIBUTE_PARAM_NOT_ALLOWED,
                                 attr.getStaticKey())));
 
-    if (!delegatingElementsWithAllAttrs.isEmpty()) {
-      updateReservedAttributesForDelegateCalls(
-          delegatingElementsWithAllAttrs, allElementsThisCompile, file.getTemplateRegistry());
-    }
-
-    checkRootElementTagNames(allElementsThisCompile);
+    updateReservedAttributesForDelegateCalls(
+        delegatingElementsWithAllAttrs.build(), allElementsThisCompile);
   }
 
   private <T extends Node> void checkAttributeTypes(SoyFileNode file) {
@@ -215,8 +232,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
   private void processTemplate(
       TemplateNode templateNode,
       Supplier<Integer> id,
-      Set<TemplateNode> delegatingElementsWithAllAttrs,
-      ImportsTemplateRegistry templateRegistry) {
+      Consumer<TemplateNode> delegatingElementsWithAllAttrs) {
     ImmutableMap<String, AttrParam> attrs =
         templateNode.getAllParams().stream()
             .filter(p -> p instanceof AttrParam)
@@ -383,9 +399,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
     if (templateNode.getAllowExtraAttributes()) {
       templateNode.setReservedAttributes(foundNormalAttr.build());
       if (iAmAnElementCallingAnElement) {
-        delegatingElementsWithAllAttrs.add(templateNode);
-      } else {
-        templateRegistry.updateTemplate(templateNode);
+        delegatingElementsWithAllAttrs.accept(templateNode);
       }
 
       TemplateParam attrsParam =
@@ -507,9 +521,8 @@ final class ElementAttributePass implements CompilerFileSetPass {
   }
 
   private void updateReservedAttributesForDelegateCalls(
-      Set<TemplateNode> templates,
-      Map<String, TemplateNode> localTemplateLookup,
-      ImportsTemplateRegistry templateRegistry) {
+      ImmutableSet<TemplateNode> templates,
+      ImmutableMap<String, TemplateNode> localTemplateLookup) {
 
     Map<String, String> templateFqnCall =
         templates.stream()
@@ -532,7 +545,8 @@ final class ElementAttributePass implements CompilerFileSetPass {
           reservedAttr = callee.getReservedAttributes();
         } else {
           reservedAttr =
-              templateRegistry
+              libRegistry
+                  .get()
                   .getBasicTemplateOrElement(leaf.getValue())
                   .getTemplateType()
                   .getReservedAttributes();
@@ -542,33 +556,28 @@ final class ElementAttributePass implements CompilerFileSetPass {
                 .addAll(caller.getReservedAttributes())
                 .addAll(reservedAttr)
                 .build());
-        templateRegistry.updateTemplate(caller);
         templateFqnCall.remove(leaf.getKey());
       }
     }
   }
 
-  private void checkRootElementTagNames(Map<String, TemplateNode> elements) {
-    for (Map.Entry<String, TemplateNode> entry : elements.entrySet()) {
-      ElementContentKind contentKind =
-          (ElementContentKind) entry.getValue().getTemplateContentKind();
+  private void checkRootElementTagNames(ImmutableCollection<TemplateNode> elements) {
+    for (TemplateNode node : elements) {
+      ElementContentKind contentKind = (ElementContentKind) node.getTemplateContentKind();
       String expectedTagName = contentKind.getTagName();
       // html<?> matches anything
       if (expectedTagName.isEmpty()) {
         continue;
       }
 
-      String tag = entry.getValue().getHtmlElementMetadata().getTag();
-      if (!"?".equals(tag)) {
-        if (!expectedTagName.equals(tag)) {
-          TagName tagName = getElementOpen(entry.getValue()).get().getTagName();
-
-          if (tagName.isStatic()) {
-            errorReporter.report(tagName.getTagLocation(), ROOT_TAG_KIND_MISMATCH, expectedTagName);
-          } else {
-            errorReporter.report(
-                tagName.getTagLocation(), DELEGATE_KIND_MISMATCH, expectedTagName, tag);
-          }
+      String tag = node.getHtmlElementMetadata().getTag();
+      if (!"?".equals(tag) && !expectedTagName.equals(tag)) {
+        TagName tagName = getElementOpen(node).get().getTagName();
+        if (tagName.isStatic()) {
+          errorReporter.report(tagName.getTagLocation(), ROOT_TAG_KIND_MISMATCH, expectedTagName);
+        } else {
+          errorReporter.report(
+              tagName.getTagLocation(), DELEGATE_KIND_MISMATCH, expectedTagName, tag);
         }
       }
     }

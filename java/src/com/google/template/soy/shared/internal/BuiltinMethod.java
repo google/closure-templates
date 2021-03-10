@@ -177,9 +177,7 @@ public enum BuiltinMethod implements SoyMethod {
     public boolean appliesToBase(SoyType baseType) {
       Preconditions.checkArgument(!SoyTypes.isNullable(baseType));
       return SoyTypes.isKindOrUnionOfKinds(
-          baseType,
-          ImmutableSet.of(
-              SoyType.Kind.TEMPLATE, SoyType.Kind.NAMED_TEMPLATE, SoyType.Kind.TEMPLATE_TYPE));
+          baseType, ImmutableSet.of(SoyType.Kind.TEMPLATE, SoyType.Kind.TEMPLATE_TYPE));
     }
 
     @Override

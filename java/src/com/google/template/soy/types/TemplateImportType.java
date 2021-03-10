@@ -29,7 +29,18 @@ public abstract class TemplateImportType extends ImportType {
     return create(moduleType.getNamespace() + "." + fieldName);
   }
 
+  /** This is not available at instantiation time since it depends on expression type resolution. */
+  private TemplateType basicTemplateType;
+
   public abstract String getName();
+
+  public TemplateType getBasicTemplateType() {
+    return basicTemplateType;
+  }
+
+  public void setBasicTemplateType(TemplateType basicTemplateType) {
+    this.basicTemplateType = basicTemplateType;
+  }
 
   @Override
   public final String toString() {

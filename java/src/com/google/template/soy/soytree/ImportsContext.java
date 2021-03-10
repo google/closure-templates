@@ -142,10 +142,6 @@ public final class ImportsContext {
       return fileSetRegistry();
     }
 
-    public void updateTemplate(TemplateNode node) {
-      fileSetRegistry().updateTemplate(node);
-    }
-
     private FileSetTemplateRegistry fileSetRegistry() {
       return file.getParent().getFileSetTemplateRegistry();
     }
