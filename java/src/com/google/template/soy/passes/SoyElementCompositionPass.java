@@ -79,6 +79,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
@@ -103,11 +104,15 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
 
   private final ErrorReporter errorReporter;
   private final ImmutableList<? extends SoyPrintDirective> printDirectives;
+  private final Supplier<TemplateRegistry> templateRegistryFull;
 
   SoyElementCompositionPass(
-      ErrorReporter errorReporter, ImmutableList<? extends SoyPrintDirective> printDirectives) {
+      ErrorReporter errorReporter,
+      ImmutableList<? extends SoyPrintDirective> printDirectives,
+      Supplier<TemplateRegistry> templateRegistryFull) {
     this.errorReporter = errorReporter;
     this.printDirectives = printDirectives;
+    this.templateRegistryFull = templateRegistryFull;
   }
 
   @Override
@@ -124,16 +129,12 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
     for (TemplateNode template : SoyTreeUtils.getAllNodesOfType(file, TemplateNode.class)) {
       for (HtmlTagNode tagNode : SoyTreeUtils.getAllNodesOfType(template, HtmlTagNode.class)) {
-        process(template, tagNode, nodeIdGen, file.getTemplateRegistry());
+        process(template, tagNode, nodeIdGen);
       }
     }
   }
 
-  private void process(
-      TemplateNode template,
-      HtmlTagNode tagNode,
-      IdGenerator nodeIdGen,
-      TemplateRegistry registry) {
+  private void process(TemplateNode template, HtmlTagNode tagNode, IdGenerator nodeIdGen) {
     TagName name = tagNode.getTagName();
     if (name.isStatic()) {
       return;
@@ -145,7 +146,11 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
 
     if (tagNode instanceof HtmlOpenTagNode) {
       ContextualAutoescaper.annotateAndRewriteHtmlTag(
-          (HtmlOpenTagNode) tagNode, registry, nodeIdGen, errorReporter, printDirectives);
+          (HtmlOpenTagNode) tagNode,
+          templateRegistryFull.get(),
+          nodeIdGen,
+          errorReporter,
+          printDirectives);
     }
 
     Preconditions.checkState(tagNode.getTaggedPairs().size() <= 1);

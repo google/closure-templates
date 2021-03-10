@@ -323,7 +323,7 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass {
 
   private final ValidatedLoggingConfig loggingConfig;
   private final SoyMethod.Registry methodRegistry;
-  private final Supplier<TemplateRegistry> libRegistry;
+  private final Supplier<TemplateRegistry> templateRegistryFromDeps;
   /** Cached map that converts a string representation of types to actual soy types. */
   private final Map<Signature, ResolvedSignature> signatureMap = new HashMap<>();
 
@@ -346,14 +346,14 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass {
       ErrorReporter errorReporter,
       ValidatedLoggingConfig loggingConfig,
       PluginResolver pluginResolver,
-      Supplier<TemplateRegistry> libRegistry) {
+      Supplier<TemplateRegistry> templateRegistryFromDeps) {
     this.errorReporter = errorReporter;
     this.loggingConfig = loggingConfig;
     this.pluginResolutionMode =
         pluginResolver == null
             ? PluginResolver.Mode.REQUIRE_DEFINITIONS
             : pluginResolver.getPluginResolutionMode();
-    this.libRegistry = libRegistry;
+    this.templateRegistryFromDeps = templateRegistryFromDeps;
     this.methodRegistry =
         new CompositeMethodRegistry(
             ImmutableList.of(BuiltinMethod.REGISTRY, new PluginMethodRegistry(pluginResolver)));
@@ -999,7 +999,8 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass {
           TemplateImportType templateType = (TemplateImportType) defn.type();
           if (templateType.getBasicTemplateType() == null) {
             String fqn = templateType.getName();
-            TemplateMetadata metadataFromLib = libRegistry.get().getBasicTemplateOrElement(fqn);
+            TemplateMetadata metadataFromLib =
+                templateRegistryFromDeps.get().getBasicTemplateOrElement(fqn);
             if (metadataFromLib != null) {
               // Type is available from deps.
               templateType.setBasicTemplateType(metadataFromLib.getTemplateType());

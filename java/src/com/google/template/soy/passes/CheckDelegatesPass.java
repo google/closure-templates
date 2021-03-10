@@ -75,19 +75,18 @@ final class CheckDelegatesPass implements CompilerFileSetPass {
               + "compared to the definition at {1}.");
 
   private final ErrorReporter errorReporter;
-  private final Supplier<TemplateRegistry> fileSetTemplateRegistry;
+  private final Supplier<TemplateRegistry> templateRegistryFull;
 
-  CheckDelegatesPass(
-      ErrorReporter errorReporter, Supplier<TemplateRegistry> fileSetTemplateRegistry) {
+  CheckDelegatesPass(ErrorReporter errorReporter, Supplier<TemplateRegistry> templateRegistryFull) {
     this.errorReporter = errorReporter;
-    this.fileSetTemplateRegistry = fileSetTemplateRegistry;
+    this.templateRegistryFull = templateRegistryFull;
   }
 
   @Override
   public Result run(ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator) {
     // Perform checks that only involve templates (uses fileset templateRegistry only, no traversal
     // and no imports context needed).
-    checkTemplates(fileSetTemplateRegistry.get().getDelTemplateSelector());
+    checkTemplates(templateRegistryFull.get().getDelTemplateSelector());
 
     for (SoyFileNode fileNode : sourceFiles) {
       LocalVariables localVariables = LocalVariablesNodeVisitor.getFileScopeVariables(fileNode);
@@ -98,7 +97,6 @@ final class CheckDelegatesPass implements CompilerFileSetPass {
             SoyTreeUtils.getAllNodesOfType(template, TemplateLiteralNode.class)) {
           checkTemplateLiteralNode(
               templateLiteralNode,
-              fileNode.getTemplateRegistry(),
               currDelPackageName,
               currTemplateNameForUserMsgs);
         }
@@ -206,13 +204,12 @@ final class CheckDelegatesPass implements CompilerFileSetPass {
 
   private void checkTemplateLiteralNode(
       TemplateLiteralNode node,
-      TemplateRegistry templateRegistry,
       @Nullable String currDelPackageName,
       String currTemplateNameForUserMsgs) {
     String calleeName = node.getResolvedName();
 
     // Check that the callee is either not in a delegate package or in the same delegate package.
-    TemplateMetadata callee = templateRegistry.getBasicTemplateOrElement(calleeName);
+    TemplateMetadata callee = templateRegistryFull.get().getBasicTemplateOrElement(calleeName);
     if (callee != null) {
       String calleeDelPackageName = callee.getDelPackageName();
       if (calleeDelPackageName != null && !calleeDelPackageName.equals(currDelPackageName)) {

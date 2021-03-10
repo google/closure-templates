@@ -59,6 +59,7 @@ public final class ContextualAutoescaper {
 
   private final ErrorReporter errorReporter;
   private final ImmutableList<? extends SoyPrintDirective> printDirectives;
+  private final TemplateRegistry templateRegistry;
 
   /**
    * This injected ctor provides a blank constructor that is filled, in normal compiler operation,
@@ -68,9 +69,12 @@ public final class ContextualAutoescaper {
    * @param soyDirectives All SoyPrintDirectives
    */
   public ContextualAutoescaper(
-      ErrorReporter errorReporter, ImmutableList<? extends SoyPrintDirective> soyDirectives) {
+      ErrorReporter errorReporter,
+      ImmutableList<? extends SoyPrintDirective> soyDirectives,
+      TemplateRegistry templateRegistry) {
     this.errorReporter = errorReporter;
     this.printDirectives = soyDirectives;
+    this.templateRegistry = templateRegistry;
   }
 
   /**
@@ -80,14 +84,12 @@ public final class ContextualAutoescaper {
    * <p>The rewriting consists entirely of inserting print directives on print, call and msg nodes.
    *
    * @param sourceFiles The files to rewrite
-   * @param registry The registry to look up information about callees
    */
   public Inferences annotate(ImmutableList<SoyFileNode> sourceFiles) {
     Inferences inferences = new Inferences();
     // Inferences collects all the typing decisions we make and escaping modes we choose.
     for (SoyFileNode file : sourceFiles) {
-      inferences.setTemplateRegistry(
-          file.hasTemplateRegistry() ? file.getTemplateRegistry() : TemplateRegistry.EMPTY);
+      inferences.setTemplateRegistry(templateRegistry);
       for (TemplateNode templateNode : file.getTemplates()) {
         try {
           // The author specifies the kind of SanitizedContent to produce, and thus the context in

@@ -39,6 +39,7 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.SoyType;
@@ -294,9 +295,11 @@ public class SoyFileNodeTransformer {
   }
 
   private final String javaPackage;
+  private final TemplateRegistry registry;
 
-  public SoyFileNodeTransformer(String javaPackage) {
+  public SoyFileNodeTransformer(String javaPackage, TemplateRegistry registry) {
     this.javaPackage = javaPackage;
+    this.registry = registry;
   }
 
   public FileInfo transform(SoyFileNode node) {
@@ -352,7 +355,7 @@ public class SoyFileNodeTransformer {
     Set<String> directParamNames = ImmutableSet.copyOf(params.keySet());
 
     IndirectParamsInfo idi =
-        new IndirectParamsCalculator(template.getParent().getTemplateRegistry())
+        new IndirectParamsCalculator(registry)
             .calculateIndirectParams(TemplateMetadata.fromTemplate(template).getTemplateType());
 
     for (Map.Entry<String, Parameter> entry : idi.indirectParams.entrySet()) {

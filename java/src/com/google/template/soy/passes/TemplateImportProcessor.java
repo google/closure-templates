@@ -24,7 +24,6 @@ import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.soytree.ImportNode;
 import com.google.template.soy.soytree.ImportNode.ImportType;
-import com.google.template.soy.soytree.ImportsContext.ImportsTemplateRegistry;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.TemplateNameRegistry;
 import com.google.template.soy.soytree.TemplatesPerFile;
@@ -65,7 +64,6 @@ public final class TemplateImportProcessor implements ImportsPass.ImportProcesso
         processImportedSymbols(anImport);
       }
     }
-    updateImportsContext(file);
   }
 
   /**
@@ -129,9 +127,5 @@ public final class TemplateImportProcessor implements ImportsPass.ImportProcesso
     return templateNameRegistry.get().allFiles().stream()
         .map(SourceFilePath::path)
         .collect(toImmutableSet());
-  }
-
-  void updateImportsContext(SoyFileNode file) {
-    file.getImportsContext().setTemplateRegistry(new ImportsTemplateRegistry(file));
   }
 }

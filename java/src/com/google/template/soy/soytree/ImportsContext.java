@@ -38,12 +38,10 @@ import javax.annotation.Nullable;
 public final class ImportsContext {
 
   private SoyTypeRegistry typeRegistry;
-  private ImportsTemplateRegistry templateRegistry;
   private final Set<String> allImportedSymbols;
 
   public ImportsContext() {
     this.typeRegistry = null;
-    this.templateRegistry = null;
     this.allImportedSymbols = new LinkedHashSet<>();
   }
 
@@ -58,26 +56,6 @@ public final class ImportsContext {
 
   public SoyTypeRegistry getTypeRegistry() {
     return checkNotNull(typeRegistry, "Type registry has not been set yet.");
-  }
-
-  public void setTemplateRegistry(ImportsTemplateRegistry templateRegistry) {
-    checkState(
-        this.templateRegistry == null,
-        "Template registry is already set; use overrideTemplateRegistry if you're sure you want to"
-            + " override.");
-    this.templateRegistry = templateRegistry;
-  }
-
-  public void overrideTemplateRegistry(ImportsTemplateRegistry templateRegistry) {
-    this.templateRegistry = templateRegistry;
-  }
-
-  public boolean hasTemplateRegistry() {
-    return this.templateRegistry != null;
-  }
-
-  public ImportsTemplateRegistry getTemplateRegistry() {
-    return checkNotNull(templateRegistry, "Template registry has not been set yet.");
   }
 
   /**
@@ -122,28 +100,6 @@ public final class ImportsContext {
                   msgAndEnumLocalToFqn.keySet().stream(), stream(super.getAllSortedTypeNames()))
               .sorted()
               .iterator();
-    }
-  }
-
-  /**
-   * A {@link TemplateRegistry} that includes imported symbols (possibly aliased) in a given file.
-   */
-  public static final class ImportsTemplateRegistry extends DelegatingTemplateRegistry {
-
-    // Which file this registry is for. Used to get the delegate file set registry.
-    private final SoyFileNode file;
-
-    public ImportsTemplateRegistry(SoyFileNode file) {
-      this.file = file;
-    }
-
-    @Override
-    protected TemplateRegistry getDelegate() {
-      return fileSetRegistry();
-    }
-
-    private FileSetTemplateRegistry fileSetRegistry() {
-      return file.getParent().getFileSetTemplateRegistry();
     }
   }
 }

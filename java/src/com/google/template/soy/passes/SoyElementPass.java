@@ -37,7 +37,6 @@ import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.HtmlElementMetadataP;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.HtmlTagNode;
-import com.google.template.soy.soytree.ImportsContext.ImportsTemplateRegistry;
 import com.google.template.soy.soytree.KeyNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SkipNode;
@@ -50,12 +49,14 @@ import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateElementNode;
 import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.VeLogNode;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 /** Validates restrictions specific to Soy elements. */
@@ -106,9 +107,11 @@ public final class SoyElementPass implements CompilerFileSetPass {
 
   private static final String DYNAMIC_ELEMENT_TAG = "?";
   private final ErrorReporter errorReporter;
+  private final Supplier<TemplateRegistry> templateRegistryFromDeps;
 
-  SoyElementPass(ErrorReporter errorReporter) {
+  SoyElementPass(ErrorReporter errorReporter, Supplier<TemplateRegistry> templateRegistryFromDeps) {
     this.errorReporter = errorReporter;
+    this.templateRegistryFromDeps = templateRegistryFromDeps;
   }
 
   @Override
@@ -127,8 +130,7 @@ public final class SoyElementPass implements CompilerFileSetPass {
     }
     for (TemplateNode template : templatesInLibrary.values()) {
       Set<TemplateNode> visited = new HashSet<>();
-      getTemplateMetadata(
-          template, templatesInLibrary, template.getParent().getTemplateRegistry(), visited);
+      getTemplateMetadata(template, templatesInLibrary, visited);
     }
     return Result.CONTINUE;
   }
@@ -140,7 +142,6 @@ public final class SoyElementPass implements CompilerFileSetPass {
   private HtmlElementMetadataP getTemplateMetadata(
       TemplateNode template,
       Map<String, TemplateNode> templatesInLibrary,
-      ImportsTemplateRegistry registry,
       Set<TemplateNode> visited) {
     if (visited.contains(template)) {
       if (template instanceof TemplateElementNode) {
@@ -190,7 +191,6 @@ public final class SoyElementPass implements CompilerFileSetPass {
             ((CallBasicNode) child).getCalleeName(),
             child.getSourceLocation(),
             templatesInLibrary,
-            registry,
             visited);
       } else if (openTag == null && child instanceof HtmlOpenTagNode) {
         closeTag = checkHtmlOpenTag(template, (HtmlOpenTagNode) child, errorReporter, isSoyElement);
@@ -224,7 +224,6 @@ public final class SoyElementPass implements CompilerFileSetPass {
                 callNodes.get(0).getCalleeName(),
                 callNodes.get(0).getSourceLocation(),
                 templatesInLibrary,
-                registry,
                 visited);
           } else if (isSoyElement) {
             this.errorReporter.report(veLogNode.getSourceLocation(), SOY_ELEMENT_EXACTLY_ONE_TAG);
@@ -260,7 +259,7 @@ public final class SoyElementPass implements CompilerFileSetPass {
       tagName =
           openTag.getTagName().isStatic()
               ? openTag.getTagName().getStaticTagName()
-              : tryGetDelegateTagName(delegateTemplate, templatesInLibrary, registry);
+              : tryGetDelegateTagName(delegateTemplate, templatesInLibrary);
       if (hasSkipNode && template instanceof TemplateElementNode) {
         errorReporter.report(openTag.getSourceLocation(), SOYELEMENT_CANNOT_BE_SKIPPED);
       }
@@ -271,12 +270,7 @@ public final class SoyElementPass implements CompilerFileSetPass {
     if (delegateTemplate != null) {
       HtmlElementMetadataP htmlMetadata =
           getTemplateMetadataForStaticCall(
-              template,
-              delegateTemplate,
-              openTag.getSourceLocation(),
-              templatesInLibrary,
-              registry,
-              visited);
+              template, delegateTemplate, openTag.getSourceLocation(), templatesInLibrary, visited);
       if (htmlMetadata.getFinalCallee().isEmpty()) {
         finalCallee = delegateTemplate;
       } else {
@@ -296,8 +290,7 @@ public final class SoyElementPass implements CompilerFileSetPass {
     return info;
   }
 
-  private static String tryGetDelegateTagName(
-      String delegateName, Map<String, TemplateNode> templates, ImportsTemplateRegistry registry) {
+  private String tryGetDelegateTagName(String delegateName, Map<String, TemplateNode> templates) {
     if (delegateName == null) {
       return DYNAMIC_ELEMENT_TAG;
     }
@@ -307,7 +300,8 @@ public final class SoyElementPass implements CompilerFileSetPass {
     if (callee != null) {
       calleeKind = callee.getTemplateContentKind();
     } else {
-      TemplateMetadata metadata = registry.getBasicTemplateOrElement(delegateName);
+      TemplateMetadata metadata =
+          templateRegistryFromDeps.get().getBasicTemplateOrElement(delegateName);
       Preconditions.checkNotNull(metadata, "No metadata for %s", delegateName);
       calleeKind = metadata.getTemplateType().getContentKind();
     }
@@ -356,12 +350,12 @@ public final class SoyElementPass implements CompilerFileSetPass {
       String callee,
       SourceLocation calleeSourceLocation,
       Map<String, TemplateNode> templatesInLibrary,
-      ImportsTemplateRegistry registry,
       Set<TemplateNode> visited) {
 
     HtmlElementMetadataP calleeMetadata = null;
     boolean isCalleeSoyElement = false;
-    TemplateMetadata templateMetadata = registry.getBasicTemplateOrElement(callee);
+    TemplateMetadata templateMetadata =
+        templateRegistryFromDeps.get().getBasicTemplateOrElement(callee);
 
     if (templateMetadata != null) {
       calleeMetadata = templateMetadata.getHtmlElement();
@@ -370,7 +364,7 @@ public final class SoyElementPass implements CompilerFileSetPass {
       TemplateNode calledTemplate = templatesInLibrary.get(callee);
       calleeMetadata = calledTemplate.getHtmlElementMetadata();
       if (calleeMetadata == null) {
-        calleeMetadata = getTemplateMetadata(calledTemplate, templatesInLibrary, registry, visited);
+        calleeMetadata = getTemplateMetadata(calledTemplate, templatesInLibrary, visited);
         // Cycle was detected
         if (calleeMetadata == null) {
           template.setHtmlElementMetadata(DEFAULT_HTML_METADATA);

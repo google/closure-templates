@@ -26,7 +26,6 @@ import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.soytree.ImportsContext.ImportsTemplateRegistry;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 import com.google.template.soy.types.SoyTypeRegistry;
@@ -261,17 +260,6 @@ public final class SoyFileNode extends AbstractParentSoyNode<SoyNode>
     Preconditions.checkState(
         importsContext != null, "Called getSoyTypeRegistry() before ImportsPass was run.");
     return importsContext.getTypeRegistry();
-  }
-
-  public ImportsTemplateRegistry getTemplateRegistry() {
-    Preconditions.checkState(
-        importsContext != null,
-        "Called getTemplateRegistry() before ResolveTemplateImportsPass was run.");
-    return importsContext.getTemplateRegistry();
-  }
-
-  public boolean hasTemplateRegistry() {
-    return importsContext.hasTemplateRegistry();
   }
 
   public ImportsContext getImportsContext() {

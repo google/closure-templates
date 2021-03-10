@@ -57,6 +57,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 
 /**
  * This compiler pass runs several checks on {@code CallNode}s.
@@ -100,14 +101,18 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
   /** The error reporter that is used in this compiler pass. */
   private final ErrorReporter errorReporter;
 
-  CheckTemplateCallsPass(ErrorReporter errorReporter) {
+  private final Supplier<TemplateRegistry> templateRegistryFull;
+
+  CheckTemplateCallsPass(
+      ErrorReporter errorReporter, Supplier<TemplateRegistry> templateRegistryFull) {
     this.errorReporter = errorReporter;
+    this.templateRegistryFull = templateRegistryFull;
   }
 
   @Override
   public Result run(ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator) {
+    CheckCallsHelper helper = new CheckCallsHelper(templateRegistryFull.get());
     for (SoyFileNode file : sourceFiles) {
-      CheckCallsHelper helper = new CheckCallsHelper(file.getTemplateRegistry());
       for (TemplateNode template : file.getTemplates()) {
         for (CallBasicNode callNode :
             SoyTreeUtils.getAllNodesOfType(template, CallBasicNode.class)) {

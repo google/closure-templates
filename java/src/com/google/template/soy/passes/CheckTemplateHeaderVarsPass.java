@@ -24,7 +24,9 @@ import com.google.template.soy.passes.IndirectParamsCalculator.IndirectParamsInf
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
+import java.util.function.Supplier;
 
 /**
  * Pass for checking that in each template there is no ambiguity between inject parameters and
@@ -40,16 +42,20 @@ public final class CheckTemplateHeaderVarsPass implements CompilerFileSetPass {
               + " ''{1}''.");
 
   private final ErrorReporter errorReporter;
+  private final Supplier<TemplateRegistry> templateRegistryFull;
 
-  CheckTemplateHeaderVarsPass(ErrorReporter errorReporter) {
+  CheckTemplateHeaderVarsPass(
+      ErrorReporter errorReporter, Supplier<TemplateRegistry> templateRegistryFull) {
     this.errorReporter = errorReporter;
+    this.templateRegistryFull = templateRegistryFull;
   }
 
   @Override
   public Result run(ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator) {
+    IndirectParamsCalculator ipc = new IndirectParamsCalculator(templateRegistryFull.get());
     for (SoyFileNode fileNode : sourceFiles) {
       for (TemplateNode templateNode : fileNode.getTemplates()) {
-        checkTemplate(templateNode, new IndirectParamsCalculator(fileNode.getTemplateRegistry()));
+        checkTemplate(templateNode, ipc);
       }
     }
     return Result.CONTINUE;

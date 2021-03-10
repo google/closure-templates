@@ -90,8 +90,17 @@ public final class PassManager {
   /** State used for inter-pass communication, without modifying the AST. */
   private static class AccumulatedState {
     private TemplateNameRegistry templateNameRegistry;
-    private TemplateRegistry fileSetTemplateRegistry;
+    private TemplateRegistry templateRegistryFromDeps;
+    private TemplateRegistry templateRegistryFull;
     private ImmutableList<SoyFileNode> topologicallyOrderedFiles;
+
+    TemplateRegistry registryFromDeps() {
+      return templateRegistryFromDeps;
+    }
+
+    TemplateRegistry registryFull() {
+      return templateRegistryFull;
+    }
   }
 
   @VisibleForTesting final ImmutableList<CompilerFilePass> parsePasses;
@@ -130,7 +139,7 @@ public final class PassManager {
       TemplateNameRegistry templateNameRegistry,
       TemplateRegistry partialTemplateRegistryWithJustDeps) {
     accumulatedState.templateNameRegistry = templateNameRegistry;
-    accumulatedState.fileSetTemplateRegistry = partialTemplateRegistryWithJustDeps;
+    accumulatedState.templateRegistryFromDeps = partialTemplateRegistryWithJustDeps;
     return runSomePasses(soyTree, partialTemplateRegistryPasses);
   }
 
@@ -138,7 +147,7 @@ public final class PassManager {
    * Runs all the fileset passes including the autoescaper and optimization passes if configured.
    */
   public void runWholeFilesetPasses(SoyFileSetNode soyTree, TemplateRegistry templateRegistry) {
-    accumulatedState.fileSetTemplateRegistry = templateRegistry;
+    accumulatedState.templateRegistryFull = templateRegistry;
     runSomePasses(soyTree, crossTemplateCheckingPasses);
   }
 
@@ -460,7 +469,9 @@ public final class PassManager {
       // The StrictHtmlValidatorPass needs to run after ResolveNames.
       addPass(new StrictHtmlValidationPass(errorReporter), partialTemplateRegistryPassesBuilder);
 
-      addPass(new SoyElementPass(errorReporter), partialTemplateRegistryPassesBuilder);
+      addPass(
+          new SoyElementPass(errorReporter, accumulatedState::registryFromDeps),
+          partialTemplateRegistryPassesBuilder);
       if (addHtmlAttributesForDebugging) {
         // needs to run after MsgsPass (so we don't mess up the auto placeholder naming algorithm)
         // and before ResolveExpressionTypesPass (since we insert expressions).
@@ -471,7 +482,7 @@ public final class PassManager {
       if (astRewrites.atLeast(AstRewrites.ALL)) {
         addPass(
             new ElementAttributePass(
-                errorReporter, pluginResolver, () -> accumulatedState.fileSetTemplateRegistry),
+                errorReporter, pluginResolver, accumulatedState::registryFromDeps),
             partialTemplateRegistryPassesBuilder);
       }
       if (!disableAllTypeChecking) {
@@ -482,10 +493,7 @@ public final class PassManager {
 
         addPass(
             new ResolveExpressionTypesPass(
-                errorReporter,
-                loggingConfig,
-                pluginResolver,
-                () -> accumulatedState.fileSetTemplateRegistry),
+                errorReporter, loggingConfig, pluginResolver, accumulatedState::registryFromDeps),
             partialTemplateRegistryPassesBuilder);
         // After ResolveExpressionTypesPass because ResolveExpressionTypesPass verifies usage and
         // types of non-null assertion operators.
@@ -541,35 +549,47 @@ public final class PassManager {
                 errorReporter, astRewrites.atLeast(AstRewrites.ALL)),
             crossTemplateCheckingPassesBuilder);
       }
-      addPass(new CheckTemplateHeaderVarsPass(errorReporter), crossTemplateCheckingPassesBuilder);
+      addPass(
+          new CheckTemplateHeaderVarsPass(errorReporter, accumulatedState::registryFull),
+          crossTemplateCheckingPassesBuilder);
       if (!disableAllTypeChecking) {
         // Needs to come after types have been set.
         addPass(
             new EnforceExperimentalFeaturesPass(options.getExperimentalFeatures(), errorReporter),
             crossTemplateCheckingPassesBuilder);
-        addPass(new CheckTemplateCallsPass(errorReporter), crossTemplateCheckingPassesBuilder);
+        addPass(
+            new CheckTemplateCallsPass(errorReporter, accumulatedState::registryFull),
+            crossTemplateCheckingPassesBuilder);
         addPass(
             new ElementCheckCrossTemplatePass(errorReporter), crossTemplateCheckingPassesBuilder);
         if (astRewrites.atLeast(AstRewrites.ALL)) {
-
           addPass(
-              new SoyElementCompositionPass(errorReporter, soyPrintDirectives),
+              new SoyElementCompositionPass(
+                  errorReporter, soyPrintDirectives, accumulatedState::registryFull),
               crossTemplateCheckingPassesBuilder);
         }
       }
       addPass(new CallAnnotationPass(), crossTemplateCheckingPassesBuilder);
-      addPass(new CheckTemplateVisibilityPass(errorReporter), crossTemplateCheckingPassesBuilder);
       addPass(
-          new CheckDelegatesPass(errorReporter, () -> accumulatedState.fileSetTemplateRegistry),
+          new CheckTemplateVisibilityPass(errorReporter, accumulatedState::registryFull),
+          crossTemplateCheckingPassesBuilder);
+      addPass(
+          new CheckDelegatesPass(errorReporter, accumulatedState::registryFull),
           crossTemplateCheckingPassesBuilder);
 
       addPass(new CombineConsecutiveRawTextNodesPass(), crossTemplateCheckingPassesBuilder);
       addPass(
-          new AutoescaperPass(errorReporter, soyPrintDirectives, insertEscapingDirectives),
+          new AutoescaperPass(
+              errorReporter,
+              soyPrintDirectives,
+              insertEscapingDirectives,
+              accumulatedState::registryFull),
           crossTemplateCheckingPassesBuilder);
       // Relies on information from the autoescaper and valid type information
       if (!disableAllTypeChecking && insertEscapingDirectives) {
-        addPass(new CheckBadContextualUsagePass(errorReporter), crossTemplateCheckingPassesBuilder);
+        addPass(
+            new CheckBadContextualUsagePass(errorReporter, accumulatedState::registryFull),
+            crossTemplateCheckingPassesBuilder);
       }
 
       // Simplification Passes.
@@ -589,8 +609,7 @@ public final class PassManager {
       // RawTextNodes. Stich them back together here.
       addPass(new CombineConsecutiveRawTextNodesPass(), crossTemplateCheckingPassesBuilder);
       addPass(
-          new BanDuplicateNamespacesPass(
-              errorReporter, () -> accumulatedState.fileSetTemplateRegistry),
+          new BanDuplicateNamespacesPass(errorReporter, accumulatedState::registryFull),
           crossTemplateCheckingPassesBuilder);
       building = false;
       if (!passContinuationRegistry.isEmpty()) {

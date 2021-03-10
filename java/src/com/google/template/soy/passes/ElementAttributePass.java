@@ -137,15 +137,15 @@ final class ElementAttributePass implements CompilerFileSetPass {
 
   private final ErrorReporter errorReporter;
   private final PluginResolver pluginResolver;
-  private final Supplier<TemplateRegistry> libRegistry;
+  private final Supplier<TemplateRegistry> templateRegistryFromDeps;
 
   ElementAttributePass(
       ErrorReporter errorReporter,
       PluginResolver pluginResolver,
-      Supplier<TemplateRegistry> libRegistry) {
+      Supplier<TemplateRegistry> templateRegistryFromDeps) {
     this.errorReporter = errorReporter;
     this.pluginResolver = pluginResolver;
-    this.libRegistry = libRegistry;
+    this.templateRegistryFromDeps = templateRegistryFromDeps;
   }
 
   @Override
@@ -545,7 +545,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
           reservedAttr = callee.getReservedAttributes();
         } else {
           reservedAttr =
-              libRegistry
+              templateRegistryFromDeps
                   .get()
                   .getBasicTemplateOrElement(leaf.getValue())
                   .getTemplateType()
