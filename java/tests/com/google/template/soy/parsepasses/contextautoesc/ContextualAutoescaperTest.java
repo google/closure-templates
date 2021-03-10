@@ -2025,9 +2025,7 @@ public final class ContextualAutoescaperTest {
     String source = rewrite(inputs).toSourceString();
     // remove the nonce, it is just distracting
     source = source.replace(NONCE_DECLARATION, "");
-    source = source.replace(NONCE_DECLARATION_STYLE, "");
     source = source.replace(NONCE, "");
-    source = source.replace(NONCE_STYLE, "");
     assertThat(source.trim()).isEqualTo(expectedOutput);
   }
 
@@ -2076,16 +2074,8 @@ public final class ContextualAutoescaperTest {
   private static final String NONCE_DECLARATION =
       "  {@inject? csp_nonce: any}  /** Created by ContentSecurityPolicyNonceInjectionPass. */\n";
 
-  private static final String NONCE_DECLARATION_STYLE =
-      "  {@inject? csp_style_nonce: any}"
-          + "  /** Created by ContentSecurityPolicyNonceInjectionPass. */\n";
-
   private static final String NONCE =
       "{if $csp_nonce} nonce=\"{$csp_nonce |filterCspNonceValue |escapeHtmlAttribute}\"{/if}";
-
-  private static final String NONCE_STYLE =
-      "{if $csp_style_nonce}"
-          + " nonce=\"{$csp_style_nonce |filterCspNonceValue |escapeHtmlAttribute}\"{/if}";
 
   private void assertContextualRewritingNoop(String expectedOutput) {
     assertContextualRewriting(expectedOutput, expectedOutput);
