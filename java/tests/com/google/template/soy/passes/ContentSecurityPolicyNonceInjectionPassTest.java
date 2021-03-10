@@ -33,8 +33,14 @@ public final class ContentSecurityPolicyNonceInjectionPassTest {
 
   private static final String DEFN =
       "  {@inject? csp_nonce: any}  /** Created by ContentSecurityPolicyNonceInjectionPass. */\n";
+  private static final String DEFN_STYLE =
+      "  {@inject? csp_style_nonce: any}"
+          + "  /** Created by ContentSecurityPolicyNonceInjectionPass. */\n";
   private static final String NONCE =
       "{if $csp_nonce} nonce=\"{$csp_nonce |filterCspNonceValue |escapeHtmlAttribute}\"{/if}";
+  private static final String NONCE_STYLE =
+      "{if $csp_style_nonce}"
+          + " nonce=\"{$csp_style_nonce |filterCspNonceValue |escapeHtmlAttribute}\"{/if}";
 
   @Test
   public void testTrivialTemplate() {
@@ -162,9 +168,9 @@ public final class ContentSecurityPolicyNonceInjectionPassTest {
     assertInjected(
         join(
             "{template .foo}\n",
-            DEFN,
+            DEFN_STYLE,
             "<style type=text/css",
-            NONCE,
+            NONCE_STYLE,
             ">",
             "p {lb} color: purple {rb}",
             "</style>\n",
@@ -310,10 +316,27 @@ public final class ContentSecurityPolicyNonceInjectionPassTest {
     assertInjected(
         join(
             "{template .foo}\n",
-            DEFN,
-            "<link rel='stylesheet' href='foo.css'" + NONCE + ">\n",
+            DEFN_STYLE,
+            "<link rel='stylesheet' href='foo.css'" + NONCE_STYLE + ">\n",
             "{/template}"),
         join("{template .foo}\n", "<link rel='stylesheet' href='foo.css'>\n", "{/template}"));
+  }
+
+  @Test
+  public void testScriptAndStylesheet() {
+    assertInjected(
+        join(
+            "{template .foo}\n",
+            DEFN,
+            DEFN_STYLE,
+            "<script" + NONCE + ">alert('Hello, World!')</script>",
+            "<link rel='stylesheet' href='foo.css'" + NONCE_STYLE + ">\n",
+            "{/template}"),
+        join(
+            "{template .foo}\n",
+            "<script>alert('Hello, World!')</script>",
+            "<link rel='stylesheet' href='foo.css'>\n",
+            "{/template}"));
   }
 
   @Test
@@ -335,8 +358,8 @@ public final class ContentSecurityPolicyNonceInjectionPassTest {
     assertInjected(
         join(
             "{template .foo}\n",
-            DEFN,
-            "<link rel='preload' as='style' href='foo.js'" + NONCE + ">\n",
+            DEFN_STYLE,
+            "<link rel='preload' as='style' href='foo.js'" + NONCE_STYLE + ">\n",
             "{/template}"),
         join(
             "{template .foo}\n", "<link rel='preload' as='style' href='foo.js'>\n", "{/template}"));

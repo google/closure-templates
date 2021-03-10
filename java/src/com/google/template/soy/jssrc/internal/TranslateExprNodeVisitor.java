@@ -51,6 +51,7 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.XID;
 import static com.google.template.soy.jssrc.internal.JsRuntime.extensionField;
 import static com.google.template.soy.jssrc.internal.JsRuntime.protoConstructor;
 import static com.google.template.soy.passes.ContentSecurityPolicyNonceInjectionPass.CSP_NONCE_VARIABLE_NAME;
+import static com.google.template.soy.passes.ContentSecurityPolicyNonceInjectionPass.CSP_STYLE_NONCE_VARIABLE_NAME;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
@@ -230,7 +231,8 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
       // to set it. So, instead of generating opt_ij_data.csp_nonce, we generate opt_ij_data &&
       // opt_ij_data.csp_nonce.
       // TODO(lukes): we only need to generate this logic if there aren't any other ij params
-      if (paramName.equals(CSP_NONCE_VARIABLE_NAME)) {
+      if (paramName.equals(CSP_NONCE_VARIABLE_NAME)
+          || paramName.equals(CSP_STYLE_NONCE_VARIABLE_NAME)) {
         return IJ_DATA.and(IJ_DATA.dotAccess(paramName), codeGenerator);
       }
       source = IJ_DATA;
