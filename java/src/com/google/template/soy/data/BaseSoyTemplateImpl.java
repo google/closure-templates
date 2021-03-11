@@ -381,6 +381,13 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
       return SoyMapImpl.forProviderMap(builder.build());
     }
 
+    protected static <K, V> SoyValue asNullableMap(
+        @Nullable Map<K, V> map,
+        Function<? super K, ? extends SoyValue> keyMapper,
+        Function<? super V, ? extends SoyValueProvider> valueMapper) {
+      return map == null ? NullData.INSTANCE : asMap(map, keyMapper, valueMapper);
+    }
+
     protected static <V> SoyLegacyObjectMap asLegacyObjectMap(
         Map<?, V> map, Function<? super V, ? extends SoyValueProvider> valueMapper) {
       ImmutableMap.Builder<String, SoyValueProvider> builder =
@@ -390,6 +397,11 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
         builder.put(entry.getKey().toString(), valueMapper.apply(entry.getValue()));
       }
       return new SoyLegacyObjectMapImpl(builder.build());
+    }
+
+    protected static <K, V> SoyValue asNullableLegacyObjectMap(
+        @Nullable Map<?, V> map, Function<? super V, ? extends SoyValueProvider> valueMapper) {
+      return map == null ? NullData.INSTANCE : asLegacyObjectMap(map, valueMapper);
     }
 
     protected static SoyValueProvider asSoyValue(@Nullable Object object) {

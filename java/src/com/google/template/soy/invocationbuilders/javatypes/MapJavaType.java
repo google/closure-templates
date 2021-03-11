@@ -21,6 +21,10 @@ package com.google.template.soy.invocationbuilders.javatypes;
 public final class MapJavaType extends JavaType {
 
   public static final CodeGenUtils.Member AS_MAP = CodeGenUtils.castFunction("asMap");
+  public static final CodeGenUtils.Member AS_NULLABLE_MAP =
+      CodeGenUtils.castFunction("asNullableMap");
+  public static final CodeGenUtils.Member AS_NULLABLE_LEGACY_OBJECT_MAP =
+      CodeGenUtils.castFunction("asNullableLegacyObjectMap");
   public static final CodeGenUtils.Member AS_LEGACY_OBJECT_MAP =
       CodeGenUtils.castFunction("asLegacyObjectMap");
 
@@ -60,7 +64,7 @@ public final class MapJavaType extends JavaType {
     // Mark as a "soy map" (as opposed to soy records / legacy maps). This allows keys to be
     // non-strings.
     if (shouldMarkAsSoyMap) {
-      return AS_MAP
+      return (isNullable() ? AS_NULLABLE_MAP : AS_MAP)
           + "("
           + variableName
           + ", "
@@ -69,7 +73,7 @@ public final class MapJavaType extends JavaType {
           + valueType.getAsInlineCastFunction(depth)
           + ")";
     } else {
-      return AS_LEGACY_OBJECT_MAP
+      return (isNullable() ? AS_NULLABLE_LEGACY_OBJECT_MAP : AS_LEGACY_OBJECT_MAP)
           + "("
           + variableName
           + ", "
