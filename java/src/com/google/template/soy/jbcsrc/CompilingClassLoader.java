@@ -37,11 +37,6 @@ import java.util.Map;
 
 /** A classloader that can compile templates on demand. */
 final class CompilingClassLoader extends AbstractMemoryClassLoader {
-  static {
-    // See http://docs.oracle.com/javase/7/docs/technotes/guides/lang/cl-mt.html
-    ClassLoader.registerAsParallelCapable();
-  }
-
   // Synchronized hashmap is sufficient for our usecase since we are only calling remove(), CHM
   // would just use more memory.
   private final Map<String, ClassData> classesByName = Collections.synchronizedMap(new HashMap<>());
@@ -70,6 +65,10 @@ final class CompilingClassLoader extends AbstractMemoryClassLoader {
 
   @Override
   protected ClassData getClassData(String name) {
+    if (!name.startsWith(Names.CLASS_PREFIX)) {
+      // this means we couldn't possibly compile it.
+      return null;
+    }
     // Remove because ClassLoader itself maintains a cache so we don't need it after loading
     ClassData classDef = classesByName.remove(name);
     if (classDef != null) {
@@ -80,11 +79,9 @@ final class CompilingClassLoader extends AbstractMemoryClassLoader {
 
     // For each template we compile there is only one 'public' class that could be loaded prior
     // to compiling the template, CompiledTemplate itself.
-    if (!name.startsWith(Names.CLASS_PREFIX)) {
-      return null;
-    }
     SoyFileNode node = javaClassNameToFile.get(name);
     if (node == null) {
+      // typo in template name?
       return null;
     }
     ClassData clazzToLoad = null;
