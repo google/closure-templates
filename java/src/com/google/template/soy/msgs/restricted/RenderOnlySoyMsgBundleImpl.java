@@ -143,7 +143,7 @@ public final class RenderOnlySoyMsgBundleImpl extends SoyMsgBundle {
     // This creates the mask. Basically, take the high-bit and fill in the bits below it.
     int maskHigh = Integer.highestOneBit(Iterables.size(msgs));
     this.bucketMask = (maskHigh | (maskHigh - 1)) >>> BUCKET_SHIFT;
-    int numBuckets = this.bucketMask + 1;
+    int numBuckets = maskHigh == 0 ? 0 : this.bucketMask + 1;
 
     // Sorts by bucket (low bits within the mask) and breaks ties with the full ID.
     Comparator<SoyMsg> bucketComparator =
