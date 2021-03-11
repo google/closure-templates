@@ -1634,7 +1634,12 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
                     node.getSourceLocation(),
                     SanitizedContentKind.TEXT);
             MsgPlaceholderNode placeholderParent = (MsgPlaceholderNode) node.getParent();
-            checkState(placeholderParent.numChildren() == 1);
+            checkState(
+                placeholderParent.numChildren() == 1,
+                "expected placeholder %s (%s) to be the only child of our parent: %s",
+                phname,
+                node,
+                placeholderParent);
             fakeLet.addChild(node); // NOTE: this removes node from placeholderParent
             placeholderParent.addChild(fakeLet);
 
