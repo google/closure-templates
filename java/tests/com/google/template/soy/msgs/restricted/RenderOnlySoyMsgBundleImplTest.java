@@ -23,8 +23,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -149,15 +147,5 @@ public class RenderOnlySoyMsgBundleImplTest {
     assertThat(copy.getLocaleString()).isEqualTo(LOCALE);
     assertThat(bundle).hasSize(testMessages.size());
     assertThat(copy).containsExactlyElementsIn(bundle).inOrder();
-  }
-
-  @Test
-  @SuppressWarnings("ReturnValueIgnored")
-  public void testEmptyBundlesDontOverAllocate() {
-    // Prior issue introduced the possibility of mistaken large allocations for empty bundles.
-    // This tries to OOM the test in the presence of such issues.
-    IntStream.range(1, 10000)
-        .mapToObj(i -> new RenderOnlySoyMsgBundleImpl("fr", ImmutableList.of()))
-        .collect(Collectors.toList());
   }
 }
