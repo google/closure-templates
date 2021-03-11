@@ -98,12 +98,16 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.annotation.Nullable;
 
 /**
  * Represents a complete set of Soy files for compilation as one bundle. The files may depend on
  * each other but should not have dependencies outside of the set.
+ *
+ * <p><strong>Note that this implementation is not synchronized.</strong> If multiple threads use a
+ * SoyFileSet concurrently, it <i>must</i> be synchronized externally.
  *
  * <p>Note: Soy file (or resource) contents must be encoded in UTF-8.
  *
@@ -643,12 +647,26 @@ public final class SoyFileSet {
     return typeRegistry;
   }
 
+  private boolean isCompiling;
+
   /** Template pattern for any public or package visible entry point method that returns a value. */
   private <T> T entryPoint(Supplier<T> variant) {
+    synchronized (this) {
+      if (isCompiling) {
+        // TODO(lukes): upgrade to an exception
+        logger.log(
+            Level.SEVERE,
+            "concurrent use of a SoyFileSet object is undefined behavior.",
+            new Exception());
+      }
+      isCompiling = true;
+    }
     resetErrorReporter();
-    T rv;
     try {
-      rv = variant.get();
+      T rv = variant.get();
+      throwIfErrorsPresent();
+      reportWarnings();
+      return rv;
     } catch (SoyCompilationException | SoyInternalCompilerException e) {
       throw e;
     } catch (RuntimeException e) {
@@ -658,10 +676,11 @@ public final class SoyFileSet {
       } else {
         throw e;
       }
+    } finally {
+      synchronized (this) {
+        isCompiling = false;
+      }
     }
-    throwIfErrorsPresent();
-    reportWarnings();
-    return rv;
   }
 
   /** Template pattern for any public or package visible entry point method that is void. */
@@ -1252,7 +1271,7 @@ public final class SoyFileSet {
    * <p>This method should be called at the beginning of every entry point into SoyFileSet.
    */
   @VisibleForTesting
-  void resetErrorReporter() {
+  synchronized void resetErrorReporter() {
     errorReporter = ErrorReporter.create(soyFileSuppliers);
   }
 
