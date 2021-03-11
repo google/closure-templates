@@ -20,12 +20,11 @@ import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import com.google.common.primitives.ImmutableIntArray;
-import com.google.common.primitives.ImmutableLongArray;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.ibm.icu.util.ULocale;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
@@ -56,7 +55,8 @@ public final class RenderOnlySoyMsgBundleImpl extends SoyMsgBundle {
   // need neither a linked list nor empty spaces in the hash table.
 
   /** Sorted array of message ID's that can be binary searched. */
-  private final ImmutableLongArray ids;
+  @SuppressWarnings("Immutable")
+  private final long[] ids;
 
   /**
    * List containing the message parts. See {@link #partRanges} for an explanation for how they
@@ -71,7 +71,8 @@ public final class RenderOnlySoyMsgBundleImpl extends SoyMsgBundle {
    * message are the sublist of {@code values} from {@code partRanges[n]} (inclusive} to {@code
    * partRanges[n+1]} (exclusive).
    */
-  private final ImmutableIntArray partRanges;
+  @SuppressWarnings("Immutable")
+  private final int[] partRanges;
 
   /*
    * This implements a very nearly free dense hashtable of SoyMsgs.
@@ -115,7 +116,8 @@ public final class RenderOnlySoyMsgBundleImpl extends SoyMsgBundle {
   private final int bucketMask;
 
   /** The bucket is the range [bucketBoundaries[bucketKey], bucketBoundaries[bucketKey]) in ids. */
-  private final ImmutableIntArray bucketBoundaries;
+  @SuppressWarnings("Immutable")
+  private final int[] bucketBoundaries;
 
   /** Returns the bucket index of the given ID. */
   private int bucketOf(long msgId) {
@@ -149,23 +151,23 @@ public final class RenderOnlySoyMsgBundleImpl extends SoyMsgBundle {
     ImmutableList<SoyMsg> sortedMsgs = ImmutableList.sortedCopyOf(bucketComparator, msgs);
 
     // Scan the sorted list to discover bucket boundaries and place them into the boundaries array.
-    ImmutableIntArray.Builder bucketBoundariesBuilder = ImmutableIntArray.builder(numBuckets + 1);
+    bucketBoundaries = new int[numBuckets + 1];
     for (int bucket = 0, idx = 0; bucket < numBuckets; bucket++) {
-      bucketBoundariesBuilder.add(idx);
+      bucketBoundaries[bucket] = idx;
       for (;
           (idx < sortedMsgs.size()) && (bucketOf(sortedMsgs.get(idx).getId()) == bucket);
           idx++) {}
     }
-    bucketBoundariesBuilder.add(sortedMsgs.size());
-    this.bucketBoundaries = bucketBoundariesBuilder.build();
+    bucketBoundaries[numBuckets] = sortedMsgs.size();
 
-    ImmutableLongArray.Builder idsBuilder = ImmutableLongArray.builder(sortedMsgs.size());
+    ids = new long[sortedMsgs.size()];
     ImmutableList.Builder<SoyMsgPart> partsBuilder = ImmutableList.builder();
-    ImmutableIntArray.Builder partRangesBuilder = ImmutableIntArray.builder(sortedMsgs.size() + 1);
-    partRangesBuilder.add(0); // The first range always starts at the beginning of the list.
+    partRanges = new int[sortedMsgs.size() + 1];
+    partRanges[0] = 0; // The first range always starts at the beginning of the list.
     long priorId = sortedMsgs.isEmpty() ? -1L : sortedMsgs.get(0).getId() - 1L;
     int runningPartCount = 0;
-    for (SoyMsg msg : sortedMsgs) {
+    for (int i = 0, c = sortedMsgs.size(); i < c; i++) {
+      SoyMsg msg = sortedMsgs.get(i);
       ImmutableList<SoyMsgPart> parts = msg.getParts();
 
       checkArgument(
@@ -175,16 +177,14 @@ public final class RenderOnlySoyMsgBundleImpl extends SoyMsgBundle {
           "Message's plural/select status is inconsistent -- internal compiler bug.");
 
       priorId = msg.getId();
-      idsBuilder.add(msg.getId());
+      ids[i] = msg.getId();
       partsBuilder.addAll(parts);
       runningPartCount += parts.size();
-      partRangesBuilder.add(runningPartCount);
+      partRanges[i + 1] = runningPartCount; // runningPartCount is the end of range, hence +1
     }
 
     // This will build the collections in the same order as the sorted map.
-    ids = idsBuilder.build();
     values = partsBuilder.build();
-    partRanges = partRangesBuilder.build();
   }
 
   /** Copies a RenderOnlySoyMsgBundleImpl, replacing only the localeString. */
@@ -229,8 +229,8 @@ public final class RenderOnlySoyMsgBundleImpl extends SoyMsgBundle {
   }
 
   private ImmutableList<SoyMsgPart> partsForIndex(int index) {
-    int startInclusive = partRanges.get(index);
-    int endExclusive = partRanges.get(index + 1);
+    int startInclusive = partRanges[index];
+    int endExclusive = partRanges[index + 1];
     return values.subList(startInclusive, endExclusive);
   }
 
@@ -248,27 +248,14 @@ public final class RenderOnlySoyMsgBundleImpl extends SoyMsgBundle {
 
   private int binarySearch(long key) {
     int bucket = bucketOf(key);
-    int low = bucketBoundaries.get(bucket);
-    int high = bucketBoundaries.get(bucket + 1) - 1;
-
-    while (low <= high) {
-      int mid = (low + high) >>> 1;
-      long midVal = ids.get(mid);
-
-      if (midVal < key) {
-        low = mid + 1;
-      } else if (midVal > key) {
-        high = mid - 1;
-      } else {
-        return mid;
-      }
-    }
-    return -(low + 1);
+    int low = bucketBoundaries[bucket];
+    int high = bucketBoundaries[bucket + 1];
+    return Arrays.binarySearch(ids, low, high, key);
   }
 
   @Override
   public int getNumMsgs() {
-    return ids.length();
+    return ids.length;
   }
 
   @Override
@@ -278,7 +265,7 @@ public final class RenderOnlySoyMsgBundleImpl extends SoyMsgBundle {
 
       @Override
       public boolean hasNext() {
-        return index < ids.length();
+        return index < ids.length;
       }
 
       @Override
@@ -286,7 +273,7 @@ public final class RenderOnlySoyMsgBundleImpl extends SoyMsgBundle {
         if (!hasNext()) {
           throw new NoSuchElementException();
         }
-        SoyMsg result = resurrectMsg(ids.get(index), partsForIndex(index));
+        SoyMsg result = resurrectMsg(ids[index], partsForIndex(index));
         index++;
         return result;
       }
