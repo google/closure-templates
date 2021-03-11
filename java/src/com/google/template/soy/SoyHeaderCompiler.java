@@ -25,6 +25,9 @@ import com.google.common.collect.Iterables;
 import com.google.template.soy.css.CssMetadata;
 import com.google.template.soy.css.CssRegistry;
 import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.ExprNode.Kind;
+import com.google.template.soy.exprtree.FieldAccessNode;
+import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
@@ -35,18 +38,21 @@ import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.CompilationUnit;
+import com.google.template.soy.soytree.ForNonemptyNode;
+import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
+import com.google.template.soy.soytree.SoyNode.LocalVarNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.templatecall.TemplateCallMetadata;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.LinkedHashSet;
-import java.util.Optional;
 import java.util.Set;
 import java.util.zip.GZIPOutputStream;
 import org.kohsuke.args4j.Option;
@@ -167,19 +173,22 @@ final class SoyHeaderCompiler extends AbstractSoyCompiler {
         for (CallNode callNode : SoyTreeUtils.getAllNodesOfType(template, CallNode.class)) {
           ImmutableList<TemplateCallMetadata.ParamArg> callParamArgs =
               callNode.getChildren().stream()
-                  .map(
-                      node ->
-                          TemplateCallMetadata.ParamArg.newBuilder()
-                              .setKey(node.getKey().identifier())
-                              .setHeaderParamAlias(getHeaderParamAlias(node).orElse(""))
-                              .build())
+                  .map(SoyHeaderCompiler::createParamArg)
                   .collect(toImmutableList());
-          templateMetadata.addCalls(
+          TemplateCallMetadata.TemplateCall.Builder templateCallMetaData =
               TemplateCallMetadata.TemplateCall.newBuilder()
                   .setDestTemplateName(getDestTemplateName(callNode))
                   .setIsDelcall(callNode.getKind() == SoyNode.Kind.CALL_DELEGATE_NODE)
-                  .setDataArg(getDataArgStr(callNode))
-                  .addAllParamArgs(callParamArgs));
+                  .addAllParamArgs(callParamArgs);
+          if (callNode.isPassingAllData()) {
+            templateCallMetaData.setIsPassingAllData(true);
+          } else if (callNode.getDataExpr() != null) {
+            templateCallMetaData.setDataArg(
+                resolveLocalVarRefToParamRef(
+                    callNode.getDataExpr().getRoot(),
+                    TemplateCallMetadata.VarRefInfo.newBuilder()));
+          }
+          templateMetadata.addCalls(templateCallMetaData);
         }
         templateCallMetadata.addTemplates(templateMetadata.build());
       }
@@ -188,32 +197,66 @@ final class SoyHeaderCompiler extends AbstractSoyCompiler {
   }
 
   /**
-   * If a call param directly references a header param var, returns the alias of the header param
-   *
-   * <p>If the call param references a local var, this will instead return an empty Optional.
-   *
-   * <p>TODO(b/179912526): resolve array and record accessor pattern (necessary to support
-   * $componentChildren)
+   * Given a CallParamNode return its ParamArg proto representation.
    *
    * @param callParamNode Node that describes a variable referenced in a template call
-   * @return String representation of the header param, if applicable
+   * @return A ParamArg containing the VarRefInfo pertaining to its value, if applicable.
    */
-  private static Optional<String> getHeaderParamAlias(CallParamNode callParamNode) {
+  private static TemplateCallMetadata.ParamArg createParamArg(CallParamNode callParamNode) {
     // only shorthand param ref syntax is supported
+    TemplateCallMetadata.ParamArg.Builder paramArg =
+        TemplateCallMetadata.ParamArg.newBuilder().setKey(callParamNode.getKey().identifier());
     if (!(callParamNode instanceof CallParamValueNode)) {
-      return Optional.empty();
+      return paramArg.build();
     }
     ExprNode possibleParamRefExpr = ((CallParamValueNode) callParamNode).getExpr().getRoot();
-    if (possibleParamRefExpr.getKind() != ExprNode.Kind.VAR_REF_NODE) {
-      // do not resolve local vars
-      // TODO(b/179912526): support record key assignment to handle $componentChildren usages
-      return Optional.empty();
+    return paramArg
+        .setVarRef(
+            resolveLocalVarRefToParamRef(
+                possibleParamRefExpr, TemplateCallMetadata.VarRefInfo.newBuilder()))
+        .build();
+  }
+
+  /**
+   * Given a ExprNode and a VarRefInfo Builder return a VarRefInfo that resolves a localVar to the
+   * Param it was derived from, if applicable.
+   *
+   * @param varExpr Node that describes a variable expression.
+   * @param varRefInfo A builder for the VarRefInfo proto that contains information about varExpr.
+   * @return A VarRefInfo that contains relates varExpr to the param reference it was derived from,
+   *     if applicable
+   */
+  private static TemplateCallMetadata.VarRefInfo resolveLocalVarRefToParamRef(
+      ExprNode varExpr, TemplateCallMetadata.VarRefInfo.Builder varRefInfo) {
+    if (varExpr.getKind() == Kind.VAR_REF_NODE) {
+      VarDefn possibleParamRefDef = ((VarRefNode) varExpr).getDefnDecl();
+      if (possibleParamRefDef.kind() == VarDefn.Kind.PARAM) {
+        varRefInfo.setHeaderParam(possibleParamRefDef.name());
+        return varRefInfo.build();
+      } else if (possibleParamRefDef.kind() == VarDefn.Kind.LOCAL_VAR) {
+        LocalVarNode varRefNode = ((LocalVar) possibleParamRefDef).declaringNode();
+        // The LocalVarNode point to a for loop local variable
+        if (varRefNode.getKind() == SoyNode.Kind.FOR_NONEMPTY_NODE) {
+          varRefInfo.setUsesListIndex(true);
+          return resolveLocalVarRefToParamRef(
+              ((ForNonemptyNode) varRefNode).getExpr().getRoot(), varRefInfo);
+        } else if (varRefNode instanceof LetValueNode) {
+          // The LocalVarNode is a let statement
+          return resolveLocalVarRefToParamRef(
+              ((LetValueNode) varRefNode).getExpr().getRoot(), varRefInfo);
+        }
+      }
+    } else if (varExpr.getKind() == Kind.ITEM_ACCESS_NODE) {
+      varRefInfo.setUsesListIndex(true);
+      return resolveLocalVarRefToParamRef(
+          ((ItemAccessNode) varExpr).getBaseExprChild(), varRefInfo);
+    } else if (varExpr.getKind() == Kind.FIELD_ACCESS_NODE) {
+      FieldAccessNode fieldAccessNode = ((FieldAccessNode) varExpr);
+      varRefInfo.setDataAccessAlias(fieldAccessNode.getFieldName());
+      return resolveLocalVarRefToParamRef(fieldAccessNode.getBaseExprChild(), varRefInfo);
     }
-    VarDefn paramRefDef = ((VarRefNode) possibleParamRefExpr).getDefnDecl();
-    if (paramRefDef.kind() != VarDefn.Kind.PARAM) {
-      return Optional.empty();
-    }
-    return Optional.of(paramRefDef.name());
+
+    return varRefInfo.build();
   }
 
   private static String getDestTemplateName(CallNode callNode) {
@@ -228,12 +271,6 @@ final class SoyHeaderCompiler extends AbstractSoyCompiler {
       default:
         throw new IllegalStateException("Unknown CallNode kind");
     }
-  }
-
-  private static String getDataArgStr(CallNode callNode) {
-    return callNode.getDataExpr() != null
-        ? callNode.getDataExpr().toSourceString()
-        : callNode.isPassingAllData() ? "all" : "";
   }
 
   /**
