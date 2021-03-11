@@ -527,6 +527,7 @@ public final class PassManager {
       addPass(
           new CheckTemplateVisibilityPass(errorReporter, accumulatedState::registryFull), passes);
       addPass(new CheckDelegatesPass(errorReporter, accumulatedState::registryFull), passes);
+      addPass(new CheckIndirectDepsPass(errorReporter, accumulatedState::registryFull), passes);
 
       addPass(new CombineConsecutiveRawTextNodesPass(), passes);
       addPass(
