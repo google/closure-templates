@@ -19,6 +19,7 @@ package com.google.template.soy.msgs.restricted;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.common.primitives.ImmutableIntArray;
 import com.google.common.primitives.ImmutableLongArray;
 import com.google.errorprone.annotations.Immutable;
@@ -72,6 +73,55 @@ public final class RenderOnlySoyMsgBundleImpl extends SoyMsgBundle {
    */
   private final ImmutableIntArray partRanges;
 
+  /*
+   * This implements a very nearly free dense hashtable of SoyMsgs.
+   * - It bucket-sorts entries by the low bits of IDs.
+   * - The buckets themselves are sorted by ID and are binary searchable.
+   * - The number of buckets varies by the number of SoyMsgs in the bundle.
+   * - The cost of the hash table is 32bits/(2**BUCKET_SHIFT) == 0.5bits per entry. This is *much*
+   *   smaller than a typical HashMap.
+   *
+   * If the messages hash evenly by masking their low bits (empircally, they do), then this
+   * approaches the performance of a HashMap. If they all hash to the same bucket, it performs no
+   * worse than the previous binary-search-the-whole-thing impementation.
+   */
+
+  /**
+   * Describes the target number of members per bucket, approximately 2^BUCKET_SHIFT per bucket.
+   *
+   * <p>This number was settled on after benchmarking. Increasing it will decrease the memory
+   * footprint of bucketBoundaries and increase hash-bucket crowding. Every time the shift shrinks
+   * by one, footprint doubles.
+   *
+   * <p>Outcomes for different values:
+   *
+   * <ul>
+   *   <li>1 - 68ns (expanded memory footprint)
+   *   <li>2 - 66ns
+   *   <li>3 - 70ns
+   *   <li>4 - 73ns
+   *   <li>5 - 75ns
+   *   <li>6 - 77ns (chosen option)
+   *   <li>7 - 82ns
+   *   <li>8 - 84ns
+   *   <li>9 - 87ns
+   *   <li>10 - 95ns
+   *   <li>24 - 128ns (low memory footprint, binary search everything)
+   * </ul>
+   */
+  private static final int BUCKET_SHIFT = 6;
+
+  /** This is both the mask used to map IDs to buckets. It's also the number of buckets-1. */
+  private final int bucketMask;
+
+  /** The bucket is the range [bucketBoundaries[bucketKey], bucketBoundaries[bucketKey]) in ids. */
+  private final ImmutableIntArray bucketBoundaries;
+
+  /** Returns the bucket index of the given ID. */
+  private int bucketOf(long msgId) {
+    return ((int) msgId) & bucketMask;
+  }
+
   /**
    * Constructs a map of render-only soy messages. This implementation saves memory but doesn't
    * store all fields necessary during extraction.
@@ -88,8 +138,26 @@ public final class RenderOnlySoyMsgBundleImpl extends SoyMsgBundle {
     this.locale = localeString == null ? null : new ULocale(localeString);
     this.isRtl = BidiGlobalDir.forStaticLocale(localeString) == BidiGlobalDir.RTL;
 
-    ImmutableList<SoyMsg> sortedMsgs =
-        ImmutableList.sortedCopyOf(Comparator.comparingLong(SoyMsg::getId), msgs);
+    // This creates the mask. Basically, take the high-bit and fill in the bits below it.
+    int maskHigh = Integer.highestOneBit(Iterables.size(msgs));
+    this.bucketMask = (maskHigh | (maskHigh - 1)) >>> BUCKET_SHIFT;
+    int numBuckets = this.bucketMask + 1;
+
+    // Sorts by bucket (low bits within the mask) and breaks ties with the full ID.
+    Comparator<SoyMsg> bucketComparator =
+        Comparator.comparingInt((SoyMsg m) -> bucketOf(m.getId())).thenComparingLong(SoyMsg::getId);
+    ImmutableList<SoyMsg> sortedMsgs = ImmutableList.sortedCopyOf(bucketComparator, msgs);
+
+    // Scan the sorted list to discover bucket boundaries and place them into the boundaries array.
+    ImmutableIntArray.Builder bucketBoundariesBuilder = ImmutableIntArray.builder(numBuckets + 1);
+    for (int bucket = 0, idx = 0; bucket < numBuckets; bucket++) {
+      bucketBoundariesBuilder.add(idx);
+      for (;
+          (idx < sortedMsgs.size()) && (bucketOf(sortedMsgs.get(idx).getId()) == bucket);
+          idx++) {}
+    }
+    bucketBoundariesBuilder.add(sortedMsgs.size());
+    this.bucketBoundaries = bucketBoundariesBuilder.build();
 
     ImmutableLongArray.Builder idsBuilder = ImmutableLongArray.builder(sortedMsgs.size());
     ImmutableList.Builder<SoyMsgPart> partsBuilder = ImmutableList.builder();
@@ -126,6 +194,8 @@ public final class RenderOnlySoyMsgBundleImpl extends SoyMsgBundle {
     this.localeString = localeString;
     this.locale = localeString == null ? null : new ULocale(localeString);
     this.isRtl = BidiGlobalDir.forStaticLocale(localeString) == BidiGlobalDir.RTL;
+    this.bucketMask = exemplar.bucketMask;
+    this.bucketBoundaries = exemplar.bucketBoundaries;
     this.ids = exemplar.ids;
     this.values = exemplar.values;
     this.partRanges = exemplar.partRanges;
@@ -177,8 +247,9 @@ public final class RenderOnlySoyMsgBundleImpl extends SoyMsgBundle {
   }
 
   private int binarySearch(long key) {
-    int low = 0;
-    int high = ids.length() - 1;
+    int bucket = bucketOf(key);
+    int low = bucketBoundaries.get(bucket);
+    int high = bucketBoundaries.get(bucket + 1) - 1;
 
     while (low <= high) {
       int mid = (low + high) >>> 1;
