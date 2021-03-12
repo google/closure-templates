@@ -5,7 +5,8 @@
 
 import './skiphandler';
 
-import {assert} from 'goog:goog.asserts';  // from //third_party/javascript/closure/asserts
+import {assert, assertExists} from 'goog:goog.asserts';  // from //third_party/javascript/closure/asserts
+import IDisposable from 'goog:goog.disposable.IDisposable'; // from //third_party/javascript/closure/disposable:idisposable
 import {IjData} from 'goog:goog.soy';  // from //third_party/javascript/closure/soy
 import SanitizedContentKind from 'goog:goog.soy.data.SanitizedContentKind'; // from //third_party/javascript/closure/soy:data
 import {Logger} from 'goog:soy.velog';  // from //javascript/template/soy:soyutils_velog
@@ -29,7 +30,8 @@ function getSkipHandler(el: HTMLElement) {
 
 
 /** Base class for a Soy element. */
-export abstract class SoyElement<TData extends {}|null, TInterface extends {}> {
+export abstract class SoyElement<TData extends {}|null, TInterface extends {}>
+    implements IDisposable {
   // Node in which this object is stashed.
   private node: HTMLElement|null = null;
   private skipHandler:
@@ -42,8 +44,22 @@ export abstract class SoyElement<TData extends {}|null, TInterface extends {}> {
   // DOM
   key: string = '';
   private logGraft = false;
+  private disposed = false;
 
   constructor(protected data: TData, protected ijData?: IjData) {}
+
+  /** @override */
+  dispose() {
+    if (!this.disposed) {
+      this.disposed = true;
+      this.unsetLifecycleHooks();
+    }
+  }
+
+  /** @override */
+  isDisposed() {
+    return this.disposed;
+  }
 
   /**
    * Sets the Logger instance to use for renders of this SoyElement. If `render`
@@ -179,6 +195,9 @@ export abstract class SoyElement<TData extends {}|null, TInterface extends {}> {
   unsetLifecycleHooks() {
     this.skipHandler = null;
     this.patchHandler = null;
+    const node = assertExists(this.node);
+    node.__soy_skip_handler = undefined;
+    node.__soy_patch_handler = undefined;
   }
 
   /**
