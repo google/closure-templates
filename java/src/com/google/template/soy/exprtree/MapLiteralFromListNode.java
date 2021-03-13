@@ -18,6 +18,7 @@ package com.google.template.soy.exprtree;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
@@ -28,6 +29,11 @@ import com.google.template.soy.basetree.CopyState;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  */
 public final class MapLiteralFromListNode extends AbstractParentExprNode {
+  public static final String KEY_STRING = "key";
+  public static final String VALUE_STRING = "value";
+  public static final ImmutableSet<String> MAP_RECORD_FIELDS =
+      ImmutableSet.of(KEY_STRING, VALUE_STRING);
+
   private final Identifier mapIdentifier;
 
   public MapLiteralFromListNode(

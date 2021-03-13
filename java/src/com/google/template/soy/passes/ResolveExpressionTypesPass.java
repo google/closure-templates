@@ -314,11 +314,6 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass {
   private static final SoyErrorKind NOT_PROTO_MESSAGE =
       SoyErrorKind.of("Only proto messages may be instantiated.");
 
-  private static final String KEY_STRING = "key";
-  private static final String VALUE_STRING = "value";
-  private static final ImmutableList<String> MAP_RECORD_FIELDS =
-      ImmutableList.of(KEY_STRING, VALUE_STRING);
-
   private final ErrorReporter errorReporter;
 
   private final ValidatedLoggingConfig loggingConfig;
@@ -956,13 +951,21 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass {
       }
       RecordType recordType = (RecordType) listType.getElementType();
 
-      return ImmutableList.sortedCopyOf(recordType.getMemberNames()).equals(MAP_RECORD_FIELDS);
+      return ImmutableSet.copyOf(recordType.getMemberNames())
+          .equals(MapLiteralFromListNode.MAP_RECORD_FIELDS);
     }
 
     @Override
     protected void visitMapLiteralFromListNode(MapLiteralFromListNode node) {
       // Resolve the listExpr in "map(listExpr)".
       visit(node.getListExpr());
+      if (node.getListExpr().getType().equals(ListType.EMPTY_LIST)) {
+        node.setType(MapType.EMPTY_MAP);
+        if (inferringParam) {
+          errorReporter.report(node.getSourceLocation(), AMBIGUOUS_INFERRED_TYPE, "an empty map");
+        }
+        return;
+      }
 
       if (!isListOfKeyValueRecords(node.getListExpr().getType())) {
         errorReporter.report(
@@ -976,10 +979,10 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass {
 
       SoyType keyType =
           ((RecordType) ((ListType) node.getListExpr().getType()).getElementType())
-              .getMemberType(KEY_STRING);
+              .getMemberType(MapLiteralFromListNode.KEY_STRING);
       SoyType valueType =
           ((RecordType) ((ListType) node.getListExpr().getType()).getElementType())
-              .getMemberType(VALUE_STRING);
+              .getMemberType(MapLiteralFromListNode.VALUE_STRING);
       if (!MapType.isAllowedKeyType(keyType)) {
         errorReporter.report(node.getSourceLocation(), MapType.BAD_MAP_KEY_TYPE, keyType);
       }
