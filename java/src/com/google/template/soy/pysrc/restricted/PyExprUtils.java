@@ -250,6 +250,31 @@ public final class PyExprUtils {
     return new PyExpr("{" + joiner.join(values) + "}", Integer.MAX_VALUE);
   }
 
+  public static PyExpr genPyMapLiteralFromListExpr(
+      PyExpr listExpr, String varName, String keyString, String valueString) {
+
+    // Generate code for "{ varName['key'] : varName['value'] for varName in listExpr}".
+    String genCodeString =
+        "{"
+            + varName
+            + "['"
+            + keyString
+            + "']:"
+            + varName
+            + "['"
+            + valueString
+            + "'] for "
+            + varName
+            + " in "
+            // In the python grammar, comprehension in
+            // https://docs.python.org/3/reference/expressions.html#grammar-token-comprehension
+            // takes an 'or_test' expression which is basically any expression except
+            // conditional expression
+            + maybeProtect(listExpr, pyPrecedenceForOperator(Operator.OR)).getText()
+            + "}";
+    return new PyExpr(genCodeString, Integer.MAX_VALUE);
+  }
+
   public static PyExpr genPyListComprehensionExpr(
       PyExpr listExpr, PyExpr transformExpr, PyExpr filterExpr, String varName, String indexName) {
 

@@ -40,6 +40,7 @@ import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.ListComprehensionNode;
+import com.google.template.soy.exprtree.MapLiteralFromListNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.shared.restricted.SoyFunction;
@@ -414,6 +415,12 @@ public final class SoyTreeUtils {
 
     @Override
     protected void visitListComprehensionNode(ListComprehensionNode node) {
+      node.setNodeId(nodeIdGen.genId());
+      visitChildren(node);
+    }
+
+    @Override
+    protected void visitMapLiteralFromListNode(MapLiteralFromListNode node) {
       node.setNodeId(nodeIdGen.genId());
       visitChildren(node);
     }

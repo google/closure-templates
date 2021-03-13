@@ -299,9 +299,10 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
 
   @Override
   protected PyExpr visitMapLiteralFromListNode(MapLiteralFromListNode node) {
-    // Unimplemented. Return an empty map for now.
-    Map<PyExpr, PyExpr> dict = new LinkedHashMap<>();
-    return PyExprUtils.convertMapToPyExpr(dict);
+    PyExpr listExpr = visit(node.getListExpr());
+    String varName = String.format("MapComprehension%d", node.getNodeId());
+    return PyExprUtils.genPyMapLiteralFromListExpr(
+        listExpr, varName, MapLiteralFromListNode.KEY_STRING, MapLiteralFromListNode.VALUE_STRING);
   }
 
   // -----------------------------------------------------------------------------------------------

@@ -4339,7 +4339,7 @@ private ExprNode MapLiteral(Identifier ident) :
     // (Function calls and map literals are usually distinguished by their parameter syntax
     // (positional vs. named), but that's not helpful when there are no params.)
     SourceLocation srcLoc = ident.location().extend(createSrcLoc(closeParen));
-    return fromList ? new MapLiteralFromListNode(ident, key, srcLoc) : new MapLiteralNode(ident, kvPairs.build(), srcLoc);
+    return fromList ? new MapLiteralFromListNode(ident, key, srcLoc, nodeIdGen.genId()) : new MapLiteralNode(ident, kvPairs.build(), srcLoc);
   }
 }
 

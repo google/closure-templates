@@ -35,11 +35,13 @@ public final class MapLiteralFromListNode extends AbstractParentExprNode {
       ImmutableSet.of(KEY_STRING, VALUE_STRING);
 
   private final Identifier mapIdentifier;
+  private int nodeId;
 
   public MapLiteralFromListNode(
-      Identifier ident, ExprNode listExpr, SourceLocation sourceLocation) {
+      Identifier ident, ExprNode listExpr, SourceLocation sourceLocation, int nodeId) {
     super(sourceLocation);
     mapIdentifier = ident;
+    this.nodeId = nodeId;
     addChild(listExpr);
   }
 
@@ -51,6 +53,7 @@ public final class MapLiteralFromListNode extends AbstractParentExprNode {
   private MapLiteralFromListNode(MapLiteralFromListNode orig, CopyState copyState) {
     super(orig, copyState);
     this.mapIdentifier = orig.mapIdentifier;
+    this.nodeId = orig.nodeId;
   }
 
   @Override
@@ -61,6 +64,14 @@ public final class MapLiteralFromListNode extends AbstractParentExprNode {
   /** Gets the listExpr in "map(listExpr)". */
   public ExprNode getListExpr() {
     return checkNotNull(getChild(0));
+  }
+
+  public void setNodeId(int nodeId) {
+    this.nodeId = nodeId;
+  }
+
+  public int getNodeId() {
+    return nodeId;
   }
 
   @Override
