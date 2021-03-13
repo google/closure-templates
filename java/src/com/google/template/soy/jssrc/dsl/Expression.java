@@ -193,8 +193,8 @@ public abstract class Expression extends CodeChunk {
     return New.create(ctor).call(args);
   }
 
-  public static Expression constructMap() {
-    return New.create(id("Map"), GoogRequire.create("soy.map")).call();
+  public static Expression constructMap(Expression... initializers) {
+    return New.create(id("Map"), GoogRequire.create("soy.map")).call(initializers);
   }
 
   /**

@@ -194,6 +194,9 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
       SoyErrorKind.of(
           "Function ''{0}'' implemented by ''{1}'' does not have a JavaScript implementation.");
 
+  private static final SoyErrorKind SOY_JS_SRC_BAD_LIST_TO_MAP_CONSTRUCTOR =
+      SoyErrorKind.of("List to map constructor encloses ''{0}'', which is not a list.");
+
   /**
    * The current replacement JS expressions for the local variables (and foreach-loop special
    * functions) current in scope.
@@ -404,8 +407,34 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
 
   @Override
   protected Expression visitMapLiteralFromListNode(MapLiteralFromListNode node) {
-    // Unimplemented. Return an empty map for now.
-    return Expression.constructMap();
+    // Generate the code "new Map(list.map(dummyVar => [dummyVar.key, dummyVar.value]))"
+    // corresponding to the input "map(list)"
+    Expression list = visit(node.getListExpr());
+    SoyType listType = node.getListExpr().getType();
+    if (!(listType instanceof ListType)) {
+      errorReporter.report(node.getSourceLocation(), SOY_JS_SRC_BAD_LIST_TO_MAP_CONSTRUCTOR, list);
+      return Expression.constructMap();
+    }
+    if (listType.equals(ListType.EMPTY_LIST)) {
+      // If the list is empty, trying to infer the type of the dummyVar is futile. So we create a
+      // special case and directly return an empty list.
+      return Expression.constructMap();
+    }
+
+    String dummyVar = "list_to_map_constructor_" + node.getNodeId();
+    JsDoc doc =
+        JsDoc.builder()
+            .addParam(dummyVar, jsTypeFor(((ListType) listType).getElementType()).typeExpr())
+            .build();
+
+    Expression body =
+        Expression.arrayLiteral(
+            Arrays.asList(
+                id(dummyVar).dotAccess(MapLiteralFromListNode.KEY_STRING),
+                id(dummyVar).dotAccess(MapLiteralFromListNode.VALUE_STRING)));
+
+    Expression nestedList = list.dotAccess("map").call(arrowFunction(doc, body));
+    return Expression.constructMap(nestedList);
   }
 
   private Expression genMapKeyCode(ExprNode keyNode) {
