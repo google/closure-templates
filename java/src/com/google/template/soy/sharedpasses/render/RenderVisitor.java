@@ -21,7 +21,9 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableTable;
 import com.google.common.collect.Lists;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyAbstractCachingValueProvider;
@@ -61,12 +63,15 @@ import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.CallParamValueNode;
+import com.google.template.soy.soytree.ConstNode;
 import com.google.template.soy.soytree.DebuggerNode;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
+import com.google.template.soy.soytree.ImportNode;
+import com.google.template.soy.soytree.ImportNode.ImportType;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.LogNode;
@@ -75,6 +80,7 @@ import com.google.template.soy.soytree.MsgHtmlTagNode;
 import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
+import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
@@ -85,7 +91,9 @@ import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.VeLogNode;
+import com.google.template.soy.soytree.defn.ImportedVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
+import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import java.io.Flushable;
 import java.io.IOException;
@@ -111,6 +119,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
   protected final ImmutableMap<String, TemplateNode> basicTemplates;
   protected final DelTemplateSelector<TemplateDelegateNode> deltemplates;
+  protected final ImmutableTable<SourceFilePath, String, ConstNode> constants;
   /** The current template data. */
   protected final SoyRecord data;
 
@@ -168,8 +177,8 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
    *     Allowed to be null when known to be irrelevant.
    * @param msgBundle The bundle of translated messages, or null to use the messages from the Soy
    *     source.
-   * @param cssRenamingMap The CSS renaming map, or null if not applicable.
    * @param xidRenamingMap The 'xid' renaming map, or null if not applicable.
+   * @param cssRenamingMap The CSS renaming map, or null if not applicable.
    * @param pluginInstances The instances used for evaluating functions that call instance methods.
    */
   public RenderVisitor(
@@ -177,6 +186,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       Appendable outputBuf,
       ImmutableMap<String, TemplateNode> basicTemplates,
       DelTemplateSelector<TemplateDelegateNode> deltemplates,
+      ImmutableTable<SourceFilePath, String, ConstNode> constants,
       SoyRecord data,
       @Nullable SoyRecord ijData,
       @Nullable Predicate<String> activeDelPackageSelector,
@@ -190,6 +200,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     this.evalVisitorFactory = evalVisitorFactory;
     this.basicTemplates = checkNotNull(basicTemplates);
     this.deltemplates = checkNotNull(deltemplates);
+    this.constants = checkNotNull(constants);
     this.data = data;
     this.ijData = ijData;
     this.activeDelPackageSelector = activeDelPackageSelector;
@@ -242,6 +253,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
         outputBuf,
         basicTemplates,
         deltemplates,
+        constants,
         data,
         ijData,
         activeDelPackageSelector,
@@ -263,6 +275,13 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
   /** A private helper to render templates with optimized type checking. */
   private void renderTemplate(TemplateNode template) {
     env = Environment.create(template, data, ijData);
+
+    // Visit top-level constant and imports explicitly every time we render a new template, in order
+    // to populate the variable environment.
+    SoyFileNode file = template.getParent();
+    file.getImports().forEach(this::visitImportNode);
+    file.getConstants().forEach(this::visitConstNode);
+
     checkStrictParamTypes(template);
     visitChildren(template);
     env = null; // unpin for gc
@@ -270,6 +289,43 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
   // -----------------------------------------------------------------------------------------------
   // Implementations for specific nodes.
+
+  @Override
+  protected void visitImportNode(ImportNode node) {
+    for (ImportedVar var : node.getIdentifiers()) {
+      registerImportsInEnv(node, var, node.getModuleType());
+    }
+  }
+
+  private void registerImportsInEnv(ImportNode node, ImportedVar var, SoyType parentType) {
+    if (node.getImportType() != ImportType.TEMPLATE) {
+      return;
+    }
+    if (parentType != null
+        && parentType.getKind() == Kind.TEMPLATE_MODULE
+        && var.type().getKind() != Kind.TEMPLATE_TYPE) {
+      // Any nested vardefn of a template module import that is not a template type must be a
+      // constant.
+      env.bind(
+          var,
+          SoyValueConverter.INSTANCE.convertLazy(
+              // Bind this lazily since we process every import for every template in the file.
+              () -> {
+                ConstNode constNode =
+                    constants.get(SourceFilePath.create(node.getPath()), var.getSymbol());
+                return eval(constNode.getExpr(), constNode);
+              }));
+    }
+    for (String nestedType : var.getNestedTypes()) {
+      registerImportsInEnv(node, var.nested(nestedType), var.type());
+    }
+  }
+
+  @Override
+  protected void visitConstNode(ConstNode node) {
+    SoyValue constValue = eval(node.getExpr(), node);
+    env.bind(node.getVar(), constValue);
+  }
 
   @Override
   protected void visitTemplateNode(TemplateNode node) {

@@ -23,6 +23,7 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableTable;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.AbstractFuture;
 import com.google.common.util.concurrent.Futures;
@@ -290,6 +291,7 @@ public class RenderVisitorTest {
             outputSb,
             ImmutableMap.of(),
             new DelTemplateSelector.Builder<TemplateDelegateNode>().build(),
+            ImmutableTable.of(),
             data,
             TEST_IJ_DATA,
             arg -> false,
@@ -340,6 +342,7 @@ public class RenderVisitorTest {
             outputSb,
             basicTemplates,
             getDeltemplateSelector(parseResult.fileSet()),
+            ImmutableTable.of(),
             data,
             ijData,
             activeDelPackageNames,
@@ -1033,6 +1036,7 @@ public class RenderVisitorTest {
             output,
             basicTemplates,
             getDeltemplateSelector(fileSet),
+            ImmutableTable.of(),
             data,
             testIj,
             arg -> false,

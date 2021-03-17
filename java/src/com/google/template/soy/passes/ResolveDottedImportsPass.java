@@ -66,7 +66,7 @@ public final class ResolveDottedImportsPass implements CompilerFilePass {
 
   private static final SoyErrorKind NO_SUCH_NESTED_TYPE =
       SoyErrorKind.of(
-          "Nested type ''{0}'' does not exist in {1} {2}.{3}", StyleAllowance.NO_PUNCTUATION);
+          "Nested symbol ''{0}'' does not exist in {1} {2}.{3}", StyleAllowance.NO_PUNCTUATION);
 
   private static final SoyErrorKind ENUM_MEMBERSHIP_ERROR =
       SoyErrorKind.of("''{0}'' is not a member of enum ''{1}''.");
@@ -82,13 +82,7 @@ public final class ResolveDottedImportsPass implements CompilerFilePass {
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
     SoyTreeUtils.allNodesOfType(file, VarRefNode.class)
-        .filter(
-            v -> {
-              if (!v.hasType()) {
-                return false;
-              }
-              return v.getDefnDecl().type() instanceof ImportType;
-            })
+        .filter(v -> v.getDefnDecl().kind() == VarDefn.Kind.IMPORT_VAR)
         .forEach(
             v -> {
               while (v != null) {
@@ -158,7 +152,10 @@ public final class ResolveDottedImportsPass implements CompilerFilePass {
   @Nullable
   private ExprNode resolveField(
       VarRefNode refn, Kind kind, String fieldName, SourceLocation fullLocation) {
-    VarDefn defn = refn.getDefnDecl();
+    ImportedVar defn = (ImportedVar) refn.getDefnDecl();
+    if (!defn.hasType()) {
+      return null;
+    }
     SoyType type = defn.type();
 
     if (type.getKind() == SoyType.Kind.PROTO_ENUM_TYPE) {
@@ -174,20 +171,33 @@ public final class ResolveDottedImportsPass implements CompilerFilePass {
       }
     }
 
-    SoyType nestedType = UnknownType.getInstance();
+    SoyType nestedType = null;
 
     if (type.getKind() == SoyType.Kind.PROTO_MODULE) {
+      // e.g. {protos.Message()}
       nestedType =
           typeRegistry.getProtoImportType(
               ((ProtoModuleImportType) type).getDescriptor(), fieldName);
     } else if (type.getKind() == SoyType.Kind.PROTO_TYPE) {
+      // e.g. {Message.Nested()}
       nestedType =
           typeRegistry.getProtoImportType(((ProtoImportType) type).getDescriptor(), fieldName);
     } else if (type.getKind() == SoyType.Kind.TEMPLATE_MODULE) {
+      // e.g. import * as templates from 'src.soy';
       TemplateModuleImportType moduleType = (TemplateModuleImportType) type;
-      if (moduleType.getTemplateNames().contains(fieldName)) {
+      if (!moduleType.getSymbols().contains(fieldName)) {
+        // e.g. {call templates.doesNotExist}
+        nestedType = UnknownType.getInstance();
+      } else if (moduleType.getTemplateNames().contains(fieldName)) {
+        // e.g. {call templates.body}
         nestedType = typeRegistry.intern(TemplateImportType.create(moduleType, fieldName));
+      } else {
+        // e.g. {templates.CONST}
+        // Constant import. Continue with inlining but without setting the type. Types not known
+        // until ResolveExpressionTypesPass.
       }
+    } else {
+      nestedType = UnknownType.getInstance();
     }
 
     if (nestedType == UnknownType.getInstance()) {
@@ -205,7 +215,10 @@ public final class ResolveDottedImportsPass implements CompilerFilePass {
       return null;
     }
 
-    VarDefn newDefn = ImportedVar.nested(defn, nestedType);
+    ImportedVar newDefn = defn.nested(fieldName);
+    if (nestedType != null) {
+      newDefn.setType(nestedType);
+    }
     return new VarRefNode(refn.getName() + "." + fieldName, fullLocation, newDefn);
   }
 

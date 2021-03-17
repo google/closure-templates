@@ -18,6 +18,7 @@ package com.google.template.soy.soytree;
 
 import com.google.template.soy.types.SoyType;
 import java.util.Collection;
+import javax.annotation.Nullable;
 
 /**
  * Metadata about a soy file that is available from soy header deps or after the AST is mostly
@@ -32,8 +33,14 @@ public interface FileMetadata extends PartialFileMetadata {
     SoyType getType();
   }
 
+  @Nullable
+  TemplateMetadata getTemplate(String name);
+
   /** Returns all templates in this file, including possible naming collisions. */
   Collection<TemplateMetadata> getTemplates();
+
+  @Nullable
+  Constant getConstant(String name);
 
   Collection<? extends Constant> getConstants();
 }

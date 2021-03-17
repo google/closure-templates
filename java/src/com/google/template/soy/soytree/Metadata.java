@@ -49,8 +49,7 @@ import java.util.Optional;
 import javax.annotation.Nullable;
 
 /**
- * Utilities and factories related to {@link FileSetMetadata}, {@link FileMetadata}, {@link
- * TemplateMetadata}, etc.
+ * Utility methods for {@link FileSetMetadata}, {@link FileMetadata}, {@link TemplateMetadata}, etc.
  */
 public final class Metadata {
 
@@ -362,6 +361,16 @@ public final class Metadata {
     protected abstract ImmutableMap<String, ? extends Constant> constantIndex();
 
     protected abstract ImmutableMap<String, TemplateMetadata> templateIndex();
+
+    @Override
+    public Constant getConstant(String name) {
+      return constantIndex().get(name);
+    }
+
+    @Override
+    public TemplateMetadata getTemplate(String name) {
+      return templateIndex().get(name);
+    }
 
     @Override
     public final ImmutableCollection<? extends Constant> getConstants() {

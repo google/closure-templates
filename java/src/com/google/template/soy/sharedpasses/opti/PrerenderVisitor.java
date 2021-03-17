@@ -17,6 +17,7 @@
 package com.google.template.soy.sharedpasses.opti;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableTable;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.shared.internal.DelTemplateSelector;
@@ -51,7 +52,7 @@ final class PrerenderVisitor extends RenderVisitor {
   /**
    * @param preevalVisitorFactory Factory for creating an instance of PreevalVisitor.
    * @param outputBuf The Appendable to append the output to.
-   * @param templateRegistry A registry of all templates.
+   * @param basicTemplates A registry of all templates.
    */
   PrerenderVisitor(
       PreevalVisitorFactory preevalVisitorFactory,
@@ -62,6 +63,7 @@ final class PrerenderVisitor extends RenderVisitor {
         outputBuf,
         basicTemplates,
         /* deltemplates=*/ new DelTemplateSelector.Builder<TemplateDelegateNode>().build(),
+        ImmutableTable.of(),
         ParamStore.EMPTY_INSTANCE,
         /* ijData= */ null,
         /* activeDelPackageSelector= */ null,

@@ -20,11 +20,13 @@ import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static java.util.stream.Collectors.joining;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.soytree.defn.ImportedVar;
+import com.google.template.soy.types.SoyType;
 import java.util.List;
 
 /**
@@ -39,8 +41,13 @@ public final class ImportNode extends AbstractSoyNode {
   private final ImmutableList<ImportedVar> identifiers;
 
   private final StringNode path;
-
   private ImportType importType;
+  /**
+   * If this is NOT a module import (* as) then store the {@link
+   * com.google.template.soy.types.TemplateModuleImportType} or {@link
+   * com.google.template.soy.types.ProtoModuleImportType} here as a convenience.
+   */
+  private SoyType moduleType;
 
   /** Only Proto is supported right now. */
   public enum ImportType {
@@ -67,13 +74,14 @@ public final class ImportNode extends AbstractSoyNode {
         orig.identifiers.stream()
             .map(
                 prev -> {
-                  ImportedVar next = prev.clone();
+                  ImportedVar next = prev.copy(copyState);
                   copyState.updateRefs(prev, next);
                   return next;
                 })
             .collect(toImmutableList());
     this.path = orig.path.copy(copyState);
     this.importType = orig.importType;
+    this.moduleType = orig.moduleType;
   }
 
   @Override
@@ -84,10 +92,6 @@ public final class ImportNode extends AbstractSoyNode {
   @Override
   public ImportNode copy(CopyState copyState) {
     return new ImportNode(this, copyState);
-  }
-
-  public boolean isSideEffectImport() {
-    return identifiers.isEmpty();
   }
 
   public void setImportType(ImportType importType) {
@@ -121,6 +125,15 @@ public final class ImportNode extends AbstractSoyNode {
         "Module alias can only be retrieved for module imports (e.g. \"import * as fooTemplates"
             + " from 'my_foo.soy';\")");
     return identifiers.get(0).name();
+  }
+
+  public SoyType getModuleType() {
+    return moduleType;
+  }
+
+  public void setModuleType(SoyType moduleType) {
+    Preconditions.checkState(!isModuleImport());
+    this.moduleType = moduleType;
   }
 
   public SourceLocation getPathSourceLocation() {

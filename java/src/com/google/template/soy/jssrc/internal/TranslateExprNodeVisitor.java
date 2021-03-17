@@ -446,16 +446,21 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
 
   @Override
   protected Expression visitVarRefNode(VarRefNode node) {
+    if (node.getDefnDecl().kind() == VarDefn.Kind.IMPORT_VAR) {
+      // TODO(b/177245767): implement
+      return LITERAL_NULL;
+    }
+
     Expression translation = variableMappings.maybeGet(node.getName());
     if (translation != null) {
       // Case 1: In-scope local var.
       return translation;
-    } else {
-      // Case 2: Data reference.
-      // TODO(lukes): I believe this case is only present for state vars in jssrc, everything else
-      // should hit the above.
-      return genCodeForParamAccess(node.getNameWithoutLeadingDollar(), node.getDefnDecl());
     }
+
+    // Case 2: Data reference.
+    // TODO(lukes): I believe this case is only present for state vars in jssrc, everything else
+    // should hit the above.
+    return genCodeForParamAccess(node.getNameWithoutLeadingDollar(), node.getDefnDecl());
   }
 
   @Override

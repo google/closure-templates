@@ -106,6 +106,7 @@ import com.google.template.soy.shared.restricted.SoySourceFunctionMethod;
 import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.SoyNode.LocalVarNode;
 import com.google.template.soy.soytree.defn.ConstVar;
+import com.google.template.soy.soytree.defn.ImportedVar;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.ListType;
@@ -977,6 +978,12 @@ final class ExpressionCompiler {
     // Let vars
 
     @Override
+    SoyExpression visitImportedVar(VarRefNode node, ImportedVar c) {
+      // TODO(b/177245767): implement
+      return SoyExpression.NULL;
+    }
+
+    @Override
     SoyExpression visitConstVar(VarRefNode varRef, ConstVar c) {
       // TODO(b/177245767): implement
       SoyType type = varRef.getType();
@@ -1639,13 +1646,13 @@ final class ExpressionCompiler {
         case LOCAL_VAR:
         case STATE:
         case CONST:
+        case IMPORT_VAR:
           return false;
         case UNDECLARED:
-        case IMPORT_VAR:
         case TEMPLATE:
           break;
       }
-      throw new AssertionError();
+      throw new AssertionError(node.getDefnDecl().kind());
     }
 
     @Override

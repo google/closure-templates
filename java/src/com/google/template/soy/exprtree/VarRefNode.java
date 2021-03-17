@@ -19,7 +19,6 @@ package com.google.template.soy.exprtree;
 import com.google.common.base.Preconditions;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.exprtree.VarDefn.ImmutableVarDefn;
 import com.google.template.soy.types.SoyType;
 import javax.annotation.Nullable;
 
@@ -67,14 +66,10 @@ public final class VarRefNode extends AbstractExprNode {
     this.name = orig.name;
     this.substituteType = orig.substituteType;
     if (orig.defn != null) {
-      if (orig.defn instanceof ImmutableVarDefn) {
-        this.defn = orig.defn;
-      } else {
-        // Maintain the original def in case only a subtree is getting cloned, but also register a
-        // listener so that if the defn is replaced we will get updated also.
-        this.defn = orig.defn;
-        copyState.registerRefListener(orig.defn, this::setDefn);
-      }
+      // Maintain the original def in case only a subtree is getting cloned, but also register a
+      // listener so that if the defn is replaced we will get updated also.
+      this.defn = orig.defn;
+      copyState.registerRefListener(orig.defn, this::setDefn);
     }
   }
 

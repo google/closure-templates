@@ -25,13 +25,22 @@ import com.google.template.soy.base.SourceFilePath;
 public abstract class TemplateModuleImportType extends ImportType {
 
   public static TemplateModuleImportType create(
-      String namespace, SourceFilePath path, ImmutableSet<String> templateNames) {
-    return new AutoValue_TemplateModuleImportType(namespace, path, templateNames);
+      String namespace,
+      SourceFilePath path,
+      ImmutableSet<String> constantNames,
+      ImmutableSet<String> templateNames) {
+    return new AutoValue_TemplateModuleImportType(
+        namespace,
+        path,
+        ImmutableSet.<String>builder().addAll(constantNames).addAll(templateNames).build(),
+        templateNames);
   }
 
   public abstract String getNamespace();
 
   public abstract SourceFilePath getPath();
+
+  public abstract ImmutableSet<String> getSymbols();
 
   public abstract ImmutableSet<String> getTemplateNames();
 
@@ -47,6 +56,6 @@ public abstract class TemplateModuleImportType extends ImportType {
 
   @Override
   public ImmutableCollection<String> getNestedSymbolNames() {
-    return getTemplateNames();
+    return getSymbols();
   }
 }

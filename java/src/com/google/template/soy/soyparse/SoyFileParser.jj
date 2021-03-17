@@ -3061,7 +3061,7 @@ private ConstNode ConstStmt() :
 {
   tagBegin = <CONST_OPEN>
   {
-    exported = tagBegin.image.startsWith("export ");
+    exported = tagBegin.image.startsWith("{export ");
   }
 
   try {

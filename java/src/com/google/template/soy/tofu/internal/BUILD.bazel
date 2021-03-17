@@ -6,6 +6,7 @@ java_library(
     name = "internal",
     srcs = glob(["*.java"]),
     deps = [
+        "//java/src/com/google/template/soy/base",
         "//java/src/com/google/template/soy/base/internal",
         "//java/src/com/google/template/soy/data",
         "//java/src/com/google/template/soy/data:unsafesanitizedcontentordainer",

@@ -83,10 +83,13 @@ public final class TemplateImportProcessor implements ImportsPass.ImportProcesso
   private void processImportedSymbols(ImportNode node) {
     PartialFileMetadata fileMetadata =
         fileSetMetadata.getPartialFile(SourceFilePath.create(node.getPath()));
+    node.setModuleType(buildModuleType(node));
     for (ImportedVar symbol : node.getIdentifiers()) {
       String name = symbol.getSymbol();
+      boolean isTemplate = fileMetadata.hasTemplate(name);
+
       // Report an error if the template name is invalid.
-      if (!fileMetadata.hasTemplate(name)) {
+      if (!isTemplate && !fileMetadata.hasConstant(name)) {
         ImportsPass.reportUnknownSymbolError(
             errorReporter,
             symbol.nameLocation(),
@@ -99,8 +102,10 @@ public final class TemplateImportProcessor implements ImportsPass.ImportProcesso
 
       // Needs to be able to handle duplicates, since the formatter fixes them, but it's not a
       // compiler error (if they have the same path).
-      symbol.setType(
-          typeRegistry.intern(TemplateImportType.create(templateFqn(fileMetadata, name))));
+      if (isTemplate) {
+        symbol.setType(
+            typeRegistry.intern(TemplateImportType.create(templateFqn(fileMetadata, name))));
+      }
     }
   }
 
@@ -116,15 +121,18 @@ public final class TemplateImportProcessor implements ImportsPass.ImportProcesso
    * collide with other import symbol aliases).
    */
   private void processImportedModule(ImportNode node) {
+    Iterables.getOnlyElement(node.getIdentifiers()).setType(buildModuleType(node));
+  }
+
+  private TemplateModuleImportType buildModuleType(ImportNode node) {
     SourceFilePath path = SourceFilePath.create(node.getPath());
     PartialFileMetadata templatesPerFile = fileSetMetadata.getPartialFile(path);
-    Iterables.getOnlyElement(node.getIdentifiers())
-        .setType(
-            typeRegistry.intern(
-                TemplateModuleImportType.create(
-                    templatesPerFile.getNamespace(),
-                    path,
-                    ImmutableSet.copyOf(templatesPerFile.getTemplateNames()))));
+    return typeRegistry.intern(
+        TemplateModuleImportType.create(
+            templatesPerFile.getNamespace(),
+            path,
+            ImmutableSet.copyOf(templatesPerFile.getConstantNames()),
+            ImmutableSet.copyOf(templatesPerFile.getTemplateNames())));
   }
 
   @Override

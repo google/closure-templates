@@ -16,9 +16,7 @@
 
 package com.google.template.soy.sharedpasses.render;
 
-import static com.google.common.collect.ImmutableMap.toImmutableMap;
-
-import com.google.common.collect.ImmutableMap;
+import com.google.common.base.Preconditions;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
@@ -26,12 +24,9 @@ import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarDefn.Kind;
-import com.google.template.soy.soytree.ConstNode;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.defn.ConstVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import java.util.IdentityHashMap;
-import javax.annotation.Nullable;
 
 /**
  * The local variable table.
@@ -91,9 +86,6 @@ public abstract class Environment {
   /** Returns the current iterator inject for the given loop variable. */
   abstract int getIndex(VarDefn loopVar);
 
-  @Nullable
-  abstract ConstNode lookupConst(ConstVar defnDecl);
-
   private static final class Impl extends Environment {
     private static final class LoopPosition {
       boolean isLast;
@@ -102,7 +94,6 @@ public abstract class Environment {
     }
 
     final IdentityHashMap<VarDefn, Object> localVariables = new IdentityHashMap<>();
-    final ImmutableMap<String, ConstNode> constants;
     final SoyRecord data;
 
     Impl(TemplateNode template, SoyRecord data, SoyRecord ijData) {
@@ -116,9 +107,6 @@ public abstract class Environment {
         }
         bind(param, provider);
       }
-      constants =
-          template.getParent().getConstants().stream()
-              .collect(toImmutableMap(c -> c.getVar().name(), c -> c));
     }
 
     @Override
@@ -152,7 +140,13 @@ public abstract class Environment {
 
     @Override
     SoyValue getVar(VarDefn var) {
-      return getVarProvider(var).resolve();
+      return Preconditions.checkNotNull(
+              getVarProvider(var),
+              "No value for %s at %s. All: %s",
+              var.name(),
+              var.nameLocation().toLineColumnString(),
+              localVariables.keySet())
+          .resolve();
     }
 
     @Override
@@ -168,11 +162,6 @@ public abstract class Environment {
     @Override
     int getIndex(VarDefn var) {
       return ((LoopPosition) localVariables.get(var)).index;
-    }
-
-    @Override
-    ConstNode lookupConst(ConstVar defnDecl) {
-      return constants.get(defnDecl.name());
     }
   }
 
@@ -211,11 +200,6 @@ public abstract class Environment {
     @Override
     int getIndex(VarDefn loopVar) {
       return UndefinedData.INSTANCE.integerValue();
-    }
-
-    @Override
-    ConstNode lookupConst(ConstVar defnDecl) {
-      return null;
     }
   }
 }

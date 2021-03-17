@@ -30,11 +30,13 @@ import com.google.common.base.Preconditions;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Table;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
@@ -121,11 +123,14 @@ import com.google.template.soy.shared.restricted.TypedSoyFunction;
 import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.ConstNode;
+import com.google.template.soy.soytree.FileMetadata;
+import com.google.template.soy.soytree.FileMetadata.Constant;
 import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
+import com.google.template.soy.soytree.ImportNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.PrintNode;
@@ -161,6 +166,7 @@ import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.TemplateImportType;
+import com.google.template.soy.types.TemplateModuleImportType;
 import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.UnionType;
 import com.google.template.soy.types.UnknownType;
@@ -182,7 +188,8 @@ import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 /** Visitor which resolves all expression types. */
-public final class ResolveExpressionTypesPass implements CompilerFileSetPass {
+public final class ResolveExpressionTypesPass implements CompilerFileSetPass.TopologicallyOrdered {
+  // Constant type resolution requires topological ordering of inputs.
 
   // Keep in alphabetical order.
   private static final SoyErrorKind BAD_FOREACH_TYPE =
@@ -336,6 +343,7 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass {
   private final PluginResolver.Mode pluginResolutionMode;
   private ImmutableMap<String, ImportedVar> importIndex;
   private ImmutableMap<String, TemplateType> allTemplateTypes;
+  private ConstantsTypeIndex constantsTypeLookup;
 
   ResolveExpressionTypesPass(
       ErrorReporter errorReporter,
@@ -364,6 +372,7 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass {
       allTemplateTypesBuilder.putAll(templateTypesVisitor.exec(sourceFile));
     }
     this.allTemplateTypes = ImmutableMap.copyOf(allTemplateTypesBuilder);
+    this.constantsTypeLookup = new ConstantsTypeIndex(templateRegistryFromDeps);
 
     for (SoyFileNode sourceFile : sourceFiles) {
       prepFile(sourceFile);
@@ -429,6 +438,36 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass {
   }
 
   private final class TypeAssignmentSoyVisitor extends AbstractSoyNodeVisitor<Void> {
+
+    @Override
+    protected void visitImportNode(ImportNode node) {
+      for (ImportedVar var : node.getIdentifiers()) {
+        // We need to resolve constant import types.
+        resolveNestedTypes(var, node.getModuleType());
+      }
+    }
+
+    private void resolveNestedTypes(ImportedVar var, SoyType parentType) {
+      if (parentType != null && !var.hasType()) {
+        SoyType newType = UnknownType.getInstance();
+        if (parentType.getKind() == Kind.TEMPLATE_MODULE) {
+          // This must be a nested constant import. A nested template would have its type set.
+          SoyType constantType =
+              constantsTypeLookup.get(
+                  ((TemplateModuleImportType) parentType).getPath(), var.getSymbol());
+          if (constantType != null) {
+            newType = constantType;
+          }
+        }
+        var.setType(newType);
+      }
+      if (!var.hasType()) {
+        return;
+      }
+      for (String type : var.getNestedTypes()) {
+        resolveNestedTypes(var.nested(type), var.type());
+      }
+    }
 
     @Override
     protected void visitTemplateNode(TemplateNode node) {
@@ -529,6 +568,9 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass {
     protected void visitConstNode(ConstNode node) {
       visitSoyNode(node);
       node.getVar().setType(node.getExpr().getType());
+      // Store the type of this constant in the index so that imports of this constant in other
+      // files (topologically processed) can have their type set in #visitImportNode.
+      constantsTypeLookup.put(node);
     }
 
     @Override
@@ -2745,6 +2787,36 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass {
                 }
               });
       return builder.build();
+    }
+  }
+
+  private static class ConstantsTypeIndex {
+    private final Supplier<FileSetMetadata> deps;
+    private final Table<SourceFilePath, String, ConstNode> sources = HashBasedTable.create();
+
+    public ConstantsTypeIndex(Supplier<FileSetMetadata> deps) {
+      this.deps = deps;
+    }
+
+    @Nullable
+    SoyType get(SourceFilePath path, String name) {
+      ConstNode fromSources = sources.get(path, name);
+      if (fromSources != null) {
+        return fromSources.getVar().type();
+      }
+      FileMetadata fromDeps = deps.get().getFile(path);
+      if (fromDeps != null) {
+        Constant c = fromDeps.getConstant(name);
+        if (c != null) {
+          return c.getType();
+        }
+      }
+      return null;
+    }
+
+    void put(ConstNode node) {
+      SoyFileNode file = node.getNearestAncestor(SoyFileNode.class);
+      sources.put(file.getFilePath(), node.getVar().name(), node);
     }
   }
 }

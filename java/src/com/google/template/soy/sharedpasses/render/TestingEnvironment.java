@@ -22,8 +22,6 @@ import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.exprtree.VarDefn;
-import com.google.template.soy.soytree.ConstNode;
-import com.google.template.soy.soytree.defn.ConstVar;
 import java.util.Map;
 
 /** An {@link Environment} for testing expressions. */
@@ -80,11 +78,6 @@ public final class TestingEnvironment extends Environment {
   @Override
   SoyValueProvider getVarProvider(VarDefn var) {
     return doGetProvider(var.name());
-  }
-
-  @Override
-  ConstNode lookupConst(ConstVar defnDecl) {
-    return null;
   }
 
   private SoyValueProvider doGetProvider(String name) {
