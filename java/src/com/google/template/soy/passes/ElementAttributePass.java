@@ -153,7 +153,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
   public Result run(ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator) {
     // Collect all elements in this compilation first. This cache will be used to look up elements,
     // followed by the secondary cache libRegistry, which includes all elements from deps.
-    ImmutableMap<String, TemplateNode> allElementsThisCompile =
+    ImmutableMap<String, TemplateNode> allAstElements =
         sourceFiles.stream()
             .flatMap(fn -> fn.getTemplates().stream())
             .filter(
@@ -164,21 +164,19 @@ final class ElementAttributePass implements CompilerFileSetPass {
             .collect(toImmutableMap(TemplateNode::getTemplateName, t -> t));
 
     for (SoyFileNode file : sourceFiles) {
-      run(file, allElementsThisCompile, idGenerator);
+      run(file, allAstElements, idGenerator);
     }
 
-    checkRootElementTagNames(allElementsThisCompile.values());
+    checkRootElementTagNames(allAstElements.values());
 
     return Result.CONTINUE;
   }
 
   private void run(
-      SoyFileNode file,
-      ImmutableMap<String, TemplateNode> allElementsThisCompile,
-      IdGenerator nodeIdGen) {
+      SoyFileNode file, ImmutableMap<String, TemplateNode> allAstElements, IdGenerator nodeIdGen) {
     checkAttributeTypes(file);
 
-    ImmutableSet.Builder<TemplateNode> delegatingElementsWithAllAttrs = ImmutableSet.builder();
+    ImmutableList.Builder<TemplateNode> delegatingElementsWithAllAttrs = ImmutableList.builder();
 
     // Rewrite all @attribute values in root elements.
     file.getTemplates().stream()
@@ -212,7 +210,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
                                 attr.getStaticKey())));
 
     updateReservedAttributesForDelegateCalls(
-        delegatingElementsWithAllAttrs.build(), allElementsThisCompile);
+        delegatingElementsWithAllAttrs.build(), allAstElements);
   }
 
   private <T extends Node> void checkAttributeTypes(SoyFileNode file) {
@@ -522,8 +520,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
   }
 
   private void updateReservedAttributesForDelegateCalls(
-      ImmutableSet<TemplateNode> templates,
-      ImmutableMap<String, TemplateNode> localTemplateLookup) {
+      ImmutableList<TemplateNode> templates, ImmutableMap<String, TemplateNode> allAstElements) {
 
     Map<String, String> templateFqnCall =
         templates.stream()
@@ -539,8 +536,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
         throw new IllegalArgumentException("Cyclical graph: " + templateFqnCall);
       }
       for (Map.Entry<String, String> leaf : leaves) {
-        TemplateNode caller = localTemplateLookup.get(leaf.getKey());
-        TemplateNode callee = localTemplateLookup.get(leaf.getValue());
+        TemplateNode callee = allAstElements.get(leaf.getValue());
         ImmutableSet<String> reservedAttr;
         if (callee != null) {
           reservedAttr = callee.getReservedAttributes();
@@ -552,6 +548,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
                   .getTemplateType()
                   .getReservedAttributes();
         }
+        TemplateNode caller = allAstElements.get(leaf.getKey());
         caller.setReservedAttributes(
             ImmutableSet.<String>builder()
                 .addAll(caller.getReservedAttributes())
