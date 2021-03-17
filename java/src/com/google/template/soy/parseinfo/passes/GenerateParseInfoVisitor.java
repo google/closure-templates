@@ -646,12 +646,11 @@ public final class GenerateParseInfoVisitor
   private static String deprecatedJavaDoc(String content, boolean deprecated, String useInstead) {
     if (deprecated) {
       String instead = "";
-      String link = "";
       if (!Strings.isNullOrEmpty(useInstead)) {
         instead = " Use {@link " + useInstead + "} instead.";
       }
 
-      String dep = "@deprecated" + instead + link;
+      String dep = "@deprecated" + instead;
       return content.isEmpty() ? dep : content + "\n\n" + dep;
     }
     return content;
