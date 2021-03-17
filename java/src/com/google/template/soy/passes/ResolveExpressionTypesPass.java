@@ -121,6 +121,7 @@ import com.google.template.soy.shared.restricted.TypedSoyFunction;
 import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.ConstNode;
+import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfElseNode;
@@ -138,7 +139,6 @@ import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.defn.ImportedVar;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
@@ -318,7 +318,7 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass {
 
   private final ValidatedLoggingConfig loggingConfig;
   private final SoyMethod.Registry methodRegistry;
-  private final Supplier<TemplateRegistry> templateRegistryFromDeps;
+  private final Supplier<FileSetMetadata> templateRegistryFromDeps;
   /** Cached map that converts a string representation of types to actual soy types. */
   private final Map<Signature, ResolvedSignature> signatureMap = new HashMap<>();
 
@@ -341,7 +341,7 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass {
       ErrorReporter errorReporter,
       ValidatedLoggingConfig loggingConfig,
       PluginResolver pluginResolver,
-      Supplier<TemplateRegistry> templateRegistryFromDeps) {
+      Supplier<FileSetMetadata> templateRegistryFromDeps) {
     this.errorReporter = errorReporter;
     this.loggingConfig = loggingConfig;
     this.pluginResolutionMode =

@@ -16,15 +16,12 @@
 
 package com.google.template.soy.passes;
 
-import static com.google.common.collect.ImmutableList.toImmutableList;
-
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.soytree.FileSetTemplateRegistry;
+import com.google.template.soy.soytree.FileSetMetadata;
+import com.google.template.soy.soytree.Metadata;
 import com.google.template.soy.soytree.SoyFileNode;
-import com.google.template.soy.soytree.TemplateMetadata;
-import com.google.template.soy.soytree.TemplateRegistry;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -38,13 +35,13 @@ import java.util.function.Supplier;
 class FinalizeTemplateRegistryPass implements CompilerFileSetPass {
 
   private final ErrorReporter errorReporter;
-  private final Supplier<TemplateRegistry> registryFromDeps;
-  private final Consumer<TemplateRegistry> fullRegSetter;
+  private final Supplier<FileSetMetadata> registryFromDeps;
+  private final Consumer<FileSetMetadata> fullRegSetter;
 
   public FinalizeTemplateRegistryPass(
       ErrorReporter errorReporter,
-      Supplier<TemplateRegistry> registryFromDeps,
-      Consumer<TemplateRegistry> fullRegSetter) {
+      Supplier<FileSetMetadata> registryFromDeps,
+      Consumer<FileSetMetadata> fullRegSetter) {
     this.errorReporter = errorReporter;
     this.registryFromDeps = registryFromDeps;
     this.fullRegSetter = fullRegSetter;
@@ -52,15 +49,8 @@ class FinalizeTemplateRegistryPass implements CompilerFileSetPass {
 
   @Override
   public Result run(ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator) {
-    FileSetTemplateRegistry.Builder builder =
-        ((FileSetTemplateRegistry) registryFromDeps.get()).toBuilder(errorReporter);
-    for (SoyFileNode node : sourceFiles) {
-      builder.addTemplates(
-          node.getTemplates().stream()
-              .map(TemplateMetadata::fromTemplate)
-              .collect(toImmutableList()));
-    }
-    fullRegSetter.accept(builder.build());
+    fullRegSetter.accept(
+        Metadata.metadataForAst(registryFromDeps.get(), sourceFiles, errorReporter, null));
     return Result.CONTINUE;
   }
 }

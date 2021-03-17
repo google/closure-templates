@@ -20,8 +20,8 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.Multimap;
 import com.google.template.soy.passes.IndirectParamsCalculator.IndirectParamsInfo;
+import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.TemplateMetadata;
-import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import com.google.template.soy.types.TemplateType.Parameter;
 import java.util.Map;
@@ -123,7 +123,7 @@ public final class IndirectParamsCalculatorTest {
             + "  {$a6}\n"
             + "{/template}\n";
 
-    TemplateRegistry registry =
+    FileSetMetadata registry =
         SoyFileSetParserBuilder.forFileContents(alpha, beta, gamma).parse().registry();
 
     TemplateMetadata a0 = registry.getBasicTemplateOrElement("alpha.zero");

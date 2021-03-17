@@ -35,9 +35,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.template.soy.SoyFileSetParser;
-import com.google.template.soy.SoyFileSetParser.CompilationUnitAndKind;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
-import com.google.template.soy.TemplateMetadataSerializer;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
@@ -76,9 +74,11 @@ import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.soytree.CallDelegateNode;
+import com.google.template.soy.soytree.FileSetMetadata;
+import com.google.template.soy.soytree.Metadata.CompilationUnitAndKind;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
-import com.google.template.soy.soytree.TemplateRegistry;
+import com.google.template.soy.soytree.TemplateMetadataSerializer;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import java.io.IOException;
 import java.lang.reflect.Method;
@@ -1083,14 +1083,14 @@ public class BytecodeCompilerTest {
     SoyFileSetParser parser = SoyFileSetParserBuilder.forFileContents(soyFileContent1).build();
     ParseResult parseResult = parser.parse();
     SoyFileSetNode soyTree = parseResult.fileSet();
-    TemplateRegistry templateRegistry = parseResult.registry();
+    FileSetMetadata fileSetMetadata = parseResult.registry();
     // apply an escaping directive to the callsite, just like the autoescaper would
     CallDelegateNode cdn =
         SoyTreeUtils.getAllNodesOfType(soyTree.getChild(0), CallDelegateNode.class).get(0);
     cdn.setEscapingDirectives(ImmutableList.of(new EscapeHtmlDirective()));
     CompiledTemplates templates =
         BytecodeCompiler.compile(
-                templateRegistry,
+                fileSetMetadata,
                 soyTree,
                 ErrorReporter.exploding(),
                 parser.soyFileSuppliers(),
@@ -1331,7 +1331,6 @@ public class BytecodeCompilerTest {
     CompilationUnitAndKind dependency1 =
         CompilationUnitAndKind.create(
             SoyFileKind.DEP,
-            SourceFilePath.create("foo.soy"),
             TemplateMetadataSerializer.compilationUnitFromFileSet(
                 parseResult1.fileSet(), parseResult1.registry()));
 
@@ -1421,7 +1420,6 @@ public class BytecodeCompilerTest {
     CompilationUnitAndKind dependency1 =
         CompilationUnitAndKind.create(
             SoyFileKind.DEP,
-            SourceFilePath.create("foo.soy"),
             TemplateMetadataSerializer.compilationUnitFromFileSet(
                 parseResult1.fileSet(), parseResult1.registry()));
 

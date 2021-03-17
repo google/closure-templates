@@ -30,10 +30,10 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.shared.internal.gencode.GeneratedFile;
+import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.NamespaceDeclaration;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.testing.Extendable;
 import com.google.template.soy.testing.Extension;
 import com.google.template.soy.testing.Foo;
@@ -222,7 +222,7 @@ public final class GenerateParseInfoVisitorTest {
                 protos.toArray(new GenericDescriptor[0]))
             .typeRegistry(typeRegistry)
             .parse();
-    TemplateRegistry registry = parseResult.registry();
+    FileSetMetadata registry = parseResult.registry();
 
     ImmutableList<GeneratedFile> parseInfos =
         new GenerateParseInfoVisitor("com.google.gpivtest", "filename", registry)

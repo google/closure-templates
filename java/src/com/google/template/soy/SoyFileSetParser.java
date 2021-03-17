@@ -16,7 +16,6 @@
 
 package com.google.template.soy;
 
-import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
@@ -25,20 +24,18 @@ import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.internal.FixedIdGenerator;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.IncrementingIdGenerator;
-import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.css.CssRegistry;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.passes.PassManager;
 import com.google.template.soy.shared.SoyAstCache;
 import com.google.template.soy.soyparse.SoyFileParser;
-import com.google.template.soy.soytree.CompilationUnit;
-import com.google.template.soy.soytree.FileSetTemplateRegistry;
+import com.google.template.soy.soytree.FileSetMetadata;
+import com.google.template.soy.soytree.Metadata;
+import com.google.template.soy.soytree.Metadata.CompilationUnitAndKind;
 import com.google.template.soy.soytree.SoyFileNode;
-import com.google.template.soy.soytree.SoyFileP;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
-import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.types.SoyTypeRegistry;
 import java.io.IOException;
 import java.io.Reader;
@@ -54,46 +51,25 @@ import javax.annotation.Nullable;
 @AutoValue
 public abstract class SoyFileSetParser {
 
-  /**
-   * Simple tuple of un an-evaluatied compilation unit containing information about dependencies.
-   */
-  @AutoValue
-  public abstract static class CompilationUnitAndKind {
-    public static CompilationUnitAndKind create(
-        SoyFileKind fileKind, SourceFilePath filePath, CompilationUnit compilationUnit) {
-      // sanity check
-      checkArgument(
-          fileKind != SoyFileKind.SRC, "compilation units should only represent dependencies");
-      return new AutoValue_SoyFileSetParser_CompilationUnitAndKind(
-          fileKind, filePath, compilationUnit);
-    }
-
-    abstract SoyFileKind fileKind();
-
-    abstract SourceFilePath filePath();
-
-    abstract CompilationUnit compilationUnit();
-  }
-
   /** A simple tuple for the result of a parse operation. */
   public static class ParseResult {
     private final SoyFileSetNode soyTree;
 
     /** The TemplateRegistry, which is guaranteed to be present if the error reporter is empty. */
-    private final Optional<TemplateRegistry> registry;
+    private final Optional<FileSetMetadata> registry;
 
     private final Optional<CssRegistry> cssRegistry;
 
     static ParseResult create(
         SoyFileSetNode soyTree,
-        Optional<TemplateRegistry> registry,
+        Optional<FileSetMetadata> registry,
         Optional<CssRegistry> cssRegistry) {
       return new ParseResult(soyTree, registry, cssRegistry);
     }
 
     ParseResult(
         SoyFileSetNode soyTree,
-        Optional<TemplateRegistry> registry,
+        Optional<FileSetMetadata> registry,
         Optional<CssRegistry> cssRegistry) {
       this.soyTree = soyTree;
       this.registry = registry;
@@ -107,7 +83,7 @@ public abstract class SoyFileSetParser {
     /**
      * Gets the TemplateRegistry, which is guaranteed to be present if the error reporter is empty.
      */
-    public final TemplateRegistry registry() {
+    public final FileSetMetadata registry() {
       return registry.orElseThrow(
           () ->
               new IllegalStateException(
@@ -229,23 +205,12 @@ public abstract class SoyFileSetParser {
     }
 
     // Build the template registry for the file set & its dependencies.
-    FileSetTemplateRegistry.Builder builder = FileSetTemplateRegistry.builder(errorReporter());
-
-    // Register templates for each file in the dependencies.
-    for (CompilationUnitAndKind unit : compilationUnits()) {
-      for (SoyFileP file : unit.compilationUnit().getFileList()) {
-        builder.addTemplates(
-            TemplateMetadataSerializer.templatesFromSoyFileP(
-                file, unit.fileKind(), typeRegistry(), unit.filePath(), errorReporter()));
-      }
-    }
-
-    // Run the passes that we need to finish building the template registry.
-    FileSetTemplateRegistry partialRegistryForDeps = builder.build();
+    FileSetMetadata partialRegistryForDeps =
+        Metadata.metadataForDeps(compilationUnits(), errorReporter(), typeRegistry());
     passManager().runPasses(soyTree, partialRegistryForDeps);
 
-    TemplateRegistry finalTemplateRegistry = passManager().getFinalTemplateRegistry();
-    return ParseResult.create(soyTree, Optional.ofNullable(finalTemplateRegistry), cssRegistry());
+    FileSetMetadata finalFileSetMetadata = passManager().getFinalTemplateRegistry();
+    return ParseResult.create(soyTree, Optional.ofNullable(finalFileSetMetadata), cssRegistry());
   }
 
   /**

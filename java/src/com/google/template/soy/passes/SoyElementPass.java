@@ -34,6 +34,7 @@ import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.soytree.CallBasicNode;
+import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.HtmlElementMetadataP;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.HtmlTagNode;
@@ -49,7 +50,6 @@ import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateElementNode;
 import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.VeLogNode;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -107,9 +107,9 @@ public final class SoyElementPass implements CompilerFileSetPass {
 
   private static final String DYNAMIC_ELEMENT_TAG = "?";
   private final ErrorReporter errorReporter;
-  private final Supplier<TemplateRegistry> templateRegistryFromDeps;
+  private final Supplier<FileSetMetadata> templateRegistryFromDeps;
 
-  SoyElementPass(ErrorReporter errorReporter, Supplier<TemplateRegistry> templateRegistryFromDeps) {
+  SoyElementPass(ErrorReporter errorReporter, Supplier<FileSetMetadata> templateRegistryFromDeps) {
     this.errorReporter = errorReporter;
     this.templateRegistryFromDeps = templateRegistryFromDeps;
   }

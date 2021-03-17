@@ -23,10 +23,10 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
+import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateMetadata;
-import com.google.template.soy.soytree.TemplateRegistry;
 import java.util.function.Supplier;
 
 /** Checks that all calls are to direct, and not indirect, deps. */
@@ -40,10 +40,10 @@ public final class CheckIndirectDepsPass implements CompilerFileSetPass {
           StyleAllowance.NO_PUNCTUATION);
 
   private final ErrorReporter errorReporter;
-  private final Supplier<TemplateRegistry> templateRegistryFull;
+  private final Supplier<FileSetMetadata> templateRegistryFull;
 
   public CheckIndirectDepsPass(
-      ErrorReporter errorReporter, Supplier<TemplateRegistry> templateRegistryFull) {
+      ErrorReporter errorReporter, Supplier<FileSetMetadata> templateRegistryFull) {
     this.errorReporter = errorReporter;
     this.templateRegistryFull = templateRegistryFull;
   }

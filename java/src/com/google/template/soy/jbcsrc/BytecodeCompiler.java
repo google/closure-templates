@@ -36,13 +36,13 @@ import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.jbcsrc.shared.Names;
 import com.google.template.soy.plugin.java.internal.PluginAnalyzer;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
+import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.TemplateType;
 import java.io.IOException;
@@ -65,7 +65,7 @@ public final class BytecodeCompiler {
    *     have been reported to the error reporter.
    */
   public static Optional<CompiledTemplates> compile(
-      final TemplateRegistry registry,
+      final FileSetMetadata registry,
       final SoyFileSetNode fileSet,
       ErrorReporter reporter,
       ImmutableMap<SourceFilePath, SoyFileSupplier> filePathsToSuppliers,

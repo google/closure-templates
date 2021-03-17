@@ -416,7 +416,6 @@ public abstract class AbstractSoyCompiler {
       try {
         sfsBuilder.addCompilationUnit(
             depKind,
-            SourceFilePath.create(depFile.getPath()),
             cache.read(depFile, CacheLoaders.COMPILATION_UNIT_LOADER, soyCompilerFileReader));
       } catch (IOException e) {
         throw new CommandLineError(

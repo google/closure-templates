@@ -33,7 +33,6 @@ import com.google.common.io.ByteSource;
 import com.google.common.io.CharSink;
 import com.google.common.io.CharSource;
 import com.google.protobuf.Descriptors.GenericDescriptor;
-import com.google.template.soy.SoyFileSetParser.CompilationUnitAndKind;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.internal.SoyFileKind;
@@ -85,8 +84,10 @@ import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyMethodSignature;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.CompilationUnit;
+import com.google.template.soy.soytree.FileSetMetadata;
+import com.google.template.soy.soytree.Metadata;
+import com.google.template.soy.soytree.Metadata.CompilationUnitAndKind;
 import com.google.template.soy.soytree.SoyFileSetNode;
-import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.tofu.SoyTofu;
 import com.google.template.soy.tofu.internal.BaseTofu;
 import com.google.template.soy.types.SoyTypeRegistry;
@@ -501,10 +502,9 @@ public final class SoyFileSet {
       return this;
     }
 
-    Builder addCompilationUnit(
-        SoyFileKind fileKind, SourceFilePath filePath, CompilationUnit compilationUnit) {
+    Builder addCompilationUnit(SoyFileKind fileKind, CompilationUnit compilationUnit) {
       compilationUnitsBuilder.add(
-          CompilationUnitAndKind.create(fileKind, filePath, compilationUnit));
+          Metadata.CompilationUnitAndKind.create(fileKind, compilationUnit));
       return this;
     }
 
@@ -730,7 +730,7 @@ public final class SoyFileSet {
           throwIfErrorsPresent();
 
           SoyFileSetNode soyTree = result.fileSet();
-          TemplateRegistry registry = result.registry();
+          FileSetMetadata registry = result.registry();
 
           // Do renaming of package-relative class names.
           return new GenerateParseInfoVisitor(javaPackage, javaClassNameSource, registry)
@@ -1004,9 +1004,9 @@ public final class SoyFileSet {
    */
   private static final class ServerCompilationPrimitives {
     final SoyFileSetNode soyTree;
-    final TemplateRegistry registry;
+    final FileSetMetadata registry;
 
-    ServerCompilationPrimitives(TemplateRegistry registry, SoyFileSetNode soyTree) {
+    ServerCompilationPrimitives(FileSetMetadata registry, SoyFileSetNode soyTree) {
       this.registry = registry;
       this.soyTree = soyTree;
     }
@@ -1018,7 +1018,7 @@ public final class SoyFileSet {
     throwIfErrorsPresent();
 
     SoyFileSetNode soyTree = result.fileSet();
-    TemplateRegistry registry = result.registry();
+    FileSetMetadata registry = result.registry();
     // Clear the SoyDoc strings because they use unnecessary memory, unless we have a cache, in
     // which case it is pointless.
     if (cache == null) {
@@ -1056,7 +1056,7 @@ public final class SoyFileSet {
               passManagerBuilder().allowUnknownJsGlobals().desugarHtmlAndStateNodes(false);
           ParseResult result = parse(builder);
           throwIfErrorsPresent();
-          TemplateRegistry registry = result.registry();
+          FileSetMetadata registry = result.registry();
           SoyFileSetNode fileSet = result.fileSet();
           return new JsSrcMain(scopedData.enterable(), typeRegistry)
               .genJsSrc(fileSet, registry, jsSrcOptions, msgBundle, errorReporter);
@@ -1112,7 +1112,7 @@ public final class SoyFileSet {
   abstract static class HeaderResult {
     abstract SoyFileSetNode fileSet();
 
-    abstract TemplateRegistry templateRegistry();
+    abstract FileSetMetadata templateRegistry();
 
     abstract CssRegistry cssRegistry();
   }
@@ -1149,7 +1149,7 @@ public final class SoyFileSet {
     /**
      * The template registry, will be empty if errors occurred early and it couldn't be constructed.
      */
-    public abstract Optional<TemplateRegistry> registry();
+    public abstract Optional<FileSetMetadata> registry();
 
     /** The full parsed AST. */
     public abstract SoyFileSetNode fileSet();

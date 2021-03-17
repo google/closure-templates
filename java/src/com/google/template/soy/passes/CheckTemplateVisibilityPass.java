@@ -21,10 +21,10 @@ import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
+import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateMetadata;
-import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.Visibility;
 import java.util.function.Supplier;
 
@@ -40,10 +40,10 @@ final class CheckTemplateVisibilityPass implements CompilerFileSetPass {
       SoyErrorKind.of("{0} has {1} access in {2}.");
 
   private final ErrorReporter errorReporter;
-  private final Supplier<TemplateRegistry> templateRegistryFull;
+  private final Supplier<FileSetMetadata> templateRegistryFull;
 
   CheckTemplateVisibilityPass(
-      ErrorReporter errorReporter, Supplier<TemplateRegistry> templateRegistryFull) {
+      ErrorReporter errorReporter, Supplier<FileSetMetadata> templateRegistryFull) {
     this.errorReporter = errorReporter;
     this.templateRegistryFull = templateRegistryFull;
   }

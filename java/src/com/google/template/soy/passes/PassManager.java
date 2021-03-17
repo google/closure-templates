@@ -34,9 +34,9 @@ import com.google.template.soy.passes.CompilerFileSetPass.Result;
 import com.google.template.soy.passes.CompilerFileSetPass.TopologicallyOrdered;
 import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
+import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
-import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -88,16 +88,16 @@ public final class PassManager {
 
   /** State used for inter-pass communication, without modifying the AST. */
   private static class AccumulatedState {
-    private TemplateRegistry templateRegistryFromDeps;
-    private TemplateRegistry templateRegistryFull;
+    private FileSetMetadata fileSetMetadataFromDeps;
+    private FileSetMetadata fileSetMetadataFull;
     private ImmutableList<SoyFileNode> topologicallyOrderedFiles;
 
-    TemplateRegistry registryFromDeps() {
-      return templateRegistryFromDeps;
+    FileSetMetadata registryFromDeps() {
+      return fileSetMetadataFromDeps;
     }
 
-    TemplateRegistry registryFull() {
-      return templateRegistryFull;
+    FileSetMetadata registryFull() {
+      return fileSetMetadataFull;
     }
   }
 
@@ -124,12 +124,12 @@ public final class PassManager {
   /**
    * Runs passes that are needed before we can add the fileset's files to the {TemplateRegistry}.
    *
-   * @param partialTemplateRegistryWithJustDeps registry of just the deps (we don't have enough info
+   * @param partialFileSetMetadataWithJustDeps registry of just the deps (we don't have enough info
    *     yet to create the metadata for the current fileset).
    */
   public Result runPasses(
-      SoyFileSetNode soyTree, TemplateRegistry partialTemplateRegistryWithJustDeps) {
-    accumulatedState.templateRegistryFromDeps = partialTemplateRegistryWithJustDeps;
+      SoyFileSetNode soyTree, FileSetMetadata partialFileSetMetadataWithJustDeps) {
+    accumulatedState.fileSetMetadataFromDeps = partialFileSetMetadataWithJustDeps;
 
     ImmutableList<SoyFileNode> sourceFiles = ImmutableList.copyOf(soyTree.getChildren());
     IdGenerator idGenerator = soyTree.getNodeIdGenerator();
@@ -147,8 +147,8 @@ public final class PassManager {
   }
 
   @Nullable
-  public TemplateRegistry getFinalTemplateRegistry() {
-    return accumulatedState.templateRegistryFull;
+  public FileSetMetadata getFinalTemplateRegistry() {
+    return accumulatedState.fileSetMetadataFull;
   }
 
   /** Enforces that the current set of passes doesn't violate any annotated ordering constraints. */
@@ -492,7 +492,7 @@ public final class PassManager {
           new FinalizeTemplateRegistryPass(
               errorReporter,
               accumulatedState::registryFromDeps,
-              reg -> accumulatedState.templateRegistryFull = reg));
+              reg -> accumulatedState.fileSetMetadataFull = reg));
 
       // Fileset passes run on all sources files and have access to a template registry so they can
       // examine information about dependencies. These are naturally more expensive and should be

@@ -43,6 +43,7 @@ import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
+import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.HtmlAttributeValueNode;
 import com.google.template.soy.soytree.HtmlAttributeValueNode.Quotes;
@@ -61,7 +62,6 @@ import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TagName;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.defn.AttrParam;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.BoolType;
@@ -138,12 +138,12 @@ final class ElementAttributePass implements CompilerFileSetPass {
 
   private final ErrorReporter errorReporter;
   private final PluginResolver pluginResolver;
-  private final Supplier<TemplateRegistry> templateRegistryFromDeps;
+  private final Supplier<FileSetMetadata> templateRegistryFromDeps;
 
   ElementAttributePass(
       ErrorReporter errorReporter,
       PluginResolver pluginResolver,
-      Supplier<TemplateRegistry> templateRegistryFromDeps) {
+      Supplier<FileSetMetadata> templateRegistryFromDeps) {
     this.errorReporter = errorReporter;
     this.pluginResolver = pluginResolver;
     this.templateRegistryFromDeps = templateRegistryFromDeps;

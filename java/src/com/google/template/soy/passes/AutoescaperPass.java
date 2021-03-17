@@ -21,8 +21,8 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.parsepasses.contextautoesc.ContextualAutoescaper;
 import com.google.template.soy.parsepasses.contextautoesc.Inferences;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
+import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.SoyFileNode;
-import com.google.template.soy.soytree.TemplateRegistry;
 import java.util.function.Supplier;
 
 /** A shim around ContextualAutoescaper to make it conform to the pass interface. */
@@ -32,13 +32,13 @@ final class AutoescaperPass implements CompilerFileSetPass {
   private final ErrorReporter errorReporter;
   private final ImmutableList<? extends SoyPrintDirective> printDirectives;
   private final boolean autoescaperEnabled;
-  private final Supplier<TemplateRegistry> templateRegistryFull;
+  private final Supplier<FileSetMetadata> templateRegistryFull;
 
   AutoescaperPass(
       ErrorReporter errorReporter,
       ImmutableList<? extends SoyPrintDirective> printDirectives,
       boolean autoescaperEnabled,
-      Supplier<TemplateRegistry> templateRegistryFull) {
+      Supplier<FileSetMetadata> templateRegistryFull) {
     this.errorReporter = errorReporter;
     this.printDirectives = printDirectives;
     this.autoescaperEnabled = autoescaperEnabled;

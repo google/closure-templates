@@ -25,9 +25,9 @@ import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Maps;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
+import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.TemplateType.Parameter;
@@ -153,7 +153,7 @@ public final class IndirectParamsCalculator {
   }
 
   /** Registry of all templates in the Soy tree. */
-  private final TemplateRegistry templateRegistry;
+  private final FileSetMetadata fileSetMetadata;
 
   /** The set of calls we've visited already (during pass). */
   private Set<TransitiveCallSituation> visitedCallSituations;
@@ -179,13 +179,13 @@ public final class IndirectParamsCalculator {
    */
   private boolean mayHaveIndirectParamsInExternalDelCalls;
 
-  /** @param templateRegistry Map from template name to TemplateNode to use during the pass. */
-  public IndirectParamsCalculator(TemplateRegistry templateRegistry) {
-    this.templateRegistry = checkNotNull(templateRegistry);
+  /** @param fileSetMetadata Map from template name to TemplateNode to use during the pass. */
+  public IndirectParamsCalculator(FileSetMetadata fileSetMetadata) {
+    this.fileSetMetadata = checkNotNull(fileSetMetadata);
   }
 
   public IndirectParamsInfo calculateIndirectParams(TemplateNode node) {
-    return calculateIndirectParams(templateRegistry.getMetadata(node).getTemplateType());
+    return calculateIndirectParams(fileSetMetadata.getTemplate(node).getTemplateType());
   }
 
   public IndirectParamsInfo calculateIndirectParams(TemplateType template) {
@@ -227,7 +227,7 @@ public final class IndirectParamsCalculator {
         mayHaveIndirectParamsInExternalDelCalls = true;
         // TODO(lukes): this should probably take variants into account if they are present
         for (TemplateMetadata delCallee :
-            templateRegistry
+            fileSetMetadata
                 .getDelTemplateSelector()
                 .delTemplateNameToValues()
                 .get(call.getTemplateName())) {
@@ -235,7 +235,7 @@ public final class IndirectParamsCalculator {
         }
       } else {
         TemplateMetadata basicCallee =
-            templateRegistry.getBasicTemplateOrElement(call.getTemplateName());
+            fileSetMetadata.getBasicTemplateOrElement(call.getTemplateName());
         if (basicCallee == null) {
           mayHaveIndirectParamsInExternalCalls = true;
         } else {

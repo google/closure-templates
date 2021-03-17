@@ -27,8 +27,8 @@ import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.internal.InsertMsgsVisitor;
 import com.google.template.soy.passes.CombineConsecutiveRawTextNodesPass;
 import com.google.template.soy.shared.internal.SoyScopedData;
+import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.SoyFileSetNode;
-import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.List;
 import javax.annotation.Nullable;
@@ -56,7 +56,7 @@ public class JsSrcMain {
    * translated messages.
    *
    * @param soyTree The Soy parse tree to generate JS source code for.
-   * @param templateRegistry The template registry that contains all the template information.
+   * @param fileSetMetadata The template registry that contains all the template information.
    * @param jsSrcOptions The compilation options relevant to this backend.
    * @param msgBundle The bundle of translated messages, or null to use the messages from the Soy
    *     source.
@@ -66,7 +66,7 @@ public class JsSrcMain {
    */
   public List<String> genJsSrc(
       SoyFileSetNode soyTree,
-      TemplateRegistry templateRegistry,
+      FileSetMetadata fileSetMetadata,
       SoyJsSrcOptions jsSrcOptions,
       @Nullable SoyMsgBundle msgBundle,
       ErrorReporter errorReporter) {
@@ -92,7 +92,7 @@ public class JsSrcMain {
       // Combine raw text nodes before codegen.
       new CombineConsecutiveRawTextNodesPass().run(soyTree);
       return createVisitor(jsSrcOptions, typeRegistry, inScope.getBidiGlobalDir(), errorReporter)
-          .gen(soyTree, templateRegistry, errorReporter);
+          .gen(soyTree, fileSetMetadata, errorReporter);
     }
   }
 

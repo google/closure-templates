@@ -23,12 +23,12 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
+import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.HtmlContext;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.HtmlTagNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.UnionType;
@@ -59,7 +59,7 @@ public final class ContextualAutoescaper {
 
   private final ErrorReporter errorReporter;
   private final ImmutableList<? extends SoyPrintDirective> printDirectives;
-  private final TemplateRegistry templateRegistry;
+  private final FileSetMetadata fileSetMetadata;
 
   /**
    * This injected ctor provides a blank constructor that is filled, in normal compiler operation,
@@ -71,10 +71,10 @@ public final class ContextualAutoescaper {
   public ContextualAutoescaper(
       ErrorReporter errorReporter,
       ImmutableList<? extends SoyPrintDirective> soyDirectives,
-      TemplateRegistry templateRegistry) {
+      FileSetMetadata fileSetMetadata) {
     this.errorReporter = errorReporter;
     this.printDirectives = soyDirectives;
-    this.templateRegistry = templateRegistry;
+    this.fileSetMetadata = fileSetMetadata;
   }
 
   /**
@@ -89,7 +89,7 @@ public final class ContextualAutoescaper {
     Inferences inferences = new Inferences();
     // Inferences collects all the typing decisions we make and escaping modes we choose.
     for (SoyFileNode file : sourceFiles) {
-      inferences.setTemplateRegistry(templateRegistry);
+      inferences.setTemplateRegistry(fileSetMetadata);
       for (TemplateNode templateNode : file.getTemplates()) {
         try {
           // The author specifies the kind of SanitizedContent to produce, and thus the context in
@@ -111,7 +111,7 @@ public final class ContextualAutoescaper {
 
   public static void annotateAndRewriteHtmlTag(
       HtmlOpenTagNode openTag,
-      TemplateRegistry registry,
+      FileSetMetadata registry,
       IdGenerator idGenerator,
       ErrorReporter errorReporter,
       ImmutableList<? extends SoyPrintDirective> printDirectives) {

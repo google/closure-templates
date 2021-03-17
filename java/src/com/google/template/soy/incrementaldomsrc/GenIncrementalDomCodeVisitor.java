@@ -111,6 +111,7 @@ import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.KeyNode;
 import com.google.template.soy.soytree.LetContentNode;
+import com.google.template.soy.soytree.Metadata;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.MsgHtmlTagNode;
 import com.google.template.soy.soytree.MsgPlaceholderNode;
@@ -350,7 +351,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       // TODO(b/11787791): make the checkTypes suppression more fine grained.
       jsDocBuilder.addParameterizedAnnotation("suppress", "checkTypes");
     } else {
-      if (templateRegistry.getMetadata(node).getTemplateType().getActualParameters().stream()
+      if (fileSetMetadata.getTemplate(node).getTemplateType().getActualParameters().stream()
           .anyMatch(TemplateType.Parameter::isImplicit)) {
         jsDocBuilder.addParameterizedAnnotation("suppress", "missingProperties");
       }
@@ -868,7 +869,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     }
 
     Expression call;
-    Optional<SanitizedContentKind> kind = templateRegistry.getCallContentKind(node);
+    Optional<SanitizedContentKind> kind = Metadata.getCallContentKind(fileSetMetadata, node);
     GenCallCodeUtils.Callee callee =
         genCallCodeUtils.genCallee(node, templateAliases, getExprTranslator());
     Supplier<Expression> objToPass =
@@ -1128,7 +1129,8 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     // the appending path needs to be executed.
     for (SoyNode n : value.getChildren()) {
       if (n instanceof CallNode) {
-        Optional<SanitizedContentKind> kind = templateRegistry.getCallContentKind((CallNode) n);
+        Optional<SanitizedContentKind> kind =
+            Metadata.getCallContentKind(fileSetMetadata, (CallNode) n);
         needsToBeCoerced =
             !kind.isPresent()
                 || kind.get().isHtml()

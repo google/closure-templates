@@ -37,7 +37,6 @@ java_library(
     name = "impl",
     srcs = [
         "SoyFileSetParser.java",
-        "TemplateMetadataSerializer.java",
     ],
     deps = [
         "//java/src/com/google/template/soy/base",
@@ -49,7 +48,6 @@ java_library(
         "//java/src/com/google/template/soy/soyparse",
         "//java/src/com/google/template/soy/soytree",
         "//java/src/com/google/template/soy/types",
-        "//src/main/protobuf:template_metadata_java_proto",
         "@com_google_auto_value_auto_value",
         "@maven//:com_google_code_findbugs_jsr305",
         "@maven//:com_google_guava_guava",
@@ -180,7 +178,6 @@ java_library(
     srcs = ["SoyHeaderCompiler.java"],
     deps = [
         ":cache",
-        ":impl",
         ":soy",
         ":soy_cmdline",
         "//java/src/com/google/template/soy/css",
@@ -190,8 +187,8 @@ java_library(
         "//java/src/com/google/template/soy/soytree:soynode",
         "//java/src/com/google/template/soy/soytree/defn",
         "//src/main/protobuf:css_metadata_java_proto",
-        "//src/main/protobuf:template_metadata_java_proto",
         "//src/main/protobuf:template_call_metadata_java_proto",
+        "//src/main/protobuf:template_metadata_java_proto",
         "@maven//:args4j_args4j",
         "@maven//:com_google_guava_guava",
     ],

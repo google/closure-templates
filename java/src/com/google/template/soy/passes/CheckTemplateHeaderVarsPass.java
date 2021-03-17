@@ -21,10 +21,10 @@ import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.passes.IndirectParamsCalculator.IndirectParamsInfo;
+import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import java.util.function.Supplier;
 
@@ -43,10 +43,10 @@ public final class CheckTemplateHeaderVarsPass implements CompilerFileSetPass {
               + " ''{1}''.");
 
   private final ErrorReporter errorReporter;
-  private final Supplier<TemplateRegistry> templateRegistryFull;
+  private final Supplier<FileSetMetadata> templateRegistryFull;
 
   CheckTemplateHeaderVarsPass(
-      ErrorReporter errorReporter, Supplier<TemplateRegistry> templateRegistryFull) {
+      ErrorReporter errorReporter, Supplier<FileSetMetadata> templateRegistryFull) {
     this.errorReporter = errorReporter;
     this.templateRegistryFull = templateRegistryFull;
   }

@@ -21,13 +21,14 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.SoyFileSetParser;
-import com.google.template.soy.SoyFileSetParser.CompilationUnitAndKind;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
-import com.google.template.soy.TemplateMetadataSerializer;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.soytree.Metadata;
+import com.google.template.soy.soytree.Metadata.CompilationUnitAndKind;
+import com.google.template.soy.soytree.TemplateMetadataSerializer;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import org.junit.Before;
 import org.junit.Test;
@@ -165,9 +166,8 @@ public final class ImportsPassTest {
     SoyFileSetParser parserForDeps =
         createParserForFiles(ImmutableList.of(createSoyFileSupplier(fileContents, fileName)));
     ParseResult dependencyParseResult = parserForDeps.parse();
-    return CompilationUnitAndKind.create(
+    return Metadata.CompilationUnitAndKind.create(
         SoyFileKind.DEP,
-        SourceFilePath.create("foo_unit.soy"),
         TemplateMetadataSerializer.compilationUnitFromFileSet(
             dependencyParseResult.fileSet(), dependencyParseResult.registry()));
   }

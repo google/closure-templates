@@ -32,11 +32,11 @@ import com.google.template.soy.passes.LocalVariablesNodeVisitor.LocalVariables;
 import com.google.template.soy.shared.internal.DelTemplateSelector;
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallParamContentNode;
+import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.TemplateType.Parameter;
 import java.util.Collection;
@@ -76,9 +76,9 @@ final class CheckDelegatesPass implements CompilerFileSetPass {
               + "compared to the definition at {1}.");
 
   private final ErrorReporter errorReporter;
-  private final Supplier<TemplateRegistry> templateRegistryFull;
+  private final Supplier<FileSetMetadata> templateRegistryFull;
 
-  CheckDelegatesPass(ErrorReporter errorReporter, Supplier<TemplateRegistry> templateRegistryFull) {
+  CheckDelegatesPass(ErrorReporter errorReporter, Supplier<FileSetMetadata> templateRegistryFull) {
     this.errorReporter = errorReporter;
     this.templateRegistryFull = templateRegistryFull;
   }

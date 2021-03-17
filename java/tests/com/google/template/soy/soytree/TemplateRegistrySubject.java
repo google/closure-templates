@@ -25,20 +25,20 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Custom Truth subject for {@link TemplateRegistry}.
+ * Custom Truth subject for {@link FileSetMetadata}.
  *
  * @author brndn@google.com (Brendan Linn)
  */
 final class TemplateRegistrySubject extends Subject {
 
-  private final TemplateRegistry actual;
+  private final FileSetMetadata actual;
 
-  private TemplateRegistrySubject(FailureMetadata failureMetadata, TemplateRegistry registry) {
+  private TemplateRegistrySubject(FailureMetadata failureMetadata, FileSetMetadata registry) {
     super(failureMetadata, registry);
     this.actual = registry;
   }
 
-  static TemplateRegistrySubject assertThatRegistry(TemplateRegistry registry) {
+  static TemplateRegistrySubject assertThatRegistry(FileSetMetadata registry) {
     return Truth.assertAbout(TemplateRegistrySubject::new).that(registry);
   }
 

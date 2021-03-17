@@ -41,6 +41,7 @@ import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.CommandTagAttribute;
+import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.HtmlAttributeValueNode;
 import com.google.template.soy.soytree.HtmlContext;
@@ -60,7 +61,6 @@ import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TagName;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.defn.AttrParam;
 import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.SanitizedType.AttributesType;
@@ -104,12 +104,12 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
 
   private final ErrorReporter errorReporter;
   private final ImmutableList<? extends SoyPrintDirective> printDirectives;
-  private final Supplier<TemplateRegistry> templateRegistryFull;
+  private final Supplier<FileSetMetadata> templateRegistryFull;
 
   SoyElementCompositionPass(
       ErrorReporter errorReporter,
       ImmutableList<? extends SoyPrintDirective> printDirectives,
-      Supplier<TemplateRegistry> templateRegistryFull) {
+      Supplier<FileSetMetadata> templateRegistryFull) {
     this.errorReporter = errorReporter;
     this.printDirectives = printDirectives;
     this.templateRegistryFull = templateRegistryFull;

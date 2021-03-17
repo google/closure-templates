@@ -26,8 +26,8 @@ import com.google.template.soy.jssrc.internal.CanInitOutputVarVisitor;
 import com.google.template.soy.jssrc.internal.JavaScriptValueFactoryImpl;
 import com.google.template.soy.passes.CombineConsecutiveRawTextNodesPass;
 import com.google.template.soy.shared.internal.SoyScopedData;
+import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.SoyFileSetNode;
-import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.Collections;
 import java.util.List;
@@ -62,7 +62,7 @@ public class IncrementalDomSrcMain {
    */
   public List<String> genJsSrc(
       SoyFileSetNode soyTree,
-      TemplateRegistry registry,
+      FileSetMetadata registry,
       SoyIncrementalDomSrcOptions options,
       ErrorReporter errorReporter) {
 

@@ -25,9 +25,9 @@ import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.internal.exemptions.NamespaceExemptions;
+import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.TemplateMetadata;
-import com.google.template.soy.soytree.TemplateRegistry;
 import java.util.function.Supplier;
 
 /**
@@ -46,10 +46,10 @@ final class BanDuplicateNamespacesPass implements CompilerFileSetPass {
           "Found another files ''{0}'' with the same namespace.  All files should have unique"
               + " namespaces. This will soon become an error.");
   private final ErrorReporter errorReporter;
-  private final Supplier<TemplateRegistry> fileSetTemplateRegistry;
+  private final Supplier<FileSetMetadata> fileSetTemplateRegistry;
 
   BanDuplicateNamespacesPass(
-      ErrorReporter errorReporter, Supplier<TemplateRegistry> fileSetTemplateRegistry) {
+      ErrorReporter errorReporter, Supplier<FileSetMetadata> fileSetTemplateRegistry) {
     this.errorReporter = errorReporter;
     this.fileSetTemplateRegistry = fileSetTemplateRegistry;
   }

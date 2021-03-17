@@ -48,10 +48,10 @@ import com.google.template.soy.invocationbuilders.passes.SoyFileNodeTransformer.
 import com.google.template.soy.invocationbuilders.passes.SoyFileNodeTransformer.TemplateInfo;
 import com.google.template.soy.shared.internal.gencode.GeneratedFile;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
+import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -123,7 +123,7 @@ public final class GenInvocationBuildersVisitor
   private ImmutableList.Builder<GeneratedFile> generatedFiles; // The generated Java files to write.
 
   public GenInvocationBuildersVisitor(
-      ErrorReporter errorReporter, String javaPackage, TemplateRegistry registry) {
+      ErrorReporter errorReporter, String javaPackage, FileSetMetadata registry) {
     this.errorReporter = errorReporter;
     this.transformer = new SoyFileNodeTransformer(javaPackage, registry);
   }

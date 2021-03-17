@@ -16,36 +16,26 @@
 
 package com.google.template.soy.passes;
 
-import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
-import static com.google.common.collect.ImmutableSortedMap.toImmutableSortedMap;
-import static java.util.Comparator.naturalOrder;
 
-import com.google.auto.value.AutoValue;
-import com.google.auto.value.extension.memoized.Memoized;
-import com.google.common.base.Preconditions;
-import com.google.common.base.Strings;
-import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.SetMultimap;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.ImportNode;
 import com.google.template.soy.soytree.ImportNode.ImportType;
+import com.google.template.soy.soytree.Metadata;
+import com.google.template.soy.soytree.PartialFileMetadata;
+import com.google.template.soy.soytree.PartialFileSetMetadata;
 import com.google.template.soy.soytree.SoyFileNode;
-import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.defn.ImportedVar;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.TemplateImportType;
 import com.google.template.soy.types.TemplateModuleImportType;
 import com.google.template.soy.types.UnknownType;
-import java.util.Collection;
-import java.util.Map;
 import java.util.function.Supplier;
 
 /**
@@ -55,39 +45,19 @@ import java.util.function.Supplier;
 public final class TemplateImportProcessor implements ImportsPass.ImportProcessor {
 
   private final ErrorReporter errorReporter;
-  private final Supplier<TemplateRegistry> registryFromDeps;
-  private ImmutableMap<SourceFilePath, TemplatesPerFile> allTemplates;
+  private final Supplier<FileSetMetadata> registryFromDeps;
+  private PartialFileSetMetadata fileSetMetadata;
 
   private SoyTypeRegistry typeRegistry;
 
-  TemplateImportProcessor(
-      ErrorReporter errorReporter, Supplier<TemplateRegistry> registryFromDeps) {
+  TemplateImportProcessor(ErrorReporter errorReporter, Supplier<FileSetMetadata> registryFromDeps) {
     this.registryFromDeps = registryFromDeps;
     this.errorReporter = errorReporter;
   }
 
   @Override
   public void init(ImmutableList<SoyFileNode> sourceFiles) {
-    SetMultimap<SourceFilePath, TemplateName> index = HashMultimap.create();
-
-    registryFromDeps
-        .get()
-        .getAllTemplates()
-        .forEach(
-            metadata ->
-                index.put(
-                    metadata.getSourceLocation().getFilePath(),
-                    TemplateName.create(metadata.getTemplateName())));
-
-    for (SoyFileNode file : sourceFiles) {
-      for (TemplateNode template : file.getTemplates()) {
-        index.put(file.getFilePath(), TemplateName.create(template.getTemplateName()));
-      }
-    }
-
-    allTemplates =
-        index.asMap().entrySet().stream()
-            .collect(toImmutableMap(Map.Entry::getKey, e -> TemplatesPerFile.create(e.getValue())));
+    fileSetMetadata = Metadata.partialMetadataForAst(registryFromDeps.get(), sourceFiles);
   }
 
   @Override
@@ -111,27 +81,32 @@ public final class TemplateImportProcessor implements ImportsPass.ImportProcesso
    * path exists and any alias symbols are valid.
    */
   private void processImportedSymbols(ImportNode node) {
-    TemplatesPerFile templatesPerFile = allTemplates.get(SourceFilePath.create(node.getPath()));
+    PartialFileMetadata fileMetadata =
+        fileSetMetadata.getPartialFile(SourceFilePath.create(node.getPath()));
     for (ImportedVar symbol : node.getIdentifiers()) {
       String name = symbol.getSymbol();
       // Report an error if the template name is invalid.
-      if (!templatesPerFile.hasTemplateWithUnqualifiedName(name)) {
+      if (!fileMetadata.hasTemplate(name)) {
         ImportsPass.reportUnknownSymbolError(
             errorReporter,
             symbol.nameLocation(),
             name,
             node.getPath(),
-            /* validSymbols= */ templatesPerFile.getUnqualifiedTemplateNames());
+            /* validSymbols= */ fileMetadata.getTemplateNames());
         symbol.setType(UnknownType.getInstance());
         continue;
       }
 
       // Needs to be able to handle duplicates, since the formatter fixes them, but it's not a
       // compiler error (if they have the same path).
-      TemplateName templateName = templatesPerFile.getFullTemplateName(name);
       symbol.setType(
-          typeRegistry.intern(TemplateImportType.create(templateName.fullyQualifiedName())));
+          typeRegistry.intern(TemplateImportType.create(templateFqn(fileMetadata, name))));
     }
+  }
+
+  private static String templateFqn(PartialFileMetadata file, String name) {
+    String namespace = file.getNamespace();
+    return namespace.isEmpty() ? name : namespace + "." + name;
   }
 
   /**
@@ -142,98 +117,25 @@ public final class TemplateImportProcessor implements ImportsPass.ImportProcesso
    */
   private void processImportedModule(ImportNode node) {
     SourceFilePath path = SourceFilePath.create(node.getPath());
-    TemplatesPerFile templatesPerFile = allTemplates.get(path);
+    PartialFileMetadata templatesPerFile = fileSetMetadata.getPartialFile(path);
     Iterables.getOnlyElement(node.getIdentifiers())
         .setType(
             typeRegistry.intern(
                 TemplateModuleImportType.create(
                     templatesPerFile.getNamespace(),
                     path,
-                    templatesPerFile.getTemplateNames().stream()
-                        .map(TemplateName::unqualifiedName)
-                        .collect(toImmutableSet()))));
+                    ImmutableSet.copyOf(templatesPerFile.getTemplateNames()))));
   }
 
   @Override
   public boolean handlesPath(String path) {
-    return allTemplates.containsKey(SourceFilePath.create(path));
+    return fileSetMetadata.getPartialFile(SourceFilePath.create(path)) != null;
   }
 
   @Override
   public ImmutableCollection<String> getAllPaths() {
-    return allTemplates.keySet().stream().map(SourceFilePath::path).collect(toImmutableSet());
-  }
-
-  /**
-   * Template registry for a single soy file. This holds metadata for all the templates in the file
-   * (NOT its dependencies).
-   */
-  @AutoValue
-  abstract static class TemplatesPerFile {
-
-    private static TemplatesPerFile create(Collection<TemplateName> value) {
-      return new AutoValue_TemplateImportProcessor_TemplatesPerFile(ImmutableSet.copyOf(value));
-    }
-
-    public abstract ImmutableSet<TemplateName> getTemplateNames();
-
-    @Memoized
-    ImmutableMap<String, TemplateName> templatesByUnqualifiedName() {
-      return getTemplateNames().stream()
-          .collect(toImmutableSortedMap(naturalOrder(), TemplateName::unqualifiedName, n -> n));
-    }
-
-    public String getNamespace() {
-      return Iterables.getFirst(getTemplateNames(), null).getNamespace();
-    }
-
-    /** Gets the short (unqualified) template names for all the templates in this file. */
-    public ImmutableSet<String> getUnqualifiedTemplateNames() {
-      return templatesByUnqualifiedName().keySet();
-    }
-
-    /** Whether this file has a template with the given unqualified name. */
-    public boolean hasTemplateWithUnqualifiedName(String unqualifiedTemplateName) {
-      return templatesByUnqualifiedName().containsKey(unqualifiedTemplateName);
-    }
-
-    /**
-     * Gets the full template name wrapper object for the given unqualified template name. Throws an
-     * error if the template does not exist in this file.
-     */
-    public TemplateName getFullTemplateName(String unqualifiedTemplateName) {
-      return templatesByUnqualifiedName().get(unqualifiedTemplateName);
-    }
-  }
-
-  /**
-   * Wrapper for a template name. Stores the fully qualified and unqualified versions of the name
-   * (e.g. "my.namespace.foo" and "foo").
-   */
-  @AutoValue
-  abstract static class TemplateName {
-    private static TemplateName create(String fullyQualifiedName) {
-      Preconditions.checkArgument(
-          !Strings.isNullOrEmpty(fullyQualifiedName),
-          "Template name cannot be null or empty %s",
-          fullyQualifiedName);
-
-      int startOfUnqualifiedName = fullyQualifiedName.lastIndexOf('.');
-      String unqualifiedName = fullyQualifiedName.substring(startOfUnqualifiedName + 1);
-      return new AutoValue_TemplateImportProcessor_TemplateName(
-          fullyQualifiedName, unqualifiedName);
-    }
-
-    public abstract String fullyQualifiedName();
-
-    public abstract String unqualifiedName();
-
-    public String getNamespace() {
-      if (fullyQualifiedName().equals(unqualifiedName())) {
-        return "";
-      }
-      return fullyQualifiedName()
-          .substring(0, fullyQualifiedName().length() - (1 + unqualifiedName().length()));
-    }
+    return fileSetMetadata.getAllPartialFiles().stream()
+        .map(f -> f.getPath().path())
+        .collect(toImmutableSet());
   }
 }

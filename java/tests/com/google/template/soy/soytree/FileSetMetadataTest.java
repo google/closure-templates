@@ -22,9 +22,7 @@ import static com.google.template.soy.soytree.TemplateRegistrySubject.assertThat
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import com.google.template.soy.SoyFileSetParser.CompilationUnitAndKind;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
-import com.google.template.soy.TemplateMetadataSerializer;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
@@ -34,18 +32,19 @@ import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.exprtree.VarRefNode;
+import com.google.template.soy.soytree.Metadata.CompilationUnitAndKind;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 /**
- * Tests for {@link TemplateRegistry}.
+ * Tests for {@link FileSetMetadata}.
  *
  * @author brndn@google.com (Brendan Linn)
  */
 @RunWith(JUnit4.class)
-public final class TemplateRegistryTest {
+public final class FileSetMetadataTest {
 
   private static final SourceFilePath FILE_PATH = SourceFilePath.create("example.soy");
 
@@ -54,7 +53,7 @@ public final class TemplateRegistryTest {
 
   @Test
   public void testSimple() {
-    TemplateRegistry registry =
+    FileSetMetadata registry =
         SoyFileSetParserBuilder.forSuppliers(
                 SoyFileSupplier.Factory.create(
                     "{namespace ns}\n"
@@ -98,15 +97,14 @@ public final class TemplateRegistryTest {
                     FILE_PATH))
             .parse();
     CompilationUnitAndKind dependencyCompilationUnit =
-        CompilationUnitAndKind.create(
+        Metadata.CompilationUnitAndKind.create(
             SoyFileKind.DEP,
-            SourceFilePath.create("example_header.soy"),
             TemplateMetadataSerializer.compilationUnitFromFileSet(
                 dependencyParseResult.fileSet(), dependencyParseResult.registry()));
 
     // Now, parse another file with the same name, and feed the previous compilation unit in as a
     // dependency.
-    TemplateRegistry registry =
+    FileSetMetadata registry =
         SoyFileSetParserBuilder.forSuppliers(
                 SoyFileSupplier.Factory.create(
                     "{namespace ns}\n"
@@ -142,7 +140,7 @@ public final class TemplateRegistryTest {
 
   @Test
   public void testBasicTemplatesWithSameNamesInDifferentFiles() {
-    TemplateRegistry registry =
+    FileSetMetadata registry =
         SoyFileSetParserBuilder.forSuppliers(
                 SoyFileSupplier.Factory.create(
                     "{namespace ns}\n"
@@ -169,7 +167,7 @@ public final class TemplateRegistryTest {
 
   @Test
   public void testDelTemplates() {
-    TemplateRegistry registry =
+    FileSetMetadata registry =
         SoyFileSetParserBuilder.forSuppliers(
                 SoyFileSupplier.Factory.create(
                     "{namespace ns}\n"
@@ -317,17 +315,17 @@ public final class TemplateRegistryTest {
             .errorReporter(errorReporter)
             .parse();
 
-    TemplateRegistry registry = parseResult.registry();
+    FileSetMetadata registry = parseResult.registry();
 
     TemplateNode firstTemplate = (TemplateNode) parseResult.fileSet().getChild(0).getChild(0);
     TemplateNode secondTemplate = (TemplateNode) parseResult.fileSet().getChild(0).getChild(1);
 
     // Make sure this returns the metadata for the deltemplate in file #1, not #2.
-    assertThat(registry.getMetadata(firstTemplate))
+    assertThat(registry.getTemplate(firstTemplate))
         .isEqualTo(TemplateMetadata.fromTemplate(firstTemplate));
 
     // Sanity check getMetadata for a regular template.
-    assertThat(registry.getMetadata(secondTemplate))
+    assertThat(registry.getTemplate(secondTemplate))
         .isEqualTo(TemplateMetadata.fromTemplate(secondTemplate));
   }
 
@@ -380,7 +378,7 @@ public final class TemplateRegistryTest {
     TemplateMetadata file3Template1 =
         TemplateMetadata.fromTemplate((TemplateNode) file3.getChild(0));
 
-    TemplateRegistry registry = parseResult.registry();
+    FileSetMetadata registry = parseResult.registry();
     assertThat(registry.getAllTemplates())
         .containsExactlyElementsIn(
             ImmutableList.of(
@@ -431,7 +429,7 @@ public final class TemplateRegistryTest {
 
   @Test
   public void testGetCallContentKind_basicTemplate() {
-    TemplateRegistry registry =
+    FileSetMetadata registry =
         SoyFileSetParserBuilder.forSuppliers(
                 SoyFileSupplier.Factory.create(
                     "{namespace ns}\n"
@@ -452,12 +450,13 @@ public final class TemplateRegistryTest {
             false,
             FAIL);
     node.getCalleeExpr().setType(registry.getBasicTemplateOrElement("ns.foo").getTemplateType());
-    assertThat(registry.getCallContentKind(node)).hasValue(SanitizedContentKind.ATTRIBUTES);
+    assertThat(Metadata.getCallContentKind(registry, node))
+        .hasValue(SanitizedContentKind.ATTRIBUTES);
   }
 
   @Test
   public void testGetCallContentKind_basicTemplateMissing() {
-    TemplateRegistry registry =
+    FileSetMetadata registry =
         SoyFileSetParserBuilder.forSuppliers(
                 SoyFileSupplier.Factory.create(
                     "{namespace ns}\n"
@@ -476,12 +475,12 @@ public final class TemplateRegistryTest {
             NO_ATTRS,
             false,
             FAIL);
-    assertThat(registry.getCallContentKind(node)).isEmpty();
+    assertThat(Metadata.getCallContentKind(registry, node)).isEmpty();
   }
 
   @Test
   public void testGetCallContentKind_delTemplate() {
-    TemplateRegistry registry =
+    FileSetMetadata registry =
         SoyFileSetParserBuilder.forSuppliers(
                 SoyFileSupplier.Factory.create(
                     "{namespace ns}\n"
@@ -500,12 +499,13 @@ public final class TemplateRegistryTest {
             NO_ATTRS,
             false,
             FAIL);
-    assertThat(registry.getCallContentKind(node)).hasValue(SanitizedContentKind.ATTRIBUTES);
+    assertThat(Metadata.getCallContentKind(registry, node))
+        .hasValue(SanitizedContentKind.ATTRIBUTES);
   }
 
   @Test
   public void testGetCallContentKind_delTemplateMissing() {
-    TemplateRegistry registry =
+    FileSetMetadata registry =
         SoyFileSetParserBuilder.forSuppliers(
                 SoyFileSupplier.Factory.create(
                     "{namespace ns}\n"
@@ -524,6 +524,6 @@ public final class TemplateRegistryTest {
             NO_ATTRS,
             false,
             FAIL);
-    assertThat(registry.getCallContentKind(node)).isEmpty();
+    assertThat(Metadata.getCallContentKind(registry, node)).isEmpty();
   }
 }

@@ -22,11 +22,12 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.EscapingMode;
+import com.google.template.soy.soytree.FileSetMetadata;
+import com.google.template.soy.soytree.Metadata;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.types.TemplateType;
 import java.util.IdentityHashMap;
 import java.util.List;
@@ -50,7 +51,7 @@ import java.util.List;
 public final class Inferences {
 
   /** Map of template names to instances used to type <code>{call}</code> commands. */
-  private TemplateRegistry templateRegistry = null;
+  private FileSetMetadata fileSetMetadata = null;
 
   /** Maps print, msg and call commands to the inferred escaping modes. */
   private final IdentityHashMap<SoyNode, ImmutableList<EscapingMode>> nodeToEscapingModes =
@@ -59,8 +60,8 @@ public final class Inferences {
   /** Maps print, msg and call commands to the context. */
   private final IdentityHashMap<SoyNode, Context> nodeToContext = Maps.newIdentityHashMap();
 
-  public void setTemplateRegistry(TemplateRegistry templateRegistry) {
-    this.templateRegistry = templateRegistry;
+  public void setTemplateRegistry(FileSetMetadata fileSetMetadata) {
+    this.fileSetMetadata = fileSetMetadata;
   }
 
   /**
@@ -69,7 +70,7 @@ public final class Inferences {
    * @param templateName A qualified template name.
    */
   ImmutableList<TemplateType> lookupTemplates(CallNode call) {
-    return templateRegistry.getTemplates(call);
+    return Metadata.getTemplates(fileSetMetadata, call);
   }
 
   /** Null if there is no escaping mode for the given <code>{print}</code> node. */
