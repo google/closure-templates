@@ -16,38 +16,19 @@
 
 package com.google.template.soy;
 
-import static com.google.common.base.Strings.nullToEmpty;
-import static com.google.common.collect.ImmutableList.toImmutableList;
 import static java.util.stream.Collectors.toList;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.css.CssMetadata;
 import com.google.template.soy.css.CssRegistry;
-import com.google.template.soy.exprtree.ExprNode;
-import com.google.template.soy.exprtree.ExprNode.Kind;
-import com.google.template.soy.exprtree.FieldAccessNode;
-import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.StringNode;
-import com.google.template.soy.exprtree.VarDefn;
-import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.shared.internal.BuiltinFunction;
-import com.google.template.soy.soytree.CallBasicNode;
-import com.google.template.soy.soytree.CallDelegateNode;
-import com.google.template.soy.soytree.CallNode;
-import com.google.template.soy.soytree.CallParamNode;
-import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.CompilationUnit;
-import com.google.template.soy.soytree.ForNonemptyNode;
-import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
-import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.SoyNode.LocalVarNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateMetadataSerializer;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.templatecall.TemplateCallMetadata;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -164,114 +145,10 @@ final class SoyHeaderCompiler extends AbstractSoyCompiler {
 
     for (SoyFileNode file : fileSet.getChildren()) {
       for (TemplateNode template : file.getTemplates()) {
-        TemplateCallMetadata.Template.Builder templateMetadata =
-            TemplateCallMetadata.Template.newBuilder()
-                .setName(template.getTemplateName())
-                .setDelpackage(nullToEmpty(template.getDelPackageName()));
-
-        // TODO(b/172278368): incorporate Soy Element Composition (see
-
-        for (CallNode callNode : SoyTreeUtils.getAllNodesOfType(template, CallNode.class)) {
-          ImmutableList<TemplateCallMetadata.ParamArg> callParamArgs =
-              callNode.getChildren().stream()
-                  .map(SoyHeaderCompiler::createParamArg)
-                  .collect(toImmutableList());
-          TemplateCallMetadata.TemplateCall.Builder templateCallMetaData =
-              TemplateCallMetadata.TemplateCall.newBuilder()
-                  .setDestTemplateName(getDestTemplateName(callNode))
-                  .setIsDelcall(callNode.getKind() == SoyNode.Kind.CALL_DELEGATE_NODE)
-                  .addAllParamArgs(callParamArgs);
-          if (callNode.isPassingAllData()) {
-            templateCallMetaData.setIsPassingAllData(true);
-          } else if (callNode.getDataExpr() != null) {
-            templateCallMetaData.setDataArg(
-                resolveLocalVarRefToParamRef(
-                    callNode.getDataExpr().getRoot(),
-                    TemplateCallMetadata.VarRefInfo.newBuilder()));
-          }
-          templateMetadata.addCalls(templateCallMetaData);
-        }
-        templateCallMetadata.addTemplates(templateMetadata.build());
+        templateCallMetadata.addTemplates(template.getTemplateCallMetadata());
       }
     }
     return templateCallMetadata.build();
-  }
-
-  /**
-   * Given a CallParamNode return its ParamArg proto representation.
-   *
-   * @param callParamNode Node that describes a variable referenced in a template call
-   * @return A ParamArg containing the VarRefInfo pertaining to its value, if applicable.
-   */
-  private static TemplateCallMetadata.ParamArg createParamArg(CallParamNode callParamNode) {
-    // only shorthand param ref syntax is supported
-    TemplateCallMetadata.ParamArg.Builder paramArg =
-        TemplateCallMetadata.ParamArg.newBuilder().setKey(callParamNode.getKey().identifier());
-    if (!(callParamNode instanceof CallParamValueNode)) {
-      return paramArg.build();
-    }
-    ExprNode possibleParamRefExpr = ((CallParamValueNode) callParamNode).getExpr().getRoot();
-    return paramArg
-        .setVarRef(
-            resolveLocalVarRefToParamRef(
-                possibleParamRefExpr, TemplateCallMetadata.VarRefInfo.newBuilder()))
-        .build();
-  }
-
-  /**
-   * Given a ExprNode and a VarRefInfo Builder return a VarRefInfo that resolves a localVar to the
-   * Param it was derived from, if applicable.
-   *
-   * @param varExpr Node that describes a variable expression.
-   * @param varRefInfo A builder for the VarRefInfo proto that contains information about varExpr.
-   * @return A VarRefInfo that contains relates varExpr to the param reference it was derived from,
-   *     if applicable
-   */
-  private static TemplateCallMetadata.VarRefInfo resolveLocalVarRefToParamRef(
-      ExprNode varExpr, TemplateCallMetadata.VarRefInfo.Builder varRefInfo) {
-    if (varExpr.getKind() == Kind.VAR_REF_NODE) {
-      VarDefn possibleParamRefDef = ((VarRefNode) varExpr).getDefnDecl();
-      if (possibleParamRefDef.kind() == VarDefn.Kind.PARAM) {
-        varRefInfo.setHeaderParam(possibleParamRefDef.name());
-        return varRefInfo.build();
-      } else if (possibleParamRefDef.kind() == VarDefn.Kind.LOCAL_VAR) {
-        LocalVarNode varRefNode = ((LocalVar) possibleParamRefDef).declaringNode();
-        // The LocalVarNode point to a for loop local variable
-        if (varRefNode.getKind() == SoyNode.Kind.FOR_NONEMPTY_NODE) {
-          varRefInfo.setUsesListIndex(true);
-          return resolveLocalVarRefToParamRef(
-              ((ForNonemptyNode) varRefNode).getExpr().getRoot(), varRefInfo);
-        } else if (varRefNode instanceof LetValueNode) {
-          // The LocalVarNode is a let statement
-          return resolveLocalVarRefToParamRef(
-              ((LetValueNode) varRefNode).getExpr().getRoot(), varRefInfo);
-        }
-      }
-    } else if (varExpr.getKind() == Kind.ITEM_ACCESS_NODE) {
-      varRefInfo.setUsesListIndex(true);
-      return resolveLocalVarRefToParamRef(
-          ((ItemAccessNode) varExpr).getBaseExprChild(), varRefInfo);
-    } else if (varExpr.getKind() == Kind.FIELD_ACCESS_NODE) {
-      FieldAccessNode fieldAccessNode = ((FieldAccessNode) varExpr);
-      varRefInfo.setDataAccessAlias(fieldAccessNode.getFieldName());
-      return resolveLocalVarRefToParamRef(fieldAccessNode.getBaseExprChild(), varRefInfo);
-    }
-
-    return varRefInfo.build();
-  }
-
-  private static String getDestTemplateName(CallNode callNode) {
-    switch (callNode.getKind()) {
-      case CALL_BASIC_NODE:
-        CallBasicNode basicNode = ((CallBasicNode) callNode);
-        return basicNode.isStaticCall()
-            ? basicNode.getCalleeName()
-            : basicNode.getCalleeExpr().toSourceString();
-      case CALL_DELEGATE_NODE:
-        return ((CallDelegateNode) callNode).getDelCalleeName();
-      default:
-        throw new IllegalStateException("Unknown CallNode kind");
-    }
   }
 
   /**

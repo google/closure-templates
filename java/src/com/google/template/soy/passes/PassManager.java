@@ -423,6 +423,10 @@ public final class PassManager {
         passes.add(new ResolveTemplateFunctionsPass());
       }
       passes.add(new ResolveTemplateNamesPass(errorReporter));
+
+      // Must run after ResolveTemplateNamesPass
+      passes.add(new TemplateCallMetadataPass());
+
       if (!disableAllTypeChecking) {
         // Without type checking proto enums in variant expressions are not resolved.
         passes.add(new ValidateVariantExpressionsPass(errorReporter));

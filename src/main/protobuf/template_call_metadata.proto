@@ -72,6 +72,9 @@ message TemplateCallMetadata {
 
     // If val is derived from a list
     bool uses_list_index = 4;
+
+    // deprecated field #
+    reserved 1;
   }
 
   repeated Template templates = 1;
