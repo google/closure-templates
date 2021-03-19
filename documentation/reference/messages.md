@@ -157,6 +157,19 @@ might not know whether an expression `$gender` applies to the gender of the user
 or the target. Expressions like `$userGender` and `$targetGender` clearly
 represent the gender of the user and the gender of the target.
 
+Examples of these transforms can be seen below:
+
+*   `aaaBbb` -> AAA_BBB
+*   `aaa_bbb` -> AAA_BBB
+*   `aaa.bbb` -> BBB
+*   `$b.aaa` -> AAA
+*   `aaa.BBB` -> BBB
+*   `aaa.0` -> fallback
+*   `aaa[0]` -> fallback
+*   `aaa[0].bbb` -> BBB
+*   `length($aaa)` -> fallback
+*   `aaa + 1` -> fallback
+
 #### Varies in English {#gender-vary}
 
 Gender-aware messages that vary in English can be written using a `select`
@@ -243,8 +256,10 @@ There is a rarely used `offset` attribute that works in conjunction with a
 special `remainder` function:
 
 ```soy
+{let $firstAttendeeGender: $attendees[0]?.gender /}
+{let $secondAttendeeGender: $attendees[1]?.gender /}
 {msg desc="Says how many people are attending, listing up to 2 names."
-     genders="$attendees[0]?.gender, $attendees[1]?.gender"}
+     genders="$firstAttendeeGender, $secondAttendeeGender"}
   {plural $attendees.length() offset="2"}
     // Note: length() is never 0.
     {case 1}{$attendees[0].name} is attending
@@ -261,8 +276,10 @@ the above example could just as well be written without the use of `offset` and
 `remainder`. It would be:
 
 ```soy
+{let $firstAttendeeGender: $attendees[0]?.gender /}
+{let $secondAttendeeGender: $attendees[1]?.gender /}
 {msg desc="Says how many people are attending, listing up to 2 names."
-     genders="$attendees[0]?.gender, $attendees[1]?.gender"}
+     genders="$firstAttendeeGender, $secondAttendeeGender"}
   {plural $attendees.length()}
     // Note: length() is never 0.
     {case 1}{$attendees[0].name} is attending
