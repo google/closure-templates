@@ -86,7 +86,7 @@ public final class ConstNode extends AbstractCommandNode implements ExprHolderNo
 
   @Override
   public String getCommandText() {
-    return var.name() + ": " + valueExpr.toSourceString();
+    return var.name() + "= " + valueExpr.toSourceString();
   }
 
   @Override

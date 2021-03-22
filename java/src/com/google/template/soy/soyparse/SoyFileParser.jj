@@ -3048,7 +3048,7 @@ private LetNode LetStmt() :
 
 
 /**
- * ConstStmt -> {const ident: expr /}
+ * ConstStmt -> {const ident= expr /}
  */
 private ConstNode ConstStmt() :
 {
@@ -3074,7 +3074,7 @@ private ConstNode ConstStmt() :
 
   // Value expression
   try {
-    <COLON>
+    <EQ>
     valueExpr = Expr()
     tagClose = <CMD_SELF_CLOSE>
   } catch (ParseException e) {
