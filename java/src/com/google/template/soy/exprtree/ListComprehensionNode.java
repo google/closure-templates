@@ -135,30 +135,30 @@ public final class ListComprehensionNode extends AbstractParentExprNode {
         return String.format(
             "[%s for %s, %s in %s if %s]",
             getListItemTransformExpr().toSourceString(),
-            listIterVar.name(),
-            indexVar.name(),
+            listIterVar.refName(),
+            indexVar.refName(),
             getListExpr().toSourceString(),
             getFilterExpr().toSourceString());
       }
       return String.format(
           "[%s for %s, %s in %s]",
           getListItemTransformExpr().toSourceString(),
-          listIterVar.name(),
-          indexVar.name(),
+          listIterVar.refName(),
+          indexVar.refName(),
           getListExpr().toSourceString());
     }
     if (hasFilter) {
       return String.format(
           "[%s for %s in %s if %s]",
           getListItemTransformExpr().toSourceString(),
-          listIterVar.name(),
+          listIterVar.refName(),
           getListExpr().toSourceString(),
           getFilterExpr().toSourceString());
     }
     return String.format(
         "[%s for %s in %s]",
         getListItemTransformExpr().toSourceString(),
-        listIterVar.name(),
+        listIterVar.refName(),
         getListExpr().toSourceString());
   }
 
