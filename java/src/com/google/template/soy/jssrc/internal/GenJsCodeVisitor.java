@@ -45,8 +45,7 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.sanitizedContentO
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.SetMultimap;
-import com.google.common.collect.TreeMultimap;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.UniqueNameGenerator;
@@ -57,7 +56,6 @@ import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.Operator;
-import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
@@ -73,7 +71,6 @@ import com.google.template.soy.passes.IndirectParamsCalculator;
 import com.google.template.soy.passes.IndirectParamsCalculator.IndirectParamsInfo;
 import com.google.template.soy.passes.ShouldEnsureDataIsDefinedVisitor;
 import com.google.template.soy.shared.RangeArgs;
-import com.google.template.soy.shared.internal.FindCalleesNotInFile;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallNode;
@@ -86,6 +83,7 @@ import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
+import com.google.template.soy.soytree.ImportNode.ImportType;
 import com.google.template.soy.soytree.KeyNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetValueNode;
@@ -411,7 +409,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     jsCodeBuilder = createCodeBuilder();
 
     if (jsSrcOptions.shouldGenerateGoogModules()) {
-      templateAliases = AliasUtils.createTemplateAliases(node);
+      templateAliases = AliasUtils.createTemplateAliases(node, fileSetMetadata);
 
       addCodeToDeclareGoogModule(file, node);
       addCodeToRequireGoogModules(node);
@@ -550,33 +548,20 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    * @param soyFile The node we're visiting.
    */
   private void addCodeToRequireGoogModules(SoyFileNode soyFile) {
-    // Get all the unique calls in the file.
-    Set<String> calls = new HashSet<>();
-    for (TemplateLiteralNode templateLiteralNode :
-        SoyTreeUtils.getAllNodesOfType(soyFile, TemplateLiteralNode.class)) {
-      calls.add(templateLiteralNode.getResolvedName());
-    }
-
-    // Map all the unique namespaces to the templates in those namespaces.
-    SetMultimap<String, String> namespaceToTemplates = TreeMultimap.create();
-    for (String call : calls) {
-      namespaceToTemplates.put(call.substring(0, call.lastIndexOf('.')), call);
-    }
-
-    for (String namespace : namespaceToTemplates.keySet()) {
-      // Skip the file's own namespace as there is nothing to import/alias.
-      if (namespace.equals(soyFile.getNamespace())) {
-        continue;
-      }
-
-      // Add a require of the module
-      String namespaceAlias = templateAliases.getNamespaceAlias(namespace);
-      String importNamespace = getGoogModuleNamespace(namespace);
-      jsCodeBuilder.append(
-          VariableDeclaration.builder(namespaceAlias)
-              .setRhs(GOOG_REQUIRE.call(stringLiteral(importNamespace)))
-              .build());
-    }
+    soyFile.getImports().stream()
+        .filter(i -> i.getImportType() == ImportType.TEMPLATE)
+        .map(i -> namespaceForPath(i.getSourceFilePath()))
+        .distinct()
+        .sorted()
+        .forEach(
+            calleeNamespace -> {
+              String namespaceAlias = templateAliases.getNamespaceAlias(calleeNamespace);
+              String importNamespace = getGoogModuleNamespace(calleeNamespace);
+              jsCodeBuilder.append(
+                  VariableDeclaration.builder(namespaceAlias)
+                      .setRhs(GOOG_REQUIRE.call(stringLiteral(importNamespace)))
+                      .build());
+            });
   }
 
   private void addJsDocToProvideDelTemplates(JsDoc.Builder header, SoyFileNode soyFile) {
@@ -610,22 +595,13 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    * @param soyFile The node we're visiting.
    */
   private void addCodeToRequireSoyNamespaces(SoyFileNode soyFile) {
-
-    String prevCalleeNamespace = null;
-    Set<String> calleeNamespaces = new TreeSet<>();
-    for (TemplateLiteralNode templateLiteralNode :
-        FindCalleesNotInFile.findCalleesNotInFile(soyFile)) {
-      String calleeNotInFile = templateLiteralNode.getResolvedName();
-      int lastDotIndex = calleeNotInFile.lastIndexOf('.');
-      calleeNamespaces.add(calleeNotInFile.substring(0, lastDotIndex));
-    }
-
-    for (String calleeNamespace : calleeNamespaces) {
-      if (calleeNamespace.length() > 0 && !calleeNamespace.equals(prevCalleeNamespace)) {
-        jsCodeBuilder.addGoogRequire(GoogRequire.create(calleeNamespace));
-        prevCalleeNamespace = calleeNamespace;
-      }
-    }
+    soyFile.getImports().stream()
+        .filter(i -> i.getImportType() == ImportType.TEMPLATE)
+        .map(i -> namespaceForPath(i.getSourceFilePath()))
+        .distinct()
+        .sorted()
+        .forEach(
+            calleeNamespace -> jsCodeBuilder.addGoogRequire(GoogRequire.create(calleeNamespace)));
   }
 
   /**
@@ -1793,5 +1769,9 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
   protected boolean isIncrementalDom() {
     return false;
+  }
+
+  private String namespaceForPath(SourceFilePath path) {
+    return fileSetMetadata.getFile(path).getNamespace();
   }
 }

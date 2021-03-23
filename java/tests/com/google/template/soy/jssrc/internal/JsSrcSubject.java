@@ -256,7 +256,8 @@ abstract class JsSrcSubject<T extends Subject> extends Subject {
                       SoyToJsVariableMappings.startingWith(initialLocalVarTranslations),
                       CodeChunk.Generator.create(nameGenerator),
                       nameGenerator),
-                  AliasUtils.createTemplateAliases(parseResult.fileSet().getChild(0)),
+                  AliasUtils.createTemplateAliases(
+                      parseResult.fileSet().getChild(0), parseResult.registry()),
                   errorReporter)
               .exec(exprNode);
     }

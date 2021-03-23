@@ -22,11 +22,10 @@ import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
-import com.google.template.soy.exprtree.TemplateLiteralNode;
+import com.google.template.soy.soytree.FileMetadata;
 import com.google.template.soy.soytree.FileSetMetadata;
+import com.google.template.soy.soytree.ImportNode.ImportType;
 import com.google.template.soy.soytree.SoyFileNode;
-import com.google.template.soy.soytree.SoyTreeUtils;
-import com.google.template.soy.soytree.TemplateMetadata;
 import java.util.function.Supplier;
 
 /** Checks that all calls are to direct, and not indirect, deps. */
@@ -35,7 +34,7 @@ public final class CheckIndirectDepsPass implements CompilerFileSetPass {
 
   private static final SoyErrorKind CALL_TO_INDIRECT_DEPENDENCY =
       SoyErrorKind.of(
-          "Call is satisfied only by indirect dependency {0}. Add it as a direct dependency."
+          "Import is satisfied only by indirect dependency {0}. Add it as a direct dependency."
           ,
           StyleAllowance.NO_PUNCTUATION);
 
@@ -51,30 +50,21 @@ public final class CheckIndirectDepsPass implements CompilerFileSetPass {
   @Override
   public Result run(ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator) {
     sourceFiles.stream()
-        .flatMap(f -> SoyTreeUtils.allNodesOfType(f, TemplateLiteralNode.class))
-        .forEach(this::checkTemplateLiteralNode);
+        .flatMap(f -> f.getImports().stream())
+        .filter(i -> i.getImportType() == ImportType.TEMPLATE)
+        .forEach(
+            i -> {
+              FileMetadata metadata = templateRegistryFull.get().getFile(i.getSourceFilePath());
+              SoyFileKind calleeKind = metadata.getSoyFileKind();
+              if (calleeKind == SoyFileKind.INDIRECT_DEP) {
+                String callerFilePath = i.getSourceLocation().getFilePath().path();
+                String calleeFilePath = i.getSourceFilePath().path();
+                errorReporter.report(
+                    i.getPathSourceLocation(),
+                    CALL_TO_INDIRECT_DEPENDENCY,
+                    calleeFilePath);
+              }
+            });
     return Result.CONTINUE;
-  }
-
-  // TODO(gboyer): Consider some deltemplate checking, but it's hard to make a coherent case for
-  // deltemplates since it's legitimate to have zero implementations, or to have the implementation
-  // in a different part of the dependency graph (if it's late-bound).
-  private void checkTemplateLiteralNode(TemplateLiteralNode node) {
-    TemplateMetadata callee =
-        templateRegistryFull.get().getBasicTemplateOrElement(node.getResolvedName());
-
-    if (callee == null) {
-      return;
-    }
-
-    SoyFileKind calleeKind = callee.getSoyFileKind();
-    String callerFilePath = node.getSourceLocation().getFilePath().path();
-    String calleeFilePath = callee.getSourceLocation().getFilePath().path();
-    if (calleeKind == SoyFileKind.INDIRECT_DEP) {
-      errorReporter.report(
-          node.getSourceLocation(),
-          CALL_TO_INDIRECT_DEPENDENCY,
-          calleeFilePath);
-    }
   }
 }

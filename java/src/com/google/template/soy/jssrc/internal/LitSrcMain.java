@@ -17,6 +17,7 @@
 package com.google.template.soy.jssrc.internal;
 
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.List;
@@ -39,8 +40,9 @@ public class LitSrcMain {
    * @return A list of strings where each string represents the JS source code that belongs in one
    *     JS file. The generated JS files correspond one-to-one to the original Soy source files.
    */
-  public List<String> genJsSrc(SoyFileSetNode soyTree, ErrorReporter errorReporter) {
+  public List<String> genJsSrc(
+      SoyFileSetNode soyTree, FileSetMetadata registry, ErrorReporter errorReporter) {
 
-    return new GenLitCodeVisitor().gen(soyTree, errorReporter);
+    return new GenLitCodeVisitor(registry).gen(soyTree, errorReporter);
   }
 }

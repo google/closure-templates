@@ -22,6 +22,7 @@ import static java.util.stream.Collectors.joining;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.exprtree.StringNode;
@@ -104,6 +105,10 @@ public final class ImportNode extends AbstractSoyNode {
 
   public String getPath() {
     return path.getValue();
+  }
+
+  public SourceFilePath getSourceFilePath() {
+    return SourceFilePath.create(path.getValue());
   }
 
   /**

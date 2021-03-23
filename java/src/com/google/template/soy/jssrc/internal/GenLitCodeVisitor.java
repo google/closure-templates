@@ -28,6 +28,7 @@ import com.google.template.soy.jssrc.dsl.JsDoc;
 import com.google.template.soy.jssrc.dsl.Statement;
 import com.google.template.soy.jssrc.dsl.VariableDeclaration;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
+import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
@@ -44,9 +45,14 @@ import java.util.Map;
 /** Generates Lit-HTML code based off of a Soy template. This is basically a shim. */
 public final class GenLitCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
+  private final FileSetMetadata fileSetMetadata;
   private TemplateAliases templateAliases = null;
   private JsCodeBuilder jsCodeBuilder;
   private List<String> jsFilesContents;
+
+  public GenLitCodeVisitor(FileSetMetadata fileSetMetadata) {
+    this.fileSetMetadata = fileSetMetadata;
+  }
 
   @Override
   protected void visit(SoyNode node) {
@@ -107,7 +113,7 @@ public final class GenLitCodeVisitor extends AbstractSoyNodeVisitor<List<String>
     file.append("\n\n");
     jsCodeBuilder = new JsCodeBuilder();
 
-    templateAliases = AliasUtils.createTemplateAliases(node);
+    templateAliases = AliasUtils.createTemplateAliases(node, fileSetMetadata);
 
     addCodeToDeclareGoogModule(file, node);
 

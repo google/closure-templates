@@ -16,6 +16,7 @@
 
 package com.google.template.soy.soytree;
 
+import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.types.SoyType;
 import java.util.Collection;
 import javax.annotation.Nullable;
@@ -43,4 +44,6 @@ public interface FileMetadata extends PartialFileMetadata {
   Constant getConstant(String name);
 
   Collection<? extends Constant> getConstants();
+
+  SoyFileKind getSoyFileKind();
 }

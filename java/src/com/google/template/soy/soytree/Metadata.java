@@ -438,6 +438,11 @@ public final class Metadata {
           .collect(toImmutableList());
     }
 
+    @Override
+    public SoyFileKind getSoyFileKind() {
+      return kind();
+    }
+
     @Memoized
     @Override
     protected ImmutableMap<String, TemplateMetadata> templateIndex() {
@@ -563,6 +568,11 @@ public final class Metadata {
     public String getNamespace() {
       return namespace;
     }
+
+    @Override
+    public SoyFileKind getSoyFileKind() {
+      return SoyFileKind.SRC;
+    }
   }
 
   @AutoValue
@@ -631,6 +641,11 @@ public final class Metadata {
     @Override
     public String getNamespace() {
       return primary.getNamespace();
+    }
+
+    @Override
+    public SoyFileKind getSoyFileKind() {
+      return primary.getSoyFileKind();
     }
   }
 
