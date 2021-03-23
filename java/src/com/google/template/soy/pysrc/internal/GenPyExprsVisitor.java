@@ -153,7 +153,8 @@ public final class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>
   @Override
   protected void visitRawTextNode(RawTextNode node) {
     // Escape special characters in the text before writing as a string.
-    String exprText = BaseUtils.escapeToSoyString(node.getRawText(), false, QuoteStyle.SINGLE);
+    String exprText =
+        BaseUtils.escapeToWrappedSoyString(node.getRawText(), false, QuoteStyle.SINGLE);
     pyExprs.add(new PyStringExpr(exprText));
   }
 

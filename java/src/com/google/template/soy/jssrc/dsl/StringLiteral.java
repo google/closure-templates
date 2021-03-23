@@ -57,7 +57,8 @@ abstract class StringLiteral extends Expression {
     // Escape non-ASCII characters since browsers are inconsistent in how they interpret utf-8 in
     // JS source files.
     String escaped =
-        BaseUtils.escapeToSoyString(literal, /* shouldEscapeToAscii= */ true, QuoteStyle.SINGLE);
+        BaseUtils.escapeToWrappedSoyString(
+            literal, /* shouldEscapeToAscii= */ true, QuoteStyle.SINGLE);
 
     // </script in a JavaScript string will end the current script tag in most browsers. Escape the
     // forward slash in the string to get around this issue.

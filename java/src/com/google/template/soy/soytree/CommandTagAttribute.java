@@ -358,7 +358,7 @@ public final class CommandTagAttribute {
   public String toString() {
     String valueStr =
         (value != null)
-            ? BaseUtils.escapeToSoyString(value, false, quoteStyle)
+            ? BaseUtils.escapeToWrappedSoyString(value, false, quoteStyle)
             : quoteStyle.getQuoteChar()
                 + SoyTreeUtils.toSourceString(valueExprList)
                 + quoteStyle.getQuoteChar();

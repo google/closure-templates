@@ -95,7 +95,7 @@ public final class StringNode extends AbstractPrimitiveNode {
    * @return A Soy string literal for this string value (including the surrounding single quotes).
    */
   public String toSourceString(boolean escapeToAscii) {
-    return BaseUtils.escapeToSoyString(value, escapeToAscii, quoteStyle);
+    return BaseUtils.escapeToWrappedSoyString(value, escapeToAscii, quoteStyle);
   }
 
   @Override

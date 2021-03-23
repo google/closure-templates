@@ -170,17 +170,37 @@ public final class BaseUtils {
   }
 
   /**
-   * Builds a Soy string literal for this string value (including the surrounding single quotes).
-   * Note that Soy string syntax is a subset of JS string syntax, so the result should also be a
-   * valid JS string.
+   * Builds a Soy string literal for this string value, including the surrounding quotes. Note that
+   * Soy string syntax is a subset of JS string syntax, so the result should also be a valid JS
+   * string.
+   *
+   * @param value The string value to escape.
+   * @param shouldEscapeToAscii Whether to escape non-ASCII characters as Unicode hex escapes
+   *     (backslash + 'u' + 4 hex digits).
+   * @param quoteStyle What kind of quotes to wrap the string with.
+   * @return A Soy string literal for this string value (including the surrounding quotes).
+   */
+  public static String escapeToWrappedSoyString(
+      String value, boolean shouldEscapeToAscii, QuoteStyle quoteStyle) {
+    return new StringBuilder(value.length() + 2)
+        .append(quoteStyle.getQuoteChar())
+        .append(escapeToSoyString(value, shouldEscapeToAscii, quoteStyle))
+        .append(quoteStyle.getQuoteChar())
+        .toString();
+  }
+
+  /**
+   * Builds a Soy string literal for this string value. Note that Soy string syntax is a subset of
+   * JS string syntax, so the result should also be a valid JS string.
    *
    * <p>Adapted from StringUtil.javaScriptEscape().
    *
    * @param value The string value to escape.
    * @param shouldEscapeToAscii Whether to escape non-ASCII characters as Unicode hex escapes
    *     (backslash + 'u' + 4 hex digits).
-   * @param quoteStyle whether or not to use double quotes
-   * @return A Soy string literal for this string value (including the surrounding quotes).
+   * @param quoteStyle What kind of quotes this string is expected to be wrapped with. This affects
+   *     escaping (e.g. single quotes will be escaped in {@code QuoteStyle.SINGLE} strings).
+   * @return A Soy string literal for this string value.
    */
   public static String escapeToSoyString(
       String value, boolean shouldEscapeToAscii, QuoteStyle quoteStyle) {
@@ -193,7 +213,6 @@ public final class BaseUtils {
 
     int len = value.length();
     StringBuilder out = new StringBuilder(len * 9 / 8);
-    out.append(quoteStyle.getQuoteChar());
 
     int codePoint;
     for (int i = 0; i < len; i += Character.charCount(codePoint)) {
@@ -235,7 +254,6 @@ public final class BaseUtils {
       }
     }
 
-    out.append(quoteStyle.getQuoteChar());
     return out.toString();
   }
 
