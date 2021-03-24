@@ -43,6 +43,9 @@ public final class StringNode extends AbstractPrimitiveNode {
   public StringNode(String value, QuoteStyle quoteStyle, SourceLocation sourceLocation) {
     super(sourceLocation);
     this.value = Preconditions.checkNotNull(value);
+    Preconditions.checkArgument(
+        quoteStyle == QuoteStyle.SINGLE || quoteStyle == QuoteStyle.DOUBLE,
+        "StringNode quote style must be SINGLE or DOUBLE");
     this.quoteStyle = quoteStyle;
   }
 

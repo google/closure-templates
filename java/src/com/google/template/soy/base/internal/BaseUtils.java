@@ -237,13 +237,18 @@ public final class BaseUtils {
         case '\\':
           out.append("\\\\");
           break;
-        case '\'':
-          out.append(quoteStyle == QuoteStyle.DOUBLE ? "'" : "\\'");
+        case '$':
+          {
+            // TODO(user): We could probably be smarter and only escape when we look ahead and
+            // see `${`.
+            out.append(quoteStyle == QuoteStyle.BACKTICK ? "\\$" : "$");
           break;
-        case '"':
-          out.append(quoteStyle == QuoteStyle.DOUBLE ? "\\\"" : '"');
-          break;
+          }
         default:
+          if (codePoint == quoteStyle.getQuoteChar()) {
+            out.append("\\").append(quoteStyle.getQuoteChar());
+            break;
+          }
           // If shouldEscapeToAscii, then hex escape characters outside the range 0x20 to 0x7F.
           if (shouldEscapeToAscii && (codePoint < 0x20 || codePoint >= 0x7F)) {
             appendHexEscape(out, codePoint);

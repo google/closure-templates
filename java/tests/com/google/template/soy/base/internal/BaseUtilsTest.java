@@ -96,8 +96,8 @@ public final class BaseUtilsTest {
   @Test
   public void testEscapeToSoyString() {
     assertThat(BaseUtils.escapeToSoyString("xXx", false, QuoteStyle.SINGLE)).isEqualTo("xXx");
-    assertThat(BaseUtils.escapeToSoyString("\\\"\'\b\f\n\r\t", false, QuoteStyle.SINGLE))
-        .isEqualTo("\\\\\"\\'\\b\\f\\n\\r\\t");
+    assertThat(BaseUtils.escapeToSoyString("\\\"\'`\b\f\n\r\t", true, QuoteStyle.SINGLE))
+        .isEqualTo("\\\\\"\\\'`\\b\\f\\n\\r\\t");
 
     assertThat(BaseUtils.escapeToSoyString("\u2028 \u2029", false, QuoteStyle.SINGLE))
         .isEqualTo("\u2028 \u2029");
@@ -124,8 +124,8 @@ public final class BaseUtilsTest {
   @Test
   public void testEscapeToSoyString_toAscii() {
     assertThat(BaseUtils.escapeToSoyString("xXx", true, QuoteStyle.SINGLE)).isEqualTo("xXx");
-    assertThat(BaseUtils.escapeToSoyString("\\\"\'\b\f\n\r\t", true, QuoteStyle.SINGLE))
-        .isEqualTo("\\\\\"\\\'\\b\\f\\n\\r\\t");
+    assertThat(BaseUtils.escapeToSoyString("\\\"\'`\b\f\n\r\t", true, QuoteStyle.SINGLE))
+        .isEqualTo("\\\\\"\\\'`\\b\\f\\n\\r\\t");
 
     assertThat(BaseUtils.escapeToSoyString("\u2028 \u2029", true, QuoteStyle.SINGLE))
         .isEqualTo("\\u2028 \\u2029");
@@ -150,20 +150,34 @@ public final class BaseUtilsTest {
 
   @Test
   public void testEscapeToSoyString_doubleQuoteStyle() {
-    assertThat(BaseUtils.escapeToSoyString("console.log(\"test's\");", false, QuoteStyle.DOUBLE))
-        .isEqualTo("console.log(\\\"test's\\\");");
+    assertThat(
+            BaseUtils.escapeToSoyString(
+                "console.log(\"test's\", `quote$`);", false, QuoteStyle.DOUBLE))
+        .isEqualTo("console.log(\\\"test's\\\", `quote$`);");
+  }
+
+  @Test
+  public void testEscapeToSoyString_backtickQuoteStyle() {
+    assertThat(
+            BaseUtils.escapeToSoyString(
+                "console.log(\"test's\", `quote$`);", false, QuoteStyle.BACKTICK))
+        .isEqualTo("console.log(\"test's\", \\`quote\\$\\`);");
   }
 
   @Test
   public void testEscapeToWrappedSoyString() {
     assertThat(
             BaseUtils.escapeToWrappedSoyString(
-                "they said, \"this'll be a string literal\"", false, QuoteStyle.SINGLE))
-        .isEqualTo("\'they said, \"this\\'ll be a string literal\"\'");
+                "they said, \"this'll be a `string` literal\"", false, QuoteStyle.SINGLE))
+        .isEqualTo("'they said, \"this\\'ll be a `string` literal\"'");
     assertThat(
             BaseUtils.escapeToWrappedSoyString(
-                "they said, \"this'll be a string literal\"", false, QuoteStyle.DOUBLE))
-        .isEqualTo("\"they said, \\\"this'll be a string literal\\\"\"");
+                "they said, \"this'll be a `string` literal\"", false, QuoteStyle.DOUBLE))
+        .isEqualTo("\"they said, \\\"this'll be a `string` literal\\\"\"");
+    assertThat(
+            BaseUtils.escapeToWrappedSoyString(
+                "they said, \"this'll be a `string` literal\"", false, QuoteStyle.BACKTICK))
+        .isEqualTo("`they said, \"this'll be a \\`string\\` literal\"`");
   }
 
   // TODO: fix callers of wrapped

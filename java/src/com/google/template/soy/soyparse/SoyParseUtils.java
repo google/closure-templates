@@ -138,6 +138,9 @@ final class SoyParseUtils {
 
   /** Unescapes backslash quote sequences in an attribute value to just the quote. */
   static String unescapeCommandAttributeValue(String s, QuoteStyle quoteStyle) {
+    checkArgument(
+        quoteStyle == QuoteStyle.SINGLE || quoteStyle == QuoteStyle.DOUBLE,
+        "Quote style must be SINGLE or DOUBLE");
     // NOTE: we don't just use String.replace since it internally allocates/compiles a regular
     // expression.  Instead we have a handrolled loop.
     int index = s.indexOf(quoteStyle == QuoteStyle.DOUBLE ? "\\\"" : "\\\'");

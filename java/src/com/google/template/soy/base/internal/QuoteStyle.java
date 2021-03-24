@@ -18,9 +18,15 @@ package com.google.template.soy.base.internal;
 /** It's what you think it is. */
 public enum QuoteStyle {
   SINGLE,
-  DOUBLE;
+  DOUBLE,
+  BACKTICK;
 
   public char getQuoteChar() {
-    return this == SINGLE ? '\'' : '"';
+    if (this == SINGLE) {
+      return '\'';
+    } else if (this == DOUBLE) {
+      return '"';
+    }
+    return '`';
   }
 }
