@@ -44,7 +44,6 @@ import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -330,19 +329,19 @@ public final class SoyTreeUtilsTest {
             .parse()
             .fileSet();
 
-    assertThat(SoyTreeUtils.buildAstString(soyTree, 2, new StringBuilder()).toString())
+    assertThat(SoyTreeUtils.buildAstString(soyTree))
         .isEqualTo(
             ""
-                + "    SOY_FILE_NODE\n"
-                + "      TEMPLATE_BASIC_NODE\n"
-                + "        FOR_NODE\n"
-                + "          FOR_NONEMPTY_NODE\n"
-                + "            IF_NODE\n"
-                + "              IF_COND_NODE\n"
-                + "                PRINT_NODE\n"
-                + "              IF_ELSE_NODE\n"
-                + "                PRINT_NODE\n"
-                + "        RAW_TEXT_NODE\n");
+                + "SOY_FILE_NODE\n"
+                + "  TEMPLATE_BASIC_NODE\n"
+                + "    FOR_NODE\n"
+                + "      FOR_NONEMPTY_NODE\n"
+                + "        IF_NODE\n"
+                + "          IF_COND_NODE\n"
+                + "            PRINT_NODE\n"
+                + "          IF_ELSE_NODE\n"
+                + "            PRINT_NODE\n"
+                + "    RAW_TEXT_NODE\n");
   }
 
   private static final SoyFunction ASSERT_IS_CONST_FUNCTION =
@@ -353,7 +352,7 @@ public final class SoyTreeUtilsTest {
         }
 
         @Override
-        public Set<Integer> getValidArgsSizes() {
+        public ImmutableSet<Integer> getValidArgsSizes() {
           return ImmutableSet.of(1);
         }
       };
@@ -366,7 +365,7 @@ public final class SoyTreeUtilsTest {
         }
 
         @Override
-        public Set<Integer> getValidArgsSizes() {
+        public ImmutableSet<Integer> getValidArgsSizes() {
           return ImmutableSet.of(1);
         }
       };
@@ -379,7 +378,7 @@ public final class SoyTreeUtilsTest {
         }
 
         @Override
-        public Set<Integer> getValidArgsSizes() {
+        public ImmutableSet<Integer> getValidArgsSizes() {
           return ImmutableSet.of(1);
         }
       };

@@ -47,6 +47,9 @@ public interface Node {
    */
   ParentNode<?> getParent();
 
+  /** Returns the nodes kind enum */
+  Enum<?> getKind();
+
   /**
    * Determines whether this node has an ancestor of the given type. The ancestor can be this node
    * (i.e. doesn't have to be a proper ancestor).

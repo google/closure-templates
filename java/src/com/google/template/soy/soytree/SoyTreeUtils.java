@@ -238,15 +238,47 @@ public final class SoyTreeUtils {
    * </pre></code>
    *
    * @param node The root of the AST.
+   * @return The String instance.
+   */
+  public static String buildAstString(ParentSoyNode<?> node) {
+    return buildAstStringHelper(node, 0, new StringBuilder()).toString();
+  }
+  /**
+   * Given an expr node, returns a {@code StringBuilder} that can be used to pretty print the AST
+   * structure.
+   *
+   * <p>For example, for the following soy source <code><pre>
+   * {for i in range(5)}
+   *   {if $i % 2 == 0}
+   *     foo
+   *   {/if}
+   * {/for}
+   * </pre></code> This method prints the AST string as follow: <code><pre>
+   * FOR_NODE
+   *   IF_NODE
+   *     IF_COND_NODE
+   *       PRINT_NODE
+   * </pre></code>
+   *
+   * @param node The root of the AST.
+   * @return The String instance.
+   */
+  public static String buildAstString(ParentExprNode node) {
+    return buildAstStringHelper(node, 0, new StringBuilder()).toString();
+  }
+
+  /**
+   * @param node The root of the AST.
    * @param indent The indentation for each level.
    * @param sb The StringBuilder instance used for recursion.
    * @return The StringBuilder instance.
    */
-  public static StringBuilder buildAstString(ParentSoyNode<?> node, int indent, StringBuilder sb) {
-    for (SoyNode child : node.getChildren()) {
+  private static StringBuilder buildAstStringHelper(
+      ParentNode<?> node, int indent, StringBuilder sb) {
+    for (Node child : node.getChildren()) {
       sb.append(Strings.repeat("  ", indent)).append(child.getKind()).append('\n');
-      if (child instanceof ParentSoyNode) {
-        buildAstString((ParentSoyNode<?>) child, indent + 1, sb);
+      if (child instanceof ParentNode) {
+        buildAstStringHelper((ParentNode<?>) child, indent + 1, sb);
       }
     }
     return sb;
@@ -328,7 +360,7 @@ public final class SoyTreeUtils {
     T clone = (T) origNode.copy(new CopyState());
 
     // Generate new ids.
-    (new GenNewIdsVisitor(nodeIdGen)).exec(clone);
+    new GenNewIdsVisitor(nodeIdGen).exec(clone);
 
     return clone;
   }
@@ -358,7 +390,7 @@ public final class SoyTreeUtils {
     for (T origNode : origNodes) {
       @SuppressWarnings("unchecked")
       T clone = (T) origNode.copy(new CopyState());
-      (new GenNewIdsVisitor(nodeIdGen)).exec(clone);
+      new GenNewIdsVisitor(nodeIdGen).exec(clone);
       clones.add(clone);
     }
 
@@ -369,7 +401,7 @@ public final class SoyTreeUtils {
   private static class GenNewIdsVisitor extends AbstractNodeVisitor<SoyNode, Void> {
 
     /** The generator for new node ids. */
-    private IdGenerator nodeIdGen;
+    private final IdGenerator nodeIdGen;
 
     /** @param nodeIdGen The generator for new node ids. */
     public GenNewIdsVisitor(IdGenerator nodeIdGen) {

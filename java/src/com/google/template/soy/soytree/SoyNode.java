@@ -107,6 +107,7 @@ public interface SoyNode extends Node {
   }
 
   /** Returns this node's kind (corresponding to this node's specific type). */
+  @Override
   Kind getKind();
 
   /**
@@ -327,11 +328,7 @@ public interface SoyNode extends Node {
 
       private IdentitySamenessKey(IdentitySamenessKey orig, CopyState copyState) {
         this.node = orig.node;
-        copyState.registerRefListener(
-            orig.node,
-            newNode -> {
-              this.node = newNode;
-            });
+        copyState.registerRefListener(orig.node, newNode -> this.node = newNode);
       }
 
       @Override

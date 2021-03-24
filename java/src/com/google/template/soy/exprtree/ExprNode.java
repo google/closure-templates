@@ -100,6 +100,7 @@ public interface ExprNode extends Node {
    *
    * @return This node's kind (corresponding to this node's specific type).
    */
+  @Override
   public Kind getKind();
 
   /** Gets the data type of this node. */

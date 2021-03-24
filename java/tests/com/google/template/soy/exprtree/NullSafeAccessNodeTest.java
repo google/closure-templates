@@ -22,8 +22,6 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.testing.ExpressionParser;
-import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.testing.Extendable;
 import com.google.template.soy.testing.Foo;
@@ -341,25 +339,6 @@ public class NullSafeAccessNodeTest {
                 "  FIELD_ACCESS_NODE: DO_NOT_USE__NULL_SAFE_ACCESS.foo",
                 "    GLOBAL_NODE: DO_NOT_USE__NULL_SAFE_ACCESS",
                 ""));
-  }
-
-  /**
-   * Similar to {@link SoyTreeUtils#buildAstString}, but also print the source string for debug
-   * usages.
-   */
-  private static StringBuilder buildAstStringWithPreview(
-      ParentSoyNode<?> node, int indent, StringBuilder sb) {
-    for (SoyNode child : node.getChildren()) {
-      sb.append(Strings.repeat("  ", indent))
-          .append(child.getKind())
-          .append(": ")
-          .append(child.toSourceString())
-          .append('\n');
-      if (child instanceof ParentSoyNode) {
-        SoyTreeUtils.buildAstString((ParentSoyNode<?>) child, indent + 1, sb);
-      }
-    }
-    return sb;
   }
 
   /**

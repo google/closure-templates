@@ -546,9 +546,8 @@ public final class HtmlRewriterTest {
   @Test
   public void testHtmlCommentWithControlFlow() {
     ErrorReporter errorReporter = ErrorReporter.createForTest();
-    TemplateNode node;
     // Control flow structure should be preserved.
-    node = runPass("<!-- {if $foo} foo {else} bar {/if} -->", errorReporter);
+    TemplateNode node = runPass("<!-- {if $foo} foo {else} bar {/if} -->", errorReporter);
     assertThatASTString(node)
         .isEqualTo(
             Joiner.on('\n')
@@ -792,12 +791,10 @@ public final class HtmlRewriterTest {
   private static StringSubject assertThatASTString(TemplateNode node) {
     SoyFileNode parent = node.getParent().copy(new CopyState());
     new CombineConsecutiveRawTextNodesPass().run(parent);
-    return assertThat(
-        SoyTreeUtils.buildAstString((TemplateNode) parent.getChild(0), 0, new StringBuilder())
-            .toString());
+    return assertThat(SoyTreeUtils.buildAstString((TemplateNode) parent.getChild(0)));
   }
 
   private static StringSubject assertThatASTStringNoCombine(TemplateNode node) {
-    return assertThat(SoyTreeUtils.buildAstString(node, 0, new StringBuilder()).toString());
+    return assertThat(SoyTreeUtils.buildAstString(node));
   }
 }
