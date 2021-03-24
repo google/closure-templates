@@ -42,13 +42,17 @@ public final class SoyToJsVariableMappings {
   private final IdentityHashMap<MsgFallbackGroupNode, Expression>
       isPrimaryMsgInUseForFallbackGroup = new IdentityHashMap<>();
 
-  private SoyToJsVariableMappings(ImmutableMap<String, ? extends Expression> initialMappings) {
+  private SoyToJsVariableMappings(Map<String, ? extends Expression> initialMappings) {
     mappings = new HashMap<>(initialMappings);
   }
 
   /** Returns a new {@link SoyToJsVariableMappings} suitable for translating an entire template. */
-  public static SoyToJsVariableMappings forNewTemplate() {
+  public static SoyToJsVariableMappings newEmpty() {
     return new SoyToJsVariableMappings(ImmutableMap.of());
+  }
+
+  static SoyToJsVariableMappings startingWith(SoyToJsVariableMappings initialMappings) {
+    return new SoyToJsVariableMappings(initialMappings.mappings);
   }
 
   /** Returns a {@link SoyToJsVariableMappings} seeded with the given mappings. For testing only. */
@@ -93,7 +97,7 @@ public final class SoyToJsVariableMappings {
    * mapping exists for that variable.
    *
    * <p>TODO(brndn): the null case is only for handling template params. Eliminate the @Nullable by
-   * seeding {@link #forNewTemplate()} with the params.
+   * seeding {@link #newEmpty()} with the params.
    */
   @Nullable
   public Expression maybeGet(String name) {

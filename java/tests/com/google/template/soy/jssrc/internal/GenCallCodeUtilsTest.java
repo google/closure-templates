@@ -236,7 +236,7 @@ public final class GenCallCodeUtilsTest {
     UniqueNameGenerator nameGenerator = JsSrcNameGenerators.forLocalVariables();
     TranslationContext translationContext =
         TranslationContext.of(
-            SoyToJsVariableMappings.forNewTemplate()
+            SoyToJsVariableMappings.newEmpty()
                 .put("$boo", Expression.id("boo"))
                 .put("$goo", Expression.id("goo")),
             CodeChunk.Generator.create(nameGenerator),

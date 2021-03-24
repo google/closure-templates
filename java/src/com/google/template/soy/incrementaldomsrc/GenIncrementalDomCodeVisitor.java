@@ -409,7 +409,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       bodyStatements.add(redeclareIjData());
     } else {
       bodyStatements.add(
-          JsRuntime.SOY_ARE_YOU_AND_INTERNAL_CALLER
+          JsRuntime.SOY_ARE_YOU_AN_INTERNAL_CALLER
               .call(id(StandardNames.ARE_YOU_AN_INTERNAL_CALLER))
               .asStatement());
     }

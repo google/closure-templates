@@ -103,6 +103,11 @@ final class AliasUtils {
               String alias = "$" + templateNode.getLocalTemplateSymbol();
               aliasMap.put(templateNode.getTemplateName(), alias);
             });
+    // Index local constants by their local name.
+    fileNode
+        .getConstants()
+        .forEach(
+            constNode -> aliasMap.put(constNode.getVar().name(), "$" + constNode.getVar().name()));
 
     fileNode.getImports().stream()
         .filter(i -> i.getImportType() == ImportType.TEMPLATE)

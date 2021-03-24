@@ -446,11 +446,6 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
 
   @Override
   protected Expression visitVarRefNode(VarRefNode node) {
-    if (node.getDefnDecl().kind() == VarDefn.Kind.IMPORT_VAR) {
-      // TODO(b/177245767): implement
-      return LITERAL_NULL;
-    }
-
     Expression translation = variableMappings.maybeGet(node.getName());
     if (translation != null) {
       // Case 1: In-scope local var.

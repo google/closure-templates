@@ -76,6 +76,7 @@ import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamNode;
+import com.google.template.soy.soytree.ConstNode;
 import com.google.template.soy.soytree.DebuggerNode;
 import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.ForNode;
@@ -83,6 +84,7 @@ import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
+import com.google.template.soy.soytree.ImportNode;
 import com.google.template.soy.soytree.ImportNode.ImportType;
 import com.google.template.soy.soytree.KeyNode;
 import com.google.template.soy.soytree.LetContentNode;
@@ -106,11 +108,14 @@ import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.VeLogNode;
 import com.google.template.soy.soytree.Visibility;
+import com.google.template.soy.soytree.defn.ConstVar;
+import com.google.template.soy.soytree.defn.ImportedVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.types.AnyType;
 import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.StringType;
@@ -180,6 +185,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   private final SoyTypeRegistry typeRegistry;
 
   protected ErrorReporter errorReporter;
+  protected SoyToJsVariableMappings topLevelSymbols;
   protected TranslationContext templateTranslationContext;
 
   protected List<Statement> staticVarDeclarations;
@@ -255,6 +261,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   void visitForTesting(SoyNode node, FileSetMetadata registry, ErrorReporter errorReporter) {
     this.errorReporter = errorReporter;
     this.fileSetMetadata = registry;
+    this.topLevelSymbols = SoyToJsVariableMappings.newEmpty();
     visit(node);
   }
 
@@ -456,6 +463,20 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       }
     }
 
+    topLevelSymbols = SoyToJsVariableMappings.newEmpty();
+
+    for (ImportNode importNode : node.getImports()) {
+      visit(importNode);
+    }
+    UniqueNameGenerator nameGenerator = JsSrcNameGenerators.forLocalVariables();
+    CodeChunk.Generator codeGenerator = CodeChunk.Generator.create(nameGenerator);
+    templateTranslationContext =
+        TranslationContext.of(topLevelSymbols, codeGenerator, nameGenerator);
+    for (ConstNode constant : node.getConstants()) {
+      jsCodeBuilder.appendLine().appendLine();
+      visit(constant);
+    }
+
     // Add code for each template.
     for (TemplateNode template : node.getTemplates()) {
       jsCodeBuilder.appendLine().appendLine();
@@ -616,6 +637,80 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         : "!" + NodeContentKinds.toJsSanitizedContentCtorName(node.getContentKind());
   }
 
+  @Override
+  protected void visitImportNode(ImportNode node) {
+    if (node.getImportType() == ImportType.TEMPLATE) {
+      node.getIdentifiers().forEach(id -> visitImportNode(node, id, node.getModuleType()));
+    }
+  }
+
+  private void visitImportNode(ImportNode node, ImportedVar var, SoyType parentType) {
+    if (parentType != null
+        && parentType.getKind() == Kind.TEMPLATE_MODULE
+        && var.type().getKind() != Kind.TEMPLATE_TYPE) {
+      // This is a constant import.
+      String namespace = namespaceForPath(node.getSourceFilePath());
+      if (jsSrcOptions.shouldGenerateGoogModules()) {
+        namespace = templateAliases.getNamespaceAlias(namespace);
+      }
+      topLevelSymbols.put(
+          var.name(),
+          dottedIdNoRequire(namespace + "." + var.getSymbol())
+              .call(JsRuntime.SOY_INTERNAL_CALL_MARKER));
+    }
+    var.getNestedTypes().forEach(name -> visitImportNode(node, var.nested(name), var.type()));
+  }
+
+  @Override
+  protected void visitConstNode(ConstNode node) {
+    SoyFileNode file = node.getNearestAncestor(SoyFileNode.class);
+    ConstVar var = node.getVar();
+
+    ImmutableList.Builder<Statement> declarations = ImmutableList.builder();
+
+    JsDoc jsDoc =
+        addInternalCallerParam(
+                JsDoc.builder()
+                    .addAnnotation(node.isExported() ? "public" : "private")
+                    .addParameterizedAnnotation(
+                        "return", getJsTypeForParamForDeclaration(var.type()).typeExpr()))
+            .build();
+
+    String partialName = var.name();
+    String alias =
+        jsSrcOptions.shouldGenerateGoogModules()
+            ? partialName
+            : file.getNamespace() + "." + partialName;
+
+    Expression aliasExp = dottedIdNoRequire(alias);
+
+    Expression constantGetterFunction =
+        Expression.function(
+            jsDoc,
+            Statement.of(
+                JsRuntime.SOY_ARE_YOU_AN_INTERNAL_CALLER
+                    .call(id(StandardNames.ARE_YOU_AN_INTERNAL_CALLER))
+                    .asStatement(),
+                returnValue(translateExpr(node.getExpr()))));
+
+    if (jsSrcOptions.shouldGenerateGoogModules()) {
+      declarations.add(
+          VariableDeclaration.builder(alias)
+              .setJsDoc(jsDoc)
+              .setRhs(constantGetterFunction)
+              .build());
+      if (node.isExported()) {
+        declarations.add(assign(JsRuntime.EXPORTS.dotAccess(partialName), aliasExp));
+      }
+    } else {
+      declarations.add(Statement.assign(aliasExp, constantGetterFunction, jsDoc));
+    }
+
+    jsCodeBuilder.append(Statement.of(declarations.build()));
+
+    topLevelSymbols.put(var.name(), aliasExp.call(JsRuntime.SOY_INTERNAL_CALL_MARKER));
+  }
+
   /**
    * Outputs a {@link TemplateNode}, generating the function open and close, along with a a debug
    * template name.
@@ -667,7 +762,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     CodeChunk.Generator codeGenerator = CodeChunk.Generator.create(nameGenerator);
     templateTranslationContext =
         TranslationContext.of(
-            SoyToJsVariableMappings.forNewTemplate(), codeGenerator, nameGenerator);
+            SoyToJsVariableMappings.startingWith(topLevelSymbols), codeGenerator, nameGenerator);
     genJsExprsVisitor =
         genJsExprsVisitorFactory.create(templateTranslationContext, templateAliases, errorReporter);
     assistantForMsgs = null;
@@ -782,8 +877,8 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         .collect(toImmutableList());
   }
 
-  protected final void addInternalCallerParam(JsDoc.Builder jsDocBuilder) {
-    jsDocBuilder.addParam(StandardNames.ARE_YOU_AN_INTERNAL_CALLER, "!Object");
+  protected final JsDoc.Builder addInternalCallerParam(JsDoc.Builder jsDocBuilder) {
+    return jsDocBuilder.addParam(StandardNames.ARE_YOU_AN_INTERNAL_CALLER, "!Object");
   }
 
   protected JsDoc generatePositionalFunctionJsDoc(TemplateNode node) {
@@ -921,7 +1016,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       bodyStatements.add(redeclareIjData());
     } else {
       bodyStatements.add(
-          JsRuntime.SOY_ARE_YOU_AND_INTERNAL_CALLER
+          JsRuntime.SOY_ARE_YOU_AN_INTERNAL_CALLER
               .call(id(StandardNames.ARE_YOU_AN_INTERNAL_CALLER))
               .asStatement());
     }

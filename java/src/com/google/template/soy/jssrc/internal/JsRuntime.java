@@ -127,7 +127,7 @@ public final class JsRuntime {
   public static final Expression SOY_DEBUG_SOY_TEMPLATE_INFO =
       SOY.dotAccess("$$getDebugSoyTemplateInfo");
 
-  public static final Expression SOY_ARE_YOU_AND_INTERNAL_CALLER =
+  public static final Expression SOY_ARE_YOU_AN_INTERNAL_CALLER =
       SOY.dotAccess("$$areYouAnInternalCaller");
   public static final Expression SOY_INTERNAL_CALL_MARKER =
       SOY.dotAccess("$$internalCallMarkerDoNotUse");
