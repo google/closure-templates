@@ -263,8 +263,9 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
       SoyErrorKind.of("Missing required proto field ''{0}''.");
   private static final SoyErrorKind PROTO_NULL_ARG_TYPE =
       SoyErrorKind.of("Cannot assign static type ''null'' to proto field ''{0}''.");
-  private static final SoyErrorKind PROTO_FIELD_NAME_ALIAS_CONFLICT =
-      SoyErrorKind.of("Alias ''{0}'' conflicts with a field with the same name in proto ''{1}''.");
+  private static final SoyErrorKind PROTO_FIELD_NAME_IMPORT_CONFLICT =
+      SoyErrorKind.of(
+          "Imported symbol ''{0}'' conflicts with a field of proto constructor ''{1}''.");
   private static final SoyErrorKind TYPE_MISMATCH =
       SoyErrorKind.of("Soy types ''{0}'' and ''{1}'' are not comparable.");
   private static final SoyErrorKind DECLARED_DEFAULT_TYPE_MISMATCH =
@@ -1721,6 +1722,7 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
       List<Identifier> resolvedIdentifiers = new ArrayList<>();
 
       // Resolve aliases for the given field names of the proto.
+      Checkpoint checkpoint = errorReporter.checkpoint();
       for (Identifier id : node.getParamNames()) {
         String originalName = id.identifier();
         boolean hasOriginal = fields.contains(originalName);
@@ -1740,7 +1742,7 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
           if (hasOriginal && !hasOriginalExt) {
             errorReporter.report(
                 id.location(),
-                PROTO_FIELD_NAME_ALIAS_CONFLICT,
+                PROTO_FIELD_NAME_IMPORT_CONFLICT,
                 originalName,
                 protoType.getDescriptor().getName());
             node.setType(UnknownType.getInstance());
@@ -1754,7 +1756,7 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
       }
 
       // Replace the proto init node to have a list of the resolved param names.
-      if (hasAliasedParams) {
+      if (hasAliasedParams && !errorReporter.errorsSince(checkpoint)) {
         FunctionNode resolvedNode =
             CallableExprBuilder.builder(node).setParamNames(resolvedIdentifiers).buildFunction();
         resolvedNode.setSoyFunction(node.getSoyFunction());
