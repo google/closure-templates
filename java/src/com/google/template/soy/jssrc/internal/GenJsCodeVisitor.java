@@ -109,7 +109,6 @@ import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.VeLogNode;
 import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.soytree.defn.ConstVar;
-import com.google.template.soy.soytree.defn.ImportedVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.types.AnyType;
@@ -639,26 +638,22 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
   @Override
   protected void visitImportNode(ImportNode node) {
-    if (node.getImportType() == ImportType.TEMPLATE) {
-      node.getIdentifiers().forEach(id -> visitImportNode(node, id, node.getModuleType()));
-    }
-  }
-
-  private void visitImportNode(ImportNode node, ImportedVar var, SoyType parentType) {
-    if (parentType != null
-        && parentType.getKind() == Kind.TEMPLATE_MODULE
-        && var.type().getKind() != Kind.TEMPLATE_TYPE) {
-      // This is a constant import.
-      String namespace = namespaceForPath(node.getSourceFilePath());
-      if (jsSrcOptions.shouldGenerateGoogModules()) {
-        namespace = templateAliases.getNamespaceAlias(namespace);
-      }
-      topLevelSymbols.put(
-          var.name(),
-          dottedIdNoRequire(namespace + "." + var.getSymbol())
-              .call(JsRuntime.SOY_INTERNAL_CALL_MARKER));
-    }
-    var.getNestedTypes().forEach(name -> visitImportNode(node, var.nested(name), var.type()));
+    node.visitVars(
+        (var, parentType) -> {
+          if (parentType != null
+              && parentType.getKind() == Kind.TEMPLATE_MODULE
+              && var.type().getKind() != Kind.TEMPLATE_TYPE) {
+            // This is a constant import.
+            String namespace = namespaceForPath(node.getSourceFilePath());
+            if (jsSrcOptions.shouldGenerateGoogModules()) {
+              namespace = templateAliases.getNamespaceAlias(namespace);
+            }
+            topLevelSymbols.put(
+                var.name(),
+                dottedIdNoRequire(namespace + "." + var.getSymbol())
+                    .call(JsRuntime.SOY_INTERNAL_CALL_MARKER));
+          }
+        });
   }
 
   @Override

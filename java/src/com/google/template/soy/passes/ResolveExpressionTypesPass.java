@@ -442,32 +442,22 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
 
     @Override
     protected void visitImportNode(ImportNode node) {
-      for (ImportedVar var : node.getIdentifiers()) {
-        // We need to resolve constant import types.
-        resolveNestedTypes(var, node.getModuleType());
-      }
-    }
-
-    private void resolveNestedTypes(ImportedVar var, SoyType parentType) {
-      if (parentType != null && !var.hasType()) {
-        SoyType newType = UnknownType.getInstance();
-        if (parentType.getKind() == Kind.TEMPLATE_MODULE) {
-          // This must be a nested constant import. A nested template would have its type set.
-          SoyType constantType =
-              constantsTypeLookup.get(
-                  ((TemplateModuleImportType) parentType).getPath(), var.getSymbol());
-          if (constantType != null) {
-            newType = constantType;
-          }
-        }
-        var.setType(newType);
-      }
-      if (!var.hasType()) {
-        return;
-      }
-      for (String type : var.getNestedTypes()) {
-        resolveNestedTypes(var.nested(type), var.type());
-      }
+      node.visitVars(
+          (var, parentType) -> {
+            if (parentType != null && !var.hasType()) {
+              SoyType newType = UnknownType.getInstance();
+              if (parentType.getKind() == Kind.TEMPLATE_MODULE) {
+                // This must be a nested constant import. A nested template would have its type set.
+                SoyType constantType =
+                    constantsTypeLookup.get(
+                        ((TemplateModuleImportType) parentType).getPath(), var.getSymbol());
+                if (constantType != null) {
+                  newType = constantType;
+                }
+              }
+              var.setType(newType);
+            }
+          });
     }
 
     @Override

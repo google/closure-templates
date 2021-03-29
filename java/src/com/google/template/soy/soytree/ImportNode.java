@@ -29,6 +29,7 @@ import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.soytree.defn.ImportedVar;
 import com.google.template.soy.types.SoyType;
 import java.util.List;
+import java.util.function.BiConsumer;
 
 /**
  * Node representing a 'import' statement with a value expression.
@@ -161,5 +162,23 @@ public final class ImportNode extends AbstractSoyNode {
                   .collect(joining(",")));
     }
     return String.format("import %s'%s'", exprs, path.getValue());
+  }
+
+  /**
+   * Visits all {@link ImportedVar} descending from this import node. {@code visitor} is called once
+   * for each var. The second argument to {@code visitor} is the (nullable) type of the parent var,
+   * or the {@link #getModuleType()} for a top level var.
+   */
+  public void visitVars(BiConsumer<ImportedVar, SoyType> visitor) {
+    getIdentifiers().forEach(id -> visitVars(id, getModuleType(), visitor));
+  }
+
+  private static void visitVars(
+      ImportedVar id, SoyType parentType, BiConsumer<ImportedVar, SoyType> visitor) {
+    visitor.accept(id, parentType);
+    id.getNestedTypes()
+        .forEach(
+            nestedType ->
+                visitVars(id.nested(nestedType), id.hasType() ? id.type() : null, visitor));
   }
 }

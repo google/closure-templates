@@ -91,9 +91,7 @@ import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.VeLogNode;
-import com.google.template.soy.soytree.defn.ImportedVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
-import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import java.io.Flushable;
 import java.io.IOException;
@@ -292,33 +290,28 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
   @Override
   protected void visitImportNode(ImportNode node) {
-    for (ImportedVar var : node.getIdentifiers()) {
-      registerImportsInEnv(node, var, node.getModuleType());
-    }
-  }
-
-  private void registerImportsInEnv(ImportNode node, ImportedVar var, SoyType parentType) {
     if (node.getImportType() != ImportType.TEMPLATE) {
       return;
     }
-    if (parentType != null
-        && parentType.getKind() == Kind.TEMPLATE_MODULE
-        && var.type().getKind() != Kind.TEMPLATE_TYPE) {
-      // Any nested vardefn of a template module import that is not a template type must be a
-      // constant.
-      env.bind(
-          var,
-          SoyValueConverter.INSTANCE.convertLazy(
-              // Bind this lazily since we process every import for every template in the file.
-              () -> {
-                ConstNode constNode =
-                    constants.get(SourceFilePath.create(node.getPath()), var.getSymbol());
-                return eval(constNode.getExpr(), constNode);
-              }));
-    }
-    for (String nestedType : var.getNestedTypes()) {
-      registerImportsInEnv(node, var.nested(nestedType), var.type());
-    }
+    node.visitVars(
+        (var, parentType) -> {
+          if (parentType != null
+              && parentType.getKind() == Kind.TEMPLATE_MODULE
+              && var.type().getKind() != Kind.TEMPLATE_TYPE) {
+            // Any nested vardefn of a template module import that is not a template type must be a
+            // constant.
+            env.bind(
+                var,
+                SoyValueConverter.INSTANCE.convertLazy(
+                    // Bind this lazily since we process every import for every template in the
+                    // file.
+                    () -> {
+                      ConstNode constNode =
+                          constants.get(SourceFilePath.create(node.getPath()), var.getSymbol());
+                      return eval(constNode.getExpr(), constNode);
+                    }));
+          }
+        });
   }
 
   @Override
