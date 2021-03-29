@@ -20,7 +20,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.stream.Collectors.joining;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
@@ -135,9 +134,9 @@ public final class PassManager {
     IdGenerator idGenerator = soyTree.getNodeIdGenerator();
     for (CompilerFileSetPass pass : passes) {
       ImmutableList<SoyFileNode> sourceFilesThisPass = sourceFiles;
-      if (pass instanceof TopologicallyOrdered) {
-        sourceFilesThisPass =
-            Preconditions.checkNotNull(accumulatedState.topologicallyOrderedFiles);
+      if (pass instanceof TopologicallyOrdered
+          && accumulatedState.topologicallyOrderedFiles != null) {
+        sourceFilesThisPass = accumulatedState.topologicallyOrderedFiles;
       }
       if (pass.run(sourceFilesThisPass, idGenerator) == Result.STOP) {
         return Result.STOP;
@@ -391,6 +390,9 @@ public final class PassManager {
           .add(
               new FileDependencyOrderPass(
                   errorReporter, v -> accumulatedState.topologicallyOrderedFiles = v))
+          .add(
+              new ConstantInvariantsEnforcementPass(
+                  errorReporter, () -> accumulatedState.topologicallyOrderedFiles != null))
           .add(new RestoreGlobalsPass())
           .add(new RestoreCompilerChecksPass(errorReporter))
           // needs to come early since it is necessary to create template metadata objects for

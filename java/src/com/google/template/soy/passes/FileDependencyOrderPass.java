@@ -103,7 +103,6 @@ public class FileDependencyOrderPass implements CompilerFileSetPass {
           sorter.cyclicKeys.stream().map(fn -> fn.getFilePath().path()).collect(joining("\n--> "));
       if (allowedCyclical(sorter.allNonLeafKeys)) {
         errorReporter.warn(SourceLocation.UNKNOWN, CYCLE, cycleText);
-        stateSetter.accept(files);
         return Result.CONTINUE;
       } else {
         errorReporter.report(SourceLocation.UNKNOWN, CYCLE, cycleText);
