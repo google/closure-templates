@@ -39,11 +39,11 @@ import java.util.function.Supplier;
 final class BanDuplicateNamespacesPass implements CompilerFileSetPass {
   private static final SoyErrorKind DUPLICATE_NAMESPACE =
       SoyErrorKind.of(
-          "Found another files ''{0}'' with the same namespace.  All files must have unique"
+          "Found another file ''{0}'' with the same namespace.  All files must have unique"
               + " namespaces.");
   private static final SoyErrorKind DUPLICATE_NAMESPACE_WARNING =
       SoyErrorKind.of(
-          "Found another files ''{0}'' with the same namespace.  All files should have unique"
+          "Found another file ''{0}'' with the same namespace.  All files should have unique"
               + " namespaces. This will soon become an error.");
   private final ErrorReporter errorReporter;
   private final Supplier<FileSetMetadata> fileSetTemplateRegistry;
