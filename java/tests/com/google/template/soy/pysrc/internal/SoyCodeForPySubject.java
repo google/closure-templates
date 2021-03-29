@@ -25,6 +25,7 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.truth.FailureMetadata;
 import com.google.common.truth.Subject;
+import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
@@ -174,23 +175,31 @@ public final class SoyCodeForPySubject extends Subject {
   }
 
   private String compileFile() {
-    SoyFileSetNode node = SoyFileSetParserBuilder.forFileContents(actual).parse().fileSet();
+    ParseResult parseResult = SoyFileSetParserBuilder.forFileContents(actual).parse();
+    SoyFileSetNode node = parseResult.fileSet();
     List<String> fileContents =
         PySrcMain.createVisitor(
-                defaultOptions(), BidiGlobalDir.LTR, ErrorReporter.exploding(), ImmutableMap.of())
+                defaultOptions(),
+                BidiGlobalDir.LTR,
+                ErrorReporter.exploding(),
+                ImmutableMap.of(),
+                parseResult.registry())
             .gen(node, ErrorReporter.exploding());
     return fileContents.get(0).replaceAll("([a-zA-Z]+)\\d+", "$1###");
   }
 
   private String compileBody() {
-    SoyNode node =
-        SharedTestUtils.getNode(
-            SoyFileSetParserBuilder.forTemplateContents(actual).parse().fileSet(), 0);
+    ParseResult parseResult = SoyFileSetParserBuilder.forTemplateContents(actual).parse();
+    SoyNode node = SharedTestUtils.getNode(parseResult.fileSet(), 0);
 
     // Setup the GenPyCodeVisitor's state before the node is visited.
     GenPyCodeVisitor genPyCodeVisitor =
         PySrcMain.createVisitor(
-            defaultOptions(), BidiGlobalDir.LTR, ErrorReporter.exploding(), ImmutableMap.of());
+            defaultOptions(),
+            BidiGlobalDir.LTR,
+            ErrorReporter.exploding(),
+            ImmutableMap.of(),
+            parseResult.registry());
     genPyCodeVisitor.pyCodeBuilder = new PyCodeBuilder();
     genPyCodeVisitor.pyCodeBuilder.pushOutputVar("output");
     genPyCodeVisitor.pyCodeBuilder.setOutputVarInited();

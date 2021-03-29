@@ -16,33 +16,36 @@
 
 package com.google.template.soy.pysrc.internal;
 
+import static java.util.stream.Collectors.toCollection;
+
 import com.google.auto.value.AutoValue;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.Operator;
-import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.internal.i18n.SoyBidiUtils;
 import com.google.template.soy.pysrc.SoyPySrcOptions;
 import com.google.template.soy.pysrc.internal.GenPyExprsVisitor.GenPyExprsVisitorFactory;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyExprUtils;
 import com.google.template.soy.pysrc.restricted.PyFunctionExprBuilder;
-import com.google.template.soy.shared.internal.FindCalleesNotInFile;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamNode;
+import com.google.template.soy.soytree.ConstNode;
 import com.google.template.soy.soytree.DebuggerNode;
+import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.ForIfemptyNode;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
+import com.google.template.soy.soytree.ImportNode;
+import com.google.template.soy.soytree.ImportNode.ImportType;
 import com.google.template.soy.soytree.KeyNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetValueNode;
@@ -61,6 +64,7 @@ import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.VeLogNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
+import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.ast.TypeNode;
 import java.util.ArrayList;
 import java.util.List;
@@ -78,14 +82,13 @@ import java.util.TreeSet;
  */
 final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
-  private static final SoyErrorKind NON_NAMESPACED_TEMPLATE =
-      SoyErrorKind.of("Called template does not reside in a namespace.");
-
   /** The options configuration for this run. */
   private final SoyPySrcOptions pySrcOptions;
 
   /** The namespace manifest for all current and dependent sources. */
   private final ImmutableMap<String, String> namespaceManifest;
+
+  private final FileSetMetadata fileSetMetadata;
 
   @VisibleForTesting protected PyCodeBuilder pyCodeBuilder;
 
@@ -104,11 +107,13 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   GenPyCodeVisitor(
       SoyPySrcOptions pySrcOptions,
       ImmutableMap<String, String> currentManifest,
+      FileSetMetadata fileSetMetadata,
       IsComputableAsPyExprVisitor isComputableAsPyExprVisitor,
       GenPyExprsVisitorFactory genPyExprsVisitorFactory,
       GenPyCallExprVisitor genPyCallExprVisitor,
       PythonValueFactoryImpl pluginValueFactory) {
     this.pySrcOptions = pySrcOptions;
+    this.fileSetMetadata = fileSetMetadata;
     this.isComputableAsPyExprVisitor = isComputableAsPyExprVisitor;
     this.genPyExprsVisitorFactory = genPyExprsVisitorFactory;
     this.genPyCallExprVisitor = genPyCallExprVisitor;
@@ -224,6 +229,7 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
      */
     @Override
     protected void visitSoyFileNode(SoyFileNode node) {
+      localVarExprs = new LocalVariableStack();
       pyCodeBuilder = new PyCodeBuilder();
 
       // Encode all source files in utf-8 to allow for special unicode characters in the generated
@@ -253,14 +259,62 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         pyCodeBuilder.appendLine("import pdb");
       }
 
+      genPyExprsVisitor = genPyExprsVisitorFactory.create(localVarExprs, errorReporter);
+      localVarExprs.pushFrame();
+      node.getImports().forEach(this::visit);
+
+      // Add code for each constant.
+      for (ConstNode constNode : node.getConstants()) {
+        pyCodeBuilder.appendLine().appendLine();
+        visit(constNode);
+      }
+
       // Add code for each template.
-      for (TemplateNode template : SoyTreeUtils.getAllNodesOfType(node, TemplateNode.class)) {
+      for (TemplateNode template : node.getTemplates()) {
         pyCodeBuilder.appendLine().appendLine();
         visit(template);
       }
+      localVarExprs.popFrame();
 
       pyFilesContents.add(pyCodeBuilder.getCode());
       pyCodeBuilder = null;
+    }
+
+    @Override
+    protected void visitImportNode(ImportNode node) {
+      node.visitVars(
+          (var, parentType) -> {
+            if (parentType != null
+                && parentType.getKind() == Kind.TEMPLATE_MODULE
+                && var.type().getKind() != Kind.TEMPLATE_TYPE) {
+              // This is a constant import.
+              String fullNamespace = fileSetMetadata.getNamespaceForPath(node.getSourceFilePath());
+              NamespaceAndName namespaceAndName = NamespaceAndName.fromModule(fullNamespace);
+              localVarExprs.addVariable(
+                  var.name(),
+                  new PyExpr(
+                      namespaceAndName.name() + "." + var.getSymbol() + "()", Integer.MAX_VALUE));
+            }
+          });
+    }
+
+    @Override
+    protected void visitConstNode(ConstNode node) {
+      String functionName = GenPyCallExprVisitor.getLocalConstName(node);
+      pyCodeBuilder.appendLine("def ", functionName, "():");
+      pyCodeBuilder.increaseIndent();
+
+      TranslateToPyExprVisitor translator =
+          new TranslateToPyExprVisitor(localVarExprs, pluginValueFactory, node, errorReporter);
+
+      PyExpr value = translator.exec(node.getExpr());
+      pyCodeBuilder.appendLine("return ", value.getText());
+
+      localVarExprs.addVariable(
+          node.getVar().name(), new PyExpr(functionName + "()", Integer.MAX_VALUE));
+
+      // Dedent to end the function.
+      pyCodeBuilder.decreaseIndent();
     }
 
     /**
@@ -278,7 +332,6 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
      */
     @Override
     protected void visitTemplateNode(TemplateNode node) {
-      localVarExprs = new LocalVariableStack();
       for (TemplateParam param : node.getParams()) {
         TypeNode type = param.getTypeNode();
         // Skip this if it's a param with a default value and an inferred type. We don't have to
@@ -288,8 +341,6 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
           type.accept(new LegacyObjectMapFinder(errorReporter));
         }
       }
-
-      genPyExprsVisitor = genPyExprsVisitorFactory.create(localVarExprs, errorReporter);
 
       // Generate function definition up to colon.
       pyCodeBuilder.appendLine(
@@ -830,20 +881,11 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
      * @param soyFile The node we're visiting.
      */
     private void addCodeToRequireSoyNamespaces(SoyFileNode soyFile) {
-      SortedSet<String> calleeModules = new TreeSet<>();
-      for (TemplateLiteralNode templateLiteralNode :
-          FindCalleesNotInFile.findCalleesNotInFile(soyFile)) {
-        String calleeNotInFile = templateLiteralNode.getResolvedName();
-        int lastDotIndex = calleeNotInFile.lastIndexOf('.');
-        if (lastDotIndex == -1) {
-          errorReporter.report(templateLiteralNode.getSourceLocation(), NON_NAMESPACED_TEMPLATE);
-          continue;
-        }
-        String calleeModule = calleeNotInFile.substring(0, lastDotIndex);
-        if (!calleeModule.isEmpty()) {
-          calleeModules.add(calleeModule);
-        }
-      }
+      SortedSet<String> calleeModules =
+          soyFile.getImports().stream()
+              .filter(i -> i.getImportType() == ImportType.TEMPLATE)
+              .map(i -> fileSetMetadata.getNamespaceForPath(i.getSourceFilePath()))
+              .collect(toCollection(TreeSet::new));
 
       for (String calleeModule : calleeModules) {
         NamespaceAndName namespaceAndName = NamespaceAndName.fromModule(calleeModule);

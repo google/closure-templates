@@ -31,6 +31,7 @@ import com.google.template.soy.internal.i18n.SoyBidiUtils;
 import com.google.template.soy.pysrc.SoyPySrcOptions;
 import com.google.template.soy.pysrc.internal.GenPyExprsVisitor.GenPyExprsVisitorFactory;
 import com.google.template.soy.shared.internal.SoyScopedData;
+import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import java.io.File;
@@ -77,12 +78,18 @@ public final class PySrcMain {
       SoyFileSetNode soyTree,
       SoyPySrcOptions pySrcOptions,
       ImmutableMap<String, String> currentManifest,
+      FileSetMetadata fileSetMetadata,
       ErrorReporter errorReporter) {
 
     BidiGlobalDir bidiGlobalDir =
         SoyBidiUtils.decodeBidiGlobalDirFromPyOptions(pySrcOptions.getBidiIsRtlFn());
     try (SoyScopedData.InScope inScope = apiCallScope.enter(/* msgBundle= */ null, bidiGlobalDir)) {
-      return createVisitor(pySrcOptions, inScope.getBidiGlobalDir(), errorReporter, currentManifest)
+      return createVisitor(
+              pySrcOptions,
+              inScope.getBidiGlobalDir(),
+              errorReporter,
+              currentManifest,
+              fileSetMetadata)
           .gen(soyTree, errorReporter);
     }
   }
@@ -97,7 +104,10 @@ public final class PySrcMain {
    * @throws IOException If there is an error in opening/writing an output Python file.
    */
   public List<String> genPyFiles(
-      SoyFileSetNode soyTree, SoyPySrcOptions pySrcOptions, ErrorReporter errorReporter)
+      SoyFileSetNode soyTree,
+      FileSetMetadata fileSetMetadata,
+      SoyPySrcOptions pySrcOptions,
+      ErrorReporter errorReporter)
       throws IOException {
 
     // Generate the manifest and add it to the current manifest.
@@ -109,7 +119,8 @@ public final class PySrcMain {
             errorReporter);
 
     // Generate the Python source.
-    List<String> pyFileContents = genPySrc(soyTree, pySrcOptions, manifest, errorReporter);
+    List<String> pyFileContents =
+        genPySrc(soyTree, pySrcOptions, manifest, fileSetMetadata, errorReporter);
 
     if (soyTree.getChildren().size() != pyFileContents.size()) {
       throw new AssertionError(
@@ -171,7 +182,8 @@ public final class PySrcMain {
       SoyPySrcOptions pySrcOptions,
       BidiGlobalDir bidiGlobalDir,
       ErrorReporter errorReporter,
-      ImmutableMap<String, String> currentManifest) {
+      ImmutableMap<String, String> currentManifest,
+      FileSetMetadata fileSetMetadata) {
     final IsComputableAsPyExprVisitor isComputableAsPyExprs = new IsComputableAsPyExprVisitor();
     // There is a circular dependency between the GenPyExprsVisitorFactory and GenPyCallExprVisitor
     // here we resolve it with a mutable field in a custom provider
@@ -194,6 +206,7 @@ public final class PySrcMain {
     return new GenPyCodeVisitor(
         pySrcOptions,
         currentManifest,
+        fileSetMetadata,
         isComputableAsPyExprs,
         genPyExprsFactory,
         provider.get(),

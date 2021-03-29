@@ -36,6 +36,7 @@ import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.CallParamValueNode;
+import com.google.template.soy.soytree.ConstNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.soytree.defn.TemplateParam;
@@ -295,5 +296,13 @@ final class GenPyCallExprVisitor extends AbstractReturningSoyNodeVisitor<PyExpr>
       return "__" + templateName;
     }
     return templateName;
+  }
+
+  static String getLocalConstName(ConstNode node) {
+    String functionName = node.getVar().name();
+    if (!node.isExported()) {
+      return "__" + functionName;
+    }
+    return functionName;
   }
 }

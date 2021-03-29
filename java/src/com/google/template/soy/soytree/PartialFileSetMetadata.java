@@ -27,4 +27,13 @@ public interface PartialFileSetMetadata {
   PartialFileMetadata getPartialFile(SourceFilePath path);
 
   Collection<? extends PartialFileMetadata> getAllPartialFiles();
+
+  /**
+   * Gets the Soy namespace of a source file indexed in this metadata.
+   *
+   * @throws NullPointerException if {@code path} is not registered in metadata.
+   */
+  default String getNamespaceForPath(SourceFilePath path) {
+    return getPartialFile(path).getNamespace();
+  }
 }

@@ -14,6 +14,7 @@ java_library(
         "*.java",
     ]),
     deps = [
+        "//java/src/com/google/template/soy:impl",
         "//java/src/com/google/template/soy/base",
         "//java/src/com/google/template/soy/error:error_reporter",
         "//java/src/com/google/template/soy/exprtree",

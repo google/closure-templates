@@ -1087,8 +1087,6 @@ public final class SoyFileSet {
   /**
    * Compiles this Soy file set into Python source code files and writes these Python files to disk.
    *
-   * @param outputPathFormat The format string defining how to build the output file path
-   *     corresponding to an input file path.
    * @param pySrcOptions The compilation options for the Python Src output target.
    * @throws SoyCompilationException If compilation fails.
    * @throws RuntimeException If there is an error in opening/reading a message file or
@@ -1101,7 +1099,7 @@ public final class SoyFileSet {
             ParseResult result = parse();
             throwIfErrorsPresent();
             return new PySrcMain(scopedData.enterable())
-                .genPyFiles(result.fileSet(), pySrcOptions, errorReporter);
+                .genPyFiles(result.fileSet(), result.registry(), pySrcOptions, errorReporter);
           } catch (IOException e) {
             throw new RuntimeException(e);
           }
