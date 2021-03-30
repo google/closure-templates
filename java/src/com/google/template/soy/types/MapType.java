@@ -60,6 +60,7 @@ public final class MapType extends AbstractMapType {
 
   // IMPORTANT: if the allowed key types change, make sure to update BAD_MAP_KEY_TYPE above.
   /** Whether the type is permissible as a key in a Soy {@code map} ({@link MapType}). */
+  // LINT.IfChange(allowed_soy_map_key_types)
   public static boolean isAllowedKeyType(SoyType type) {
     switch (type.getKind()) {
       case BOOL:
@@ -72,6 +73,7 @@ public final class MapType extends AbstractMapType {
         return type == SoyTypes.NUMBER_TYPE;
     }
   }
+  // LINT.ThenChange(../data/SoyMap.java:allowed_soy_map_key_types)
 
   @Override
   public Kind getKind() {

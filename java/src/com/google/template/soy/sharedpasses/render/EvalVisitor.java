@@ -18,6 +18,8 @@ package com.google.template.soy.sharedpasses.render;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.template.soy.shared.internal.SharedRuntime.checkMapFromListConstructorCondition;
+import static com.google.template.soy.shared.internal.SharedRuntime.constructMapFromList;
 import static com.google.template.soy.shared.internal.SharedRuntime.dividedBy;
 import static com.google.template.soy.shared.internal.SharedRuntime.equal;
 import static com.google.template.soy.shared.internal.SharedRuntime.lessThan;
@@ -34,7 +36,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.errorprone.annotations.ForOverride;
-import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyLegacyObjectMap;
@@ -130,6 +131,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalInt;
 import javax.annotation.Nullable;
 
 /**
@@ -346,44 +348,13 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     ExprNode listExpr = node.getListExpr();
     SoyValue listValue = visit(listExpr);
     checkMapFromListConstructorCondition(
-        listValue instanceof SoyList, node.getListExpr().getSourceLocation(), listValue, null);
+        listValue instanceof SoyList,
+        node.getListExpr().getSourceLocation(),
+        listValue,
+        OptionalInt.empty());
 
-    Map<SoyValue, SoyValueProvider> map = new HashMap<>();
     List<? extends SoyValueProvider> list = ((SoyList) listValue).asJavaList();
-    for (int i = 0; i < list.size(); i++) {
-      SoyValue recordEntry = list.get(i).resolve();
-      checkMapFromListConstructorCondition(
-          recordEntry instanceof SoyRecord, node.getListExpr().getSourceLocation(), recordEntry, i);
-
-      ImmutableMap<String, SoyValueProvider> record = ((SoyRecord) recordEntry).recordAsMap();
-      checkMapFromListConstructorCondition(
-          record.keySet().equals(MapLiteralFromListNode.MAP_RECORD_FIELDS),
-          node.getListExpr().getSourceLocation(),
-          recordEntry,
-          i);
-
-      map.put(
-          record.get(MapLiteralFromListNode.KEY_STRING).resolve(),
-          record.get(MapLiteralFromListNode.VALUE_STRING));
-    }
-
-    return SoyMapImpl.forProviderMap(map);
-  }
-
-  private void checkMapFromListConstructorCondition(
-      boolean condition, SourceLocation sourceLocation, SoyValue list, Integer index) {
-    if (!condition) {
-      String exceptionString =
-          String.format(
-              "Error constructing map in %s. Expected a list where each item is a record of 'key',"
-                  + " 'value' pairs. Found: %s",
-              sourceLocation, list);
-      if (index != null) {
-        exceptionString += String.format(" at index %d", index);
-      }
-
-      throw RenderException.create(exceptionString);
-    }
+    return constructMapFromList(list, node.getListExpr().getSourceLocation());
   }
 
   // -----------------------------------------------------------------------------------------------

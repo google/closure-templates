@@ -16,6 +16,7 @@
 
 package com.google.template.soy.data;
 
+import com.google.template.soy.data.restricted.PrimitiveData;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
@@ -97,4 +98,10 @@ public interface SoyMap extends SoyValue {
    */
   @Nonnull
   Map<? extends SoyValue, ? extends SoyValueProvider> asJavaMap();
+
+  // LINT.IfChange(allowed_soy_map_key_types)
+  static boolean isAllowedKeyType(SoyValue key) {
+    return key instanceof PrimitiveData;
+  }
+  // LINT.ThenChange(../types/MapType.java:allowed_soy_map_key_types)
 }
