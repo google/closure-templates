@@ -111,7 +111,7 @@ final class AliasUtils {
 
     fileNode.getImports().stream()
         .filter(i -> i.getImportType() == ImportType.TEMPLATE)
-        .map(i -> fileSetMetadata.getFile(i.getSourceFilePath()).getNamespace())
+        .map(i -> fileSetMetadata.getNamespaceForPath(i.getSourceFilePath()))
         .distinct()
         .forEach(
             namespace -> {

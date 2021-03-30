@@ -88,7 +88,7 @@ public final class TemplateImportProcessor implements ImportsPass.ImportProcesso
       String name = symbol.getSymbol();
       boolean isTemplate = fileMetadata.hasTemplate(name);
 
-      // Report an error if the template name is invalid.
+      // Report an error if the symbol name is invalid.
       if (!isTemplate && !fileMetadata.hasConstant(name)) {
         ImportsPass.reportUnknownSymbolError(
             errorReporter,

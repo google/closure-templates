@@ -1862,6 +1862,6 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   }
 
   private String namespaceForPath(SourceFilePath path) {
-    return fileSetMetadata.getFile(path).getNamespace();
+    return fileSetMetadata.getNamespaceForPath(path);
   }
 }
