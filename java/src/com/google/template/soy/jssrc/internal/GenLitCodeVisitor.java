@@ -19,16 +19,24 @@ package com.google.template.soy.jssrc.internal;
 import static com.google.template.soy.jssrc.dsl.Expression.dottedIdNoRequire;
 import static com.google.template.soy.jssrc.dsl.Statement.assign;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.internal.SanitizedContentKind;
+import com.google.template.soy.base.internal.UniqueNameGenerator;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.GoogRequire;
 import com.google.template.soy.jssrc.dsl.JsDoc;
 import com.google.template.soy.jssrc.dsl.Statement;
 import com.google.template.soy.jssrc.dsl.VariableDeclaration;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
+import com.google.template.soy.soytree.ConstNode;
 import com.google.template.soy.soytree.FileSetMetadata;
+import com.google.template.soy.soytree.ImportNode;
+import com.google.template.soy.soytree.ImportNode.ImportType;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
@@ -36,7 +44,11 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.Visibility;
+import com.google.template.soy.soytree.defn.ConstVar;
+import com.google.template.soy.soytree.defn.ImportedVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
+import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.SoyType.Kind;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -49,9 +61,27 @@ public final class GenLitCodeVisitor extends AbstractSoyNodeVisitor<List<String>
   private TemplateAliases templateAliases = null;
   private JsCodeBuilder jsCodeBuilder;
   private List<String> jsFilesContents;
+  private ErrorReporter errorReporter;
+  private SoyToJsVariableMappings topLevelSymbols;
+  private TranslationContext templateTranslationContext;
 
-  public GenLitCodeVisitor(FileSetMetadata fileSetMetadata) {
+  /** The IsComputableAsJsExprsVisitor used by this instance. */
+  private final IsComputableAsLitTemplateVisitor isComputableAsLitTemplateVisitor;
+
+  /** The GenLitExprVisitorFactory used by this instance. */
+  private final GenLitExprVisitor.GenLitExprVisitorFactory genLitExprVisitorFactory;
+
+  private final JavaScriptValueFactoryImpl javaScriptValueFactory;
+
+  GenLitCodeVisitor(
+      FileSetMetadata fileSetMetadata,
+      JavaScriptValueFactoryImpl javaScriptValueFactory,
+      IsComputableAsLitTemplateVisitor isComputableAsLitTemplateVisitor,
+      GenLitExprVisitor.GenLitExprVisitorFactory genLitExprVisitorFactory) {
     this.fileSetMetadata = fileSetMetadata;
+    this.javaScriptValueFactory = javaScriptValueFactory;
+    this.isComputableAsLitTemplateVisitor = isComputableAsLitTemplateVisitor;
+    this.genLitExprVisitorFactory = genLitExprVisitorFactory;
   }
 
   @Override
@@ -65,6 +95,7 @@ public final class GenLitCodeVisitor extends AbstractSoyNodeVisitor<List<String>
   }
 
   public List<String> gen(SoyFileSetNode node, ErrorReporter errorReporter) {
+    this.errorReporter = errorReporter;
     try {
       jsFilesContents = new ArrayList<>();
       jsCodeBuilder = null;
@@ -117,6 +148,20 @@ public final class GenLitCodeVisitor extends AbstractSoyNodeVisitor<List<String>
 
     addCodeToDeclareGoogModule(file, node);
 
+    topLevelSymbols = SoyToJsVariableMappings.newEmpty();
+    UniqueNameGenerator nameGenerator = JsSrcNameGenerators.forLocalVariables();
+    CodeChunk.Generator codeGenerator = CodeChunk.Generator.create(nameGenerator);
+    templateTranslationContext =
+        TranslationContext.of(topLevelSymbols, codeGenerator, nameGenerator);
+
+    for (ImportNode importNode : node.getImports()) {
+      visit(importNode);
+    }
+    for (ConstNode constant : node.getConstants()) {
+      jsCodeBuilder.appendLine().appendLine();
+      visit(constant);
+    }
+
     // Add code for each template.
     for (TemplateNode template : node.getTemplates()) {
       jsCodeBuilder.appendLine().appendLine();
@@ -133,6 +178,8 @@ public final class GenLitCodeVisitor extends AbstractSoyNodeVisitor<List<String>
     SanitizedContentKind kind = node.getContentKind();
     // Attribute templates do not have an equivalent type in lit-html
     if (kind == SanitizedContentKind.ATTRIBUTES
+        || kind == SanitizedContentKind.JS // TODO(user): not yet sure how to support these
+        || kind == SanitizedContentKind.CSS // TODO(user): not yet sure how to support these
         || node instanceof TemplateDelegateNode
         || node.getVisibility() == Visibility.PRIVATE) {
       return;
@@ -142,9 +189,9 @@ public final class GenLitCodeVisitor extends AbstractSoyNodeVisitor<List<String>
     String alias = templateAliases.get(templateName);
     String partialName = node.getLocalTemplateSymbol();
     Expression aliasExp = dottedIdNoRequire(alias);
-    JsDoc jsDoc = generateFunctionJsDoc(alias);
+    JsDoc jsDoc = generateFunctionJsDoc(alias, kind);
 
-    Expression function = Expression.function(jsDoc, generateFunctionBody());
+    Expression function = Expression.function(jsDoc, generateFunctionBody(node));
 
     declarations.add(VariableDeclaration.builder(alias).setJsDoc(jsDoc).setRhs(function).build());
     declarations.add(assign(JsRuntime.EXPORTS.dotAccess(partialName), aliasExp));
@@ -188,18 +235,106 @@ public final class GenLitCodeVisitor extends AbstractSoyNodeVisitor<List<String>
     return true;
   }
 
-  private JsDoc generateFunctionJsDoc(String alias) {
+  private JsDoc generateFunctionJsDoc(String alias, SanitizedContentKind kind) {
     JsDoc.Builder jsDocBuilder = JsDoc.builder();
     jsDocBuilder.addParam(StandardNames.DOLLAR_DATA, "!" + alias + ".Params");
-    jsDocBuilder.addParameterizedAnnotation("return", "lit_element.TemplateResult");
+    if (kind == SanitizedContentKind.TEXT) {
+      jsDocBuilder.addParameterizedAnnotation("return", "string");
+    } else {
+      jsDocBuilder.addParameterizedAnnotation("return", "lit_element.TemplateResult");
+    }
     return jsDocBuilder.build();
   }
 
-  private Statement generateFunctionBody() {
-    return Statement.throwValue(
-        Expression.construct(
-            Expression.id("Error"),
-            Expression.stringLiteral("No implementation yet for the lit soy backend")));
+  private Statement generateFunctionBody(TemplateNode node) {
+    if (!isComputableAsLitTemplateVisitor.exec(node)) {
+      return Statement.throwValue(
+          Expression.construct(
+              Expression.id("Error"),
+              Expression.stringLiteral("No implementation yet for the lit soy backend")));
+    }
+
+    // TODO(user): Handle IJ data
+    // TODO(user): Template stubbing support (not in scope for the prototype, though).
+    // TODO(user): Runtime type check for data/params
+
+    GenLitExprVisitor genLitExprVisitor =
+        genLitExprVisitorFactory.create(templateTranslationContext, templateAliases, errorReporter);
+    List<Expression> functionBody = genLitExprVisitor.exec(node);
+    Preconditions.checkState(functionBody.size() == 1);
+    return Statement.returnValue(functionBody.get(0));
+  }
+
+  @Override
+  protected void visitImportNode(ImportNode node) {
+    if (node.getImportType() == ImportType.TEMPLATE) {
+      node.getIdentifiers().forEach(id -> visitImportNode(node, id, node.getModuleType()));
+    }
+  }
+
+  private void visitImportNode(ImportNode node, ImportedVar var, SoyType parentType) {
+    if (parentType != null
+        && parentType.getKind() == Kind.TEMPLATE_MODULE
+        && var.type().getKind() != Kind.TEMPLATE_TYPE) {
+      // This is a constant import.
+      String namespace = namespaceForPath(node.getSourceFilePath());
+      namespace = templateAliases.getNamespaceAlias(namespace);
+      topLevelSymbols.put(
+          var.name(),
+          dottedIdNoRequire(namespace + "." + var.getSymbol())
+              .call(JsRuntime.SOY_INTERNAL_CALL_MARKER));
+    }
+    var.getNestedTypes().forEach(name -> visitImportNode(node, var.nested(name), var.type()));
+  }
+
+  private String namespaceForPath(SourceFilePath path) {
+    return fileSetMetadata.getFile(path).getNamespace();
+  }
+
+  @Override
+  protected void visitConstNode(ConstNode node) {
+    ConstVar var = node.getVar();
+
+    ImmutableList.Builder<Statement> declarations = ImmutableList.builder();
+
+    JsDoc jsDoc =
+        JsDoc.builder()
+            .addAnnotation(node.isExported() ? "public" : "private")
+            .addParameterizedAnnotation(
+                "return", getJsTypeForParamForDeclaration(var.type()).typeExpr())
+            .build();
+
+    String partialName = var.name();
+    String alias = partialName;
+
+    Expression aliasExp = dottedIdNoRequire(alias);
+
+    Expression constantGetterFunction =
+        Expression.function(jsDoc, Statement.returnValue(translateExpr(node.getExpr())));
+
+    declarations.add(
+        VariableDeclaration.builder(alias).setJsDoc(jsDoc).setRhs(constantGetterFunction).build());
+    if (node.isExported()) {
+      declarations.add(assign(JsRuntime.EXPORTS.dotAccess(partialName), aliasExp));
+    }
+
+    jsCodeBuilder.append(Statement.of(declarations.build()));
+
+    topLevelSymbols.put(var.name(), aliasExp.call(JsRuntime.SOY_INTERNAL_CALL_MARKER));
+  }
+
+  /** Gets the type to use for a parameter in record type declarations. */
+  private JsType getJsTypeForParamForDeclaration(SoyType paramType) {
+    return JsType.forJsSrc(paramType);
+  }
+
+  private TranslateExprNodeVisitor getExprTranslator() {
+    return new TranslateExprNodeVisitor(
+        javaScriptValueFactory, templateTranslationContext, templateAliases, errorReporter);
+  }
+
+  private Expression translateExpr(ExprNode expr) {
+    return getExprTranslator().exec(expr);
   }
 
   @Override

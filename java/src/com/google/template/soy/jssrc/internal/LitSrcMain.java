@@ -17,6 +17,9 @@
 package com.google.template.soy.jssrc.internal;
 
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.internal.i18n.BidiGlobalDir;
+import com.google.template.soy.shared.internal.SoyScopedData;
+import com.google.template.soy.shared.internal.SoySimpleScope;
 import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.types.SoyTypeRegistry;
@@ -42,7 +45,24 @@ public class LitSrcMain {
    */
   public List<String> genJsSrc(
       SoyFileSetNode soyTree, FileSetMetadata registry, ErrorReporter errorReporter) {
-
-    return new GenLitCodeVisitor(registry).gen(soyTree, errorReporter);
+    // TODO(user): Figure out the proper way to create a scope?
+    SoyScopedData scope = new SoySimpleScope();
+    // TODO(user): Properly set a global bidi from options, instead of hardcoding LTR.
+    BidiGlobalDir dir = BidiGlobalDir.LTR;
+    try (SoyScopedData.InScope inScope = scope.enterable().enter(/* msgBundle= */ null, dir)) {
+      final JavaScriptValueFactoryImpl javaScriptValueFactory =
+          new JavaScriptValueFactoryImpl(dir, errorReporter);
+      final IsComputableAsLitTemplateVisitor isComputableAsLitTemplateVisitor =
+          new IsComputableAsLitTemplateVisitor();
+      final GenLitExprVisitor.GenLitExprVisitorFactory genLitExprVisitorFactory =
+          new GenLitExprVisitor.GenLitExprVisitorFactory(
+              javaScriptValueFactory, isComputableAsLitTemplateVisitor);
+      return new GenLitCodeVisitor(
+              registry,
+              javaScriptValueFactory,
+              isComputableAsLitTemplateVisitor,
+              genLitExprVisitorFactory)
+          .gen(soyTree, errorReporter);
+    }
   }
 }

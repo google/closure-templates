@@ -207,17 +207,32 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
   private final ErrorReporter errorReporter;
   private final CodeChunk.Generator codeGenerator;
   private final TemplateAliases templateAliases;
+  /**
+   * An expression that represents the data parameter to read params from. Defaults to {@code
+   * OPT_DATA}.
+   */
+  private final Expression dataSource;
 
   public TranslateExprNodeVisitor(
       JavaScriptValueFactoryImpl javascriptValueFactory,
       TranslationContext translationContext,
       TemplateAliases templateAliases,
       ErrorReporter errorReporter) {
+    this(javascriptValueFactory, translationContext, templateAliases, errorReporter, OPT_DATA);
+  }
+
+  public TranslateExprNodeVisitor(
+      JavaScriptValueFactoryImpl javascriptValueFactory,
+      TranslationContext translationContext,
+      TemplateAliases templateAliases,
+      ErrorReporter errorReporter,
+      Expression dataSource) {
     this.javascriptValueFactory = javascriptValueFactory;
     this.errorReporter = errorReporter;
     this.variableMappings = translationContext.soyToJsVariableMappings();
     this.codeGenerator = translationContext.codeGenerator();
     this.templateAliases = templateAliases;
+    this.dataSource = dataSource;
   }
 
   /**
@@ -228,7 +243,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
    * @return The code to access the value of that parameter.
    */
   Expression genCodeForParamAccess(String paramName, VarDefn varDefn) {
-    Expression source = OPT_DATA;
+    Expression source = dataSource;
     if (varDefn.isInjected()) {
       // Special case for csp_nonce. It is created by the compiler itself, and users should not need
       // to set it. So, instead of generating opt_ij_data.csp_nonce, we generate opt_ij_data &&
