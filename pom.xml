@@ -79,7 +79,7 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <java.version>1.8</java.version>
     <guice.version>4.1.0</guice.version>
-    <guava.version>25.1-jre</guava.version>
+    <guava.version>30.1.1-jre</guava.version>
     <asm.version>7.0</asm.version>
     <autovalue.version>1.7.4</autovalue.version>
     <proto.version>3.3.0</proto.version>
