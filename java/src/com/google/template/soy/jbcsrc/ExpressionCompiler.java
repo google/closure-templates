@@ -28,6 +28,7 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.firstNonNu
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.logicalNot;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.ternary;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.data.SoyLegacyObjectMap;
@@ -94,8 +95,10 @@ import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyRuntimeType;
 import com.google.template.soy.jbcsrc.restricted.Statement;
+import com.google.template.soy.jbcsrc.restricted.TypeInfo;
 import com.google.template.soy.jbcsrc.shared.ClassLoaderFallbackCallFactory;
 import com.google.template.soy.jbcsrc.shared.LegacyFunctionAdapter;
+import com.google.template.soy.jbcsrc.shared.Names;
 import com.google.template.soy.logging.ValidatedLoggingConfig.ValidatedLoggableElement;
 import com.google.template.soy.plugin.java.internal.PluginAnalyzer;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
@@ -104,6 +107,9 @@ import com.google.template.soy.shared.internal.BuiltinMethod;
 import com.google.template.soy.shared.restricted.SoyMethod;
 import com.google.template.soy.shared.restricted.SoySourceFunctionMethod;
 import com.google.template.soy.soytree.ForNonemptyNode;
+import com.google.template.soy.soytree.PartialFileSetMetadata;
+import com.google.template.soy.soytree.SoyFileNode;
+import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.LocalVarNode;
 import com.google.template.soy.soytree.defn.ConstVar;
 import com.google.template.soy.soytree.defn.ImportedVar;
@@ -148,13 +154,21 @@ final class ExpressionCompiler {
     private final CompilerVisitor compilerVisitor;
 
     private BasicExpressionCompiler(
+        SoyNode context,
         TemplateAnalysis analysis,
         TemplateParameterLookup parameters,
         LocalVariableManager varManager,
-        JavaSourceFunctionCompiler sourceFunctionCompiler) {
+        JavaSourceFunctionCompiler sourceFunctionCompiler,
+        PartialFileSetMetadata fileSetMetadata) {
       this.compilerVisitor =
           new CompilerVisitor(
-              analysis, parameters, varManager, BasicDetacher.INSTANCE, sourceFunctionCompiler);
+              context,
+              analysis,
+              parameters,
+              varManager,
+              BasicDetacher.INSTANCE,
+              sourceFunctionCompiler,
+              fileSetMetadata);
     }
 
     private BasicExpressionCompiler(CompilerVisitor visitor) {
@@ -183,20 +197,30 @@ final class ExpressionCompiler {
    * ExpressionDetacher.Factory}
    */
   static ExpressionCompiler create(
+      SoyNode context,
       TemplateAnalysis analysis,
       TemplateParameterLookup parameters,
       LocalVariableManager varManager,
-      JavaSourceFunctionCompiler sourceFunctionCompiler) {
+      JavaSourceFunctionCompiler sourceFunctionCompiler,
+      PartialFileSetMetadata fileSetMetadata) {
     return new ExpressionCompiler(
-        analysis, checkNotNull(parameters), varManager, sourceFunctionCompiler);
+        context,
+        analysis,
+        checkNotNull(parameters),
+        varManager,
+        sourceFunctionCompiler,
+        fileSetMetadata);
   }
 
   static BasicExpressionCompiler createConstantCompiler(
+      SoyNode context,
       TemplateAnalysis analysis,
       LocalVariableManager varManager,
-      JavaSourceFunctionCompiler sourceFunctionCompiler) {
+      JavaSourceFunctionCompiler sourceFunctionCompiler,
+      PartialFileSetMetadata fileSetMetadata) {
     return new BasicExpressionCompiler(
         new CompilerVisitor(
+            context,
             analysis,
             new TemplateParameterLookup() {
               UnsupportedOperationException unsupported() {
@@ -236,7 +260,8 @@ final class ExpressionCompiler {
             },
             varManager,
             ExpressionDetacher.NullDetatcher.INSTANCE,
-            sourceFunctionCompiler));
+            sourceFunctionCompiler,
+            fileSetMetadata));
   }
 
   /**
@@ -246,11 +271,14 @@ final class ExpressionCompiler {
    * value is boxed, so it is only valid for use by the {@link LazyClosureCompiler}.
    */
   static BasicExpressionCompiler createBasicCompiler(
+      SoyNode context,
       TemplateAnalysis analysis,
       TemplateParameterLookup parameters,
       LocalVariableManager varManager,
-      JavaSourceFunctionCompiler sourceFunctionCompiler) {
-    return new BasicExpressionCompiler(analysis, parameters, varManager, sourceFunctionCompiler);
+      JavaSourceFunctionCompiler sourceFunctionCompiler,
+      PartialFileSetMetadata fileSetMetadata) {
+    return new BasicExpressionCompiler(
+        context, analysis, parameters, varManager, sourceFunctionCompiler, fileSetMetadata);
   }
 
   /**
@@ -261,27 +289,33 @@ final class ExpressionCompiler {
     return CanCompileToConstantVisitor.INSTANCE.exec(expr);
   }
 
+  private final SoyNode context;
   private final TemplateAnalysis analysis;
   private final TemplateParameterLookup parameters;
   private final LocalVariableManager varManager;
   private final JavaSourceFunctionCompiler sourceFunctionCompiler;
+  private final PartialFileSetMetadata fileSetMetadata;
 
   private ExpressionCompiler(
+      SoyNode context,
       TemplateAnalysis analysis,
       TemplateParameterLookup parameters,
       LocalVariableManager varManager,
-      JavaSourceFunctionCompiler sourceFunctionCompiler) {
+      JavaSourceFunctionCompiler sourceFunctionCompiler,
+      PartialFileSetMetadata fileSetMetadata) {
+    this.context = context;
     this.analysis = analysis;
     this.parameters = checkNotNull(parameters);
     this.varManager = checkNotNull(varManager);
     this.sourceFunctionCompiler = checkNotNull(sourceFunctionCompiler);
+    this.fileSetMetadata = fileSetMetadata;
   }
 
   /**
    * Compiles the given expression tree to a sequence of bytecode.
    *
    * <p>If the stack will not be empty when the expression is compiled, this method should be used
-   * instead of {@link compileRootExpression}, and you should configure the {@code detacher} to
+   * instead of {@link #compileRootExpression}, and you should configure the {@code detacher} to
    * return to a {@code Label} where the stack will be empty.
    */
   SoyExpression compileSubExpression(ExprNode node, ExpressionDetacher detacher) {
@@ -295,7 +329,7 @@ final class ExpressionCompiler {
    * and it will generate code such that the stack contains a single SoyValue when it returns. The
    * SoyValue object will have a runtime type equal to {@code node.getType().javaType()}.
    *
-   * <p>If the stack will not be empty when this method is called, {@link compileSubExpression}
+   * <p>If the stack will not be empty when this method is called, {@link #compileSubExpression}
    * should be used instead so that you can manually configure a detacher that will return to the
    * correct label (where the stack is empty).
    */
@@ -325,7 +359,13 @@ final class ExpressionCompiler {
     }
     return Optional.of(
         new CompilerVisitor(
-                analysis, parameters, varManager, /* detacher=*/ null, sourceFunctionCompiler)
+                context,
+                analysis,
+                parameters,
+                varManager,
+                /* detacher=*/ null,
+                sourceFunctionCompiler,
+                fileSetMetadata)
             .exec(node));
   }
 
@@ -335,29 +375,42 @@ final class ExpressionCompiler {
    */
   BasicExpressionCompiler asBasicCompiler(ExpressionDetacher detacher) {
     return new BasicExpressionCompiler(
-        new CompilerVisitor(analysis, parameters, varManager, detacher, sourceFunctionCompiler));
+        new CompilerVisitor(
+            context,
+            analysis,
+            parameters,
+            varManager,
+            detacher,
+            sourceFunctionCompiler,
+            fileSetMetadata));
   }
 
   private static final class CompilerVisitor
       extends EnhancedAbstractExprNodeVisitor<SoyExpression> {
     // is null when we are generating code with no detaches.
     @Nullable final ExpressionDetacher detacher;
+    private final SoyNode context;
     final TemplateAnalysis analysis;
     final TemplateParameterLookup parameters;
     final LocalVariableManager varManager;
     private final JavaSourceFunctionCompiler sourceFunctionCompiler;
+    private final PartialFileSetMetadata fileSetMetadata;
 
     CompilerVisitor(
+        SoyNode context,
         TemplateAnalysis analysis,
         TemplateParameterLookup parameters,
         LocalVariableManager varManager,
         ExpressionDetacher detacher,
-        JavaSourceFunctionCompiler sourceFunctionCompiler) {
+        JavaSourceFunctionCompiler sourceFunctionCompiler,
+        PartialFileSetMetadata fileSetMetadata) {
+      this.context = Preconditions.checkNotNull(context);
       this.analysis = analysis;
       this.detacher = detacher;
       this.parameters = parameters;
       this.varManager = varManager;
       this.sourceFunctionCompiler = sourceFunctionCompiler;
+      this.fileSetMetadata = fileSetMetadata;
     }
 
     @Override
@@ -978,29 +1031,27 @@ final class ExpressionCompiler {
     // Let vars
 
     @Override
-    SoyExpression visitImportedVar(VarRefNode node, ImportedVar c) {
-      // TODO(b/177245767): implement
-      return SoyExpression.NULL;
+    SoyExpression visitImportedVar(VarRefNode varRef, ImportedVar importedVar) {
+      String namespace = fileSetMetadata.getNamespaceForPath(importedVar.getSourceFilePath());
+      TypeInfo owningType = TypeInfo.createClass(Names.javaClassNameFromSoyNamespace(namespace));
+      return constVar(owningType, importedVar.getSymbol(), importedVar.type());
     }
 
     @Override
-    SoyExpression visitConstVar(VarRefNode varRef, ConstVar c) {
-      // TODO(b/177245767): implement
-      SoyType type = varRef.getType();
-      switch (type.getKind()) {
-        case NULL:
-          return SoyExpression.NULL;
-        case BOOL:
-          return SoyExpression.FALSE;
-        case INT:
-          return SoyExpression.forInt(BytecodeUtils.constant(0L));
-        case FLOAT:
-          return SoyExpression.forFloat(BytecodeUtils.constant(0D));
-        case STRING:
-          return SoyExpression.forString(BytecodeUtils.constant(""));
-        default:
-          return SoyExpression.NULL;
-      }
+    SoyExpression visitConstVar(VarRefNode varRef, ConstVar constVar) {
+      SoyFileNode fileNode = context.getNearestAncestor(SoyFileNode.class);
+      TypeInfo typeInfo =
+          TypeInfo.createClass(Names.javaClassNameFromSoyNamespace(fileNode.getNamespace()));
+      return constVar(typeInfo, constVar.name(), constVar.type());
+    }
+
+    private SoyExpression constVar(TypeInfo typeInfo, String varName, SoyType varType) {
+      MethodRef methodRef =
+          MethodRef.createStaticMethod(
+              typeInfo, ConstantsCompiler.getConstantMethod(varName, varType));
+      return SoyExpression.forRuntimeType(
+          ConstantsCompiler.getConstantRuntimeType(varType),
+          methodRef.invoke(parameters.getRenderContext()));
     }
 
     @Override

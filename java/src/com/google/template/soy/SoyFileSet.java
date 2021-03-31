@@ -970,7 +970,7 @@ public final class SoyFileSet {
           ServerCompilationPrimitives primitives = compileForServerRendering();
           try {
             BytecodeCompiler.compileToJar(
-                primitives.soyTree, errorReporter, typeRegistry, jarTarget);
+                primitives.soyTree, errorReporter, typeRegistry, jarTarget, primitives.registry);
             if (srcJarTarget.isPresent()) {
               BytecodeCompiler.writeSrcJar(
                   primitives.soyTree, soyFileSuppliers, srcJarTarget.get());

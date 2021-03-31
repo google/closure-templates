@@ -17,6 +17,7 @@
 package com.google.template.soy.soytree.defn;
 
 import com.google.common.base.Preconditions;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.exprtree.AbstractVarDefn;
@@ -42,6 +43,8 @@ public final class ImportedVar extends AbstractVarDefn {
   private final Map<String, ImportedVar> nestedVarDefns;
   // A back reference to the parent if this is a nested type.
   private final ImportedVar parent;
+  // The file path of the ImportNode that owns this var. Only set if parent == null.
+  private SourceFilePath filePath;
 
   public ImportedVar(String name, @Nullable String alias, SourceLocation nameLocation) {
     super(alias != null ? alias : name, nameLocation, null);
@@ -68,6 +71,12 @@ public final class ImportedVar extends AbstractVarDefn {
     }
     this.symbol = var.symbol;
     this.parent = parent;
+    this.filePath = var.filePath;
+  }
+
+  public void onParentInit(SourceFilePath path) {
+    Preconditions.checkState(parent == null);
+    this.filePath = path;
   }
 
   public ImportedVar copy(CopyState copyState) {
@@ -120,5 +129,9 @@ public final class ImportedVar extends AbstractVarDefn {
 
   public void setType(SoyType type) {
     this.type = type;
+  }
+
+  public SourceFilePath getSourceFilePath() {
+    return parent != null ? parent.getSourceFilePath() : filePath;
   }
 }

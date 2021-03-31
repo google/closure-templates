@@ -19,6 +19,7 @@ package com.google.template.soy.jbcsrc;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.google.auto.value.AutoValue;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.internal.exemptions.NamespaceExemptions;
 import com.google.template.soy.jbcsrc.internal.ClassData;
@@ -26,10 +27,12 @@ import com.google.template.soy.jbcsrc.internal.InnerClasses;
 import com.google.template.soy.jbcsrc.internal.SoyClassWriter;
 import com.google.template.soy.jbcsrc.restricted.TypeInfo;
 import com.google.template.soy.jbcsrc.shared.Names;
+import com.google.template.soy.soytree.ConstNode;
+import com.google.template.soy.soytree.PartialFileSetMetadata;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.TemplateNode;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.objectweb.asm.Opcodes;
 
@@ -41,42 +44,68 @@ final class SoyFileCompiler {
 
   private final SoyFileNode fileNode;
   private final JavaSourceFunctionCompiler javaSourceFunctionCompiler;
-  private final List<TypeWriter> writers = new ArrayList<>();
+  private final PartialFileSetMetadata fileSetMetadata;
 
   SoyFileCompiler(
       SoyFileNode fileNode,
-      JavaSourceFunctionCompiler javaSourceFunctionCompiler) {
+      JavaSourceFunctionCompiler javaSourceFunctionCompiler,
+      PartialFileSetMetadata fileSetMetadata) {
     this.fileNode = fileNode;
     this.javaSourceFunctionCompiler = javaSourceFunctionCompiler;
+    this.fileSetMetadata = fileSetMetadata;
   }
 
   ImmutableList<ClassData> compile() {
+    if (NamespaceExemptions.isKnownDuplicateNamespace(fileNode.getNamespace())) {
+      return compileToManyClasses();
+    } else {
+      return compileToSingleClass();
+    }
+  }
+
+  private ImmutableList<ClassData> compileToManyClasses() {
+    Preconditions.checkArgument(fileNode.getConstants().isEmpty());
+
+    // If the template is in a file whose namespace is not known to be unique, generate it into its
+    // own class to avoid ODR violations.
+    List<TypeWriter> writers =
+        fileNode.getTemplates().stream()
+            .map(
+                templateNode -> {
+                  TypeWriter typeWriter = TypeWriter.create(templateNode);
+                  new TemplateCompiler(
+                          templateNode,
+                          typeWriter.writer(),
+                          typeWriter.fields(),
+                          typeWriter.innerClasses(),
+                          javaSourceFunctionCompiler,
+                          fileSetMetadata)
+                      .compile();
+                  return typeWriter;
+                })
+            .collect(Collectors.toList());
+    return writers.stream().flatMap(TypeWriter::close).collect(toImmutableList());
+  }
+
+  private ImmutableList<ClassData> compileToSingleClass() {
+    TypeWriter typeWriter = TypeWriter.create(fileNode);
+
+    for (ConstNode constant : fileNode.getConstants()) {
+      new ConstantsCompiler(
+              constant, typeWriter.writer(), javaSourceFunctionCompiler, fileSetMetadata)
+          .compile();
+    }
     for (TemplateNode templateNode : fileNode.getTemplates()) {
-      TypeWriter typeWriter = forTemplate(templateNode);
       new TemplateCompiler(
               templateNode,
               typeWriter.writer(),
               typeWriter.fields(),
               typeWriter.innerClasses(),
-              javaSourceFunctionCompiler)
+              javaSourceFunctionCompiler,
+              fileSetMetadata)
           .compile();
     }
-    return writers.stream().flatMap(TypeWriter::close).collect(toImmutableList());
-  }
-
-  TypeWriter forTemplate(TemplateNode node) {
-    // If the template is in a file whose namespace is not known to be unique, generate it into its
-    // own class to avoid ODR violations.
-    if (NamespaceExemptions.isKnownDuplicateNamespace(node.getParent().getNamespace())) {
-      TypeWriter writer = TypeWriter.create(node);
-      writers.add(writer);
-      return writer;
-    } else {
-      if (writers.isEmpty()) {
-        writers.add(TypeWriter.create(node.getParent()));
-      }
-      return writers.get(0);
-    }
+    return typeWriter.close().collect(toImmutableList());
   }
 
   @AutoValue

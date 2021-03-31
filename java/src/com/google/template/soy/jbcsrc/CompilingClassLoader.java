@@ -26,6 +26,7 @@ import com.google.template.soy.error.SoyError;
 import com.google.template.soy.jbcsrc.internal.AbstractMemoryClassLoader;
 import com.google.template.soy.jbcsrc.internal.ClassData;
 import com.google.template.soy.jbcsrc.shared.Names;
+import com.google.template.soy.soytree.PartialFileSetMetadata;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateNode;
@@ -44,11 +45,13 @@ final class CompilingClassLoader extends AbstractMemoryClassLoader {
   private final ImmutableMap<SourceFilePath, SoyFileSupplier> filePathsToSuppliers;
   private final ImmutableMap<String, SoyFileNode> javaClassNameToFile;
   private final SoyTypeRegistry typeRegistry;
+  private final PartialFileSetMetadata fileSetMetadata;
 
   CompilingClassLoader(
       SoyFileSetNode fileSet,
       ImmutableMap<SourceFilePath, SoyFileSupplier> filePathsToSuppliers,
-      SoyTypeRegistry typeRegistry) {
+      SoyTypeRegistry typeRegistry,
+      PartialFileSetMetadata fileSetMetadata) {
     Map<String, SoyFileNode> javaClassNameToFile = new LinkedHashMap<>();
     for (SoyFileNode file : fileSet.getChildren()) {
       // TODO(b/180904763):For the vast majority of files all templates share the same class, but
@@ -61,6 +64,7 @@ final class CompilingClassLoader extends AbstractMemoryClassLoader {
     this.javaClassNameToFile = ImmutableMap.copyOf(javaClassNameToFile);
     this.typeRegistry = typeRegistry;
     this.filePathsToSuppliers = filePathsToSuppliers;
+    this.fileSetMetadata = fileSetMetadata;
   }
 
   @Override
@@ -87,7 +91,8 @@ final class CompilingClassLoader extends AbstractMemoryClassLoader {
     ClassData clazzToLoad = null;
     ErrorReporter reporter = ErrorReporter.create(filePathsToSuppliers);
     for (ClassData clazz :
-        new SoyFileCompiler(node, new JavaSourceFunctionCompiler(typeRegistry, reporter))
+        new SoyFileCompiler(
+                node, new JavaSourceFunctionCompiler(typeRegistry, reporter), fileSetMetadata)
             .compile()) {
       String className = clazz.type().className();
       if (className.equals(name)) {

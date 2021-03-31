@@ -78,6 +78,7 @@ import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.CaseOrDefaultNode;
+import com.google.template.soy.soytree.ConstNode;
 import com.google.template.soy.soytree.DebuggerNode;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForNonemptyNode;
@@ -92,6 +93,7 @@ import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.MsgHtmlTagNode;
 import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.MsgPlaceholderNode;
+import com.google.template.soy.soytree.PartialFileSetMetadata;
 import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
@@ -142,6 +144,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
    * @param parameterLookup The variable lookup table for reading locals.
    */
   static SoyNodeCompiler create(
+      SoyNode context,
       TemplateAnalysis analysis,
       InnerClasses innerClasses,
       AppendableExpression appendableVar,
@@ -149,12 +152,19 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       TemplateParameterLookup parameterLookup,
       FieldManager fields,
       BasicExpressionCompiler constantCompiler,
-      JavaSourceFunctionCompiler javaSourceFunctionCompiler) {
+      JavaSourceFunctionCompiler javaSourceFunctionCompiler,
+      PartialFileSetMetadata fileSetMetadata) {
     // We pass a lazy supplier of render context so that lazy closure compiler classes that don't
     // generate detach logic don't trigger capturing this value into a field.
     DetachState detachState = new DetachState(variables, parameterLookup::getRenderContext);
     ExpressionCompiler expressionCompiler =
-        ExpressionCompiler.create(analysis, parameterLookup, variables, javaSourceFunctionCompiler);
+        ExpressionCompiler.create(
+            context,
+            analysis,
+            parameterLookup,
+            variables,
+            javaSourceFunctionCompiler,
+            fileSetMetadata);
     ExpressionToSoyValueProviderCompiler soyValueProviderCompiler =
         ExpressionToSoyValueProviderCompiler.create(analysis, expressionCompiler, parameterLookup);
     return new SoyNodeCompiler(
@@ -168,7 +178,8 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         expressionCompiler,
         soyValueProviderCompiler,
         constantCompiler,
-        javaSourceFunctionCompiler);
+        javaSourceFunctionCompiler,
+        fileSetMetadata);
   }
 
   final TemplateAnalysis analysis;
@@ -182,6 +193,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   final ExpressionToSoyValueProviderCompiler expressionToSoyValueProviderCompiler;
   final BasicExpressionCompiler constantCompiler;
   final JavaSourceFunctionCompiler javaSourceFunctionCompiler;
+  final PartialFileSetMetadata fileSetMetadata;
   private Scope currentScope;
 
   SoyNodeCompiler(
@@ -195,7 +207,8 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       ExpressionCompiler exprCompiler,
       ExpressionToSoyValueProviderCompiler expressionToSoyValueProviderCompiler,
       BasicExpressionCompiler constantCompiler,
-      JavaSourceFunctionCompiler javaSourceFunctionCompiler) {
+      JavaSourceFunctionCompiler javaSourceFunctionCompiler,
+      PartialFileSetMetadata fileSetMetadata) {
     this.analysis = checkNotNull(analysis);
     this.innerClasses = innerClasses;
     this.detachState = checkNotNull(detachState);
@@ -207,6 +220,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     this.expressionToSoyValueProviderCompiler = checkNotNull(expressionToSoyValueProviderCompiler);
     this.constantCompiler = constantCompiler;
     this.javaSourceFunctionCompiler = javaSourceFunctionCompiler;
+    this.fileSetMetadata = fileSetMetadata;
   }
 
   @AutoValue
@@ -329,6 +343,12 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   @Override
   protected Statement visitTemplateNode(TemplateNode node) {
     // template nodes are directly handled by compile()
+    throw new AssertionError("should not be called");
+  }
+
+  @Override
+  protected Statement visitConstNode(ConstNode node) {
+    // constant nodes are directly handled by compile()
     throw new AssertionError("should not be called");
   }
 
@@ -1236,10 +1256,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
    *   <li>Clear the two fields once rendering is complete.
    * </ul>
    *
-   * @param parametersReattachPoint The label where execution should resume if we need to detach
-   *     while calculating parameters.
    * @param node The call node
-   * @param calleeExpression The expression that resolves to a constructed instance of the template
    * @return A statement rendering the template.
    */
   private Statement renderCallNode(CallNode node, CallGenerator callGenerator) {
@@ -1667,6 +1684,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         exprCompiler,
         expressionToSoyValueProviderCompiler,
         constantCompiler,
-        javaSourceFunctionCompiler);
+        javaSourceFunctionCompiler,
+        fileSetMetadata);
   }
 }

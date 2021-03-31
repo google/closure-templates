@@ -24,6 +24,7 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constantNu
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
@@ -550,29 +551,28 @@ public class ExpressionCompilerTest {
     String createTemplateBody =
         SharedTestUtils.createTemplateBodyForExpression(
             "fakeFunction(" + soyExpr + ")", types.build());
-    TemplateNode templateNode =
-        (TemplateNode)
-            SoyFileSetParserBuilder.forTemplateContents(createTemplateBody)
-                .errorReporter(ErrorReporter.explodeOnErrorsAndIgnoreWarnings())
-                .addSoyFunction(
-                    new SoyFunction() {
-                      @Override
-                      public String getName() {
-                        return "fakeFunction";
-                      }
+    ParseResult result =
+        SoyFileSetParserBuilder.forTemplateContents(createTemplateBody)
+            .errorReporter(ErrorReporter.explodeOnErrorsAndIgnoreWarnings())
+            .addSoyFunction(
+                new SoyFunction() {
+                  @Override
+                  public String getName() {
+                    return "fakeFunction";
+                  }
 
-                      @Override
-                      public ImmutableSet<Integer> getValidArgsSizes() {
-                        return ImmutableSet.of(1);
-                      }
-                    })
-                .parse()
-                .fileSet()
-                .getChild(0)
-                .getChild(0);
+                  @Override
+                  public ImmutableSet<Integer> getValidArgsSizes() {
+                    return ImmutableSet.of(1);
+                  }
+                })
+            .parse();
+
+    TemplateNode templateNode = (TemplateNode) result.fileSet().getChild(0).getChild(0);
     PrintNode code = (PrintNode) templateNode.getChild(0);
     ExpressionCompiler testExpressionCompiler =
         ExpressionCompiler.create(
+            templateNode,
             TemplateAnalysis.analyze(templateNode),
             new TemplateParameterLookup() {
               @Override
@@ -619,7 +619,8 @@ public class ExpressionCompilerTest {
                 null,
                 /*isStatic=*/ true),
             new JavaSourceFunctionCompiler(
-                SoyTypeRegistryBuilder.create(), ErrorReporter.exploding()));
+                SoyTypeRegistryBuilder.create(), ErrorReporter.exploding()),
+            result.registry());
 
     return testExpressionCompiler.compileRootExpression(
         ((FunctionNode) code.getExpr().getChild(0)).getChild(0),

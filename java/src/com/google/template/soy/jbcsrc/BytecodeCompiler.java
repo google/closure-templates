@@ -37,6 +37,7 @@ import com.google.template.soy.jbcsrc.shared.Names;
 import com.google.template.soy.plugin.java.internal.PluginAnalyzer;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.soytree.FileSetMetadata;
+import com.google.template.soy.soytree.PartialFileSetMetadata;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
@@ -80,7 +81,7 @@ public final class BytecodeCompiler {
                             == TemplateType.TemplateKind.DELTEMPLATE)
                 .map(TemplateMetadata::getTemplateName)
                 .collect(toImmutableSet()),
-            new CompilingClassLoader(fileSet, filePathsToSuppliers, typeRegistry));
+            new CompilingClassLoader(fileSet, filePathsToSuppliers, typeRegistry, registry));
     if (reporter.errorsSince(checkpoint)) {
       return Optional.empty();
     }
@@ -101,7 +102,8 @@ public final class BytecodeCompiler {
       SoyFileSetNode fileSet,
       ErrorReporter reporter,
       SoyTypeRegistry typeRegistry,
-      ByteSink sink)
+      ByteSink sink,
+      PartialFileSetMetadata fileSetMetadata)
       throws IOException {
     try (final SoyJarFileWriter writer = new SoyJarFileWriter(sink.openStream())) {
       final Set<String> delTemplates = new TreeSet<>();
@@ -155,7 +157,8 @@ public final class BytecodeCompiler {
                 }
               }
             }
-          });
+          },
+          fileSetMetadata);
       if (!delTemplates.isEmpty()) {
         String delData = Joiner.on('\n').join(delTemplates);
         writer.writeEntry(
@@ -238,12 +241,14 @@ public final class BytecodeCompiler {
       SoyFileSetNode fileSet,
       ErrorReporter errorReporter,
       SoyTypeRegistry typeRegistry,
-      CompilerListener<T, E> listener)
+      CompilerListener<T, E> listener,
+      PartialFileSetMetadata fileSetMetadata)
       throws E {
     JavaSourceFunctionCompiler javaSourceFunctionCompiler =
         new JavaSourceFunctionCompiler(typeRegistry, errorReporter);
     for (SoyFileNode file : fileSet.getChildren()) {
-      for (ClassData clazz : new SoyFileCompiler(file, javaSourceFunctionCompiler).compile()) {
+      for (ClassData clazz :
+          new SoyFileCompiler(file, javaSourceFunctionCompiler, fileSetMetadata).compile()) {
         if (Flags.DEBUG) {
           clazz.checkClass();
         }

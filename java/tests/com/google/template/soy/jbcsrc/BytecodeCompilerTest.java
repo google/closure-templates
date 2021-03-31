@@ -1534,6 +1534,7 @@ public class BytecodeCompilerTest {
     return new CompilingClassLoader(
         parseResult.fileSet(),
         parser.soyFileSuppliers(),
-        parser.typeRegistry());
+        parser.typeRegistry(),
+        parseResult.registry());
   }
 }

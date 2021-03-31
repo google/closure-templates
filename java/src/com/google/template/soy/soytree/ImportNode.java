@@ -63,6 +63,10 @@ public final class ImportNode extends AbstractSoyNode {
     this.identifiers = ImmutableList.copyOf(defns);
     this.path = path;
     this.importType = ImportType.UNKNOWN;
+
+    for (ImportedVar defn : identifiers) {
+      defn.onParentInit(getSourceFilePath());
+    }
   }
 
   /**

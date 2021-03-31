@@ -459,7 +459,12 @@ final class LazyClosureCompiler {
           new LazyClosureParameterLookup(this, parent.parameterLookup, variableSet, thisVar);
       SoyExpression compile =
           ExpressionCompiler.createBasicCompiler(
-                  analysis, lookup, variableSet, parent.javaSourceFunctionCompiler)
+                  node,
+                  analysis,
+                  lookup,
+                  variableSet,
+                  parent.javaSourceFunctionCompiler,
+                  parent.fileSetMetadata)
               .compile(exprNode);
       SoyExpression expression = compile.box();
       final Statement storeExpr = RESOLVED_VALUE.putInstanceField(thisVar, expression);
@@ -501,7 +506,12 @@ final class LazyClosureCompiler {
           new LazyClosureParameterLookup(this, parent.parameterLookup, variableSet, thisVar);
       ExpressionCompiler expressionCompiler =
           ExpressionCompiler.create(
-              analysis, lookup, variableSet, parent.javaSourceFunctionCompiler);
+              node,
+              analysis,
+              lookup,
+              variableSet,
+              parent.javaSourceFunctionCompiler,
+              parent.fileSetMetadata);
       Optional<Expression> expr =
           ExpressionToSoyValueProviderCompiler.create(analysis, expressionCompiler, lookup)
               .compileToSoyValueProviderIfUsefulToPreserveStreaming(
@@ -540,10 +550,12 @@ final class LazyClosureCompiler {
       final Label end = new Label();
       BasicExpressionCompiler constantCompiler =
           ExpressionCompiler.createConstantCompiler(
+              node,
               analysis,
               new SimpleLocalVariableManager(
                   type.type(), BytecodeUtils.CLASS_INIT, /* isStatic=*/ true),
-              parent.javaSourceFunctionCompiler);
+              parent.javaSourceFunctionCompiler,
+              parent.fileSetMetadata);
       final TemplateVariableManager variableSet =
           new TemplateVariableManager(
               type.type(),
@@ -558,6 +570,7 @@ final class LazyClosureCompiler {
               this, parent.parameterLookup, variableSet, variableSet.getVariable("this"));
       SoyNodeCompiler soyNodeCompiler =
           SoyNodeCompiler.create(
+              node,
               analysis,
               parent.innerClasses,
               AppendableExpression.forExpression(
@@ -566,7 +579,8 @@ final class LazyClosureCompiler {
               lookup,
               fields,
               constantCompiler,
-              parent.javaSourceFunctionCompiler);
+              parent.javaSourceFunctionCompiler,
+              parent.fileSetMetadata);
       CompiledMethodBody compileChildren = soyNodeCompiler.compile(renderUnit, prefix, suffix);
       writer.setNumDetachStates(compileChildren.numberOfDetachStates());
       final Statement nodeBody = compileChildren.body();

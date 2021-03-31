@@ -54,6 +54,7 @@ import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetValueNode;
+import com.google.template.soy.soytree.PartialFileSetMetadata;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
@@ -93,13 +94,15 @@ final class TemplateCompiler {
   private final SoyClassWriter writer;
   private final TemplateAnalysis analysis;
   private final JavaSourceFunctionCompiler javaSourceFunctionCompiler;
+  private final PartialFileSetMetadata fileSetMetadata;
 
   TemplateCompiler(
       TemplateNode templateNode,
       SoyClassWriter writer,
       FieldManager fields,
       InnerClasses innerClasses,
-      JavaSourceFunctionCompiler javaSourceFunctionCompiler) {
+      JavaSourceFunctionCompiler javaSourceFunctionCompiler,
+      PartialFileSetMetadata fileSetMetadata) {
     this.template = CompiledTemplateMetadata.create(templateNode);
     this.templateNode = templateNode;
     this.writer = writer;
@@ -107,6 +110,7 @@ final class TemplateCompiler {
     this.innerClasses = innerClasses;
     this.analysis = TemplateAnalysis.analyze(templateNode);
     this.javaSourceFunctionCompiler = javaSourceFunctionCompiler;
+    this.fileSetMetadata = fileSetMetadata;
   }
 
   /**
@@ -330,10 +334,12 @@ final class TemplateCompiler {
   private void generateRenderMethod() {
     BasicExpressionCompiler constantCompiler =
         ExpressionCompiler.createConstantCompiler(
+            templateNode,
             analysis,
             new SimpleLocalVariableManager(
                 template.typeInfo().type(), BytecodeUtils.CLASS_INIT, /* isStatic=*/ true),
-            javaSourceFunctionCompiler);
+            javaSourceFunctionCompiler,
+            fileSetMetadata);
     final Label start = new Label();
     final Label end = new Label();
     ImmutableList.Builder<String> paramNames = ImmutableList.builder();
@@ -368,6 +374,7 @@ final class TemplateCompiler {
             variableSet.getVariable(StandardNames.APPENDABLE).asNonNullable());
     SoyNodeCompiler nodeCompiler =
         SoyNodeCompiler.create(
+            templateNode,
             analysis,
             innerClasses,
             appendable,
@@ -375,7 +382,8 @@ final class TemplateCompiler {
             variables,
             fields,
             constantCompiler,
-            javaSourceFunctionCompiler);
+            javaSourceFunctionCompiler,
+            fileSetMetadata);
     // Allocate local variables for all declared parameters.
     // NOTE: we initialize the parameters prior to where the jump table is initialized, this means
     // that all variables will be re-initialized ever time we re-enter the template.
@@ -412,6 +420,7 @@ final class TemplateCompiler {
     }
     final CompiledMethodBody methodBody =
         SoyNodeCompiler.create(
+                templateNode,
                 analysis,
                 innerClasses,
                 appendable,
@@ -419,7 +428,8 @@ final class TemplateCompiler {
                 variables,
                 fields,
                 constantCompiler,
-                javaSourceFunctionCompiler)
+                javaSourceFunctionCompiler,
+                fileSetMetadata)
             .compile(
                 templateNode,
                 /* prefix= */ ExtraCodeCompiler.NO_OP,
