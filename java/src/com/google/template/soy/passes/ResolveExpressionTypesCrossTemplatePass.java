@@ -391,7 +391,8 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
     PrintNode printNode = name.getDynamicTagName();
     ExprNode exprNode = printNode.getExpr().getRoot();
     if (exprNode.getKind() == Kind.FUNCTION_NODE) {
-      if (((FunctionNode) exprNode).getSoyFunction() == BuiltinFunction.LEGACY_DYNAMIC_TAG) {
+      if (((FunctionNode) exprNode).isResolved()
+          && ((FunctionNode) exprNode).getSoyFunction() == BuiltinFunction.LEGACY_DYNAMIC_TAG) {
         FunctionNode functionNode = (FunctionNode) exprNode;
         if (functionNode.numChildren() == 1) {
           printNode.getExpr().clearChildren();

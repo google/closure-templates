@@ -447,7 +447,6 @@ public final class PassManager {
         // and before ResolveExpressionTypesPass (since we insert expressions).
         passes.add(new AddDebugAttributesPass());
       }
-      passes.add(new CheckAllFunctionsResolvedPass(pluginResolver));
       if (astRewrites.atLeast(AstRewrites.ALL)) {
         passes.add(
             new ElementAttributePass(
@@ -475,6 +474,7 @@ public final class PassManager {
           passes.add(new GetExtensionRewriteParamPass());
         }
       }
+      passes.add(new CheckAllFunctionsResolvedPass(pluginResolver));
 
       passes.add(new ResolvePackageRelativeCssNamesPass(errorReporter));
 

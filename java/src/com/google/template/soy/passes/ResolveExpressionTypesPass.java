@@ -322,6 +322,9 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
   private static final SoyErrorKind NOT_PROTO_MESSAGE =
       SoyErrorKind.of("Only proto messages may be instantiated.");
 
+  private static final SoyErrorKind MUST_USE_TEMPLATES_IMMEDIATELY =
+      SoyErrorKind.of("Templates may only be called as the sole child of a print statement.");
+
   private final ErrorReporter errorReporter;
 
   private final ValidatedLoggingConfig loggingConfig;
@@ -552,6 +555,14 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
 
     @Override
     protected void visitPrintNode(PrintNode node) {
+      if (node.getExpr().getRoot() instanceof FunctionNode) {
+        FunctionNode fnNode = (FunctionNode) node.getExpr().getRoot();
+        if (!fnNode.hasStaticName()
+            && (fnNode.getNameExpr().getType() instanceof TemplateImportType
+                || fnNode.getNameExpr().getType() instanceof TemplateType)) {
+          fnNode.setAllowedToInvokeAsFunction(true);
+        }
+      }
       visitSoyNode(node);
     }
 
@@ -1559,6 +1570,38 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
     @Override
     protected void visitFunctionNode(FunctionNode node) {
       visitChildren(node);
+      if (!node.hasStaticName()) {
+        if (!node.allowedToInvokeAsFunction()
+            && (node.getNameExpr().getType() instanceof TemplateImportType
+                || node.getNameExpr().getType() instanceof TemplateType)) {
+          node.setType(UnknownType.getInstance());
+          errorReporter.report(node.getSourceLocation(), MUST_USE_TEMPLATES_IMMEDIATELY);
+          // Suppress a followup error that this is unknown.
+          node.setAllowedToInvokeAsFunction(true);
+          return;
+        }
+        visit(node.getNameExpr());
+        if (node.getNameExpr().getType() instanceof TemplateImportType) {
+          node.setType(
+              SanitizedType.getTypeForContentKind(
+                  ((TemplateImportType) node.getNameExpr().getType())
+                      .getBasicTemplateType()
+                      .getContentKind()
+                      .getSanitizedContentKind()));
+          return;
+        } else if (node.getNameExpr().getType() instanceof TemplateType) {
+          node.setType(
+              SanitizedType.getTypeForContentKind(
+                  ((TemplateType) node.getNameExpr().getType())
+                      .getContentKind()
+                      .getSanitizedContentKind()));
+          return;
+        }
+      }
+      if (!node.isResolved()) {
+        node.setType(UnknownType.getInstance());
+        return;
+      }
       Object knownFunction = node.getSoyFunction();
       if (knownFunction.getClass().isAnnotationPresent(SoyFunctionSignature.class)) {
         checkState(

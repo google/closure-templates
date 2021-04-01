@@ -34,7 +34,7 @@ final class CheckAllFunctionsResolvedPass implements CompilerFilePass {
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
     SoyTreeUtils.allNodesOfType(file, FunctionNode.class)
-        .filter(fct -> !fct.isResolved())
+        .filter(fct -> !fct.isResolved() && !fct.allowedToInvokeAsFunction())
         .forEach(resolver::reportUnresolved);
   }
 }

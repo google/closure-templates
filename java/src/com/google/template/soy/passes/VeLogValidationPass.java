@@ -23,7 +23,6 @@ import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
-import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.shared.internal.BuiltinFunction;
@@ -144,16 +143,14 @@ final class VeLogValidationPass implements CompilerFileSetPass {
     // However, because there is no way (currently) to navigate from an ExprNode to the SoyNode
     // which owns it, we need to do this multi-phase traversal to ensure the correct parenting
     // hierarchy.
-    for (ExprHolderNode holderNode :
-        SoyTreeUtils.getAllNodesOfType(template, SoyNode.ExprHolderNode.class)) {
-      for (ExprRootNode rootNode : holderNode.getExprList()) {
-        for (FunctionNode function : SoyTreeUtils.getAllNodesOfType(rootNode, FunctionNode.class)) {
-          if (function.getSoyFunction() instanceof LoggingFunction) {
+    SoyTreeUtils.visitExprNodesWithHolder(
+        template,
+        FunctionNode.class,
+        (holderNode, function) -> {
+          if (function.isResolved() && function.getSoyFunction() instanceof LoggingFunction) {
             validateLoggingFunction(holderNode, function);
           }
-        }
-      }
-    }
+        });
   }
 
   private void validateLoggingFunction(ExprHolderNode holderNode, FunctionNode function) {

@@ -87,6 +87,7 @@ public final class FunctionNode extends AbstractParentExprNode implements ExprNo
   private static final class FunctionState {
     @Nullable private FunctionRef function;
     @Nullable private ImmutableList<SoyType> allowedParamTypes;
+    private boolean allowedToInvokeAsFunction = false;
   }
 
   public static FunctionNode newPositional(
@@ -165,6 +166,7 @@ public final class FunctionNode extends AbstractParentExprNode implements ExprNo
     this.paramNames = orig.paramNames;
     this.state.function = orig.state.function;
     this.state.allowedParamTypes = orig.state.allowedParamTypes;
+    this.state.allowedToInvokeAsFunction = orig.state.allowedToInvokeAsFunction;
     this.commaLocations = orig.commaLocations;
   }
 
@@ -215,6 +217,14 @@ public final class FunctionNode extends AbstractParentExprNode implements ExprNo
 
   public boolean isResolved() {
     return state.function != null;
+  }
+
+  public boolean allowedToInvokeAsFunction() {
+    return this.state.allowedToInvokeAsFunction;
+  }
+
+  public void setAllowedToInvokeAsFunction(boolean cond) {
+    this.state.allowedToInvokeAsFunction = cond;
   }
 
   public Object getSoyFunction() {

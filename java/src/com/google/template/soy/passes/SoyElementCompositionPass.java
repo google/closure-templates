@@ -30,9 +30,11 @@ import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
+import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.parsepasses.contextautoesc.ContextualAutoescaper;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
@@ -69,6 +71,7 @@ import com.google.template.soy.types.SanitizedType.TrustedResourceUriType;
 import com.google.template.soy.types.SanitizedType.UriType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypes;
+import com.google.template.soy.types.TemplateImportType;
 import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.TemplateType.Parameter;
 import com.google.template.soy.types.UnionType;
@@ -131,6 +134,53 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
       for (HtmlTagNode tagNode : SoyTreeUtils.getAllNodesOfType(template, HtmlTagNode.class)) {
         process(template, tagNode, nodeIdGen);
       }
+      for (PrintNode printNode : SoyTreeUtils.getAllNodesOfType(template, PrintNode.class)) {
+        process(printNode, nodeIdGen);
+      }
+    }
+  }
+
+  private void process(PrintNode printNode, IdGenerator nodeIdGen) {
+    if (printNode.getExpr().getRoot() instanceof FunctionNode
+        && !((FunctionNode) printNode.getExpr().getRoot()).hasStaticName()
+        && ((FunctionNode) printNode.getExpr().getRoot()).getNameExpr() != null) {
+      FunctionNode fnNode = (FunctionNode) printNode.getExpr().getRoot();
+      ExprNode callee;
+      SoyType type;
+      if (fnNode.getNameExpr() instanceof VarRefNode
+          && fnNode.getNameExpr().getType() instanceof TemplateImportType) {
+        TemplateLiteralNode templateLiteralNode =
+            TemplateLiteralNode.forVarRef((VarRefNode) fnNode.getNameExpr());
+        templateLiteralNode.setStaticCall(true);
+        callee = templateLiteralNode;
+        type = ((TemplateImportType) fnNode.getNameExpr().getType()).getBasicTemplateType();
+        templateLiteralNode.setType(type);
+      } else if (fnNode.getNameExpr().getType() instanceof TemplateType) {
+        callee = fnNode.getNameExpr().copy(new CopyState());
+        type = callee.getType();
+      } else {
+        return;
+      }
+      CallBasicNode call =
+          new CallBasicNode(
+              nodeIdGen.genId(),
+              printNode.getSourceLocation(),
+              printNode.getExpr().getSourceLocation(),
+              callee,
+              ImmutableList.of(),
+              false,
+              errorReporter);
+      call.getCalleeExpr().setType(type);
+      for (int i = 0; i < fnNode.getParamNames().size(); i++) {
+        Identifier identifier = fnNode.getParamNames().get(i);
+        call.addChild(
+            new CallParamValueNode(
+                nodeIdGen.genId(),
+                identifier.location(),
+                identifier,
+                fnNode.getParams().get(i).copy(new CopyState())));
+      }
+      printNode.getParent().replaceChild(printNode, call);
     }
   }
 
