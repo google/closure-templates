@@ -17,6 +17,7 @@
 package com.google.template.soy.jssrc.internal;
 
 import com.google.template.soy.soytree.AbstractReturningSoyNodeVisitor;
+import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyNode;
@@ -68,6 +69,11 @@ public class IsComputableAsLitTemplateVisitor extends AbstractReturningSoyNodeVi
 
   @Override
   protected Boolean visitPrintNode(PrintNode node) {
+    return true;
+  }
+
+  @Override
+  protected Boolean visitLetValueNode(LetValueNode node) {
     return true;
   }
 

@@ -19,7 +19,6 @@ package com.google.template.soy.jssrc.internal;
 import static com.google.template.soy.jssrc.dsl.Expression.dottedIdNoRequire;
 import static com.google.template.soy.jssrc.dsl.Statement.assign;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.internal.SanitizedContentKind;
@@ -63,7 +62,6 @@ public final class GenLitCodeVisitor extends AbstractSoyNodeVisitor<List<String>
   private List<String> jsFilesContents;
   private ErrorReporter errorReporter;
   private SoyToJsVariableMappings topLevelSymbols;
-  private TranslationContext templateTranslationContext;
 
   /** The IsComputableAsJsExprsVisitor used by this instance. */
   private final IsComputableAsLitTemplateVisitor isComputableAsLitTemplateVisitor;
@@ -72,6 +70,9 @@ public final class GenLitCodeVisitor extends AbstractSoyNodeVisitor<List<String>
   private final GenLitExprVisitor.GenLitExprVisitorFactory genLitExprVisitorFactory;
 
   private final JavaScriptValueFactoryImpl javaScriptValueFactory;
+
+  private final UniqueNameGenerator nameGenerator = JsSrcNameGenerators.forLocalVariables();
+  private final CodeChunk.Generator codeGenerator = CodeChunk.Generator.create(nameGenerator);
 
   GenLitCodeVisitor(
       FileSetMetadata fileSetMetadata,
@@ -149,10 +150,6 @@ public final class GenLitCodeVisitor extends AbstractSoyNodeVisitor<List<String>
     addCodeToDeclareGoogModule(file, node);
 
     topLevelSymbols = SoyToJsVariableMappings.newEmpty();
-    UniqueNameGenerator nameGenerator = JsSrcNameGenerators.forLocalVariables();
-    CodeChunk.Generator codeGenerator = CodeChunk.Generator.create(nameGenerator);
-    templateTranslationContext =
-        TranslationContext.of(topLevelSymbols, codeGenerator, nameGenerator);
 
     for (ImportNode importNode : node.getImports()) {
       visit(importNode);
@@ -258,11 +255,13 @@ public final class GenLitCodeVisitor extends AbstractSoyNodeVisitor<List<String>
     // TODO(user): Template stubbing support (not in scope for the prototype, though).
     // TODO(user): Runtime type check for data/params
 
+    TranslationContext templateTranslationContext =
+        TranslationContext.of(
+            SoyToJsVariableMappings.startingWith(topLevelSymbols), codeGenerator, nameGenerator);
     GenLitExprVisitor genLitExprVisitor =
         genLitExprVisitorFactory.create(templateTranslationContext, templateAliases, errorReporter);
-    List<Expression> functionBody = genLitExprVisitor.exec(node);
-    Preconditions.checkState(functionBody.size() == 1);
-    return Statement.returnValue(functionBody.get(0));
+    Expression functionBody = genLitExprVisitor.exec(node);
+    return Statement.returnValue(functionBody);
   }
 
   @Override
@@ -329,8 +328,13 @@ public final class GenLitCodeVisitor extends AbstractSoyNodeVisitor<List<String>
   }
 
   private TranslateExprNodeVisitor getExprTranslator() {
+
     return new TranslateExprNodeVisitor(
-        javaScriptValueFactory, templateTranslationContext, templateAliases, errorReporter);
+        javaScriptValueFactory,
+        TranslationContext.of(
+            SoyToJsVariableMappings.startingWith(topLevelSymbols), codeGenerator, nameGenerator),
+        templateAliases,
+        errorReporter);
   }
 
   private Expression translateExpr(ExprNode expr) {
