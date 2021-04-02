@@ -125,7 +125,7 @@ function handleSoyElement<DATA, T extends SoyElement<DATA, {}>>(
 // tslint:disable-next-line:no-any Attaching arbitrary attributes to function.
 function makeHtml(idomFn: any): IdomFunction {
   const fn = (() => {
-               throw new Error('Should not be called directly');
+               idomFn(defaultIdomRenderer);
              }) as unknown as (SanitizedHtml & IdomFunction);
   // tslint:disable-next-line:no-any Hack :(
   (fn as any).prototype = SanitizedHtml;
@@ -378,7 +378,7 @@ function print(
       incrementaldom.skip();
       incrementaldom.close();
     }
-  } else {
+  } else if (expr !== undefined) {
     renderDynamicContent(incrementaldom, expr as IdomFunction);
   }
 }
