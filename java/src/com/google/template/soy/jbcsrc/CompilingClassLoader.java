@@ -23,6 +23,7 @@ import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyCompilationException;
 import com.google.template.soy.error.SoyError;
+import com.google.template.soy.internal.exemptions.NamespaceExemptions;
 import com.google.template.soy.jbcsrc.internal.AbstractMemoryClassLoader;
 import com.google.template.soy.jbcsrc.internal.ClassData;
 import com.google.template.soy.jbcsrc.shared.Names;
@@ -54,11 +55,15 @@ final class CompilingClassLoader extends AbstractMemoryClassLoader {
       PartialFileSetMetadata fileSetMetadata) {
     Map<String, SoyFileNode> javaClassNameToFile = new LinkedHashMap<>();
     for (SoyFileNode file : fileSet.getChildren()) {
-      // TODO(b/180904763):For the vast majority of files all templates share the same class, but
-      // there are some exceptions due to this bug.  Remove this loop when that is cleaned up.
-      for (TemplateNode template : file.getTemplates()) {
-        javaClassNameToFile.put(
-            Names.javaClassNameFromSoyTemplateName(template.getTemplateName()), file);
+      if (NamespaceExemptions.isKnownDuplicateNamespace(file.getNamespace())) {
+        // TODO(b/180904763):For the vast majority of files all templates share the same class, but
+        // there are some exceptions due to this bug.  Remove this loop when that is cleaned up.
+        for (TemplateNode template : file.getTemplates()) {
+          javaClassNameToFile.put(
+              Names.javaClassNameFromSoyTemplateName(template.getTemplateName()), file);
+        }
+      } else {
+        javaClassNameToFile.put(Names.javaClassNameFromSoyNamespace(file.getNamespace()), file);
       }
     }
     this.javaClassNameToFile = ImmutableMap.copyOf(javaClassNameToFile);

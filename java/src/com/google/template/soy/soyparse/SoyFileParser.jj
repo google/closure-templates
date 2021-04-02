@@ -1447,7 +1447,7 @@ private SoyFileNode SoyFile() :
         templates.add(template);
       }
     }
-  )+
+  )*
 
   eof = <EOF>
 
