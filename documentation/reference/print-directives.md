@@ -21,6 +21,16 @@ NOTE: The template compiler applies autoescaping before evaluating
 `|bidiSpanWrap`, which is safe because `|bidiSpanWrap` correctly handles
 HTML-escaped text.
 
+For Incremental DOM users, it is preferable to use `bidiWrap` instead.
+
+```soy
+import {bidiWrap} from 'third_party/java/soy/i18n.soy';
+
+...
+
+bidiWrap(content:$content)
+```
+
 ### `|bidiUnicodeWrap` {#bidiUnicodeWrap}
 
 If the overall directionality the print command is different from the global
