@@ -16,7 +16,6 @@
 
 package com.google.template.soy.shared.internal;
 
-import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyRecord;
@@ -164,42 +163,39 @@ public final class SharedRuntime {
     return serialize(key.coerceToString(), ":");
   }
 
-  public static SoyValue constructMapFromList(
-      List<? extends SoyValueProvider> list, SourceLocation sourceLocation) {
+  public static SoyMap constructMapFromList(List<? extends SoyValueProvider> list) {
     Map<SoyValue, SoyValueProvider> map = new HashMap<>();
     for (int i = 0; i < list.size(); i++) {
       SoyValue recordEntry = list.get(i).resolve();
       checkMapFromListConstructorCondition(
-          recordEntry instanceof SoyRecord, sourceLocation, recordEntry, OptionalInt.of(i));
+          recordEntry instanceof SoyRecord, recordEntry, OptionalInt.of(i));
 
-      SoyValueProvider keyProvider =
-          ((SoyRecord) recordEntry).getField(MapLiteralFromListNode.KEY_STRING);
-      SoyValueProvider valueProvider =
-          ((SoyRecord) recordEntry).getField(MapLiteralFromListNode.VALUE_STRING);
       checkMapFromListConstructorCondition(
-          keyProvider != null && valueProvider != null,
-          sourceLocation,
+          ((SoyRecord) recordEntry).hasField(MapLiteralFromListNode.KEY_STRING)
+              && ((SoyRecord) recordEntry).hasField(MapLiteralFromListNode.VALUE_STRING),
           recordEntry,
           OptionalInt.of(i));
 
-      SoyValue keyValue = keyProvider.resolve();
+      SoyValue key = ((SoyRecord) recordEntry).getField(MapLiteralFromListNode.KEY_STRING);
+      SoyValueProvider valueProvider =
+          ((SoyRecord) recordEntry).getFieldProvider(MapLiteralFromListNode.VALUE_STRING);
       checkMapFromListConstructorCondition(
-          SoyMap.isAllowedKeyType(keyValue), sourceLocation, recordEntry, OptionalInt.of(i));
+          key != null && SoyMap.isAllowedKeyType(key), recordEntry, OptionalInt.of(i));
 
-      map.put(keyValue, valueProvider);
+      map.put(key, valueProvider);
     }
 
     return SoyMapImpl.forProviderMap(map);
   }
 
   public static void checkMapFromListConstructorCondition(
-      boolean condition, SourceLocation sourceLocation, SoyValue list, OptionalInt index) {
+      boolean condition, SoyValue list, OptionalInt index) {
     if (!condition) {
       String exceptionString =
           String.format(
-              "Error constructing map in %s. Expected a list where each item is a record of 'key',"
+              "Error constructing map. Expected a list where each item is a record of 'key',"
                   + " 'value' pairs, with the 'key' fields holding primitive values. Found: %s",
-              sourceLocation, list);
+              list);
       if (index.isPresent()) {
         exceptionString += String.format(" at index %d", index.getAsInt());
       }

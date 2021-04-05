@@ -79,7 +79,6 @@ java_library(
     name = "shared_runtime",
     srcs = SHARED_RUNTIME_SRCS,
     deps = [
-        "//java/src/com/google/template/soy/base",
         "//java/src/com/google/template/soy/data",
         "//java/src/com/google/template/soy/exprtree",
     ],

@@ -269,7 +269,12 @@ public final class DictImpl extends SoyAbstractValue implements SoyDict, SoyMap 
       }
       key.render(appendable);
       appendable.append(": ");
-      value.render(appendable);
+      // TODO: Remove this once we box record values as SoyValueProvider
+      if (value == null) {
+        appendable.append("null");
+      } else {
+        value.render(appendable);
+      }
     }
     appendable.append('}');
   }

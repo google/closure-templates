@@ -400,6 +400,9 @@ public abstract class MethodRef {
   public static final MethodRef RUNTIME_MOD =
       create(SharedRuntime.class, "mod", SoyValue.class, SoyValue.class).asNonNullable();
 
+  public static final MethodRef CONSTRUCT_MAP_FROM_LIST =
+      create(SharedRuntime.class, "constructMapFromList", List.class).asNonNullable();
+
   public static final MethodRef MSG_RENDERER_SET_PLACEHOLDER =
       create(
           JbcSrcRuntime.MsgRenderer.class, "setPlaceholder", String.class, SoyValueProvider.class);

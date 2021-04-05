@@ -626,12 +626,9 @@ final class ExpressionCompiler {
 
     @Override
     protected final SoyExpression visitMapLiteralFromListNode(MapLiteralFromListNode node) {
-      // Unimplemented. Return an empty map for now.
-      List<Expression> keys = new ArrayList<>();
-      List<Expression> values = new ArrayList<>();
-      Expression soyDict =
-          MethodRef.MAP_IMPL_FOR_PROVIDER_MAP.invoke(BytecodeUtils.newHashMap(keys, values));
-      return SoyExpression.forSoyValue(node.getType(), soyDict);
+      return SoyExpression.forSoyValue(
+          node.getType(),
+          MethodRef.CONSTRUCT_MAP_FROM_LIST.invoke(visit(node.getListExpr()).unboxAsList()));
     }
 
     // Comparison operators

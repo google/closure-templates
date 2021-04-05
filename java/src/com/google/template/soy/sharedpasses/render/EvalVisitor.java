@@ -347,14 +347,16 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
   protected SoyValue visitMapLiteralFromListNode(MapLiteralFromListNode node) {
     ExprNode listExpr = node.getListExpr();
     SoyValue listValue = visit(listExpr);
-    checkMapFromListConstructorCondition(
-        listValue instanceof SoyList,
-        node.getListExpr().getSourceLocation(),
-        listValue,
-        OptionalInt.empty());
+    try {
+      checkMapFromListConstructorCondition(
+          listValue instanceof SoyList, listValue, OptionalInt.empty());
 
-    List<? extends SoyValueProvider> list = ((SoyList) listValue).asJavaList();
-    return constructMapFromList(list, node.getListExpr().getSourceLocation());
+      List<? extends SoyValueProvider> list = ((SoyList) listValue).asJavaList();
+      return constructMapFromList(list);
+    } catch (IllegalArgumentException e) {
+      throw RenderException.create(
+          e.getMessage() + " at " + node.getListExpr().getSourceLocation(), e);
+    }
   }
 
   // -----------------------------------------------------------------------------------------------
