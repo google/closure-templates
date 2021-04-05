@@ -25,6 +25,12 @@ current template (the caller).
     {/call}
     ```
 
+*   With parameter names and values (notice that `call` is not needed):
+
+    ```soy
+    {<TEMPLATE_NAME(<KEY1>: <EXPRESSION1>, <KEY2: <EXPRESSION2>)}
+    ```
+
 *   With values from the caller template's data:
 
     ```soy
@@ -37,6 +43,7 @@ The following sections discuss these five options for passing values to a callee
 template:
 
 1.  Pass values using `param` commands.
+1.  Pass values using parameter names.
 1.  Pass values using the `data` attribute.
 1.  Pass all of the caller template's `data`.
 1.  Construct values to pass using `param` commands.
@@ -74,6 +81,20 @@ with names that match the callee's parameters.
 
 This is the *recommended* way of calling templates in Soy as explicit data
 passing makes code more readable and easier to debug.
+
+#### Pass values using parameter names (recommended)
+
+In cases where all parameters are passed without blocks, the call can be
+shortened to a function-like call.
+
+```soy
+{template .exampleCaller}
+  {let $largerNum: 20 /}
+  {let $smallerNum: 10 /}
+
+  {.exampleCallee(largerNum: $largerNum, smallerNum: $smallerNum)}
+{/template}
+```
 
 #### Pass values using the `data` attribute
 
