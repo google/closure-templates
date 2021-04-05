@@ -26,6 +26,7 @@ import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.Kind;
 import com.google.template.soy.exprtree.FieldAccessNode;
+import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
@@ -222,6 +223,11 @@ public final class TemplateCallMetadataPass implements CompilerFileSetPass {
       FieldAccessNode fieldAccessNode = ((FieldAccessNode) varExpr);
       varRefInfo.setDataAccessAlias(fieldAccessNode.getFieldName());
       return resolveLocalVarRefToParamRef(fieldAccessNode.getBaseExprChild(), varRefInfo);
+    } else if (varExpr.getKind() == Kind.FUNCTION_NODE) {
+      if ("checkNotNull".equals(((FunctionNode) varExpr).getFunctionName())) {
+        // this function accepts 1 expr and does not meaningfully change its value
+        return resolveLocalVarRefToParamRef(((FunctionNode) varExpr).getChild(0), varRefInfo);
+      }
     }
 
     return varRefInfo.build();
