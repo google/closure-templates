@@ -524,11 +524,9 @@ public final class PassManager {
                     options.getExperimentalFeatures(), errorReporter))
             .add(new CheckTemplateCallsPass(errorReporter, accumulatedState::registryFull))
             .add(new ElementCheckCrossTemplatePass(errorReporter));
-        if (astRewrites.atLeast(AstRewrites.ALL)) {
-          passes.add(
-              new SoyElementCompositionPass(
-                  errorReporter, soyPrintDirectives, accumulatedState::registryFull));
-        }
+        passes.add(
+            new SoyElementCompositionPass(
+                astRewrites, errorReporter, soyPrintDirectives, accumulatedState::registryFull));
       }
       passes
           .add(new CallAnnotationPass())
