@@ -107,11 +107,24 @@ For example:
 
 ### map {#map}
 
-Map literals are delimited by `map()` and contain a comma-delimited sequence of
-key-value pairs separated by `:` characters. For example,
+There are two different syntaxes for creating map literals. They are both
+delimited by `map()`.
 
-*   `map()`: the empty map
-*   `map(1: 'one', 2: 'two')`
+1.  They can contain a comma-delimited sequence of key-value pairs separated by
+    `:` characters. For example,
+
+    *   `map()`: the empty map
+    *   `map(1: 'one', 2: 'two')`
+
+2.  They can contain a list whose elements are each a [record](#record) with
+    exactly two fields named **key** and **value**. The following examples
+    produce the same maps as the above ones:
+
+    *   `{let $arr: [] /} map($arr)`
+    *   `map([record(key: 1, value: 'one'), record(key: 2, value: 'two')])`
+
+    Note: This syntax is most useful when used in conjunction with list
+    comprehensions. For more details, see [this section](#map-from-list)
 
 These expressions create [map](types.md#map) values. For more details about the
 difference between maps and legacy object maps see the [map](types.md#map)
@@ -401,6 +414,29 @@ an optional **filter expression**, such as:
 For the original `$myList` value above, this would evaluate to:
 
 `[5, 7, 9]`
+
+### Using list comprehensions to create maps {#map-from-list}
+
+List comprehensions can be particularly useful for constructing and manipulating
+maps. To illustrate, we'll construct three maps (`result1`, `result2` and
+`result3`) in the code snippet below. Each map is constructed using a list
+comprehension and evaluates to `map('a': 1, 'b': 2, 'c': 3)`.
+
+```soy
+{let $result1: map([record(key: $c, value: $i + 1) for $c, $i in ['a', 'b', 'c']]) /}
+
+{let $oldMap: map('a': 10, 'b': 20, 'c': 30, 'd': 40, 'e': 50) /}
+{let $result2: map([record(key : $x, value : $oldMap[$x] / 10) for $x in $oldMap.keys() if $oldMap[$x] < 35]) /}
+
+// 'Person' is a proto with the following signature:
+//
+// message Person {
+//   string name = 1;
+//   int32 age = 2;
+// }
+{let $arr: [Person(name: 'a', age: 1), Person(name: 'b', age: 2), Person(name: 'c', age: 3)] /}
+{let $result3: map([record(key: $x.name, value: $x.age) for $x in $arr]) /}
+```
 
 ## Function calls
 

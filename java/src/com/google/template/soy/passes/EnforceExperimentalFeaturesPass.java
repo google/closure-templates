@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
-import com.google.template.soy.exprtree.MapLiteralFromListNode;
 import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
 import com.google.template.soy.soytree.ConstNode;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -44,9 +43,6 @@ final class EnforceExperimentalFeaturesPass implements CompilerFilePass {
 
   private static final SoyErrorKind CONSTANT_NOT_GA =
       SoyErrorKind.of("'{'const'}' is not available for general use.");
-
-  private static final SoyErrorKind LIST_TO_MAP_CONSTRUCTOR_NOT_GA =
-      SoyErrorKind.of("The map($list) syntax is not available for general use.");
 
   private final ImmutableSet<String> features;
   private final ErrorReporter reporter;
@@ -71,14 +67,6 @@ final class EnforceExperimentalFeaturesPass implements CompilerFilePass {
       SoyTreeUtils.allNodesOfType(file, ConstNode.class)
           .forEach(
               closeTagNode -> reporter.report(closeTagNode.getSourceLocation(), CONSTANT_NOT_GA));
-    }
-
-    if (!features.contains("enableListToMapConstructor")) {
-      SoyTreeUtils.allNodesOfType(file, MapLiteralFromListNode.class)
-          .forEach(
-              closeTagNode ->
-                  reporter.report(
-                      closeTagNode.getSourceLocation(), LIST_TO_MAP_CONSTRUCTOR_NOT_GA));
     }
   }
 }
