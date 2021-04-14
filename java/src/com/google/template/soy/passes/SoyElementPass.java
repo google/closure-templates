@@ -87,8 +87,9 @@ public final class SoyElementPass implements CompilerFileSetPass {
   private static final SoyErrorKind SOY_ELEMENT_EXACTLY_ONE_TAG =
       SoyErrorKind.of(
           "Soy elements must contain exactly one top-level HTML element (e.g, span, div). Calls to"
-              + " templates (but not deltemplates) that contain one top-level HTML element are"
-              + " also allowed.");
+              + " templates (but not deltemplates) that contain one top-level HTML element are also"
+              + " allowed, but not as function calls. Replace function calls with call commands or"
+              + " element composition instead.");
 
   private static final SoyErrorKind ELEMENT_TEMPLATE_EXACTLY_ONE_TAG =
       SoyErrorKind.of(
