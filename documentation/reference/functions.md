@@ -372,9 +372,10 @@ field `past_height`, it would be accessed as follows:
 
 ### `legacyDynamicTag($ag)` {#legacyDynamicTag}
 
-The `legacyTagName` function is used to create an HTML tag whose name is
+The `legacyDynamicTag` function is used to create an HTML tag whose name is
 determined dynamically by a print node. Wrapping the tag name expression in
-`legacyTagName` is required in order to disambiguate it with other Soy syntax.
+`legacyDynamicTag` is required in order to disambiguate it with other Soy
+syntax.
 
 ```soy
 {template .foo}
