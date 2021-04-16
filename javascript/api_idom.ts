@@ -31,6 +31,12 @@ export const patchOuter = incrementaldom.createPatchOuter(patchConfig);
 /** PatchInner using Soy-IDOM semantics. */
 export const patch = patchInner;
 
+/**
+ * TODO(tomnguyen) Once https://github.com/google/incremental-dom/pull/457 is
+ * merged, use createMap() to create a Soy-only version of applyAttributes.
+ */
+export const attributes = incrementaldom.attributes;
+
 interface IdomRendererApi {
   open(nameOrCtor: string, key?: string): void|HTMLElement;
   openSSR(nameOrCtor: string, key?: string, data?: unknown): boolean;
