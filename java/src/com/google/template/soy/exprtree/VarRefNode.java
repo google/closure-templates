@@ -113,24 +113,6 @@ public final class VarRefNode extends AbstractExprNode {
     return defn;
   }
 
-  /** Returns whether this is a local variable reference. */
-  public boolean isLocalVar() {
-    return defn.kind() == VarDefn.Kind.LOCAL_VAR;
-  }
-
-  /**
-   * Returns whether this might be header variable reference. A header variable is declared in Soy
-   * with the @param or @state annotation.
-   */
-  public Boolean isPossibleHeaderVar() {
-    if (defn == null) {
-      throw new NullPointerException(getSourceLocation().toString());
-    }
-    return defn.kind() == VarDefn.Kind.PARAM
-        || defn.kind() == VarDefn.Kind.STATE
-        || defn.kind() == VarDefn.Kind.UNDECLARED;
-  }
-
   /**
    * Override the type of the variable when used in this context. This is set by the flow analysis
    * in the type resolution pass which can infer a stronger type.
