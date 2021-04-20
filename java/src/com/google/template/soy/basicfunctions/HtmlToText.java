@@ -76,11 +76,11 @@ public final class HtmlToText {
   private static final ImmutableSet<String> TAB_TAGS = createOpenTagSet("td", "th");
   private static final Pattern WHITESPACE = Pattern.compile("\\s+");
 
-  private static boolean endsWithNewline(StringBuilder builder) {
+  private static boolean endsWithNewline(StringBuffer builder) {
     return builder.length() == 0 || builder.charAt(builder.length() - 1) == '\n';
   }
 
-  private static boolean emptyOrEndsWithSpace(StringBuilder builder) {
+  private static boolean emptyOrEndsWithSpace(StringBuffer builder) {
     return builder.length() == 0
         || CharMatcher.whitespace().matches(builder.charAt(builder.length() - 1));
   }
@@ -102,7 +102,7 @@ public final class HtmlToText {
     }
     Preconditions.checkArgument(((SanitizedContent) value).getContentKind() == ContentKind.HTML);
     String html = value.stringValue();
-    StringBuilder text = new StringBuilder(html.length()); // guaranteed to be no bigger than this
+    StringBuffer text = new StringBuffer(html.length()); // guaranteed to be no bigger than this
     int start = 0;
     String removingUntil = "";
     String wsPreservingUntil = "";
