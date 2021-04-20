@@ -488,6 +488,8 @@ public final class JsType {
                 String.format(
                     "function(!incrementaldomlib.IncrementalDomRenderer, %s, %s):(%s)",
                     parametersType, ijType, returnType));
+          } else if (kind == JsTypeKind.LITSRC) {
+            builder.addType(String.format("function(%s):(%s)", parametersType, "TemplateResult"));
           } else {
             builder.addType(
                 String.format("function(%s, %s):(%s)", parametersType, ijType, returnType));
