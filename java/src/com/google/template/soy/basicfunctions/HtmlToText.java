@@ -16,8 +16,13 @@
 
 package com.google.template.soy.basicfunctions;
 
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
+import static java.util.Arrays.stream;
+
 import com.google.common.base.Ascii;
+import com.google.common.base.CharMatcher;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyValue;
@@ -25,28 +30,68 @@ import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.internal.base.UnescapeUtils;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 /** Converts HTML to plain text by removing tags, normalizing spaces and converting entities. */
 public final class HtmlToText {
   // LINT.IfChange
   private static final Pattern TAG =
       Pattern.compile(
-          "<(?:!--.*?--|(?:!|(/?[a-z][\\w:-]*))(?:[^>'\"]|\"[^\"]*\"|'[^']*')*)>|\\z",
-          Pattern.CASE_INSENSITIVE);
-  private static final Pattern REMOVING_TAGS =
-      Pattern.compile("script|style|textarea|title", Pattern.CASE_INSENSITIVE);
-  private static final Pattern WS_PRESERVING_TAGS =
-      Pattern.compile("pre", Pattern.CASE_INSENSITIVE);
-  private static final Pattern NEWLINE_TAGS = Pattern.compile("br", Pattern.CASE_INSENSITIVE);
-  private static final Pattern BLOCK_TAGS =
-      Pattern.compile(
-          "/?(address|blockquote|dd|div|dl|dt|h[1-6]|hr|li|ol|p|pre|table|tr|ul)",
-          Pattern.CASE_INSENSITIVE);
-  private static final Pattern TAB_TAGS = Pattern.compile("td|th", Pattern.CASE_INSENSITIVE);
+          "<(?:!--.*?--|(?:!|(/?[a-zA-Z][\\w:-]*))(?:[^>'\"]*|\"[^\"]*\"|'[^']*')*)>|\\z");
+
+  private static ImmutableSet<String> createOpenTagSet(String... tags) {
+    return ImmutableSet.copyOf(tags);
+  }
+
+  private static ImmutableSet<String> createOpenAndCloseTagSet(String... tags) {
+    return Stream.concat(stream(tags).map(t -> "/" + t), stream(tags)).collect(toImmutableSet());
+  }
+
+  private static final ImmutableSet<String> REMOVING_TAGS =
+      createOpenTagSet("script", "style", "textarea", "title");
+  private static final String WS_PRESERVING_TAGS = "pre";
+  private static final String NEWLINE_TAGS = "br";
+  private static final ImmutableSet<String> BLOCK_TAGS =
+      createOpenAndCloseTagSet(
+          "address",
+          "blockquote",
+          "dd",
+          "div",
+          "dl",
+          "dt",
+          "h1",
+          "h2",
+          "h3",
+          "h4",
+          "h5",
+          "h6",
+          "hr",
+          "li",
+          "ol",
+          "p",
+          "pre",
+          "table",
+          "tr",
+          "ul");
+  private static final ImmutableSet<String> TAB_TAGS = createOpenTagSet("td", "th");
   private static final Pattern WHITESPACE = Pattern.compile("\\s+");
-  private static final Pattern TRAILING_NON_WHITESPACE = Pattern.compile("\\S\\z");
-  private static final Pattern TRAILING_NON_NEWLINE = Pattern.compile("[^\n]\\z");
-  private static final Pattern LEADING_SPACE = Pattern.compile("^ ");
+
+  private static boolean endsWithNewline(StringBuilder builder) {
+    return builder.length() == 0 || builder.charAt(builder.length() - 1) == '\n';
+  }
+
+  private static boolean emptyOrEndsWithSpace(StringBuilder builder) {
+    return builder.length() == 0
+        || CharMatcher.whitespace().matches(builder.charAt(builder.length() - 1));
+  }
+
+  private static boolean matchesTag(String tag, ImmutableSet<String> tagSet) {
+    return tagSet.contains(tag);
+  }
+
+  private static boolean matchesTag(String tag, String tagSet) {
+    return tagSet.equals(tag);
+  }
 
   public static String convert(SoyValue value) {
     if (value == null || value instanceof NullData) {
@@ -57,43 +102,62 @@ public final class HtmlToText {
     }
     Preconditions.checkArgument(((SanitizedContent) value).getContentKind() == ContentKind.HTML);
     String html = value.stringValue();
-    StringBuilder text = new StringBuilder();
+    StringBuilder text = new StringBuilder(html.length()); // guaranteed to be no bigger than this
     int start = 0;
     String removingUntil = "";
     String wsPreservingUntil = "";
+    Matcher wsMatcher = null;
+
     Matcher matcher = TAG.matcher(html);
     while (matcher.find()) {
       int offset = matcher.start();
       String tag = matcher.group(1);
+      String lowerCaseTag = tag != null ? Ascii.toLowerCase(tag) : null;
       if (removingUntil.isEmpty()) {
         String chunk = html.substring(start, offset);
         chunk = UnescapeUtils.unescapeHtml(chunk);
         if (wsPreservingUntil.isEmpty()) {
-          chunk = WHITESPACE.matcher(chunk).replaceAll(" ");
-          if (!TRAILING_NON_WHITESPACE.matcher(text).find()) {
-            chunk = LEADING_SPACE.matcher(chunk).replaceFirst("");
+          // collapse internal whitespace sequences to a single space
+          // perform this loop inline so we can append directly to text instead of allocating
+          // intermediate strings which is how Matcher.replaceAll works
+          if (wsMatcher == null) {
+            wsMatcher = WHITESPACE.matcher(chunk);
+          } else {
+            // reuse matchers, this saves a lot of allocations.
+            wsMatcher.reset(chunk);
           }
+          while (wsMatcher.find()) {
+            // if the current builder ends with space and we see ws at the beginning of this chunk
+            // just skip it
+            if (wsMatcher.start() == 0 && emptyOrEndsWithSpace(text)) {
+              wsMatcher.appendReplacement(text, "");
+            } else {
+              wsMatcher.appendReplacement(text, " ");
+            }
+          }
+          wsMatcher.appendTail(text);
+        } else {
+          text.append(chunk);
         }
-        text.append(chunk);
-        if (tag != null) {
-          if (REMOVING_TAGS.matcher(tag).matches()) {
-            removingUntil = '/' + tag;
-          } else if (NEWLINE_TAGS.matcher(tag).matches()) {
+        if (lowerCaseTag != null) {
+          if (matchesTag(lowerCaseTag, REMOVING_TAGS)) {
+            removingUntil = '/' + lowerCaseTag;
+          } else if (matchesTag(lowerCaseTag, NEWLINE_TAGS)) {
             text.append('\n');
-          } else if (BLOCK_TAGS.matcher(tag).matches()) {
-            if (TRAILING_NON_NEWLINE.matcher(text).find()) {
+          } else if (matchesTag(lowerCaseTag, BLOCK_TAGS)) {
+            if (!endsWithNewline(text)) {
               text.append('\n');
             }
-            if (WS_PRESERVING_TAGS.matcher(tag).matches()) {
-              wsPreservingUntil = '/' + tag;
-            } else if (Ascii.equalsIgnoreCase(tag, wsPreservingUntil)) {
+            if (matchesTag(lowerCaseTag, WS_PRESERVING_TAGS)) {
+              wsPreservingUntil = '/' + lowerCaseTag;
+            } else if (lowerCaseTag.equals(wsPreservingUntil)) {
               wsPreservingUntil = "";
             }
-          } else if (TAB_TAGS.matcher(tag).matches()) {
+          } else if (matchesTag(lowerCaseTag, TAB_TAGS)) {
             text.append('\t');
           }
         }
-      } else if (Ascii.equalsIgnoreCase(removingUntil, tag)) {
+      } else if (removingUntil.equals(lowerCaseTag)) {
         removingUntil = "";
       }
       start = matcher.end();
@@ -103,4 +167,6 @@ public final class HtmlToText {
   // LINT.ThenChange(
   //     ../../../../../../../../../javascript/template/soy/soyutils_usegoog.js:htmlToText,
   //     ../../../../../../python/runtime/sanitize.py:htmlToText)
+
+  private HtmlToText() {}
 }
