@@ -92,7 +92,7 @@ shortened to a function-like call.
   {let $largerNum: 20 /}
   {let $smallerNum: 10 /}
 
-  {.exampleCallee(largerNum: $largerNum, smallerNum: $smallerNum)}
+  {exampleCallee(largerNum: $largerNum, smallerNum: $smallerNum)}
 {/template}
 ```
 
