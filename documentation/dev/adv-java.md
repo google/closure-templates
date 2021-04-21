@@ -149,7 +149,7 @@ operation. There are 3 different options:
     particular future is available via the `RenderResult.future()` method.
 1.  `LIMITED` this means that the output stream told us to stop rendering
 
-How to handle each event depends stronly on the particular environment of the
+How to handle each event depends strongly on the particular environment of the
 rendering operation. For example,
 
 *   If the future is a `ListenableFuture` then a listener could be attached and
