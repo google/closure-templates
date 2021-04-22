@@ -23,7 +23,6 @@ import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
-import com.google.template.soy.soytree.ConstNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 
@@ -57,16 +56,16 @@ final class EnforceExperimentalFeaturesPass implements CompilerFilePass {
     // TOOD(b/22389927): enable the non-null assertion operator once we're ready to use for
     // fixing proto nullability.
     if (!features.contains("enableNonNullAssertionOperator")) {
-      for (AssertNonNullOpNode assertNonNullOpNode :
-          SoyTreeUtils.getAllNodesOfType(file, AssertNonNullOpNode.class)) {
-        reporter.report(assertNonNullOpNode.getSourceLocation(), NON_NULL_ASSERTION_BANNED);
-      }
+      SoyTreeUtils.allNodesOfType(file, AssertNonNullOpNode.class)
+          .forEach(
+              assertNonNullOpNode ->
+                  reporter.report(
+                      assertNonNullOpNode.getSourceLocation(), NON_NULL_ASSERTION_BANNED));
     }
 
     if (!features.contains("enableConstants")) {
-      SoyTreeUtils.allNodesOfType(file, ConstNode.class)
-          .forEach(
-              closeTagNode -> reporter.report(closeTagNode.getSourceLocation(), CONSTANT_NOT_GA));
+      file.getConstants()
+          .forEach(constNode -> reporter.report(constNode.getSourceLocation(), CONSTANT_NOT_GA));
     }
   }
 }

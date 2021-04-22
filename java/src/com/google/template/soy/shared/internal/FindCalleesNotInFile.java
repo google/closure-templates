@@ -40,7 +40,7 @@ public final class FindCalleesNotInFile {
   public static Set<TemplateLiteralNode> findCalleesNotInFile(SoyFileNode soyFileNode) {
     Set<String> templatesInFile = new LinkedHashSet<>();
     Set<TemplateLiteralNode> calleesNotInFile = new LinkedHashSet<>();
-    for (TemplateNode template : SoyTreeUtils.getAllNodesOfType(soyFileNode, TemplateNode.class)) {
+    for (TemplateNode template : soyFileNode.getTemplates()) {
       templatesInFile.add(template.getTemplateName());
     }
     for (TemplateLiteralNode templateLiteralNode :

@@ -26,7 +26,6 @@ import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode.Kind;
-import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.AttrParam;
 import com.google.template.soy.types.SoyType;
@@ -53,7 +52,7 @@ public final class ElementCheckCrossTemplatePass implements CompilerFileSetPass 
   @Override
   public Result run(ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator) {
     sourceFiles.stream()
-        .flatMap(file -> SoyTreeUtils.allNodesOfType(file, TemplateNode.class))
+        .flatMap(file -> file.getTemplates().stream())
         .filter(t -> t.getTemplateContentKind() instanceof TemplateContentKind.ElementContentKind)
         .forEach(this::processTemplate);
     return Result.CONTINUE;
