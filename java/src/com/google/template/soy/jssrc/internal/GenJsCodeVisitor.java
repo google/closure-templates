@@ -392,6 +392,13 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         .append(node.getFilePath().path())
         .append('\n');
 
+    if (node.getConstants().isEmpty() && node.getTemplates().isEmpty()) {
+      // Special support for empty Soy files created with NamespaceDeclaration.EMPTY.
+      jsFilesContents.add(file.toString());
+      jsCodeBuilder = null;
+      return;
+    }
+
     // Output a section containing optionally-parsed compiler directives in comments. Since these
     // are comments, they are not controlled by an option, and will be removed by minifiers that do
     // not understand them.

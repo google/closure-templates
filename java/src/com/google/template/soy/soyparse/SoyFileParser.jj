@@ -1392,6 +1392,39 @@ TOKEN_MGR_DECLS: {
  */
 private SoyFileNode SoyFile() :
 {
+  SoyFileNode file;
+}
+{
+  (
+    file = EmptySoyFile()
+  |
+    file = NonEmptySoyFile()
+  )
+  {
+    return file;
+  }
+}
+
+private SoyFileNode EmptySoyFile() :
+{
+  Token eof;
+}
+{
+  eof = <EOF>
+  {
+    return new SoyFileNode(
+        nodeIdGen.genId(),
+        new SourceLocation(filePath,
+            SourceLocation.Point.create(1, 1),
+            SourceLocation.Point.create(Math.max(1, eof.beginLine), Math.max(1, eof.beginColumn))),
+            NamespaceDeclaration.EMPTY,
+            SoyFileHeaderInfo.EMPTY,
+            buildComments(token_source));
+  }
+}
+
+private SoyFileNode NonEmptySoyFile() :
+{
   DelPackageDeclaration delpackageDecl = null;
   NamespaceDeclaration namespace;
   AliasDeclaration alias;

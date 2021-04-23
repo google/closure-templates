@@ -17,6 +17,7 @@
 package com.google.template.soy.soytree;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.template.soy.base.SourceLocation.UNKNOWN;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
@@ -24,11 +25,19 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 import java.util.List;
 import javax.annotation.Nullable;
 
 /** A {@code {namespace ..}} declaration. */
 public final class NamespaceDeclaration {
+  public static final NamespaceDeclaration EMPTY =
+      new NamespaceDeclaration(
+          Identifier.create(SoyFileHeaderInfo.EMPTY.getNamespace(), UNKNOWN),
+          ImmutableList.of(),
+          null,
+          UNKNOWN);
+
   private final Identifier namespace;
   private final ImmutableList<String> requiredCssNamespaces;
   private final ImmutableList<String> requiredCssPaths;
