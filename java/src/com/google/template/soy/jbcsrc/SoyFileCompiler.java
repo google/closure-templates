@@ -56,7 +56,10 @@ final class SoyFileCompiler {
   }
 
   ImmutableList<ClassData> compile() {
-    if (NamespaceExemptions.isKnownDuplicateNamespace(fileNode.getNamespace())) {
+    if (fileNode.getConstants().isEmpty() && fileNode.getTemplates().isEmpty()) {
+      // Special support for empty Soy files created with NamespaceDeclaration.EMPTY.
+      return ImmutableList.of();
+    } else if (NamespaceExemptions.isKnownDuplicateNamespace(fileNode.getNamespace())) {
       return compileToManyClasses();
     } else {
       return compileToSingleClass();
