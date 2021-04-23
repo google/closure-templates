@@ -197,10 +197,6 @@ public final class PassManager {
     TRICORDER,
     /** All the AST rewrites. */
     ALL;
-
-    boolean atLeast(AstRewrites v) {
-      return this.ordinal() >= v.ordinal();
-    }
   }
 
   /** A builder for configuring the pass manager. */
@@ -373,7 +369,7 @@ public final class PassManager {
       // TODO(b/158474755): Try to simplify this pass structure structure once we have template
       // imports.
       PassBuilder passes = new PassBuilder();
-      if (astRewrites.atLeast(AstRewrites.ALL)) {
+      if (astRewrites == AstRewrites.ALL) {
         passes
             .add(new ContentSecurityPolicyNonceInjectionPass(errorReporter))
             // Needs to come after ContentSecurityPolicyNonceInjectionPass.
@@ -403,7 +399,7 @@ public final class PassManager {
       passes.add(new ResolvePluginsPass(pluginResolver));
 
       // Must come after ResolvePluginsPass.
-      if (astRewrites.atLeast(AstRewrites.ALL)) {
+      if (astRewrites == AstRewrites.ALL) {
         passes
             .add(new RewriteDirectivesCallableAsFunctionsPass(errorReporter))
             .add(new RewriteRemaindersPass(errorReporter))
@@ -421,7 +417,7 @@ public final class PassManager {
           .add(new UnknownJsGlobalPass(allowUnknownJsGlobals, errorReporter))
           .add(new ResolveNamesPass(errorReporter))
           .add(new ResolveDottedImportsPass(errorReporter, registry));
-      if (astRewrites.atLeast(AstRewrites.KYTHE)) {
+      if (astRewrites != AstRewrites.NONE) {
         passes.add(new ResolveTemplateFunctionsPass());
       }
       passes.add(new ResolveTemplateNamesPass(errorReporter));
@@ -434,7 +430,7 @@ public final class PassManager {
         passes.add(new ValidateVariantExpressionsPass(errorReporter));
       }
       // needs to be after ResolveNames and MsgsPass
-      if (astRewrites.atLeast(AstRewrites.ALL)) {
+      if (astRewrites == AstRewrites.ALL) {
         passes.add(new MsgWithIdFunctionPass(errorReporter));
       }
 
@@ -447,7 +443,7 @@ public final class PassManager {
         // and before ResolveExpressionTypesPass (since we insert expressions).
         passes.add(new AddDebugAttributesPass());
       }
-      if (astRewrites.atLeast(AstRewrites.ALL)) {
+      if (astRewrites == AstRewrites.ALL) {
         passes.add(
             new ElementAttributePass(
                 errorReporter, pluginResolver, accumulatedState::registryFromDeps));
@@ -513,7 +509,7 @@ public final class PassManager {
       if (!disableAllTypeChecking) {
         passes.add(
             new ResolveExpressionTypesCrossTemplatePass(
-                errorReporter, astRewrites.atLeast(AstRewrites.ALL)));
+                errorReporter, astRewrites == AstRewrites.ALL));
       }
       passes.add(new CheckTemplateHeaderVarsPass(errorReporter, accumulatedState::registryFull));
       if (!disableAllTypeChecking) {

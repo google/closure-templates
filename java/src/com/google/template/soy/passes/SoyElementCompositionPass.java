@@ -135,12 +135,15 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
 
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
     for (TemplateNode template : file.getTemplates()) {
-      if (astRewrites.atLeast(AstRewrites.ALL)) {
+      if (astRewrites == AstRewrites.ALL) {
         for (HtmlTagNode tagNode : SoyTreeUtils.getAllNodesOfType(template, HtmlTagNode.class)) {
           process(template, tagNode, nodeIdGen);
         }
       }
-      if (astRewrites.atLeast(AstRewrites.KYTHE)) {
+      // It is OK for Kythe to depend on the rewritten call nodes since they have appropriate
+      // source locations to map back to the original template. For tricorder fixes, we need
+      // to make sure that we are only rewriting human-written call nodes.
+      if (astRewrites != AstRewrites.TRICORDER && astRewrites != AstRewrites.NONE) {
         for (PrintNode printNode : SoyTreeUtils.getAllNodesOfType(template, PrintNode.class)) {
           process(printNode, nodeIdGen);
         }
