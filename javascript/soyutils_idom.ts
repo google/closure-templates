@@ -26,7 +26,7 @@ import {isAttribute} from 'goog:soy.checks';  // from //javascript/template/soy:
 import {ordainSanitizedHtml} from 'goog:soydata.VERY_UNSAFE';  // from //javascript/template/soy:soy_usegoog_js
 import * as incrementaldom from 'incrementaldom';  // from //third_party/javascript/incremental_dom:incrementaldom
 
-import {FalsinessRenderer, IncrementalDomRenderer, patch, patchOuter} from './api_idom';
+import {attributes, FalsinessRenderer, IncrementalDomRenderer, patch, patchOuter} from './api_idom';
 import {splitAttributes} from './attributes';
 import {IdomFunction, PatchFunction, SoyElement} from './element_lib_idom';
 import {getSoyUntyped} from './global';
@@ -40,7 +40,7 @@ const htmlToStringRenderer = new IncrementalDomRenderer();
 
 type LetFunction = (idom: IncrementalDomRenderer) => void;
 
-incrementaldom.attributes['checked'] =
+attributes['checked'] =
     // tslint:disable-next-line:no-any
     (el: Element, name: string, value: any) => {
       // We don't use !!value because:
@@ -58,7 +58,7 @@ incrementaldom.attributes['checked'] =
       }
     };
 
-incrementaldom.attributes['value'] =
+attributes['value'] =
     // tslint:disable-next-line:no-any
     (el: Element, name: string, value: any) => {
       if (value == null) {
