@@ -436,7 +436,7 @@ export class FalsinessRenderer implements IdomRendererApi {
     return null;
   }
   verifyLogOnly(logOnly: boolean): boolean {
-    throw new Error('Cannot evaluate VE functions in conditions.');
+    return logOnly;
   }
   evalLoggingFunction(name: string, args: Array<{}>, placeHolder: string):
       string {
