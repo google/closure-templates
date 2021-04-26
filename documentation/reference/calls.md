@@ -28,7 +28,7 @@ current template (the caller).
 *   With parameter names and values (notice that `call` is not needed):
 
     ```soy
-    {<TEMPLATE_NAME(<KEY1>: <EXPRESSION1>, <KEY2: <EXPRESSION2>)}
+    {<TEMPLATE_NAME>(<KEY1>: <EXPRESSION1>, <KEY2>: <EXPRESSION2>)}
     ```
 
 *   With values from the caller template's data:
