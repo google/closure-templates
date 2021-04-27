@@ -80,6 +80,10 @@ public interface VarDefn {
    */
   SoyType type();
 
+  default SoyType typeOrDefault(@Nullable SoyType defaultValue) {
+    return hasType() ? type() : defaultValue;
+  }
+
   /** Whether a type has been set yet for this variable (in early passes, this may not be true). */
   boolean hasType();
 

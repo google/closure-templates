@@ -39,8 +39,6 @@ public interface TemplateHeaderVarDefn extends VarDefn {
 
   ExprRootNode defaultValue();
 
-  boolean hasType();
-
   void setType(SoyType type);
 
   @Nullable

@@ -181,8 +181,6 @@ public final class ImportNode extends AbstractSoyNode {
       ImportedVar id, SoyType parentType, BiConsumer<ImportedVar, SoyType> visitor) {
     visitor.accept(id, parentType);
     id.getNestedTypes()
-        .forEach(
-            nestedType ->
-                visitVars(id.nested(nestedType), id.hasType() ? id.type() : null, visitor));
+        .forEach(nestedType -> visitVars(id.nested(nestedType), id.typeOrDefault(null), visitor));
   }
 }
