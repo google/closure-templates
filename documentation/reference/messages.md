@@ -89,15 +89,21 @@ Example message:
 
 Example of what the translators see:
 
-    Hello {USER_NAME}! Please click {START_LINK}here{END_LINK}.
+```
+Hello {USER_NAME}! Please click {START_LINK}here{END_LINK}.
+```
 
 Example translation that one translator might give us:
 
-    {START_LINK}Zhere{END_LINK} zclick zplease. {USER_NAME} zhello!
+```
+{START_LINK}Zhere{END_LINK} zclick zplease. {USER_NAME} zhello!
+```
 
 Example output (for `userName = 'Jess'` and `url = 'http://www.google.com/'`):
 
-    <a href="http://www.google.com/">Zhere</a> zclick zplease. Jess zhello!
+```
+<a href="http://www.google.com/">Zhere</a> zclick zplease. Jess zhello!
+```
 
 ### Meaning
 
@@ -243,6 +249,18 @@ Each `plural` block appears as a placeholder in the containing message. The
 placeholder name is `phname` (if present) or the UPPER_SNAKE_CASE version of the
 variable name (`NUM_DRAFTS` in this example). By convention, it is recommended
 that all names be UPPER_SNAKE_CASE.
+
+If a message is the same in all cases in English, but could have multiple cases
+in other languages, use `default` before the sentence. For example, in the
+syntax example below, the message is the same for any $count in English.
+
+```soy
+{msg desc="..."}
+  {plural $count}
+    {default} Start your {$count} day trial.
+  {/plural}
+{/msg}
+```
 
 WARNING: You cannot nest `plural` tags.
 
