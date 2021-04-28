@@ -531,7 +531,7 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
                       RuntimeTypeCoercion.maybeCoerceType(
                           headerVar.defaultValue().getRoot(), SoyTypes.expandUnions(declaredType));
                 }
-                if (!declaredType.isAssignableFromStrict(actualType)) {
+                if (!declaredType.isAssignableFromLoose(actualType)) {
                   errorReporter.report(
                       headerVar.defaultValue().getSourceLocation(),
                       DECLARED_DEFAULT_TYPE_MISMATCH,
