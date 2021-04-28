@@ -69,6 +69,12 @@ class SoyMap {
   keys() {}
 
   /**
+   * @return {!IteratorIterable<V>} An iterator that contains the keys for each
+   *     element in this map.
+   */
+  values() {}
+
+  /**
    * Returns an iterator over the [key, value] pair entries of this map.
    *
    * TODO(b/69049599): structural interfaces defeat property renaming.
@@ -142,26 +148,37 @@ function $$populateMap(proto, jspbMap, map) {
  * @suppress {missingProperties}
  */
 function $$isSoyMap(map) {
-  return goog.isObject(map) && typeof map.get === 'function' &&
-      typeof map.set === 'function' && typeof map.keys === 'function' &&
+  return goog.isObject(map) &&
+      typeof map.get === 'function' &&
+      typeof map.set === 'function' &&
+      typeof map.keys === 'function' &&
+      typeof map.values === 'function' &&
       typeof map.entries === 'function';
 }
 
 
 /**
- * @param {!Map<?, ?>} mapOne
- * @param {!Map<?, ?>} mapTwo
+ * @param {!SoyMap<?, ?>} mapOne
+ * @param {!SoyMap<?, ?>} mapTwo
  * @return {!Map<?,?>}
  */
 function $$concatMaps(mapOne, mapTwo) {
-  return new Map([...mapOne, ...mapTwo]);
+  const m = new Map();
+  for (const [k, v] of mapOne.entries()) {
+    m.set(k, v);
+  }
+  for (const [k, v] of mapTwo.entries()) {
+    m.set(k, v);
+  }
+  return m;
 }
 
 
 /**
  * Gets the values in a map as an array. There are no guarantees on the order.
- * @param {!Map<?, ?>} map The map to get the values of.
- * @return {!Array<?>} The array of values in the given map.
+ * @param {!SoyMap<K, V>} map The map to get the values of.
+ * @return {!Array<V>} The array of values in the given map.
+ * @template K, V
  */
 function $$getMapValues(map) {
   const values = Array.from(map.values());
@@ -174,23 +191,33 @@ function $$getMapValues(map) {
 
 /**
  * Gets the values in a map as an array. There are no guarantees on the order.
- * @param {!Map<?, ?>} map The map to get the values of.
+ * @param {!SoyMap<?, ?>} map The map to get the values of.
  * @return {!Array<?>} The array of values in the given map.
  */
 function $$getMapEntries(map) {
   const entries = [];
-  map.forEach((v, k) => entries.push({"key": k, "value": v}));
+  for (const [k, v] of map.entries()) {
+    entries.push({"key": k, "value": v});
+  }
   return entries;
 }
 
 
 /**
  * Gets the size of a map.
- * @param {!Map<?, ?>} map The map to get the values of.
+ * @param {!SoyMap<?, ?>} map The map to get the values of.
  * @return {number} The number of keys in the map.
+ * @suppress {missingProperties}
  */
 function $$getMapLength(map) {
-  return map.size;
+  if (typeof map.getLength === 'function') {
+    // jspb.Map
+    return map.getLength();
+  } else if (typeof map.size === 'number') {
+    return map.size;
+  } else {
+    throw new Error('Not a Map or jsbp.Map: ' + map);
+  }
 }
 
 
