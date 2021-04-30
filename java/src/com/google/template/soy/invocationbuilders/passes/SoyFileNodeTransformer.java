@@ -510,7 +510,11 @@ public class SoyFileNodeTransformer {
     if (Ascii.toLowerCase(fileName).endsWith(".soy")) {
       fileName = fileName.substring(0, fileName.length() - 4);
     }
-    return makeUpperCamelCase(fileName) + "Templates";
+    String prefix = makeUpperCamelCase(fileName);
+    if (Character.isDigit(prefix.charAt(0))) {
+      prefix = "_" + prefix;
+    }
+    return prefix + "Templates";
   }
 
   private static String generateTemplateClassName(TemplateNode template) {

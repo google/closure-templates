@@ -120,7 +120,11 @@ public final class GenerateParseInfoVisitor
           if (Ascii.toLowerCase(fileName).endsWith(".soy")) {
             fileName = fileName.substring(0, fileName.length() - 4);
           }
-          return makeUpperCamelCase(fileName);
+          String prefix = makeUpperCamelCase(fileName);
+          if (Character.isDigit(prefix.charAt(0))) {
+            prefix = "_" + prefix;
+          }
+          return prefix;
 
         case SOY_NAMESPACE_LAST_PART:
           String namespace = soyFile.getNamespace();
