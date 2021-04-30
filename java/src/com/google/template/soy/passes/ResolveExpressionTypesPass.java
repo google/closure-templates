@@ -897,13 +897,15 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
       visit(node.getListExpr());
 
       // Report an error if listExpr did not actually evaluate to a list.
-      // TODO(lukes): Should we allow iterating over the unknown type?  We do for for-loops.
-      if (!(node.getListExpr().getType() instanceof ListType)) {
+      if (node.getListExpr().getType().getKind() != SoyType.Kind.LIST
+          && node.getListExpr().getType().getKind() != SoyType.Kind.UNKNOWN) {
         errorReporter.report(
             node.getListExpr().getSourceLocation(),
             BAD_LIST_COMP_TYPE,
             node.getListExpr().toSourceString(),
             node.getListExpr().getType());
+        node.getListIterVar().setType(UnknownType.getInstance());
+      } else if (node.getListExpr().getType().getKind() == SoyType.Kind.UNKNOWN) {
         node.getListIterVar().setType(UnknownType.getInstance());
       } else {
         // Otherwise, use the list element type to set the type of the iterator ($var in this
