@@ -573,7 +573,7 @@ public class ExpressionCompilerTest {
     ExpressionCompiler testExpressionCompiler =
         ExpressionCompiler.create(
             templateNode,
-            TemplateAnalysis.analyze(templateNode),
+            TemplateAnalysisImpl.analyze(templateNode),
             new TemplateParameterLookup() {
               @Override
               public Expression getParam(TemplateParam paramName) {

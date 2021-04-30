@@ -108,7 +108,7 @@ final class TemplateCompiler {
     this.writer = writer;
     this.fields = fields;
     this.innerClasses = innerClasses;
-    this.analysis = TemplateAnalysis.analyze(templateNode);
+    this.analysis = TemplateAnalysisImpl.analyze(templateNode);
     this.javaSourceFunctionCompiler = javaSourceFunctionCompiler;
     this.fileSetMetadata = fileSetMetadata;
   }

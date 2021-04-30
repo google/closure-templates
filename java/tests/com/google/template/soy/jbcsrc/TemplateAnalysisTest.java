@@ -44,7 +44,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-/** Tests for {@link TemplateAnalysis}. */
+/** Tests for {@link TemplateAnalysisImpl}. */
 @RunWith(JUnit4.class)
 public final class TemplateAnalysisTest {
 
@@ -79,7 +79,7 @@ public final class TemplateAnalysisTest {
             "{@param x : [field:string]}",
             "{$p?.field}",
             "{$x?.field}");
-    TemplateAnalysis analysis = TemplateAnalysis.analyze(template);
+    TemplateAnalysisImpl analysis = TemplateAnalysisImpl.analyze(template);
     ExprNode xField = ((PrintNode) template.getChild(1)).getExpr().getChild(0);
     DataAccessNode access = (DataAccessNode) ((NullSafeAccessNode) xField).getDataAccess();
     assertThat(analysis.isResolved(access)).isFalse();
@@ -90,7 +90,7 @@ public final class TemplateAnalysisTest {
     TemplateNode template =
         parseTemplate(
             "{@param p : list<string>}", "{@param x : list<string>}", "{$p?[0]}", "{$x?[0]}");
-    TemplateAnalysis analysis = TemplateAnalysis.analyze(template);
+    TemplateAnalysisImpl analysis = TemplateAnalysisImpl.analyze(template);
     ExprNode xList = ((PrintNode) template.getChild(1)).getExpr().getChild(0);
     DataAccessNode access = (DataAccessNode) ((NullSafeAccessNode) xList).getDataAccess();
     assertThat(analysis.isResolved(access)).isFalse();
@@ -470,7 +470,7 @@ public final class TemplateAnalysisTest {
 
   void runTest(String... lines) {
     TemplateNode template = parseTemplate(lines);
-    TemplateAnalysis analysis = TemplateAnalysis.analyze(template);
+    TemplateAnalysisImpl analysis = TemplateAnalysisImpl.analyze(template);
     // Due to how MsgNodes are compiled and analyzed, we only want to look at representative nodes
     // so we need a complex query
     // first look at all assertions that aren't in a placeholder.
@@ -499,7 +499,7 @@ public final class TemplateAnalysisTest {
     }
   }
 
-  private static void runTestOnLeafNode(TemplateAnalysis analysis, Node n) {
+  private static void runTestOnLeafNode(TemplateAnalysisImpl analysis, Node n) {
     if (n instanceof FunctionNode) {
       FunctionNode functionNode = (FunctionNode) n;
       if (functionNode.getSoyFunction() == NOT_REFED_FUNCTION) {
@@ -510,7 +510,7 @@ public final class TemplateAnalysisTest {
     }
   }
 
-  private static void checkNotReferenced(TemplateAnalysis analysis, ExprNode child) {
+  private static void checkNotReferenced(TemplateAnalysisImpl analysis, ExprNode child) {
     if (hasDefinitelyAlreadyBeenAccessed(analysis, child)) {
       fail(
           "Expected reference to "
@@ -520,7 +520,7 @@ public final class TemplateAnalysisTest {
     }
   }
 
-  private static void checkReferenced(TemplateAnalysis analysis, ExprNode child) {
+  private static void checkReferenced(TemplateAnalysisImpl analysis, ExprNode child) {
     if (!hasDefinitelyAlreadyBeenAccessed(analysis, child)) {
       fail(
           "Expected reference to "
@@ -531,7 +531,7 @@ public final class TemplateAnalysisTest {
   }
 
   private static boolean hasDefinitelyAlreadyBeenAccessed(
-      TemplateAnalysis analysis, ExprNode child) {
+      TemplateAnalysisImpl analysis, ExprNode child) {
     if (child instanceof VarRefNode) {
       return analysis.isResolved((VarRefNode) child);
     }

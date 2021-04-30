@@ -321,9 +321,12 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
               + " names are not allowed.");
   private static final SoyErrorKind NOT_PROTO_MESSAGE =
       SoyErrorKind.of("Only proto messages may be instantiated.");
-
   private static final SoyErrorKind MUST_USE_TEMPLATES_IMMEDIATELY =
       SoyErrorKind.of("Templates may only be called as the sole child of a print statement.");
+  private static final SoyErrorKind CONSTANTS_CANT_BE_NULLABLE =
+      SoyErrorKind.of("Type calculated type, {0}, is nullable, which is not allowed for const.");
+  private static final SoyErrorKind NOT_ALLOWED_IN_CONSTANT_VALUE =
+      SoyErrorKind.of("This operation is not allowed inside a const value definition.");
 
   private final ErrorReporter errorReporter;
 
@@ -337,6 +340,7 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
       new ResolveTypesExprVisitor(/* inferringParam=*/ false);
   private final ResolveTypesExprVisitor paramInfExprVisitor =
       new ResolveTypesExprVisitor(/* inferringParam=*/ true);
+  private final ResolveTypesExprVisitor constExprVisitor = new ResolveTypesConstNodeVisitor();
 
   /** Current set of type substitutions. */
   private TypeSubstitution substitutions;
@@ -568,8 +572,12 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
 
     @Override
     protected void visitConstNode(ConstNode node) {
-      visitSoyNode(node);
-      node.getVar().setType(node.getExpr().getType());
+      constExprVisitor.exec(node.getExpr());
+      SoyType type = node.getExpr().getType();
+      if (SoyTypes.isNullable(type)) {
+        errorReporter.report(node.getSourceLocation(), CONSTANTS_CANT_BE_NULLABLE, type);
+      }
+      node.getVar().setType(type);
       // Store the type of this constant in the index so that imports of this constant in other
       // files (topologically processed) can have their type set in #visitImportNode.
       constantsTypeLookup.put(node);
@@ -787,7 +795,7 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
    * Visitor which resolves all variable and parameter references in expressions to point to the
    * corresponding declaration object.
    */
-  private final class ResolveTypesExprVisitor extends AbstractExprNodeVisitor<Void> {
+  private class ResolveTypesExprVisitor extends AbstractExprNodeVisitor<Void> {
     /**
      * Whether we are currently examining an expression in a default initializer for an inferred
      * template.
@@ -2457,6 +2465,72 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
         return false;
       }
       return true;
+    }
+  }
+
+  /**
+   * Disallow many types of expressions in ConstNode value initializers, as a security policy. Some
+   * of these things aren't proven to be dangerous and could be allowed in the future if requested.
+   */
+  private final class ResolveTypesConstNodeVisitor extends ResolveTypesExprVisitor {
+    ResolveTypesConstNodeVisitor() {
+      super(false);
+    }
+
+    private void notAllowed(ExprNode node) {
+      errorReporter.report(node.getSourceLocation(), NOT_ALLOWED_IN_CONSTANT_VALUE);
+    }
+
+    @Override
+    protected void visitFieldAccessNode(FieldAccessNode node) {
+      notAllowed(node);
+      super.visitFieldAccessNode(node);
+    }
+
+    @Override
+    protected void visitItemAccessNode(ItemAccessNode node) {
+      notAllowed(node);
+      super.visitItemAccessNode(node);
+    }
+
+    @Override
+    protected void visitNullNode(NullNode node) {
+      notAllowed(node);
+      super.visitNullNode(node);
+    }
+
+    @Override
+    protected void visitFunctionNode(FunctionNode node) {
+      if (node.isResolved()
+          && node.getSoyFunction() != BuiltinFunction.PROTO_INIT
+          && node.getSoyFunction() != BuiltinFunction.XID) {
+        notAllowed(node);
+      }
+      super.visitFunctionNode(node);
+    }
+
+    @Override
+    protected void visitMethodCallNode(MethodCallNode node) {
+      notAllowed(node);
+      super.visitMethodCallNode(node);
+    }
+
+    @Override
+    protected void visitAssertNonNullOpNode(AssertNonNullOpNode node) {
+      notAllowed(node);
+      super.visitAssertNonNullOpNode(node);
+    }
+
+    @Override
+    protected void visitNullCoalescingOpNode(NullCoalescingOpNode node) {
+      notAllowed(node);
+      super.visitNullCoalescingOpNode(node);
+    }
+
+    @Override
+    protected void visitNullSafeAccessNode(NullSafeAccessNode node) {
+      notAllowed(node);
+      super.visitNullSafeAccessNode(node);
     }
   }
 

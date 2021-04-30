@@ -22,6 +22,8 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.exprtree.AbstractLocalVarDefn;
+import com.google.template.soy.exprtree.DataAccessNode;
+import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.jbcsrc.ExpressionCompiler.BasicExpressionCompiler;
 import com.google.template.soy.jbcsrc.internal.SoyClassWriter;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
@@ -46,6 +48,21 @@ import org.objectweb.asm.commons.Method;
 /** Compiles byte code for {@link ConstNode}s. */
 @VisibleForTesting
 public final class ConstantsCompiler {
+
+  private static final TemplateAnalysis ALL_RESOLVED =
+      new TemplateAnalysis() {
+        @Override
+        public boolean isResolved(VarRefNode ref) {
+          // Only locals in list comprehension and other globals may possibly be referenced.
+          return true;
+        }
+
+        @Override
+        public boolean isResolved(DataAccessNode ref) {
+          // Data access is not allowed in const context.
+          throw new UnsupportedOperationException();
+        }
+      };
 
   private final ConstNode constant;
   private final SoyClassWriter writer;
@@ -92,11 +109,16 @@ public final class ConstantsCompiler {
             /*isStatic=*/ true);
     Expression renderContext = variableSet.getVariable(StandardNames.RENDER_CONTEXT);
     TemplateParameterLookup variables =
-        new ConstantVariables(new RenderContextExpression(renderContext));
+        new ConstantVariables(variableSet, new RenderContextExpression(renderContext));
 
     BasicExpressionCompiler expressionCompiler =
         ExpressionCompiler.createBasicCompiler(
-            constant, null, variables, variableSet, javaSourceFunctionCompiler, fileSetMetadata);
+            constant,
+            ALL_RESOLVED,
+            variables,
+            variableSet,
+            javaSourceFunctionCompiler,
+            fileSetMetadata);
 
     SoyExpression body = expressionCompiler.compile(constant.getExpr());
     Preconditions.checkArgument(
@@ -120,10 +142,12 @@ public final class ConstantsCompiler {
   }
 
   private static final class ConstantVariables implements TemplateParameterLookup {
+    private final TemplateVariableManager variableSet;
     private final RenderContextExpression renderContext;
 
-    ConstantVariables(RenderContextExpression renderContext) {
+    ConstantVariables(TemplateVariableManager variableSet, RenderContextExpression renderContext) {
       this.renderContext = renderContext;
+      this.variableSet = variableSet;
     }
 
     UnsupportedOperationException unsupported() {
@@ -148,7 +172,7 @@ public final class ConstantsCompiler {
 
     @Override
     public Expression getLocal(AbstractLocalVarDefn<?> local) {
-      throw unsupported();
+      return variableSet.getVariable(local.name());
     }
 
     @Override
