@@ -40,9 +40,6 @@ final class EnforceExperimentalFeaturesPass implements CompilerFilePass {
       SoyErrorKind.of(
           "Non-null assertion operator not supported, use the ''checkNotNull'' function instead.");
 
-  private static final SoyErrorKind CONSTANT_NOT_GA =
-      SoyErrorKind.of("'{'const'}' is not available for general use.");
-
   private final ImmutableSet<String> features;
   private final ErrorReporter reporter;
 
@@ -61,11 +58,6 @@ final class EnforceExperimentalFeaturesPass implements CompilerFilePass {
               assertNonNullOpNode ->
                   reporter.report(
                       assertNonNullOpNode.getSourceLocation(), NON_NULL_ASSERTION_BANNED));
-    }
-
-    if (!features.contains("enableConstants")) {
-      file.getConstants()
-          .forEach(constNode -> reporter.report(constNode.getSourceLocation(), CONSTANT_NOT_GA));
     }
   }
 }
