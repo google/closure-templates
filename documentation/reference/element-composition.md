@@ -17,7 +17,7 @@ The following are valid HTML-tag templates:
 {/template}
 
 {template example2 kind="html<div>"}
-  <{example3()}></> // Element composition call
+  <{example()}></> // Element composition call
 {/template}
 ```
 
@@ -72,7 +72,8 @@ inside an element tag (`<>`). This element can either self-close or close with
 an empty tag. For example:
 
 ```soy
-<{example()}></>
+<{example()} />  // Self-closing tag
+<{example()}></> // Empty tag
 ```
 
 If an HTML-tag template is declared as a parameter in another template, it can
