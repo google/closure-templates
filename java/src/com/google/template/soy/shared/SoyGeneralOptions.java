@@ -62,7 +62,6 @@ public final class SoyGeneralOptions implements Cloneable {
     return experimentalFeatures;
   }
 
-
   /**
    * Sets the map from compile-time global name to value.
    *
@@ -72,7 +71,9 @@ public final class SoyGeneralOptions implements Cloneable {
    * @param compileTimeGlobalsMap Map from compile-time global name to value. The values can be any
    *     of the Soy primitive types: null, boolean, integer, float (Java double), or string.
    * @throws IllegalArgumentException If one of the values is not a valid Soy primitive type.
+   * @deprecated Use Soy constants instead.
    */
+  @Deprecated
   public SoyGeneralOptions setCompileTimeGlobals(Map<String, ?> compileTimeGlobalsMap) {
     setCompileTimeGlobalsInternal(
         InternalValueUtils.convertCompileTimeGlobalsMap(compileTimeGlobalsMap));
@@ -108,7 +109,9 @@ public final class SoyGeneralOptions implements Cloneable {
    *
    * @param compileTimeGlobalsFile The file containing compile-time globals.
    * @throws IOException If there is an error reading the compile-time globals file.
+   * @deprecated Use Soy constants instead.
    */
+  @Deprecated
   public SoyGeneralOptions setCompileTimeGlobals(File compileTimeGlobalsFile) throws IOException {
     setCompileTimeGlobalsInternal(
         SoyUtils.parseCompileTimeGlobals(Files.asCharSource(compileTimeGlobalsFile, UTF_8)));
@@ -133,7 +136,9 @@ public final class SoyGeneralOptions implements Cloneable {
    *
    * @param compileTimeGlobalsResource The resource file containing compile-time globals.
    * @throws IOException If there is an error reading the compile-time globals file.
+   * @deprecated Use Soy constants instead.
    */
+  @Deprecated
   public SoyGeneralOptions setCompileTimeGlobals(URL compileTimeGlobalsResource)
       throws IOException {
     setCompileTimeGlobalsInternal(

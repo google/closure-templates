@@ -422,7 +422,9 @@ public final class SoyFileSet {
      *     any of the Soy primitive types: null, boolean, integer, float (Java double), or string.
      * @return This builder.
      * @throws IllegalArgumentException If one of the values is not a valid Soy primitive type.
+     * @deprecated Use Soy constants instead.
      */
+    @Deprecated
     public Builder setCompileTimeGlobals(Map<String, ?> compileTimeGlobalsMap) {
       getGeneralOptions().setCompileTimeGlobals(compileTimeGlobalsMap);
       return this;
@@ -447,7 +449,9 @@ public final class SoyFileSet {
      * @param compileTimeGlobalsFile The file containing compile-time globals.
      * @return This builder.
      * @throws IOException If there is an error reading the compile-time globals file.
+     * @deprecated Use Soy constants instead.
      */
+    @Deprecated
     public Builder setCompileTimeGlobals(File compileTimeGlobalsFile) throws IOException {
       getGeneralOptions().setCompileTimeGlobals(compileTimeGlobalsFile);
       return this;
@@ -472,7 +476,9 @@ public final class SoyFileSet {
      * @param compileTimeGlobalsResource The resource containing compile-time globals.
      * @return This builder.
      * @throws IOException If there is an error reading the compile-time globals file.
+     * @deprecated Use Soy constants instead.
      */
+    @Deprecated
     public Builder setCompileTimeGlobals(URL compileTimeGlobalsResource) throws IOException {
       getGeneralOptions().setCompileTimeGlobals(compileTimeGlobalsResource);
       return this;

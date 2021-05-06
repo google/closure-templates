@@ -64,7 +64,9 @@ public final class SoyUtils {
    * @param output The object to append the generated text to.
    * @throws IllegalArgumentException If one of the values is not a valid Soy primitive type.
    * @throws IOException If there is an error appending to the given {@code Appendable}.
+   * @deprecated Use Soy constants instead.
    */
+  @Deprecated
   public static void generateCompileTimeGlobalsFile(
       Map<String, ?> compileTimeGlobalsMap, Appendable output) throws IOException {
 
@@ -92,7 +94,9 @@ public final class SoyUtils {
    * @return The parsed globals map.
    * @throws IOException If an error occurs while reading the globals file.
    * @throws IllegalStateException If the globals file is not in the correct format.
+   * @deprecated Use Soy constants instead.
    */
+  @Deprecated
   public static ImmutableMap<String, PrimitiveData> parseCompileTimeGlobals(CharSource inputSource)
       throws IOException {
     ImmutableMap.Builder<String, PrimitiveData> compileTimeGlobalsBuilder = ImmutableMap.builder();

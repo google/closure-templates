@@ -109,7 +109,8 @@ public abstract class AbstractSoyCompiler {
       name = "--compileTimeGlobalsFile",
       aliases = "--compileTimeGlobalsFiles",
       usage =
-          "The path to a file containing the mappings for global names to be substituted"
+          "(Deprecated, use Soy constants instead.) "
+              + "The path to a file containing the mappings for global names to be substituted"
               + " at compile time. Each line of the file should have the format"
               + " \"<global_name> = <primitive_data>\" where primitive_data is a valid Soy"
               + " expression literal for a primitive type (null, boolean, integer, float, or"
