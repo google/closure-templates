@@ -1,11 +1,11 @@
-# Templates
+# Constants
 
 
 [TOC]
 
 ## const {#const}
 
-The const command allows you to define immutable data that can be used across
+The `const` command allows you to define immutable data that can be used across
 multiple templates. The first form of the command defines a constant that is
 private to the file in which it is defined.
 
@@ -20,6 +20,8 @@ other files.
 {export const CONST_NAME = const_value_expr /}
 ```
 
+Constants must be defined outside of templates.
+
 ### Using a constant
 
 To use a constant inside the Soy file in which it is defined, simply reference
@@ -27,7 +29,9 @@ it by its name.
 
 ```soy
 {template helloConst}
-  My constant: {CONST_NAME}
+  <p>
+    My constant: {CONST_NAME}
+  </p>
 {/template}
 ```
 
@@ -47,6 +51,8 @@ import {CONST_NAME} from 'path/to/file_1.soy';
 import * as ns from 'path/to/file_2.soy';
 
 {template concat}
-  {CONST_NAME} {ns.CONST2}
+  <p>
+    {CONST_NAME} {ns.CONST2}
+  </p>
 {/template}
 ```
