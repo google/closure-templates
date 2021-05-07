@@ -23,7 +23,7 @@ import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.exprtree.AbstractVarDefn;
 import com.google.template.soy.types.SoyType;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import javax.annotation.Nullable;
@@ -49,21 +49,21 @@ public final class ImportedVar extends AbstractVarDefn {
   public ImportedVar(String name, @Nullable String alias, SourceLocation nameLocation) {
     super(alias != null ? alias : name, nameLocation, null);
     Preconditions.checkArgument(alias == null || (!alias.isEmpty() && !alias.equals(name)));
-    this.nestedVarDefns = new HashMap<>();
+    this.nestedVarDefns = new LinkedHashMap<>();
     this.symbol = name;
     this.parent = null;
   }
 
   private ImportedVar(ImportedVar parent, String symbol) {
     super(parent.name() + "." + symbol, parent.nameLocation(), null);
-    this.nestedVarDefns = new HashMap<>();
+    this.nestedVarDefns = new LinkedHashMap<>();
     this.symbol = symbol;
     this.parent = parent;
   }
 
   private ImportedVar(ImportedVar var, ImportedVar parent, CopyState copyState) {
     super(var);
-    this.nestedVarDefns = new HashMap<>();
+    this.nestedVarDefns = new LinkedHashMap<>();
     for (Map.Entry<String, ImportedVar> entry : var.nestedVarDefns.entrySet()) {
       ImportedVar newNested = new ImportedVar(entry.getValue(), this, copyState);
       this.nestedVarDefns.put(entry.getKey(), newNested);
