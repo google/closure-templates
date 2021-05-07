@@ -64,7 +64,7 @@ public final class SoyUtils {
    * @param output The object to append the generated text to.
    * @throws IllegalArgumentException If one of the values is not a valid Soy primitive type.
    * @throws IOException If there is an error appending to the given {@code Appendable}.
-   * @deprecated Use Soy constants instead.
+   * @deprecated Use {@link #generateConstantsFile} and Soy constants instead.
    */
   @Deprecated
   public static void generateCompileTimeGlobalsFile(
@@ -78,6 +78,44 @@ public final class SoyUtils {
           InternalValueUtils.convertPrimitiveDataToExpr(entry.getValue(), SourceLocation.UNKNOWN)
               .toSourceString();
       output.append(entry.getKey()).append(" = ").append(valueSrcStr).append("\n");
+    }
+  }
+
+  /**
+   * Generates the text for a Soy file containing a list of exported constants and appends the
+   * generated text to the given {@code Appendable}. Useful when migrating from build rules from
+   * compileTimeGlobals to Soy constants.
+   *
+   * <p>The generated lines will follow the iteration order of the provided map. Map keys will be
+   * converted to valid Soy single identifiers, replacing '.' with '_' if necessary.
+   *
+   * <p>Important: When you write the output to a file, be sure to use UTF-8 encoding.
+   *
+   * @param namespace The namespace of the generated Soy file.
+   * @param compileTimeGlobalsMap Map from compile-time global name to value. The values can be any
+   *     of the Soy primitive types: null, boolean, integer, float (Java double), or string.
+   * @param output The object to append the generated text to.
+   * @throws IllegalArgumentException If one of the values is not a valid Soy primitive type.
+   * @throws IOException If there is an error appending to the given {@code Appendable}.
+   */
+  public static void generateConstantsFile(
+      String namespace, Map<String, ?> compileTimeGlobalsMap, Appendable output)
+      throws IOException {
+
+    Map<String, PrimitiveData> compileTimeGlobals =
+        InternalValueUtils.convertCompileTimeGlobalsMap(compileTimeGlobalsMap);
+
+    output.append("{namespace ").append(namespace).append("}\n\n");
+    for (Map.Entry<String, PrimitiveData> entry : compileTimeGlobals.entrySet()) {
+      String valueSrcStr =
+          InternalValueUtils.convertPrimitiveDataToExpr(entry.getValue(), SourceLocation.UNKNOWN)
+              .toSourceString();
+      output
+          .append("{export const ")
+          .append(entry.getKey().replace('.', '_'))
+          .append(" = ")
+          .append(valueSrcStr)
+          .append(" /}\n");
     }
   }
 
