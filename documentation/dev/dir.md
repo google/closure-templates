@@ -28,30 +28,31 @@ To see all of the available command-line flags, run the binary with `--help`.
 
 The table below lists the most important command-line flags:
 
-| Flag                       | Usage                                           |
-| -------------------------- | ----------------------------------------------- |
-| `--srcs`                   | **[Required]** The list of source Soy files.    |
-| `--deps`                   | The list of dependency Soy files (if            |
-:                            : applicable). The compiler needs deps for        :
-:                            : analysis/checking, but does not generate code   :
-:                            : for dep files.                                  :
-| `--indirecteDeps`          | The list of indirected dependency Soy files (if |
-:                            : applicable). The compiler needs indirect deps   :
-:                            : for analysis/checking, but does not generate    :
-:                            : code for dep files.                             :
-| `--output`                 | **[Required]** The name of the Jar file to      |
-:                            : write                                           :
-| `--outputSrcJar`           | The name of a Jar file containing source files  |
-:                            : to write. This places the source files into a   :
-:                            : directory structure that will enable some IDEs  :
-:                            : like eclipse to do basic line level debugging   :
-:                            : of your Soy template source files               :
-| `--compileTimeGlobalsFile` | The path of the file that contains the mappings |
-:                            : for global names to be bound at compile time.   :
-:                            : Please see the [Globals](#globals) section in   :
-:                            : this chapter for more information.              :
-| `--pluginModules`          | See the section on [function or print directive |
-:                            : plugins](./plugins) in Plugins.                 :
+| Flag                       | Usage                                          |
+| -------------------------- | ---------------------------------------------- |
+| `--srcs`                   | **[Required]** The list of source Soy files.   |
+| `--deps`                   | The list of dependency Soy files (if           |
+:                            : applicable). The compiler needs deps for       :
+:                            : analysis/checking, but does not generate code  :
+:                            : for dep files.                                 :
+| `--indirecteDeps`          | The list of indirected dependency Soy files    |
+:                            : (if applicable). The compiler needs indirect   :
+:                            : deps for analysis/checking, but does not       :
+:                            : generate code for dep files.                   :
+| `--output`                 | **[Required]** The name of the Jar file to     |
+:                            : write                                          :
+| `--outputSrcJar`           | The name of a Jar file containing source files |
+:                            : to write. This places the source files into a  :
+:                            : directory structure that will enable some IDEs :
+:                            : like eclipse to do basic line level debugging  :
+:                            : of your Soy template source files              :
+| `--compileTimeGlobalsFile` | (Deprecated) The path of the file that         |
+:                            : contains the mappings for global names to be   :
+:                            : bound at compile time. Please see the          :
+:                            : [Globals](../reference/expressions.md#globals) :
+:                            : section in this chapter for more information.  :
+| `--pluginModules`          | See the section on [function or print          |
+:                            : directive plugins](./plugins) in Plugins.      :
 
 Here's an example of how the compiler might be invoked from the command line:
 
@@ -94,7 +95,7 @@ Flag                             | Usage
 `--shouldGenerateGoogMsgDefs`    | Set this flag if you want `goog.getMsg` definitions to be generated for all `msg` blocks. For more information, see the section on [Letting JS Compiler Handle Translation](localization#closurecompiler) in the Translation chapter.
 `--bidiGlobalDir`                | **[Required if and only if generating `goog.getMsg` definitions]** For more information, see the section on [Letting JS Compiler Handle Translation](localization#closurecompiler) in the Translation chapter.
 `--useGoogIsRtlForBidiGlobalDir` | [Only applicable if both `shouldGenerateGoogMsgDefs` is true] Set this flag to determine the bidi global direction at template render time by evaluating `goog.i18n.bidi.IS_RTL`. Do not combine with `bidiGlobalDir`.
-`--compileTimeGlobalsFile`       | The path of the file that contains the mappings for global names to be bound at compile time. Please see the [Globals](#globals) section in this chapter for more information.
+`--compileTimeGlobalsFile`       | (Deprecated) The path of the file that contains the mappings for global names to be bound at compile time. Please see the [Globals](../reference/expressions.md#globals) section in this chapter for more information.
 `--googMsgsAreExternal`          | Use this flag if you want your project to use Soy to extract messages (e.g. with `SoyMsgExtractor`) but use JS Compiler to insert the translated messages. Using Soy to extract messages is recommended. If you use Soy from both Java and JavaScript, then it's essential for correctness.
 `--pluginModules`                | See the section on [function or print directive plugins](./plugins) in Plugins.
 

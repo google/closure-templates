@@ -158,12 +158,15 @@ For example: `$foo`
 
 ### globals
 
+WARNING: Compile time globals are deprecated. Use [Soy constants](constants.md)
+instead.
+
 A global is a reference that looks like a simple dotted identifier sequence.
 
 `foo.bar.Baz`
 
 Globals can be configured with the compiler via the `--compileTimeGlobalsFile`
-flag, proto enum values are also represented as global references.
+flag.
 
 TIP: You can use the [`{alias ...}`](file-declarations.md#alias) directive to
 abbreviate globals.

@@ -19,7 +19,7 @@ are.
 
 ### Variables
 
-Variables are things like parameters (`$myParam`), globals, and injected data.
+Variables are things like parameters (`$myParam`), constants, and injected data.
 
 ### Operators
 
