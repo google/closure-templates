@@ -422,9 +422,6 @@ public final class PassManager {
       }
       passes.add(new ResolveTemplateNamesPass(errorReporter));
 
-      // Must run after ResolveTemplateNamesPass
-      passes.add(new TemplateCallMetadataPass());
-
       if (!disableAllTypeChecking) {
         // Without type checking proto enums in variant expressions are not resolved.
         passes.add(new ValidateVariantExpressionsPass(errorReporter));
@@ -463,6 +460,8 @@ public final class PassManager {
             // After ResolveExpressionTypesPass because ResolveExpressionTypesPass verifies usage
             // and types of non-null assertion operators.
             .add(new SimplifyAssertNonNullPass())
+            // Must run after ResolveExpressionTypesPass to use allowedToInvokeAsFunction
+            .add(new TemplateCallMetadataPass())
             .add(new VeLogRewritePass());
         // Needs to run before CheckGlobalsPass to prevent unbound global errors on the getExtension
         // parameters.

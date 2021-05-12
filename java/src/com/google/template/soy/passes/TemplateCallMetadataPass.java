@@ -23,6 +23,7 @@ import static com.google.common.collect.Lists.newArrayList;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Streams;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.Kind;
 import com.google.template.soy.exprtree.FieldAccessNode;
@@ -41,6 +42,7 @@ import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.HtmlTagNode;
 import com.google.template.soy.soytree.LetValueNode;
+import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.LocalVarNode;
@@ -49,11 +51,18 @@ import com.google.template.soy.soytree.TagName;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.templatecall.TemplateCallMetadata;
+import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.TemplateImportType;
 import java.util.List;
 import java.util.Optional;
 
 /** Provides a serializable proto containing descriptions of template calls. */
-@RunAfter(ResolveTemplateNamesPass.class) // Required to use getCalleeName()
+@RunAfter({
+  // Required to use getCalleeName()
+  ResolveTemplateNamesPass.class,
+  // Required to use allowedToInvokeAsFunction() to identify short form template calls
+  ResolveExpressionTypesPass.class,
+})
 public final class TemplateCallMetadataPass implements CompilerFileSetPass {
 
   TemplateCallMetadataPass() {}
@@ -69,6 +78,13 @@ public final class TemplateCallMetadataPass implements CompilerFileSetPass {
                 .flatMap(Streams::stream)
                 .collect(toImmutableList());
 
+        // Handle Soy Element Composition
+        List<TemplateCallMetadata.TemplateCall> shortFormCalls =
+            SoyTreeUtils.getAllNodesOfType(template, PrintNode.class).stream()
+                .map(TemplateCallMetadataPass::calculateShortFormTemplateCall)
+                .flatMap(Streams::stream)
+                .collect(toImmutableList());
+
         template.addTemplateCallMetadata(
             TemplateCallMetadata.Template.newBuilder()
                 .setName(template.getTemplateName())
@@ -78,10 +94,51 @@ public final class TemplateCallMetadataPass implements CompilerFileSetPass {
                         .map(TemplateCallMetadataPass::calculateTemplateCall)
                         .collect(toImmutableList()))
                 .addAllCalls(callsFromTags)
+                .addAllCalls(shortFormCalls)
                 .build());
       }
     }
     return Result.CONTINUE;
+  }
+
+  /**
+   * Parses short form template calls.
+   *
+   * @param printNode Node that may contain a template call
+   * @return template call node if provided node references a template call; else empty Optional
+   */
+  private static Optional<TemplateCallMetadata.TemplateCall> calculateShortFormTemplateCall(
+      PrintNode printNode) {
+    if (!(printNode.getExpr().getRoot() instanceof FunctionNode)) {
+      return Optional.empty();
+    }
+    FunctionNode fnNode = (FunctionNode) printNode.getExpr().getRoot();
+    if (!fnNode.allowedToInvokeAsFunction()) {
+      return Optional.empty();
+    }
+    SoyType possibleTemplateImportType = ((VarRefNode) fnNode.getNameExpr()).getDefnDecl().type();
+    if (possibleTemplateImportType.getKind() != SoyType.Kind.TEMPLATE_TYPE) {
+      return Optional.empty();
+    }
+    String templateName = ((TemplateImportType) possibleTemplateImportType).getName();
+
+    List<Identifier> paramNames = fnNode.getParamNames();
+    List<ExprNode> params = fnNode.getParams();
+    List<TemplateCallMetadata.ParamArg> callParamArgs = newArrayList();
+    for (int i = 0; i < params.size(); i++) {
+      callParamArgs.add(
+          TemplateCallMetadata.ParamArg.newBuilder()
+              .setKey(paramNames.get(i).identifier())
+              .setVarRef(
+                  resolveLocalVarRefToParamRef(
+                      params.get(i), TemplateCallMetadata.VarRefInfo.newBuilder()))
+              .build());
+    }
+    return Optional.of(
+        TemplateCallMetadata.TemplateCall.newBuilder()
+            .setDestTemplateName(templateName)
+            .addAllParamArgs(callParamArgs)
+            .build());
   }
 
   /**
