@@ -39,6 +39,7 @@ const uncheckedconversions = goog.require('goog.html.uncheckedconversions');
  * @param {!SafeHtmlProto} proto Protocol message to
  *   convert from.
  * @return {!SafeHtml}
+ * @deprecated Use safevalues.protoconversions instead.
  */
 function safeHtmlFromProto(proto) {
   return uncheckedconversions.safeHtmlFromStringKnownToSatisfyTypeContract(
@@ -59,6 +60,7 @@ function safeHtmlFromProto(proto) {
  * safeHtmlFromProto.
  * @param {!SafeHtml} safehtml SafeHtml to serialize.
  * @return {!SafeHtmlProto}
+ * @deprecated Use safevalues.protoconversions instead.
  */
 function safeHtmlToProto(safehtml) {
   var protoHtml = new SafeHtmlProto();
@@ -85,6 +87,7 @@ function safeHtmlToProto(safehtml) {
  *   convert from.
  * @return {!SafeScript}
  * @suppress {visibility}
+ * @deprecated Use safevalues.protoconversions instead.
  */
 function safeScriptFromProto(proto) {
   return uncheckedconversions.safeScriptFromStringKnownToSatisfyTypeContract(
@@ -105,6 +108,7 @@ function safeScriptFromProto(proto) {
  * safeScriptFromProto.
  * @param {!SafeScript} script SafeScript to serialize.
  * @return {!SafeScriptProto}
+ * @deprecated Use safevalues.protoconversions instead.
  */
 function safeScriptToProto(script) {
   var protoScript = new SafeScriptProto();
@@ -131,6 +135,7 @@ function safeScriptToProto(script) {
  *   convert from.
  * @return {!SafeStyle}
  * @suppress {visibility}
+ * @deprecated Use safevalues.protoconversions instead.
  */
 function safeStyleFromProto(proto) {
   return uncheckedconversions.safeStyleFromStringKnownToSatisfyTypeContract(
@@ -151,6 +156,7 @@ function safeStyleFromProto(proto) {
  * safeStyleFromProto.
  * @param {!SafeStyle} style SafeStyle to serialize.
  * @return {!SafeStyleProto}
+ * @deprecated Use safevalues.protoconversions instead.
  */
 function safeStyleToProto(style) {
   var protoStyle = new SafeStyleProto();
@@ -177,6 +183,7 @@ function safeStyleToProto(style) {
  *   convert from.
  * @return {!SafeStyleSheet}
  * @suppress {visibility}
+ * @deprecated Use safevalues.protoconversions instead.
  */
 function safeStyleSheetFromProto(proto) {
   return uncheckedconversions
@@ -199,6 +206,7 @@ function safeStyleSheetFromProto(proto) {
  * safeStyleSheetFromProto.
  * @param {!SafeStyleSheet} styleSheet SafeStyleSheet to serialize.
  * @return {!SafeStyleSheetProto}
+ * @deprecated Use safevalues.protoconversions instead.
  */
 function safeStyleSheetToProto(styleSheet) {
   var protoStyleSheet = new SafeStyleSheetProto();
@@ -225,6 +233,7 @@ function safeStyleSheetToProto(styleSheet) {
  *   convert from.
  * @return {!SafeUrl}
  * @suppress {visibility}
+ * @deprecated Use safevalues.protoconversions instead.
  */
 function safeUrlFromProto(proto) {
   return uncheckedconversions.safeUrlFromStringKnownToSatisfyTypeContract(
@@ -245,6 +254,7 @@ function safeUrlFromProto(proto) {
  * safeUrlFromProto.
  * @param {!SafeUrl} url SafeUrl to serialize.
  * @return {!SafeUrlProto}
+ * @deprecated Use safevalues.protoconversions instead.
  */
 function safeUrlToProto(url) {
   var protoUrl = new SafeUrlProto();
@@ -271,6 +281,7 @@ function safeUrlToProto(url) {
  *   convert from.
  * @return {!TrustedResourceUrl}
  * @suppress {visibility}
+ * @deprecated Use safevalues.protoconversions instead.
  */
 function trustedResourceUrlFromProto(proto) {
   return uncheckedconversions
@@ -294,6 +305,7 @@ function trustedResourceUrlFromProto(proto) {
  * trustedResourceUrlFromProto.
  * @param {!TrustedResourceUrl} url TrustedResourceUrl to serialize.
  * @return {!TrustedResourceUrlProto}
+ * @deprecated Use safevalues.protoconversions instead.
  */
 function trustedResourceUrlToProto(url) {
   var protoUrl = new TrustedResourceUrlProto();
