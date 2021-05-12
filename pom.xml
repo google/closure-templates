@@ -862,10 +862,6 @@
                 <argument>--messageFilePathFormat</argument>
                 <argument>${soy.examples.path}/examples_translated_{LOCALE}.xlf
                 </argument>
-                <argument>--compileTimeGlobalsFile</argument>
-                <argument>
-                  ${project.basedir}/javascript/examples/features-usage_globals.txt
-                </argument>
                 <argument>--srcs</argument>
                 <argument>
                   ${soy.examples.path}/simple.soy,${soy.examples.path}/features.soy
@@ -928,10 +924,6 @@
                 <argument>com.google.template.soy.examples</argument>
                 <argument>--javaClassNameSource</argument>
                 <argument>filename</argument>
-                <argument>--compileTimeGlobalsFile</argument>
-                <argument>
-                  ${project.basedir}/javascript/examples/features-usage_globals.txt
-                </argument>
                 <argument>--srcs</argument>
                 <argument>
                   ${soy.examples.path}/simple.soy,${soy.examples.path}/features.soy
@@ -979,10 +971,6 @@
                 <argument>${soy.examples.out}/examples.jar</argument>
                 <argument>--outputSrcJar</argument>
                 <argument>${soy.examples.out}/examples-src.jar</argument>
-                <argument>--compileTimeGlobalsFile</argument>
-                <argument>
-                  ${project.basedir}/javascript/examples/features-usage_globals.txt
-                </argument>
                 <argument>--srcs</argument>
                 <argument>
                   ${soy.examples.path}/simple.soy,${soy.examples.path}/features.soy
