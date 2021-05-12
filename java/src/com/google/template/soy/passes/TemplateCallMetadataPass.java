@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Streams;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.Kind;
 import com.google.template.soy.exprtree.FieldAccessNode;
@@ -65,10 +66,17 @@ import java.util.Optional;
 })
 public final class TemplateCallMetadataPass implements CompilerFileSetPass {
 
-  TemplateCallMetadataPass() {}
+  private ErrorReporter errorReporter;
+
+  TemplateCallMetadataPass(ErrorReporter errorReporter) {
+    this.errorReporter = errorReporter;
+  }
 
   @Override
   public Result run(ImmutableList<SoyFileNode> sourceFiles, IdGenerator nodeIdGen) {
+    if (errorReporter.hasErrors()) {
+      return Result.CONTINUE;
+    }
     for (SoyFileNode file : sourceFiles) {
       for (TemplateNode template : file.getTemplates()) {
         // Handle Soy Element Composition

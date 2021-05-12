@@ -461,7 +461,7 @@ public final class PassManager {
             // and types of non-null assertion operators.
             .add(new SimplifyAssertNonNullPass())
             // Must run after ResolveExpressionTypesPass to use allowedToInvokeAsFunction
-            .add(new TemplateCallMetadataPass())
+            .add(new TemplateCallMetadataPass(errorReporter))
             .add(new VeLogRewritePass());
         // Needs to run before CheckGlobalsPass to prevent unbound global errors on the getExtension
         // parameters.
