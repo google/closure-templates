@@ -810,7 +810,8 @@ public final class EscapingConventions {
                 + // A non-hex color
                 "(?:rgb|hsl)a?\\([0-9.%, ]+\\)|"
                 + // A quantity, with an optional unit
-                "-?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)(?:[a-z]{1,4}|%)?|"
+                // Note that this matches "1." even though that is not valid per the spec.
+                "[-+]?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)(?:e-?[0-9]+)?(?:[a-z]{1,4}|%)?|"
                 + // The special value !important.
                 "!important)"
                 + // Spaces and commas (for property value lists).

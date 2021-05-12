@@ -25,6 +25,7 @@ import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyStringExpr;
 import com.google.template.soy.testing.AbstractSoyPrintDirectiveTestCase;
+import java.util.Arrays;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -142,6 +143,12 @@ public class BasicEscapeDirectiveTest extends AbstractSoyPrintDirectiveTestCase 
         UnsafeSanitizedContentOrdainer.ordainAsSafe(
             "color:expression('foo')", SanitizedContent.ContentKind.CSS),
         filterCssValue);
+
+    // Source: https://developer.mozilla.org/en-US/docs/Web/CSS/number
+    for (String goodUnit :
+        Arrays.asList("1%", "1.1px", "-5px", "0.001em", "1e8px", "3.1E-8%", "0.0", ".1", "+0.0")) {
+      assertTofuOutput(goodUnit, goodUnit, filterCssValue);
+    }
   }
 
   @Test
