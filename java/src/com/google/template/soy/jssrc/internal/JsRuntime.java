@@ -98,6 +98,9 @@ public final class JsRuntime {
   public static final Expression GOOG_HTML_SAFE_HTML =
       GoogRequire.create("goog.html.SafeHtml").reference();
 
+  public static final Expression GOOG_HTML_SAFE_ATTRIBUTE =
+      GoogRequire.create("goog.soy.data.SanitizedHtmlAttribute").reference();
+
   public static final Expression GOOG_STRING_UNESCAPE_ENTITIES =
       GOOG_STRING.dotAccess("unescapeEntities");
 
