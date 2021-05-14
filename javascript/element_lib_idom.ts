@@ -12,7 +12,7 @@ import SanitizedContentKind from 'goog:goog.soy.data.SanitizedContentKind'; // f
 import {Logger} from 'goog:soy.velog';  // from //javascript/template/soy:soyutils_velog
 
 import {IncrementalDomRenderer, patchOuter} from './api_idom';
-import {isTaggedForSkip} from './global';
+import {getGlobalSkipHandler, isTaggedForSkip} from './global';
 
 /** Function that executes Idom instructions */
 export type PatchFunction = (a?: unknown) => void;
@@ -28,12 +28,11 @@ function getSkipHandler(el: HTMLElement) {
   return el.__soy_skip_handler;
 }
 
-
 /** Base class for a Soy element. */
 export abstract class SoyElement<TData extends {}|null, TInterface extends {}>
     implements IDisposable {
   // Node in which this object is stashed.
-  private node: HTMLElement|null = null;
+  node: HTMLElement|null = null;
   private skipHandler:
       ((prev: TInterface, next: TInterface) => boolean)|null = null;
   private patchHandler:
@@ -154,6 +153,14 @@ export abstract class SoyElement<TData extends {}|null, TInterface extends {}>
     const newNode = new (
         this.constructor as
         {new (a: TData): SoyElement<TData, TInterface>})(data);
+    const globalSkipHandler = getGlobalSkipHandler() as
+        unknown as ((prev: TInterface, next: TInterface) => boolean);
+    if (globalSkipHandler &&
+        globalSkipHandler(
+            this as unknown as TInterface, newNode as unknown as TInterface)) {
+      this.data = newNode.data;
+      return true;
+    }
     if (maybeSkipHandler || this.patchHandler) {
       // Users may configure a skip handler to avoid patching DOM in certain
       // cases.
