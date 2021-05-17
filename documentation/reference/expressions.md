@@ -156,25 +156,6 @@ Parameters and locals are introduced by:
 To reference a variable, use a dollar sign `$` followed by the variable name.
 For example: `$foo`
 
-### globals
-
-WARNING: Compile time globals are deprecated. Use [Soy constants](constants.md)
-instead.
-
-A global is a reference that looks like a simple dotted identifier sequence.
-
-`foo.bar.Baz`
-
-Globals can be configured with the compiler via the `--compileTimeGlobalsFile`
-flag.
-
-TIP: You can use the [`{alias ...}`](file-declarations.md#alias) directive to
-abbreviate globals.
-
-It is an error in the compiler to reference a global that doesn't have a
-definition at compile time, however, if you are only compiling for JavaScript
-then legacy code can use [`unknownJsGlobal`](functions.md#unknownJsGlobal).
-
 ## Operators
 
 ### Precedence

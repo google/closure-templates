@@ -387,7 +387,7 @@ syntax.
 ### `unknownJsGlobal(stringLiteral)` {#unknownJsGlobal}
 
 The `unknownJsGlobal` function allows code compiled to the `jssrc` backend to
-access JavaScript global values outside of the normal support for globals.
+access JavaScript global values.
 
 This function can only be used by the JavaScript backend, as such files that use
 it are incompatible with the other backends. When used the function must take a

@@ -379,7 +379,6 @@ public final class PassManager {
           .add(
               new ImportsPass(
                   errorReporter,
-                  options,
                   disableAllTypeChecking,
                   new ProtoImportProcessor(registry, errorReporter, disableAllTypeChecking),
                   new TemplateImportProcessor(errorReporter, accumulatedState::registryFromDeps)))
@@ -412,7 +411,7 @@ public final class PassManager {
       // Run before the RewriteGlobalsPass as it removes some globals.
       passes
           .add(new VeRewritePass())
-          .add(new RewriteGlobalsPass(options.getCompileTimeGlobals()))
+          .add(new RewriteGlobalsPass())
           .add(new XidPass(errorReporter))
           .add(new UnknownJsGlobalPass(allowUnknownJsGlobals, errorReporter))
           .add(new ResolveNamesPass(errorReporter))
@@ -480,7 +479,7 @@ public final class PassManager {
         passes.add(new CheckGlobalsPass(errorReporter));
       }
       passes
-          .add(new ValidateAliasesPass(errorReporter, options, loggingConfig))
+          .add(new ValidateAliasesPass(errorReporter, loggingConfig))
           .add(new KeyCommandPass(errorReporter, disableAllTypeChecking))
           .add(new ValidateSkipNodesPass(errorReporter));
 

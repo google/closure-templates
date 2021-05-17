@@ -413,78 +413,6 @@ public final class SoyFileSet {
     }
 
     /**
-     * Sets the map from compile-time global name to value.
-     *
-     * <p>The values can be any of the Soy primitive types: null, boolean, integer, float (Java
-     * double), or string.
-     *
-     * @param compileTimeGlobalsMap Map from compile-time global name to value. The values can be
-     *     any of the Soy primitive types: null, boolean, integer, float (Java double), or string.
-     * @return This builder.
-     * @throws IllegalArgumentException If one of the values is not a valid Soy primitive type.
-     * @deprecated Use Soy constants instead.
-     */
-    @Deprecated
-    public Builder setCompileTimeGlobals(Map<String, ?> compileTimeGlobalsMap) {
-      getGeneralOptions().setCompileTimeGlobals(compileTimeGlobalsMap);
-      return this;
-    }
-
-    /**
-     * Sets the file containing compile-time globals.
-     *
-     * <p>Each line of the file should have the format
-     *
-     * <pre>
-     *     &lt;global_name&gt; = &lt;primitive_data&gt;
-     * </pre>
-     *
-     * where primitive_data is a valid Soy expression literal for a primitive type (null, boolean,
-     * integer, float, or string). Empty lines and lines beginning with "//" are ignored. The file
-     * should be encoded in UTF-8.
-     *
-     * <p>If you need to generate a file in this format from Java, consider using the utility {@code
-     * SoyUtils.generateCompileTimeGlobalsFile()}.
-     *
-     * @param compileTimeGlobalsFile The file containing compile-time globals.
-     * @return This builder.
-     * @throws IOException If there is an error reading the compile-time globals file.
-     * @deprecated Use Soy constants instead.
-     */
-    @Deprecated
-    public Builder setCompileTimeGlobals(File compileTimeGlobalsFile) throws IOException {
-      getGeneralOptions().setCompileTimeGlobals(compileTimeGlobalsFile);
-      return this;
-    }
-
-    /**
-     * Sets the resource file containing compile-time globals.
-     *
-     * <p>Each line of the file should have the format
-     *
-     * <pre>
-     *     &lt;global_name&gt; = &lt;primitive_data&gt;
-     * </pre>
-     *
-     * where primitive_data is a valid Soy expression literal for a primitive type (null, boolean,
-     * integer, float, or string). Empty lines and lines beginning with "//" are ignored. The file
-     * should be encoded in UTF-8.
-     *
-     * <p>If you need to generate a file in this format from Java, consider using the utility {@code
-     * SoyUtils.generateCompileTimeGlobalsFile()}.
-     *
-     * @param compileTimeGlobalsResource The resource containing compile-time globals.
-     * @return This builder.
-     * @throws IOException If there is an error reading the compile-time globals file.
-     * @deprecated Use Soy constants instead.
-     */
-    @Deprecated
-    public Builder setCompileTimeGlobals(URL compileTimeGlobalsResource) throws IOException {
-      getGeneralOptions().setCompileTimeGlobals(compileTimeGlobalsResource);
-      return this;
-    }
-
-    /**
      * Registers a collection of protocol buffer descriptors. This makes all the types defined in
      * the provided descriptors available to use in soy.
      */
@@ -1216,7 +1144,7 @@ public final class SoyFileSet {
     // 2. it potentially removes metadata from the tree by precalculating expressions. For
     //     example, trivial print nodes are evaluated, which can remove globals from the tree,
     //     but the gencode needs to find these so that their proto types can be used to bootstrap
-    // development mode compilation.
+    //     development mode compilation.
     return parse(
         passManagerBuilder()
             .optimize(false)

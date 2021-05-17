@@ -669,7 +669,6 @@ public class RenderVisitorTest {
         "Notify <span class=\"sharebox-id-email-number\">10</span> people via email &rsaquo;");
   }
 
-
   @Test
   public void testRenderPluralWithRuntimeErrors() throws Exception {
     String templateBody =
@@ -1182,10 +1181,6 @@ public class RenderVisitorTest {
             + // variant "gamma" not implemented
             "    {param boo: 'zzz' /}\n"
             + "  {/delcall}\n"
-            + "  {delcall myApp.myDelegate variant=\"test.GLOBAL\"}\n"
-            + // variant is a global expression
-            "    {param boo: 'zzz' /}\n"
-            + "  {/delcall}\n"
             + "{/template}\n"
             + "\n"
             + "{deltemplate myApp.myDelegate}\n"
@@ -1204,11 +1199,6 @@ public class RenderVisitorTest {
             + "  {@param boo: ?}\n"
             + // variant "beta" default
             "  000beta\n"
-            + "{/deltemplate}\n"
-            + "{deltemplate myApp.myDelegate variant=\"test.GLOBAL\"}\n"
-            + "  {@param boo: ?}\n"
-            + // variant using global
-            "  000global\n"
             + "{/deltemplate}\n";
 
     String soyFileContent2 =
@@ -1232,11 +1222,6 @@ public class RenderVisitorTest {
             + "  {@param boo: ?}\n"
             + // "beta" in SecretFeature
             "  111beta\n"
-            + "{/deltemplate}\n"
-            + "{deltemplate myApp.myDelegate variant=\"test.GLOBAL\"}\n"
-            + "  {@param boo: ?}\n"
-            + // variant using global
-            "  111global\n"
             + "{/deltemplate}\n";
 
     String soyFileContent3 =
@@ -1254,15 +1239,9 @@ public class RenderVisitorTest {
             + "  {@param boo: ?}\n"
             + // variant "alpha" in Alternate
             "  222alpha\n"
-            + "{/deltemplate}\n"
-            + "{deltemplate myApp.myDelegate variant=\"test.GLOBAL\"}\n"
-            + "  {@param boo: ?}\n"
-            + // variant using global
-            "  222global\n"
             + "{/deltemplate}\n"; // Note: No variant "beta" in AlternateSecretFeature.
 
     SoyGeneralOptions options = new SoyGeneralOptions();
-    options.setCompileTimeGlobals(ImmutableMap.<String, Object>of("test.GLOBAL", 1));
     ParseResult result =
         SoyFileSetParserBuilder.forFileContents(soyFileContent1, soyFileContent2, soyFileContent3)
             .options(options)
@@ -1274,32 +1253,32 @@ public class RenderVisitorTest {
     assertThat(
             renderTemplateInFile(
                 result, "ns1.callerTemplate", TEST_DATA, TEST_IJ_DATA, activeDelPackageNames))
-        .isEqualTo("000alpha000beta000empty000global");
+        .isEqualTo("000alpha000beta000empty");
 
     activeDelPackageNames = "SecretFeature"::equals;
     assertThat(
             renderTemplateInFile(
                 result, "ns1.callerTemplate", TEST_DATA, TEST_IJ_DATA, activeDelPackageNames))
-        .isEqualTo("111alpha111beta111empty111global");
+        .isEqualTo("111alpha111beta111empty");
 
     activeDelPackageNames = "AlternateSecretFeature"::equals;
     assertThat(
             renderTemplateInFile(
                 result, "ns1.callerTemplate", TEST_DATA, TEST_IJ_DATA, activeDelPackageNames))
-        .isEqualTo("222alpha000beta222empty222global");
+        .isEqualTo("222alpha000beta222empty");
 
     activeDelPackageNames = "NonexistentFeature"::equals;
     assertThat(
             renderTemplateInFile(
                 result, "ns1.callerTemplate", TEST_DATA, TEST_IJ_DATA, activeDelPackageNames))
-        .isEqualTo("000alpha000beta000empty000global");
+        .isEqualTo("000alpha000beta000empty");
 
     activeDelPackageNames =
         ImmutableSet.of("NonexistentFeature", "AlternateSecretFeature")::contains;
     assertThat(
             renderTemplateInFile(
                 result, "ns1.callerTemplate", TEST_DATA, TEST_IJ_DATA, activeDelPackageNames))
-        .isEqualTo("222alpha000beta222empty222global");
+        .isEqualTo("222alpha000beta222empty");
     try {
       renderTemplateInFile(
           result,

@@ -20,7 +20,6 @@ import static java.util.stream.Collectors.toCollection;
 
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
@@ -28,14 +27,11 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.error.SoyErrors;
-import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.soytree.ImportNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.defn.ImportedVar;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.TypeRegistries;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -66,10 +62,6 @@ public final class ImportsPass implements CompilerFileSetPass {
       SoyErrorKind.of("One or more imported symbols are required for import.");
 
   // Naming conflict errors:
-  private static final SoyErrorKind IMPORT_CONFLICTS_WITH_GLOBAL =
-      SoyErrorKind.of("Import ''{0}'' conflicts with a global of the same name.");
-  private static final SoyErrorKind IMPORT_CONFLICTS_WITH_GLOBAL_PREFIX =
-      SoyErrorKind.of("Import ''{0}'' conflicts with namespace for global ''{1}''.");
   private static final SoyErrorKind IMPORT_CONFLICTS_WITH_TYPE_NAME =
       SoyErrorKind.of("Import ''{0}'' conflicts with a builtin type of the same name.");
   private static final SoyErrorKind IMPORT_SAME_FILE =
@@ -86,20 +78,14 @@ public final class ImportsPass implements CompilerFileSetPass {
   }
 
   private final ErrorReporter errorReporter;
-  private final SoyGeneralOptions options;
   private final boolean disableAllTypeChecking;
   private final ImmutableList<ImportProcessor> processors;
 
-  // LazyInit
-  private Map<String, String> globalPrefixToFullNameMap = null;
-
   public ImportsPass(
       ErrorReporter errorReporter,
-      SoyGeneralOptions options,
       boolean disableAllTypeChecking,
       ImportProcessor... processors) {
     this.errorReporter = errorReporter;
-    this.options = options;
     this.disableAllTypeChecking = disableAllTypeChecking;
     this.processors = ImmutableList.copyOf(processors);
   }
@@ -193,12 +179,6 @@ public final class ImportsPass implements CompilerFileSetPass {
       foundErrors = true;
     }
 
-    // Name conflicts with a global.
-    if (options.getCompileTimeGlobals().containsKey(importSymbolName)) {
-      foundErrors = true;
-      errorReporter.report(nameLocation, IMPORT_CONFLICTS_WITH_GLOBAL, importSymbolName);
-    }
-
     // Name conflicts with a built-in type.
     SoyType type = TypeRegistries.builtinTypeRegistry().getType(importSymbolName);
     if (type != null) {
@@ -206,42 +186,7 @@ public final class ImportsPass implements CompilerFileSetPass {
       errorReporter.report(nameLocation, IMPORT_CONFLICTS_WITH_TYPE_NAME, importSymbolName);
     }
 
-    // Name conflicts with the namespace for a global.
-    String prefix = importSymbolName + ".";
-    if (globalPrefixToFullNameMap == null) {
-      globalPrefixToFullNameMap = buildGlobalPrefixToFullNameMap();
-    }
-    if (globalPrefixToFullNameMap.containsKey(prefix)) {
-      foundErrors = true;
-      errorReporter.report(
-          nameLocation,
-          IMPORT_CONFLICTS_WITH_GLOBAL_PREFIX,
-          importSymbolName,
-          globalPrefixToFullNameMap.get(prefix));
-    }
-
     return foundErrors;
-  }
-
-  /**
-   * Builds a map that contains, for each compile time global, the first dotted prefix mapped to the
-   * full global name (e.g. "foo." -> "foo.bar.Baz"). If multiple types have the same prefix, the
-   * map will store the first one.
-   */
-  private ImmutableMap<String, String> buildGlobalPrefixToFullNameMap() {
-    Map<String, String> prefixesToGlobalNamesBuilder = new HashMap<>();
-
-    for (String fullName : options.getCompileTimeGlobals().keySet()) {
-      String prefix = fullName;
-      int indexOfFirstDot = fullName.indexOf(".");
-      // If there was no dot, or a dot was the last char, return the whole string.
-      // Otherwise, return "foo." in "foo.bar.baz".
-      if (indexOfFirstDot >= 0 && indexOfFirstDot < fullName.length() - 1) {
-        prefix = fullName.substring(0, indexOfFirstDot + 1);
-      }
-      prefixesToGlobalNamesBuilder.putIfAbsent(prefix, fullName);
-    }
-    return ImmutableMap.copyOf(prefixesToGlobalNamesBuilder);
   }
 
   private void reportUnknownImport(SoyFileNode file, ImportNode node) {

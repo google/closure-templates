@@ -20,7 +20,6 @@ import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
-import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.soytree.AliasDeclaration;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.types.SoyProtoEnumType;
@@ -33,10 +32,6 @@ import com.google.template.soy.types.TypeRegistry;
  * Checks that aliases don't conflict with things that can be aliased (or their namespace prefixes).
  */
 final class ValidateAliasesPass implements CompilerFilePass {
-  private static final SoyErrorKind ALIAS_CONFLICTS_WITH_GLOBAL =
-      SoyErrorKind.of("Alias ''{0}'' conflicts with a global of the same name.");
-  private static final SoyErrorKind ALIAS_CONFLICTS_WITH_GLOBAL_PREFIX =
-      SoyErrorKind.of("Alias ''{0}'' conflicts with namespace for global ''{1}''.");
 
   private static final SoyErrorKind ALIAS_CONFLICTS_WITH_TYPE_NAME =
       SoyErrorKind.of("Alias ''{0}'' conflicts with a type of the same name.");
@@ -45,15 +40,10 @@ final class ValidateAliasesPass implements CompilerFilePass {
       SoyErrorKind.of("Alias ''{0}'' conflicts with a VE of the same name.");
 
   private final ErrorReporter errorReporter;
-  private final SoyGeneralOptions options;
   private final ValidatedLoggingConfig loggingConfig;
 
-  ValidateAliasesPass(
-      ErrorReporter errorReporter,
-      SoyGeneralOptions options,
-      ValidatedLoggingConfig loggingConfig) {
+  ValidateAliasesPass(ErrorReporter errorReporter, ValidatedLoggingConfig loggingConfig) {
     this.errorReporter = errorReporter;
-    this.options = options;
     this.loggingConfig = loggingConfig;
   }
 
@@ -61,10 +51,6 @@ final class ValidateAliasesPass implements CompilerFilePass {
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
     TypeRegistry registry = TypeRegistries.builtinTypeRegistry();
     for (AliasDeclaration alias : file.getAliasDeclarations()) {
-      if (options.getCompileTimeGlobals().containsKey(alias.alias().identifier())) {
-        errorReporter.report(alias.alias().location(), ALIAS_CONFLICTS_WITH_GLOBAL, alias.alias());
-      }
-
       SoyType type = registry.getType(alias.alias().identifier());
       // When running with a dummy type provider that parses all types as unknown, ignore that.
       if (type != null && type.getKind() != SoyType.Kind.UNKNOWN) {
@@ -76,13 +62,6 @@ final class ValidateAliasesPass implements CompilerFilePass {
         }
       }
 
-      String prefix = alias.alias().identifier() + ".";
-      for (String global : options.getCompileTimeGlobals().keySet()) {
-        if (global.startsWith(prefix)) {
-          errorReporter.report(
-              alias.alias().location(), ALIAS_CONFLICTS_WITH_GLOBAL_PREFIX, alias.alias(), global);
-        }
-      }
       if (loggingConfig.getElement(alias.alias().identifier()) != null) {
         errorReporter.report(alias.alias().location(), ALIAS_CONFLICTS_WITH_VE, alias.alias());
       }

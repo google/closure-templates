@@ -16,28 +16,18 @@
 
 package com.google.template.soy.passes;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
-import com.google.template.soy.data.internalutils.InternalValueUtils;
-import com.google.template.soy.data.restricted.PrimitiveData;
-import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 
-/** A {@link CompilerFilePass} that searches for compile time globals and substitutes values. */
+/** A {@link CompilerFilePass} that resolves globals against {alias} commands in the same file. */
 @RunAfter({
   VeRewritePass.class, // rewrites some VE references that are parsed as globals in a different way
 })
 @RunBefore({CheckGlobalsPass.class})
 final class RewriteGlobalsPass implements CompilerFilePass {
-
-  private final ImmutableMap<String, PrimitiveData> compileTimeGlobals;
-
-  RewriteGlobalsPass(ImmutableMap<String, PrimitiveData> compileTimeGlobals) {
-    this.compileTimeGlobals = compileTimeGlobals;
-  }
 
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
@@ -54,16 +44,6 @@ final class RewriteGlobalsPass implements CompilerFilePass {
     Identifier alias = file.resolveAlias(global.getIdentifier());
     if (!alias.equals(original)) {
       global.setName(alias.identifier());
-    }
-
-    String name = global.getName();
-    // if that doesn't work, see if it was registered in the globals file.
-    PrimitiveData value = compileTimeGlobals.get(name);
-
-    if (value != null) {
-      PrimitiveNode expr =
-          InternalValueUtils.convertPrimitiveDataToExpr(value, global.getSourceLocation());
-      global.resolve(expr.getType(), expr);
     }
   }
 }

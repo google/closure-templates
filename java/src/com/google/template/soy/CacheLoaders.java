@@ -27,7 +27,6 @@ import com.google.protobuf.DescriptorProtos.FileDescriptorSet;
 import com.google.protobuf.Descriptors.DescriptorValidationException;
 import com.google.protobuf.Descriptors.FileDescriptor;
 import com.google.protobuf.ExtensionRegistry;
-import com.google.template.soy.data.restricted.PrimitiveData;
 import com.google.template.soy.internal.proto.ProtoUtils;
 import com.google.template.soy.logging.AnnotatedLoggingConfig;
 import com.google.template.soy.logging.VeMetadata;
@@ -54,15 +53,6 @@ final class CacheLoaders {
             // empty extension registry.
             return AnnotatedLoggingConfig.parseFrom(stream, ExtensionRegistry.getEmptyRegistry());
           }
-        }
-      };
-
-  static final SoyInputCache.CacheLoader<ImmutableMap<String, PrimitiveData>> GLOBALS_LOADER =
-      new SoyInputCache.CacheLoader<ImmutableMap<String, PrimitiveData>>() {
-        @Override
-        public ImmutableMap<String, PrimitiveData> read(
-            File file, SoyCompilerFileReader reader, SoyInputCache cache) throws IOException {
-          return SoyUtils.parseCompileTimeGlobals(reader.read(file).asCharSource(UTF_8));
         }
       };
 

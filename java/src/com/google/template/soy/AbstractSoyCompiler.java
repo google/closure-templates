@@ -21,7 +21,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.SetMultimap;
@@ -35,7 +34,6 @@ import com.google.protobuf.Descriptors.FileDescriptor;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.internal.SoyFileKind;
-import com.google.template.soy.data.restricted.PrimitiveData;
 import com.google.template.soy.error.SoyCompilationException;
 import com.google.template.soy.logging.AnnotatedLoggingConfig;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
@@ -104,22 +102,6 @@ public abstract class AbstractSoyCompiler {
               + "Used by the compiler for typechecking and call analysis.",
       handler = SoyCmdLineParser.FileListOptionHandler.class)
   private List<File> indirectDepHeaders = new ArrayList<>();
-
-  @Option(
-      name = "--compileTimeGlobalsFile",
-      aliases = "--compileTimeGlobalsFiles",
-      usage =
-          "(Deprecated, use Soy constants instead.) "
-              + "The path to a file containing the mappings for global names to be substituted"
-              + " at compile time. Each line of the file should have the format"
-              + " \"<global_name> = <primitive_data>\" where primitive_data is a valid Soy"
-              + " expression literal for a primitive type (null, boolean, integer, float, or"
-              + " string). Empty lines and lines beginning with \"//\" are ignored. The file"
-              + " should be encoded in UTF-8. If you need to generate a file in this format"
-              + " from Java, consider using the utility"
-              + " SoyUtils.generateCompileTimeGlobalsFile().",
-      handler = SoyCmdLineParser.FileListOptionHandler.class)
-  private List<File> globalsFiles = new ArrayList<>();
 
   @Option(
       name = "--pluginModules",
@@ -304,7 +286,6 @@ public abstract class AbstractSoyCompiler {
         // Set experimental features that are not generally available.
         .setExperimentalFeatures(experimentalFeatures)
         .addProtoDescriptors(parseProtos(protoFileDescriptors, cache, soyCompilerFileReader, err))
-        .setCompileTimeGlobals(parseGlobals())
         .setSoyAstCache(cache.astCache());
 
     // add sources
@@ -449,36 +430,6 @@ public abstract class AbstractSoyCompiler {
     return ValidatedLoggingConfig.create(configBuilder.build());
   }
 
-  private Map<String, PrimitiveData> parseGlobals() {
-    Map<String, PrimitiveData> globals = new HashMap<>();
-    Map<String, File> globalsToFilePath = new HashMap<>();
-    for (File globalsFile : globalsFiles) {
-      try {
-        ImmutableMap<String, PrimitiveData> parsedGlobals =
-            cache.read(globalsFile, CacheLoaders.GLOBALS_LOADER, soyCompilerFileReader);
-        for (Map.Entry<String, PrimitiveData> entry : parsedGlobals.entrySet()) {
-          PrimitiveData oldValue = globals.put(entry.getKey(), entry.getValue());
-          if (oldValue != null && !entry.getValue().equals(oldValue)) {
-            throw new CommandLineError(
-                String.format(
-                    "Found 2 values for the global '%s': '%s' was provided in %s and '%s' was "
-                        + "provided in %s",
-                    entry.getKey(),
-                    oldValue,
-                    globalsToFilePath.get(entry.getKey()),
-                    entry.getValue(),
-                    globalsFile));
-          }
-          globalsToFilePath.put(entry.getKey(), globalsFile);
-        }
-      } catch (IOException e) {
-        throw new CommandLineError(
-            "Unable to soy globals file: " + globalsFile + ": " + e.getMessage());
-      }
-    }
-    return globals;
-  }
-
   /**
    * Extension point for subtypes to perform additional logic to validate compiler specific flags.
    */
@@ -506,8 +457,8 @@ public abstract class AbstractSoyCompiler {
   /**
    * Performs the actual compilation.
    *
-   * @param sfsBuilder The builder, already populated with sources, globals (if set) and plugins.
-   *     subclasses may set additional compilation options on the builder.
+   * @param sfsBuilder The builder, already populated with sources and plugins. subclasses may set
+   *     additional compilation options on the builder.
    */
   @ForOverride
   protected abstract void compile(SoyFileSet.Builder sfsBuilder) throws IOException;

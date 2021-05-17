@@ -110,17 +110,17 @@ public class InternalValueUtils {
    *
    * <p>The returned map will have the same iteration order as the provided map.
    *
-   * @param compileTimeGlobalsMap Map from compile-time global name to value. The values can be any
-   *     of the Soy primitive types: null, boolean, integer, float (Java double), or string.
+   * @param constantNameToJavaValue Map from compile-time global name to value. The values can be
+   *     any of the Soy primitive types: null, boolean, integer, float (Java double), or string.
    * @return An equivalent map in the internal format.
    * @throws IllegalArgumentException If the map contains an invalid value.
    */
-  public static ImmutableMap<String, PrimitiveData> convertCompileTimeGlobalsMap(
-      Map<String, ?> compileTimeGlobalsMap) {
+  public static ImmutableMap<String, PrimitiveData> convertConstantsMap(
+      Map<String, ?> constantNameToJavaValue) {
 
     ImmutableMap.Builder<String, PrimitiveData> resultMapBuilder = ImmutableMap.builder();
 
-    for (Map.Entry<String, ?> entry : compileTimeGlobalsMap.entrySet()) {
+    for (Map.Entry<String, ?> entry : constantNameToJavaValue.entrySet()) {
 
       Object valueObj = entry.getValue();
       PrimitiveData value;
@@ -137,10 +137,7 @@ public class InternalValueUtils {
       }
       if (!isValidValue) {
         throw new IllegalArgumentException(
-            "Compile-time globals map contains invalid value: "
-                + valueObj
-                + " for key: "
-                + entry.getKey());
+            "Constants map contains invalid value: " + valueObj + " for key: " + entry.getKey());
       }
 
       resultMapBuilder.put(entry.getKey(), value);

@@ -23,7 +23,6 @@ import static com.google.template.soy.testing.SharedTestUtils.untypedTemplateBod
 
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.truth.FailureMetadata;
 import com.google.common.truth.Subject;
 import com.google.template.soy.error.ErrorReporter;
@@ -74,19 +73,6 @@ public final class SoyExprForPySubject extends Subject {
     for (Map.Entry<String, PyExpr> entry : localVarFrame.entrySet()) {
       localVarExprs.addVariable(entry.getKey(), entry.getValue());
     }
-    return this;
-  }
-
-  /**
-   * Sets a map of key to {@link com.google.template.soy.data.restricted.PrimitiveData} values as
-   * the current globally available data. Any compilation step will use these globals to replace
-   * unrecognized variables.
-   *
-   * @param globals a map of keys to PrimitiveData values
-   * @return the current subject for chaining
-   */
-  public SoyExprForPySubject withGlobals(ImmutableMap<String, ?> globals) {
-    opts.setCompileTimeGlobals(globals);
     return this;
   }
 
