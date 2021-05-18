@@ -99,6 +99,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.annotation.Nullable;
@@ -166,6 +167,8 @@ public final class SoyFileSet {
     private boolean skipPluginValidation = false;
 
     private boolean optimize = true;
+
+    private Set<SourceFilePath> generatedPathsToCheck = ImmutableSet.of();
 
     private final ImmutableSet.Builder<SoyFunction> soyFunctions = ImmutableSet.builder();
     private final ImmutableSet.Builder<SoyPrintDirective> soyPrintDirectives =
@@ -242,6 +245,7 @@ public final class SoyFileSet {
           pluginRuntimeJars,
           skipPluginValidation,
           optimize,
+          generatedPathsToCheck,
           cssRegistry);
     }
 
@@ -412,6 +416,11 @@ public final class SoyFileSet {
       return this;
     }
 
+    public Builder setGeneratedPathsToCheck(Set<SourceFilePath> generatedPaths) {
+      this.generatedPathsToCheck = generatedPaths;
+      return this;
+    }
+
     /**
      * Registers a collection of protocol buffer descriptors. This makes all the types defined in
      * the provided descriptors available to use in soy.
@@ -523,6 +532,7 @@ public final class SoyFileSet {
   private final boolean skipPluginValidation;
 
   private final boolean optimize;
+  private final ImmutableSet<SourceFilePath> generatedPathsToCheck;
 
   /** For reporting errors during parsing. */
   private ErrorReporter errorReporter;
@@ -546,6 +556,7 @@ public final class SoyFileSet {
       ImmutableList<File> pluginRuntimeJars,
       boolean skipPluginValidation,
       boolean optimize,
+      Set<SourceFilePath> generatedPathsToCheck,
       Optional<CssRegistry> cssRegistry) {
     this.scopedData = apiCallScopeProvider;
     this.typeRegistry = typeRegistry;
@@ -563,6 +574,7 @@ public final class SoyFileSet {
     this.pluginRuntimeJars = pluginRuntimeJars;
     this.skipPluginValidation = skipPluginValidation;
     this.optimize = optimize;
+    this.generatedPathsToCheck = ImmutableSet.copyOf(generatedPathsToCheck);
     this.cssRegistry = cssRegistry;
   }
 
@@ -1180,6 +1192,7 @@ public final class SoyFileSet {
     return new PassManager.Builder()
         .setGeneralOptions(generalOptions)
         .optimize(optimize)
+        .setGeneratedPathsToCheck(generatedPathsToCheck)
         .setSoyPrintDirectives(printDirectives)
         .setCssRegistry(cssRegistry)
         .setErrorReporter(errorReporter)

@@ -53,6 +53,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.annotation.CheckReturnValue;
 import org.kohsuke.args4j.Argument;
 import org.kohsuke.args4j.CmdLineException;
@@ -172,6 +173,11 @@ public abstract class AbstractSoyCompiler {
               + "This flag should only be set in integration test environment.")
   private boolean disableOptimizer = false;
 
+  @Option(
+      name = "--allow_unblessed_generated_files",
+      usage = "Whether to allow generated source files without the blessed comment.")
+  private boolean allowUnblessedGeneratedFiles = false;
+
   /** The remaining arguments after parsing command-line flags. */
   @Argument private List<String> arguments = new ArrayList<>();
 
@@ -287,6 +293,11 @@ public abstract class AbstractSoyCompiler {
         .setExperimentalFeatures(experimentalFeatures)
         .addProtoDescriptors(parseProtos(protoFileDescriptors, cache, soyCompilerFileReader, err))
         .setSoyAstCache(cache.astCache());
+
+    if (!allowUnblessedGeneratedFiles) {
+      sfsBuilder.setGeneratedPathsToCheck(
+          generatedFiles.values().stream().map(SourceFilePath::create).collect(Collectors.toSet()));
+    }
 
     // add sources
     for (File src : srcs) {
