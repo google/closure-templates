@@ -26,6 +26,7 @@ import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.ExprNode.CallableExpr.ParamsStyle;
 import com.google.template.soy.exprtree.ExprNode.Kind;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FunctionNode;
@@ -130,6 +131,10 @@ public final class TemplateCallMetadataPass implements CompilerFileSetPass {
     }
     String templateName = ((TemplateImportType) possibleTemplateImportType).getName();
 
+    if (fnNode.getParamsStyle() == ParamsStyle.POSITIONAL) {
+      // This is checked and reported in CheckTemplateCallsPass but that runs later.
+      return Optional.empty();
+    }
     List<Identifier> paramNames = fnNode.getParamNames();
     List<ExprNode> params = fnNode.getParams();
     List<TemplateCallMetadata.ParamArg> callParamArgs = newArrayList();
