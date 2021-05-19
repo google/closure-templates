@@ -23,6 +23,7 @@ import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.FixedIdGenerator;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.passes.CompilerFileSetPass.Result;
 import com.google.template.soy.soytree.Comment;
@@ -99,7 +100,11 @@ public final class CheckGeneratedSourcesPassTest {
     return new SoyFileNode(
         1,
         new SourceLocation(path, 1, 1, 2, 1),
-        NamespaceDeclaration.EMPTY,
+        new NamespaceDeclaration(
+            Identifier.create("ns", SourceLocation.UNKNOWN),
+            ImmutableList.of(),
+            null,
+            SourceLocation.UNKNOWN),
         SoyFileHeaderInfo.EMPTY,
         ImmutableList.of(Comment.create(Comment.Type.LINE, comment, SourceLocation.UNKNOWN)));
   }

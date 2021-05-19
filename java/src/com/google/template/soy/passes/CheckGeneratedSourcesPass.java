@@ -22,6 +22,7 @@ import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.SoyFileNode;
+import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 import java.util.regex.Pattern;
 
 /**
@@ -62,6 +63,10 @@ public class CheckGeneratedSourcesPass implements CompilerFileSetPass {
 
   private boolean check(SoyFileNode sourceFile) {
     if (!generatedPaths.contains(sourceFile.getFilePath())) {
+      return true;
+    }
+    if (sourceFile.getNamespace().equals(SoyFileHeaderInfo.EMPTY.getNamespace())) {
+      // Ignore empty files to make bazel rules easier to write.
       return true;
     }
 
