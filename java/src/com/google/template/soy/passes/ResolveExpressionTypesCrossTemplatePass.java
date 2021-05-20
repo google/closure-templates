@@ -40,6 +40,7 @@ import com.google.template.soy.shared.internal.BuiltinMethod;
 import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.HtmlTagNode;
+import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
@@ -302,7 +303,11 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
     }
     if (Parameter.isValidAttrName(name)) {
       String paramName = Parameter.attrToParamName(name);
-      if (attr.getParent() instanceof HtmlOpenTagNode && !addAttr.apply(paramName)) {
+      // This is a synthetically created IfCond Node created by somethin akin to @class="Hello"
+      if (((attr.getParent() instanceof IfCondNode
+                  && !attr.getParent().getSourceLocation().isKnown())
+              || attr.getParent() instanceof HtmlOpenTagNode)
+          && !addAttr.apply(paramName)) {
         errorReporter.report(loc, DUPLICATE_PARAM, name);
         return;
       } else if (!hasAllAttributes) {
