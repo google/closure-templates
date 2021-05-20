@@ -368,14 +368,6 @@ public class SanitizersTest {
     assertThat(Sanitizers.filterNormalizeUri("javascript\uff1aalert(1337);"))
         .doesNotContain("javascript\uff1a");
 
-    // Tests of filtering hierarchy within uri path (/.. etc )
-    assertThat(Sanitizers.filterNormalizeUri("a/../")).isEqualTo("about:invalid#zSoyz");
-    assertThat(Sanitizers.filterNormalizeUri("/..?")).isEqualTo("about:invalid#zSoyz");
-    assertThat(Sanitizers.filterNormalizeUri("http://bad.url.com../../s../.#.."))
-        .isEqualTo("about:invalid#zSoyz");
-    assertThat(Sanitizers.filterNormalizeUri("http://badurl.com/normal/../unsafe"))
-        .isEqualTo("about:invalid#zSoyz");
-
     // Things we should accept.
     String[] goodForAllFilters =
         new String[] {
@@ -391,15 +383,7 @@ public class SanitizersTest {
           "#",
           "/",
           "",
-          "../",
-          ".%2E",
-          "..",
-          "%2E%2E",
-          "%2e%2e",
-          "%2e.",
-          "http://goodurl.com/.stuff/?/../.",
-          "http://good.url.com../..s../.#..",
-          "http://goodurl.com/normal/%2e/unsafe?",
+          "../"
         };
 
     for (String goodCase : goodForAllFilters) {

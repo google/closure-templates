@@ -925,20 +925,9 @@ public final class EscapingConventions {
       // It also disallows HTML entities in the first path part of a relative path,
       // e.g. "foo&lt;bar/baz".  Our existing escaping functions should not produce that.
       // More importantly, it disallows masking of a colon, e.g. "javascript&#58;...".
-      //
-      // Also Rejects paths with the following properties:
-      // (3) paths containing /../
-      // (4) paths ending in /..
       super(
           Pattern.compile(
-              "^"
-                  +
-                  // Reject case (3) and (4)
-                  "(?![^#?]*/(?:\\.|%2E){2}(?:[/?#]|\\z))"
-                  +
-                  // Accept cases (1) and (2)
-                  "(?:(?:https?|mailto):|[^&:/?#]*(?:[/?#]|\\z))",
-              Pattern.CASE_INSENSITIVE),
+              "^(?:(?:https?|mailto):|[^&:/?#]*(?:[/?#]|\\z))", Pattern.CASE_INSENSITIVE),
           null);
     }
 
