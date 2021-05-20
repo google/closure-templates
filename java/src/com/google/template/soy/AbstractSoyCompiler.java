@@ -176,7 +176,7 @@ public abstract class AbstractSoyCompiler {
   @Option(
       name = "--allow_unblessed_generated_files",
       usage = "Whether to allow generated source files without the blessed comment.")
-  private boolean allowUnblessedGeneratedFiles = false;
+  private boolean allowUnblessedGeneratedFiles = true;
 
   /** The remaining arguments after parsing command-line flags. */
   @Argument private List<String> arguments = new ArrayList<>();
