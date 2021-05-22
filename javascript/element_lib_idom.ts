@@ -38,7 +38,7 @@ export abstract class SoyElement<TData extends {}|null, TInterface extends {}>
   private patchHandler:
       ((prev: TInterface, next: TInterface) => void)|null = null;
   private syncState = true;
-  private logger: Logger|null = null;
+  private loggerPrivate: Logger|null = null;
   // Marker so that future element accesses can find this Soy element from the
   // DOM
   key: string = '';
@@ -66,7 +66,7 @@ export abstract class SoyElement<TData extends {}|null, TInterface extends {}>
    * used instead.
    */
   setLogger(logger: Logger|null): this {
-    this.logger = logger;
+    this.loggerPrivate = logger;
     return this;
   }
 
@@ -94,8 +94,8 @@ export abstract class SoyElement<TData extends {}|null, TInterface extends {}>
    */
   render(renderer = new IncrementalDomRenderer()) {
     assert(this.node);
-    if (this.logger && !renderer.getLogger()) {
-      renderer.setLogger(this.logger);
+    if (this.loggerPrivate && !renderer.getLogger()) {
+      renderer.setLogger(this.loggerPrivate);
     }
     if (this.patchHandler) {
       const patchHandler =
@@ -113,8 +113,8 @@ export abstract class SoyElement<TData extends {}|null, TInterface extends {}>
     this.skipHandler = null;
     try {
       patchOuter(this.node!, () => {
-        if (this.logger && this.logGraft) {
-          this.logger.logGraft(this.node!, () => {
+        if (this.loggerPrivate && this.logGraft) {
+          this.loggerPrivate.logGraft(this.node!, () => {
             this.renderInternal(renderer, this.data!);
           });
         } else {
@@ -125,8 +125,8 @@ export abstract class SoyElement<TData extends {}|null, TInterface extends {}>
       this.syncState = origSyncState;
       this.skipHandler = skipHandler;
     }
-    if (this.logger) {
-      this.logger.resetBuilder();
+    if (this.loggerPrivate) {
+      this.loggerPrivate.resetBuilder();
     }
   }
 
