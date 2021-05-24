@@ -83,7 +83,7 @@ final class PythonValueFactoryImpl extends PythonValueFactory {
         result = ERROR_VALUE;
       }
     } catch (Throwable t) {
-      BaseUtils.trimStackTraceTo(t, getClass());
+      BaseUtils.trimStackTraceTo(t, fn.getClass());
       report(location, name, fn, UNEXPECTED_ERROR, Throwables.getStackTraceAsString(t));
       result = ERROR_VALUE;
     }

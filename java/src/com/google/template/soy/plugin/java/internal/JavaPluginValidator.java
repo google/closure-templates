@@ -78,7 +78,7 @@ public class JavaPluginValidator {
         reporter.nullReturn();
       }
     } catch (Throwable t) {
-      BaseUtils.trimStackTraceTo(t, getClass());
+      BaseUtils.trimStackTraceTo(t, fn.getClass());
       reporter.unexpectedError(t);
     }
     // Note: Successful return of null is reported above.
