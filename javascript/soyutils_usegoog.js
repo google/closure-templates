@@ -621,7 +621,7 @@ const $$getDelegateFn = function(
     delTemplateId, delTemplateVariant, allowsEmptyDefault) {
   let delFn =
       DELEGATE_REGISTRY_FUNCTIONS_['key_' + delTemplateId + ':' + delTemplateVariant];
-  if (!delFn && delTemplateVariant != '') {
+  if (!delFn && delTemplateVariant !== '') {
     // Fallback to empty variant.
     delFn = DELEGATE_REGISTRY_FUNCTIONS_['key_' + delTemplateId + ':'];
   }

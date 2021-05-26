@@ -545,7 +545,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
         } else {
           // Variant is either a StringData or a SanitizedContent. Use the value as a string. If
           // the value is not a string, and exception will be thrown.
-          variant = variantData.stringValue();
+          variant = variantData.coerceToString();
         }
       } catch (SoyDataException e) {
         throw RenderException.createWithSource(

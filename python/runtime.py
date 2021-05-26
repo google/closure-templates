@@ -155,7 +155,10 @@ def get_delegate_fn(template_id, variant, allow_empty_default):
   """
   entry = _DELEGATE_REGISTRY.get(_gen_delegate_id(template_id, variant))
   fn = entry[1] if entry else None
-  if not fn and variant:
+  # variant may be another zero value besides the empty string and we want to
+  # detect that
+  # pylint: disable=g-explicit-bool-comparison
+  if not fn and variant != '':
     # Fallback to empty variant.
     entry = _DELEGATE_REGISTRY.get(_gen_delegate_id(template_id))
     fn = entry[1] if entry else None
