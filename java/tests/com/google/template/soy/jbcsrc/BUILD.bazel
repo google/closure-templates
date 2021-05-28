@@ -6,7 +6,10 @@ package(
     default_visibility = ["//:soy_internal"],
 )
 
-TESTING_SRCS = ["JbcSrcJavaValues.java"]
+TESTING_SRCS = [
+    "JbcSrcJavaValues.java",
+    "TestExpressionDetacher.java",
+]
 
 java_library(
     name = "testing",

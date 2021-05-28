@@ -40,14 +40,16 @@ public final class JbcSrcJavaValues {
       FunctionNode fnNode,
       JbcSrcPluginContext context,
       Function<String, Expression> pluginInstanceFn,
-      List<SoyExpression> args) {
+      List<SoyExpression> args,
+      ExpressionDetacher detacher) {
     return new JbcSrcValueFactory(
             JavaPluginExecContext.forFunctionNode(
                 fnNode, (SoyJavaSourceFunction) fnNode.getSoyFunction()),
             context,
             pluginInstanceFn::apply,
             ErrorReporter.exploding(),
-            SoyTypeRegistryBuilder.create())
+            SoyTypeRegistryBuilder.create(),
+            detacher)
         .computeForJavaSource(args);
   }
 }

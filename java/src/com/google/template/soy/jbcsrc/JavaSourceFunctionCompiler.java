@@ -52,8 +52,10 @@ final class JavaSourceFunctionCompiler {
       MethodCallNode node,
       SoySourceFunctionMethod method,
       List<SoyExpression> args,
-      @Nullable TemplateParameterLookup parameters) {
-    return compile(JavaPluginExecContext.forMethodCallNode(node, method), args, parameters);
+      @Nullable TemplateParameterLookup parameters,
+      ExpressionDetacher detacher) {
+    return compile(
+        JavaPluginExecContext.forMethodCallNode(node, method), args, parameters, detacher);
   }
   /**
    * Compile the given function call to a {@link SoyExpression}
@@ -69,14 +71,17 @@ final class JavaSourceFunctionCompiler {
       FunctionNode node,
       SoyJavaSourceFunction function,
       List<SoyExpression> args,
-      @Nullable TemplateParameterLookup parameters) {
-    return compile(JavaPluginExecContext.forFunctionNode(node, function), args, parameters);
+      @Nullable TemplateParameterLookup parameters,
+      ExpressionDetacher detacher) {
+    return compile(
+        JavaPluginExecContext.forFunctionNode(node, function), args, parameters, detacher);
   }
 
   private SoyExpression compile(
       JavaPluginExecContext context,
       List<SoyExpression> args,
-      @Nullable TemplateParameterLookup parameters) {
+      @Nullable TemplateParameterLookup parameters,
+      ExpressionDetacher detacher) {
     return new JbcSrcValueFactory(
             context,
             // parameters is null when we are in a constant context.
@@ -110,7 +115,8 @@ final class JavaSourceFunctionCompiler {
               return parameters.getRenderContext().getPluginInstance(pluginName);
             },
             errorReporter,
-            typeRegistry)
+            typeRegistry,
+            detacher)
         .computeForJavaSource(args);
   }
 }

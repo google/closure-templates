@@ -76,6 +76,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.Future;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -474,6 +475,9 @@ public abstract class MethodRef {
               LoggingAdvisingAppendable.class,
               boolean.class)
           .asNonNullable();
+
+  public static final MethodRef CONVERT_FUTURE_TO_SOY_VALUE_PROVIDER =
+      create(JbcSrcRuntime.class, "convertFutureToSoyValueProvider", Future.class);
 
   public static final MethodRef SOY_VALUE_PROVIDER_RESOLVE =
       create(JbcSrcRuntime.class, "resolveSoyValueProvider", SoyValueProvider.class);

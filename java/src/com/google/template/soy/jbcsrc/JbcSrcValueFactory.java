@@ -51,6 +51,7 @@ import com.google.template.soy.types.UnknownType;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Future;
 import org.objectweb.asm.Type;
 
 /** Adapts JavaValueFactory to working with Expressions for jbc src. */
@@ -68,13 +69,15 @@ final class JbcSrcValueFactory extends JavaValueFactory {
   private final JavaPluginValidator pluginValidator;
   private final SoyTypeRegistry registry;
   private final ErrorReporter errorReporter;
+  private final ExpressionDetacher detacher;
 
   JbcSrcValueFactory(
       JavaPluginExecContext fnNode,
       final JbcSrcPluginContext jbcPluginContext,
       PluginInstanceLookup pluginInstanceLookup,
       ErrorReporter errorReporter,
-      SoyTypeRegistry registry) {
+      SoyTypeRegistry registry,
+      ExpressionDetacher detacher) {
     this.fnNode = fnNode;
     this.pluginInstanceLookup = pluginInstanceLookup;
     this.registry = registry;
@@ -99,6 +102,7 @@ final class JbcSrcValueFactory extends JavaValueFactory {
             return JbcSrcJavaValue.of(jbcPluginContext.getAllRequiredCssNamespaces(soyExpression));
           }
         };
+    this.detacher = detacher;
   }
 
   SoyExpression computeForJavaSource(List<SoyExpression> args) {
@@ -401,6 +405,14 @@ final class JbcSrcValueFactory extends JavaValueFactory {
             SoyExpression.forSoyValue(
                 expectedType,
                 expr.checkedCast(SoyRuntimeType.getBoxedType(expectedType).runtimeType()));
+      } else if (Future.class.isAssignableFrom(type)) {
+        soyExpr =
+            SoyExpression.forSoyValue(
+                expectedType,
+                detacher
+                    .resolveSoyValueProvider(
+                        expr.invoke(MethodRef.CONVERT_FUTURE_TO_SOY_VALUE_PROVIDER))
+                    .checkedCast(SoyRuntimeType.getBoxedType(expectedType).runtimeType()));
       } else if (Message.class.isAssignableFrom(type)) {
         soyExpr =
             SoyExpression.forProto(

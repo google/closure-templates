@@ -24,6 +24,8 @@ java_library(
         "//java/src/com/google/template/soy/jbcsrc/api:internal",
         "//java/src/com/google/template/soy/jbcsrc/api:plugin_runtime_instance_info",
         "//java/src/com/google/template/soy/jbcsrc/runtime",
+        "//java/src/com/google/template/soy/plugin/java/restricted",
+        "//java/src/com/google/template/soy/shared/restricted",
         "@maven//:com_google_guava_guava",
         "@maven//:com_google_truth_truth",
         "@maven//:junit_junit",

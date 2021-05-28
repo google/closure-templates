@@ -42,11 +42,14 @@ import org.junit.runners.JUnit4;
 public class SoySauceTest {
 
   private SoySauce sauce;
+  private TestAsyncPlugin testAsyncPlugin;
 
   @Before
   public void setUp() throws Exception {
     SoyFileSet.Builder builder = SoyFileSet.builder();
     builder.add(SoySauceTest.class.getResource("strict.soy"));
+    testAsyncPlugin = new TestAsyncPlugin();
+    builder.addSourceFunction(testAsyncPlugin);
     sauce = builder.build().compileTemplates();
   }
 
@@ -317,6 +320,19 @@ public class SoySauceTest {
   }
 
   @Test
+  public void testPluginDetaching_string() {
+    SoySauce.Renderer tmpl = sauce.renderTemplate("strict_test.withAsyncPluginCall");
+    tmpl.setPluginInstances(ImmutableMap.of("testAsyncPlugin", () -> testAsyncPlugin));
+    Continuation<SanitizedContent> continuation = tmpl.renderHtml();
+    assertThat(continuation.result().type()).isEqualTo(RenderResult.Type.DETACH);
+    assertThat(continuation.result().future()).isEqualTo(testAsyncPlugin.testAsyncPlugin());
+    testAsyncPlugin.resolveTo("Charlie");
+    continuation = continuation.continueRender();
+    assertThat(continuation.result()).isEqualTo(RenderResult.done());
+    assertThat(continuation.get().getContent()).isEqualTo("Hello, Charlie!");
+  }
+
+  @Test
   public void testExceptionRewriting() {
     SoySauce.Renderer tmpl = sauce.renderTemplate("strict_test.callsItself");
 
@@ -335,10 +351,10 @@ public class SoySauceTest {
     } catch (ClassCastException cce) {
       // we get an CCE because we passed an int but it expected a string
       StackTraceElement[] stackTrace = cce.getStackTrace();
-      assertThat(stackTrace[0].toString()).isEqualTo("strict_test.callsItself(strict.soy:52)");
+      assertThat(stackTrace[0].toString()).isEqualTo("strict_test.callsItself(strict.soy:56)");
 
       for (int i = 1; i < 11; i++) {
-        assertThat(stackTrace[i].toString()).isEqualTo("strict_test.callsItself(strict.soy:54)");
+        assertThat(stackTrace[i].toString()).isEqualTo("strict_test.callsItself(strict.soy:58)");
       }
     }
   }

@@ -44,6 +44,10 @@ Hello world
   Hello, {$p}
 {/template}
 
+{template .withAsyncPluginCall}
+  Hello, {testAsyncPlugin()}!
+{/template}
+
 /** a template with a param */
 {template .callsItself}
   {@param depth : int}

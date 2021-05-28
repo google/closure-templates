@@ -41,6 +41,7 @@ import com.google.template.soy.types.UnknownType;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.Future;
 
 /** Validates plugin functions. */
 public class JavaPluginValidator {
@@ -138,6 +139,8 @@ public class JavaPluginValidator {
       } else if (SoyValue.class.isAssignableFrom(actualClass)) {
         // TODO(sameb): This could validate that the boxed soy type is valid for the return type
         // at compile time too.
+        actualSoyType = expectedType;
+      } else if (Future.class.isAssignableFrom(actualClass)) {
         actualSoyType = expectedType;
       } else if (Message.class.isAssignableFrom(actualClass)) {
         Optional<SoyType> returnType =

@@ -169,6 +169,10 @@ public final class JbcSrcRuntime {
     }
   }
 
+  public static SoyValueProvider convertFutureToSoyValueProvider(Future<?> future) {
+    return SoyValueConverter.INSTANCE.convert(future);
+  }
+
   /** Helper function to translate NullData -> null when resolving a SoyValueProvider. */
   public static SoyValue resolveSoyValueProvider(SoyValueProvider provider) {
     SoyValue value = provider.resolve();

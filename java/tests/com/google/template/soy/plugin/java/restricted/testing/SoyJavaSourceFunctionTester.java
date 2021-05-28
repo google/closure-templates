@@ -19,6 +19,7 @@ package com.google.template.soy.plugin.java.restricted.testing;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.template.soy.jbcsrc.restricted.FieldRef.staticFieldReference;
+import static java.util.Arrays.stream;
 
 import com.google.common.collect.Iterables;
 import com.google.template.soy.base.SourceFilePath;
@@ -43,6 +44,7 @@ import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jbcsrc.JbcSrcJavaValues;
+import com.google.template.soy.jbcsrc.TestExpressionDetacher;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.ConstructorRef;
 import com.google.template.soy.jbcsrc.restricted.Expression;
@@ -150,7 +152,8 @@ public class SoyJavaSourceFunctionTester {
               fnNode,
               new InternalContext(),
               this::getFunctionRuntime,
-              Stream.of(args).map(this::transform).collect(toImmutableList())));
+              stream(args).map(this::transform).collect(toImmutableList()),
+              new TestExpressionDetacher()));
     } catch (ReflectiveOperationException roe) {
       throw new RuntimeException(roe);
     }

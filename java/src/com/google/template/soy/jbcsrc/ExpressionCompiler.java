@@ -101,6 +101,7 @@ import com.google.template.soy.jbcsrc.shared.LegacyFunctionAdapter;
 import com.google.template.soy.jbcsrc.shared.Names;
 import com.google.template.soy.logging.ValidatedLoggingConfig.ValidatedLoggableElement;
 import com.google.template.soy.plugin.java.internal.PluginAnalyzer;
+import com.google.template.soy.plugin.java.restricted.MethodSignature;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.internal.BuiltinMethod;
@@ -126,6 +127,7 @@ import java.lang.invoke.MethodType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.Future;
 import javax.annotation.Nullable;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
@@ -1284,7 +1286,7 @@ final class ExpressionCompiler {
         List<SoyExpression> args = new ArrayList<>(node.numParams() + 1);
         args.add(baseExpr);
         node.getParams().forEach(n -> args.add(visit(n)));
-        return sourceFunctionCompiler.compile(node, sourceMethod, args, parameters);
+        return sourceFunctionCompiler.compile(node, sourceMethod, args, parameters, detacher);
       }
       throw new AssertionError(function.getClass());
     }
@@ -1552,12 +1554,14 @@ final class ExpressionCompiler {
 
     // Non-builtin functions
 
+
     @Override
     SoyExpression visitPluginFunction(FunctionNode node) {
       Object fn = node.getSoyFunction();
       List<SoyExpression> args = visitChildren(node);
       if (fn instanceof SoyJavaSourceFunction) {
-        return sourceFunctionCompiler.compile(node, (SoyJavaSourceFunction) fn, args, parameters);
+        return sourceFunctionCompiler.compile(
+            node, (SoyJavaSourceFunction) fn, args, parameters, detacher);
       }
 
       // Functions that are not a SoyJavaSourceFunction
@@ -1909,6 +1913,22 @@ final class ExpressionCompiler {
     @Override
     protected Boolean visitTemplateLiteralNode(TemplateLiteralNode node) {
       return false;
+    }
+
+    @Override
+    protected Boolean visitPluginFunction(FunctionNode node) {
+      Object fn = node.getSoyFunction();
+      if (fn instanceof SoyJavaSourceFunction) {
+        PluginAnalyzer.PluginMetadata metadata = PluginAnalyzer.analyze((SoyJavaSourceFunction) fn);
+        for (MethodSignature methodSignature :
+            Iterables.concat(
+                metadata.instanceMethodSignatures(), metadata.staticMethodSignatures())) {
+          if (Future.class.isAssignableFrom(methodSignature.returnType())) {
+            return true;
+          }
+        }
+      }
+      return visitExprNode(node);
     }
 
     @Override

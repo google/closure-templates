@@ -240,6 +240,13 @@ unsupported. It is impossible to say this function will return `T` when the
 input is `list<T>`.
 
 
+## Note on supported Java types
+
+Java functions called from Soy may use either the unboxed (e.g.: `String`,
+`Object`) or boxed (e.g.: `SoyValue`) types in their signatures, for both
+parameters and return types. Additionally, return types may be a `Future` which
+resolves to a valid unboxed or boxed type.
+
 ## Pure functions {#pure}
 
 Soy can sometimes optimize a function if the function is marked as "pure". A
