@@ -46,16 +46,20 @@ by Soy.
 ```
 
 This is an example of valid HTML snippet. In this example, in each `for` block,
-every tag that is opened, must be closed (`input` is a [void
-tag](https://www.w3.org/TR/HTML51/syntax.HTML#void-elements) and is
+every tag that is opened, must be closed (`input` is a
+[void tag](https://www.w3.org/TR/HTML51/syntax.HTML#void-elements) and is
 self-closing). The `param` block that explicitly sets `kind="html"` should also
 contain self-closed tags. Note that a template is also a block and the `div` tag
 at the very beginning has been closed at the end.
 
+WARNING: Note that in this case "balanced" means correct according to the HTML
+spec. Many tags, such as `<p>`, do not require a closing tag; they are
+"balanced" without a matching closing tag.
+
 ### Void elements
 
-According to the [HTML
-spec](https://www.w3.org/TR/2016/REC-html51-20161101/syntax.html#void-elements),
+According to the
+[HTML spec](https://www.w3.org/TR/2016/REC-html51-20161101/syntax.html#void-elements),
 void elements only have a start tag; end tags must not be specified for void
 elements. The compiler will enforce the following rules:
 
@@ -453,10 +457,10 @@ exactly the same HTML, and is supported by the compiler.
 
 ### Optional tags
 
-According to the HTML spec, some tags [can be
-omitted](https://www.w3.org/TR/html5/syntax.html#optional-tags). In particular,
-if certain criteria are met, the HTML parser can imply the start tags and/or end
-tags.
+According to the HTML spec, some tags
+[can be omitted](https://www.w3.org/TR/html5/syntax.html#optional-tags). In
+particular, if certain criteria are met, the HTML parser can imply the start
+tags and/or end tags.
 
 Soy supports part of these rules. The major differences between what we support
 and the HTML spec:
@@ -639,6 +643,6 @@ templates `bar` and `baz` will not.
 {/template}
 ```
 
-To enforce `stricthtml` in all templates, add a custom [Soy
-conformance](../dev/conformance) rule
+To enforce `stricthtml` in all templates, add a custom
+[Soy conformance](../dev/conformance) rule
 `com.google.template.soy.conformance.RequireStrictHtml`.
