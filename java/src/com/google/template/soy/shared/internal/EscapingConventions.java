@@ -45,7 +45,6 @@ import javax.annotation.ParametersAreNonnullByDefault;
  *
  * <p>Escaping functions are exposed as {@link Escaper}s in Java and via a JavaScript code
  * generating ant task for JavaScript.
- *
  */
 @ParametersAreNonnullByDefault
 public final class EscapingConventions {

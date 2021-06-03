@@ -37,7 +37,6 @@ import javax.annotation.Nullable;
  * message descriptions. This also has small runtime performance penalties, such as using binary
  * search instead of hash tables, constructing wrapper objects on the fly, and computing properties
  * of the message instead of storing them.
- *
  */
 @Immutable
 public final class RenderOnlySoyMsgBundleImpl extends SoyMsgBundle {

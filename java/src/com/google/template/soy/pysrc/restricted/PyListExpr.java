@@ -21,7 +21,6 @@ package com.google.template.soy.pysrc.restricted;
  * the precedence of the top-most operator.
  *
  * <p>Important: This class may only be used in implementing plugins (e.g. functions, directives).
- *
  */
 public final class PyListExpr extends PyExpr {
 

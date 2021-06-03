@@ -38,8 +38,6 @@ import org.junit.runners.JUnit4;
 
 /**
  * Test case for {@link SoyConformance}.
- *
- * @author brndn@google.com (Brendan Linn)
  */
 @RunWith(JUnit4.class)
 public class SoyConformanceTest {

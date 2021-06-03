@@ -30,7 +30,6 @@ import javax.annotation.Nullable;
  * Node representing a Soy element.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public final class TemplateElementNode extends TemplateNode implements ExprHolderNode {
 

@@ -30,7 +30,6 @@ import org.kohsuke.args4j.Option;
  *
  * <p>The command-line arguments should contain command-line flags and the list of paths to the Soy
  * files.
- *
  */
 public final class SoyMsgExtractor extends AbstractSoyCompiler {
 

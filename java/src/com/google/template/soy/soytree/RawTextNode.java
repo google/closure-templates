@@ -40,7 +40,6 @@ import javax.annotation.Nullable;
  * Node representing a contiguous raw text section.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public final class RawTextNode extends AbstractSoyNode
     implements HtmlContext.HtmlContextHolder, StandaloneNode {

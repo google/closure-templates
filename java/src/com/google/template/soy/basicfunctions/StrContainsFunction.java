@@ -43,7 +43,6 @@ import java.util.List;
  * <p><code>strContains(expr1, expr2)</code> requires <code>expr1</code> and <code>expr2</code> to
  * be of type string or {@link SanitizedContent}. It evaluates to <code>true</code> iff <code>expr1
  * </code> contains <code>expr2</code>. <code>strContains</code> is case sensitive.
- *
  */
 @SoyFunctionSignature(
     name = "strContains",

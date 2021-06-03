@@ -42,7 +42,6 @@ import java.util.Set;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  * <p>{@link #exec} should be called on a {@code TemplateNode}.
- *
  */
 public final class IndirectParamsCalculator {
 

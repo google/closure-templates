@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableSet;
 
 /**
  * Compilation options applicable to the Soy frontend and/or to multiple Soy backends.
- *
  */
 public final class SoyGeneralOptions implements Cloneable {
 

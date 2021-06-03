@@ -26,7 +26,6 @@ import org.junit.runners.JUnit4;
 
 /**
  * Unit test for raw text messages, which use a semi complex dynamic encoding.
- *
  */
 @RunWith(JUnit4.class)
 public class SoyMsgRawTextPartTest {

@@ -73,7 +73,6 @@ import javax.annotation.ParametersAreNonnullByDefault;
  * com.google.template.soy.data.SoyValueConverter#markAsSoyMap}.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 @ParametersAreNonnullByDefault
 public final class DictImpl extends SoyAbstractValue implements SoyDict, SoyMap {

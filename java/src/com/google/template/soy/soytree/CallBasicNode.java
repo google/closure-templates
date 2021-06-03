@@ -36,7 +36,6 @@ import java.util.List;
  * Node representing a call to a basic template.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public final class CallBasicNode extends CallNode {
 

@@ -46,7 +46,6 @@ import javax.annotation.Nullable;
  * Static functions for parsing a set of Soy files into a {@link SoyFileSetNode}.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 @AutoValue
 public abstract class SoyFileSetParser {

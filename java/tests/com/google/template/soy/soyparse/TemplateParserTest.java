@@ -80,7 +80,6 @@ import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for the template parser.
- *
  */
 @RunWith(JUnit4.class)
 public final class TemplateParserTest {

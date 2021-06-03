@@ -20,7 +20,6 @@ import com.google.template.soy.soytree.SoyTypeP;
 
 /**
  * Soy floating-point type.
- *
  */
 public final class FloatType extends PrimitiveType {
 

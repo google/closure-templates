@@ -28,7 +28,6 @@ import javax.annotation.Nullable;
  * Default implementation of EvalVisitorFactory.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public final class EvalVisitorFactoryImpl implements EvalVisitorFactory {
 

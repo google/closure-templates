@@ -38,7 +38,6 @@ import javax.annotation.Nullable;
  * <p>All children are {@code MsgNode}s. And conversely, all {@code MsgNode}s must be children of
  * {@code MsgFallbackGroupNode}s through parsing and middle-end passes. (Backends may have their own
  * special structure for messages).
- *
  */
 public final class MsgFallbackGroupNode extends AbstractParentSoyNode<MsgNode>
     implements HtmlContext.HtmlContextHolder,

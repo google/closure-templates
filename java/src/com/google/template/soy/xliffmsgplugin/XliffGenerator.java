@@ -33,7 +33,6 @@ import javax.annotation.Nullable;
  * messages.
  *
  * <p>XLIFF specification: http://docs.oasis-open.org/xliff/xliff-core/xliff-core.html
- *
  */
 class XliffGenerator {
 

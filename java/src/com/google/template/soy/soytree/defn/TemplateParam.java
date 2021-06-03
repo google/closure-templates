@@ -35,7 +35,6 @@ import javax.annotation.Nullable;
  * An explicitly declared template parameter.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public class TemplateParam extends AbstractVarDefn implements TemplateHeaderVarDefn {
   private final TypeNode typeNode;

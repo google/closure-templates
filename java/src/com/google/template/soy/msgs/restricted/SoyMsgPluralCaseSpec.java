@@ -35,7 +35,6 @@ import java.util.function.Function;
  * <p>A plural case value can be either a number, or one of {@code ZERO}, {@code ONE}, {@code TWO},
  * {@code FEW}, {@code MANY} or {@code OTHER}. Here, a number is represented by the number {@code
  * explicitValue} with status set to EXPLICIT and the remaining by an enum value.
- *
  */
 @Immutable
 public final class SoyMsgPluralCaseSpec {

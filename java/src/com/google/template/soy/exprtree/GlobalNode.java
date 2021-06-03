@@ -30,7 +30,6 @@ import com.google.template.soy.types.UnknownType;
  * Node representing a global.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public final class GlobalNode extends AbstractExprNode {
   /** Simple callback interface for hooking into globals resolution. */

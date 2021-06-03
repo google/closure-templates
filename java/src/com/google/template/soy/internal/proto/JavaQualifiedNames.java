@@ -29,7 +29,6 @@ import com.google.protobuf.Descriptors.FileDescriptor;
 
 /**
  * Helper class for generating fully qualified Java/GWT identfiers for descriptors.
- *
  */
 public final class JavaQualifiedNames {
   private JavaQualifiedNames() {}

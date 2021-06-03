@@ -35,7 +35,6 @@ import java.util.List;
 
 /**
  * Soy function that checks whether its argument is a defined nonnull value.
- *
  */
 @SoyFunctionSignature(
     name = "isNonnull",

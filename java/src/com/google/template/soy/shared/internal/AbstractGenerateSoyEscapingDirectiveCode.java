@@ -35,7 +35,6 @@ import org.apache.tools.ant.Task;
 
 /**
  * Abstract class for generating code relied upon by escaping directives.
- *
  */
 @ParametersAreNonnullByDefault
 public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {

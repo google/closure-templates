@@ -44,7 +44,6 @@ import javax.annotation.Nullable;
  * Node representing a call.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
     implements StandaloneNode,

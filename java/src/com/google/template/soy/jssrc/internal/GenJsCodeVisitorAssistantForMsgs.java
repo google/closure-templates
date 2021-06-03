@@ -73,7 +73,6 @@ import javax.annotation.Nullable;
  * Assistant visitor for GenJsCodeVisitor to handle messages.
  *
  * <p>Precondition: MsgNode should not exist in the tree.
- *
  */
 public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
 

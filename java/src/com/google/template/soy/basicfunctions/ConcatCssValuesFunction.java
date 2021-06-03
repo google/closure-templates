@@ -37,7 +37,6 @@ import java.util.List;
 
 /**
  * Soy function that concatenates two css style attributes.
- *
  */
 @SoyPureFunction
 @SoyFunctionSignature(

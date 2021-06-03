@@ -37,7 +37,6 @@ import java.util.List;
 
 /**
  * Soy function that takes the floor of a number.
- *
  */
 @SoyPureFunction
 @SoyFunctionSignature(

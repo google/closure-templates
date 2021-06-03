@@ -26,8 +26,6 @@ import com.google.template.soy.soytree.SoyFileSetNode;
 
 /**
  * Abstract base class for a conformance rule applying to one particular node type.
- *
- * @author brndn@google.com (Brendan Linn)
  */
 abstract class Rule<T extends Node> {
 

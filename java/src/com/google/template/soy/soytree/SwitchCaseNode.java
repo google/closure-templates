@@ -28,7 +28,6 @@ import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
  * Node representing a 'case' block in a 'switch' block.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public final class SwitchCaseNode extends CaseOrDefaultNode
     implements ConditionalBlockNode, ExprHolderNode {

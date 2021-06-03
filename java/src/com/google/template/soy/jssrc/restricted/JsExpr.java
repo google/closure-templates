@@ -27,7 +27,6 @@ import com.google.template.soy.internal.targetexpr.TargetExpr;
  *
  * <p>Note that while all behavior of JsExpr matches TargetExpr, the class serves to differentiate
  * between languages and retain plugin behavior.
- *
  */
 @Immutable
 public final class JsExpr extends TargetExpr {

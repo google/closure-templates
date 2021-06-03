@@ -31,7 +31,6 @@ import java.util.List;
  * Abstract implementation of an OperatorNode.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public abstract class AbstractOperatorNode extends AbstractParentExprNode implements OperatorNode {
 

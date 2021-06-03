@@ -45,7 +45,6 @@ import java.util.Map;
 
 /**
  * Functions for generating Python code for template calls and their parameters.
- *
  */
 final class GenPyCallExprVisitor extends AbstractReturningSoyNodeVisitor<PyExpr> {
 

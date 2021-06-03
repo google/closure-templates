@@ -39,7 +39,6 @@ import javax.annotation.Nullable;
  * Node representing an HTML tag within a {@code msg} statement/block.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceholderInitialNode {
 

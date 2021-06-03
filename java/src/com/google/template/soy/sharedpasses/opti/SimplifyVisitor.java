@@ -85,7 +85,6 @@ import javax.annotation.Nullable;
  * Visitor for simplifying subtrees based on constant values known at compile time.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public final class SimplifyVisitor {
 

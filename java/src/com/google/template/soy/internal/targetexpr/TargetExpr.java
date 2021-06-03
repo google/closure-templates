@@ -29,7 +29,6 @@ import java.util.Objects;
  * com.google.template.soy.exprtree.Operator#getPrecedence}), the precedence ordering of the Soy
  * expression operators matches that of JS, Python, and Java, so the precedence numbers are correct
  * when used for generating the target code as well.
- *
  */
 @Immutable
 public class TargetExpr {

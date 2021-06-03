@@ -47,7 +47,6 @@ import org.objectweb.asm.Type;
  *
  * <p>It takes a single argument : an integer specifying the max number of characters between
  * breaks.
- *
  */
 @SoyPurePrintDirective
 final class InsertWordBreaksDirective

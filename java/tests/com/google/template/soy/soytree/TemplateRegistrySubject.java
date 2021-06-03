@@ -26,8 +26,6 @@ import java.util.List;
 
 /**
  * Custom Truth subject for {@link FileSetMetadata}.
- *
- * @author brndn@google.com (Brendan Linn)
  */
 final class TemplateRegistrySubject extends Subject {
 

@@ -23,7 +23,6 @@ import com.google.template.soy.base.internal.BaseUtils;
  * Shared utilities specific to the JS Src backend.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public final class JsSrcUtils {
 
@@ -80,7 +79,7 @@ public final class JsSrcUtils {
   static boolean isReservedWord(String key) {
     return LEGACY_JS_RESERVED_WORDS.contains(key);
   }
-
+  
   static final ImmutableSet<String> JS_LITERALS =
       ImmutableSet.of("null", "true", "false", "NaN", "Infinity", "undefined");
 

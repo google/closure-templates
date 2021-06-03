@@ -28,7 +28,6 @@ import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
  * Node representing a 'param' with a value expression.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public final class CallParamValueNode extends CallParamNode implements ExprHolderNode {
 

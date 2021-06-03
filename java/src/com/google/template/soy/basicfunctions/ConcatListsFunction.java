@@ -37,7 +37,6 @@ import java.util.List;
 
 /**
  * Soy function that concatenates two or more lists together.
- *
  */
 @SoyFunctionSignature(
     name = "concatLists",

@@ -25,7 +25,6 @@ import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
  * Node representing a 'case' block in a 'plural' block.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public final class MsgPluralCaseNode extends CaseOrDefaultNode implements MsgBlockNode {
 

@@ -25,7 +25,6 @@ import com.google.template.soy.basetree.CopyState;
  * statements.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public abstract class CaseOrDefaultNode extends AbstractBlockCommandNode {
 

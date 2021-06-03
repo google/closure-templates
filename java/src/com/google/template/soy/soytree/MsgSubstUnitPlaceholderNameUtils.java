@@ -40,7 +40,6 @@ import java.util.List;
  * plural/select vars).
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public final class MsgSubstUnitPlaceholderNameUtils {
 

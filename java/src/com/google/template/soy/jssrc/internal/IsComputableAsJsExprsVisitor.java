@@ -56,7 +56,6 @@ import java.util.Map;
  * <p>Precondition: MsgNode should not exist in the tree.
  *
  * <p>TODO(user): This should no longer be necessary after CodeChunk migration. Rip it all out.
- *
  */
 public class IsComputableAsJsExprsVisitor extends AbstractReturningSoyNodeVisitor<Boolean> {
 

@@ -37,7 +37,6 @@ import java.util.List;
 
 /**
  * Soy function that concatenates two attribute values that are strings.
- *
  */
 @SoyPureFunction
 @SoyFunctionSignature(

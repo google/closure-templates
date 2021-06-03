@@ -46,7 +46,6 @@ import com.google.template.soy.soytree.SoyTreeUtils;
  *   <li>It must used the same expression as its corresponding {@code plural}.
  *   <li>If it is used as the root expression in a print node, then there can be no phname
  * </ul>
- *
  */
 @RunAfter(ResolvePluginsPass.class)
 final class RewriteRemaindersPass implements CompilerFilePass {

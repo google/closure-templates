@@ -27,7 +27,6 @@ import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for InsertWordBreaksDirective.
- *
  */
 @RunWith(JUnit4.class)
 public class InsertWordBreaksDirectiveTest extends AbstractSoyPrintDirectiveTestCase {

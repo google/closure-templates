@@ -37,7 +37,6 @@ import java.util.regex.Pattern;
  * Utilities for building msg parts with ICU syntax.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public class IcuSyntaxUtils {
 

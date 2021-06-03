@@ -28,7 +28,6 @@ import javax.annotation.Nullable;
  * always be used as opposed to using a variable name.
  *
  * <p>TODO(lukes): All variables have declaring nodes, we should add that field to this interface.
- *
  */
 public interface VarDefn {
 

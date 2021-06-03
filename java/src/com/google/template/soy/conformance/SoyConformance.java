@@ -27,8 +27,6 @@ import java.util.List;
 /**
  * Class for collecting Soy conformance violations. Performs a single pass over the AST, aggregating
  * results from different conformance rules.
- *
- * @author brndn@google.com (Brendan Linn)
  */
 public final class SoyConformance {
 

@@ -30,7 +30,6 @@ import java.util.List;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  * <p>Important: Even though this class is not marked 'final', do not extend this class.
- *
  */
 public abstract class CollectionData extends SoyData {
 

@@ -60,7 +60,6 @@ import javax.annotation.Nullable;
 
 /**
  * Applies changes specified in {@link Inferences} to a Soy parse tree.
- *
  */
 final class Rewriter {
 

@@ -24,7 +24,6 @@ import java.util.Objects;
  * Represents the type of a list, a sequential random-access container keyed by integer.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public final class ListType extends SoyType {
 

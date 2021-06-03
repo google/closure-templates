@@ -61,7 +61,6 @@ import org.kohsuke.args4j.Option;
 
 /**
  * Usage of the features examples.
- *
  */
 public class FeaturesUsage {
 

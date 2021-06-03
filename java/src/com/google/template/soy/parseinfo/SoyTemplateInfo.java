@@ -23,7 +23,6 @@ import com.google.errorprone.annotations.Immutable;
 
 /**
  * Parsed info about a template.
- *
  */
 @Immutable
 public class SoyTemplateInfo {

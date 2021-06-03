@@ -29,8 +29,6 @@ import com.google.template.soy.exprtree.VarRefNode;
 
 /**
  * Custom Truth subject for testing expression parsing.
- *
- * @author brndn@google.com (Brendan Linn)
  */
 final class ExpressionSubject extends Subject {
 

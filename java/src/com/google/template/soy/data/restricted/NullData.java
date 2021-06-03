@@ -26,7 +26,6 @@ import com.google.template.soy.data.SoyDataException;
  *
  * <p>NullData is only used by Tofu, jbcsrc internally represents null as {@code null}. Ideally,
  * Tofu would switch to using {@code null} also, but that may be infeasible.
- *
  */
 @Immutable
 public final class NullData extends PrimitiveData {

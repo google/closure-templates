@@ -44,7 +44,6 @@ import java.util.List;
  *
  * <p>This enables iteration over the keys in a map, e.g. {@code {for $key in keys($myMap)} ...
  * {/for}}
- *
  */
 @SoyFunctionSignature(
     name = "mapKeys",

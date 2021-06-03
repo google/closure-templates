@@ -38,7 +38,6 @@ import java.util.concurrent.ConcurrentMap;
  *
  * <p>This saves an enormous amount of memory, especially since in gender/plural messages, there are
  * many repeated parts.
- *
  */
 public final class SoyMsgBundleCompactor {
 

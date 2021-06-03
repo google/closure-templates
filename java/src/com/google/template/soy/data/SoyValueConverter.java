@@ -68,7 +68,6 @@ import javax.annotation.Nullable;
  * {@link #convert} and the static fields. But do not use the {@code new*} methods. Consider the
  * {@code new*} methods internal to Soy, since we haven't yet decided whether or not to make them
  * directly available.
- *
  */
 public final class SoyValueConverter {
 

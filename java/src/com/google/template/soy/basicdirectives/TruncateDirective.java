@@ -41,7 +41,6 @@ import org.objectweb.asm.Type;
 /**
  * A directive that truncates a string to a maximum length if it is too long, optionally adding
  * ellipsis.
- *
  */
 @SoyPurePrintDirective
 final class TruncateDirective

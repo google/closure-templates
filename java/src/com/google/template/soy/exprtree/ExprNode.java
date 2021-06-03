@@ -34,7 +34,6 @@ import java.util.Optional;
  * <p>The top level definition is the base ExprNode interface.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public interface ExprNode extends Node {
 

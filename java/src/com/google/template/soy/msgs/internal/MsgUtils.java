@@ -39,7 +39,6 @@ import com.google.template.soy.soytree.VeLogNode;
 
 /**
  * Soy-specific utilities for working with messages.
- *
  */
 public class MsgUtils {
 

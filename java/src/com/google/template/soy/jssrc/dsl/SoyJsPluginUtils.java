@@ -45,7 +45,6 @@ import java.util.List;
  * and have no need for these utilities. By contrast, plugins understand only {@link JsExpr}s. These
  * utilities are provided so that plugins do not needs to convert between code chunks and JsExprs
  * manually.
- *
  */
 public final class SoyJsPluginUtils {
 

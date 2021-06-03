@@ -37,7 +37,6 @@ import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for MsgNode.
- *
  */
 @RunWith(JUnit4.class)
 public class MsgNodeTest {

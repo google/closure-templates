@@ -50,7 +50,6 @@ import java.util.List;
  * creates the JS code that backs escaping directives, and {@link
  * com.google.template.soy.pysrc.internal.GeneratePySanitizeEscapingDirectiveCode} which creates the
  * Python backing code.
- *
  */
 public abstract class BasicEscapeDirective
     implements SoyJavaPrintDirective,

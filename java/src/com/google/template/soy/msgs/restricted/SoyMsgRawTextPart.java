@@ -25,7 +25,6 @@ import java.util.Arrays;
 
 /**
  * Represents a raw text string within a message (the stuff that translators change).
- *
  */
 public abstract class SoyMsgRawTextPart extends SoyMsgPart {
   // TODO(lukes): when java9 is released, remove this.. the optimization performed by these

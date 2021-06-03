@@ -42,7 +42,6 @@ import java.util.Optional;
 /**
  * Truth assertion which compiles the provided soy code and asserts that the generated Python code
  * matches the expected output.
- *
  */
 public final class SoyCodeForPySubject extends Subject {
 

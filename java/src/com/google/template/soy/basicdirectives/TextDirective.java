@@ -40,7 +40,6 @@ import java.util.Set;
  *
  * <p>Should never be used by users in its current state. This directive itself performs no
  * escaping, though in the future, it may force autoescaping to re-escape the value.
- *
  */
 @SoyPurePrintDirective
 final class TextDirective

@@ -68,7 +68,6 @@ import javax.annotation.Nullable;
  *   return output.toString();
  * }  // the end
  * </pre>
- *
  */
 public class JsCodeBuilder {
 

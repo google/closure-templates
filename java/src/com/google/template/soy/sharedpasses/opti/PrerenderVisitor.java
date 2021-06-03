@@ -45,7 +45,6 @@ import com.google.template.soy.soytree.TemplateNode;
  * <p>Package-private helper for {@link SimplifyVisitor}.
  *
  * <p>The rendered output will be appended to the Appendable provided to the constructor.
- *
  */
 final class PrerenderVisitor extends RenderVisitor {
 

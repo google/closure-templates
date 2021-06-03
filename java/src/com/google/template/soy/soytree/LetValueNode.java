@@ -27,7 +27,6 @@ import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
  * Node representing a 'let' statement with a value expression.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public final class LetValueNode extends LetNode implements ExprHolderNode {
 

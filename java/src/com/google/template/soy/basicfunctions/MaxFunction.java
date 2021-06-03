@@ -37,7 +37,6 @@ import java.util.List;
 
 /**
  * Soy function that takes the max of two numbers.
- *
  */
 @SoyFunctionSignature(
     name = "max",

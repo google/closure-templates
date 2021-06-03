@@ -36,7 +36,6 @@ import javax.annotation.Nullable;
  * Represents a full set of messages in some language/locale.
  *
  * <p>Important: Only use this class from message plugins!
- *
  */
 @Immutable
 public class SoyMsgBundleImpl extends SoyMsgBundle {
@@ -114,7 +113,7 @@ public class SoyMsgBundleImpl extends SoyMsgBundle {
   public ULocale getLocale() {
     return locale;
   }
-
+  
   @Override
   public boolean isRtl() {
     return isRtl;

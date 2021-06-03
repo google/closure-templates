@@ -35,7 +35,6 @@ import java.util.List;
 
 /**
  * Soy function that generates a random integer in the range [0, n-1].
- *
  */
 @SoyFunctionSignature(
     name = "randomInt",

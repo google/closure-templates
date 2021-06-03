@@ -24,7 +24,6 @@ import javax.annotation.Nullable;
 /**
  * Ways of escaping dynamic content in a template. This is only used by the contextautoesc package,
  * but lives in soytree since it's reference by the HtmlContext enum.
- *
  */
 public enum EscapingMode {
 

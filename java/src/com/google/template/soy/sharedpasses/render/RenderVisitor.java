@@ -108,7 +108,6 @@ import javax.annotation.Nullable;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  * <p>The rendered output will be appended to the Appendable provided to the constructor.
- *
  */
 public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 

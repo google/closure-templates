@@ -29,8 +29,6 @@ import java.text.MessageFormat;
  * for readers to inspect the errors that the class could report.
  *
  * <p>Error messages should be capitalized, and concluded with a punctuation mark.
- *
- * @author brndn@google.com (Brendan Linn)
  */
 public final class SoyErrorKind {
 

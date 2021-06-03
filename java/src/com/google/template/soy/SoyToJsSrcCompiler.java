@@ -31,7 +31,6 @@ import org.kohsuke.args4j.Option;
 
 /**
  * Executable for compiling a set of Soy files into corresponding JS source files.
- *
  */
 public final class SoyToJsSrcCompiler extends AbstractSoyCompiler {
 

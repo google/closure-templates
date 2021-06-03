@@ -81,7 +81,6 @@ import java.util.Optional;
  *       See fixed-point typing below for a discussion of reentrant templates and templates used in
  *       different contexts.
  * </ul>
- *
  */
 final class InferenceEngine {
 

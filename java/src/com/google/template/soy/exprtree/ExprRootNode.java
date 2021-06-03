@@ -29,7 +29,6 @@ import com.google.template.soy.basetree.CopyState;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  * <p>This node should always have exactly one child.
- *
  */
 public final class ExprRootNode extends AbstractParentExprNode {
 

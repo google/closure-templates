@@ -46,7 +46,6 @@ import java.util.Optional;
  * autoescape="contextual"}
  *
  * <p>Hello, {$world |escapeHtml}! {/template} </xmp>
- *
  */
 public final class ContextualAutoescaper {
 

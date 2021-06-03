@@ -42,7 +42,6 @@ import java.util.List;
  * character is to be inserted. If the preceding text string would change the bidi directionality
  * going forward, then the bidi mark is inserted to restore the global bidi directionality.
  * Otherwise, nothing is inserted.
- *
  */
 @SoyFunctionSignature(
     name = "bidiMarkAfter",

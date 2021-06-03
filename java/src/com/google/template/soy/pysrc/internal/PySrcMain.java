@@ -48,7 +48,6 @@ import java.util.Optional;
  * Main entry point for the Python Src backend (output target).
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public final class PySrcMain {
 

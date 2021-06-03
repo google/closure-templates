@@ -35,7 +35,6 @@ import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for BidiUnicodeWrapDirective.
- *
  */
 @RunWith(JUnit4.class)
 public class BidiUnicodeWrapDirectiveTest extends AbstractSoyPrintDirectiveTestCase {

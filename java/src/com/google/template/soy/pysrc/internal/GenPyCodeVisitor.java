@@ -78,7 +78,6 @@ import java.util.TreeSet;
  * <p>{@link #gen} should be called on a full parse tree. Python source code will be generated for
  * all the Soy files. The return value is a list of strings, each string being the content of one
  * generated Python file (corresponding to one Soy file).
- *
  */
 final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 

@@ -43,7 +43,6 @@ import java.util.Map;
  * Visitor to determine whether the output string for the subtree rooted at a given node is
  * computable as the concatenation of one or more Python expressions. If this is false, it means the
  * generated code for computing the node's output must include one or more full Python statements.
- *
  */
 class IsComputableAsPyExprVisitor extends AbstractReturningSoyNodeVisitor<Boolean> {
 

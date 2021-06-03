@@ -73,7 +73,6 @@ import java.util.stream.StreamSupport;
  * Shared utilities for the 'soytree' package.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public final class SoyTreeUtils {
 

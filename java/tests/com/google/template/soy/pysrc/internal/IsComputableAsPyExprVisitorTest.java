@@ -28,7 +28,6 @@ import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for IsComputableAsPyExprVisitor.
- *
  */
 @RunWith(JUnit4.class)
 public class IsComputableAsPyExprVisitorTest {

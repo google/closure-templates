@@ -22,7 +22,6 @@ import com.google.protobuf.Descriptors.FileDescriptor;
 
 /**
  * Parsed info about a Soy file.
- *
  */
 public class SoyFileInfo {
 

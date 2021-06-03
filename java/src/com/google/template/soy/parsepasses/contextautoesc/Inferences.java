@@ -46,7 +46,6 @@ import java.util.List;
  * <p>The {@link ContextualAutoescaper} creates a single root instance and its passes fold
  * successful inferences into the parent until it ends up with a final set of rewriting decisions
  * that the {@link Rewriter} applies to the input Soy parse tree.
- *
  */
 public final class Inferences {
 

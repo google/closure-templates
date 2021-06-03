@@ -30,7 +30,6 @@ import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for {@link IsComputableAsJsExprsVisitor}.
- *
  */
 @RunWith(JUnit4.class)
 public final class IsComputableAsJsExprsVisitorTest {

@@ -24,7 +24,6 @@ import java.io.IOException;
  * String data.
  *
  * <p>Important: This class may only be used in implementing plugins (e.g. functions, directives).
- *
  */
 @Immutable
 public final class StringData extends PrimitiveData {

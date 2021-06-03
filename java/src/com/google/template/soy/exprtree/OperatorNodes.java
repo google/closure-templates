@@ -24,7 +24,6 @@ import com.google.template.soy.exprtree.ExprNode.AccessChainComponentNode;
  * Container of nodes representing operators.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public class OperatorNodes {
 

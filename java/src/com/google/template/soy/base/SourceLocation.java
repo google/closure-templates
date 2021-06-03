@@ -31,8 +31,6 @@ import javax.annotation.ParametersAreNonnullByDefault;
 
 /**
  * Describes a source location in a Soy input file.
- *
- * @author brndn@google.com (Brendan Linn)
  */
 @ParametersAreNonnullByDefault
 @Immutable

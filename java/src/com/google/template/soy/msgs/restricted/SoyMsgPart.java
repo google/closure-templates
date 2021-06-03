@@ -23,7 +23,6 @@ import javax.annotation.Nullable;
 
 /**
  * Represents a part of a message (i.e. raw text or placeholder).
- *
  */
 @Immutable
 public abstract class SoyMsgPart {

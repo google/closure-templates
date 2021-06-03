@@ -54,7 +54,6 @@ import javax.annotation.Nullable;
  * Enum of Soy expression operators.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public enum Operator {
   NEGATIVE(ImmutableList.of(new Token("-"), OPERAND_0), 8, RIGHT, "- (unary)") {

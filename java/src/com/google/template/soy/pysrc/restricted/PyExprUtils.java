@@ -37,7 +37,6 @@ import java.util.Map;
  * Common utilities for dealing with Python expressions.
  *
  * <p>Important: This class may only be used in implementing plugins (e.g. functions, directives).
- *
  */
 public final class PyExprUtils {
 

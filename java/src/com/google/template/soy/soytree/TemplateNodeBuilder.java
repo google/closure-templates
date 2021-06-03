@@ -44,7 +44,6 @@ import javax.annotation.Nullable;
  * Builder for TemplateNode.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
   // TODO(b/78790262): Remove once people get used to it.

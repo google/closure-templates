@@ -53,7 +53,6 @@ import java.util.logging.Logger;
  * javascript vs java. So now we continue to support these usecases but issue warnings when it
  * occurs. In the long run we will switch to either throwing exception or always returning null from
  * these methods.
- *
  */
 public final class SoyProtoValue extends SoyAbstractValue implements SoyLegacyObjectMap, SoyRecord {
   private static final Logger logger = Logger.getLogger(SoyProtoValue.class.getName());

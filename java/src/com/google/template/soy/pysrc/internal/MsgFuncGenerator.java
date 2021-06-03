@@ -53,7 +53,6 @@ import java.util.Map;
 
 /**
  * Class to generate python code for one {@link MsgNode}.
- *
  */
 public final class MsgFuncGenerator {
   /** The msg node to generate the function calls from. */

@@ -23,7 +23,6 @@ import com.google.template.soy.data.SoyValueConverterUtility;
 
 /**
  * Unit tests for EvalVisitor.
- *
  */
 public class EvalVisitorFutureTest extends EvalVisitorTest {
   @Override

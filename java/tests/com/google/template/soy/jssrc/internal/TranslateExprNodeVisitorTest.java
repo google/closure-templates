@@ -34,7 +34,6 @@ import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for {@link TranslateExprNodeVisitor}.
- *
  */
 @RunWith(JUnit4.class)
 public final class TranslateExprNodeVisitorTest {

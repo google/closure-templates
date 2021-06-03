@@ -38,7 +38,6 @@ import javax.annotation.ParametersAreNonnullByDefault;
  *   <li>Extracting a field from a protocol message that is always run-time sanitized by a backend.
  *       It's useful to label the protocol message fields with a "SafeHtml" suffix to reinforce.
  * </ul>
- *
  */
 @ParametersAreNonnullByDefault
 public final class UnsafeSanitizedContentOrdainer {

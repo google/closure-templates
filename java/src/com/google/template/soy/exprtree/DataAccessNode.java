@@ -25,7 +25,6 @@ import com.google.template.soy.exprtree.ExprNode.AccessChainComponentNode;
  * Base class which represents access to a field or element of an aggregate value, such as an object
  * or collection. Syntactically, data accesses are always suffix operators such as base.fieldName or
  * base[expression].
- *
  */
 public abstract class DataAccessNode extends AbstractParentExprNode
     implements AccessChainComponentNode {

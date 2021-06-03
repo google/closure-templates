@@ -44,7 +44,6 @@ import javax.annotation.ParametersAreNonnullByDefault;
  *
  * <p>There must be exactly one {@code <output>} element which specifies where the output should be
  * written. That output contains the input sources and the generated helper functions.
- *
  */
 @ParametersAreNonnullByDefault
 public final class GeneratePySanitizeEscapingDirectiveCode

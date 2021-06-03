@@ -25,7 +25,6 @@ import com.google.template.soy.soytree.SoyTypeP;
 /**
  * Implementation of types for sanitized strings, that is strings that are produced by templates
  * having a "kind" attribute. All of these types may be implicitly coerced into strings.
- *
  */
 public abstract class SanitizedType extends PrimitiveType {
 

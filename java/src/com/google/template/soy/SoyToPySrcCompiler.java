@@ -35,7 +35,6 @@ import org.kohsuke.args4j.Option;
  * <p>Note: The Python output and runtime libraries are targeted at Python v2.7. Support for Python
  * v3.1+ is also intended through the use of __future__ and version agnostic syntax, HOWEVER at the
  * moment testing support is only guaranteed for v2.7.
- *
  */
 public final class SoyToPySrcCompiler extends AbstractSoyCompiler {
 

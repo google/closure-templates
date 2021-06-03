@@ -24,7 +24,6 @@ import org.json.JSONObject;
 
 /**
  * Ordainer for creating SanitizedContent objects with Json data.
- *
  */
 public final class JsonOrdainer {
 

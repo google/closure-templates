@@ -26,7 +26,6 @@ import javax.annotation.Nullable;
 
 /**
  * Represents a full set of messages in some language/locale.
- *
  */
 public abstract class SoyMsgBundle implements Iterable<SoyMsg> {
   /**

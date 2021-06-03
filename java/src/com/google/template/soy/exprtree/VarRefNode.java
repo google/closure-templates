@@ -24,7 +24,6 @@ import javax.annotation.Nullable;
 
 /**
  * Expression representing an unqualified variable name, e.g. $foo.
- *
  */
 public final class VarRefNode extends AbstractExprNode {
 

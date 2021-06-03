@@ -32,7 +32,6 @@ import java.util.stream.Collectors;
  * could be used function call code recursively.
  *
  * <p>Sample Output: {@code some_func_call(1, "str", foo='bar', foo=nested_call(42))}
- *
  */
 public final class PyFunctionExprBuilder {
 

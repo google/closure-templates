@@ -30,8 +30,6 @@ import java.util.Optional;
 
 /**
  * Simple {@link com.google.template.soy.error.ErrorReporter} implementation.
- *
- * @author brndn@google.com (Brendan Linn)
  */
 final class ErrorReporterImpl extends ErrorReporter {
 

@@ -25,7 +25,6 @@ import javax.annotation.Nullable;
 
 /**
  * Exception thrown when a rendering or evaluation attempt fails.
- *
  */
 public final class RenderException extends RuntimeException {
 

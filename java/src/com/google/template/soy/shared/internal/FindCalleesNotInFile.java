@@ -34,7 +34,6 @@ import java.util.Set;
  * words, if T is the set of templates in this file and U is the set of templates not in this file,
  * then the returned set consists of the full names of all templates in U called by any template in
  * T.
- *
  */
 public final class FindCalleesNotInFile {
   public static Set<TemplateLiteralNode> findCalleesNotInFile(SoyFileNode soyFileNode) {

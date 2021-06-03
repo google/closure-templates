@@ -37,7 +37,6 @@ import javax.annotation.Nullable;
  * Main entry point for the JS Src backend (output target).
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public class JsSrcMain {
   /** The scope object that manages the API call scope. */

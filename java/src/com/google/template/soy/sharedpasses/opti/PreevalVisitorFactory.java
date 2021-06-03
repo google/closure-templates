@@ -29,7 +29,6 @@ import javax.annotation.Nullable;
  * A factory for creating PreevalVisitor objects.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 final class PreevalVisitorFactory implements EvalVisitorFactory {
 

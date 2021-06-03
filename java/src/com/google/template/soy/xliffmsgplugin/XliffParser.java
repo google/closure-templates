@@ -40,7 +40,6 @@ import org.xml.sax.helpers.DefaultHandler;
  * Static function for parsing the content of a translated XLIFF file and creating a SoyMsgBundle.
  *
  * <p>XLIFF specification: http://docs.oasis-open.org/xliff/xliff-core/xliff-core.html
- *
  */
 class XliffParser {
 

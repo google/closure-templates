@@ -45,7 +45,6 @@ import javax.annotation.Nullable;
 /**
  * Visitor for rewriting 'msg' nodes with 'genders' attribute into 'msg' nodes with one or more
  * levels of 'select'.
- *
  */
 final class RewriteGenderMsgsPass implements CompilerFilePass {
 

@@ -32,7 +32,6 @@ import org.junit.rules.TestName;
  * Utilities for testing Soy print directives.
  *
  * <p>TODO(lukes): this should be changed to be a {@code @Rule}
- *
  */
 @ParametersAreNonnullByDefault
 public abstract class AbstractSoyPrintDirectiveTestCase {

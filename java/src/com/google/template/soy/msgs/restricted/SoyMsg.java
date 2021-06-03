@@ -35,7 +35,6 @@ import javax.annotation.Nullable;
  * messages comprised the single largest category of memory usage prior to optimization. Several
  * fields can be omitted entirely for render-only usage. ImmutableSet and ImmutableList are used
  * because their empty implementations are singletons.
- *
  */
 @DoNotMock("use the builder() instead to construct a real instance")
 @AutoValue

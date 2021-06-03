@@ -27,8 +27,6 @@ import java.util.Collection;
 
 /**
  * Conformance rule banning particular HTML tags in Soy.
- *
- * @author brndn@google.com (Brendan Linn)
  */
 final class BannedHtmlTag extends Rule<HtmlOpenTagNode> {
 

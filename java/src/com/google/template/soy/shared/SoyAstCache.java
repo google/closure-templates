@@ -33,7 +33,6 @@ import javax.inject.Inject;
  * does not help in a production startup-compilation setup; instead, this will just use more memory.
  *
  * <p>Please treat the internals as Soy superpackage-private.
- *
  */
 public final class SoyAstCache {
   /** A {@link SoyFileNode} with an associated {@link Version}. */

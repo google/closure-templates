@@ -64,7 +64,6 @@ import java.util.Optional;
 
 /**
  * Generates JS code for {call}s and {delcall}s.
- *
  */
 public class GenCallCodeUtils {
   /**

@@ -48,7 +48,6 @@ import java.util.regex.Pattern;
  *
  * <p>{@link #exec} should be called on a full parse tree. All messages will be extracted and
  * returned in a {@code SoyMsgBundle} (locale "en").
- *
  */
 public final class ExtractMsgsVisitor extends AbstractSoyNodeVisitor<SoyMsgBundle> {
   private static final SoyErrorKind MISMATCHED_MSG_ATTRIBUTE =

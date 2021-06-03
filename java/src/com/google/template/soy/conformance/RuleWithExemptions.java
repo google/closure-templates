@@ -22,8 +22,6 @@ import com.google.template.soy.basetree.Node;
 
 /**
  * A tuple of a {@link Rule rule} and a list of whitelisted paths that are exempt from the rule.
- *
- * @author brndn@google.com (Brendan Linn)
  */
 @AutoValue
 abstract class RuleWithExemptions {

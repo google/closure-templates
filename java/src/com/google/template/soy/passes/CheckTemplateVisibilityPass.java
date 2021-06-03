@@ -30,8 +30,6 @@ import java.util.function.Supplier;
 
 /**
  * Visitor for checking the visibility of a template.
- *
- * @author brndn@google.com (Brendan Linn)
  */
 @RunAfter(FinalizeTemplateRegistryPass.class)
 final class CheckTemplateVisibilityPass implements CompilerFileSetPass {

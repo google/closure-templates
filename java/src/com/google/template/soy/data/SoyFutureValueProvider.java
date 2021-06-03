@@ -28,7 +28,6 @@ import javax.annotation.Nonnull;
  * Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  * <p>SoyValueProvider implementation that represents a wrapped future.
- *
  */
 public final class SoyFutureValueProvider extends SoyAbstractCachingValueProvider {
 

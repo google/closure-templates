@@ -30,7 +30,6 @@ import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for CanInitOutputVarVisitor.
- *
  */
 @RunWith(JUnit4.class)
 public class CanInitOutputVarVisitorTest {

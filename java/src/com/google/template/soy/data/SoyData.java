@@ -24,7 +24,6 @@ import java.util.concurrent.Future;
  * Abstract base class for all nodes in a Soy data tree.
  *
  * <p>Important: Even though this class is not marked 'final', do not extend this class.
- *
  */
 public abstract class SoyData extends SoyAbstractValue {
 

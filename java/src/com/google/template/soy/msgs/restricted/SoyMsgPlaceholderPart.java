@@ -25,7 +25,6 @@ import java.util.Optional;
 
 /**
  * Represents a placeholder within a message.
- *
  */
 public final class SoyMsgPlaceholderPart extends SoyMsgPart {
 

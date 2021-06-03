@@ -23,8 +23,6 @@ import com.google.template.soy.exprtree.FunctionNode;
 
 /**
  * Conformance rule banning particular Soy functions (plausible example: {@code hasData}).
- *
- * @author brndn@google.com (Brendan Linn)
  */
 final class BannedFunction extends Rule<FunctionNode> {
 

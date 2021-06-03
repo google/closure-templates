@@ -63,7 +63,6 @@ import javax.annotation.Nullable;
  * Visitor for simplifying expressions based on constant values known at compile time.
  *
  * <p>Package-private helper for {@link SimplifyVisitor}.
- *
  */
 final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
 

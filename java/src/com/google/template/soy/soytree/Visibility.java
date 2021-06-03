@@ -26,8 +26,6 @@ import java.util.Set;
  * <p>Soy templates have two visibility-related attributes, the older boolean-valued {@code private}
  * attribute and the newer string-valued {@code visibility} attribute. {@code visibility} was
  * introduced to address inconsistencies in the behavior of {@code private}.
- *
- * @author brndn@google.com
  */
 public enum Visibility {
   // {template .foo visibility="private"}

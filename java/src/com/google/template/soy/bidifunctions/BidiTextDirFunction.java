@@ -37,7 +37,6 @@ import java.util.List;
 /**
  * Soy function that gets the bidi directionality of a text string (1 for LTR, -1 for RTL, or 0 for
  * none).
- *
  */
 @SoyFunctionSignature(
     name = "bidiTextDir",

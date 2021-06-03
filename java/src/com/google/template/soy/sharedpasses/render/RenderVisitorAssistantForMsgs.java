@@ -47,7 +47,6 @@ import javax.annotation.Nullable;
 
 /**
  * Assistant visitor for RenderVisitor to handle messages.
- *
  */
 final class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
 

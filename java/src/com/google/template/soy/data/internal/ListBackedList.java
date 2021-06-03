@@ -31,7 +31,6 @@ import javax.annotation.ParametersAreNonnullByDefault;
  * modification via the API, and ListImpl, which wraps existing lists.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 @ParametersAreNonnullByDefault
 abstract class ListBackedList extends AbstractSoyList {

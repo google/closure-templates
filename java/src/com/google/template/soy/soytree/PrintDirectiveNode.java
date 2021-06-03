@@ -37,7 +37,6 @@ import javax.annotation.Nullable;
  * Node representing a 'print' directive.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public final class PrintDirectiveNode extends AbstractSoyNode implements ExprHolderNode {
 

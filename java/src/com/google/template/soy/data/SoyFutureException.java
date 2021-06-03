@@ -18,7 +18,6 @@ package com.google.template.soy.data;
 
 /**
  * Exception thrown when a future fails. Similar to ExecutionException.
- *
  */
 public final class SoyFutureException extends RuntimeException {
   public SoyFutureException(Throwable cause) {

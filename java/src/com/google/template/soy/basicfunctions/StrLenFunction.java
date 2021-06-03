@@ -44,7 +44,6 @@ import java.util.List;
  *
  * <p>TODO(lukes,dcphillips): This function has inconsistent behavior between the backends when it
  * comes to astral plane codepoints. Python is the only backend doing it right.
- *
  */
 @SoyFunctionSignature(
     name = "strLen",

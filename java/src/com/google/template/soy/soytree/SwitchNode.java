@@ -33,7 +33,6 @@ import com.google.template.soy.soytree.SoyNode.StatementNode;
  * Node representing a 'switch' statement.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public final class SwitchNode extends AbstractParentCommandNode<CaseOrDefaultNode>
     implements StandaloneNode,

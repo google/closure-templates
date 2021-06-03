@@ -24,7 +24,6 @@ import com.google.template.soy.types.FloatType;
  * Node representing a float value.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public final class FloatNode extends AbstractPrimitiveNode {
 

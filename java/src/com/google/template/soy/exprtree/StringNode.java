@@ -27,7 +27,6 @@ import com.google.template.soy.types.StringType;
  * Node representing a string value.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public final class StringNode extends AbstractPrimitiveNode {
 

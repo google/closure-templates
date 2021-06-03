@@ -28,7 +28,6 @@ import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for SoyMsgBundleCompactor.
- *
  */
 @RunWith(JUnit4.class)
 public class SoyMsgBundleCompactorTest {

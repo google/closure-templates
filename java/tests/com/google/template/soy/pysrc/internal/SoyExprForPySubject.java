@@ -45,7 +45,6 @@ import java.util.Map;
  * Truth assertion which compiles the provided soy code and asserts that the generated PyExprs match
  * the expected expressions. This subject is only valid for soy code which can be represented as one
  * or more Python expressions.
- *
  */
 public final class SoyExprForPySubject extends Subject {
 

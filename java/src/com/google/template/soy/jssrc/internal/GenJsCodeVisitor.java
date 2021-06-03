@@ -141,7 +141,6 @@ import javax.annotation.CheckReturnValue;
  * <p>{@link #gen} should be called on a full parse tree. JS source code will be generated for all
  * the Soy files. The return value is a list of strings, each string being the content of one
  * generated JS file (corresponding to one Soy file).
- *
  */
 public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 

@@ -26,7 +26,6 @@ import com.google.template.soy.soytree.TemplateNode;
  * needed).
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public final class ClearSoyDocStringsVisitor extends AbstractSoyNodeVisitor<Void> {
   // -----------------------------------------------------------------------------------------------

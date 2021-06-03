@@ -45,7 +45,6 @@ import java.util.List;
  * <p>It returns the index within the string <code>expr1</code> of the first occurrence of the
  * specified substring <code>expr2</code>. If no such index exists, then <code>-1</code>is returned.
  * <code>strIndexOf</code> is case sensitive and the string indices are zero based.
- *
  */
 @SoyFunctionSignature(
     name = "strIndexOf",

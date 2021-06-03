@@ -47,7 +47,6 @@ import java.util.List;
  * substring begins at the index specified by <code>expr2</code>. If <code>expr3</code> is not
  * specified, the substring will extend to the end of <code>expr1</code>. Otherwise it will extend
  * to the character at index <code>expr3 - 1</code>.
- *
  */
 @SoyFunctionSignature(
     name = "strSub",

@@ -32,7 +32,6 @@ import java.util.stream.Collectors;
 
 /**
  * Type representing a set of possible alternative types.
- *
  */
 public final class UnionType extends SoyType {
 

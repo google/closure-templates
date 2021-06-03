@@ -26,8 +26,6 @@ import java.util.Map;
 
 /**
  * Collects errors during parsing.
- *
- * @author brndn@google.com (Brendan Linn)
  */
 public abstract class ErrorReporter {
 

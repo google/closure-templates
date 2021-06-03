@@ -53,7 +53,6 @@ import java.util.List;
  * Visitor for generating JS expressions for parse tree nodes.
  *
  * <p>Precondition: MsgNode should not exist in the tree.
- *
  */
 public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<Expression>> {
 

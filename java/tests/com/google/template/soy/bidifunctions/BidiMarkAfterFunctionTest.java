@@ -30,7 +30,6 @@ import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for BidiMarkAfterFunction.
- *
  */
 @RunWith(JUnit4.class)
 public class BidiMarkAfterFunctionTest {

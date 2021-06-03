@@ -29,7 +29,6 @@ import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for {@link CheckTemplateHeaderVarsPass}.
- *
  */
 @RunWith(JUnit4.class)
 public final class CheckTemplateHeaderVarsPassTest {

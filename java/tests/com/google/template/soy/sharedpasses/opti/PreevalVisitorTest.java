@@ -35,7 +35,6 @@ import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for PreevalVisitor.
- *
  */
 @RunWith(JUnit4.class)
 public final class PreevalVisitorTest {

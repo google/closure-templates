@@ -60,8 +60,6 @@ import javax.annotation.Nullable;
 
 /**
  * Fluent builder for configuring {@link com.google.template.soy.SoyFileSetParser}s in tests.
- *
- * @author brndn@google.com (Brendan Linn)
  */
 public final class SoyFileSetParserBuilder {
 

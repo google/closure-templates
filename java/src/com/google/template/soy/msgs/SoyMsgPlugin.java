@@ -22,7 +22,6 @@ import com.google.template.soy.msgs.SoyMsgBundleHandler.OutputFileOptions;
 
 /**
  * Plugin for implementing a specific message file format.
- *
  */
 @Immutable
 public interface SoyMsgPlugin {

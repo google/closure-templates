@@ -20,7 +20,6 @@ import com.google.template.soy.soytree.SoyTypeP;
 
 /**
  * The "null" type.
- *
  */
 public final class NullType extends PrimitiveType {
 

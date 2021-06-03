@@ -418,7 +418,6 @@ import javax.annotation.Nullable;
  *       + See above for the definition of a named parameter list.
  *       Examples:   proto()   my.new.Proto(a: 'str', b: $foo)*
  * </pre>
- *
  */
 public class SoyFileParser {
 

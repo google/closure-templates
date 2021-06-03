@@ -24,7 +24,6 @@ import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for IndentedLinesBuilder.
- *
  */
 @RunWith(JUnit4.class)
 public final class IndentedLinesBuilderTest {

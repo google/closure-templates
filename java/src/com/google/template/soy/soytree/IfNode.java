@@ -32,7 +32,6 @@ import javax.annotation.Nullable;
  * Node representing an 'if' statement.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public final class IfNode extends AbstractParentSoyNode<BlockNode>
     implements HtmlContext.HtmlContextHolder,

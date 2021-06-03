@@ -29,7 +29,6 @@ import com.google.template.soy.soytree.SoyTreeUtils;
  * contextual autoescaping inference engine.
  *
  * <p>Checks that internal-only directives such as {@code |text} are not used.
- *
  */
 @RunAfter(ContentSecurityPolicyNonceInjectionPass.class)
 final class CheckEscapingSanityFilePass implements CompilerFilePass {

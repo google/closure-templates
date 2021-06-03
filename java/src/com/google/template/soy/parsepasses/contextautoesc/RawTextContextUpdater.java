@@ -76,7 +76,6 @@ import javax.annotation.Nullable;
  * </ul>
  *
  * <p>So, for the time being we should just be careful.
- *
  */
 final class RawTextContextUpdater {
 

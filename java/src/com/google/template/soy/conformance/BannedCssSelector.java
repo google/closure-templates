@@ -25,8 +25,6 @@ import com.google.template.soy.exprtree.StringNode;
 
 /**
  * Conformance rule banning particular CSS selectors.
- *
- * @author brndn@google.com (Brendan Linn)
  */
 final class BannedCssSelector extends Rule<FunctionNode> {
 

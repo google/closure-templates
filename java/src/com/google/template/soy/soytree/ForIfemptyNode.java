@@ -24,7 +24,6 @@ import com.google.template.soy.soytree.SoyNode.ConditionalBlockNode;
  * Node representing the 'ifempty' portion of a 'for' statement.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public final class ForIfemptyNode extends AbstractBlockCommandNode implements ConditionalBlockNode {
 

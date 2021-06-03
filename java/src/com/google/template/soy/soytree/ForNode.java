@@ -32,7 +32,6 @@ import com.google.template.soy.soytree.SoyNode.StatementNode;
  * May contain a second child, which should be a ForIfemptyNode.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public final class ForNode extends AbstractParentCommandNode<BlockNode>
     implements StandaloneNode, SplitLevelTopNode<BlockNode>, StatementNode, ExprHolderNode {

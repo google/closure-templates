@@ -68,7 +68,6 @@ import javax.annotation.Nullable;
  * Represents a compiled Soy file set. This is the result of compiling Soy to a Java object.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public final class BaseTofu implements SoyTofu {
 

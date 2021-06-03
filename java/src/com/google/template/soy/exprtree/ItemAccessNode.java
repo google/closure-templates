@@ -26,7 +26,6 @@ import com.google.template.soy.basetree.CopyState;
  *
  * <p>The source location of this node is the location of the {@code [<expr>]} and doesn't include
  * the base expression.
- *
  */
 public final class ItemAccessNode extends DataAccessNode {
 

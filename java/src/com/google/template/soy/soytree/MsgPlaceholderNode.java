@@ -28,7 +28,6 @@ import com.google.template.soy.soytree.SoyNode.MsgSubstUnitNode;
  * <p>Note: there is no guarantee that the child of this node is a {@link
  * SoyNode.MsgPlaceholderInitialNode}, the optimizer may inline and replace constant placeholders as
  * {@link RawTextNode}s.
- *
  */
 public final class MsgPlaceholderNode extends AbstractBlockNode implements MsgSubstUnitNode {
 

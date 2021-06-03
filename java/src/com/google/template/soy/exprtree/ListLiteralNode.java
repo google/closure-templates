@@ -26,7 +26,6 @@ import java.util.Optional;
  * A node representing a list literal (with items as children).
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public final class ListLiteralNode extends AbstractParentExprNode {
 

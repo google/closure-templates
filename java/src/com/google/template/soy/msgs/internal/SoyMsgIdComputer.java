@@ -27,7 +27,6 @@ import javax.annotation.Nullable;
 
 /**
  * Static methods to compute the unique message id for a message.
- *
  */
 final class SoyMsgIdComputer {
 

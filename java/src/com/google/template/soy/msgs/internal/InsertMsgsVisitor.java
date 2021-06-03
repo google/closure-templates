@@ -61,7 +61,6 @@ import javax.annotation.Nullable;
  * <p>Note that the Soy tree is usually simplifiable after this pass is run (e.g. it usually
  * contains consecutive RawTextNodes). It's usually advisable to run a simplification pass after
  * this pass.
- *
  */
 public final class InsertMsgsVisitor {
 

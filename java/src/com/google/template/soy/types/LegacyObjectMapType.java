@@ -28,7 +28,6 @@ import java.util.Objects;
  * eventually delete LegacyObjectMapType. See b/69046114.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public final class LegacyObjectMapType extends AbstractMapType {
 

@@ -31,7 +31,6 @@ import com.google.template.soy.internal.targetexpr.TargetExpr;
  * <p>NOTE: Some expressions could potentially return multiple types (such as a ternary if with a
  * String or number as potential results). If possible to avoid, the results will be improved, but
  * if not, this class can be used with no type assumed.
- *
  */
 public class PyExpr extends TargetExpr {
 

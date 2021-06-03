@@ -32,7 +32,6 @@ import com.google.template.soy.soytree.defn.TemplateParam;
  * Visitor for determining whether a template needs to ensure that its data is defined.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public final class ShouldEnsureDataIsDefinedVisitor {
 

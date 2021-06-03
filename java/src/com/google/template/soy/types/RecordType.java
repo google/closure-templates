@@ -31,7 +31,6 @@ import java.util.stream.Collectors;
  * Dict type - classic dictionary type with string keys. Only works with field (dot) access.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public final class RecordType extends SoyType {
 

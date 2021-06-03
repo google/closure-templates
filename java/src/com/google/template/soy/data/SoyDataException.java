@@ -18,7 +18,6 @@ package com.google.template.soy.data;
 
 /**
  * Exception thrown when an error occurs in the data package.
- *
  */
 public class SoyDataException extends RuntimeException {
 

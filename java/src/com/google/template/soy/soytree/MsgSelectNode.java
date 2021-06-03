@@ -40,7 +40,6 @@ import javax.annotation.Nullable;
  * Node representing a 'select' block.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public final class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefaultNode>
     implements MsgSubstUnitNode,

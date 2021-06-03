@@ -35,7 +35,6 @@ import java.util.Optional;
  * Node representing a 'param' with content.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public final class CallParamContentNode extends CallParamNode
     implements RenderUnitNode, CommandTagAttributesHolder {

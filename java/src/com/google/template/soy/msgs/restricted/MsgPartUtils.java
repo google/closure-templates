@@ -20,7 +20,6 @@ import java.util.List;
 
 /**
  * Utilities for dealing with msg parts.
- *
  */
 public class MsgPartUtils {
 

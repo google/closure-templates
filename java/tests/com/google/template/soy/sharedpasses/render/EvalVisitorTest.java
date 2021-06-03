@@ -51,7 +51,6 @@ import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for EvalVisitor.
- *
  */
 @RunWith(JUnit4.class)
 public class EvalVisitorTest {

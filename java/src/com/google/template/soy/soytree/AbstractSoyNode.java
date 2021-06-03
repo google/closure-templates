@@ -24,7 +24,6 @@ import com.google.template.soy.basetree.CopyState;
  * Abstract implementation of a SoyNode.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public abstract class AbstractSoyNode extends AbstractNode implements SoyNode {
 

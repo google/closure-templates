@@ -40,7 +40,6 @@ import javax.annotation.Nullable;
  * Node representing a call to a delegate template.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public final class CallDelegateNode extends CallNode {
 

@@ -36,8 +36,6 @@ import javax.annotation.Nullable;
 
 /**
  * Truth custom subject for testing templates.
- *
- * @author brndn@google.com (Brendan Linn)
  */
 public final class TemplateSubject extends Subject {
 

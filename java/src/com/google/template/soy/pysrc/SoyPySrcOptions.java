@@ -25,7 +25,6 @@ import javax.annotation.Nullable;
 
 /**
  * Compilation options for the Python backend.
- *
  */
 public final class SoyPySrcOptions implements Cloneable {
   /** The full module and fn path to a runtime library for determining global directionality. */

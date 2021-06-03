@@ -58,7 +58,6 @@ import javax.annotation.Nullable;
  *
  * <p>The contextual autoescape rewriter propagates contexts so that it can infer an appropriate
  * {@link EscapingMode escaping function} for each <code>{print ...}</code> command.
- *
  */
 @Immutable
 @AutoValue

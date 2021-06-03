@@ -87,7 +87,6 @@ import javax.annotation.Nullable;
 /**
  * Visitor for translating a Soy expression (in the form of an {@link ExprNode}) into an equivalent
  * Python expression.
- *
  */
 public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVisitor<PyExpr> {
 

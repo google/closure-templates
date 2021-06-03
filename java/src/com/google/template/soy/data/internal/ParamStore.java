@@ -35,7 +35,6 @@ import javax.annotation.Nonnull;
  * Internal-use param store for passing data in subtemplate calls.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public final class ParamStore extends SoyAbstractValue implements SoyRecord {
 

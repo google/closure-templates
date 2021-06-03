@@ -84,7 +84,6 @@ import java.util.TreeSet;
  *     [tests_dir]/com/google/template/soy/test_data/AaaBbbCcc.soy
  *     [tests_dir]/com/google/template/soy/test_data/AaaBbbCccSoyInfo.java
  * </pre>
- *
  */
 public final class GenerateParseInfoVisitor
     extends AbstractSoyNodeVisitor<ImmutableList<GeneratedFile>> {

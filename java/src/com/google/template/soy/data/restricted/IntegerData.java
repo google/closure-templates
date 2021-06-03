@@ -23,7 +23,6 @@ import com.google.errorprone.annotations.Immutable;
  * Integer data.
  *
  * <p>Important: This class may only be used in implementing plugins (e.g. functions, directives).
- *
  */
 @Immutable
 public final class IntegerData extends NumberData {

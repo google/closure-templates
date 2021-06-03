@@ -26,7 +26,6 @@ import java.io.Reader;
  * file content, and also the file path.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public final class StableSoyFileSupplier extends AbstractSoyFileSupplier {
 

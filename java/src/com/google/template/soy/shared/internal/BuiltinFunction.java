@@ -26,7 +26,6 @@ import javax.annotation.Nullable;
  * Enum of built-in functions supported in Soy expressions.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public enum BuiltinFunction implements SoyFunction {
   IS_FIRST("isFirst"),

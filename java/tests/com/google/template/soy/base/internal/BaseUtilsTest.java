@@ -24,7 +24,6 @@ import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for BaseUtils.
- *
  */
 @RunWith(JUnit4.class)
 public final class BaseUtilsTest {

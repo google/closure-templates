@@ -30,7 +30,6 @@ import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
  * the 'if' block or an 'elseif' block).
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public final class IfCondNode extends AbstractBlockCommandNode
     implements ConditionalBlockNode, ExprHolderNode {

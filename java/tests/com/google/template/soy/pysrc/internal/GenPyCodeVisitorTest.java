@@ -27,7 +27,6 @@ import org.junit.runners.JUnit4;
  * Unit tests for GenPyCodeVisitor.
  *
  * <p>TODO(dcphillips): Add non-inlined 'if' test after adding LetNode support.
- *
  */
 @RunWith(JUnit4.class)
 public final class GenPyCodeVisitorTest {

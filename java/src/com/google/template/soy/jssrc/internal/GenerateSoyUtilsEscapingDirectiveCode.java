@@ -49,7 +49,6 @@ import javax.annotation.ParametersAreNonnullByDefault;
  *
  * <p>There may be zero or more {@code <libdefined>} elements which specify which functions should
  * be available in the context in which {@code <output>} is run.
- *
  */
 @ParametersAreNonnullByDefault
 public final class GenerateSoyUtilsEscapingDirectiveCode

@@ -25,7 +25,6 @@ import com.google.template.soy.internal.i18n.BidiGlobalDir;
  * Shared utilities for unit tests.
  *
  * <p>Important: This class may only be used when testing plugins (e.g. functions, directives).
- *
  */
 public class BidiTestUtils {
 

@@ -27,7 +27,6 @@ import javax.annotation.Nullable;
 
 /**
  * Represents a plural statement within a message.
- *
  */
 public final class SoyMsgPluralPart extends SoyMsgPart {
 

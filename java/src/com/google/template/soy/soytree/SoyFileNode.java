@@ -36,7 +36,6 @@ import javax.annotation.Nullable;
  * Node representing a Soy file.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public final class SoyFileNode extends AbstractParentSoyNode<SoyNode>
     implements SplitLevelTopNode<SoyNode> {

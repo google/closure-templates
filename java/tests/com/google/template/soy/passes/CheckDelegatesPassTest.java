@@ -27,7 +27,6 @@ import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for CheckDelegatesPass.
- *
  */
 @RunWith(JUnit4.class)
 public final class CheckDelegatesPassTest {

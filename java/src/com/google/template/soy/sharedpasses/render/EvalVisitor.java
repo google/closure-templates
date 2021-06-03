@@ -142,7 +142,6 @@ import javax.annotation.Nullable;
  * <p>{@link #exec} may be called on any expression. The result of evaluating the expression (in the
  * context of the {@code data} and {@code env} passed into the constructor) is returned as a {@code
  * SoyValue} object.
- *
  */
 public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
 

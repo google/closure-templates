@@ -28,7 +28,6 @@ import java.util.List;
  * Builder for TemplateBasicNode.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public class TemplateBasicNodeBuilder extends TemplateNodeBuilder<TemplateBasicNodeBuilder> {
 

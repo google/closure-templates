@@ -26,7 +26,6 @@ import com.google.template.soy.basetree.CopyState;
  * Abstract node representing a 'param'.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public abstract class CallParamNode extends AbstractCommandNode {
 

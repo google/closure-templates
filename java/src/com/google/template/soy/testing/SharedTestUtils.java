@@ -65,7 +65,6 @@ import org.junit.Test;
  * Shared utilities for unit tests.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public final class SharedTestUtils {
 

@@ -25,7 +25,6 @@ import javax.annotation.Nullable;
 
 /**
  * Implementation of common features of {@link VarDefn}.
- *
  */
 public abstract class AbstractVarDefn implements VarDefn {
 

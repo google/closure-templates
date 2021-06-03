@@ -24,7 +24,6 @@ import com.google.template.soy.soytree.SoyNode.CommandNode;
 
 /**
  * Abstract implementation of a CommandNode.
- *
  */
 abstract class AbstractCommandNode extends AbstractSoyNode implements CommandNode {
 

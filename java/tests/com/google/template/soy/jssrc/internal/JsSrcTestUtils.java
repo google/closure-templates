@@ -23,7 +23,6 @@ import com.google.template.soy.jssrc.internal.GenJsExprsVisitor.GenJsExprsVisito
 
 /**
  * Utilities for unit tests in the Js Src backend.
- *
  */
 final class JsSrcTestUtils {
 

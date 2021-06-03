@@ -38,7 +38,6 @@ import java.util.Set;
  * com.google.template.soy.parsepasses.contextautoesc.Context#forContentKind(SanitizedContentKind)}).
  *
  * <p>TODO(lukes): delete this class, move the backend specific functionality into the backends
- *
  */
 public final class NodeContentKinds {
 

@@ -27,7 +27,6 @@ import java.util.regex.Pattern;
  * Creation utilities for SanitizedContent objects for JS identifiers.
  *
  * <p>This is based on http://mathiasbynens.be/notes/javascript-identifiers
- *
  */
 public final class JsIdentifierOrdainer {
 

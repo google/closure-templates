@@ -28,7 +28,6 @@ import javax.annotation.Nullable;
  * Represents a compiled Soy file set, with a namespace prepended to templates being rendered.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public final class NamespacedTofu implements SoyTofu {
 

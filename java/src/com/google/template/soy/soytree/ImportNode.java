@@ -35,7 +35,6 @@ import java.util.function.BiConsumer;
  * Node representing a 'import' statement with a value expression.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public final class ImportNode extends AbstractSoyNode {
 

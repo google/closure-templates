@@ -68,7 +68,6 @@ import javax.annotation.Nullable;
  * </ul>
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public final class MsgNode extends AbstractBlockCommandNode
     implements ExprHolderNode, MsgBlockNode, CommandTagAttributesHolder {

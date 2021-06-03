@@ -33,7 +33,6 @@ import javax.annotation.Nullable;
  * Builder for TemplateDelegateNode.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder<TemplateDelegateNodeBuilder> {
 

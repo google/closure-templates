@@ -179,7 +179,6 @@ import java.util.List;
  * <p>Type-failures are correctness issues but do not lead to increased exposure to XSS or otherwise
  * compromise security or privacy since a failure to unpack a type leads to a value that coerces to
  * a trivial value like {@code undefined} or {@code "[Object]"}.
- *
  */
 public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<Expression> {
 

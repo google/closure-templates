@@ -56,7 +56,6 @@ import javax.annotation.Nullable;
  * Node representing a template.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public abstract class TemplateNode extends AbstractBlockCommandNode
     implements RenderUnitNode, ExprHolderNode, CommandTagAttributesHolder {

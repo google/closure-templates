@@ -112,7 +112,6 @@ import javax.annotation.Nullable;
  * SoyFileSet concurrently, it <i>must</i> be synchronized externally.
  *
  * <p>Note: Soy file (or resource) contents must be encoded in UTF-8.
- *
  */
 public final class SoyFileSet {
   private static final Logger logger = Logger.getLogger(SoyFileSet.class.getName());

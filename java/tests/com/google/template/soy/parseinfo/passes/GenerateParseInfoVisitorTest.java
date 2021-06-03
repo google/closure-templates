@@ -48,7 +48,6 @@ import org.junit.runners.JUnit4;
  * Unit tests for GenerateParseInfoVisitor.
  *
  * <p>Note: Testing of the actual code generation happens in {@code SoyFileSetTest}.
- *
  */
 @RunWith(JUnit4.class)
 public final class GenerateParseInfoVisitorTest {

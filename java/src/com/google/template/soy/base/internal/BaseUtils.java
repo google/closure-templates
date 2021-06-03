@@ -29,7 +29,6 @@ import java.util.regex.Pattern;
  * Base utilities for Soy code.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public final class BaseUtils {
 

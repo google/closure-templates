@@ -55,7 +55,6 @@ import javax.annotation.Nullable;
  * Java implementations of functions that escape, normalize, and filter untrusted strings to allow
  * them to be safely embedded in particular contexts. These correspond to the {@code soy.$$escape*},
  * {@code soy.$$normalize*}, and {@code soy.$$filter*} functions defined in "soyutils.js".
- *
  */
 public final class Sanitizers {
 

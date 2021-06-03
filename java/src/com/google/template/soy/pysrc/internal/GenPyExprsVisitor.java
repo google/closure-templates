@@ -51,7 +51,6 @@ import java.util.List;
  * Visitor for generating Python expressions for parse tree nodes.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public final class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>> {
   private static final SoyErrorKind UNKNOWN_SOY_PY_SRC_PRINT_DIRECTIVE =

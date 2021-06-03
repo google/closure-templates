@@ -50,7 +50,6 @@ import javax.annotation.Nullable;
 /**
  * Checks various rules regarding the use of delegates (including delegate packages, delegate
  * templates, and delegate calls).
- *
  */
 @RunAfter(FinalizeTemplateRegistryPass.class)
 final class CheckDelegatesPass implements CompilerFileSetPass {

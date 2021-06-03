@@ -27,7 +27,6 @@ import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  * <p>TODO(lukes): consider replacing this with just passing a {@code List<SoyFileNode>} around
- *
  */
 public final class SoyFileSetNode extends AbstractParentSoyNode<SoyFileNode>
     implements SplitLevelTopNode<SoyFileNode> {

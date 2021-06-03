@@ -40,7 +40,6 @@ import javax.annotation.Nullable;
  * A node representing a function (with args as children).
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public final class FunctionNode extends AbstractParentExprNode implements ExprNode.CallableExpr {
 

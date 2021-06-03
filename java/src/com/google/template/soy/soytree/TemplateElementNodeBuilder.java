@@ -30,7 +30,6 @@ import java.util.List;
  * Builder for TemplateElementNode.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public final class TemplateElementNodeBuilder
     extends TemplateNodeBuilder<TemplateElementNodeBuilder> {

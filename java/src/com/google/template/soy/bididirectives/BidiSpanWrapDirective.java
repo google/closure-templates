@@ -42,7 +42,6 @@ import javax.annotation.Nonnull;
  * A directive that maybe wraps the output within a 'span' with dir=ltr or dir=rtl. This wrapping is
  * only applied when the output text's bidi directionality is different from the bidi global
  * directionality.
- *
  */
 final class BidiSpanWrapDirective
     implements SanitizedContentOperator,

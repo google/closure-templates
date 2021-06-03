@@ -38,7 +38,6 @@ import java.util.List;
 
 /**
  * Soy function that gets the length of a list.
- *
  */
 @SoyPureFunction
 @SoyFunctionSignature(
