@@ -463,7 +463,10 @@ sequence of key value pairs where the keys correspond to fields in the proto.
 
 For example:
 
-*   `foo.bar.Baz(quux: 3)`
+```soy
+import {Baz} from 'foo/baz.proto';
 
-TIP: You can use the [`{alias ...}`](file-declarations.md#alias) directive to
-abbreviate proto names used in initialization expressions.
+{template bar}
+  {let $b: Baz(quux: 3) /}
+{/template}
+```
