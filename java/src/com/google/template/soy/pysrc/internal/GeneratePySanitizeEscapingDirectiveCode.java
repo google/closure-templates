@@ -159,9 +159,10 @@ public final class GeneratePySanitizeEscapingDirectiveCode
 
   @Override
   protected void generateReplacerFunction(StringBuilder outputCode, String mapName) {
+    String fnName = CaseFormat.UPPER_UNDERSCORE.to(CaseFormat.LOWER_UNDERSCORE, mapName);
     outputCode
-        .append("\ndef _REPLACER_FOR_")
-        .append(mapName)
+        .append("\ndef _replacer_for_")
+        .append(fnName)
         .append("(match):\n")
         .append("  ch = match.group(0)\n")
         .append("  return _ESCAPE_MAP_FOR_")
@@ -213,13 +214,14 @@ public final class GeneratePySanitizeEscapingDirectiveCode
       throw new UnsupportedOperationException("Non ASCII prefix escapers not implemented yet.");
     }
     if (digest.getEscapesName() != null) {
-      String escapeMapName = digest.getEscapesName();
+      String escapeMapName =
+          CaseFormat.UPPER_UNDERSCORE.to(CaseFormat.LOWER_UNDERSCORE, digest.getEscapesName());
       String matcherName = digest.getMatcherName();
       outputCode
           .append("  return _MATCHER_FOR_")
           .append(matcherName)
           .append(".sub(\n")
-          .append("      _REPLACER_FOR_")
+          .append("      _replacer_for_")
           .append(escapeMapName)
           .append(", value)\n");
     } else {

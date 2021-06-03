@@ -44,7 +44,7 @@ _ESCAPE_MAP_FOR_ESCAPE_HTML__AND__NORMALIZE_HTML__AND__ESCAPE_HTML_NOSPACE__AND_
   '\u2029': '&#8233;',
 }
 
-def _REPLACER_FOR_ESCAPE_HTML__AND__NORMALIZE_HTML__AND__ESCAPE_HTML_NOSPACE__AND__NORMALIZE_HTML_NOSPACE(match):
+def _replacer_for_escape_html__and__normalize_html__and__escape_html_nospace__and__normalize_html_nospace(match):
   ch = match.group(0)
   return _ESCAPE_MAP_FOR_ESCAPE_HTML__AND__NORMALIZE_HTML__AND__ESCAPE_HTML_NOSPACE__AND__NORMALIZE_HTML_NOSPACE[ch]
 
@@ -85,7 +85,7 @@ _ESCAPE_MAP_FOR_ESCAPE_JS_STRING__AND__ESCAPE_JS_REGEX = {
   '\u2029': '\\u2029',
 }
 
-def _REPLACER_FOR_ESCAPE_JS_STRING__AND__ESCAPE_JS_REGEX(match):
+def _replacer_for_escape_js_string__and__escape_js_regex(match):
   ch = match.group(0)
   return _ESCAPE_MAP_FOR_ESCAPE_JS_STRING__AND__ESCAPE_JS_REGEX[ch]
 
@@ -119,7 +119,7 @@ _ESCAPE_MAP_FOR_ESCAPE_CSS_STRING = {
   '\u2029': '\\2029 ',
 }
 
-def _REPLACER_FOR_ESCAPE_CSS_STRING(match):
+def _replacer_for_escape_css_string(match):
   ch = match.group(0)
   return _ESCAPE_MAP_FOR_ESCAPE_CSS_STRING[ch]
 
@@ -191,7 +191,7 @@ _ESCAPE_MAP_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_
   '\uff3d': '%EF%BC%BD',
 }
 
-def _REPLACER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI(match):
+def _replacer_for_normalize_uri__and__filter_normalize_uri__and__filter_normalize_media_uri(match):
   ch = match.group(0)
   return _ESCAPE_MAP_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI[ch]
 
@@ -235,43 +235,43 @@ _FILTER_FOR_FILTER_CSP_NONCE_VALUE = re.compile(r"""^[a-zA-Z0-9+/_-]+={0,2}$""",
 def escape_html_helper(value):
   value = str(value)
   return _MATCHER_FOR_ESCAPE_HTML.sub(
-      _REPLACER_FOR_ESCAPE_HTML__AND__NORMALIZE_HTML__AND__ESCAPE_HTML_NOSPACE__AND__NORMALIZE_HTML_NOSPACE, value)
+      _replacer_for_escape_html__and__normalize_html__and__escape_html_nospace__and__normalize_html_nospace, value)
 
 
 def normalize_html_helper(value):
   value = str(value)
   return _MATCHER_FOR_NORMALIZE_HTML.sub(
-      _REPLACER_FOR_ESCAPE_HTML__AND__NORMALIZE_HTML__AND__ESCAPE_HTML_NOSPACE__AND__NORMALIZE_HTML_NOSPACE, value)
+      _replacer_for_escape_html__and__normalize_html__and__escape_html_nospace__and__normalize_html_nospace, value)
 
 
 def escape_html_nospace_helper(value):
   value = str(value)
   return _MATCHER_FOR_ESCAPE_HTML_NOSPACE.sub(
-      _REPLACER_FOR_ESCAPE_HTML__AND__NORMALIZE_HTML__AND__ESCAPE_HTML_NOSPACE__AND__NORMALIZE_HTML_NOSPACE, value)
+      _replacer_for_escape_html__and__normalize_html__and__escape_html_nospace__and__normalize_html_nospace, value)
 
 
 def normalize_html_nospace_helper(value):
   value = str(value)
   return _MATCHER_FOR_NORMALIZE_HTML_NOSPACE.sub(
-      _REPLACER_FOR_ESCAPE_HTML__AND__NORMALIZE_HTML__AND__ESCAPE_HTML_NOSPACE__AND__NORMALIZE_HTML_NOSPACE, value)
+      _replacer_for_escape_html__and__normalize_html__and__escape_html_nospace__and__normalize_html_nospace, value)
 
 
 def escape_js_string_helper(value):
   value = str(value)
   return _MATCHER_FOR_ESCAPE_JS_STRING.sub(
-      _REPLACER_FOR_ESCAPE_JS_STRING__AND__ESCAPE_JS_REGEX, value)
+      _replacer_for_escape_js_string__and__escape_js_regex, value)
 
 
 def escape_js_regex_helper(value):
   value = str(value)
   return _MATCHER_FOR_ESCAPE_JS_REGEX.sub(
-      _REPLACER_FOR_ESCAPE_JS_STRING__AND__ESCAPE_JS_REGEX, value)
+      _replacer_for_escape_js_string__and__escape_js_regex, value)
 
 
 def escape_css_string_helper(value):
   value = str(value)
   return _MATCHER_FOR_ESCAPE_CSS_STRING.sub(
-      _REPLACER_FOR_ESCAPE_CSS_STRING, value)
+      _replacer_for_escape_css_string, value)
 
 
 def filter_css_value_helper(value):
@@ -285,7 +285,7 @@ def filter_css_value_helper(value):
 def normalize_uri_helper(value):
   value = str(value)
   return _MATCHER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI.sub(
-      _REPLACER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI, value)
+      _replacer_for_normalize_uri__and__filter_normalize_uri__and__filter_normalize_media_uri, value)
 
 
 def filter_normalize_uri_helper(value):
@@ -294,7 +294,7 @@ def filter_normalize_uri_helper(value):
     return 'about:invalid#zSoyz'
 
   return _MATCHER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI.sub(
-      _REPLACER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI, value)
+      _replacer_for_normalize_uri__and__filter_normalize_uri__and__filter_normalize_media_uri, value)
 
 
 def filter_normalize_media_uri_helper(value):
@@ -303,7 +303,7 @@ def filter_normalize_media_uri_helper(value):
     return 'about:invalid#zSoyz'
 
   return _MATCHER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI.sub(
-      _REPLACER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI, value)
+      _replacer_for_normalize_uri__and__filter_normalize_uri__and__filter_normalize_media_uri, value)
 
 
 def filter_image_data_uri_helper(value):
