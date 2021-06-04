@@ -1,6 +1,5 @@
 # Debugger
 
-
 [TOC]
 
 The `{debugger}` command can be used to help debug your templates. The command

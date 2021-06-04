@@ -74,7 +74,7 @@ public abstract class CodeChunk {
    * {@link #doFormatInitialStatements} and {@link Expression#doFormatOutputExpr} are the main
    * methods subclasses should override to control their formatting. Subclasses should only override
    * this method in the special case that a code chunk needs to control its formatting when it is
-   * the only chunk being serialized. TODO(brndn): only one override, can probably be declared
+   * the only chunk being serialized. TODO(user): only one override, can probably be declared
    * final.
    *
    * @param startingIndent The indent level of the foreign code into which this code will be

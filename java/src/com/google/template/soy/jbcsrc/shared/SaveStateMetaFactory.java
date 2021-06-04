@@ -224,7 +224,7 @@ public final class SaveStateMetaFactory {
    * A JVM bootstrap method for saving incremental rendering state
    *
    * <p>This generates code equivalent to {@code renderContext.pushFrame(new
-   * StackFrameXXX(user, ....))} where {@code StackFrameXXX} is a dynamically generated
+   * StackFrameXXX(stateNumber, ....))} where {@code StackFrameXXX} is a dynamically generated
    * {@link StackFrame} instance, {@code stateNumber} is a parameter to the bootstrap method and
    * {@code ...} is all the values to be saved.
    *

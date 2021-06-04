@@ -1048,6 +1048,7 @@ final class ExpressionCompiler {
       MethodRef methodRef =
           MethodRef.createStaticMethod(
               typeInfo, ConstantsCompiler.getConstantMethod(varName, varType));
+      // TODO(b/184155734): Use ClassLoaderFallbackCallFactory here so GWS can use constants.
       return SoyExpression.forRuntimeType(
           ConstantsCompiler.getConstantRuntimeType(varType),
           methodRef.invoke(parameters.getRenderContext()));

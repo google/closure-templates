@@ -77,7 +77,7 @@ public enum BuiltinMethod implements SoyMethod {
       }
 
       ProtoExtensionImportType extType = (ProtoExtensionImportType) param.getType();
-      // TODO(user): Have SoyProtoType understand ProtoExtensionImportType rather than looking up
+      // TODO(jcg): Have SoyProtoType understand ProtoExtensionImportType rather than looking up
       //            on string representation.
       ImmutableSet<String> fields = protoType.getExtensionFieldNames();
       String fieldName = extType.getFieldName();

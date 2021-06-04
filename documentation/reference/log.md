@@ -1,6 +1,5 @@
 # Logging
 
-
 [TOC]
 
 ### Log {#log}

@@ -252,7 +252,6 @@ export class IncrementalDomRenderer implements IdomRendererApi {
   /**
    * Switches runtime to produce incremental dom calls that do not traverse
    * the DOM. This happens when logOnly in a velogging node is set to true.
-   * For more info, see http://go/soy/reference/velog#the-logonly-attribute
    */
   toNullRenderer() {
     const nullRenderer = new NullRenderer(this);
@@ -299,7 +298,6 @@ export class IncrementalDomRenderer implements IdomRendererApi {
 
 /**
  * Renderer that mutes all IDOM commands and returns void.
- * For more info, see http://go/soy/reference/velog#the-logonly-attribute
  */
 export class NullRenderer extends IncrementalDomRenderer {
   constructor(private readonly renderer: IncrementalDomRenderer) {

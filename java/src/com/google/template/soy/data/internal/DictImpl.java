@@ -65,12 +65,13 @@ import javax.annotation.ParametersAreNonnullByDefault;
  * RuntimeMapTypeTracker.Type#LEGACY_OBJECT_MAP_OR_RECORD} state, and later invocations of SoyMap
  * methods cause runtime errors.
  *
- * every {@code legacy_object_map} to {@code map} and delete {@code legacy_object_map}. This will
- * require changing every plain JS object passed in to Soy to be an ES6 Map with the same entries.
- * It should not require any changes to Java renderers: every java.util.Map becomes a DictImpl
- * instance that can act as a {@code map}. After the migration, Java renderers that want to take
- * advantage of nonstring keys must wrap their java.util.Maps in {@link
- * com.google.template.soy.data.SoyValueConverter#markAsSoyMap}.
+ * <p>
+ * We want to migrate every {@code legacy_object_map} to {@code map} and delete {@code
+ * legacy_object_map}. This will require changing every plain JS object passed in to Soy to be an
+ * ES6 Map with the same entries. It should not require any changes to Java renderers: every
+ * java.util.Map becomes a DictImpl instance that can act as a {@code map}. After the migration,
+ * Java renderers that want to take advantage of nonstring keys must wrap their java.util.Maps in
+ * {@link com.google.template.soy.data.SoyValueConverter#markAsSoyMap}.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  */

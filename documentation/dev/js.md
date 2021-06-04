@@ -45,7 +45,6 @@ soy.examples.helloWorld = function(opt_data, opt_ijData) {
 The exact signature of the generated JavaScript function is an implementation
 detail.
 
-
 The generated JavaScript function takes optional params representing the
 different kinds of data that a Soy template can use. It returns a
 [`SanitizedContent`][sanitized-content] object representing the rendered result.
@@ -141,4 +140,3 @@ annotating locals or specifying method parameter types.
 
 [sanitized-content]: https://github.com/google/closure-library/blob/master/closure/goog/soy/data.js
 [sanitized-html]: https://github.com/google/closure-library/blob/master/closure/goog/soy/data.js
-

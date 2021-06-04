@@ -1,6 +1,5 @@
 # Element Composition
 
-
 [TOC]
 
 ## HTML-tag templates {#html-tag-templates}
@@ -248,7 +247,6 @@ Bar"></div>`.
   <{example()} class="Bar"></>
 {/template}
 ```
-
 
 #### Arbitrary attributes {#attributeStar}
 

@@ -1,6 +1,5 @@
 # Message Localization
 
-
 [TOC]
 
 ## Message translation
@@ -167,7 +166,6 @@ var MSG_UNNAMED_42 = goog.getMsg(
      'endLink': '</a>'});
 ```
 
-
 ## Using Multiple Natural Languages (Bidi)
 
 Soy templates support bidirectional text (bidi) with seven functions and two
@@ -187,7 +185,6 @@ For an example of a template that uses Bidi functions, see
 [`examples/features.soy`](https://github.com/google/closure-templates/blob/master/examples/features.soy).
 
 ### Bidi Functions in Soy {#bidi_functions}
-
 
 <table>
 <thead>
@@ -293,9 +290,6 @@ HTML "escapes" (default <code>false</code>).</td>
 </tbody>
 </table>
 
-
-
-
 <table>
 <thead>
 <tr>
@@ -347,8 +341,6 @@ example inside an HTML <code>&lt;option&gt;</code> element.</td>
 </tr>
 </tbody>
 </table>
-
-
 
 ## Message Plugins {#message_plugins}
 

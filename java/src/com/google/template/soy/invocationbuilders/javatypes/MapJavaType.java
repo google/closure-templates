@@ -31,6 +31,13 @@ public final class MapJavaType extends JavaType {
   private final JavaType keyType; // The type of the map's keys.
   private final JavaType valueType; // The type of the map's values.
 
+  /**
+   * Whether this Java map value should be marked as an actual Soy map (e.g. as opposed to a Soy
+   * legacy object map). Soy maps can have non-string keys, but legacy object maps cannot, so we
+   * need to call {@link com.google.template.soy.data.SoyValueConverter#markAsSoyMap} in {@link
+   * JavaType#asInlineCast}.
+   *
+   */
   private final boolean shouldMarkAsSoyMap;
 
   public MapJavaType(JavaType keyType, JavaType valueType, boolean shouldMarkAsSoyMap) {

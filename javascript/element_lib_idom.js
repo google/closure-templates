@@ -99,6 +99,10 @@ var SoyElement = /** @class */ (function () {
      * open element of a template.
      */
     SoyElement.prototype.handleSoyElementRuntime = function (node, data) {
+        /**
+         * This is null because it is possible that no DOM has been generated
+         * for this Soy element
+         */
         if (!node) {
             return false;
         }

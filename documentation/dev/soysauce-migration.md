@@ -1,6 +1,5 @@
 # Migrating to SoySauce from Tofu
 
-
 The SoySauce backend for server side rendered Soy has a number of benefits over
 the Tofu interpreter
 
@@ -20,7 +19,6 @@ the Tofu interpreter
 
 For all these reasons the Tofu backend is discouraged for new users and all
 users are encouraged to migrate.
-
 
 [TOC]
 
@@ -157,7 +155,6 @@ error if you perform certain operations with the result of the expression
 (calling `isNonnull` and simple comparisons are the only thing you can do). An
 appropriate fix would be to rewrite it as `isNonnull($foo.bar?.baz)`.
 
-
 ### Required parameter semantics
 
 NOTE: If you use the SoyTemplate API for preparing parameters, this distinction
@@ -184,4 +181,3 @@ happen:
 In SoySauce you always get `null`. We chose this option because it is more
 internally consistent (Soy->Soy and java->Soy calls are treated equivalently)
 and it is more consistent with the behavior of the JavaScript backend.
-

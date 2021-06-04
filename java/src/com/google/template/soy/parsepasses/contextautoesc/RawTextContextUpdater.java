@@ -700,6 +700,7 @@ final class RawTextContextUpdater {
                   makeTransitionToStateLiteral("/*", HtmlContext.CSS_COMMENT),
                   // TODO: Do we need to support non-standard but widely supported C++ style
                   // comments?
+                  // gsearch -i -c -f '\.soy$' '<style[^>]*>[^<]*?\/\/' shows only 3 uses.
                   makeTransitionToStateLiteral("\"", HtmlContext.CSS_DQ_STRING),
                   makeTransitionToStateLiteral("'", HtmlContext.CSS_SQ_STRING),
                   // Although we don't contextually parse CSS, certain property names are only used

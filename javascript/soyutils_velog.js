@@ -400,6 +400,16 @@ class Logger {
 /** The ID of the UndefinedVe. */
 const UNDEFINED_VE_ID = -1;
 
+/**
+ * Soy's runtime representation of objects of the Soy `ve` type.
+ *
+ * <p>This is for use only in Soy internal code and Soy generated JS. DO NOT use
+ * this from handwritten code.
+ *
+ * create instances for tests.
+ *
+ * @final
+ */
 class $$VisualElement {
   /**
    * @param {number} id
@@ -446,6 +456,16 @@ class $$VisualElement {
   }
 }
 
+/**
+ * Soy's runtime representation of objects of the Soy `ve_data` type.
+ *
+ * <p>This is for use only in Soy internal code and Soy generated JS. DO NOT use
+ * this from handwritten code.
+ *
+ * create instances for tests.
+ *
+ * @final
+ */
 class $$VisualElementData {
   /**
    * @param {!$$VisualElement} ve

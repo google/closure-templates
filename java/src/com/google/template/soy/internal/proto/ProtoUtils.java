@@ -213,7 +213,6 @@ public final class ProtoUtils {
     }
   }
 
-
   public static OneofDescriptor getContainingOneof(FieldDescriptor fd) {
     return
     fd.getContainingOneof();

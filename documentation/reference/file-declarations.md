@@ -1,6 +1,5 @@
 # File Declarations
 
-
 [TOC]
 
 ## namespace {#namespace}
@@ -104,7 +103,6 @@ The syntax for calling imported templates is:
 ```
 
 </section>
-
 
 ## alias (DEPRECATED; will be deleted soon) {#alias}
 

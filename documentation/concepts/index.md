@@ -1,6 +1,5 @@
 # Concepts
 
-
 This page describes Soy's core concepts—what you need to understand in order to
 be a successful Soy developer.
 

@@ -118,6 +118,7 @@ public final class CodeChunkTest {
     Statement statement =
         ifStatement(
                 var.doubleEqualsNull(),
+                // We have to use a sketchy API to force an empty block.
                 // That's as it should be, since empty blocks are useless.
                 Statement.treatRawStringAsStatementLegacyOnly("", ImmutableList.of()))
             .build();
@@ -309,7 +310,7 @@ public final class CodeChunkTest {
   }
 
   /**
-   * TODO(brndn): multiple assignments could collapse to an expression using the comma operator:
+   * TODO(user): multiple assignments could collapse to an expression using the comma operator:
    * <code>foo, bar</code>. But the benefit to the gencode is doubtful, and it certainly impairs its
    * readability.
    */

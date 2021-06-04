@@ -205,6 +205,6 @@ public final class ImportsPass implements CompilerFileSetPass {
         node.getPathSourceLocation(),
         IMPORT_NOT_IN_DEPS,
         nodePath,
-        SoyErrors.getDidYouMeanMessage(allPaths, nodePath));
+        SoyErrors.getDidYouMeanMessage(allPaths, nodePath) );
   }
 }

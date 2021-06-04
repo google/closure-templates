@@ -1626,7 +1626,6 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
         visitBuiltinFunction((BuiltinFunction) knownFunction, node);
       }
 
-
       // Always attempt to visit for internal soy functions, even if we already had a signature.
       visitInternalSoyFunction(knownFunction, node);
       tryApplySubstitution(node);

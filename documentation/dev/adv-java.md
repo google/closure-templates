@@ -80,7 +80,6 @@ progress is made before we need to wait for any asynchronous data.
 
 ### Asynchronous rendering {#async}
 
-
 The `SoySauce` backend has built in support for responding to asynchronous IO.
 There are two kinds of asynchronous events that we handle:
 
@@ -103,7 +102,6 @@ There are two kinds of asynchronous events that we handle:
 To handle these events the renderer will detect when it is about to evaluate an
 unfinished future or when the output buffer is full and then pause rendering to
 return control to the caller.
-
 
 To see how this works, consider this example:
 
@@ -158,7 +156,6 @@ rendering operation. For example,
 *   If the HTTP server you are using supports asynchronous request processing
     (like the Servlet 3.0 `AsyncContext`), then you could integrate with that to
     continue your rendering after the future is complete.
-
 
 <br>
 

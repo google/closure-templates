@@ -49,7 +49,8 @@ public final class Continuations {
    * Return a {@link SanitizedContent} valued continuation. Rendering logic is delegated to the
    * {@link WriteContinuation}, but it is assumed that the builder is the render target.
    */
-  static < T>
+  static <
+          T>
       Continuation<T> valueContinuation(WriteContinuation delegate, ValueSupplier<T> suppler) {
     if (delegate.result().isDone()) {
       return new ResultContinuation<>(suppler.get());
@@ -58,7 +59,8 @@ public final class Continuations {
   }
 
   /** Implementation of a partially evaluated continuation for {@link #valueContinuation}. */
-  private static final class PendingValueContinuation< T>
+  private static final class PendingValueContinuation<
+          T>
       implements Continuation<T> {
     final WriteContinuation delegate;
     final ValueSupplier<T> supplier;
@@ -103,7 +105,8 @@ public final class Continuations {
   }
 
   /** A 'done' {@link Continuation} with a non-null value */
-  private static final class ResultContinuation< T>
+  private static final class ResultContinuation<
+          T>
       implements Continuation<T> {
     final T value;
 

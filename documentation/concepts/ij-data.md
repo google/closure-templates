@@ -53,13 +53,11 @@ The code that renders your template must provide injected data:
     template. For more information, see
     [Generating JavaScript functions from Soy files](../dev/js.md#generating-javascript-functions-from-soy-files).
 
-
 <br>
 
 --------------------------------------------------------------------------------
 
 You're done with basic Soy concepts! Next, we suggest working through the
 codelabs.
-
 
 <br>

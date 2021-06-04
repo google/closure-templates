@@ -33,6 +33,13 @@ import com.google.protobuf.Descriptors.FileDescriptor;
 public final class JavaQualifiedNames {
   private JavaQualifiedNames() {}
 
+  /**
+   * A map that stores special cases for underscoresToCamelCase.
+   *
+   * forbidden words (names that should be avoided as field names). For a forbidden word, helpers.cc
+   * adds a trailing "_" for converting underscores to camel case. An example is a proto field named
+   * "class" -- it will generate hasClass_ or getClass_ method to avoid colliding method names.
+   */
   private static final ImmutableMap<String, String> SPECIAL_CASES =
       ImmutableMap.<String, String>builder()
           .put("cached_size", "CachedSize_")
@@ -201,7 +208,6 @@ public final class JavaQualifiedNames {
         sb.append(file.getPackage());
       }
     }
-
 
     return sb.toString();
   }

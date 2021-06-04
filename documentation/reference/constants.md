@@ -1,6 +1,5 @@
 # Constants
 
-
 [TOC]
 
 ## const {#const}

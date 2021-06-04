@@ -268,10 +268,8 @@ have.
 For ordinary content that doesn't contain markup, you can just pass in the
 string values as template parameters as before, and they will get escaped.
 
-
 Soy treats `SafeHtml` and the other safe contract types (`SafeStyle`, `SafeUrl`,
 etc.) as exempt from re-escaping and filtering.
-
 
 ## Content Security Policy (CSP) {#content_security_policy}
 

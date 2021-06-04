@@ -199,6 +199,10 @@ var IncrementalDomRenderer = /** @class */ (function () {
             this.logger.exit();
         }
     };
+    /**
+     * Switches runtime to produce incremental dom calls that do not traverse
+     * the DOM. This happens when logOnly in a velogging node is set to true.
+     */
     IncrementalDomRenderer.prototype.toNullRenderer = function () {
         var nullRenderer = new NullRenderer(this);
         return nullRenderer;
@@ -235,6 +239,9 @@ var IncrementalDomRenderer = /** @class */ (function () {
     return IncrementalDomRenderer;
 }());
 exports.IncrementalDomRenderer = IncrementalDomRenderer;
+/**
+ * Renderer that mutes all IDOM commands and returns void.
+ */
 var NullRenderer = /** @class */ (function (_super) {
     tslib_1.__extends(NullRenderer, _super);
     function NullRenderer(renderer) {

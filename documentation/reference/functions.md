@@ -1,6 +1,5 @@
 # Methods and Functions
 
-
 Soy methods and functions are called from within Soy
 [expressions](expressions.md).
 
@@ -369,7 +368,6 @@ field `past_height`, it would be accessed as follows:
 
 ## Other Functions
 
-
 ### `legacyDynamicTag($ag)` {#legacyDynamicTag}
 
 The `legacyDynamicTag` function is used to create an HTML tag whose name is
@@ -477,7 +475,6 @@ For example, assuming that the file has `{alias foo.bar}`, then
 `xid('foo.bar')`, `xid(foo.bar)`, and `xid(bar)` will all evaluate to the same
 value.
 
-
 The `xid()` function returns a string. If you need to pass it as a parameter,
 prefer the simple param syntax, e.g. `{param jsname: xid('input') /}`. In more
 complex expressions, pass it as text:
@@ -564,7 +561,6 @@ already bound to the template type may not be bound again.
 ```
 
 </section>
-
 
 ## Localization (l10n) Functions
 

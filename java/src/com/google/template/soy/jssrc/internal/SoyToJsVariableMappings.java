@@ -32,7 +32,7 @@ import javax.annotation.Nullable;
  * inside a single template.
  */
 public final class SoyToJsVariableMappings {
-  /** TODO(brndn): change the key type to {@link com.google.template.soy.exprtree.VarDefn}. */
+  /** TODO(user): change the key type to {@link com.google.template.soy.exprtree.VarDefn}. */
   private final Map<String, Expression> mappings;
 
   /**
@@ -70,7 +70,7 @@ public final class SoyToJsVariableMappings {
    * Maps the Soy variable named {@code name} to the given translation. Any previous mapping for the
    * variable is lost.
    *
-   * <p>TODO(brndn): this API requires callers to mangle the names they pass in to ensure
+   * <p>TODO(user): this API requires callers to mangle the names they pass in to ensure
    * uniqueness. Do the mangling internally.
    */
   public SoyToJsVariableMappings put(String var, Expression translation) {
@@ -96,7 +96,7 @@ public final class SoyToJsVariableMappings {
    * Returns the JavaScript translation for the Soy variable with the given name, or null if no
    * mapping exists for that variable.
    *
-   * <p>TODO(brndn): the null case is only for handling template params. Eliminate the @Nullable by
+   * <p>TODO(user): the null case is only for handling template params. Eliminate the @Nullable by
    * seeding {@link #newEmpty()} with the params.
    */
   @Nullable

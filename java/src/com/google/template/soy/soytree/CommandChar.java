@@ -16,6 +16,9 @@
 
 package com.google.template.soy.soytree;
 
+/**
+ * The Soy command characters. See
+ */
 public enum CommandChar {
   SPACE("{sp}", " "),
   NIL("{nil}", ""),

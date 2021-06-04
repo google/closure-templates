@@ -1,6 +1,5 @@
 # Types
 
-
 Soy supports a basic type system. Parameters can be strictly typed to:
 
 *   enable compile time type checking of template calls
@@ -79,7 +78,6 @@ primitive.)
 `string` is one of the most common types in Soy. In addition to plain strings
 there are a number of safe subtypes.
 
-
 <table>
 <thead>
 <tr>
@@ -130,7 +128,6 @@ SoySauce   | `string`, `com.google.template.soy.data.SanitizedContent`
 Tofu       | `com.google.template.soy.data.SanitizedContent`
 Python     | `sanitize.SanitizedHtml`, `html_types.SafeHtml`
 
-
 ### `js` {#js}
 
 `js` is for a string that contains safe JavaScript code. Safe JavaScript is a
@@ -143,11 +140,9 @@ SoySauce   | `string`, `com.google.template.soy.data.SanitizedContent`
 Tofu       | `com.google.template.soy.data.SanitizedContent`
 Python     | `sanitize.SanitizedJs`, `html_types.SafeScript`
 
-
 ### `uri` {#uri}
 
 `uri` is for a string that contains a URI that came from a trusted source.
-
 
 <table>
 <thead>
@@ -257,7 +252,6 @@ Python     | `sanitize.SanitizedCss`, `html_types.SafeStyleSheet`
 Additionally, all backends have support for coercing
 `webutil.html.types.SafeStyleSheetProto` and `webutil.html.types.SafeStyleProto`
 to a `css` object.
-
 
 ### `template` {#template}
 

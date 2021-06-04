@@ -1,5 +1,4 @@
 
-
 ## Advanced Migration strategies
 
 Sometimes when migrating to the type safe API you will come across templates

@@ -1,6 +1,5 @@
 # Let command
 
-
 ## let {#let}
 
 Syntax for arbitrary values:

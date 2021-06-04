@@ -210,7 +210,6 @@ classes must be supplied to `SoySauce` or `Tofu` constructor (or
 JS, the compiler will output a `goog.require('some.js.lib');` and invoke
 `some.js.lib.uniqueId()` for each call to `uniqueId()`.
 
-
 ## More about SoyFunctionSignature...
 
 All types that are understandable by Soy compiler will be supported in the
@@ -238,7 +237,6 @@ There are some restrictions to this annotation. First, it does not support
 overloads that have the same amount of arguments. Second, generic overloads are
 unsupported. It is impossible to say this function will return `T` when the
 input is `list<T>`.
-
 
 ## Note on supported Java types
 

@@ -26,6 +26,69 @@ import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SanitizedContents;
 import javax.annotation.Nullable;
 
+/**
+ * Utility class for formatting text for display in a potentially opposite-directionality context
+ * without garbling. The directionality of the context is set at formatter creation and the
+ * directionality of the text can be either estimated or passed in when known. Provides the
+ * following functionality:
+ *
+ * <p>1. Bidi Wrapping When text in one language is mixed into a document in another,
+ * opposite-directionality language, e.g. when an English business name is embedded in a Hebrew web
+ * page, both the inserted string and the text surrounding it may be displayed incorrectly unless
+ * the inserted string is explicitly separated from the surrounding text in a "wrapper" that:
+ *
+ * <p>- Declares its directionality so that the string is displayed correctly. This can be done in
+ * HTML markup (e.g. a 'span dir="rtl"' element) by {@link #spanWrap}, or - only in contexts where
+ * markup can't be used - in Unicode bidi formatting codes by {@link #unicodeWrap}. Optionally, the
+ * markup can be inserted even when the directionality is the same, in order to keep the DOM
+ * structure more stable.
+ *
+ * <p>- Isolates the string's directionality, so it does not unduly affect the surrounding content.
+ * Currently, this can only be done using invisible Unicode characters of the same direction as the
+ * context (LRM or RLM) in addition to the directionality declaration above, thus "resetting" the
+ * directionality to that of the context. The "reset" may need to be done at both ends of the
+ * string. Without "reset" after the string, the string will "stick" to a number or logically
+ * separate opposite-direction text that happens to follow it in-line (even if separated by neutral
+ * content like spaces and punctuation). Without "reset" before the string, the same can happen
+ * there, but only with more opposite-direction text, not a number. One approach is to "reset" the
+ * direction only after each string, on the theory that if the preceding opposite- direction text is
+ * itself bidi-wrapped, the "reset" after it will prevent the sticking. (Doing the "reset" only
+ * before each string definitely does not work because we do not want to require bidi-wrapping
+ * numbers, and a bidi-wrapped opposite-direction string could be followed by a number.) Still, the
+ * safest policy is to do the "reset" on both ends of each string, since RTL message translations
+ * often contain untranslated Latin-script brand names and technical terms, and one of these can be
+ * followed by a bidi-wrapped inserted value. On the other hand, when one has such a message, it is
+ * best to do the "reset" manually in the message translation itself, since the message's
+ * opposite-direction text could be followed by an inserted number, which we would not bidi-wrap
+ * anyway. Thus, "reset" only after the string is the current default. In an alternative to "reset",
+ * recent additions to the HTML, CSS, and Unicode standards allow the isolation to be part of the
+ * directionality declaration. This form of isolation is better than "reset" because it takes less
+ * space, does not require knowing the context directionality, has a gentler effect than "reset",
+ * and protects both ends of the string. However, we do not yet allow using it because required
+ * platforms do not yet support it.
+ *
+ * <p>Providing these wrapping services is the basic purpose of the bidi formatter.
+ *
+ * <p>2. Directionality estimation How does one know whether a string about to be inserted into
+ * surrounding text has the same directionality? Well, in many cases, one knows that this must be
+ * the case when writing the code doing the insertion, e.g. when a localized message is inserted
+ * into a localized page. In such cases there is no need to involve the bidi formatter at all. In
+ * some other cases, it need not be the same as the context, but is either constant (e.g. urls are
+ * always LTR) or otherwise known. In the remaining cases, e.g. when the string is user-entered or
+ * comes from a database, the language of the string (and thus its directionality) is not known a
+ * priori, and must be estimated at run-time. The bidi formatter can do this automatically.
+ *
+ * <p>3. Escaping When wrapping plain text - i.e. text that is not already HTML or HTML-escaped - in
+ * HTML markup, the text must first be HTML-escaped to prevent XSS attacks and other nasty business.
+ * This of course is always true, but the escaping can not be done after the string has already been
+ * wrapped in markup, so the bidi formatter also serves as a last chance and includes escaping
+ * services.
+ *
+ * <p>Thus, in a single call, the formatter can escape the input string as specified, determine its
+ * directionality, and wrap it as necessary. It is then up to the caller to insert the return value
+ * in the output.
+ *
+ */
 public class BidiFormatter {
 
   /** The text used to bidi wrap a string. */

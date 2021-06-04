@@ -1,8 +1,6 @@
 # Compiling Templates
 
-
 ## Invoking the compiler directly
-
 
 For open source users, we release maven artifacts that are executable jars, and
 users can directly invoke these binaries to compile the templates.
@@ -70,7 +68,6 @@ compiler from Java. This section discusses how to use both options.
 
 #### How to build and run the executable binary
 
-
 In the command line arguments to the `SoyToJsSrcCompiler`, you must include the
 paths to all of the Soy files that you want to be compiled together as one
 bundle. The binary also accepts a number of command-line flags, some of which
@@ -106,4 +103,3 @@ $ java -jar SoyToJsSrcCompiler.jar \
 This sample usage generates 6 total JS files in your directory — one for each
 combination of input `.soy` file (`simple.soy`, `features.soy`) and locale
 (`en`, `xx-YY`, `xx-ZZ`).
-

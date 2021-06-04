@@ -32,3 +32,4 @@ public final class NamespaceExemptions {
 
   private NamespaceExemptions() {}
 }
+

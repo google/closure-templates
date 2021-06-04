@@ -19,6 +19,9 @@ package com.google.template.soy.soyparse;
 import com.google.template.soy.base.SourceLocation.Point;
 import java.util.Arrays;
 
+/**
+ * Extends the generated char stream here:
+ */
 final class SoySimpleCharStream extends SimpleCharStream {
   // The length of each line (1-indexed), updated only up to the latest char we've parsed so far
   // (e.g. if we're midway through parsing line 150, only lines 1 - 149 will have the correct

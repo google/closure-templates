@@ -1,6 +1,5 @@
 # Print Directives
 
-
 Print directives are post-processing on the output of a
 [`print` command](print.md).
 

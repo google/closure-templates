@@ -55,4 +55,3 @@ section for details.
 <section class="nextButton"><a href="auto-escaping.md">CONTINUE >></a></section>
 
 <br>
-

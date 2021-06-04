@@ -220,4 +220,3 @@ In the following example, the type of the template returned by `bind` is
 </section>
 
 <br>
-

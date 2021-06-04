@@ -127,6 +127,11 @@ public final class StrictHtmlValidationPassTest {
     assertThat(ifCondNode.getNodeForEdgeKind(EdgeKind.FALSE_EDGE)).hasValue(accNode);
   }
 
+  /**
+   * Validates the graph made from a template with a single {@code {if $cond}}:
+   *
+   * <p>For diagrams and more detailed information, see <a
+   */
   @Test
   public void testSingleBranchIfCondition() {
     // Arrange: set up a template with a {if $cond1} branch that contains an element.
@@ -179,6 +184,11 @@ public final class StrictHtmlValidationPassTest {
     assertThat(nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE)).isEmpty();
   }
 
+  /**
+   * Validates the graph made from a template with two sequential {@code {if}} commands.
+   *
+   * <p>For diagrams and more detailed information, see <a
+   */
   @Test
   public void testTwoIfConditions() {
     // Arrange: set up the template under test.
@@ -248,6 +258,11 @@ public final class StrictHtmlValidationPassTest {
     assertThat(nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE)).isEmpty();
   }
 
+  /**
+   * Validates the graph made from a template containing {@code {if}..{elseif}..{elseif}..{/if}}:
+   *
+   * <p>For diagrams and more detailed information, see <a
+   */
   @Test
   public void testIfElseifElseif() {
     // Arrange: set up the template under test.
@@ -319,6 +334,11 @@ public final class StrictHtmlValidationPassTest {
     assertThat(nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE)).isEmpty();
   }
 
+  /**
+   * Validates the graph made from a template contining {@code {if}..{else}..{/if}}.
+   *
+   * <p>For diagrams and more detailed information, see <a
+   */
   @Test
   public void testIfElse() {
     // Arrange: set up the template under test.
@@ -377,6 +397,12 @@ public final class StrictHtmlValidationPassTest {
     assertThat(nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE)).isEmpty();
   }
 
+  /**
+   * Validates the graph made from a template with nested-if blocks. E.g. {@code
+   * {if}..{if}..{/if}..{else}..{/if}}.
+   *
+   * <p>For diagrams and more detailed information, see <a
+   */
   @Test
   public void testIfNestedIfElse() {
     // Arrange: set up the template under test.
@@ -456,6 +482,12 @@ public final class StrictHtmlValidationPassTest {
     assertThat(nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE)).isEmpty();
   }
 
+  /**
+   * Validates the graph made from a template with {@code switch} blocks. E.g. {@code
+   * {switch}..{case}..{/switch}}.
+   *
+   * <p>For diagrams and more detailed information, see <a
+   */
   @Test
   public void testSwitchCase() {
     // Arrange: set up the template under test.
@@ -527,6 +559,11 @@ public final class StrictHtmlValidationPassTest {
     assertThat(nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE)).isEmpty();
   }
 
+  /**
+   * Validates that multiple identical nodes are created for switch cases with multiple expressions.
+   *
+   * <p>For diagrams and more detailed information, see <a
+   */
   @Test
   public void testSwitchCaseWithMultipleExpressions() {
     // Arrange: set up the template under test.
@@ -566,6 +603,11 @@ public final class StrictHtmlValidationPassTest {
     assertThatSwitchCaseCommandEqualTo(switchCaseNode2, "1, 2");
   }
 
+  /**
+   * Validates the graph made from a template with {@code {switch}..{case}..{default}}.
+   *
+   * <p>For diagrams and more detailed information, see <a
+   */
   @Test
   public void testSwitchCaseDefault() {
     // Arrange: set up the template under test.

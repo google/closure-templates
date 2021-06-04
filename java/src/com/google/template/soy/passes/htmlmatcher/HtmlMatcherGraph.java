@@ -22,6 +22,10 @@ import static com.google.common.base.Preconditions.checkState;
 import java.util.ArrayDeque;
 import java.util.Optional;
 
+/**
+ * The graph used when matching HTML tags through all the possible code paths in a Soy template.
+ *
+ */
 public final class HtmlMatcherGraph {
 
   private Optional<HtmlMatcherGraphNode> rootNode = Optional.empty();

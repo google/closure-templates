@@ -16,7 +16,6 @@ below.
 
 For information on how to develop the compiler see [the development guide](development-guide.md).
 
-
 ## Background
 
 The Soy server side renderer is currently implemented as a [recursive
@@ -813,7 +812,7 @@ incompatibilities here:
         uses for generics).
 
     *   Tofu fails to type check params which are statically typed to `?`, this
-        is a known bug.
+        is a known bug .
         SoySauce does not have this bug so user templates relying on it will
         have to be fixed.
 
@@ -847,4 +846,3 @@ incompatibilities here:
     internally consistent (soy->soy and java->soy calls are treated
     equivalently) and it is more consistent with the behavior of the JavaScript
     Soy backend.
-

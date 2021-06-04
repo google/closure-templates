@@ -1,6 +1,5 @@
 # Delegate templates
 
-
 Delegate templates allow you to write multiple implementations of a template and
 choose one of them at render time. Delegate templates are defined and called
 using `deltemplate` and `delcall`, which have syntax similar to `template` and

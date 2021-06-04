@@ -1,6 +1,5 @@
 # HTML Validation
 
-
 The [HTML spec](https://html.spec.whatwg.org/multipage/) defines what is valid
 HTML. There are many existing tools (both first-party and third-party) that can
 validate plain HTML. In Soy, we also provide some HTML validation support by

@@ -115,7 +115,6 @@ In JS, it is expected that you will arrange to conditionally load at most one of
 the `{delpackage ...}` gencode. It is an error to load more than one
 `{delpackage ...}` that defines the same `{deltemplate...}`
 
-
 ## In rare cases, use `variant`
 
 Deltemplates can also be registered with a `variant` identifier. This is
@@ -207,4 +206,3 @@ deltemplate implementation to all is:
 1.  Otherwise, if the delcall has the attribute `allowemptydefault="true"`, then
     the call renders to the empty string.
 1.  Otherwise, an error occurs.
-

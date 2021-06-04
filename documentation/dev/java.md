@@ -2,9 +2,7 @@
 
 [TOC]
 
-
 <!--#include file="includes/configuring-java-builders.md"-->
-
 
 <!-- Open source docs. TODO(b/141946412): Remove this section once we support invocation builders in OS.  -->
 
@@ -145,4 +143,3 @@ there are any incomplete futures. For asynchronous rendering, please check the
 [Advanced Java Rendering](adv-java.md) page.
 
 [renderer-source-link]: https://github.com/google/closure-templates/blob/master/java/src/com/google/template/soy/jbcsrc/api/SoySauce.java#L43
-

@@ -1,6 +1,5 @@
 # Comments
 
-
 This page describes how to comment your Soy file.
 
 **NOTE**: No type of comment is ever rendered to Soy's output.

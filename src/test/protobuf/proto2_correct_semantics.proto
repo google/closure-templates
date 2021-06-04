@@ -2,7 +2,6 @@ syntax = "proto2";
 
 option java_package = "com.google.template.soy.testing.correct";
 
-
 package soy.test.correct;
 
 message Proto2ImplicitDefaults {

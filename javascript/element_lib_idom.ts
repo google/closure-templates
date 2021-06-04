@@ -139,7 +139,6 @@ export abstract class SoyElement<TData extends {}|null, TInterface extends {}>
     /**
      * This is null because it is possible that no DOM has been generated
      * for this Soy element
-     * (see http://go/soy/reference/velog#the-logonly-attribute)
      */
     if (!node) {
       return false;

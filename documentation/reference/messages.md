@@ -1,6 +1,5 @@
 # Translation (Msg, Plurals and Gender)
 
-
 [TOC]
 
 ## msg {#msg}
@@ -444,4 +443,3 @@ To fix this you can use null safe access patterns:
 
 Now, if the list has too few people in it, the later placeholders will just
 evaluate to `null` instead of throwing an error.
-

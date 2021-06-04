@@ -863,7 +863,7 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       }
 
       // Add import and instantiate statements for translator module
-      // TODO(steveyang): remember the check when implementing MsgNode
+      // TODO(user): remember the check when implementing MsgNode
       if (!pySrcOptions.getTranslationClass().isEmpty()) {
         NamespaceAndName namespaceAndName =
             NamespaceAndName.fromModule(pySrcOptions.getTranslationClass());

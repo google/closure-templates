@@ -507,7 +507,6 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
       // enforces this.  However, this ordering constraint isn't interesting since placeholders
       // derived from html close tags are always trivial and contain no interesting subexpressions.
       //
-      //
       // To model this, we evaluate every placeholder in a dead end branch.  This is very similar to
       // how Lets are defined.
       evaluateMsgParts(msgNode, parts, placeholderBlocks);

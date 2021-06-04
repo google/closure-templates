@@ -224,6 +224,7 @@ final class CheckDelegatesPass implements CompilerFileSetPass {
           // bug where it failed to inspect CallParamContentNode and thus missed a number of call
           // sites...and people depend on it.
           // luckily this particular error doesn't seem very important. it doesn't violate Soy's
+          // invariants, it is just likely to not work with the pinto module system.
           errorReporter.warn(
               node.getSourceLocation(),
               CROSS_PACKAGE_DELCALL,

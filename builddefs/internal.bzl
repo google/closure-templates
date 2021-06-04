@@ -25,7 +25,6 @@ def java_individual_tests(deps, jvm_flags = []):
       jvm_flags: JVM flags to pass when running the test.
     """
 
-
     test_files = native.glob(["*Test.java"])
 
     test_package = native.package_name()[len("java/tests/"):].replace("/", ".")

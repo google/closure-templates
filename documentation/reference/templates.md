@@ -1,6 +1,5 @@
 # Templates
 
-
 [TOC]
 
 ## template {#template}
@@ -49,7 +48,6 @@ These are the `template` tag's attributes:
 
 *   `stricthtml`: Optional. Default `true`. Configures
     [strict html support](html)
-
 
 *   `whitespace`: Optional. Default `join`. Configures the whitespace joining
     algorithm to use. See the [Line Joining](textual-commands##line-joining)

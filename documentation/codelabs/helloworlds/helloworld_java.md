@@ -365,4 +365,3 @@ You've just completed the Soy Hello World using Java. Where should you go next?
     chapter.
 
 [concepts]: /documentation/concepts/index.md
-

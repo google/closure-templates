@@ -153,7 +153,7 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
   /**
    * Errors in this visitor generate Python source that immediately explodes. Users of Soy are
    * expected to check the error reporter before using the gencode; if they don't, this should
-   * apprise them. TODO(brndn): consider changing the visitor to return {@code Optional<PyExpr>} and
+   * apprise them. TODO(user): consider changing the visitor to return {@code Optional<PyExpr>} and
    * returning {@link Optional#absent()} on error.
    */
   private static final PyExpr ERROR =

@@ -460,7 +460,6 @@ def _get_content_of_kind(value, content_kind):
   if is_content_kind(value, content_kind):
     return value.content
 
-
   return None
 
 
@@ -612,6 +611,13 @@ def _balance_tags(tags):
 
 
 class IActuallyUnderstandSoyTypeSafetyAndHaveSecurityApproval:
+  """An instance of this approval must be passed to any type conversion.
+
+  The sanitized types are internal to Soy and they are allowed only in the code
+  generated from templates and in internal Soy functions. External usage is not
+  allowed and it will not be approved. Use SafeHtml types instead.
+
+  """
   justification = None
 
   def __init__(self, justification=None):

@@ -249,7 +249,7 @@ public class IsComputableAsJsExprsVisitor extends AbstractReturningSoyNodeVisito
 
   /** @return True if there is no point in visiting the child node, since it's always computable. */
   protected boolean canSkipChild(SoyNode child) {
-    // TODO(brndn): This check is probably not worth doing.  Remove.
+    // TODO(user): This check is probably not worth doing.  Remove.
     return child instanceof RawTextNode || child instanceof PrintNode;
   }
 }

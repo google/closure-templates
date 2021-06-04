@@ -44,7 +44,7 @@ public final class JsIdentifierOrdainer {
    *
    * <p>Reserved words and other identifiers that are almost never a good idea to use.
    *
-   * <p>TODO(Tony Payne): See if there is a canonical list somewhere.
+   * <p>TODO(user): See if there is a canonical list somewhere.
    */
   private static final ImmutableSet<String> INVALID_JS_IDENTIFIERS =
       ImmutableSet.of(

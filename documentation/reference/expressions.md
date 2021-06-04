@@ -1,6 +1,5 @@
 # Expressions
 
-
 Expressions are written within templates to reference template data, variables,
 or compute intermediate values. Soy uses a language-neutral expression syntax.
 This section describes the expression grammar, including how to reference data,
@@ -130,7 +129,6 @@ These expressions create [map](types.md#map) values. For more details about the
 difference between maps and legacy object maps see the [map](types.md#map)
 documentation.
 
-
 ### record {#record}
 
 Record literals are delimited by `record()` and contain a comma-delimited
@@ -140,7 +138,6 @@ identifier. For example,
 *   `record(aaa: 'blah', bbb: 123, ccc: $foo)`
 
 Empty records are not allowed.
-
 
 ## Variables
 

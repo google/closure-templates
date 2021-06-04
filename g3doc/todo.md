@@ -28,7 +28,6 @@ Cons:
 *   we may not be able to delete as much code as we would hope due to how this
     works in the optimizer
 
-
 ## Move af_soy_library to `third_party/java/builddefs` and rename to `soy_library`
 
 A prerequisite for maybe bazel-ifying it
@@ -76,7 +75,6 @@ code builder, the problem is that this eliminates the structured data and also
 means we need to be able to serialize everything 'too soon' which means we need
 to select symbol names for temporaries before we know all the code we are going
 to generate. (see previous item)
-
 
 ## Eliminate the SoyData type hierarchy
 

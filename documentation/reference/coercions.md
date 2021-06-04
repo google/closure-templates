@@ -1,6 +1,5 @@
 # Coercions
 
-
 Some Soy operations will take an expression of a given type and coerce it to
 another type. This page will describe how these operations behave and when they
 trigger.
