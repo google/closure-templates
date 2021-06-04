@@ -254,6 +254,10 @@ final class TemplateCompiler {
     Set<String> namespaces = Sets.newLinkedHashSet();
     // This ordering is critical to preserve css hierarchy.
     namespaces.addAll(templateNode.getParent().getRequiredCssNamespaces());
+    templateNode.getParent().getRequiredCssPaths().stream()
+        .map(p -> p.getNamespace())
+        .filter(p -> p != null)
+        .forEach(namespaces::add);
     namespaces.addAll(templateNode.getRequiredCssNamespaces());
     TemplateMetadata metadata =
         createTemplateMetadata(

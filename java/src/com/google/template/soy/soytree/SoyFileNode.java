@@ -44,6 +44,7 @@ public final class SoyFileNode extends AbstractParentSoyNode<SoyNode>
   public static final class CssPath {
     private final String sourcePath;
     private String resolvedPath;
+    private String namespace = null;
 
     CssPath(String sourcePath) {
       this.sourcePath = checkNotNull(sourcePath);
@@ -60,6 +61,14 @@ public final class SoyFileNode extends AbstractParentSoyNode<SoyNode>
 
     public Optional<String> resolvedPath() {
       return Optional.ofNullable(resolvedPath);
+    }
+
+    public void setNamespace(String namespace) {
+      this.namespace = namespace;
+    }
+
+    public String getNamespace() {
+      return namespace;
     }
 
     public void setResolvedPath(String resolvedPath) {

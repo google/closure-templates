@@ -110,12 +110,21 @@ final class SoyHeaderCompiler extends AbstractSoyCompiler {
     // We need to remove duplicates and preserve order, so collect into maps first
     Set<String> requiredCssNames = new LinkedHashSet<>();
     Set<String> requiredCssPaths = new LinkedHashSet<>();
+    Set<String> cssNamesFromPath = new LinkedHashSet<>();
     for (SoyFileNode file : fileSet.getChildren()) {
       requiredCssNames.addAll(file.getRequiredCssNamespaces());
       for (SoyFileNode.CssPath cssPath : file.getRequiredCssPaths()) {
-        // This should alwayus be present due to the ValidateRequiredCssPass, but that pass isn't
+        // This should always be present due to the ValidateRequiredCssPass, but that pass isn't
         // run in the open source release.
-        cssPath.resolvedPath().ifPresent(requiredCssPaths::add);
+        cssPath
+            .resolvedPath()
+            .ifPresent(
+                path -> {
+                  requiredCssPaths.add(path);
+                  if (cssPath.getNamespace() != null) {
+                    cssNamesFromPath.add(cssPath.getNamespace());
+                  }
+                });
       }
       for (TemplateNode template : file.getTemplates()) {
         requiredCssNames.addAll(template.getRequiredCssNamespaces());
@@ -127,6 +136,7 @@ final class SoyHeaderCompiler extends AbstractSoyCompiler {
             fn -> cssClassNames.add(((StringNode) Iterables.getLast(fn.getChildren())).getValue()));
     return CssMetadata.newBuilder()
         .addAllRequireCssNames(requiredCssNames)
+        .addAllRequireCssNames(cssNamesFromPath)
         .addAllRequireCssPaths(requiredCssPaths)
         .addAllRequireCssPathsFromNamespaces(
             requiredCssNames.stream()
