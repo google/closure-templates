@@ -35,19 +35,33 @@ message TemplateCallMetadata {
     oneof data_arg_oneof {
       // true if data="all"
       bool is_passing_all_data = 3;
-      // populated if data="somthing" and something is a variable reference
+
+      // Populated if data="something" and something is a variable reference
       VarRefInfo data_arg = 4;
     }
 
-    // true if this is a delcall (the name lookup behaves differently)
+    // True if this is a delcall (the name lookup behaves differently)
     bool is_delcall = 5;
+
+    // Populated if the template call was derived from a local variable
+    // that is equal to a template parameter with some parameters bound
+    string source_param = 6;
+
+    // Populated if the template call is derived to a local variable that is
+    // equal to a template literal with some parameters bound
+    string source_template = 7;
   }
 
   message ParamArg {
     // Name or key of param used by dest template
     string key = 1;
-    // populated if the value is a variable reference
-    VarRefInfo var_ref = 2;
+
+    oneof value {
+      // populated if the value is a variable reference
+      VarRefInfo var_ref = 2;
+      // populated if the value passed to the param is a bound template
+      TemplateCall bound_template = 3;
+    }
   }
 
   message VarRefInfo {
