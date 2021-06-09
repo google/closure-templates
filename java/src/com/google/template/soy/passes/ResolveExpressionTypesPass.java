@@ -327,6 +327,10 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
       SoyErrorKind.of("Type calculated type, {0}, is nullable, which is not allowed for const.");
   private static final SoyErrorKind NOT_ALLOWED_IN_CONSTANT_VALUE =
       SoyErrorKind.of("This operation is not allowed inside a const value definition.");
+  private static final SoyErrorKind ILLEGAL_SWITCH_EXPRESSION_TYPE =
+      SoyErrorKind.of("Type ''{0}'' is not allowed in a switch expression.");
+  private static final SoyErrorKind SWITCH_CASE_TYPE_MISMATCH =
+      SoyErrorKind.of("Case type ''{0}'' not assignable to switch type ''{1}''.");
 
   private final ErrorReporter errorReporter;
 
@@ -638,12 +642,28 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
       substitutions = savedSubstitutionState;
     }
 
+    private final ImmutableSet<SoyType.Kind> allowedSwitchTypes =
+        ImmutableSet.of(
+            Kind.BOOL, Kind.INT, Kind.FLOAT, Kind.STRING, Kind.PROTO_ENUM, Kind.UNKNOWN, Kind.ANY);
+
     @Override
     protected void visitSwitchNode(SwitchNode node) {
       visitExpressions(node);
 
       TypeSubstitution savedSubstitutionState = substitutions;
       ExprNode switchExpr = node.getExpr().getRoot();
+      SoyType switchExprType = switchExpr.getType();
+      boolean exprTypeError = false;
+      if (switchExprType.getKind() == Kind.NULL
+          || !SoyTypes.isKindOrUnionOfKinds(
+              SoyTypes.removeNull(switchExprType), allowedSwitchTypes)) {
+        errorReporter.report(
+            switchExpr.getSourceLocation(), ILLEGAL_SWITCH_EXPRESSION_TYPE, switchExprType);
+        exprTypeError = true;
+      } else if (SoyTypes.removeNull(switchExprType).getKind() == Kind.PROTO_ENUM) {
+        // Allow int cases in proto switch.
+        switchExprType = UnionType.of(switchExprType, IntType.getInstance());
+      }
       for (SoyNode child : node.getChildren()) {
         if (child instanceof SwitchCaseNode) {
           SwitchCaseNode scn = ((SwitchCaseNode) child);
@@ -654,9 +674,19 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
           List<SoyType> caseTypes = new ArrayList<>();
           boolean nullFound = false;
           for (ExprRootNode expr : scn.getExprList()) {
-            caseTypes.add(expr.getType());
+            SoyType type = expr.getType();
+            caseTypes.add(type);
             if (expr.getRoot().getKind() == ExprNode.Kind.NULL_NODE) {
               nullFound = true;
+            }
+
+            if (!exprTypeError && type.getKind() != Kind.UNKNOWN && type.getKind() != Kind.NULL) {
+              // Type system has problems with nullability and proto values. So we have to allow
+              // "case null" even if we don't think the type is nullable.
+              if (!switchExprType.isAssignableFromLoose(type)) {
+                errorReporter.report(
+                    expr.getSourceLocation(), SWITCH_CASE_TYPE_MISMATCH, type, switchExprType);
+              }
             }
           }
           SoyType caseType = typeRegistry.getOrCreateUnionType(caseTypes);

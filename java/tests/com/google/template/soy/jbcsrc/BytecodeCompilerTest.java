@@ -623,9 +623,9 @@ public class BytecodeCompilerTest {
         .rendersAs("two");
     assertThatTemplateBody(
             "{switch 'asdf'}",
-            "  {case 1}",
+            "  {case '1'}",
             "    one",
-            "  {case 2}",
+            "  {case '2'}",
             "    two",
             "  {default}",
             "    default",
@@ -639,7 +639,7 @@ public class BytecodeCompilerTest {
             "{switch 'a'}",
             "  {case 'a'}",
             "    {switch 1} {case 1} sub {default} sub default {/switch}",
-            "  {case 2}",
+            "  {case '2'}",
             "    two",
             "  {default}",
             "    default",
