@@ -315,6 +315,8 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
   private static final SoyErrorKind TEMPLATE_TYPE_PARAMETERS_CANNOT_USE_INFERRED_TYPES =
       SoyErrorKind.of(
           "Template type parameters cannot be inferred. Instead, explicitly declare the type.");
+  private static final SoyErrorKind CANNOT_USE_INFERRED_TYPES =
+      SoyErrorKind.of("Type cannot be inferred, the param definition requires an explicit type.");
   private static final SoyErrorKind PROTO_EXT_FQN =
       SoyErrorKind.of(
           "Extensions fields in proto init functions must be imported symbols. Fully qualified"
@@ -1102,8 +1104,11 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
       SoyType newType = getTypeSubstitution(varRef);
       if (newType != null) {
         varRef.setSubstituteType(newType);
-      } else {
-        if (varRef.getType() == null) {
+      } else if (!varRef.hasType()) {
+        if (inferringParam) {
+          errorReporter.report(varRef.getSourceLocation(), CANNOT_USE_INFERRED_TYPES);
+          varRef.setSubstituteType(UnknownType.getInstance());
+        } else {
           // sanity check, default params and state params have complex type initialization logic
           // double check that it worked.
           throw new IllegalStateException(

@@ -41,6 +41,7 @@ import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.ListComprehensionNode;
 import com.google.template.soy.exprtree.MapLiteralFromListNode;
+import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.shared.restricted.SoyFunction;
@@ -519,6 +520,14 @@ public final class SoyTreeUtils {
     switch (expr.getKind()) {
       case VAR_REF_NODE:
         VarRefNode refNode = (VarRefNode) expr;
+        VarDefn varDefs = refNode.getDefnDecl();
+        if (varDefs != null
+            && (varDefs.kind() == VarDefn.Kind.CONST
+                || varDefs.kind() == VarDefn.Kind.IMPORT_VAR)) {
+          // This method is called while inferring parameter types, before the type has been set on
+          // refNode.
+          return false;
+        }
         if (refNode.hasType()) {
           switch (refNode.getType().getKind()) {
             case TEMPLATE_TYPE:
