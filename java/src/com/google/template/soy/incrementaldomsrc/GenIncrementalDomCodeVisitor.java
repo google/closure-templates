@@ -52,6 +52,7 @@ import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SO
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_TYPE_HTML;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_VISIT_HTML_COMMENT;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.STATE_PREFIX;
+import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.STATE_VAR_PREFIX;
 import static com.google.template.soy.jssrc.dsl.Expression.EMPTY_OBJECT_LITERAL;
 import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_EMPTY_STRING;
 import static com.google.template.soy.jssrc.dsl.Expression.id;
@@ -587,9 +588,19 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
                 .addAnnotation("override")
                 .addParameterizedAnnotation("suppress", "checkTypes")
                 .build(),
+            // Various parts of the js codegen expects these values to be in the local
+            // scope.
             Statement.of(
-                // Various parts of the js codegen expects these parameters to be in the local
-                // scope.
+                Statement.of(
+                    node.getStateVars().stream()
+                        .map(
+                            stateVar ->
+                                VariableDeclaration.builder(
+                                        STATE_VAR_PREFIX + STATE_PREFIX + stateVar.name())
+                                    .setRhs(
+                                        Expression.THIS.dotAccess(STATE_PREFIX + stateVar.name()))
+                                    .build())
+                        .collect(toImmutableList())),
                 VariableDeclaration.builder(StandardNames.DOLLAR_IJDATA)
                     .setRhs(Expression.THIS.dotAccess("ijData"))
                     .build(),

@@ -6,10 +6,17 @@
  * a skip handler if available in the Idom runtime.
  */
 
+// We cannot import SoyElement because this is required to be in its standalone
+// library in order to restrict visibility.
+// tslint:disable-next-line:no-any
+type UnknownSoyElement = any;
+
 declare global {
   interface Node {
     // tslint:disable-next-line:enforce-name-casing
-    __soy_skip_handler: (<T>(prev: T, next: T) => boolean)|undefined;
+    __soy_skip_handler:
+        ((prev: UnknownSoyElement,
+          next: UnknownSoyElement) => boolean)|undefined;
     // tslint:disable-next-line:enforce-name-casing
     __soy_patch_handler: (() => void)|undefined;
   }
@@ -25,7 +32,8 @@ declare global {
  * T should correspond to the corresponding interface for the Soy element.
  */
 export function setSkipHandler(
-    el: Element, fn: <T>(prev: T, next: T) => boolean) {
+    el: Element,
+    fn: (prev: UnknownSoyElement, next: UnknownSoyElement) => boolean) {
   el.__soy_skip_handler = fn;
 }
 
@@ -36,6 +44,6 @@ export function setSkipHandler(
  * @param fn A function that corresponds to the patch handler of the Soy
  *     element.
  */
-export function setAfterPatchHandler<T>(el: Element, fn: () => void) {
+export function setAfterPatchHandler(el: Element, fn: () => void) {
   el.__soy_patch_handler = fn;
 }

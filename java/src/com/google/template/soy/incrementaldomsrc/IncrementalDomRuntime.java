@@ -117,6 +117,12 @@ final class IncrementalDomRuntime {
   /** Prefix for state vars of stateful template objects. */
   public static final String STATE_PREFIX = "state_";
 
+  /**
+   * Within a template, a variable needs to be allocated so that direct accesses of this.state_X
+   * aren't used in closures. This defines a variable prefix for those variables.
+   */
+  public static final String STATE_VAR_PREFIX = "$$state$$";
+
   /** The JavaScript method to pack a sanitized object into a safe proto. */
   public static final ImmutableMap<String, Expression> IDOM_JS_TO_PROTO_PACK_FN =
       ImmutableMap.<String, Expression>builder()

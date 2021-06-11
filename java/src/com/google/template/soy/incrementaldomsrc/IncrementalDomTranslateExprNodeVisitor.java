@@ -19,6 +19,7 @@ import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_EVAL_LOG_FN;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_IS_TRUTHY;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.STATE_PREFIX;
+import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.STATE_VAR_PREFIX;
 import static com.google.template.soy.jssrc.dsl.Expression.id;
 import static com.google.template.soy.jssrc.dsl.Expression.number;
 import static com.google.template.soy.jssrc.internal.JsRuntime.BIND_TEMPLATE_PARAMS_FOR_IDOM;
@@ -58,7 +59,7 @@ public class IncrementalDomTranslateExprNodeVisitor extends TranslateExprNodeVis
 
   @Override
   protected Expression genCodeForStateAccess(String paramName, TemplateStateVar stateVar) {
-    return id("this").dotAccess(STATE_PREFIX + paramName);
+    return id(STATE_VAR_PREFIX + STATE_PREFIX + paramName);
   }
 
   @Override
