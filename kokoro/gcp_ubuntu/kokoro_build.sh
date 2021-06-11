@@ -3,4 +3,4 @@
 # Fail on any error.
 set -e
 
-${KOKORO_ARTIFACTS_DIR}/git/closure-templates/opensource/kokoro/build.sh
+${KOKORO_ARTIFACTS_DIR}/github/closure-templates/opensource/kokoro/build.sh
