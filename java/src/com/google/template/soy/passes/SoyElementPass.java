@@ -20,13 +20,11 @@ import static com.google.common.base.Strings.nullToEmpty;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
-import com.google.template.soy.base.internal.TemplateContentKind;
 import com.google.template.soy.base.internal.TemplateContentKind.ElementContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -106,7 +104,6 @@ public final class SoyElementPass implements CompilerFileSetPass {
   private static final HtmlElementMetadataP DEFAULT_HTML_METADATA =
       HtmlElementMetadataP.newBuilder().setIsHtmlElement(false).setIsVelogged(false).build();
 
-  private static final String DYNAMIC_ELEMENT_TAG = "?";
   private final ErrorReporter errorReporter;
   private final Supplier<FileSetMetadata> templateRegistryFromDeps;
 
@@ -264,10 +261,21 @@ public final class SoyElementPass implements CompilerFileSetPass {
         }
       }
       delegateTemplate = getStaticDelegateCall(openTag);
-      tagName =
-          openTag.getTagName().isStatic()
-              ? openTag.getTagName().getStaticTagName()
-              : tryGetDelegateTagName(delegateTemplate, templatesInLibrary);
+      if (openTag.getTagName().isStatic()) {
+        tagName = openTag.getTagName().getStaticTagName();
+      } else if (delegateTemplate != null) {
+        HtmlElementMetadataP metadata =
+            getTemplateMetadataForStaticCall(
+                template,
+                delegateTemplate,
+                openTag.getSourceLocation(),
+                templatesInLibrary,
+                visited);
+        tagName = metadata.getTag();
+      } else {
+        // TODO(tomnguyen) It should be possible to use type information to get more data.
+        tagName = "?";
+      }
       if (hasSkipNode && template instanceof TemplateElementNode) {
         errorReporter.report(openTag.getSourceLocation(), SOYELEMENT_CANNOT_BE_SKIPPED);
       }
@@ -296,29 +304,6 @@ public final class SoyElementPass implements CompilerFileSetPass {
             .build();
     template.setHtmlElementMetadata(info);
     return info;
-  }
-
-  private String tryGetDelegateTagName(String delegateName, Map<String, TemplateNode> templates) {
-    if (delegateName == null) {
-      return DYNAMIC_ELEMENT_TAG;
-    }
-
-    TemplateContentKind calleeKind;
-    TemplateNode callee = templates.get(delegateName);
-    if (callee != null) {
-      calleeKind = callee.getTemplateContentKind();
-    } else {
-      TemplateMetadata metadata =
-          templateRegistryFromDeps.get().getBasicTemplateOrElement(delegateName);
-      Preconditions.checkNotNull(metadata, "No metadata for %s", delegateName);
-      calleeKind = metadata.getTemplateType().getContentKind();
-    }
-
-    if (calleeKind instanceof ElementContentKind) {
-      return ((ElementContentKind) calleeKind).getTagName();
-    }
-
-    return DYNAMIC_ELEMENT_TAG;
   }
 
   /**
