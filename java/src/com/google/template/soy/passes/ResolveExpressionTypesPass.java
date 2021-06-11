@@ -741,7 +741,7 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
 
     private final ImmutableSet<SoyType.Kind> allowedVariantTypes =
         ImmutableSet.of(
-            SoyType.Kind.STRING, SoyType.Kind.INT, SoyType.Kind.PROTO_ENUM, SoyType.Kind.UNKNOWN);
+            SoyType.Kind.STRING, SoyType.Kind.INT, SoyType.Kind.PROTO_ENUM);
 
     @Override
     protected void visitCallDelegateNode(CallDelegateNode node) {
