@@ -39,6 +39,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Table;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basicfunctions.ConcatListsFunction;
@@ -75,6 +76,7 @@ import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.GlobalNode;
+import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.ListComprehensionNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
@@ -122,6 +124,7 @@ import com.google.template.soy.shared.restricted.SoySourceFunctionMethod;
 import com.google.template.soy.shared.restricted.TypedSoyFunction;
 import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
+import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.ConstNode;
 import com.google.template.soy.soytree.FileMetadata;
 import com.google.template.soy.soytree.FileMetadata.Constant;
@@ -333,6 +336,10 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
       SoyErrorKind.of("Type ''{0}'' is not allowed in a switch expression.");
   private static final SoyErrorKind SWITCH_CASE_TYPE_MISMATCH =
       SoyErrorKind.of("Case type ''{0}'' not assignable to switch type ''{1}''.");
+  private static final SoyErrorKind BAD_DELCALL_VARIANT_TYPE =
+      SoyErrorKind.of("Delcall variant must be of type string, int, or proto enum. Found ''{0}''.");
+  private static final SoyErrorKind INVALID_VARIANT_EXPRESSION =
+      SoyErrorKind.of("Invalid variant literal value ''{0}'' in ''delcall''.");
 
   private final ErrorReporter errorReporter;
 
@@ -730,6 +737,42 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
         node.getIndexVar().setType(IntType.getInstance());
       }
       visitChildren(node);
+    }
+
+    private final ImmutableSet<SoyType.Kind> allowedVariantTypes =
+        ImmutableSet.of(
+            SoyType.Kind.STRING, SoyType.Kind.INT, SoyType.Kind.PROTO_ENUM, SoyType.Kind.UNKNOWN);
+
+    @Override
+    protected void visitCallDelegateNode(CallDelegateNode node) {
+      super.visitCallDelegateNode(node);
+
+      ExprRootNode variant = node.getDelCalleeVariantExpr();
+      if (variant == null) {
+        return;
+      }
+
+      SourceLocation location = variant.getSourceLocation();
+      SoyType variantType = variant.getType();
+      if (variantType.getKind() == SoyType.Kind.NULL
+          || !SoyTypes.isKindOrUnionOfKinds(
+              SoyTypes.tryRemoveNull(variantType), allowedVariantTypes)) {
+        errorReporter.report(location, BAD_DELCALL_VARIANT_TYPE, variantType);
+      }
+
+      // Do some sanity checks on the variant expression.
+      if (variant.getRoot().getKind() == ExprNode.Kind.STRING_NODE) {
+        // If the variant is a fixed string, it evaluates to an identifier.
+        String variantStr = ((StringNode) variant.getRoot()).getValue();
+        if (!BaseUtils.isIdentifier(variantStr)) {
+          errorReporter.report(location, INVALID_VARIANT_EXPRESSION, variantStr);
+        }
+      } else if (variant.getRoot().getKind() == ExprNode.Kind.INTEGER_NODE) {
+        long variantInt = ((IntegerNode) variant.getRoot()).getValue();
+        if (variantInt < 0) {
+          errorReporter.report(location, INVALID_VARIANT_EXPRESSION, variant.toSourceString());
+        }
+      }
     }
 
     @Override

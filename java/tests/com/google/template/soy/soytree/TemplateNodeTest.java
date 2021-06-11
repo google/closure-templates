@@ -24,15 +24,9 @@ import static org.junit.Assert.assertTrue;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.exprtree.ExprRootNode;
-import com.google.template.soy.exprtree.GlobalNode;
-import com.google.template.soy.exprtree.IntegerNode;
-import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
-import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -178,44 +172,6 @@ public class TemplateNodeTest {
     assertEquals("namespace.boo", node.getDelTemplateName());
     assertEquals("abc", node.getDelTemplateVariant());
     assertEquals("abc", node.getDelTemplateKey().variant());
-
-    // Variant is a global, that was not yet resolved.
-    node =
-        (TemplateDelegateNode)
-            parse(
-                join(
-                    "{namespace ns}",
-                    "{deltemplate namespace.boo variant=\"test.GLOBAL_CONSTANT\"}",
-                    "{/deltemplate}"));
-    assertEquals("namespace.boo", node.getDelTemplateName());
-    assertEquals("test.GLOBAL_CONSTANT", node.getDelTemplateVariant());
-    assertEquals("test.GLOBAL_CONSTANT", node.getDelTemplateKey().variant());
-    // Verify the global expression.
-    List<ExprRootNode> exprs = node.getExprList();
-    assertEquals(1, exprs.size());
-    ExprRootNode expr = exprs.get(0);
-    assertEquals("test.GLOBAL_CONSTANT", expr.toSourceString());
-    assertEquals(1, expr.numChildren());
-    assertTrue(expr.getRoot() instanceof GlobalNode);
-    // Substitute the global expression.
-    expr.replaceChild(0, new IntegerNode(123, expr.getRoot().getSourceLocation()));
-    // Check the new values.
-    assertEquals("123", node.getDelTemplateVariant());
-    assertEquals("123", node.getDelTemplateKey().variant());
-
-    // Resolve a global to a string.
-    node =
-        (TemplateDelegateNode)
-            parse(
-                join(
-                    "{namespace ns}",
-                    "{deltemplate namespace.boo variant=\"test.GLOBAL_CONSTANT\"}",
-                    "{/deltemplate}"));
-    node.getExprList()
-        .get(0)
-        .replaceChild(0, new StringNode("variant", QuoteStyle.SINGLE, node.getSourceLocation()));
-    assertEquals("variant", node.getDelTemplateVariant());
-    assertEquals("variant", node.getDelTemplateKey().variant());
   }
 
   @Test

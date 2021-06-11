@@ -24,14 +24,10 @@ import static com.google.template.soy.soytree.TemplateDelegateNode.VARIANT_ATTR;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyErrorKind;
-import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.ExprRootNode;
-import com.google.template.soy.exprtree.StringNode;
 import java.util.List;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
@@ -42,11 +38,6 @@ import javax.annotation.Nullable;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  */
 public final class CallDelegateNode extends CallNode {
-
-  private static final SoyErrorKind INVALID_VARIANT_EXPRESSION =
-      SoyErrorKind.of(
-          "Invalid variant expression \"{0}\" in ''delcall''"
-              + " (variant expression must evaluate to an identifier).");
 
   private final Identifier sourceDelCalleeName;
 
@@ -92,18 +83,6 @@ public final class CallDelegateNode extends CallNode {
           // Parsed in CallNode.
           break;
         case "variant":
-          ExprRootNode value = attr.valueAsExpr(errorReporter);
-          // Do some sanity checks on the variant expression.
-          if (value.getRoot() instanceof StringNode) {
-            // If the variant is a fixed string, it evaluates to an identifier.
-            String variantStr = ((StringNode) value.getRoot()).getValue();
-            if (!BaseUtils.isIdentifier(variantStr)) {
-              errorReporter.report(location, INVALID_VARIANT_EXPRESSION, variantStr);
-            }
-          } else if (value.getRoot() instanceof PrimitiveNode) {
-            // Variant should not be other primitives (boolean, number, etc.)
-            errorReporter.report(location, INVALID_VARIANT_EXPRESSION, value.toSourceString());
-          }
           break;
         case "allowemptydefault":
           allowEmptyDefault = attr.valueAsEnabled(errorReporter);

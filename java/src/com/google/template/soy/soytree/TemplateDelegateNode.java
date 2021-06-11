@@ -42,13 +42,13 @@ import javax.annotation.Nullable;
 public final class TemplateDelegateNode extends TemplateNode {
 
   private static final SoyErrorKind INVALID_VARIANT_STRING =
-      SoyErrorKind.of("Invalid variant ''{0}'' value must be an identifier.");
+      SoyErrorKind.of("Invalid variant ''{0}'' string literal must be an identifier.");
   private static final SoyErrorKind INVALID_VARIANT_INTEGER =
-      SoyErrorKind.of("Invalid variant ''{0}'' value must non-negative.");
+      SoyErrorKind.of("Invalid variant ''{0}'' integer literal must non-negative.");
   private static final SoyErrorKind INVALID_VARIANT_EXPR =
       SoyErrorKind.of(
-          "Invalid variant expression with kind {0} (must be a string literal containing an"
-              + " identifier or global expression).");
+          "Invalid variant expression with kind {0}; must be a string, int, or proto enum"
+              + " literal.");
 
   public static final String VARIANT_ATTR = "variant";
 
@@ -238,14 +238,6 @@ public final class TemplateDelegateNode extends TemplateNode {
         }
         break;
       case PROTO_ENUM_VALUE_NODE:
-        break;
-      case GLOBAL_NODE:
-        GlobalNode gn = (GlobalNode) primitiveNode;
-        if (gn.isResolved()) {
-          validateVariantExpression(gn.getValue(), reporter);
-        } else {
-          gn.onResolve(value -> validateVariantExpression(value, reporter));
-        }
         break;
       default:
         reporter.report(
