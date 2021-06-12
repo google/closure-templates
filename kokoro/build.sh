@@ -10,7 +10,7 @@ set -e
 set -x
 
 # Install bazel.
-use_bazel.sh latest --quiet
+use_bazel.sh 4.1.0
 command -v bazel
 bazel version
 
