@@ -203,6 +203,9 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
       case DEBUGGER_NODE:
         visitDebuggerNode((DebuggerNode) node);
         break;
+      case EXTERN_NODE:
+        visitExternNode((ExternNode) node);
+        break;
 
       default:
         visitSoyNode(node);
@@ -241,6 +244,10 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
   }
 
   protected void visitSoyFileNode(SoyFileNode node) {
+    visitSoyNode(node);
+  }
+
+  protected void visitExternNode(ExternNode node) {
     visitSoyNode(node);
   }
 

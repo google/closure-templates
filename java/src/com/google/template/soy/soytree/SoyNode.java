@@ -70,6 +70,7 @@ public interface SoyNode extends Node {
     PRINT_DIRECTIVE_NODE,
 
     CONST_NODE,
+    EXTERN_NODE,
     LET_VALUE_NODE,
     LET_CONTENT_NODE,
 

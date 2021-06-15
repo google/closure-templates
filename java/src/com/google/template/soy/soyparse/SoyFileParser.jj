@@ -105,6 +105,7 @@ import com.google.template.soy.soytree.CommandTagAttribute;
 import com.google.template.soy.soytree.Comment;
 import com.google.template.soy.soytree.ConstNode;
 import com.google.template.soy.soytree.DebuggerNode;
+import com.google.template.soy.soytree.ExternNode;
 import com.google.template.soy.soytree.ForIfemptyNode;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForNonemptyNode;
@@ -112,6 +113,8 @@ import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.ImportNode;
+import com.google.template.soy.soytree.JavaImpl;
+import com.google.template.soy.soytree.JsImpl;
 import com.google.template.soy.soytree.KeyNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetNode;
@@ -1106,6 +1109,7 @@ TOKEN_MGR_DECLS: {
   < DELTEMPLATE_OPEN : "{deltemplate" <WS> > { isInTemplate = true; } : IN_CMD_TAG
 | < TEMPLATE_OPEN: "{template" <WS> > { isInTemplate = true; } : IN_CMD_TAG
 | < ELEMENT_OPEN: "{element" <WS> > { isInTemplate = true; } : IN_CMD_TAG
+| < EXTERN_OPEN: "{extern" <WS> > { isInTemplate = true; } : IN_CMD_TAG
 }
 
 
@@ -1130,6 +1134,7 @@ TOKEN_MGR_DECLS: {
   < CMD_CLOSE_TEMPLATE           : "{/template}"    > { resetState(); } : DEFAULT
 | < CMD_CLOSE_DELTEMPLATE        : "{/deltemplate}" > { resetState(); } : DEFAULT
 | < CMD_CLOSE_ELEMENT            : "{/element}" > { resetState(); } : DEFAULT
+| < CMD_CLOSE_EXTERN             : "{/extern}"    > { resetState(); } : DEFAULT
 
 | < DECL_BEGIN_PARAM             : "{@param"        > : IN_CMD_TAG
 | < DECL_ATTRIBUTE_STAR          : "{@attribute *}" >
@@ -1152,6 +1157,8 @@ TOKEN_MGR_DECLS: {
 | < CMD_FULL_NBSP                : "{nbsp}"         >
 
 | < CMD_OPEN_LITERAL             : "{literal}"      > : IN_LITERAL_BLOCK
+| < CMD_OPEN_JS_IMPL             : "{jsimpl"        > : IN_CMD_TAG
+| < CMD_OPEN_JAVA_IMPL           : "{javaimpl"      > : IN_CMD_TAG
 
 | < CMD_BEGIN_CALL               : "{call" <WS>     > : EXPR
 | < CMD_BEGIN_DELCALL            : "{delcall" <WS>  > : IN_CMD_TAG
@@ -1444,9 +1451,11 @@ private SoyFileNode NonEmptySoyFile() :
   AliasDeclaration alias;
   ImportNode importNode;
   ConstNode constant;
+  ExternNode extern;
   ImmutableList.Builder<AliasDeclaration> aliases = new ImmutableList.Builder<AliasDeclaration>();
   ImmutableList.Builder<ImportNode> imports = new ImmutableList.Builder<ImportNode>();
   ImmutableList.Builder<ConstNode> constants = new ImmutableList.Builder<ConstNode>();
+  ImmutableList.Builder<ExternNode> externs = new ImmutableList.Builder<ExternNode>();
   TemplateNode template;
   Token eof;
 }
@@ -1480,12 +1489,20 @@ private SoyFileNode NonEmptySoyFile() :
     }
   )*
 
+  (
+    extern = ExternStmt()
+    {
+      if (extern != null) {
+        externs.add(extern);
+      }
+    }
+  )*
+
   {
     headerInfo = new SoyFileHeaderInfo(errorReporter, delpackageDecl, namespace,
         aliases.build(), importSymbols);
     List<TemplateNode> templates = new ArrayList<TemplateNode>();
   }
-
   (
     template = Template(headerInfo)
     {
@@ -1506,8 +1523,59 @@ private SoyFileNode NonEmptySoyFile() :
             namespace, headerInfo, buildComments(token_source));
     sfn.addChildren(imports.build());
     sfn.addChildren(constants.build());
+     sfn.addChildren(externs.build());
     sfn.addChildren(templates);
     return sfn;
+  }
+}
+
+/**
+ * ExternStmt -> {extern ident: type}{/extern}
+ */
+private ExternNode ExternStmt() :
+{
+  Token open, name, openClose, close;
+  Token implOpen, implClose;
+  List<CommandTagAttribute> attributes;
+  JavaImpl javaImpl = null;
+  JsImpl jsImpl = null;
+  TypeNode type;
+}
+{
+  open = <EXTERN_OPEN>
+  name = <NAME>
+  <CMD_COLON>
+  type = TemplateType()
+  openClose = <CMD_END>
+  (
+      <TOKEN_NOT_WS>
+  |   <TOKEN_WS>
+  |
+    (
+      implOpen = <CMD_OPEN_JS_IMPL>
+      attributes = Attributes()
+      implClose = <CMD_SELF_CLOSE>
+      {
+        SourceLocation srcLoc = createSrcLoc(implOpen, implClose);
+        jsImpl = JsImpl.create(srcLoc, attributes, errorReporter);
+      }
+    )
+  |
+    (
+      implOpen = <CMD_OPEN_JAVA_IMPL>
+      attributes = Attributes()
+      implClose = <CMD_SELF_CLOSE>
+      {
+        SourceLocation srcLoc = createSrcLoc(implOpen, implClose);
+        javaImpl = JavaImpl.create(srcLoc, attributes, errorReporter);
+      }
+    )
+  )*
+  close = <CMD_CLOSE_EXTERN>
+  {
+    return new ExternNode(nodeIdGen.genId(), createSrcLoc(open, close),
+        Identifier.create(name.image, createSrcLoc(name)), (TemplateTypeNode) type,
+        createSrcLoc(open, openClose), jsImpl, javaImpl);
   }
 }
 
@@ -4752,6 +4820,7 @@ private TypeNode PrimaryType() :
 
 /**
  * TemplateType -> "("  ( TemplateArgument ( "," TemplateArgument )* )? ")" "=>" TypeExpr
+ * TODO: This (and template type) should be renamed to FunctionType.
  */
 private TypeNode TemplateType() :
 {

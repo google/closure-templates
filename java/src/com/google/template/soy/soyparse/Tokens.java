@@ -106,6 +106,8 @@ final class Tokens {
         return "{[export ]const";
       case SoyFileParserConstants.TEMPLATE_OPEN:
         return "{template";
+      case SoyFileParserConstants.EXTERN_OPEN:
+        return "{extern";
       case SoyFileParserConstants.ELEMENT_OPEN:
         return "{element";
       case SoyFileParserConstants.EOF:

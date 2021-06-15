@@ -23,6 +23,7 @@ import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
+import com.google.template.soy.soytree.ExternNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 
@@ -39,6 +40,9 @@ final class EnforceExperimentalFeaturesPass implements CompilerFilePass {
   private static final SoyErrorKind NON_NULL_ASSERTION_BANNED =
       SoyErrorKind.of(
           "Non-null assertion operator not supported, use the ''checkNotNull'' function instead.");
+
+  private static final SoyErrorKind EXTERN_NODES_BANNED =
+      SoyErrorKind.of("Extern nodes are not allowed.");
 
   private final ImmutableSet<String> features;
   private final ErrorReporter reporter;
@@ -58,6 +62,12 @@ final class EnforceExperimentalFeaturesPass implements CompilerFilePass {
               assertNonNullOpNode ->
                   reporter.report(
                       assertNonNullOpNode.getSourceLocation(), NON_NULL_ASSERTION_BANNED));
+    }
+
+    if (!features.contains("enableExterns")) {
+      SoyTreeUtils.allNodesOfType(file, ExternNode.class)
+          .forEach(
+              externNode -> reporter.report(externNode.getSourceLocation(), EXTERN_NODES_BANNED));
     }
   }
 }

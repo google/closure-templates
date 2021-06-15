@@ -154,6 +154,8 @@ public abstract class AbstractReturningSoyNodeVisitor<R>
         return visitLogNode((LogNode) node);
       case DEBUGGER_NODE:
         return visitDebuggerNode((DebuggerNode) node);
+      case EXTERN_NODE:
+        return visitExternNode((ExternNode) node);
     }
     return visitSoyNode(node);
   }
@@ -186,6 +188,10 @@ public abstract class AbstractReturningSoyNodeVisitor<R>
   }
 
   protected R visitTemplateNode(TemplateNode node) {
+    return visitSoyNode(node);
+  }
+
+  protected R visitExternNode(ExternNode node) {
     return visitSoyNode(node);
   }
 
