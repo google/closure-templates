@@ -699,9 +699,11 @@ public final class JbcSrcRuntime {
       };
 
   /** Determines if the operand's string form can be equality-compared with a string. */
-  public static boolean compareNullableString(@Nullable String string, SoyValue other) {
+  public static boolean compareNullableString(@Nullable String string, @Nullable SoyValue other) {
     // This is a parallel version of SharedRuntime.compareString except it can handle a null LHS.
-
+    if (string == null && other == null) {
+      return true;
+    }
     // This follows similarly to the Javascript specification, to ensure similar operation
     // over Javascript and Java: http://www.ecma-international.org/ecma-262/5.1/#sec-11.9.3
     if (other instanceof StringData || other instanceof SanitizedContent) {
