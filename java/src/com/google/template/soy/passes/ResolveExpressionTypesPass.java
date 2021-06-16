@@ -938,9 +938,6 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
     @Override
     protected void visitPrimitiveNode(PrimitiveNode node) {
       // We don't do anything here because primitive nodes already have type information.
-      if (inferringParam && node.getKind() == ExprNode.Kind.NULL_NODE) {
-        errorReporter.report(node.getSourceLocation(), AMBIGUOUS_INFERRED_TYPE, "a 'null' literal");
-      }
     }
 
     @Override
