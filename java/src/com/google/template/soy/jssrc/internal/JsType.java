@@ -486,7 +486,7 @@ public final class JsType {
               parameters.isEmpty()
                   ? "null"
                   : "{" + Joiner.on(", ").withKeyValueSeparator(": ").join(parameters) + ",}";
-          String ijType = "?goog.soy.IjData";
+          String ijType = "(goog.soy.IjData|undefined)";
           String returnType = forReturnType.typeExpr();
           if (kind == JsTypeKind.IDOMSRC) {
             builder.addRequire(
