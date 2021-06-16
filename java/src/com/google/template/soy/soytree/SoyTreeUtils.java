@@ -50,6 +50,7 @@ import com.google.template.soy.soytree.SoyNode.Kind;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.UnknownType;
+import com.google.template.soy.types.ast.FunctionTypeNode;
 import com.google.template.soy.types.ast.GenericTypeNode;
 import com.google.template.soy.types.ast.NamedTypeNode;
 import com.google.template.soy.types.ast.RecordTypeNode;
@@ -627,6 +628,14 @@ public final class SoyTreeUtils {
 
         @Override
         public ImmutableList<? extends TypeNode> visit(TemplateTypeNode node) {
+          ImmutableList.Builder<TypeNode> types = ImmutableList.builder();
+          types.add(node.returnType());
+          node.parameters().forEach(p -> types.add(p.type()));
+          return types.build();
+        }
+
+        @Override
+        public List<? extends TypeNode> visit(FunctionTypeNode node) {
           ImmutableList.Builder<TypeNode> types = ImmutableList.builder();
           types.add(node.returnType());
           node.parameters().forEach(p -> types.add(p.type()));

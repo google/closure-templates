@@ -26,6 +26,7 @@ import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.SoyType.Kind;
+import com.google.template.soy.types.ast.FunctionTypeNode;
 import com.google.template.soy.types.ast.GenericTypeNode;
 import com.google.template.soy.types.ast.NamedTypeNode;
 import com.google.template.soy.types.ast.RecordTypeNode;
@@ -141,6 +142,11 @@ final class CheckDeclaredTypesPass implements CompilerFilePass {
         parameter.type().accept(this);
       }
       node.returnType().accept(this);
+      return null;
+    }
+
+    @Override
+    public Void visit(FunctionTypeNode node) {
       return null;
     }
   }

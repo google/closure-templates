@@ -18,6 +18,7 @@ package com.google.template.soy.soytree;
 
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.TemplateType;
 import java.util.Collection;
 import javax.annotation.Nullable;
 
@@ -32,6 +33,13 @@ public interface FileMetadata extends PartialFileMetadata {
     String getName();
 
     SoyType getType();
+  }
+
+  /** Java object version of {@link ExternP}. */
+  interface Extern {
+    String getName();
+
+    TemplateType getSignature();
   }
 
   @Nullable

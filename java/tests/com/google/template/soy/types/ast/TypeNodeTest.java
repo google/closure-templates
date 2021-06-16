@@ -250,6 +250,11 @@ public final class TypeNodeTest {
             assertEquals(node.returnType(), ((TemplateTypeNode) right).returnType());
             return null;
           }
+
+          @Override
+          public Void visit(FunctionTypeNode node) {
+            return null;
+          }
         });
   }
 

@@ -424,6 +424,7 @@ final class ValidatorFactory extends JavaValueFactory {
       case PROTO_MODULE:
       case TEMPLATE_TYPE:
       case TEMPLATE_MODULE:
+      case FUNCTION:
         throw new IllegalStateException(
             "Cannot have " + type.getKind() + " from function signature");
     }

@@ -22,10 +22,8 @@ import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.soytree.CommandTagAttribute.CommandTagAttributesHolder;
-import com.google.template.soy.soytree.SoyNode.Kind;
-import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
-import com.google.template.soy.soytree.SoyNode.StandaloneNode;
-import com.google.template.soy.types.ast.TemplateTypeNode;
+import com.google.template.soy.types.FunctionType;
+import com.google.template.soy.types.ast.FunctionTypeNode;
 import java.util.Optional;
 
 /**
@@ -34,24 +32,29 @@ import java.util.Optional;
  */
 public final class ExternNode extends AbstractCommandNode
     implements CommandTagAttributesHolder, SoySourceFunction {
-  private final TemplateTypeNode typeNode;
+
+  private final FunctionTypeNode typeNode;
   private final Identifier name;
   private final SourceLocation openTagLocation;
+  private final boolean exported;
   private final JsImpl jsImpl;
   private final JavaImpl javaImpl;
+  private FunctionType type;
 
   public ExternNode(
       int id,
       SourceLocation location,
       Identifier name,
-      TemplateTypeNode typeNode,
+      FunctionTypeNode typeNode,
       SourceLocation headerLocation,
+      boolean exported,
       JsImpl jsImpl,
       JavaImpl javaImpl) {
     super(id, location, "extern");
     this.name = name;
     this.openTagLocation = headerLocation;
     this.typeNode = typeNode;
+    this.exported = exported;
     this.jsImpl = jsImpl;
     this.javaImpl = javaImpl;
   }
@@ -66,12 +69,17 @@ public final class ExternNode extends AbstractCommandNode
     this.name = orig.name;
     this.typeNode = orig.typeNode;
     this.openTagLocation = orig.openTagLocation;
+    this.exported = orig.exported;
     this.jsImpl = orig.jsImpl;
     this.javaImpl = orig.javaImpl;
   }
 
   public Identifier getIdentifier() {
     return name;
+  }
+
+  public boolean isExported() {
+    return exported;
   }
 
   public Optional<JsImpl> getJsImpl() {
@@ -82,7 +90,7 @@ public final class ExternNode extends AbstractCommandNode
     return Optional.ofNullable(javaImpl);
   }
 
-  public TemplateTypeNode typeNode() {
+  public FunctionTypeNode typeNode() {
     return typeNode;
   }
 
@@ -105,6 +113,14 @@ public final class ExternNode extends AbstractCommandNode
   @Override
   public SourceLocation getOpenTagLocation() {
     return openTagLocation;
+  }
+
+  public FunctionType getType() {
+    return type;
+  }
+
+  public void setType(FunctionType type) {
+    this.type = type;
   }
 
   @Override

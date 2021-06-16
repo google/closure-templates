@@ -2182,6 +2182,7 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
           return UnknownType.getInstance();
         case PROTO_MODULE:
         case PROTO_ENUM_TYPE:
+        case FUNCTION:
       }
       throw new AssertionError("unhandled kind: " + baseType.getKind());
     }
@@ -2289,6 +2290,7 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
         case PROTO_MODULE:
         case TEMPLATE_TYPE:
         case TEMPLATE_MODULE:
+        case FUNCTION:
           errorReporter.report(baseLocation, BRACKET_ACCESS_NOT_SUPPORTED, baseType);
           return UnknownType.getInstance();
       }

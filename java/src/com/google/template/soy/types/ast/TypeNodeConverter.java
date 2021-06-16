@@ -32,6 +32,7 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.error.SoyErrors;
+import com.google.template.soy.types.FunctionType;
 import com.google.template.soy.types.ProtoTypeRegistry;
 import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.SanitizedType;
@@ -60,6 +61,9 @@ public final class TypeNodeConverter
 
   private static final SoyErrorKind DUPLICATE_TEMPLATE_ARGUMENT =
       SoyErrorKind.of("Duplicate argument ''{0}'' in template type declaration.");
+
+  private static final SoyErrorKind DUPLICATE_FUNCTION_PARAM =
+      SoyErrorKind.of("Duplicate parameter ''{0}'' in function type declaration.");
 
   private static final SoyErrorKind INVALID_TEMPLATE_RETURN_TYPE =
       SoyErrorKind.of(
@@ -405,6 +409,29 @@ public final class TypeNodeConverter
     }
     SoyType type =
         interner.internTemplateType(TemplateType.declaredTypeOf(map.values(), returnType));
+    node.setResolvedType(type);
+    return type;
+  }
+
+  @Override
+  public SoyType visit(FunctionTypeNode node) {
+    Map<String, FunctionType.Parameter> map = new LinkedHashMap<>();
+    for (FunctionTypeNode.Parameter parameter : node.parameters()) {
+      FunctionType.Parameter oldParameter =
+          map.put(
+              parameter.name(),
+              FunctionType.Parameter.of(parameter.name(), parameter.type().accept(this)));
+      if (oldParameter != null) {
+        errorReporter.report(parameter.nameLocation(), DUPLICATE_FUNCTION_PARAM, parameter.name());
+        map.put(parameter.name(), oldParameter);
+      }
+    }
+    SoyType returnType = handleReturnTypeOfTemplateType(node.returnType());
+    // Validate return type.
+    if (!ALLOWED_TEMPLATE_RETURN_TYPES.contains(returnType.getKind())) {
+      errorReporter.report(node.returnType().sourceLocation(), INVALID_TEMPLATE_RETURN_TYPE);
+    }
+    SoyType type = interner.intern(FunctionType.of(map.values(), node.returnType().accept(this)));
     node.setResolvedType(type);
     return type;
   }

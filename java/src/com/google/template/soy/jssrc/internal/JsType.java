@@ -511,6 +511,7 @@ public final class JsType {
       case PROTO_MODULE:
       case TEMPLATE_TYPE:
       case TEMPLATE_MODULE:
+      case FUNCTION:
     }
     throw new AssertionError("unhandled soytype: " + soyType);
   }

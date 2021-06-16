@@ -19,6 +19,7 @@ package com.google.template.soy.pysrc.internal;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
+import com.google.template.soy.types.ast.FunctionTypeNode;
 import com.google.template.soy.types.ast.GenericTypeNode;
 import com.google.template.soy.types.ast.NamedTypeNode;
 import com.google.template.soy.types.ast.RecordTypeNode;
@@ -89,6 +90,11 @@ final class LegacyObjectMapFinder implements TypeNodeVisitor<Void> {
       parameter.type().accept(this);
     }
     node.returnType().accept(this);
+    return null;
+  }
+
+  @Override
+  public Void visit(FunctionTypeNode node) {
     return null;
   }
 

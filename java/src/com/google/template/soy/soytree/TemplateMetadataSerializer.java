@@ -34,6 +34,7 @@ import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.types.AnyType;
 import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.FloatType;
+import com.google.template.soy.types.FunctionType;
 import com.google.template.soy.types.IntType;
 import com.google.template.soy.types.MessageType;
 import com.google.template.soy.types.NullType;
@@ -91,6 +92,9 @@ public final class TemplateMetadataSerializer {
       file.getConstants().stream()
           .filter(ConstNode::isExported)
           .forEach(c -> fileBuilder.addConstants(protoFromConstant(c)));
+      file.getExterns().stream()
+          .filter(ExternNode::isExported)
+          .forEach(e -> fileBuilder.addExterns(protoFromExtern(e)));
       for (TemplateNode template : file.getTemplates()) {
         TemplateMetadata meta = registry.getTemplate(template);
         fileBuilder.addTemplate(protoFromTemplate(meta, file));
@@ -129,6 +133,13 @@ public final class TemplateMetadataSerializer {
     return ConstantP.newBuilder()
         .setName(node.getVar().name())
         .setType(node.getVar().type().toProto())
+        .build();
+  }
+
+  private static ExternP protoFromExtern(ExternNode node) {
+    return ExternP.newBuilder()
+        .setName(node.getIdentifier().identifier())
+        .setSignature(node.getType().toProto().getFunction())
         .build();
   }
 
@@ -413,6 +424,21 @@ public final class TemplateMetadataSerializer {
                   parameters,
                   fromProto(
                       proto.getTemplate().getReturnType(), typeRegistry, filePath, errorReporter)));
+        }
+      case FUNCTION:
+        {
+          List<FunctionType.Parameter> parameters = new ArrayList<>();
+          for (FunctionTypeP.Parameter parameter : proto.getFunction().getParametersList()) {
+            parameters.add(
+                FunctionType.Parameter.of(
+                    parameter.getName(),
+                    fromProto(parameter.getType(), typeRegistry, filePath, errorReporter)));
+          }
+          return typeRegistry.intern(
+              FunctionType.of(
+                  parameters,
+                  fromProto(
+                      proto.getFunction().getReturnType(), typeRegistry, filePath, errorReporter)));
         }
       case UNION:
         {

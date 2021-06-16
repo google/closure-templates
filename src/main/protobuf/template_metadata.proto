@@ -33,6 +33,8 @@ message SoyFileP {
   string namespace = 3;
   // The exported constants in the file
   repeated ConstantP constants = 6;
+  // The exported constants in the file
+  repeated ExternP externs = 7;
   // The templates in the file
   repeated TemplateMetadataP template = 4;
   reserved 5;
@@ -95,6 +97,7 @@ message SoyTypeP {
     UnionTypeP union = 8;
     string ve = 9;
     TemplateTypeP template = 10;
+    FunctionTypeP function = 13;
     bool message = 11;
     HtmlTypeP html = 12;
   }
@@ -106,6 +109,14 @@ message ConstantP {
   string name = 1;
   // The type of the constant.
   SoyTypeP type = 2;
+}
+
+// An exported extern.
+message ExternP {
+  // The name of the external function.
+  string name = 1;
+  // The function signature.
+  FunctionTypeP signature = 2;
 }
 
 // A single declared template parameter
@@ -125,6 +136,19 @@ message ParameterP {
   KindP kind = 4;
   // Whether or not the parameter is implicitly added by the Soy framework.
   bool implicit = 5;
+}
+
+message FunctionTypeP {
+  // A single declared function parameter.
+  message Parameter {
+    // The parameter name
+    string name = 1;
+    // The type of the parameter.
+    SoyTypeP type = 2;
+  }
+
+  repeated Parameter parameters = 1;
+  SoyTypeP return_type = 2;
 }
 
 // Represents a call within a template.

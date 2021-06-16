@@ -19,12 +19,14 @@ import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.TemplateContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.soytree.ExternNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.TemplateElementNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.AttrParam;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
+import com.google.template.soy.types.FunctionType;
 import com.google.template.soy.types.UnknownType;
 import com.google.template.soy.types.ast.TypeNodeConverter;
 
@@ -48,6 +50,10 @@ final class ResolveTemplateParamTypesPass implements CompilerFilePass {
             .setTypeRegistry(file.getSoyTypeRegistry())
             .setDisableAllTypeChecking(disableAllTypeChecking)
             .build();
+
+    for (ExternNode extern : file.getExterns()) {
+      extern.setType((FunctionType) converter.getOrCreateType(extern.typeNode()));
+    }
 
     for (TemplateNode template : file.getTemplates()) {
       for (TemplateParam param : template.getAllParams()) {

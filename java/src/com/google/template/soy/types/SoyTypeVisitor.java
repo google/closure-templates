@@ -41,4 +41,6 @@ public interface SoyTypeVisitor<T> {
   T visit(MessageType type);
 
   T visit(ImportType type);
+
+  T visit(FunctionType type);
 }

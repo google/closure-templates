@@ -382,6 +382,11 @@ public final class SoyTypes {
           public Boolean visit(ImportType type) {
             return kindTest.test(type);
           }
+
+          @Override
+          public Boolean visit(FunctionType type) {
+            return kindTest.test(type);
+          }
         });
   }
 

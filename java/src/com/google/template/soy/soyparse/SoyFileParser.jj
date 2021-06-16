@@ -45,6 +45,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.exprtree.Operator.createOperatorNode;
 
+import com.google.template.soy.types.FunctionType;
 import java.io.IOException;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -155,6 +156,7 @@ import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.TemplateType.ParameterKind;
+import com.google.template.soy.types.ast.FunctionTypeNode;
 import com.google.template.soy.types.ast.GenericTypeNode;
 import com.google.template.soy.types.ast.NamedTypeNode;
 import com.google.template.soy.types.ast.RecordTypeNode;
@@ -1109,7 +1111,7 @@ TOKEN_MGR_DECLS: {
   < DELTEMPLATE_OPEN : "{deltemplate" <WS> > { isInTemplate = true; } : IN_CMD_TAG
 | < TEMPLATE_OPEN: "{template" <WS> > { isInTemplate = true; } : IN_CMD_TAG
 | < ELEMENT_OPEN: "{element" <WS> > { isInTemplate = true; } : IN_CMD_TAG
-| < EXTERN_OPEN: "{extern" <WS> > { isInTemplate = true; } : IN_CMD_TAG
+| < EXTERN_OPEN: "{" ("export ")? "extern" <WS> > { isInTemplate = true; } : IN_CMD_TAG
 }
 
 
@@ -1539,13 +1541,13 @@ private ExternNode ExternStmt() :
   List<CommandTagAttribute> attributes;
   JavaImpl javaImpl = null;
   JsImpl jsImpl = null;
-  TypeNode type;
+  FunctionTypeNode type;
 }
 {
   open = <EXTERN_OPEN>
   name = <NAME>
   <CMD_COLON>
-  type = TemplateType()
+  type = FunctionType()
   openClose = <CMD_END>
   (
       <TOKEN_NOT_WS>
@@ -1573,9 +1575,10 @@ private ExternNode ExternStmt() :
   )*
   close = <CMD_CLOSE_EXTERN>
   {
+    boolean exported = open.image.startsWith("{export ");
     return new ExternNode(nodeIdGen.genId(), createSrcLoc(open, close),
-        Identifier.create(name.image, createSrcLoc(name)), (TemplateTypeNode) type,
-        createSrcLoc(open, openClose), jsImpl, javaImpl);
+        Identifier.create(name.image, createSrcLoc(name)), type,
+        createSrcLoc(open, openClose), exported, jsImpl, javaImpl);
   }
 }
 
@@ -4820,7 +4823,6 @@ private TypeNode PrimaryType() :
 
 /**
  * TemplateType -> "("  ( TemplateArgument ( "," TemplateArgument )* )? ")" "=>" TypeExpr
- * TODO: This (and template type) should be renamed to FunctionType.
  */
 private TypeNode TemplateType() :
 {
@@ -4888,6 +4890,70 @@ private TemplateTypeNode.Parameter TemplateParameter() :
   }
 }
 
+/**
+ * FunctionType -> "("  ( TemplateArgument ( "," TemplateArgument )* )? ")" "=>" TypeExpr
+ */
+private FunctionTypeNode FunctionType() :
+{
+  List<FunctionTypeNode.Parameter> parameters = ImmutableList.of();
+  Token open, close, arrow;
+  TypeNode returnType;
+  FunctionTypeNode.Parameter parameter;
+}
+{
+  open = <LPAREN>
+
+  (
+    parameter = FunctionParameter()
+    {
+      parameters = new ArrayList<FunctionTypeNode.Parameter>();
+      parameters.add(parameter);
+    }
+    (
+      <COMMA>
+      parameter = FunctionParameter()
+      {
+        parameters.add(parameter);
+      }
+    )*
+  )?
+
+  close = <RPAREN>
+
+  arrow = <FORWARD_ARROW>
+
+  returnType = NamedType()
+
+  {
+    SourceLocation srcLoc = createSrcLoc(open, close, arrow);
+    return FunctionTypeNode.create(srcLoc, parameters, returnType);
+  }
+}
+
+/**
+ * FunctionParameter -> IDENT ":" TypeExpr
+ */
+private FunctionTypeNode.Parameter FunctionParameter() :
+{
+  Token parameterName;
+  TypeNode parameterType;
+}
+{
+  (
+    parameterName = <IDENT>
+  |
+    parameterName = <ATTR_IDENT>
+  )
+
+  <COLON>
+  parameterType = TypeExpr()
+
+  {
+    String paramName = parameterName.image;
+    return FunctionTypeNode.Parameter.create(
+        createSrcLoc(parameterName), paramName, parameterName.image, parameterType);
+  }
+}
 
 /**
  * RecordType -> "[" ( RecordField ( "," RecordField )* )? "]"

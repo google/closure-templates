@@ -107,6 +107,7 @@ public abstract class SoyType {
     PROTO,
     PROTO_ENUM,
     TEMPLATE,
+    FUNCTION,
     UNION,
     VE,
     VE_DATA,
