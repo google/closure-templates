@@ -18,6 +18,7 @@ package com.google.template.soy.soytree;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.common.collect.ImmutableListMultimap.toImmutableListMultimap;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 
@@ -26,6 +27,7 @@ import com.google.auto.value.extension.memoized.Memoized;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.concurrent.LazyInit;
@@ -36,6 +38,7 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.shared.internal.DelTemplateSelector;
+import com.google.template.soy.types.FunctionType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.TemplateType;
@@ -361,6 +364,8 @@ public final class Metadata {
 
     protected abstract ImmutableMap<String, ? extends Constant> constantIndex();
 
+    protected abstract ImmutableListMultimap<String, ? extends Extern> externIndex();
+
     protected abstract ImmutableMap<String, TemplateMetadata> templateIndex();
 
     @Override
@@ -386,6 +391,16 @@ public final class Metadata {
     @Override
     public final ImmutableSet<String> getConstantNames() {
       return constantIndex().keySet();
+    }
+
+    @Override
+    public Collection<? extends Extern> getExterns() {
+      return externIndex().values();
+    }
+
+    @Override
+    public List<? extends Extern> getExterns(String name) {
+      return externIndex().get(name);
     }
   }
 
@@ -437,6 +452,24 @@ public final class Metadata {
                       getPath(),
                       context().errorReporter()))
           .collect(toImmutableList());
+    }
+
+    @Memoized
+    @Override
+    protected ImmutableListMultimap<String, ? extends Extern> externIndex() {
+      return proto().getExternsList().stream()
+          .collect(
+              toImmutableListMultimap(
+                  ExternP::getName,
+                  e ->
+                      ExternImpl.of(
+                          e.getName(),
+                          (FunctionType)
+                              TemplateMetadataSerializer.fromProto(
+                                  SoyTypeP.newBuilder().setFunction(e.getSignature()).build(),
+                                  context().typeRegistry(),
+                                  getPath(),
+                                  context().errorReporter()))));
     }
 
     @Override
@@ -517,6 +550,7 @@ public final class Metadata {
     private final ImmutableMap<String, ConstantImpl> constantIndex;
     private final ImmutableList<TemplateMetadata> allTemplates;
     private final ImmutableMap<String, TemplateMetadata> templateIndex;
+    private final ImmutableListMultimap<String, ExternImpl> externIndex;
 
     /** ASTs are mutable so we need to copy all data in the constructor. */
     public AstFileMetadata(SoyFileNode ast) {
@@ -534,6 +568,13 @@ public final class Metadata {
                               // Type will not be set if type checking is off.
                               c.getVar().typeOrDefault(UnknownType.getInstance())),
                       (t1, t2) -> t1 /* Will be reported as error elsewhere. */));
+      this.externIndex =
+          ast.getExterns().stream()
+              .filter(ExternNode::isExported)
+              .collect(
+                  toImmutableListMultimap(
+                      e -> e.getIdentifier().identifier(),
+                      e -> ExternImpl.of(e.getIdentifier().identifier(), e.getType())));
 
       ImmutableList.Builder<TemplateMetadata> templates = ImmutableList.builder();
       Map<String, TemplateMetadata> index = new LinkedHashMap<>();
@@ -557,6 +598,11 @@ public final class Metadata {
     @Override
     protected ImmutableMap<String, ConstantImpl> constantIndex() {
       return constantIndex;
+    }
+
+    @Override
+    protected ImmutableListMultimap<String, ? extends Extern> externIndex() {
+      return externIndex;
     }
 
     @Override
@@ -594,6 +640,20 @@ public final class Metadata {
     public abstract SoyType getType();
   }
 
+  @AutoValue
+  abstract static class ExternImpl implements FileMetadata.Extern {
+
+    private static ExternImpl of(String name, FunctionType signature) {
+      return new AutoValue_Metadata_ExternImpl(name, signature);
+    }
+
+    @Override
+    public abstract String getName();
+
+    @Override
+    public abstract FunctionType getSignature();
+  }
+
   private static FileMetadata merge(FileMetadata primary, FileMetadata secondary) {
     return new MergedFileMetadata(primary, secondary);
   }
@@ -625,6 +685,11 @@ public final class Metadata {
     @Override
     protected ImmutableMap<String, Constant> constantIndex() {
       return constantIndex;
+    }
+
+    @Override
+    protected ImmutableListMultimap<String, ? extends Extern> externIndex() {
+      return ((AbstractFileMetadata) primary).externIndex();
     }
 
     @Override
