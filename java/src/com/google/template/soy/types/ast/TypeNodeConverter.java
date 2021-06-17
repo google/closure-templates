@@ -426,11 +426,6 @@ public final class TypeNodeConverter
         map.put(parameter.name(), oldParameter);
       }
     }
-    SoyType returnType = handleReturnTypeOfTemplateType(node.returnType());
-    // Validate return type.
-    if (!ALLOWED_TEMPLATE_RETURN_TYPES.contains(returnType.getKind())) {
-      errorReporter.report(node.returnType().sourceLocation(), INVALID_TEMPLATE_RETURN_TYPE);
-    }
     SoyType type = interner.intern(FunctionType.of(map.values(), node.returnType().accept(this)));
     node.setResolvedType(type);
     return type;

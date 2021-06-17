@@ -126,6 +126,7 @@ import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.ConstNode;
+import com.google.template.soy.soytree.ExternNode;
 import com.google.template.soy.soytree.FileMetadata;
 import com.google.template.soy.soytree.FileMetadata.Constant;
 import com.google.template.soy.soytree.FileSetMetadata;
@@ -220,6 +221,8 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
       SoyErrorKind.of("Type {0} does not support dot access.");
   private static final SoyErrorKind DOT_ACCESS_NOT_SUPPORTED_CONSIDER_RECORD =
       SoyErrorKind.of("Type {0} does not support dot access (consider record instead of map).");
+  private static final SoyErrorKind AMBIGUOUS_FUNCTION =
+      SoyErrorKind.of("This function call can be assigned to more than one foreign function.");
   private static final SoyErrorKind UNNECESSARY_NULL_SAFE_ACCESS =
       SoyErrorKind.of("This null safe access is unnecessary, it is on a value that is non-null.");
   private static final SoyErrorKind DUPLICATE_KEY_IN_MAP_LITERAL =
@@ -361,6 +364,7 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
   private ExprEquivalence exprEquivalence;
   private SoyTypeRegistry typeRegistry;
   private TypeNodeConverter pluginTypeConverter;
+  private List<ExternNode> externs;
   private final PluginResolver.Mode pluginResolutionMode;
   private ImmutableMap<String, ImportedVar> importIndex;
   private ImmutableMap<String, TemplateType> allTemplateTypes;
@@ -405,6 +409,7 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
   private void prepFile(SoyFileNode file) {
     substitutions = null;
     typeRegistry = file.getSoyTypeRegistry();
+    externs = file.getExterns();
     importIndex =
         file.getImports().stream()
             .flatMap(i -> i.getIdentifiers().stream())
@@ -1652,6 +1657,35 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
       return resolvedSignature;
     }
 
+    private boolean maybeSetExtern(ExternNode extern, FunctionNode node) {
+      if (node.isResolved()) {
+        errorReporter.report(node.getFunctionNameLocation(), AMBIGUOUS_FUNCTION);
+        return false;
+      }
+      if (!extern.getIdentifier().identifier().equals(node.getStaticFunctionName())
+          || extern.typeNode().parameters().size() != node.numChildren()) {
+        return false;
+      }
+      if (node.getParamsStyle() == ParamsStyle.NAMED) {
+        errorReporter.report(node.getFunctionNameLocation(), INCORRECT_ARG_STYLE);
+        return false;
+      }
+      List<SoyType> externTypes =
+          extern.typeNode().parameters().stream()
+              .map(p -> p.type().getResolvedType())
+              .collect(toImmutableList());
+      for (int i = 0; i < node.numChildren(); ++i) {
+        if (!externTypes.get(i).isAssignableFromLoose(node.getChild(i).getType())
+            && node.getChild(i).getType() != UnknownType.getInstance()) {
+          return false;
+        }
+      }
+      node.setAllowedParamTypes(externTypes);
+      node.setType(extern.typeNode().returnType().getResolvedType());
+      node.setSoyFunction(extern);
+      return true;
+    }
+
     @Override
     protected void visitFunctionNode(FunctionNode node) {
       visitChildren(node);
@@ -1680,6 +1714,11 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
                   ((TemplateType) node.getNameExpr().getType())
                       .getContentKind()
                       .getSanitizedContentKind()));
+          return;
+        }
+      }
+      for (ExternNode externNode : externs) {
+        if (maybeSetExtern(externNode, node)) {
           return;
         }
       }
