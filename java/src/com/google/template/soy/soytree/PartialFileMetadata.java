@@ -37,4 +37,10 @@ public interface PartialFileMetadata {
   default boolean hasConstant(String shortName) {
     return getConstantNames().contains(shortName);
   }
+
+  Set<String> getExternNames();
+
+  default boolean hasExtern(String shortName) {
+    return getExternNames().contains(shortName);
+  }
 }

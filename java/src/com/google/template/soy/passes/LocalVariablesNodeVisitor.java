@@ -34,6 +34,7 @@ import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarDefn.Kind;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.ConstNode;
+import com.google.template.soy.soytree.ExternNode;
 import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.ImportNode;
 import com.google.template.soy.soytree.LetContentNode;
@@ -45,6 +46,7 @@ import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.defn.ExternVar;
 import com.google.template.soy.soytree.defn.ImportedVar;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import java.util.ArrayDeque;
@@ -207,6 +209,18 @@ final class LocalVariablesNodeVisitor {
     }
 
     @Override
+    protected void visitExternNode(ExternNode node) {
+      super.visitExternNode(node);
+      ExternVar var = node.getVar();
+      VarDefn preexisting = localVariables.lookup(var.refName());
+      if (preexisting instanceof ExternVar) {
+        // Allow multiple externs with the same name.
+        return;
+      }
+      localVariables.define(var, node);
+    }
+
+    @Override
     protected void visitTemplateNode(TemplateNode node) {
       // Create a scope for all parameters.
       localVariables.enterScope();
@@ -334,6 +348,8 @@ final class LocalVariablesNodeVisitor {
         return "Local variable";
       case TEMPLATE:
         return "Template name";
+      case EXTERN:
+        return "Extern function";
       case UNDECLARED:
       case CONST:
         return "Symbol";

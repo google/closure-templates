@@ -2271,32 +2271,27 @@ private RawTextNode TemplateHeader(TemplateNodeBuilder<?> templateBuilder, boole
         {
           docSinkParam = param;
           switch (param.kind()) {
-          case PARAM:
-            // we just parsed a param, preceding whitespace/doc comments are not important
-            whitespace = null;
-            soyDoc = null;
-            if (params.isEmpty()) {
-              params = new ArrayList<TemplateHeaderVarDefn>();
-            }
-            params.add(param);
-            break;
-          case STATE:
-            if (params.isEmpty()) {
-              params = new ArrayList<TemplateHeaderVarDefn>();
-            }
-            if (allowState) {
+            case PARAM:
+              // we just parsed a param, preceding whitespace/doc comments are not important
+              whitespace = null;
+              soyDoc = null;
+              if (params.isEmpty()) {
+                params = new ArrayList<TemplateHeaderVarDefn>();
+              }
               params.add(param);
-            } else {
-              errorReporter.report(param.nameLocation(), STATE_IN_TEMPLATE);
-            }
-            break;
-          case LOCAL_VAR:
-          case COMPREHENSION_VAR:
-          case IMPORT_VAR:
-          case TEMPLATE:
-          case CONST:
-          case UNDECLARED:
-            throw new AssertionError("unexpected var kind: " + param.kind());
+              break;
+            case STATE:
+              if (params.isEmpty()) {
+                params = new ArrayList<TemplateHeaderVarDefn>();
+              }
+              if (allowState) {
+                params.add(param);
+              } else {
+                errorReporter.report(param.nameLocation(), STATE_IN_TEMPLATE);
+              }
+              break;
+            default:
+              throw new AssertionError("unexpected var kind: " + param.kind());
           }
         }
       )

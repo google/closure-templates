@@ -28,11 +28,18 @@ public abstract class TemplateModuleImportType extends ImportType {
       String namespace,
       SourceFilePath path,
       ImmutableSet<String> constantNames,
+      ImmutableSet<String> externNames,
       ImmutableSet<String> templateNames) {
     return new AutoValue_TemplateModuleImportType(
         namespace,
         path,
-        ImmutableSet.<String>builder().addAll(constantNames).addAll(templateNames).build(),
+        ImmutableSet.<String>builder()
+            .addAll(constantNames)
+            .addAll(externNames)
+            .addAll(templateNames)
+            .build(),
+        constantNames,
+        externNames,
         templateNames);
   }
 
@@ -41,6 +48,10 @@ public abstract class TemplateModuleImportType extends ImportType {
   public abstract SourceFilePath getPath();
 
   public abstract ImmutableSet<String> getSymbols();
+
+  public abstract ImmutableSet<String> getConstantNames();
+
+  public abstract ImmutableSet<String> getExternNames();
 
   public abstract ImmutableSet<String> getTemplateNames();
 

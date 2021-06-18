@@ -185,16 +185,18 @@ public final class ResolveDottedImportsPass implements CompilerFilePass {
     } else if (type.getKind() == SoyType.Kind.TEMPLATE_MODULE) {
       // e.g. import * as templates from 'src.soy';
       TemplateModuleImportType moduleType = (TemplateModuleImportType) type;
-      if (!moduleType.getSymbols().contains(fieldName)) {
-        // e.g. {call templates.doesNotExist}
-        nestedType = UnknownType.getInstance();
-      } else if (moduleType.getTemplateNames().contains(fieldName)) {
+      if (moduleType.getTemplateNames().contains(fieldName)) {
         // e.g. {call templates.body}
         nestedType = typeRegistry.intern(TemplateImportType.create(moduleType, fieldName));
-      } else {
+      } else if (moduleType.getConstantNames().contains(fieldName)) {
         // e.g. {templates.CONST}
         // Constant import. Continue with inlining but without setting the type. Types not known
         // until ResolveExpressionTypesPass.
+      } else if (moduleType.getExternNames().contains(fieldName)) {
+        // e.g. {templates.pluginFunction(1)}
+      } else {
+        // e.g. {call templates.doesNotExist}
+        nestedType = UnknownType.getInstance();
       }
     } else {
       nestedType = UnknownType.getInstance();

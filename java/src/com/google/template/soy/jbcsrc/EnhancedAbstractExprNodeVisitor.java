@@ -74,6 +74,7 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
       case IMPORT_VAR:
         return visitImportedVar(node, (ImportedVar) defn);
       case TEMPLATE:
+      case EXTERN:
       case UNDECLARED:
         throw new RuntimeException(defn.kind() + " are not supported by jbcsrc");
     }

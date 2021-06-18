@@ -20,8 +20,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.soytree.CommandTagAttribute.CommandTagAttributesHolder;
+import com.google.template.soy.soytree.defn.ExternVar;
 import com.google.template.soy.types.FunctionType;
 import com.google.template.soy.types.ast.FunctionTypeNode;
 import java.util.Optional;
@@ -30,8 +30,7 @@ import java.util.Optional;
  * Node representing a 'extern' statement with js/java implementations. TODO(b/191090743) Handle the
  * {export keyword.
  */
-public final class ExternNode extends AbstractCommandNode
-    implements CommandTagAttributesHolder, SoySourceFunction {
+public final class ExternNode extends AbstractCommandNode implements CommandTagAttributesHolder {
 
   private final FunctionTypeNode typeNode;
   private final Identifier name;
@@ -39,6 +38,7 @@ public final class ExternNode extends AbstractCommandNode
   private final boolean exported;
   private final JsImpl jsImpl;
   private final JavaImpl javaImpl;
+  private final ExternVar var;
   private FunctionType type;
 
   public ExternNode(
@@ -57,6 +57,7 @@ public final class ExternNode extends AbstractCommandNode
     this.exported = exported;
     this.jsImpl = jsImpl;
     this.javaImpl = javaImpl;
+    this.var = new ExternVar(name.identifier(), name.location(), null);
   }
 
   /**
@@ -72,6 +73,8 @@ public final class ExternNode extends AbstractCommandNode
     this.exported = orig.exported;
     this.jsImpl = orig.jsImpl;
     this.javaImpl = orig.javaImpl;
+    this.var = new ExternVar(orig.var);
+    copyState.updateRefs(orig.var, this.var);
   }
 
   public Identifier getIdentifier() {
@@ -121,6 +124,10 @@ public final class ExternNode extends AbstractCommandNode
 
   public void setType(FunctionType type) {
     this.type = type;
+  }
+
+  public ExternVar getVar() {
+    return var;
   }
 
   @Override

@@ -1703,6 +1703,7 @@ final class ExpressionCompiler {
           return false;
         case UNDECLARED:
         case TEMPLATE:
+        case EXTERN:
           break;
       }
       throw new AssertionError(node.getDefnDecl().kind());

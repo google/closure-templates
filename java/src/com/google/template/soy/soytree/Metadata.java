@@ -50,6 +50,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import javax.annotation.Nullable;
 
 /**
@@ -402,6 +403,11 @@ public final class Metadata {
     public List<? extends Extern> getExterns(String name) {
       return externIndex().get(name);
     }
+
+    @Override
+    public Set<String> getExternNames() {
+      return externIndex().keySet();
+    }
   }
 
   /** FileMetadata for deps. */
@@ -505,6 +511,7 @@ public final class Metadata {
     private final String namespace;
     private final ImmutableSet<String> templateNames;
     private final ImmutableSet<String> constantNames;
+    private final ImmutableSet<String> externNames;
 
     /** ASTs are mutable so we need to copy all data in the constructor. */
     public AstPartialFileMetadata(SoyFileNode ast) {
@@ -518,6 +525,11 @@ public final class Metadata {
           ast.getConstants().stream()
               .filter(ConstNode::isExported)
               .map(c -> c.getVar().name())
+              .collect(toImmutableSet());
+      this.externNames =
+          ast.getExterns().stream()
+              .filter(ExternNode::isExported)
+              .map(e -> e.getIdentifier().identifier())
               .collect(toImmutableSet());
     }
 
@@ -539,6 +551,11 @@ public final class Metadata {
     @Override
     public ImmutableSet<String> getConstantNames() {
       return constantNames;
+    }
+
+    @Override
+    public ImmutableSet<String> getExternNames() {
+      return externNames;
     }
   }
 
