@@ -269,7 +269,7 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
         .filter(Parameter::isRequired)
         .forEach(
             p -> {
-              if (!hasAllAttributes && p.getKind() == ParameterKind.ATTRIBUTE) {
+              if (p.getKind() == ParameterKind.ATTRIBUTE) {
                 if (!seenAttributes.contains(p.getName())) {
                   errorReporter.report(
                       openTagNode.getSourceLocation(),
