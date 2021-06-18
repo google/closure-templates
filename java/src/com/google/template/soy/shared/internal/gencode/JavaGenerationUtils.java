@@ -20,6 +20,7 @@ import static java.util.stream.Collectors.toSet;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Streams;
 import com.google.protobuf.Descriptors.FieldDescriptor;
@@ -64,6 +65,63 @@ public final class JavaGenerationUtils {
 
   /** Pattern for a character that's not a letter nor a digit. */
   private static final Pattern NON_LETTER_DIGIT = Pattern.compile("[^A-Za-z0-9]");
+
+  // See https://docs.oracle.com/javase/tutorial/java/nutsandbolts/_keywords.html
+  private static final ImmutableSet<String> RESERVED_JAVA_KEYWORDS =
+      ImmutableSet.of(
+          "abstract",
+          "assert",
+          "boolean",
+          "break",
+          "byte",
+          "case",
+          "catch",
+          "char",
+          "class",
+          "const",
+          "continue",
+          "default",
+          "do",
+          "double",
+          "else",
+          "enum",
+          "extends",
+          "false",
+          "final",
+          "finally",
+          "float",
+          "for",
+          "goto",
+          "if",
+          "implements",
+          "import",
+          "instanceof",
+          "int",
+          "interface",
+          "long",
+          "native",
+          "new",
+          "null",
+          "package",
+          "private",
+          "protected",
+          "public",
+          "return",
+          "short",
+          "static",
+          "strictfp",
+          "super",
+          "switch",
+          "synchronized",
+          "this",
+          "throw",
+          "throws",
+          "transient",
+          "true",
+          "try",
+          "void",
+          "volatile",
+          "while");
 
   private JavaGenerationUtils() {}
 
@@ -363,5 +421,10 @@ public final class JavaGenerationUtils {
   private static Iterator<? extends SoyType> typeIterator(
       SoyType root, SoyTypeRegistry typeRegistry) {
     return SoyTypes.getTypeTraverser(root, typeRegistry);
+  }
+
+  /** Returns whether the given symbol is a keyword reserved by the Java language. */
+  public static boolean isReservedKeyword(String symbol) {
+    return RESERVED_JAVA_KEYWORDS.contains(symbol);
   }
 }

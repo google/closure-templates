@@ -27,6 +27,7 @@ import static com.google.template.soy.invocationbuilders.javatypes.CodeGenUtils.
 import static com.google.template.soy.invocationbuilders.javatypes.CodeGenUtils.STANDARD_P;
 import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.appendFunctionCallWithParamsOnNewLines;
 import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.appendJavadoc;
+import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.isReservedKeyword;
 import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.makeLowerCamelCase;
 import static java.util.stream.Collectors.counting;
 import static java.util.stream.Collectors.groupingBy;
@@ -34,7 +35,6 @@ import static java.util.stream.Collectors.toList;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.internal.IndentedLinesBuilder;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -754,62 +754,8 @@ public final class GenInvocationBuildersVisitor
     }
   }
 
-  private static final ImmutableSet<String> RESERVED_JAVA_WORDS =
-      ImmutableSet.of(
-          "abstract",
-          "assert",
-          "boolean",
-          "byte",
-          "case",
-          "catch",
-          "char",
-          "class",
-          "const",
-          "continue",
-          "default",
-          "do",
-          "double",
-          "else",
-          "extends",
-          "false",
-          "final",
-          "finally",
-          "float",
-          "for",
-          "goto",
-          "if",
-          "implements",
-          "import",
-          "instanceof",
-          "int",
-          "interface",
-          "long",
-          "native",
-          "new",
-          "null",
-          "package",
-          "private",
-          "protected",
-          "public",
-          "return",
-          "short",
-          "static",
-          "strictfp",
-          "super",
-          "switch",
-          "synchronized",
-          "this",
-          "throw",
-          "throws",
-          "transient",
-          "true",
-          "try",
-          "void",
-          "volatile",
-          "while");
-
   private static String makeParamName(String s) {
     s = makeLowerCamelCase(s);
-    return RESERVED_JAVA_WORDS.contains(s) ? s + "_" : s;
+    return isReservedKeyword(s) ? s + "_" : s;
   }
 }
