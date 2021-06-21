@@ -245,7 +245,7 @@ public final class JavaGenerationUtils {
   public static void appendImmutableListInline(
       IndentedLinesBuilder ilb, String typeParamSnippet, Collection<String> itemSnippets) {
     appendFunctionCallWithParamsOnNewLines(
-        ilb, "ImmutableList." + typeParamSnippet + "of", itemSnippets);
+        ilb, "com.google.common.collect.ImmutableList." + typeParamSnippet + "of", itemSnippets);
   }
 
   /**
@@ -285,10 +285,10 @@ public final class JavaGenerationUtils {
   public static void appendImmutableMap(
       IndentedLinesBuilder ilb, String typeParamSnippet, Map<String, String> entrySnippetPairs) {
     if (entrySnippetPairs.isEmpty()) {
-      ilb.appendLineStart("ImmutableMap.", typeParamSnippet, "of()");
+      ilb.appendLineStart("com.google.common.collect.ImmutableMap.", typeParamSnippet, "of()");
 
     } else {
-      ilb.appendLine("ImmutableMap.", typeParamSnippet, "builder()");
+      ilb.appendLine("com.google.common.collect.ImmutableMap.", typeParamSnippet, "builder()");
       ilb.increaseIndent(2);
       for (Map.Entry<String, String> entrySnippetPair : entrySnippetPairs.entrySet()) {
         ilb.appendLine(".put(", entrySnippetPair.getKey(), ", ", entrySnippetPair.getValue(), ")");

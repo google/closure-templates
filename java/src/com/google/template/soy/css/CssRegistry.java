@@ -76,6 +76,18 @@ public abstract class CssRegistry {
     return classMap().isPresent();
   }
 
+  public static CssRegistry createForLocalDevelopment(
+      ImmutableSet<String> providedSymbols, ImmutableMap<String, String> filePathToSymbol) {
+    return new AutoValue_CssRegistry(
+        providedSymbols,
+        filePathToSymbol,
+        Optional.empty(),
+        ImmutableMap.of(),
+        ImmutableMap.of(),
+        ImmutableList.of(),
+        true /* skipCssReferenceCheck */);
+  }
+
   public static CssRegistry create(
       ImmutableSet<String> providedSymbols, ImmutableMap<String, String> filePathToSymbol) {
     return new AutoValue_CssRegistry(
