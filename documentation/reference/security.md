@@ -175,8 +175,8 @@ This escaping logic applies to:
 *   `iframe.src`
 *   `base.href`
 *   `object.data`
-*   `link.href` unless the `link` also has a whitelisted `rel` attribute, one
-    of:
+*   `link.href` unless the `link` also has a `rel` attribute with one
+    of the following values:
     *   alternate
     *   amphtml
     *   apple-touch-icon
