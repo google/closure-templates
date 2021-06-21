@@ -71,6 +71,8 @@ public interface SoyNode extends Node {
 
     CONST_NODE,
     EXTERN_NODE,
+    JAVA_IMPL_NODE,
+    JS_IMPL_NODE,
     LET_VALUE_NODE,
     LET_CONTENT_NODE,
 

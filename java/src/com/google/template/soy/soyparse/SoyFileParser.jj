@@ -106,6 +106,7 @@ import com.google.template.soy.soytree.CommandTagAttribute;
 import com.google.template.soy.soytree.Comment;
 import com.google.template.soy.soytree.ConstNode;
 import com.google.template.soy.soytree.DebuggerNode;
+import com.google.template.soy.soytree.ExternImplNode;
 import com.google.template.soy.soytree.ExternNode;
 import com.google.template.soy.soytree.ForIfemptyNode;
 import com.google.template.soy.soytree.ForNode;
@@ -114,8 +115,8 @@ import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.ImportNode;
-import com.google.template.soy.soytree.JavaImpl;
-import com.google.template.soy.soytree.JsImpl;
+import com.google.template.soy.soytree.JavaImplNode;
+import com.google.template.soy.soytree.JsImplNode;
 import com.google.template.soy.soytree.KeyNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetNode;
@@ -1539,11 +1540,12 @@ private ExternNode ExternStmt() :
   Token open, name, openClose, close;
   Token implOpen, implClose;
   List<CommandTagAttribute> attributes;
-  JavaImpl javaImpl = null;
-  JsImpl jsImpl = null;
   FunctionTypeNode type;
 }
 {
+  {
+    List<ExternImplNode> impls = new ArrayList<ExternImplNode>();
+  }
   open = <EXTERN_OPEN>
   name = <NAME>
   <CMD_COLON>
@@ -1559,7 +1561,7 @@ private ExternNode ExternStmt() :
       implClose = <CMD_SELF_CLOSE>
       {
         SourceLocation srcLoc = createSrcLoc(implOpen, implClose);
-        jsImpl = JsImpl.create(srcLoc, attributes, errorReporter);
+        impls.add(new JsImplNode(nodeIdGen.genId(), srcLoc, attributes, errorReporter));
       }
     )
   |
@@ -1569,16 +1571,18 @@ private ExternNode ExternStmt() :
       implClose = <CMD_SELF_CLOSE>
       {
         SourceLocation srcLoc = createSrcLoc(implOpen, implClose);
-        javaImpl = JavaImpl.create(srcLoc, attributes, errorReporter);
+        impls.add(new JavaImplNode(nodeIdGen.genId(), srcLoc, attributes, errorReporter));
       }
     )
   )*
   close = <CMD_CLOSE_EXTERN>
   {
     boolean exported = open.image.startsWith("{export ");
-    return new ExternNode(nodeIdGen.genId(), createSrcLoc(open, close),
+    ExternNode node = new ExternNode(nodeIdGen.genId(), createSrcLoc(open, close),
         Identifier.create(name.image, createSrcLoc(name)), type,
-        createSrcLoc(open, openClose), exported, jsImpl, javaImpl);
+        createSrcLoc(open, openClose), exported);
+    node.addChildren(impls);
+    return node;
   }
 }
 

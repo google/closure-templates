@@ -156,6 +156,10 @@ public abstract class AbstractReturningSoyNodeVisitor<R>
         return visitDebuggerNode((DebuggerNode) node);
       case EXTERN_NODE:
         return visitExternNode((ExternNode) node);
+      case JAVA_IMPL_NODE:
+        return visitJavaImplNode((JavaImplNode) node);
+      case JS_IMPL_NODE:
+        return visitJsImplNode((JsImplNode) node);
     }
     return visitSoyNode(node);
   }
@@ -192,6 +196,14 @@ public abstract class AbstractReturningSoyNodeVisitor<R>
   }
 
   protected R visitExternNode(ExternNode node) {
+    return visitSoyNode(node);
+  }
+
+  protected R visitJavaImplNode(JavaImplNode node) {
+    return visitSoyNode(node);
+  }
+
+  protected R visitJsImplNode(JsImplNode node) {
     return visitSoyNode(node);
   }
 

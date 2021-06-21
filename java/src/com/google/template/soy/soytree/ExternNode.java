@@ -24,20 +24,18 @@ import com.google.template.soy.soytree.CommandTagAttribute.CommandTagAttributesH
 import com.google.template.soy.soytree.defn.ExternVar;
 import com.google.template.soy.types.FunctionType;
 import com.google.template.soy.types.ast.FunctionTypeNode;
-import java.util.Optional;
 
 /**
  * Node representing a 'extern' statement with js/java implementations. TODO(b/191090743) Handle the
  * {export keyword.
  */
-public final class ExternNode extends AbstractCommandNode implements CommandTagAttributesHolder {
+public final class ExternNode extends AbstractParentCommandNode<ExternImplNode>
+    implements CommandTagAttributesHolder {
 
   private final FunctionTypeNode typeNode;
   private final Identifier name;
   private final SourceLocation openTagLocation;
   private final boolean exported;
-  private final JsImpl jsImpl;
-  private final JavaImpl javaImpl;
   private final ExternVar var;
   private FunctionType type;
 
@@ -47,16 +45,12 @@ public final class ExternNode extends AbstractCommandNode implements CommandTagA
       Identifier name,
       FunctionTypeNode typeNode,
       SourceLocation headerLocation,
-      boolean exported,
-      JsImpl jsImpl,
-      JavaImpl javaImpl) {
+      boolean exported) {
     super(id, location, "extern");
     this.name = name;
     this.openTagLocation = headerLocation;
     this.typeNode = typeNode;
     this.exported = exported;
-    this.jsImpl = jsImpl;
-    this.javaImpl = javaImpl;
     this.var = new ExternVar(name.identifier(), name.location(), null);
   }
 
@@ -71,8 +65,6 @@ public final class ExternNode extends AbstractCommandNode implements CommandTagA
     this.typeNode = orig.typeNode;
     this.openTagLocation = orig.openTagLocation;
     this.exported = orig.exported;
-    this.jsImpl = orig.jsImpl;
-    this.javaImpl = orig.javaImpl;
     this.var = new ExternVar(orig.var);
     copyState.updateRefs(orig.var, this.var);
   }
@@ -83,14 +75,6 @@ public final class ExternNode extends AbstractCommandNode implements CommandTagA
 
   public boolean isExported() {
     return exported;
-  }
-
-  public Optional<JsImpl> getJsImpl() {
-    return Optional.ofNullable(jsImpl);
-  }
-
-  public Optional<JavaImpl> getJavaImpl() {
-    return Optional.ofNullable(javaImpl);
   }
 
   public FunctionTypeNode typeNode() {

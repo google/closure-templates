@@ -16,17 +16,17 @@
 
 package com.google.template.soy.soytree;
 
-import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.soytree.SoyNode.Kind;
 import java.util.Arrays;
 import java.util.List;
 
 /** Java implementation for an extern. */
-@AutoValue
-public abstract class JavaImpl {
+public final class JavaImplNode extends ExternImplNode {
   private static final SoyErrorKind INVALID_IMPL_ATTRIBUTE =
       SoyErrorKind.of("''{0}'' is not a valid attribute.");
   private static final String CLASS = "class";
@@ -37,60 +37,73 @@ public abstract class JavaImpl {
   private static final SoyErrorKind UNEXPECTED_ARGS =
       SoyErrorKind.of("Java implementations require attributes " + FIELDS + " .");
 
-  public static JavaImpl create(
+  private CommandTagAttribute module;
+  private CommandTagAttribute function;
+  private CommandTagAttribute args;
+  private CommandTagAttribute returnType;
+
+  public JavaImplNode(
+      int id,
       SourceLocation sourceLocation,
       List<CommandTagAttribute> attributes,
       ErrorReporter errorReporter) {
+    super(id, sourceLocation, "javaimpl");
+
     if (attributes.size() != 4) {
       errorReporter.report(sourceLocation, UNEXPECTED_ARGS);
-      return null;
     }
-    Builder externBuilder = builder();
-    externBuilder.setSourceLocation(sourceLocation);
+
     for (CommandTagAttribute attr : attributes) {
-      String value = attr.getValue();
       if (attr.hasName(CLASS)) {
-        externBuilder.setModule(value);
+        this.module = attr;
       } else if (attr.hasName(METHOD)) {
-        externBuilder.setFunction(value);
+        this.function = attr;
       } else if (attr.hasName(PARAMS)) {
-        externBuilder.setArgs(ImmutableList.copyOf(Arrays.asList(value.split(","))));
+        this.args = attr;
       } else if (attr.hasName(RETURN)) {
-        externBuilder.setReturnType(value);
+        this.returnType = attr;
       } else {
         errorReporter.report(attr.getSourceLocation(), INVALID_IMPL_ATTRIBUTE, attr.getName());
-        return null;
       }
     }
-    return externBuilder.build();
   }
 
-  static Builder builder() {
-    return new AutoValue_JavaImpl.Builder();
+  /**
+   * Copy constructor.
+   *
+   * @param orig The node to copy.
+   */
+  private JavaImplNode(JavaImplNode orig, CopyState copyState) {
+    super(orig, copyState);
+    this.module = orig.module;
+    this.function = orig.function;
+    this.args = orig.args;
+    this.returnType = orig.returnType;
   }
 
-  @AutoValue.Builder
-  abstract static class Builder {
-    abstract Builder setModule(String value);
-
-    abstract Builder setFunction(String value);
-
-    abstract Builder setArgs(ImmutableList<String> value);
-
-    abstract Builder setReturnType(String value);
-
-    abstract Builder setSourceLocation(SourceLocation sourceLocation);
-
-    abstract JavaImpl build();
+  @Override
+  public Kind getKind() {
+    return Kind.JAVA_IMPL_NODE;
   }
 
-  public abstract String module();
+  @Override
+  public JavaImplNode copy(CopyState copyState) {
+    return new JavaImplNode(this, copyState);
+  }
 
-  public abstract String function();
+  public String module() {
+    return module.getValue();
+  }
 
-  public abstract ImmutableList<String> args();
+  public String function() {
+    return function.getValue();
+  }
 
-  public abstract String returnType();
+  public ImmutableList<String> args() {
+    return ImmutableList.copyOf(Arrays.asList(args.getValue().split(",")));
+  }
 
-  public abstract SourceLocation sourceLocation();
+  public String returnType() {
+    return returnType.getValue();
+  }
 }
