@@ -90,11 +90,7 @@ public final class SoyTypes {
    * number.
    */
   public static boolean isNumericPrimitive(SoyType type) {
-    SoyType.Kind kind = type.getKind();
-    if (NUMERIC_PRIMITIVES.contains(kind)) {
-      return true;
-    }
-    return type.isAssignableFromStrict(NUMBER_TYPE) || NUMBER_TYPE.isAssignableFromStrict(type);
+    return isKindOrUnionOfKinds(type, NUMERIC_PRIMITIVES);
   }
 
   public static SoyType removeNull(SoyType type) {

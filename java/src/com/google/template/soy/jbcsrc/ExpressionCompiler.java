@@ -637,12 +637,24 @@ final class ExpressionCompiler {
 
     @Override
     protected final SoyExpression visitEqualOpNode(EqualOpNode node) {
+      if (node.getChild(0).getKind() == ExprNode.Kind.NULL_NODE) {
+        return SoyExpression.forBool(BytecodeUtils.isNull(visit(node.getChild(1))));
+      }
+      if (node.getChild(1).getKind() == ExprNode.Kind.NULL_NODE) {
+        return SoyExpression.forBool(BytecodeUtils.isNull(visit(node.getChild(0))));
+      }
       return SoyExpression.forBool(
           BytecodeUtils.compareSoyEquals(visit(node.getChild(0)), visit(node.getChild(1))));
     }
 
     @Override
     protected final SoyExpression visitNotEqualOpNode(NotEqualOpNode node) {
+      if (node.getChild(0).getKind() == ExprNode.Kind.NULL_NODE) {
+        return SoyExpression.forBool(BytecodeUtils.isNonNull(visit(node.getChild(1))));
+      }
+      if (node.getChild(1).getKind() == ExprNode.Kind.NULL_NODE) {
+        return SoyExpression.forBool(BytecodeUtils.isNonNull(visit(node.getChild(0))));
+      }
       return SoyExpression.forBool(
           logicalNot(
               BytecodeUtils.compareSoyEquals(visit(node.getChild(0)), visit(node.getChild(1)))));
@@ -1554,7 +1566,6 @@ final class ExpressionCompiler {
     }
 
     // Non-builtin functions
-
 
     @Override
     SoyExpression visitPluginFunction(FunctionNode node) {

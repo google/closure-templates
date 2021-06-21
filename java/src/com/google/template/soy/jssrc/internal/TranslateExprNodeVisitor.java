@@ -57,6 +57,7 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Descriptors.FileDescriptor.Syntax;
@@ -780,19 +781,28 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     return operation(node.getOperator(), visitChildren(node));
   }
 
+  private static final ImmutableSet<SoyType.Kind> CAN_USE_EQUALS =
+      Sets.immutableEnumSet(
+          SoyType.Kind.INT, SoyType.Kind.FLOAT, SoyType.Kind.PROTO_ENUM, Kind.BOOL, Kind.STRING);
+
   private Expression visitEqualNodeHelper(OperatorNode node) {
+    boolean needsSoyEquals = false;
+    boolean neverSoyEquals = false;
+
     for (ExprNode c : node.getChildren()) {
       SoyType type = c.getType();
-      // A runtime directive needs to be used if operands are anything but booleans and
-      // numbers.
-      if ((!SoyTypes.isNumericPrimitive(type) && type.getKind() != SoyType.Kind.BOOL)
-          || type.getKind() == SoyType.Kind.UNKNOWN
-          || type.getKind() == SoyType.Kind.ANY) {
-        return SOY_EQUALS.call(visitChildren(node));
+      if (type.getKind() == SoyType.Kind.NULL) {
+        // If either operand is null always use ===.
+        neverSoyEquals = true;
+      } else if (!SoyTypes.isKindOrUnionOfKinds(type, CAN_USE_EQUALS)) {
+        // If either operand is not a JS primitive (number, string, bool) then use soy.$$equals.
+        needsSoyEquals = true;
       }
     }
 
-    return operation(Operator.EQUAL, visitChildren(node));
+    return needsSoyEquals && !neverSoyEquals
+        ? SOY_EQUALS.call(visitChildren(node))
+        : operation(Operator.EQUAL, visitChildren(node));
   }
 
   @Override
