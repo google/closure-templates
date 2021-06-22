@@ -347,6 +347,9 @@ public final class FunctionNode extends AbstractParentExprNode implements ExprNo
    * <p>See {@link SoyPureFunction} for the definition of a pure function.
    */
   public boolean isPure() {
+    if (!isResolved()) {
+      return false;
+    }
     if (state.function.type() == FunctionRef.Type.EXTERN) {
       return false;
     }
