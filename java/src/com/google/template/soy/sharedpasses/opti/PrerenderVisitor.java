@@ -63,6 +63,7 @@ final class PrerenderVisitor extends RenderVisitor {
         basicTemplates,
         /* deltemplates=*/ new DelTemplateSelector.Builder<TemplateDelegateNode>().build(),
         ImmutableTable.of(),
+        ImmutableTable.of(),
         ParamStore.EMPTY_INSTANCE,
         /* ijData= */ null,
         /* activeDelPackageSelector= */ null,

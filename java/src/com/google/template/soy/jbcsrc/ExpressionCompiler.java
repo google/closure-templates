@@ -48,6 +48,7 @@ import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FloatNode;
 import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.exprtree.FunctionNode.ExternRef;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
@@ -1574,6 +1575,9 @@ final class ExpressionCompiler {
       if (fn instanceof SoyJavaSourceFunction) {
         return sourceFunctionCompiler.compile(
             node, (SoyJavaSourceFunction) fn, args, parameters, detacher);
+      } else if (fn instanceof ExternRef) {
+        // TODO(b/191092039): Implement this.
+        return SoyExpression.NULL;
       }
 
       // Functions that are not a SoyJavaSourceFunction

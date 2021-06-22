@@ -17,12 +17,16 @@
 package com.google.template.soy.sharedpasses.opti;
 
 import com.google.common.base.Supplier;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableTable;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.sharedpasses.render.Environment;
 import com.google.template.soy.sharedpasses.render.EvalVisitor.EvalVisitorFactory;
+import com.google.template.soy.soytree.ExternNode;
 import javax.annotation.Nullable;
 
 /**
@@ -39,7 +43,8 @@ final class PreevalVisitorFactory implements EvalVisitorFactory {
       @Nullable SoyIdRenamingMap xidRenamingMap,
       @Nullable SoyMsgBundle msgBundle,
       boolean debugSoyTemplateInfo,
-      ImmutableMap<String, Supplier<Object>> pluginInstances) {
+      ImmutableMap<String, Supplier<Object>> pluginInstances,
+      ImmutableTable<SourceFilePath, String, ImmutableList<ExternNode>> externs) {
     return new PreevalVisitor(env);
   }
 }

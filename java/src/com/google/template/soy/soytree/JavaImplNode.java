@@ -21,7 +21,6 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
-import com.google.template.soy.soytree.SoyNode.Kind;
 import java.util.Arrays;
 import java.util.List;
 
@@ -37,9 +36,9 @@ public final class JavaImplNode extends ExternImplNode {
   private static final SoyErrorKind UNEXPECTED_ARGS =
       SoyErrorKind.of("Java implementations require attributes " + FIELDS + " .");
 
-  private CommandTagAttribute module;
-  private CommandTagAttribute function;
-  private CommandTagAttribute args;
+  private CommandTagAttribute className;
+  private CommandTagAttribute methodName;
+  private CommandTagAttribute params;
   private CommandTagAttribute returnType;
 
   public JavaImplNode(
@@ -55,11 +54,11 @@ public final class JavaImplNode extends ExternImplNode {
 
     for (CommandTagAttribute attr : attributes) {
       if (attr.hasName(CLASS)) {
-        this.module = attr;
+        this.className = attr;
       } else if (attr.hasName(METHOD)) {
-        this.function = attr;
+        this.methodName = attr;
       } else if (attr.hasName(PARAMS)) {
-        this.args = attr;
+        this.params = attr;
       } else if (attr.hasName(RETURN)) {
         this.returnType = attr;
       } else {
@@ -75,10 +74,10 @@ public final class JavaImplNode extends ExternImplNode {
    */
   private JavaImplNode(JavaImplNode orig, CopyState copyState) {
     super(orig, copyState);
-    this.module = orig.module;
-    this.function = orig.function;
-    this.args = orig.args;
-    this.returnType = orig.returnType;
+    this.className = orig.className.copy(copyState);
+    this.methodName = orig.methodName.copy(copyState);
+    this.params = orig.params.copy(copyState);
+    this.returnType = orig.returnType.copy(copyState);
   }
 
   @Override
@@ -91,16 +90,16 @@ public final class JavaImplNode extends ExternImplNode {
     return new JavaImplNode(this, copyState);
   }
 
-  public String module() {
-    return module.getValue();
+  public String className() {
+    return className.getValue();
   }
 
-  public String function() {
-    return function.getValue();
+  public String methodName() {
+    return methodName.getValue();
   }
 
-  public ImmutableList<String> args() {
-    return ImmutableList.copyOf(Arrays.asList(args.getValue().split(",")));
+  public ImmutableList<String> params() {
+    return ImmutableList.copyOf(Arrays.asList(params.getValue().split("\\s*,\\s*")));
   }
 
   public String returnType() {

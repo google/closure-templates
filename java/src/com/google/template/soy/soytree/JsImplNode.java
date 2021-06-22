@@ -66,8 +66,8 @@ public final class JsImplNode extends ExternImplNode {
    */
   private JsImplNode(JsImplNode orig, CopyState copyState) {
     super(orig, copyState);
-    this.module = orig.module;
-    this.function = orig.function;
+    this.module = orig.module.copy(copyState);
+    this.function = orig.function.copy(copyState);
   }
 
   @Override

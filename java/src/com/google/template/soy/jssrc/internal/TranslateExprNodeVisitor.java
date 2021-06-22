@@ -74,6 +74,7 @@ import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FloatNode;
 import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.exprtree.FunctionNode.ExternRef;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
@@ -930,6 +931,9 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
           (SoyJavaScriptSourceFunction) soyFunction,
           visitChildren(node),
           codeGenerator);
+    } else if (soyFunction instanceof ExternRef) {
+      // TODO(b/191092101): Implement this.
+      return stringLiteral("TODO");
     } else {
       if (!(soyFunction instanceof SoyJsSrcFunction)) {
         errorReporter.report(

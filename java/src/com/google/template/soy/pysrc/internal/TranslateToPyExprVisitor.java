@@ -32,6 +32,7 @@ import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.exprtree.FunctionNode.ExternRef;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
@@ -149,6 +150,8 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
       SoyErrorKind.of(
           "Bracket access on values of unknown type is not supported in pysrc. "
               + "The expression should be declared as a list or map.");
+  private static final SoyErrorKind EXTERNS_NOT_SUPPORTED =
+      SoyErrorKind.of("Externs are not supported in the Python runtime.");
 
   /**
    * Errors in this visitor generate Python source that immediately explodes. Users of Soy are
@@ -582,6 +585,9 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
     } else if (soyFunction instanceof LoggingFunction) {
       // trivial logging function support
       return new PyStringExpr("'" + ((LoggingFunction) soyFunction).getPlaceholder() + "'");
+    } else if (soyFunction instanceof ExternRef) {
+      errorReporter.report(node.getSourceLocation(), EXTERNS_NOT_SUPPORTED);
+      return ERROR;
     } else {
       errorReporter.report(
           node.getSourceLocation(), SOY_PY_SRC_FUNCTION_NOT_FOUND, node.getStaticFunctionName());

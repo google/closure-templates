@@ -20,10 +20,13 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Supplier;
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.ImmutableTable;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Sets;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.internal.SanitizedContentKind;
@@ -47,6 +50,7 @@ import com.google.template.soy.sharedpasses.render.RenderException;
 import com.google.template.soy.sharedpasses.render.RenderVisitor;
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.ConstNode;
+import com.google.template.soy.soytree.ExternNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
@@ -77,6 +81,7 @@ public final class BaseTofu implements SoyTofu {
   private final ImmutableMap<String, TemplateNode> basicTemplates;
   private final DelTemplateSelector<TemplateDelegateNode> delTemplates;
   private final ImmutableTable<SourceFilePath, String, ConstNode> constants;
+  private final ImmutableTable<SourceFilePath, String, ImmutableList<ExternNode>> externs;
 
   private final ImmutableMap<String, ImmutableSortedSet<String>> templateToIjParamsInfoMap;
 
@@ -92,9 +97,19 @@ public final class BaseTofu implements SoyTofu {
     DelTemplateSelector.Builder<TemplateDelegateNode> delTemplates =
         new DelTemplateSelector.Builder<>();
     ImmutableTable.Builder<SourceFilePath, String, ConstNode> constants = ImmutableTable.builder();
+    ImmutableTable.Builder<SourceFilePath, String, ImmutableList<ExternNode>> externs =
+        ImmutableTable.builder();
     for (SoyFileNode fileNode : fileSet.getChildren()) {
       for (ConstNode constNode : fileNode.getConstants()) {
         constants.put(fileNode.getFilePath(), constNode.getVar().name(), constNode);
+      }
+      ListMultimap<String, ExternNode> externMap = ArrayListMultimap.create();
+      for (ExternNode externNode : fileNode.getExterns()) {
+        externMap.put(externNode.getIdentifier().identifier(), externNode);
+      }
+      for (String externName : externMap.keySet()) {
+        externs.put(
+            fileNode.getFilePath(), externName, ImmutableList.copyOf(externMap.get(externName)));
       }
       for (TemplateNode template : fileNode.getTemplates()) {
         if (template instanceof TemplateDelegateNode) {
@@ -115,6 +130,7 @@ public final class BaseTofu implements SoyTofu {
     this.basicTemplates = basicTemplates.build();
     this.delTemplates = delTemplates.build();
     this.constants = constants.build();
+    this.externs = externs.build();
     this.templateToIjParamsInfoMap =
         buildTemplateToIjParamsInfoMap(this.basicTemplates, this.delTemplates);
     this.pluginInstances = ImmutableMap.copyOf(pluginInstances);
@@ -323,6 +339,7 @@ public final class BaseTofu implements SoyTofu {
               basicTemplates,
               delTemplates,
               constants,
+              externs,
               data,
               ijData,
               activeDelPackageNames,

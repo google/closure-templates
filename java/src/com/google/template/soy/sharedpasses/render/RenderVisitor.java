@@ -65,6 +65,7 @@ import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.ConstNode;
 import com.google.template.soy.soytree.DebuggerNode;
+import com.google.template.soy.soytree.ExternNode;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.IfCondNode;
@@ -122,6 +123,8 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
   /** The current injected data. */
   protected final SoyRecord ijData;
+
+  private final ImmutableTable<SourceFilePath, String, ImmutableList<ExternNode>> externs;
 
   /** The current environment. */
   protected Environment env;
@@ -184,6 +187,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       ImmutableMap<String, TemplateNode> basicTemplates,
       DelTemplateSelector<TemplateDelegateNode> deltemplates,
       ImmutableTable<SourceFilePath, String, ConstNode> constants,
+      ImmutableTable<SourceFilePath, String, ImmutableList<ExternNode>> externs,
       SoyRecord data,
       @Nullable SoyRecord ijData,
       @Nullable Predicate<String> activeDelPackageSelector,
@@ -198,6 +202,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     this.basicTemplates = checkNotNull(basicTemplates);
     this.deltemplates = checkNotNull(deltemplates);
     this.constants = checkNotNull(constants);
+    this.externs = checkNotNull(externs);
     this.data = data;
     this.ijData = ijData;
     this.activeDelPackageSelector = activeDelPackageSelector;
@@ -251,6 +256,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
         basicTemplates,
         deltemplates,
         constants,
+        externs,
         data,
         ijData,
         activeDelPackageSelector,
@@ -827,7 +833,8 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
               xidRenamingMap,
               msgBundle,
               debugSoyTemplateInfo,
-              pluginInstances);
+              pluginInstances,
+              externs);
     }
 
     try {

@@ -16,6 +16,8 @@
 
 package com.google.template.soy.sharedpasses.render;
 
+import com.google.errorprone.annotations.FormatMethod;
+import com.google.errorprone.annotations.FormatString;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.TemplateNode;
@@ -34,6 +36,17 @@ public final class RenderException extends RuntimeException {
 
   public static RenderException create(String message, Throwable cause) {
     return new RenderException(message, cause);
+  }
+
+  @FormatMethod
+  public static RenderException createF(@FormatString String format, Object... args) {
+    return create(String.format(format, args), (Throwable) null);
+  }
+
+  @FormatMethod
+  public static RenderException createF(
+      @FormatString String format, Throwable cause, Object... args) {
+    return create(String.format(format, args), cause);
   }
 
   public static RenderException createWithSource(String message, SoyNode source) {
@@ -65,7 +78,7 @@ public final class RenderException extends RuntimeException {
   }
 
   @Override
-  public Throwable fillInStackTrace() {
+  public synchronized Throwable fillInStackTrace() {
     // Remove java stack trace, we only care about the soy stack.
     return this;
   }

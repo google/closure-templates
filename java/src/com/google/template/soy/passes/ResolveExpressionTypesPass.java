@@ -76,6 +76,7 @@ import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.exprtree.FunctionNode.ExternRef;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
@@ -157,6 +158,7 @@ import com.google.template.soy.types.AbstractMapType;
 import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.FloatType;
 import com.google.template.soy.types.FunctionType;
+import com.google.template.soy.types.FunctionType.Parameter;
 import com.google.template.soy.types.IntType;
 import com.google.template.soy.types.LegacyObjectMapType;
 import com.google.template.soy.types.ListType;
@@ -188,6 +190,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -1676,30 +1679,39 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
       return resolvedSignature;
     }
 
-    private boolean maybeSetExtern(FunctionNode node, List<FunctionType> externTypes) {
-      OUTER:
-      for (FunctionType externType : externTypes) {
-        if (externType.getParameters().size() != node.numChildren()) {
-          continue;
-        }
-
-        List<SoyType> paramTypes = new ArrayList<>(node.numChildren());
-        for (int i = 0; i < node.numChildren(); ++i) {
-          SoyType childType = node.getChild(i).getType();
-          SoyType paramType = externType.getParameters().get(i).getType();
-          paramTypes.add(paramType);
-          if (!paramType.isAssignableFromLoose(childType)
-              && childType != UnknownType.getInstance()) {
-            continue OUTER;
-          }
-        }
-
-        node.setAllowedParamTypes(paramTypes);
-        node.setType(externType.getReturnType());
-        node.setSoyFunction(externType);
+    private boolean maybeSetExtern(FunctionNode node, List<ExternRef> externTypes) {
+      Optional<ExternRef> matching =
+          externTypes.stream()
+              .filter(t -> paramsMatchFunctionType(node.getParams(), t.signature()))
+              .findFirst();
+      if (matching.isPresent()) {
+        ExternRef ref = matching.get();
+        node.setAllowedParamTypes(
+            ref.signature().getParameters().stream().map(Parameter::getType).collect(toList()));
+        node.setType(ref.signature().getReturnType());
+        node.setSoyFunction(ref);
         return true;
       }
       return false;
+    }
+
+    private boolean paramsMatchFunctionType(
+        List<ExprNode> providedParams, FunctionType functionType) {
+      ImmutableList<Parameter> functParams = functionType.getParameters();
+      if (functParams.size() != providedParams.size()) {
+        return false;
+      }
+
+      for (int i = 0; i < providedParams.size(); ++i) {
+        SoyType providedType = providedParams.get(i).getType();
+        SoyType paramType = functParams.get(i).getType();
+        if (!paramType.isAssignableFromLoose(providedType)
+            && providedType != UnknownType.getInstance()) {
+          return false;
+        }
+      }
+
+      return true;
     }
 
     @Override
@@ -1743,7 +1755,7 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
               filePath = ((ImportedVar) defn).getSourceFilePath();
               functionName = ((ImportedVar) defn).getSymbol();
             }
-            List<FunctionType> externTypes = externsTypeLookup.get(filePath, functionName);
+            List<ExternRef> externTypes = externsTypeLookup.getRefs(filePath, functionName);
             if (maybeSetExtern(node, externTypes)) {
               return;
             } else if (!externTypes.isEmpty()) {
@@ -1757,7 +1769,7 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
                   externTypes.stream()
                       .map(
                           t ->
-                              t.getParameters().stream()
+                              t.signature().getParameters().stream()
                                   .map(p -> p.getType().toString())
                                   .collect(joining(", ")))
                       .collect(joining("', '", "'", "'"));
@@ -3102,6 +3114,10 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
 
     public ExternsTypeIndex(Supplier<FileSetMetadata> deps) {
       this.deps = deps;
+    }
+
+    List<ExternRef> getRefs(SourceFilePath path, String name) {
+      return get(path, name).stream().map(type -> ExternRef.of(path, name, type)).collect(toList());
     }
 
     List<FunctionType> get(SourceFilePath path, String name) {

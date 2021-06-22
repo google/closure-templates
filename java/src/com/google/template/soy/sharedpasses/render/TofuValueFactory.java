@@ -49,19 +49,28 @@ import java.util.List;
 /** Adapts JavaValueFactory to work with Tofu, wrapping the JavaValues in TofuJavaValues. */
 // TODO(b/19252021): Add unit tests after things shape up.
 class TofuValueFactory extends JavaValueFactory {
-  private final JavaPluginExecContext fn;
+  private final SourceLocation fnSourceLocation;
+  private final String fnName;
   private final ImmutableMap<String, Supplier<Object>> pluginInstances;
 
   TofuValueFactory(
       JavaPluginExecContext fn, ImmutableMap<String, Supplier<Object>> pluginInstances) {
-    this.fn = fn;
+    this(fn.getSourceLocation(), fn.getFunctionName(), pluginInstances);
+  }
+
+  TofuValueFactory(
+      SourceLocation fnSourceLocation,
+      String fnName,
+      ImmutableMap<String, Supplier<Object>> pluginInstances) {
+    this.fnSourceLocation = fnSourceLocation;
+    this.fnName = fnName;
     this.pluginInstances = pluginInstances;
   }
 
   SoyValue computeForJava(
       SoyJavaSourceFunction srcFn, List<SoyValue> args, TofuPluginContext context) {
     List<JavaValue> javaArgs =
-        Lists.transform(args, soyArg -> TofuJavaValue.forSoyValue(soyArg, fn.getSourceLocation()));
+        Lists.transform(args, soyArg -> TofuJavaValue.forSoyValue(soyArg, fnSourceLocation));
     TofuJavaValue result = (TofuJavaValue) srcFn.applyForJavaSource(this, javaArgs, context);
     if (!result.hasSoyValue()) {
       throw RenderException.create(
@@ -72,7 +81,7 @@ class TofuValueFactory extends JavaValueFactory {
   }
 
   @Override
-  public JavaValue callStaticMethod(MethodSignature methodSig, JavaValue... params) {
+  public TofuJavaValue callStaticMethod(MethodSignature methodSig, JavaValue... params) {
     return callStaticMethod(toMethod(methodSig), params);
   }
 
@@ -86,16 +95,15 @@ class TofuValueFactory extends JavaValueFactory {
   }
 
   @Override
-  public JavaValue callInstanceMethod(MethodSignature methodSig, JavaValue... params) {
+  public TofuJavaValue callInstanceMethod(MethodSignature methodSig, JavaValue... params) {
     return callInstanceMethod(toMethod(methodSig), params);
   }
 
   @Override
   public TofuJavaValue callInstanceMethod(Method method, JavaValue... params) {
-    Supplier<Object> instanceSupplier = pluginInstances.get(fn.getFunctionName());
+    Supplier<Object> instanceSupplier = pluginInstances.get(fnName);
     if (instanceSupplier == null) {
-      throw RenderException.create(
-          "No plugin instance registered for function '" + fn.getFunctionName() + "'");
+      throw RenderException.create("No plugin instance registered for function '" + fnName + "'");
     }
     try {
       return wrapInTofuValue(
@@ -120,7 +128,7 @@ class TofuValueFactory extends JavaValueFactory {
               return tjv.soyValue();
             });
     return TofuJavaValue.forSoyValue(
-        SoyValueConverter.INSTANCE.convert(values).resolve(), fn.getSourceLocation());
+        SoyValueConverter.INSTANCE.convert(values).resolve(), fnSourceLocation);
   }
 
   @Override
@@ -150,11 +158,11 @@ class TofuValueFactory extends JavaValueFactory {
 
   private TofuJavaValue wrapInTofuValue(Method method, Object object) {
     if (object instanceof SoyValue) {
-      return TofuJavaValue.forSoyValue((SoyValue) object, fn.getSourceLocation());
+      return TofuJavaValue.forSoyValue((SoyValue) object, fnSourceLocation);
     }
     try {
       return TofuJavaValue.forSoyValue(
-          SoyValueConverter.INSTANCE.convert(object).resolve(), fn.getSourceLocation());
+          SoyValueConverter.INSTANCE.convert(object).resolve(), fnSourceLocation);
     } catch (SoyDataException e) {
       throw RenderException.create("Invalid return value from `" + method + "`", e);
     }

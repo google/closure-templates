@@ -24,6 +24,7 @@ import com.google.template.soy.soytree.CommandTagAttribute.CommandTagAttributesH
 import com.google.template.soy.soytree.defn.ExternVar;
 import com.google.template.soy.types.FunctionType;
 import com.google.template.soy.types.ast.FunctionTypeNode;
+import java.util.Optional;
 
 /**
  * Node representing a 'extern' statement with js/java implementations. TODO(b/191090743) Handle the
@@ -62,7 +63,7 @@ public final class ExternNode extends AbstractParentCommandNode<ExternImplNode>
   private ExternNode(ExternNode orig, CopyState copyState) {
     super(orig, copyState);
     this.name = orig.name;
-    this.typeNode = orig.typeNode;
+    this.typeNode = orig.typeNode.copy();
     this.openTagLocation = orig.openTagLocation;
     this.exported = orig.exported;
     this.var = new ExternVar(orig.var);
@@ -75,6 +76,20 @@ public final class ExternNode extends AbstractParentCommandNode<ExternImplNode>
 
   public boolean isExported() {
     return exported;
+  }
+
+  public Optional<JsImplNode> getJsImpl() {
+    return getChildren().stream()
+        .filter(JsImplNode.class::isInstance)
+        .map(JsImplNode.class::cast)
+        .findFirst();
+  }
+
+  public Optional<JavaImplNode> getJavaImpl() {
+    return getChildren().stream()
+        .filter(JavaImplNode.class::isInstance)
+        .map(JavaImplNode.class::cast)
+        .findFirst();
   }
 
   public FunctionTypeNode typeNode() {

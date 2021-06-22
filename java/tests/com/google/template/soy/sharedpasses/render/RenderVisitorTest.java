@@ -75,9 +75,7 @@ import org.junit.runner.Description;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-/**
- * Unit tests for RenderVisitor.
- */
+/** Unit tests for RenderVisitor. */
 @RunWith(JUnit4.class)
 public class RenderVisitorTest {
 
@@ -291,6 +289,7 @@ public class RenderVisitorTest {
             ImmutableMap.of(),
             new DelTemplateSelector.Builder<TemplateDelegateNode>().build(),
             ImmutableTable.of(),
+            ImmutableTable.of(),
             data,
             TEST_IJ_DATA,
             arg -> false,
@@ -341,6 +340,7 @@ public class RenderVisitorTest {
             outputSb,
             basicTemplates,
             getDeltemplateSelector(parseResult.fileSet()),
+            ImmutableTable.of(),
             ImmutableTable.of(),
             data,
             ijData,
@@ -1034,6 +1034,7 @@ public class RenderVisitorTest {
             output,
             basicTemplates,
             getDeltemplateSelector(fileSet),
+            ImmutableTable.of(),
             ImmutableTable.of(),
             data,
             testIj,

@@ -22,6 +22,7 @@ import static org.junit.Assert.fail;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableTable;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyDict;
 import com.google.template.soy.data.SoyList;
@@ -158,7 +159,8 @@ public class EvalVisitorTest {
                 xidRenamingMap,
                 null,
                 /* debugSoyTemplateInfo= */ false,
-                /* pluginInstances= */ ImmutableMap.of());
+                /* pluginInstances= */ ImmutableMap.of(),
+                ImmutableTable.of());
     return evalVisitor.exec(expr);
   }
 

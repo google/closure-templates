@@ -17,11 +17,15 @@
 package com.google.template.soy.sharedpasses.render;
 
 import com.google.common.base.Supplier;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableTable;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.sharedpasses.render.EvalVisitor.EvalVisitorFactory;
+import com.google.template.soy.soytree.ExternNode;
 import javax.annotation.Nullable;
 
 /**
@@ -38,7 +42,8 @@ public final class EvalVisitorFactoryImpl implements EvalVisitorFactory {
       @Nullable SoyIdRenamingMap xidRenamingMap,
       @Nullable SoyMsgBundle msgBundle,
       boolean debugSoyTemplateInfo,
-      ImmutableMap<String, Supplier<Object>> pluginInstances) {
+      ImmutableMap<String, Supplier<Object>> pluginInstances,
+      ImmutableTable<SourceFilePath, String, ImmutableList<ExternNode>> externs) {
     return new EvalVisitor(
         env,
         cssRenamingMap,
@@ -51,6 +56,7 @@ public final class EvalVisitorFactoryImpl implements EvalVisitorFactory {
          * buggy implementation of data access nodes and this makes that behavior a little more
          * explicit.
          */
-        EvalVisitor.UndefinedDataHandlingMode.BUGGED);
+        EvalVisitor.UndefinedDataHandlingMode.BUGGED,
+        externs);
   }
 }

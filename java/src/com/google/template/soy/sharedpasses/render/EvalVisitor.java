@@ -34,8 +34,10 @@ import static com.google.template.soy.shared.internal.SharedRuntime.times;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableTable;
 import com.google.common.collect.Iterables;
 import com.google.errorprone.annotations.ForOverride;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyLegacyObjectMap;
@@ -70,6 +72,7 @@ import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FloatNode;
 import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.exprtree.FunctionNode.ExternRef;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
@@ -112,6 +115,7 @@ import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.plugin.internal.JavaPluginExecContext;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
+import com.google.template.soy.plugin.java.restricted.MethodSignature;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
@@ -120,6 +124,8 @@ import com.google.template.soy.shared.internal.BuiltinMethod;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyMethod;
 import com.google.template.soy.shared.restricted.SoySourceFunctionMethod;
+import com.google.template.soy.soytree.ExternNode;
+import com.google.template.soy.soytree.JavaImplNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.SoyProtoType;
@@ -131,6 +137,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.OptionalInt;
 import javax.annotation.Nullable;
 
@@ -181,7 +188,8 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
         @Nullable SoyIdRenamingMap xidRenamingMap,
         @Nullable SoyMsgBundle msgBundle,
         boolean debugSoyTemplateInfo,
-        ImmutableMap<String, Supplier<Object>> pluginInstances);
+        ImmutableMap<String, Supplier<Object>> pluginInstances,
+        ImmutableTable<SourceFilePath, String, ImmutableList<ExternNode>> externs);
   }
 
   /** The current environment. */
@@ -210,6 +218,8 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
   /** How to manage old data handling bugs. */
   private final UndefinedDataHandlingMode undefinedDataHandlingMode;
 
+  private final ImmutableTable<SourceFilePath, String, ImmutableList<ExternNode>> externs;
+
   /**
    * @param env The current environment.
    * @param pluginInstances The instances used for evaluating functions that call instance methods.
@@ -221,7 +231,8 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       @Nullable SoyMsgBundle msgBundle,
       boolean debugSoyTemplateInfo,
       ImmutableMap<String, Supplier<Object>> pluginInstances,
-      UndefinedDataHandlingMode undefinedDataHandlingMode) {
+      UndefinedDataHandlingMode undefinedDataHandlingMode,
+      ImmutableTable<SourceFilePath, String, ImmutableList<ExternNode>> externs) {
     this.env = checkNotNull(env);
     this.msgBundle = msgBundle;
     this.cssRenamingMap = (cssRenamingMap == null) ? SoyCssRenamingMap.EMPTY : cssRenamingMap;
@@ -230,6 +241,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     this.context = new TofuPluginContext(msgBundle);
     this.pluginInstances = checkNotNull(pluginInstances);
     this.undefinedDataHandlingMode = checkNotNull(undefinedDataHandlingMode);
+    this.externs = externs;
   }
 
   // -----------------------------------------------------------------------------------------------
@@ -835,15 +847,54 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       return computeFunctionHelper(args, JavaPluginExecContext.forFunctionNode(node, fn));
     } else if (soyFunction instanceof LoggingFunction) {
       return StringData.forValue(((LoggingFunction) soyFunction).getPlaceholder());
+    } else if (soyFunction instanceof ExternRef) {
+      return visitExternRef(node, (ExternRef) soyFunction);
     } else {
-      throw RenderException.create(
-          "Failed to find Soy function with name '"
-              + node.getStaticFunctionName()
-              + "'"
-              + " (function call \""
-              + node.toSourceString()
-              + "\").");
+      throw RenderException.createF(
+          "Failed to find Soy function with name '%s' (function call \"%s\").",
+          node.getStaticFunctionName(), node.toSourceString());
     }
+  }
+
+  private SoyValue visitExternRef(FunctionNode node, ExternRef soyFunction) {
+    ImmutableList<ExternNode> externNodes = externs.get(soyFunction.path(), soyFunction.name());
+    if (externNodes == null) {
+      externNodes = ImmutableList.of();
+    }
+    Optional<ExternNode> matching =
+        externNodes.stream().filter(e -> e.getType().equals(soyFunction.signature())).findFirst();
+    if (!matching.isPresent()) {
+      throw RenderException.createF(
+          "No extern named '%s' matching signature %s.",
+          soyFunction.name(), soyFunction.signature());
+    }
+    Optional<JavaImplNode> impl = matching.get().getJavaImpl();
+    if (!impl.isPresent()) {
+      throw RenderException.createF("No java implementation for extern '%s'.", soyFunction.name());
+    }
+    JavaImplNode java = impl.get();
+    MethodSignature method;
+    try {
+      method =
+          MethodSignature.create(
+              java.className(),
+              java.methodName(),
+              java.returnType(),
+              java.params().toArray(new String[0]));
+    } catch (ClassNotFoundException e) {
+      throw RenderException.create("Required Java runtime class not found.", e);
+    }
+
+    List<ExprNode> params = node.getParams();
+    TofuJavaValue[] javaValues = new TofuJavaValue[params.size()];
+    for (int i = 0; i < params.size(); i++) {
+      ExprNode param = params.get(i);
+      javaValues[i] = TofuJavaValue.forSoyValue(visit(param), param.getSourceLocation());
+    }
+
+    return new TofuValueFactory(node.getSourceLocation(), soyFunction.name(), ImmutableMap.of())
+        .callStaticMethod(method, javaValues)
+        .soyValue();
   }
 
   protected SoyValue visitProtoInitFunction(FunctionNode node) {
