@@ -46,6 +46,9 @@ The following are not:
 {/template}
 ```
 
+Best Practice: Always declare `kind="html<TAG_NAME>"` for applicable templates
+when it's expected that the template will stay one element.
+
 ## Calling templates with `{call}`
 
 HTML-tag templates can be called using the traditional `{call}` syntax:
