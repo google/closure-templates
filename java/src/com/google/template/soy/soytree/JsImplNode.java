@@ -16,6 +16,9 @@
 
 package com.google.template.soy.soytree;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
+
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
@@ -34,6 +37,9 @@ public final class JsImplNode extends ExternImplNode {
   private static final SoyErrorKind UNEXPECTED_ARGS =
       SoyErrorKind.of("JS implementations require attributes" + JsImplNode.FIELDS + " .");
 
+  private final ImmutableList<CommandTagAttribute> attributes;
+
+  // Stored separately from {@code attributes} for convenience.
   private CommandTagAttribute module;
   private CommandTagAttribute function;
 
@@ -47,16 +53,18 @@ public final class JsImplNode extends ExternImplNode {
     if (attributes.size() != 2) {
       errorReporter.report(sourceLocation, UNEXPECTED_ARGS);
     }
+    attributes.stream()
+        .filter(attr -> !(attr.hasName(NAMESPACE) || attr.hasName(FUNCTION)))
+        .findAny()
+        .ifPresent(
+            invalidAttr ->
+                errorReporter.report(
+                    invalidAttr.getSourceLocation(),
+                    INVALID_IMPL_ATTRIBUTE,
+                    invalidAttr.getName()));
 
-    for (CommandTagAttribute attr : attributes) {
-      if (attr.hasName(NAMESPACE)) {
-        this.module = attr;
-      } else if (attr.hasName(FUNCTION)) {
-        this.function = attr;
-      } else {
-        errorReporter.report(attr.getSourceLocation(), INVALID_IMPL_ATTRIBUTE, attr.getName());
-      }
-    }
+    this.attributes = ImmutableList.copyOf(attributes);
+    initAttributes();
   }
 
   /**
@@ -66,8 +74,25 @@ public final class JsImplNode extends ExternImplNode {
    */
   private JsImplNode(JsImplNode orig, CopyState copyState) {
     super(orig, copyState);
-    this.module = orig.module.copy(copyState);
-    this.function = orig.function.copy(copyState);
+    this.attributes =
+        orig.attributes.stream()
+            .map(origAttr -> origAttr.copy(copyState))
+            .collect(toImmutableList());
+    initAttributes();
+  }
+
+  /**
+   * Pulls out relevant attributes into class fields for quick reference. Should only be used in
+   * constructors.
+   */
+  private final void initAttributes() {
+    for (CommandTagAttribute attr : attributes) {
+      if (attr.hasName(NAMESPACE)) {
+        this.module = attr;
+      } else if (attr.hasName(FUNCTION)) {
+        this.function = attr;
+      }
+    }
   }
 
   @Override
@@ -86,5 +111,15 @@ public final class JsImplNode extends ExternImplNode {
 
   public String function() {
     return function.getValue();
+  }
+
+  @Override
+  public SourceLocation getOpenTagLocation() {
+    return getSourceLocation();
+  }
+
+  @Override
+  public ImmutableList<CommandTagAttribute> getAttributes() {
+    return attributes;
   }
 }

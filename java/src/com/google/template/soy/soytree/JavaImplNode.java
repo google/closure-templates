@@ -16,11 +16,14 @@
 
 package com.google.template.soy.soytree;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
+
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.soytree.SoyNode.Kind;
 import java.util.Arrays;
 import java.util.List;
 
@@ -36,6 +39,9 @@ public final class JavaImplNode extends ExternImplNode {
   private static final SoyErrorKind UNEXPECTED_ARGS =
       SoyErrorKind.of("Java implementations require attributes " + FIELDS + " .");
 
+  private final ImmutableList<CommandTagAttribute> attributes;
+
+  // Stored separately from {@code attributes} for convenience.
   private CommandTagAttribute className;
   private CommandTagAttribute methodName;
   private CommandTagAttribute params;
@@ -51,20 +57,23 @@ public final class JavaImplNode extends ExternImplNode {
     if (attributes.size() != 4) {
       errorReporter.report(sourceLocation, UNEXPECTED_ARGS);
     }
+    attributes.stream()
+        .filter(
+            attr ->
+                !(attr.hasName(CLASS)
+                    || attr.hasName(METHOD)
+                    || attr.hasName(PARAMS)
+                    || attr.hasName(RETURN)))
+        .findAny()
+        .ifPresent(
+            invalidAttr ->
+                errorReporter.report(
+                    invalidAttr.getSourceLocation(),
+                    INVALID_IMPL_ATTRIBUTE,
+                    invalidAttr.getName()));
 
-    for (CommandTagAttribute attr : attributes) {
-      if (attr.hasName(CLASS)) {
-        this.className = attr;
-      } else if (attr.hasName(METHOD)) {
-        this.methodName = attr;
-      } else if (attr.hasName(PARAMS)) {
-        this.params = attr;
-      } else if (attr.hasName(RETURN)) {
-        this.returnType = attr;
-      } else {
-        errorReporter.report(attr.getSourceLocation(), INVALID_IMPL_ATTRIBUTE, attr.getName());
-      }
-    }
+    this.attributes = ImmutableList.copyOf(attributes);
+    initAttributes();
   }
 
   /**
@@ -74,10 +83,30 @@ public final class JavaImplNode extends ExternImplNode {
    */
   private JavaImplNode(JavaImplNode orig, CopyState copyState) {
     super(orig, copyState);
-    this.className = orig.className.copy(copyState);
-    this.methodName = orig.methodName.copy(copyState);
-    this.params = orig.params.copy(copyState);
-    this.returnType = orig.returnType.copy(copyState);
+
+    this.attributes =
+        orig.attributes.stream()
+            .map(origAttr -> origAttr.copy(copyState))
+            .collect(toImmutableList());
+    initAttributes();
+  }
+
+  /**
+   * Pulls out relevant attributes into class fields for quick reference. Should only be used in
+   * constructors.
+   */
+  private final void initAttributes() {
+    for (CommandTagAttribute attr : attributes) {
+      if (attr.hasName(CLASS)) {
+        this.className = attr;
+      } else if (attr.hasName(METHOD)) {
+        this.methodName = attr;
+      } else if (attr.hasName(PARAMS)) {
+        this.params = attr;
+      } else if (attr.hasName(RETURN)) {
+        this.returnType = attr;
+      }
+    }
   }
 
   @Override
@@ -104,5 +133,15 @@ public final class JavaImplNode extends ExternImplNode {
 
   public String returnType() {
     return returnType.getValue();
+  }
+
+  @Override
+  public SourceLocation getOpenTagLocation() {
+    return getSourceLocation();
+  }
+
+  @Override
+  public ImmutableList<CommandTagAttribute> getAttributes() {
+    return attributes;
   }
 }
