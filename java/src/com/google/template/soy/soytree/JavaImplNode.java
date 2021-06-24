@@ -23,18 +23,18 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
-import com.google.template.soy.soytree.SoyNode.Kind;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 /** Java implementation for an extern. */
 public final class JavaImplNode extends ExternImplNode {
   private static final SoyErrorKind INVALID_IMPL_ATTRIBUTE =
       SoyErrorKind.of("''{0}'' is not a valid attribute.");
-  private static final String CLASS = "class";
-  private static final String METHOD = "method";
-  private static final String PARAMS = "params";
-  private static final String RETURN = "return";
+  public static final String CLASS = "class";
+  public static final String METHOD = "method";
+  public static final String PARAMS = "params";
+  public static final String RETURN = "return";
   public static final String FIELDS = String.format("%s,%s,%s,%s", CLASS, METHOD, PARAMS, RETURN);
   private static final SoyErrorKind UNEXPECTED_ARGS =
       SoyErrorKind.of("Java implementations require attributes " + FIELDS + " .");
@@ -143,5 +143,11 @@ public final class JavaImplNode extends ExternImplNode {
   @Override
   public ImmutableList<CommandTagAttribute> getAttributes() {
     return attributes;
+  }
+
+  public SourceLocation getAttributeValueLocation(String paramName) {
+    Optional<CommandTagAttribute> attr =
+        attributes.stream().filter(a -> paramName.equals(a.getName().identifier())).findFirst();
+    return attr.isPresent() ? attr.get().getValueLocation() : SourceLocation.UNKNOWN;
   }
 }

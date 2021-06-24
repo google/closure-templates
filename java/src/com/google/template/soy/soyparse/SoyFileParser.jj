@@ -4855,7 +4855,7 @@ private TypeNode TemplateType() :
   returnType = NamedType()
 
   {
-    SourceLocation srcLoc = createSrcLoc(open, close, arrow);
+    SourceLocation srcLoc = createSrcLoc(open, returnType.sourceLocation().getEndPoint());
     return TemplateTypeNode.create(srcLoc, parameters, returnType);
   }
 }
@@ -4924,7 +4924,7 @@ private FunctionTypeNode FunctionType() :
   returnType = NamedType()
 
   {
-    SourceLocation srcLoc = createSrcLoc(open, close, arrow);
+    SourceLocation srcLoc = createSrcLoc(open, returnType.sourceLocation().getEndPoint());
     return FunctionTypeNode.create(srcLoc, parameters, returnType);
   }
 }

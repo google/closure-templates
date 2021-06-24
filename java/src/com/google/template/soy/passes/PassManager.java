@@ -405,7 +405,9 @@ public final class PassManager {
           .add(new ResolveTemplateParamTypesPass(errorReporter, disableAllTypeChecking));
 
       // needs to come before SoyConformancePass
-      passes.add(new ResolvePluginsPass(pluginResolver));
+      passes
+          .add(new ResolvePluginsPass(pluginResolver))
+          .add(new ValidateExternsPass(errorReporter));
 
       // Must come after ResolvePluginsPass.
       if (astRewrites == AstRewrites.ALL) {

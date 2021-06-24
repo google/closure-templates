@@ -96,7 +96,7 @@ public abstract class MethodSignature {
         classFqn, method, returnType, ImmutableList.copyOf(args), /* inInterface= */ true);
   }
 
-  private static Class<?> forName(String className) throws ClassNotFoundException {
+  public static Class<?> forName(String className) throws ClassNotFoundException {
     Class<?> primitive = PRIMITIVE_TYPE_INDEX.get(className);
     return primitive != null ? primitive : Class.forName(className);
   }
