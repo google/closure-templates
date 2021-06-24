@@ -25,7 +25,6 @@ import com.google.template.soy.parsepasses.contextautoesc.ContextualAutoescaper;
 import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.SoyFileNode;
-import com.google.template.soy.soytree.SoyNode.Kind;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.AttrParam;
 import com.google.template.soy.types.SoyType;
@@ -83,10 +82,10 @@ public final class ElementCheckCrossTemplatePass implements CompilerFileSetPass 
     validateAttributeTypes(
         openTagNode,
         template.getHeaderParams().stream()
-            .filter(p -> p instanceof AttrParam)
+            .filter(AttrParam.class::isInstance)
             .map(AttrParam.class::cast));
     openTagNode.getChildren().stream()
-        .filter(p -> p.getKind() == Kind.HTML_ATTRIBUTE_NODE)
+        .filter(HtmlAttributeNode.class::isInstance)
         .map(HtmlAttributeNode.class::cast)
         .filter(attr -> attr.getStaticKey() == null)
         .forEach(

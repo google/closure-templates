@@ -113,7 +113,7 @@ public final class SoyTypeRegistryBuilder {
     public ProtoTypeRegistry build(SoyTypeRegistry interner) {
       Set<FileDescriptor> fileInputs =
           inputs.stream()
-              .filter(d -> d instanceof FileDescriptor)
+              .filter(FileDescriptor.class::isInstance)
               .map(FileDescriptor.class::cast)
               .collect(toImmutableSet()); // maintain order
 

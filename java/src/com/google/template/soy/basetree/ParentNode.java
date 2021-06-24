@@ -16,7 +16,11 @@
 
 package com.google.template.soy.basetree;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
+
+import com.google.common.collect.ImmutableList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * A node that may have children in the parse tree.
@@ -35,7 +39,7 @@ public interface ParentNode<N extends Node> extends Node {
    *
    * @return The number of children.
    */
-  public int numChildren();
+  int numChildren();
 
   /**
    * Gets the child at the given index.
@@ -43,7 +47,7 @@ public interface ParentNode<N extends Node> extends Node {
    * @param index The index of the child to get.
    * @return The child at the given index.
    */
-  public N getChild(int index);
+  N getChild(int index);
 
   /**
    * Finds the index of the given child.
@@ -51,7 +55,7 @@ public interface ParentNode<N extends Node> extends Node {
    * @param child The child to find the index of.
    * @return The index of the given child, or -1 if the given child is not a child of this node.
    */
-  public int getChildIndex(Node child);
+  int getChildIndex(Node child);
 
   /**
    * Gets the list of children.
@@ -63,14 +67,26 @@ public interface ParentNode<N extends Node> extends Node {
    *
    * @return The list of children.
    */
-  public List<N> getChildren();
+  List<N> getChildren();
+
+  default <T extends N> ImmutableList<T> getChildrenOfType(
+      ParentNode<? super T> root, Class<T> type) {
+    return root.getChildren().stream()
+        .filter(type::isInstance)
+        .map(type::cast)
+        .collect(toImmutableList());
+  }
+
+  default <T extends N> Optional<T> getChildOfType(ParentNode<? super T> root, Class<T> type) {
+    return root.getChildren().stream().filter(type::isInstance).map(type::cast).findFirst();
+  }
 
   /**
    * Adds the given child.
    *
    * @param child The child to add.
    */
-  public void addChild(N child);
+  void addChild(N child);
 
   /**
    * Adds the given child at the given index (shifting existing children if necessary).
@@ -78,21 +94,21 @@ public interface ParentNode<N extends Node> extends Node {
    * @param index The index to add the child at.
    * @param child The child to add.
    */
-  public void addChild(int index, N child);
+  void addChild(int index, N child);
 
   /**
    * Removes the child at the given index.
    *
    * @param index The index of the child to remove.
    */
-  public void removeChild(int index);
+  void removeChild(int index);
 
   /**
    * Removes the given child.
    *
    * @param child The child to remove.
    */
-  public void removeChild(N child);
+  void removeChild(N child);
 
   /**
    * Replaces the child at the given index with the given new child.
@@ -100,7 +116,7 @@ public interface ParentNode<N extends Node> extends Node {
    * @param index The index of the child to replace.
    * @param newChild The new child.
    */
-  public void replaceChild(int index, N newChild);
+  void replaceChild(int index, N newChild);
 
   /**
    * Replaces the given current child with the given new child.
@@ -108,17 +124,17 @@ public interface ParentNode<N extends Node> extends Node {
    * @param currChild The current child to be replaced.
    * @param newChild The new child.
    */
-  public void replaceChild(N currChild, N newChild);
+  void replaceChild(N currChild, N newChild);
 
   /** Clears the list of children. */
-  public void clearChildren();
+  void clearChildren();
 
   /**
    * Adds the given children.
    *
    * @param children The children to add.
    */
-  public void addChildren(List<? extends N> children);
+  void addChildren(List<? extends N> children);
 
   /**
    * Adds the given children at the given index (shifting existing children if necessary).
@@ -126,12 +142,12 @@ public interface ParentNode<N extends Node> extends Node {
    * @param index The index to add the children at.
    * @param children The children to add.
    */
-  public void addChildren(int index, List<? extends N> children);
+  void addChildren(int index, List<? extends N> children);
 
   /**
    * Appends the source strings for all the children to the given StringBuilder.
    *
    * @param sb The StringBuilder to which to append the children's source strings.
    */
-  public void appendSourceStringForChildren(StringBuilder sb);
+  void appendSourceStringForChildren(StringBuilder sb);
 }

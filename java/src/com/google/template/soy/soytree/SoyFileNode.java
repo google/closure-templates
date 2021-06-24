@@ -216,27 +216,26 @@ public final class SoyFileNode extends AbstractParentSoyNode<SoyNode>
     return getSourceLocation().getFilePath();
   }
 
-  private <T extends SoyNode> ImmutableList<T> getChildrenOfType(Class<T> type) {
+  public boolean isEmpty() {
     return this.getChildren().stream()
-        .filter(type::isInstance)
-        .map(type::cast)
-        .collect(toImmutableList());
+        .noneMatch(
+            c -> c instanceof TemplateNode || c instanceof ConstNode || c instanceof ExternNode);
   }
 
   public ImmutableList<ConstNode> getConstants() {
-    return getChildrenOfType(ConstNode.class);
+    return getChildrenOfType(this, ConstNode.class);
   }
 
   public ImmutableList<TemplateNode> getTemplates() {
-    return getChildrenOfType(TemplateNode.class);
+    return getChildrenOfType(this, TemplateNode.class);
   }
 
   public ImmutableList<ImportNode> getImports() {
-    return getChildrenOfType(ImportNode.class);
+    return getChildrenOfType(this, ImportNode.class);
   }
 
   public ImmutableList<ExternNode> getExterns() {
-    return getChildrenOfType(ExternNode.class);
+    return getChildrenOfType(this, ExternNode.class);
   }
 
   /** Returns this Soy file's name. */

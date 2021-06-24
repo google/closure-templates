@@ -79,17 +79,11 @@ public final class ExternNode extends AbstractParentCommandNode<ExternImplNode>
   }
 
   public Optional<JsImplNode> getJsImpl() {
-    return getChildren().stream()
-        .filter(JsImplNode.class::isInstance)
-        .map(JsImplNode.class::cast)
-        .findFirst();
+    return getChildOfType(this, JsImplNode.class);
   }
 
   public Optional<JavaImplNode> getJavaImpl() {
-    return getChildren().stream()
-        .filter(JavaImplNode.class::isInstance)
-        .map(JavaImplNode.class::cast)
-        .findFirst();
+    return getChildOfType(this, JavaImplNode.class);
   }
 
   public FunctionTypeNode typeNode() {

@@ -222,7 +222,6 @@ final class ElementAttributePass implements CompilerFileSetPass {
         .forEach(
             t ->
                 SoyTreeUtils.allNodesOfType(t, HtmlAttributeNode.class)
-                    .map(HtmlAttributeNode.class::cast)
                     .filter(HtmlAttributeNode::isSoyAttr)
                     .forEach(
                         attr ->
@@ -238,7 +237,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
   private <T extends Node> void checkAttributeTypes(SoyFileNode file) {
     file.getTemplates().stream()
         .flatMap(t -> t.getHeaderParams().stream())
-        .filter(p -> p instanceof AttrParam)
+        .filter(AttrParam.class::isInstance)
         .map(AttrParam.class::cast)
         .forEach(
             attr -> {
@@ -256,7 +255,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
       Consumer<TemplateNode> delegatingElementsWithAllAttrs) {
     ImmutableMap<String, AttrParam> attrs =
         templateNode.getAllParams().stream()
-            .filter(p -> p instanceof AttrParam)
+            .filter(AttrParam.class::isInstance)
             .map(AttrParam.class::cast)
             .collect(toImmutableMap(AttrParam::getAttrName, Function.identity()));
 

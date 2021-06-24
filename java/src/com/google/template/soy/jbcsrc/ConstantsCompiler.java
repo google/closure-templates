@@ -18,7 +18,6 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.isDefinitelyAssignableFrom;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.exprtree.AbstractLocalVarDefn;
@@ -46,10 +45,9 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
 
 /** Compiles byte code for {@link ConstNode}s. */
-@VisibleForTesting
 public final class ConstantsCompiler {
 
-  private static final TemplateAnalysis ALL_RESOLVED =
+  static final TemplateAnalysis ALL_RESOLVED =
       new TemplateAnalysis() {
         @Override
         public boolean isResolved(VarRefNode ref) {

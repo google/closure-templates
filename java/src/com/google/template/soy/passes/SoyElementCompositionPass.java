@@ -220,7 +220,7 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
     SourceLocation unknown = template.getSourceLocation().clearRange();
     Map<String, AttrParam> attrs =
         template.getAllParams().stream()
-            .filter(p -> p instanceof AttrParam)
+            .filter(AttrParam.class::isInstance)
             .map(AttrParam.class::cast)
             .collect(Collectors.toMap(AttrParam::name, Function.identity()));
 

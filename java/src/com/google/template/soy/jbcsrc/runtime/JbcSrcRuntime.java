@@ -144,6 +144,10 @@ public final class JbcSrcRuntime {
     return new AssertionError("Unexpected state requested: " + frame.stateNumber);
   }
 
+  public static NoSuchMethodException noExternJavaImpl() {
+    return new NoSuchMethodException("No Java implementation for extern.");
+  }
+
   /**
    * Every {@code debugger} statement will call this method. You can use conditional breakpoints
    * here to easily stop execution at the right location.

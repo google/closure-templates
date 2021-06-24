@@ -432,6 +432,9 @@ public abstract class MethodRef {
   public static final MethodRef RUNTIME_UNEXPECTED_STATE_ERROR =
       create(JbcSrcRuntime.class, "unexpectedStateError", StackFrame.class).asNonNullable();
 
+  public static final MethodRef NO_EXTERN_JAVA_IMPL =
+      create(JbcSrcRuntime.class, "noExternJavaImpl").asNonNullable();
+
   public static final MethodRef SOY_LIST_AS_JAVA_LIST =
       create(SoyList.class, "asJavaList").asNonNullable();
 

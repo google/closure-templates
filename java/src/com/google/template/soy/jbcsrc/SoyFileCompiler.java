@@ -28,6 +28,7 @@ import com.google.template.soy.jbcsrc.internal.SoyClassWriter;
 import com.google.template.soy.jbcsrc.restricted.TypeInfo;
 import com.google.template.soy.jbcsrc.shared.Names;
 import com.google.template.soy.soytree.ConstNode;
+import com.google.template.soy.soytree.ExternNode;
 import com.google.template.soy.soytree.PartialFileSetMetadata;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.TemplateNode;
@@ -56,7 +57,7 @@ final class SoyFileCompiler {
   }
 
   ImmutableList<ClassData> compile() {
-    if (fileNode.getConstants().isEmpty() && fileNode.getTemplates().isEmpty()) {
+    if (fileNode.isEmpty()) {
       // Special support for empty Soy files created with NamespaceDeclaration.EMPTY.
       return ImmutableList.of();
     } else if (NamespaceExemptions.isKnownDuplicateNamespace(fileNode.getNamespace())) {
@@ -68,6 +69,7 @@ final class SoyFileCompiler {
 
   private ImmutableList<ClassData> compileToManyClasses() {
     Preconditions.checkArgument(fileNode.getConstants().isEmpty());
+    Preconditions.checkArgument(fileNode.getExterns().isEmpty());
 
     // If the template is in a file whose namespace is not known to be unique, generate it into its
     // own class to avoid ODR violations.
@@ -93,21 +95,30 @@ final class SoyFileCompiler {
   private ImmutableList<ClassData> compileToSingleClass() {
     TypeWriter typeWriter = TypeWriter.create(fileNode);
 
-    for (ConstNode constant : fileNode.getConstants()) {
-      new ConstantsCompiler(
-              constant, typeWriter.writer(), javaSourceFunctionCompiler, fileSetMetadata)
-          .compile();
-    }
-    for (TemplateNode templateNode : fileNode.getTemplates()) {
-      new TemplateCompiler(
-              templateNode,
-              typeWriter.writer(),
-              typeWriter.fields(),
-              typeWriter.innerClasses(),
-              javaSourceFunctionCompiler,
-              fileSetMetadata)
-          .compile();
-    }
+    fileNode
+        .getChildren()
+        .forEach(
+            c -> {
+              if (c instanceof ConstNode) {
+                new ConstantsCompiler(
+                        (ConstNode) c,
+                        typeWriter.writer(),
+                        javaSourceFunctionCompiler,
+                        fileSetMetadata)
+                    .compile();
+              } else if (c instanceof ExternNode) {
+                new ExternCompiler((ExternNode) c, typeWriter.writer()).compile();
+              } else if (c instanceof TemplateNode) {
+                new TemplateCompiler(
+                        (TemplateNode) c,
+                        typeWriter.writer(),
+                        typeWriter.fields(),
+                        typeWriter.innerClasses(),
+                        javaSourceFunctionCompiler,
+                        fileSetMetadata)
+                    .compile();
+              }
+            });
     return typeWriter.close().collect(toImmutableList());
   }
 
