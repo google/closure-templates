@@ -817,13 +817,12 @@ incompatibilities here:
         have to be fixed.
 
 *   SoySauce is stricter about dereferencing `null` objects. For example, given
-    the expression `isNonnull($foo.bar.baz)` if `bar` is `null` then accessing
+    the expression `$foo.bar.baz != null` if `bar` is `null` then accessing
     `.baz` on it should cause an error, and it does in SoySauce and the JS
     backend, however, in Tofu this doesn’t happen (though there is a TODO),
     instead it only causes an error if you perform certain operations with the
-    result of the expression (calling `isNonnull` and simple comparisons the
-    only thing you can do). An appropriate fix would be to rewrite it as
-    `isNonnull($foo.bar?.baz)`.
+    result of the expression. An appropriate fix would be to rewrite it as
+    `$foo.bar?.baz != null`.
 
 *   SoySauce interprets 'required' template parameters slightly differently than
     Tofu. Imagine this template:

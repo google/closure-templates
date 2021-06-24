@@ -42,17 +42,14 @@ This type narrowing feature is triggered by the various control flow mechanisms:
 *   [ternary operator](../reference/expressions#ternary)
 
 When the predicate of the conditional is a comparison with `null` the compiler
-is able to narrow the type on each side of the branch. This includes implicit
-comparisons as well as explicit ones using the
-[`isNull`](../reference/functions#isNull) and
-[`isNonnull`](../reference/functions#isNonnull) functions.
+is able to narrow the type on each side of the branch.
 
-For example consider these expressions, `$foo ? A : B`, `$foo != null ? A : B`,
-`isNonnull($foo) ? A : B`. In each example, the variable `$foo` is compared with
-`null` either implicitly or explicitly, so within the `A` branch we know that
-all references to `$foo` are guaranteed to be non-null and so the type is
-modified to reflect that. Furthermore within the `B` branch we know that `$foo`
-is `null` or at least is `falsy`.
+For example consider these expressions, `$foo ? A : B`, `$foo != null ? A : B`.
+In each example, the variable `$foo` is compared with `null` either implicitly
+or explicitly, so within the `A` branch we know that all references to `$foo`
+are guaranteed to be non-null and so the type is modified to reflect that.
+Furthermore within the `B` branch we know that `$foo` is `null` or at least is
+`falsy`.
 
 ## `checkNotNull` function
 

@@ -279,10 +279,10 @@ The second issue is if `$pair.smallerInt == 0`, then it would be falsy and so
 should be passed. This is why you should generally avoid using sometimes-defined
 field values. If you do use them, consider the possibility of falsy values. In
 this example, if there's a possibility that `$pair.smallerInt == 0`, you could
-correct the bug by rewriting the EXPRESSION using the function `isNonnull`:
+correct the bug by adding a comparison to `null` to the EXPRESSION:
 
 ```soy
-{param smallerNum: isNonnull($pair.smallerInt) ? $pair.smallerInt : $pair.largerInt - 100 /}
+{param smallerNum: $pair.smallerInt != null ? $pair.smallerInt : $pair.largerInt - 100 /}
 ```
 
 or better yet, use the null-coalescing operator:

@@ -775,7 +775,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
   @Override
   protected SoyValue visitNullCoalescingOpNode(NullCoalescingOpNode node) {
     SoyValue operand0 = visit(node.getChild(0));
-    // identical to the implementation of isNonnull
+    // identical to the implementation of != null
     if (operand0 instanceof NullData || operand0 instanceof UndefinedData) {
       return visit(node.getChild(1));
     }

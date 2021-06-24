@@ -148,12 +148,11 @@ SoySauce has somewhat stricter runtime type checking. For example,
 ### Stricter `null` handling {#null-handling}
 
 SoySauce is stricter about dereferencing null objects. For example, given the
-expression `isNonnull($foo.bar.baz)` if `bar` is `null` then accessing `.baz` on
-it should cause an error, and it does in SoySauce and the JS backend, however,
-in Tofu this doesn’t happen (though there is a TODO), instead it only causes an
-error if you perform certain operations with the result of the expression
-(calling `isNonnull` and simple comparisons are the only thing you can do). An
-appropriate fix would be to rewrite it as `isNonnull($foo.bar?.baz)`.
+expression `$foo.bar.baz != null` if `bar` is `null` then accessing `.baz` on it
+should cause an error, and it does in SoySauce and the JS backend, however, in
+Tofu this doesn’t happen (though there is a TODO), instead it only causes an
+error if you perform certain operations with the result of the expression. An
+appropriate fix would be to rewrite it as `$foo.bar?.baz != null`.
 
 ### Required parameter semantics
 
