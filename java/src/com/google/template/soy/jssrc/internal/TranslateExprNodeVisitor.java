@@ -786,7 +786,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
       Sets.immutableEnumSet(
           SoyType.Kind.INT, SoyType.Kind.FLOAT, SoyType.Kind.PROTO_ENUM, Kind.BOOL, Kind.STRING);
 
-  private Expression visitEqualNodeHelper(OperatorNode node) {
+  private Expression visitEqualNodeHelper(OperatorNode node, Operator eq) {
     boolean needsSoyEquals = false;
     boolean neverSoyEquals = false;
 
@@ -801,19 +801,26 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
       }
     }
 
-    return needsSoyEquals && !neverSoyEquals
-        ? SOY_EQUALS.call(visitChildren(node))
-        : operation(Operator.EQUAL, visitChildren(node));
+    Expression rv;
+    if (needsSoyEquals && !neverSoyEquals) {
+      rv = SOY_EQUALS.call(visitChildren(node));
+      if (eq == Operator.NOT_EQUAL) {
+        rv = not(rv);
+      }
+    } else {
+      rv = operation(eq, visitChildren(node));
+    }
+    return rv;
   }
 
   @Override
   protected Expression visitEqualOpNode(EqualOpNode node) {
-    return visitEqualNodeHelper(node);
+    return visitEqualNodeHelper(node, Operator.EQUAL);
   }
 
   @Override
   protected Expression visitNotEqualOpNode(NotEqualOpNode node) {
-    return not(visitEqualNodeHelper(node));
+    return visitEqualNodeHelper(node, Operator.NOT_EQUAL);
   }
 
   @Override

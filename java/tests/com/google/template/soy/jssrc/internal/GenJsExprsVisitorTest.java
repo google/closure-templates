@@ -133,7 +133,7 @@ public final class GenJsExprsVisitorTest {
             "{@param goo : ?}",
             "{if $boo}",
             "  Blah",
-            "{elseif not isNonnull($goo)}",
+            "{elseif not ($goo != null)}",
             "  Bleh",
             "{else}",
             "  Bluh",
@@ -160,7 +160,7 @@ public final class GenJsExprsVisitorTest {
             "{@param goo : ?}",
             "{if $boo}",
             "  Blah",
-            "{elseif not isNonnull($goo)}",
+            "{elseif not ($goo != null)}",
             "  Bleh",
             "{/if}");
     String expectedJsExprText =
