@@ -17,7 +17,6 @@
 package com.google.template.soy.soytree;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
-import static com.google.template.soy.error.ErrorReporter.exploding;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
@@ -26,9 +25,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
-import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
-import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.AbstractNodeVisitor;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.Node;
@@ -43,13 +40,10 @@ import com.google.template.soy.exprtree.ListComprehensionNode;
 import com.google.template.soy.exprtree.MapLiteralFromListNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
-import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.Kind;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
-import com.google.template.soy.types.BoolType;
-import com.google.template.soy.types.UnknownType;
 import com.google.template.soy.types.ast.FunctionTypeNode;
 import com.google.template.soy.types.ast.GenericTypeNode;
 import com.google.template.soy.types.ast.NamedTypeNode;
@@ -67,7 +61,6 @@ import java.util.Spliterators.AbstractSpliterator;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -283,33 +276,6 @@ public final class SoyTreeUtils {
       }
     }
     return sb;
-  }
-
-  public static FunctionNode buildNotNull(ExprNode node, SoySourceFunction isNonNullFn) {
-    SourceLocation unknown = node.getSourceLocation().clearRange();
-    FunctionNode isNonnull =
-        FunctionNode.newPositional(Identifier.create("isNonnull", unknown), isNonNullFn, unknown);
-    ExprRootNode exprNode = new ExprRootNode(node.copy(new CopyState()));
-    exprNode.setType(node.getType());
-    isNonnull.addChild(exprNode);
-    isNonnull.setType(BoolType.getInstance());
-    isNonnull.setAllowedParamTypes(ImmutableList.of(UnknownType.getInstance()));
-    return isNonnull;
-  }
-
-  public static IfNode buildPrintIfNotNull(
-      ExprNode node, Supplier<Integer> id, SoySourceFunction isNonnull) {
-    SourceLocation unknown = node.getSourceLocation().clearRange();
-    IfNode ifNode = new IfNode(id.get(), unknown);
-    IfCondNode ifCondNode =
-        new IfCondNode(id.get(), unknown, unknown, "if", buildNotNull(node, isNonnull));
-    ifCondNode.getExpr().setType(BoolType.getInstance());
-    ifNode.addChild(ifCondNode);
-    PrintNode printNode =
-        new PrintNode(id.get(), unknown, true, node, ImmutableList.of(), exploding());
-    printNode.getExpr().setType(node.getType());
-    ifCondNode.addChild(printNode);
-    return ifNode;
   }
 
   // -----------------------------------------------------------------------------------------------

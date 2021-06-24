@@ -452,9 +452,7 @@ public final class PassManager {
         passes.add(new AddDebugAttributesPass());
       }
       if (astRewrites == AstRewrites.ALL) {
-        passes.add(
-            new ElementAttributePass(
-                errorReporter, pluginResolver, accumulatedState::registryFromDeps));
+        passes.add(new ElementAttributePass(errorReporter, accumulatedState::registryFromDeps));
       }
       if (!disableAllTypeChecking) {
         passes
