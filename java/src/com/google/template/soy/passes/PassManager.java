@@ -396,7 +396,7 @@ public final class PassManager {
               new FileDependencyOrderPass(
                   errorReporter, v -> accumulatedState.topologicallyOrderedFiles = v))
           .add(
-              new ConstantInvariantsEnforcementPass(
+              new ModernFeatureInvariantsEnforcementPass(
                   errorReporter, () -> accumulatedState.topologicallyOrderedFiles != null))
           .add(new RestoreGlobalsPass())
           .add(new RestoreCompilerChecksPass(errorReporter))
