@@ -341,7 +341,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
                 replacementNode = newAttrNode;
               } else if (attrNode.getConcatenationDelimiter() == null && attrNode.hasValue()) {
                 // No concatenation, with a default value. Use if/else to use either the default or
-                // override. Generates: id="{isNonnull($id) ? $id : $idDefault}"
+                // override. Generates: id="{$id != null ? $id : $idDefault}"
                 IfNode ifNode = buildPrintIfNotNull(attrExpr, id);
                 valueNode.addChild(ifNode);
                 IfElseNode ifElseNode = new IfElseNode(id.get(), unknown, unknown);
