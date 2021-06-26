@@ -12,14 +12,6 @@ custom Soy functions, see [Plugins](../dev/plugins.md#function_plugins).
 
 ## Basic Functions
 
-### `isNonnull(value)` {#isNonnull}
-
-Returns `true` if the given value is not `null`.
-
-### `isNull(value)` {#isNull}
-
-Returns `true` if the given value is `null`.
-
 ### `checkNotNull(value)` {#checkNotNull}
 
 Throws a runtime exception if the given value is `null` and returns the value

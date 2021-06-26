@@ -2868,20 +2868,6 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
 
     @Override
     protected void visitFunctionNode(FunctionNode node) {
-      // Handle 'isNull(<expr>)' and 'isNonnull(<expr>)'.
-      if (node.numChildren() != 1) {
-        return;
-      } else if ("isNonnull".equals(node.getFunctionName())) {
-        ExprEquivalence.Wrapper wrappedExpr = exprEquivalence.wrap(node.getChild(0));
-        positiveTypeConstraints.put(
-            wrappedExpr, SoyTypes.tryRemoveNull(wrappedExpr.get().getType()));
-        negativeTypeConstraints.put(wrappedExpr, NullType.getInstance());
-      } else if ("isNull".equals(node.getFunctionName())) {
-        ExprEquivalence.Wrapper wrappedExpr = exprEquivalence.wrap(node.getChild(0));
-        positiveTypeConstraints.put(wrappedExpr, NullType.getInstance());
-        negativeTypeConstraints.put(
-            wrappedExpr, SoyTypes.tryRemoveNull(wrappedExpr.get().getType()));
-      }
     }
 
     @Override

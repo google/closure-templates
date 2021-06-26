@@ -778,7 +778,7 @@ public class BytecodeCompilerTest {
 
   @Test
   public void testIsNonNull() {
-    assertThatTemplateBody("{@param foo : [a : [ b : string]] }", "{isNonnull($foo.a)}")
+    assertThatTemplateBody("{@param foo : [a : [ b : string]] }", "{$foo.a != null}")
         .rendersAs(
             "false", ImmutableMap.<String, Object>of("foo", ImmutableMap.<String, String>of()));
   }

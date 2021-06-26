@@ -198,7 +198,7 @@ public class LazyClosureCompilerTest {
             "{@param comments: list<string>}",
             "{@param? numComments: number}",
             "  {let $numNotShown: ",
-            "      isNonnull($numComments) and length($comments) > $numComments + 2 ?",
+            "      ($numComments != null) and length($comments) > $numComments + 2 ?",
             "          length($comments) - $numComments : 0 /}",
             "  {$numNotShown}");
     tester.rendersAs("0", ImmutableMap.of("comments", ImmutableList.of(), "numComments", 2));

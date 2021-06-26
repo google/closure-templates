@@ -569,12 +569,12 @@ public final class ResolveExpressionTypesPassTest {
                     "    {assertType('bool', $pa)}", // #13 must be non-null
                     "  {/if}",
                     "{/if}",
-                    "{if isNonnull($pa)}", // isNonnull function
+                    "{if $pa != null}", // != null
                     "  {assertType('bool', $pa)}", // #14 must be non-null
                     "{else}",
                     "  {assertType('null', $pa)}", // #15 must be null
                     "{/if}",
-                    "{if isNull($pa)}", // isNull function
+                    "{if $pa == null}", // == null
                     "  {assertType('null', $pa)}", // #16 must be null
                     "{else}",
                     "  {assertType('bool', $pa)}", // #17 must be non-null
@@ -649,7 +649,7 @@ public final class ResolveExpressionTypesPassTest {
                     "{@param? selected: map<string,bool>}",
                     "{assertType('bool', $selected and $selected['a'])}",
                     "{assertType('bool', $selected == null or $selected['a'])}",
-                    "{if isNonnull($record.active) and (not $record.active)}",
+                    "{if ($record.active != null) and (not $record.active)}",
                     "  {assertType('bool', $record.active)}",
                     "{/if}",
                     ""))
@@ -737,7 +737,7 @@ public final class ResolveExpressionTypesPassTest {
                     "{if not $pc.a}{assertType('int|null', $pc.a)}{/if}"))
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
             .parse()
-            .fileSet(); // #2 must be non-null (re-written to (isNonnull($pa) ? $pa : $pb))
+            .fileSet(); // #2 must be non-null (re-written to ($pa != null ? $pa : $pb))
     assertTypes(soyTree);
   }
 
@@ -975,7 +975,7 @@ public final class ResolveExpressionTypesPassTest {
                     "{@param b: bool}",
                     "{@param r: [a: null|[b: null|[c: null|string]]]}",
                     "{assertType('int', $i!)}",
-                    "{assertType('int|null', isNonnull($i) ? $i! : null)}",
+                    "{assertType('int|null', $i != null ? $i! : null)}",
                     "{assertType('string', $r.a.b.c!)}",
                     "{assertType('[c: null|string]', $r.a.b!)}",
                     "{assertType('int', $i ?: $n!)}",

@@ -45,8 +45,8 @@ public class PrintDirectiveRewritingTest {
     testRewritten("{@param a : ?}{$a |hola: 1, 'x'}", "{hola($a, 1, 'x')}");
     testRewritten("{@param a : ?}{@param y : ?}{$a |hola: 1, 'x', $y}", "{hola($a, 1, 'x', $y)}");
     testRewritten(
-        "{@param a : ?}{@param y : ?}{$a |hola: 1, 'x', $y, isNonnull($y)}",
-        "{hola($a, 1, 'x', $y, isNonnull($y))}");
+        "{@param a : ?}{@param y : ?}{$a |hola: 1, 'x', $y, $y != null}",
+        "{hola($a, 1, 'x', $y, $y != null)}");
     testRewritten("{@param a : ?}{$a |hola: 1 |hola: 2}", "{hola(hola($a, 1), 2)}");
   }
 
