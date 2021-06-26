@@ -113,7 +113,7 @@ previous section.
 {/template}
 ```
 
-**Warning:**: When passing data in this way much of the call-site type checking
+**Warning:** When passing data in this way much of the call-site type checking
 that Soy normally performs is *disabled*. So it can be easy to make simple
 mistakes like forgetting to pass a required parameter or passing a parameter of
 the wrong type. See b/168852179
