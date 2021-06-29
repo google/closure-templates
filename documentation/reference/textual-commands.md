@@ -216,6 +216,31 @@ merged:
 
 ### Tips & tricks for common mistakes
 
+#### No spaces removed {#no-spaces-removed}
+
+The following are different. The former produces " /accounts " while the latter
+produces "/accounts".
+
+```soy
+{param accountsUrl kind="uri"} /accounts {/param}
+```
+
+```soy
+{param accountsUrl kind="uri"}
+  /accounts
+{/param}
+```
+
+Line joining will remove all whitespace before and after text when it's on a new
+line compared to the opening/closing `param` commands. Whitespace is respected
+otherwise. In a hybrid case, the below will produce " /accounts".
+
+
+```soy
+{param accountsUrl kind="uri"} /accounts
+{/param}
+```
+
 #### Too few spaces {#too-few-spaces}
 
 The following is a common example of where line joining has an unintended effect
