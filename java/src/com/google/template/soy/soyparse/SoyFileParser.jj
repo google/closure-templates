@@ -492,6 +492,10 @@ public class SoyFileParser {
   private static final SoyErrorKind LEGACY_NOT_ERROR =
       SoyErrorKind.of("Found use of ''!'' instead of the ''not'' operator.");
 
+  // Extern errors:
+  private static final SoyErrorKind MULTIPLE_IMPLS =
+      SoyErrorKind.of("An extern can only have one implementation per language.");
+
   // Error message that mimics a ParseException
   private static final SoyErrorKind PARSER_ERROR =
       SoyErrorKind.of(
@@ -1112,7 +1116,10 @@ TOKEN_MGR_DECLS: {
   < DELTEMPLATE_OPEN : "{deltemplate" <WS> > { isInTemplate = true; } : IN_CMD_TAG
 | < TEMPLATE_OPEN: "{template" <WS> > { isInTemplate = true; } : IN_CMD_TAG
 | < ELEMENT_OPEN: "{element" <WS> > { isInTemplate = true; } : IN_CMD_TAG
-| < EXTERN_OPEN: "{" ("export ")? "extern" <WS> > { isInTemplate = true; } : IN_CMD_TAG
+| < EXTERN_OPEN: "{" ("export ")? "extern" <WS> > : IN_CMD_TAG
+| < CMD_CLOSE_EXTERN : "{/extern}" > { resetState(); } : DEFAULT
+| < CMD_OPEN_JS_IMPL : "{jsimpl" > { isInTemplate = false; } : IN_CMD_TAG
+| < CMD_OPEN_JAVA_IMPL : "{javaimpl" > { isInTemplate = false; } : IN_CMD_TAG
 }
 
 
@@ -1137,7 +1144,6 @@ TOKEN_MGR_DECLS: {
   < CMD_CLOSE_TEMPLATE           : "{/template}"    > { resetState(); } : DEFAULT
 | < CMD_CLOSE_DELTEMPLATE        : "{/deltemplate}" > { resetState(); } : DEFAULT
 | < CMD_CLOSE_ELEMENT            : "{/element}" > { resetState(); } : DEFAULT
-| < CMD_CLOSE_EXTERN             : "{/extern}"    > { resetState(); } : DEFAULT
 
 | < DECL_BEGIN_PARAM             : "{@param"        > : IN_CMD_TAG
 | < DECL_ATTRIBUTE_STAR          : "{@attribute *}" >
@@ -1160,8 +1166,6 @@ TOKEN_MGR_DECLS: {
 | < CMD_FULL_NBSP                : "{nbsp}"         >
 
 | < CMD_OPEN_LITERAL             : "{literal}"      > : IN_LITERAL_BLOCK
-| < CMD_OPEN_JS_IMPL             : "{jsimpl"        > : IN_CMD_TAG
-| < CMD_OPEN_JAVA_IMPL           : "{javaimpl"      > : IN_CMD_TAG
 
 | < CMD_BEGIN_CALL               : "{call" <WS>     > : EXPR
 | < CMD_BEGIN_DELCALL            : "{delcall" <WS>  > : IN_CMD_TAG
@@ -1538,9 +1542,9 @@ private SoyFileNode NonEmptySoyFile() :
 private ExternNode ExternStmt() :
 {
   Token open, name, openClose, close;
-  Token implOpen, implClose;
   List<CommandTagAttribute> attributes;
   FunctionTypeNode type;
+  ExternImplNode impl;
 }
 {
   {
@@ -1551,32 +1555,32 @@ private ExternNode ExternStmt() :
   <CMD_COLON>
   type = FunctionType()
   openClose = <CMD_END>
+
   (
-      <TOKEN_NOT_WS>
-  |   <TOKEN_WS>
+    impl = JsImplStmt()
+    { impls.add(impl); }
   |
-    (
-      implOpen = <CMD_OPEN_JS_IMPL>
-      attributes = Attributes()
-      implClose = <CMD_SELF_CLOSE>
-      {
-        SourceLocation srcLoc = createSrcLoc(implOpen, implClose);
-        impls.add(new JsImplNode(nodeIdGen.genId(), srcLoc, attributes, errorReporter));
-      }
-    )
-  |
-    (
-      implOpen = <CMD_OPEN_JAVA_IMPL>
-      attributes = Attributes()
-      implClose = <CMD_SELF_CLOSE>
-      {
-        SourceLocation srcLoc = createSrcLoc(implOpen, implClose);
-        impls.add(new JavaImplNode(nodeIdGen.genId(), srcLoc, attributes, errorReporter));
-      }
-    )
-  )*
+    impl = JavaImplStmt()
+    { impls.add(impl); }
+  )+
   close = <CMD_CLOSE_EXTERN>
   {
+    boolean hasJsImpl = false;
+    boolean hasJavaImpl = false;
+    for (ExternImplNode parsedImpl : impls) {
+      if (parsedImpl instanceof JsImplNode) {
+        if (hasJsImpl) {
+          errorReporter.report(parsedImpl.getSourceLocation(), MULTIPLE_IMPLS);
+        }
+        hasJsImpl = true;
+      }
+      if (parsedImpl instanceof JavaImplNode) {
+        if (hasJavaImpl) {
+          errorReporter.report(parsedImpl.getSourceLocation(), MULTIPLE_IMPLS);
+        }
+        hasJavaImpl = true;
+      }
+    }
     boolean exported = open.image.startsWith("{export ");
     ExternNode node = new ExternNode(nodeIdGen.genId(), createSrcLoc(open, close),
         Identifier.create(name.image, createSrcLoc(name)), type,
@@ -1585,6 +1589,44 @@ private ExternNode ExternStmt() :
     return node;
   }
 }
+
+
+/**
+ * JsImplStmt -> {jsimpl module="" function="" /}
+ */
+private JsImplNode JsImplStmt() :
+{
+  Token open, close;
+  List<CommandTagAttribute> attributes;
+}
+{
+  open = <CMD_OPEN_JS_IMPL>
+  attributes = Attributes()
+  close = <CMD_SELF_CLOSE>
+  {
+    SourceLocation srcLoc = createSrcLoc(open, close);
+    return new JsImplNode(nodeIdGen.genId(), srcLoc, attributes, errorReporter);
+  }
+}
+
+/**
+ * JavaImplStmt -> {javaimpl module="" function="" /}
+ */
+private JavaImplNode JavaImplStmt() :
+{
+  Token open, close;
+  List<CommandTagAttribute> attributes;
+}
+{
+  open = <CMD_OPEN_JAVA_IMPL>
+  attributes = Attributes()
+  close = <CMD_SELF_CLOSE>
+  {
+    SourceLocation srcLoc = createSrcLoc(open, close);
+    return new JavaImplNode(nodeIdGen.genId(), srcLoc, attributes, errorReporter);
+  }
+}
+
 
 
 /**
