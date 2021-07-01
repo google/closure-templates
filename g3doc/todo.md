@@ -28,7 +28,7 @@ Cons:
 *   we may not be able to delete as much code as we would hope due to how this
     works in the optimizer
 
-## Move af_soy_library to `third_party/java/builddefs` and rename to `soy_library`
+## Open source `af_soy_library` and rename to `soy_library`
 
 A prerequisite for maybe bazel-ifying it
 

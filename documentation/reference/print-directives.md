@@ -20,16 +20,6 @@ NOTE: The template compiler applies autoescaping before evaluating
 `|bidiSpanWrap`, which is safe because `|bidiSpanWrap` correctly handles
 HTML-escaped text.
 
-For Incremental DOM users, it is preferable to use `bidiWrap` instead.
-
-```soy
-import {bidiWrap} from 'third_party/java/soy/i18n.soy';
-
-...
-
-bidiWrap(content:$content)
-```
-
 ### `|bidiUnicodeWrap` {#bidiUnicodeWrap}
 
 If the overall directionality the print command is different from the global
@@ -143,7 +133,7 @@ base64 encoded string as defined by the
 
 This directives is used internally by the compiler as part of its support for
 ContentSecurityPolicy nonces. See our
-[security guide](/third_party/java_src/soy/g3doc/dev/security.md#content_security_policy)
+[security guide](../dev/security.md#content_security_policy)
 for more information.
 
 ### `|whitespaceHtmlAttributes` {#whitespaceHtmlAttributes}
