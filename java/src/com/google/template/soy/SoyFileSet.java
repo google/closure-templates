@@ -69,6 +69,7 @@ import com.google.template.soy.passes.PassManager.AstRewrites;
 import com.google.template.soy.passes.PassManager.PassContinuationRule;
 import com.google.template.soy.passes.PluginResolver;
 import com.google.template.soy.passes.SoyConformancePass;
+import com.google.template.soy.plugin.MethodChecker;
 import com.google.template.soy.plugin.internal.PluginValidator;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.pysrc.SoyPySrcOptions;
@@ -167,6 +168,9 @@ public final class SoyFileSet {
 
     private boolean optimize = true;
 
+    private MethodChecker javaPluginValidator =
+        (className, methodName, returnType, arguments, inInterface, reporter) -> false;
+
     private Set<SourceFilePath> generatedPathsToCheck = ImmutableSet.of();
 
     private final ImmutableSet.Builder<SoyFunction> soyFunctions = ImmutableSet.builder();
@@ -245,7 +249,13 @@ public final class SoyFileSet {
           skipPluginValidation,
           optimize,
           generatedPathsToCheck,
-          cssRegistry);
+          cssRegistry,
+          javaPluginValidator);
+    }
+
+    public Builder setJavaPluginValidator(MethodChecker javaPluginValidator) {
+      this.javaPluginValidator = javaPluginValidator;
+      return this;
     }
 
     /** Adds one {@link SoySourceFunction} to the functions used by this SoyFileSet. */
@@ -532,6 +542,7 @@ public final class SoyFileSet {
 
   private final boolean optimize;
   private final ImmutableSet<SourceFilePath> generatedPathsToCheck;
+  private final MethodChecker javaMethodChecker;
 
   /** For reporting errors during parsing. */
   private ErrorReporter errorReporter;
@@ -556,7 +567,8 @@ public final class SoyFileSet {
       boolean skipPluginValidation,
       boolean optimize,
       Set<SourceFilePath> generatedPathsToCheck,
-      Optional<CssRegistry> cssRegistry) {
+      Optional<CssRegistry> cssRegistry,
+      MethodChecker javaMethodChecker) {
     this.scopedData = apiCallScopeProvider;
     this.typeRegistry = typeRegistry;
     this.soyFileSuppliers = soyFileSuppliers;
@@ -575,6 +587,7 @@ public final class SoyFileSet {
     this.optimize = optimize;
     this.generatedPathsToCheck = ImmutableSet.copyOf(generatedPathsToCheck);
     this.cssRegistry = cssRegistry;
+    this.javaMethodChecker = javaMethodChecker;
   }
 
   /** Returns the list of suppliers for the input Soy files. For testing use only! */
@@ -1195,6 +1208,7 @@ public final class SoyFileSet {
         .setSoyPrintDirectives(printDirectives)
         .setCssRegistry(cssRegistry)
         .setErrorReporter(errorReporter)
+        .setJavaPluginValidator(javaMethodChecker)
         .setConformanceConfig(conformanceConfig)
         .setLoggingConfig(loggingConfig)
         .setPluginResolver(

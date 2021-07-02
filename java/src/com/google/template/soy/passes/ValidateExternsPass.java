@@ -19,6 +19,7 @@ package com.google.template.soy.passes;
 import static com.google.common.collect.ImmutableListMultimap.toImmutableListMultimap;
 
 import com.google.common.base.Strings;
+import com.google.common.base.VerifyException;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ListMultimap;
 import com.google.common.primitives.Primitives;
@@ -33,6 +34,7 @@ import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.internal.proto.JavaQualifiedNames;
+import com.google.template.soy.plugin.MethodChecker;
 import com.google.template.soy.plugin.java.restricted.MethodSignature;
 import com.google.template.soy.soytree.ExternNode;
 import com.google.template.soy.soytree.JavaImplNode;
@@ -62,14 +64,18 @@ class ValidateExternsPass implements CompilerFilePass {
   private static final SoyErrorKind OVERLOAD_RETURN_CONFLICT =
       SoyErrorKind.of(
           "Overloaded extern must have the same return type as the earlier extern defined on {0}.");
+  private static final SoyErrorKind IMPLEMENTATION_DOES_NOT_EXIST =
+      SoyErrorKind.of("This Java implementation does not exist{0}.");
   private static final SoyErrorKind OVERLOAD_PARAM_CONFLICT =
       SoyErrorKind.of(
           "Overloaded extern parameters are ambiguous with the earlier extern defined on {0}.");
 
   private final ErrorReporter errorReporter;
+  private final MethodChecker checker;
 
-  ValidateExternsPass(ErrorReporter errorReporter) {
+  ValidateExternsPass(ErrorReporter errorReporter, MethodChecker checker) {
     this.errorReporter = errorReporter;
+    this.checker = checker;
   }
 
   @Override
@@ -148,6 +154,21 @@ class ValidateExternsPass implements CompilerFilePass {
             extern.getType().getParameters().get(i).getType(),
             () -> java.getAttributeValueLocation(JavaImplNode.PARAMS));
       }
+    }
+    try {
+      if (!checker.hasMethod(
+          java.className(),
+          java.methodName(),
+          java.returnType(),
+          java.params(),
+          false,
+          (error) -> {
+            throw new VerifyException(error);
+          })) {
+        errorReporter.report(java.getSourceLocation(), IMPLEMENTATION_DOES_NOT_EXIST, "");
+      }
+    } catch (VerifyException e) {
+      errorReporter.report(java.getSourceLocation(), IMPLEMENTATION_DOES_NOT_EXIST, e.getMessage());
     }
   }
 

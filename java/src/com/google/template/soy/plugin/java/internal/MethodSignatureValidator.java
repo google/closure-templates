@@ -37,7 +37,7 @@ public class MethodSignatureValidator {
   private final CompiledJarsPluginSignatureReader sigReader;
 
   public MethodSignatureValidator(List<File> pluginRuntimeJars, ErrorReporter errorReporter) {
-    this.sigReader = new CompiledJarsPluginSignatureReader(pluginRuntimeJars);
+    this.sigReader = new CompiledJarsPluginSignatureReader(pluginRuntimeJars, true);
     this.errorReporter = errorReporter;
   }
 

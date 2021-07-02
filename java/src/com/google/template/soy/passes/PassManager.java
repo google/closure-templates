@@ -33,6 +33,7 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.passes.CompilerFileSetPass.Result;
 import com.google.template.soy.passes.CompilerFileSetPass.TopologicallyOrdered;
+import com.google.template.soy.plugin.MethodChecker;
 import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.FileSetMetadata;
@@ -213,6 +214,7 @@ public final class PassManager {
     private boolean allowUnknownGlobals;
     private boolean allowUnknownJsGlobals;
     private boolean disableAllTypeChecking;
+    private MethodChecker javaPluginValidator;
     private boolean desugarHtmlAndStateNodes = true;
     private boolean optimize = true;
     private ImmutableSet<SourceFilePath> generatedPathsToCheck = ImmutableSet.of();
@@ -234,6 +236,11 @@ public final class PassManager {
     public Builder setSoyPrintDirectives(
         ImmutableList<? extends SoyPrintDirective> printDirectives) {
       this.soyPrintDirectives = checkNotNull(printDirectives);
+      return this;
+    }
+
+    public Builder setJavaPluginValidator(MethodChecker javaPluginValidator) {
+      this.javaPluginValidator = javaPluginValidator;
       return this;
     }
 
@@ -407,7 +414,7 @@ public final class PassManager {
       // needs to come before SoyConformancePass
       passes
           .add(new ResolvePluginsPass(pluginResolver))
-          .add(new ValidateExternsPass(errorReporter));
+          .add(new ValidateExternsPass(errorReporter, javaPluginValidator));
 
       // Must come after ResolvePluginsPass.
       if (astRewrites == AstRewrites.ALL) {

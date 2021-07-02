@@ -30,6 +30,7 @@ java_library(
         "//java/src/com/google/template/soy/internal/i18n",
         "//java/src/com/google/template/soy/internal/proto",
         "//java/src/com/google/template/soy/jbcsrc/restricted",
+        "//java/src/com/google/template/soy/plugin",
         "//java/src/com/google/template/soy/plugin/java/restricted",
         "//java/src/com/google/template/soy/shared/restricted:annotations",
         "//java/src/com/google/template/soy/types",

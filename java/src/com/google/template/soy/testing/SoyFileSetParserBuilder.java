@@ -58,9 +58,7 @@ import java.util.List;
 import java.util.Optional;
 import javax.annotation.Nullable;
 
-/**
- * Fluent builder for configuring {@link com.google.template.soy.SoyFileSetParser}s in tests.
- */
+/** Fluent builder for configuring {@link com.google.template.soy.SoyFileSetParser}s in tests. */
 public final class SoyFileSetParserBuilder {
 
   private final ImmutableMap<SourceFilePath, SoyFileSupplier> soyFileSuppliers;
@@ -373,6 +371,8 @@ public final class SoyFileSetParserBuilder {
         .setSoyPrintDirectives(soyPrintDirectives.build())
         .setErrorReporter(errorReporter)
         .setTypeRegistry(typeRegistry)
+        .setJavaPluginValidator(
+            (className, methodName, returnType, arguments, inInterface, errorReporter) -> true)
         .desugarHtmlAndStateNodes(desugarHtmlAndStateNodes)
         .setGeneralOptions(options)
         .setConformanceConfig(conformanceConfig)

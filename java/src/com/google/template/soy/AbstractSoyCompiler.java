@@ -37,6 +37,7 @@ import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.error.SoyCompilationException;
 import com.google.template.soy.logging.AnnotatedLoggingConfig;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
+import com.google.template.soy.plugin.DelegatingMethodChecker;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
@@ -71,7 +72,7 @@ public abstract class AbstractSoyCompiler {
           + "java "
           + getClass().getName()
           + " \\\n"
-          + "     [<flag1> <flag2> ...] --jar <jarName>  \\\n"
+          + "     [<flag1> <flag2> ...] --java_extern_defn_jars <jarName>  \\\n"
           + "     --srcs <soyFilePath>,... [--deps <soyFilePath>,...]\n";
 
   @Option(
@@ -164,6 +165,14 @@ public abstract class AbstractSoyCompiler {
               + "experiments on. Please proceed with caution at your own risk.",
       handler = SoyCmdLineParser.StringListOptionHandler.class)
   private List<String> experimentalFeatures = new ArrayList<>();
+
+  @Option(
+      name = "--java_extern_defn_jars",
+      usage =
+          "Java jars that are used to validate that java implementations of externs are valid"
+              + " references.",
+      handler = SoyCmdLineParser.FileListOptionHandler.class)
+  private List<File> javaDeps = new ArrayList<>();
 
   @Option(
       name = "--disableOptimizerForTestingUseOnly",
@@ -288,6 +297,7 @@ public abstract class AbstractSoyCompiler {
     sfsBuilder
         .addSourceFunctions(sourceFunctions)
         .setWarningSink(err)
+        .setJavaPluginValidator(new DelegatingMethodChecker(builder.build()))
         .setValidatedLoggingConfig(parseLoggingConfig())
         // Set experimental features that are not generally available.
         .setExperimentalFeatures(experimentalFeatures)

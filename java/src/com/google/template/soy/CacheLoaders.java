@@ -30,6 +30,7 @@ import com.google.protobuf.ExtensionRegistry;
 import com.google.template.soy.internal.proto.ProtoUtils;
 import com.google.template.soy.logging.AnnotatedLoggingConfig;
 import com.google.template.soy.logging.VeMetadata;
+import com.google.template.soy.plugin.java.internal.CompiledJarsPluginSignatureReader;
 import com.google.template.soy.soytree.CompilationUnit;
 import java.io.File;
 import java.io.IOException;
@@ -186,6 +187,15 @@ final class CacheLoaders {
             return new CachedDescriptorSet(
                 file, FileDescriptorSet.parseFrom(stream, ProtoUtils.REGISTRY));
           }
+        }
+      };
+
+  static final SoyInputCache.CacheLoader<CompiledJarsPluginSignatureReader> JAVA_DEPS =
+      new SoyInputCache.CacheLoader<CompiledJarsPluginSignatureReader>() {
+        @Override
+        public CompiledJarsPluginSignatureReader read(
+            File file, SoyCompilerFileReader reader, SoyInputCache cache) {
+          return new CompiledJarsPluginSignatureReader(ImmutableList.of(file), false);
         }
       };
 

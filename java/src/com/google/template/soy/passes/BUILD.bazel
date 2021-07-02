@@ -22,6 +22,7 @@ java_library(
     name = "passes",
     srcs = glob(["*.java"]),
     deps = [
+        "//java/com/google/template/soy/plugin",
         "//java/src/com/google/template/soy/base",
         "//java/src/com/google/template/soy/base/internal",
         "//java/src/com/google/template/soy/basetree",
@@ -57,8 +58,8 @@ java_library(
         "//java/src/com/google/template/soy/soytree/defn",
         "//java/src/com/google/template/soy/types",
         "//java/src/com/google/template/soy/types/ast",
-        "//src/main/protobuf:template_metadata_java_proto",
         "//src/main/protobuf:template_call_metadata_java_proto",
+        "//src/main/protobuf:template_metadata_java_proto",
         "@com_google_auto_value_auto_value",
         "@com_google_protobuf//:protobuf_java",
         "@maven//:com_google_code_findbugs_jsr305",
