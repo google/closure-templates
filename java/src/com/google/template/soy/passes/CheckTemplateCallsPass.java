@@ -50,6 +50,7 @@ import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.SanitizedType;
+import com.google.template.soy.types.SanitizedType.ElementType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.StringType;
@@ -81,7 +82,7 @@ import java.util.function.Supplier;
  * <p>Note: This pass requires that the ResolveExpressionTypesPass has already been run.
  */
 @RunAfter(FinalizeTemplateRegistryPass.class)
-final class CheckTemplateCallsPass implements CompilerFileSetPass {
+public final class CheckTemplateCallsPass implements CompilerFileSetPass {
 
   static final SoyErrorKind ARGUMENT_TYPE_MISMATCH =
       SoyErrorKind.of(
@@ -132,7 +133,8 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
         }
         for (PrintNode printNode : SoyTreeUtils.getAllNodesOfType(template, PrintNode.class)) {
           if (printNode.getExpr().getRoot() instanceof FunctionNode
-              && ((FunctionNode) printNode.getExpr().getRoot()).allowedToInvokeAsFunction()) {
+              && (((FunctionNode) printNode.getExpr().getRoot()).allowedToInvokeAsFunction()
+                  || printNode.getExpr().getRoot().getType() instanceof ElementType)) {
             helper.checkFnCall(template, printNode, (FunctionNode) printNode.getExpr().getRoot());
           }
         }
