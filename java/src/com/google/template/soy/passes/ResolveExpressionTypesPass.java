@@ -281,6 +281,8 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
           "Imported symbol ''{0}'' conflicts with a field of proto constructor ''{1}''.");
   private static final SoyErrorKind TYPE_MISMATCH =
       SoyErrorKind.of("Soy types ''{0}'' and ''{1}'' are not comparable.");
+  private static final SoyErrorKind PROTO_INIT_IN_COMPARE =
+      SoyErrorKind.of("Protos do not compare. Use ''isDefault'' or ''equals'' instead.");
   private static final SoyErrorKind DECLARED_DEFAULT_TYPE_MISMATCH =
       SoyErrorKind.of(
           "The initializer for ''{0}'' has type ''{1}'' which is not assignable to type ''{2}''.");
@@ -2111,6 +2113,12 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
     }
 
     private void visitEqualComparisonOpNode(AbstractOperatorNode node) {
+      SoyTreeUtils.allFunctionInvocations(node, BuiltinFunction.PROTO_INIT)
+          .filter(fn -> fn.getParent().equals(node))
+          .forEach(
+              fn -> {
+                errorReporter.report(fn.getSourceLocation(), PROTO_INIT_IN_COMPARE);
+              });
       visitChildren(node);
       SoyType left = node.getChild(0).getType();
       SoyType right = node.getChild(1).getType();
@@ -2867,8 +2875,7 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
     }
 
     @Override
-    protected void visitFunctionNode(FunctionNode node) {
-    }
+    protected void visitFunctionNode(FunctionNode node) {}
 
     @Override
     protected void visitExprNode(ExprNode node) {
