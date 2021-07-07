@@ -311,6 +311,14 @@ Returns a copy of a string with leading and trailing whitespace removed.
 
 ## Proto methods
 
+### `proto.isDefault()` {#Message_isDefault}
+
+Returns whether a protobuf message is equal to the default instance of its type.
+
+### `proto.equals(p)` {#Message_equals}
+
+Returns whether two protobuf messages are equal.
+
 ### `proto.getExtension(name)`
 
 Returns the value of the extension field of the `proto`, given the name of an

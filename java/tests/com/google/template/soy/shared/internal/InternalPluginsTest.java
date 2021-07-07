@@ -63,7 +63,9 @@ public final class InternalPluginsTest {
       assertThat(function.getClass().isAnnotationPresent(SoyFunctionSignature.class)).isTrue();
       assertThat(function).isInstanceOf(SoyJavaScriptSourceFunction.class);
       assertThat(function).isInstanceOf(SoyJavaSourceFunction.class);
-      assertThat(function).isInstanceOf(SoyPythonSourceFunction.class);
+      if (!function.getClass().getName().contains("Proto")) {
+        assertThat(function).isInstanceOf(SoyPythonSourceFunction.class);
+      }
       // Internal functions should no longer implement SoyJavaFunction or SoyJsSrcFunction
       assertThat(function).isNotInstanceOf(SoyJsSrcFunction.class);
       assertThat(function).isNotInstanceOf(SoyJavaFunction.class);
@@ -77,7 +79,9 @@ public final class InternalPluginsTest {
       assertThat(function.getClass().isAnnotationPresent(SoyMethodSignature.class)).isTrue();
       assertThat(function).isInstanceOf(SoyJavaScriptSourceFunction.class);
       assertThat(function).isInstanceOf(SoyJavaSourceFunction.class);
-      assertThat(function).isInstanceOf(SoyPythonSourceFunction.class);
+      if (!function.getClass().getName().contains("Proto")) {
+        assertThat(function).isInstanceOf(SoyPythonSourceFunction.class);
+      }
     }
   }
 

@@ -21,10 +21,12 @@
 goog.module('soy.map');
 goog.module.declareLegacyNamespace();
 
+const Message = goog.require('jspb.Message');
 const {assertString} = goog.require('goog.asserts');
 const {shuffle} = goog.require('goog.array');
 /**
- * Required to fix declareLegacyNamespace, since soy is also declareLegacyNamespace.
+ * Required to fix declareLegacyNamespace, since soy is also
+ * declareLegacyNamespace.
  * @suppress{extraRequire}
  */
 goog.require('soy');
@@ -148,12 +150,9 @@ function $$populateMap(proto, jspbMap, map) {
  * @suppress {missingProperties}
  */
 function $$isSoyMap(map) {
-  return goog.isObject(map) &&
-      typeof map.get === 'function' &&
-      typeof map.set === 'function' &&
-      typeof map.keys === 'function' &&
-      typeof map.values === 'function' &&
-      typeof map.entries === 'function';
+  return goog.isObject(map) && typeof map.get === 'function' &&
+      typeof map.set === 'function' && typeof map.keys === 'function' &&
+      typeof map.values === 'function' && typeof map.entries === 'function';
 }
 
 
@@ -197,7 +196,7 @@ function $$getMapValues(map) {
 function $$getMapEntries(map) {
   const entries = [];
   for (const [k, v] of map.entries()) {
-    entries.push({"key": k, "value": v});
+    entries.push({'key': k, 'value': v});
   }
   return entries;
 }
@@ -221,10 +220,33 @@ function $$getMapLength(map) {
 }
 
 
+/**
+ * Returns whether a proto is equal to the default instance of its type.
+ * @param {!Message} proto A proto.
+ * @return {boolean}
+ */
+function $$isProtoDefault(proto) {
+  return Message.equals(proto, new proto.constructor());
+}
+
+
+/**
+ * Returns whether two protos are equals.
+ * @param {!Message} p1 A proto.
+ * @param {!Message} p2 Another proto.
+ * @return {boolean}
+ */
+function $$protoEquals(p1, p2) {
+  return Message.equals(p1, p2);
+}
+
+
 exports = {
   $$mapToLegacyObjectMap,
   $$populateMap,
   $$getMapKeys,
+  $$isProtoDefault,
+  $$protoEquals,
   $$isSoyMap,
   $$getMapValues,
   $$getMapEntries,

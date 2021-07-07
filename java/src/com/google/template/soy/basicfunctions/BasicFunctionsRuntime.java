@@ -27,6 +27,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.primitives.Doubles;
 import com.google.common.primitives.Longs;
+import com.google.protobuf.Message;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyDict;
@@ -386,5 +387,13 @@ public final class BasicFunctionsRuntime {
   @SuppressWarnings("deprecation")
   public static SoyMap legacyObjectMapToMap(SoyValue value) {
     return SoyMaps.legacyObjectMapToMap((SoyLegacyObjectMap) value);
+  }
+
+  public static boolean isDefault(Message proto) {
+    return proto.equals(proto.getDefaultInstanceForType());
+  }
+
+  public static boolean protoEquals(Message proto1, Message proto2) {
+    return proto1.equals(proto2);
   }
 }

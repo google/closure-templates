@@ -26,6 +26,7 @@ public class BasicFunctions {
 
   public static ImmutableList<SoySourceFunction> functions() {
     return ImmutableList.of(
+        // go/keep-sorted start
         new CeilingFunction(),
         new ConcatListsFunction(),
         new ConcatMapsMethod(),
@@ -37,8 +38,8 @@ public class BasicFunctions {
         new LengthFunction(),
         new ListContainsFunction(),
         new ListIndexOfFunction(),
-        new ListSliceMethod(),
         new ListReverseMethod(),
+        new ListSliceMethod(),
         new MapEntriesMethod(),
         new MapKeysFunction(),
         new MapLengthMethod(),
@@ -50,6 +51,8 @@ public class BasicFunctions {
         new ParseFloatFunction(),
         new ParseIntFunction(),
         new PowFunction(),
+        new ProtoEqualsMethod(),
+        new ProtoIsDefaultMethod(),
         new RandomIntFunction(),
         new RangeFunction(),
         new RoundFunction(),
@@ -67,5 +70,6 @@ public class BasicFunctions {
         new StrToAsciiUpperCaseFunction(),
         new StrTrimMethod(),
         new StringListSortMethod());
+    // go/keep-sorted end
   }
 }
