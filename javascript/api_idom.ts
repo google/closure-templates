@@ -4,9 +4,9 @@
  * Functions necessary to interact with the Soy-Idom runtime.
  */
 
-import Message from 'goog:jspb.Message'; // from //javascript/apps/jspb:message_lib
-import * as soy from 'goog:soy';  // from //javascript/template/soy:soy_usegoog_js
-import {$$VisualElementData, ElementMetadata, Logger} from 'goog:soy.velog';  // from //javascript/template/soy:soyutils_velog
+import {Message} from 'google3/javascript/apps/jspb/message';
+import * as soy from 'google3/javascript/template/soy/soyutils_usegoog';
+import {$$VisualElementData, ElementMetadata, Logger} from 'google3/javascript/template/soy/soyutils_velog';
 import * as incrementaldom from 'incrementaldom';  // from //third_party/javascript/incremental_dom:incrementaldom
 
 export {IdomTemplate as Template} from './templates';
