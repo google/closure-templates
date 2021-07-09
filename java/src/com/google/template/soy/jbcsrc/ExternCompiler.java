@@ -17,20 +17,26 @@
 package com.google.template.soy.jbcsrc;
 
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.jbcsrc.internal.SoyClassWriter;
-import com.google.template.soy.jbcsrc.restricted.BytecodeProducer;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
+import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyRuntimeType;
 import com.google.template.soy.jbcsrc.restricted.Statement;
+import com.google.template.soy.jbcsrc.restricted.TypeInfo;
+import com.google.template.soy.jbcsrc.shared.Names;
+import com.google.template.soy.plugin.java.restricted.MethodSignature;
 import com.google.template.soy.soytree.ConstNode;
 import com.google.template.soy.soytree.ExternNode;
 import com.google.template.soy.soytree.JavaImplNode;
+import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.types.FunctionType;
-import com.google.template.soy.types.FunctionType.Parameter;
 import com.google.template.soy.types.SoyType;
-import java.util.Optional;
+import com.google.template.soy.types.SoyType.Kind;
+import java.util.Arrays;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -47,43 +53,62 @@ public final class ExternCompiler {
     this.writer = writer;
   }
 
-  static SoyRuntimeType getConstantRuntimeType(SoyType type) {
-    return SoyRuntimeType.getUnboxedType(type).orElseGet(() -> SoyRuntimeType.getBoxedType(type));
-  }
-
-  static Method getExternMethod(String symbol, FunctionType type) {
-    ImmutableList<Parameter> params = type.getParameters();
-    Type[] args = new Type[params.size()];
-    for (int i = 0; i < params.size(); i++) {
-      args[i] = getConstantRuntimeType(params.get(i).getType()).runtimeType();
-    }
-    return new Method(symbol, getConstantRuntimeType(type.getReturnType()).runtimeType(), args);
-  }
-
   public void compile() {
-    Method method = getExternMethod(extern.getIdentifier().identifier(), extern.getType());
-    Optional<JavaImplNode> java = extern.getJavaImpl();
+    // We define a local static method that simply delegates to the extern method. However, the
+    // local method parameter types match the soy types from the extern definition while the extern
+    // delegate parameter types match the java types from the javaimpl definition.
+    Method memberMethod = buildMemberMethod(extern.getIdentifier().identifier(), extern.getType());
+
+    if (!extern.getJavaImpl().isPresent()) {
+      Statement.throwExpression(MethodRef.NO_EXTERN_JAVA_IMPL.invoke())
+          .writeMethod(methodAccess(), memberMethod, writer);
+      return;
+    }
+
+    JavaImplNode javaImpl = extern.getJavaImpl().get();
+
+    ImmutableList.Builder<String> paramNamesBuilder = ImmutableList.builder();
+    for (int i = 0; i < javaImpl.params().size(); i++) {
+      paramNamesBuilder.add("p" + (i + 1));
+    }
+    ImmutableList<String> paramNames = paramNamesBuilder.build();
+
+    TypeInfo externClass = TypeInfo.create(javaImpl.className(), false);
+    TypeInfo returnType = getTypeInfoLoadedIfPossible(javaImpl.returnType());
+    TypeInfo[] paramTypesInfos =
+        javaImpl.params().stream()
+            .map(ExternCompiler::getTypeInfoLoadedIfPossible)
+            .toArray(TypeInfo[]::new);
+    Type[] paramTypes = Arrays.stream(paramTypesInfos).map(TypeInfo::type).toArray(Type[]::new);
 
     Label start = new Label();
     Label end = new Label();
+    TemplateVariableManager paramSet =
+        new TemplateVariableManager(
+            TypeInfo.createClass(
+                    Names.javaClassNameFromSoyNamespace(
+                        extern.getNearestAncestor(SoyFileNode.class).getNamespace()))
+                .type(),
+            memberMethod,
+            paramNames,
+            start,
+            end,
+            /*isStatic=*/ true);
 
-    BytecodeProducer body;
-    if (java.isPresent()) {
-      Type rt = method.getReturnType();
-      if (Type.BOOLEAN_TYPE.equals(rt)) {
-        body = BytecodeUtils.constant(false);
-      } else if (Type.INT_TYPE.equals(rt)) {
-        body = BytecodeUtils.constant(0);
-      } else if (Type.LONG_TYPE.equals(rt)) {
-        body = BytecodeUtils.constant(0L);
-      } else if (Type.FLOAT_TYPE.equals(rt) || Type.DOUBLE_TYPE.equals(rt)) {
-        body = BytecodeUtils.constant(0D);
-      } else {
-        body = BytecodeUtils.constantNull(rt);
-      }
-    } else {
-      body = Statement.throwExpression(MethodRef.NO_EXTERN_JAVA_IMPL.invoke());
+    Method externMethod = new Method(javaImpl.methodName(), returnType.type(), paramTypes);
+    Expression[] adaptedParams = new Expression[paramNames.size()];
+    for (int i = 0; i < paramTypesInfos.length; i++) {
+      adaptedParams[i] =
+          adaptParameter(
+              paramSet.getVariable(paramNames.get(i)),
+              paramTypesInfos[i],
+              extern.getType().getParameters().get(i).getType());
     }
+
+    Expression body =
+        adaptReturnType(
+            memberMethod.getReturnType(),
+            MethodRef.createStaticMethod(externClass, externMethod).invoke(adaptedParams));
 
     new Statement() {
       @Override
@@ -92,12 +117,126 @@ public final class ExternCompiler {
         body.gen(adapter);
         adapter.mark(end);
         adapter.returnValue();
+        paramSet.generateTableEntries(adapter);
       }
-    }.writeMethod(methodAccess(), method, writer);
+    }.writeMethod(methodAccess(), memberMethod, writer);
   }
 
   private int methodAccess() {
     // Same issue as TemplateCompiler#methodAccess
     return (extern.isExported() ? Opcodes.ACC_PUBLIC : 0) | Opcodes.ACC_STATIC;
+  }
+
+  private static SoyRuntimeType getRuntimeType(SoyType type) {
+    return SoyRuntimeType.getUnboxedType(type).orElseGet(() -> SoyRuntimeType.getBoxedType(type));
+  }
+
+  private static Method buildMemberMethod(String symbol, FunctionType type) {
+    Type[] args =
+        type.getParameters().stream()
+            .map(p -> getRuntimeType(p.getType()).runtimeType())
+            .toArray(Type[]::new);
+    return new Method(symbol, getRuntimeType(type.getReturnType()).runtimeType(), args);
+  }
+
+  private static TypeInfo getTypeInfoLoadedIfPossible(String s) {
+    try {
+      return TypeInfo.create(MethodSignature.forName(s));
+    } catch (ClassNotFoundException e) {
+      return TypeInfo.create(s, false);
+    }
+  }
+
+  private static Expression adaptParameter(
+      Expression paramAsSoyType, TypeInfo javaTypeInfo, SoyType soyType) {
+    Type javaType = javaTypeInfo.type();
+    SoyExpression actualParam =
+        paramAsSoyType instanceof SoyExpression
+            ? (SoyExpression) paramAsSoyType
+            : SoyExpression.forRuntimeType(getRuntimeType(soyType), paramAsSoyType);
+
+    // If expecting a bland 'SoyValue', just box the expr.
+    if (javaType.equals(BytecodeUtils.SOY_VALUE_TYPE)) {
+      return actualParam.box();
+    }
+    // If we expect a specific SoyValue subclass, then box + cast.
+    if (javaTypeInfo.classOptional().isPresent()
+        && SoyValue.class.isAssignableFrom(javaTypeInfo.classOptional().get())) {
+      return actualParam.box().checkedCast(javaType);
+    }
+
+    // Otherwise, we're an unboxed type (non-SoyValue).
+
+    // int needs special-casing for overflow, and because we can't unbox as int
+    if (javaType.equals(Type.INT_TYPE)) {
+      return MethodRef.LONG_TO_INT.invoke(actualParam);
+    } else if (javaType.equals(BytecodeUtils.INTEGER_TYPE)) {
+      return MethodRef.BOX_INTEGER.invoke(MethodRef.LONG_TO_INT.invoke(actualParam));
+    } else if (javaType.equals(Type.DOUBLE_TYPE)) {
+      return actualParam.coerceToDouble();
+    } else if (javaType.equals(BytecodeUtils.BOXED_DOUBLE_TYPE)) {
+      return MethodRef.BOX_DOUBLE.invoke(actualParam.coerceToDouble());
+    }
+    // For protos, we need to unbox as Message & then cast.
+    if (soyType.getKind() == Kind.MESSAGE || soyType.getKind() == Kind.PROTO) {
+      if (javaType.equals(BytecodeUtils.MESSAGE_TYPE)) {
+        return actualParam.unboxAsMessage();
+      }
+      return actualParam.unboxAsMessage().checkedCast(javaType);
+    }
+    // For protocol enums, we need to call forNumber on the type w/ the param (as casted to an int).
+    // This is because Soy internally stores enums as ints. We know this is safe because we
+    // already validated that the enum type matches the signature.
+    if (soyType.getKind() == Kind.PROTO_ENUM) {
+      return MethodRef.createStaticMethod(
+              javaTypeInfo, new Method("forNumber", javaType, new Type[] {Type.INT_TYPE}))
+          .invoke(BytecodeUtils.numericConversion(actualParam.unboxAsLong(), Type.INT_TYPE));
+    }
+
+    if (javaType.equals(Type.BOOLEAN_TYPE)) {
+      return actualParam.unboxAsBoolean();
+    } else if (javaType.equals(BytecodeUtils.BOXED_BOOLEAN_TYPE)) {
+      return MethodRef.BOX_BOOLEAN.invoke(actualParam.unboxAsBoolean());
+    } else if (javaType.equals(Type.LONG_TYPE)) {
+      return actualParam.unboxAsLong();
+    } else if (javaType.equals(BytecodeUtils.BOXED_LONG_TYPE)) {
+      return MethodRef.BOX_LONG.invoke(actualParam.unboxAsLong());
+    } else if (javaType.equals(BytecodeUtils.STRING_TYPE)) {
+      return actualParam.unboxAsString();
+    } else if (javaType.equals(BytecodeUtils.LIST_TYPE)) {
+      return actualParam.unboxAsList();
+    } else if (javaType.equals(BytecodeUtils.OBJECT.type())) {
+      return actualParam;
+    }
+
+    throw new AssertionError(
+        String.format(
+            "Unable to convert parameter of Soy type %s to java type %s.", soyType, javaType));
+  }
+
+  static Expression adaptReturnType(Type returnType, Expression externCall) {
+    Type externType = externCall.resultType();
+
+    if (externType.equals(BytecodeUtils.INTEGER_TYPE)) {
+      return MethodRef.UNBOX_INTEGER.invoke(externCall);
+    } else if (externType.equals(Type.INT_TYPE)) {
+      return MethodRef.INT_TO_LONG.invoke(externCall);
+    } else if (externType.equals(BytecodeUtils.BOXED_LONG_TYPE)) {
+      return MethodRef.UNBOX_LONG.invoke(externCall);
+    } else if (externType.equals(BytecodeUtils.INTEGER_DATA_TYPE)) {
+      return MethodRef.SOY_VALUE_LONG_VALUE.invoke(externCall);
+    } else if (externType.equals(BytecodeUtils.BOXED_DOUBLE_TYPE)) {
+      return MethodRef.UNBOX_DOUBLE.invoke(externCall);
+    } else if (externType.equals(BytecodeUtils.FLOAT_DATA_TYPE)) {
+      return MethodRef.SOY_VALUE_FLOAT_VALUE.invoke(externCall);
+    } else if (externType.equals(BytecodeUtils.BOXED_BOOLEAN_TYPE)) {
+      return MethodRef.UNBOX_BOOLEAN.invoke(externCall);
+    } else if (externType.equals(BytecodeUtils.BOOLEAN_DATA_TYPE)) {
+      return MethodRef.SOY_VALUE_BOOLEAN_VALUE.invoke(externCall);
+    } else if (externType.equals(BytecodeUtils.STRING_DATA_TYPE)) {
+      return MethodRef.SOY_VALUE_STRING_VALUE.invoke(externCall);
+    }
+
+    return externCall;
   }
 }

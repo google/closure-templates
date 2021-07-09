@@ -40,6 +40,8 @@ import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.SoyVisualElement;
 import com.google.template.soy.data.SoyVisualElementData;
 import com.google.template.soy.data.internal.Converters;
+import com.google.template.soy.data.restricted.BooleanData;
+import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jbcsrc.api.RenderResult;
@@ -90,6 +92,9 @@ public final class BytecodeUtils {
   public static final Type DIR_TYPE = Type.getType(Dir.class);
   public static final Type HASH_MAP_TYPE = Type.getType(HashMap.class);
   public static final Type INTEGER_DATA_TYPE = Type.getType(IntegerData.class);
+  public static final Type FLOAT_DATA_TYPE = Type.getType(FloatData.class);
+  public static final Type BOOLEAN_DATA_TYPE = Type.getType(BooleanData.class);
+  public static final Type STRING_DATA_TYPE = Type.getType(StringData.class);
   public static final Type LINKED_HASH_MAP_TYPE = Type.getType(LinkedHashMap.class);
   public static final Type LIST_TYPE = Type.getType(List.class);
   public static final Type MAP_TYPE = Type.getType(Map.class);
@@ -116,6 +121,7 @@ public final class BytecodeUtils {
   public static final Type INTEGER_TYPE = Type.getType(Integer.class);
   public static final Type BOXED_LONG_TYPE = Type.getType(Long.class);
   public static final Type BOXED_BOOLEAN_TYPE = Type.getType(Boolean.class);
+  public static final Type BOXED_DOUBLE_TYPE = Type.getType(Double.class);
   public static final Type LOGGABLE_ELEMENT_METADATA_TYPE =
       Type.getType(LoggableElementMetadata.class);
   public static final Type STACK_FRAME_TYPE = Type.getType(StackFrame.class);

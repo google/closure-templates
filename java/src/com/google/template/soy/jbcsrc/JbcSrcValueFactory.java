@@ -168,10 +168,7 @@ final class JbcSrcValueFactory extends JavaValueFactory {
         new org.objectweb.asm.commons.Method(
             methodSignature.methodName(),
             Type.getType(methodSignature.returnType()),
-            methodSignature.arguments().stream()
-                .map(Type::getType)
-                .collect(toImmutableList())
-                .toArray(new Type[0]));
+            methodSignature.arguments().stream().map(Type::getType).toArray(Type[]::new));
     Expression methodCall;
     if (instance) {
       // We need to cast to the method's declaring class in order for the owner type

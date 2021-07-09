@@ -288,6 +288,18 @@ public final class JbcSrcRuntime {
     return directive.applyForJava(value, args);
   }
 
+  public static int longToInt(long value) {
+    Preconditions.checkState(
+        value >= Integer.MIN_VALUE && value <= Integer.MAX_VALUE,
+        "Casting long to integer results in overflow: %s",
+        value);
+    return (int) value;
+  }
+
+  public static long intToLong(int value) {
+    return value;
+  }
+
   /**
    * Wraps a given template with a collection of escapers to apply.
    *

@@ -39,7 +39,7 @@ public final class TypeInfoTest {
 
   @Test
   public void testInnerClass() {
-    assertThat(TypeInfo.create(TypeInfoTest.class).innerClass("Inner"))
-        .isEqualTo(TypeInfo.create(Inner.class));
+    assertThat(TypeInfo.create(TypeInfoTest.class).innerClass("Inner").className())
+        .isEqualTo(TypeInfo.create(Inner.class).className());
   }
 }

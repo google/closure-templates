@@ -488,6 +488,9 @@ public abstract class MethodRef {
   public static final MethodRef SOY_VALUE_PROVIDER_OR_NULL =
       create(JbcSrcRuntime.class, "soyValueProviderOrNull", SoyValueProvider.class);
 
+  public static final MethodRef LONG_TO_INT = create(JbcSrcRuntime.class, "longToInt", long.class);
+  public static final MethodRef INT_TO_LONG = create(JbcSrcRuntime.class, "intToLong", int.class);
+
   public static final MethodRef SOY_VALUE_PROVIDER_STATUS =
       create(SoyValueProvider.class, "status").asNonNullable();
 
@@ -498,6 +501,20 @@ public abstract class MethodRef {
 
   public static final MethodRef STRING_VALUE_OF =
       create(String.class, "valueOf", Object.class).asNonNullable();
+
+  public static final MethodRef BOX_INTEGER =
+      create(Integer.class, "valueOf", int.class).asNonNullable();
+  public static final MethodRef BOX_LONG =
+      create(Long.class, "valueOf", long.class).asNonNullable();
+  public static final MethodRef BOX_DOUBLE =
+      create(Double.class, "valueOf", double.class).asNonNullable();
+  public static final MethodRef BOX_BOOLEAN =
+      create(Boolean.class, "valueOf", boolean.class).asNonNullable();
+  public static final MethodRef UNBOX_INTEGER = create(Integer.class, "longValue").asNonNullable();
+  public static final MethodRef UNBOX_LONG = create(Long.class, "longValue").asNonNullable();
+  public static final MethodRef UNBOX_DOUBLE = create(Double.class, "doubleValue").asNonNullable();
+  public static final MethodRef UNBOX_BOOLEAN =
+      create(Boolean.class, "booleanValue").asNonNullable();
 
   public static final MethodRef STRING_DATA_FOR_VALUE =
       create(StringData.class, "forValue", String.class).asCheap().asNonNullable();
