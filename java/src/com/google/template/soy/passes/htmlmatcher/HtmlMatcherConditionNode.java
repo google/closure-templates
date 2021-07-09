@@ -77,7 +77,8 @@ public final class HtmlMatcherConditionNode extends HtmlMatcherGraphNode {
             /** inCondition */
             true,
             foreignContentTagDepth,
-            "condition");
+            "condition",
+            /* modifyAst= */ false);
     if (foreignContentTagDepth > 0) {
       if (!isInternallyBalancedForForeignContent.isPresent()) {
         pass.run(graph);
