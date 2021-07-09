@@ -22,7 +22,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.internal.IdGenerator;
-import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.passes.htmlmatcher.ActiveEdge;
@@ -38,7 +37,6 @@ import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.ForIfemptyNode;
 import com.google.template.soy.soytree.ForNonemptyNode;
-import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.HtmlCloseTagNode;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.IfCondNode;
@@ -63,7 +61,9 @@ import java.util.List;
 import java.util.Optional;
 import javax.annotation.Nullable;
 
-/** A {@link CompilerFilePass} that checks strict html mode. See go/soy-html for usages. */
+/**
+ * A {@link CompilerFilePass} that checks strict html mode. See go/soy-html for usages.
+ */
 @RunAfter(ResolveNamesPass.class)
 public final class StrictHtmlValidationPass implements CompilerFilePass {
 
@@ -93,8 +93,7 @@ public final class StrictHtmlValidationPass implements CompilerFilePass {
             /** foreignContentTagDepth */
             0,
             /** parentBlockType */
-            null,
-            true)
+            null)
         .run(htmlMatcherGraph);
     if (node.isStrictHtml()) {
       reporter.copyTo(this.errorReporter);
@@ -160,20 +159,9 @@ public final class StrictHtmlValidationPass implements CompilerFilePass {
     }
 
     @Override
-    protected void visitTemplateNode(TemplateNode node) {
-      if (node.getContentKind() == SanitizedContentKind.HTML
-          || node.getContentKind() == SanitizedContentKind.HTML_ELEMENT) {
-        super.visit(node);
-      }
-    }
-
-    @Override
     protected void visitHtmlOpenTagNode(HtmlOpenTagNode node) {
       htmlMatcherGraph.addNode(new HtmlMatcherTagNode(node));
     }
-
-    @Override
-    protected void visitHtmlAttributeNode(HtmlAttributeNode node) {}
 
     @Override
     protected void visitHtmlCloseTagNode(HtmlCloseTagNode node) {
@@ -295,10 +283,6 @@ public final class StrictHtmlValidationPass implements CompilerFilePass {
 
     @Override
     protected void visitLetContentNode(LetContentNode node) {
-      if (node.getContentKind() != SanitizedContentKind.HTML
-          && node.getContentKind() != SanitizedContentKind.HTML_ELEMENT) {
-        return;
-      }
       HtmlMatcherGraph htmlMatcherGraph = new HtmlTagVisitor(idGenerator, errorReporter).exec(node);
       new HtmlTagMatchingPass(
               errorReporter,
@@ -307,17 +291,12 @@ public final class StrictHtmlValidationPass implements CompilerFilePass {
               false,
               /** foreignContentTagDepth */
               0,
-              "let content",
-              true)
+              "let content")
           .run(htmlMatcherGraph);
     }
 
     @Override
     protected void visitCallParamContentNode(CallParamContentNode node) {
-      if (node.getContentKind() != SanitizedContentKind.HTML
-          && node.getContentKind() != SanitizedContentKind.HTML_ELEMENT) {
-        return;
-      }
       HtmlMatcherGraph htmlMatcherGraph = new HtmlTagVisitor(idGenerator, errorReporter).exec(node);
       new HtmlTagMatchingPass(
               errorReporter,
@@ -326,8 +305,7 @@ public final class StrictHtmlValidationPass implements CompilerFilePass {
               false,
               /** foreignContentTagDepth */
               0,
-              "call param content",
-              true)
+              "call param content")
           .run(htmlMatcherGraph);
     }
 
