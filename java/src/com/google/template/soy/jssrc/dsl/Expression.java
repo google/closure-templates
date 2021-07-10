@@ -174,9 +174,16 @@ public abstract class Expression extends CodeChunk {
   public static Expression arrowFunction(JsDoc parameters, Statement body) {
     return FunctionDeclaration.createArrowFunction(parameters, body);
   }
+
   /** Creates a code chunk representing an arrow function. */
   public static Expression arrowFunction(JsDoc parameters, Expression body) {
     return FunctionDeclaration.createArrowFunction(parameters, body);
+  }
+
+  /** Creates a code chunk representing an immediately invoked function expression. */
+  public static Expression iife(Expression expr) {
+    return Group.create(FunctionDeclaration.createArrowFunction(JsDoc.builder().build(), expr))
+        .call();
   }
 
   /** Creates a code chunk representing the logical negation {@code !} of the given chunk. */

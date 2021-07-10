@@ -21,6 +21,7 @@ import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.DebuggerNode;
+import com.google.template.soy.soytree.ExternNode;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.HtmlAttributeValueNode;
@@ -29,6 +30,8 @@ import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
+import com.google.template.soy.soytree.JavaImplNode;
+import com.google.template.soy.soytree.JsImplNode;
 import com.google.template.soy.soytree.KeyNode;
 import com.google.template.soy.soytree.LetNode;
 import com.google.template.soy.soytree.LogNode;
@@ -220,6 +223,21 @@ public class IsComputableAsJsExprsVisitor extends AbstractReturningSoyNodeVisito
 
   @Override
   protected Boolean visitSkipNode(SkipNode node) {
+    return false;
+  }
+
+  @Override
+  protected Boolean visitExternNode(ExternNode node) {
+    return false;
+  }
+
+  @Override
+  protected Boolean visitJsImplNode(JsImplNode node) {
+    return false;
+  }
+
+  @Override
+  protected Boolean visitJavaImplNode(JavaImplNode node) {
     return false;
   }
 

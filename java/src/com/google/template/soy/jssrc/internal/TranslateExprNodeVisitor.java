@@ -939,8 +939,8 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
           visitChildren(node),
           codeGenerator);
     } else if (soyFunction instanceof ExternRef) {
-      // TODO(b/191092101): Implement this.
-      return stringLiteral("TODO");
+      ExternRef ref = (ExternRef) soyFunction;
+      return variableMappings.get(ref.name()).call(visitChildren(node));
     } else {
       if (!(soyFunction instanceof SoyJsSrcFunction)) {
         errorReporter.report(

@@ -23,6 +23,7 @@ import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static com.google.template.soy.jssrc.dsl.Expression.EMPTY_OBJECT_LITERAL;
 import static com.google.template.soy.jssrc.dsl.Expression.dottedIdNoRequire;
 import static com.google.template.soy.jssrc.dsl.Expression.id;
+import static com.google.template.soy.jssrc.dsl.Expression.iife;
 import static com.google.template.soy.jssrc.dsl.Expression.number;
 import static com.google.template.soy.jssrc.dsl.Expression.stringLiteral;
 import static com.google.template.soy.jssrc.dsl.Statement.assign;
@@ -32,6 +33,7 @@ import static com.google.template.soy.jssrc.dsl.Statement.returnValue;
 import static com.google.template.soy.jssrc.dsl.Statement.switchValue;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_DEBUG;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_IS_OBJECT;
+import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_MODULE_GET;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_REQUIRE;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_SOY;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_SOY_ALIAS;
@@ -45,6 +47,7 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.sanitizedContentO
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Streams;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.SanitizedContentKind;
@@ -78,6 +81,7 @@ import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.ConstNode;
 import com.google.template.soy.soytree.DebuggerNode;
+import com.google.template.soy.soytree.ExternNode;
 import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForNonemptyNode;
@@ -86,6 +90,7 @@ import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.ImportNode;
 import com.google.template.soy.soytree.ImportNode.ImportType;
+import com.google.template.soy.soytree.JsImplNode;
 import com.google.template.soy.soytree.KeyNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetValueNode;
@@ -391,7 +396,9 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         .append(node.getFilePath().path())
         .append('\n');
 
-    if (node.getConstants().isEmpty() && node.getTemplates().isEmpty()) {
+    if (node.getConstants().isEmpty()
+        && node.getExterns().isEmpty()
+        && node.getTemplates().isEmpty()) {
       // Special support for empty Soy files created with NamespaceDeclaration.EMPTY.
       jsFilesContents.add(file.toString());
       jsCodeBuilder = null;
@@ -482,6 +489,15 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       visit(constant);
     }
 
+    node.getExterns().stream()
+        .map(ExternNode::getJsImpl)
+        .flatMap(Streams::stream)
+        .forEach(
+            jsExtern -> {
+              jsCodeBuilder.appendLine().appendLine();
+              visit(jsExtern);
+            });
+
     // Add code for each template.
     for (TemplateNode template : node.getTemplates()) {
       jsCodeBuilder.appendLine().appendLine();
@@ -491,6 +507,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         jsCodeBuilder.append(Statement.of(staticVarDeclarations));
       }
     }
+
     jsCodeBuilder.appendGoogRequiresTo(file);
     jsCodeBuilder.appendCodeTo(file);
     jsFilesContents.add(file.toString());
@@ -649,15 +666,20 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
           if (parentType != null
               && parentType.getKind() == Kind.TEMPLATE_MODULE
               && var.type().getKind() != Kind.TEMPLATE_TYPE) {
-            // This is a constant import.
+            // This is a constant or function import.
             String namespace = namespaceForPath(node.getSourceFilePath());
             if (jsSrcOptions.shouldGenerateGoogModules()) {
               namespace = templateAliases.getNamespaceAlias(namespace);
             }
-            topLevelSymbols.put(
-                var.name(),
-                dottedIdNoRequire(namespace + "." + var.getSymbol())
-                    .call(JsRuntime.SOY_INTERNAL_CALL_MARKER));
+            if (var.type().getKind() == Kind.FUNCTION) {
+              Expression translation = dottedIdNoRequire(namespace + "." + var.getSymbol());
+              topLevelSymbols.put(var.getSymbol(), translation);
+            } else {
+              Expression translation =
+                  dottedIdNoRequire(namespace + "." + var.getSymbol())
+                      .call(JsRuntime.SOY_INTERNAL_CALL_MARKER);
+              topLevelSymbols.put(var.name(), translation);
+            }
           }
         });
   }
@@ -1680,6 +1702,44 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     // PlaceholderNodes just wrap other nodes with placeholder metadata which is processed by the
     // GenJsCodeVisitorAssistentForMsgs
     visitChildren(node);
+  }
+
+  @Override
+  protected void visitJsImplNode(JsImplNode node) {
+    ExternNode externNode = node.getParent();
+    String externName = externNode.getIdentifier().originalName();
+
+    // Skip if we handled this impl already, e.g. a prev extern overload.
+    if (topLevelSymbols.has(externName)) {
+      return;
+    }
+
+    GoogRequire externRequire;
+    Expression externReference;
+    if (jsSrcOptions.shouldGenerateGoogModules()) {
+      externRequire = GoogRequire.createWithAlias(node.module(), node.module().replace('.', '$'));
+      externReference = dottedIdNoRequire(externRequire.alias()).dotAccess(node.function());
+    } else {
+      externRequire = GoogRequire.create(node.module());
+      externReference =
+          GOOG_MODULE_GET.call(stringLiteral(node.module())).dotAccess(node.function());
+    }
+    jsCodeBuilder.addGoogRequire(externRequire);
+    topLevelSymbols.put(externName, externReference);
+
+    if (externNode.isExported()) {
+      SoyFileNode file = node.getNearestAncestor(SoyFileNode.class);
+      Expression exportAlias =
+          jsSrcOptions.shouldGenerateGoogModules()
+              ? JsRuntime.EXPORTS
+              : dottedIdNoRequire(file.getNamespace());
+      Expression export = exportAlias.dotAccess(externName);
+      // Have to wrap iife when using goog.provide, since goog.module.get can't be called in global
+      // scope.
+      Expression exportedReference =
+          jsSrcOptions.shouldGenerateGoogModules() ? externReference : iife(externReference);
+      jsCodeBuilder.append(Statement.assign(export, exportedReference));
+    }
   }
 
   // -----------------------------------------------------------------------------------------------

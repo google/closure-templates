@@ -122,4 +122,9 @@ public final class JsImplNode extends ExternImplNode {
   public ImmutableList<CommandTagAttribute> getAttributes() {
     return attributes;
   }
+
+  @Override
+  public ExternNode getParent() {
+    return (ExternNode) super.getParent();
+  }
 }

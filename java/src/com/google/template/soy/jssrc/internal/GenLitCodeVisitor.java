@@ -33,9 +33,11 @@ import com.google.template.soy.jssrc.dsl.Statement;
 import com.google.template.soy.jssrc.dsl.VariableDeclaration;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.ConstNode;
+import com.google.template.soy.soytree.ExternNode;
 import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.ImportNode;
 import com.google.template.soy.soytree.ImportNode.ImportType;
+import com.google.template.soy.soytree.JsImplNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
@@ -52,6 +54,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /** Generates Lit-HTML code based off of a Soy template. This is basically a shim. */
 public final class GenLitCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
@@ -158,6 +161,15 @@ public final class GenLitCodeVisitor extends AbstractSoyNodeVisitor<List<String>
       jsCodeBuilder.appendLine().appendLine();
       visit(constant);
     }
+    node.getExterns().stream()
+        .map(ExternNode::getJsImpl)
+        .filter(Optional::isPresent)
+        .map(Optional::get)
+        .forEach(
+            jsExtern -> {
+              jsCodeBuilder.appendLine().appendLine();
+              visit(jsExtern);
+            });
 
     // Add code for each template.
     for (TemplateNode template : node.getTemplates()) {
@@ -278,10 +290,11 @@ public final class GenLitCodeVisitor extends AbstractSoyNodeVisitor<List<String>
       // This is a constant import.
       String namespace = namespaceForPath(node.getSourceFilePath());
       namespace = templateAliases.getNamespaceAlias(namespace);
-      topLevelSymbols.put(
-          var.name(),
-          dottedIdNoRequire(namespace + "." + var.getSymbol())
-              .call(JsRuntime.SOY_INTERNAL_CALL_MARKER));
+      Expression translation = dottedIdNoRequire(namespace + "." + var.getSymbol());
+      if (parentType.getKind() != Kind.FUNCTION) {
+        translation = translation.call(JsRuntime.SOY_INTERNAL_CALL_MARKER);
+      }
+      topLevelSymbols.put(var.name(), translation);
     }
     var.getNestedTypes().forEach(name -> visitImportNode(node, var.nested(name), var.type()));
   }
@@ -320,6 +333,31 @@ public final class GenLitCodeVisitor extends AbstractSoyNodeVisitor<List<String>
     jsCodeBuilder.append(Statement.of(declarations.build()));
 
     topLevelSymbols.put(var.name(), aliasExp.call(JsRuntime.SOY_INTERNAL_CALL_MARKER));
+  }
+
+  @Override
+  protected void visitJsImplNode(JsImplNode node) {
+    ExternNode externNode = node.getParent();
+    String externName = externNode.getIdentifier().originalName();
+
+    // Skip if we handled this impl already, e.g. a prev extern overload.
+    if (topLevelSymbols.has(externName)) {
+      return;
+    }
+
+    GoogRequire externRequire =
+        GoogRequire.createWithAlias(node.module(), node.module().replace('.', '$'));
+    ;
+    Expression externReference =
+        dottedIdNoRequire(externRequire.alias()).dotAccess(node.function());
+    ;
+    jsCodeBuilder.addGoogRequire(externRequire);
+    topLevelSymbols.put(externName, externReference);
+
+    if (externNode.isExported()) {
+      Expression export = JsRuntime.EXPORTS.dotAccess(externName);
+      jsCodeBuilder.append(Statement.assign(export, externReference));
+    }
   }
 
   /** Gets the type to use for a parameter in record type declarations. */

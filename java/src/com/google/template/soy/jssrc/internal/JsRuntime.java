@@ -92,6 +92,8 @@ public final class JsRuntime {
 
   public static final Expression GOOG_REQUIRE = dottedIdNoRequire("goog.require");
 
+  public static final Expression GOOG_MODULE_GET = dottedIdNoRequire("goog.module.get");
+
   public static final Expression GOOG_SOY_DATA_SANITIZED_CONTENT =
       GoogRequire.create("goog.soy.data.SanitizedContent").reference();
 

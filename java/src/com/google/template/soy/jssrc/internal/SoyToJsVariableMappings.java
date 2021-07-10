@@ -85,7 +85,11 @@ public final class SoyToJsVariableMappings {
 
   /** Returns the JavaScript translation for the Soy variable with the given name, */
   public Expression get(String name) {
-    return Preconditions.checkNotNull(mappings.get(name), "No value for key %s", name);
+    return Preconditions.checkNotNull(
+        mappings.get(name),
+        "No value for key %s. Available keys: %s",
+        name,
+        String.join(",", mappings.keySet()));
   }
 
   public Expression isPrimaryMsgInUse(MsgFallbackGroupNode msg) {
@@ -102,5 +106,10 @@ public final class SoyToJsVariableMappings {
   @Nullable
   public Expression maybeGet(String name) {
     return mappings.get(name);
+  }
+
+  /** Returns true if there is an existing variable mapping for the given name. */
+  public boolean has(String name) {
+    return mappings.get(name) != null;
   }
 }

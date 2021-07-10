@@ -47,6 +47,7 @@ import com.google.template.soy.types.SoyType;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
@@ -69,6 +70,8 @@ class ValidateExternsPass implements CompilerFilePass {
   private static final SoyErrorKind OVERLOAD_PARAM_CONFLICT =
       SoyErrorKind.of(
           "Overloaded extern parameters are ambiguous with the earlier extern defined on {0}.");
+  private static final SoyErrorKind JS_IMPL_OVERLOADS_MUST_MATCH =
+      SoyErrorKind.of("Overloads for the same extern symbol must have the same jsimpl.");
 
   private final ErrorReporter errorReporter;
   private final MethodChecker checker;
@@ -117,8 +120,19 @@ class ValidateExternsPass implements CompilerFilePass {
               OVERLOAD_PARAM_CONFLICT,
               first.getSourceLocation().toLineColumnString());
         }
+
+        if (!jsImplsEqual(first.getJsImpl(), second.getJsImpl())) {
+          errorReporter.report(second.typeNode().sourceLocation(), JS_IMPL_OVERLOADS_MUST_MATCH);
+        }
       }
     }
+  }
+
+  private boolean jsImplsEqual(Optional<JsImplNode> first, Optional<JsImplNode> second) {
+    boolean moduleEquals = first.map(JsImplNode::module).equals(second.map(JsImplNode::module));
+    boolean functionEquals =
+        first.map(JsImplNode::function).equals(second.map(JsImplNode::function));
+    return moduleEquals && functionEquals;
   }
 
   private void validateJava(ExternNode extern, JavaImplNode java) {

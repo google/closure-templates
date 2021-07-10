@@ -150,4 +150,9 @@ public final class JavaImplNode extends ExternImplNode {
         attributes.stream().filter(a -> paramName.equals(a.getName().identifier())).findFirst();
     return attr.isPresent() ? attr.get().getValueLocation() : SourceLocation.UNKNOWN;
   }
+
+  @Override
+  public ExternNode getParent() {
+    return (ExternNode) super.getParent();
+  }
 }
