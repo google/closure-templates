@@ -16,6 +16,7 @@
 
 package com.google.template.soy.passes;
 
+import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.base.SourceLocation.UNKNOWN;
 import static java.util.stream.Collectors.toCollection;
 
@@ -66,6 +67,7 @@ import com.google.template.soy.soytree.TagName;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.AttrParam;
 import com.google.template.soy.types.NullType;
+import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SanitizedType.AttributesType;
 import com.google.template.soy.types.SanitizedType.StyleType;
 import com.google.template.soy.types.SanitizedType.TrustedResourceUriType;
@@ -102,6 +104,9 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
 
   private static final SoyErrorKind DUPLICATE_ATTRIBUTE =
       SoyErrorKind.of("Attribute specified multiple times.");
+
+  private static final SoyErrorKind ATTRIBUTE_VALUE_MUST_BE_URI =
+      SoyErrorKind.of("Attribute value must be a uri.");
 
   private static final SoyErrorKind SKIP_NODE_NOT_ALLOWED =
       SoyErrorKind.of("Skip nodes are not allowed on this template call.");
@@ -513,7 +518,21 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
       return null;
     }
     HtmlAttributeValueNode attrValue = (HtmlAttributeValueNode) value;
+    // If the attribute type is "uri", make sure the value passed in was a single print node with
+    // an expr of type URI.
+    if (SoyTypes.removeNull(parameterMap.get(paramName)).getKind().equals(SoyType.Kind.URI)) {
+      verifyContainsSingleUriExpr(attrValue, errorReporter);
+    }
     if (!condition.isPresent()) {
+      // If the attribute type is "uri", or "string | uri", and the value passed was a single uri,
+      // then we want to unwrap the uri (from the print node) and send it without coercing to a
+      // string.
+      if (parameterMap.get(paramName).isAssignableFromStrict(SanitizedType.UriType.getInstance())
+          && containsSingleUriExpr(attrValue)) {
+        return unwrapUriExprAsCallParamNode(attrValue, paramName, nodeIdGen);
+      }
+
+      // maybe unwrap. uri val -> string | uri attr
       CallParamContentNode contentNode =
           new CallParamContentNode(
               nodeIdGen.genId(),
@@ -589,5 +608,46 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
     } else {
       return "text";
     }
+  }
+
+  private static boolean verifyAllBranchesResolveToUri(
+      HtmlAttributeValueNode attrValue, ErrorReporter errorReporter) {
+    return true;
+  }
+
+  private static boolean verifyContainsSingleUriExpr(
+      HtmlAttributeValueNode attrValue, ErrorReporter errorReporter) {
+    if (!containsSingleUriExpr(attrValue)) {
+      errorReporter.report(attrValue.getSourceLocation(), ATTRIBUTE_VALUE_MUST_BE_URI);
+      return false;
+    }
+    return true;
+  }
+
+  private static boolean containsSingleUriExpr(HtmlAttributeValueNode attrValue) {
+    if (attrValue.getChildren().size() != 1 || !(attrValue.getChild(0) instanceof PrintNode)) {
+      return false;
+    }
+
+    PrintNode printNode = (PrintNode) attrValue.getChild(0);
+    if (!printNode.getExpr().getType().getKind().equals(SoyType.Kind.URI)
+        || printNode.hasUserSpecifiedPrintDirectives()) {
+      return false;
+    }
+    return true;
+  }
+
+  private static CallParamValueNode unwrapUriExprAsCallParamNode(
+      HtmlAttributeValueNode attrValue, String paramName, IdGenerator nodeIdGen) {
+
+    checkState(containsSingleUriExpr(attrValue));
+
+    PrintNode printNode = (PrintNode) attrValue.getChild(0);
+
+    return new CallParamValueNode(
+        nodeIdGen.genId(),
+        attrValue.getSourceLocation(),
+        Identifier.create(paramName, attrValue.getSourceLocation().clearRange()),
+        printNode.getExpr().getRoot().copy(new CopyState()));
   }
 }
