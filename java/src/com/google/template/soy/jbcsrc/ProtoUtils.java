@@ -1397,7 +1397,7 @@ final class ProtoUtils {
   }
 
   // TODO(lukes): Consider caching? in SoyRuntimeType?
-  private static TypeInfo messageRuntimeType(Descriptor descriptor) {
+  static TypeInfo messageRuntimeType(Descriptor descriptor) {
     String className = JavaQualifiedNames.getClassName(descriptor);
     return TypeInfo.createClass(className);
   }

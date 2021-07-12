@@ -129,11 +129,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Future;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
+import org.objectweb.asm.commons.Method;
 
 /**
  * Compiles an {@link ExprNode} to a {@link SoyExpression}.
@@ -1576,8 +1578,7 @@ final class ExpressionCompiler {
         return sourceFunctionCompiler.compile(
             node, (SoyJavaSourceFunction) fn, args, parameters, detacher);
       } else if (fn instanceof ExternRef) {
-        // TODO(b/191092039): Implement this.
-        return SoyExpression.NULL;
+        return callExtern((ExternRef) fn, node.getParams());
       }
 
       // Functions that are not a SoyJavaSourceFunction
@@ -1594,6 +1595,47 @@ final class ExpressionCompiler {
           MethodRef.RUNTIME_CALL_LEGACY_FUNCTION
               .invoke(legacyFunctionRuntimeExpr, list)
               .checkedCast(SoyRuntimeType.getBoxedType(node.getType()).runtimeType()));
+    }
+
+    private SoyExpression callExtern(ExternRef extern, List<ExprNode> params) {
+      String namespace = fileSetMetadata.getNamespaceForPath(extern.path());
+      TypeInfo externOwner = TypeInfo.createClass(Names.javaClassNameFromSoyNamespace(namespace));
+      Method asmMethod = ExternCompiler.buildMemberMethod(extern.name(), extern.signature());
+      MethodRef ref = MethodRef.createStaticMethod(externOwner, asmMethod);
+      SoyRuntimeType soyReturnType =
+          ExternCompiler.getRuntimeType(extern.signature().getReturnType());
+      List<Expression> args = params.stream().map(this::visit).collect(Collectors.toList());
+      for (int i = 0; i < args.size(); i++) {
+        args.set(
+            i,
+            adaptExternArg(
+                (SoyExpression) args.get(i), extern.signature().getParameters().get(i).getType()));
+      }
+      return SoyExpression.forRuntimeType(soyReturnType, ref.invoke(args));
+    }
+
+    private static Expression adaptExternArg(SoyExpression soyExpression, SoyType type) {
+      if (type.getKind() == Kind.BOOL) {
+        return soyExpression.coerceToBoolean().unboxAsBoolean();
+      } else if (type.getKind() == Kind.INT) {
+        return soyExpression.unboxAsLong();
+      } else if (type.getKind() == Kind.STRING) {
+        return soyExpression.coerceToString().unboxAsString();
+      } else if (type.getKind() == Kind.FLOAT) {
+        return soyExpression.coerceToDouble().unboxAsDouble();
+      } else if (type.getKind() == Kind.ANY || type.getKind() == Kind.UNKNOWN) {
+        return soyExpression.boxAsSoyValueProvider().checkedCast(BytecodeUtils.SOY_VALUE_TYPE);
+      } else if (type.getKind() == Kind.PROTO) {
+        return soyExpression
+            .unboxAsMessage()
+            .checkedCast(
+                ProtoUtils.messageRuntimeType(((SoyProtoType) type).getDescriptor()).type());
+      } else if (type.getKind() == Kind.MESSAGE) {
+        return soyExpression.unboxAsMessage();
+      } else if (type.getKind() == Kind.PROTO_ENUM) {
+        return soyExpression.unboxAsLong();
+      }
+      return soyExpression;
     }
 
     // Proto initialization calls

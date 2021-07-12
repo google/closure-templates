@@ -41,6 +41,7 @@ import com.google.template.soy.data.SoyProtoValue;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
+import com.google.template.soy.data.SoyValueUnconverter;
 import com.google.template.soy.data.SoyVisualElement;
 import com.google.template.soy.data.SoyVisualElementData;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
@@ -481,6 +482,8 @@ public abstract class MethodRef {
 
   public static final MethodRef CONVERT_FUTURE_TO_SOY_VALUE_PROVIDER =
       create(JbcSrcRuntime.class, "convertFutureToSoyValueProvider", Future.class);
+  public static final MethodRef CONVERT_OBJECT_TO_SOY_VALUE_PROVIDER =
+      create(JbcSrcRuntime.class, "convertObjectToSoyValueProvider", Object.class);
 
   public static final MethodRef SOY_VALUE_PROVIDER_RESOLVE =
       create(JbcSrcRuntime.class, "resolveSoyValueProvider", SoyValueProvider.class);
@@ -515,6 +518,8 @@ public abstract class MethodRef {
   public static final MethodRef UNBOX_DOUBLE = create(Double.class, "doubleValue").asNonNullable();
   public static final MethodRef UNBOX_BOOLEAN =
       create(Boolean.class, "booleanValue").asNonNullable();
+  public static final MethodRef UNBOX_OBJECT =
+      create(SoyValueUnconverter.class, "unconvert", SoyValueProvider.class);
 
   public static final MethodRef STRING_DATA_FOR_VALUE =
       create(StringData.class, "forValue", String.class).asCheap().asNonNullable();

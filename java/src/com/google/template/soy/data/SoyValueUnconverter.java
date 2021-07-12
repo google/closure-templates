@@ -26,11 +26,11 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /** Performs the inverse operation to {@link SoyValueConverter#convert(Object)}. */
-final class SoyValueUnconverter {
+public final class SoyValueUnconverter {
 
   private SoyValueUnconverter() {}
 
-  static Object unconvert(SoyValueProvider provider) {
+  public static Object unconvert(SoyValueProvider provider) {
     SoyValue soyValue = provider.resolve();
     if (soyValue instanceof NullData) {
       return null;

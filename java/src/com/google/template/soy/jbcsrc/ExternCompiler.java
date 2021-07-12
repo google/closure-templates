@@ -34,6 +34,7 @@ import com.google.template.soy.soytree.ExternNode;
 import com.google.template.soy.soytree.JavaImplNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.types.FunctionType;
+import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import java.util.Arrays;
@@ -127,11 +128,11 @@ public final class ExternCompiler {
     return (extern.isExported() ? Opcodes.ACC_PUBLIC : 0) | Opcodes.ACC_STATIC;
   }
 
-  private static SoyRuntimeType getRuntimeType(SoyType type) {
+  static SoyRuntimeType getRuntimeType(SoyType type) {
     return SoyRuntimeType.getUnboxedType(type).orElseGet(() -> SoyRuntimeType.getBoxedType(type));
   }
 
-  private static Method buildMemberMethod(String symbol, FunctionType type) {
+  static Method buildMemberMethod(String symbol, FunctionType type) {
     Type[] args =
         type.getParameters().stream()
             .map(p -> getRuntimeType(p.getType()).runtimeType())
@@ -178,11 +179,11 @@ public final class ExternCompiler {
       return MethodRef.BOX_DOUBLE.invoke(actualParam.coerceToDouble());
     }
     // For protos, we need to unbox as Message & then cast.
-    if (soyType.getKind() == Kind.MESSAGE || soyType.getKind() == Kind.PROTO) {
-      if (javaType.equals(BytecodeUtils.MESSAGE_TYPE)) {
-        return actualParam.unboxAsMessage();
-      }
-      return actualParam.unboxAsMessage().checkedCast(javaType);
+    if (soyType.getKind() == Kind.MESSAGE) {
+      return actualParam;
+    } else if (soyType.getKind() == Kind.PROTO) {
+      return actualParam.checkedCast(
+          ProtoUtils.messageRuntimeType(((SoyProtoType) soyType).getDescriptor()).type());
     }
     // For protocol enums, we need to call forNumber on the type w/ the param (as casted to an int).
     // This is because Soy internally stores enums as ints. We know this is safe because we
@@ -206,7 +207,7 @@ public final class ExternCompiler {
     } else if (javaType.equals(BytecodeUtils.LIST_TYPE)) {
       return actualParam.unboxAsList();
     } else if (javaType.equals(BytecodeUtils.OBJECT.type())) {
-      return actualParam;
+      return actualParam.isBoxed() ? MethodRef.UNBOX_OBJECT.invoke(actualParam) : actualParam;
     }
 
     throw new AssertionError(
@@ -235,6 +236,8 @@ public final class ExternCompiler {
       return MethodRef.SOY_VALUE_BOOLEAN_VALUE.invoke(externCall);
     } else if (externType.equals(BytecodeUtils.STRING_DATA_TYPE)) {
       return MethodRef.SOY_VALUE_STRING_VALUE.invoke(externCall);
+    } else if (externType.equals(BytecodeUtils.OBJECT.type())) {
+      return MethodRef.CONVERT_OBJECT_TO_SOY_VALUE_PROVIDER.invoke(externCall);
     }
 
     return externCall;

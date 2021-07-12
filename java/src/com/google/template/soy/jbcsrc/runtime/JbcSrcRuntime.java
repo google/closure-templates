@@ -173,6 +173,10 @@ public final class JbcSrcRuntime {
     }
   }
 
+  public static SoyValueProvider convertObjectToSoyValueProvider(Object o) {
+    return SoyValueConverter.INSTANCE.convert(o);
+  }
+
   public static SoyValueProvider convertFutureToSoyValueProvider(Future<?> future) {
     return SoyValueConverter.INSTANCE.convert(future);
   }
