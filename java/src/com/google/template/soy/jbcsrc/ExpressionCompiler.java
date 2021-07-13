@@ -614,9 +614,6 @@ final class ExpressionCompiler {
     @Override
     protected final SoyExpression visitMapLiteralNode(MapLiteralNode node) {
       final int numItems = node.numChildren() / 2;
-      if (numItems == 0) {
-        return SoyExpression.forSoyValue(node.getType(), FieldRef.EMPTY_MAP.accessor());
-      }
       List<Expression> keys = new ArrayList<>(numItems);
       List<Expression> values = new ArrayList<>(numItems);
       for (int i = 0; i < numItems; i++) {

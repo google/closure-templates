@@ -51,6 +51,7 @@ _DELEGATE_REGISTRY = {}
 
 # All number types for use during custom type functions.
 _NUMBER_TYPES = six.integer_types + (float,)
+_STRUCT_TYPES = (list, dict)
 
 # The mapping of css class names for get_css_name.
 _css_name_mapping = None
@@ -458,7 +459,7 @@ def string_list_sort(l):
 def type_safe_eq(first, second):
   """An equality function that does type coercion for various scenarios.
 
-  This function emulates JavaScript's equalty behavior. In JS, Objects will be
+  This function emulates JavaScript's equality behavior. In JS, Objects will be
   converted to strings when compared to a string primitive.
 
   Args:
@@ -468,6 +469,9 @@ def type_safe_eq(first, second):
   Returns:
     True/False depending on the result of the comparison.
   """
+  if isinstance(first, _STRUCT_TYPES) or isinstance(second, _STRUCT_TYPES):
+    return first is second
+
   # If the values are empty or of the same type, no coersion necessary.
   # TODO(dcphillips): Do a more basic type equality check if it's not slower
   # (b/16661176).

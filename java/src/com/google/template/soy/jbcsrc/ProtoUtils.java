@@ -837,13 +837,6 @@ final class ProtoUtils {
     }
 
     SoyExpression generate() {
-      // For cases with no field assignments, return proto.defaultInstance().
-      if (node.numChildren() == 0) {
-        final Expression defaultInstance = getDefaultInstanceMethod(descriptor).invoke();
-        return SoyExpression.forProto(
-            SoyRuntimeType.getUnboxedType(protoType).get(), defaultInstance);
-      }
-
       final Expression newBuilderCall = getBuilderMethod(descriptor).invoke();
       final ImmutableList<Statement> setters = getFieldSetters();
       final MethodRef buildCall = getBuildMethod(descriptor);
@@ -1522,14 +1515,6 @@ final class ProtoUtils {
     TypeInfo builder = builderRuntimeType(descriptor);
     return MethodRef.createStaticMethod(
             message, new Method("newBuilder", builder.type(), MethodRef.NO_METHOD_ARGS))
-        .asNonNullable();
-  }
-
-  /** Returns the {@link MethodRef} for the generated defaultInstance method. */
-  private static MethodRef getDefaultInstanceMethod(Descriptor descriptor) {
-    TypeInfo message = messageRuntimeType(descriptor);
-    return MethodRef.createStaticMethod(
-            message, new Method("getDefaultInstance", message.type(), MethodRef.NO_METHOD_ARGS))
         .asNonNullable();
   }
 

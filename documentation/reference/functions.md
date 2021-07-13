@@ -137,13 +137,17 @@ Also callable as deprecated global function: `concatLists(list, list...)`
 
 ### `list.contains(value)` {#listContains} <!-- {#list-any_contains} -->
 
-Checks if the given value is inside the list.
+Checks if the given value is inside the list. This method implements JavaScript
+semantics, comparing elements with `==`. Therefore it only works on lists of
+primitive values.
 
 Also callable as deprecated global function: `listContains(list, value)`
 
 ### `list.indexOf(value)` {#listIndexOf} <!-- {#list-any_indexOf} -->
 
-Return the index of the value in list, or -1.
+Return the index of the value in list, or -1. This method implements JavaScript
+semantics, comparing elements with `==`. Therefore it only works on lists of
+primitive values.
 
 Also callable as deprecated global function: `listIndexOf(list, value)`
 
