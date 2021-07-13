@@ -599,9 +599,9 @@ final class ExpressionCompiler {
       List<Expression> keys = new ArrayList<>(numItems);
       List<Expression> values = new ArrayList<>(numItems);
       for (int i = 0; i < numItems; i++) {
-        // Keys are strings and values are boxed SoyValues.
+        // Keys are strings and values are boxed SoyValueProviders.
         keys.add(BytecodeUtils.constant(node.getKey(i).identifier()));
-        values.add(visit(node.getChild(i)).box());
+        values.add(visit(node.getChild(i)).boxAsSoyValueProvider());
       }
       Expression soyDict =
           MethodRef.DICT_IMPL_FOR_PROVIDER_MAP.invoke(
