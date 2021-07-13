@@ -16,7 +16,7 @@
 
 package com.google.template.soy.data;
 
-import com.google.common.collect.ImmutableMap;
+import java.util.Map;
 import java.util.function.BiConsumer;
 import javax.annotation.ParametersAreNonnullByDefault;
 
@@ -55,7 +55,7 @@ public interface SoyRecord extends SoyValue {
   SoyValueProvider getFieldProvider(String name);
 
   /** Returns a view of this object as a java map. */
-  ImmutableMap<String, SoyValueProvider> recordAsMap();
+  Map<String, SoyValueProvider> recordAsMap();
 
   void forEach(BiConsumer<String, ? super SoyValueProvider> action);
 

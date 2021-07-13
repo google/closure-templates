@@ -61,9 +61,7 @@ public final class SoyValueUnconverter {
       // this needs to come after checking for SoyProtoValue since SoyProtoValue implements
       // SoyRecord
       Map<String, Object> unconverted = new LinkedHashMap<>();
-      ((SoyRecord) soyValue)
-          .recordAsMap()
-          .forEach((key, value) -> unconverted.put(key, unconvert(value)));
+      ((SoyRecord) soyValue).forEach((key, value) -> unconverted.put(key, unconvert(value)));
       return unconverted;
     } else if (soyValue instanceof SanitizedContent) {
       SanitizedContent sc = (SanitizedContent) soyValue;
