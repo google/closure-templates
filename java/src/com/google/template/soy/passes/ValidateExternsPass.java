@@ -21,16 +21,13 @@ import static com.google.common.collect.ImmutableListMultimap.toImmutableListMul
 import com.google.common.base.Strings;
 import com.google.common.base.VerifyException;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ListMultimap;
 import com.google.common.primitives.Primitives;
 import com.google.protobuf.Message;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.data.SoyData;
-import com.google.template.soy.data.restricted.BooleanData;
-import com.google.template.soy.data.restricted.FloatData;
-import com.google.template.soy.data.restricted.IntegerData;
-import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.internal.proto.JavaQualifiedNames;
@@ -41,6 +38,7 @@ import com.google.template.soy.soytree.JavaImplNode;
 import com.google.template.soy.soytree.JsImplNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.types.FunctionType;
+import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
@@ -210,23 +208,31 @@ class ValidateExternsPass implements CompilerFilePass {
     }
   }
 
+  private static final ImmutableSet<SoyType.Kind> ALLOWED_LIST_TYPES =
+      ImmutableSet.of(
+          SoyType.Kind.INT,
+          SoyType.Kind.FLOAT,
+          SoyType.Kind.STRING,
+          SoyType.Kind.BOOL,
+          SoyType.Kind.PROTO,
+          SoyType.Kind.PROTO_ENUM);
+
   private static boolean typesAreCompatible(Class<?> javaType, SoyType soyType) {
     javaType = Primitives.wrap(javaType);
     switch (soyType.getKind()) {
       case INT:
-        return javaType == Integer.class || javaType == Long.class || javaType == IntegerData.class;
+        return javaType == Integer.class || javaType == Long.class;
       case FLOAT:
-        return javaType == Double.class || javaType == FloatData.class;
+        return javaType == Double.class;
       case STRING:
-        return javaType == String.class || javaType == StringData.class;
+        return javaType == String.class;
       case BOOL:
-        return javaType == Boolean.class || javaType == BooleanData.class;
-      case UNKNOWN:
-        return true;
+        return javaType == Boolean.class;
       case ANY:
         return javaType == Object.class || javaType == SoyData.class;
       case LIST:
-        return javaType == List.class;
+        return (javaType == List.class || javaType == ImmutableList.class)
+            && ALLOWED_LIST_TYPES.contains(((ListType) soyType).getElementType().getKind());
       case MESSAGE:
         return javaType == Message.class;
       case PROTO:

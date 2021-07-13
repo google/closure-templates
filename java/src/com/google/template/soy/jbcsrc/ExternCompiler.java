@@ -18,6 +18,7 @@ package com.google.template.soy.jbcsrc;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.internal.proto.JavaQualifiedNames;
 import com.google.template.soy.jbcsrc.internal.SoyClassWriter;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
@@ -34,6 +35,8 @@ import com.google.template.soy.soytree.ExternNode;
 import com.google.template.soy.soytree.JavaImplNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.types.FunctionType;
+import com.google.template.soy.types.ListType;
+import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
@@ -204,8 +207,29 @@ public final class ExternCompiler {
       return MethodRef.BOX_LONG.invoke(actualParam.unboxAsLong());
     } else if (javaType.equals(BytecodeUtils.STRING_TYPE)) {
       return actualParam.unboxAsString();
-    } else if (javaType.equals(BytecodeUtils.LIST_TYPE)) {
-      return actualParam.unboxAsList();
+    } else if (javaType.equals(BytecodeUtils.LIST_TYPE)
+        || javaType.equals(BytecodeUtils.IMMUTIBLE_LIST_TYPE)) {
+      SoyType elmType = ((ListType) soyType).getElementType();
+      SoyExpression unboxedList = actualParam.isBoxed() ? actualParam.unboxAsList() : actualParam;
+      switch (elmType.getKind()) {
+        case INT:
+          return MethodRef.LIST_UNBOX_INTS.invoke(unboxedList);
+        case FLOAT:
+          return MethodRef.LIST_UNBOX_FLOATS.invoke(unboxedList);
+        case STRING:
+          return MethodRef.LIST_UNBOX_STRINGS.invoke(unboxedList);
+        case BOOL:
+          return MethodRef.LIST_UNBOX_BOOLS.invoke(unboxedList);
+        case PROTO:
+          return MethodRef.LIST_UNBOX_PROTOS.invoke(unboxedList);
+        case PROTO_ENUM:
+          String javaClass =
+              JavaQualifiedNames.getClassName(((SoyProtoEnumType) elmType).getDescriptor());
+          return MethodRef.LIST_UNBOX_ENUMS.invoke(
+              unboxedList, BytecodeUtils.constant(BytecodeUtils.getTypeForClassName(javaClass)));
+        default:
+          throw new AssertionError("ValidateExternsPass should prevent this.");
+      }
     } else if (javaType.equals(BytecodeUtils.OBJECT.type())) {
       return actualParam.isBoxed() ? MethodRef.UNBOX_OBJECT.invoke(actualParam) : actualParam;
     }
@@ -238,6 +262,9 @@ public final class ExternCompiler {
       return MethodRef.SOY_VALUE_STRING_VALUE.invoke(externCall);
     } else if (externType.equals(BytecodeUtils.OBJECT.type())) {
       return MethodRef.CONVERT_OBJECT_TO_SOY_VALUE_PROVIDER.invoke(externCall);
+    } else if (externType.equals(BytecodeUtils.LIST_TYPE)
+        || externType.equals(BytecodeUtils.IMMUTIBLE_LIST_TYPE)) {
+      return MethodRef.LIST_BOX_VALUES.invoke(externCall);
     }
 
     return externCall;

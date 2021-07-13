@@ -18,8 +18,10 @@ package com.google.template.soy.jbcsrc.runtime;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static java.lang.invoke.MethodType.methodType;
+import static java.util.stream.Collectors.toList;
 
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
@@ -33,6 +35,8 @@ import com.google.common.collect.SetMultimap;
 import com.google.errorprone.annotations.Immutable;
 import com.google.protobuf.ExtensionLite;
 import com.google.protobuf.GeneratedMessage.ExtendableMessage;
+import com.google.protobuf.Message;
+import com.google.protobuf.ProtocolMessageEnum;
 import com.google.template.soy.data.AbstractLoggingAdvisingAppendable;
 import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
@@ -43,6 +47,7 @@ import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyLegacyObjectMap;
 import com.google.template.soy.data.SoyMap;
+import com.google.template.soy.data.SoyProtoValue;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyRecords;
 import com.google.template.soy.data.SoyValue;
@@ -79,6 +84,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
+import java.lang.reflect.Method;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -302,6 +308,46 @@ public final class JbcSrcRuntime {
 
   public static long intToLong(int value) {
     return value;
+  }
+
+  public static ImmutableList<String> listUnboxStrings(List<SoyValue> values) {
+    return values.stream().map(SoyValue::coerceToString).collect(toImmutableList());
+  }
+
+  public static ImmutableList<Long> listUnboxInts(List<SoyValue> values) {
+    return values.stream().map(SoyValue::longValue).collect(toImmutableList());
+  }
+
+  public static ImmutableList<Double> listUnboxFloats(List<SoyValue> values) {
+    return values.stream().map(SoyValue::floatValue).collect(toImmutableList());
+  }
+
+  public static ImmutableList<Boolean> listUnboxBools(List<SoyValue> values) {
+    return values.stream().map(SoyValue::coerceToBoolean).collect(toImmutableList());
+  }
+
+  public static ImmutableList<Message> listUnboxProtos(List<SoyValue> values) {
+    return values.stream().map(v -> ((SoyProtoValue) v).getProto()).collect(toImmutableList());
+  }
+
+  public static <T extends ProtocolMessageEnum> ImmutableList<T> listUnboxEnums(
+      List<SoyValue> values, Class<T> type) {
+    return values.stream()
+        .map(v -> getEnumValue(type, (int) v.longValue()))
+        .collect(toImmutableList());
+  }
+
+  static <T> T getEnumValue(Class<T> clazz, int enumValue) {
+    try {
+      Method forNumber = clazz.getMethod("forNumber", int.class);
+      return clazz.cast(forNumber.invoke(null, enumValue));
+    } catch (ReflectiveOperationException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  public static List<SoyValueProvider> listBoxValues(List<?> javaValues) {
+    return javaValues.stream().map(SoyValueConverter.INSTANCE::convert).collect(toList());
   }
 
   /**

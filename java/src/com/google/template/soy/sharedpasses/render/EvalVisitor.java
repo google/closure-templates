@@ -892,7 +892,11 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       javaValues[i] = TofuJavaValue.forSoyValue(visit(param), param.getSourceLocation());
     }
 
-    return new TofuValueFactory(node.getSourceLocation(), soyFunction.name(), ImmutableMap.of())
+    return new TofuValueFactory(
+            node.getSourceLocation(),
+            soyFunction.name(),
+            ImmutableMap.of(),
+            soyFunction.signature())
         .callStaticMethod(method, javaValues)
         .soyValue();
   }

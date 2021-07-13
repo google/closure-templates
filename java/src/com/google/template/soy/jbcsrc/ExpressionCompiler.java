@@ -1631,6 +1631,8 @@ final class ExpressionCompiler {
         return soyExpression.unboxAsMessage();
       } else if (type.getKind() == Kind.PROTO_ENUM) {
         return soyExpression.unboxAsLong();
+      } else if (type.getKind() == Kind.LIST) {
+        return soyExpression.unboxAsList();
       }
       return soyExpression;
     }

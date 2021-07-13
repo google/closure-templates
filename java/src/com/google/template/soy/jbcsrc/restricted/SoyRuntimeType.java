@@ -227,10 +227,10 @@ public abstract class SoyRuntimeType {
 
   /** Returns the runtime type for the message correspdoning to the given descriptor.. */
   public static Type protoType(Descriptor descriptor) {
-    return Type.getType('L' + JavaQualifiedNames.getClassName(descriptor).replace('.', '/') + ';');
+    return BytecodeUtils.getTypeForClassName(JavaQualifiedNames.getClassName(descriptor));
   }
 
-  private static PrimitiveSoyType enumType(SoyProtoEnumType enumType) {
+  public static PrimitiveSoyType enumType(SoyProtoEnumType enumType) {
     return new PrimitiveSoyType(enumType, Type.LONG_TYPE, BytecodeUtils.INTEGER_DATA_TYPE);
   }
 

@@ -73,6 +73,7 @@ import java.io.PrintStream;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -132,6 +133,9 @@ public abstract class MethodRef {
 
   public static final MethodRef RENDER_RESULT_ASSERT_DONE =
       create(RenderResult.class, "assertDone");
+
+  public static final MethodRef IMMUTABLE_LIST_COPY_OF_COLLECTION =
+      create(ImmutableList.class, "copyOf", Collection.class);
 
   /** a list of all the ImmutableList.of overloads, indexed by arity. */
   public static final ImmutableList<MethodRef> IMMUTABLE_LIST_OF;
@@ -249,6 +253,21 @@ public abstract class MethodRef {
           String.class,
           ContentKind.class,
           Dir.class);
+
+  public static final MethodRef LIST_UNBOX_INTS =
+      create(JbcSrcRuntime.class, "listUnboxInts", List.class);
+  public static final MethodRef LIST_UNBOX_FLOATS =
+      create(JbcSrcRuntime.class, "listUnboxFloats", List.class);
+  public static final MethodRef LIST_UNBOX_BOOLS =
+      create(JbcSrcRuntime.class, "listUnboxBools", List.class);
+  public static final MethodRef LIST_UNBOX_STRINGS =
+      create(JbcSrcRuntime.class, "listUnboxStrings", List.class);
+  public static final MethodRef LIST_UNBOX_PROTOS =
+      create(JbcSrcRuntime.class, "listUnboxProtos", List.class);
+  public static final MethodRef LIST_UNBOX_ENUMS =
+      create(JbcSrcRuntime.class, "listUnboxEnums", List.class, Class.class);
+  public static final MethodRef LIST_BOX_VALUES =
+      create(JbcSrcRuntime.class, "listBoxValues", List.class);
 
   public static final MethodRef PARAM_STORE_SET_FIELD =
       create(
