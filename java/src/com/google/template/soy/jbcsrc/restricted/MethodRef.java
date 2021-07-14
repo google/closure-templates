@@ -22,6 +22,7 @@ import static com.google.template.soy.jbcsrc.restricted.Expression.areAllCheap;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.html.types.SafeUrl;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.UnsignedInts;
 import com.google.common.primitives.UnsignedLongs;
@@ -34,6 +35,7 @@ import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
 import com.google.template.soy.data.ProtoFieldInterpreter;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.data.SanitizedContents;
 import com.google.template.soy.data.SoyLegacyObjectMap;
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyMap;
@@ -505,6 +507,8 @@ public abstract class MethodRef {
       create(JbcSrcRuntime.class, "convertFutureToSoyValueProvider", Future.class);
   public static final MethodRef CONVERT_OBJECT_TO_SOY_VALUE_PROVIDER =
       create(JbcSrcRuntime.class, "convertObjectToSoyValueProvider", Object.class);
+  public static final MethodRef CONVERT_SAFE_URL_TO_SOY_VALUE_PROVIDER =
+      create(SanitizedContents.class, "fromSafeUrl", SafeUrl.class);
 
   public static final MethodRef SOY_VALUE_PROVIDER_RESOLVE =
       create(JbcSrcRuntime.class, "resolveSoyValueProvider", SoyValueProvider.class);
@@ -541,6 +545,8 @@ public abstract class MethodRef {
       create(Boolean.class, "booleanValue").asNonNullable();
   public static final MethodRef UNBOX_OBJECT =
       create(SoyValueUnconverter.class, "unconvert", SoyValueProvider.class);
+  public static final MethodRef UNBOX_SAFE_URL =
+      create(JbcSrcRuntime.class, "unboxSafeUrl", SoyValueProvider.class);
 
   public static final MethodRef STRING_DATA_FOR_VALUE =
       create(StringData.class, "forValue", String.class).asCheap().asNonNullable();

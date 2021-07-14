@@ -198,6 +198,10 @@ public final class ExternCompiler {
           .invoke(BytecodeUtils.numericConversion(actualParam.unboxAsLong(), Type.INT_TYPE));
     }
 
+    if (javaType.equals(BytecodeUtils.SAFE_URL)) {
+      return MethodRef.UNBOX_SAFE_URL.invoke(actualParam);
+    }
+
     if (javaType.equals(Type.BOOLEAN_TYPE)) {
       return actualParam.unboxAsBoolean();
     } else if (javaType.equals(BytecodeUtils.BOXED_BOOLEAN_TYPE)) {
@@ -274,6 +278,8 @@ public final class ExternCompiler {
     } else if (externType.equals(BytecodeUtils.LIST_TYPE)
         || externType.equals(BytecodeUtils.IMMUTIBLE_LIST_TYPE)) {
       return MethodRef.LIST_BOX_VALUES.invoke(externCall);
+    } else if (externType.equals(BytecodeUtils.SAFE_URL)) {
+      return MethodRef.CONVERT_SAFE_URL_TO_SOY_VALUE_PROVIDER.invoke(externCall);
     }
 
     return externCall;
