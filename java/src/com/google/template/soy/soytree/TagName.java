@@ -208,7 +208,7 @@ public final class TagName {
           .putAll("tbody", "tbody", "tfoot")
           .put("tfoot", "table")
           .put("tr", "tr")
-          .putAll("td", "tr", "th")
+          .putAll("td", "tr", "th", "td")
           .putAll("th", "td", "th")
           .build();
 
