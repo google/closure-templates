@@ -16,6 +16,9 @@
 
 package com.google.template.soy.sharedpasses.render;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.common.collect.ImmutableMap.toImmutableMap;
+
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -31,6 +34,7 @@ import com.google.template.soy.data.SoyProtoValue;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueProvider;
+import com.google.template.soy.data.SoyValueUnconverter;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
@@ -253,6 +257,8 @@ class TofuValueFactory extends JavaValueFactory {
                   + "]");
         }
         return null;
+      } else if (externSig != null && type == Object.class) {
+        return SoyValueUnconverter.unconvert(value);
       } else if (type.isInstance(value)) {
         return value;
       } else if (type == boolean.class) {
@@ -275,7 +281,7 @@ class TofuValueFactory extends JavaValueFactory {
                               item,
                               ((ListType) externSig.getParameters().get(i).getType())
                                   .getElementType()))
-                  .collect(ImmutableList.toImmutableList());
+                  .collect(toImmutableList());
         } else {
           return ((SoyList) value).asJavaList();
         }
@@ -284,7 +290,7 @@ class TofuValueFactory extends JavaValueFactory {
         return ((SoyMap) value)
             .entrySet().stream()
                 .collect(
-                    ImmutableMap.toImmutableMap(
+                    toImmutableMap(
                         e -> adaptParamItem(e.getKey(), mapType.getKeyType()),
                         e -> adaptParamItem(e.getValue(), mapType.getValueType())));
       } else if (Message.class.isAssignableFrom(type)) {

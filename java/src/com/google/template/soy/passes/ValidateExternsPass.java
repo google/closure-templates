@@ -44,6 +44,8 @@ import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.SoyTypes;
+import com.google.template.soy.types.UnionType;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -220,7 +222,17 @@ class ValidateExternsPass implements CompilerFilePass {
           SoyType.Kind.PROTO,
           SoyType.Kind.PROTO_ENUM);
 
+  private static final ImmutableSet<SoyType.Kind> ALLOWED_UNION_MEMBERS =
+      ImmutableSet.<SoyType.Kind>builder()
+          .addAll(ALLOWED_PARAMETERIZED_TYPES)
+          .add(SoyType.Kind.URI)
+          .build();
+
   private static boolean typesAreCompatible(Class<?> javaType, SoyType soyType) {
+    if (SoyTypes.isNullable(soyType)) {
+      return false;
+    }
+
     javaType = Primitives.wrap(javaType);
     switch (soyType.getKind()) {
       case INT:
@@ -231,7 +243,14 @@ class ValidateExternsPass implements CompilerFilePass {
         return javaType == String.class;
       case BOOL:
         return javaType == Boolean.class;
+      case UNION:
+        if (((UnionType) soyType)
+            .getMembers().stream().anyMatch(t -> !ALLOWED_UNION_MEMBERS.contains(t.getKind()))) {
+          return false;
+        }
+        // fallthrough
       case ANY:
+      case UNKNOWN:
         return javaType == Object.class || javaType == SoyData.class;
       case LIST:
         return (javaType == List.class || javaType == ImmutableList.class)

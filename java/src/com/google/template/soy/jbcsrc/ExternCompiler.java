@@ -160,9 +160,9 @@ public final class ExternCompiler {
             ? (SoyExpression) paramAsSoyType
             : SoyExpression.forRuntimeType(getRuntimeType(soyType), paramAsSoyType);
 
-    // If expecting a bland 'SoyValue', just box the expr.
-    if (javaType.equals(BytecodeUtils.SOY_VALUE_TYPE)) {
-      return actualParam.box();
+    // If expecting a bland 'SoyData', just box the expr.
+    if (javaType.equals(BytecodeUtils.SOY_DATA_TYPE)) {
+      return actualParam.box().checkedCast(javaType);
     }
     // If we expect a specific SoyValue subclass, then box + cast.
     if (javaTypeInfo.classOptional().isPresent()

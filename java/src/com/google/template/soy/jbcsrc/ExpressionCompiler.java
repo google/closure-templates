@@ -1634,7 +1634,7 @@ final class ExpressionCompiler {
       } else if (type.getKind() == Kind.LIST) {
         return soyExpression.unboxAsList();
       }
-      return soyExpression;
+      return soyExpression.box();
     }
 
     // Proto initialization calls

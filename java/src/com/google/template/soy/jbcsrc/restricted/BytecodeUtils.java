@@ -32,6 +32,7 @@ import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.data.SoyData;
 import com.google.template.soy.data.SoyLegacyObjectMap;
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyMap;
@@ -117,6 +118,7 @@ public final class BytecodeUtils {
   public static final Type SOY_PROTO_VALUE_TYPE = Type.getType(SoyProtoValue.class);
   public static final Type SOY_RECORD_TYPE = Type.getType(SoyRecord.class);
   public static final Type SOY_VALUE_TYPE = Type.getType(SoyValue.class);
+  public static final Type SOY_DATA_TYPE = Type.getType(SoyData.class);
   public static final Type SOY_VALUE_PROVIDER_TYPE = Type.getType(SoyValueProvider.class);
   public static final Type SOY_STRING_TYPE = Type.getType(StringData.class);
   public static final Type STRING_TYPE = Type.getType(String.class);
