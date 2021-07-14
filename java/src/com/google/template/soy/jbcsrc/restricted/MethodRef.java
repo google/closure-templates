@@ -268,6 +268,8 @@ public abstract class MethodRef {
       create(JbcSrcRuntime.class, "listUnboxEnums", List.class, Class.class);
   public static final MethodRef LIST_BOX_VALUES =
       create(JbcSrcRuntime.class, "listBoxValues", List.class);
+  public static final MethodRef UNBOX_MAP =
+      create(JbcSrcRuntime.class, "unboxMap", SoyMap.class, Class.class, Class.class);
 
   public static final MethodRef PARAM_STORE_SET_FIELD =
       create(

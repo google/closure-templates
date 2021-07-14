@@ -346,6 +346,32 @@ public final class JbcSrcRuntime {
     }
   }
 
+  public static ImmutableMap<?, ?> unboxMap(SoyMap map, Class<?> keyType, Class<?> valueType) {
+    return map.entrySet().stream()
+        .collect(
+            toImmutableMap(
+                e -> unboxMapItem(e.getKey(), keyType),
+                e -> unboxMapItem(e.getValue().resolve(), valueType)));
+  }
+
+  public static Object unboxMapItem(SoyValue value, Class<?> type) {
+    if (type == Long.class) {
+      return value.longValue();
+    } else if (type == String.class) {
+      return value.coerceToString();
+    } else if (type == Boolean.class) {
+      return value.coerceToBoolean();
+    } else if (type == Double.class) {
+      return value.floatValue();
+    } else if (Message.class.isAssignableFrom(type)) {
+      return ((SoyProtoValue) value).getProto();
+    } else if (ProtocolMessageEnum.class.isAssignableFrom(type)) {
+      return getEnumValue(type, value.integerValue());
+    } else {
+      throw new IllegalArgumentException("unsupported type: " + type);
+    }
+  }
+
   public static List<SoyValueProvider> listBoxValues(List<?> javaValues) {
     return javaValues.stream().map(SoyValueConverter.INSTANCE::convert).collect(toList());
   }

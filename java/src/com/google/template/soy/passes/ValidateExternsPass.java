@@ -21,6 +21,7 @@ import static com.google.common.collect.ImmutableListMultimap.toImmutableListMul
 import com.google.common.base.Strings;
 import com.google.common.base.VerifyException;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ListMultimap;
 import com.google.common.primitives.Primitives;
@@ -39,11 +40,13 @@ import com.google.template.soy.soytree.JsImplNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.types.FunctionType;
 import com.google.template.soy.types.ListType;
+import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -208,7 +211,7 @@ class ValidateExternsPass implements CompilerFilePass {
     }
   }
 
-  private static final ImmutableSet<SoyType.Kind> ALLOWED_LIST_TYPES =
+  private static final ImmutableSet<SoyType.Kind> ALLOWED_PARAMETERIZED_TYPES =
       ImmutableSet.of(
           SoyType.Kind.INT,
           SoyType.Kind.FLOAT,
@@ -232,7 +235,13 @@ class ValidateExternsPass implements CompilerFilePass {
         return javaType == Object.class || javaType == SoyData.class;
       case LIST:
         return (javaType == List.class || javaType == ImmutableList.class)
-            && ALLOWED_LIST_TYPES.contains(((ListType) soyType).getElementType().getKind());
+            && ALLOWED_PARAMETERIZED_TYPES.contains(
+                ((ListType) soyType).getElementType().getKind());
+      case MAP:
+        MapType mapType = (MapType) soyType;
+        return (javaType == Map.class || javaType == ImmutableMap.class)
+            && ALLOWED_PARAMETERIZED_TYPES.contains(mapType.getKeyType().getKind())
+            && ALLOWED_PARAMETERIZED_TYPES.contains(mapType.getValueType().getKind());
       case MESSAGE:
         return javaType == Message.class;
       case PROTO:

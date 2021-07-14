@@ -36,6 +36,7 @@ import com.google.template.soy.soytree.JavaImplNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.types.FunctionType;
 import com.google.template.soy.types.ListType;
+import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
@@ -230,6 +231,14 @@ public final class ExternCompiler {
         default:
           throw new AssertionError("ValidateExternsPass should prevent this.");
       }
+    } else if (javaType.equals(BytecodeUtils.MAP_TYPE)
+        || javaType.equals(BytecodeUtils.IMMUTIBLE_MAP_TYPE)) {
+      SoyType keyType = ((MapType) soyType).getKeyType();
+      SoyType valueType = ((MapType) soyType).getValueType();
+      return MethodRef.UNBOX_MAP.invoke(
+          actualParam,
+          BytecodeUtils.constant(BytecodeUtils.getTypeForSoyType(keyType)),
+          BytecodeUtils.constant(BytecodeUtils.getTypeForSoyType(valueType)));
     } else if (javaType.equals(BytecodeUtils.OBJECT.type())) {
       return actualParam.isBoxed() ? MethodRef.UNBOX_OBJECT.invoke(actualParam) : actualParam;
     }

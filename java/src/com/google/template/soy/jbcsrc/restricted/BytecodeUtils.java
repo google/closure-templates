@@ -22,9 +22,11 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.primitives.Ints;
 import com.google.protobuf.Message;
+import com.google.protobuf.contrib.JavaQualifiedNames;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
@@ -53,6 +55,9 @@ import com.google.template.soy.jbcsrc.shared.Names;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.jbcsrc.shared.StackFrame;
 import com.google.template.soy.logging.LoggableElementMetadata;
+import com.google.template.soy.types.SoyProtoEnumType;
+import com.google.template.soy.types.SoyProtoType;
+import com.google.template.soy.types.SoyType;
 import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
@@ -98,6 +103,7 @@ public final class BytecodeUtils {
   public static final Type LINKED_HASH_MAP_TYPE = Type.getType(LinkedHashMap.class);
   public static final Type LIST_TYPE = Type.getType(List.class);
   public static final Type IMMUTIBLE_LIST_TYPE = Type.getType(ImmutableList.class);
+  public static final Type IMMUTIBLE_MAP_TYPE = Type.getType(ImmutableMap.class);
   public static final Type MAP_TYPE = Type.getType(Map.class);
   public static final Type MAP_ENTRY_TYPE = Type.getType(Map.Entry.class);
   public static final Type MESSAGE_TYPE = Type.getType(Message.class);
@@ -1067,5 +1073,26 @@ public final class BytecodeUtils {
 
   public static Type getTypeForClassName(String name) {
     return Type.getType('L' + name.replace('.', '/') + ';');
+  }
+
+  public static Type getTypeForSoyType(SoyType type) {
+    switch (type.getKind()) {
+      case INT:
+        return BOXED_LONG_TYPE;
+      case FLOAT:
+        return BOXED_DOUBLE_TYPE;
+      case BOOL:
+        return BOXED_BOOLEAN_TYPE;
+      case STRING:
+        return STRING_TYPE;
+      case PROTO:
+        return getTypeForClassName(
+            JavaQualifiedNames.getClassName(((SoyProtoType) type).getDescriptor()));
+      case PROTO_ENUM:
+        return getTypeForClassName(
+            JavaQualifiedNames.getClassName(((SoyProtoEnumType) type).getDescriptor()));
+      default:
+        throw new IllegalArgumentException("unsupported type: " + type);
+    }
   }
 }

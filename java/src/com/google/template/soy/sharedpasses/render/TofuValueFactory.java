@@ -26,6 +26,7 @@ import com.google.protobuf.ProtocolMessageEnum;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyList;
+import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyProtoValue;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueConverter;
@@ -45,6 +46,7 @@ import com.google.template.soy.plugin.java.restricted.MethodSignature;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.types.FunctionType;
 import com.google.template.soy.types.ListType;
+import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyType;
 import com.ibm.icu.util.ULocale;
@@ -52,6 +54,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import javax.annotation.Nullable;
 
 /** Adapts JavaValueFactory to work with Tofu, wrapping the JavaValues in TofuJavaValues. */
@@ -266,11 +269,24 @@ class TofuValueFactory extends JavaValueFactory {
         if (externSig != null) {
           return ((SoyList) value)
               .asJavaList().stream()
-                  .map(item -> adaptParamItem(item, externSig.getParameters().get(i).getType()))
+                  .map(
+                      item ->
+                          adaptParamItem(
+                              item,
+                              ((ListType) externSig.getParameters().get(i).getType())
+                                  .getElementType()))
                   .collect(ImmutableList.toImmutableList());
         } else {
           return ((SoyList) value).asJavaList();
         }
+      } else if ((type == Map.class || type == ImmutableMap.class) && externSig != null) {
+        MapType mapType = (MapType) externSig.getParameters().get(i).getType();
+        return ((SoyMap) value)
+            .entrySet().stream()
+                .collect(
+                    ImmutableMap.toImmutableMap(
+                        e -> adaptParamItem(e.getKey(), mapType.getKeyType()),
+                        e -> adaptParamItem(e.getValue(), mapType.getValueType())));
       } else if (Message.class.isAssignableFrom(type)) {
         return type.cast(((SoyProtoValue) value).getProto());
       } else if (type.isEnum() && ProtocolMessageEnum.class.isAssignableFrom(type)) {
@@ -296,8 +312,7 @@ class TofuValueFactory extends JavaValueFactory {
     }
   }
 
-  private Object adaptParamItem(SoyValueProvider item, SoyType externParamType) {
-    SoyType elmType = ((ListType) externParamType).getElementType();
+  private Object adaptParamItem(SoyValueProvider item, SoyType elmType) {
     SoyValue val = item.resolve();
     switch (elmType.getKind()) {
       case INT:
