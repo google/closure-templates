@@ -18,15 +18,16 @@ package com.google.template.soy.error;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.common.collect.Streams.stream;
+import static java.lang.Math.min;
+import static java.util.Arrays.stream;
 
 import com.google.common.base.Ascii;
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Streams;
 import com.google.protobuf.Descriptors.Descriptor;
-import java.util.Arrays;
 import javax.annotation.Nullable;
 
 /** Utility methods for constructing Soy error messages. */
@@ -49,7 +50,7 @@ public final class SoyErrors {
   /** Produces a "Did you mean..?" message for a list of suggestions. */
   public static String getDidYouMeanMessage(String... closestNames) {
     ImmutableList<String> closestNamesList =
-        Arrays.stream(closestNames)
+        stream(closestNames)
             .filter(s -> !Strings.isNullOrEmpty(s))
             // Wrap in quotes, unless it already contains them (sometimes these are already
             // formatted w/ helper text after the suggestion).
@@ -144,12 +145,12 @@ public final class SoyErrors {
       for (int j = 0; j < t.length(); j++) {
         char tChar = Ascii.toLowerCase(t.charAt(j));
         v1[j + 1] =
-            Math.min(
+            min(
                 v1[j] + 1, // deletion
-                Math.min(
+                min(
                     v0[j + 1] + 1, // insertion
                     v0[j] + ((sChar == tChar) ? 0 : 1))); // substitution
-        bestThisRow = Math.min(bestThisRow, v1[j + 1]);
+        bestThisRow = min(bestThisRow, v1[j + 1]);
       }
       if (bestThisRow > maxDistance) {
         // if we couldn't possibly do better than maxDistance, stop trying.
@@ -194,11 +195,7 @@ public final class SoyErrors {
             .append(" during Soy compilation\n");
     if (messageOnly) {
       Joiner.on("\n\n")
-          .appendTo(
-              sb,
-              Streams.stream(errors)
-                  .map(SoyError::message)
-                  .collect(ImmutableList.toImmutableList()))
+          .appendTo(sb, stream(errors).map(SoyError::message).collect(toImmutableList()))
           .append('\n');
     } else {
       Joiner.on('\n').appendTo(sb, errors);
@@ -220,4 +217,6 @@ public final class SoyErrors {
     checkArgument(n > 0);
     to.append(n).append(' ').append(type).append(n == 1 ? "" : "s");
   }
+
+  private SoyErrors() {}
 }
