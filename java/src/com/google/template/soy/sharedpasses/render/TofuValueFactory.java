@@ -23,10 +23,12 @@ import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import com.google.common.html.types.SafeUrl;
 import com.google.common.primitives.Primitives;
 import com.google.protobuf.Message;
 import com.google.protobuf.ProtocolMessageEnum;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyMap;
@@ -301,6 +303,8 @@ class TofuValueFactory extends JavaValueFactory {
         } catch (ReflectiveOperationException roe) {
           throw RenderException.create("Invalid parameter: " + tofuVal, roe);
         }
+      } else if (type == SafeUrl.class) {
+        return ((SanitizedContent) value).toSafeUrl();
       } else {
         throw new UnsupportedOperationException(
             "cannot call method "

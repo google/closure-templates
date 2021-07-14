@@ -32,6 +32,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multiset;
 import com.google.common.collect.SetMultimap;
+import com.google.common.html.types.SafeUrl;
 import com.google.errorprone.annotations.Immutable;
 import com.google.protobuf.ExtensionLite;
 import com.google.protobuf.GeneratedMessage.ExtendableMessage;
@@ -264,6 +265,12 @@ public final class JbcSrcRuntime {
   /** Returns true if the value is derived from a missing parameter */
   public static boolean isParamSet(SoyValueProvider provider) {
     return provider != MISSING_PARAMETER;
+  }
+
+  /** Returns true if the value is derived from a missing parameter */
+  public static SafeUrl unboxSafeUrl(SoyValueProvider provider) {
+    SoyValue soyValue = provider.resolve();
+    return ((SanitizedContent) soyValue).toSafeUrl();
   }
 
   /**

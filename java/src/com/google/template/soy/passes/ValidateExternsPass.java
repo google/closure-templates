@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ListMultimap;
+import com.google.common.html.types.SafeUrl;
 import com.google.common.primitives.Primitives;
 import com.google.protobuf.Message;
 import com.google.template.soy.base.SourceLocation;
@@ -263,6 +264,8 @@ class ValidateExternsPass implements CompilerFilePass {
             && ALLOWED_PARAMETERIZED_TYPES.contains(mapType.getValueType().getKind());
       case MESSAGE:
         return javaType == Message.class;
+      case URI:
+        return javaType == SafeUrl.class;
       case PROTO:
         SoyProtoType protoType = (SoyProtoType) soyType;
         return JavaQualifiedNames.getClassName(protoType.getDescriptor())
