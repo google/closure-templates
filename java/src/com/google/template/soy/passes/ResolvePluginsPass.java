@@ -68,23 +68,24 @@ final class ResolvePluginsPass implements CompilerFilePass {
               return;
             }
 
-            // Built-in and plug-in functions take precedence over var refs.
-            Object impl =
-                resolver.lookupSoyFunction(
-                    node.getStaticFunctionName(), node.numChildren(), node.getSourceLocation());
-            if (impl != null) {
-              node.setSoyFunction(impl);
+            // If the name of the function is resolvable to a var def then replace the function
+            // identifier with a function name expression. This is the case if the function is:
+            //   1. element composition of a local or imported template
+            //   2. a local or imported extern
+            //   3. proto init (top-level message only)
+            VarDefn varDefn = getLocalVariables().lookup(node.getStaticFunctionName());
+            boolean varDefnIsTemplate = varDefn != null && varDefn.kind() == VarDefn.Kind.TEMPLATE;
+
+            // Precedence 1: Global/plug-in function, special case only when name collides with a
+            //   local template name.
+            // Due to many existing collisions between global/plug-in functions and template
+            // names, we need to resolve such functions with higher precedence than template
+            // symbols.
+            if (varDefnIsTemplate && trySetFunction(node)) {
               return;
             }
 
-            // If the name of the function is resolvable to a var def then replace the function
-            // identifier with a function name expression. Currently only proto message types are
-            // represented as VarDefn and all other symbols have been turned back into GlobalNodes
-            // by RestoreGlobalsPass. But eventually this could be modified to have built-in/plug-in
-            // functions imported as well.
-            // Note that this only handles non-nested proto types. Nested proto types appear at this
-            // stage as METHOD_CALL(VARREF) and await handling in ResolveDottedImportsPass.
-            VarDefn varDefn = getLocalVariables().lookup(node.getStaticFunctionName());
+            // Precedence 2: In-scope symbols, e.g. extern, template composition, proto init.
             if (varDefn != null) {
               VarRefNode functionRef =
                   new VarRefNode(
@@ -97,7 +98,22 @@ final class ResolvePluginsPass implements CompilerFilePass {
               // Set the soy function field to "resolve" the function.
               setSoyFunctionForNameExpr(newFunct);
               node.getParent().replaceChild(node, newFunct);
+              return;
             }
+
+            // Precedence 3: Global/plug-in function.
+            trySetFunction(node);
+          }
+
+          private boolean trySetFunction(FunctionNode node) {
+            Object impl =
+                resolver.lookupSoyFunction(
+                    node.getStaticFunctionName(), node.numChildren(), node.getSourceLocation());
+            if (impl != null) {
+              node.setSoyFunction(impl);
+              return true;
+            }
+            return false;
           }
         };
 
