@@ -40,10 +40,6 @@ public final class SoyRecordImpl extends SoyAbstractValue implements SoyRecord {
     this.map = checkNotNull(map);
   }
 
-  public static SoyRecordImpl forProviderMap(Map<String, SoyValueProvider> map) {
-    return new SoyRecordImpl(ImmutableMap.copyOf(map));
-  }
-
   @Override
   public ImmutableMap<String, SoyValueProvider> recordAsMap() {
     return map;

@@ -34,6 +34,7 @@ import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.data.SoyLegacyObjectMap;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyRecord;
+import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
 import com.google.template.soy.exprtree.AbstractLocalVarDefn;
 import com.google.template.soy.exprtree.AbstractReturningExprNodeVisitor;
 import com.google.template.soy.exprtree.BooleanNode;
@@ -89,6 +90,7 @@ import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.ConstructorRef;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.Expression.Feature;
+import com.google.template.soy.jbcsrc.restricted.FieldRef;
 import com.google.template.soy.jbcsrc.restricted.LocalVariable;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
@@ -597,13 +599,15 @@ final class ExpressionCompiler {
       List<Expression> keys = new ArrayList<>(numItems);
       List<Expression> values = new ArrayList<>(numItems);
       for (int i = 0; i < numItems; i++) {
-        // Keys are strings and values are boxed SoyValueProviders.
+        // Keys are strings and values are boxed SoyValues.
         keys.add(BytecodeUtils.constant(node.getKey(i).identifier()));
-        values.add(visit(node.getChild(i)).boxAsSoyValueProvider());
+        values.add(visit(node.getChild(i)).box());
       }
       Expression soyDict =
-          MethodRef.RECORD_IMPL_FOR_PROVIDER_MAP.invoke(
-              BytecodeUtils.newLinkedHashMap(keys, values));
+          MethodRef.DICT_IMPL_FOR_PROVIDER_MAP.invoke(
+              BytecodeUtils.newLinkedHashMap(keys, values),
+              FieldRef.enumReference(RuntimeMapTypeTracker.Type.LEGACY_OBJECT_MAP_OR_RECORD)
+                  .accessor());
       return SoyExpression.forSoyValue(node.getType(), soyDict);
     }
 
