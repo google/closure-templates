@@ -189,11 +189,11 @@ import * as simple from 'examples/simple.soy';
                                                             * 'name' and 'numWaffles'.
                                                             */
 
-  {for $person in $persons}
+  {for $person, $personIndex in $persons}
 
-    {if isFirst($person)}
+    {if $personIndex == 0}
       First,
-    {elseif isLast($person)}
+    {elseif $personIndex == $persons.length() - 1}
       Finally,
     {else}
       Then
@@ -275,7 +275,7 @@ import * as simple from 'examples/simple.soy';
                                  trips only. */
   {@param destinations: list<string>}  /** List of destinations visited by this person. */
 
-  {for $destination in $destinations}
+  {for $destination, $destinationIndex in $destinations}
 
     // Pass the current template data and also pass a parameter.
     // Note: Only passing data="all" is not sufficient for providing the 'destination' parameter of
@@ -285,12 +285,13 @@ import * as simple from 'examples/simple.soy';
       {param destination: $destination /}
     {/call}<br>
 
-    {if index($destination) % 2 == 0}  // even index means odd-numbered trip since index is 0-based
+    {if $destinationIndex % 2 == 0} // even index means odd-numbered trip since index is 0-based
       // Pass two parameters.
       {call .tripReport_}
         {param name: $companionName /}
         {param destination: $destination /}
-      {/call}<br>
+      {/call}
+      <br>
     {/if}
 
   {/for}
@@ -400,19 +401,20 @@ import * as simple from 'examples/simple.soy';
   Last student's year: {$students[length($students) - 1].year}<br>
   Random student's major: {$students[randomInt(length($students))].major}<br>
 
-  {for $student in $students}
+  {for $student, $studentIndex in $students}
     {$student.name}:
 
-    {if isFirst($student)}
+    {if $studentIndex == 0}
       {sp}First.
-    {elseif isLast($student)}
+    {elseif $studentIndex == $students.length() - 1}
       {sp}Last.
     // Note: must use floor() in next check since division is floating-point.
-    {elseif index($student) == ceiling(length($students) / 2) - 1}
+    {elseif $studentIndex == ceiling(length($students) / 2) - 1}
       {sp}Middle.
     {/if}
 
-    {if index($student) % 2 == 1} Even.{/if}
+    {if $studentIndex % 2 == 1} Even.
+    {/if}
     {sp}{$student.major}.
     {if $student.major == 'Physics' or $student.major == 'Biology'} Scientist.{/if}
     {if $currentYear - $student.year < 10} Young.{/if}
@@ -457,8 +459,8 @@ import * as simple from 'examples/simple.soy';
  */
 {template .buildCommaSeparatedList_ visibility="private" kind="text"}
   {@param items: list<?>}  /** The list of items. */
-  {for $item in $items}
-    {if not isFirst($item)}
+  {for $item, $itemIndex in $items}
+    {if $itemIndex != 0}
       ,{sp}
     {/if}
     {$item}
