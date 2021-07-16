@@ -121,6 +121,7 @@ java_library(
         "//java/src/com/google/template/soy/msgs/internal",
         "//java/src/com/google/template/soy/parseinfo/passes",
         "//java/src/com/google/template/soy/passes",
+        "//java/src/com/google/template/soy/plugin:api",
         "//java/src/com/google/template/soy/plugin/internal",
         "//java/src/com/google/template/soy/plugin/restricted",
         "//java/src/com/google/template/soy/pysrc",

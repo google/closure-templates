@@ -21,11 +21,11 @@ import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
 import static org.junit.Assert.fail;
 
 import com.google.common.base.Joiner;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.Futures;
 import com.google.template.soy.data.SoyDict;
 import com.google.template.soy.data.SoyFutureException;
 import com.google.template.soy.data.SoyValueConverterUtility;
+import com.google.template.soy.plugin.PluginInstances;
 import com.google.template.soy.shared.internal.NoOpScopedData;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import com.google.template.soy.tofu.SoyTofu;
@@ -74,7 +74,7 @@ public final class TofuExceptionsTest {
         new BaseTofu(
             new NoOpScopedData(),
             SoyFileSetParserBuilder.forFileContents(SOY_FILE).parse().fileSet(),
-            ImmutableMap.of());
+            PluginInstances.empty());
   }
 
   @Test

@@ -46,6 +46,7 @@ import com.google.template.soy.jbcsrc.shared.LegacyFunctionAdapter;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.logging.SoyLogger;
 import com.google.template.soy.msgs.SoyMsgBundle;
+import com.google.template.soy.plugin.PluginInstances;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.internal.SoyScopedData;
@@ -63,7 +64,7 @@ import javax.annotation.Nullable;
 public final class SoySauceImpl implements SoySauce {
   private final CompiledTemplates templates;
   private final SoyScopedData.Enterable apiCallScope;
-  private final ImmutableMap<String, Supplier<Object>> pluginInstances;
+  private final PluginInstances pluginInstances;
   private final ImmutableMap<String, SoyJavaPrintDirective> printDirectives;
 
   public SoySauceImpl(
@@ -71,11 +72,10 @@ public final class SoySauceImpl implements SoySauce {
       SoyScopedData.Enterable apiCallScope,
       ImmutableList<? extends SoyFunction> functions,
       ImmutableList<? extends SoyPrintDirective> printDirectives,
-      ImmutableMap<String, Supplier<Object>> pluginInstances) {
+      PluginInstances pluginInstances) {
     this.templates = checkNotNull(templates);
     this.apiCallScope = checkNotNull(apiCallScope);
     ImmutableMap.Builder<String, Supplier<Object>> pluginInstanceBuilder = ImmutableMap.builder();
-    pluginInstanceBuilder.putAll(pluginInstances);
 
     for (SoyFunction fn : functions) {
       if (fn instanceof SoyJavaFunction) {
@@ -95,7 +95,7 @@ public final class SoySauceImpl implements SoySauce {
       }
     }
     this.printDirectives = soyJavaPrintDirectives.build();
-    this.pluginInstances = pluginInstanceBuilder.build();
+    this.pluginInstances = pluginInstances.combine(pluginInstanceBuilder.build());
   }
 
   @Override
@@ -200,11 +200,7 @@ public final class SoySauceImpl implements SoySauce {
     @Override
     public RendererImpl setPluginInstances(Map<String, Supplier<Object>> pluginInstances) {
       contextBuilder.withPluginInstances(
-          ImmutableMap.<String, Supplier<Object>>builderWithExpectedSize(
-                  SoySauceImpl.this.pluginInstances.size() + pluginInstances.size())
-              .putAll(SoySauceImpl.this.pluginInstances)
-              .putAll(pluginInstances)
-              .build());
+          SoySauceImpl.this.pluginInstances.combine(pluginInstances));
       return this;
     }
 

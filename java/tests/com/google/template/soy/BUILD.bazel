@@ -37,6 +37,7 @@ java_library(
         "//java/src/com/google/template/soy/jbcsrc/shared",
         "//java/src/com/google/template/soy/logging:internal",
         "//java/src/com/google/template/soy/parseinfo",
+        "//java/src/com/google/template/soy/plugin:api",
         "//java/src/com/google/template/soy/shared/internal",
         "//java/src/com/google/template/soy/shared/restricted",
         "//java/src/com/google/template/soy/testing:soy_file_set_parser_builder",

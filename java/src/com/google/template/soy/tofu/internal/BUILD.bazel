@@ -29,6 +29,7 @@ java_library(
         "//java/src/com/google/template/soy/exprtree",
         "//java/src/com/google/template/soy/msgs",
         "//java/src/com/google/template/soy/parseinfo",
+        "//java/src/com/google/template/soy/plugin:api",
         "//java/src/com/google/template/soy/shared:interfaces",
         "//java/src/com/google/template/soy/shared/internal",
         "//java/src/com/google/template/soy/shared/internal:deltemplate_selector",

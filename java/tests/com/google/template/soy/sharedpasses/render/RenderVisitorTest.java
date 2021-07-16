@@ -44,6 +44,7 @@ import com.google.template.soy.msgs.restricted.SoyMsg;
 import com.google.template.soy.msgs.restricted.SoyMsgBundleImpl;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
 import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
+import com.google.template.soy.plugin.PluginInstances;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.shared.SoyIdRenamingMap;
@@ -297,7 +298,7 @@ public class RenderVisitorTest {
             xidRenamingMap,
             cssRenamingMap,
             false,
-            /* pluginInstances= */ ImmutableMap.of());
+            PluginInstances.empty());
     rv.exec(templateNode);
     return outputSb.toString();
   }
@@ -349,7 +350,7 @@ public class RenderVisitorTest {
             xidRenamingMap,
             cssRenamingMap,
             false,
-            /* pluginInstances= */ ImmutableMap.of());
+            PluginInstances.empty());
     TemplateNode templateNode = basicTemplates.get(templateName);
     rv.exec(templateNode);
     return outputSb.toString();
@@ -1043,7 +1044,7 @@ public class RenderVisitorTest {
             xidRenamingMap,
             cssRenamingMap,
             false,
-            /* pluginInstances= */ ImmutableMap.of());
+            PluginInstances.empty());
     rv.exec(basicTemplates.get("ns.callerTemplate"));
 
     String expectedOutput =

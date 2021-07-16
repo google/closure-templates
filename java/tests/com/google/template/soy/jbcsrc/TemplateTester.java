@@ -53,6 +53,7 @@ import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.jbcsrc.shared.LegacyFunctionAdapter;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
+import com.google.template.soy.plugin.PluginInstances;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
@@ -90,7 +91,7 @@ public final class TemplateTester {
         InternalPlugins.internalDirectives(new SoySimpleScope()).stream()
             .filter(e -> e instanceof SoyJavaPrintDirective)
             .collect(toImmutableMap(SoyPrintDirective::getName, d -> (SoyJavaPrintDirective) d)),
-        ImmutableMap.of());
+        PluginInstances.empty());
   }
 
   static RenderContext getDefaultContext(CompiledTemplates templates) {
@@ -396,7 +397,7 @@ public final class TemplateTester {
         this.template = compiledTemplates.getTemplate(templateName);
         defaultContext =
             createDefaultBuilder(compiledTemplates)
-                .withPluginInstances(pluginInstances.build())
+                .withPluginInstances(PluginInstances.of(pluginInstances.build()))
                 .withCssRenamingMap(cssRenamingMap)
                 .withXidRenamingMap(xidRenamingMap)
                 .build();

@@ -27,12 +27,13 @@ java_library(
     resources = glob(["*.soy"]),
     deps = [
         "//java/src/com/google/template/soy/data",
+        "//java/src/com/google/template/soy/internal/exemptions",
         "//java/src/com/google/template/soy/jbcsrc/shared",
         "//java/src/com/google/template/soy/jbcsrc/shared:names",
-        "//java/src/com/google/template/soy/internal/exemptions",
-        "@maven//:junit_junit",
+        "//java/src/com/google/template/soy/plugin:api",
         "@maven//:com_google_guava_guava",
         "@maven//:com_google_truth_truth",
+        "@maven//:junit_junit",
     ],
 )
 

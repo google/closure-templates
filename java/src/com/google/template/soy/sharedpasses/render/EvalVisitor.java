@@ -31,9 +31,7 @@ import static com.google.template.soy.shared.internal.SharedRuntime.plus;
 import static com.google.template.soy.shared.internal.SharedRuntime.soyServerKey;
 import static com.google.template.soy.shared.internal.SharedRuntime.times;
 
-import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableTable;
 import com.google.common.collect.Iterables;
 import com.google.errorprone.annotations.ForOverride;
@@ -113,6 +111,7 @@ import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.logging.SoyLogger;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.msgs.SoyMsgBundle;
+import com.google.template.soy.plugin.PluginInstances;
 import com.google.template.soy.plugin.internal.JavaPluginExecContext;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
 import com.google.template.soy.plugin.java.restricted.MethodSignature;
@@ -188,7 +187,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
         @Nullable SoyIdRenamingMap xidRenamingMap,
         @Nullable SoyMsgBundle msgBundle,
         boolean debugSoyTemplateInfo,
-        ImmutableMap<String, Supplier<Object>> pluginInstances,
+        PluginInstances pluginInstances,
         ImmutableTable<SourceFilePath, String, ImmutableList<ExternNode>> externs);
   }
 
@@ -213,7 +212,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
    * The instances for functions that implement {@link SoyJavaSourceFunction} and call {@link
    * JavaValueFactory#callInstanceMethod}.
    */
-  private final ImmutableMap<String, Supplier<Object>> pluginInstances;
+  private final PluginInstances pluginInstances;
 
   /** How to manage old data handling bugs. */
   private final UndefinedDataHandlingMode undefinedDataHandlingMode;
@@ -230,7 +229,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       @Nullable SoyIdRenamingMap xidRenamingMap,
       @Nullable SoyMsgBundle msgBundle,
       boolean debugSoyTemplateInfo,
-      ImmutableMap<String, Supplier<Object>> pluginInstances,
+      PluginInstances pluginInstances,
       UndefinedDataHandlingMode undefinedDataHandlingMode,
       ImmutableTable<SourceFilePath, String, ImmutableList<ExternNode>> externs) {
     this.env = checkNotNull(env);
@@ -875,12 +874,15 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     JavaImplNode java = impl.get();
     MethodSignature method;
     try {
+      Class<?> rt = MethodSignature.forName(java.returnType());
+      Class<?>[] args = new Class<?>[java.params().size()];
+      for (int i = 0; i < java.params().size(); i++) {
+        args[i] = MethodSignature.forName(java.params().get(i));
+      }
       method =
-          MethodSignature.create(
-              java.className(),
-              java.methodName(),
-              java.returnType(),
-              java.params().toArray(new String[0]));
+          java.isInterface()
+              ? MethodSignature.createInterfaceMethod(java.className(), java.methodName(), rt, args)
+              : MethodSignature.create(java.className(), java.methodName(), rt, args);
     } catch (ClassNotFoundException e) {
       throw RenderException.create("Required Java runtime class not found.", e);
     }
@@ -892,13 +894,17 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       javaValues[i] = TofuJavaValue.forSoyValue(visit(param), param.getSourceLocation());
     }
 
-    return new TofuValueFactory(
+    TofuValueFactory factory =
+        new TofuValueFactory(
             node.getSourceLocation(),
             soyFunction.name(),
-            ImmutableMap.of(),
-            soyFunction.signature())
-        .callStaticMethod(method, javaValues)
-        .soyValue();
+            PluginInstances.empty(),
+            soyFunction.signature());
+    TofuJavaValue value =
+        java.isStatic()
+            ? factory.callStaticMethod(method, javaValues)
+            : factory.callInstanceMethod(method, javaValues);
+    return value.soyValue();
   }
 
   protected SoyValue visitProtoInitFunction(FunctionNode node) {

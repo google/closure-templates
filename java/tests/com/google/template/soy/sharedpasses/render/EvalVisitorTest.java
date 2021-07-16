@@ -37,6 +37,7 @@ import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.plugin.PluginInstances;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.restricted.SoyFunction;
@@ -159,7 +160,7 @@ public class EvalVisitorTest {
                 xidRenamingMap,
                 null,
                 /* debugSoyTemplateInfo= */ false,
-                /* pluginInstances= */ ImmutableMap.of(),
+                PluginInstances.empty(),
                 ImmutableTable.of());
     return evalVisitor.exec(expr);
   }

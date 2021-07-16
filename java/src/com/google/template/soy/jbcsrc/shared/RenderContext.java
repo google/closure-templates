@@ -20,7 +20,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
-import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
@@ -33,11 +32,13 @@ import com.google.template.soy.logging.SoyLogger;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.restricted.SoyMsg;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
+import com.google.template.soy.plugin.PluginInstances;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.ibm.icu.util.ULocale;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 /**
@@ -60,7 +61,7 @@ public final class RenderContext {
   private final CompiledTemplates templates;
   private final SoyCssRenamingMap cssRenamingMap;
   private final SoyIdRenamingMap xidRenamingMap;
-  private final ImmutableMap<String, Supplier<Object>> pluginInstances;
+  private final PluginInstances pluginInstances;
   private final ImmutableMap<String, SoyJavaPrintDirective> soyJavaDirectivesMap;
   /** The bundle of translated messages */
   private final SoyMsgBundle msgBundle;
@@ -79,7 +80,7 @@ public final class RenderContext {
   private RenderContext(
       CompiledTemplates templates,
       ImmutableMap<String, SoyJavaPrintDirective> soyJavaDirectivesMap,
-      ImmutableMap<String, Supplier<Object>> pluginInstances,
+      PluginInstances pluginInstances,
       @Nullable Predicate<String> activeDelPackageSelector,
       @Nullable SoyCssRenamingMap cssRenamingMap,
       @Nullable SoyIdRenamingMap xidRenamingMap,
@@ -327,7 +328,7 @@ public final class RenderContext {
   public static final class Builder {
     private final CompiledTemplates templates;
     private final ImmutableMap<String, SoyJavaPrintDirective> soyJavaDirectivesMap;
-    private ImmutableMap<String, Supplier<Object>> pluginInstances;
+    private PluginInstances pluginInstances;
     private Predicate<String> activeDelPackageSelector;
     private SoyCssRenamingMap cssRenamingMap;
     private SoyIdRenamingMap xidRenamingMap;
@@ -338,7 +339,7 @@ public final class RenderContext {
     public Builder(
         CompiledTemplates templates,
         ImmutableMap<String, SoyJavaPrintDirective> soyJavaDirectivesMap,
-        ImmutableMap<String, Supplier<Object>> pluginInstances) {
+        PluginInstances pluginInstances) {
       this.templates = templates;
       this.soyJavaDirectivesMap = soyJavaDirectivesMap;
       this.pluginInstances = pluginInstances;
@@ -359,7 +360,7 @@ public final class RenderContext {
       return this;
     }
 
-    public Builder withPluginInstances(ImmutableMap<String, Supplier<Object>> pluginInstances) {
+    public Builder withPluginInstances(PluginInstances pluginInstances) {
       this.pluginInstances = checkNotNull(pluginInstances);
       return this;
     }

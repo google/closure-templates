@@ -20,6 +20,7 @@ import static java.lang.invoke.MethodType.methodType;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.template.soy.plugin.PluginInstances;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
@@ -180,7 +181,7 @@ public final class SaveStateMetaFactoryTest {
             new CompiledTemplates(
                 ImmutableSet.of(), SaveStateMetaFactoryTest.class.getClassLoader()),
             ImmutableMap.of(),
-            ImmutableMap.of())
+            PluginInstances.empty())
         .withActiveDelPackageSelector(arg -> false)
         .withDebugSoyTemplateInfo(false)
         .build();

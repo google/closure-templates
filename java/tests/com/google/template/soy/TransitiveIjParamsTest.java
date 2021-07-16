@@ -19,13 +19,13 @@ package com.google.template.soy;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jbcsrc.BytecodeCompiler;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
+import com.google.template.soy.plugin.PluginInstances;
 import com.google.template.soy.shared.internal.NoOpScopedData;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import com.google.template.soy.tofu.SoyTofu;
@@ -271,9 +271,7 @@ public final class TransitiveIjParamsTest {
       SoyFileSetParser parser = SoyFileSetParserBuilder.forFileContents(fileContent).build();
       ParseResult result = parser.parse();
       // parserBuilder.
-      tofu =
-          new BaseTofu(
-              new NoOpScopedData(), result.fileSet(), /*pluginInstances=*/ ImmutableMap.of());
+      tofu = new BaseTofu(new NoOpScopedData(), result.fileSet(), PluginInstances.empty());
       compiledTemplates =
           BytecodeCompiler.compile(
                   result.registry(),

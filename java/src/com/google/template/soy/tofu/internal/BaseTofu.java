@@ -41,6 +41,7 @@ import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.parseinfo.SoyTemplateInfo;
+import com.google.template.soy.plugin.PluginInstances;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.internal.DelTemplateSelector;
@@ -85,13 +86,13 @@ public final class BaseTofu implements SoyTofu {
 
   private final ImmutableMap<String, ImmutableSortedSet<String>> templateToIjParamsInfoMap;
 
-  private final ImmutableMap<String, Supplier<Object>> pluginInstances;
+  private final PluginInstances pluginInstances;
 
   /** @param apiCallScope The scope object that manages the API call scope. */
   public BaseTofu(
       SoyScopedData.Enterable apiCallScope,
       SoyFileSetNode fileSet,
-      Map<String, Supplier<Object>> pluginInstances) {
+      PluginInstances pluginInstances) {
     this.apiCallScope = apiCallScope;
     ImmutableMap.Builder<String, TemplateNode> basicTemplates = ImmutableMap.builder();
     DelTemplateSelector.Builder<TemplateDelegateNode> delTemplates =
@@ -133,7 +134,7 @@ public final class BaseTofu implements SoyTofu {
     this.externs = externs.build();
     this.templateToIjParamsInfoMap =
         buildTemplateToIjParamsInfoMap(this.basicTemplates, this.delTemplates);
-    this.pluginInstances = ImmutableMap.copyOf(pluginInstances);
+    this.pluginInstances = pluginInstances;
   }
 
   private static ImmutableMap<String, ImmutableSortedSet<String>> buildTemplateToIjParamsInfoMap(
@@ -268,7 +269,7 @@ public final class BaseTofu implements SoyTofu {
       @Nullable SoyIdRenamingMap idRenamingMap,
       @Nullable SoyCssRenamingMap cssRenamingMap,
       boolean debugSoyTemplateInfo,
-      ImmutableMap<String, Supplier<Object>> pluginInstances) {
+      PluginInstances pluginInstances) {
 
     if (activeDelPackageNames == null) {
       activeDelPackageNames = arg -> false;
@@ -313,7 +314,7 @@ public final class BaseTofu implements SoyTofu {
       @Nullable SoyIdRenamingMap idRenamingMap,
       @Nullable SoyCssRenamingMap cssRenamingMap,
       boolean debugSoyTemplateInfo,
-      ImmutableMap<String, Supplier<Object>> pluginInstances) {
+      PluginInstances pluginInstances) {
 
     // templateNode is always guaranteed to be non-null because for a tofu compile all templates are
     // considered source files
@@ -486,13 +487,9 @@ public final class BaseTofu implements SoyTofu {
       return sb.toString();
     }
 
-    private ImmutableMap<String, Supplier<Object>> getPluginInstances() {
-
+    private PluginInstances getPluginInstances() {
       if (perRenderPluginInstances != null) {
-        return ImmutableMap.<String, Supplier<Object>>builder()
-            .putAll(baseTofu.pluginInstances)
-            .putAll(perRenderPluginInstances)
-            .build();
+        return baseTofu.pluginInstances.combine(perRenderPluginInstances);
       }
       return baseTofu.pluginInstances;
     }

@@ -19,7 +19,6 @@ package com.google.template.soy.sharedpasses.render;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
 
-import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -45,6 +44,7 @@ import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.internal.proto.JavaQualifiedNames;
+import com.google.template.soy.plugin.PluginInstances;
 import com.google.template.soy.plugin.internal.JavaPluginExecContext;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
@@ -61,6 +61,7 @@ import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 /** Adapts JavaValueFactory to work with Tofu, wrapping the JavaValues in TofuJavaValues. */
@@ -68,18 +69,17 @@ import javax.annotation.Nullable;
 class TofuValueFactory extends JavaValueFactory {
   private final SourceLocation fnSourceLocation;
   private final String fnName;
-  private final ImmutableMap<String, Supplier<Object>> pluginInstances;
+  private final PluginInstances pluginInstances;
   @Nullable private final FunctionType externSig;
 
-  TofuValueFactory(
-      JavaPluginExecContext fn, ImmutableMap<String, Supplier<Object>> pluginInstances) {
+  TofuValueFactory(JavaPluginExecContext fn, PluginInstances pluginInstances) {
     this(fn.getSourceLocation(), fn.getFunctionName(), pluginInstances, null);
   }
 
   TofuValueFactory(
       SourceLocation fnSourceLocation,
       String fnName,
-      ImmutableMap<String, Supplier<Object>> pluginInstances,
+      PluginInstances pluginInstances,
       FunctionType externSig) {
     this.fnSourceLocation = fnSourceLocation;
     this.fnName = fnName;

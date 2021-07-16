@@ -19,6 +19,16 @@ load("@rules_java//java:defs.bzl", "java_library")
 package(default_visibility = ["//:soy_internal"])
 
 java_library(
+    name = "api",
+    srcs = [
+        "PluginInstances.java",
+    ],
+    deps = [
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_library(
     name = "internal",
     srcs = [
         "DelegatingMethodChecker.java",

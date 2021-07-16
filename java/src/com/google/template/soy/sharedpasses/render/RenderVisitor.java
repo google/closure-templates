@@ -18,7 +18,6 @@ package com.google.template.soy.sharedpasses.render;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableTable;
@@ -48,6 +47,7 @@ import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.msgs.SoyMsgBundle;
+import com.google.template.soy.plugin.PluginInstances;
 import com.google.template.soy.shared.RangeArgs;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
@@ -166,7 +166,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
   private CountingFlushableAppendable flushable;
 
   /** The runtime instances for functions. */
-  private final ImmutableMap<String, Supplier<Object>> pluginInstances;
+  private final PluginInstances pluginInstances;
 
   /**
    * @param evalVisitorFactory Factory for creating an instance of EvalVisitor.
@@ -195,7 +195,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       @Nullable SoyIdRenamingMap xidRenamingMap,
       @Nullable SoyCssRenamingMap cssRenamingMap,
       boolean debugSoyTemplateInfo,
-      ImmutableMap<String, Supplier<Object>> pluginInstances) {
+      PluginInstances pluginInstances) {
     checkNotNull(data);
 
     this.evalVisitorFactory = evalVisitorFactory;

@@ -70,6 +70,7 @@ import com.google.template.soy.passes.PassManager.PassContinuationRule;
 import com.google.template.soy.passes.PluginResolver;
 import com.google.template.soy.passes.SoyConformancePass;
 import com.google.template.soy.plugin.MethodChecker;
+import com.google.template.soy.plugin.PluginInstances;
 import com.google.template.soy.plugin.internal.PluginValidator;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.pysrc.SoyPySrcOptions;
@@ -869,7 +870,8 @@ public final class SoyFileSet {
   /** Helper method to compile SoyTofu from {@link ServerCompilationPrimitives} */
   private SoyTofu doCompileToTofu(
       ServerCompilationPrimitives primitives, Map<String, Supplier<Object>> pluginInstances) {
-    return new BaseTofu(scopedData.enterable(), primitives.soyTree, pluginInstances);
+    return new BaseTofu(
+        scopedData.enterable(), primitives.soyTree, PluginInstances.of(pluginInstances));
   }
 
   /**
@@ -911,7 +913,7 @@ public final class SoyFileSet {
         () -> {
           ServerCompilationPrimitives primitives = compileForServerRendering();
           throwIfErrorsPresent();
-          return doCompileSoySauce(primitives, pluginInstances);
+          return doCompileSoySauce(primitives, PluginInstances.of(pluginInstances));
         });
   }
 
@@ -941,7 +943,7 @@ public final class SoyFileSet {
 
   /** Helper method to compile SoySauce from {@link ServerCompilationPrimitives} */
   private SoySauce doCompileSoySauce(
-      ServerCompilationPrimitives primitives, Map<String, Supplier<Object>> pluginInstances) {
+      ServerCompilationPrimitives primitives, PluginInstances pluginInstances) {
     Optional<CompiledTemplates> templates =
         BytecodeCompiler.compile(
             primitives.registry, primitives.soyTree, errorReporter, soyFileSuppliers, typeRegistry);
@@ -949,11 +951,7 @@ public final class SoyFileSet {
     throwIfErrorsPresent();
 
     return new SoySauceImpl(
-        templates.get(),
-        scopedData.enterable(),
-        soyFunctions,
-        printDirectives,
-        ImmutableMap.copyOf(pluginInstances));
+        templates.get(), scopedData.enterable(), soyFunctions, printDirectives, pluginInstances);
   }
 
   /**

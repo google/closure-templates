@@ -20,10 +20,10 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.jbcsrc.shared.Names;
+import com.google.template.soy.plugin.PluginInstances;
 import com.google.template.soy.shared.internal.InternalPlugins;
 import com.google.template.soy.shared.internal.SoyScopedData;
 import com.google.template.soy.shared.internal.SoySimpleScope;
@@ -41,7 +41,7 @@ import java.util.Map;
 public final class SoySauceBuilder {
   private ImmutableList<SoyFunction> userFunctions = ImmutableList.of();
   private ImmutableList<SoyPrintDirective> userDirectives = ImmutableList.of();
-  private ImmutableMap<String, Supplier<Object>> userPluginInstances = ImmutableMap.of();
+  private PluginInstances userPluginInstances = PluginInstances.empty();
   private CompiledTemplates.Factory compiledTemplatesFactory = CompiledTemplates::new;
   private ClassLoader loader;
 
@@ -62,7 +62,7 @@ public final class SoySauceBuilder {
    * and migrate these cases over, and then we could add validation to build().
    */
   public SoySauceBuilder withPluginInstances(Map<String, Supplier<Object>> pluginInstances) {
-    this.userPluginInstances = ImmutableMap.copyOf(pluginInstances);
+    this.userPluginInstances = PluginInstances.of(pluginInstances);
     return this;
   }
 
