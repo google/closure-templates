@@ -17,8 +17,10 @@
 package com.google.template.soy.soytree;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static java.util.stream.Collectors.joining;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
@@ -29,15 +31,29 @@ import java.util.Optional;
 
 /** Java implementation for an extern. */
 public final class JavaImplNode extends ExternImplNode {
-  private static final SoyErrorKind INVALID_IMPL_ATTRIBUTE =
-      SoyErrorKind.of("''{0}'' is not a valid attribute.");
   public static final String CLASS = "class";
   public static final String METHOD = "method";
   public static final String PARAMS = "params";
   public static final String RETURN = "return";
-  public static final String FIELDS = String.format("%s,%s,%s,%s", CLASS, METHOD, PARAMS, RETURN);
-  private static final SoyErrorKind UNEXPECTED_ARGS =
-      SoyErrorKind.of("Java implementations require attributes " + FIELDS + " .");
+  public static final String TYPE = "type";
+
+  public static final String TYPE_STATIC = "static"; // static method in a class
+  public static final String TYPE_INSTANCE = "instance"; // instance method in a class
+  public static final String TYPE_INTERFACE = "interface"; // instance method in a interface
+  public static final String TYPE_STATIC_INTERFACE =
+      "static_interface"; // static method in a interface
+  private static final ImmutableSet<String> ALLOWED_TYPES =
+      ImmutableSet.of(TYPE_STATIC, TYPE_INSTANCE, TYPE_INTERFACE, TYPE_STATIC_INTERFACE);
+
+  private static final SoyErrorKind INVALID_IMPL_ATTRIBUTE =
+      SoyErrorKind.of("Invalid attribute ''{0}''.");
+  private static final SoyErrorKind MISSING_ATTR =
+      SoyErrorKind.of("Missing required attribute ''{0}''.");
+  private static final SoyErrorKind BAD_TYPE =
+      SoyErrorKind.of(
+          String.format(
+              "Valid values for ''%s'' are %s.",
+              TYPE, ALLOWED_TYPES.stream().collect(joining("'', ''", "''", "''"))));
 
   private final ImmutableList<CommandTagAttribute> attributes;
 
@@ -46,6 +62,7 @@ public final class JavaImplNode extends ExternImplNode {
   private CommandTagAttribute methodName;
   private CommandTagAttribute params;
   private CommandTagAttribute returnType;
+  private CommandTagAttribute type;
 
   public JavaImplNode(
       int id,
@@ -53,27 +70,8 @@ public final class JavaImplNode extends ExternImplNode {
       List<CommandTagAttribute> attributes,
       ErrorReporter errorReporter) {
     super(id, sourceLocation, "javaimpl");
-
-    if (attributes.size() != 4) {
-      errorReporter.report(sourceLocation, UNEXPECTED_ARGS);
-    }
-    attributes.stream()
-        .filter(
-            attr ->
-                !(attr.hasName(CLASS)
-                    || attr.hasName(METHOD)
-                    || attr.hasName(PARAMS)
-                    || attr.hasName(RETURN)))
-        .findAny()
-        .ifPresent(
-            invalidAttr ->
-                errorReporter.report(
-                    invalidAttr.getSourceLocation(),
-                    INVALID_IMPL_ATTRIBUTE,
-                    invalidAttr.getName()));
-
     this.attributes = ImmutableList.copyOf(attributes);
-    initAttributes();
+    initAttributes(errorReporter);
   }
 
   /**
@@ -88,14 +86,14 @@ public final class JavaImplNode extends ExternImplNode {
         orig.attributes.stream()
             .map(origAttr -> origAttr.copy(copyState))
             .collect(toImmutableList());
-    initAttributes();
+    initAttributes(ErrorReporter.devnull());
   }
 
   /**
    * Pulls out relevant attributes into class fields for quick reference. Should only be used in
    * constructors.
    */
-  private final void initAttributes() {
+  private final void initAttributes(ErrorReporter errorReporter) {
     for (CommandTagAttribute attr : attributes) {
       if (attr.hasName(CLASS)) {
         this.className = attr;
@@ -105,7 +103,27 @@ public final class JavaImplNode extends ExternImplNode {
         this.params = attr;
       } else if (attr.hasName(RETURN)) {
         this.returnType = attr;
+      } else if (attr.hasName(TYPE)) {
+        this.type = attr;
+        if (!ALLOWED_TYPES.contains(type.getValue())) {
+          errorReporter.report(attr.getSourceLocation(), BAD_TYPE);
+        }
+      } else {
+        errorReporter.report(attr.getSourceLocation(), INVALID_IMPL_ATTRIBUTE, attr.getName());
       }
+    }
+
+    if (className == null) {
+      errorReporter.report(getSourceLocation(), MISSING_ATTR, CLASS);
+    }
+    if (methodName == null) {
+      errorReporter.report(getSourceLocation(), MISSING_ATTR, METHOD);
+    }
+    if (params == null) {
+      errorReporter.report(getSourceLocation(), MISSING_ATTR, PARAMS);
+    }
+    if (returnType == null) {
+      errorReporter.report(getSourceLocation(), MISSING_ATTR, RETURN);
     }
   }
 
@@ -125,6 +143,20 @@ public final class JavaImplNode extends ExternImplNode {
 
   public String methodName() {
     return methodName.getValue();
+  }
+
+  public String type() {
+    return type != null ? type.getValue() : TYPE_STATIC;
+  }
+
+  public boolean isStatic() {
+    String t = type();
+    return TYPE_STATIC.equals(t) || TYPE_STATIC_INTERFACE.equals(t);
+  }
+
+  public boolean isInterface() {
+    String t = type();
+    return TYPE_INTERFACE.equals(t) || TYPE_STATIC_INTERFACE.equals(t);
   }
 
   public ImmutableList<String> params() {

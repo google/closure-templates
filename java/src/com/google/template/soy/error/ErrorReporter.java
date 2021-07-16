@@ -44,6 +44,10 @@ public abstract class ErrorReporter {
     return new ErrorReporterImpl(ImmutableMap.copyOf(filePathsToSuppliers));
   }
 
+  public static ErrorReporter devnull() {
+    return new ErrorReporterImpl(ImmutableMap.of());
+  }
+
   /** Creates a new ErrorReporter suitable for asserting on messages in tests. */
   public static ErrorReporter createForTest() {
     return new ErrorReporterImpl(ImmutableMap.of());
