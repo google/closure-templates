@@ -1757,6 +1757,7 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
             }
             List<ExternRef> externTypes = externsTypeLookup.getRefs(filePath, functionName);
             if (maybeSetExtern(node, externTypes)) {
+              visitInternalExtern(node);
               return;
             } else if (!externTypes.isEmpty()) {
               String providedParamTypes =
@@ -2511,6 +2512,15 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
       }
     }
 
+    private void visitInternalExtern(FunctionNode node) {
+      ExternRef externRef = (ExternRef) node.getSoyFunction();
+      if (externRef.path().path().endsWith("java/soy/plugins/functions.soy")
+          && externRef.name().equals("unpackAny")) {
+        ExprNode secondParam = node.getChild(1);
+        node.setType(secondParam.getType());
+      }
+    }
+
     /**
      * Private helper that checks types of the arguments and tries to set the return type for some
      * basic functions provided by Soy.
@@ -2867,8 +2877,7 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
     }
 
     @Override
-    protected void visitFunctionNode(FunctionNode node) {
-    }
+    protected void visitFunctionNode(FunctionNode node) {}
 
     @Override
     protected void visitExprNode(ExprNode node) {
