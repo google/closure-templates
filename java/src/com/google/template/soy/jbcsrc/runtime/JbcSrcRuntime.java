@@ -32,7 +32,9 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multiset;
 import com.google.common.collect.SetMultimap;
+import com.google.common.html.types.SafeHtml;
 import com.google.common.html.types.SafeUrl;
+import com.google.common.html.types.TrustedResourceUrl;
 import com.google.errorprone.annotations.Immutable;
 import com.google.protobuf.ExtensionLite;
 import com.google.protobuf.GeneratedMessage.ExtendableMessage;
@@ -271,6 +273,16 @@ public final class JbcSrcRuntime {
   public static SafeUrl unboxSafeUrl(SoyValueProvider provider) {
     SoyValue soyValue = provider.resolve();
     return ((SanitizedContent) soyValue).toSafeUrl();
+  }
+
+  public static SafeHtml unboxSafeHtml(SoyValueProvider provider) {
+    SoyValue soyValue = provider.resolve();
+    return ((SanitizedContent) soyValue).toSafeHtml();
+  }
+
+  public static TrustedResourceUrl unboxTrustedResourceUrl(SoyValueProvider provider) {
+    SoyValue soyValue = provider.resolve();
+    return ((SanitizedContent) soyValue).toTrustedResourceUrl();
   }
 
   /**

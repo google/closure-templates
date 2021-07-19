@@ -24,7 +24,9 @@ import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
+import com.google.common.html.types.SafeHtml;
 import com.google.common.html.types.SafeUrl;
+import com.google.common.html.types.TrustedResourceUrl;
 import com.google.common.primitives.Ints;
 import com.google.protobuf.Message;
 import com.google.protobuf.contrib.JavaQualifiedNames;
@@ -135,7 +137,9 @@ public final class BytecodeUtils {
   public static final Type LOGGABLE_ELEMENT_METADATA_TYPE =
       Type.getType(LoggableElementMetadata.class);
   public static final Type STACK_FRAME_TYPE = Type.getType(StackFrame.class);
-  public static final Type SAFE_URL = Type.getType(SafeUrl.class);
+  public static final Type SAFE_URL_TYPE = Type.getType(SafeUrl.class);
+  public static final Type SAFE_HTML_TYPE = Type.getType(SafeHtml.class);
+  public static final Type TRUSTED_RESOURCE_URL_TYPE = Type.getType(TrustedResourceUrl.class);
 
   public static final Method CLASS_INIT = Method.getMethod("void <clinit>()");
   public static final Method NULLARY_INIT = Method.getMethod("void <init>()");

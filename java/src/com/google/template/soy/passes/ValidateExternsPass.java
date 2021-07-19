@@ -24,7 +24,9 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ListMultimap;
+import com.google.common.html.types.SafeHtml;
 import com.google.common.html.types.SafeUrl;
+import com.google.common.html.types.TrustedResourceUrl;
 import com.google.common.primitives.Primitives;
 import com.google.protobuf.Message;
 import com.google.template.soy.base.SourceLocation;
@@ -226,6 +228,8 @@ class ValidateExternsPass implements CompilerFilePass {
   private static final ImmutableSet<SoyType.Kind> ALLOWED_UNION_MEMBERS =
       ImmutableSet.<SoyType.Kind>builder()
           .addAll(ALLOWED_PARAMETERIZED_TYPES)
+          .add(SoyType.Kind.HTML)
+          .add(SoyType.Kind.TRUSTED_RESOURCE_URI)
           .add(SoyType.Kind.URI)
           .build();
 
@@ -266,6 +270,10 @@ class ValidateExternsPass implements CompilerFilePass {
         return javaType == Message.class;
       case URI:
         return javaType == SafeUrl.class;
+      case TRUSTED_RESOURCE_URI:
+        return javaType == TrustedResourceUrl.class;
+      case HTML:
+        return javaType == SafeHtml.class;
       case PROTO:
         SoyProtoType protoType = (SoyProtoType) soyType;
         return JavaQualifiedNames.getClassName(protoType.getDescriptor())
