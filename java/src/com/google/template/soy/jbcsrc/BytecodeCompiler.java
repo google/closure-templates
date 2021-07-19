@@ -36,6 +36,7 @@ import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.jbcsrc.shared.Names;
 import com.google.template.soy.plugin.java.internal.PluginAnalyzer;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
+import com.google.template.soy.soytree.ExternNode;
 import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.PartialFileSetMetadata;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -47,12 +48,11 @@ import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.TemplateType;
 import java.io.IOException;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.stream.Collectors;
 
 /** The entry point to the {@code jbcsrc} compiler. */
 public final class BytecodeCompiler {
@@ -110,7 +110,7 @@ public final class BytecodeCompiler {
 
       // A map of plugin names -> info about the required instance class (only for plugins that
       // require a runtime class).
-      Map<String, PluginRuntimeInstanceInfo.Builder> pluginInstances = new TreeMap<>();
+      SortedMap<String, PluginRuntimeInstanceInfo> mergedInstanceIndex = new TreeMap<>();
 
       compileTemplates(
           fileSet,
@@ -133,27 +133,21 @@ public final class BytecodeCompiler {
               // For each function call, check if the plugin needs an instance class. If so, add an
               // entry to pluginInstances.
               if (fnNode.getSoyFunction() instanceof SoyJavaSourceFunction) {
-                if (!pluginInstances.containsKey(fnNode.getStaticFunctionName())) {
-                  Set<String> instances =
-                      PluginAnalyzer.analyze(
-                              (SoyJavaSourceFunction) fnNode.getSoyFunction(), fnNode.numChildren())
-                          .pluginInstanceNames();
-                  if (!instances.isEmpty()) {
-                    // We guarantee there's either 0 or 1 instances required for the plugin because
-                    // we already passed through PluginResolver, which checked this.
-                    pluginInstances.put(
-                        fnNode.getStaticFunctionName(),
-                        PluginRuntimeInstanceInfo.builder()
-                            .setPluginName(fnNode.getStaticFunctionName())
-                            .setInstanceClassName(Iterables.getOnlyElement(instances)));
-                  }
-                }
-
-                if (pluginInstances.containsKey(fnNode.getStaticFunctionName())) {
-                  // Add the source location to the list of places the function is used.
-                  pluginInstances
-                      .get(fnNode.getStaticFunctionName())
-                      .addSourceLocation(fnNode.getSourceLocation().toString());
+                Set<String> instances =
+                    PluginAnalyzer.analyze(
+                            (SoyJavaSourceFunction) fnNode.getSoyFunction(), fnNode.numChildren())
+                        .pluginInstanceNames();
+                if (!instances.isEmpty()) {
+                  // We guarantee there's either 0 or 1 instances required for the plugin because
+                  // we already passed through PluginResolver, which checked this.
+                  mergedInstanceIndex.merge(
+                      fnNode.getStaticFunctionName(),
+                      PluginRuntimeInstanceInfo.builder()
+                          .setPluginName(fnNode.getStaticFunctionName())
+                          .setInstanceClassName(Iterables.getOnlyElement(instances))
+                          .addSourceLocation(fnNode.getSourceLocation().toString())
+                          .build(),
+                      PluginRuntimeInstanceInfo::merge);
                 }
               }
             }
@@ -165,16 +159,28 @@ public final class BytecodeCompiler {
             Names.META_INF_DELTEMPLATE_PATH, ByteSource.wrap(delData.getBytes(UTF_8)));
       }
 
+      // Collect all instances from all declared externs.
+      SoyTreeUtils.allNodesOfType(fileSet, ExternNode.class)
+          .filter(e -> e.getJavaImpl().isPresent())
+          .map(e -> e.getJavaImpl().get())
+          .filter(j -> !j.isStatic())
+          .map(
+              j ->
+                  PluginRuntimeInstanceInfo.builder()
+                      .setPluginName(j.className())
+                      .setInstanceClassName(j.className())
+                      .addSourceLocation(j.getSourceLocation().toString())
+                      .build())
+          .forEach(
+              i -> mergedInstanceIndex.merge(i.pluginName(), i, PluginRuntimeInstanceInfo::merge));
+
       // If there were required plugin runtime instances, write a meta-inf file containing each
       // plugin's name, it's runtime class name, and the locations in soy where the function is
       // used.
-      if (!pluginInstances.isEmpty()) {
+      if (!mergedInstanceIndex.isEmpty()) {
         writer.writeEntry(
             Names.META_INF_PLUGIN_PATH,
-            PluginRuntimeInstanceInfo.serialize(
-                pluginInstances.values().stream()
-                    .map(PluginRuntimeInstanceInfo.Builder::build)
-                    .collect(Collectors.toList())));
+            PluginRuntimeInstanceInfo.serialize(mergedInstanceIndex.values()));
       }
     }
   }

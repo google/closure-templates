@@ -21,7 +21,6 @@ import static com.google.common.base.Preconditions.checkState;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.auto.value.AutoValue;
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
@@ -125,8 +124,7 @@ public abstract class PluginRuntimeInstanceInfo {
    * Merges two {@code PluginRuntimeInstanceInfo} objects with the same plugin name and instance
    * class name into a single {@code PluginRuntimeInstanceInfo}.
    */
-  @VisibleForTesting
-  static PluginRuntimeInstanceInfo merge(
+  public static PluginRuntimeInstanceInfo merge(
       PluginRuntimeInstanceInfo original, PluginRuntimeInstanceInfo other) {
     checkArgument(original.pluginName().equals(other.pluginName()));
     checkArgument(original.instanceClassName().equals(other.instanceClassName()));
