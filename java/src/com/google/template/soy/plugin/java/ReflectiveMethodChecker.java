@@ -13,26 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.template.soy.plugin;
+package com.google.template.soy.plugin.java;
 
+import com.google.template.soy.plugin.java.internal.AbstractMethodChecker;
 import com.google.template.soy.plugin.java.internal.CompiledJarsPluginSignatureReader;
-import java.util.List;
-import java.util.function.Consumer;
+import com.google.template.soy.plugin.java.internal.CompiledJarsPluginSignatureReader.ClassSignatures;
 
 /** Method checker for local development purposes. Only uses reflection to get access to methods. */
-public final class ReflectiveMethodChecker implements MethodChecker {
+public final class ReflectiveMethodChecker extends AbstractMethodChecker {
+
   @Override
-  public boolean hasMethod(
-      String className,
-      String methodName,
-      String returnType,
-      List<String> arguments,
-      boolean inInterface,
-      Consumer<String> errorReporter) {
-    return CompiledJarsPluginSignatureReader.hasMatchingMethod(
-        CompiledJarsPluginSignatureReader.indexReflectively(className),
-        methodName,
-        returnType,
-        arguments);
+  protected ClassSignatures getSignatures(String className) {
+    return CompiledJarsPluginSignatureReader.indexReflectively(className);
   }
 }

@@ -17,8 +17,10 @@
 package com.google.template.soy.jbcsrc;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Streams;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.internal.proto.JavaQualifiedNames;
+import com.google.template.soy.jbcsrc.ConstantsCompiler.ConstantVariables;
 import com.google.template.soy.jbcsrc.internal.SoyClassWriter;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
@@ -41,7 +43,10 @@ import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Stream;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -71,14 +76,16 @@ public final class ExternCompiler {
     }
 
     JavaImplNode javaImpl = extern.getJavaImpl().get();
+    int declaredMethodArgs = javaImpl.params().size();
 
     ImmutableList.Builder<String> paramNamesBuilder = ImmutableList.builder();
-    for (int i = 0; i < javaImpl.params().size(); i++) {
-      paramNamesBuilder.add("p" + (i + 1));
+    paramNamesBuilder.add(StandardNames.RENDER_CONTEXT);
+    for (int i = 0; i < declaredMethodArgs; i++) {
+      paramNamesBuilder.add("p" + (i + 1 /* start with p1 */));
     }
     ImmutableList<String> paramNames = paramNamesBuilder.build();
 
-    TypeInfo externClass = TypeInfo.create(javaImpl.className(), false);
+    TypeInfo externClass = TypeInfo.create(javaImpl.className(), javaImpl.isInterface());
     TypeInfo returnType = getTypeInfoLoadedIfPossible(javaImpl.returnType());
     TypeInfo[] paramTypesInfos =
         javaImpl.params().stream()
@@ -99,21 +106,38 @@ public final class ExternCompiler {
             start,
             end,
             /*isStatic=*/ true);
+    Expression renderContext = paramSet.getVariable(StandardNames.RENDER_CONTEXT);
+    ConstantVariables vars =
+        new ConstantVariables(paramSet, new RenderContextExpression(renderContext));
 
     Method externMethod = new Method(javaImpl.methodName(), returnType.type(), paramTypes);
-    Expression[] adaptedParams = new Expression[paramNames.size()];
-    for (int i = 0; i < paramTypesInfos.length; i++) {
-      adaptedParams[i] =
+
+    List<Expression> adaptedParams = new ArrayList<>();
+    if (!javaImpl.isStatic()) {
+      adaptedParams.add(
+          vars.getRenderContext()
+              .getPluginInstance(javaImpl.className())
+              .checkedCast(externClass.type()));
+    }
+    for (int i = 0; i < declaredMethodArgs; i++) {
+      adaptedParams.add(
           adaptParameter(
-              paramSet.getVariable(paramNames.get(i)),
+              paramSet.getVariable(paramNames.get(i + 1)),
               paramTypesInfos[i],
-              extern.getType().getParameters().get(i).getType());
+              extern.getType().getParameters().get(i).getType()));
+    }
+
+    MethodRef extMethodRef;
+    if (javaImpl.isStatic()) {
+      extMethodRef = MethodRef.createStaticMethod(externClass, externMethod);
+    } else if (javaImpl.isInterface()) {
+      extMethodRef = MethodRef.createInterfaceMethod(externClass, externMethod);
+    } else {
+      extMethodRef = MethodRef.createInstanceMethod(externClass, externMethod);
     }
 
     Expression body =
-        adaptReturnType(
-            memberMethod.getReturnType(),
-            MethodRef.createStaticMethod(externClass, externMethod).invoke(adaptedParams));
+        adaptReturnType(memberMethod.getReturnType(), extMethodRef.invoke(adaptedParams));
 
     new Statement() {
       @Override
@@ -138,8 +162,9 @@ public final class ExternCompiler {
 
   static Method buildMemberMethod(String symbol, FunctionType type) {
     Type[] args =
-        type.getParameters().stream()
-            .map(p -> getRuntimeType(p.getType()).runtimeType())
+        Streams.concat(
+                Stream.of(BytecodeUtils.RENDER_CONTEXT_TYPE),
+                type.getParameters().stream().map(p -> getRuntimeType(p.getType()).runtimeType()))
             .toArray(Type[]::new);
     return new Method(symbol, getRuntimeType(type.getReturnType()).runtimeType(), args);
   }

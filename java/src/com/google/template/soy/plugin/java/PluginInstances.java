@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.plugin;
+package com.google.template.soy.plugin.java;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import java.util.Map;
 import java.util.function.Supplier;
 
@@ -39,6 +40,10 @@ public final class PluginInstances {
 
   public Supplier<Object> get(String name) {
     return pluginInstances.get(name);
+  }
+
+  public ImmutableSet<String> keys() {
+    return pluginInstances.keySet();
   }
 
   public PluginInstances combine(Map<String, ? extends Supplier<Object>> morePlugins) {

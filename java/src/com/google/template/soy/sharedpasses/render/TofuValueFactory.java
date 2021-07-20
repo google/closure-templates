@@ -44,8 +44,8 @@ import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.internal.proto.JavaQualifiedNames;
-import com.google.template.soy.plugin.PluginInstances;
 import com.google.template.soy.plugin.internal.JavaPluginExecContext;
+import com.google.template.soy.plugin.java.PluginInstances;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
 import com.google.template.soy.plugin.java.restricted.MethodSignature;
@@ -68,7 +68,7 @@ import javax.annotation.Nullable;
 // TODO(b/19252021): Add unit tests after things shape up.
 class TofuValueFactory extends JavaValueFactory {
   private final SourceLocation fnSourceLocation;
-  private final String fnName;
+  private final String instanceKey;
   private final PluginInstances pluginInstances;
   @Nullable private final FunctionType externSig;
 
@@ -78,11 +78,11 @@ class TofuValueFactory extends JavaValueFactory {
 
   TofuValueFactory(
       SourceLocation fnSourceLocation,
-      String fnName,
+      String instanceKey,
       PluginInstances pluginInstances,
       FunctionType externSig) {
     this.fnSourceLocation = fnSourceLocation;
-    this.fnName = fnName;
+    this.instanceKey = instanceKey;
     this.pluginInstances = pluginInstances;
     this.externSig = externSig;
   }
@@ -121,9 +121,13 @@ class TofuValueFactory extends JavaValueFactory {
 
   @Override
   public TofuJavaValue callInstanceMethod(Method method, JavaValue... params) {
-    Supplier<Object> instanceSupplier = pluginInstances.get(fnName);
+    Supplier<Object> instanceSupplier = pluginInstances.get(instanceKey);
     if (instanceSupplier == null) {
-      throw RenderException.create("No plugin instance registered for function '" + fnName + "'");
+      throw RenderException.create(
+          "No plugin instance registered for key '"
+              + instanceKey
+              + "'. Available keys are: "
+              + pluginInstances.keys());
     }
     try {
       return wrapInTofuValue(

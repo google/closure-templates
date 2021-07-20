@@ -44,7 +44,7 @@ import com.google.template.soy.msgs.restricted.SoyMsg;
 import com.google.template.soy.msgs.restricted.SoyMsgBundleImpl;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
 import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
-import com.google.template.soy.plugin.PluginInstances;
+import com.google.template.soy.plugin.java.PluginInstances;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.shared.SoyIdRenamingMap;

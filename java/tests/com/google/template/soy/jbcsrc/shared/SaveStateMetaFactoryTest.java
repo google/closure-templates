@@ -20,7 +20,7 @@ import static java.lang.invoke.MethodType.methodType;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.template.soy.plugin.PluginInstances;
+import com.google.template.soy.plugin.java.PluginInstances;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;

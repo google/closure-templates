@@ -18,30 +18,25 @@ load("@rules_java//java:defs.bzl", "java_library")
 
 package(default_visibility = ["//:soy_internal"])
 
-java_library(
-    name = "api",
-    srcs = [
-        "PluginInstances.java",
-    ],
-    deps = [
-        "@maven//:com_google_guava_guava",
-    ],
-)
+REFLECTIVE_SRCS = ["ReflectiveMethodChecker.java"]
 
 java_library(
-    name = "internal",
-    srcs = [
-        "DelegatingMethodChecker.java",
-        "MethodChecker.java",
+    name = "java",
+    srcs = glob(
+        ["*.java"],
+        exclude = REFLECTIVE_SRCS,
+    ),
+    deps = [
+        "@com_google_auto_value_auto_value",
+        "@maven//:com_google_guava_guava",
     ],
-    deps = [],
 )
 
 java_library(
     name = "reflective",
     srcs = ["ReflectiveMethodChecker"],
     deps = [
-        ":plugin",
+        ":java",
         "//java/src/com/google/template/soy/plugin/java/internal",
     ],
 )

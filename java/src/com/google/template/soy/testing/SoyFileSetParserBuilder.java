@@ -40,6 +40,7 @@ import com.google.template.soy.passes.CompilerPass;
 import com.google.template.soy.passes.PassManager;
 import com.google.template.soy.passes.PassManager.PassContinuationRule;
 import com.google.template.soy.passes.PluginResolver;
+import com.google.template.soy.plugin.java.ReflectiveMethodChecker;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.shared.SoyAstCache;
 import com.google.template.soy.shared.SoyGeneralOptions;
@@ -371,8 +372,7 @@ public final class SoyFileSetParserBuilder {
         .setSoyPrintDirectives(soyPrintDirectives.build())
         .setErrorReporter(errorReporter)
         .setTypeRegistry(typeRegistry)
-        .setJavaPluginValidator(
-            (className, methodName, returnType, arguments, inInterface, errorReporter) -> true)
+        .setJavaPluginValidator(new ReflectiveMethodChecker())
         .desugarHtmlAndStateNodes(desugarHtmlAndStateNodes)
         .setGeneralOptions(options)
         .setConformanceConfig(conformanceConfig)

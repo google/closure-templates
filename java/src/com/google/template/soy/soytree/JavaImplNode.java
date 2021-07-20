@@ -160,7 +160,11 @@ public final class JavaImplNode extends ExternImplNode {
   }
 
   public ImmutableList<String> params() {
-    return ImmutableList.copyOf(Arrays.asList(params.getValue().split("\\s*,\\s*")));
+    String val = params.getValue();
+    if (val.isEmpty()) {
+      return ImmutableList.of();
+    }
+    return ImmutableList.copyOf(Arrays.asList(val.split("\\s*,\\s*")));
   }
 
   public String returnType() {

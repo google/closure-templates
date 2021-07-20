@@ -111,8 +111,8 @@ import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.logging.SoyLogger;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.msgs.SoyMsgBundle;
-import com.google.template.soy.plugin.PluginInstances;
 import com.google.template.soy.plugin.internal.JavaPluginExecContext;
+import com.google.template.soy.plugin.java.PluginInstances;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
 import com.google.template.soy.plugin.java.restricted.MethodSignature;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
@@ -897,8 +897,8 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     TofuValueFactory factory =
         new TofuValueFactory(
             node.getSourceLocation(),
-            soyFunction.name(),
-            PluginInstances.empty(),
+            java.className(), // Use java class as instance key.
+            pluginInstances,
             soyFunction.signature());
     TofuJavaValue value =
         java.isStatic()

@@ -37,7 +37,7 @@ import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.error.SoyCompilationException;
 import com.google.template.soy.logging.AnnotatedLoggingConfig;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
-import com.google.template.soy.plugin.DelegatingMethodChecker;
+import com.google.template.soy.plugin.java.DelegatingMethodChecker;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;

@@ -70,7 +70,7 @@ java_library(
         "//java/src/com/google/template/soy/logging:public",
         "//java/src/com/google/template/soy/logging/testing",
         "//java/src/com/google/template/soy/msgs",
-        "//java/src/com/google/template/soy/plugin:api",
+        "//java/src/com/google/template/soy/plugin/java",
         "//java/src/com/google/template/soy/plugin/java/restricted",
         "//java/src/com/google/template/soy/plugin/restricted",
         "//java/src/com/google/template/soy/shared",

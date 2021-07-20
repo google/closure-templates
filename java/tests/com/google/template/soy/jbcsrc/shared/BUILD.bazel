@@ -30,7 +30,7 @@ java_library(
         "//java/src/com/google/template/soy/internal/exemptions",
         "//java/src/com/google/template/soy/jbcsrc/shared",
         "//java/src/com/google/template/soy/jbcsrc/shared:names",
-        "//java/src/com/google/template/soy/plugin:api",
+        "//java/src/com/google/template/soy/plugin/java",
         "@maven//:com_google_guava_guava",
         "@maven//:com_google_truth_truth",
         "@maven//:junit_junit",

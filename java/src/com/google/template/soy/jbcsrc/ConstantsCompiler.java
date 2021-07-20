@@ -139,7 +139,7 @@ public final class ConstantsCompiler {
     return (constant.isExported() ? Opcodes.ACC_PUBLIC : 0) | Opcodes.ACC_STATIC;
   }
 
-  private static final class ConstantVariables implements TemplateParameterLookup {
+  static final class ConstantVariables implements TemplateParameterLookup {
     private final TemplateVariableManager variableSet;
     private final RenderContextExpression renderContext;
 

@@ -13,10 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.template.soy.plugin;
+package com.google.template.soy.plugin.java;
 
 import java.util.List;
-import java.util.function.Consumer;
 
 /** Collects multiple MethodCheckers and delegates to each of them. */
 public final class DelegatingMethodChecker implements MethodChecker {
@@ -27,19 +26,15 @@ public final class DelegatingMethodChecker implements MethodChecker {
   }
 
   @Override
-  public boolean hasMethod(
-      String className,
-      String methodName,
-      String returnType,
-      List<String> arguments,
-      boolean inInterface,
-      Consumer<String> errorReporter) {
+  public Response findMethod(
+      String className, String methodName, String returnType, List<String> arguments) {
+    Response lastResponse = null;
     for (MethodChecker methodChecker : methodCheckers) {
-      if (methodChecker.hasMethod(
-          className, methodName, returnType, arguments, inInterface, errorReporter)) {
-        return true;
+      lastResponse = methodChecker.findMethod(className, methodName, returnType, arguments);
+      if (lastResponse.getCode() == Code.EXISTS) {
+        return lastResponse;
       }
     }
-    return false;
+    return lastResponse;
   }
 }

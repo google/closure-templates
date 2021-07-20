@@ -25,7 +25,7 @@ import com.google.common.util.concurrent.Futures;
 import com.google.template.soy.data.SoyDict;
 import com.google.template.soy.data.SoyFutureException;
 import com.google.template.soy.data.SoyValueConverterUtility;
-import com.google.template.soy.plugin.PluginInstances;
+import com.google.template.soy.plugin.java.PluginInstances;
 import com.google.template.soy.shared.internal.NoOpScopedData;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import com.google.template.soy.tofu.SoyTofu;

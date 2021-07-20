@@ -33,7 +33,7 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.passes.CompilerFileSetPass.Result;
 import com.google.template.soy.passes.CompilerFileSetPass.TopologicallyOrdered;
-import com.google.template.soy.plugin.MethodChecker;
+import com.google.template.soy.plugin.java.MethodChecker;
 import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.FileSetMetadata;

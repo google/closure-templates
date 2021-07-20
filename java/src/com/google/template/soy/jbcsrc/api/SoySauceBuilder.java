@@ -23,7 +23,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.jbcsrc.shared.Names;
-import com.google.template.soy.plugin.PluginInstances;
+import com.google.template.soy.plugin.java.PluginInstances;
 import com.google.template.soy.shared.internal.InternalPlugins;
 import com.google.template.soy.shared.internal.SoyScopedData;
 import com.google.template.soy.shared.internal.SoySimpleScope;

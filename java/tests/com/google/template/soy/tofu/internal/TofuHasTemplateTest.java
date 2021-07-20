@@ -19,7 +19,7 @@ package com.google.template.soy.tofu.internal;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.base.Joiner;
-import com.google.template.soy.plugin.PluginInstances;
+import com.google.template.soy.plugin.java.PluginInstances;
 import com.google.template.soy.shared.internal.NoOpScopedData;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import com.google.template.soy.tofu.SoyTofu;

@@ -30,6 +30,7 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.ternary;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Streams;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.data.SoyLegacyObjectMap;
 import com.google.template.soy.data.SoyMap;
@@ -130,6 +131,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
@@ -1601,12 +1603,15 @@ final class ExpressionCompiler {
       MethodRef ref = MethodRef.createStaticMethod(externOwner, asmMethod);
       SoyRuntimeType soyReturnType =
           ExternCompiler.getRuntimeType(extern.signature().getReturnType());
-      List<Expression> args = params.stream().map(this::visit).collect(Collectors.toList());
-      for (int i = 0; i < args.size(); i++) {
+      List<Expression> args =
+          Streams.concat(Stream.of(parameters.getRenderContext()), params.stream().map(this::visit))
+              .collect(Collectors.toList());
+      for (int i = 1; i < args.size(); i++) {
         args.set(
             i,
             adaptExternArg(
-                (SoyExpression) args.get(i), extern.signature().getParameters().get(i).getType()));
+                (SoyExpression) args.get(i),
+                extern.signature().getParameters().get(i - 1).getType()));
       }
       return SoyExpression.forRuntimeType(soyReturnType, ref.invoke(args));
     }

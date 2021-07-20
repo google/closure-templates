@@ -25,7 +25,7 @@ import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jbcsrc.BytecodeCompiler;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
-import com.google.template.soy.plugin.PluginInstances;
+import com.google.template.soy.plugin.java.PluginInstances;
 import com.google.template.soy.shared.internal.NoOpScopedData;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import com.google.template.soy.tofu.SoyTofu;

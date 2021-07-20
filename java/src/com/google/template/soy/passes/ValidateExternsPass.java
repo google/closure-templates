@@ -19,7 +19,6 @@ package com.google.template.soy.passes;
 import static com.google.common.collect.ImmutableListMultimap.toImmutableListMultimap;
 
 import com.google.common.base.Strings;
-import com.google.common.base.VerifyException;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -34,8 +33,11 @@ import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.data.SoyData;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
+import com.google.template.soy.error.SoyErrors;
 import com.google.template.soy.internal.proto.JavaQualifiedNames;
-import com.google.template.soy.plugin.MethodChecker;
+import com.google.template.soy.plugin.java.MethodChecker;
+import com.google.template.soy.plugin.java.ReadMethodData;
 import com.google.template.soy.plugin.java.restricted.MethodSignature;
 import com.google.template.soy.soytree.ExternNode;
 import com.google.template.soy.soytree.JavaImplNode;
@@ -71,13 +73,23 @@ class ValidateExternsPass implements CompilerFilePass {
   private static final SoyErrorKind OVERLOAD_RETURN_CONFLICT =
       SoyErrorKind.of(
           "Overloaded extern must have the same return type as the earlier extern defined on {0}.");
-  private static final SoyErrorKind IMPLEMENTATION_DOES_NOT_EXIST =
-      SoyErrorKind.of("This Java implementation does not exist{0}.");
   private static final SoyErrorKind OVERLOAD_PARAM_CONFLICT =
       SoyErrorKind.of(
           "Overloaded extern parameters are ambiguous with the earlier extern defined on {0}.");
   private static final SoyErrorKind JS_IMPL_OVERLOADS_MUST_MATCH =
       SoyErrorKind.of("Overloads for the same extern symbol must have the same jsimpl.");
+  private static final SoyErrorKind NO_SUCH_JAVA_CLASS =
+      SoyErrorKind.of("Java implementation class not loaded.");
+  private static final SoyErrorKind NO_SUCH_JAVA_METHOD_NAME =
+      SoyErrorKind.of(
+          "No method ''{0}'' exists on implementation class.{1}", StyleAllowance.NO_PUNCTUATION);
+  private static final SoyErrorKind JAVA_METHOD_SIG_MISMATCH =
+      SoyErrorKind.of(
+          "Method ''{0}'' of implementation class does not match the provided arguments.");
+  private static final SoyErrorKind JAVA_METHOD_TYPE_MISMATCH =
+      SoyErrorKind.of("Attribute ''type'' should have value ''{0}''.");
+  private static final SoyErrorKind JAVA_METHOD_RETURN_TYPE_MISMATCH =
+      SoyErrorKind.of("Return type of method ''{0}'' must be one of [{1}].");
 
   private final ErrorReporter errorReporter;
   private final MethodChecker checker;
@@ -175,20 +187,60 @@ class ValidateExternsPass implements CompilerFilePass {
             () -> java.getAttributeValueLocation(JavaImplNode.PARAMS));
       }
     }
-    try {
-      if (!checker.hasMethod(
-          java.className(),
-          java.methodName(),
-          java.returnType(),
-          java.params(),
-          false,
-          (error) -> {
-            throw new VerifyException(error);
-          })) {
-        errorReporter.report(java.getSourceLocation(), IMPLEMENTATION_DOES_NOT_EXIST, "");
-      }
-    } catch (VerifyException e) {
-      errorReporter.report(java.getSourceLocation(), IMPLEMENTATION_DOES_NOT_EXIST, e.getMessage());
+    MethodChecker.Response response =
+        checker.findMethod(java.className(), java.methodName(), java.returnType(), java.params());
+    switch (response.getCode()) {
+      case EXISTS:
+        ReadMethodData method = response.getMethod();
+        if (method.instanceMethod() == java.isStatic()
+            || method.classIsInterface() != java.isInterface()) {
+          String properType;
+          if (method.instanceMethod()) {
+            if (method.classIsInterface()) {
+              properType = JavaImplNode.TYPE_INTERFACE;
+            } else {
+              properType = JavaImplNode.TYPE_INSTANCE;
+            }
+          } else {
+            if (method.classIsInterface()) {
+              properType = JavaImplNode.TYPE_STATIC_INTERFACE;
+            } else {
+              properType = JavaImplNode.TYPE_STATIC;
+            }
+          }
+          SourceLocation loc = java.getAttributeValueLocation(JavaImplNode.TYPE);
+          if (loc.equals(SourceLocation.UNKNOWN)) {
+            loc = java.getSourceLocation();
+          }
+          errorReporter.report(loc, JAVA_METHOD_TYPE_MISMATCH, properType);
+        }
+        break;
+      case NO_SUCH_CLASS:
+        errorReporter.report(
+            java.getAttributeValueLocation(JavaImplNode.CLASS), NO_SUCH_JAVA_CLASS);
+        break;
+      case NO_SUCH_METHOD_SIG:
+        errorReporter.report(
+            java.getAttributeValueLocation(JavaImplNode.PARAMS),
+            JAVA_METHOD_SIG_MISMATCH,
+            java.methodName());
+        break;
+      case NO_SUCH_RETURN_TYPE:
+        errorReporter.report(
+            java.getAttributeValueLocation(JavaImplNode.RETURN),
+            JAVA_METHOD_RETURN_TYPE_MISMATCH,
+            java.methodName(),
+            String.join(", ", response.getSuggesions()));
+        break;
+      case NO_SUCH_METHOD_NAME:
+        String didYouMean =
+            SoyErrors.getDidYouMeanMessage(response.getSuggesions(), java.methodName());
+        errorReporter.report(
+            java.getAttributeValueLocation(JavaImplNode.METHOD),
+            NO_SUCH_JAVA_METHOD_NAME,
+            java.methodName(),
+            didYouMean);
+        break;
     }
   }
 

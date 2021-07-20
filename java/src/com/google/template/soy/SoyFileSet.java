@@ -69,9 +69,11 @@ import com.google.template.soy.passes.PassManager.AstRewrites;
 import com.google.template.soy.passes.PassManager.PassContinuationRule;
 import com.google.template.soy.passes.PluginResolver;
 import com.google.template.soy.passes.SoyConformancePass;
-import com.google.template.soy.plugin.MethodChecker;
-import com.google.template.soy.plugin.PluginInstances;
 import com.google.template.soy.plugin.internal.PluginValidator;
+import com.google.template.soy.plugin.java.MethodChecker;
+import com.google.template.soy.plugin.java.MethodChecker.Code;
+import com.google.template.soy.plugin.java.MethodChecker.Response;
+import com.google.template.soy.plugin.java.PluginInstances;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.pysrc.SoyPySrcOptions;
 import com.google.template.soy.pysrc.internal.PySrcMain;
@@ -170,7 +172,7 @@ public final class SoyFileSet {
     private boolean optimize = true;
 
     private MethodChecker javaPluginValidator =
-        (className, methodName, returnType, arguments, inInterface, reporter) -> false;
+        (className, methodName, returnType, arguments) -> Response.error(Code.NO_SUCH_CLASS);
 
     private Set<SourceFilePath> generatedPathsToCheck = ImmutableSet.of();
 

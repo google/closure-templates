@@ -41,7 +41,7 @@ import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.parseinfo.SoyTemplateInfo;
-import com.google.template.soy.plugin.PluginInstances;
+import com.google.template.soy.plugin.java.PluginInstances;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.internal.DelTemplateSelector;

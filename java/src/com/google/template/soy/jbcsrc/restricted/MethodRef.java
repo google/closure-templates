@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.jbcsrc.restricted.Expression.areAllCheap;
 
 import com.google.auto.value.AutoValue;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.html.types.SafeHtml;
@@ -664,6 +665,7 @@ public abstract class MethodRef {
   }
 
   public static MethodRef createInterfaceMethod(TypeInfo owner, Method method) {
+    Preconditions.checkArgument(owner.isInterface());
     return new AutoValue_MethodRef(
         Opcodes.INVOKEINTERFACE,
         owner,
@@ -674,6 +676,7 @@ public abstract class MethodRef {
   }
 
   public static MethodRef createInstanceMethod(TypeInfo owner, Method method) {
+    Preconditions.checkArgument(!owner.isInterface());
     return new AutoValue_MethodRef(
         Opcodes.INVOKEVIRTUAL,
         owner,
