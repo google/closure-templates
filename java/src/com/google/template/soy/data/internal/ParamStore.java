@@ -27,6 +27,7 @@ import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import javax.annotation.Nonnull;
@@ -93,8 +94,8 @@ public final class ParamStore extends SoyAbstractValue implements SoyRecord {
   }
 
   @Override
-  public ImmutableMap<String, SoyValueProvider> recordAsMap() {
-    return ImmutableMap.copyOf(localStore);
+  public Map<String, SoyValueProvider> recordAsMap() {
+    return Collections.unmodifiableMap(localStore);
   }
 
   @Override
