@@ -117,7 +117,6 @@ function handleSoyElement<DATA, T extends SoyElement<DATA, {}>>(
     incrementaldom.open = oldOpen;
     return element;
   }
-  incrementaldom.visit(element);
   soyElement.renderInternal(incrementaldom, data);
   return soyElement;
 }
