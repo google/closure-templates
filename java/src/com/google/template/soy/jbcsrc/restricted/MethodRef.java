@@ -57,6 +57,7 @@ import com.google.template.soy.data.internal.ListImpl;
 import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
 import com.google.template.soy.data.internal.SoyMapImpl;
+import com.google.template.soy.data.internal.SoyRecordImpl;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
@@ -125,6 +126,9 @@ public abstract class MethodRef {
 
   public static final MethodRef MAP_IMPL_FOR_PROVIDER_MAP =
       create(SoyMapImpl.class, "forProviderMap", Map.class).asNonNullable();
+
+  public static final MethodRef RECORD_IMPL_FOR_PROVIDER_MAP =
+      create(SoyRecordImpl.class, "forProviderMap", Map.class).asNonNullable();
 
   public static final MethodRef DOUBLE_TO_STRING =
       create(FloatData.class, "toString", double.class).asNonNullable();
