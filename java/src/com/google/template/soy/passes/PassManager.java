@@ -412,9 +412,11 @@ public final class PassManager {
           .add(new ResolveTemplateParamTypesPass(errorReporter, disableAllTypeChecking));
 
       // needs to come before SoyConformancePass
-      passes
-          .add(new ResolvePluginsPass(pluginResolver))
-          .add(new ValidateExternsPass(errorReporter, javaPluginValidator));
+      passes.add(new ResolvePluginsPass(pluginResolver));
+      // When type checking is disabled, extern implementations will likely not be loaded.
+      if (!disableAllTypeChecking) {
+        passes.add(new ValidateExternsPass(errorReporter, javaPluginValidator));
+      }
 
       // Must come after ResolvePluginsPass.
       if (astRewrites == AstRewrites.ALL) {
