@@ -210,9 +210,10 @@ export abstract class SoyElement<TData extends {}|null, TInterface extends {}>
 
   /**
    * Sets the skip handler.
+   * They execute right before a patch and influence whether further patching is
+   * needed.
    *
    * The given function return value means:
-   *
    *   - true: skip the element
    *   - false: renders the element
    */
@@ -221,6 +222,12 @@ export abstract class SoyElement<TData extends {}|null, TInterface extends {}>
     this.skipHandler = skipHandler;
   }
 
+  /**
+   * Sets the after patch handler.
+   *
+   * Executes right after a Soy element has finished rendering, but before
+   * anymore of the template executes.
+   */
   setAfterPatch(handler: (prev: TInterface, next: TInterface) => void) {
     assert(!this.patchHandler, 'Only one patch handler is allowed');
     this.patchHandler = handler;
