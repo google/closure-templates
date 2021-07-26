@@ -29,6 +29,7 @@ import com.google.template.soy.data.SoyProtoValue;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
+import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.FloatType;
 import com.google.template.soy.types.IntType;
@@ -410,6 +411,19 @@ public final class SoyExpression extends Expression {
       return forFloat(delegate.invoke(MethodRef.SOY_VALUE_FLOAT_VALUE));
     }
     return forFloat(delegate.invoke(MethodRef.SOY_VALUE_NUMBER_VALUE));
+  }
+
+  public Expression coerceToNumber() {
+    if (!isBoxed()) {
+      if (soyRuntimeType.isKnownFloat()) {
+        return MethodRef.BOX_DOUBLE.invoke(this);
+      }
+      if (soyRuntimeType.isKnownInt()) {
+        return MethodRef.BOX_LONG.invoke(this);
+      }
+      throw new UnsupportedOperationException("Can't convert " + resultType() + " to a Number");
+    }
+    return delegate.checkedCast(NumberData.class).invoke(MethodRef.SOY_VALUE_JAVA_NUMBER_VALUE);
   }
 
   /**

@@ -157,6 +157,11 @@ public final class IntegerData extends NumberData {
   }
 
   @Override
+  public Number javaNumberValue() {
+    return value;
+  }
+
+  @Override
   public boolean equals(Object other) {
     if (!(other instanceof NumberData)) {
       return false;

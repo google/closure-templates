@@ -206,6 +206,8 @@ public final class ExternCompiler {
       return actualParam.coerceToDouble();
     } else if (javaType.equals(BytecodeUtils.BOXED_DOUBLE_TYPE)) {
       return MethodRef.BOX_DOUBLE.invoke(actualParam.coerceToDouble());
+    } else if (javaType.equals(BytecodeUtils.NUMBER_TYPE)) {
+      return actualParam.coerceToNumber();
     }
     // For protos, we need to unbox as Message & then cast.
     if (soyType.getKind() == Kind.MESSAGE) {
@@ -302,7 +304,8 @@ public final class ExternCompiler {
       return MethodRef.SOY_VALUE_BOOLEAN_VALUE.invoke(externCall);
     } else if (externType.equals(BytecodeUtils.STRING_DATA_TYPE)) {
       return MethodRef.SOY_VALUE_STRING_VALUE.invoke(externCall);
-    } else if (externType.equals(BytecodeUtils.OBJECT.type())) {
+    } else if (externType.equals(BytecodeUtils.OBJECT.type())
+        || externType.equals(BytecodeUtils.NUMBER_TYPE)) {
       return MethodRef.CONVERT_OBJECT_TO_SOY_VALUE_PROVIDER.invoke(externCall);
     } else if (externType.equals(BytecodeUtils.LIST_TYPE)
         || externType.equals(BytecodeUtils.IMMUTIBLE_LIST_TYPE)) {

@@ -61,6 +61,7 @@ import com.google.template.soy.data.internal.SoyRecordImpl;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
+import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.restricted.Expression.Feature;
@@ -495,6 +496,9 @@ public abstract class MethodRef {
 
   public static final MethodRef SOY_VALUE_NUMBER_VALUE =
       create(SoyValue.class, "numberValue").asNonNullable();
+
+  public static final MethodRef SOY_VALUE_JAVA_NUMBER_VALUE =
+      create(NumberData.class, "javaNumberValue").asNonNullable();
 
   public static final MethodRef SOY_VALUE_STRING_VALUE =
       create(SoyValue.class, "stringValue").asCheap().asNonNullable();

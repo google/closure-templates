@@ -301,6 +301,9 @@ class ValidateExternsPass implements CompilerFilePass {
       case BOOL:
         return javaType == Boolean.class;
       case UNION:
+        if (soyType.equals(SoyTypes.NUMBER_TYPE)) {
+          return javaType == Number.class || javaType == Double.class;
+        }
         if (((UnionType) soyType)
             .getMembers().stream().anyMatch(t -> !ALLOWED_UNION_MEMBERS.contains(t.getKind()))) {
           return false;

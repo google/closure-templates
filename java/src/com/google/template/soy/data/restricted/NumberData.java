@@ -40,6 +40,8 @@ public abstract class NumberData extends PrimitiveData {
     return toFloat();
   }
 
+  public abstract Number javaNumberValue();
+
   @Override
   public boolean equals(Object other) {
     return other instanceof NumberData && ((NumberData) other).toFloat() == this.toFloat();

@@ -40,6 +40,7 @@ import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
+import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
@@ -265,6 +266,10 @@ class TofuValueFactory extends JavaValueFactory {
         return null;
       } else if (externSig != null && type == Object.class) {
         return SoyValueUnconverter.unconvert(value);
+      } else if (externSig != null && type == Number.class) {
+        return value instanceof NumberData
+            ? ((NumberData) value).javaNumberValue()
+            : value.numberValue();
       } else if (type.isInstance(value)) {
         return value;
       } else if (type == boolean.class) {

@@ -96,4 +96,9 @@ public final class FloatData extends NumberData {
   public double toFloat() {
     return value;
   }
+
+  @Override
+  public Number javaNumberValue() {
+    return value;
+  }
 }
