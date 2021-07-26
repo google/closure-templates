@@ -7,12 +7,12 @@ import './skiphandler';
 
 import {assert, assertExists} from 'goog:goog.asserts';  // from //third_party/javascript/closure/asserts
 import IDisposable from 'goog:goog.disposable.IDisposable'; // from //third_party/javascript/closure/disposable:idisposable
-import {IjData} from 'goog:goog.soy';  // from //third_party/javascript/closure/soy
 import SanitizedContentKind from 'goog:goog.soy.data.SanitizedContentKind'; // from //third_party/javascript/closure/soy:data
 import {Logger} from 'goog:soy.velog';  // from //javascript/template/soy:soyutils_velog
 
 import {IncrementalDomRenderer, patchOuter} from './api_idom';
 import {getGlobalSkipHandler, isTaggedForSkip} from './global';
+import {IdomTemplate, IjData} from './templates';
 
 /** Function that executes Idom instructions */
 export type PatchFunction = (a?: unknown) => void;
@@ -44,8 +44,10 @@ export abstract class SoyElement<TData extends {}|null, TInterface extends {}>
   key: string = '';
   private logGraft = false;
   private disposed = false;
-
-  constructor(protected data: TData, protected ijData?: IjData) {}
+  data!: TData;
+  ijData!: IjData;
+  // tslint:disable-next-line:no-any Setting this to TData seems to trigger spurious type errors.
+  template!: IdomTemplate<any>;
 
   /** @override */
   dispose() {
@@ -149,9 +151,9 @@ export abstract class SoyElement<TData extends {}|null, TInterface extends {}>
       this.syncStateFromData(data);
     }
     const maybeSkipHandler = this.skipHandler || getSkipHandler(node);
-    const newNode = new (
-        this.constructor as
-        {new (a: TData): SoyElement<TData, TInterface>})(data);
+    const newNode =
+        new (this.constructor as {new (): SoyElement<TData, TInterface>})();
+    newNode.data = data;
     const globalSkipHandler = getGlobalSkipHandler() as
         unknown as ((prev: TInterface, next: TInterface) => boolean);
     if (globalSkipHandler &&
@@ -178,9 +180,9 @@ export abstract class SoyElement<TData extends {}|null, TInterface extends {}>
       }
 
       if (this.patchHandler) {
-        const oldNode = new (
-            this.constructor as
-            {new (a: TData): SoyElement<TData, TInterface>})(oldData);
+        const oldNode =
+            new (this.constructor as {new (): SoyElement<TData, TInterface>})();
+        oldNode.data = oldData;
         const patchHandler = this.patchHandler;
         this.node.__soy_patch_handler = () => {
           patchHandler(
@@ -227,7 +229,9 @@ export abstract class SoyElement<TData extends {}|null, TInterface extends {}>
   /**
    * Makes idom patch calls, inside of a patch context.
    */
-  abstract renderInternal(renderer: IncrementalDomRenderer, data: TData): void;
+  renderInternal(renderer: IncrementalDomRenderer, data: TData) {
+    this.template(renderer, data);
+  }
 }
 
 /**

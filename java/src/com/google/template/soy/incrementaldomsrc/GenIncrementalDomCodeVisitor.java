@@ -303,9 +303,49 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       getJsCodeBuilder().appendLine();
       getJsCodeBuilder().append(generateAccessorInterface(elementAccessor, element));
       getJsCodeBuilder().append(generateExportsForSoyElement(elementAccessor));
+      getJsCodeBuilder().append(generateRenderInternal(element));
       getJsCodeBuilder().append(generateClassForSoyElement(elementName, elementAccessor, element));
       getJsCodeBuilder().append(generateExportsForSoyElement(elementName));
     }
+  }
+
+  private Statement generateRenderInternal(TemplateElementNode node) {
+    String paramsType = hasOnlyImplicitParams(node) ? "null" : "!" + alias + ".Params";
+    String soyElementClassName = this.getSoyElementClassName();
+    JsDoc jsDoc =
+        JsDoc.builder()
+            .addParam(INCREMENTAL_DOM_PARAM_NAME, "!incrementaldomlib.IncrementalDomRenderer")
+            .addParam(StandardNames.OPT_DATA, paramsType)
+            .addAnnotation("public")
+            .addAnnotation("override")
+            .addParameterizedAnnotation("this", soyElementClassName)
+            .addParameterizedAnnotation("suppress", "checkTypes")
+            .build();
+    // Build `renderInternal` method.
+    Expression fn =
+        Expression.function(
+            jsDoc,
+            // Various parts of the js codegen expects these values to be in the local
+            // scope.
+            Statement.of(
+                VariableDeclaration.builder(StandardNames.DOLLAR_IJDATA)
+                    .setRhs(Expression.THIS.dotAccess("ijData"))
+                    .build(),
+                Statement.of(
+                    node.getStateVars().stream()
+                        .map(
+                            stateVar ->
+                                VariableDeclaration.builder(
+                                        STATE_VAR_PREFIX + STATE_PREFIX + stateVar.name())
+                                    .setRhs(
+                                        Expression.THIS.dotAccess(STATE_PREFIX + stateVar.name()))
+                                    .build())
+                        .collect(toImmutableList())),
+                generateIncrementalDomRenderCalls(node, alias, /*isPositionalStyle=*/ false)));
+    return VariableDeclaration.builder(soyElementClassName + "Internal")
+        .setJsDoc(jsDoc)
+        .setRhs(fn)
+        .build();
   }
 
   @Override
@@ -428,7 +468,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     }
     bodyStatements.add(
         node instanceof TemplateElementNode
-            ? this.generateFunctionBodyForSoyElement(node)
+            ? this.generateFunctionBodyForSoyElement((TemplateElementNode) node)
             : this.generateIncrementalDomRenderCalls(node, alias, isPositionalStyle));
     return Statement.of(bodyStatements.build());
   }
@@ -482,7 +522,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
    * Generates main template function body for Soy elements. Specifically, generates code to create
    * a new instance of the element class and invoke its #render method.
    */
-  private Statement generateFunctionBodyForSoyElement(TemplateNode node) {
+  private Statement generateFunctionBodyForSoyElement(TemplateElementNode node) {
     String soyElementClassName = this.getSoyElementClassName();
     String tplName =
         node.getHtmlElementMetadata().getFinalCallee().isEmpty()
@@ -493,16 +533,27 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
         // this will always be the first element key.
         JsRuntime.XID.call(Expression.stringLiteral(tplName + "-root"));
 
-    return SOY_IDOM
-        .dotAccess("$$handleSoyElement")
-        .call(
-            INCREMENTAL_DOM,
-            id(soyElementClassName),
-            firstElementKey,
-            Expression.stringLiteral(node.getHtmlElementMetadata().getTag()),
-            JsRuntime.OPT_DATA,
-            JsRuntime.IJ_DATA)
-        .asStatement();
+    return Statement.of(
+        VariableDeclaration.builder("soyEl")
+            .setRhs(
+                SOY_IDOM
+                    .dotAccess("$$handleSoyElement")
+                    .call(
+                        INCREMENTAL_DOM,
+                        id(soyElementClassName),
+                        firstElementKey,
+                        Expression.stringLiteral(node.getHtmlElementMetadata().getTag()),
+                        JsRuntime.OPT_DATA,
+                        JsRuntime.IJ_DATA,
+                        id(soyElementClassName + "Internal")))
+            .build(),
+        Statement.ifStatement(
+                id("soyEl"),
+                id("soyEl")
+                    .dotAccess("renderInternal")
+                    .call(INCREMENTAL_DOM, JsRuntime.OPT_DATA)
+                    .asStatement())
+            .build());
   }
 
   /**
@@ -565,49 +616,11 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     // Build constructor method.
     Statement ctorBody =
         Statement.of(
-            id("super").call(id(StandardNames.DOLLAR_DATA), JsRuntime.IJ_DATA).asStatement(),
-            Statement.of(stateVarInitializations.build()));
+            id("super").call().asStatement(), Statement.of(stateVarInitializations.build()));
     MethodDeclaration constructorMethod =
-        MethodDeclaration.create(
-            "constructor",
-            JsDoc.builder()
-                .addParam(StandardNames.DOLLAR_DATA, paramsType)
-                .addGoogRequire(GOOG_SOY_ALIAS)
-                .addParam(StandardNames.DOLLAR_IJDATA, "!" + GOOG_SOY_ALIAS.alias() + ".IjData=")
-                .build(),
-            ctorBody);
-
-    // Build `renderInternal` method.
-    MethodDeclaration renderInternalMethod =
-        MethodDeclaration.create(
-            "renderInternal",
-            JsDoc.builder()
-                .addParam(INCREMENTAL_DOM_PARAM_NAME, "!incrementaldomlib.IncrementalDomRenderer")
-                .addParam(StandardNames.OPT_DATA, paramsType)
-                .addAnnotation("public")
-                .addAnnotation("override")
-                .addParameterizedAnnotation("suppress", "checkTypes")
-                .build(),
-            // Various parts of the js codegen expects these values to be in the local
-            // scope.
-            Statement.of(
-                Statement.of(
-                    node.getStateVars().stream()
-                        .map(
-                            stateVar ->
-                                VariableDeclaration.builder(
-                                        STATE_VAR_PREFIX + STATE_PREFIX + stateVar.name())
-                                    .setRhs(
-                                        Expression.THIS.dotAccess(STATE_PREFIX + stateVar.name()))
-                                    .build())
-                        .collect(toImmutableList())),
-                VariableDeclaration.builder(StandardNames.DOLLAR_IJDATA)
-                    .setRhs(Expression.THIS.dotAccess("ijData"))
-                    .build(),
-                generateIncrementalDomRenderCalls(node, alias, /*isPositionalStyle=*/ false)));
-
+        MethodDeclaration.create("constructor", JsDoc.builder().build(), ctorBody);
     ImmutableList.Builder<MethodDeclaration> builder = ImmutableList.builder();
-    builder.add(constructorMethod, renderInternalMethod);
+    builder.add(constructorMethod);
     Optional<Statement> maybeSyncState = genSyncStateCalls(node, alias);
     if (maybeSyncState.isPresent()) {
       builder.add(

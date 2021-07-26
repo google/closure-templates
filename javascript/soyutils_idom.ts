@@ -80,9 +80,9 @@ incrementaldom.setKeyAttributeName('soy-server-key');
  * and then proceeds to render the Soy element.
  */
 function handleSoyElement<DATA, T extends SoyElement<DATA, {}>>(
-    incrementaldom: IncrementalDomRenderer,
-    elementClassCtor: new (data: DATA, ij: unknown) => T,
-    firstElementKey: string, tagName: string, data: DATA, ijData: unknown) {
+    incrementaldom: IncrementalDomRenderer, elementClassCtor: new () => T,
+    firstElementKey: string, tagName: string, data: DATA, ijData: IjData,
+    template: IdomTemplate<DATA>) {
   // If we're just testing truthiness, record an element but don't do anythng.
   if (incrementaldom instanceof FalsinessRenderer) {
     incrementaldom.open('div');
@@ -102,22 +102,24 @@ function handleSoyElement<DATA, T extends SoyElement<DATA, {}>>(
   };
   let soyElement: T;
   if (!(getSoyUntyped(element as HTMLElement) instanceof elementClassCtor)) {
-    soyElement = new elementClassCtor(data, ijData);
+    soyElement = new elementClassCtor();
+    soyElement.data = data;
+    soyElement.ijData = ijData;
     soyElement.key = soyElementKey;
     // NOTE(b/166257386): Without this, SoyElement re-renders don't have logging
     soyElement.setLogger(incrementaldom.getLogger());
   } else {
-    soyElement = getSoyUntyped(element as HTMLElement) as T;
+    soyElement = getSoyUntyped(element as HTMLElement) as unknown as T;
   }
+  soyElement.template = template.bind(soyElement);
   const maybeSkip =
       soyElement.handleSoyElementRuntime(element as HTMLElement, data);
   if (maybeSkip) {
     incrementaldom.skip();
     incrementaldom.close();
     incrementaldom.open = oldOpen;
-    return element;
+    return null;
   }
-  soyElement.renderInternal(incrementaldom, data);
   return soyElement;
 }
 
