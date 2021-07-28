@@ -1044,6 +1044,18 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
               .asStatement());
     }
     bodyStatements.add(generateStubbingTest(node, alias, isPositionalStyle));
+    // Generate statement to ensure data is defined, if necessary and this is not a positional style
+    // method, if this is a positional style then we don't have an opt_data field
+    if (!isPositionalStyle && new ShouldEnsureDataIsDefinedVisitor().exec(node)) {
+      bodyStatements.add(
+          assign(
+              OPT_DATA,
+              OPT_DATA.or(EMPTY_OBJECT_LITERAL, templateTranslationContext.codeGenerator())));
+    }
+
+    // Type check parameters.
+    bodyStatements.add(genParamTypeChecks(node, alias, isPositionalStyle));
+
     if (node instanceof TemplateElementNode) {
       TemplateElementNode elementNode = (TemplateElementNode) node;
       for (TemplateStateVar stateVar : elementNode.getStateVars()) {
@@ -1057,17 +1069,6 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         bodyStatements.add(VariableDeclaration.builder(stateVar.name()).setRhs(expr).build());
       }
     }
-    // Generate statement to ensure data is defined, if necessary and this is not a positional style
-    // method, if this is a positional style then we don't have an opt_data field
-    if (!isPositionalStyle && new ShouldEnsureDataIsDefinedVisitor().exec(node)) {
-      bodyStatements.add(
-          assign(
-              OPT_DATA,
-              OPT_DATA.or(EMPTY_OBJECT_LITERAL, templateTranslationContext.codeGenerator())));
-    }
-
-    // Type check parameters.
-    bodyStatements.add(genParamTypeChecks(node, alias, isPositionalStyle));
 
     SanitizedContentKind kind = node.getContentKind();
     if (isComputableAsJsExprsVisitor.exec(node)) {
