@@ -158,7 +158,7 @@ Syntax:
 
 `{@inject}` declares an [injected template parameter](../concepts/ij-data.md).
 The syntax is identical to the [required param](#param) syntax with the
-exception of the keyword.
+exception of the keyword. The injected parameter may be optional (`{@inject?}`).
 
 See the [types reference](types) for instructions on how to declare types.
 
