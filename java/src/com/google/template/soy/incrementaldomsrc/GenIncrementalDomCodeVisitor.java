@@ -312,13 +312,19 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   private Statement generateRenderInternal(TemplateElementNode node) {
     String paramsType = hasOnlyImplicitParams(node) ? "null" : "!" + alias + ".Params";
     String soyElementClassName = this.getSoyElementClassName();
+    // TODO(b/194302456): Assert that jsnamespace and jsclass are always set together.
+    boolean isCustomElement = node.jsnamespace != null;
     JsDoc jsDoc =
         JsDoc.builder()
             .addParam(INCREMENTAL_DOM_PARAM_NAME, "!incrementaldomlib.IncrementalDomRenderer")
             .addParam(StandardNames.OPT_DATA, paramsType)
             .addAnnotation("public")
             .addAnnotation("override")
-            .addParameterizedAnnotation("this", soyElementClassName)
+            .addParameterizedAnnotation(
+                "this",
+                isCustomElement
+                    ? (soyElementClassName + "Import." + node.jsclass)
+                    : soyElementClassName)
             .addParameterizedAnnotation("suppress", "checkTypes")
             .build();
     // Build `renderInternal` method.
@@ -338,7 +344,9 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
                                 VariableDeclaration.builder(
                                         STATE_VAR_PREFIX + STATE_PREFIX + stateVar.name())
                                     .setRhs(
-                                        Expression.THIS.dotAccess(STATE_PREFIX + stateVar.name()))
+                                        Expression.THIS.dotAccess(
+                                            (isCustomElement ? "" : STATE_PREFIX)
+                                                + stateVar.name()))
                                     .build())
                         .collect(toImmutableList())),
                 generateIncrementalDomRenderCalls(node, alias, /*isPositionalStyle=*/ false)));
@@ -532,7 +540,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
         // Since Soy element roots cannot have manual keys (see go/soy-element-keyed-roots),
         // this will always be the first element key.
         JsRuntime.XID.call(Expression.stringLiteral(tplName + "-root"));
-
+    boolean isCustomElement = node.jsnamespace != null;
     return Statement.of(
         VariableDeclaration.builder("soyEl")
             .setRhs(
@@ -540,19 +548,36 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
                     .dotAccess("$$handleSoyElement")
                     .call(
                         INCREMENTAL_DOM,
-                        id(soyElementClassName),
+                        isCustomElement
+                            ? GoogRequire.createWithAlias(
+                                    node.jsnamespace, soyElementClassName + "Import")
+                                .dotAccess(node.jsclass)
+                            : id(soyElementClassName),
                         firstElementKey,
-                        Expression.stringLiteral(node.getHtmlElementMetadata().getTag()),
+                        isCustomElement
+                            ? id(soyElementClassName + "Import").dotAccess(node.jsclass)
+                            : Expression.stringLiteral(node.getHtmlElementMetadata().getTag()),
                         JsRuntime.OPT_DATA,
                         JsRuntime.IJ_DATA,
                         id(soyElementClassName + "Internal")))
             .build(),
         Statement.ifStatement(
                 id("soyEl"),
-                id("soyEl")
-                    .dotAccess("renderInternal")
-                    .call(INCREMENTAL_DOM, JsRuntime.OPT_DATA)
-                    .asStatement())
+                Statement.of(
+                    Statement.of(
+                        isCustomElement
+                            ? node.getParams().stream()
+                                .map(
+                                    param ->
+                                        Statement.assign(
+                                            id("soyEl").dotAccess(param.name()),
+                                            JsRuntime.OPT_DATA.dotAccess(param.name())))
+                                .collect(toImmutableList())
+                            : ImmutableList.of()),
+                    id("soyEl")
+                        .dotAccess("renderInternal")
+                        .call(INCREMENTAL_DOM, isCustomElement ? id("soyEl") : JsRuntime.OPT_DATA)
+                        .asStatement()))
             .build());
   }
 

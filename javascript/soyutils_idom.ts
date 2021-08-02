@@ -26,7 +26,7 @@ import {isAttribute} from 'goog:soy.checks';  // from //javascript/template/soy:
 import {ordainSanitizedHtml} from 'goog:soydata.VERY_UNSAFE';  // from //javascript/template/soy:soy_usegoog_js
 import * as incrementaldom from 'incrementaldom';  // from //third_party/javascript/incremental_dom:incrementaldom
 
-import {attributes, FalsinessRenderer, IncrementalDomRenderer, patch, patchOuter} from './api_idom';
+import {attributes, ElementConstructor, FalsinessRenderer, IncrementalDomRenderer, patch, patchOuter} from './api_idom';
 import {splitAttributes} from './attributes';
 import {IdomFunction, PatchFunction, SoyElement} from './element_lib_idom';
 import {getSoyUntyped} from './global';
@@ -39,6 +39,17 @@ const defaultIdomRenderer = new IncrementalDomRenderer();
 const htmlToStringRenderer = new IncrementalDomRenderer();
 
 type LetFunction = (idom: IncrementalDomRenderer) => void;
+
+/**
+ * A template acceptor is an object that a template can receive context from.
+ * This acceptor receive `template.bind(acceptor)` and the template will use
+ * state and data fields from the acceptor.
+ */
+interface TemplateAcceptor<TDATA extends {}> {
+  template: IdomTemplate<TDATA>;
+  renderInternal(renderer: IncrementalDomRenderer, data: TDATA): void;
+  render(renderer?: IncrementalDomRenderer): void;
+}
 
 attributes['checked'] =
     // tslint:disable-next-line:no-any
@@ -79,10 +90,10 @@ incrementaldom.setKeyAttributeName('soy-server-key');
  * one. Afterwards, it queues up a Soy element (see docs for queueSoyElement)
  * and then proceeds to render the Soy element.
  */
-function handleSoyElement<DATA, T extends SoyElement<DATA, {}>>(
+function handleSoyElement<T extends TemplateAcceptor<{}>>(
     incrementaldom: IncrementalDomRenderer, elementClassCtor: new () => T,
-    firstElementKey: string, tagName: string, data: DATA, ijData: IjData,
-    template: IdomTemplate<DATA>) {
+    firstElementKey: string, tagNameOrCtor: string|(new () => T), data: {},
+    ijData: IjData, template: IdomTemplate<unknown>): T|null {
   // If we're just testing truthiness, record an element but don't do anythng.
   if (incrementaldom instanceof FalsinessRenderer) {
     incrementaldom.open('div');
@@ -90,26 +101,65 @@ function handleSoyElement<DATA, T extends SoyElement<DATA, {}>>(
     return null;
   }
   const soyElementKey = firstElementKey + incrementaldom.getCurrentKeyStack();
+  const isCustomElement = tagNameOrCtor === elementClassCtor;
 
-  const element = incrementaldom.open(tagName, firstElementKey);
+  /**
+   * Open the element early in order to execute lifeycle hooks. Suppress the
+   * next element open since we've already opened it.
+   */
+  const element = incrementaldom.open(
+      tagNameOrCtor as string | ElementConstructor, firstElementKey);
   const oldOpen = incrementaldom.open;
-  incrementaldom.open = (tagName, soyElementKey) => {
-    if (tagName !== tagName || soyElementKey !== firstElementKey) {
-      throw new Error('Expected tag name and key to match.');
+  incrementaldom.open = (tagNameOrCtor, soyElementKey) => {
+    if (element) {
+      if ((isCustomElement ? (element.tagName.toLowerCase()) :
+                             tagNameOrCtor) !== tagNameOrCtor ||
+          soyElementKey !== firstElementKey) {
+        throw new Error('Expected tag name and key to match.');
+      }
     }
     incrementaldom.open = oldOpen;
     return element;
   };
-  let soyElement: T;
+  if (!element) {
+    // Template still needs to execute in order to trigger logging.
+    if (isCustomElement) {
+      template = template.bind(new elementClassCtor());
+    } else {
+      const soyElement =
+          new elementClassCtor() as unknown as SoyElement<{}, {}>;
+      soyElement.data = data;
+      soyElement.ijData = ijData;
+      template = template.bind(soyElement);
+    }
+    template(incrementaldom, data, ijData);
+    return null;
+  }
+  if (isCustomElement) {
+    const customEl = element as unknown as T;
+    customEl.template = template.bind(element);
+    if (!customEl.renderInternal) {
+      customEl.renderInternal =
+          customEl.renderInternal || ((idomRenderer, data) => {
+            customEl.template(idomRenderer, data);
+          });
+      customEl.render = (renderer = new IncrementalDomRenderer()) =>
+          patchOuter(element, () => {
+            customEl.renderInternal(renderer, customEl);
+          });
+    }
+    return customEl;
+  }
+  let soyElement: SoyElement<{}, {}>;
   if (!(getSoyUntyped(element as HTMLElement) instanceof elementClassCtor)) {
-    soyElement = new elementClassCtor();
+    soyElement = new elementClassCtor() as unknown as SoyElement<{}, {}>;
     soyElement.data = data;
     soyElement.ijData = ijData;
     soyElement.key = soyElementKey;
     // NOTE(b/166257386): Without this, SoyElement re-renders don't have logging
     soyElement.setLogger(incrementaldom.getLogger());
   } else {
-    soyElement = getSoyUntyped(element as HTMLElement) as unknown as T;
+    soyElement = getSoyUntyped(element)!;
   }
   soyElement.template = template.bind(soyElement);
   const maybeSkip =
@@ -120,7 +170,7 @@ function handleSoyElement<DATA, T extends SoyElement<DATA, {}>>(
     incrementaldom.open = oldOpen;
     return null;
   }
-  return soyElement;
+  return soyElement as unknown as T;
 }
 
 // tslint:disable-next-line:no-any Attaching arbitrary attributes to function.

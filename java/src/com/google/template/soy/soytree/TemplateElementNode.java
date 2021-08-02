@@ -33,6 +33,11 @@ import javax.annotation.Nullable;
  */
 public final class TemplateElementNode extends TemplateNode implements ExprHolderNode {
 
+  // These two fields represent a possible alternate implementation for preserving state (as opposed
+  // to a Soy element). For more information, see go/wit-block-design
+  public final String jsnamespace;
+  public final String jsclass;
+
   /**
    * Main constructor. This is package-private because TemplateElementNode instances should be built
    * using TemplateElementNodeBuilder.
@@ -45,8 +50,12 @@ public final class TemplateElementNode extends TemplateNode implements ExprHolde
   TemplateElementNode(
       TemplateElementNodeBuilder nodeBuilder,
       SoyFileHeaderInfo soyFileHeaderInfo,
-      @Nullable ImmutableList<TemplateHeaderVarDefn> params) {
+      @Nullable ImmutableList<TemplateHeaderVarDefn> params,
+      @Nullable String jsnamespace,
+      @Nullable String jsclass) {
     super(nodeBuilder, "element", soyFileHeaderInfo, Visibility.PUBLIC, params);
+    this.jsnamespace = jsnamespace;
+    this.jsclass = jsclass;
   }
 
   /**
@@ -56,6 +65,8 @@ public final class TemplateElementNode extends TemplateNode implements ExprHolde
    */
   private TemplateElementNode(TemplateElementNode orig, CopyState copyState) {
     super(orig, copyState);
+    this.jsnamespace = orig.jsnamespace;
+    this.jsclass = orig.jsclass;
   }
 
   /** Returns the state variables from template header. */

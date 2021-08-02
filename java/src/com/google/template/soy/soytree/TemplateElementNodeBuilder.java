@@ -45,6 +45,9 @@ public final class TemplateElementNodeBuilder
 
   private List<CommandTagAttribute> attrs = ImmutableList.of();
 
+  public String jsNamespace = null;
+  public String jsClass = null;
+
   /** @param soyFileHeaderInfo Info from the containing Soy file's header declarations. */
   public TemplateElementNodeBuilder(
       SoyFileHeaderInfo soyFileHeaderInfo, ErrorReporter errorReporter) {
@@ -74,8 +77,14 @@ public final class TemplateElementNodeBuilder
         this.errorReporter.report(
             attr.getName().location(), BANNED_ATTRIBUTE_NAMES_ERROR, attr.getName().identifier());
       }
+      if (attr.getName().identifier().equals("jsnamespace")) {
+        jsNamespace = attr.getValue();
+      }
+      if (attr.getName().identifier().equals("jsclass")) {
+        jsClass = attr.getValue();
+      }
     }
-    return new TemplateElementNode(this, soyFileHeaderInfo, params);
+    return new TemplateElementNode(this, soyFileHeaderInfo, params, jsNamespace, jsClass);
   }
 
   @Override

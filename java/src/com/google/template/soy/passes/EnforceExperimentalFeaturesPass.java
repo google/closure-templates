@@ -25,6 +25,7 @@ import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
+import com.google.template.soy.soytree.TemplateElementNode;
 
 /**
  * A pass that ensures that experimental features are only used when enabled.
@@ -39,6 +40,9 @@ final class EnforceExperimentalFeaturesPass implements CompilerFilePass {
   private static final SoyErrorKind NON_NULL_ASSERTION_BANNED =
       SoyErrorKind.of(
           "Non-null assertion operator not supported, use the ''checkNotNull'' function instead.");
+
+  private static final SoyErrorKind WIT_BLOCK_BANNED =
+      SoyErrorKind.of("Do not use jsnamespace or jsclass. They are currently experimental.");
 
   private final ImmutableSet<String> features;
   private final ErrorReporter reporter;
@@ -58,6 +62,15 @@ final class EnforceExperimentalFeaturesPass implements CompilerFilePass {
               assertNonNullOpNode ->
                   reporter.report(
                       assertNonNullOpNode.getSourceLocation(), NON_NULL_ASSERTION_BANNED));
+    }
+    if (!features.contains("enableWitBlock")) {
+      SoyTreeUtils.allNodesOfType(file, TemplateElementNode.class)
+          .forEach(
+              elementNode -> {
+                if (elementNode.jsnamespace != null) {
+                  reporter.report(elementNode.getSourceLocation(), WIT_BLOCK_BANNED);
+                }
+              });
     }
   }
 }

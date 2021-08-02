@@ -17,11 +17,22 @@ declare global {
   }
 }
 
+/** Constructor for a custom element. */
+export interface ElementConstructor {
+  new(): Element;
+}
+
 const patchConfig: incrementaldom.PatchConfig = {
   matches:
       (matchNode, nameOrCtor, expectedNameOrCtor, proposedKey,
-       currentPointerKey) => nameOrCtor === expectedNameOrCtor &&
-      isMatchingKey(proposedKey, currentPointerKey)
+       currentPointerKey) => {
+        if (typeof expectedNameOrCtor === 'function' &&
+            matchNode instanceof Element) {
+          expectedNameOrCtor = matchNode.tagName.toLowerCase();
+        }
+        return nameOrCtor === expectedNameOrCtor &&
+            isMatchingKey(proposedKey, currentPointerKey);
+      }
 };
 
 /** PatchInner using Soy-IDOM semantics. */
@@ -38,8 +49,9 @@ export const patch = patchInner;
 export const attributes = incrementaldom.createAttributeMap();
 
 interface IdomRendererApi {
-  open(nameOrCtor: string, key?: string): void|HTMLElement;
-  openSSR(nameOrCtor: string, key?: string, data?: unknown): boolean;
+  open(nameOrCtor: string|ElementConstructor, key?: string): void|HTMLElement;
+  openSSR(nameOrCtor: string|ElementConstructor, key?: string, data?: unknown):
+      boolean;
   visit(el: void|HTMLElement): void;
   pushManualKey(key: incrementaldom.Key): void;
   popManualKey(): void;
@@ -92,7 +104,7 @@ export class IncrementalDomRenderer implements IdomRendererApi {
    * Pushes/pops the given key from `keyStack` (versus `Array#concat`)
    * to avoid allocating a new array for every element open.
    */
-  open(nameOrCtor: string, key = ''): HTMLElement|void {
+  open(nameOrCtor: string|ElementConstructor, key = ''): HTMLElement|void {
     const el = incrementaldom.open(nameOrCtor, this.getNewKey(key));
     this.visit(el);
     return el;
@@ -103,7 +115,8 @@ export class IncrementalDomRenderer implements IdomRendererApi {
    * at server-side rendering.
    * For more information, see go/typed-html-templates.
    */
-  openSSR(nameOrCtor: string, key = '', data: unknown = null) {
+  openSSR(
+      nameOrCtor: string|ElementConstructor, key = '', data: unknown = null) {
     key = this.getNewKey(key);
     const el = incrementaldom.open(nameOrCtor, key);
     this.visit(el);
@@ -305,11 +318,11 @@ export class NullRenderer extends IncrementalDomRenderer {
     this.setLogger(renderer.getLogger());
   }
 
-  open(nameOrCtor: string, key?: string) {
+  open(nameOrCtor: string|ElementConstructor, key?: string) {
     return undefined;
   }
 
-  openSSR(nameOrCtor: string, key?: string) {
+  openSSR(nameOrCtor: string|ElementConstructor, key?: string) {
     return true;
   }
 
@@ -447,12 +460,12 @@ export class FalsinessRenderer implements IdomRendererApi {
     return this.rendered;
   }
 
-  open(nameOrCtor: string, key?: string) {
+  open(nameOrCtor: string|ElementConstructor, key?: string) {
     this.rendered = true;
     return undefined;
   }
 
-  openSSR(nameOrCtor: string, key?: string) {
+  openSSR(nameOrCtor: string|ElementConstructor, key?: string) {
     this.rendered = true;
     // Always skip, since we already know that we rendered things.
     return false;
