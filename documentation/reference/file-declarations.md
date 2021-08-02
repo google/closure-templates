@@ -31,7 +31,8 @@ multiple files.
 
 ## import
 
-This command allows you to import protos and templates from other Soy files.
+This command allows you to import templates and external functions from other
+Soy files, and protos.
 
 Syntax:
 

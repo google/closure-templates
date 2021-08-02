@@ -8,11 +8,10 @@ Similar to other programing languages, Soy functions are a way to perform
 particular tasks in your Soy templates. Examples include checking the length of
 a list, basic number operations such as rounding and flooring, etc.
 
-Since Soy is a template language, functions are *not* defined/declared in
-templates. Built-in functions are included in the compiler, and custom functions
-(aka, plugins) can be implemented by developers in multiple backends.
+Functions are either built in (included in the compiler) or custom (implemented
+by the user).
 
-## What does a function look like?
+## How is a function called? {#call}
 
 Functions are called from within expressions, which perform operations, and are
 evaluated for their results or side-effects (or both). Expressions can be used
@@ -23,30 +22,42 @@ you'd want them to work, they just do.)
 For example:
 
 ```soy
-{param myStringLength: (strLen($myString)) /}
+{param myText: htmlToText($html)) /}
 ```
 
-The above param finds the length of `$myString`, and assigns it to a new
-parameter `$myStringLength`.
+The above code calls `htmlToText()` to convert the html value `$html` to text,
+and assigns it to a new parameter `$myText`.
 
 ## What types of functions are there?
 
-There are two main types of functions in Soy, ones included in the compiler,
-simply known as functions, and custom functions known as plugins.
+There are three types of functions: built-in functions, external functions, and
+plugins. These differ only in the way they are defined. All functions are
+[called](#call) in the same way.
 
-See [reference](../reference/functions) for full list of built-in functions.
+### Built-in functions
+
+Built-in functions are defined in the compiler. For a complete list, see
+[Methods and Functions](../reference/functions).
+
+### External functions
+
+External functions are written by the user in one or more host languages (Java,
+JavaScript, Python) and are made available to Soy templates via the `{extern}`
+command. For more information, see
+[Creating an External Function](../dev/externs).
 
 ### Plugins
 
-A plugin is a custom Soy function that isn't hard-coded in the compiler.
-Developers can write plugins for any additional functions, print directives, or
-other message file formats. (Print directives are post-processing on the output
-of a print command.)
+**Warning:** For new custom functions, use external functions instead of
+plugins.
 
-Developers implement the plugin outside of the Soy codebase, and Soy provides an
-API to connect the implementations so that the custom functions can be used in
-templates. To learn how to setup a plugin, see [the dev guide](../dev/plugins)
-section for details.
+Users can use the plugin mechanism to write custom functions, print directives,
+or other message file formats. (Print directives perform post-processing on the
+output of a print command.)
+
+Users implement the plugin in one or more host languages and are made available
+to Soy templates via an API. For more information, see
+[Creating a Plugin](../dev/plugins).
 
 <br>
 

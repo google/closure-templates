@@ -425,9 +425,9 @@ Function calls consist of an identifier with a number of positional parameters:
 
 `<IDENT>(<EXPR>,...)`
 
-See the [dev guide](../dev/plugins.md) for how to register a custom function and
-the [functions reference](functions.md) for a list of all functions that are
-available by default.
+See the [dev guide](../dev/externs.md) for how to define a custom external
+function and the [functions reference](functions.md) for a list of all functions
+that are available by default.
 
 For example:
 

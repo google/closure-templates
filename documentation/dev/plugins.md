@@ -1,11 +1,15 @@
 [TOC]
 
-# Creating a Custom Plugin
+# Creating a Plugin
 
-Soy allows users to write functions that templates can call. This is useful for
-when there is some logic that is difficult or impossible to express using Soy
-language features. Soy actually has a number of these built in. For example, the
-`mapKeys` function which can be used to get the keys of a map for iteration.
+**Warning:** For new custom functions, use an [external function](externs.md)
+instead of a plugin.
+
+Soy allows users to write custom functions that templates can call. This is
+useful for when there is some logic that is difficult or impossible to express
+using Soy language features. Soy actually has a number of these built in. For
+example, the `mapKeys` function which can be used to get the keys of a map for
+iteration.
 
 ```soy
 {template .foo}
@@ -17,7 +21,11 @@ language features. Soy actually has a number of these built in. For example, the
 ```
 
 However, it isn't possible for Soy to supply all possible desired functionality
-so Soy allows users to supply custom plugin function definitions.
+so Soy allows users to write their own functions.
+
+There are two ways to define custom functions: via the
+[`{extern}` command](externs) and via plugins (this page). All new custom
+functions should use the `{extern}` command.
 
 ## When to define a custom function
 
