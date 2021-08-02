@@ -15,6 +15,7 @@
  */
 package com.google.template.soy.plugin.java;
 
+import com.google.common.base.Preconditions;
 import java.util.List;
 
 /** Collects multiple MethodCheckers and delegates to each of them. */
@@ -28,6 +29,10 @@ public final class DelegatingMethodChecker implements MethodChecker {
   @Override
   public Response findMethod(
       String className, String methodName, String returnType, List<String> arguments) {
+    if (methodCheckers.isEmpty()) {
+      return Response.error(Code.NO_SUCH_CLASS);
+    }
+
     Response lastResponse = null;
     for (MethodChecker methodChecker : methodCheckers) {
       lastResponse = methodChecker.findMethod(className, methodName, returnType, arguments);
@@ -35,6 +40,6 @@ public final class DelegatingMethodChecker implements MethodChecker {
         return lastResponse;
       }
     }
-    return lastResponse;
+    return Preconditions.checkNotNull(lastResponse);
   }
 }

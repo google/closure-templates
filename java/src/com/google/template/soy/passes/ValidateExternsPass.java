@@ -79,7 +79,9 @@ class ValidateExternsPass implements CompilerFilePass {
   private static final SoyErrorKind JS_IMPL_OVERLOADS_MUST_MATCH =
       SoyErrorKind.of("Overloads for the same extern symbol must have the same jsimpl.");
   private static final SoyErrorKind NO_SUCH_JAVA_CLASS =
-      SoyErrorKind.of("Java implementation class not loaded.");
+      SoyErrorKind.of(
+          "Java implementation class not loaded."
+          );
   private static final SoyErrorKind NO_SUCH_JAVA_METHOD_NAME =
       SoyErrorKind.of(
           "No method ''{0}'' exists on implementation class.{1}", StyleAllowance.NO_PUNCTUATION);
