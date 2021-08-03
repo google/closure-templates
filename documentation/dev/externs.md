@@ -74,6 +74,9 @@ The most common way to do this is to implement the function as a `public static`
 method in some Java class.
 
 ```java
+package com.google.apps.framework.modulesets.soyplugins;
+
+...
 
 public class StaticRuntime {
 
