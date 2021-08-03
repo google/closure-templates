@@ -38,14 +38,20 @@ public abstract class AbstractMethodChecker implements MethodChecker {
     MethodSignatures methodsForSig =
         signatures.forPartial(PartialSignature.create(methodName, ImmutableList.copyOf(arguments)));
     if (methodsForSig.equals(MethodSignatures.EMPTY)) {
-      if (signatures.allPartials().stream().anyMatch(p -> p.methodName().equals(methodName))) {
-        return Response.error(Code.NO_SUCH_METHOD_SIG);
-      } else {
+      ImmutableList<PartialSignature> methodsMatchingName =
+          signatures.allPartials().stream()
+              .filter(p -> p.methodName().equals(methodName))
+              .collect(toImmutableList());
+      if (methodsMatchingName.isEmpty()) {
         return Response.error(
             Code.NO_SUCH_METHOD_NAME,
             signatures.allPartials().stream()
                 .map(PartialSignature::methodName)
                 .collect(toImmutableList()));
+      } else {
+        ImmutableList<String> suggestedSigs =
+            methodsMatchingName.stream().map(PartialSignature::toString).collect(toImmutableList());
+        return Response.error(Code.NO_SUCH_METHOD_SIG, suggestedSigs);
       }
     }
     ReadMethodData method = methodsForSig.forReturnType(returnType);

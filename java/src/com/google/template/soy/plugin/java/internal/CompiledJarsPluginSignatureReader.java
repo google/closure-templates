@@ -314,6 +314,11 @@ public class CompiledJarsPluginSignatureReader implements PluginSignatureReader,
 
     abstract ImmutableList<String> arguments();
 
+    @Override
+    public final String toString() {
+      return methodName() + "(" + String.join(", ", arguments()) + ")";
+    }
+
     static PartialSignature create(Method method) {
       return new AutoValue_CompiledJarsPluginSignatureReader_PartialSignature(
           method.getName(),

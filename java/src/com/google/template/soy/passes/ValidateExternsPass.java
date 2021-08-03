@@ -87,7 +87,8 @@ class ValidateExternsPass implements CompilerFilePass {
           "No method ''{0}'' exists on implementation class.{1}", StyleAllowance.NO_PUNCTUATION);
   private static final SoyErrorKind JAVA_METHOD_SIG_MISMATCH =
       SoyErrorKind.of(
-          "Method ''{0}'' of implementation class does not match the provided arguments.");
+          "Method ''{0}'' of implementation class does not match the provided arguments. Available"
+              + " signatures: {1}.");
   private static final SoyErrorKind JAVA_METHOD_TYPE_MISMATCH =
       SoyErrorKind.of("Attribute ''type'' should have value ''{0}''.");
   private static final SoyErrorKind JAVA_METHOD_RETURN_TYPE_MISMATCH =
@@ -225,7 +226,8 @@ class ValidateExternsPass implements CompilerFilePass {
         errorReporter.report(
             java.getAttributeValueLocation(JavaImplNode.PARAMS),
             JAVA_METHOD_SIG_MISMATCH,
-            java.methodName());
+            java.methodName(),
+            String.join(", ", response.getSuggesions()));
         break;
       case NO_SUCH_RETURN_TYPE:
         errorReporter.report(
