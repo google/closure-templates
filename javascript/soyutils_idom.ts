@@ -138,16 +138,6 @@ function handleSoyElement<T extends TemplateAcceptor<{}>>(
   if (isCustomElement) {
     const customEl = element as unknown as T;
     customEl.template = template.bind(element);
-    if (!customEl.renderInternal) {
-      customEl.renderInternal =
-          customEl.renderInternal || ((idomRenderer, data) => {
-            customEl.template(idomRenderer, data);
-          });
-      customEl.render = (renderer = new IncrementalDomRenderer()) =>
-          patchOuter(element, () => {
-            customEl.renderInternal(renderer, customEl);
-          });
-    }
     return customEl;
   }
   let soyElement: SoyElement<{}, {}>;
