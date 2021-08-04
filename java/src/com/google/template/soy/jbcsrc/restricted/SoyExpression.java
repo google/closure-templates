@@ -29,7 +29,6 @@ import com.google.template.soy.data.SoyProtoValue;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
-import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.FloatType;
 import com.google.template.soy.types.IntType;
@@ -423,7 +422,17 @@ public final class SoyExpression extends Expression {
       }
       throw new UnsupportedOperationException("Can't convert " + resultType() + " to a Number");
     }
-    return delegate.checkedCast(NumberData.class).invoke(MethodRef.SOY_VALUE_JAVA_NUMBER_VALUE);
+    return new Expression(BytecodeUtils.NUMBER_TYPE, features()) {
+      @Override
+      protected void doGen(CodeBuilder adapter) {
+        Label end = new Label();
+        delegate.gen(adapter);
+        BytecodeUtils.nullCoalesce(adapter, end);
+        adapter.checkCast(BytecodeUtils.NUMBER_DATA_TYPE);
+        MethodRef.SOY_VALUE_JAVA_NUMBER_VALUE.invokeUnchecked(adapter);
+        adapter.mark(end);
+      }
+    };
   }
 
   /**

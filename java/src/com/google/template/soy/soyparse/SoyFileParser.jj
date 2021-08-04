@@ -4980,12 +4980,7 @@ private FunctionTypeNode.Parameter FunctionParameter() :
   TypeNode parameterType;
 }
 {
-  (
-    parameterName = <IDENT>
-  |
-    parameterName = <ATTR_IDENT>
-  )
-
+  parameterName = <IDENT>
   <COLON>
   parameterType = TypeExpr()
 

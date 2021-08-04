@@ -49,6 +49,7 @@ import com.google.template.soy.data.internal.Converters;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
+import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.restricted.Expression.Feature;
@@ -100,6 +101,7 @@ public final class BytecodeUtils {
   public static final Type CLOSEABLE_TYPE = Type.getType(Closeable.class);
   public static final Type DIR_TYPE = Type.getType(Dir.class);
   public static final Type HASH_MAP_TYPE = Type.getType(HashMap.class);
+  public static final Type NUMBER_DATA_TYPE = Type.getType(NumberData.class);
   public static final Type INTEGER_DATA_TYPE = Type.getType(IntegerData.class);
   public static final Type FLOAT_DATA_TYPE = Type.getType(FloatData.class);
   public static final Type BOOLEAN_DATA_TYPE = Type.getType(BooleanData.class);

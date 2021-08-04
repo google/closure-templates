@@ -280,6 +280,16 @@ public abstract class MethodRef {
       create(JbcSrcRuntime.class, "listBoxValues", List.class);
   public static final MethodRef UNBOX_MAP =
       create(JbcSrcRuntime.class, "unboxMap", SoyMap.class, Class.class, Class.class);
+  public static final MethodRef SOY_VALUE_TO_BOXED_INTEGER =
+      create(JbcSrcRuntime.class, "toBoxedInteger", SoyValue.class);
+  public static final MethodRef SOY_VALUE_TO_BOXED_DOUBLE =
+      create(JbcSrcRuntime.class, "toBoxedDouble", SoyValue.class);
+  public static final MethodRef SOY_VALUE_TO_ENUM =
+      create(JbcSrcRuntime.class, "toEnum", SoyValue.class, Class.class);
+  public static final MethodRef SOY_VALUE_TO_BOXED_BOOLEAN =
+      create(JbcSrcRuntime.class, "toBoxedBoolean", SoyValue.class);
+  public static final MethodRef SOY_VALUE_TO_BOXED_LONG =
+      create(JbcSrcRuntime.class, "toBoxedLong", SoyValue.class);
 
   public static final MethodRef PARAM_STORE_SET_FIELD =
       create(

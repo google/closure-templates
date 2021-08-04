@@ -190,11 +190,11 @@ import {imageUrlFromOptions} from 'path/to/functions.soy';
 
 Soy type               | Allowed Java types                                          | Notes
 ---------------------- | ----------------------------------------------------------- | -----
-`int`                  | `int`, `java.lang.Integer`, `long`, `java.lang.Long`        | Integer overflow throws a runtime error.
-`float`                | `double`, `java.lang.Double`                                |
-`number`               | `double`, `java.lang.Double`, `java.lang.Number`            | `number` is an alias for `int\|float`.
+`int`                  | `int`\*, `java.lang.Integer`, `long`\*, `java.lang.Long`    | Integer overflow throws a runtime error.
+`float`                | `double`*, `java.lang.Double`                               |
+`number`               | `double`*, `java.lang.Double`, `java.lang.Number`           | `number` is an alias for `int\|float`.
 `string`               | `java.lang.String`                                          |
-`bool`                 | `boolean`, `java.lang.Boolean`                              |
+`bool`                 | `boolean`*, `java.lang.Boolean`                             |
 `Message`              | `com.google.protobuf.Message`                               |
 protos                 | the proto message Java type                                 |
 proto enums            | the proto enum Java type                                    |
@@ -205,3 +205,5 @@ proto enums            | the proto enum Java type                               
 `map<?,?>`             | `java.util.Map`, `com.google.common.collect.ImmutableMap`   | Same supported element types as list.
 unions                 | `java.lang.Object`, `com.google.template.soy.data.SoyData`  | All unions other than `int\|float`. Supported union members are: `int`, `float`, `string`, `bool`, proto, proto enum, `uri`, `trusted_resource_uri`, and `html`.
 `any`                  | `java.lang.Object`, `com.google.template.soy.data.SoyData`  |
+
+\* If the Soy type is nullable then the primitive Java type is not allowed.

@@ -290,10 +290,13 @@ class ValidateExternsPass implements CompilerFilePass {
           .build();
 
   private static boolean typesAreCompatible(Class<?> javaType, SoyType soyType) {
-    if (SoyTypes.isNullable(soyType)) {
+    boolean nullable = SoyTypes.isNullable(soyType);
+    boolean isPrimitive = Primitives.allPrimitiveTypes().contains(javaType);
+    if (nullable && isPrimitive) {
       return false;
     }
 
+    soyType = SoyTypes.removeNull(soyType);
     javaType = Primitives.wrap(javaType);
     switch (soyType.getKind()) {
       case INT:

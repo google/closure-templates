@@ -31,6 +31,9 @@ public final class SoyValueUnconverter {
   private SoyValueUnconverter() {}
 
   public static Object unconvert(SoyValueProvider provider) {
+    if (provider == null) {
+      return null;
+    }
     SoyValue soyValue = provider.resolve();
     if (soyValue instanceof NullData) {
       return null;

@@ -178,12 +178,13 @@ public final class ExternCompiler {
   }
 
   private static Expression adaptParameter(
-      Expression paramAsSoyType, TypeInfo javaTypeInfo, SoyType soyType) {
+      Expression param, TypeInfo javaTypeInfo, SoyType soyType) {
     Type javaType = javaTypeInfo.type();
     SoyExpression actualParam =
-        paramAsSoyType instanceof SoyExpression
-            ? (SoyExpression) paramAsSoyType
-            : SoyExpression.forRuntimeType(getRuntimeType(soyType), paramAsSoyType);
+        param instanceof SoyExpression
+            ? (SoyExpression) param
+            : SoyExpression.forRuntimeType(getRuntimeType(soyType), param);
+    boolean soyTypeBoxed = actualParam.soyRuntimeType().isBoxed();
 
     // If expecting a bland 'SoyData', just box the expr.
     if (javaType.equals(BytecodeUtils.SOY_DATA_TYPE)) {
@@ -201,10 +202,16 @@ public final class ExternCompiler {
     if (javaType.equals(Type.INT_TYPE)) {
       return MethodRef.LONG_TO_INT.invoke(actualParam);
     } else if (javaType.equals(BytecodeUtils.INTEGER_TYPE)) {
+      if (soyTypeBoxed) {
+        return MethodRef.SOY_VALUE_TO_BOXED_INTEGER.invoke(actualParam);
+      }
       return MethodRef.BOX_INTEGER.invoke(MethodRef.LONG_TO_INT.invoke(actualParam));
     } else if (javaType.equals(Type.DOUBLE_TYPE)) {
       return actualParam.coerceToDouble();
     } else if (javaType.equals(BytecodeUtils.BOXED_DOUBLE_TYPE)) {
+      if (soyTypeBoxed) {
+        return MethodRef.SOY_VALUE_TO_BOXED_DOUBLE.invoke(actualParam);
+      }
       return MethodRef.BOX_DOUBLE.invoke(actualParam.coerceToDouble());
     } else if (javaType.equals(BytecodeUtils.NUMBER_TYPE)) {
       return actualParam.coerceToNumber();
@@ -220,6 +227,11 @@ public final class ExternCompiler {
     // This is because Soy internally stores enums as ints. We know this is safe because we
     // already validated that the enum type matches the signature.
     if (soyType.getKind() == Kind.PROTO_ENUM) {
+      if (soyTypeBoxed) {
+        return MethodRef.SOY_VALUE_TO_ENUM.invoke(
+            actualParam,
+            BytecodeUtils.constant(BytecodeUtils.getTypeForClassName(javaType.getClassName())));
+      }
       return MethodRef.createStaticMethod(
               javaTypeInfo, new Method("forNumber", javaType, new Type[] {Type.INT_TYPE}))
           .invoke(BytecodeUtils.numericConversion(actualParam.unboxAsLong(), Type.INT_TYPE));
@@ -236,10 +248,16 @@ public final class ExternCompiler {
     if (javaType.equals(Type.BOOLEAN_TYPE)) {
       return actualParam.unboxAsBoolean();
     } else if (javaType.equals(BytecodeUtils.BOXED_BOOLEAN_TYPE)) {
+      if (soyTypeBoxed) {
+        return MethodRef.SOY_VALUE_TO_BOXED_BOOLEAN.invoke(actualParam);
+      }
       return MethodRef.BOX_BOOLEAN.invoke(actualParam.unboxAsBoolean());
     } else if (javaType.equals(Type.LONG_TYPE)) {
       return actualParam.unboxAsLong();
     } else if (javaType.equals(BytecodeUtils.BOXED_LONG_TYPE)) {
+      if (soyTypeBoxed) {
+        return MethodRef.SOY_VALUE_TO_BOXED_LONG.invoke(actualParam);
+      }
       return MethodRef.BOX_LONG.invoke(actualParam.unboxAsLong());
     } else if (javaType.equals(BytecodeUtils.STRING_TYPE)) {
       return actualParam.unboxAsString();
@@ -292,18 +310,10 @@ public final class ExternCompiler {
       return MethodRef.INT_TO_LONG.invoke(externCall);
     } else if (externType.equals(BytecodeUtils.BOXED_LONG_TYPE)) {
       return MethodRef.UNBOX_LONG.invoke(externCall);
-    } else if (externType.equals(BytecodeUtils.INTEGER_DATA_TYPE)) {
-      return MethodRef.SOY_VALUE_LONG_VALUE.invoke(externCall);
     } else if (externType.equals(BytecodeUtils.BOXED_DOUBLE_TYPE)) {
       return MethodRef.UNBOX_DOUBLE.invoke(externCall);
-    } else if (externType.equals(BytecodeUtils.FLOAT_DATA_TYPE)) {
-      return MethodRef.SOY_VALUE_FLOAT_VALUE.invoke(externCall);
     } else if (externType.equals(BytecodeUtils.BOXED_BOOLEAN_TYPE)) {
       return MethodRef.UNBOX_BOOLEAN.invoke(externCall);
-    } else if (externType.equals(BytecodeUtils.BOOLEAN_DATA_TYPE)) {
-      return MethodRef.SOY_VALUE_BOOLEAN_VALUE.invoke(externCall);
-    } else if (externType.equals(BytecodeUtils.STRING_DATA_TYPE)) {
-      return MethodRef.SOY_VALUE_STRING_VALUE.invoke(externCall);
     } else if (externType.equals(BytecodeUtils.OBJECT.type())
         || externType.equals(BytecodeUtils.NUMBER_TYPE)) {
       return MethodRef.CONVERT_OBJECT_TO_SOY_VALUE_PROVIDER.invoke(externCall);

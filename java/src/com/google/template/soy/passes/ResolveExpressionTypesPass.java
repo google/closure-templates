@@ -190,10 +190,10 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 /** Visitor which resolves all expression types. */
@@ -229,7 +229,8 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
   private static final SoyErrorKind NO_SUCH_EXTERN_OVERLOAD_1 =
       SoyErrorKind.of("Parameter types, {0}, do not satisfy the function signature, {1}.");
   private static final SoyErrorKind NO_SUCH_EXTERN_OVERLOAD_N =
-      SoyErrorKind.of("Parameter types, {0}, do not satisfy any of the function signatures [{1}].");
+      SoyErrorKind.of(
+          "Parameter types, {0}, do not uniquely satisfy one of the function signatures [{1}].");
   private static final SoyErrorKind UNNECESSARY_NULL_SAFE_ACCESS =
       SoyErrorKind.of("This null safe access is unnecessary, it is on a value that is non-null.");
   private static final SoyErrorKind DUPLICATE_KEY_IN_MAP_LITERAL =
@@ -1680,12 +1681,12 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
     }
 
     private boolean maybeSetExtern(FunctionNode node, List<ExternRef> externTypes) {
-      Optional<ExternRef> matching =
+      List<ExternRef> matching =
           externTypes.stream()
               .filter(t -> paramsMatchFunctionType(node.getParams(), t.signature()))
-              .findFirst();
-      if (matching.isPresent()) {
-        ExternRef ref = matching.get();
+              .collect(Collectors.toList());
+      if (matching.size() == 1) {
+        ExternRef ref = matching.get(0);
         node.setAllowedParamTypes(
             ref.signature().getParameters().stream().map(Parameter::getType).collect(toList()));
         node.setType(ref.signature().getReturnType());

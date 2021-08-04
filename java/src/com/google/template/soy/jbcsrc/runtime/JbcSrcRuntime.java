@@ -271,16 +271,25 @@ public final class JbcSrcRuntime {
 
   /** Returns true if the value is derived from a missing parameter */
   public static SafeUrl unboxSafeUrl(SoyValueProvider provider) {
+    if (provider == null) {
+      return null;
+    }
     SoyValue soyValue = provider.resolve();
     return ((SanitizedContent) soyValue).toSafeUrl();
   }
 
   public static SafeHtml unboxSafeHtml(SoyValueProvider provider) {
+    if (provider == null) {
+      return null;
+    }
     SoyValue soyValue = provider.resolve();
     return ((SanitizedContent) soyValue).toSafeHtml();
   }
 
   public static TrustedResourceUrl unboxTrustedResourceUrl(SoyValueProvider provider) {
+    if (provider == null) {
+      return null;
+    }
     SoyValue soyValue = provider.resolve();
     return ((SanitizedContent) soyValue).toTrustedResourceUrl();
   }
@@ -330,30 +339,83 @@ public final class JbcSrcRuntime {
   }
 
   public static ImmutableList<String> listUnboxStrings(List<SoyValue> values) {
+    if (values == null) {
+      return null;
+    }
     return values.stream().map(SoyValue::coerceToString).collect(toImmutableList());
   }
 
   public static ImmutableList<Long> listUnboxInts(List<SoyValue> values) {
+    if (values == null) {
+      return null;
+    }
     return values.stream().map(SoyValue::longValue).collect(toImmutableList());
   }
 
   public static ImmutableList<Double> listUnboxFloats(List<SoyValue> values) {
+    if (values == null) {
+      return null;
+    }
     return values.stream().map(SoyValue::floatValue).collect(toImmutableList());
   }
 
   public static ImmutableList<Boolean> listUnboxBools(List<SoyValue> values) {
+    if (values == null) {
+      return null;
+    }
     return values.stream().map(SoyValue::coerceToBoolean).collect(toImmutableList());
   }
 
   public static ImmutableList<Message> listUnboxProtos(List<SoyValue> values) {
+    if (values == null) {
+      return null;
+    }
     return values.stream().map(v -> ((SoyProtoValue) v).getProto()).collect(toImmutableList());
   }
 
   public static <T extends ProtocolMessageEnum> ImmutableList<T> listUnboxEnums(
       List<SoyValue> values, Class<T> type) {
+    if (values == null) {
+      return null;
+    }
     return values.stream()
         .map(v -> getEnumValue(type, (int) v.longValue()))
         .collect(toImmutableList());
+  }
+
+  public static Integer toBoxedInteger(SoyValue value) {
+    if (value == null) {
+      return null;
+    }
+    return value.integerValue();
+  }
+
+  public static Long toBoxedLong(SoyValue value) {
+    if (value == null) {
+      return null;
+    }
+    return value.longValue();
+  }
+
+  public static Double toBoxedDouble(SoyValue value) {
+    if (value == null) {
+      return null;
+    }
+    return value.floatValue();
+  }
+
+  public static Boolean toBoxedBoolean(SoyValue value) {
+    if (value == null) {
+      return null;
+    }
+    return value.coerceToBoolean();
+  }
+
+  public static <T> T toEnum(SoyValue value, Class<T> clazz) {
+    if (value == null) {
+      return null;
+    }
+    return getEnumValue(clazz, value.integerValue());
   }
 
   static <T> T getEnumValue(Class<T> clazz, int enumValue) {
@@ -366,6 +428,9 @@ public final class JbcSrcRuntime {
   }
 
   public static ImmutableMap<?, ?> unboxMap(SoyMap map, Class<?> keyType, Class<?> valueType) {
+    if (map == null) {
+      return null;
+    }
     return map.entrySet().stream()
         .collect(
             toImmutableMap(
@@ -374,7 +439,9 @@ public final class JbcSrcRuntime {
   }
 
   public static Object unboxMapItem(SoyValue value, Class<?> type) {
-    if (type == Long.class) {
+    if (value == null) {
+      return null;
+    } else if (type == Long.class) {
       return value.longValue();
     } else if (type == String.class) {
       return value.coerceToString();
@@ -392,6 +459,9 @@ public final class JbcSrcRuntime {
   }
 
   public static List<SoyValueProvider> listBoxValues(List<?> javaValues) {
+    if (javaValues == null) {
+      return null;
+    }
     return javaValues.stream().map(SoyValueConverter.INSTANCE::convert).collect(toList());
   }
 

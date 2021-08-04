@@ -1613,6 +1613,9 @@ final class ExpressionCompiler {
     }
 
     private static Expression adaptExternArg(SoyExpression soyExpression, SoyType type) {
+      SoyRuntimeType runtimeType = ExternCompiler.getRuntimeType(type);
+      Type javaType = runtimeType.runtimeType();
+
       if (type.getKind() == Kind.BOOL) {
         return soyExpression.coerceToBoolean().unboxAsBoolean();
       } else if (type.getKind() == Kind.INT) {
@@ -1622,7 +1625,7 @@ final class ExpressionCompiler {
       } else if (type.getKind() == Kind.FLOAT) {
         return soyExpression.coerceToDouble().unboxAsDouble();
       } else if (type.getKind() == Kind.ANY || type.getKind() == Kind.UNKNOWN) {
-        return soyExpression.boxAsSoyValueProvider().checkedCast(BytecodeUtils.SOY_VALUE_TYPE);
+        return soyExpression.box().checkedCast(BytecodeUtils.SOY_VALUE_TYPE);
       } else if (type.getKind() == Kind.PROTO) {
         return soyExpression
             .unboxAsMessage()
@@ -1634,8 +1637,9 @@ final class ExpressionCompiler {
         return soyExpression.unboxAsLong();
       } else if (type.getKind() == Kind.LIST) {
         return soyExpression.unboxAsList();
+      } else {
+        return soyExpression.box().checkedCast(javaType);
       }
-      return soyExpression.box();
     }
 
     // Proto initialization calls

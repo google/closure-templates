@@ -238,7 +238,6 @@ class TofuValueFactory extends JavaValueFactory {
   }
 
   private Object adaptParam(TofuJavaValue tofuVal, Class<?> type, Method method, int i) {
-    type = Primitives.unwrap(type);
     if (type == BidiGlobalDir.class) {
       return tofuVal.bidiGlobalDir();
     } else if (type == ULocale.class) {
@@ -272,13 +271,16 @@ class TofuValueFactory extends JavaValueFactory {
             : value.numberValue();
       } else if (type.isInstance(value)) {
         return value;
-      } else if (type == boolean.class) {
+      }
+
+      Class<?> primitiveType = Primitives.unwrap(type);
+      if (primitiveType == boolean.class) {
         return value.booleanValue();
-      } else if (type == int.class) {
+      } else if (primitiveType == int.class) {
         return value.integerValue();
-      } else if (type == long.class) {
+      } else if (primitiveType == long.class) {
         return value.longValue();
-      } else if (type == double.class) {
+      } else if (primitiveType == double.class) {
         return value.numberValue();
       } else if (type == String.class) {
         return value.stringValue();
