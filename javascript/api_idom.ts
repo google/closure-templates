@@ -26,7 +26,8 @@ const patchConfig: incrementaldom.PatchConfig = {
   matches:
       (matchNode, nameOrCtor, expectedNameOrCtor, proposedKey,
        currentPointerKey) => {
-        if (typeof expectedNameOrCtor === 'function' &&
+        if ((typeof nameOrCtor === 'function' ||
+             typeof expectedNameOrCtor === 'function') &&
             matchNode instanceof Element) {
           expectedNameOrCtor = matchNode.tagName.toLowerCase();
         }
