@@ -20,6 +20,7 @@ declare global {
 /** Constructor for a custom element. */
 export interface ElementConstructor {
   new(): Element;
+  tagName: string;
 }
 
 const patchConfig: incrementaldom.PatchConfig = {
@@ -29,6 +30,9 @@ const patchConfig: incrementaldom.PatchConfig = {
         if (typeof expectedNameOrCtor === 'function' &&
             matchNode instanceof Element) {
           expectedNameOrCtor = matchNode.tagName.toLowerCase();
+        }
+        if (typeof nameOrCtor === 'function') {
+          nameOrCtor = (nameOrCtor as ElementConstructor).tagName;
         }
         return nameOrCtor === expectedNameOrCtor &&
             isMatchingKey(proposedKey, currentPointerKey);
