@@ -243,6 +243,12 @@ public final class ExternCompiler {
       return MethodRef.UNBOX_SAFE_HTML.invoke(actualParam);
     } else if (javaType.equals(BytecodeUtils.TRUSTED_RESOURCE_URL_TYPE)) {
       return MethodRef.UNBOX_TRUSTED_RESOURCE_URL.invoke(actualParam);
+    } else if (javaType.equals(BytecodeUtils.SAFE_URL_PROTO_TYPE)) {
+      return MethodRef.UNBOX_SAFE_URL_PROTO.invoke(actualParam);
+    } else if (javaType.equals(BytecodeUtils.TRUSTED_RESOURCE_PROTO_TYPE)) {
+      return MethodRef.UNBOX_TRUSTED_RESOURCE_URL_PROTO.invoke(actualParam);
+    } else if (javaType.equals(BytecodeUtils.SAFE_HTML_PROTO_TYPE)) {
+      return MethodRef.UNBOX_SAFE_HTML_PROTO.invoke(actualParam);
     }
 
     if (javaType.equals(Type.BOOLEAN_TYPE)) {
@@ -322,8 +328,14 @@ public final class ExternCompiler {
       return MethodRef.LIST_BOX_VALUES.invoke(externCall);
     } else if (externType.equals(BytecodeUtils.SAFE_URL_TYPE)) {
       return MethodRef.CONVERT_SAFE_URL_TO_SOY_VALUE_PROVIDER.invoke(externCall);
+    } else if (externType.equals(BytecodeUtils.SAFE_URL_PROTO_TYPE)) {
+      return MethodRef.CONVERT_SAFE_URL_PROTO_TO_SOY_VALUE_PROVIDER.invoke(externCall);
+    } else if (externType.equals(BytecodeUtils.TRUSTED_RESOURCE_PROTO_TYPE)) {
+      return MethodRef.CONVERT_TRUSTED_RESOURCE_URL_PROTO_TO_SOY_VALUE_PROVIDER.invoke(externCall);
     } else if (externType.equals(BytecodeUtils.SAFE_HTML_TYPE)) {
       return MethodRef.CONVERT_SAFE_HTML_TO_SOY_VALUE_PROVIDER.invoke(externCall);
+    } else if (externType.equals(BytecodeUtils.SAFE_HTML_PROTO_TYPE)) {
+      return MethodRef.CONVERT_SAFE_HTML_PROTO_TO_SOY_VALUE_PROVIDER.invoke(externCall);
     } else if (externType.equals(BytecodeUtils.TRUSTED_RESOURCE_URL_TYPE)) {
       return MethodRef.CONVERT_TRUSTED_RESOURCE_URL_TO_SOY_VALUE_PROVIDER.invoke(externCall);
     }

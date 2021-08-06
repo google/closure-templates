@@ -25,8 +25,11 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.html.types.SafeHtml;
+import com.google.common.html.types.SafeHtmlProto;
 import com.google.common.html.types.SafeUrl;
+import com.google.common.html.types.SafeUrlProto;
 import com.google.common.html.types.TrustedResourceUrl;
+import com.google.common.html.types.TrustedResourceUrlProto;
 import com.google.common.primitives.Ints;
 import com.google.protobuf.Message;
 import com.google.protobuf.contrib.JavaQualifiedNames;
@@ -141,6 +144,10 @@ public final class BytecodeUtils {
       Type.getType(LoggableElementMetadata.class);
   public static final Type STACK_FRAME_TYPE = Type.getType(StackFrame.class);
   public static final Type SAFE_URL_TYPE = Type.getType(SafeUrl.class);
+  public static final Type SAFE_URL_PROTO_TYPE = Type.getType(SafeUrlProto.class);
+  public static final Type TRUSTED_RESOURCE_PROTO_TYPE =
+      Type.getType(TrustedResourceUrlProto.class);
+  public static final Type SAFE_HTML_PROTO_TYPE = Type.getType(SafeHtmlProto.class);
   public static final Type SAFE_HTML_TYPE = Type.getType(SafeHtml.class);
   public static final Type TRUSTED_RESOURCE_URL_TYPE = Type.getType(TrustedResourceUrl.class);
 

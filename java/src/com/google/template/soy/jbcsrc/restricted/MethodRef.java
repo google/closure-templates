@@ -24,8 +24,11 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.html.types.SafeHtml;
+import com.google.common.html.types.SafeHtmlProto;
 import com.google.common.html.types.SafeUrl;
+import com.google.common.html.types.SafeUrlProto;
 import com.google.common.html.types.TrustedResourceUrl;
+import com.google.common.html.types.TrustedResourceUrlProto;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.UnsignedInts;
 import com.google.common.primitives.UnsignedLongs;
@@ -530,6 +533,12 @@ public abstract class MethodRef {
       create(JbcSrcRuntime.class, "convertObjectToSoyValueProvider", Object.class);
   public static final MethodRef CONVERT_SAFE_URL_TO_SOY_VALUE_PROVIDER =
       create(SanitizedContents.class, "fromSafeUrl", SafeUrl.class);
+  public static final MethodRef CONVERT_SAFE_URL_PROTO_TO_SOY_VALUE_PROVIDER =
+      create(SanitizedContents.class, "fromSafeUrlProto", SafeUrlProto.class);
+  public static final MethodRef CONVERT_TRUSTED_RESOURCE_URL_PROTO_TO_SOY_VALUE_PROVIDER =
+      create(SanitizedContents.class, "fromTrustedResourceUrlProto", TrustedResourceUrlProto.class);
+  public static final MethodRef CONVERT_SAFE_HTML_PROTO_TO_SOY_VALUE_PROVIDER =
+      create(SanitizedContents.class, "fromSafeHtmlProto", SafeHtmlProto.class);
   public static final MethodRef CONVERT_SAFE_HTML_TO_SOY_VALUE_PROVIDER =
       create(SanitizedContents.class, "fromSafeHtml", SafeHtml.class);
   public static final MethodRef CONVERT_TRUSTED_RESOURCE_URL_TO_SOY_VALUE_PROVIDER =
@@ -572,6 +581,12 @@ public abstract class MethodRef {
       create(SoyValueUnconverter.class, "unconvert", SoyValueProvider.class);
   public static final MethodRef UNBOX_SAFE_URL =
       create(JbcSrcRuntime.class, "unboxSafeUrl", SoyValueProvider.class);
+  public static final MethodRef UNBOX_SAFE_HTML_PROTO =
+      create(JbcSrcRuntime.class, "unboxSafeHtmlProto", SoyValueProvider.class);
+  public static final MethodRef UNBOX_SAFE_URL_PROTO =
+      create(JbcSrcRuntime.class, "unboxSafeUrlProto", SoyValueProvider.class);
+  public static final MethodRef UNBOX_TRUSTED_RESOURCE_URL_PROTO =
+      create(JbcSrcRuntime.class, "unboxTrustedResourceUrlProto", SoyValueProvider.class);
   public static final MethodRef UNBOX_SAFE_HTML =
       create(JbcSrcRuntime.class, "unboxSafeHtml", SoyValueProvider.class);
   public static final MethodRef UNBOX_TRUSTED_RESOURCE_URL =

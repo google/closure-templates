@@ -22,7 +22,10 @@ import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import com.google.common.html.types.SafeHtml;
+import com.google.common.html.types.SafeHtmlProto;
 import com.google.common.html.types.SafeUrl;
+import com.google.common.html.types.SafeUrlProto;
 import com.google.common.primitives.Primitives;
 import com.google.protobuf.Message;
 import com.google.protobuf.ProtocolMessageEnum;
@@ -306,16 +309,22 @@ class TofuValueFactory extends JavaValueFactory {
                     toImmutableMap(
                         e -> adaptParamItem(e.getKey(), mapType.getKeyType()),
                         e -> adaptParamItem(e.getValue(), mapType.getValueType())));
-      } else if (Message.class.isAssignableFrom(type)) {
-        return type.cast(((SoyProtoValue) value).getProto());
       } else if (type.isEnum() && ProtocolMessageEnum.class.isAssignableFrom(type)) {
         try {
           return type.getDeclaredMethod("forNumber", int.class).invoke(null, value.integerValue());
         } catch (ReflectiveOperationException roe) {
           throw RenderException.create("Invalid parameter: " + tofuVal, roe);
         }
+      } else if (type == SafeHtml.class) {
+        return ((SanitizedContent) value).toSafeHtml();
       } else if (type == SafeUrl.class) {
         return ((SanitizedContent) value).toSafeUrl();
+      } else if (type == SafeUrlProto.class) {
+        return ((SanitizedContent) value).toSafeUrlProto();
+      } else if (type == SafeHtmlProto.class) {
+        return ((SanitizedContent) value).toSafeHtmlProto();
+      } else if (Message.class.isAssignableFrom(type)) {
+        return type.cast(((SoyProtoValue) value).getProto());
       } else {
         throw new UnsupportedOperationException(
             "cannot call method "
