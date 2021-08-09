@@ -467,6 +467,8 @@ long namespaces easier. For example,
 When the css selector is prefixed with a percent symbol, Soy will use the
 following rules to decide what to do:
 
+1.  If there is a `cssprefix` attribute on the `namespace`, use it for the
+    prefix
 1.  If there is a `cssbase` attribute on the `template`, use it for the prefix
 1.  If there is a `cssbase` attribute on the `namespace`, use it for the prefix
 1.  Otherwise use the first `requirecss` namespace defined on the `namespace`

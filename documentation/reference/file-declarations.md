@@ -13,12 +13,30 @@ Syntax (basic form):
 With all optional attributes:
 
 ```soy
-{namespace <namespace> requirecss="<NAMESPACE>.<CSS_ELEMENT>" cssbase="<NAMESPACE>.<CSS_BASE>"}
+{namespace <namespace> requirecsspath="<CSS_FILE>" cssprefix="<PREFIX>" requirecss="<NAMESPACE>.<CSS_ELEMENT>" cssbase="<NAMESPACE>.<CSS_BASE>"}
 ```
 
 These are the `namespace` tag's attributes:
 
-<!--#include file="common-attributes-include.md"-->
+*   `requirecsspath` takes a list of absolute and/or relative paths for CSS
+    files, without their file extensions. These can be either GSS or Sass files.
+    This does NOT have any autoprefix behavior. Use of `cssbase` or `cssprefix`
+    is required to autoprefix.
+
+*   `cssprefix`: takes an explicit prefix to use for autoprefixing in
+    [`css` function](functions.md#css) calls.
+
+*   `requirecss`: Deprecated. Use `requirecsspath` instead.
+
+    Takes a list of CSS namespaces (dotted identifiers). This is used to add
+    `@requirecss` annotations in the generated JavaScript. Also, if there is no
+    `cssbase` attribute, the first `requirecss` namespace can be used for
+    autoprefixing in [`css` function](functions.md#css) calls.
+
+*   `cssbase`: Deprecated. Use `cssprefix` instead.
+
+    Takes a single CSS namespace (dotted identifier). This is used for
+    autoprefixing in [`css` function](functions.md#css) calls.
 
 This command is required at the start of every template file. It declares the
 namespace for the file, which serves as the common prefix for the full name of
