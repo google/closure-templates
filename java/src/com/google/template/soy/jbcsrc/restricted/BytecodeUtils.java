@@ -139,6 +139,7 @@ public final class BytecodeUtils {
   public static final Type BOXED_LONG_TYPE = Type.getType(Long.class);
   public static final Type BOXED_BOOLEAN_TYPE = Type.getType(Boolean.class);
   public static final Type BOXED_DOUBLE_TYPE = Type.getType(Double.class);
+  public static final Type BOXED_FLOAT_TYPE = Type.getType(Float.class);
   public static final Type NUMBER_TYPE = Type.getType(Number.class);
   public static final Type LOGGABLE_ELEMENT_METADATA_TYPE =
       Type.getType(LoggableElementMetadata.class);
@@ -444,7 +445,7 @@ public final class BytecodeUtils {
    * @throws IllegalArgumentException if either the expression or the target type is not a numeric
    *     primitive
    */
-  public static Expression numericConversion(final Expression expr, final Type to) {
+  public static Expression numericConversion(Expression expr, Type to) {
     if (to.equals(expr.resultType())) {
       return expr;
     }

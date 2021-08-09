@@ -364,10 +364,6 @@ public final class JbcSrcRuntime {
     return (int) value;
   }
 
-  public static long intToLong(int value) {
-    return value;
-  }
-
   public static ImmutableList<String> listUnboxStrings(List<SoyValue> values) {
     if (values == null) {
       return null;
@@ -432,6 +428,13 @@ public final class JbcSrcRuntime {
       return null;
     }
     return value.floatValue();
+  }
+
+  public static Float toBoxedFloat(SoyValue value) {
+    if (value == null) {
+      return null;
+    }
+    return (float) value.floatValue();
   }
 
   public static Boolean toBoxedBoolean(SoyValue value) {

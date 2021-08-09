@@ -287,6 +287,8 @@ public abstract class MethodRef {
       create(JbcSrcRuntime.class, "toBoxedInteger", SoyValue.class);
   public static final MethodRef SOY_VALUE_TO_BOXED_DOUBLE =
       create(JbcSrcRuntime.class, "toBoxedDouble", SoyValue.class);
+  public static final MethodRef SOY_VALUE_TO_BOXED_FLOAT =
+      create(JbcSrcRuntime.class, "toBoxedFloat", SoyValue.class);
   public static final MethodRef SOY_VALUE_TO_ENUM =
       create(JbcSrcRuntime.class, "toEnum", SoyValue.class, Class.class);
   public static final MethodRef SOY_VALUE_TO_BOXED_BOOLEAN =
@@ -551,7 +553,6 @@ public abstract class MethodRef {
       create(JbcSrcRuntime.class, "soyValueProviderOrNull", SoyValueProvider.class);
 
   public static final MethodRef LONG_TO_INT = create(JbcSrcRuntime.class, "longToInt", long.class);
-  public static final MethodRef INT_TO_LONG = create(JbcSrcRuntime.class, "intToLong", int.class);
 
   public static final MethodRef SOY_VALUE_PROVIDER_STATUS =
       create(SoyValueProvider.class, "status").asNonNullable();
@@ -570,11 +571,14 @@ public abstract class MethodRef {
       create(Long.class, "valueOf", long.class).asNonNullable();
   public static final MethodRef BOX_DOUBLE =
       create(Double.class, "valueOf", double.class).asNonNullable();
+  public static final MethodRef BOX_FLOAT =
+      create(Float.class, "valueOf", float.class).asNonNullable();
   public static final MethodRef BOX_BOOLEAN =
       create(Boolean.class, "valueOf", boolean.class).asNonNullable();
   public static final MethodRef UNBOX_INTEGER = create(Integer.class, "longValue").asNonNullable();
   public static final MethodRef UNBOX_LONG = create(Long.class, "longValue").asNonNullable();
   public static final MethodRef UNBOX_DOUBLE = create(Double.class, "doubleValue").asNonNullable();
+  public static final MethodRef UNBOX_FLOAT = create(Float.class, "doubleValue").asNonNullable();
   public static final MethodRef UNBOX_BOOLEAN =
       create(Boolean.class, "booleanValue").asNonNullable();
   public static final MethodRef UNBOX_OBJECT =

@@ -241,6 +241,9 @@ class TofuValueFactory extends JavaValueFactory {
   }
 
   private Object adaptParam(TofuJavaValue tofuVal, Class<?> type, Method method, int i) {
+    // Some conversions here are only supported in the newer extern API, not the older plugin API.
+    boolean isExternApi = externSig != null;
+
     if (type == BidiGlobalDir.class) {
       return tofuVal.bidiGlobalDir();
     } else if (type == ULocale.class) {
@@ -266,9 +269,9 @@ class TofuValueFactory extends JavaValueFactory {
                   + "]");
         }
         return null;
-      } else if (externSig != null && type == Object.class) {
+      } else if (isExternApi && type == Object.class) {
         return SoyValueUnconverter.unconvert(value);
-      } else if (externSig != null && type == Number.class) {
+      } else if (isExternApi && type == Number.class) {
         return value instanceof NumberData
             ? ((NumberData) value).javaNumberValue()
             : value.numberValue();
@@ -285,10 +288,12 @@ class TofuValueFactory extends JavaValueFactory {
         return value.longValue();
       } else if (primitiveType == double.class) {
         return value.numberValue();
+      } else if (primitiveType == float.class) {
+        return (float) value.numberValue();
       } else if (type == String.class) {
         return value.stringValue();
       } else if (type == List.class || type == ImmutableList.class) {
-        if (externSig != null) {
+        if (isExternApi) {
           return ((SoyList) value)
               .asJavaList().stream()
                   .map(
@@ -301,7 +306,7 @@ class TofuValueFactory extends JavaValueFactory {
         } else {
           return ((SoyList) value).asJavaList();
         }
-      } else if ((type == Map.class || type == ImmutableMap.class) && externSig != null) {
+      } else if ((type == Map.class || type == ImmutableMap.class) && isExternApi) {
         MapType mapType = (MapType) externSig.getParameters().get(i).getType();
         return ((SoyMap) value)
             .entrySet().stream()

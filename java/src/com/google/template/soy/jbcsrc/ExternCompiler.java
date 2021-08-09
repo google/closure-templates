@@ -213,6 +213,14 @@ public final class ExternCompiler {
         return MethodRef.SOY_VALUE_TO_BOXED_DOUBLE.invoke(actualParam);
       }
       return MethodRef.BOX_DOUBLE.invoke(actualParam.coerceToDouble());
+    } else if (javaType.equals(Type.FLOAT_TYPE)) {
+      return BytecodeUtils.numericConversion(actualParam.coerceToDouble(), Type.FLOAT_TYPE);
+    } else if (javaType.equals(BytecodeUtils.BOXED_FLOAT_TYPE)) {
+      if (soyTypeBoxed) {
+        return MethodRef.SOY_VALUE_TO_BOXED_FLOAT.invoke(actualParam);
+      }
+      return MethodRef.BOX_FLOAT.invoke(
+          BytecodeUtils.numericConversion(actualParam.coerceToDouble(), Type.FLOAT_TYPE));
     } else if (javaType.equals(BytecodeUtils.NUMBER_TYPE)) {
       return actualParam.coerceToNumber();
     }
@@ -313,11 +321,15 @@ public final class ExternCompiler {
     if (externType.equals(BytecodeUtils.INTEGER_TYPE)) {
       return MethodRef.UNBOX_INTEGER.invoke(externCall);
     } else if (externType.equals(Type.INT_TYPE)) {
-      return MethodRef.INT_TO_LONG.invoke(externCall);
+      return BytecodeUtils.numericConversion(externCall, Type.LONG_TYPE);
     } else if (externType.equals(BytecodeUtils.BOXED_LONG_TYPE)) {
       return MethodRef.UNBOX_LONG.invoke(externCall);
     } else if (externType.equals(BytecodeUtils.BOXED_DOUBLE_TYPE)) {
       return MethodRef.UNBOX_DOUBLE.invoke(externCall);
+    } else if (externType.equals(Type.FLOAT_TYPE)) {
+      return BytecodeUtils.numericConversion(externCall, Type.DOUBLE_TYPE);
+    } else if (externType.equals(BytecodeUtils.BOXED_FLOAT_TYPE)) {
+      return MethodRef.UNBOX_FLOAT.invoke(externCall);
     } else if (externType.equals(BytecodeUtils.BOXED_BOOLEAN_TYPE)) {
       return MethodRef.UNBOX_BOOLEAN.invoke(externCall);
     } else if (externType.equals(BytecodeUtils.OBJECT.type())

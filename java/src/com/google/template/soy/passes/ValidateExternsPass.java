@@ -305,7 +305,7 @@ class ValidateExternsPass implements CompilerFilePass {
       case INT:
         return javaType == Integer.class || javaType == Long.class;
       case FLOAT:
-        return javaType == Double.class;
+        return javaType == Double.class || javaType == Float.class;
       case STRING:
         return javaType == String.class;
       case BOOL:
