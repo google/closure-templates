@@ -137,6 +137,11 @@ public final class GenLitCodeVisitor extends AbstractSoyNodeVisitor<List<String>
         .append(node.getFilePath().path())
         .append('\n');
 
+    if (node.numChildren() == 0) {
+      jsFilesContents.add(file.toString());
+      return;
+    }
+
     // Output a section containing optionally-parsed compiler directives in comments. Since these
     // are comments, they are not controlled by an option, and will be removed by minifiers that do
     // not understand them.
