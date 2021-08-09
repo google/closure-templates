@@ -71,7 +71,9 @@ class ValidateExternsPass implements CompilerFilePass {
   private static final SoyErrorKind UNKNOWN_TYPE = SoyErrorKind.of("Type ''{0}'' not loaded.");
   private static final SoyErrorKind ARITY_MISMATCH =
       SoyErrorKind.of("Implementation must match extern signature with {0} parameter(s).");
-  private static final SoyErrorKind INCOMPATIBLE_TYPE =
+  private static final SoyErrorKind INCOMPATIBLE_PARAM_TYPE =
+      SoyErrorKind.of("Soy type ''{1}'' is not coercible to Java type ''{0}''.");
+  private static final SoyErrorKind INCOMPATIBLE_RETURN_TYPE =
       SoyErrorKind.of("Java type ''{0}'' is not coercible to Soy type ''{1}''.");
   private static final SoyErrorKind OVERLOAD_RETURN_CONFLICT =
       SoyErrorKind.of(
@@ -176,6 +178,7 @@ class ValidateExternsPass implements CompilerFilePass {
       validateTypes(
           java.returnType(),
           extern.getType().getReturnType(),
+          INCOMPATIBLE_RETURN_TYPE,
           () -> java.getAttributeValueLocation(JavaImplNode.RETURN));
     }
 
@@ -190,6 +193,7 @@ class ValidateExternsPass implements CompilerFilePass {
         validateTypes(
             paramType,
             extern.getType().getParameters().get(i).getType(),
+            INCOMPATIBLE_PARAM_TYPE,
             () -> java.getAttributeValueLocation(JavaImplNode.PARAMS));
       }
     }
@@ -251,12 +255,16 @@ class ValidateExternsPass implements CompilerFilePass {
     }
   }
 
-  private void validateTypes(String javaTypeName, SoyType soyType, Supplier<SourceLocation> loc) {
+  private void validateTypes(
+      String javaTypeName,
+      SoyType soyType,
+      SoyErrorKind compatibleErrorKind,
+      Supplier<SourceLocation> loc) {
     Class<?> javaType = getType(javaTypeName);
     if (javaType != null) {
       // Verify that the soy param type and the java param type are compatible.
       if (!typesAreCompatible(javaType, soyType)) {
-        errorReporter.report(loc.get(), INCOMPATIBLE_TYPE, javaType.getName(), soyType);
+        errorReporter.report(loc.get(), compatibleErrorKind, javaType.getName(), soyType);
       }
     } else if (!protoTypesAreCompatible(javaTypeName, soyType)) {
       // Protos won't be loaded but we can make sure they are compatible via the descriptor.
