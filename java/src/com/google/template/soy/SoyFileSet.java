@@ -664,7 +664,7 @@ public final class SoyFileSet {
   ImmutableList<GeneratedFile> generateInvocationBuilders(String javaPackage) {
     return entryPoint(
         () -> {
-          ParseResult result = parseForGenJava();
+          ParseResult result = parseWithoutOptimizingOrDesugaringHtml();
           throwIfErrorsPresent();
           SoyFileSetNode soyTree = result.fileSet();
 
@@ -687,7 +687,7 @@ public final class SoyFileSet {
   ImmutableList<GeneratedFile> generateParseInfo(String javaPackage, String javaClassNameSource) {
     return entryPoint(
         () -> {
-          ParseResult result = parseForGenJava();
+          ParseResult result = parseWithoutOptimizingOrDesugaringHtml();
           throwIfErrorsPresent();
 
           SoyFileSetNode soyTree = result.fileSet();
@@ -1161,7 +1161,7 @@ public final class SoyFileSet {
    * Parses the file set with the options we need for writing generated java *SoyInfo and invocation
    * builders.
    */
-  private ParseResult parseForGenJava() {
+  private ParseResult parseWithoutOptimizingOrDesugaringHtml() {
     // N.B. we do not run the optimizer here for 2 reasons:
     // 1. it would just waste time, since we are not running code generation the optimization
     //    work doesn't help anything

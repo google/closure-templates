@@ -106,7 +106,7 @@ public class JsCodeBuilder {
   /** Whether the current output variable is initialized. */
   private boolean currOutputVarIsInited;
 
-  protected JsCodeBuilder() {
+  public JsCodeBuilder() {
     code = new StringBuilder();
     indent = "";
     outputVars = new ArrayDeque<>();
