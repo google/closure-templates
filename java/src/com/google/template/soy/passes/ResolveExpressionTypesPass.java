@@ -43,6 +43,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
+import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.basicfunctions.ConcatListsFunction;
 import com.google.template.soy.basicfunctions.ConcatMapsMethod;
 import com.google.template.soy.basicfunctions.KeysFunction;
@@ -1757,6 +1758,9 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
               functionName = ((ImportedVar) defn).getSymbol();
             }
             List<ExternRef> externTypes = externsTypeLookup.getRefs(filePath, functionName);
+            if (!externTypes.isEmpty()) {
+              autoMarshallExternParams(node);
+            }
             if (maybeSetExtern(node, externTypes)) {
               visitInternalExtern(node);
               return;
@@ -1812,6 +1816,22 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
       if (node.getParamsStyle() == ParamsStyle.POSITIONAL && node.getAllowedParamTypes() == null) {
         node.setAllowedParamTypes(
             Collections.nCopies(node.numChildren(), UnknownType.getInstance()));
+      }
+    }
+
+    private void autoMarshallExternParams(FunctionNode node) {
+      // Allows template pointers to be passed to functions, converting them silently to the
+      // template FQN string.
+      for (int i = 0; i < node.numChildren(); i++) {
+        ExprNode param = node.getChild(i);
+        if (param.getKind() != ExprNode.Kind.TEMPLATE_LITERAL_NODE
+            || !((TemplateLiteralNode) param).isResolved()) {
+          continue;
+        }
+
+        String fqTemplate = ((TemplateLiteralNode) param).getResolvedName();
+        node.replaceChild(
+            i, new StringNode(fqTemplate, QuoteStyle.DOUBLE, param.getSourceLocation()));
       }
     }
 

@@ -207,3 +207,13 @@ unions                 | `java.lang.Object`, `com.google.template.soy.data.SoyDa
 `any`                  | `java.lang.Object`, `com.google.template.soy.data.SoyData`                                                |
 
 \* If the Soy type is nullable then the primitive Java type is not allowed.
+
+## Additional type support
+
+Externs support the following automatic type conversions.
+
+| Reference type              | Soy type | Notes                             |
+| --------------------------- | -------- | --------------------------------- |
+| template (local or imported | string   | The fully qualified template name |
+: symbol)                     :          : is passed as a string to the      :
+:                             :          : extern.                           :
