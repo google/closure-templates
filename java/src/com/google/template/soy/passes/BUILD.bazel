@@ -22,7 +22,6 @@ java_library(
     name = "passes",
     srcs = glob(["*.java"]),
     deps = [
-        "//java/com/google/template/soy/plugin/java",
         "//java/src/com/google/template/soy/base",
         "//java/src/com/google/template/soy/base/internal",
         "//java/src/com/google/template/soy/basetree",
@@ -40,6 +39,7 @@ java_library(
         "//java/src/com/google/template/soy/msgs/internal",
         "//java/src/com/google/template/soy/parsepasses/contextautoesc",
         "//java/src/com/google/template/soy/passes/htmlmatcher",
+        "//java/src/com/google/template/soy/plugin/java",
         "//java/src/com/google/template/soy/plugin/java/internal",
         "//java/src/com/google/template/soy/plugin/java/restricted",
         "//java/src/com/google/template/soy/plugin/restricted",
