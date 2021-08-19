@@ -34,9 +34,8 @@ java_library(
 
 java_library(
     name = "reflective",
-    srcs = ["ReflectiveMethodChecker"],
+    srcs = REFLECTIVE_SRCS,
     deps = [
-        ":java",
         "//java/src/com/google/template/soy/plugin/java/internal",
     ],
 )
