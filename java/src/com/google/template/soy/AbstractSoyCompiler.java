@@ -38,6 +38,7 @@ import com.google.template.soy.error.SoyCompilationException;
 import com.google.template.soy.logging.AnnotatedLoggingConfig;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.plugin.java.DelegatingMethodChecker;
+import com.google.template.soy.plugin.java.MethodChecker;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
@@ -293,6 +294,11 @@ public abstract class AbstractSoyCompiler {
       Optional.ofNullable(injector.getExistingBinding(new Key<Set<SoyPrintDirective>>() {}))
           .ifPresent(b -> sfsBuilder.addSoyPrintDirectives(b.getProvider().get()));
       guiceTimer.stop();
+    }
+
+    ImmutableList.Builder<MethodChecker> builder = ImmutableList.builder();
+    for (File dep : javaDeps) {
+      builder.add(cache.read(dep, CacheLoaders.JAVA_DEPS, soyCompilerFileReader));
     }
     sfsBuilder
         .addSourceFunctions(sourceFunctions)
