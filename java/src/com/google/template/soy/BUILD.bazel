@@ -76,6 +76,7 @@ java_library(
         "//java/src/com/google/template/soy/logging:internal",
         "//java/src/com/google/template/soy/msgs",
         "//java/src/com/google/template/soy/plugin/java",
+        "//java/src/com/google/template/soy/plugin/java/internal",
         "//java/src/com/google/template/soy/plugin/restricted",
         "//java/src/com/google/template/soy/shared/restricted",
         "//src/main/protobuf:annotated_logging_config_java_proto",
