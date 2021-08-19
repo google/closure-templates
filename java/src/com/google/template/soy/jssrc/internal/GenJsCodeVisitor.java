@@ -31,6 +31,7 @@ import static com.google.template.soy.jssrc.dsl.Statement.forLoop;
 import static com.google.template.soy.jssrc.dsl.Statement.ifStatement;
 import static com.google.template.soy.jssrc.dsl.Statement.returnValue;
 import static com.google.template.soy.jssrc.dsl.Statement.switchValue;
+import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_ASSERTS_ASSERT;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_DEBUG;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_IS_OBJECT;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_MODULE_GET;
@@ -930,7 +931,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       // pass an object.
       jsDocBuilder.addParam(StandardNames.OPT_DATA, "?" + alias + ".Params=");
     } else {
-      jsDocBuilder.addParam(StandardNames.OPT_DATA, "!" + alias + ".Params");
+      jsDocBuilder.addParam(StandardNames.OPT_DATA, "!" + alias + ".Params=");
     }
     addIjDataParam(jsDocBuilder, /*forPositionalSignature=*/ false);
     addReturnTypeAndAnnotations(node, jsDocBuilder);
@@ -1046,11 +1047,15 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     bodyStatements.add(generateStubbingTest(node, alias, isPositionalStyle));
     // Generate statement to ensure data is defined, if necessary and this is not a positional style
     // method, if this is a positional style then we don't have an opt_data field
-    if (!isPositionalStyle && new ShouldEnsureDataIsDefinedVisitor().exec(node)) {
-      bodyStatements.add(
-          assign(
-              OPT_DATA,
-              OPT_DATA.or(EMPTY_OBJECT_LITERAL, templateTranslationContext.codeGenerator())));
+    if (!isPositionalStyle) {
+      if (new ShouldEnsureDataIsDefinedVisitor().exec(node)) {
+        bodyStatements.add(
+            assign(
+                OPT_DATA,
+                OPT_DATA.or(EMPTY_OBJECT_LITERAL, templateTranslationContext.codeGenerator())));
+      } else {
+        bodyStatements.add(GOOG_ASSERTS_ASSERT.call(OPT_DATA).asStatement());
+      }
     }
 
     // Type check parameters.
