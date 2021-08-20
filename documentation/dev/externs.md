@@ -96,7 +96,7 @@ and `return` attributes to the exact values from the implementation class.
       method="imageUrlFromOptions"
       params="com.google.common.html.types.SafeUrl, com.google.photos.proto.photos.proto2api.ImageUrlOptions"
       return="com.google.common.html.types.SafeUrl" /}
-{/export}
+{/extern}
 ```
 
 If the static method is defined on a Java interface you must add
@@ -140,7 +140,7 @@ The `{jsimpl}` command specifies the namespace and function name.
 ```soy
 {export extern ...}
   {jsimpl namespace="apps.photos.imageurl" function="formatForSoyFromOptions" /}
-{/export}
+{/extern}
 ```
 
 ###### TypeScript {.pg-tab}
@@ -159,7 +159,7 @@ name.
 ```soy
 {export extern ...}
   {jsimpl namespace="google3.java.apps.photos.imageurl" function="formatForSoyFromOptions" /}
-{/export}
+{/extern}
 ```
 
 </section>
