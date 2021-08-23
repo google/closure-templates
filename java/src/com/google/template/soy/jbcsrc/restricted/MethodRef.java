@@ -283,6 +283,8 @@ public abstract class MethodRef {
       create(JbcSrcRuntime.class, "listBoxValues", List.class);
   public static final MethodRef UNBOX_MAP =
       create(JbcSrcRuntime.class, "unboxMap", SoyMap.class, Class.class, Class.class);
+  public static final MethodRef UNBOX_RECORD =
+      create(JbcSrcRuntime.class, "unboxRecord", SoyRecord.class);
   public static final MethodRef SOY_VALUE_TO_BOXED_INTEGER =
       create(JbcSrcRuntime.class, "toBoxedInteger", SoyValue.class);
   public static final MethodRef SOY_VALUE_TO_BOXED_DOUBLE =

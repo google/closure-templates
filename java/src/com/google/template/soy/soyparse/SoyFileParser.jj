@@ -4963,7 +4963,7 @@ private FunctionTypeNode FunctionType() :
 
   arrow = <FORWARD_ARROW>
 
-  returnType = NamedType()
+  returnType = TypeExpr()
 
   {
     SourceLocation srcLoc = createSrcLoc(open, returnType.sourceLocation().getEndPoint());

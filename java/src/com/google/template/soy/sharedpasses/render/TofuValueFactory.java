@@ -59,6 +59,7 @@ import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.SoyType.Kind;
 import com.ibm.icu.util.ULocale;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -307,7 +308,16 @@ class TofuValueFactory extends JavaValueFactory {
           return ((SoyList) value).asJavaList();
         }
       } else if ((type == Map.class || type == ImmutableMap.class) && isExternApi) {
-        MapType mapType = (MapType) externSig.getParameters().get(i).getType();
+        SoyType paramType = externSig.getParameters().get(i).getType();
+        if (paramType.getKind() == Kind.RECORD) {
+          return ((SoyMap) value)
+              .entrySet().stream()
+                  .collect(
+                      toImmutableMap(
+                          e -> e.getKey().coerceToString(),
+                          e -> SoyValueUnconverter.unconvert(e.getValue())));
+        }
+        MapType mapType = (MapType) paramType;
         return ((SoyMap) value)
             .entrySet().stream()
                 .collect(

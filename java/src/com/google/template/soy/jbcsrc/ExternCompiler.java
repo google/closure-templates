@@ -300,6 +300,9 @@ public final class ExternCompiler {
       }
     } else if (javaType.equals(BytecodeUtils.MAP_TYPE)
         || javaType.equals(BytecodeUtils.IMMUTIBLE_MAP_TYPE)) {
+      if (soyType.getKind() == Kind.RECORD) {
+        return MethodRef.UNBOX_RECORD.invoke(actualParam);
+      }
       SoyType keyType = ((MapType) soyType).getKeyType();
       SoyType valueType = ((MapType) soyType).getValueType();
       return MethodRef.UNBOX_MAP.invoke(
@@ -333,7 +336,9 @@ public final class ExternCompiler {
     } else if (externType.equals(BytecodeUtils.BOXED_BOOLEAN_TYPE)) {
       return MethodRef.UNBOX_BOOLEAN.invoke(externCall);
     } else if (externType.equals(BytecodeUtils.OBJECT.type())
-        || externType.equals(BytecodeUtils.NUMBER_TYPE)) {
+        || externType.equals(BytecodeUtils.NUMBER_TYPE)
+        || externType.equals(BytecodeUtils.MAP_TYPE)
+        || externType.equals(BytecodeUtils.IMMUTIBLE_MAP_TYPE)) {
       return MethodRef.CONVERT_OBJECT_TO_SOY_VALUE_PROVIDER.invoke(externCall);
     } else if (externType.equals(BytecodeUtils.LIST_TYPE)
         || externType.equals(BytecodeUtils.IMMUTIBLE_LIST_TYPE)) {

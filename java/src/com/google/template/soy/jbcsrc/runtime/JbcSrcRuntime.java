@@ -62,6 +62,7 @@ import com.google.template.soy.data.SoyRecords;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueProvider;
+import com.google.template.soy.data.SoyValueUnconverter;
 import com.google.template.soy.data.SoyVisualElementData;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.internal.LazyProtoToSoyValueList;
@@ -489,6 +490,14 @@ public final class JbcSrcRuntime {
     } else {
       throw new IllegalArgumentException("unsupported type: " + type);
     }
+  }
+
+  public static ImmutableMap<?, ?> unboxRecord(SoyRecord map) {
+    if (map == null) {
+      return null;
+    }
+    return map.recordAsMap().entrySet().stream()
+        .collect(toImmutableMap(e -> e.getKey(), e -> SoyValueUnconverter.unconvert(e.getValue())));
   }
 
   public static List<SoyValueProvider> listBoxValues(List<?> javaValues) {

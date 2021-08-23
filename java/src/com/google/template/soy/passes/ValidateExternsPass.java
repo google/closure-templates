@@ -49,6 +49,7 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.types.FunctionType;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.MapType;
+import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
@@ -300,6 +301,8 @@ class ValidateExternsPass implements CompilerFilePass {
           .add(SoyType.Kind.URI)
           .build();
 
+  private static final ImmutableSet<SoyType.Kind> ALLOWED_RECORD_MEMBERS = ALLOWED_UNION_MEMBERS;
+
   private static boolean typesAreCompatible(Class<?> javaType, SoyType soyType) {
     boolean nullable = SoyTypes.isNullable(soyType);
     boolean isPrimitive = Primitives.allPrimitiveTypes().contains(javaType);
@@ -339,6 +342,12 @@ class ValidateExternsPass implements CompilerFilePass {
         return (javaType == Map.class || javaType == ImmutableMap.class)
             && ALLOWED_PARAMETERIZED_TYPES.contains(mapType.getKeyType().getKind())
             && ALLOWED_PARAMETERIZED_TYPES.contains(mapType.getValueType().getKind());
+      case RECORD:
+        RecordType recordType = (RecordType) soyType;
+        return (javaType == Map.class || javaType == ImmutableMap.class)
+            && recordType.getMembers().stream()
+                .map(m -> m.type().getKind())
+                .allMatch(ALLOWED_RECORD_MEMBERS::contains);
       case MESSAGE:
         return javaType == Message.class;
       case URI:
