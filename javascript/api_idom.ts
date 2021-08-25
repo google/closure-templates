@@ -322,39 +322,39 @@ export class NullRenderer extends IncrementalDomRenderer {
     this.setLogger(renderer.getLogger());
   }
 
-  open(nameOrCtor: string|ElementConstructor, key?: string) {
+  override open(nameOrCtor: string|ElementConstructor, key?: string) {
     return undefined;
   }
 
-  openSSR(nameOrCtor: string|ElementConstructor, key?: string) {
+  override openSSR(nameOrCtor: string|ElementConstructor, key?: string) {
     return true;
   }
 
-  close() {}
-  elementClose() {}
+  override close() {}
+  override elementClose() {}
 
-  text(value: string) {}
+  override text(value: string) {}
 
-  attr(name: string, value: string) {}
+  override attr(name: string, value: string) {}
 
-  currentPointer() {
+  override currentPointer() {
     return null;
   }
 
-  applyAttrs() {}
+  override applyAttrs() {}
 
-  applyStatics(statics: incrementaldom.Statics) {}
+  override applyStatics(statics: incrementaldom.Statics) {}
 
-  skip() {}
+  override skip() {}
 
   key(val: string) {}
 
-  currentElement() {}
+  override currentElement() {}
 
-  skipNode() {}
+  override skipNode() {}
 
   /** Returns to the default renderer which will traverse the DOM. */
-  toDefaultRenderer() {
+  override toDefaultRenderer() {
     this.renderer!.setLogger(this.getLogger());
     return this.renderer;
   }
