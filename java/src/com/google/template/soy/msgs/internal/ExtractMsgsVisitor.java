@@ -141,6 +141,9 @@ public final class ExtractMsgsVisitor extends AbstractSoyNodeVisitor<SoyMsgBundl
                 node.getParent().numChildren() == 2 && node.getParent().getChildIndex(node) == 0)
             .build();
     msgs.add(msg);
+
+    // Nested msg are allowed, e.g. as params of a nested call node.
+    visitChildren(node);
   }
 
   @Override
