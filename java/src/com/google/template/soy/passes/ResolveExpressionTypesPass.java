@@ -456,7 +456,6 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
           .filter(headerVar -> headerVar.defaultValue() != null && headerVar.getTypeNode() == null)
           .forEach(
               headerVar -> {
-                headerVar.getTypeNode();
                 paramInfExprVisitor.exec(headerVar.defaultValue());
                 headerVar.setType(headerVar.defaultValue().getRoot().getType());
               });
