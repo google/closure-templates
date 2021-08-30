@@ -76,7 +76,7 @@ public final class ExternCompiler {
     }
 
     JavaImplNode javaImpl = extern.getJavaImpl().get();
-    int declaredMethodArgs = javaImpl.params().size();
+    int declaredMethodArgs = extern.getType().getParameters().size();
 
     ImmutableList.Builder<String> paramNamesBuilder = ImmutableList.builder();
     paramNamesBuilder.add(StandardNames.RENDER_CONTEXT);
@@ -125,6 +125,10 @@ public final class ExternCompiler {
               paramSet.getVariable(paramNames.get(i + 1)),
               paramTypesInfos[i],
               extern.getType().getParameters().get(i).getType()));
+    }
+    // Add implicit params.
+    for (int i = declaredMethodArgs; i < javaImpl.params().size(); i++) {
+      adaptedParams.add(adaptImplicitParameter(vars, paramTypesInfos[i]));
     }
 
     MethodRef extMethodRef;
@@ -316,6 +320,15 @@ public final class ExternCompiler {
     throw new AssertionError(
         String.format(
             "Unable to convert parameter of Soy type %s to java type %s.", soyType, javaType));
+  }
+
+  private static Expression adaptImplicitParameter(ConstantVariables vars, TypeInfo javaTypeInfo) {
+    switch (javaTypeInfo.className()) {
+      case "com.ibm.icu.util.ULocale":
+        return vars.getRenderContext().getULocale();
+      default:
+        throw new IllegalArgumentException(javaTypeInfo.className());
+    }
   }
 
   static Expression adaptReturnType(Type returnType, Expression externCall) {

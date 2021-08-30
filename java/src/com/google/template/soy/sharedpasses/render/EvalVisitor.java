@@ -131,6 +131,7 @@ import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.UnionType;
+import com.ibm.icu.util.ULocale;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -872,11 +873,12 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       throw RenderException.createF("No java implementation for extern '%s'.", soyFunction.name());
     }
     JavaImplNode java = impl.get();
+    int numJavaParams = java.params().size();
     MethodSignature method;
     try {
       Class<?> rt = MethodSignature.forName(java.returnType());
-      Class<?>[] args = new Class<?>[java.params().size()];
-      for (int i = 0; i < java.params().size(); i++) {
+      Class<?>[] args = new Class<?>[numJavaParams];
+      for (int i = 0; i < numJavaParams; i++) {
         args[i] = MethodSignature.forName(java.params().get(i));
       }
       method =
@@ -888,10 +890,19 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     }
 
     List<ExprNode> params = node.getParams();
-    TofuJavaValue[] javaValues = new TofuJavaValue[params.size()];
+    TofuJavaValue[] javaValues = new TofuJavaValue[numJavaParams];
     for (int i = 0; i < params.size(); i++) {
       ExprNode param = params.get(i);
       javaValues[i] = TofuJavaValue.forSoyValue(visit(param), param.getSourceLocation());
+    }
+    // Add implicit params.
+    for (int i = params.size(); i < numJavaParams; i++) {
+      Class<?> implicitType = method.arguments().get(i);
+      if (implicitType == ULocale.class) {
+        javaValues[i] = context.getULocale();
+      } else {
+        throw new IllegalArgumentException(implicitType.getName());
+      }
     }
 
     TofuValueFactory factory =

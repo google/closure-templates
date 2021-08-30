@@ -55,6 +55,7 @@ import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.UnionType;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -99,6 +100,8 @@ class ValidateExternsPass implements CompilerFilePass {
       SoyErrorKind.of("Attribute ''type'' should have value ''{0}''.");
   private static final SoyErrorKind JAVA_METHOD_RETURN_TYPE_MISMATCH =
       SoyErrorKind.of("Return type of method ''{0}'' must be one of [{1}].");
+  private static final SoyErrorKind IMPLICIT_PARAM_ORDER =
+      SoyErrorKind.of("Implicit Java parameter {0} must come at the end of the parameter list.");
 
   private final ErrorReporter errorReporter;
   private final MethodChecker checker;
@@ -162,6 +165,9 @@ class ValidateExternsPass implements CompilerFilePass {
     return moduleEquals && functionEquals;
   }
 
+  private static final ImmutableSet<String> IMPLICIT_PARAMS =
+      ImmutableSet.of("com.ibm.icu.util.ULocale");
+
   private void validateJava(ExternNode extern, JavaImplNode java) {
     int requiredParamCount = extern.getType().getParameters().size();
 
@@ -183,12 +189,27 @@ class ValidateExternsPass implements CompilerFilePass {
           () -> java.getAttributeValueLocation(JavaImplNode.RETURN));
     }
 
+    List<String> paramTypes = new ArrayList<>(java.params());
+    boolean inTail = true;
+    for (int i = paramTypes.size() - 1; i >= 0; i--) {
+      if (IMPLICIT_PARAMS.contains(paramTypes.get(i))) {
+        paramTypes.remove(i);
+        if (!inTail) {
+          errorReporter.report(
+              java.getAttributeValueLocation(JavaImplNode.PARAMS),
+              IMPLICIT_PARAM_ORDER,
+              paramTypes.get(i));
+        }
+      } else {
+        inTail = false;
+      }
+    }
+
     // Verify that the soy arity type and the java arity are equal.
-    if (java.params().size() != requiredParamCount) {
+    if (paramTypes.size() != requiredParamCount) {
       errorReporter.report(
           java.getAttributeValueLocation(JavaImplNode.PARAMS), ARITY_MISMATCH, requiredParamCount);
     } else {
-      ImmutableList<String> paramTypes = java.params();
       for (int i = 0; i < paramTypes.size(); i++) {
         String paramType = paramTypes.get(i);
         validateTypes(

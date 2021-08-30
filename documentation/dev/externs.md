@@ -207,3 +207,18 @@ unions                 | `java.lang.Object`, `com.google.template.soy.data.SoyDa
 `any`                  | `java.lang.Object`, `com.google.template.soy.data.SoyData`                                                |
 
 \* If the Soy type is nullable then the primitive Java type is not allowed.
+
+### Implicit Java Parameters
+
+Some values passed to the Java implementation of an extern function come from
+the rendering context rather than from values explicitly passed from the
+template. Such values are called implicit parameters. Implicit parameters must
+appear at the end of the Java implementation parameter list, after all normal
+parameters.
+
+The following implicit parameter types are supported:
+
+| Java type                  | Notes                                          |
+| -------------------------- | ---------------------------------------------- |
+| `com.ibm.icu.util.ULocale` | Provides access to the user's locale in server |
+:                            : side rendering.                                :
