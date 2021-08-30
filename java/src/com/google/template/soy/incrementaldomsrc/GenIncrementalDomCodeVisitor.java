@@ -134,7 +134,6 @@ import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.TemplateType;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -150,15 +149,6 @@ import javax.annotation.Nullable;
 public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
 
   private static final String NAMESPACE_EXTENSION = ".incrementaldom";
-
-  private static class Holder<T> {
-    T elementValue;
-    T callValue;
-
-    public Holder(T value) {
-      this.elementValue = value;
-    }
-  }
 
   /**
    * Class that contains the state generated from visiting the beginning of a velogging statement.
@@ -186,13 +176,6 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     }
   }
 
-  // Tracks the counter to use for a tag's generated key:
-  // - When encountering an open tag without a manual key, the counter at the top of the stack is
-  //   incremented.
-  // - When encountering an open tag with a manual key, a new counter is pushed onto the stack.
-  // - When encountering a close tag that corresponds to an open tag with a manual key, the
-  //   topmost counter is then popped from the stack.
-  private ArrayDeque<Holder<Integer>> keyCounterStack;
   // Counter for static variables that are declared at the global scope.
   private int staticsCounter = 0;
   private String alias = "";
@@ -273,8 +256,6 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
 
   @Override
   protected void visitTemplateNode(TemplateNode node) {
-    keyCounterStack = new ArrayDeque<>();
-    keyCounterStack.push(new Holder<>(0));
     staticsCounter = 0;
     SanitizedContentKind kind = node.getContentKind();
     getJsCodeBuilder().setContentKind(kind);
@@ -1205,19 +1186,6 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   }
 
   /**
-   * Returns a unique key for the template. This has the side-effect of incrementing the current
-   * keyCounter at the top of the stack unless the element is the root.
-   */
-  private Expression incrementKeyForTemplate(TemplateNode template, boolean isElementRoot) {
-    if (isElementRoot) {
-      return JsRuntime.XID.call(Expression.stringLiteral(template.getTemplateName() + "-root"));
-    }
-    Holder<Integer> keyCounter = keyCounterStack.peek();
-    return JsRuntime.XID.call(
-        Expression.stringLiteral(template.getTemplateName() + "-" + keyCounter.elementValue++));
-  }
-
-  /**
    * Removes static children from {@code node} and returns them in a map of key to value. For
    * attribute nodes that are known to be static, we can improve performance by adding them to the
    * statics array(http://google.github.io/incremental-dom/#statics-array).
@@ -1284,13 +1252,13 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     return CodeChunkUtils.concatChunksForceString(getAttributeValues(node));
   }
 
-  private Expression getOpenSSRCall(HtmlOpenTagNode node, SkipNode skip) {
+  private Expression getOpenSSRCall(HtmlOpenTagNode node) {
     List<Expression> args = new ArrayList<>();
     args.add(getTagNameCodeChunk(node.getTagName()));
 
     KeyNode keyNode = node.getKeyNode();
     if (keyNode == null) {
-      args.add(JsRuntime.XID.call(Expression.stringLiteral(skip.getSkipId())));
+      args.add(JsRuntime.XID.call(Expression.stringLiteral(node.getKeyId())));
     } else {
       // Key difference between getOpen and getOpenSSR
       args.add(translateExpr(node.getKeyNode().getExpr()));
@@ -1315,16 +1283,13 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   }
 
   private Expression getOpenCall(HtmlOpenTagNode node) {
-    TemplateNode template = node.getNearestAncestor(TemplateNode.class);
     List<Expression> args = new ArrayList<>();
     args.add(getTagNameCodeChunk(node.getTagName()));
 
     KeyNode keyNode = node.getKeyNode();
     Expression key = Expression.LITERAL_UNDEFINED;
     if (keyNode == null) {
-      key = incrementKeyForTemplate(template, node.isElementRoot());
-    } else {
-      keyCounterStack.push(new Holder<>(0));
+      key = JsRuntime.XID.call(Expression.stringLiteral(node.getKeyId()));
     }
     args.add(key);
 
@@ -1398,7 +1363,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     }
     jsCodeBuilder.append(getAttributeAndCloseCalls(node));
     String tagName = node.getTagName().getTagString();
-    if (tagName != null && Ascii.toLowerCase(tagName).equals("script")) {
+    if (tagName != null && Ascii.equalsIgnoreCase(tagName, "script")) {
       scriptOutputVar = "script_" + staticsCounter++;
       jsCodeBuilder.pushOutputVar(scriptOutputVar).setOutputVarInited();
       jsCodeBuilder.appendLine("let ", scriptOutputVar, " = '';");
@@ -1441,12 +1406,10 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
    */
   @Override
   protected void visitHtmlCloseTagNode(HtmlCloseTagNode node) {
-    // This case occurs in the case where we encounter the end of a keyed element. If the open tag
-    // mapped to this close tag contains a key node, pop the keyCounterStack to return
-    // to the state before entering the keyed node.
+    // This case occurs in the case where we encounter the end of a keyed element.
     getJsCodeBuilder().appendLine("// " + node.getSourceLocation());
     String tagName = node.getTagName().getTagString();
-    if (tagName != null && Ascii.toLowerCase(tagName).equals("script")) {
+    if (tagName != null && Ascii.equalsIgnoreCase(tagName, "script")) {
       getJsCodeBuilder().popOutputVar();
       Expression ordainer = id("soy").dotAccess("VERY_UNSAFE").dotAccess("ordainSanitizedJs");
       Expression safeScript = ordainer.call(id(scriptOutputVar)).dotAccess("toSafeScript").call();
@@ -1460,7 +1423,6 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     if (node.getTaggedPairs().size() == 1) {
       HtmlOpenTagNode openTag = (HtmlOpenTagNode) node.getTaggedPairs().get(0);
       if (openTag.getKeyNode() != null && !(openTag.getParent() instanceof SkipNode)) {
-        keyCounterStack.pop();
         getJsCodeBuilder().append(INCREMENTAL_DOM_POP_MANUAL_KEY.call());
       }
     }
@@ -1570,7 +1532,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   protected void visitSkipNode(SkipNode node) {
     IncrementalDomCodeBuilder jsCodeBuilder = getJsCodeBuilder();
     HtmlOpenTagNode openTag = (HtmlOpenTagNode) node.getChild(0);
-    Expression openTagExpr = getOpenSSRCall(openTag, node);
+    Expression openTagExpr = getOpenSSRCall(openTag);
     Statement childStatements = visitChildrenReturningCodeChunk(node);
     jsCodeBuilder.append(Statement.ifStatement(openTagExpr, Statement.of(childStatements)).build());
   }

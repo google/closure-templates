@@ -139,7 +139,7 @@ public final class PassManagerTest {
             SimplifyAssertNonNullPass.class,
             UnknownJsGlobalPass.class,
             ValidateAliasesPass.class,
-            ValidateSkipNodesPass.class,
+            IncrementalDomKeysPass.class,
             VeLogRewritePass.class,
             VeLogValidationPass.class,
             VeRewritePass.class);

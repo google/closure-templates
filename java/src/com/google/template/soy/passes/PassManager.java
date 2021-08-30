@@ -500,7 +500,7 @@ public final class PassManager {
       passes
           .add(new ValidateAliasesPass(errorReporter, loggingConfig))
           .add(new KeyCommandPass(errorReporter, disableAllTypeChecking))
-          .add(new ValidateSkipNodesPass(errorReporter));
+          .add(new IncrementalDomKeysPass(errorReporter));
 
       if (!disableAllTypeChecking) {
         passes.add(new VeLogValidationPass(errorReporter, registry));

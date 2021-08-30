@@ -168,7 +168,7 @@ public final class DesugarHtmlNodesPass implements CompilerFileSetPass {
                 BuiltinFunction.XID,
                 openTag.getSourceLocation());
         funcNode.addChild(
-            new StringNode(skipNode.getSkipId(), QuoteStyle.SINGLE, openTag.getSourceLocation()));
+            new StringNode(openTag.getKeyId(), QuoteStyle.SINGLE, openTag.getSourceLocation()));
         funcNode.setType(StringType.getInstance());
         wrappedFn.addChild(funcNode);
       } else {

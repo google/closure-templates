@@ -41,6 +41,8 @@ public final class HtmlOpenTagNode extends HtmlTagNode {
   /** Whether or not this node is the root of a skip node. Populated by ValidateSkipNodesPass. */
   private boolean isSkipRoot;
 
+  private String keyId = null;
+
   public HtmlOpenTagNode(
       int id,
       StandaloneNode node,
@@ -55,6 +57,7 @@ public final class HtmlOpenTagNode extends HtmlTagNode {
     super(orig, copyState);
     this.selfClosing = orig.selfClosing;
     this.isElementRoot = orig.isElementRoot;
+    this.keyId = orig.keyId;
   }
 
   @Override
@@ -74,6 +77,14 @@ public final class HtmlOpenTagNode extends HtmlTagNode {
   /** Marks this tag as an element root. */
   public void setElementRoot() {
     isElementRoot = true;
+  }
+
+  public String getKeyId() {
+    return this.keyId;
+  }
+
+  public void setKeyId(String keyId) {
+    this.keyId = keyId;
   }
 
   public boolean isSlot() {
