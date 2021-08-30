@@ -166,7 +166,7 @@ class ValidateExternsPass implements CompilerFilePass {
   }
 
   private static final ImmutableSet<String> IMPLICIT_PARAMS =
-      ImmutableSet.of("com.ibm.icu.util.ULocale");
+      ImmutableSet.of("com.google.template.soy.data.Dir", "com.ibm.icu.util.ULocale");
 
   private void validateJava(ExternNode extern, JavaImplNode java) {
     int requiredParamCount = extern.getType().getParameters().size();

@@ -324,6 +324,8 @@ public final class ExternCompiler {
 
   private static Expression adaptImplicitParameter(ConstantVariables vars, TypeInfo javaTypeInfo) {
     switch (javaTypeInfo.className()) {
+      case "com.google.template.soy.data.Dir":
+        return vars.getRenderContext().getBidiGlobalDirDir();
       case "com.ibm.icu.util.ULocale":
         return vars.getRenderContext().getULocale();
       default:

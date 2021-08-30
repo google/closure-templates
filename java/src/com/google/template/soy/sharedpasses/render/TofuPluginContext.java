@@ -32,7 +32,7 @@ final class TofuPluginContext implements JavaPluginContext {
   }
 
   @Override
-  public JavaValue getBidiDir() {
+  public TofuJavaValue getBidiDir() {
     return TofuJavaValue.forBidiDir(
         BidiGlobalDir.forStaticIsRtl(msgBundle == null ? false : msgBundle.isRtl()));
   }

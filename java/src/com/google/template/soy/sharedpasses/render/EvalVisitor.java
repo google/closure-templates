@@ -37,6 +37,7 @@ import com.google.common.collect.Iterables;
 import com.google.errorprone.annotations.ForOverride;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.internal.Identifier;
+import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyLegacyObjectMap;
 import com.google.template.soy.data.SoyList;
@@ -898,7 +899,9 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     // Add implicit params.
     for (int i = params.size(); i < numJavaParams; i++) {
       Class<?> implicitType = method.arguments().get(i);
-      if (implicitType == ULocale.class) {
+      if (implicitType == Dir.class) {
+        javaValues[i] = context.getBidiDir();
+      } else if (implicitType == ULocale.class) {
         javaValues[i] = context.getULocale();
       } else {
         throw new IllegalArgumentException(implicitType.getName());

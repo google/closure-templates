@@ -44,7 +44,7 @@ final class TofuJavaValue implements JavaValue {
     return new TofuJavaValue(null, checkNotNull(locale), null, null);
   }
 
-  static JavaValue forBidiDir(BidiGlobalDir bidiGlobalDir) {
+  static TofuJavaValue forBidiDir(BidiGlobalDir bidiGlobalDir) {
     return new TofuJavaValue(null, null, checkNotNull(bidiGlobalDir), null);
   }
 

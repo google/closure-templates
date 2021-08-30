@@ -30,6 +30,7 @@ import com.google.common.primitives.Primitives;
 import com.google.protobuf.Message;
 import com.google.protobuf.ProtocolMessageEnum;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyList;
@@ -247,6 +248,8 @@ class TofuValueFactory extends JavaValueFactory {
 
     if (type == BidiGlobalDir.class) {
       return tofuVal.bidiGlobalDir();
+    } else if (type == Dir.class) {
+      return tofuVal.bidiGlobalDir().toDir();
     } else if (type == ULocale.class) {
       return tofuVal.locale();
     } else {

@@ -218,7 +218,7 @@ parameters.
 
 The following implicit parameter types are supported:
 
-| Java type                  | Notes                                          |
-| -------------------------- | ---------------------------------------------- |
-| `com.ibm.icu.util.ULocale` | Provides access to the user's locale in server |
-:                            : side rendering.                                :
+Java type                          | Notes
+---------------------------------- | --------------------------
+`com.google.template.soy.data.Dir` | The global bidi direction.
+`com.ibm.icu.util.ULocale`         | The end user's locale.

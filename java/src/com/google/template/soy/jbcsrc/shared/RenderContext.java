@@ -22,6 +22,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.restricted.StringData;
@@ -110,6 +111,10 @@ public final class RenderContext {
 
   public BidiGlobalDir getBidiGlobalDir() {
     return BidiGlobalDir.forStaticIsRtl(msgBundle.isRtl());
+  }
+
+  public Dir getBidiGlobalDirDir() {
+    return getBidiGlobalDir().toDir();
   }
 
   public String renameCssSelector(String selector) {
