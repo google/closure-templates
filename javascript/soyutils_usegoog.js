@@ -1747,19 +1747,23 @@ const $$concatAttributeValues = function(l, r, delimiter) {
  * Conditionally concatenates two attribute values with a delimiter if they are
  * both non-empty.
  *
- * @param {string} l
- * @param {string} r
+ * @param {!SanitizedCss} l
+ * @param {!SanitizedCss} r
  * @return {!SanitizedCss|!$$EMPTY_STRING_}
  */
 const $$concatCssValues = function(l, r) {
-  if (l !== $$EMPTY_STRING_.VALUE) {
+  if (!l || !r) {
+    return l || r || $$EMPTY_STRING_;
+  }
+
+  if (l.getContent() !== $$EMPTY_STRING_.VALUE) {
     asserts.assertInstanceof(l, SanitizedCss);
   }
-  if (r !== $$EMPTY_STRING_.VALUE) {
+  if (r.getContent() !== $$EMPTY_STRING_.VALUE) {
     asserts.assertInstanceof(r, SanitizedCss);
   }
   return VERY_UNSAFE.$$ordainSanitizedCssForInternalBlocks(
-      $$concatAttributeValues(l, r, ';'));
+      $$concatAttributeValues(l.getContent(), r.getContent(), ';'));
 };
 
 
