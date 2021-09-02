@@ -18,6 +18,7 @@ package com.google.template.soy.jbcsrc.restricted;
 
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.jbcsrc.restricted.Expression.areAllCheap;
+import static java.lang.Math.max;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
@@ -186,7 +187,8 @@ public abstract class MethodRef {
   public static final ImmutableList<MethodRef> IMMUTABLE_MAP_OF;
 
   static {
-    MethodRef[] immutableMapOfMethods = new MethodRef[6];
+    List<Method> immutableMapOfMethods = Arrays.asList(new Method[11]);
+    int maxSize = 0;
     for (java.lang.reflect.Method m : ImmutableMap.class.getMethods()) {
       if (m.getName().equals("of")) {
         Class<?>[] params = m.getParameterTypes();
@@ -198,10 +200,11 @@ public abstract class MethodRef {
           // the zero arg one is 'cheap'
           ref = ref.asCheap();
         }
-        immutableMapOfMethods[numEntries] = ref;
+        maxSize = max(numEntries, maxSize);
+        immutableMapOfMethods.set(numEntries, ref);
       }
     }
-    IMMUTABLE_MAP_OF = ImmutableList.copyOf(immutableMapOfMethods);
+    IMMUTABLE_MAP_OF = ImmutableList.copyOf(immutableMapOfMethods.subList(0, maxSize + 1));
   }
 
   public static final MethodRef INTEGER_DATA_FOR_VALUE =
