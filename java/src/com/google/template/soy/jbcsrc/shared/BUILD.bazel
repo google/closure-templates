@@ -43,6 +43,7 @@ java_library(
         "//java/src/com/google/template/soy/logging:public",
         "//java/src/com/google/template/soy/msgs",
         "//java/src/com/google/template/soy/plugin/java",
+        "//java/src/com/google/template/soy/plugin/java:extern_helpers",
         "//java/src/com/google/template/soy/plugin/java/restricted",
         "//java/src/com/google/template/soy/shared:interfaces",
         "//java/src/com/google/template/soy/shared/internal:deltemplate_selector",

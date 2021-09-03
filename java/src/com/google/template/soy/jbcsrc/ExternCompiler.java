@@ -326,6 +326,8 @@ public final class ExternCompiler {
     switch (javaTypeInfo.className()) {
       case "com.google.template.soy.data.Dir":
         return vars.getRenderContext().getBidiGlobalDirDir();
+      case "com.google.template.soy.plugin.java.RenderCssHelper":
+        return vars.getRenderContext().getRenderCssHelper();
       case "com.ibm.icu.util.ULocale":
         return vars.getRenderContext().getULocale();
       default:

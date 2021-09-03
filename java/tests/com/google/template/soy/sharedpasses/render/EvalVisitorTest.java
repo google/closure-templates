@@ -51,9 +51,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-/**
- * Unit tests for EvalVisitor.
- */
+/** Unit tests for EvalVisitor. */
 @RunWith(JUnit4.class)
 public class EvalVisitorTest {
 
@@ -161,7 +159,9 @@ public class EvalVisitorTest {
                 null,
                 /* debugSoyTemplateInfo= */ false,
                 PluginInstances.empty(),
-                ImmutableTable.of());
+                ImmutableTable.of(),
+                null,
+                null);
     return evalVisitor.exec(expr);
   }
 
@@ -307,10 +307,10 @@ public class EvalVisitorTest {
     assertThat(eval("$foo.goo2[22]")).isInstanceOf(UndefinedData.class);
 
     // TODO: If enabling exception for undefined LHS (see EvalVisitor), uncomment tests below.
-    //assertRenderException(
+    // assertRenderException(
     //    "$foo.bar.moo.tar", "encountered undefined LHS just before accessing \".tar\"");
     assertThat(eval("$foo.bar.moo.tar")).isInstanceOf(UndefinedData.class);
-    //assertRenderException(
+    // assertRenderException(
     //    "$foo.baz.moo.tar", "encountered undefined LHS just before accessing \".moo\"");
     assertThat(eval("$foo.baz.moo.tar")).isInstanceOf(UndefinedData.class);
     assertRenderException("$boo?[2]", "encountered non-map/list just before accessing \"[2]\"");
@@ -321,10 +321,10 @@ public class EvalVisitorTest {
         "SoyDict accessed with non-string key (got key type"
             + " com.google.template.soy.data.restricted.IntegerData).");
     assertThat(eval("$moo.too")).isInstanceOf(UndefinedData.class);
-    //assertRenderException(
+    // assertRenderException(
     //    "$roo.too", "encountered undefined LHS just before accessing \".too\"");
     assertThat(eval("$roo.too")).isInstanceOf(UndefinedData.class);
-    //assertRenderException("$roo[2]", "encountered undefined LHS just before accessing \"[2]\"");
+    // assertRenderException("$roo[2]", "encountered undefined LHS just before accessing \"[2]\"");
     assertThat(eval("$roo[2]")).isInstanceOf(UndefinedData.class);
   }
 

@@ -834,7 +834,9 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
               msgBundle,
               debugSoyTemplateInfo,
               pluginInstances,
-              externs);
+              externs,
+              deltemplates,
+              activeDelPackageSelector);
     }
 
     try {

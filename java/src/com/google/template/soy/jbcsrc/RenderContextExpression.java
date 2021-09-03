@@ -109,6 +109,8 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
 
   private static final MethodRef GET_LOGGER = MethodRef.create(RenderContext.class, "getLogger");
   private static final MethodRef POP_FRAME = MethodRef.create(RenderContext.class, "popFrame");
+  private static final MethodRef GET_RENDER_CSS_HELPER =
+      MethodRef.create(RenderContext.class, "getRenderCssHelper");
 
   private final Expression delegate;
 
@@ -134,6 +136,10 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
   @Override
   public Expression getAllRequiredCssNamespaces(SoyExpression template) {
     return delegate.invoke(GET_ALL_REQUIRED_CSS_NAMESPACES, template.unboxAsString());
+  }
+
+  Expression getRenderCssHelper() {
+    return delegate.invoke(GET_RENDER_CSS_HELPER);
   }
 
   Expression getDebugSoyTemplateInfo() {

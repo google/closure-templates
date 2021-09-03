@@ -42,7 +42,7 @@ public class CompiledTemplates {
   private final ClassLoader loader;
   private final ConcurrentHashMap<String, TemplateData> templateNameToFactory =
       new ConcurrentHashMap<>();
-  private final DelTemplateSelector<TemplateData> selector;
+  final DelTemplateSelector<TemplateData> selector;
 
   /** Interface for constructor. */
   public interface Factory {

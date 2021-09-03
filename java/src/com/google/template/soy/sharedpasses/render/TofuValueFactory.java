@@ -30,7 +30,6 @@ import com.google.common.primitives.Primitives;
 import com.google.protobuf.Message;
 import com.google.protobuf.ProtocolMessageEnum;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyList;
@@ -47,7 +46,6 @@ import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
-import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.internal.proto.JavaQualifiedNames;
 import com.google.template.soy.plugin.internal.JavaPluginExecContext;
 import com.google.template.soy.plugin.java.PluginInstances;
@@ -61,7 +59,6 @@ import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
-import com.ibm.icu.util.ULocale;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
@@ -246,16 +243,9 @@ class TofuValueFactory extends JavaValueFactory {
     // Some conversions here are only supported in the newer extern API, not the older plugin API.
     boolean isExternApi = externSig != null;
 
-    if (type == BidiGlobalDir.class) {
-      return tofuVal.bidiGlobalDir();
-    } else if (type == Dir.class) {
-      return tofuVal.bidiGlobalDir().toDir();
-    } else if (type == ULocale.class) {
-      return tofuVal.locale();
+    if (!tofuVal.hasSoyValue()) {
+      return tofuVal.rawValue();
     } else {
-      if (!tofuVal.hasSoyValue()) {
-        throw RenderException.create("Invalid parameter: " + tofuVal);
-      }
       SoyValue value = tofuVal.soyValue();
       if (value instanceof NullData || value instanceof UndefinedData) {
         if (Primitives.allPrimitiveTypes().contains(type)) {

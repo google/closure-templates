@@ -28,12 +28,14 @@ import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jbcsrc.api.RenderResult;
+import com.google.template.soy.jbcsrc.shared.CompiledTemplates.TemplateData;
 import com.google.template.soy.logging.LoggableElementMetadata;
 import com.google.template.soy.logging.SoyLogger;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.restricted.SoyMsg;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
 import com.google.template.soy.plugin.java.PluginInstances;
+import com.google.template.soy.plugin.java.RenderCssHelper;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
@@ -103,6 +105,14 @@ public final class RenderContext {
   @Nullable
   public ULocale getLocale() {
     return msgBundle.getLocale();
+  }
+
+  public RenderCssHelper getRenderCssHelper() {
+    return (delTemplate, variant) -> {
+      TemplateData data =
+          templates.selector.selectTemplate(delTemplate, variant, activeDelPackageSelector);
+      return data != null ? data.soyTemplateName : null;
+    };
   }
 
   public ImmutableList<String> getAllRequiredCssNamespaces(String template) {

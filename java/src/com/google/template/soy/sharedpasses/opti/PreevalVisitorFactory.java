@@ -23,9 +23,12 @@ import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.plugin.java.PluginInstances;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
+import com.google.template.soy.shared.internal.DelTemplateSelector;
 import com.google.template.soy.sharedpasses.render.Environment;
 import com.google.template.soy.sharedpasses.render.EvalVisitor.EvalVisitorFactory;
 import com.google.template.soy.soytree.ExternNode;
+import com.google.template.soy.soytree.TemplateDelegateNode;
+import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 /**
@@ -43,7 +46,9 @@ final class PreevalVisitorFactory implements EvalVisitorFactory {
       @Nullable SoyMsgBundle msgBundle,
       boolean debugSoyTemplateInfo,
       PluginInstances pluginInstances,
-      ImmutableTable<SourceFilePath, String, ImmutableList<ExternNode>> externs) {
+      ImmutableTable<SourceFilePath, String, ImmutableList<ExternNode>> externs,
+      DelTemplateSelector<TemplateDelegateNode> deltemplates,
+      Predicate<String> activeDelPackageSelector) {
     return new PreevalVisitor(env);
   }
 }

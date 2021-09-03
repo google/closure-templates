@@ -166,7 +166,10 @@ class ValidateExternsPass implements CompilerFilePass {
   }
 
   private static final ImmutableSet<String> IMPLICIT_PARAMS =
-      ImmutableSet.of("com.google.template.soy.data.Dir", "com.ibm.icu.util.ULocale");
+      ImmutableSet.of(
+          "com.google.template.soy.data.Dir",
+          "com.google.template.soy.plugin.java.RenderCssHelper",
+          "com.ibm.icu.util.ULocale");
 
   private void validateJava(ExternNode extern, JavaImplNode java) {
     int requiredParamCount = extern.getType().getParameters().size();
@@ -322,7 +325,11 @@ class ValidateExternsPass implements CompilerFilePass {
           .add(SoyType.Kind.URI)
           .build();
 
-  private static final ImmutableSet<SoyType.Kind> ALLOWED_RECORD_MEMBERS = ALLOWED_UNION_MEMBERS;
+  private static final ImmutableSet<SoyType.Kind> ALLOWED_RECORD_MEMBERS =
+      ImmutableSet.<SoyType.Kind>builder()
+          .addAll(ALLOWED_UNION_MEMBERS)
+          .add(SoyType.Kind.CSS)
+          .build();
 
   private static boolean typesAreCompatible(Class<?> javaType, SoyType soyType) {
     boolean nullable = SoyTypes.isNullable(soyType);

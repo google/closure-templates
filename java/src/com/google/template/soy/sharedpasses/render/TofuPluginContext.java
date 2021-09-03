@@ -33,13 +33,16 @@ final class TofuPluginContext implements JavaPluginContext {
 
   @Override
   public TofuJavaValue getBidiDir() {
-    return TofuJavaValue.forBidiDir(
-        BidiGlobalDir.forStaticIsRtl(msgBundle == null ? false : msgBundle.isRtl()));
+    return TofuJavaValue.forRaw(getBidiGlobalDir());
+  }
+
+  public BidiGlobalDir getBidiGlobalDir() {
+    return BidiGlobalDir.forStaticIsRtl(msgBundle != null && msgBundle.isRtl());
   }
 
   @Override
   public TofuJavaValue getULocale() {
-    return TofuJavaValue.forULocale(msgBundle == null ? ULocale.ENGLISH : msgBundle.getLocale());
+    return TofuJavaValue.forRaw(msgBundle == null ? ULocale.ENGLISH : msgBundle.getLocale());
   }
 
   @Override

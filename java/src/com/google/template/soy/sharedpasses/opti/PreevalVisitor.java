@@ -53,7 +53,9 @@ final class PreevalVisitor extends EvalVisitor {
         /* debugSoyTemplateInfo= */ false,
         PluginInstances.empty(),
         UndefinedDataHandlingMode.NORMAL,
-        ImmutableTable.of());
+        ImmutableTable.of(),
+        null,
+        null);
   }
 
   // -----------------------------------------------------------------------------------------------

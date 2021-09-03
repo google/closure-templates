@@ -18,13 +18,15 @@ load("@rules_java//java:defs.bzl", "java_library")
 
 package(default_visibility = ["//:soy_internal"])
 
+EXTERN_HELPERS_SRCS = ["RenderCssHelper.java"]
+
 REFLECTIVE_SRCS = ["ReflectiveMethodChecker.java"]
 
 java_library(
     name = "java",
     srcs = glob(
         ["*.java"],
-        exclude = REFLECTIVE_SRCS,
+        exclude = REFLECTIVE_SRCS + EXTERN_HELPERS_SRCS,
     ),
     deps = [
         "@com_google_auto_value_auto_value",
@@ -37,5 +39,13 @@ java_library(
     srcs = REFLECTIVE_SRCS,
     deps = [
         "//java/src/com/google/template/soy/plugin/java/internal",
+    ],
+)
+
+java_library(
+    name = "extern_helpers",
+    srcs = EXTERN_HELPERS_SRCS,
+    deps = [
+        "@maven//:com_google_code_findbugs_jsr305",
     ],
 )

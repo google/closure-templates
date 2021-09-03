@@ -114,6 +114,7 @@ import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.plugin.internal.JavaPluginExecContext;
 import com.google.template.soy.plugin.java.PluginInstances;
+import com.google.template.soy.plugin.java.RenderCssHelper;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
 import com.google.template.soy.plugin.java.restricted.MethodSignature;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
@@ -121,11 +122,13 @@ import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.internal.BuiltinMethod;
+import com.google.template.soy.shared.internal.DelTemplateSelector;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyMethod;
 import com.google.template.soy.shared.restricted.SoySourceFunctionMethod;
 import com.google.template.soy.soytree.ExternNode;
 import com.google.template.soy.soytree.JavaImplNode;
+import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.SoyProtoType;
@@ -140,6 +143,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 /**
@@ -190,7 +194,9 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
         @Nullable SoyMsgBundle msgBundle,
         boolean debugSoyTemplateInfo,
         PluginInstances pluginInstances,
-        ImmutableTable<SourceFilePath, String, ImmutableList<ExternNode>> externs);
+        ImmutableTable<SourceFilePath, String, ImmutableList<ExternNode>> externs,
+        DelTemplateSelector<TemplateDelegateNode> deltemplates,
+        Predicate<String> activeDelPackageSelector);
   }
 
   /** The current environment. */
@@ -220,6 +226,8 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
   private final UndefinedDataHandlingMode undefinedDataHandlingMode;
 
   private final ImmutableTable<SourceFilePath, String, ImmutableList<ExternNode>> externs;
+  private final DelTemplateSelector<TemplateDelegateNode> deltemplates;
+  private final Predicate<String> activeDelPackageSelector;
 
   /**
    * @param env The current environment.
@@ -233,7 +241,9 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       boolean debugSoyTemplateInfo,
       PluginInstances pluginInstances,
       UndefinedDataHandlingMode undefinedDataHandlingMode,
-      ImmutableTable<SourceFilePath, String, ImmutableList<ExternNode>> externs) {
+      ImmutableTable<SourceFilePath, String, ImmutableList<ExternNode>> externs,
+      DelTemplateSelector<TemplateDelegateNode> deltemplates,
+      Predicate<String> activeDelPackageSelector) {
     this.env = checkNotNull(env);
     this.msgBundle = msgBundle;
     this.cssRenamingMap = (cssRenamingMap == null) ? SoyCssRenamingMap.EMPTY : cssRenamingMap;
@@ -243,6 +253,8 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     this.pluginInstances = checkNotNull(pluginInstances);
     this.undefinedDataHandlingMode = checkNotNull(undefinedDataHandlingMode);
     this.externs = externs;
+    this.deltemplates = deltemplates;
+    this.activeDelPackageSelector = activeDelPackageSelector;
   }
 
   // -----------------------------------------------------------------------------------------------
@@ -900,9 +912,11 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     for (int i = params.size(); i < numJavaParams; i++) {
       Class<?> implicitType = method.arguments().get(i);
       if (implicitType == Dir.class) {
-        javaValues[i] = context.getBidiDir();
+        javaValues[i] = TofuJavaValue.forRaw(context.getBidiGlobalDir().toDir());
       } else if (implicitType == ULocale.class) {
         javaValues[i] = context.getULocale();
+      } else if (implicitType == RenderCssHelper.class) {
+        javaValues[i] = TofuJavaValue.forRaw(getRenderCssHelper());
       } else {
         throw new IllegalArgumentException(implicitType.getName());
       }
@@ -919,6 +933,14 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
             ? factory.callStaticMethod(method, javaValues)
             : factory.callInstanceMethod(method, javaValues);
     return value.soyValue();
+  }
+
+  private RenderCssHelper getRenderCssHelper() {
+    return (delTemplate, variant) -> {
+      TemplateDelegateNode data =
+          deltemplates.selectTemplate(delTemplate, variant, activeDelPackageSelector);
+      return data != null ? data.getTemplateName() : null;
+    };
   }
 
   protected SoyValue visitProtoInitFunction(FunctionNode node) {
