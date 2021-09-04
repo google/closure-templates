@@ -22,7 +22,6 @@ import static com.google.template.soy.jbcsrc.restricted.Expression.areAllCheap;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.html.types.SafeHtml;
 import com.google.common.html.types.SafeHtmlProto;
 import com.google.common.html.types.SafeUrl;
@@ -177,31 +176,6 @@ public abstract class MethodRef {
     }
     IMMUTABLE_LIST_OF_ARRAY = immutableListOfArray;
     IMMUTABLE_LIST_OF = ImmutableList.copyOf(immutableListOfMethods);
-  }
-
-  /**
-   * A list of all the {@link ImmutableMap#of} overloads, indexed by number of key-value pairs.
-   * (Note that this is a different indexing scheme than {@link #IMMUTABLE_LIST_OF}.)
-   */
-  public static final ImmutableList<MethodRef> IMMUTABLE_MAP_OF;
-
-  static {
-    MethodRef[] immutableMapOfMethods = new MethodRef[6];
-    for (java.lang.reflect.Method m : ImmutableMap.class.getMethods()) {
-      if (m.getName().equals("of")) {
-        Class<?>[] params = m.getParameterTypes();
-        MethodRef ref = MethodRef.create(m).asNonNullable();
-        int arity = params.length;
-        checkState(arity % 2 == 0);
-        int numEntries = arity >> 1;
-        if (numEntries == 0) {
-          // the zero arg one is 'cheap'
-          ref = ref.asCheap();
-        }
-        immutableMapOfMethods[numEntries] = ref;
-      }
-    }
-    IMMUTABLE_MAP_OF = ImmutableList.copyOf(immutableMapOfMethods);
   }
 
   public static final MethodRef INTEGER_DATA_FOR_VALUE =
