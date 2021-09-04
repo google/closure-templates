@@ -447,7 +447,7 @@ For example:
 *   `$foo?.bar(1, 2)` calls the `bar` method on `$foo` with the arguments `1`
     and `2` only if `$foo` is non-`null`
 
-See the [methods reference](methods.md) for a list of all methods that are
+See the [methods reference](functions.md) for a list of all methods that are
 available.
 
 ## Proto initialization
