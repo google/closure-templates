@@ -16,6 +16,7 @@
 
 package com.google.template.soy.data;
 
+import com.google.template.soy.data.SoyValueConverter.TypeMap;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
@@ -23,6 +24,7 @@ import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /** Performs the inverse operation to {@link SoyValueConverter#convert(Object)}. */
@@ -30,67 +32,82 @@ public final class SoyValueUnconverter {
 
   private SoyValueUnconverter() {}
 
+  private static final TypeMap<Object> CONVERTERS = new TypeMap<>();
+
+  static {
+    CONVERTERS.put(NullData.class, v -> null);
+    CONVERTERS.put(BooleanData.class, BooleanData::getValue);
+    CONVERTERS.put(IntegerData.class, IntegerData::getValue);
+    CONVERTERS.put(FloatData.class, FloatData::getValue);
+    CONVERTERS.put(StringData.class, StringData::getValue);
+    CONVERTERS.put(
+        SoyList.class,
+        v ->
+            v.asResolvedJavaList().stream()
+                .map(SoyValueUnconverter::unconvert)
+                .collect(Collectors.toList())); // Use ArrayList to allow nulls.
+    CONVERTERS.put(
+        SoyMap.class,
+        v -> {
+          // Use LinkedHashMap to preserve ordering and allow nulls.
+          Map<Object, Object> unconverted = new LinkedHashMap<>();
+          v.asJavaMap().forEach((key, value) -> unconverted.put(unconvert(key), unconvert(value)));
+          return unconverted;
+        });
+    CONVERTERS.put(SoyProtoValue.class, SoyProtoValue::getProto);
+    CONVERTERS.put(
+        // Note that SoyProtoValue implements SoyRecord but TypeMap's lookup order handles that OK
+        // since SoyProtoValue is a final class.
+        SoyRecord.class,
+        v -> {
+          Map<String, Object> unconverted = new LinkedHashMap<>();
+          v.forEach((key, value) -> unconverted.put(key, unconvert(value)));
+          return unconverted;
+        });
+    CONVERTERS.put(
+        SanitizedContent.class,
+        sc -> {
+          switch (sc.getContentKind()) {
+            case ATTRIBUTES:
+              return sc;
+            case CSS:
+              try {
+                return sc.toSafeStyle();
+              } catch (IllegalStateException e) {
+                return sc.toSafeStyleSheet();
+              }
+            case HTML:
+              return sc.toSafeHtml();
+            case JS:
+              return sc.toSafeScript();
+            case TRUSTED_RESOURCE_URI:
+              return sc.toTrustedResourceUrl();
+            case URI:
+              return sc.toSafeUrl();
+            default:
+              throw new IllegalArgumentException(sc.getContentKind().toString());
+          }
+        });
+  }
+
   public static Object unconvert(SoyValueProvider provider) {
     if (provider == null) {
       return null;
     }
     SoyValue soyValue = provider.resolve();
-    if (soyValue instanceof NullData) {
-      return null;
-    } else if (soyValue instanceof BooleanData) {
-      return ((BooleanData) soyValue).getValue();
-    } else if (soyValue instanceof IntegerData) {
-      return ((IntegerData) soyValue).getValue();
-    } else if (soyValue instanceof FloatData) {
-      return ((FloatData) soyValue).getValue();
-    } else if (soyValue instanceof StringData) {
-      return ((StringData) soyValue).getValue();
-    } else if (soyValue instanceof SoyList) {
-      // Use ArrayList to allow nulls.
-      return ((SoyList) soyValue)
-          .asResolvedJavaList().stream()
-              .map(SoyValueUnconverter::unconvert)
-              .collect(Collectors.toList());
-    } else if (soyValue instanceof SoyMap) {
-      // Use LinkedHashMap to preserve ordering and allow nulls.
-      Map<Object, Object> unconverted = new LinkedHashMap<>();
-      ((SoyMap) soyValue)
-          .asJavaMap()
-          .forEach((key, value) -> unconverted.put(unconvert(key), unconvert(value)));
-      return unconverted;
-    } else if (soyValue instanceof SoyProtoValue) {
-      return ((SoyProtoValue) soyValue).getProto();
-    } else if (soyValue instanceof SoyRecord) {
-      // this needs to come after checking for SoyProtoValue since SoyProtoValue implements
-      // SoyRecord
-      Map<String, Object> unconverted = new LinkedHashMap<>();
-      ((SoyRecord) soyValue).forEach((key, value) -> unconverted.put(key, unconvert(value)));
-      return unconverted;
-    } else if (soyValue instanceof SanitizedContent) {
-      SanitizedContent sc = (SanitizedContent) soyValue;
-      switch (sc.getContentKind()) {
-        case ATTRIBUTES:
-          return sc;
-        case CSS:
-          try {
-            return sc.toSafeStyle();
-          } catch (IllegalStateException e) {
-            return sc.toSafeStyleSheet();
-          }
-        case HTML:
-          return sc.toSafeHtml();
-        case JS:
-          return sc.toSafeScript();
-        case TRUSTED_RESOURCE_URI:
-          return sc.toTrustedResourceUrl();
-        case URI:
-          return sc.toSafeUrl();
-        default:
-          throw new IllegalArgumentException(sc.getContentKind().toString());
-      }
-    } else {
-      throw new IllegalArgumentException(
-          "Can't unconvert values of type: " + soyValue.getClass().getName());
+    return unconvertInternal(soyValue);
+  }
+
+  private static <T extends SoyValue> Object unconvertInternal(T soyValue) {
+    @SuppressWarnings({"unchecked"}) // Java thinks it's "? extends T"
+    Class<T> valueClass = (Class<T>) soyValue.getClass();
+
+    Function<T, Object> converter = CONVERTERS.getConverter(valueClass);
+    if (converter != null) {
+      return converter.apply(soyValue);
     }
+
+    throw new IllegalArgumentException(
+        "Can't unconvert values of type: " + soyValue.getClass().getName());
   }
 }
