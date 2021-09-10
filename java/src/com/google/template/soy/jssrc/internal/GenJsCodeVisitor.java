@@ -1853,28 +1853,14 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       Expression paramChunk =
           isThisParamPositional ? id(paramAlias) : genCodeForParamAccess(paramName, param);
       JsType jsType = getJsTypeForParamTypeCheck(paramType);
-      // The opt_param.name value that will be type-tested.
-      Expression coerced = jsType.getValueCoercion(paramChunk, generator);
-      if (coerced != null) {
-        if (isThisParamPositional) {
-          // reassign, post coercion
-          // add a cast to maintain the type of our parameter
-          declarations.add(Statement.assign(id(paramAlias), coerced.castAs(jsType.typeExpr())));
-        } else {
-          // since we have coercion logic, dump into a temporary
-          paramChunk = generator.declarationBuilder().setMutable().setRhs(coerced).build().ref();
-        }
-      }
       // TODO(lukes): for positional style params we should switch to inline defaults in the
       // declaration and let the JS VM handle this.
       if (param.hasDefault()) {
-        if (coerced == null && !isThisParamPositional) {
+        if (!isThisParamPositional) {
           // if we haven't captured the param into a mutable temporary allocate one now.
           paramChunk = generator.declarationBuilder().setMutable().setRhs(paramChunk).build().ref();
         }
-        declarations.add(
-            genParamDefault(
-                param, paramChunk, getJsTypeForParamTypeCheck(param.type()), generator));
+        declarations.add(genParamDefault(param, paramChunk, jsType, generator));
       }
       Optional<Expression> soyTypeAssertion =
           jsType.getSoyParamTypeAssertion(

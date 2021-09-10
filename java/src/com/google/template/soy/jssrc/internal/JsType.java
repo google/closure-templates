@@ -36,9 +36,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import com.google.template.soy.base.SoyBackendKind;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.TemplateContentKind;
@@ -58,7 +56,6 @@ import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.UnionType;
 import java.util.EnumMap;
-import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -73,29 +70,6 @@ import javax.annotation.Nullable;
  * declarations and cast operators.
  */
 public final class JsType {
-
-  /**
-   * In some cases we need to coerce a user provided value to something else to support
-   * compatibility.
-   *
-   * <p>Currently we only support protos and null, and it might be difficult to add more options.
-   */
-  private enum ValueCoercionStrategy {
-    /**
-     * Means that the value is allowed to be null.
-     *
-     * <p>This can influence the order of other coercion operations
-     */
-    NULL,
-
-    /**
-     * For protos, in particular try to handle the toObject() representation in addition to the
-     * normal runtime representation. Our type declarations specifically do not allow this but we
-     * support it to make it easier for applications to migrate away from the toObject() jspb
-     * representation.
-     */
-    PROTO;
-  }
 
   // TODO(lukes): use this consistently throughout jssrc.  We should consider inserting type
   // expressions when extracting list items/map items/record items.  Also at all of those points we
@@ -395,7 +369,6 @@ public final class JsType {
                     // allow null, but it isn't clear that this is very useful for users.
                     : protoTypeName)
             .addRequire(GoogRequire.create(protoTypeName))
-            .addCoercionStrategy(ValueCoercionStrategy.PROTO)
             .setPredicate(
                 (value, codeGenerator) ->
                     Optional.of(value.instanceOf(JsRuntime.protoConstructor(protoType))))
@@ -428,7 +401,6 @@ public final class JsType {
           // handle null first so that if other type tests dereference the param they won't fail
           if (isNullable) {
             builder.addTypes(NULL_OR_UNDEFINED_TYPE.typeExpressions);
-            builder.addCoercionStrategy(ValueCoercionStrategy.NULL);
             types.add(NULL_OR_UNDEFINED_TYPE);
           }
           for (SoyType member : unionType.getMembers()) {
@@ -438,7 +410,6 @@ public final class JsType {
             JsType memberType = forSoyType(member, kind, isStrict);
             builder.addRequires(memberType.extraRequires);
             builder.addTypes(memberType.typeExpressions);
-            builder.addCoercionStrategies(memberType.coercionStrategies);
             types.add(memberType);
           }
           return builder
@@ -451,7 +422,7 @@ public final class JsType {
                     for (JsType memberType : types) {
                       Optional<Expression> typeAssertion =
                           memberType.getTypeAssertion(value, codeGenerator);
-                      if (!typeAssertion.isPresent()) {
+                      if (typeAssertion.isEmpty()) {
                         return Optional.empty();
                       }
                       if (result == null) {
@@ -489,19 +460,22 @@ public final class JsType {
                   : "{" + Joiner.on(", ").withKeyValueSeparator(": ").join(parameters) + ",}";
           String ijType = "(goog.soy.IjData|undefined)";
           String returnType = forReturnType.typeExpr();
-          if (kind == JsTypeKind.IDOMSRC) {
-            builder.addRequire(
-                GoogRequire.createWithAlias(
-                    "google3.javascript.template.soy.api_idom", "incrementaldomlib"));
-            builder.addType(
-                String.format(
-                    "function(!incrementaldomlib.IncrementalDomRenderer, %s, %s):(%s)",
-                    parametersType, ijType, returnType));
-          } else if (kind == JsTypeKind.LITSRC) {
-            builder.addType(String.format("function(%s):(%s)", parametersType, "TemplateResult"));
-          } else {
-            builder.addType(
-                String.format("function(%s, %s):(%s)", parametersType, ijType, returnType));
+          switch (kind) {
+            case IDOMSRC:
+              builder.addRequire(
+                  GoogRequire.createWithAlias(
+                      "google3.javascript.template.soy.api_idom", "incrementaldomlib"));
+              builder.addType(
+                  String.format(
+                      "function(!incrementaldomlib.IncrementalDomRenderer, %s, %s):(%s)",
+                      parametersType, ijType, returnType));
+              break;
+            case LITSRC:
+              builder.addType(String.format("function(%s):(%s)", parametersType, "TemplateResult"));
+              break;
+            default:
+              builder.addType(
+                  String.format("function(%s, %s):(%s)", parametersType, ijType, returnType));
           }
           builder.setPredicate(GOOG_IS_FUNCTION);
           return builder.build();
@@ -579,14 +553,12 @@ public final class JsType {
 
   private final ImmutableSortedSet<String> typeExpressions;
   private final ImmutableSet<GoogRequire> extraRequires;
-  private final ImmutableSet<ValueCoercionStrategy> coercionStrategies;
   private final TypePredicate predicate;
 
   private JsType(Builder builder) {
     // Sort for determinism, order doesn't matter.
     this.typeExpressions = builder.typeExpressions.build();
     checkArgument(!typeExpressions.isEmpty());
-    this.coercionStrategies = Sets.immutableEnumSet(builder.coercionStrategies);
     this.extraRequires = builder.extraRequires.build();
     this.predicate = checkNotNull(builder.predicate);
   }
@@ -629,7 +601,7 @@ public final class JsType {
   public final Optional<Expression> getSoyParamTypeAssertion(
       Expression value, String valueName, String paramKind, Generator codeGenerator) {
     Optional<Expression> typeAssertion = getTypeAssertion(value, codeGenerator);
-    if (!typeAssertion.isPresent()) {
+    if (typeAssertion.isEmpty()) {
       return Optional.empty();
     }
 
@@ -640,20 +612,6 @@ public final class JsType {
             value,
             stringLiteral(paramKind),
             stringLiteral(typeExpr())));
-  }
-
-  /** Generates code to coerce the value, returns {@code null} if no coercion is necessary. */
-  @Nullable
-  final Expression getValueCoercion(Expression value, Generator codeGenerator) {
-    boolean needsProtoCoercion = coercionStrategies.contains(ValueCoercionStrategy.PROTO);
-    if (!needsProtoCoercion) {
-      return null;
-    }
-    Expression coercion =
-        value.castAs("?").dotAccess("$jspbMessageInstance").or(value, codeGenerator);
-    // If the value is null, return null instead of throwing. The assertion will catch the null with
-    // a readable error message.
-    return value.and(coercion, codeGenerator);
   }
 
   private static JsType createSanitized(final SanitizedContentKind kind, boolean isStrict) {
@@ -737,8 +695,6 @@ public final class JsType {
   private static final class Builder {
     final ImmutableSortedSet.Builder<String> typeExpressions = ImmutableSortedSet.naturalOrder();
     final ImmutableSet.Builder<GoogRequire> extraRequires = ImmutableSet.builder();
-    final Set<ValueCoercionStrategy> coercionStrategies =
-        EnumSet.noneOf(ValueCoercionStrategy.class);
     @Nullable TypePredicate predicate;
 
     Builder addType(String typeExpr) {
@@ -758,16 +714,6 @@ public final class JsType {
 
     Builder addRequires(Iterable<GoogRequire> symbols) {
       extraRequires.addAll(symbols);
-      return this;
-    }
-
-    Builder addCoercionStrategy(ValueCoercionStrategy strategy) {
-      coercionStrategies.add(strategy);
-      return this;
-    }
-
-    Builder addCoercionStrategies(Iterable<ValueCoercionStrategy> strategies) {
-      Iterables.addAll(coercionStrategies, strategies);
       return this;
     }
 
