@@ -422,7 +422,7 @@ public final class JsType {
                     for (JsType memberType : types) {
                       Optional<Expression> typeAssertion =
                           memberType.getTypeAssertion(value, codeGenerator);
-                      if (typeAssertion.isEmpty()) {
+                      if (!typeAssertion.isPresent()) {
                         return Optional.empty();
                       }
                       if (result == null) {
@@ -601,7 +601,7 @@ public final class JsType {
   public final Optional<Expression> getSoyParamTypeAssertion(
       Expression value, String valueName, String paramKind, Generator codeGenerator) {
     Optional<Expression> typeAssertion = getTypeAssertion(value, codeGenerator);
-    if (typeAssertion.isEmpty()) {
+    if (!typeAssertion.isPresent()) {
       return Optional.empty();
     }
 
