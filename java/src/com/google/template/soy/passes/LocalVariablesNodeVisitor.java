@@ -50,6 +50,7 @@ import com.google.template.soy.soytree.defn.ExternVar;
 import com.google.template.soy.soytree.defn.ImportedVar;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Deque;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -150,6 +151,18 @@ final class LocalVariablesNodeVisitor {
 
     List<String> allVariablesInScope() {
       return currentScope.stream().flatMap(map -> map.keySet().stream()).collect(toList());
+    }
+
+    List<String> allVariablesInScopeOfType(VarDefn.Kind kind) {
+      List<String> vars = new ArrayList<>();
+      for (Map<String, VarDefn> map : currentScope) {
+        for (Map.Entry<String, VarDefn> entry : map.entrySet()) {
+          if (entry.getValue().kind() == kind) {
+            vars.add(entry.getKey());
+          }
+        }
+      }
+      return vars;
     }
   }
 

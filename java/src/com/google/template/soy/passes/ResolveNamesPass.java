@@ -111,6 +111,14 @@ public final class ResolveNamesPass implements CompilerFilePass {
             SoyErrors.getDidYouMeanMessage(localVariables.allVariablesInScope(), varRef.getName()));
         varDefn = new UndeclaredVar(varRef.getName(), varRef.getSourceLocation());
       }
+      if (varRef.toSourceString().startsWith(".") && varDefn.kind() != VarDefn.Kind.TEMPLATE) {
+        errorReporter.report(
+            varRef.getSourceLocation(),
+            UKNOWN_VARIABLE,
+            SoyErrors.getDidYouMeanMessage(
+                localVariables.allVariablesInScopeOfType(VarDefn.Kind.TEMPLATE), varRef.getName()));
+        varDefn = new UndeclaredVar(varRef.getName(), varRef.getSourceLocation());
+      }
       varRef.setDefn(varDefn);
     }
   }
