@@ -152,10 +152,26 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
   }
 
   private void process(PrintNode printNode, IdGenerator nodeIdGen) {
-    if (printNode.getExpr().getRoot() instanceof FunctionNode
-        && !((FunctionNode) printNode.getExpr().getRoot()).hasStaticName()
-        && ((FunctionNode) printNode.getExpr().getRoot()).getNameExpr() != null) {
-      FunctionNode fnNode = (FunctionNode) printNode.getExpr().getRoot();
+    ExprNode rootExpr = printNode.getExpr().getRoot();
+    if ((rootExpr instanceof VarRefNode || rootExpr instanceof TemplateLiteralNode)
+        && rootExpr.getType() instanceof TemplateType
+        && ((TemplateType) rootExpr.getType())
+            .getParameters().stream().allMatch(param -> !param.isRequired())) {
+      CallBasicNode call =
+          new CallBasicNode(
+              nodeIdGen.genId(),
+              printNode.getSourceLocation(),
+              printNode.getExpr().getSourceLocation(),
+              rootExpr.copy(new CopyState()),
+              ImmutableList.of(),
+              false,
+              errorReporter);
+      call.getCalleeExpr().setType(rootExpr.getType());
+      printNode.getParent().replaceChild(printNode, call);
+    } else if (rootExpr instanceof FunctionNode
+        && !((FunctionNode) rootExpr).hasStaticName()
+        && ((FunctionNode) rootExpr).getNameExpr() != null) {
+      FunctionNode fnNode = (FunctionNode) rootExpr;
       ExprNode callee;
       SoyType type;
       if (fnNode.getNameExpr() instanceof VarRefNode
