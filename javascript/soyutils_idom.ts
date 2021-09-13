@@ -421,7 +421,7 @@ function print(
     } else {
       // For HTML content we need to insert a custom element where we can place
       // the content without incremental dom modifying it.
-      const el = incrementaldom.open('html-blob');
+      const el = incrementaldom.open('html-blob', '');
       if (el && el.__innerHTML !== content) {
         googSoy.renderHtml(el, ordainSanitizedHtml(content));
         el.__innerHTML = content;

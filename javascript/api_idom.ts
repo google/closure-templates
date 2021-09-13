@@ -60,7 +60,7 @@ interface IdomRendererApi {
   pushManualKey(key: incrementaldom.Key): void;
   popManualKey(): void;
   pushKey(key: string): string;
-  getNewKey(key: string): string;
+  getNewKey(key: string|undefined): string;
   popKey(oldKey: string): void;
   getCurrentKeyStack(): string;
   elementClose(): void|Element;
@@ -108,7 +108,8 @@ export class IncrementalDomRenderer implements IdomRendererApi {
    * Pushes/pops the given key from `keyStack` (versus `Array#concat`)
    * to avoid allocating a new array for every element open.
    */
-  open(nameOrCtor: string|ElementConstructor, key = ''): HTMLElement|void {
+  open(nameOrCtor: string|ElementConstructor, key: string|undefined):
+      HTMLElement|void {
     const el = incrementaldom.open(nameOrCtor, this.getNewKey(key));
     this.visit(el);
     return el;
@@ -177,8 +178,13 @@ export class IncrementalDomRenderer implements IdomRendererApi {
     return oldKey;
   }
 
-  getNewKey(key: string) {
+  getNewKey(key: string|undefined) {
     const oldKey = this.getCurrentKeyStack();
+    // This happens in the case where an element has a manual key. The very next
+    // key should be undefined.
+    if (key === undefined) {
+      return oldKey;
+    }
     const serializedKey = soy.$$serializeKey(key);
     return serializedKey + oldKey;
   }
@@ -431,7 +437,7 @@ export class FalsinessRenderer implements IdomRendererApi {
   pushKey(key: string): string {
     return '';
   }
-  getNewKey(key: string): string {
+  getNewKey(key: string|undefined): string {
     return '';
   }
   popKey(oldKey: string): void {}

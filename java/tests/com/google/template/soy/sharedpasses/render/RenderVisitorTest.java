@@ -1651,11 +1651,6 @@ public class RenderVisitorTest {
     assertRenderException("{@inject ijInt: string}\n{$ijInt}\n", "Parameter type mismatch");
   }
 
-  @Test
-  public void testKeyNodeIsNoOp() throws Exception {
-    assertRender("<div {key 'foo'}></div>", "<div></div>");
-  }
-
   private static SoyValue createToStringTestValue() {
     return new SoyAbstractValue() {
       @Override
