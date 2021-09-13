@@ -33,7 +33,7 @@ import com.google.common.primitives.Primitives;
 import com.google.protobuf.Message;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
-import com.google.template.soy.data.SoyData;
+import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
@@ -360,7 +360,7 @@ class ValidateExternsPass implements CompilerFilePass {
         // fallthrough
       case ANY:
       case UNKNOWN:
-        return javaType == Object.class || javaType == SoyData.class;
+        return javaType == Object.class || javaType == SoyValue.class;
       case LIST:
         return (javaType == List.class || javaType == ImmutableList.class)
             && ALLOWED_PARAMETERIZED_TYPES.contains(

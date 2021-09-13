@@ -45,7 +45,7 @@ public class SoyListDataTest {
     sld.put("0", StringData.forValue("moomoo"));
     assertThat(((StringData) sld.get("0")).getValue()).isEqualTo("moomoo");
 
-    sld.put("0", (SoyData) null);
+    sld.put("0", (SoyValue) null);
     assertThat(sld.length()).isEqualTo(1);
     assertThat(sld.get("0")).isInstanceOf(NullData.class);
 
@@ -59,7 +59,7 @@ public class SoyListDataTest {
     sld.set(0, BooleanData.FALSE);
     assertThat(((BooleanData) sld.get(0)).getValue()).isFalse();
 
-    sld.set(1, (SoyData) null);
+    sld.set(1, (SoyValue) null);
     assertThat(sld.get(1)).isInstanceOf(NullData.class);
 
     sld.add(true);

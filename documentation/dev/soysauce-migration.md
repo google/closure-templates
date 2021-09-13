@@ -106,7 +106,7 @@ are some behavior differences.
 
 NOTE: the `SoyTofu.Renderer` has a `setData` overload that accepts a `SoyRecord`
 object, but `SoySauce.Renderer` does not. This means that if you are
-constructing `SoyData` objects to pass to the renderer that you will need to
+constructing `SoyValue` objects to pass to the renderer that you will need to
 switch to passing plain Java objects (maps, lists, strings, protos).
 
 TIP: you may find it useful to use the `Shims` in the

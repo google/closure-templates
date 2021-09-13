@@ -44,6 +44,7 @@ import javax.annotation.Nonnull;
  */
 @Deprecated
 public class SoyMapData extends CollectionData implements SoyDict, SoyMap {
+  // TODO(b/18800133): Update all types from SoyData to SoyValue once callers are hardened.
 
   /** Underlying map. */
   private final Map<String, SoyData> map;
@@ -70,7 +71,7 @@ public class SoyMapData extends CollectionData implements SoyDict, SoyMap {
       Object value = entry.getValue();
 
       try {
-        map.put(key, SoyData.createFromExistingData(value));
+        map.put(key, /* TODO(b/18800133) cast */ (SoyData) createFromExistingData(value));
       } catch (SoyDataException sde) {
         sde.prependKeyToDataPath(key);
         throw sde;
@@ -178,8 +179,8 @@ public class SoyMapData extends CollectionData implements SoyDict, SoyMap {
    * @param value The data to put at the specified key.
    */
   @Override
-  public void putSingle(String key, SoyData value) {
-    map.put(key, value);
+  public void putSingle(String key, SoyValue value) {
+    map.put(key, /* TODO(b/18800133) cast */ (SoyData) value);
   }
 
   /**

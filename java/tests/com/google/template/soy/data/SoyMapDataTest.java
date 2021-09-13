@@ -44,7 +44,7 @@ public final class SoyMapDataTest {
     smd.put("boo", StringData.forValue("boohoo"));
     assertThat(((StringData) smd.get("boo")).getValue()).isEqualTo("boohoo");
 
-    smd.put("boo", (SoyData) null);
+    smd.put("boo", (SoyValue) null);
     assertThat(smd.get("boo")).isInstanceOf(NullData.class);
 
     smd.remove("boo");

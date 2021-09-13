@@ -40,6 +40,8 @@ import javax.annotation.Nonnull;
  */
 @Deprecated
 public final class SoyListData extends CollectionData implements Iterable<SoyData>, SoyList {
+  // TODO(b/18800133): Update all types from SoyData to SoyValue once callers are hardened.
+
   /** The underlying list. */
   private final List<SoyData> list;
 
@@ -157,7 +159,7 @@ public final class SoyListData extends CollectionData implements Iterable<SoyDat
 
     for (Object el : data) {
       try {
-        add(SoyData.createFromExistingData(el));
+        add(createFromExistingData(el));
 
       } catch (SoyDataException sde) {
         sde.prependIndexToDataPath(list.size());
@@ -180,8 +182,8 @@ public final class SoyListData extends CollectionData implements Iterable<SoyDat
    *
    * @param value The data to add.
    */
-  public void add(SoyData value) {
-    list.add(ensureValidValue(value));
+  public void add(SoyValue value) {
+    list.add(/* TODO(b/18800133) cast */ (SoyData) ensureValidValue(value));
   }
 
   /**
@@ -237,11 +239,11 @@ public final class SoyListData extends CollectionData implements Iterable<SoyDat
    * @param index The index.
    * @param value The data to set.
    */
-  public void set(int index, SoyData value) {
+  public void set(int index, SoyValue value) {
     if (index == list.size()) {
-      list.add(ensureValidValue(value));
+      list.add(/* TODO(b/18800133) cast */ (SoyData) ensureValidValue(value));
     } else {
-      list.set(index, ensureValidValue(value));
+      list.set(index, /* TODO(b/18800133) cast */ (SoyData) ensureValidValue(value));
     }
   }
 
@@ -397,7 +399,7 @@ public final class SoyListData extends CollectionData implements Iterable<SoyDat
    * @param value The data to put at the specified key.
    */
   @Override
-  public void putSingle(String key, SoyData value) {
+  public void putSingle(String key, SoyValue value) {
     set(Integer.parseInt(key), value);
   }
 

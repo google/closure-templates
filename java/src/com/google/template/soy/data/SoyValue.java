@@ -20,7 +20,7 @@ import java.io.IOException;
 import javax.annotation.ParametersAreNonnullByDefault;
 
 /**
- * Superinterface of all Soy value interfaces/classes. Replaces the old SoyData.
+ * Superinterface of all Soy value interfaces/classes.
  *
  * <p>Important: Until this API is more stable and this note is removed, users must not define
  * classes that implement this interface.
