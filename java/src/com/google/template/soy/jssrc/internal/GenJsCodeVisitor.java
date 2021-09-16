@@ -535,14 +535,17 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    *
    * @param soyFile The file with the templates..
    */
-  private static void addCodeToRequireCss(JsDoc.Builder header, SoyFileNode soyFile) {
+  private void addCodeToRequireCss(JsDoc.Builder header, SoyFileNode soyFile) {
 
     SortedSet<String> requiredCssNamespaces = new TreeSet<>();
-    requiredCssNamespaces.addAll(soyFile.getRequireCss());
-    for (TemplateNode template : soyFile.getTemplates()) {
-      requiredCssNamespaces.addAll(template.getRequiredCssNamespaces());
+    if (jsSrcOptions.dependOnCssHeader()) {
+      requiredCssNamespaces.add("./" + soyFile.getFilePath().fileName());
+    } else {
+      requiredCssNamespaces.addAll(soyFile.getRequireCss());
+      for (TemplateNode template : soyFile.getTemplates()) {
+        requiredCssNamespaces.addAll(template.getRequiredCssNamespaces());
+      }
     }
-
     // NOTE: CSS requires in JS can only be done on a file by file basis at this time.  Perhaps in
     // the future, this might be supported per function.
     for (String requiredCssNamespace : requiredCssNamespaces) {
