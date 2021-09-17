@@ -338,16 +338,20 @@ public final class CommandTagAttribute {
     return value;
   }
 
+  void checkAsExpr(ErrorReporter reporter) {
+    checkState(value == null);
+    if (valueExprList.size() != 1) {
+      SourceLocation loc =
+          valueExprList.isEmpty() ? getSourceLocation() : valueExprList.get(1).getSourceLocation();
+      reporter.report(loc, EXPECTED_A_SINGLE_EXPRESSION, key.identifier());
+    }
+  }
+
   /** Returns the value as an expression. Only call on an expression attribute. */
   public ExprRootNode valueAsExpr(ErrorReporter reporter) {
-    checkState(value == null);
-    if (valueExprList.size() > 1) {
-      reporter.report(
-          valueExprList.get(1).getSourceLocation(), EXPECTED_A_SINGLE_EXPRESSION, key.identifier());
-      // Return the first expr to avoid an NPE in CallNode ctor.
-      return valueExprList.get(0);
-    }
-    return Iterables.getOnlyElement(valueExprList);
+    checkAsExpr(reporter);
+    // Return the first expr to avoid an NPE in CallNode ctor.
+    return valueExprList.get(0);
   }
 
   public boolean hasExprValue() {

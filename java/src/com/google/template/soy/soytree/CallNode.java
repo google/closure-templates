@@ -18,6 +18,7 @@ package com.google.template.soy.soytree;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.template.soy.base.SourceLocation.UNKNOWN;
 import static com.google.template.soy.base.internal.BaseUtils.convertToUpperUnderscore;
 import static com.google.template.soy.soytree.MessagePlaceholder.PHEX_ATTR;
 import static com.google.template.soy.soytree.MessagePlaceholder.PHNAME_ATTR;
@@ -26,6 +27,8 @@ import static com.google.template.soy.soytree.MessagePlaceholder.validatePlaceho
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.Identifier;
+import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprRootNode;
@@ -36,6 +39,7 @@ import com.google.template.soy.soytree.SoyNode.MsgPlaceholderInitialNode;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import javax.annotation.Nullable;
@@ -57,6 +61,9 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
   /** Fallback base placeholder name. */
   private static final String FALLBACK_BASE_PLACEHOLDER_NAME = "XXX";
 
+  static final String KEY = "key";
+  static final String DATA = "data";
+
   /** True if this call is passing data="all". */
   private boolean isPassingAllData;
 
@@ -64,15 +71,9 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
   private final boolean selfClosing;
 
   /** Used for formatting */
-  private final List<CommandTagAttribute> attributes;
+  private ImmutableList<CommandTagAttribute> attributes;
 
   private final SourceLocation openTagLocation;
-
-  /** The data= expression, or null if the call does not pass data or passes data="all". */
-  @Nullable private ExprRootNode dataExpr;
-
-  /** The key= expression, or null if the call does not pass key. */
-  @Nullable private ExprRootNode keyExpr;
 
   private final MessagePlaceholder placeholder;
 
@@ -115,17 +116,16 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
       String name = attr.getName().identifier();
 
       switch (name) {
-        case "data":
+        case DATA:
           if (!attr.hasExprValue() && "all".equals(attr.getValue())) {
             this.isPassingAllData = true;
-            this.dataExpr = null;
           } else {
             this.isPassingAllData = false;
-            this.dataExpr = attr.valueAsExpr(reporter);
+            attr.checkAsExpr(reporter); // report any errors to compiler
           }
           break;
-        case "key":
-          this.keyExpr = attr.valueAsExpr(reporter);
+        case KEY:
+          attr.checkAsExpr(reporter); // report any errors to compiler
           break;
         case PHNAME_ATTR:
           phNameLocation = attr.getValueLocation();
@@ -141,7 +141,7 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
       }
     }
 
-    this.attributes = attributes;
+    this.attributes = ImmutableList.copyOf(attributes);
     this.selfClosing = selfClosing;
     this.placeholder =
         (phName == null)
@@ -159,8 +159,6 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
   protected CallNode(CallNode orig, CopyState copyState) {
     super(orig, copyState);
     this.isPassingAllData = orig.isPassingAllData;
-    this.dataExpr = (orig.dataExpr != null) ? orig.dataExpr.copy(copyState) : null;
-    this.keyExpr = (orig.keyExpr != null) ? orig.keyExpr.copy(copyState) : null;
     this.placeholder = orig.placeholder;
     this.escapingDirectives = orig.escapingDirectives;
     this.callKey = orig.callKey;
@@ -190,7 +188,7 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
   }
 
   public boolean isPassingData() {
-    return isPassingAllData || dataExpr != null;
+    return isPassingAllData || getDataExpr() != null;
   }
 
   public void setTemplateCallKey(String key) {
@@ -216,16 +214,49 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
 
   @Nullable
   public ExprRootNode getDataExpr() {
-    return dataExpr;
+    return attributes.stream()
+        .filter(a -> a.hasName(DATA) && a.hasExprValue())
+        .findFirst()
+        .map(a -> a.valueAsExprList().get(0))
+        .orElse(null);
   }
 
   @Nullable
   public ExprRootNode getKeyExpr() {
-    return keyExpr;
+    return attributes.stream()
+        .filter(a -> a.hasName(KEY))
+        .findFirst()
+        .map(a -> a.valueAsExprList().get(0))
+        .orElse(null);
   }
 
   public void setKeyExpr(ExprRootNode expr) {
-    this.keyExpr = expr;
+    CommandTagAttribute existing =
+        attributes.stream().filter(a -> a.hasName(KEY)).findFirst().orElse(null);
+    if (existing == null && expr == null) {
+      return;
+    }
+
+    List<CommandTagAttribute> newAttr = new ArrayList<>(attributes);
+    if (existing != null) {
+      newAttr.remove(existing);
+      if (expr != null) {
+        newAttr.add(
+            new CommandTagAttribute(
+                existing.getName(),
+                existing.getQuoteStyle(),
+                ImmutableList.of(expr.getRoot()),
+                existing.getSourceLocation()));
+      }
+    } else {
+      newAttr.add(
+          new CommandTagAttribute(
+              Identifier.create(KEY, UNKNOWN),
+              QuoteStyle.DOUBLE,
+              ImmutableList.of(expr.getRoot()),
+              UNKNOWN));
+    }
+    attributes = ImmutableList.copyOf(newAttr);
   }
 
   public boolean getIsPcData() {
@@ -261,19 +292,10 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
 
   @Override
   public ImmutableList<ExprRootNode> getExprList() {
-    ImmutableList.Builder<ExprRootNode> list = ImmutableList.builder();
-    if (dataExpr != null) {
-      list.add(dataExpr);
-    }
-    if (keyExpr != null) {
-      list.add(keyExpr);
-    }
-    for (CommandTagAttribute attribute : attributes) {
-      if (attribute.hasExprValue()) {
-        list.addAll(attribute.valueAsExprList());
-      }
-    }
-    return list.build();
+    return attributes.stream()
+        .filter(CommandTagAttribute::hasExprValue)
+        .flatMap(a -> a.valueAsExprList().stream())
+        .collect(toImmutableList());
   }
 
   @SuppressWarnings("unchecked")
