@@ -170,13 +170,13 @@ callee template.
   // Greet the person.
   {call .helloName data="all" /}<br>
   // Greet the additional people.
-  {for $additionalName in $additionalNames}
+  {for $additionalName, $i in $additionalNames}
+    {if $i > 0}
+      <br>  // break after every line except the last
+    {/if}
     {call .helloName}
       {param name: $additionalName /}
     {/call}
-    {if not isLast($additionalName)}
-      <br>  // break after every line except the last
-    {/if}
   {ifempty}
     No additional people to greet.
   {/for}

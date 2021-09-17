@@ -36,7 +36,9 @@ For example:
 
 Example output (for pi = 2.71828):
 
-    2.71828 is a bad approximation of pi.
+```
+2.71828 is a bad approximation of pi.
+```
 
 ## switch, case, default {#switch}
 
@@ -79,7 +81,9 @@ For example:
 
 Example output (for `numMarbles` = 2):
 
-    You have a normal number of marbles.
+```
+You have a normal number of marbles.
+```
 
 For `numMarbles` = 4, the output would be empty.
 
@@ -134,6 +138,9 @@ For the original `$operands` = `['alpha', 'beta', 'gamma']`, this would output:
 ```
 alpha(0) + beta(1) + gamma(2)
 ```
+
+WARNING: The following section describes function `isLast()` which is deprecated
+in favor of indexed iteration.
 
 Within the block, you can use a special function `isLast($var)` that only takes
 the iterator as its argument and returns `true` only on the last iteration. For

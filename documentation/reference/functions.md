@@ -52,22 +52,28 @@ is omitted, it defaults to 1. If the `start` argument is omitted, it defaults to
 This function behaves identically to the Python `range` builtin function, or the
 Closure `goog.array.range` function.
 
-## For Loop Context Functions
+## For Loop Context Functions (Deprecated)
 
 ### `isFirst($var)` {#isFirst}
 
 Use this in `for` loops. See the [`for` section](control-flow.md#for) of the
 Commands chapter. This does not work for list comprehensions.
 
+Deprecated. Use [indexed for loops](control-flow.md#for-indexed) instead.
+
 ### `isLast($var)` {#isLast}
 
 Use this in `for` loops. See the [`for` section](control-flow.md#for) of the
 Commands chapter. This does not work for list comprehensions.
 
+Deprecated. Use [indexed for loops](control-flow.md#for-indexed) instead.
+
 ### `index($var)` {#index}
 
 Use this in `for` loops. See the [`for` section](control-flow.md#for) of the
 Commands chapter. This does not work for list comprehensions.
+
+Deprecated. Use [indexed for loops](control-flow.md#for-indexed) instead.
 
 ## Math Functions
 

@@ -421,10 +421,10 @@ supported by the compiler.
 ```soy {.bad}
 {template .t}
   {@param a: list<string>}
-  {for $x in $a}
-    {if isFirst($x)}<ul>{/if}
+  {for $x, $i in $a}
+    {if $i == 0}<ul>{/if}
     <li>{$x}
-    {if isLast($x)}</ul>{/if}
+    {if $i == $a.length() - 1}</ul>{/if}
   {/for}
 {/template}
 ```
@@ -444,7 +444,7 @@ exactly the same HTML, and is supported by the compiler.
 ```soy {.good}
 {template .t}
   {@param a: list<string>}
-  {if length($a) > 0}
+  {if $a.length() > 0}
     <ul>
     {for $x in $a}
       <li>{$x}

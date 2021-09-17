@@ -225,7 +225,7 @@ false == true`)
 For example,
 
 *   `not $bar`
-*   `not isLast($foo)`
+*   `not $foo.contains('x')`
 
 ### Times operator `*`
 
