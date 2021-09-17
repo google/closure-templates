@@ -37,7 +37,6 @@ import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.plugin.java.internal.PluginAnalyzer;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
-import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyDeprecated;
 import com.google.template.soy.shared.restricted.SoyFunction;
@@ -72,7 +71,7 @@ public final class PluginResolver {
       SoyErrorKind.of("Unknown {0} ''{1}''.{2}", StyleAllowance.NO_PUNCTUATION);
 
   private static final SoyErrorKind DEPRECATED_PLUGIN =
-      SoyErrorKind.deprecation(
+      SoyErrorKind.of(
           "{0} is deprecated: {1}", StyleAllowance.NO_PUNCTUATION, StyleAllowance.NO_CAPS);
 
   private static final SoyErrorKind INCORRECT_NUM_ARGS =
@@ -433,11 +432,6 @@ public final class PluginResolver {
         reporter.warn(location, DEPRECATED_PLUGIN, name, sig.deprecatedWarning());
       }
       return;
-    } else if (plugin instanceof BuiltinFunction) {
-      BuiltinFunction builtin = (BuiltinFunction) plugin;
-      if (!builtin.deprecatedWarning().isEmpty()) {
-        reporter.warn(location, DEPRECATED_PLUGIN, name, builtin.deprecatedWarning());
-      }
     }
 
     // SoyMethod, SoyPrintDirective, and SoySourceFunction can all be annotated with @SoyDeprecated.

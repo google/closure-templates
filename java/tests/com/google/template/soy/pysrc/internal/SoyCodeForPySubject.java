@@ -188,10 +188,7 @@ public final class SoyCodeForPySubject extends Subject {
   }
 
   private String compileBody() {
-    ParseResult parseResult =
-        SoyFileSetParserBuilder.forTemplateContents(actual)
-            .errorReporter(ErrorReporter.explodeOnErrorsAndIgnoreDeprecations())
-            .parse();
+    ParseResult parseResult = SoyFileSetParserBuilder.forTemplateContents(actual).parse();
     SoyNode node = SharedTestUtils.getNode(parseResult.fileSet(), 0);
 
     // Setup the GenPyCodeVisitor's state before the node is visited.

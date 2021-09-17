@@ -48,8 +48,7 @@ final class KeyCommandPass implements CompilerFilePass {
               + "(e.g. `<div '{'key 'foo''}'></div>`).");
 
   private static final SoyErrorKind DUPLICATE_KEY_ATTR =
-      SoyErrorKind.deprecation(
-          "The key attribute is deprecated. Instead, use the '{'key'}' command.");
+      SoyErrorKind.of("The key attribute is deprecated. Instead, use the '{'key'}' command.");
 
   private static final SoyErrorKind UNSUPPORTED_TYPE =
       SoyErrorKind.of("Unsupported type ''{0}'': keys must be of type string, integer, or enum.");

@@ -23,7 +23,6 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.Node;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.DataAccessNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
@@ -571,7 +570,6 @@ public final class TemplateAnalysisTest {
                         ""))
             .addSoyFunction(REFED_FUNCTION)
             .addSoyFunction(NOT_REFED_FUNCTION)
-            .errorReporter(ErrorReporter.explodeOnErrorsAndIgnoreDeprecations())
             .parse()
             .fileSet()
             .getChild(0)

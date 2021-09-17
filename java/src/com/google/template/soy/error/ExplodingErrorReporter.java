@@ -31,55 +31,52 @@ import com.google.template.soy.base.SourceLocation;
  * check the full list of errors encountered during compilation), pass a non-exploding ErrorReporter
  * instance to {@link com.google.template.soy.testing.SoyFileSetParserBuilder#errorReporter}.
  */
-class ExplodingErrorReporter extends ErrorReporter {
-  static final ErrorReporter EXPLODING = new ExplodingErrorReporter();
-  static final ErrorReporter EXPLODING_IGNORE_WARNINGS =
-      new ExplodingErrorReporter() {
-        @Override
-        public void warn(SourceLocation sourceLocation, SoyErrorKind error, Object... args) {
-          checkNotNull(sourceLocation);
-        }
-      };
+final class ExplodingErrorReporter extends ErrorReporter {
+  static final ErrorReporter EXPLODING = new ExplodingErrorReporter(false);
+  static final ErrorReporter EXPLODING_IGNORE_WARNINGS = new ExplodingErrorReporter(true);
 
-  ExplodingErrorReporter() {}
+  private final boolean ignoreWarnings;
 
-  protected final void explode(SourceLocation sourceLocation, SoyErrorKind error, Object... args) {
-    throw new AssertionError(
-        String.format("Unexpected error: %s at %s", error.format(args), sourceLocation));
+  private ExplodingErrorReporter(boolean ignoreWarnings) {
+    this.ignoreWarnings = ignoreWarnings;
   }
 
   @Override
   public void report(SourceLocation sourceLocation, SoyErrorKind error, Object... args) {
     checkNotNull(sourceLocation);
-    explode(sourceLocation, error, args);
+    throw new AssertionError(
+        String.format("Unexpected error: %s at %s", error.format(args), sourceLocation));
   }
 
   @Override
   public void warn(SourceLocation sourceLocation, SoyErrorKind error, Object... args) {
     checkNotNull(sourceLocation);
-    explode(sourceLocation, error, args);
+    if (!ignoreWarnings) {
+      throw new AssertionError(
+          String.format("Unexpected warning: %s at %s", error.format(args), sourceLocation));
+    }
   }
 
   @Override
-  final int getCurrentNumberOfErrors() {
+  int getCurrentNumberOfErrors() {
     return 0;
   }
 
   @Override
-  final int getCurrentNumberOfReports() {
+  int getCurrentNumberOfReports() {
     return 0;
   }
 
   @Override
-  public final void copyTo(ErrorReporter other) {}
+  public void copyTo(ErrorReporter other) {}
 
   @Override
-  public final ImmutableList<SoyError> getErrors() {
+  public ImmutableList<SoyError> getErrors() {
     return ImmutableList.of();
   }
 
   @Override
-  public final ImmutableList<SoyError> getWarnings() {
+  public ImmutableList<SoyError> getWarnings() {
     return ImmutableList.of();
   }
 }

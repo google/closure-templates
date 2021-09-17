@@ -757,7 +757,6 @@ public final class ResolveExpressionTypesPassTest {
                     "   {assertType('string', xid('bar'))}",
                     "{/for}"))
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
-            .errorReporter(ErrorReporter.explodeOnErrorsAndIgnoreDeprecations())
             .parse()
             .fileSet();
     assertTypes(soyTree);

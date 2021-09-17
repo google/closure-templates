@@ -356,7 +356,7 @@ public final class TemplateTester {
             builder
                 .typeRegistry(typeRegistry)
                 .runOptimizer(true)
-                .errorReporter(ErrorReporter.explodeOnErrorsAndIgnoreDeprecations())
+                .errorReporter(ErrorReporter.exploding())
                 .enableExperimentalFeatures(experimentalFeatures)
                 .parse();
         SoyFileSetNode fileSet = parseResult.fileSet();
@@ -484,15 +484,12 @@ public final class TemplateTester {
 
   static CompiledTemplates compileFile(String... fileBody) {
     String file = Joiner.on('\n').join(fileBody);
-    SoyFileSetParser parser =
-        SoyFileSetParserBuilder.forFileContents(file)
-            .errorReporter(ErrorReporter.explodeOnErrorsAndIgnoreDeprecations())
-            .build();
+    SoyFileSetParser parser = SoyFileSetParserBuilder.forFileContents(file).build();
     ParseResult parseResult = parser.parse();
     return BytecodeCompiler.compile(
             parseResult.registry(),
             parseResult.fileSet(),
-            ErrorReporter.explodeOnErrorsAndIgnoreDeprecations(),
+            ErrorReporter.exploding(),
             parser.soyFileSuppliers(),
             parser.typeRegistry())
         .get();

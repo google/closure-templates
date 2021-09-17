@@ -268,6 +268,7 @@ public class RenderVisitorTest {
   private String renderWithDataAndMsgBundle(
       String templateBody, SoyRecord data, @Nullable SoyMsgBundle msgBundle) throws Exception {
 
+    ErrorReporter boom = ErrorReporter.exploding();
     ExperimentalFeatures experimentalFeatures =
         testDescription.getAnnotation(ExperimentalFeatures.class);
     SoyFileSetNode soyTree =
@@ -276,7 +277,7 @@ public class RenderVisitorTest {
                 experimentalFeatures == null
                     ? ImmutableList.of()
                     : ImmutableList.copyOf(experimentalFeatures.value()))
-            .errorReporter(ErrorReporter.explodeOnErrorsAndIgnoreDeprecations())
+            .errorReporter(boom)
             .parse()
             .fileSet();
     TemplateNode templateNode = (TemplateNode) SharedTestUtils.getNode(soyTree);

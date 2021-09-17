@@ -40,12 +40,10 @@ public final class SoyErrorKind {
 
   private final MessageFormat messageFormat;
   private final int requiredArgs;
-  private final boolean deprecation;
 
-  private SoyErrorKind(MessageFormat messageFormat, boolean deprecation) {
+  private SoyErrorKind(MessageFormat messageFormat) {
     this.messageFormat = messageFormat;
     this.requiredArgs = messageFormat.getFormatsByArgumentIndex().length;
-    this.deprecation = deprecation;
   }
 
   public String format(Object... args) {
@@ -58,19 +56,9 @@ public final class SoyErrorKind {
     return messageFormat.format(args);
   }
 
-  public boolean isDeprecation() {
-    return deprecation;
-  }
-
   public static SoyErrorKind of(String format, StyleAllowance... exceptions) {
     checkFormat(format, exceptions);
-    return new SoyErrorKind(new MessageFormat(format), /* deprecation= */ false);
-  }
-
-  /** Create a message specifically related to deprecation. */
-  public static SoyErrorKind deprecation(String format, StyleAllowance... exceptions) {
-    checkFormat(format, exceptions);
-    return new SoyErrorKind(new MessageFormat(format), /* deprecation= */ true);
+    return new SoyErrorKind(new MessageFormat(format));
   }
 
   private static void checkFormat(String format, StyleAllowance... exceptions) {
