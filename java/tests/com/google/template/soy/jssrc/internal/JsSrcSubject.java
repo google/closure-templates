@@ -160,6 +160,7 @@ abstract class JsSrcSubject<T extends Subject> extends Subject {
             .allowUnboundGlobals(true)
             .setLoggingConfig(loggingConfig)
             .allowUnknownJsGlobals(true)
+            .errorReporter(ErrorReporter.explodeOnErrorsAndIgnoreDeprecations())
             .enableExperimentalFeatures(experimentalFeatures);
     for (SoyFunction soyFunction : soyFunctions) {
       builder.addSoyFunction(soyFunction);

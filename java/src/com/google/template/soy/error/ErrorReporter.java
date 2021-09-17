@@ -16,6 +16,7 @@
 
 package com.google.template.soy.error;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.errorprone.annotations.ForOverride;
@@ -24,9 +25,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import java.util.Map;
 
-/**
- * Collects errors during parsing.
- */
+/** Collects errors during parsing. */
 public abstract class ErrorReporter {
 
   /**
@@ -45,10 +44,17 @@ public abstract class ErrorReporter {
   }
 
   public static ErrorReporter devnull() {
-    return new ErrorReporterImpl(ImmutableMap.of());
+    return new ExplodingErrorReporter() {
+      @Override
+      public void report(SourceLocation sourceLocation, SoyErrorKind error, Object... args) {}
+
+      @Override
+      public void warn(SourceLocation sourceLocation, SoyErrorKind error, Object... args) {}
+    };
   }
 
   /** Creates a new ErrorReporter suitable for asserting on messages in tests. */
+  @VisibleForTesting
   public static ErrorReporter createForTest() {
     return new ErrorReporterImpl(ImmutableMap.of());
   }
@@ -65,6 +71,17 @@ public abstract class ErrorReporter {
   /** Returns an ErrorReporter that throws assertion error on every error but ignores warnings. */
   public static ErrorReporter explodeOnErrorsAndIgnoreWarnings() {
     return ExplodingErrorReporter.EXPLODING_IGNORE_WARNINGS;
+  }
+
+  public static ErrorReporter explodeOnErrorsAndIgnoreDeprecations() {
+    return new ExplodingErrorReporter() {
+      @Override
+      public void warn(SourceLocation sourceLocation, SoyErrorKind error, Object... args) {
+        if (!error.isDeprecation()) {
+          super.warn(sourceLocation, error, args);
+        }
+      }
+    };
   }
 
   /**
