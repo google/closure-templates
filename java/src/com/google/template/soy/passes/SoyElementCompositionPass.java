@@ -152,7 +152,24 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
   }
 
   private void process(PrintNode printNode, IdGenerator nodeIdGen) {
-    if (printNode.getExpr().getRoot() instanceof FunctionNode
+    if (printNode.getExpr().getRoot() instanceof VarRefNode
+        && printNode.getExpr().getRoot().getType() instanceof TemplateType) {
+      // TODO: Check that template is of type () => html.
+      VarRefNode varRefNode = (VarRefNode) printNode.getExpr().getRoot();
+      SoyType type = varRefNode.getType();
+      ExprNode callee = varRefNode.copy(new CopyState());
+      CallBasicNode call =
+          new CallBasicNode(
+              nodeIdGen.genId(),
+              printNode.getSourceLocation(),
+              printNode.getExpr().getSourceLocation(),
+              callee,
+              ImmutableList.of(),
+              false,
+              errorReporter);
+      call.getCalleeExpr().setType(type);
+      printNode.getParent().replaceChild(printNode, call);
+    } else if (printNode.getExpr().getRoot() instanceof FunctionNode
         && !((FunctionNode) printNode.getExpr().getRoot()).hasStaticName()
         && ((FunctionNode) printNode.getExpr().getRoot()).getNameExpr() != null) {
       FunctionNode fnNode = (FunctionNode) printNode.getExpr().getRoot();

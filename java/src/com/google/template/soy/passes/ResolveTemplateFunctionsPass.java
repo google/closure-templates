@@ -35,6 +35,8 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.types.ProtoImportType;
 import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.TemplateImportType;
+import com.google.template.soy.types.TemplateType;
 
 /**
  * Resolves function calls to template names inside of the dynamic names of HTML open tags, where
@@ -65,6 +67,18 @@ final class ResolveTemplateFunctionsPass implements CompilerFilePass {
         .filter(fct -> fct.getNameExpr().getKind() == Kind.VAR_REF_NODE)
         .collect(toList()) // Guard against concurrent modification.
         .forEach(ResolveTemplateFunctionsPass::convertToBind);
+    SoyTreeUtils.allNodesOfType(file, FunctionNode.class)
+        .filter(
+            node ->
+                node.getParent().getKind() == Kind.LIST_COMPREHENSION_NODE
+                    && !node.hasStaticName()
+                    && !node.allowedToInvokeAsFunction()
+                    && (node.getParamsStyle() == ParamsStyle.NONE
+                        || node.getParamsStyle() == ParamsStyle.NAMED)
+                    && (node.getNameExpr().getType() instanceof TemplateImportType
+                        || node.getNameExpr().getType() instanceof TemplateType))
+        .collect(toList())
+        .forEach(ResolveTemplateFunctionsPass::convertToBind);
   }
 
   private static void convertToBind(FunctionNode fct) {
@@ -76,7 +90,9 @@ final class ResolveTemplateFunctionsPass implements CompilerFilePass {
     if (varRefNode.hasType() && varRefNode.getType().getKind() == SoyType.Kind.TEMPLATE_TYPE) {
       // If the function is a template symbol modify AST like:
       // {tmp(...)} -> {template(tmp).bind(...)}
-      replacementExpr = TemplateLiteralNode.forVarRef(varRefNode);
+      TemplateLiteralNode templateLiteralNode = TemplateLiteralNode.forVarRef(varRefNode);
+      templateLiteralNode.setStaticCall(fct.hasStaticName());
+      replacementExpr = templateLiteralNode;
     } else {
       // Otherwise modify AST like:
       // {$tmp(...)} -> {$tmp.bind(...)}
