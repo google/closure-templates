@@ -143,10 +143,8 @@ the identifier you specify. When you `call` a template in an aliased namespace,
 you don't need to type the whole namespace, only the alias plus the template's
 partial name.
 
-This deprecated feature still works for:
-
-*   [Global references](expressions#globals)
-*   The ID parameter to the [`xid()` function](functions#xid)
+This deprecated feature still works for the ID parameter to the
+[`xid()` function](functions#xid).
 
 ## delpackage {#delpackage}
 
