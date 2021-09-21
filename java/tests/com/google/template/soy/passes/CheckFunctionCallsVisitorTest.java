@@ -126,7 +126,10 @@ public final class CheckFunctionCallsVisitorTest {
   }
 
   private void assertSuccess(String... lines) {
-    SoyFileSetParserBuilder.forFileContents(Joiner.on('\n').join(lines)).parse().fileSet();
+    SoyFileSetParserBuilder.forFileContents(Joiner.on('\n').join(lines))
+        .errorReporter(ErrorReporter.explodeOnErrorsAndIgnoreDeprecations())
+        .parse()
+        .fileSet();
   }
 
   private void assertFunctionCallsInvalid(String errorMessage, String... lines) {

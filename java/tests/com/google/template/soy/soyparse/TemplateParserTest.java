@@ -419,8 +419,6 @@ public final class TemplateParserTest {
             + "    {default} bluh bluh\n"
             + "  {/switch}\n");
     assertValidTemplate(
-        "{@param items : list<?>}" + "{for $item in $items}{index($item)}. {$item.name}<br>{/for}");
-    assertValidTemplate(
         "{@param boo : ?}"
             + "{for $i in range($boo + 1,\n"
             + "                 88, 11)}\n"
@@ -1338,7 +1336,9 @@ public final class TemplateParserTest {
             + "    Sorry, no booze.\n"
             + "  {/for}\n";
 
-    List<StandaloneNode> nodes = parseTemplateContent(templateBody, FAIL).getChildren();
+    List<StandaloneNode> nodes =
+        parseTemplateContent(templateBody, ErrorReporter.explodeOnErrorsAndIgnoreDeprecations())
+            .getChildren();
     assertEquals(2, nodes.size());
 
     ForNode fn0 = (ForNode) nodes.get(0);

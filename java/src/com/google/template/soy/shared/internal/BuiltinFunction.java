@@ -154,4 +154,15 @@ public enum BuiltinFunction implements SoyFunction {
     }
     throw new AssertionError(this);
   }
+
+  public String deprecatedWarning() {
+    switch (this) {
+      case INDEX:
+      case IS_FIRST:
+      case IS_LAST:
+        return "Use indexed for loops instead.";
+      default:
+        return "";
+    }
+  }
 }
