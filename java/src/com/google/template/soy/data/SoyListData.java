@@ -39,11 +39,9 @@ import javax.annotation.Nonnull;
  *     over those APIs.
  */
 @Deprecated
-public final class SoyListData extends CollectionData implements Iterable<SoyData>, SoyList {
-  // TODO(b/18800133): Update all types from SoyData to SoyValue once callers are hardened.
-
+public final class SoyListData extends CollectionData implements Iterable<SoyValue>, SoyList {
   /** The underlying list. */
-  private final List<SoyData> list;
+  private final List<SoyValue> list;
 
   public SoyListData() {
     list = Lists.newArrayList();
@@ -74,7 +72,7 @@ public final class SoyListData extends CollectionData implements Iterable<SoyDat
    *
    * <p>Returns a view of this SoyListData object as a List.
    */
-  public List<SoyData> asList() {
+  public List<SoyValue> asList() {
     return Collections.unmodifiableList(list);
   }
 
@@ -144,7 +142,7 @@ public final class SoyListData extends CollectionData implements Iterable<SoyDat
   }
 
   @Override
-  public Iterator<SoyData> iterator() {
+  public Iterator<SoyValue> iterator() {
     return Collections.unmodifiableList(list).iterator();
   }
 
@@ -183,7 +181,7 @@ public final class SoyListData extends CollectionData implements Iterable<SoyDat
    * @param value The data to add.
    */
   public void add(SoyValue value) {
-    list.add(/* TODO(b/18800133) cast */ (SoyData) ensureValidValue(value));
+    list.add(ensureValidValue(value));
   }
 
   /**
@@ -241,9 +239,9 @@ public final class SoyListData extends CollectionData implements Iterable<SoyDat
    */
   public void set(int index, SoyValue value) {
     if (index == list.size()) {
-      list.add(/* TODO(b/18800133) cast */ (SoyData) ensureValidValue(value));
+      list.add(ensureValidValue(value));
     } else {
-      list.set(index, /* TODO(b/18800133) cast */ (SoyData) ensureValidValue(value));
+      list.set(index, ensureValidValue(value));
     }
   }
 
@@ -307,7 +305,7 @@ public final class SoyListData extends CollectionData implements Iterable<SoyDat
    * @return The data at the given index, or null of the index is undefined.
    */
   @Override
-  public SoyData get(int index) {
+  public SoyValue get(int index) {
     try {
       return list.get(index);
     } catch (IndexOutOfBoundsException ioobe) {
@@ -424,7 +422,7 @@ public final class SoyListData extends CollectionData implements Iterable<SoyDat
    * @return The data at the specified key, or null if the key is not defined.
    */
   @Override
-  public SoyData getSingle(String key) {
+  public SoyValue getSingle(String key) {
     return get(Integer.parseInt(key));
   }
 

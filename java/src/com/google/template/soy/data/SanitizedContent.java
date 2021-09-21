@@ -48,7 +48,7 @@ import javax.annotation.ParametersAreNonnullByDefault;
 @ParametersAreNonnullByDefault
 @Immutable
 @DoNotMock("Use SanitizedContents.emptyString or UnsafeSanitizedContentOrdainer.ordainAsSafe")
-public class SanitizedContent extends SoyData {
+public class SanitizedContent extends SoyAbstractValue {
 
   /**
    * Creates a SanitizedContent object.

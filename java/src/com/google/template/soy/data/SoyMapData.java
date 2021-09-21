@@ -44,10 +44,9 @@ import javax.annotation.Nonnull;
  */
 @Deprecated
 public class SoyMapData extends CollectionData implements SoyDict, SoyMap {
-  // TODO(b/18800133): Update all types from SoyData to SoyValue once callers are hardened.
 
   /** Underlying map. */
-  private final Map<String, SoyData> map;
+  private final Map<String, SoyValue> map;
 
   public SoyMapData() {
     map = Maps.newLinkedHashMap();
@@ -71,7 +70,7 @@ public class SoyMapData extends CollectionData implements SoyDict, SoyMap {
       Object value = entry.getValue();
 
       try {
-        map.put(key, /* TODO(b/18800133) cast */ (SoyData) createFromExistingData(value));
+        map.put(key, createFromExistingData(value));
       } catch (SoyDataException sde) {
         sde.prependKeyToDataPath(key);
         throw sde;
@@ -95,7 +94,7 @@ public class SoyMapData extends CollectionData implements SoyDict, SoyMap {
    *
    * <p>Returns a view of this SoyMapData object as a Map.
    */
-  public Map<String, SoyData> asMap() {
+  public Map<String, SoyValue> asMap() {
     return Collections.unmodifiableMap(map);
   }
 
@@ -127,9 +126,9 @@ public class SoyMapData extends CollectionData implements SoyDict, SoyMap {
   @Override
   public void render(LoggingAdvisingAppendable appendable) throws IOException {
     appendable.append('{');
-    Iterator<Map.Entry<String, SoyData>> iterator = map.entrySet().iterator();
+    Iterator<Map.Entry<String, SoyValue>> iterator = map.entrySet().iterator();
     if (iterator.hasNext()) {
-      Map.Entry<String, SoyData> entry = iterator.next();
+      Map.Entry<String, SoyValue> entry = iterator.next();
       appendable.append(entry.getKey()).append(": ");
       entry.getValue().render(appendable);
       while (iterator.hasNext()) {
@@ -180,7 +179,7 @@ public class SoyMapData extends CollectionData implements SoyDict, SoyMap {
    */
   @Override
   public void putSingle(String key, SoyValue value) {
-    map.put(key, /* TODO(b/18800133) cast */ (SoyData) value);
+    map.put(key, value);
   }
 
   /**
@@ -204,7 +203,7 @@ public class SoyMapData extends CollectionData implements SoyDict, SoyMap {
    * @return The data at the specified key, or null if the key is not defined.
    */
   @Override
-  public SoyData getSingle(String key) {
+  public SoyValue getSingle(String key) {
     return map.get(key);
   }
 
@@ -323,7 +322,7 @@ public class SoyMapData extends CollectionData implements SoyDict, SoyMap {
   @Override
   public Map<? extends SoyValue, ? extends SoyValueProvider> asJavaMap() {
     ImmutableMap.Builder<SoyValue, SoyValueProvider> builder = ImmutableMap.builder();
-    for (Map.Entry<String, SoyData> entry : map.entrySet()) {
+    for (Map.Entry<String, SoyValue> entry : map.entrySet()) {
       builder.put(StringData.forValue(entry.getKey()), entry.getValue());
     }
     return builder.build();

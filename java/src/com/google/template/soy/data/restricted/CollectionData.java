@@ -17,7 +17,7 @@
 package com.google.template.soy.data.restricted;
 
 import com.google.common.collect.Lists;
-import com.google.template.soy.data.SoyData;
+import com.google.template.soy.data.SoyAbstractValue;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyListData;
 import com.google.template.soy.data.SoyMapData;
@@ -36,7 +36,7 @@ import java.util.concurrent.Future;
  *
  * <p>Important: Even though this class is not marked 'final', do not extend this class.
  */
-public abstract class CollectionData extends SoyData {
+public abstract class CollectionData extends SoyAbstractValue {
 
   /**
    * Creates SoyValue objects from standard Java data structures.
@@ -229,7 +229,7 @@ public abstract class CollectionData extends SoyData {
    *     Indicates the path to the location within this data tree.
    * @return The data at the specified key string, or null if there's no data at the location.
    */
-  public SoyData get(String keyStr) {
+  public SoyValue get(String keyStr) {
 
     List<String> keys = split(keyStr, '.');
     int numKeys = keys.size();
@@ -385,7 +385,7 @@ public abstract class CollectionData extends SoyData {
    * @param key An individual key.
    * @return The data at the specified key, or null if the key is not defined.
    */
-  public abstract SoyData getSingle(String key);
+  public abstract SoyValue getSingle(String key);
 
   // -----------------------------------------------------------------------------------------------
   // Protected/private helpers.
