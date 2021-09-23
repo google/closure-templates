@@ -15,9 +15,15 @@
  */
 package com.google.template.soy.incrementaldomsrc;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
+import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_EVAL_LOG_FN;
+import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_PARAM_NAME;
+import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_POP_KEY;
+import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_PUSH_KEY;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_IS_TRUTHY;
+import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_MAKE_HTML;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.STATE_PREFIX;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.STATE_VAR_PREFIX;
 import static com.google.template.soy.jssrc.dsl.Expression.id;
@@ -34,8 +40,13 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.ProtoEnumValueNode;
+import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.jssrc.dsl.Expression;
+import com.google.template.soy.jssrc.dsl.JsDoc;
+import com.google.template.soy.jssrc.dsl.Statement;
+import com.google.template.soy.jssrc.dsl.VariableDeclaration;
 import com.google.template.soy.jssrc.internal.JavaScriptValueFactoryImpl;
+import com.google.template.soy.jssrc.internal.JsRuntime;
 import com.google.template.soy.jssrc.internal.JsType;
 import com.google.template.soy.jssrc.internal.TemplateAliases;
 import com.google.template.soy.jssrc.internal.TranslateExprNodeVisitor;
@@ -46,9 +57,13 @@ import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.TemplateType;
+import java.util.ArrayList;
+import java.util.List;
 
 /** Translates expressions, overriding methods for special-case idom behavior. */
 public class IncrementalDomTranslateExprNodeVisitor extends TranslateExprNodeVisitor {
+  private static int staticsCounter = 0;
+
   public IncrementalDomTranslateExprNodeVisitor(
       JavaScriptValueFactoryImpl javaScriptValueFactory,
       TranslationContext translationContext,
@@ -69,7 +84,39 @@ public class IncrementalDomTranslateExprNodeVisitor extends TranslateExprNodeVis
 
   @Override
   protected Expression visitFunctionNode(FunctionNode node) {
-    if (node.getSoyFunction() instanceof LoggingFunction) {
+    if (node.getSoyFunction() instanceof TemplateLiteralNode) {
+      TemplateLiteralNode templateLiteral = (TemplateLiteralNode) node.getSoyFunction();
+
+      Expression callee =
+          Expression.dottedIdNoRequire(
+              templateAliases.get(templateLiteral.getResolvedName()) + "$");
+      List<Expression> params = new ArrayList<>();
+      params.add(JsRuntime.SOY_INTERNAL_CALL_MARKER);
+      params.add(JsRuntime.IJ_DATA);
+      params.add(INCREMENTAL_DOM);
+      params.addAll(
+          node.getParams().stream().map(param -> visit(param)).collect(toImmutableList()));
+
+      String keyVariable = "keyVariable" + staticsCounter++;
+      String templateCallKey =
+          templateLiteral.getType() + "-list-comprehension-" + staticsCounter++;
+      Statement call =
+          Statement.of(
+              VariableDeclaration.builder(keyVariable)
+                  .setRhs(
+                      INCREMENTAL_DOM_PUSH_KEY.call(
+                          JsRuntime.XID.call(Expression.stringLiteral(templateCallKey))))
+                  .build(),
+              callee.call(params).asStatement(),
+              INCREMENTAL_DOM_POP_KEY.call(Expression.id(keyVariable)).asStatement());
+
+      JsDoc jsdoc =
+          JsDoc.builder()
+              .addParam(INCREMENTAL_DOM_PARAM_NAME, "incrementaldomlib.IncrementalDomRenderer")
+              .build();
+
+      return SOY_IDOM_MAKE_HTML.call(Expression.arrowFunction(jsdoc, call));
+    } else if (node.getSoyFunction() instanceof LoggingFunction) {
       LoggingFunction loggingNode = (LoggingFunction) node.getSoyFunction();
       return INCREMENTAL_DOM_EVAL_LOG_FN.call(
           XID.call(Expression.stringLiteral(node.getStaticFunctionName())),

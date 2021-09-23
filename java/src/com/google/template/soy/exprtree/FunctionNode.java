@@ -71,7 +71,8 @@ public final class FunctionNode extends AbstractParentExprNode implements ExprNo
     enum Type {
       SOY_FUNCTION,
       SOY_SOURCE_FUNCTION,
-      EXTERN
+      EXTERN,
+      TEMPLATE
     }
 
     public static FunctionRef of(Object soyFunction) {
@@ -81,6 +82,8 @@ public final class FunctionNode extends AbstractParentExprNode implements ExprNo
         return of((SoySourceFunction) soyFunction);
       } else if (soyFunction instanceof ExternRef) {
         return of((ExternRef) soyFunction);
+      } else if (soyFunction instanceof TemplateLiteralNode) {
+        return of((TemplateLiteralNode) soyFunction);
       } else {
         throw new ClassCastException(String.valueOf(soyFunction));
       }
@@ -98,6 +101,10 @@ public final class FunctionNode extends AbstractParentExprNode implements ExprNo
       return AutoOneOf_FunctionNode_FunctionRef.extern(functionType);
     }
 
+    public static FunctionRef of(TemplateLiteralNode templateLiteral) {
+      return AutoOneOf_FunctionNode_FunctionRef.template(templateLiteral);
+    }
+
     abstract Type type();
 
     abstract SoyFunction soyFunction();
@@ -105,6 +112,8 @@ public final class FunctionNode extends AbstractParentExprNode implements ExprNo
     abstract SoySourceFunction soySourceFunction();
 
     abstract ExternRef extern();
+
+    abstract TemplateLiteralNode template();
 
     public Object either() {
       switch (type()) {
@@ -114,6 +123,8 @@ public final class FunctionNode extends AbstractParentExprNode implements ExprNo
           return soySourceFunction();
         case EXTERN:
           return extern();
+        case TEMPLATE:
+          return template();
       }
       throw new AssertionError();
     }
@@ -122,7 +133,6 @@ public final class FunctionNode extends AbstractParentExprNode implements ExprNo
   private static final class FunctionState {
     @Nullable private FunctionRef function;
     @Nullable private ImmutableList<SoyType> allowedParamTypes;
-    private boolean allowedToInvokeAsFunction = false;
   }
 
   public static FunctionNode newPositional(
@@ -201,7 +211,6 @@ public final class FunctionNode extends AbstractParentExprNode implements ExprNo
     this.paramNames = orig.paramNames;
     this.state.function = orig.state.function;
     this.state.allowedParamTypes = orig.state.allowedParamTypes;
-    this.state.allowedToInvokeAsFunction = orig.state.allowedToInvokeAsFunction;
     this.commaLocations = orig.commaLocations;
   }
 
@@ -252,14 +261,6 @@ public final class FunctionNode extends AbstractParentExprNode implements ExprNo
 
   public boolean isResolved() {
     return state.function != null;
-  }
-
-  public boolean allowedToInvokeAsFunction() {
-    return this.state.allowedToInvokeAsFunction;
-  }
-
-  public void setAllowedToInvokeAsFunction(boolean cond) {
-    this.state.allowedToInvokeAsFunction = cond;
   }
 
   public Object getSoyFunction() {

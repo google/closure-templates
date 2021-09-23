@@ -120,8 +120,7 @@ public final class TemplateCallMetadataPass implements CompilerFileSetPass {
     if (printNode.getExpr().getRoot() instanceof FunctionNode) {
       FunctionNode fnNode = (FunctionNode) printNode.getExpr().getRoot();
 
-      if (!fnNode.allowedToInvokeAsFunction()
-          || fnNode.getParamsStyle() == ParamsStyle.POSITIONAL) {
+      if (fnNode.getParamsStyle() == ParamsStyle.POSITIONAL) {
         return Optional.empty();
       }
       VarRefNode fnNameExpr = (VarRefNode) fnNode.getNameExpr();

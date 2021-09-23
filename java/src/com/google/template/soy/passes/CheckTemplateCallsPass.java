@@ -50,7 +50,6 @@ import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.SanitizedType;
-import com.google.template.soy.types.SanitizedType.ElementType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.StringType;
@@ -132,9 +131,7 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
           helper.checkCall(template, callNode);
         }
         for (PrintNode printNode : SoyTreeUtils.getAllNodesOfType(template, PrintNode.class)) {
-          if (printNode.getExpr().getRoot() instanceof FunctionNode
-              && (((FunctionNode) printNode.getExpr().getRoot()).allowedToInvokeAsFunction()
-                  || printNode.getExpr().getRoot().getType() instanceof ElementType)) {
+          if (printNode.getExpr().getRoot() instanceof FunctionNode) {
             helper.checkFnCall(template, printNode, (FunctionNode) printNode.getExpr().getRoot());
           }
         }

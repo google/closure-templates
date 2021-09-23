@@ -19,6 +19,7 @@ package com.google.template.soy.jssrc.internal;
 import static com.google.common.base.CaseFormat.LOWER_CAMEL;
 import static com.google.common.base.CaseFormat.UPPER_CAMEL;
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_FALSE;
 import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_NULL;
 import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_TRUE;
@@ -206,7 +207,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
   private final JavaScriptValueFactoryImpl javascriptValueFactory;
   private final ErrorReporter errorReporter;
   private final CodeChunk.Generator codeGenerator;
-  private final TemplateAliases templateAliases;
+  protected final TemplateAliases templateAliases;
   /**
    * An expression that represents the data parameter to read params from. Defaults to {@code
    * OPT_DATA}.
@@ -885,7 +886,18 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
   protected Expression visitFunctionNode(FunctionNode node) {
     Object soyFunction = node.getSoyFunction();
 
-    if (soyFunction instanceof BuiltinFunction) {
+    if (soyFunction instanceof TemplateLiteralNode) {
+      VarRefNode varRef = (VarRefNode) node.getNameExpr();
+      Expression callee =
+          Expression.dottedIdNoRequire(
+              templateAliases.get(TemplateLiteralNode.forVarRef(varRef).getResolvedName()) + "$");
+      List<Expression> params = new ArrayList<>();
+      params.add(JsRuntime.SOY_INTERNAL_CALL_MARKER);
+      params.add(JsRuntime.IJ_DATA);
+      params.addAll(
+          node.getParams().stream().map(param -> visit(param)).collect(toImmutableList()));
+      return callee.call(params);
+    } else if (soyFunction instanceof BuiltinFunction) {
       switch ((BuiltinFunction) soyFunction) {
         case IS_PARAM_SET:
           return visitIsSetFunction(node);

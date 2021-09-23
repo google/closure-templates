@@ -337,8 +337,6 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
               + " names are not allowed.");
   private static final SoyErrorKind NOT_PROTO_MESSAGE =
       SoyErrorKind.of("Only proto messages may be instantiated.");
-  private static final SoyErrorKind MUST_USE_TEMPLATES_IMMEDIATELY =
-      SoyErrorKind.of("Templates may only be called as the sole child of a print statement.");
   private static final SoyErrorKind CONSTANTS_CANT_BE_NULLABLE =
       SoyErrorKind.of("Type calculated type, {0}, is nullable, which is not allowed for const.");
   private static final SoyErrorKind NOT_ALLOWED_IN_CONSTANT_VALUE =
@@ -1718,15 +1716,6 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
     protected void visitFunctionNode(FunctionNode node) {
       visitChildren(node);
       if (!node.hasStaticName()) {
-        if (!node.allowedToInvokeAsFunction()
-            && (node.getNameExpr().getType() instanceof TemplateImportType
-                || node.getNameExpr().getType() instanceof TemplateType)) {
-          node.setType(UnknownType.getInstance());
-          errorReporter.report(node.getSourceLocation(), MUST_USE_TEMPLATES_IMMEDIATELY);
-          // Suppress a followup error that this is unknown.
-          node.setAllowedToInvokeAsFunction(true);
-          return;
-        }
         visit(node.getNameExpr());
         if (node.getNameExpr().getType().getKind() == Kind.TEMPLATE_TYPE) {
           node.setType(
@@ -1735,6 +1724,7 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
                       .getBasicTemplateType()
                       .getContentKind()
                       .getSanitizedContentKind()));
+          node.setSoyFunction(TemplateLiteralNode.forVarRef((VarRefNode) node.getNameExpr()));
           return;
         } else if (node.getNameExpr().getType().getKind() == Kind.TEMPLATE) {
           node.setType(
@@ -1742,6 +1732,7 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
                   ((TemplateType) node.getNameExpr().getType())
                       .getContentKind()
                       .getSanitizedContentKind()));
+          node.setSoyFunction(TemplateLiteralNode.forVarRef((VarRefNode) node.getNameExpr()));
           return;
         } else if (node.getNameExpr().getType().getKind() == Kind.FUNCTION) {
           if (node.getParamsStyle() == ParamsStyle.NAMED) {
