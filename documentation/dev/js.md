@@ -51,11 +51,11 @@ different kinds of data that a Soy template can use. It returns a
 
 The exact return type of the generated JavaScript function depends on the
 template's [content kind](security#content_kinds). Most templates have a content
-kind of `html`, so most generated JavaScript functions return a
-[`SanitizedHtml`][sanitized-html] object, a subclass of `SanitizedContent`. The
-other `SanitizedContent` objects correspond to the other content kinds:
-`SanitizedCss` for `kind="css"`, etc. Templates of `kind="text"` return a raw
-JavaScript `string`.
+kind of `html` or `html<[some_tag]>`, so most generated JavaScript functions
+return a [`SanitizedHtml`][sanitized-html] object, a subclass of
+`SanitizedContent`. The other `SanitizedContent` objects correspond to the other
+content kinds: `SanitizedCss` for `kind="css"`, etc. Templates of `kind="text"`
+return a raw JavaScript `string`.
 
 ### Calling JavaScript functions from user code
 
