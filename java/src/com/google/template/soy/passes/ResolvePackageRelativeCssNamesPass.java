@@ -26,7 +26,9 @@ import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.shared.internal.BuiltinFunction;
+import com.google.template.soy.soytree.ConstNode;
 import com.google.template.soy.soytree.SoyFileNode;
+import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
 import javax.annotation.Nullable;
@@ -75,10 +77,15 @@ final class ResolvePackageRelativeCssNamesPass implements CompilerFilePass {
       SoyTreeUtils.allFunctionInvocations(template, BuiltinFunction.CSS)
           .forEach(fn -> resolveSelector(template, fn, finalPackagePrefix));
     }
+    for (ConstNode constNode : file.getConstants()) {
+      String prefix = namespacePrefix;
+      SoyTreeUtils.allFunctionInvocations(constNode, BuiltinFunction.CSS)
+          .forEach(fn -> resolveSelector(constNode, fn, prefix));
+    }
   }
 
   private void resolveSelector(
-      TemplateNode template, FunctionNode node, @Nullable String packagePrefix) {
+      SoyNode templateOrConstant, FunctionNode node, @Nullable String packagePrefix) {
     ExprNode lastChild = Iterables.getLast(node.getChildren(), null);
     if (!(lastChild instanceof StringNode)) {
       // this will generate an error in CheckFunctionCallsVisitor
@@ -98,7 +105,8 @@ final class ResolvePackageRelativeCssNamesPass implements CompilerFilePass {
           selectorText);
     }
 
-    if (packagePrefix == null) {
+    if (packagePrefix == null && templateOrConstant instanceof TemplateNode) {
+      TemplateNode template = (TemplateNode) templateOrConstant;
       errorReporter.report(
           selector.getSourceLocation(),
           NO_CSS_PACKAGE,

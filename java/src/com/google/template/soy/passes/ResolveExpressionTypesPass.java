@@ -2692,6 +2692,7 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
     protected void visitFunctionNode(FunctionNode node) {
       if (node.isResolved()
           && node.getSoyFunction() != BuiltinFunction.PROTO_INIT
+          && node.getSoyFunction() != BuiltinFunction.CSS
           && node.getSoyFunction() != BuiltinFunction.XID) {
         notAllowed(node);
       }
