@@ -249,17 +249,11 @@ placeholder name is `phname` (if present) or the UPPER_SNAKE_CASE version of the
 variable name (`NUM_DRAFTS` in this example). By convention, it is recommended
 that all names be UPPER_SNAKE_CASE.
 
-If a message is the same in all cases in English, but could have multiple cases
-in other languages, use `default` before the sentence. For example, in the
-syntax example below, the message is the same for any $count in English.
-
-```soy
-{msg desc="..."}
-  {plural $count}
-    {default} Start your {$count} day trial.
-  {/plural}
-{/msg}
-```
+If a message is the same in all cases in English, you should still declare it as
+a plural, so that translator can add cases according to their languages. It is
+mandatory to specify cases at least for `1`, and `default`. Translators will add
+one or more of the available cases (`0`, `1`, `2`, `few`, `many`, `other`), if
+they apply in their target language.
 
 WARNING: You cannot nest `plural` tags.
 
