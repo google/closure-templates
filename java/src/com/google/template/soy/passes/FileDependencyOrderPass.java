@@ -58,10 +58,6 @@ public class FileDependencyOrderPass implements CompilerFileSetPass {
   private static final SoyErrorKind CYCLE =
       SoyErrorKind.of("Dependency cycle between source files:\n{0}", StyleAllowance.NO_PUNCTUATION);
 
-  private static final ImmutableSet<String> ALLOWED_CYCLE_FILES =
-      ImmutableSet.of(
-          );
-
   private static final ImmutableList<String> ALLOWED_CYCLE_DIRS =
       ImmutableList.of(
           );
@@ -114,8 +110,7 @@ public class FileDependencyOrderPass implements CompilerFileSetPass {
   private static boolean allowedCyclical(Iterable<SoyFileNode> nonLeafs) {
     for (SoyFileNode fn : nonLeafs) {
       String path = fn.getFilePath().path();
-      if (!ALLOWED_CYCLE_FILES.contains(path)
-          && ALLOWED_CYCLE_DIRS.stream().noneMatch(path::startsWith)) {
+      if (ALLOWED_CYCLE_DIRS.stream().noneMatch(path::startsWith)) {
         return false;
       }
     }
