@@ -100,6 +100,9 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
   private static final SoyErrorKind NO_SUCH_ATTRIBUTE =
       SoyErrorKind.of("Unrecognized attribute.{0}", StyleAllowance.NO_PUNCTUATION);
 
+  private static final SoyErrorKind MISUSED_AT_ATTRIBUTE =
+      SoyErrorKind.of("Attributes with a leading @ should not have values.");
+
   private static final SoyErrorKind BAD_ATTRIBUTE_NAME =
       SoyErrorKind.of("Element attribute names must be lower hyphen case.");
 
@@ -337,6 +340,9 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
 
     if (!attr.hasValue() && !isSoyAttr && allParamsByAttrName.containsKey(name)) {
       errorReporter.report(attr.getSourceLocation(), NO_ATTRIBUTE_VALUE);
+    }
+    if (attr.hasValue() && isSoyAttr) {
+      errorReporter.report(attr.getSourceLocation(), MISUSED_AT_ATTRIBUTE);
     }
   }
 
