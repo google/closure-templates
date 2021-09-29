@@ -17,8 +17,6 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.template.soy.jbcsrc.SyntheticVarName.foreachLoopIndex;
-import static com.google.template.soy.jbcsrc.SyntheticVarName.foreachLoopLength;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.LIST_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.NULL_POINTER_EXCEPTION_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_PROVIDER_TYPE;
@@ -107,11 +105,9 @@ import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.internal.BuiltinMethod;
 import com.google.template.soy.shared.restricted.SoyMethod;
 import com.google.template.soy.shared.restricted.SoySourceFunctionMethod;
-import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.PartialFileSetMetadata;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.SoyNode.LocalVarNode;
 import com.google.template.soy.soytree.defn.ConstVar;
 import com.google.template.soy.soytree.defn.ImportedVar;
 import com.google.template.soy.soytree.defn.LocalVar;
@@ -1389,77 +1385,10 @@ final class ExpressionCompiler {
     // Builtin functions
 
     @Override
-    SoyExpression visitIsFirstFunction(FunctionNode node) {
-      VarRefNode varRef = (VarRefNode) node.getChild(0);
-      LocalVarNode foreach = ((LocalVar) varRef.getDefnDecl()).declaringNode();
-      SyntheticVarName indexVar = foreachLoopIndex((ForNonemptyNode) foreach);
-      final Expression expr = parameters.getLocal(indexVar);
-
-      return SoyExpression.forBool(
-          new Expression(Type.BOOLEAN_TYPE) {
-            @Override
-            protected void doGen(CodeBuilder adapter) {
-              // implements index == 0 ? true : false
-              expr.gen(adapter);
-              Label ifFirst = new Label();
-              adapter.ifZCmp(Opcodes.IFEQ, ifFirst);
-              adapter.pushBoolean(false);
-              Label end = new Label();
-              adapter.goTo(end);
-              adapter.mark(ifFirst);
-              adapter.pushBoolean(true);
-              adapter.mark(end);
-            }
-          });
-    }
-
-    @Override
     SoyExpression visitIsSetFunction(FunctionNode node) {
       VarRefNode varRef = (VarRefNode) node.getChild(0);
       return SoyExpression.forBool(
           MethodRef.IS_PARAM_SET.invoke(parameters.getParam((TemplateParam) varRef.getDefnDecl())));
-    }
-
-    @Override
-    SoyExpression visitIsLastFunction(FunctionNode node) {
-      VarRefNode varRef = (VarRefNode) node.getChild(0);
-      LocalVarNode foreach = ((LocalVar) varRef.getDefnDecl()).declaringNode();
-      SyntheticVarName indexVar = foreachLoopIndex((ForNonemptyNode) foreach);
-      SyntheticVarName lengthVar = foreachLoopLength((ForNonemptyNode) foreach);
-
-      final Expression index = parameters.getLocal(indexVar);
-      final Expression length = parameters.getLocal(lengthVar);
-      // basically 'index + 1 == length'
-      return SoyExpression.forBool(
-          new Expression(Type.BOOLEAN_TYPE) {
-            @Override
-            protected void doGen(CodeBuilder adapter) {
-              // 'index + 1 == length ? true : false'
-              index.gen(adapter);
-              adapter.pushInt(1);
-              adapter.visitInsn(Opcodes.IADD);
-              length.gen(adapter);
-              Label ifLast = new Label();
-              adapter.ifICmp(Opcodes.IFEQ, ifLast);
-              adapter.pushBoolean(false);
-              Label end = new Label();
-              adapter.goTo(end);
-              adapter.mark(ifLast);
-              adapter.pushBoolean(true);
-              adapter.mark(end);
-            }
-          });
-    }
-
-    @Override
-    SoyExpression visitIndexFunction(FunctionNode node) {
-      VarRefNode varRef = (VarRefNode) node.getChild(0);
-      LocalVarNode foreach = ((LocalVar) varRef.getDefnDecl()).declaringNode();
-      SyntheticVarName indexVar = foreachLoopIndex((ForNonemptyNode) foreach);
-
-      // '(long) index'
-      return SoyExpression.forInt(
-          BytecodeUtils.numericConversion(parameters.getLocal(indexVar), Type.LONG_TYPE));
     }
 
     @Override

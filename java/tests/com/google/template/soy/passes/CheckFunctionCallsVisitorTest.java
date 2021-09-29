@@ -30,66 +30,6 @@ import org.junit.runners.JUnit4;
 public final class CheckFunctionCallsVisitorTest {
 
   @Test
-  public void testNotALoopVariable1() {
-    assertFunctionCallsInvalid(
-        "Function 'index' must have a loop variable as its argument",
-        "{namespace ns}\n",
-        "{template .foo}",
-        "  {@param x: ?}",
-        "  {print index($x)}",
-        "{/template}");
-  }
-
-  @Test
-  public void testNotALoopVariable2() {
-    assertFunctionCallsInvalid(
-        "Function 'index' must have a loop variable as its argument",
-        "{namespace ns}\n",
-        "{template .foo}",
-        "  {@param x: ?}",
-        "  {print index($x.y)}",
-        "{/template}");
-  }
-
-  @Test
-  public void testNotALoopVariable3() {
-    assertFunctionCallsInvalid(
-        "Function 'index' must have a loop variable as its argument",
-        "{namespace ns}\n",
-        "{template .foo}",
-        "  {@param x: ?}",
-        "  {print index($x + 1)}",
-        "{/template}");
-  }
-
-  @Test
-  public void testLoopVariableOk() {
-    assertSuccess(
-        "{namespace ns}\n",
-        "{template .foo}",
-        "  {@param elements: ?}",
-        "  {for $z in $elements}",
-        "    {if isLast($z)}Lorem Ipsum{/if}",
-        "  {/for}",
-        "{/template}");
-  }
-
-  @Test
-  public void testLoopVariableNotInScopeWhenEmpty() {
-    assertFunctionCallsInvalid(
-        "Function 'index' must have a loop variable as its argument",
-        "{namespace ns}\n",
-        "{template .foo}",
-        "  {@param elements: ?}",
-        "  {for $z in $elements}",
-        "    Lorem Ipsum...",
-        "  {ifempty}",
-        "    {print index($elements)}", // Loop variable not in scope when empty.
-        "  {/for}",
-        "{/template}");
-  }
-
-  @Test
   public void testCssFunction() {
     assertSuccess(
         "{namespace ns}\n",

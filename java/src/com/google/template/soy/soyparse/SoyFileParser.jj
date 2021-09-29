@@ -425,7 +425,7 @@ import javax.annotation.Nullable;
  *       + Function name, open parenthesis, optional expression list, close parenthesis.
  *       + The function name is one or more identifiers, separated by dots.
  *       + See above for the definition of an expression list.
- *       Examples:   foo()   isFirst($item)   my.new.Proto(a: 'str', b: $foo)
+ *       Examples:   foo()   parseInt($item)   my.new.Proto(a: 'str', b: $foo)
  *
  *    12. Proto initialization:
  *       + Fully qualified proto name, open parenthesis, optional named parameter list,

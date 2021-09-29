@@ -24,7 +24,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
-import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.internal.i18n.SoyBidiUtils;
 import com.google.template.soy.pysrc.SoyPySrcOptions;
 import com.google.template.soy.pysrc.internal.GenPyExprsVisitor.GenPyExprsVisitorFactory;
@@ -634,15 +633,8 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       pyCodeBuilder.increaseIndent();
 
       // Add a new localVarExprs frame and populate it with the translations from this loop.
-      int eqPrecedence = PyExprUtils.pyPrecedenceForOperator(Operator.EQUAL);
       localVarExprs.pushFrame();
-      localVarExprs
-          .addVariable(baseVarName, new PyExpr(dataVarName, Integer.MAX_VALUE))
-          .addVariable(baseVarName + "__isFirst", new PyExpr(indexVarName + " == 0", eqPrecedence))
-          .addVariable(
-              baseVarName + "__isLast",
-              new PyExpr(indexVarName + " == len(" + listVarName + ") - 1", eqPrecedence))
-          .addVariable(baseVarName + "__index", new PyExpr(indexVarName, Integer.MAX_VALUE));
+      localVarExprs.addVariable(baseVarName, new PyExpr(dataVarName, Integer.MAX_VALUE));
 
       if (node.getIndexVar() != null) {
         localVarExprs.addVariable(

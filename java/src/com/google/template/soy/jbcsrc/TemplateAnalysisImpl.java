@@ -815,9 +815,6 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
       if (node.getSoyFunction() instanceof BuiltinFunction) {
         BuiltinFunction builtinFunction = (BuiltinFunction) node.getSoyFunction();
         switch (builtinFunction) {
-          case INDEX:
-          case IS_FIRST:
-          case IS_LAST:
           case IS_PRIMARY_MSG_IN_USE:
             // early return for these.  the AST looks like we are evaluating a var, but in fact we
             // generate alternate code to reference a synthetic variable.

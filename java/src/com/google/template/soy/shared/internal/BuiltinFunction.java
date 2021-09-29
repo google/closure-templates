@@ -28,9 +28,6 @@ import javax.annotation.Nullable;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  */
 public enum BuiltinFunction implements SoyFunction {
-  IS_FIRST("isFirst"),
-  IS_LAST("isLast"),
-  INDEX("index"),
   CHECK_NOT_NULL("checkNotNull"),
   // TODO(b/144312362): try changing it to private $$isParamSet when hooking up with default value
   // desugaring so that it can be tested implicitly.
@@ -104,9 +101,6 @@ public enum BuiltinFunction implements SoyFunction {
         return ImmutableSet.of(0);
       case IS_PARAM_SET:
       case SOY_SERVER_KEY:
-      case IS_FIRST:
-      case IS_LAST:
-      case INDEX:
       case CHECK_NOT_NULL:
       case XID:
       case UNKNOWN_JS_GLOBAL:
@@ -139,9 +133,6 @@ public enum BuiltinFunction implements SoyFunction {
       case PROTO_INIT:
       case IS_PARAM_SET:
         return true;
-      case IS_FIRST: // implicitly depends on loop index
-      case IS_LAST: // implicitly depends on loop index
-      case INDEX: // implicitly depends on loop index
       case CSS: // implicitly depends on a renaming map or js compiler flag
       case XID: // implicitly depends on a renaming map or js compiler flag
       case SOY_SERVER_KEY: // Relies on call stack dependent on rendering
@@ -156,13 +147,6 @@ public enum BuiltinFunction implements SoyFunction {
   }
 
   public String deprecatedWarning() {
-    switch (this) {
-      case INDEX:
-      case IS_FIRST:
-      case IS_LAST:
-        return "Use indexed for loops instead.";
-      default:
-        return "";
-    }
+    return "";
   }
 }

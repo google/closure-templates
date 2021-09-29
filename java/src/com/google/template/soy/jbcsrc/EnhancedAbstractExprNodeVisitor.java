@@ -90,12 +90,6 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
       switch (builtinFn) {
         case IS_PARAM_SET:
           return visitIsSetFunction(node);
-        case IS_FIRST:
-          return visitIsFirstFunction(node);
-        case IS_LAST:
-          return visitIsLastFunction(node);
-        case INDEX:
-          return visitIndexFunction(node);
         case CHECK_NOT_NULL:
           return visitCheckNotNullFunction(node);
         case CSS:
@@ -151,19 +145,7 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
     return visitExprNode(varRef);
   }
 
-  T visitIsFirstFunction(FunctionNode node) {
-    return visitExprNode(node);
-  }
-
   T visitIsSetFunction(FunctionNode node) {
-    return visitExprNode(node);
-  }
-
-  T visitIsLastFunction(FunctionNode node) {
-    return visitExprNode(node);
-  }
-
-  T visitIndexFunction(FunctionNode node) {
     return visitExprNode(node);
   }
 

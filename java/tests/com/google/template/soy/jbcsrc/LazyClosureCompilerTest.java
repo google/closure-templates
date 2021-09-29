@@ -50,10 +50,8 @@ import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import java.io.IOException;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import org.junit.Test;
@@ -138,31 +136,6 @@ public class LazyClosureCompilerTest {
   public void testLetValueNode_captureParameter() {
     assertThatTemplateBody("{@param param: string}", "{let $foo : $param + '_suffix' /}", "{$foo}")
         .rendersAs("string_suffix", ImmutableMap.of("param", "string"));
-  }
-
-  // Regression test for a bug where captures of synthetic variables wouldn't be deduped properly
-  // and we would recapture the same synthetic multiple times.
-  @Test
-  public void testLetValueNode_captureSyntheticParameter() {
-    // make sure that if we capture a synthetic we only capture it once
-    CompiledTemplates templates =
-        compileTemplateBody(
-            "{@param l : list<string>}",
-            "{for $s in $l}",
-            // the index function is implemented via a synthetic loop index
-            "  {let $bar : index($s) + index($s) /}",
-            "  {$bar}",
-            "{/for}");
-    Class<?> clazz = templates.getTemplateData("ns.foo").templateClass();
-    List<Class<?>> innerClasses = Lists.newArrayList(clazz.getDeclaredClasses());
-    Class<?> let = Iterables.getOnlyElement(innerClasses);
-    assertThat(let.getSimpleName()).isEqualTo("let_bar");
-    // the closures capture variables as constructor parameters.
-    // in this case since index() always returns an unboxed integer the parameter should be a single
-    // int.  In a previous version, we passed 2 ints.
-    assertThat(let.getDeclaredConstructors()).hasLength(1);
-    Constructor<?> cStruct = let.getDeclaredConstructors()[0];
-    assertThat(Arrays.asList(cStruct.getParameterTypes())).isEqualTo(Arrays.asList(int.class));
   }
 
   @Test

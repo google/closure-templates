@@ -467,7 +467,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
         ForNonemptyNode child = (ForNonemptyNode) node.getChild(0);
         int size = length / step + (length % step == 0 ? 0 : 1);
         for (int i = 0; i < size; ++i) {
-          executeForeachBody(child, i, IntegerData.forValue(start + step * i), size);
+          executeForeachBody(child, i, IntegerData.forValue(start + step * i));
         }
       }
     } else {
@@ -489,7 +489,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
         // Case 1: Nonempty list.
         ForNonemptyNode child = (ForNonemptyNode) node.getChild(0);
         for (int i = 0; i < listLength; ++i) {
-          executeForeachBody(child, i, foreachList.getProvider(i), listLength);
+          executeForeachBody(child, i, foreachList.getProvider(i));
         }
       } else {
         // Case 2: Empty list. If the 'ifempty' node exists, visit it.
@@ -500,8 +500,8 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     }
   }
 
-  private void executeForeachBody(ForNonemptyNode child, int i, SoyValueProvider value, int size) {
-    env.bindLoopPosition(child.getVar(), value, i, size - 1 == i);
+  private void executeForeachBody(ForNonemptyNode child, int i, SoyValueProvider value) {
+    env.bindLoopPosition(child.getVar(), value);
     if (child.getIndexVar() != null) {
       env.bind(child.getIndexVar(), SoyValueConverter.INSTANCE.convert(i));
     }

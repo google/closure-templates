@@ -429,12 +429,10 @@ supported by the compiler.
 {/template}
 ```
 
-`isFirst` and `isLast` are [built-in commands](control-flow#for) that check the
-position of the current iterator. Although this template produces valid HTML (it
-opens and closes `<ul>` exactly once if the list is non-empty), supporting this
-pattern adds an additional layer of complexity to the compiler. It requires
-checking function names, validating this particular AST structure, and do
-special handling for these functions.
+Although this template produces valid HTML (it opens and closes `<ul>` exactly
+once if the list is non-empty), supporting this pattern adds an additional layer
+of complexity to the compiler. It requires checking function names, validating
+this particular AST structure, and do special handling for these functions.
 
 For this example, we recommend you to use the following template. It renders
 exactly the same HTML, and is supported by the compiler.

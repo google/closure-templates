@@ -135,14 +135,6 @@ public final class SharedTestUtils {
 
       @Override
       protected void visitFunctionNode(FunctionNode node) {
-        switch (node.getFunctionName()) {
-          case "index":
-          case "isFirst":
-          case "isLast":
-            loopVarNames.add(((VarRefNode) node.getChild(0)).getNameWithoutLeadingDollar());
-            break;
-          default: // fall out
-        }
         visitChildren(node);
       }
 

@@ -544,18 +544,6 @@ public class BytecodeCompilerTest {
         .rendersAs("empty", ImmutableMap.of("list", EMPTY_LIST));
 
     assertThatTemplateBody("{for $i in [1,2,3,4,5]}", "  {$i}", "{/for}").rendersAs("12345");
-
-    assertThatTemplateBody(
-            "{for $i in [1,2,3,4,5]}",
-            "  {if isFirst($i)}",
-            "    first!{\\n}",
-            "  {/if}",
-            "  {$i}-{index($i)}{\\n}",
-            "  {if isLast($i)}",
-            "    last!",
-            "  {/if}",
-            "{/for}")
-        .rendersAs(Joiner.on('\n').join("first!", "1-0", "2-1", "3-2", "4-3", "5-4", "last!"));
   }
 
   @Test
@@ -569,9 +557,9 @@ public class BytecodeCompilerTest {
     assertThatTemplateBody(
             "{@param map : map<string, int>}",
             "{for $key in mapKeys($map)}",
-            "  {$key} - {$map[$key]}{if not isLast($key)}{\\n}{/if}",
+            "  {$key} - {$map[$key]}{\\n}",
             "{/for}")
-        .rendersAs("a - 1\nb - 2", ImmutableMap.of("map", ImmutableMap.of("a", 1, "b", 2)));
+        .rendersAs("a - 1\nb - 2\n", ImmutableMap.of("map", ImmutableMap.of("a", 1, "b", 2)));
   }
 
   @Test
@@ -788,8 +776,8 @@ public class BytecodeCompilerTest {
   public void testBoxedIntComparisonFromFunctions() {
     assertThatTemplateBody(
             "{@param list : list<int>}",
-            "{for $item in $list}",
-            "{if index($item) == ceiling(length($list) / 2) - 1}",
+            "{for $item, $idx in $list}",
+            "{if $idx == ceiling(length($list) / 2) - 1}",
             "  Middle.",
             "{/if}",
             "{/for}",
@@ -1197,13 +1185,13 @@ public class BytecodeCompilerTest {
                     // failures on the foreach loop used to get assigned the line number of the
                     // if statement.
                     "  {for $foo in $list}",
-                    "    {$foo}{if not isLast($foo)}{sp}{/if}",
+                    "    {$foo}{sp}",
                     "  {/for}",
                     "{/if}",
                     "{/template}"));
     assertThat(
             render(templates, asRecord(ImmutableMap.of("list", ImmutableList.of(1, 2))), "ns.foo"))
-        .isEqualTo("1 2");
+        .isEqualTo("1 2 ");
     ListenableFuture<?> failed = immediateFailedFuture(new RuntimeException("boom"));
     // since each parameter is on a different source line, depending on which one is assigned the
     // failed future, the template should show a different line number

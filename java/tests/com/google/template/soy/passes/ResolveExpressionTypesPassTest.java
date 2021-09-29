@@ -748,9 +748,6 @@ public final class ResolveExpressionTypesPassTest {
                 constructFileSource(
                     "{@inject list: list<int|null>}",
                     "{for $item in $list}",
-                    "   {assertType('int', index($item))}",
-                    "   {assertType('bool', isLast($item))}",
-                    "   {assertType('bool', isFirst($item))}",
                     "   {assertType('int|null', $item)}",
                     "   {assertType('int', checkNotNull($item))}",
                     "   {assertType('string', css('foo'))}",

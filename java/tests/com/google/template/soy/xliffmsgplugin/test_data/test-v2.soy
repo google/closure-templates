@@ -22,8 +22,8 @@
   {@param cow: ?}  /** Don't have one. */
   {@param moose: ?}  /** The moose to print info about. */
 
-  {for $moo in $moose}
-    {if isFirst($moo)}
+  {for $moo, $idx in $moose}
+    {if $idx == 0}
       {call .mooHelper_}
         {param moo : $moo /}
       {/call}

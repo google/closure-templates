@@ -20,7 +20,6 @@ import static com.google.template.soy.exprtree.Operator.CONDITIONAL;
 import static com.google.template.soy.exprtree.Operator.OR;
 import static com.google.template.soy.exprtree.Operator.PLUS;
 import static com.google.template.soy.jssrc.dsl.Expression.id;
-import static com.google.template.soy.jssrc.dsl.Expression.number;
 import static com.google.template.soy.jssrc.internal.JsSrcSubject.assertThatSoyExpr;
 
 import com.google.common.collect.ImmutableMap;
@@ -42,9 +41,6 @@ public final class TranslateExprNodeVisitorTest {
   private static final ImmutableMap<String, Expression> LOCAL_VAR_TRANSLATIONS =
       ImmutableMap.<String, Expression>builder()
           .put("$goo", id("gooData8"))
-          .put("$goo__isFirst", id("gooIndex8").doubleEquals(number(0)))
-          .put("$goo__isLast", id("gooIndex8").doubleEquals(id("gooListLen8").minus(number(1))))
-          .put("$goo__index", id("gooIndex8"))
           .build();
 
   @Test
@@ -175,24 +171,6 @@ public final class TranslateExprNodeVisitorTest {
         .generatesCode(
             "const $tmp = opt_data.a;",
             "($tmp != null ? $tmp : opt_data.b) ? opt_data.c : opt_data.d;");
-  }
-
-  @Test
-  public void testForeachFunctions() {
-    assertThatSoyExpr("isFirst($goo) ? 1 : 0")
-        .withInitialLocalVarTranslations(LOCAL_VAR_TRANSLATIONS)
-        .generatesCode("gooIndex8 == 0 ? 1 : 0;")
-        .withPrecedence(CONDITIONAL);
-
-    assertThatSoyExpr("not isLast($goo) ? 1 : 0")
-        .withInitialLocalVarTranslations(LOCAL_VAR_TRANSLATIONS)
-        .generatesCode("!(gooIndex8 == gooListLen8 - 1) ? 1 : 0;")
-        .withPrecedence(CONDITIONAL);
-
-    assertThatSoyExpr("index($goo) + 1")
-        .withInitialLocalVarTranslations(LOCAL_VAR_TRANSLATIONS)
-        .generatesCode("gooIndex8 + 1;")
-        .withPrecedence(PLUS);
   }
 
   @Test

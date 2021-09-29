@@ -239,19 +239,6 @@ public final class TemplateAnalysisTest {
 
   @Test
   public void testForeach() {
-    // test special functions for foreach loops. though these all look like references to the loop
-    // var, they actually aren't.
-    runTest(
-        "{@param list : list<?>}",
-        "{for $item in $list}",
-        "  {if isFirst($item)}first{/if}",
-        "  {if isLast($item)}last{/if}",
-        "  {index($item)}",
-        "  {notrefed($item)}",
-        "  {refed($list)}",
-        "{/for}",
-        "{refed($list)}");
-
     // test ifempty blocks
     runTest(
         "{@param list : list<?>}",

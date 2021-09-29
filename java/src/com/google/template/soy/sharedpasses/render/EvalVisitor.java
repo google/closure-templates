@@ -812,12 +812,6 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       switch (nonpluginFn) {
         case IS_PARAM_SET:
           return visitIsSetFunction(node);
-        case IS_FIRST:
-          return visitIsFirstFunction(node);
-        case IS_LAST:
-          return visitIsLastFunction(node);
-        case INDEX:
-          return visitIndexFunction(node);
         case CHECK_NOT_NULL:
           return assertNotNull(node.getChild(0));
         case CSS:
@@ -1009,45 +1003,6 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
 
   private SoyValue visitIsSetFunction(FunctionNode node) {
     return BooleanData.forValue(env.hasVar(((VarRefNode) node.getChild(0)).getDefnDecl()));
-  }
-
-  private SoyValue visitIsFirstFunction(FunctionNode node) {
-
-    int localVarIndex;
-    try {
-      VarRefNode dataRef = (VarRefNode) node.getChild(0);
-      localVarIndex = env.getIndex(dataRef.getDefnDecl());
-    } catch (Exception e) {
-      throw RenderException.create(
-          "Failed to evaluate function call " + node.toSourceString() + ".", e);
-    }
-    return convertResult(localVarIndex == 0);
-  }
-
-  private SoyValue visitIsLastFunction(FunctionNode node) {
-
-    boolean isLast;
-    try {
-      VarRefNode dataRef = (VarRefNode) node.getChild(0);
-      isLast = env.isLast(dataRef.getDefnDecl());
-    } catch (Exception e) {
-      throw RenderException.create(
-          "Failed to evaluate function call " + node.toSourceString() + ".", e);
-    }
-    return convertResult(isLast);
-  }
-
-  private SoyValue visitIndexFunction(FunctionNode node) {
-
-    int localVarIndex;
-    try {
-      VarRefNode dataRef = (VarRefNode) node.getChild(0);
-      localVarIndex = env.getIndex(dataRef.getDefnDecl());
-    } catch (Exception e) {
-      throw RenderException.create(
-          "Failed to evaluate function call " + node.toSourceString() + ".", e);
-    }
-    return convertResult(localVarIndex);
   }
 
   private SoyValue visitCssFunction(FunctionNode node) {

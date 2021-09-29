@@ -171,13 +171,13 @@ Follow these steps to create a simple Hello World template and use it in Java:
       // Greet the person.
       {call .helloName data="all" /}<br>
       // Greet the additional people.
-      {for $additionalName in $additionalNames}
+      {for $additionalName, $idx in $additionalNames}
+        {if $idx > 0}
+          <br>  // break after every line except the last
+        {/if}
         {call .helloName}
           {param name: $additionalName /}
         {/call}
-        {if not isLast($additionalName)}
-          <br>  // break after every line except the last
-        {/if}
       {ifempty}
         No additional people to greet.
       {/for}

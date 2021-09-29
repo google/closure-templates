@@ -234,23 +234,6 @@ public final class GenPyCodeVisitorTest {
             + "  output.append(str(operandData###))\n";
 
     assertThatSoyCode(soyCode).compilesTo(expectedPyCode);
-
-    soyCode =
-        "{@param operands : ?}\n"
-            + "{for $operand in $operands}\n"
-            + "  {isFirst($operand) ? 1 : 0}\n"
-            + "  {isLast($operand) ? 1 : 0}\n"
-            + "  {index($operand)}\n"
-            + "{/for}\n";
-
-    expectedPyCode =
-        "operandList### = data.get('operands')\n"
-            + "for operandIndex###, operandData### in enumerate(operandList###):\n"
-            + "  output.extend([str(1 if operandIndex### == 0 else 0),"
-            + "str(1 if operandIndex### == len(operandList###) - 1 else 0),"
-            + "str(operandIndex###)])\n";
-
-    assertThatSoyCode(soyCode).compilesTo(expectedPyCode);
   }
 
   @Test

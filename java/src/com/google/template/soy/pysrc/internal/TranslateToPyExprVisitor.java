@@ -599,12 +599,6 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
     switch (nonpluginFn) {
       case IS_PARAM_SET:
         return visitIsSetFunction(node);
-      case IS_FIRST:
-        return visitForEachFunction(node, "__isFirst");
-      case IS_LAST:
-        return visitForEachFunction(node, "__isLast");
-      case INDEX:
-        return visitForEachFunction(node, "__index");
       case CHECK_NOT_NULL:
         return assertNotNull(node.getChild(0));
       case CSS:
@@ -639,11 +633,6 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
         return ERROR;
     }
     throw new AssertionError();
-  }
-
-  private PyExpr visitForEachFunction(FunctionNode node, String suffix) {
-    String varName = ((VarRefNode) node.getChild(0)).getNameWithoutLeadingDollar();
-    return localVarExprs.getVariableExpression(varName + suffix);
   }
 
   private PyExpr visitIsSetFunction(FunctionNode node) {

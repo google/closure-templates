@@ -139,34 +139,13 @@ For the original `$operands` = `['alpha', 'beta', 'gamma']`, this would output:
 alpha(0) + beta(1) + gamma(2)
 ```
 
-WARNING: The following section describes function `isLast()` which is deprecated
-in favor of indexed iteration.
-
-Within the block, you can use a special function `isLast($var)` that only takes
-the iterator as its argument and returns `true` only on the last iteration. For
-example:
-
-```soy
-{for $operand in $operands}
-  {$operand}
-  {if not isLast($operand)} - {/if}
-{ifempty}
-  0
-{/for}
-```
-
-Example output:
-
-```
-alpha - beta - gamma
-```
-
 If you only want to iterate over a list of numbers, you can use the
 [`range(...)` function](functions.md#range), for example:
 
 ```soy
-{for $i in range(5)}
-  {$i}{if not isLast($i)}, {/if}
+{for $i, $idx in range(5)}
+  {if $idx > 0}, {/if}
+  {$i}
 {/for}
 ```
 

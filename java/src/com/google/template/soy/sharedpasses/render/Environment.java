@@ -68,8 +68,7 @@ public abstract class Environment {
    * Binds the data about the current loop position to support the isLast and index builtin
    * functions.
    */
-  abstract void bindLoopPosition(
-      VarDefn loopVar, SoyValueProvider value, int index, boolean isLast);
+  abstract void bindLoopPosition(VarDefn loopVar, SoyValueProvider value);
 
   /** Returns the resolved SoyValue for the given VarDefn. Guaranteed to not return null. */
   abstract SoyValue getVar(VarDefn var);
@@ -80,16 +79,8 @@ public abstract class Environment {
   /** Returns the resolved SoyValue for the given VarDefn. Guaranteed to not return null. */
   abstract SoyValueProvider getVarProvider(VarDefn var);
 
-  /** Returns {@code true} if we are the last iteration for the given loop variable. */
-  abstract boolean isLast(VarDefn loopVar);
-
-  /** Returns the current iterator inject for the given loop variable. */
-  abstract int getIndex(VarDefn loopVar);
-
   private static final class Impl extends Environment {
     private static final class LoopPosition {
-      boolean isLast;
-      int index;
       SoyValueProvider item;
     }
 
@@ -115,12 +106,10 @@ public abstract class Environment {
     }
 
     @Override
-    void bindLoopPosition(VarDefn loopVar, SoyValueProvider value, int index, boolean isLast) {
+    void bindLoopPosition(VarDefn loopVar, SoyValueProvider value) {
       LoopPosition position =
           (LoopPosition) localVariables.computeIfAbsent(loopVar, ignored -> new LoopPosition());
       position.item = value;
-      position.index = index;
-      position.isLast = isLast;
     }
 
     @Override
@@ -153,16 +142,6 @@ public abstract class Environment {
     boolean hasVar(VarDefn var) {
       return data.hasField(var.name());
     }
-
-    @Override
-    boolean isLast(VarDefn var) {
-      return ((LoopPosition) localVariables.get(var)).isLast;
-    }
-
-    @Override
-    int getIndex(VarDefn var) {
-      return ((LoopPosition) localVariables.get(var)).index;
-    }
   }
 
   /** An environment that is empty and returns {@link UndefinedData} for everything. */
@@ -173,7 +152,7 @@ public abstract class Environment {
     }
 
     @Override
-    void bindLoopPosition(VarDefn loopVar, SoyValueProvider value, int index, boolean isLast) {
+    void bindLoopPosition(VarDefn loopVar, SoyValueProvider value) {
       throw new UnsupportedOperationException();
     }
 
@@ -190,16 +169,6 @@ public abstract class Environment {
     @Override
     boolean hasVar(VarDefn var) {
       return false;
-    }
-
-    @Override
-    boolean isLast(VarDefn loopVar) {
-      return UndefinedData.INSTANCE.booleanValue();
-    }
-
-    @Override
-    int getIndex(VarDefn loopVar) {
-      return UndefinedData.INSTANCE.integerValue();
     }
   }
 }

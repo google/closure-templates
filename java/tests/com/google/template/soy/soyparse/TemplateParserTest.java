@@ -1331,7 +1331,6 @@ public final class TemplateParserTest {
             + "  {/for}\n"
             + "  {for $boo in $foo.booze}\n"
             + "    Scary drink {$boo.name}!\n"
-            + "    {if not isLast($boo)}{\\n}{/if}\n"
             + "  {ifempty}\n"
             + "    Sorry, no booze.\n"
             + "  {/for}\n";
@@ -1361,11 +1360,7 @@ public final class TemplateParserTest {
     assertEquals("boo", fn1fnn0.getVarName());
     assertEquals("$foo.booze", fn1fnn0.getExpr().toSourceString());
     assertEquals("boo", fn1fnn0.getVarName());
-    assertEquals(4, fn1fnn0.numChildren());
-    IfNode fn1fnn0in = (IfNode) fn1fnn0.getChild(3);
-    assertEquals(1, fn1fnn0in.numChildren());
-    assertEquals(
-        "not isLast($boo)", ((IfCondNode) fn1fnn0in.getChild(0)).getExpr().toSourceString());
+    assertEquals(3, fn1fnn0.numChildren());
 
     ForIfemptyNode fn1fin1 = (ForIfemptyNode) fn1.getChild(1);
     assertEquals(1, fn1fin1.numChildren());

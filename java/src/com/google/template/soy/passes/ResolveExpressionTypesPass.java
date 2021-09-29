@@ -151,7 +151,6 @@ import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.ImportedVar;
-import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.types.AbstractMapType;
@@ -295,8 +294,6 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
       SoyErrorKind.of("Function ''{0}'' called with incorrect arg type {1} (expected {2}).");
   private static final SoyErrorKind INCORRECT_ARG_STYLE =
       SoyErrorKind.of("Function called with incorrect arg style (positional or named).");
-  private static final SoyErrorKind LOOP_VARIABLE_NOT_IN_SCOPE =
-      SoyErrorKind.of("Function ''{0}'' must have a loop variable as its argument.");
   private static final SoyErrorKind STRING_LITERAL_REQUIRED =
       SoyErrorKind.of("Argument to function ''{0}'' must be a string literal.");
   private static final SoyErrorKind INVALID_METHOD_BASE =
@@ -2441,17 +2438,8 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
             node.setType(SoyTypes.removeNull(type));
           }
           break;
-        case INDEX:
-          requireLoopVariableInScope(node, 0);
-          node.setType(IntType.getInstance());
-          break;
         case IS_PRIMARY_MSG_IN_USE:
           // don't bother checking the args, they are only ever set by the MsgIdFunctionPass
-          node.setType(BoolType.getInstance());
-          break;
-        case IS_FIRST:
-        case IS_LAST:
-          requireLoopVariableInScope(node, 0);
           node.setType(BoolType.getInstance());
           break;
         case CSS:
@@ -2617,22 +2605,6 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
       return MapType.of(
           keys.isEmpty() ? UnknownType.getInstance() : typeRegistry.getOrCreateUnionType(keys),
           values.isEmpty() ? UnknownType.getInstance() : typeRegistry.getOrCreateUnionType(values));
-    }
-
-    /** @param fn The function that must take a loop variable. */
-    private void requireLoopVariableInScope(FunctionNode fn, int childIndex) {
-      if (childIndex < 0 || childIndex >= fn.numChildren()) {
-        return;
-      }
-
-      ExprNode loopVariable = fn.getChild(childIndex);
-      if (!(loopVariable instanceof VarRefNode
-          && ((VarRefNode) loopVariable).getDefnDecl() instanceof LocalVar
-          && ((LocalVar) ((VarRefNode) loopVariable).getDefnDecl()).declaringNode()
-              instanceof ForNonemptyNode)) {
-        errorReporter.report(
-            fn.getSourceLocation(), LOOP_VARIABLE_NOT_IN_SCOPE, fn.getStaticFunctionName());
-      }
     }
 
     /** Checks the argument type. Returns false if an incorrect arg type error was reported. */

@@ -556,7 +556,6 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   /**
    * Helper for visitSoyFileNode(SoyFileNode) to add code to provide Soy namespaces.
    *
-   * @param header
    * @param soyFile The node we're visiting.
    */
   private static void addCodeToProvideSoyNamespace(StringBuilder header, SoyFileNode soyFile) {
@@ -574,7 +573,6 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   /**
    * Helper for visitSoyFileNode(SoyFileNode) to generate a module definition.
    *
-   * @param header
    * @param soyFile The node we're visiting.
    */
   private void addCodeToDeclareGoogModule(StringBuilder header, SoyFileNode soyFile) {
@@ -1525,12 +1523,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         VariableDeclaration.builder(dataName).setRhs(getDataItemFunction.apply(loopIndex)).build();
 
     // Populate the local var translations with the translations from this node.
-    templateTranslationContext
-        .soyToJsVariableMappings()
-        .put(refPrefix, id(dataName))
-        .put(refPrefix + "__isFirst", loopIndex.doubleEquals(number(0)))
-        .put(refPrefix + "__isLast", loopIndex.doubleEquals(limit.minus(number(1))))
-        .put(refPrefix + "__index", loopIndex);
+    templateTranslationContext.soyToJsVariableMappings().put(refPrefix, id(dataName));
 
     if (node.getIndexVar() != null) {
       templateTranslationContext

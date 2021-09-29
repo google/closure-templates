@@ -18,7 +18,6 @@ package com.google.template.soy.jssrc.internal;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.jssrc.dsl.Expression.id;
-import static com.google.template.soy.jssrc.dsl.Expression.number;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
@@ -53,9 +52,6 @@ public final class GenJsCodeVisitorTest {
   private static final ImmutableMap<String, Expression> LOCAL_VAR_TRANSLATIONS =
       ImmutableMap.<String, Expression>builder()
           .put("$goo", id("gooData8"))
-          .put("$goo__isFirst", id("gooIndex8").doubleEquals(number(0)))
-          .put("$goo__isLast", id("gooIndex8").doubleEquals(id("gooListLen8").minus(number(1))))
-          .put("$goo__index", id("gooIndex8"))
           .build();
 
   private static final TemplateAliases TEMPLATE_ALIASES = AliasUtils.IDENTITY_ALIASES;

@@ -239,9 +239,6 @@ public final class ParseExpressionTest {
 
   @Test
   public void testRecognizeFunctionCall() {
-    assertThatExpression("isFirst($x)").isValidExpression();
-    assertThatExpression("isLast($y)").isValidExpression();
-    assertThatExpression("index($z)").isValidExpression();
     assertThatExpression("randomInt()").isValidExpression();
     assertThatExpression("length($x.y.z)").isValidExpression();
     assertThatExpression("round(3.14159)").isValidExpression();
@@ -422,13 +419,7 @@ public final class ParseExpressionTest {
 
   @Test
   public void testParseFunctionCall() throws Exception {
-    ExprNode expr = assertThatExpression("isFirst($x)").isValidExpression();
-    FunctionNode isFirstFn = (FunctionNode) expr;
-    assertThat(isFirstFn.getFunctionName()).isEqualTo("isFirst");
-    assertThat(isFirstFn.numChildren()).isEqualTo(1);
-    assertThat(isFirstFn.getChild(0).toSourceString()).isEqualTo("$x");
-
-    expr = assertThatExpression("round(3.14159, 2)").isValidExpression();
+    ExprNode expr = assertThatExpression("round(3.14159, 2)").isValidExpression();
     FunctionNode roundFn = (FunctionNode) expr;
     assertThat(roundFn.getFunctionName()).isEqualTo("round");
     assertThat(roundFn.numChildren()).isEqualTo(2);

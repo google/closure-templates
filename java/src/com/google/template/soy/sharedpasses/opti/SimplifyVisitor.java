@@ -279,10 +279,6 @@ public final class SimplifyVisitor {
         FunctionNode functionNode = (FunctionNode) expr;
         if (functionNode.getSoyFunction() instanceof BuiltinFunction) {
           switch ((BuiltinFunction) functionNode.getSoyFunction()) {
-              // These 3 just reference synthetic loop variables
-            case IS_FIRST:
-            case INDEX:
-            case IS_LAST:
               // These 2 are glorified strings
             case XID:
             case CSS:

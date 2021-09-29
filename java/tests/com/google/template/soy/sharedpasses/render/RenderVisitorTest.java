@@ -752,9 +752,9 @@ public class RenderVisitorTest {
             + "{@param list0 : list<?> }\n"
             + "{@param foo : ? }\n"
             + "{@param boo : ? }\n"
-            + "  {for $n in $goo}\n"
-            + "    {if not isFirst($n)}{\\n}{/if}\n"
-            + "    {$n} = Sum of 1 through {index($n) + 1}.\n"
+            + "  {for $n, $idx in $goo}\n"
+            + "    {if $idx > 0}{\\n}{/if}\n"
+            + "    {$n} = Sum of 1 through {$idx + 1}.\n"
             + "  {/for}\n"
             + "  {\\n}\n"
             + "  {for $i in $goo}\n"
@@ -790,12 +790,12 @@ public class RenderVisitorTest {
     templateBody =
         ""
             + "{@param myMap : map<string, ?> }\n"
-            + "  {for $key in mapKeys($myMap)}\n"
-            + "    {if isFirst($key)}\n"
+            + "  {for $key, $idx in mapKeys($myMap)}\n"
+            + "    {if $idx == 0}\n"
             + "      [\n"
             + "    {/if}\n"
             + "    {$key}: {$myMap[$key]}\n"
-            + "    {if isLast($key)}\n"
+            + "    {if $idx == length(mapKeys($myMap)) - 1}\n"
             + "      ]\n"
             + "    {else}\n"
             + "      ,{sp}\n"
@@ -807,29 +807,6 @@ public class RenderVisitorTest {
             "myMap", SoyValueConverterUtility.newDict("aaa", "Blah", "bbb", 17));
     String output = renderWithData(templateBody, data);
     assertThat(ImmutableSet.of("[aaa: Blah, bbb: 17]", "[bbb: 17, aaa: Blah]")).contains(output);
-  }
-
-  @Test
-  public void testRenderForStmt2() throws Exception {
-    String templateBody =
-        "{@param goo : list<?> }\n"
-            + "  {for $n in $goo}\n"
-            + "    {if not isFirst($n)}{\\n}{/if}\n"
-            + "    {$n} ={sp}\n"
-            + "    {for $i in range(1, index($n)+2)}\n"
-            + "      {if $i != 1} + {/if}\n"
-            + "      {$i}\n"
-            + "    {/for}\n"
-            + "  {/for}\n";
-
-    assertRender(
-        templateBody,
-        "1 = 1\n"
-            + "3 = 1 + 2\n"
-            + "6 = 1 + 2 + 3\n"
-            + "10 = 1 + 2 + 3 + 4\n"
-            + "15 = 1 + 2 + 3 + 4 + 5\n"
-            + "21 = 1 + 2 + 3 + 4 + 5 + 6");
   }
 
   @Test

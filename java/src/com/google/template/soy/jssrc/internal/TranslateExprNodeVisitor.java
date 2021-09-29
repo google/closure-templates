@@ -889,12 +889,6 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
       switch ((BuiltinFunction) soyFunction) {
         case IS_PARAM_SET:
           return visitIsSetFunction(node);
-        case IS_FIRST:
-          return visitIsFirstFunction(node);
-        case IS_LAST:
-          return visitIsLastFunction(node);
-        case INDEX:
-          return visitIndexFunction(node);
         case CHECK_NOT_NULL:
           return visitCheckNotNullFunction(node);
         case CSS:
@@ -973,24 +967,9 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
         .castAs(jsTypeFor(SoyTypes.tryRemoveNull(expr.getType())).typeExpr());
   }
 
-  private Expression visitIsFirstFunction(FunctionNode node) {
-    String varName = ((VarRefNode) node.getChild(0)).getName();
-    return variableMappings.get(varName + "__isFirst");
-  }
-
   private Expression visitIsSetFunction(FunctionNode node) {
     Expression expression = visit(node.getChild(0));
     return expression.tripleNotEquals(Expression.LITERAL_UNDEFINED);
-  }
-
-  private Expression visitIsLastFunction(FunctionNode node) {
-    String varName = ((VarRefNode) node.getChild(0)).getName();
-    return variableMappings.get(varName + "__isLast");
-  }
-
-  private Expression visitIndexFunction(FunctionNode node) {
-    String varName = ((VarRefNode) node.getChild(0)).getName();
-    return variableMappings.get(varName + "__index");
   }
 
   private Expression visitCssFunction(FunctionNode node) {
