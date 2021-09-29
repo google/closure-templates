@@ -225,6 +225,11 @@ public abstract class SanitizedType extends PrimitiveType {
       builder.setPrimitive(SoyTypeP.PrimitiveTypeP.URI);
     }
 
+    @Override
+    boolean doIsAssignableFromNonUnionType(SoyType srcType) {
+      return srcType.getKind() == Kind.URI || srcType.getKind() == Kind.TRUSTED_RESOURCE_URI;
+    }
+
     /** Return the single instance of this type. */
     public static UriType getInstance() {
       return INSTANCE;

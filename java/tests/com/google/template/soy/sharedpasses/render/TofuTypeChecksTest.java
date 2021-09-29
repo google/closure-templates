@@ -267,6 +267,7 @@ public class TofuTypeChecksTest {
         DICT_DATA);
 
     assertIsInstance(SanitizedType.UriType.getInstance(), URI_DATA);
+    assertIsInstance(SanitizedType.UriType.getInstance(), TRUSTED_RESOURCE_URI_DATA);
     assertIsNotInstance(
         SanitizedType.UriType.getInstance(),
         NULL_DATA,
@@ -277,7 +278,6 @@ public class TofuTypeChecksTest {
         HTML_DATA,
         ATTRIBUTES_DATA,
         CSS_DATA,
-        TRUSTED_RESOURCE_URI_DATA,
         JS_DATA,
         LIST_DATA,
         MAP_DATA,

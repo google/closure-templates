@@ -167,7 +167,11 @@ public final class TofuTypeChecks {
         }
         return unionResult;
       case URI:
-        return isSanitizedofKind(value, ContentKind.URI);
+        return CheckResult.fromBool(
+            value instanceof SanitizedContent
+                && (((SanitizedContent) value).getContentKind() == ContentKind.URI
+                    || ((SanitizedContent) value).getContentKind()
+                        == ContentKind.TRUSTED_RESOURCE_URI));
       case VE:
         // Dynamic VE support is minimally implemented in Tofu: ve and ve_data objects are always
         // UndefinedVe.
