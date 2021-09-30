@@ -58,10 +58,6 @@ public class FileDependencyOrderPass implements CompilerFileSetPass {
   private static final SoyErrorKind CYCLE =
       SoyErrorKind.of("Dependency cycle between source files:\n{0}", StyleAllowance.NO_PUNCTUATION);
 
-  private static final ImmutableList<String> ALLOWED_CYCLE_DIRS =
-      ImmutableList.of(
-          );
-
   private final ErrorReporter errorReporter;
   private final Consumer<ImmutableList<SoyFileNode>> stateSetter;
 
@@ -97,30 +93,14 @@ public class FileDependencyOrderPass implements CompilerFileSetPass {
     } catch (NoSuchElementException e) {
       String cycleText =
           sorter.cyclicKeys.stream().map(fn -> fn.getFilePath().path()).collect(joining("\n--> "));
-      if (allowedCyclical(sorter.allNonLeafKeys)) {
-        errorReporter.warn(SourceLocation.UNKNOWN, CYCLE, cycleText);
-        return Result.CONTINUE;
-      } else {
         errorReporter.report(SourceLocation.UNKNOWN, CYCLE, cycleText);
         return Result.STOP;
-      }
     }
-  }
-
-  private static boolean allowedCyclical(Iterable<SoyFileNode> nonLeafs) {
-    for (SoyFileNode fn : nonLeafs) {
-      String path = fn.getFilePath().path();
-      if (ALLOWED_CYCLE_DIRS.stream().noneMatch(path::startsWith)) {
-        return false;
-      }
-    }
-    return true;
   }
 
   @VisibleForTesting
   static final class TopoSort<T> {
 
-    private Set<T> allNonLeafKeys;
     private List<T> cyclicKeys;
 
     ImmutableList<T> sort(Iterable<T> unsorted, Function<T, Iterable<T>> successorFunc) {
@@ -165,7 +145,6 @@ public class FileDependencyOrderPass implements CompilerFileSetPass {
         }
 
         if (nextCleared.isEmpty()) {
-          this.allNonLeafKeys = ImmutableSet.copyOf(deps.keySet());
           this.cyclicKeys = findCycle(deps);
           throw new NoSuchElementException("cycle");
         }
