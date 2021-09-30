@@ -141,7 +141,10 @@ public final class ExternCompiler {
     }
 
     Expression body =
-        adaptReturnType(memberMethod.getReturnType(), extMethodRef.invoke(adaptedParams));
+        adaptReturnType(
+            memberMethod.getReturnType(),
+            extern.getType().getReturnType(),
+            extMethodRef.invoke(adaptedParams));
 
     new Statement() {
       @Override
@@ -335,7 +338,7 @@ public final class ExternCompiler {
     }
   }
 
-  static Expression adaptReturnType(Type returnType, Expression externCall) {
+  static Expression adaptReturnType(Type returnType, SoyType soyReturnType, Expression externCall) {
     Type externType = externCall.resultType();
 
     if (externType.equals(BytecodeUtils.INTEGER_TYPE)) {
@@ -372,6 +375,9 @@ public final class ExternCompiler {
       return MethodRef.CONVERT_SAFE_HTML_PROTO_TO_SOY_VALUE_PROVIDER.invoke(externCall);
     } else if (externType.equals(BytecodeUtils.TRUSTED_RESOURCE_URL_TYPE)) {
       return MethodRef.CONVERT_TRUSTED_RESOURCE_URL_TO_SOY_VALUE_PROVIDER.invoke(externCall);
+    } else if (soyReturnType.getKind() == SoyType.Kind.PROTO_ENUM) {
+      return BytecodeUtils.numericConversion(
+          MethodRef.PROTOCOL_ENUM_GET_NUMBER.invoke(externCall), Type.LONG_TYPE);
     }
 
     return externCall;
