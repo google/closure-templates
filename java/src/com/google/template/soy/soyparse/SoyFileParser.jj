@@ -507,18 +507,19 @@ public class SoyFileParser {
   private static final ImmutableSet<String> EXPR_ATTR_NAMES =
       ImmutableSet.of("data", "genders", "key", "logonly", "variant");
 
-  // TODO(b/162252599): Move this to `Attributes` or `Attribute` call below.
-  private static void validateAttributes(
-      ExprNode expr, List<CommandTagAttribute> attributes, ErrorReporter errorReporter) {
+  private static List<CommandTagAttribute> validateAttributes(
+      SourceLocation currentLocation, List<CommandTagAttribute> attributes, ErrorReporter errorReporter) {
     for (CommandTagAttribute attribute : attributes) {
-      if (expr.getSourceLocation().isJustBefore(attribute.getName().location())) {
+      if (currentLocation != null && currentLocation.isJustBefore(attribute.getName().location())) {
         errorReporter.report(
             attribute.getName().location(),
             PARSER_ERROR,
             attribute.getName().identifier(),
             "whitespace");
       }
+      currentLocation = attribute.getSourceLocation();
     }
+    return attributes;
   }
 
   /** Attempts to parse the given input as a Soy expression. */
@@ -1830,7 +1831,7 @@ private List<CommandTagAttribute> Attributes() :
   // Drop duplicates and report errors before returning to our caller.
   {
     CommandTagAttribute.removeDuplicatesAndReportErrors(attributes, errorReporter);
-    return attributes;
+    return validateAttributes(null, attributes, errorReporter);
   }
 }
 
@@ -2809,7 +2810,7 @@ private MsgPluralNode MsgPlural() :
   }
 
   {
-    validateAttributes(pluralExpr, attributes, errorReporter);
+    validateAttributes(pluralExpr.getSourceLocation(), attributes, errorReporter);
 
     List<CaseOrDefaultNode> caseNodes = new ArrayList<CaseOrDefaultNode>();
   }
@@ -2921,7 +2922,7 @@ private MsgSelectNode MsgSelect() :
   }
 
   {
-    validateAttributes(selectExpr, attributes, errorReporter);
+    validateAttributes(selectExpr.getSourceLocation(), attributes, errorReporter);
 
     List<CaseOrDefaultNode> caseNodes = new ArrayList<CaseOrDefaultNode>();
   }
