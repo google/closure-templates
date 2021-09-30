@@ -137,8 +137,7 @@ public final class PassManager {
     IdGenerator idGenerator = soyTree.getNodeIdGenerator();
     for (CompilerFileSetPass pass : passes) {
       ImmutableList<SoyFileNode> sourceFilesThisPass = sourceFiles;
-      if (pass instanceof TopologicallyOrdered
-          && accumulatedState.topologicallyOrderedFiles != null) {
+      if (pass instanceof TopologicallyOrdered) {
         sourceFilesThisPass = accumulatedState.topologicallyOrderedFiles;
       }
       if (pass.run(sourceFilesThisPass, idGenerator) == Result.STOP) {
@@ -402,9 +401,7 @@ public final class PassManager {
           .add(
               new FileDependencyOrderPass(
                   errorReporter, v -> accumulatedState.topologicallyOrderedFiles = v))
-          .add(
-              new ModernFeatureInvariantsEnforcementPass(
-                  errorReporter, () -> accumulatedState.topologicallyOrderedFiles != null))
+          .add(new ModernFeatureInvariantsEnforcementPass(errorReporter))
           .add(new RestoreGlobalsPass())
           .add(new RestoreCompilerChecksPass(errorReporter))
           // needs to come early since it is necessary to create template metadata objects for

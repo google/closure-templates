@@ -25,7 +25,6 @@ import com.google.template.soy.soytree.ConstNode;
 import com.google.template.soy.soytree.ExternNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import java.util.List;
-import java.util.function.Supplier;
 
 /**
  * Enforces certain conditions on Soy files that contain constants.
@@ -38,43 +37,35 @@ import java.util.function.Supplier;
 @RunAfter(FileDependencyOrderPass.class)
 class ModernFeatureInvariantsEnforcementPass implements CompilerFileSetPass {
 
-  private static final SoyErrorKind TOPO_SORT_REQUIRED =
-      SoyErrorKind.of("Feature {0} is only allowed in non-cyclical file sets.");
-
   private static final SoyErrorKind UNIQUE_NS_REQUIRED =
       SoyErrorKind.of("Feature {0} is only allowed in files with unique namespaces.");
 
   private final ErrorReporter errorReporter;
-  private final Supplier<Boolean> topologicalSortSucceeded;
 
-  public ModernFeatureInvariantsEnforcementPass(
-      ErrorReporter errorReporter, Supplier<Boolean> topologicalSortSucceeded) {
+  public ModernFeatureInvariantsEnforcementPass(ErrorReporter errorReporter) {
     this.errorReporter = errorReporter;
-    this.topologicalSortSucceeded = topologicalSortSucceeded;
   }
 
   @Override
   public Result run(ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator) {
     boolean error = false;
-    boolean cycleError = !topologicalSortSucceeded.get();
     for (SoyFileNode file : sourceFiles) {
-      boolean duplicateNs = NamespaceExemptions.isKnownDuplicateNamespace(file.getNamespace());
-      if (!cycleError && !duplicateNs) {
+      if (!NamespaceExemptions.isKnownDuplicateNamespace(file.getNamespace())) {
         continue;
       }
 
       List<ConstNode> constants = file.getConstants();
       if (!constants.isEmpty()) {
         error = true;
-        SoyErrorKind errorKind = cycleError ? TOPO_SORT_REQUIRED : UNIQUE_NS_REQUIRED;
-        constants.forEach(c -> errorReporter.report(c.getSourceLocation(), errorKind, "{const}"));
+        constants.forEach(
+            c -> errorReporter.report(c.getSourceLocation(), UNIQUE_NS_REQUIRED, "{const}"));
       }
 
       List<ExternNode> externs = file.getExterns();
       if (!externs.isEmpty()) {
         error = true;
-        SoyErrorKind errorKind = cycleError ? TOPO_SORT_REQUIRED : UNIQUE_NS_REQUIRED;
-        externs.forEach(c -> errorReporter.report(c.getSourceLocation(), errorKind, "{extern}"));
+        externs.forEach(
+            c -> errorReporter.report(c.getSourceLocation(), UNIQUE_NS_REQUIRED, "{extern}"));
       }
     }
 
