@@ -31,12 +31,12 @@ from __future__ import unicode_literals
 __author__ = 'dcphillips@google.com (David Phillips)'
 
 import functools
+import html as html_module
 import re
 
 from . import generated_sanitize
 
 import six
-from six.moves import html_parser as HTMLParser
 
 # To allow the rest of the file to assume Python 3 strings, we will assign str
 # to unicode for Python 2. This will error in 3 and be ignored.
@@ -156,13 +156,12 @@ def html_to_text(value):
   start = 0
   removing_until = ''
   ws_preserving_until = ''
-  html_parser = HTMLParser.HTMLParser()
   for match in _TAG_RE.finditer(html):
     offset = match.start()
     tag = match.group(1)
     if not removing_until:
       chunk = html[start:offset]
-      chunk = html_parser.unescape(chunk)
+      chunk = html_module.unescape(chunk)
       if not ws_preserving_until:
         chunk = _WHITESPACE_RE.sub(' ', chunk)
         if not _TRAILING_NON_WHITESPACE_RE.search(text):
