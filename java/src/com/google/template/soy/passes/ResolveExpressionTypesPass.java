@@ -348,6 +348,8 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
       SoyErrorKind.of("Delcall variant must be of type string, int, or proto enum. Found ''{0}''.");
   private static final SoyErrorKind INVALID_VARIANT_EXPRESSION =
       SoyErrorKind.of("Invalid variant literal value ''{0}'' in ''delcall''.");
+  private static final SoyErrorKind ILLEGAL_USE_OF_NAMESPACE =
+      SoyErrorKind.of("Namespaces can only be used as a part of a field access.");
 
   private final ErrorReporter errorReporter;
 
@@ -1148,18 +1150,25 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
       // should not need this.
       if (allTemplateTypes != null) {
         VarDefn defn = varRef.getDefnDecl();
-        if (defn != null && defn.hasType() && defn.type().getKind() == Kind.TEMPLATE_TYPE) {
+        if (defn != null && defn.hasType()) {
+          if (defn.type().getKind() == Kind.TEMPLATE_TYPE) {
           TemplateImportType templateType = (TemplateImportType) defn.type();
-          if (templateType.getBasicTemplateType() == null) {
-            String fqn = templateType.getName();
-            TemplateMetadata metadataFromLib =
-                templateRegistryFromDeps.get().getBasicTemplateOrElement(fqn);
-            if (metadataFromLib != null) {
-              // Type is available from deps.
-              templateType.setBasicTemplateType(metadataFromLib.getTemplateType());
-            } else {
-              // Type is available from CollectTemplateTypesVisitor.
-              templateType.setBasicTemplateType(allTemplateTypes.get(fqn));
+            if (templateType.getBasicTemplateType() == null) {
+              String fqn = templateType.getName();
+              TemplateMetadata metadataFromLib =
+                  templateRegistryFromDeps.get().getBasicTemplateOrElement(fqn);
+              if (metadataFromLib != null) {
+                // Type is available from deps.
+                templateType.setBasicTemplateType(metadataFromLib.getTemplateType());
+              } else {
+                // Type is available from CollectTemplateTypesVisitor.
+                templateType.setBasicTemplateType(allTemplateTypes.get(fqn));
+              }
+            }
+          }
+          if (defn.type().getKind() == Kind.TEMPLATE_MODULE) {
+            if (!(varRef.getParent() instanceof FieldAccessNode)) {
+              errorReporter.report(varRef.getSourceLocation(), ILLEGAL_USE_OF_NAMESPACE);
             }
           }
         }
