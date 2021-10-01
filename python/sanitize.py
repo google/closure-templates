@@ -132,8 +132,8 @@ _BLOCK_TAGS_RE = re.compile(
     r'/?(address|blockquote|dd|div|dl|dt|h[1-6]|hr|li|ol|p|pre|table|tr|ul)$',
     re.IGNORECASE)
 _TAB_TAGS_RE = re.compile(r'(td|th)$', re.IGNORECASE)
-_WHITESPACE_RE = re.compile(r'\s+')
-_TRAILING_NON_WHITESPACE_RE = re.compile(r'\S\Z')
+_HTML_WHITESPACE_RE = re.compile(r'[ \t\r\n]+')
+_TRAILING_NON_WHITESPACE_RE = re.compile(r'[^ \t\r\n]\Z')
 _TRAILING_NON_NEWLINE_RE = re.compile(r'[^\n]\Z')
 _LEADING_SPACE_RE = re.compile(r'^ ')
 
@@ -163,7 +163,7 @@ def html_to_text(value):
       chunk = html[start:offset]
       chunk = html_module.unescape(chunk)
       if not ws_preserving_until:
-        chunk = _WHITESPACE_RE.sub(' ', chunk)
+        chunk = _HTML_WHITESPACE_RE.sub(' ', chunk)
         if not _TRAILING_NON_WHITESPACE_RE.search(text):
           chunk = _LEADING_SPACE_RE.sub('', chunk)
       text += chunk
@@ -184,7 +184,7 @@ def html_to_text(value):
     elif removing_until.lower() == tag:
       removing_until = ''
     start = match.end()
-  return text
+  return text.replace('\u00A0', ' ')
   # LINT.ThenChange(
   #     ../../../../../javascript/template/soy/soyutils_usegoog.js:htmlToText,
   #     ../../java/com/google/template/soy/basicfunctions/HtmlToText.java)

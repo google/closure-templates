@@ -20,7 +20,6 @@ import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static java.util.Arrays.stream;
 
 import com.google.common.base.Ascii;
-import com.google.common.base.CharMatcher;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SanitizedContent;
@@ -74,15 +73,14 @@ public final class HtmlToText {
           "tr",
           "ul");
   private static final ImmutableSet<String> TAB_TAGS = createOpenTagSet("td", "th");
-  private static final Pattern WHITESPACE = Pattern.compile("\\s+");
+  private static final Pattern HTML_WHITESPACE = Pattern.compile("[ \t\r\n]+");
 
   private static boolean endsWithNewline(StringBuffer builder) {
     return builder.length() == 0 || builder.charAt(builder.length() - 1) == '\n';
   }
 
-  private static boolean emptyOrEndsWithSpace(StringBuffer builder) {
-    return builder.length() == 0
-        || CharMatcher.whitespace().matches(builder.charAt(builder.length() - 1));
+  private static boolean emptyOrEndsWithWhitespace(StringBuffer builder) {
+    return builder.length() == 0 || " \t\r\n".indexOf(builder.charAt(builder.length() - 1)) >= 0;
   }
 
   private static boolean matchesTag(String tag, ImmutableSet<String> tagSet) {
@@ -91,6 +89,14 @@ public final class HtmlToText {
 
   private static boolean matchesTag(String tag, String tagSet) {
     return tagSet.equals(tag);
+  }
+
+  private static void replaceChar(StringBuffer builder, char from, char to) {
+    for (int i = 0; i < builder.length(); ++i) {
+      if (builder.charAt(i) == from) {
+        builder.setCharAt(i, to);
+      }
+    }
   }
 
   public static String convert(SoyValue value) {
@@ -121,15 +127,15 @@ public final class HtmlToText {
           // perform this loop inline so we can append directly to text instead of allocating
           // intermediate strings which is how Matcher.replaceAll works
           if (wsMatcher == null) {
-            wsMatcher = WHITESPACE.matcher(chunk);
+            wsMatcher = HTML_WHITESPACE.matcher(chunk);
           } else {
             // reuse matchers, this saves a lot of allocations.
             wsMatcher.reset(chunk);
           }
           while (wsMatcher.find()) {
-            // if the current builder ends with space and we see ws at the beginning of this chunk
-            // just skip it
-            if (wsMatcher.start() == 0 && emptyOrEndsWithSpace(text)) {
+            // if the current builder ends with whitespace and we see whitespace at the beginning of
+            // this chunk, just skip it.
+            if (wsMatcher.start() == 0 && emptyOrEndsWithWhitespace(text)) {
               wsMatcher.appendReplacement(text, "");
             } else {
               wsMatcher.appendReplacement(text, " ");
@@ -162,6 +168,8 @@ public final class HtmlToText {
       }
       start = matcher.end();
     }
+    // replace non-breaking spaces with spaces, then return the text;
+    replaceChar(text, '\u00A0', ' ');
     return text.toString();
   }
   // LINT.ThenChange(

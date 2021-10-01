@@ -928,8 +928,8 @@ const $$htmlToText = function(value) {
       chunk = googString.unescapeEntities(chunk);
       if (!wsPreservingUntil) {
         // We are not inside <pre>, normalize spaces.
-        chunk = chunk.replace(/\s+/g, ' ');
-        if (!/\S$/.test(text)) {
+        chunk = chunk.replace(/[ \t\r\n]+/g, ' ');
+        if (!/[^ \t\r\n]$/.test(text)) {
           // Strip leading space unless after non-whitespace.
           chunk = chunk.replace(/^ /, '');
         }
@@ -962,7 +962,8 @@ const $$htmlToText = function(value) {
     }
     start = offset + match[0].length;
   }
-  return text;
+  // replace non-breaking spaces with spaces, then return text;
+  return text.replace(/\u00A0/g, ' ');
 };
 
 
