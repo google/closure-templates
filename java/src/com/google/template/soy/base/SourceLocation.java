@@ -21,6 +21,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
 import com.google.auto.value.AutoValue;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ComparisonChain;
 import com.google.errorprone.annotations.CheckReturnValue;
 import com.google.errorprone.annotations.Immutable;
@@ -29,9 +30,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
-/**
- * Describes a source location in a Soy input file.
- */
+/** Describes a source location in a Soy input file. */
 @ParametersAreNonnullByDefault
 @Immutable
 @CheckReturnValue
@@ -206,6 +205,22 @@ public final class SourceLocation implements Comparable<SourceLocation> {
 
   public SourceLocation offsetEndCol(int offset) {
     return new SourceLocation(filePath, begin, end.offset(0, offset));
+  }
+
+  public SourceLocation offsetCols(int beginOffset, int endOffset) {
+    return new SourceLocation(filePath, begin.offset(0, beginOffset), end.offset(0, endOffset));
+  }
+
+  /**
+   * Returns a location representing a substring of this location. The begin and end index are
+   * relative to the start point of this location.
+   *
+   * @throws IllegalStateException if this location spans multiple lines.
+   */
+  public SourceLocation substring(int beginIndex, int endIndexExcl) {
+    Preconditions.checkState(begin.line() == end.line());
+    return new SourceLocation(
+        filePath, begin.offset(0, beginIndex), begin.offset(0, endIndexExcl - 1));
   }
 
   /**
