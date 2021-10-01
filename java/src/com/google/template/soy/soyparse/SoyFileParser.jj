@@ -1606,6 +1606,7 @@ private JsImplNode JsImplStmt() :
   close = <CMD_SELF_CLOSE>
   {
     SourceLocation srcLoc = createSrcLoc(open, close);
+    validateAttributes(null, attributes, errorReporter);
     return new JsImplNode(nodeIdGen.genId(), srcLoc, attributes, errorReporter);
   }
 }
@@ -1624,6 +1625,7 @@ private JavaImplNode JavaImplStmt() :
   close = <CMD_SELF_CLOSE>
   {
     SourceLocation srcLoc = createSrcLoc(open, close);
+    validateAttributes(null, attributes, errorReporter);
     return new JavaImplNode(nodeIdGen.genId(), srcLoc, attributes, errorReporter);
   }
 }
@@ -1802,7 +1804,10 @@ private NamespaceDeclaration Namespace() :
   name = DottedIdent()
   attributes = Attributes()
   close = <CMD_END>
-  { return new NamespaceDeclaration(name, attributes, errorReporter, createSrcLoc(open, close)); }
+  {
+    validateAttributes(createSrcLoc(open), attributes, errorReporter);
+    return new NamespaceDeclaration(name, attributes, errorReporter, createSrcLoc(open, close));
+  }
 }
 
 
@@ -1831,7 +1836,7 @@ private List<CommandTagAttribute> Attributes() :
   // Drop duplicates and report errors before returning to our caller.
   {
     CommandTagAttribute.removeDuplicatesAndReportErrors(attributes, errorReporter);
-    return validateAttributes(null, attributes, errorReporter);
+    return attributes;
   }
 }
 
@@ -2079,6 +2084,7 @@ private void TemplateOpenTagHelper(
 
   attributes = Attributes()
   {
+    validateAttributes(templateName.location(), attributes, errorReporter);
     builder.setCommandValues(templateName, attributes);
     // We can't set soy doc until after setCommandValues due to conditions in the builder.
     // --- Set the SoyDoc. ---
@@ -2641,6 +2647,7 @@ private MsgFallbackGroupNode MsgStmt() :
   templateBlock = TemplateBlockForMsg()
 
   {
+    validateAttributes(createSrcLoc(tagEnd), attributes, errorReporter);
     SourceLocation msgLocation = createSrcLoc(tagBegin, tagEnd);
     SourceLocation srcLocation = msgLocation;
     SourceLocation blockLocation = createSrcLoc(templateBlock);
@@ -2664,6 +2671,7 @@ private MsgFallbackGroupNode MsgStmt() :
 
     fallbackTemplateBlock = TemplateBlockForMsg()
     {
+      validateAttributes(createSrcLoc(tagEnd), attributes, errorReporter);
       msgLocation = createSrcLoc(fallbackTagBegin, tagEnd);
       SourceLocation openTag = msgLocation;
       blockLocation = createSrcLoc(fallbackTemplateBlock);
@@ -3010,6 +3018,7 @@ private PrintNode PrintStmt() :
   }
 
   {
+    validateAttributes(expr.getSourceLocation(), attributes, errorReporter);
     PrintNode node = new PrintNode(
         nodeIdGen.genId(),
         createSrcLoc(tagBegin, tagEnd),
@@ -3366,6 +3375,7 @@ private VeLogNode VeLogStmt() :
   tagClose = <CMD_CLOSE_VELOG>
 
   {
+    validateAttributes(veDataExpr.getSourceLocation(), attributes, errorReporter);
     VeLogNode node = new VeLogNode(
         nodeIdGen.genId(),
         createSrcLoc(tagBegin, tagClose),
@@ -3599,6 +3609,9 @@ private CallNode CallStmt() :
         // which should always be references to local templates.
         calleeExpr = TemplateLiteralNode.forVarRef(
            new VarRefNode(calleeName.identifier(), calleeName.location(), null));
+        validateAttributes(calleeName.location(), attributes, errorReporter);
+      } else {
+        validateAttributes(calleeExpr.getSourceLocation(), attributes, errorReporter);
       }
       CallBasicNode node = new CallBasicNode(
           nodeIdGen.genId(),
@@ -3637,6 +3650,7 @@ private CallNode CallStmt() :
       if (calleeName.type() == Identifier.Type.DOT_IDENT) {
         errorReporter.report(calleeName.location(), INVALID_CALLEE_NAME, calleeName.identifier());
       }
+      validateAttributes(calleeName.location(), attributes, errorReporter);
       SourceLocation tag = createSrcLoc(tagBegin, tagClose);
       CallDelegateNode node = new CallDelegateNode(
           nodeIdGen.genId(),
