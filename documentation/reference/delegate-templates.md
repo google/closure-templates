@@ -103,6 +103,17 @@ This will use the non-default implementation of `aaa.bbb.myButton` from the
 In either backend, it is an error to have more than one active implementation at
 the same priority (for example, multiple active non-default implementations).
 
+### Special case: a modded Soy template B under another modded Soy template A
+
+Please note that it is an error for two deltemplates to be installed at runtime
+with the same priority. Therefore, do not define the default implementation of
+deltemplate B within a delpackage. This would give B's default implementation
+the same priority as B's non-default (delpackage) implementations; essentially,
+B would not have a default implementation.
+
+So instead, put deltemplate B into a file without a delpackage. This will allow
+the variant (with a delpackage) to override it.
+
 ## Delegate Templates (with variant)
 
 Delegates with the `variant` attribute are appropriate for finer control of
