@@ -30,6 +30,4 @@ import java.lang.annotation.Target;
 @Retention(RUNTIME)
 public @interface ExternMigration {
   String file();
-
-  String name() default "";
 }
