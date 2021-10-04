@@ -324,7 +324,7 @@ Using a boolean constant renders the `or` expression meaningless; using a
 constant of another type means the expression does not evaluate to a boolean
 type.
 
-WARNING: While `''` is falsy is all backends, it does not compare to `true` and `false`
+WARNING: While `''` is falsy in all backends, it does not compare to `true` and `false`
 equivalently in all backends. It is therefore safe to use a string as the first
 argument of a ternary statement but not safe to compare strings to booleans.
 
