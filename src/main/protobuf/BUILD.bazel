@@ -126,3 +126,13 @@ java_proto_library(
         ":template_metadata_proto",
     ],
 )
+
+proto_library(
+    name = "idom_metadata_proto",
+    srcs = ["idom_metadata.proto"],
+)
+
+java_proto_library(
+    name = "idom_metadata_java_proto",
+    deps = [":idom_metadata_proto"],
+)

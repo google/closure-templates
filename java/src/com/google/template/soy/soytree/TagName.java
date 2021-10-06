@@ -181,6 +181,10 @@ public final class TagName {
   private static final ImmutableSet<String> HTML_OPEN_TAG_EXCLUDE_SET =
       ImmutableSet.of("head", "body", "html");
 
+  /** Set of tags that are focusable. */
+  private static final ImmutableSet<String> FOCUSABLE_TAG_NAMES =
+      ImmutableSet.of("a", "input", "textarea", "select", "button");
+
   public static final String WILDCARD = "";
 
   /**
@@ -299,6 +303,10 @@ public final class TagName {
     return OPTIONAL_TAG_CLOSE_TAG_RULES.containsKey(nameAsLowerCase)
         || OPTIONAL_TAG_OPEN_CLOSE_RULES.containsKey(nameAsLowerCase)
         || "html".equals(nameAsLowerCase);
+  }
+
+  public boolean isFocusable() {
+    return FOCUSABLE_TAG_NAMES.contains(nameAsLowerCase);
   }
 
   /**
