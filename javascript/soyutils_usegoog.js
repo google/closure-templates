@@ -916,17 +916,21 @@ const $$htmlToText = function(value) {
   let start = 0;
   // Tag name to stop removing contents, e.g. '/script'.
   let removingUntil = '';
-  // Tag name to stop preserving whitespace, e.g. '/pre'.
-  let wsPreservingUntil = '';
+  const preserveWhitespaceStack = [];
   const tagRe =
-      /<(?:!--.*?--|(?:!|(\/?[a-z][\w:-]*))(?:[^>'"]|"[^"]*"|'[^']*')*)>|$/gi;
+      /<(?:!--.*?--|(?:!|(\/?[a-z][\w:-]*))((?:[^>'"]|"[^"]*"|'[^']*')*))>|$/gi;
   for (let match; match = tagRe.exec(html);) {
     const tag = match[1];
+    const attrs = match[2];
     const offset = match.index;
+    const lowerCaseTag = tag ? tag.toLowerCase() : null;
     if (!removingUntil) {
       let chunk = html.substring(start, offset);
       chunk = googString.unescapeEntities(chunk);
-      if (!wsPreservingUntil) {
+
+      let preserveWhitespace =
+          $$shouldPreserveWhitespace_(preserveWhitespaceStack);
+      if (!preserveWhitespace) {
         // We are not inside <pre>, normalize spaces.
         chunk = chunk.replace(/[ \t\r\n]+/g, ' ');
         if (!/[^ \t\r\n]$/.test(text)) {
@@ -935,26 +939,29 @@ const $$htmlToText = function(value) {
         }
       }
       text += chunk;
-      if (/^(script|style|textarea|title)$/i.test(tag)) {
-        removingUntil = '/' + tag.toLowerCase();
-      } else if (/^br$/i.test(tag)) {
-        // <br> adds newline even after newline.
-        text += '\n';
-      } else if (BLOCK_TAGS_RE_.test(tag)) {
-        if (/[^\n]$/.test(text)) {
-          // Block tags don't add more consecutive newlines.
+
+      if (lowerCaseTag) {
+        if (/^(script|style|textarea|title)$/.test(lowerCaseTag)) {
+          removingUntil = '/' + lowerCaseTag;
+        } else if (/^br$/.test(lowerCaseTag)) {
+          // <br> adds newline even after newline.
           text += '\n';
+        } else if (BLOCK_TAGS_RE_.test(lowerCaseTag)) {
+          if (/[^\n]$/.test(text)) {
+            // Block tags don't add more consecutive newlines.
+            text += '\n';
+          }
+        } else if (/^(td|th)$/.test(lowerCaseTag)) {
+          // We add \t even after newline to support more leading <td>.
+          text += '\t';
         }
-        if (/^pre$/i.test(tag)) {
-          wsPreservingUntil = '/' + tag.toLowerCase();
-        } else if (tag.toLowerCase() == wsPreservingUntil) {
-          wsPreservingUntil = '';
+
+        if (!$$HTML5_VOID_ELEMENTS_.test("<" + lowerCaseTag + ">")) {
+          $$updatePreserveWhitespaceStack(
+              preserveWhitespaceStack, lowerCaseTag, attrs);
         }
-      } else if (/^(td|th)$/i.test(tag)) {
-        // We add \t even after newline to support more leading <td>.
-        text += '\t';
       }
-    } else if (removingUntil == tag.toLowerCase()) {
+    } else if (removingUntil === lowerCaseTag) {
       removingUntil = '';
     }
     if (!match[0]) {
@@ -966,10 +973,133 @@ const $$htmlToText = function(value) {
   return text.replace(/\u00A0/g, ' ');
 };
 
+/**
+ * A struct that holds two fields: an HTML tag, and whether that tag should
+ * preserve whitespace within it.
+ * @struct
+ */
+class TagPreservesWhitespace {
+  constructor(tag, preserveWhitespace) {
+    /** @const {string} */
+    this.tag = tag;
+
+    /** @const {boolean} */
+    this.preserveWhitespace = preserveWhitespace;
+  }
+}
+
+/**
+ * Determines if whitespace should currently be preserved by inspecting the top
+ * element of the stack.
+ *
+ * @param {!Array<!TagPreservesWhitespace>} preserveWhitespaceStack, an array of
+ * structs with properties tag and preserveWhitespace. The last element in the
+ * array is the top of the stack.
+ * @return {boolean}
+ */
+const $$shouldPreserveWhitespace_ = function(preserveWhitespaceStack) {
+  const stackSize = preserveWhitespaceStack.length;
+  if (stackSize > 0) {
+    return preserveWhitespaceStack[stackSize - 1].preserveWhitespace;
+  }
+  return false;
+};
+
+/**
+ * Determines if whitespace should currently be preserved by inspecting the top
+ * element of the stack.
+ *
+ * @param {string} style the style attribute value
+ * @return {?boolean} true if the style says to preserve whitespace, false if it
+ * says not to preserve whitespace, and null if it doesn't say either.
+ */
+const $$getStylePreservesWhitespace_ = function(style) {
+  const styleRe =
+      /[\t\n\r ]*([^:;\t\n\r ]*)[\t\n\r ]*:[\t\n\r ]*([^:;\t\n\r ]*)[\t\n\r ]*(?:;|$)/g;
+  for (let styleMatch; styleMatch = styleRe.exec(style);) {
+    const styleAttribute = styleMatch[1];
+    if (/^white-space$/i.test(styleAttribute)) {
+      const whitespaceStyle = styleMatch[2];
+      if (/^(pre|pre-wrap|break-spaces)$/i.test(whitespaceStyle)) {
+        return true;
+      } else if (/^(normal|nowrap)$/i.test(whitespaceStyle)) {
+        return false;
+      }
+    }
+  }
+  return null;
+};
+
+/**
+ * Determines whether the specified attributes indicate whitespace should be
+ * preserved. Returns null if the attributes don't indicate anything about
+ * whitespace preservation.
+ *
+ * @param {string} attrs the attributes for the current tag.
+ * @return {?boolean} true if the attrs say to preserve whitespace, false if
+ * they say not to preserve whitespace, and null if they don't say either.
+ */
+const $$getAttributesPreserveWhitespace_ = function(attrs) {
+  if (attrs !== "") {
+    for (let attrMatch; attrMatch = $$HTML_ATTRIBUTE_REGEX_.exec(attrs);) {
+      const attributeName = attrMatch[1];
+      if (/^style$/i.test(attributeName)) {
+        let style = attrMatch[2];
+        // We've matched style and won't finish iterating through the attr
+        // regex. Reset the regex matcher.
+        $$HTML_ATTRIBUTE_REGEX_.lastIndex = 0;
+
+        if (style !== "") {
+          // Strip quotes if the attribute value was quoted.
+          if (style.charAt(0) === '\'' || style.charAt(0) === '"') {
+            style = style.substr(1, style.length - 2);
+          }
+          return $$getStylePreservesWhitespace_(style);
+        }
+        return null;
+      }
+    }
+  }
+  return null;
+};
+
+/**
+ * Updates the preserveWhitespaceStack with the current tag and attributes. If
+ * it is a closing tag, this will pop elements off the stack, or if it's an
+ * open tag, it will deduce whether the tag or attrs indicate to preserve
+ * whitespace, and push a new element on the stack accordingly.
+ *
+ * @param {!Array<!TagPreservesWhitespace>} preserveWhitespaceStack, an array of
+ * structs with properties tag and preserveWhitespace. The last element in the
+ * array is the top of the stack.
+ * @param {string} lowerCaseTag the current tag, in lower case
+ * @param {string} attrs the attributes for the current tag
+ */
+const $$updatePreserveWhitespaceStack =
+    function(preserveWhitespaceStack, lowerCaseTag, attrs) {
+  if (lowerCaseTag.charAt(0) === '/') {
+    const closedTag = lowerCaseTag.substring(1);
+    // Pop tags until we pop one that matches the tag that's being closed. This
+    // means we're effectively automatically closing tags that aren't closed.
+    while (preserveWhitespaceStack.length > 0 &&
+           preserveWhitespaceStack.pop().tag !== closedTag) {
+    }
+  } else if (/^pre$/.test(lowerCaseTag)) {
+    preserveWhitespaceStack.push(
+        new TagPreservesWhitespace(lowerCaseTag, true));
+  } else {
+    let preserveWhitespace = $$getAttributesPreserveWhitespace_(attrs);
+    if (preserveWhitespace == null) {
+      preserveWhitespace = $$shouldPreserveWhitespace_(preserveWhitespaceStack);
+    }
+    preserveWhitespaceStack.push(
+        new TagPreservesWhitespace(lowerCaseTag, preserveWhitespace));
+  }
+};
 
 /** @const */
 const BLOCK_TAGS_RE_ =
-    /^\/?(address|blockquote|dd|div|dl|dt|h[1-6]|hr|li|ol|p|pre|table|tr|ul)$/i;
+    /^\/?(address|blockquote|dd|div|dl|dt|h[1-6]|hr|li|ol|p|pre|table|tr|ul)$/;
 // LINT.ThenChange(
 //     ../../../third_party/java_src/soy/java/com/google/template/soy/basicfunctions/HtmlToText.java,
 //     ../../../third_party/java_src/soy/python/runtime/sanitize.py:htmlToText)
