@@ -147,11 +147,11 @@ public final class DesugarHtmlNodesPass implements CompilerFileSetPass {
     protected void visitHtmlOpenTagNode(HtmlOpenTagNode openTag) {
       if (openTag.isSkipRoot()) {
         ImmutableList.Builder<StandaloneNode> builder = ImmutableList.builder();
-        // {skip} + {key} nodes are turned into soy-server-key="{$key}". For more information why,
+        // {skip} + {key} nodes are turned into ssk="{$key}". For more information why,
         // see go/typed-html-templates. For Incremental DOM, these are handled in
         // GenIncrementalDomCodeVisitor.
-        // Note: when users do not use their own key, the soy-server-key looks like
-        // "soy-server-key="{soyServerKey(xid('template'-0))}. When users use their own key, we just
+        // Note: when users do not use their own key, the ssk looks like
+        // "ssk="{soyServerKey(xid('template'-0))}. When users use their own key, we just
         // use their key verbatim.
         FunctionNode wrappedFn =
             FunctionNode.newPositional(
@@ -193,7 +193,7 @@ public final class DesugarHtmlNodesPass implements CompilerFileSetPass {
         }
 
         builder
-            .add(new RawTextNode(idGenerator.genId(), " soy-server-key=", attributeSourceLocation))
+            .add(new RawTextNode(idGenerator.genId(), " ssk=", attributeSourceLocation))
             .add(new RawTextNode(idGenerator.genId(), "'", SourceLocation.UNKNOWN))
             .add(
                 new PrintNode(

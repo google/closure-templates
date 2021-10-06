@@ -46,7 +46,7 @@ import com.google.template.soy.soytree.SoyTreeUtils;
  * ```
  * In other backends, this is just translated to
  * ```
- *   <div soy-server-key="0"></div>
+ *   <div ssk="0"></div>
  * ```
  * }</pre>
  *

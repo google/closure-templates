@@ -83,7 +83,7 @@ attributes['value'] =
 
 // Soy uses the {key} command syntax, rather than HTML attributes, to
 // indicate element keys.
-incrementaldom.setKeyAttributeName('soy-server-key');
+incrementaldom.setKeyAttributeName('ssk');
 
 /**
  * Tries to find an existing Soy element, if it exists. Otherwise, it creates

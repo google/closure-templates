@@ -84,7 +84,7 @@ var IncrementalDomRenderer = /** @class */ (function () {
       var el = incrementaldom.open(nameOrCtor, key);
       this.visit(el);
       if (goog.DEBUG) {
-        this.attr('soy-server-key', key);
+        this.attr('ssk', key);
       }
       // Keep going since either elements are being created or continuing will
       // be a no-op.
