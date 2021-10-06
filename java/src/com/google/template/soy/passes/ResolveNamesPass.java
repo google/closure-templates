@@ -39,7 +39,7 @@ public final class ResolveNamesPass implements CompilerFilePass {
       SoyErrorKind.of(
           "Found global reference aliasing a local variable ''{0}'', did you mean ''${0}''?");
 
-  private static final SoyErrorKind UKNOWN_VARIABLE =
+  private static final SoyErrorKind UNKNOWN_VARIABLE =
       SoyErrorKind.of("Unknown variable.{0}", StyleAllowance.NO_PUNCTUATION);
 
   private final ErrorReporter errorReporter;
@@ -107,7 +107,7 @@ public final class ResolveNamesPass implements CompilerFilePass {
       if (varDefn == null) {
         errorReporter.report(
             varRef.getSourceLocation(),
-            UKNOWN_VARIABLE,
+            UNKNOWN_VARIABLE,
             SoyErrors.getDidYouMeanMessage(localVariables.allVariablesInScope(), varRef.getName()));
         varDefn = new UndeclaredVar(varRef.getName(), varRef.getSourceLocation());
       }
