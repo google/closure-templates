@@ -478,11 +478,6 @@ public final class PassManager {
             // Must run after ResolveExpressionTypesPass to use allowedToInvokeAsFunction
             .add(new TemplateCallMetadataPass(errorReporter))
             .add(new VeLogRewritePass());
-        // Needs to run before CheckGlobalsPass to prevent unbound global errors on the getExtension
-        // parameters.
-        if (!allowUnknownGlobals) {
-          passes.add(new GetExtensionRewriteParamPass());
-        }
       }
       passes.add(new CheckAllFunctionsResolvedPass(pluginResolver));
 

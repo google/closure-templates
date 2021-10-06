@@ -72,7 +72,10 @@ public enum BuiltinMethod implements SoyMethod {
       ExprNode param = params.get(0);
 
       if (param.getType().getKind() != SoyType.Kind.PROTO_EXTENSION) {
-        errorReporter.report(param.getSourceLocation(), GET_EXTENSION_BAD_ARG);
+        if (param.getType().getKind() != SoyType.Kind.UNKNOWN) {
+          // Bad refs or typos are Kind=UNKNOWN and will be an error elsewhere.
+          errorReporter.report(param.getSourceLocation(), GET_EXTENSION_BAD_ARG);
+        }
         return UnknownType.getInstance();
       }
 
