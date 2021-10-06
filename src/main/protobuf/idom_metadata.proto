@@ -46,6 +46,22 @@ message IdomMetadataP {
 
     // A focusable html element. E.g. <button>, or <div tabindex="0">.
     FOCUSABLE_ELEMENT = 4;
+
+    // A wiz model or controller.
+    WIZOBJECT = 5;
+  }
+
+  enum IdomKind {
+    UNKNOWN_IDOM_KIND = 0;
+    // A jscontroller or model that can be used with an without idom.
+    // E.g. a jscontroller that doesn't modify the DOM.
+    COMPATIBLE = 1;
+    // A jscontroller or jsmodel that requires idom. E.g. a jscontroller that
+    // injects a soy element.
+    REQUIRE = 2;
+    // A jscontroller that can't work with idom. E.g. a jscontroller that
+    // directly modifies the DOM.
+    REJECT = 3;
   }
 
   message Location {
@@ -63,4 +79,6 @@ message IdomMetadataP {
   optional Location location = 3;
 
   repeated IdomMetadataP children = 4;
+
+  optional IdomKind idom_kind = 5;
 }

@@ -18,7 +18,11 @@ package com.google.template.soy.idom;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.template.soy.exprtree.StringNode;
+import com.google.template.soy.idom.IdomMetadataP.IdomKind;
 import com.google.template.soy.idom.IdomMetadataP.Kind;
+import com.google.template.soy.soytree.Comment;
+import com.google.template.soy.soytree.ConstNode;
 import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
@@ -26,21 +30,64 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Pass that calculates the IdomMetadata for templates. */
+/** Pass that calculates the IdomMetadata for soy files. */
 public final class IdomMetadataCalculator {
   public static ImmutableList<IdomMetadata> calcMetadata(SoyFileSetNode fileSet) {
-    ImmutableList.Builder<IdomMetadata> templateMetadatas = ImmutableList.builder();
+    ImmutableList.Builder<IdomMetadata> metadatas = ImmutableList.builder();
     for (SoyFileNode sourceFile : fileSet.getChildren()) {
       for (TemplateNode tplNode : sourceFile.getTemplates()) {
-        templateMetadatas.add(new IdomMetadataCalculator().calcTemplateMetadata(tplNode));
+        metadatas.add(new IdomMetadataCalculator().calcTemplateMetadata(tplNode));
+      }
+      IdomMetadata wizObjectMetadata = calcWizObjectMetadata(sourceFile);
+      if (wizObjectMetadata != null) {
+        metadatas.add(wizObjectMetadata);
       }
     }
-    return templateMetadatas.build();
+    return metadatas.build();
+  }
+
+  private static final String IDOM_KIND_COMMENT_PREFIX = "// idomKind:";
+
+  private static IdomMetadata calcWizObjectMetadata(SoyFileNode fileNode) {
+    if (!fileNode.getFileName().endsWith("_wiz.soy")) {
+      return null;
+    }
+    Comment idomKindComment =
+        fileNode.getComments().stream()
+            .filter(
+                c ->
+                    c.getType() == Comment.Type.LINE
+                        && c.getSource().startsWith(IDOM_KIND_COMMENT_PREFIX))
+            .findFirst()
+            .orElse(null);
+    if (idomKindComment == null) {
+      return null;
+    }
+    IdomKind idomKind =
+        IdomKind.valueOf(idomKindComment.getSource().substring(IDOM_KIND_COMMENT_PREFIX.length()));
+    ConstNode idNode =
+        fileNode.getConstants().stream()
+            .filter(c -> c.isExported() && c.getVar().name().equals("id"))
+            .findFirst()
+            .orElse(null);
+    if (idNode == null) {
+      return null;
+    }
+    StringNode idValueNode =
+        SoyTreeUtils.allNodesOfType(idNode.getExpr(), StringNode.class).findFirst().orElse(null);
+    if (idValueNode == null) {
+      return null;
+    }
+    return IdomMetadata.newBuilder(Kind.WIZOBJECT)
+        .idomKind(idomKind)
+        .name(idValueNode.getValue())
+        .build();
   }
 
   private static final ImmutableSet<SoyNode.Kind> CONDITIONAL_NODES =
