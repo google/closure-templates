@@ -19,6 +19,7 @@ package com.google.template.soy.idom;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.idom.IdomMetadataP.IdomKind;
 import com.google.template.soy.idom.IdomMetadataP.Kind;
 import org.jspecify.nullness.Nullable;
 
@@ -29,6 +30,8 @@ import org.jspecify.nullness.Nullable;
 @AutoValue
 public abstract class IdomMetadata {
   public abstract Kind kind();
+
+  public abstract IdomKind idomKind();
 
   public abstract @Nullable String name();
 
@@ -42,6 +45,8 @@ public abstract class IdomMetadata {
   @AutoValue.Builder
   public abstract static class Builder {
     public abstract Builder kind(Kind kind);
+
+    public abstract Builder idomKind(IdomKind kind);
 
     public abstract Builder name(String name);
 
@@ -63,6 +68,6 @@ public abstract class IdomMetadata {
   }
 
   public static Builder newBuilder(Kind kind) {
-    return new AutoValue_IdomMetadata.Builder().kind(kind);
+    return new AutoValue_IdomMetadata.Builder().kind(kind).idomKind(IdomKind.UNKNOWN_IDOM_KIND);
   }
 }

@@ -21,6 +21,7 @@ import static com.google.common.truth.Truth.assertThat;
 import com.google.common.base.Joiner;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.internal.SoyFileSupplier;
+import com.google.template.soy.idom.IdomMetadataP.IdomKind;
 import com.google.template.soy.passes.CheckTemplateHeaderVarsPass;
 import com.google.template.soy.passes.PassManager.PassContinuationRule;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -271,6 +272,18 @@ public final class IdomMetadataCalculatorTest {
             "{/template}"));
   }
 
+  @Test
+  public void testWizObject() {
+    assertIdomMetadata(
+        LINES.join("WIZOBJECT:a.controller:IDOM_REQUIRE", ""),
+        createFile(
+            "main_wiz.soy",
+            "{namespace main_ns}",
+            "{export const id = xid('a.controller') /}",
+            "// idomKind:REQUIRE",
+            ""));
+  }
+
   private static void assertIdomMetadata(String metadata, SoyFileSupplier... files) {
     SoyFileSetNode fileSet =
         SoyFileSetParserBuilder.forSuppliers(files)
@@ -300,6 +313,9 @@ public final class IdomMetadataCalculatorTest {
     str.append(prefix).append(metadata.kind().name());
     if (metadata.name() != null) {
       str.append(":").append(metadata.name());
+    }
+    if (metadata.idomKind() != IdomKind.UNKNOWN_IDOM_KIND) {
+      str.append(":IDOM_").append(metadata.idomKind().name());
     }
     str.append("\n");
     for (IdomMetadata child : metadata.children()) {
