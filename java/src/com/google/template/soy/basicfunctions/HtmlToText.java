@@ -17,16 +17,22 @@
 package com.google.template.soy.basicfunctions;
 
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
+import static com.google.template.soy.shared.internal.Sanitizers.HTML5_VOID_ELEMENTS;
+import static com.google.template.soy.shared.internal.Sanitizers.HTML_ATTRIBUTE_PATTERN;
 import static java.util.Arrays.stream;
 
 import com.google.common.base.Ascii;
+import com.google.common.base.Pair;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.internal.base.UnescapeUtils;
+import java.util.ArrayDeque;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -36,7 +42,26 @@ public final class HtmlToText {
   // LINT.IfChange
   private static final Pattern TAG =
       Pattern.compile(
-          "<(?:!--.*?--|(?:!|(/?[a-zA-Z][\\w:-]*))(?:[^>'\"]*|\"[^\"]*\"|'[^']*')*)>|\\z");
+          "<(?:!--.*?--|(?:!|(/?[a-zA-Z][\\w:-]*))((?:[^>'\"]*|\"[^\"]*\"|'[^']*')*))>|\\z");
+
+  /** Pattern for matching style attribute names and values */
+  private static final Pattern STYLE_ATTRIBUTE;
+
+  static {
+    String styleString = "[^:;\t\n\r ]*";
+    String whitespace = "[\t\n\r ]";
+
+    STYLE_ATTRIBUTE =
+        Pattern.compile(
+            String.format(
+                "%s*(%s)%s*:%s*(%s)%s*(?:;|$)",
+                whitespace,
+                styleString, // Group 1: Style attribute name.
+                whitespace,
+                whitespace,
+                styleString, // Group 2: Style attribute value.
+                whitespace));
+  }
 
   private static ImmutableSet<String> createOpenTagSet(String... tags) {
     return ImmutableSet.copyOf(tags);
@@ -73,6 +98,10 @@ public final class HtmlToText {
           "tr",
           "ul");
   private static final ImmutableSet<String> TAB_TAGS = createOpenTagSet("td", "th");
+  private static final ImmutableSet<String> PRESERVE_WHITESPACE_STYLES =
+      ImmutableSet.of("pre", "pre-wrap", "break-spaces");
+  private static final ImmutableSet<String> COLLAPSE_WHITESPACE_STYLES =
+      ImmutableSet.of("normal", "nowrap");
   private static final Pattern HTML_WHITESPACE = Pattern.compile("[ \t\r\n]+");
 
   private static boolean endsWithNewline(StringBuffer builder) {
@@ -99,6 +128,8 @@ public final class HtmlToText {
     }
   }
 
+  private HtmlToText() {}
+
   public static String convert(SoyValue value) {
     if (value == null || value instanceof NullData) {
       return "";
@@ -108,73 +139,171 @@ public final class HtmlToText {
     }
     Preconditions.checkArgument(((SanitizedContent) value).getContentKind() == ContentKind.HTML);
     String html = value.stringValue();
-    StringBuffer text = new StringBuffer(html.length()); // guaranteed to be no bigger than this
-    int start = 0;
-    String removingUntil = "";
-    String wsPreservingUntil = "";
-    Matcher wsMatcher = null;
 
-    Matcher matcher = TAG.matcher(html);
-    while (matcher.find()) {
-      int offset = matcher.start();
-      String tag = matcher.group(1);
-      String lowerCaseTag = tag != null ? Ascii.toLowerCase(tag) : null;
-      if (removingUntil.isEmpty()) {
-        String chunk = html.substring(start, offset);
-        chunk = UnescapeUtils.unescapeHtml(chunk);
-        if (wsPreservingUntil.isEmpty()) {
-          // collapse internal whitespace sequences to a single space
-          // perform this loop inline so we can append directly to text instead of allocating
-          // intermediate strings which is how Matcher.replaceAll works
-          if (wsMatcher == null) {
-            wsMatcher = HTML_WHITESPACE.matcher(chunk);
-          } else {
-            // reuse matchers, this saves a lot of allocations.
-            wsMatcher.reset(chunk);
-          }
-          while (wsMatcher.find()) {
-            // if the current builder ends with whitespace and we see whitespace at the beginning of
-            // this chunk, just skip it.
-            if (wsMatcher.start() == 0 && emptyOrEndsWithWhitespace(text)) {
-              wsMatcher.appendReplacement(text, "");
-            } else {
-              wsMatcher.appendReplacement(text, " ");
-            }
-          }
-          wsMatcher.appendTail(text);
-        } else {
-          text.append(chunk);
-        }
-        if (lowerCaseTag != null) {
-          if (matchesTag(lowerCaseTag, REMOVING_TAGS)) {
-            removingUntil = '/' + lowerCaseTag;
-          } else if (matchesTag(lowerCaseTag, NEWLINE_TAGS)) {
-            text.append('\n');
-          } else if (matchesTag(lowerCaseTag, BLOCK_TAGS)) {
-            if (!endsWithNewline(text)) {
-              text.append('\n');
-            }
-            if (matchesTag(lowerCaseTag, WS_PRESERVING_TAGS)) {
-              wsPreservingUntil = '/' + lowerCaseTag;
-            } else if (lowerCaseTag.equals(wsPreservingUntil)) {
-              wsPreservingUntil = "";
-            }
-          } else if (matchesTag(lowerCaseTag, TAB_TAGS)) {
-            text.append('\t');
-          }
-        }
-      } else if (removingUntil.equals(lowerCaseTag)) {
-        removingUntil = "";
+    return new HtmlToTextConverter().convert(html);
+  }
+
+  private static class HtmlToTextConverter {
+
+    Matcher whitespaceMatcher = null;
+    Matcher attributeMatcher = null;
+    Matcher styleMatcher = null;
+    ArrayDeque<Pair<String, Boolean>> preserveWhitespaceStack = new ArrayDeque<>();
+
+    // Reuse matchers, this saves a lot of allocations.
+    private void resetWhitespaceMatcher(String html) {
+      if (whitespaceMatcher == null) {
+        whitespaceMatcher = HTML_WHITESPACE.matcher(html);
+      } else {
+        whitespaceMatcher.reset(html);
       }
-      start = matcher.end();
     }
-    // replace non-breaking spaces with spaces, then return the text;
-    replaceChar(text, '\u00A0', ' ');
-    return text.toString();
+
+    private void resetAttributeMatcher(String html) {
+      if (attributeMatcher == null) {
+        attributeMatcher = HTML_ATTRIBUTE_PATTERN.matcher(html);
+      } else {
+        attributeMatcher.reset(html);
+      }
+    }
+
+    private void resetStyleMatcher(String html) {
+      if (styleMatcher == null) {
+        styleMatcher = STYLE_ATTRIBUTE.matcher(html);
+      } else {
+        styleMatcher.reset(html);
+      }
+    }
+
+    String convert(String html) {
+      StringBuffer text = new StringBuffer(html.length()); // guaranteed to be no bigger than this
+      int start = 0;
+      String removingUntil = "";
+
+      Matcher matcher = TAG.matcher(html);
+      while (matcher.find()) {
+        int offset = matcher.start();
+        String tag = matcher.group(1);
+        String attrs = matcher.group(2);
+        String lowerCaseTag = tag != null ? Ascii.toLowerCase(tag) : null;
+        if (removingUntil.isEmpty()) {
+          String chunk = html.substring(start, offset);
+          chunk = UnescapeUtils.unescapeHtml(chunk);
+
+          if (!shouldPreserveWhitespace()) {
+            resetWhitespaceMatcher(chunk);
+            // collapse internal whitespace sequences to a single space
+            // perform this loop inline so we can append directly to text instead of allocating
+            // intermediate strings which is how Matcher.replaceAll works
+            while (whitespaceMatcher.find()) {
+              // if the current builder ends with whitespace and we see whitespace at the beginning
+              // of this chunk, just skip it.
+              if (whitespaceMatcher.start() == 0 && emptyOrEndsWithWhitespace(text)) {
+                whitespaceMatcher.appendReplacement(text, "");
+              } else {
+                whitespaceMatcher.appendReplacement(text, " ");
+              }
+            }
+            whitespaceMatcher.appendTail(text);
+          } else {
+            text.append(chunk);
+          }
+          if (lowerCaseTag != null) {
+            if (matchesTag(lowerCaseTag, REMOVING_TAGS)) {
+              removingUntil = '/' + lowerCaseTag;
+            } else if (matchesTag(lowerCaseTag, NEWLINE_TAGS)) {
+              text.append('\n');
+            } else if (matchesTag(lowerCaseTag, BLOCK_TAGS)) {
+              if (!endsWithNewline(text)) {
+                text.append('\n');
+              }
+            } else if (matchesTag(lowerCaseTag, TAB_TAGS)) {
+              text.append('\t');
+            }
+
+            if (!HTML5_VOID_ELEMENTS.contains(lowerCaseTag)) {
+              updatePreserveWhitespaceStack(lowerCaseTag, attrs);
+            }
+          }
+        } else if (removingUntil.equals(lowerCaseTag)) {
+          removingUntil = "";
+        }
+        start = matcher.end();
+      }
+      // replace non-breaking spaces with spaces, then return the text;
+      replaceChar(text, '\u00A0', ' ');
+      return text.toString();
+    }
+
+    private boolean shouldPreserveWhitespace() {
+      return !preserveWhitespaceStack.isEmpty() && preserveWhitespaceStack.peek().second;
+    }
+
+    private Optional<Boolean> getStylePreservesWhitespace(String style) {
+      resetStyleMatcher(style);
+      while (styleMatcher.find()) {
+        String styleAttribute = styleMatcher.group(1);
+        String styleAttributeValue = styleMatcher.group(2);
+        if (!Strings.isNullOrEmpty(styleAttribute)
+            && Ascii.equalsIgnoreCase(styleAttribute, "white-space")) {
+          String whitespaceStyle =
+              Strings.isNullOrEmpty(styleAttributeValue)
+                  ? ""
+                  : Ascii.toLowerCase(styleAttributeValue);
+          if (PRESERVE_WHITESPACE_STYLES.contains(whitespaceStyle)) {
+            return Optional.of(true);
+          } else if (COLLAPSE_WHITESPACE_STYLES.contains(whitespaceStyle)) {
+            return Optional.of(false);
+          }
+        }
+      }
+
+      return Optional.empty();
+    }
+
+    private Optional<Boolean> getAttributesPreserveWhitespace(String attrs) {
+      if (Strings.isNullOrEmpty(attrs)) {
+        return Optional.empty();
+      }
+
+      resetAttributeMatcher(attrs);
+      while (attributeMatcher.find()) {
+        String attributeName = attributeMatcher.group(1);
+        if (!Strings.isNullOrEmpty(attributeName)
+            && Ascii.equalsIgnoreCase(attributeName, "style")) {
+          String style = attributeMatcher.group(2);
+          if (!Strings.isNullOrEmpty(style)) {
+            // Strip quotes if the attribute value was quoted.
+            if (style.charAt(0) == '\'' || style.charAt(0) == '"') {
+              style = style.substring(1, style.length() - 1);
+            }
+            return getStylePreservesWhitespace(style);
+          }
+          return Optional.empty();
+        }
+      }
+      return Optional.empty();
+    }
+
+    private void updatePreserveWhitespaceStack(String lowerCaseTag, String attrs) {
+      if (lowerCaseTag.charAt(0) == '/') {
+        lowerCaseTag = lowerCaseTag.substring(1);
+        // Pop tags until we pop one that matches the current closing tag. This means we're
+        // effectively automatically closing tags that aren't explicitly closed.
+        while (!preserveWhitespaceStack.isEmpty()
+            && !preserveWhitespaceStack.pop().first.equals(lowerCaseTag)) {}
+      } else if (matchesTag(lowerCaseTag, WS_PRESERVING_TAGS)) {
+        preserveWhitespaceStack.push(Pair.of(lowerCaseTag, true));
+      } else {
+        // If attribute don't specify whitespace preservation, inherit from parent tag.
+        boolean preserveWhitespace =
+            getAttributesPreserveWhitespace(attrs).orElseGet(this::shouldPreserveWhitespace);
+
+        preserveWhitespaceStack.push(Pair.of(lowerCaseTag, preserveWhitespace));
+      }
+    }
   }
   // LINT.ThenChange(
   //     ../../../../../../../../../javascript/template/soy/soyutils_usegoog.js:htmlToText,
   //     ../../../../../../python/runtime/sanitize.py:htmlToText)
-
-  private HtmlToText() {}
 }

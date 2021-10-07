@@ -123,8 +123,13 @@ def clean_html(value, safe_tags=None):
 
 # LINT.IfChange(htmlToText)
 _TAG_RE = re.compile(
-    r'<(?:!--.*?--|(?:!|(/?[a-z][\w:-]*))(?:[^>\'"]|"[^"]*"|\'[^\']*\')*)>|\Z',
+    r'<(?:!--.*?--|(?:!|(/?[a-z][\w:-]*))((?:[^>\'"]|"[^"]*"|\'[^\']*\')*))>|\Z',
     re.IGNORECASE)
+_ATTR_RE = re.compile(
+    r'([a-zA-Z][a-zA-Z0-9:\\-]*)[\t\n\r ]*=[\t\n\r ]*("[^"]*"|\'[^\']*\')')
+_STYLE_RE = re.compile(
+    r'[\t\n\r ]*([^:;\t\n\r ]*)[\t\n\r ]*:[\t\n\r ]*([^:;\t\n\r ]*)[\t\n\r ]*(?:;|\Z)'
+)
 _REMOVING_TAGS_RE = re.compile(r'(script|style|textarea|title)$', re.IGNORECASE)
 _WS_PRESERVING_TAGS_RE = re.compile(r'pre$', re.IGNORECASE)
 _NEWLINE_TAGS_RE = re.compile(r'br$', re.IGNORECASE)
@@ -136,6 +141,9 @@ _HTML_WHITESPACE_RE = re.compile(r'[ \t\r\n]+')
 _TRAILING_NON_WHITESPACE_RE = re.compile(r'[^ \t\r\n]\Z')
 _TRAILING_NON_NEWLINE_RE = re.compile(r'[^\n]\Z')
 _LEADING_SPACE_RE = re.compile(r'^ ')
+_PRESERVE_WHITESPACE_STYLES_RE = re.compile(r'(pre|pre-wrap|break-spaces)$',
+                                            re.IGNORECASE)
+_COLLAPSE_WHITESPACE_STYLES_RE = re.compile(r'(normal|nowrap)$', re.IGNORECASE)
 
 
 def html_to_text(value):
@@ -155,33 +163,82 @@ def html_to_text(value):
   text = ''
   start = 0
   removing_until = ''
-  ws_preserving_until = ''
+  preserve_whitespace_stack = []
+
+  def should_preserve_whitespace():
+    if preserve_whitespace_stack:
+      return preserve_whitespace_stack[-1][1]
+    return False
+
+  def get_style_preserves_whitespace(style):
+    for match in _STYLE_RE.finditer(style):
+      style_attribute = match.group(1)
+      style_attribute_value = match.group(2)
+      if style_attribute and style_attribute.lower() == 'white-space':
+        if _PRESERVE_WHITESPACE_STYLES_RE.match(style_attribute_value):
+          return True
+        elif _COLLAPSE_WHITESPACE_STYLES_RE.match(style_attribute_value):
+          return False
+
+  def get_attributes_preserve_whitespace(attrs):
+    if not attrs:
+      return None
+
+    for match in _ATTR_RE.finditer(attrs):
+      attribute_name = match.group(1)
+      if attribute_name and attribute_name.lower() == 'style':
+        style = match.group(2)
+        if style:
+          # Strip quotes if the attribute value was quoted.
+          if style[0] == '\'' or style[0] == '"':
+            style = style[1:-1]
+          return get_style_preserves_whitespace(style)
+        return None
+
+  def update_preserve_whitespace_stack(tag, attrs):
+    if tag[0] == '/':
+      tag = tag[1:]
+      # Pop tags until we pop one that matches the current closing tag. We're
+      # effectively automatically closing tags that aren't explicitly closed.
+      while preserve_whitespace_stack and (
+          preserve_whitespace_stack.pop()[0] != tag):
+        pass
+    elif _WS_PRESERVING_TAGS_RE.match(tag):
+      preserve_whitespace_stack.append((tag, True))
+    else:
+      # For unspecified whitespace preservation, inherit from parent tag.
+      preserve_whitespace = get_attributes_preserve_whitespace(attrs)
+      if preserve_whitespace is None:
+        preserve_whitespace = should_preserve_whitespace()
+
+      preserve_whitespace_stack.append((tag, preserve_whitespace))
+
   for match in _TAG_RE.finditer(html):
     offset = match.start()
-    tag = match.group(1)
+    tag = match.group(1).lower() if match.group(1) else None
+    attrs = match.group(2)
     if not removing_until:
       chunk = html[start:offset]
       chunk = html_module.unescape(chunk)
-      if not ws_preserving_until:
+      if not should_preserve_whitespace():
         chunk = _HTML_WHITESPACE_RE.sub(' ', chunk)
         if not _TRAILING_NON_WHITESPACE_RE.search(text):
           chunk = _LEADING_SPACE_RE.sub('', chunk)
       text += chunk
       if tag:
         if _REMOVING_TAGS_RE.match(tag):
-          removing_until = '/' + tag.lower()
+          removing_until = '/' + tag
         elif _NEWLINE_TAGS_RE.match(tag):
           text += '\n'
         elif _BLOCK_TAGS_RE.match(tag):
           if _TRAILING_NON_NEWLINE_RE.search(text):
             text += '\n'
-          if _WS_PRESERVING_TAGS_RE.match(tag):
-            ws_preserving_until = '/' + tag.lower()
-          elif tag.lower() == ws_preserving_until:
-            ws_preserving_until = ''
         elif _TAB_TAGS_RE.match(tag):
           text += '\t'
-    elif removing_until.lower() == tag:
+
+        if not _HTML5_VOID_ELEMENTS_RE.match('<' + tag + '>'):
+          update_preserve_whitespace_stack(tag, attrs)
+    elif removing_until == tag:
       removing_until = ''
     start = match.end()
   return text.replace('\u00A0', ' ')

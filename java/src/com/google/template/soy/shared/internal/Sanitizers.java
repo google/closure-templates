@@ -1186,7 +1186,7 @@ public final class Sanitizers {
   }
 
   /** From http://www.w3.org/TR/html-markup/syntax.html#syntax-elements */
-  private static final ImmutableSet<String> HTML5_VOID_ELEMENTS =
+  public static final ImmutableSet<String> HTML5_VOID_ELEMENTS =
       ImmutableSet.of(
           "area", "base", "br", "col", "command", "embed", "hr", "img", "input", "keygen", "link",
           "meta", "param", "source", "track", "wbr");
