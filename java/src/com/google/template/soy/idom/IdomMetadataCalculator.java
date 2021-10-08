@@ -18,7 +18,10 @@ package com.google.template.soy.idom;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.protobuf.ExtensionRegistry;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.template.soy.idom.IdomMetadataP.Kind;
+import com.google.template.soy.soytree.Comment;
 import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
@@ -29,18 +32,45 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 
-/** Pass that calculates the IdomMetadata for templates. */
+/** Pass that calculates the IdomMetadata for soy files. */
 public final class IdomMetadataCalculator {
   public static ImmutableList<IdomMetadata> calcMetadata(SoyFileSetNode fileSet) {
-    ImmutableList.Builder<IdomMetadata> templateMetadatas = ImmutableList.builder();
+    ImmutableList.Builder<IdomMetadata> metadatas = ImmutableList.builder();
     for (SoyFileNode sourceFile : fileSet.getChildren()) {
       for (TemplateNode tplNode : sourceFile.getTemplates()) {
-        templateMetadatas.add(new IdomMetadataCalculator().calcTemplateMetadata(tplNode));
+        metadatas.add(new IdomMetadataCalculator().calcTemplateMetadata(tplNode));
+      }
+      IdomMetadata wizObjectMetadata = calcWizObjectMetadata(sourceFile);
+      if (wizObjectMetadata != null) {
+        metadatas.add(wizObjectMetadata);
       }
     }
-    return templateMetadatas.build();
+    return metadatas.build();
+  }
+
+  private static final String COMMENT_PREFIX = "// IdomMetadata:";
+
+  private static IdomMetadata calcWizObjectMetadata(SoyFileNode fileNode) {
+    Comment comment =
+        fileNode.getComments().stream()
+            .filter(c -> c.getSource().startsWith(COMMENT_PREFIX))
+            .findFirst()
+            .orElse(null);
+    if (comment == null) {
+      return null;
+    }
+    try {
+      return IdomMetadata.fromProto(
+          IdomMetadataP.parseFrom(
+              Base64.getDecoder().decode(comment.getSource().substring(COMMENT_PREFIX.length())),
+              ExtensionRegistry.getGeneratedRegistry()));
+    } catch (InvalidProtocolBufferException e) {
+      throw new IllegalArgumentException(
+          "Invalid encoded IdomMetadata:\n" + comment.getSource(), e);
+    }
   }
 
   private static final ImmutableSet<SoyNode.Kind> CONDITIONAL_NODES =

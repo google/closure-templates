@@ -19,8 +19,9 @@ package com.google.template.soy.idom;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.idom.IdomMetadataP.IdomKind;
 import com.google.template.soy.idom.IdomMetadataP.Kind;
-import org.jspecify.nullness.Nullable;
+import javax.annotation.Nullable;
 
 /**
  * Contains metadata needed to check errors when using idom. This is a java wrapper of IdomMetadataP
@@ -30,9 +31,13 @@ import org.jspecify.nullness.Nullable;
 public abstract class IdomMetadata {
   public abstract Kind kind();
 
-  public abstract @Nullable String name();
+  public abstract IdomKind idomKind();
 
-  public abstract @Nullable SourceLocation location();
+  @Nullable
+  public abstract String name();
+
+  @Nullable
+  public abstract SourceLocation location();
 
   public abstract ImmutableList<IdomMetadata> children();
 
@@ -42,6 +47,8 @@ public abstract class IdomMetadata {
   @AutoValue.Builder
   public abstract static class Builder {
     public abstract Builder kind(Kind kind);
+
+    public abstract Builder idomKind(IdomKind kind);
 
     public abstract Builder name(String name);
 
@@ -63,6 +70,14 @@ public abstract class IdomMetadata {
   }
 
   public static Builder newBuilder(Kind kind) {
-    return new AutoValue_IdomMetadata.Builder().kind(kind);
+    return new AutoValue_IdomMetadata.Builder().kind(kind).idomKind(IdomKind.UNKNOWN_IDOM_KIND);
+  }
+
+  /** Converts the given proto into a IdomMetadata instance. */
+  public static IdomMetadata fromProto(IdomMetadataP proto) {
+    return IdomMetadata.newBuilder(proto.getKind())
+        .idomKind(proto.getIdomKind())
+        .name(proto.getName())
+        .build();
   }
 }

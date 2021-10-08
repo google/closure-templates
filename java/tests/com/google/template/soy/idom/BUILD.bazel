@@ -31,6 +31,7 @@ java_library(
         "//java/src/com/google/template/soy/passes",
         "//java/src/com/google/template/soy/soytree",
         "//java/src/com/google/template/soy/testing:soy_file_set_parser_builder",
+        "//src/main/protobuf:idom_metadata_java_proto",
         "@maven//:com_google_guava_guava",
         "@maven//:com_google_truth_truth",
         "@maven//:junit_junit",
