@@ -16,21 +16,38 @@
 
 package com.google.template.soy.idom;
 
+import com.google.common.base.Ascii;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.protobuf.ExtensionRegistry;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
+import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.exprtree.StringNode;
+import com.google.template.soy.exprtree.VarDefn;
+import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.idom.IdomMetadataP.Kind;
 import com.google.template.soy.soytree.Comment;
 import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
+import com.google.template.soy.soytree.LetContentNode;
+import com.google.template.soy.soytree.LetNode;
+import com.google.template.soy.soytree.LetValueNode;
+import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.defn.ImportedVar;
+import com.google.template.soy.soytree.defn.LocalVar;
+import com.google.template.soy.soytree.defn.TemplateParam;
+import com.google.template.soy.soytree.defn.TemplateStateVar;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
@@ -114,7 +131,12 @@ public final class IdomMetadataCalculator {
           }
         }
         allMetadatas.addAll(getHtmlTagMetadata(openTag, htmlChildrenMetadata));
-      } else if (node instanceof ParentSoyNode) {
+      } else if (node instanceof PrintNode) {
+        PrintNode printNode = (PrintNode) node;
+        allMetadatas.addAll(
+            addForLoopRootIfNeeded(
+                printNode, /*hasKey=*/ false, getExpressionMetadata(printNode.getExpr())));
+      } else if (node instanceof ParentSoyNode && !(node instanceof LetNode)) {
         allMetadatas.addAll(getSoyMetadata(((ParentSoyNode<?>) node).getChildren()));
       }
       if (!isConditionalNode) {
@@ -126,7 +148,14 @@ public final class IdomMetadataCalculator {
 
   private ImmutableList<IdomMetadata> getHtmlTagMetadata(
       HtmlOpenTagNode openTag, ImmutableList<IdomMetadata> htmlChildrenMetadata) {
-    ImmutableList<IdomMetadata> metadatas = htmlChildrenMetadata;
+    ImmutableList<HtmlAttributeNode> attrs =
+        SoyTreeUtils.getAllNodesOfType(openTag, HtmlAttributeNode.class);
+    ImmutableList<IdomMetadata> metadatas =
+        ImmutableList.<IdomMetadata>builder()
+            .addAll(getSoyMetadata(attrs))
+            .addAll(htmlChildrenMetadata)
+            .build();
+
     if (isFocusable(openTag)) {
       metadatas =
           ImmutableList.<IdomMetadata>builder()
@@ -161,6 +190,101 @@ public final class IdomMetadataCalculator {
             .location(node.getSourceLocation())
             .addChildren(metadatas)
             .build());
+  }
+
+  private ImmutableList<IdomMetadata> getExpressionMetadata(List<? extends ExprNode> nodes) {
+    ImmutableList.Builder<IdomMetadata> allMetadatas = ImmutableList.builder();
+    for (ExprNode node : nodes) {
+      allMetadatas.addAll(getExpressionMetadata(node));
+    }
+    return allMetadatas.build();
+  }
+
+  private ImmutableList<IdomMetadata> getExpressionMetadata(ExprNode node) {
+    if (node instanceof FunctionNode) {
+      FunctionNode fnNode = (FunctionNode) node;
+      IdomMetadata wizObjectMetadata = getWizObjectRefMetadata(fnNode);
+      if (wizObjectMetadata != null) {
+        return ImmutableList.of(wizObjectMetadata);
+      }
+      return ImmutableList.of();
+    }
+    if (node instanceof VarRefNode) {
+      VarRefNode ref = (VarRefNode) node;
+      VarDefn decl = ref.getDefnDecl();
+      if (decl instanceof LocalVar) {
+        LocalVar var = (LocalVar) decl;
+        if (var.declaringNode() instanceof LetContentNode) {
+          LetContentNode let = (LetContentNode) var.declaringNode();
+          return getSoyMetadata(let.getChildren());
+        }
+        if (var.declaringNode() instanceof LetValueNode) {
+          LetValueNode let = (LetValueNode) var.declaringNode();
+          return getExpressionMetadata(let.getExpr());
+        }
+      }
+      if (decl instanceof TemplateStateVar) {
+        TemplateStateVar stateVar = (TemplateStateVar) decl;
+        return getExpressionMetadata(stateVar.defaultValue());
+      }
+      if (decl instanceof ImportedVar) {
+        ImportedVar importedVar = (ImportedVar) decl;
+        IdomMetadata metadata = getWizObjectRefMetadata(importedVar, ref.getSourceLocation());
+        if (metadata != null) {
+          return ImmutableList.of(metadata);
+        }
+      }
+      if (decl instanceof TemplateParam) {
+        TemplateParam param = (TemplateParam) decl;
+        return ImmutableList.builder()
+            .add(
+                IdomMetadata.newBuilder(Kind.PARAM_REF)
+                    .name(param.name())
+                    .location(param.nameLocation())
+                    .build())
+            .addAll(getExpressionMetadata(param.defaultValue()))
+            .build();
+      }
+    }
+
+    if (node instanceof ParentExprNode) {
+      return getExpressionMetadata(((ParentExprNode) node).getChildren());
+    }
+    return ImmutableList.of();
+  }
+
+  private IdomMetadata getWizObjectRefMetadata(FunctionNode fnNode) {
+    if (!"xid".equals(fnNode.getFunctionName())) {
+      return null;
+    }
+    String name =
+        SoyTreeUtils.allNodesOfType(fnNode, StringNode.class)
+            .map(n -> n.getValue())
+            .findFirst()
+            .orElse(null);
+    if (name == null) {
+      return null;
+    }
+    // Guess the kind based on the xid name. This relies on
+    // go/wiz-style#naming-wiz-objects-and-files.
+    String lowerCaseName = Ascii.toLowerCase(name);
+    if (lowerCaseName.endsWith("controller") || lowerCaseName.endsWith("model")) {
+      return IdomMetadata.newBuilder(Kind.WIZOBJECT_REF)
+          .name(name)
+          .location(fnNode.getSourceLocation())
+          .build();
+    }
+    return null;
+  }
+
+  private IdomMetadata getWizObjectRefMetadata(ImportedVar importedVar, SourceLocation location) {
+    if (!importedVar.name().endsWith(".id")) {
+      return null;
+    }
+    return IdomMetadata.newBuilder(Kind.WIZOBJECT_REF)
+        .name(importedVar.getSourceFilePath().path())
+        .location(location)
+        .build();
   }
 
   private static String getTemplateName(TemplateNode tplNode) {

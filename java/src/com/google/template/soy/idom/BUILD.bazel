@@ -23,8 +23,10 @@ java_library(
     srcs = glob(["*.java"]),
     deps = [
         "//java/src/com/google/template/soy/base",
+        "//java/src/com/google/template/soy/exprtree",
         "//java/src/com/google/template/soy/soytree",
         "//java/src/com/google/template/soy/soytree:soynode",
+        "//java/src/com/google/template/soy/soytree/defn",
         "//src/main/protobuf:idom_metadata_java_proto",
         "@com_google_auto_value_auto_value",
         "@com_google_protobuf//:protobuf_java",
