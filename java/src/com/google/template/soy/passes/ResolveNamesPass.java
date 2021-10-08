@@ -27,7 +27,6 @@ import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.passes.LocalVariablesNodeVisitor.ExprVisitor;
 import com.google.template.soy.passes.LocalVariablesNodeVisitor.LocalVariables;
 import com.google.template.soy.soytree.SoyFileNode;
-import com.google.template.soy.soytree.defn.UndeclaredVar;
 
 /**
  * Visitor which resolves all variable and parameter references to point to the corresponding
@@ -109,9 +108,10 @@ public final class ResolveNamesPass implements CompilerFilePass {
             varRef.getSourceLocation(),
             UNKNOWN_VARIABLE,
             SoyErrors.getDidYouMeanMessage(localVariables.allVariablesInScope(), varRef.getName()));
-        varDefn = new UndeclaredVar(varRef.getName(), varRef.getSourceLocation());
+        GlobalNode.replaceExprWithError(varRef);
+      } else {
+        varRef.setDefn(varDefn);
       }
-      varRef.setDefn(varDefn);
     }
   }
 }

@@ -31,6 +31,7 @@ import com.google.template.soy.exprtree.ExprNode.Kind;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.ProtoEnumValueNode;
 import com.google.template.soy.exprtree.VarDefn;
@@ -213,6 +214,7 @@ public final class ResolveDottedImportsPass implements CompilerFilePass {
 
         errorReporter.report(
             fullLocation, NO_SUCH_NESTED_TYPE, fieldName, englishForType(type), type, didYouMean);
+        GlobalNode.replaceExprWithError(refn);
       }
       return null;
     }

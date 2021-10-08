@@ -528,7 +528,8 @@ public final class PassManager {
                 new EnforceExperimentalFeaturesPass(
                     options.getExperimentalFeatures(), errorReporter))
             .add(new CheckTemplateCallsPass(errorReporter, accumulatedState::registryFull))
-            .add(new ElementCheckCrossTemplatePass(errorReporter));
+            .add(new ElementCheckCrossTemplatePass(errorReporter))
+            .add(new CheckValidVarrefsPass(errorReporter));
         passes.add(
             new SoyElementCompositionPass(
                 astRewrites, errorReporter, soyPrintDirectives, accumulatedState::registryFull));

@@ -1402,6 +1402,8 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
         return method;
       }
 
+      boolean replaceNode = true;
+
       if (!andMatchArgType.isEmpty()) {
         // Unexpected. Matched multiple methods. Plug-in validation should mostly prevent this but
         // methods applying to base type "any" could still cause this.
@@ -1420,16 +1422,24 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
           didYouMean = SoyErrors.getDidYouMeanMessage(matching, methodName);
         }
         // We did not match base type and method name. No method found.
-        if (pluginResolutionMode == PluginResolver.Mode.REQUIRE_DEFINITIONS) {
-          errorReporter.report(srcLoc, INVALID_METHOD_BASE, methodName, baseType, didYouMean);
-        } else if (pluginResolutionMode == PluginResolver.Mode.ALLOW_UNDEFINED_AND_WARN) {
-          errorReporter.warn(srcLoc, INVALID_METHOD_BASE, methodName, baseType, didYouMean);
-        } else {
-          // :( this is for kythe since we can't load plugin definitions since they are too
-          // heavyweight.
+        switch (pluginResolutionMode) {
+          case REQUIRE_DEFINITIONS:
+            errorReporter.report(srcLoc, INVALID_METHOD_BASE, methodName, baseType, didYouMean);
+            break;
+          case ALLOW_UNDEFINED_AND_WARN:
+            errorReporter.warn(srcLoc, INVALID_METHOD_BASE, methodName, baseType, didYouMean);
+            replaceNode = false;
+            break;
+          default:
+            // :( this is for kythe since we can't load plugin definitions since they are too
+            // heavyweight.
+            replaceNode = false;
         }
       }
 
+      if (replaceNode) {
+        GlobalNode.replaceExprWithError(node);
+      }
       return null;
     }
 

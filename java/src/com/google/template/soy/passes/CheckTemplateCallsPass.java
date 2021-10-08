@@ -34,6 +34,7 @@ import com.google.template.soy.error.SoyErrors;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.CallableExpr.ParamsStyle;
 import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.passes.IndirectParamsCalculator.IndirectParamsInfo;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
@@ -179,12 +180,14 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
           } else {
             errorReporter.report(
                 node.getSourceLocation(), CAN_ONLY_CALL_TEMPLATE_TYPES, calleeType);
+            GlobalNode.replaceExprWithError(node.getCalleeExpr().getChild(0));
           }
         }
       } else if (calleeType.getKind() == SoyType.Kind.UNKNOWN) {
         // We may end up with UNKNOWN here for external calls.
       } else {
         errorReporter.report(node.getSourceLocation(), CAN_ONLY_CALL_TEMPLATE_TYPES, calleeType);
+        GlobalNode.replaceExprWithError(node.getCalleeExpr().getChild(0));
       }
     }
 

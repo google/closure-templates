@@ -41,6 +41,12 @@ public final class GlobalNode extends AbstractExprNode {
     return new GlobalNode(Identifier.create("error", "error", location));
   }
 
+  public static void replaceExprWithError(ExprNode expr) {
+    GlobalNode errorNode = error(expr.getSourceLocation());
+    errorNode.suppressUnknownGlobalErrors();
+    expr.getParent().replaceChild(expr, errorNode);
+  }
+
   private Identifier identifier;
 
   private boolean suppressUnknownGlobalErrors;
