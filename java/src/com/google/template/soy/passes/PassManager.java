@@ -495,7 +495,9 @@ public final class PassManager {
           .add(new IncrementalDomKeysPass(errorReporter));
 
       if (!disableAllTypeChecking) {
-        passes.add(new VeLogValidationPass(errorReporter, registry));
+        passes.add(
+            new VeLogValidationPass(
+                errorReporter, registry, pluginResolver.getPluginResolutionMode()));
       }
       // Cross template checking passes
 

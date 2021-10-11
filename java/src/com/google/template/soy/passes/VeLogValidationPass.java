@@ -109,10 +109,13 @@ final class VeLogValidationPass implements CompilerFileSetPass {
 
   private final ErrorReporter reporter;
   private final SoyTypeRegistry typeRegistry;
+  private final PluginResolver.Mode mode;
 
-  VeLogValidationPass(ErrorReporter reporter, SoyTypeRegistry typeRegistry) {
+  VeLogValidationPass(
+      ErrorReporter reporter, SoyTypeRegistry typeRegistry, PluginResolver.Mode mode) {
     this.reporter = reporter;
     this.typeRegistry = typeRegistry;
+    this.mode = mode;
   }
 
   @Override
@@ -311,7 +314,7 @@ final class VeLogValidationPass implements CompilerFileSetPass {
       if (dataExpr.getType().getKind() != Kind.NULL) {
         reporter.report(dataExpr.getSourceLocation(), VE_UNION_WITH_DATA, veExpr.getType());
       }
-    } else {
+    } else if (this.mode == PluginResolver.Mode.REQUIRE_DEFINITIONS) {
       reporter.report(veExpr.getSourceLocation(), WRONG_TYPE, "ve", veExpr.getType());
     }
   }
