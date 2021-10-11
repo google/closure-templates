@@ -58,7 +58,11 @@ public final class SoyConformanceChecker extends AbstractSoyCompiler {
   @Override
   protected void compile(SoyFileSet.Builder sfsBuilder) {
     ValidatedConformanceConfig conformanceConfig = parseConformanceConfig();
-    sfsBuilder.setConformanceConfig(conformanceConfig).build().checkConformance();
+    sfsBuilder
+        .setConformanceConfig(conformanceConfig)
+        .setSkipPluginValidation(true)
+        .build()
+        .checkConformance();
   }
 
   private ValidatedConformanceConfig parseConformanceConfig() {
