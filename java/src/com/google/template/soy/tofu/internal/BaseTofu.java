@@ -487,6 +487,25 @@ public final class BaseTofu implements SoyTofu {
       return sb.toString();
     }
 
+    @Override
+    @Deprecated
+    public SanitizedContent.ContentKind render(Appendable out) {
+      TemplateNode template =
+          baseTofu.renderMain(
+              out,
+              templateName,
+              data,
+              ijData,
+              activeDelPackageNames,
+              msgBundle,
+              idRenamingMap,
+              cssRenamingMap,
+              debugSoyTemplateInfo,
+              getPluginInstances());
+      enforceContentKind(template);
+      return SanitizedContent.ContentKind.valueOf(template.getContentKind().name());
+    }
+
     private PluginInstances getPluginInstances() {
       if (perRenderPluginInstances != null) {
         return baseTofu.pluginInstances.combine(perRenderPluginInstances);
@@ -564,25 +583,6 @@ public final class BaseTofu implements SoyTofu {
       StringBuilder sb = new StringBuilder();
       renderMain(sb);
       return sb.toString();
-    }
-
-    @Override
-    @Deprecated
-    public SanitizedContent.ContentKind render(Appendable out) {
-      TemplateNode template =
-          baseTofu.renderMain(
-              out,
-              templateName,
-              data,
-              ijData,
-              activeDelPackageNames,
-              msgBundle,
-              idRenamingMap,
-              cssRenamingMap,
-              debugSoyTemplateInfo,
-              getPluginInstances());
-      enforceContentKind(template);
-      return SanitizedContent.ContentKind.valueOf(template.getContentKind().name());
     }
 
     @Override
