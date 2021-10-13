@@ -35,6 +35,11 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public final class IdomMetadataCalculatorTest {
   private static final Joiner LINES = Joiner.on("\n");
+  private static final SoyFileSupplier A_CONTROLLER_WIZ =
+      createFile(
+          "x/a_controller_wiz.soy",
+          "{namespace x.a_controller_wiz}",
+          "{export const id = xid('a.controller') /}");
 
   @Test
   public void testTemplate_regular() {
@@ -97,6 +102,23 @@ public final class IdomMetadataCalculatorTest {
             "  {for $x in [1]}",
             "    <div><b></b></div>",
             "    <span></span>",
+            "  {/for}",
+            "{/template}"));
+  }
+
+  @Test
+  public void testForLoopChildrenWithoutKey_prints() {
+    assertIdomMetadata(
+        LINES.join("TEMPLATE:main_ns.render", "  FOR_LOOP_ROOT_WITHOUT_KEY", ""),
+        createFile(
+            "main.soy",
+            "{namespace main_ns}",
+            "{template .render}",
+            "  {let $content kind=\"html\"}",
+            "    <div></div>",
+            "  {/let}",
+            "  {for $x in [1]}",
+            "    {$content}",
             "  {/for}",
             "{/template}"));
   }
@@ -291,6 +313,107 @@ public final class IdomMetadataCalculatorTest {
             "// IdomMetadata:"
                 + Base64.getEncoder().encodeToString(wizObjectMetadata.toByteArray()),
             ""));
+  }
+
+  @Test
+  public void testWizObjectRef_importedId() {
+    assertIdomMetadata(
+        LINES.join("TEMPLATE:main_ns.render", "  WIZOBJECT_REF:x/a_controller_wiz.soy", ""),
+        createFile(
+            "main.soy",
+            "{namespace main_ns}",
+            "import * as aControllerWiz from 'x/a_controller_wiz.soy';",
+            "{template .render}",
+            "  <div jscontroller=\"{aControllerWiz.id}\"></div>",
+            "{/template}"),
+        A_CONTROLLER_WIZ);
+  }
+
+  @Test
+  public void testWizObjectRef_controllerXid() {
+    assertIdomMetadata(
+        LINES.join("TEMPLATE:main_ns.render", "  WIZOBJECT_REF:a.controller", ""),
+        createFile(
+            "main.soy",
+            "{namespace main_ns}",
+            "{template .render}",
+            "  <div jscontroller=\"{xid('a.controller')}\"></div>",
+            "{/template}"));
+  }
+
+  @Test
+  public void testWizObjectRef_modelXid() {
+    assertIdomMetadata(
+        LINES.join("TEMPLATE:main_ns.render", "  WIZOBJECT_REF:a.model", ""),
+        createFile(
+            "main.soy",
+            "{namespace main_ns}",
+            "{template .render}",
+            "  <div jsmodel=\"{xid('a.model')}\"></div>",
+            "{/template}"));
+  }
+
+  @Test
+  public void testWizObjectRef_eventXid() {
+    assertIdomMetadata(
+        LINES.join("TEMPLATE:main_ns.render", ""),
+        createFile(
+            "main.soy",
+            "{namespace main_ns}",
+            "{template .render}",
+            "  <div jsname=\"{xid('a.event')}\"></div>",
+            "{/template}"));
+  }
+
+  @Test
+  public void testLet() {
+    assertIdomMetadata(
+        LINES.join("TEMPLATE:main_ns.render", "  WIZOBJECT_REF:a_controller", ""),
+        createFile(
+            "main.soy",
+            "{namespace main_ns}",
+            "{template .render}",
+            "  {let $value: xid('a_controller') /}",
+            "  {let $content kind=\"html\"}",
+            "    <div jsname=\"{$value}\"></div>",
+            "  {/let}",
+            "  {$content}",
+            "{/template}"));
+  }
+
+  @Test
+  public void testStateInitValue() {
+    assertIdomMetadata(
+        LINES.join("TEMPLATE:main_ns.render", "  WIZOBJECT_REF:a_controller", ""),
+        createFile(
+            "main.soy",
+            "{namespace main_ns}",
+            "{element .render}",
+            "  {@state value: string = xid('a_controller')}",
+            "  <div jsname=\"{$value}\"></div>",
+            "{/element}"));
+  }
+
+  @Test
+  public void testParamRef() {
+    assertIdomMetadata(
+        LINES.join(
+            "TEMPLATE:main_ns.render",
+            "  PARAM_REF:value",
+            "  WIZOBJECT_REF:x/a_controller_wiz.soy",
+            "  PARAM_REF:content",
+            ""),
+        createFile(
+            "main.soy",
+            "{namespace main_ns}",
+            "import * as aControllerWiz from 'x/a_controller_wiz.soy';",
+            "{template .render}",
+            "  {@param content: html}",
+            "  {@param value: string = aControllerWiz.id}",
+            "  <div jsname=\"{$value}\"></div>",
+            "  {$content}",
+            "{/template}"),
+        A_CONTROLLER_WIZ);
   }
 
   private static void assertIdomMetadata(String metadata, SoyFileSupplier... files) {

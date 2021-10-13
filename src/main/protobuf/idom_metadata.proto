@@ -49,6 +49,12 @@ message IdomMetadataP {
 
     // A wiz model or controller.
     WIZOBJECT = 5;
+
+    // A reference to a wiz object.
+    WIZOBJECT_REF = 6;
+
+    // A reference to a parameter.
+    PARAM_REF = 7;
   }
 
   enum IdomKind {
