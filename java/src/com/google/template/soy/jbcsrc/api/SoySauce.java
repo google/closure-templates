@@ -30,6 +30,7 @@ import com.google.template.soy.data.SoyTemplate;
 import com.google.template.soy.data.SoyTemplateData;
 import com.google.template.soy.logging.SoyLogger;
 import com.google.template.soy.msgs.SoyMsgBundle;
+import com.google.template.soy.parseinfo.TemplateName;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import java.io.IOException;
@@ -48,6 +49,10 @@ public interface SoySauce {
    */
   @Deprecated
   Renderer renderTemplate(String template);
+
+  default Renderer renderTemplate(TemplateName template) {
+    return renderTemplate(template.name());
+  }
 
   /**
    * Returns a new {@link Renderer} for configuring and rendering the given template. The returned

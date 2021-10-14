@@ -27,6 +27,7 @@ java_library(
         "//java/src/com/google/template/soy/data",
         "//java/src/com/google/template/soy/msgs",
         "//java/src/com/google/template/soy/parseinfo",
+        "//java/src/com/google/template/soy/parseinfo:name",
         "//java/src/com/google/template/soy/shared:interfaces",
         "//java/src/com/google/template/soy/sharedpasses/render",
         "@maven//:com_google_code_findbugs_jsr305",

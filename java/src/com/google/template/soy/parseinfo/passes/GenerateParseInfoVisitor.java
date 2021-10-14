@@ -62,6 +62,7 @@ import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.TemplateType.Parameter;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -161,6 +162,8 @@ public final class GenerateParseInfoVisitor
   private IndentedLinesBuilder ilb;
 
   private SoyFileNodeTransformer.FileInfo builderReport;
+
+  private Set<String> paramFields = new HashSet<>();
 
   /**
    * @param javaPackage The Java package for the generated classes.
@@ -365,6 +368,12 @@ public final class GenerateParseInfoVisitor
           " = \"",
           templateEntry.getValue().getTemplateName(),
           "\";");
+      ilb.appendLine(
+          "public static final com.google.template.soy.parseinfo.TemplateName ",
+          templateEntry.getKey(),
+          "__NAME = com.google.template.soy.parseinfo.TemplateName.of(",
+          templateEntry.getKey(),
+          ");");
     }
 
     ilb.decreaseIndent();
@@ -382,6 +391,7 @@ public final class GenerateParseInfoVisitor
     ilb.appendLine("private Param() {}");
     ilb.appendLine();
 
+    paramFields.clear();
     for (Map.Entry<String, String> paramEntry : allParamKeysMap.entrySet()) {
       String upperUnderscoreKey = paramEntry.getKey();
       String key = paramEntry.getValue();
@@ -400,6 +410,7 @@ public final class GenerateParseInfoVisitor
       javadocSb.append('.');
       appendJavadoc(ilb, javadocSb.toString(), false, true);
 
+      paramFields.add(upperUnderscoreKey);
       ilb.appendLine("public static final String ", upperUnderscoreKey, " = \"", key, "\";");
     }
 
@@ -420,7 +431,7 @@ public final class GenerateParseInfoVisitor
     ilb.appendLine("super(");
     ilb.increaseIndent(2);
     ilb.appendLine("\"", node.getFileName(), "\",");
-    ilb.appendLine("\"", node.getNamespace(), "\",");
+    ilb.appendLine("__NAMESPACE__,");
 
     // Templates.
     List<String> itemSnippets = Lists.newArrayList();
@@ -511,9 +522,17 @@ public final class GenerateParseInfoVisitor
     ilb.increaseIndent();
 
     // ------ Constants for template name. ------
+    String templateFieldName = convertToUpperUnderscore(node.getLocalTemplateSymbol());
+
     ilb.appendLine();
     ilb.appendLine("/** This template's full name. */");
-    ilb.appendLine("public static final String __NAME__ = \"", node.getTemplateName(), "\";");
+    ilb.appendLine("public static final String __NAME__ = TemplateName.", templateFieldName, ";");
+    ilb.appendLine(
+        "private static final com.google.template.soy.parseinfo.TemplateName __TEMPLATE_NAME__ =",
+        " TemplateName.",
+        templateFieldName,
+        "__NAME",
+        ";");
     ilb.appendLine("/** This template's partial name. */");
     ilb.appendLine(
         "public static final String __PARTIAL_NAME__ = \"", node.getPartialTemplateName(), "\";");
@@ -534,12 +553,13 @@ public final class GenerateParseInfoVisitor
         appendJavadoc(ilb, param.desc(), false, false);
       }
       // The actual param field.
+      String fieldName = convertToUpperUnderscore(param.name());
       ilb.appendLine(
           "public static final String ",
           convertToUpperUnderscore(param.name()),
-          " = \"",
-          param.name(),
-          "\";");
+          " = ",
+          (paramFields.contains(fieldName) ? "Param." + fieldName : "\"" + param.name() + "\""),
+          ";");
     }
     for (Parameter param : indirectParamsInfo.indirectParams.values()) {
       if (directParamNames.contains(param.getName())) {
@@ -567,13 +587,14 @@ public final class GenerateParseInfoVisitor
       String javadoc = "Listed by " + Joiner.on(", ").join(sortedJavadocCalleeNames) + ".";
       appendJavadoc(ilb, javadoc, /* forceMultiline= */ false, /* wrapAt100Chars= */ true);
 
+      String fieldName = convertToUpperUnderscore(param.getName());
       // The actual param field.
       ilb.appendLine(
           "public static final String ",
-          convertToUpperUnderscore(param.getName()),
-          " = \"",
-          param.getName(),
-          "\";");
+          fieldName,
+          " = ",
+          (paramFields.contains(fieldName) ? "Param." + fieldName : "\"" + param.getName() + "\""),
+          ";");
     }
 
     // ------ Constructor. ------
@@ -583,7 +604,8 @@ public final class GenerateParseInfoVisitor
 
     ilb.appendLine("super(");
     ilb.increaseIndent(2);
-    ilb.appendLine("\"", node.getTemplateName(), "\",");
+    ilb.appendLine("__NAME__,");
+    ilb.appendLine("__TEMPLATE_NAME__,");
 
     if (!nodeMetadata.getTemplateType().getParameters().isEmpty()
         || !indirectParamsInfo.indirectParams.isEmpty()) {
@@ -598,7 +620,7 @@ public final class GenerateParseInfoVisitor
         }
         if (seenParams.add(param.getName())) {
           entrySnippetPairs.put(
-              "\"" + param.getName() + "\"",
+              convertToUpperUnderscore(param.getName()),
               param.isRequired() ? "ParamRequisiteness.REQUIRED" : "ParamRequisiteness.OPTIONAL");
         }
       }

@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.parseinfo.SoyTemplateInfo;
+import com.google.template.soy.parseinfo.TemplateName;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 
@@ -86,7 +87,10 @@ public final class SoyTemplatesRestrictedApi {
 
   private static final class SoyTemplateInfoShim extends SoyTemplateInfo {
     SoyTemplateInfoShim(Class<? extends SoyTemplate> type) {
-      super(getTemplateName(type), paramsAsMap(getParams(type)));
+      super(
+          SoyTemplatesRestrictedApi.getTemplateName(type),
+          TemplateName.of(SoyTemplatesRestrictedApi.getTemplateName(type)),
+          paramsAsMap(getParams(type)));
     }
 
     private static ImmutableMap<String, ParamRequisiteness> paramsAsMap(

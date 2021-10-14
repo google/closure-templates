@@ -25,6 +25,7 @@ import com.google.template.soy.data.SoyTemplate;
 import com.google.template.soy.data.SoyTemplateData;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.parseinfo.SoyTemplateInfo;
+import com.google.template.soy.parseinfo.TemplateName;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import java.util.Map;
@@ -88,6 +89,10 @@ public interface SoyTofu {
    * @return A new renderer for the given template.
    */
   Renderer newRenderer(String templateName);
+
+  default Renderer newRenderer(TemplateName templateName) {
+    return newRenderer(templateName.name());
+  }
 
   /**
    * Returns a new {@link Renderer} for configuring and rendering the given template. The returned

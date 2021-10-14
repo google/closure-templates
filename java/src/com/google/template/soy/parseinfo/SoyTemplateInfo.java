@@ -21,9 +21,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.Immutable;
 
-/**
- * Parsed info about a template.
- */
+/** Parsed info about a template. */
 @Immutable
 public class SoyTemplateInfo {
 
@@ -36,8 +34,16 @@ public class SoyTemplateInfo {
   /** The full template name. */
   private final String name;
 
+  private final TemplateName templateName;
+
   /** Map from each param to whether it's required for this template. */
   private final ImmutableMap<String, ParamRequisiteness> paramMap;
+
+  @Deprecated
+  protected SoyTemplateInfo(String name, ImmutableMap<String, ParamRequisiteness> paramMap) {
+    // TODO(jcg): Restrict inheritance and remove this constructor.
+    this(name, null, paramMap);
+  }
 
   /**
    * Constructor for internal use only, for the general case.
@@ -48,15 +54,28 @@ public class SoyTemplateInfo {
    * @param name The full template name.
    * @param paramMap Map from each param to whether it's required for this template.
    */
-  protected SoyTemplateInfo(String name, ImmutableMap<String, ParamRequisiteness> paramMap) {
-    this.name = name;
+  protected SoyTemplateInfo(
+      String name, TemplateName templateName, ImmutableMap<String, ParamRequisiteness> paramMap) {
     Preconditions.checkArgument(name.lastIndexOf('.') > 0);
+    this.name = name;
+    this.templateName = templateName;
     this.paramMap = paramMap;
   }
 
-  /** Returns the full template name, e.g. {@code myNamespace.myTemplate}. */
+  /**
+   * Returns the full template name, e.g. {@code myNamespace.myTemplate}.
+   *
+   * @deprecated Use {@link #getTemplateName()} instead. Treating template names as opaque strings
+   *     is safer and preferred.
+   */
+  @Deprecated
   public String getName() {
     return name;
+  }
+
+  /** Returns the full template name. */
+  public TemplateName getTemplateName() {
+    return Preconditions.checkNotNull(templateName);
   }
 
   /** Returns the partial template name (starting from the last dot), e.g. {@code .myTemplate}. */

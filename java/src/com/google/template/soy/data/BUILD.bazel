@@ -78,6 +78,7 @@ java_library(
     deps = [
         ":template",
         "//java/src/com/google/template/soy/parseinfo",
+        "//java/src/com/google/template/soy/parseinfo:name",
         "@maven//:com_google_guava_guava",
     ],
 )

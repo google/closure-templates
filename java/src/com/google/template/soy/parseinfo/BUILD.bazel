@@ -18,6 +18,8 @@ load("@rules_java//java:defs.bzl", "java_library")
 
 package(default_visibility = ["//:soy_internal"])
 
+NAME_SRC = ["TemplateName.java"]
+
 java_library(
     name = "parseinfo",
     deprecation = "Soy Info objects are deprecated, use the invocation builder API instead.",
@@ -27,11 +29,26 @@ java_library(
 
 java_library(
     name = "impl",
-    srcs = glob(["*.java"]),
+    srcs = glob(
+        ["*.java"],
+        exclude = NAME_SRC,
+    ),
     visibility = ["//visibility:private"],
     deps = [
+        ":name",
         "@com_google_protobuf//:protobuf_java",
         "@maven//:com_google_errorprone_error_prone_annotations",
         "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_library(
+    name = "name",
+    srcs = NAME_SRC,
+    visibility = ["//visibility:public"],
+    deps = [
+        "//java/src/com/google/template/soy/data:template",
+        "@com_google_auto_value_auto_value",
+        "@maven//:com_google_errorprone_error_prone_annotations",
     ],
 )
