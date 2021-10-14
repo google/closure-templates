@@ -21,8 +21,8 @@ import static com.google.template.soy.shared.internal.Sanitizers.HTML5_VOID_ELEM
 import static com.google.template.soy.shared.internal.Sanitizers.HTML_ATTRIBUTE_PATTERN;
 import static java.util.Arrays.stream;
 
+import com.google.auto.value.AutoValue;
 import com.google.common.base.Ascii;
-import com.google.common.base.Pair;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableSet;
@@ -148,7 +148,7 @@ public final class HtmlToText {
     Matcher whitespaceMatcher = null;
     Matcher attributeMatcher = null;
     Matcher styleMatcher = null;
-    ArrayDeque<Pair<String, Boolean>> preserveWhitespaceStack = new ArrayDeque<>();
+    ArrayDeque<TagAndWs> preserveWhitespaceStack = new ArrayDeque<>();
 
     // Reuse matchers, this saves a lot of allocations.
     private void resetWhitespaceMatcher(String html) {
@@ -236,7 +236,8 @@ public final class HtmlToText {
     }
 
     private boolean shouldPreserveWhitespace() {
-      return !preserveWhitespaceStack.isEmpty() && preserveWhitespaceStack.peek().second;
+      return !preserveWhitespaceStack.isEmpty()
+          && preserveWhitespaceStack.peek().preserveWhitespace();
     }
 
     private Optional<Boolean> getStylePreservesWhitespace(String style) {
@@ -291,19 +292,30 @@ public final class HtmlToText {
         // Pop tags until we pop one that matches the current closing tag. This means we're
         // effectively automatically closing tags that aren't explicitly closed.
         while (!preserveWhitespaceStack.isEmpty()
-            && !preserveWhitespaceStack.pop().first.equals(lowerCaseTag)) {}
+            && !preserveWhitespaceStack.pop().tagName().equals(lowerCaseTag)) {}
       } else if (matchesTag(lowerCaseTag, WS_PRESERVING_TAGS)) {
-        preserveWhitespaceStack.push(Pair.of(lowerCaseTag, true));
+        preserveWhitespaceStack.push(TagAndWs.of(lowerCaseTag, true));
       } else {
         // If attribute don't specify whitespace preservation, inherit from parent tag.
         boolean preserveWhitespace =
             getAttributesPreserveWhitespace(attrs).orElseGet(this::shouldPreserveWhitespace);
 
-        preserveWhitespaceStack.push(Pair.of(lowerCaseTag, preserveWhitespace));
+        preserveWhitespaceStack.push(TagAndWs.of(lowerCaseTag, preserveWhitespace));
       }
     }
   }
   // LINT.ThenChange(
   //     ../../../../../../../../../javascript/template/soy/soyutils_usegoog.js:htmlToText,
   //     ../../../../../../python/runtime/sanitize.py:htmlToText)
+
+  @AutoValue
+  abstract static class TagAndWs {
+    static TagAndWs of(String tagName, boolean preserveWhitespace) {
+      return new AutoValue_HtmlToText_TagAndWs(tagName, preserveWhitespace);
+    }
+
+    abstract String tagName();
+
+    abstract boolean preserveWhitespace();
+  }
 }
