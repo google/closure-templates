@@ -39,12 +39,6 @@ public class SoyTemplateInfo {
   /** Map from each param to whether it's required for this template. */
   private final ImmutableMap<String, ParamRequisiteness> paramMap;
 
-  @Deprecated
-  protected SoyTemplateInfo(String name, ImmutableMap<String, ParamRequisiteness> paramMap) {
-    // TODO(jcg): Restrict inheritance and remove this constructor.
-    this(name, null, paramMap);
-  }
-
   /**
    * Constructor for internal use only, for the general case.
    *
