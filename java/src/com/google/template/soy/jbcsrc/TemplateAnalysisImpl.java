@@ -156,8 +156,19 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
 
     AccessGraph evaluate(TemplateNode node) {
       Block start = new Block();
-      Block end = exec(start, node);
-      return AccessGraph.create(start, end, exprEquivalence);
+      try {
+        Block end = exec(start, node);
+        return AccessGraph.create(start, end, exprEquivalence);
+      } catch (StackOverflowError soe) {
+        // Trimming the analysis graph is highly recursive, log an error message to help understand
+        // the issue.
+        throw new RuntimeException(
+            "ran out of stack while analyzing: "
+                + node.getTemplateNameForUserMsgs()
+                + " from "
+                + node.getSourceLocation(),
+            soe);
+      }
     }
 
     /**
