@@ -73,7 +73,7 @@ These are the `template` tag's attributes:
     ```soy
      {namespace example}
 
-     {template .article whitespace="preserve"}
+     {template article whitespace="preserve"}
      {@param title: string}
      {@param body: string}
      <article>
@@ -183,7 +183,7 @@ comment must start on the same line as the parameter declaration.
 Example:
 
 ```soy
-{template .example}
+{template example}
   /** A leading doc comment. */
   {@param name: string}
   {@param? height: int} /** A trailing doc comment. */
