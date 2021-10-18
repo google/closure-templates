@@ -163,8 +163,6 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
     /** This template's full name. */
     public static final String __NAME__ = TemplateName.DEMO_COMMENTS;
     private static final com.google.template.soy.parseinfo.TemplateName __TEMPLATE_NAME__ = TemplateName.DEMO_COMMENTS__NAME;
-    /** This template's partial name. */
-    public static final String __PARTIAL_NAME__ = ".demoComments";
 
     private DemoCommentsSoyTemplateInfo() {
       super(
@@ -198,8 +196,6 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
     /** This template's full name. */
     public static final String __NAME__ = TemplateName.DEMO_LINE_JOINING;
     private static final com.google.template.soy.parseinfo.TemplateName __TEMPLATE_NAME__ = TemplateName.DEMO_LINE_JOINING__NAME;
-    /** This template's partial name. */
-    public static final String __PARTIAL_NAME__ = ".demoLineJoining";
 
     private DemoLineJoiningSoyTemplateInfo() {
       super(
@@ -233,8 +229,6 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
     /** This template's full name. */
     public static final String __NAME__ = TemplateName.DEMO_RAW_TEXT_COMMANDS;
     private static final com.google.template.soy.parseinfo.TemplateName __TEMPLATE_NAME__ = TemplateName.DEMO_RAW_TEXT_COMMANDS__NAME;
-    /** This template's partial name. */
-    public static final String __PARTIAL_NAME__ = ".demoRawTextCommands";
 
     private DemoRawTextCommandsSoyTemplateInfo() {
       super(
@@ -268,8 +262,6 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
     /** This template's full name. */
     public static final String __NAME__ = TemplateName.DEMO_PRINT;
     private static final com.google.template.soy.parseinfo.TemplateName __TEMPLATE_NAME__ = TemplateName.DEMO_PRINT__NAME;
-    /** This template's partial name. */
-    public static final String __PARTIAL_NAME__ = ".demoPrint";
 
     /** Something scary. */
     public static final String BOO = Param.BOO;
@@ -311,8 +303,6 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
     /** This template's full name. */
     public static final String __NAME__ = TemplateName.DEMO_AUTOESCAPE_TRUE;
     private static final com.google.template.soy.parseinfo.TemplateName __TEMPLATE_NAME__ = TemplateName.DEMO_AUTOESCAPE_TRUE__NAME;
-    /** This template's partial name. */
-    public static final String __PARTIAL_NAME__ = ".demoAutoescapeTrue";
 
     public static final String ITALIC_HTML = Param.ITALIC_HTML;
 
@@ -350,8 +340,6 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
     /** This template's full name. */
     public static final String __NAME__ = TemplateName.DEMO_MSG;
     private static final com.google.template.soy.parseinfo.TemplateName __TEMPLATE_NAME__ = TemplateName.DEMO_MSG__NAME;
-    /** This template's partial name. */
-    public static final String __PARTIAL_NAME__ = ".demoMsg";
 
     /** The name of the person to say hello to. */
     public static final String NAME = Param.NAME;
@@ -390,8 +378,6 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
     /** This template's full name. */
     public static final String __NAME__ = TemplateName.DEMO_IF;
     private static final com.google.template.soy.parseinfo.TemplateName __TEMPLATE_NAME__ = TemplateName.DEMO_IF__NAME;
-    /** This template's partial name. */
-    public static final String __PARTIAL_NAME__ = ".demoIf";
 
     /** An approximate value for pi. */
     public static final String PI = Param.PI;
@@ -430,8 +416,6 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
     /** This template's full name. */
     public static final String __NAME__ = TemplateName.DEMO_SWITCH;
     private static final com.google.template.soy.parseinfo.TemplateName __TEMPLATE_NAME__ = TemplateName.DEMO_SWITCH__NAME;
-    /** This template's partial name. */
-    public static final String __PARTIAL_NAME__ = ".demoSwitch";
 
     /** The name of a kid. */
     public static final String NAME = Param.NAME;
@@ -470,8 +454,6 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
     /** This template's full name. */
     public static final String __NAME__ = TemplateName.DEMO_FOR;
     private static final com.google.template.soy.parseinfo.TemplateName __TEMPLATE_NAME__ = TemplateName.DEMO_FOR__NAME;
-    /** This template's partial name. */
-    public static final String __PARTIAL_NAME__ = ".demoFor";
 
     /**
      * * List of persons. Each person must have
@@ -513,8 +495,6 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
     /** This template's full name. */
     public static final String __NAME__ = TemplateName.DEMO_FOR_RANGE;
     private static final com.google.template.soy.parseinfo.TemplateName __TEMPLATE_NAME__ = TemplateName.DEMO_FOR_RANGE__NAME;
-    /** This template's partial name. */
-    public static final String __PARTIAL_NAME__ = ".demoFor_Range";
 
     /** The number of lines to display. */
     public static final String NUM_LINES = Param.NUM_LINES;
@@ -553,8 +533,6 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
     /** This template's full name. */
     public static final String __NAME__ = TemplateName.DEMO_CALL_WITHOUT_PARAM;
     private static final com.google.template.soy.parseinfo.TemplateName __TEMPLATE_NAME__ = TemplateName.DEMO_CALL_WITHOUT_PARAM__NAME;
-    /** This template's partial name. */
-    public static final String __PARTIAL_NAME__ = ".demoCallWithoutParam";
 
     /** The name of the person who took a trip. */
     public static final String NAME = Param.NAME;
@@ -600,8 +578,6 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
     /** This template's full name. */
     public static final String __NAME__ = TemplateName.DEMO_CALL_OTHER_FILE;
     private static final com.google.template.soy.parseinfo.TemplateName __TEMPLATE_NAME__ = TemplateName.DEMO_CALL_OTHER_FILE__NAME;
-    /** This template's partial name. */
-    public static final String __PARTIAL_NAME__ = ".demoCallOtherFile";
 
     private DemoCallOtherFileSoyTemplateInfo() {
       super(
@@ -635,8 +611,6 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
     /** This template's full name. */
     public static final String __NAME__ = TemplateName.DEMO_CALL_WITH_PARAM;
     private static final com.google.template.soy.parseinfo.TemplateName __TEMPLATE_NAME__ = TemplateName.DEMO_CALL_WITH_PARAM__NAME;
-    /** This template's partial name. */
-    public static final String __PARTIAL_NAME__ = ".demoCallWithParam";
 
     /** The name of the person who took the trips. */
     public static final String NAME = Param.NAME;
@@ -684,8 +658,6 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
     /** This template's full name. */
     public static final String __NAME__ = TemplateName.DEMO_CALL_WITH_PARAM_BLOCK;
     private static final com.google.template.soy.parseinfo.TemplateName __TEMPLATE_NAME__ = TemplateName.DEMO_CALL_WITH_PARAM_BLOCK__NAME;
-    /** This template's partial name. */
-    public static final String __PARTIAL_NAME__ = ".demoCallWithParamBlock";
 
     public static final String NAME = Param.NAME;
 
@@ -723,8 +695,6 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
     /** This template's full name. */
     public static final String __NAME__ = TemplateName.DEMO_PARAM_WITH_KIND_ATTRIBUTE;
     private static final com.google.template.soy.parseinfo.TemplateName __TEMPLATE_NAME__ = TemplateName.DEMO_PARAM_WITH_KIND_ATTRIBUTE__NAME;
-    /** This template's partial name. */
-    public static final String __PARTIAL_NAME__ = ".demoParamWithKindAttribute";
 
     /** A message text. */
     public static final String MESSAGE = Param.MESSAGE;
@@ -766,8 +736,6 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
     /** This template's full name. */
     public static final String __NAME__ = TemplateName.DEMO_EXPRESSIONS;
     private static final com.google.template.soy.parseinfo.TemplateName __TEMPLATE_NAME__ = TemplateName.DEMO_EXPRESSIONS__NAME;
-    /** This template's partial name. */
-    public static final String __PARTIAL_NAME__ = ".demoExpressions";
 
     /** List of students. */
     public static final String STUDENTS = Param.STUDENTS;
@@ -809,8 +777,6 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
     /** This template's full name. */
     public static final String __NAME__ = TemplateName.DEMO_DOUBLE_BRACES;
     private static final com.google.template.soy.parseinfo.TemplateName __TEMPLATE_NAME__ = TemplateName.DEMO_DOUBLE_BRACES__NAME;
-    /** This template's partial name. */
-    public static final String __PARTIAL_NAME__ = ".demoDoubleBraces";
 
     /** The name of the infinite set. */
     public static final String SET_NAME = Param.SET_NAME;
@@ -852,8 +818,6 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
     /** This template's full name. */
     public static final String __NAME__ = TemplateName.DEMO_BIDI_SUPPORT;
     private static final com.google.template.soy.parseinfo.TemplateName __TEMPLATE_NAME__ = TemplateName.DEMO_BIDI_SUPPORT__NAME;
-    /** This template's partial name. */
-    public static final String __PARTIAL_NAME__ = ".demoBidiSupport";
 
     /** Book title. */
     public static final String TITLE = Param.TITLE;
@@ -901,8 +865,6 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
     /** This template's full name. */
     public static final String __NAME__ = TemplateName.BIDI_GLOBAL_DIR;
     private static final com.google.template.soy.parseinfo.TemplateName __TEMPLATE_NAME__ = TemplateName.BIDI_GLOBAL_DIR__NAME;
-    /** This template's partial name. */
-    public static final String __PARTIAL_NAME__ = ".bidiGlobalDir";
 
     private BidiGlobalDirSoyTemplateInfo() {
       super(
@@ -936,8 +898,6 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
     /** This template's full name. */
     public static final String __NAME__ = TemplateName.EXAMPLE_HEADER;
     private static final com.google.template.soy.parseinfo.TemplateName __TEMPLATE_NAME__ = TemplateName.EXAMPLE_HEADER__NAME;
-    /** This template's partial name. */
-    public static final String __PARTIAL_NAME__ = ".exampleHeader";
 
     /** The number of the example. */
     public static final String EXAMPLE_NUM = Param.EXAMPLE_NUM;

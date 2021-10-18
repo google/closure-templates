@@ -533,9 +533,6 @@ public final class GenerateParseInfoVisitor
         templateFieldName,
         "__NAME",
         ";");
-    ilb.appendLine("/** This template's partial name. */");
-    ilb.appendLine(
-        "public static final String __PARTIAL_NAME__ = \"", node.getPartialTemplateName(), "\";");
 
     // ------ Param constants. ------
     boolean hasSeenFirstDirectParam = false;
