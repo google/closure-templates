@@ -456,6 +456,19 @@ public final class TemplateAnalysisTest {
         "{refed($p)}");
   }
 
+  // we can construct a deep analysis graph with a large number of sequential if-statements
+  @Test
+  public void testDeepGraph() {
+    StringBuilder longTemplate = new StringBuilder();
+    longTemplate.append("{@param p0: ?}\n");
+    for (int i = 1; i < 1000; i++) {
+      longTemplate.append(
+          String.format(
+              "{let $p%d : $p%d + 1/}\n{if $p%d}{$p%d}{/if}\n\n", i, i - 1, i - 1, i - 1));
+    }
+    runTest(longTemplate.toString());
+  }
+
   void runTest(String... lines) {
     TemplateNode template = parseTemplate(lines);
     TemplateAnalysisImpl analysis = TemplateAnalysisImpl.analyze(template);

@@ -109,6 +109,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
 
 final class TemplateAnalysisImpl implements TemplateAnalysis {
 
@@ -908,61 +909,79 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
    * links.
    */
   private static void addPredecessors(Block start) {
+    dfsPreOrder(
+        start,
+        current -> {
+          for (Block successor : current.successors) {
+            successor.predecessors.add(current);
+          }
+        });
+  }
+
+  private static void eliminateUnconditionalBranches(Block start, Block end) {
+    dfsPreOrder(
+        start,
+        current -> {
+          if (current == end) {
+            return;
+          }
+          if (current.predecessors.size() == 1) {
+            Block predecessor = Iterables.getOnlyElement(current.predecessors);
+            if (predecessor.successors.size() == 1) {
+              // in this case the node is a single unconditional link, merge its successor into it
+              predecessor.exprs.addAll(current.exprs);
+              predecessor.successors.clear();
+              predecessor.successors.addAll(current.successors);
+              for (Block successor : current.successors) {
+                successor.predecessors.remove(current);
+                successor.predecessors.add(predecessor);
+              }
+            }
+          }
+        });
+  }
+
+  /** Removes all empty nodes (nodes with no exprs) preserving both the start and end nodes */
+  private static void eliminateEmptyNodes(Block start, Block end) {
+    dfsPreOrder(
+        start,
+        current -> {
+          // preserve the beginning and end nodes
+          if (current == end || current == start) {
+            return;
+          }
+          if (current.exprs.isEmpty()) {
+            // This node has no exprs and it isn't the start node, so we can just merge all of its
+            // successors into its predecessors and cut it out of the graph.
+            for (Block pred : current.predecessors) {
+              pred.successors.remove(current);
+              pred.successors.addAll(current.successors);
+            }
+            for (Block succ : current.successors) {
+              succ.predecessors.remove(current);
+              succ.predecessors.addAll(current.predecessors);
+            }
+          }
+        });
+  }
+
+  /**
+   * A helper function that performs a DFS traversal through the access graph (only using {@code
+   * succcessors} links) and invokes the consumer on every node in pre-order (i.e. {@code
+   * succcessors} first).
+   */
+  private static void dfsPreOrder(Block node, Consumer<Block> fn) {
     Set<Block> visited = Sets.newIdentityHashSet();
-    addPredecessors(start, visited);
-  }
 
-  private static void addPredecessors(Block current, Set<Block> visited) {
-    if (!visited.add(current)) {
-      return;
-    }
-    for (Block successor : current.successors) {
-      successor.predecessors.add(current);
-      addPredecessors(successor, visited);
-    }
-  }
-
-  private static void eliminateUnconditionalBranches(Block current, Set<Block> visited) {
-    if (!visited.add(current)) {
-      return;
-    }
-    // recursively visit successors.
-    for (Block successor : new ArrayList<>(current.successors)) {
-      eliminateUnconditionalBranches(successor, visited);
-    }
-    if (current.predecessors.size() == 1) {
-      Block predecessor = Iterables.getOnlyElement(current.predecessors);
-      if (predecessor.successors.size() == 1) {
-        // in this case the node is a single unconditional link, merge its successor into it
-        predecessor.exprs.addAll(current.exprs);
-        predecessor.successors.clear();
-        predecessor.successors.addAll(current.successors);
+    ArrayDeque<Block> stack = new ArrayDeque<>();
+    stack.push(node);
+    while (!stack.isEmpty()) {
+      Block current = stack.pop();
+      if (visited.add(current)) {
         for (Block successor : current.successors) {
-          successor.predecessors.remove(current);
-          successor.predecessors.add(predecessor);
+          stack.push(successor);
         }
-      }
-    }
-  }
-
-  private static void eliminateEmptyNodes(Block current, Set<Block> visited) {
-    if (!visited.add(current)) {
-      return;
-    }
-    // recursively visit successors.  Make a copy to prevent concurrentmodification exception
-    for (Block successor : new ArrayList<>(current.successors)) {
-      eliminateEmptyNodes(successor, visited);
-    }
-    if (current.exprs.isEmpty() && !current.predecessors.isEmpty()) {
-      // This node has no exprs and it isn't the start node, so we can just merge all of its
-      // successors into its predecessors and cut it out of the graph.
-      for (Block pred : current.predecessors) {
-        pred.successors.remove(current);
-        pred.successors.addAll(current.successors);
-      }
-      for (Block succ : current.successors) {
-        succ.predecessors.remove(current);
-        succ.predecessors.addAll(current.predecessors);
+        fn.accept(current);
       }
     }
   }
@@ -996,18 +1015,18 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
       checkState(start.predecessors.isEmpty());
       checkState(end.successors.isEmpty());
       // Due to the way we build the graph we may have lots of either empty nodes or
-      // nodes with unconditional branches.  Here wereduce the size of the graph by trying to
+      // nodes with unconditional branches.  Here we reduce the size of the graph by trying to
       // eliminate such nodes.  These are O(N) passes and the analysis performed by AccessGraph is
       // O(N+M) so this may or may not be a performance optimization, but because there are also
       // scenarios where whole AccessGraph objects are copied, this should be beneficial.
       // Additionally, it makes visualizing the graph simpler.
-      Set<Block> visited = Sets.newIdentityHashSet();
+
       // ensure our simplification doens't modify the sink
-      visited.add(end);
-      eliminateEmptyNodes(start, visited);
-      visited.clear();
-      visited.add(end);
-      eliminateUnconditionalBranches(start, visited);
+      eliminateEmptyNodes(start, end);
+      eliminateUnconditionalBranches(start, end);
+      // check basic constraints.
+      checkState(start.predecessors.isEmpty());
+      checkState(end.successors.isEmpty());
       return new AccessGraph(start, end, exprEquivalence);
     }
 
