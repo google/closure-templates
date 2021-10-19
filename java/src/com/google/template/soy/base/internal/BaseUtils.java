@@ -97,11 +97,11 @@ public final class BaseUtils {
     String dirPath =
         (path.charAt(path.length() - 1) == File.separatorChar)
             ? path.substring(0, path.length() - 1)
-            : (new File(path)).getParent();
+            : new File(path).getParent();
     if (dirPath == null || knownExistingDirs.contains(dirPath)) {
       return; // known to exist
     } else {
-      (new File(dirPath)).mkdirs();
+      new File(dirPath).mkdirs();
       knownExistingDirs.add(dirPath);
     }
   }
