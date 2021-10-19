@@ -52,11 +52,6 @@ public final class PyFunctionExprBuilder {
     return this;
   }
 
-  public PyFunctionExprBuilder addArgs(List<PyExpr> argList) {
-    this.argList.addAll(argList);
-    return this;
-  }
-
   public PyFunctionExprBuilder addArg(String str) {
     this.argList.add(new PyStringExpr("'" + str + "'"));
     return this;
@@ -79,6 +74,11 @@ public final class PyFunctionExprBuilder {
 
   public PyFunctionExprBuilder addArg(long i) {
     this.argList.add(new PyExpr(String.valueOf(i), Integer.MAX_VALUE));
+    return this;
+  }
+
+  public PyFunctionExprBuilder addArgs(List<PyExpr> argList) {
+    this.argList.addAll(argList);
     return this;
   }
 
