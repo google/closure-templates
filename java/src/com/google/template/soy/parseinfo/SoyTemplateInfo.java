@@ -16,6 +16,8 @@
 
 package com.google.template.soy.parseinfo;
 
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -63,17 +65,17 @@ public class SoyTemplateInfo {
    *     is safer and preferred.
    */
   @Deprecated
-  public String getName() {
+  public final String getName() {
     return name;
   }
 
   /** Returns the full template name. */
-  public TemplateName getTemplateName() {
+  public final TemplateName getTemplateName() {
     return Preconditions.checkNotNull(templateName);
   }
 
   /** Returns the partial template name (starting from the last dot), e.g. {@code .myTemplate}. */
-  public String getPartialName() {
+  public final String getPartialName() {
     String name = getName();
     return name.substring(name.lastIndexOf('.'));
   }
@@ -95,7 +97,7 @@ public class SoyTemplateInfo {
   public final ImmutableSet<String> getRequiredParamNames() {
     return paramMap.keySet().stream()
         .filter(n -> paramMap.get(n) == ParamRequisiteness.REQUIRED)
-        .collect(ImmutableSet.toImmutableSet());
+        .collect(toImmutableSet());
   }
 
   /** Returns true if this template has a parameter names {@code paramName}. */
