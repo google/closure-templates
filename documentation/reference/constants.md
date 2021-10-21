@@ -19,7 +19,8 @@ other files.
 {export const CONST_NAME = const_value_expr /}
 ```
 
-Constants must be defined outside of templates.
+Constants must be defined outside of templates, above any template declarations
+in a file.
 
 ### Using a constant
 
