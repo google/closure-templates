@@ -68,7 +68,8 @@ final class TruncateDirective
       throw new IllegalArgumentException(
           "Could not parse first parameter of '|truncate' as integer (value was \""
               + args.get(0).stringValue()
-              + "\").");
+              + "\").",
+          sde);
     }
 
     String str = value.coerceToString();
@@ -78,7 +79,7 @@ final class TruncateDirective
         doAddEllipsis = args.get(1).booleanValue();
       } catch (SoyDataException sde) {
         throw new IllegalArgumentException(
-            "Could not parse second parameter of '|truncate' as boolean.");
+            "Could not parse second parameter of '|truncate' as boolean.", sde);
       }
     } else {
       doAddEllipsis = true; // default to true
