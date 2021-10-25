@@ -498,7 +498,8 @@ public final class SoyListData extends CollectionData implements Iterable<SoyVal
         throw new SoyDataException(
             "SoyList accessed with non-integer key (got key type "
                 + key.getClass().getName()
-                + ").");
+                + ").",
+            nfe);
       }
     }
   }

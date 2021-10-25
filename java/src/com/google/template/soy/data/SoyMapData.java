@@ -64,7 +64,8 @@ public class SoyMapData extends CollectionData implements SoyDict, SoyMap {
         throw new SoyDataException(
             "Attempting to convert a map with non-string key to Soy data (key type "
                 + ((Map.Entry<?, ?>) entry).getKey().getClass().getName()
-                + ").");
+                + ").",
+            cce);
       }
 
       Object value = entry.getValue();
@@ -340,7 +341,8 @@ public class SoyMapData extends CollectionData implements SoyDict, SoyMap {
       return key.stringValue();
     } catch (ClassCastException e) {
       throw new SoyDataException(
-          "SoyDict accessed with non-string key (got key type " + key.getClass().getName() + ").");
+          "SoyDict accessed with non-string key (got key type " + key.getClass().getName() + ").",
+          e);
     }
   }
 }

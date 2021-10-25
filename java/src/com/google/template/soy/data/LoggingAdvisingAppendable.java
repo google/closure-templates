@@ -164,7 +164,8 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
    *
    * @see #setSanitizedContentKind(ContentKind)
    */
-  public final @Nullable ContentKind getSanitizedContentKind() {
+  @Nullable
+  public final ContentKind getSanitizedContentKind() {
     return kind;
   }
   /**
@@ -172,7 +173,8 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
    *
    * @see #setSanitizedContentDirectionality(Dir)
    */
-  public final @Nullable Dir getSanitizedContentDirectionality() {
+  @Nullable
+  public final Dir getSanitizedContentDirectionality() {
     return contentDir;
   }
 
