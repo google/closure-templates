@@ -461,7 +461,7 @@ public abstract class AbstractSoyCompiler {
    * Extension point for subtypes to perform additional logic to validate compiler specific flags.
    */
   @ForOverride
-  protected void validateFlags() {}
+  protected void validateFlags() throws IOException {}
 
   /** Extension point for subclasses to disable soy sources being required. */
   @ForOverride
