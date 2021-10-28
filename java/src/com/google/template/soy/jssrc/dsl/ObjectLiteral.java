@@ -36,10 +36,6 @@ abstract class ObjectLiteral extends Expression {
     return create(object, Expression::id);
   }
 
-  static ObjectLiteral createWithQuotedKeys(Map<String, Expression> object) {
-    return create(object, Expression::stringLiteral);
-  }
-
   private static ObjectLiteral create(
       Map<String, Expression> object, Function<String, Expression> createKeyFn) {
     ImmutableList.Builder<Statement> initialStatements = ImmutableList.builder();
@@ -49,6 +45,10 @@ abstract class ObjectLiteral extends Expression {
       values.put(createKeyFn.apply(entry.getKey()), entry.getValue());
     }
     return new AutoValue_ObjectLiteral(initialStatements.build(), values.build());
+  }
+
+  static ObjectLiteral createWithQuotedKeys(Map<String, Expression> object) {
+    return create(object, Expression::stringLiteral);
   }
 
   @Override
