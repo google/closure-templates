@@ -23,7 +23,7 @@ export type PatchFunction = (a?: unknown) => void;
  */
 export type SkipHandler = <T>(prev: T, next: T) => boolean;
 
-/**  Getter for skip handler */
+/** Gets a skip handler that was passed to setSkipHandler. */
 function getSkipHandler(el: HTMLElement) {
   return el.__soy_skip_handler;
 }
@@ -220,6 +220,15 @@ export abstract class SoyElement<TData extends {}|null, TInterface extends {}>
   setSkipHandler(skipHandler: (prev: TInterface, next: TInterface) => boolean) {
     assert(!this.skipHandler, 'Only one skip handler is allowed.');
     this.skipHandler = skipHandler;
+  }
+
+  /**
+   * Indicates whether a skip handler was passed to SoyElement.setSkipHandler or
+   * setSkipHandler(node). For internal use.
+   */
+  hasAnySkipHandler(): boolean {
+    // tslint:disable-next-line ban-truthy-function-in-boolean-expression
+    return !!this.skipHandler || !!(this.node && getSkipHandler(this.node));
   }
 
   /**
