@@ -23,8 +23,8 @@ export type PatchFunction = (a?: unknown) => void;
  */
 export type SkipHandler = <T>(prev: T, next: T) => boolean;
 
-/**  Getter for skip handler */
-function getSkipHandler(el: HTMLElement) {
+/** Gets a skip handler that was passed to setSkipHandler.  For internal use. */
+export function getSkipHandler(el: HTMLElement) {
   return el.__soy_skip_handler;
 }
 
