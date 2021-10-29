@@ -35,7 +35,7 @@ public interface SoyJavaSourceFunction extends SoySourceFunction {
    * <p>For example:
    *
    * <pre>
-   * @SoyFunctionSignature(
+   * {@literal @}SoyFunctionSignature(
    *     name = "fn",
    *     value = @Signature(parameterTypes={"int", "?", "string|html", returnType="?"))
    * )
@@ -47,7 +47,7 @@ public interface SoyJavaSourceFunction extends SoySourceFunction {
    *     return a + b.toString() + c;
    *   }
    *
-   *   @Override
+   *   {@literal @}Override
    *   public JavaValue applyForJavaSource(
    *       JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
    *     return factory.callStaticMethod(DO_FN, args.get(0), args.get(1), args.get(2));
