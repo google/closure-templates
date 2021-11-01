@@ -861,7 +861,10 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
                 assign(
                     aliasExp.dotAccess("soyTemplateName"),
                     stringLiteral(templateName),
-                    JsDoc.builder().addParameterizedAnnotation("type", "string").build()))
+                    JsDoc.builder()
+                        .addAnnotation("nocollapse")
+                        .addParameterizedAnnotation("type", "string")
+                        .build()))
             .build());
 
     // ------ If delegate template, generate a statement to register it. ------

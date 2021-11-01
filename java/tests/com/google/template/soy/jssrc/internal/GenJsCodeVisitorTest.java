@@ -50,9 +50,7 @@ public final class GenJsCodeVisitorTest {
 
   // Let 'goo' simulate a local variable from a 'foreach' loop.
   private static final ImmutableMap<String, Expression> LOCAL_VAR_TRANSLATIONS =
-      ImmutableMap.<String, Expression>builder()
-          .put("$goo", id("gooData8"))
-          .build();
+      ImmutableMap.of("$goo", id("gooData8"));
 
   private static final TemplateAliases TEMPLATE_ALIASES = AliasUtils.IDENTITY_ALIASES;
 
@@ -167,7 +165,10 @@ public final class GenJsCodeVisitorTest {
             + " '', false)(null, $ijData));\n"
             + "};\n"
             + "if (goog.DEBUG) {\n"
-            + "  /** @type {string} */\n"
+            + "  /**\n"
+            + "   * @nocollapse\n"
+            + "   * @type {string}\n"
+            + "   */\n"
             + "  boo.foo.__deltemplate_MySecretFeature_myDelegates_goo_.soyTemplateName ="
             + " 'boo.foo.__deltemplate_MySecretFeature_myDelegates_goo_';\n"
             + "}\n"
@@ -218,10 +219,9 @@ public final class GenJsCodeVisitorTest {
             + " */\n"
             + "boo.foo.__deltemplate__myDelegates_goo_googoo = function(opt_data, opt_ijData) {\n"
             + "  const $ijData = /** @type {!goog.soy.IjData} */ (opt_ijData);\n"
-            + "  if (goog.DEBUG &&"
-            + " soy.$$stubsMap['boo.foo.__deltemplate__myDelegates_goo_googoo']) {\n"
-            + "    return"
-            + " soy.$$stubsMap['boo.foo.__deltemplate__myDelegates_goo_googoo'](opt_data,"
+            + "  if (goog.DEBUG && soy.$$stubsMap['boo.foo.__deltemplate__myDelegates_goo_googoo'])"
+            + " {\n"
+            + "    return soy.$$stubsMap['boo.foo.__deltemplate__myDelegates_goo_googoo'](opt_data,"
             + " $ijData);\n"
             + "  }\n"
             + "  return"
@@ -229,7 +229,10 @@ public final class GenJsCodeVisitorTest {
             + " 'moomoo', false)(null, $ijData));\n"
             + "};\n"
             + "if (goog.DEBUG) {\n"
-            + "  /** @type {string} */\n"
+            + "  /**\n"
+            + "   * @nocollapse\n"
+            + "   * @type {string}\n"
+            + "   */\n"
             + "  boo.foo.__deltemplate__myDelegates_goo_googoo.soyTemplateName ="
             + " 'boo.foo.__deltemplate__myDelegates_goo_googoo';\n"
             + "}\n"
@@ -1160,7 +1163,10 @@ public final class GenJsCodeVisitorTest {
             + "  return soy.VERY_UNSAFE.ordainSanitizedHtml('Blah');\n"
             + "};\n"
             + "if (goog.DEBUG) {\n"
-            + "  /** @type {string} */\n"
+            + "  /**\n"
+            + "   * @nocollapse\n"
+            + "   * @type {string}\n"
+            + "   */\n"
             + "  boo.foo.goo.soyTemplateName = 'boo.foo.goo';\n"
             + "}\n";
 
