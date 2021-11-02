@@ -893,10 +893,6 @@ public final class SoyFileSet {
     return compileTemplates(ImmutableMap.of());
   }
 
-  public CssRegistry getCssRegistry() {
-    return cssRegistry.get();
-  }
-
   /**
    * Compiles this Soy file set into a set of java classes implementing the {@link SoySauce}
    * interface.
@@ -917,6 +913,10 @@ public final class SoyFileSet {
           throwIfErrorsPresent();
           return doCompileSoySauce(primitives, PluginInstances.of(pluginInstances));
         });
+  }
+
+  public CssRegistry getCssRegistry() {
+    return cssRegistry.get();
   }
 
   /**
