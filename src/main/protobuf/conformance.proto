@@ -59,8 +59,20 @@ message Requirement {
     // The banned HTML tag (lowercase).
     repeated string tag = 1;
 
+    // NOTE: All the checks below are considered separately. So if both
+    // `when_attribute_possibly_present` and `when_attribute_possibly_missing`
+    // is set, then a tag is banned if any attribute in
+    // `when_attribute_possibly_present` is present, or if any attribute in
+    // `when_attribute_possibly_missing` is missing. (Both checks must pass.)
+
     // If provided, then it will only ban tags that have all these attributes.
     repeated string when_attribute_possibly_present = 2;
+
+    // If provided, then it will ban tags that are missing any of these
+    // attributes.
+    // For example, this can be used to ban inline scripts by checking for
+    // <script> tags that are missing a `src` attribute.
+    repeated string when_attribute_possibly_missing = 3;
   }
 
   message BanXidForCssObfuscation {

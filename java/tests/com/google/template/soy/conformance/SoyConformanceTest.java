@@ -435,6 +435,78 @@ public class SoyConformanceTest {
   }
 
   @Test
+  public void bannedHtmlTagWithBannedAndRequiredAttribute() {
+    String requirement =
+        "requirement: {\n"
+            + "  banned_html_tag: {\n"
+            + "    tag: 'script'\n"
+            + "    when_attribute_possibly_missing: 'src'\n"
+            + "    when_attribute_possibly_present: 'defer'\n"
+            + "  }\n"
+            + "  error_message: 'foo'"
+            + "}";
+
+    assertNoViolation(
+        requirement,
+        "{namespace ns}\n"
+            + "{template .bar}\n"
+            + "  <script src=\"foo.js\"></script>\n"
+            + "{/template}");
+    assertViolation(
+        requirement,
+        "{namespace ns}\n" + "{template .bar}\n" + "  <script defer></script>\n" + "{/template}");
+    assertViolation(
+        requirement,
+        "{namespace ns}\n"
+            + "{template .bar}\n"
+            + "  <script src=\"foo.js\" defer></script>\n"
+            + "{/template}");
+    assertViolation(
+        requirement,
+        "{namespace ns}\n" + "{template .bar}\n" + "  <script></script>\n" + "{/template}");
+  }
+
+  @Test
+  public void bannedHtmlTagWithRequiredAttribute() {
+    String requirement =
+        "requirement: {\n"
+            + "  banned_html_tag: {\n"
+            + "    tag: 'script'\n"
+            + "    when_attribute_possibly_missing: 'src'\n"
+            + "  }\n"
+            + "  error_message: 'foo'"
+            + "}";
+
+    // Fail if a script is set without a src
+    assertViolation(
+        requirement,
+        "{namespace ns}\n"
+            + "{template .bar}\n"
+            + "  <script>console.log('js is run here');</script>\n"
+            + "{/template}");
+
+    // As long as the src attribute is set there are no violations
+    assertNoViolation(
+        requirement,
+        "{namespace ns}\n"
+            + "{template .bar}\n"
+            + "  <script src=\"foo.js\">console.log('js is ignored here');</script>\n"
+            + "{/template}");
+    assertNoViolation(
+        requirement,
+        "{namespace ns}\n"
+            + "{template .bar}\n"
+            + "  <script src=\"\">console.log('js is ignored here');</script>\n"
+            + "{/template}");
+    assertNoViolation(
+        requirement,
+        "{namespace ns}\n"
+            + "{template .bar}\n"
+            + "  <script src>console.log('js is ignored here');</script>\n"
+            + "{/template}");
+  }
+
+  @Test
   public void testBanInlineEventHandlers() {
     assertViolation(
         "requirement: {\n"
