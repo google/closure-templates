@@ -27,9 +27,8 @@ import com.google.common.html.types.SafeStyleProto;
 import com.google.common.html.types.SafeStyleSheetProto;
 import com.google.common.html.types.SafeUrlProto;
 import com.google.common.html.types.TrustedResourceUrlProto;
+import com.google.template.soy.internal.util.BreadthFirstStream;
 import com.google.template.soy.types.SoyType.Kind;
-import com.google.template.soy.types.SoyTypeGraphUtils.BreadthFirstIterator;
-import com.google.template.soy.types.SoyTypeGraphUtils.SoyTypeSuccessorsFunction;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -37,7 +36,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 /** Utility methods for operating on {@link SoyType} instances. */
@@ -553,8 +554,7 @@ public final class SoyTypes {
    */
   public static Iterator<? extends SoyType> getTypeTraverser(
       SoyType root, @Nullable SoyTypeRegistry registry) {
-    return new BreadthFirstIterator<>(
-        ImmutableList.of(root), new SoyTypeSuccessorsFunction(registry));
+    return BreadthFirstStream.of(root, new SoyTypeSuccessorsFunction(registry)).iterator();
   }
 
   /**
@@ -607,5 +607,53 @@ public final class SoyTypes {
       return symbol.substring(0, secondDot);
     }
     return symbol;
+  }
+
+  /** Implementation of SuccessorsFunction that traverses a graph rooted at a SoyType. */
+  private static class SoyTypeSuccessorsFunction
+      implements Function<SoyType, Iterable<? extends SoyType>> {
+
+    private final SoyTypeRegistry typeRegistry;
+
+    public SoyTypeSuccessorsFunction(@Nullable SoyTypeRegistry typeRegistry) {
+      this.typeRegistry = typeRegistry;
+    }
+
+    @Override
+    public Iterable<? extends SoyType> apply(SoyType type) {
+      // For any type that contains nested types, return the list of nested types. E.g. the LIST
+      // type contains the list element type, the MAP type contains both the key and value types,
+      // etc.
+      switch (type.getKind()) {
+        case UNION:
+          return ((UnionType) type).getMembers();
+
+        case LIST:
+          return ImmutableList.of(((ListType) type).getElementType());
+
+        case MAP:
+        case LEGACY_OBJECT_MAP:
+          AbstractMapType mapType = (AbstractMapType) type;
+          return ImmutableList.of(mapType.getKeyType(), mapType.getValueType());
+
+        case RECORD:
+          return ((RecordType) type)
+              .getMembers().stream().map(RecordType.Member::type).collect(Collectors.toList());
+
+        case VE:
+          VeType veType = (VeType) type;
+          if (typeRegistry != null && veType.getDataType().isPresent()) {
+            String protoFqn = veType.getDataType().get();
+            SoyType protoType = typeRegistry.getProtoRegistry().getProtoType(protoFqn);
+            if (protoType == null) {
+              throw new IllegalArgumentException(protoFqn);
+            }
+            return ImmutableList.of(protoType);
+          }
+          // fall through
+        default:
+          return ImmutableList.of();
+      }
+    }
   }
 }

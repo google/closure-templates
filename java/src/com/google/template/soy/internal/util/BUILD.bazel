@@ -1,5 +1,5 @@
 ##
-# Copyright 2019 Google Inc.
+# Copyright 2021 Google Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,19 +19,10 @@ load("@rules_java//java:defs.bzl", "java_library")
 package(default_visibility = ["//:soy_internal"])
 
 java_library(
-    name = "types",
+    name = "util",
     srcs = glob(["*.java"]),
     deps = [
-        "//java/src/com/google/template/soy/base",
-        "//java/src/com/google/template/soy/base/internal",
-        "//java/src/com/google/template/soy/error:error_reporter",
-        "//java/src/com/google/template/soy/internal/proto",
-        "//java/src/com/google/template/soy/internal/util",
-        "//src/main/protobuf:template_metadata_java_proto",
-        "@com_google_auto_value_auto_value",
-        "@com_google_protobuf//:protobuf_java",
         "@maven//:com_google_code_findbugs_jsr305",
-        "@maven//:com_google_common_html_types_types",
         "@maven//:com_google_errorprone_error_prone_annotations",
         "@maven//:com_google_guava_guava",
     ],

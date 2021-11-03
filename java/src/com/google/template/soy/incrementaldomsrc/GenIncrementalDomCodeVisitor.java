@@ -66,7 +66,6 @@ import com.google.common.base.Ascii;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContentOperator;
@@ -128,7 +127,6 @@ import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateElementNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.VeLogNode;
-import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.types.SoyType;
@@ -464,14 +462,29 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
 
   private Optional<Statement> genSyncStateCalls(TemplateElementNode node, String alias) {
     ImmutableList.Builder<Statement> stateReassignmentBuilder = ImmutableList.builder();
-    for (TemplateHeaderVarDefn headerVar : Lists.newArrayList(node.getStateVars())) {
-      if (SoyTreeUtils.isConstantExpr(headerVar.defaultValue())) {
-        continue;
+    ImmutableList<TemplateStateVar> headerVars = node.getStateVars();
+    TemplateStateVar lastNonConstVar =
+        headerVars.reverse().stream()
+            .filter(v -> !SoyTreeUtils.isConstantExpr(v.defaultValue()))
+            .findFirst()
+            .orElse(null);
+    boolean haveVisitedLastNonConstVar = lastNonConstVar == null;
+
+    for (TemplateStateVar headerVar : headerVars) {
+      if (!SoyTreeUtils.isConstantExpr(headerVar.defaultValue())) {
+        stateReassignmentBuilder.add(
+            Statement.assign(
+                Expression.THIS.dotAccess(STATE_PREFIX + headerVar.name()),
+                translateExpr(headerVar.defaultValue())));
       }
-      stateReassignmentBuilder.add(
-          Statement.assign(
-              Expression.THIS.dotAccess(STATE_PREFIX + headerVar.name()),
-              translateExpr(headerVar.defaultValue())));
+      haveVisitedLastNonConstVar = haveVisitedLastNonConstVar || headerVar.equals(lastNonConstVar);
+      // Only need to alias if there's another non-constant var to come that may reference this.
+      if (!haveVisitedLastNonConstVar) {
+        stateReassignmentBuilder.add(
+            VariableDeclaration.builder(STATE_VAR_PREFIX + STATE_PREFIX + headerVar.name())
+                .setRhs(Expression.THIS.dotAccess(STATE_PREFIX + headerVar.name()))
+                .build());
+      }
     }
     ImmutableList<Statement> stateReassignments = stateReassignmentBuilder.build();
     if (stateReassignments.isEmpty()) {

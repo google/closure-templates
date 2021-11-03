@@ -32,11 +32,13 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Table;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
@@ -111,6 +113,7 @@ import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.exprtree.VeLiteralNode;
+import com.google.template.soy.internal.util.TopoSort;
 import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.logging.ValidatedLoggingConfig.ValidatedLoggableElement;
@@ -189,6 +192,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -284,8 +288,12 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
   private static final SoyErrorKind DECLARED_DEFAULT_TYPE_MISMATCH =
       SoyErrorKind.of(
           "The initializer for ''{0}'' has type ''{1}'' which is not assignable to type ''{2}''.");
-  private static final SoyErrorKind STATE_MUST_BE_CONSTANT =
-      SoyErrorKind.of("The initializer for ''{0}'' must be a constant value.  {1}.");
+  private static final SoyErrorKind PARAM_DEPENDS_ON_PARAM =
+      SoyErrorKind.of("Param initializers may not depend on other params.");
+  private static final SoyErrorKind PARAM_DEPENDS_ON_FUNCTION =
+      SoyErrorKind.of("Only pure functions are allowed in param initializers.");
+  private static final SoyErrorKind STATE_CYCLE =
+      SoyErrorKind.of("Illegal cycle in state param initializers: {0}.");
   private static final SoyErrorKind INCOMPATIBLE_ARITHMETIC_OP =
       SoyErrorKind.of("Using arithmetic operators on Soy types ''{0}'' and ''{1}'' is illegal.");
   private static final SoyErrorKind INCOMPATIBLE_ARITHMETIC_OP_UNARY =
@@ -500,6 +508,9 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
 
     @Override
     protected void visitTemplateNode(TemplateNode node) {
+      List<TemplateStateVar> allStateVars = new ArrayList<>();
+      SetMultimap<TemplateStateVar, TemplateStateVar> stateToStateDeps = HashMultimap.create();
+
       // need to visit expressions first so parameters with inferred types have their expressions
       // analyzed
       List<TemplateHeaderVarDefn> headerVars = node.getHeaderParams();
@@ -507,6 +518,9 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
       // value parameter, which won't work because it's looking up the type of the parameter when it
       // hasn't been inferred yet.  So report an error and override the type to be the errortype
       for (TemplateHeaderVarDefn headerVar : headerVars) {
+        if (headerVar instanceof TemplateStateVar) {
+          allStateVars.add((TemplateStateVar) headerVar);
+        }
         // TODO(lukes): there are more non-sensical declarations than just 'null'
         if (headerVar.getTypeNode() != null && NullType.getInstance().equals(headerVar.type())) {
           errorReporter.report(headerVar.getTypeNode().sourceLocation(), EXPLICIT_NULL);
@@ -516,20 +530,19 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
         }
         for (ExprNode nonConstantChild :
             SoyTreeUtils.getNonConstantChildren(headerVar.defaultValue())) {
-          String extra;
-          switch (nonConstantChild.getKind()) {
+          ExprNode.Kind kind = nonConstantChild.getKind();
+          switch (kind) {
             case VAR_REF_NODE:
               VarRefNode refNode = (VarRefNode) nonConstantChild;
               if (headerVar instanceof TemplateStateVar) {
                 // @state depends on @state
                 if (refNode.getDefnDecl() instanceof TemplateStateVar) {
-                  extra = "State cannot be referenced in default initializers";
-                } else {
-                  continue; // @state depends on @param
+                  stateToStateDeps.put(
+                      (TemplateStateVar) headerVar, (TemplateStateVar) refNode.getDefnDecl());
                 }
+                continue; // @state depends on @param or @state
               } else {
-                // @param depends on @state/@param
-                extra = "Default parameters cannot depend on other parameters or state";
+                errorReporter.report(nonConstantChild.getSourceLocation(), PARAM_DEPENDS_ON_PARAM);
               }
               refNode.setSubstituteType(UnknownType.getInstance());
               break;
@@ -537,17 +550,22 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
               if (headerVar instanceof TemplateStateVar) {
                 continue;
               }
-              extra = "Only pure functions can be used in default param initializers";
+              errorReporter.report(nonConstantChild.getSourceLocation(), PARAM_DEPENDS_ON_FUNCTION);
               break;
             default:
               throw new AssertionError("Unexpected non-constant expression: " + nonConstantChild);
           }
-          errorReporter.report(
-              nonConstantChild.getSourceLocation(),
-              STATE_MUST_BE_CONSTANT,
-              headerVar.name(),
-              extra);
         }
+      }
+
+      // Note that cycles are currently impossible because forward references are not allowed.
+      TopoSort<TemplateStateVar> topoSort = new TopoSort<>();
+      try {
+        topoSort.sort(allStateVars, stateToStateDeps::get);
+      } catch (NoSuchElementException e) {
+        ImmutableList<TemplateStateVar> cycle = topoSort.getCyclicKeys();
+        String cycleText = cycle.stream().map(AbstractVarDefn::name).collect(joining(" --> "));
+        errorReporter.report(cycle.get(0).getSourceLocation(), STATE_CYCLE, cycleText);
       }
 
       // Now visit header params for which we have both a default value and a declared type. This

@@ -40,6 +40,7 @@ import com.google.template.soy.exprtree.ListComprehensionNode;
 import com.google.template.soy.exprtree.MapLiteralFromListNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
+import com.google.template.soy.internal.util.BreadthFirstStream;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.Kind;
@@ -52,17 +53,10 @@ import com.google.template.soy.types.ast.TemplateTypeNode;
 import com.google.template.soy.types.ast.TypeNode;
 import com.google.template.soy.types.ast.TypeNodeVisitor;
 import com.google.template.soy.types.ast.UnionTypeNode;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Deque;
 import java.util.List;
-import java.util.Spliterator;
-import java.util.Spliterators.AbstractSpliterator;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 /**
  * Shared utilities for the 'soytree' package.
@@ -160,7 +154,7 @@ public final class SoyTreeUtils {
    */
   public static Stream<? extends Node> allNodes(
       Node root, NodeVisitor<? super Node, VisitDirective> visitor) {
-    return bfs(
+    return BreadthFirstStream.of(
         root,
         next -> {
           if (visitor.exec(next) == VisitDirective.CONTINUE) {
@@ -610,30 +604,7 @@ public final class SoyTreeUtils {
       };
 
   public static Stream<? extends TypeNode> allTypeNodes(TypeNode root) {
-    return bfs(root, next -> next.accept(TRAVERSING));
+    return BreadthFirstStream.of(root, next -> next.accept(TRAVERSING));
   }
 
-  private static <T> Stream<? extends T> bfs(
-      T root, Function<T, Iterable<? extends T>> successors) {
-    Deque<T> generations = new ArrayDeque<>();
-    generations.add(root);
-    return StreamSupport.stream(
-        new AbstractSpliterator<T>(
-            // Our Baseclass says to pass MAX_VALUE for unsized streams
-            Long.MAX_VALUE,
-            // The order is meaningfull and every item returned is unique.
-            Spliterator.ORDERED | Spliterator.DISTINCT) {
-          @Override
-          public boolean tryAdvance(Consumer<? super T> action) {
-            T next = generations.poll();
-            if (next == null) {
-              return false;
-            }
-            Iterables.addAll(generations, successors.apply(next));
-            action.accept(next);
-            return true;
-          }
-        },
-        /* parallel= */ false);
-  }
 }
