@@ -253,6 +253,13 @@ public class JsCodeBuilder {
     return append(codeChunk.getStatementsForInsertingIntoForeignCodeAtIndent(indent.length()));
   }
 
+  public JsCodeBuilder appendNullable(@Nullable CodeChunk codeChunk) {
+    if (codeChunk != null) {
+      return append(codeChunk);
+    }
+    return this;
+  }
+
   /**
    * Serializes the given {@link JsDoc} into the code builder, respecting the code builder's current
    * indentation level.
