@@ -145,7 +145,7 @@ public final class DesugarHtmlNodesPass implements CompilerFileSetPass {
 
     @Override
     protected void visitHtmlOpenTagNode(HtmlOpenTagNode openTag) {
-      if (openTag.isSkipRoot()) {
+      if (openTag.isSkipRoot() || openTag.getKeyNode() != null) {
         ImmutableList.Builder<StandaloneNode> builder = ImmutableList.builder();
         // {skip} + {key} nodes are turned into ssk="{$key}". For more information why,
         // see go/typed-html-templates. For Incremental DOM, these are handled in
