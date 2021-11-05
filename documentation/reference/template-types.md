@@ -34,7 +34,7 @@ parameter to which the template was passed. For example:
 ###### Call Command {.pg-tab}
 
 ```soy
-{template .foo}
+{template foo}
   {@param renderer: (s:string)=>html} // Accept a template as a parameter
   {call $renderer}                    // Call the passed-in template
     {param s: 'hello' /}              // Use the parameter from the template type
@@ -45,7 +45,7 @@ parameter to which the template was passed. For example:
 ###### Element Composition {.pg-tab}
 
 ```soy
-{template .foo}
+{template foo}
   {@param renderer: (s:string)=> html<?>} // Accept a template as a parameter
 
   <{$renderer.bind(record(s: 'hello'))} /> // See below for info on .bind()
@@ -183,20 +183,20 @@ using the builtin `bind` method. This method accepts a `record` literal and
 returns a template whose type depends on the unbound parameters.
 
 In the following example, the type of the template returned by `bind` is
-`(s:string)=>html`. As a result, this template can be passed to `.foo`.
+`(s:string)=>html`. As a result, this template can be passed to `foo`.
 
 <section class="polyglot">
 
 ###### Call Command {.pg-tab}
 
 ```soy
-{template .bar}
-  {call .foo}
+{template bar}
+  {call foo}
     {param input: input2.bind(record(s2:'world')) /}
   {/call}
 {/template}
 
-{template .input2}
+{template input2}
   {@param s: string}
   {@param s2: string}
   ...
@@ -206,11 +206,11 @@ In the following example, the type of the template returned by `bind` is
 ###### Element Composition {.pg-tab}
 
 ```soy
-{template .bar}
+{template bar}
   <{foo(input: input2.bind(record(s2:'world')))} />
 {/template}
 
-{template .input2}
+{template input2}
   {@param s: string}
   {@param s2: string}
   ...

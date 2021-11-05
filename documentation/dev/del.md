@@ -77,7 +77,7 @@ like this
 ```soy
 {namespace main}
 
-{template .render}
+{template render}
   ...
   {delcall my.project.dialog}...{/delcall}
   ...
@@ -161,7 +161,7 @@ An example of Deltemplates registered with a `variant` identifier:
 ```soy
 {namespace main}
 
-{template .render}
+{template render}
   {@param data: my.proto.Content}
   ...
   {delcall my.project.renderContent variant="$data.contentType"}

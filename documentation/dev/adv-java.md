@@ -108,7 +108,7 @@ To see how this works, consider this example:
 ```soy
 {namespace ns}
 
-{template .foo}
+{template foo}
   {@param userName: string}
   <div>
     {$userName}

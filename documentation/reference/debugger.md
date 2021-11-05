@@ -19,7 +19,7 @@ and inspecting render state.
 For example:
 
 ```soy
-{template .helloTemplate}
+{template helloTemplate}
   {log}hello world{/log}
   ...
   {debugger} // how is execution getting here?? maybe the debugger will help?

@@ -67,7 +67,7 @@ the `whitespace='preserve'` attribute. See
 For example, here is a standard template:
 
 ```soy
-{template .foo}
+{template foo}
   <div class=outer>
     <div class=inner>
       Content
@@ -93,7 +93,7 @@ joined below.
 1.  Remove all line terminators and whitespace at the beginning and end of
     lines, including spaces preceding an end-of-line comment.
 
-    *   `{call .foo /} \n` will be converted to `{call .foo /}\n`
+    *   `{call foo /} \n` will be converted to `{call foo /}\n`
 
 1.  Remove empty lines that consist of only whitespace.
 
@@ -124,11 +124,11 @@ joined below.
 The following lines:
 
 ```soy
-{call .foo /}
+{call foo /}
 Hi
 ```
 
-will be joined together as: `{call .foo /}Hi` with no space, since the line join
+will be joined together as: `{call foo /}Hi` with no space, since the line join
 location borders a curly brace command.
 
 Similarly,
@@ -306,7 +306,7 @@ possible to use the `&nbsp;` entity but `{nbsp}` works in all contexts and
 produces a single Unicode character.
 
 ```soy
-{let .price kind="text"}
+{let $price kind="text"}
   {$amount}{nbsp}{$currency}
 {/let}
 ```

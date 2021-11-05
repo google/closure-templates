@@ -163,6 +163,5 @@ that could be considered
     ```
 
     Then in java you can simply call the adapter
-    `AAdapter.builder().setParams(generateMap(...)).build()`
-
-    which should simplify adoption.
+    `AAdapter.builder().setParams(generateMap(...)).build()` which should
+    simplify adoption.

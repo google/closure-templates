@@ -38,13 +38,13 @@ Copy the following basic template to the file, making sure that it appears
 /**
  * Says hello to the world.
  */
-{template .helloWorld}
+{template helloWorld}
   Hello world!
 {/template}
 ```
 
 This template simply outputs the text "`Hello world!`". The template's partial
-name is `.helloWorld`, which, when combined with the namespace, forms the fully
+name is `helloWorld`, which, when combined with the namespace, forms the fully
 qualified template name `examples.simple.helloWorld`.
 
 To run the Soy compiler for turning your templates into JavaScript code, you'll
@@ -90,13 +90,13 @@ using them from JavaScript.
 
 ## Hello Name and Hello Names
 
-Add the following second template, called `.helloName`, to `simple.soy`. Note
-that `.helloName` takes a required parameter called `name`, which is declared by
+Add the following second template, called `helloName`, to `simple.soy`. Note
+that `helloName` takes a required parameter called `name`, which is declared by
 `@param`. It also takes an optional parameter `greetingWord`, which is declared
 by `@param?`. These parameters are referenced in the template body using the
 expressions `$name` and `$greetingWord`, respectively. This template also
 demonstrates that you can conditionally include content in templates via the
-`if-else` commands. You can put this template before or after the `.helloWorld`
+`if-else` commands. You can put this template before or after the `helloWorld`
 template, just as long as it's after the `namespace` declaration.
 
 ```soy
@@ -105,7 +105,7 @@ template, just as long as it's after the `namespace` declaration.
  * @param name The name of the person.
  * @param? greetingWord Optional greeting word to use instead of "Hello".
  */
-{template .helloName}
+{template helloName}
   {if not $greetingWord}
     Hello {$name}!
   {else}
@@ -166,15 +166,15 @@ callee template.
  * @param name The name of the person.
  * @param additionalNames The additional names to greet. May be an empty list.
  */
-{template .helloNames}
+{template helloNames}
   // Greet the person.
-  {call .helloName data="all" /}<br>
+  {call helloName data="all" /}<br>
   // Greet the additional people.
   {for $additionalName, $i in $additionalNames}
     {if $i > 0}
       <br>  // break after every line except the last
     {/if}
-    {call .helloName}
+    {call helloName}
       {param name: $additionalName /}
     {/call}
   {ifempty}

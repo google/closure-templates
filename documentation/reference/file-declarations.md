@@ -94,11 +94,11 @@ of migrating all existing users to use imports).
 In the above example, `'foo.soy'` needs to contain:
 
 ```soy
-{template .button}
+{template button}
   ...
 {/template}
 
-{template .render}
+{template render}
   ...
 {/template}
 ```

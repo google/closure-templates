@@ -47,7 +47,7 @@ For example, for the following Soy file,
 // Content of examples.soy
 {namespace soy.examples}
 
-{template .foo}
+{template foo}
   ...
 {/template}
 ```
@@ -80,7 +80,7 @@ Here is an example template:
 {namespace soy.examples}
 
 /** Says hello to a list of persons. */
-{template .helloName}
+{template helloName}
   {@param names: list<string>}
   {for $name in $names}
     Hello {$name}!

@@ -25,7 +25,7 @@ or modifying an existing message.
 For new messages, add the new message in an unused template:
 
 ```soy
-{template .unusedTemplateForTranslations}
+{template unusedTemplateForTranslations}
   {msg desc="..."}...{/msg}
 {/template}
 ```

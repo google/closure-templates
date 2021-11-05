@@ -357,7 +357,7 @@ message Height {
 The template below accesses the `Height` extension of the `Person` proto.
 
 ```soy
-{template .foo}
+{template foo}
   {@param proto: soy.example.Person}
   {$proto.getExtension(soy.example.Height.height).cm}
 {/template}
@@ -372,7 +372,7 @@ For example, given the [above definition](#example-usage) of the repeated proto
 field `past_height`, it would be accessed as follows:
 
 ```soy
-{template .heightHistory}
+{template heightHistory}
   {@param person: soy.example.Person}
   {for $height in $person.getExtension(soy.example.pastHeightList)}
     {$height.cm}
@@ -390,7 +390,7 @@ determined dynamically by a print node. Wrapping the tag name expression in
 syntax.
 
 ```soy
-{template .foo}
+{template foo}
   {@param tagName: string}
   <{legacyDynamicTag($tagName)}>Hello!</{legacyDynamicTag($tagName)}>
 {/template}
@@ -440,7 +440,7 @@ The `css` function supports a simple autoprefixing syntax to make working with
 long namespaces easier. For example,
 
 ```soy
-{template .foo cssbase="foo.bar.baz"}
+{template foo cssbase="foo.bar.baz"}
 <div class={css('%Menu')}>
 ...
 </div>

@@ -22,7 +22,7 @@ template:
 /**
  * Says hello to the world.
  */
-{template .helloWorld}
+{template helloWorld}
   Hello world!
 {/template}
 ```
@@ -69,7 +69,7 @@ const output = soy.examples.helloWorld();
 ```
 
 Here, `output` is a `SanitizedContent` object containing the string `'Hello
-world!'`. Note that because the `.helloWorld` template did not declare any
+world!'`. Note that because the `helloWorld` template did not declare any
 params, it is legal to call the generated JavaScript function without any
 arguments. The next section discusses how to pass template data.
 
@@ -86,7 +86,7 @@ to the templates that you're calling). For example:
 /**
  * Says hello to a person.
  */
-{template .helloName}
+{template helloName}
   {@param name: string}
   Hello {$name}!
 {/template}

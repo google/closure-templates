@@ -70,10 +70,10 @@ Used for parsing soy strings. May not contain a newline.
 
 #### IN_ATTRIBUTE_VALUE
 
-Much like `IN_MULTILINE_COMMENT`, this is used for parsing attribute values
-in command tags. e.g. `{template .foo kind="js"}`. This allows us to handle
-arbitrary characters as string contents, much like how html attributes work
-(for example, newlines are allowed).
+Much like `IN_MULTILINE_COMMENT`, this is used for parsing attribute values in
+command tags. e.g. `{template foo kind="js"}`. This allows us to handle
+arbitrary characters as string contents, much like how html attributes work (for
+example, newlines are allowed).
 
 #### TEMPLATE_DEFAULT
 

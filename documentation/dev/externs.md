@@ -180,7 +180,7 @@ For example:
 ```soy
 import {imageUrlFromOptions} from 'path/to/functions.soy';
 
-{template .foo}
+{template foo}
   {@param uri: uri}
   <img src="{imageUrlFromOptions($uri, ImageUrlOptions())}" alt="My Image"/>
 {/template}

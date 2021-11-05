@@ -19,7 +19,7 @@ non-optional. For example:
 ```soy
 import {Person} from 'foo/bar.proto';
 
-{template .main}
+{template main}
   /** Optional parameter of type (Person|null). */
   {@param? person: Person}
   {if $person}

@@ -164,16 +164,16 @@ SoySauce interprets 'required' template parameters slightly differently than
 Tofu. Imagine this template:
 
 ```soy
-{template .foo}
+{template foo}
   {@param p: string}
   {$p}
 {/template}
 ```
 
-In Tofu, if you call `.foo` without passing `$p` there are a few things that can
+In Tofu, if you call `foo` without passing `$p` there are a few things that can
 happen:
 
-*   If it is a top level call (Java code calling .foo), then you will get a
+*   If it is a top level call (Java code calling `foo`), then you will get a
     SoyTofuException saying that a required parameter is missing.
 *   If it is a Soy->Soy call then you will get null for `$p`
 

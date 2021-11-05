@@ -7,7 +7,7 @@ function that can be used for rendering. For example,
 
 ```soy
 {namespace my.project.namespace}
-{template .hello}
+{template hello}
   {@param name: string}
   Hello, <b>{$name}</b>
 {/template}
@@ -35,7 +35,7 @@ namespace:
 ```soy
 {namespace my.namespace}
 
-{template .hello}
+{template hello}
 {/template}
 ```
 
@@ -45,7 +45,7 @@ define an empty template, which isn't very useful. So let's add some content:
 ```soy
 {namespace my.namespace}
 
-{template .hello}
+{template hello}
   Hello, world!
 {/template}
 ```
@@ -63,7 +63,7 @@ For example:
 ```soy
 {namespace my.namespace}
 
-{template .hello}
+{template hello}
   {@param name: string} /* The name to greet */
   Hello, {$name}!
 {/template}
@@ -83,7 +83,7 @@ passing these parameters through every template, they can be registered as
 ```soy
 {namespace my.namespace}
 
-{template .hello}
+{template hello}
   {@param name: string}
   {@inject partyTime: bool}
   <span class="{$partyTime ? 'party' : ''}">
@@ -108,7 +108,7 @@ For example:
 ```soy
 {namespace my.namespace}
 
-{template .hello}
+{template hello}
   {@param name: string}
   <span class="{$ij.partyTime ? 'party' : ''}">
   Hello, {$name}!
@@ -129,7 +129,7 @@ be called from their host languages (see how to call from [Java](java.md) and
 {namespace my.other.namespace}
 import * as myNamespace from 'path/to/hello.soy';
 
-{template .helloEveryone}
+{template helloEveryone}
   {@param names: list<string>}
   <ul>
     {for $name in $names}
@@ -156,7 +156,7 @@ For this, each template has a `kind` parameter (the default value is
 For example,
 
 ```soy
-{template .partyAttrs kind="attributes"}
+{template partyAttrs kind="attributes"}
   class="party-time" data-party="on"
 {/template}
 ```

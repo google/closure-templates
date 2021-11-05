@@ -37,13 +37,13 @@ Follow these steps to create a simple Hello World template and use it in Java:
     sure that it appears after the namespace declaration:
 
     ```soy
-    {template .helloWorld}
+    {template helloWorld}
       Hello world!
     {/template}
     ```
 
     This template simply outputs the text `Hello world!`. It has the partial
-    name `.helloWorld`, which, when combined with the namespace, forms the fully
+    name `helloWorld`, which, when combined with the namespace, forms the fully
     qualified template name `examples.simple.helloWorld`.
 
 4.  Now that we've written the template, we need to write the Java code to
@@ -128,19 +128,19 @@ Follow these steps to create a simple Hello World template and use it in Java:
 
 ## Hello Name and Hello Names
 
-1.  Add the following second template, called `.helloName`, to `simple.soy`.
-    Note that `.helloName` takes a required parameter called `name`, which is
-    declared by `@param`. It also takes an optional parameter `greetingWord`,
-    which is declared by `@param?`. These parameters are referenced in the
-    template body using the expressions `$name` and `$greetingWord`,
-    respectively. This template also demonstrates that you can conditionally
-    include content in templates via the `if-else` commands. You can put this
-    template before or after the `.helloWorld` template, just as long as it's
-    after the `namespace` declaration.
+1.  Add the following second template, called `helloName`, to `simple.soy`. Note
+    that `helloName` takes a required parameter called `name`, which is declared
+    by `@param`. It also takes an optional parameter `greetingWord`, which is
+    declared by `@param?`. These parameters are referenced in the template body
+    using the expressions `$name` and `$greetingWord`, respectively. This
+    template also demonstrates that you can conditionally include content in
+    templates via the `if-else` commands. You can put this template before or
+    after the `helloWorld` template, just as long as it's after the `namespace`
+    declaration.
 
     ```soy
     /** Greets a person using "Hello" by default. */
-    {template .helloName}
+    {template helloName}
       {@param name: string} /** The person's name. */
       {@param? greetingWord: string} /**
                                       * Optional greeting word to use
@@ -162,20 +162,20 @@ Follow these steps to create a simple Hello World template and use it in Java:
 
     ```soy
     /** Greets a person and optionally a list of other people. */
-    {template .helloNames}
+    {template helloNames}
       {@param name: string} /** The person's name. */
       {@param additionalNames: list<string>} /**
                                               * Additional names to greet.
                                               * May be an empty list.
                                               */
       // Greet the person.
-      {call .helloName data="all" /}<br>
+      {call helloName data="all" /}<br>
       // Greet the additional people.
       {for $additionalName, $idx in $additionalNames}
         {if $idx > 0}
           <br>  // break after every line except the last
         {/if}
-        {call .helloName}
+        {call helloName}
           {param name: $additionalName /}
         {/call}
       {ifempty}
@@ -231,8 +231,8 @@ Follow these steps to create a simple Hello World template and use it in Java:
     }
     ```
 
-    This example exercises the `.helloName` template with a Java `Map` in which
-    the parameter `name` is mapped to the string `Ana`. For the `.helloNames`
+    This example exercises the `helloName` template with a Java `Map` in which
+    the parameter `name` is mapped to the string `Ana`. For the `helloNames`
     template, the example maps the parameter `additionalNames` to a list of
     strings `Bob`, `Cid`, `Dee`.
 
@@ -298,8 +298,8 @@ below to use `SoyParseInfoGenerator` with the Hello World example:
 
     Open `src/main/java/example/SimpleTemplates.java` and look at the inner
     class that `SoyParseInfoGenerator` generated for each of the templates. For
-    example, the class `HelloName` represents the `.helloName` template and
-    `HelloName.Builder#setName` represents the `.helloName` template's parameter
+    example, the class `HelloName` represents the `helloName` template and
+    `HelloName.Builder#setName` represents the `helloName` template's parameter
     `name`.
 
 2.  Edit `src/main/java/example/HelloWorld.java` to look like this:

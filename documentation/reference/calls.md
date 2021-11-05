@@ -51,7 +51,7 @@ template:
 We'll use this callee template for the following examples:
 
 ```soy
-{template .exampleCallee}
+{template exampleCallee}
   {@param largerNum: int} /** An integer larger than 'smallerNum'. */
   {@param smallerNum: int} /** An integer smaller than 'largerNum'. */
   {$largerNum} is greater than {$smallerNum}.
@@ -67,11 +67,11 @@ To pass values to the callee, use `param` commands inside the `call` function
 with names that match the callee's parameters.
 
 ```soy
-{template .exampleCaller}
+{template exampleCaller}
   {let $largerNum: 20 /}
   {let $smallerNum: 10 /}
 
-  {call .exampleCallee}
+  {call exampleCallee}
     {param largerNum: $largerNum /}
     {param smallerNum: $smallerNum /}
   {/call}
@@ -87,7 +87,7 @@ In cases where all parameters are passed without blocks, the call can be
 shortened to a function-like call.
 
 ```soy
-{template .exampleCaller}
+{template exampleCaller}
   {let $largerNum: 20 /}
   {let $smallerNum: 10 /}
 
@@ -107,9 +107,9 @@ For example, the following call sets the value of the `largerNum` parameter to
 previous section.
 
 ```soy
-{template .exampleCaller}
+{template exampleCaller}
   {let $pair : record(largerNum: 20, smallerNum: 10)}
-  {call .exampleCallee data="$pair" /}
+  {call exampleCallee data="$pair" /}
 {/template}
 ```
 
@@ -136,14 +136,14 @@ A template's *data* is a record that contains:
 If a call includes a `param` command with the same name as a field in the `data`
 record, the value from the `param` command is used.
 
-For example, in the following call, the data of `.exampleCallee` will be a
-record containing the fields `largerNum`, `smallerNum`, and `otherNum`:
+For example, in the following call, the data of `exampleCallee` will be a record
+containing the fields `largerNum`, `smallerNum`, and `otherNum`:
 
 ```soy
-{template .exampleCaller}
+{template exampleCaller}
   {let $pair : record(largerNum: 20, smallerNum: 10) /}
   {let $otherNum : 5 /}
-  {call .exampleCallee data="$pair"}
+  {call exampleCallee data="$pair"}
     {param otherNum: $otherNum /}
   {/call}
 {/template}
@@ -158,8 +158,8 @@ callee (with the same parameter names), you can simply set `data="all"`.
 
 ```soy {.bad}
 // Discouraged.
-{template .exampleCaller}
-  {call .exampleCallee data="all" /}
+{template exampleCaller}
+  {call exampleCallee data="all" /}
 {/template}
 ```
 
@@ -245,7 +245,7 @@ As a more complex example, assume that the caller's parameters include a list
 
 ```soy
 {for $pair in $pairs}
-  {call .exampleCallee}
+  {call exampleCallee}
     {param largerNum: $pair.largerInt /}
     {param smallerNum kind="text"}
       {if $pair.smallerInt}
@@ -301,7 +301,7 @@ template:
 
 ```soy
 {for $smallerNum in $smallerNums}
-  {call .exampleCallee data="record(largerNum: $largerNum)"}
+  {call exampleCallee data="record(largerNum: $largerNum)"}
     {param smallerNum: $smallerNum /}
   {/call}
 {/for}
@@ -321,7 +321,7 @@ using the usual syntax:
 ```soy
 import {button, dialog} from 'path/to/soy/file/foo.soy'
 
-{template .myTemplate}
+{template myTemplate}
   {call button /}
   {call dialog}
     {param someParam: 1 /}
@@ -335,7 +335,7 @@ readability perspective (e.g. "content"), you can alias the imported template:
 ```soy
 import {content as hotelReviewContent} from 'path/to/soy/file/bar.soy'
 
-{template .myTemplate}
+{template myTemplate}
   {call hotelReviewContent /}
 {/template}
 ```

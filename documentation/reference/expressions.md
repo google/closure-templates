@@ -15,10 +15,10 @@ in [print commands](print.md), but they are also used in
 places. Here are a few examples:
 
 ```soy
-{template .foo}
+{template foo}
   {@param p: ?}
   {if $p > 2}
-    {call .bar}{param p : $p == 3 ? 'a' : 'b' /}{/call}
+    {call bar}{param p : $p == 3 ? 'a' : 'b' /}{/call}
   {/if}
 {/template}
 ```

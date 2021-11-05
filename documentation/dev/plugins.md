@@ -12,7 +12,7 @@ example, the `mapKeys` function which can be used to get the keys of a map for
 iteration.
 
 ```soy
-{template .foo}
+{template foo}
   {@param m: map<string, string>}
   {for $key in mapKeys($m)}
     Key: {$key}, Value: {$m[$key]}
@@ -201,7 +201,7 @@ At this point, you can start calling your new plugin function from your
 templates. For example:
 
 ```soy
-{template .foo}
+{template foo}
   {let $id : uniqueId() /}
   <div id={$id}>
     Some content

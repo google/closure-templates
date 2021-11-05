@@ -43,14 +43,14 @@ directly from the parse tree. The Soy language is simple and all the basic
 language constructs map directly into Java constructs. For example, this
 template:
 
-~~~soy
-{template .foo}
+```soy
+{template foo}
   {@param p : string}
   {@param p2 : string}
   {$p}
   {$p2}
 {/template}
-~~~
+```
 
 could be implemented by a Java function like:
 
@@ -166,8 +166,8 @@ bytecode directly. This comes with a number of pros and cons.
 To demonstrate the control flow issues mentioned above, consider the following
 example:
 
-~~~soy
-{template .foo}
+```soy
+{template foo}
   {@param p1 : [f: bool, v: list<string>]}
   {if $p1.f}
     {for $s in $p1.v}
@@ -175,7 +175,7 @@ example:
     {/for}
   {/if}
 {/template}
-~~~
+```
 
 This is a simple template with a `for` loop inside an `if` statement.
 
@@ -657,7 +657,7 @@ calling](#call_basic_nodecall_delegate_node) for a detailed example.
 There are several styles of calls. For now I will demonstrate a normal call with
 no data param. e.g.
 
-`{call .foo}{param bar : 1 /}{/call}`
+`{call foo}{param bar : 1 /}{/call}`
 
 This will generate code that looks like:
 
@@ -828,17 +828,17 @@ incompatibilities here:
     Tofu. Imagine this template:
 
     ```soy
-    {template .foo}
+    {template foo}
       {@param p : string}
       {$p}
     {/template}
     ```
 
-    In Tofu, if you call `.foo` without passing `$p` there are a few things that
+    In Tofu, if you call `foo` without passing `$p` there are a few things that
     can happen:
 
-    *   If it is a top level call (Java code calling `.foo`), then you will get
-        a `SoyTofuException` saying that a required parameter is missing.
+    *   If it is a top level call (Java code calling `foo`), then you will get a
+        `SoyTofuException` saying that a required parameter is missing.
     *   If it is a Soy->Soy call then you will get `null` for `$p`
 
     In SoySauce you always get `null`. We chose this option because it is more

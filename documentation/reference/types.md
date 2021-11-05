@@ -276,7 +276,7 @@ For example:
 ###### Call Command {.pg-tab}
 
 ```soy
-{template .foo}
+{template foo}
   {@param tpl: (count: int, greeting: string) => html}
 
   {call $tpl}
@@ -289,7 +289,7 @@ For example:
 ###### Element Composition {.pg-tab}
 
 ```soy
-{template .foo}
+{template foo}
   {@param tpl: (count: int, greeting: string) => html<?>}
 
   <{$tpl.bind(record(count:5, greeting: 'Hello'))} />
@@ -315,7 +315,7 @@ A list can contain any type as an element. Lists can be accessed using the
 For example,
 
 ```soy
-{template .foo}
+{template foo}
   {@param l: list<string>}
   {$l[0]}, {$l[1]}, {$l[2]}
 {/template}
@@ -325,7 +325,7 @@ The most common thing to do with a list is to iterate over it, using the for
 loop:
 
 ```soy
-{template .foo}
+{template foo}
   {@param l: list<string>}
   <ul>
   {for $el in $l}
@@ -350,7 +350,7 @@ the [indexed operators](expressions.md#indexing-operators).
 For example,
 
 ```soy
-{template .foo}
+{template foo}
   {@param m: map<int, string>}
   <ul>
     {for $entry in $m.entries()}
@@ -380,7 +380,7 @@ object maps are accessed using the
 For example,
 
 ```soy
-{template .foo}
+{template foo}
   {@param m: legacy_object_map<string, string>}
   <ul>
     {for $key in keys($m)}
@@ -414,7 +414,7 @@ be accessed using the [data access operators](expressions.md#data-access)
 For example,
 
 ```soy
-{template .foo}
+{template foo}
   {@param person: [age: int, name: string]}
   Name: {$person.name}
   Age: {$person.age}

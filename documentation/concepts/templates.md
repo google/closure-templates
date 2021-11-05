@@ -16,7 +16,7 @@ Here's a simple template that takes a string parameter `name`, and prints a
 greeting:
 
 ```soy
-{template .helloName}
+{template helloName}
   {@param name: string}
   Hello {$name}!
 {/template}
