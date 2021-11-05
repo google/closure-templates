@@ -30,7 +30,7 @@ import {attributes, ElementConstructor, FalsinessRenderer, IncrementalDomRendere
 import {splitAttributes} from './attributes';
 import {IdomFunction, PatchFunction, SoyElement} from './element_lib_idom';
 import {getSoyUntyped} from './global';
-import {IdomTemplate, IjData, SoyTemplate, Template} from './templates';
+import {IdomSyncState, IdomTemplate, IjData, SoyTemplate, Template} from './templates';
 
 // Declare properties that need to be applied not as attributes but as
 // actual DOM properties.
@@ -47,6 +47,7 @@ type LetFunction = (idom: IncrementalDomRenderer) => void;
  */
 interface TemplateAcceptor<TDATA extends {}> {
   template: IdomTemplate<TDATA>;
+  syncState: IdomSyncState<TDATA>;
   renderInternal(renderer: IncrementalDomRenderer, data: TDATA): void;
   render(renderer?: IncrementalDomRenderer): void;
 }
@@ -93,7 +94,8 @@ incrementaldom.setKeyAttributeName('ssk');
 function handleSoyElement<T extends TemplateAcceptor<{}>>(
     incrementaldom: IncrementalDomRenderer, elementClassCtor: new () => T,
     firstElementKey: string, tagNameOrCtor: string|(new () => T), data: {},
-    ijData: IjData, template: IdomTemplate<unknown>): T|null {
+    ijData: IjData, template: IdomTemplate<unknown>,
+    syncState?: IdomSyncState<unknown>): T|null {
   // If we're just testing truthiness, record an element but don't do anythng.
   if (incrementaldom instanceof FalsinessRenderer) {
     incrementaldom.open('div');
@@ -147,6 +149,10 @@ function handleSoyElement<T extends TemplateAcceptor<{}>>(
           patchOuter(element, () => {
             customEl.renderInternal(renderer, customEl);
           });
+    }
+    if (syncState) {
+      customEl.syncState = syncState.bind(element);
+      customEl.syncState(data);
     }
     return customEl;
   }
