@@ -20,7 +20,7 @@
 /**
  * Says hello to the world.
  */
-{template .helloWorld}
+{template helloWorld}
   {msg desc="Says hello to the world."}
     Hello world!
   {/msg}
@@ -30,14 +30,14 @@
 /**
  * Says hello to a person (or to the world if no person is given).
  */
-{template .helloName}
+{template helloName}
   {@param? name: string}  /** The name of the person to say hello to. */
   {if $name}
     {msg desc="Says hello to a person."}
       Hello {$name}!
     {/msg}
   {else}
-    {call .helloWorld /}
+    {call helloWorld /}
   {/if}
 {/template}
 
@@ -45,10 +45,10 @@
 /**
  * Say hello to a list of people.
  */
-{template .helloNames}
+{template helloNames}
   {@param names: list<string>}  /** List of names of the people to say hello to. */
   {for $name, $nameIndex in $names}
-    {call .helloName}
+    {call helloName}
       {param name: $name /}
     {/call}
     {if $nameIndex != $names.length() - 1}
@@ -56,6 +56,6 @@
     {/if}
   {ifempty}
     // If names list is empty, say "Hello world".
-    {call .helloWorld /}
+    {call helloWorld /}
   {/for}
 {/template}
