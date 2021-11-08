@@ -1677,7 +1677,8 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
      *     is also used as a fake file path in the reported error.
      * @param errorReporter The Soy error reporter.
      */
-    private @Nullable ResolvedSignature getOrCreateFunctionSignature(
+    @Nullable
+    private ResolvedSignature getOrCreateFunctionSignature(
         Signature signature, String className, ErrorReporter errorReporter) {
       ResolvedSignature resolvedSignature = signatureMap.get(signature);
       if (resolvedSignature != null) {

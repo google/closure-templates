@@ -381,15 +381,15 @@ final class LocalVariablesNodeVisitor {
       return null;
     }
 
-    protected LocalVariables getLocalVariables() {
-      return Preconditions.checkNotNull(localVariables);
-    }
-
     @Override
     public Void exec(ExprNode node) {
       Preconditions.checkArgument(node instanceof ExprRootNode);
       visit(node);
       return null;
+    }
+
+    protected LocalVariables getLocalVariables() {
+      return Preconditions.checkNotNull(localVariables);
     }
 
     @Override

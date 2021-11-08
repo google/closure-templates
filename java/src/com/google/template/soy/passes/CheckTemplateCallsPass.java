@@ -198,23 +198,6 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
       checkCallParamTypes(callerTemplate, node, calleeType);
     }
 
-    void checkFnCall(TemplateNode callerTemplate, PrintNode printNode, FunctionNode fnNode) {
-      TemplateType type;
-      if (fnNode.getNameExpr().getType() instanceof TemplateImportType) {
-        type = ((TemplateImportType) fnNode.getNameExpr().getType()).getBasicTemplateType();
-      } else {
-        type = (TemplateType) fnNode.getNameExpr().getType();
-      }
-      if (fnNode.getParamsStyle() == ParamsStyle.POSITIONAL) {
-        errorReporter.report(fnNode.getSourceLocation(), EXPECTED_NAMED_PARAMETERS);
-        return;
-      }
-      checkCallParamNames(fnNode, type);
-      checkPassesUnusedParams(fnNode, type);
-      checkStrictHtml(callerTemplate, printNode, type);
-      checkCallParamTypes(fnNode, type);
-    }
-
     void checkCall(TemplateNode callerTemplate, CallDelegateNode node) {
       ImmutableList<TemplateMetadata> potentialCallees =
           fileSetMetadata
@@ -233,6 +216,23 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
       if (!potentialCallees.isEmpty()) {
         checkStrictHtml(callerTemplate, node, potentialCallees.get(0).getTemplateType());
       }
+    }
+
+    void checkFnCall(TemplateNode callerTemplate, PrintNode printNode, FunctionNode fnNode) {
+      TemplateType type;
+      if (fnNode.getNameExpr().getType() instanceof TemplateImportType) {
+        type = ((TemplateImportType) fnNode.getNameExpr().getType()).getBasicTemplateType();
+      } else {
+        type = (TemplateType) fnNode.getNameExpr().getType();
+      }
+      if (fnNode.getParamsStyle() == ParamsStyle.POSITIONAL) {
+        errorReporter.report(fnNode.getSourceLocation(), EXPECTED_NAMED_PARAMETERS);
+        return;
+      }
+      checkCallParamNames(fnNode, type);
+      checkPassesUnusedParams(fnNode, type);
+      checkStrictHtml(callerTemplate, printNode, type);
+      checkCallParamTypes(fnNode, type);
     }
 
     /**
