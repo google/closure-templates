@@ -42,7 +42,7 @@ public final class RewriteGlobalsPassTest {
             + "{alias foo.bar.baz as global}\n"
             + "{alias global.with.sugar}\n"
             + "\n"
-            + "{template .t}\n"
+            + "{template t}\n"
             + "  {global}\n"
             + "  {global.with.field}\n"
             + "  {sugar}\n"

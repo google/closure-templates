@@ -245,14 +245,14 @@ public final class DetachStateTest {
         TemplateTester.compileFile(
             "{namespace ns}",
             "",
-            "{template .caller}",
+            "{template caller}",
             "  {@param callerParam : string}",
-            "  {call .callee}",
+            "  {call callee}",
             "    {param calleeParam: $callerParam /}",
             "  {/call}",
             "{/template}",
             "",
-            "{template .callee}",
+            "{template callee}",
             "  {@param calleeParam : string}",
             "  prefix {$calleeParam} suffix",
             "{/template}",
@@ -278,9 +278,9 @@ public final class DetachStateTest {
             "{namespace ns}",
             "",
             "/** */",
-            "{template .caller}",
+            "{template caller}",
             "  {@param callerParam : string}",
-            "  {call .callee}",
+            "  {call callee}",
             "    {param calleeParam kind=\"text\"}",
             "      prefix {$callerParam} suffix",
             "    {/param}",
@@ -288,7 +288,7 @@ public final class DetachStateTest {
             "{/template}",
             "",
             "/** */",
-            "{template .callee}",
+            "{template callee}",
             "  {@param calleeParam : string}",
             "  {$calleeParam}",
             "{/template}",
@@ -313,7 +313,7 @@ public final class DetachStateTest {
         TemplateTester.compileFile(
             "{namespace ns}",
             "",
-            "{template .t}",
+            "{template t}",
             "  {@param p : string}",
             "  {msg desc='...'}",
             "    Hello {$p phname='name'}!",
@@ -339,7 +339,7 @@ public final class DetachStateTest {
     CompiledTemplates templates =
         TemplateTester.compileFile(
             "{namespace ns}",
-            "{template .t}",
+            "{template t}",
             "  {@param count: number}",
             "  {msg desc='...'}",
             "    {plural $count}",
@@ -380,7 +380,7 @@ public final class DetachStateTest {
         TemplateTester.compileFileWithLoggingConfig(
             config,
             new GenericDescriptor[] {Foo.getDescriptor()},
-            "{template .t}",
+            "{template t}",
             "  {@param myBool : bool}",
             "  {msg desc=\"foo\" hidden=\"true\"}",
             "    No definitions found for this word.{sp}",
@@ -414,7 +414,7 @@ public final class DetachStateTest {
   @Test
   public void testNoDetachesForTrivialBlocks() throws IOException {
     CompiledTemplates templates =
-        TemplateTester.compileFile("{namespace ns}", "", "{template .t}", "", "{/template}", "");
+        TemplateTester.compileFile("{namespace ns}", "", "{template t}", "", "{/template}", "");
     CompiledTemplate template = templates.getTemplate("ns.t");
     BufferingAppendable output = LoggingAdvisingAppendable.buffering();
     assertThat(
@@ -460,11 +460,11 @@ public final class DetachStateTest {
         TemplateTester.compileFile(
             "{namespace ns}",
             "",
-            "{template .t}",
+            "{template t}",
             "{@param depth: number}",
             "  {if $depth >0}",
             "    {$depth}",
-            "    {call .t}{param depth: $depth-1 /}{/call}",
+            "    {call t}{param depth: $depth-1 /}{/call}",
             "  {/if}",
             "{/template}",
             "");

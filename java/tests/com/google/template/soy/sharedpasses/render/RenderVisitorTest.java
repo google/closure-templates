@@ -446,7 +446,7 @@ public class RenderVisitorTest {
     // With msg bundle.
     SoyFileNode file =
         SoyFileSetParserBuilder.forFileContents(
-                "{namespace test}\n{template .foo}\n" + templateBody + "{/template}")
+                "{namespace test}\n{template foo}\n" + templateBody + "{/template}")
             .parse()
             .fileSet()
             .getChild(0);
@@ -852,28 +852,28 @@ public class RenderVisitorTest {
     String soyFileContent =
         "{namespace ns}\n"
             + "\n"
-            + "{template .callerTemplate}\n"
+            + "{template callerTemplate}\n"
             + "  {@param boo: ?}\n"
             + "  {@param foo: ?}\n"
             + "  {@param goo: ?}\n"
-            + "  {call .calleeTemplate data=\"all\" /}\n"
-            + "  {call .calleeTemplate data=\"$foo\" /}\n"
-            + "  {call .calleeTemplate data=\"all\"}\n"
+            + "  {call calleeTemplate data=\"all\" /}\n"
+            + "  {call calleeTemplate data=\"$foo\" /}\n"
+            + "  {call calleeTemplate data=\"all\"}\n"
             + "    {param boo: $foo.boo /}\n"
             + "  {/call}\n"
-            + "  {call .calleeTemplate data=\"all\"}\n"
+            + "  {call calleeTemplate data=\"all\"}\n"
             + "    {param boo: 'moo' /}\n"
             + "  {/call}\n"
-            + "  {call .calleeTemplate data=\"$foo\"}\n"
+            + "  {call calleeTemplate data=\"$foo\"}\n"
             + "    {param boo kind=\"text\"}moo{/param}\n"
             + "  {/call}\n"
-            + "  {call .calleeTemplate}\n"
+            + "  {call calleeTemplate}\n"
             + "    {param boo kind=\"text\"}zoo{/param}\n"
             + "    {param goo: $foo.goo /}\n"
             + "  {/call}\n"
             + "{/template}\n"
             + "\n"
-            + "{template .calleeTemplate}\n"
+            + "{template calleeTemplate}\n"
             + "  {@param boo: ?}\n"
             + "  {@param goo: ?}\n"
             + "  {$boo}\n"
@@ -949,28 +949,28 @@ public class RenderVisitorTest {
     String soyFileContent =
         "{namespace ns}\n"
             + "\n"
-            + "{template .callerTemplate}\n"
+            + "{template callerTemplate}\n"
             + "  {@param boo: ?}\n"
             + "  {@param foo: ?}\n"
             + "  {@param goo: ?}\n"
-            + "  {call .calleeTemplate data=\"all\" /}\n"
-            + "  {call .calleeTemplate data=\"$foo\" /}\n"
-            + "  {call .calleeTemplate data=\"all\"}\n"
+            + "  {call calleeTemplate data=\"all\" /}\n"
+            + "  {call calleeTemplate data=\"$foo\" /}\n"
+            + "  {call calleeTemplate data=\"all\"}\n"
             + "    {param boo: $foo.boo /}\n"
             + "  {/call}\n"
-            + "  {call .calleeTemplate data=\"all\"}\n"
+            + "  {call calleeTemplate data=\"all\"}\n"
             + "    {param boo: 'moo' /}\n"
             + "  {/call}\n"
-            + "  {call .calleeTemplate data=\"$foo\"}\n"
+            + "  {call calleeTemplate data=\"$foo\"}\n"
             + "    {param boo kind=\"text\"}moo{/param}\n"
             + "  {/call}\n"
-            + "  {call .calleeTemplate}\n"
+            + "  {call calleeTemplate}\n"
             + "    {param boo kind=\"text\"}zoo{/param}\n"
             + "    {param goo: $foo.goo /}\n"
             + "  {/call}\n"
             + "{/template}\n"
             + "\n"
-            + "{template .calleeTemplate}\n"
+            + "{template calleeTemplate}\n"
             + "  {@param boo: ?}\n"
             + "  {@param goo: ?}\n"
             + "  {@inject future: ?}\n"
@@ -1041,7 +1041,7 @@ public class RenderVisitorTest {
         "{namespace ns1}\n"
             + "\n"
             + "/***/\n"
-            + "{template .callerTemplate}\n"
+            + "{template callerTemplate}\n"
             + "  {delcall myApp.myDelegate}\n"
             + "    {param boo: 'aaaaaah' /}\n"
             + "  {/delcall}\n"
@@ -1077,7 +1077,7 @@ public class RenderVisitorTest {
         "{delpackage AlternateSecretFeature}\n"
             + "{namespace ns4}\n"
             + "\n"
-            + "{template .helper}\n"
+            + "{template helper}\n"
             + "  {@param boo: ?}\n"
             + "  {@inject ijStr: ?}\n"
             + "  {$boo} {$ijStr}\n"
@@ -1144,7 +1144,7 @@ public class RenderVisitorTest {
         ""
             + "{namespace ns1}\n"
             + "\n"
-            + "{template .callerTemplate}\n"
+            + "{template callerTemplate}\n"
             + "  {@param greekB: ?}\n"
             + "  {delcall myApp.myDelegate variant=\"'alpha'\"}\n"
             + // variant is string
@@ -1279,7 +1279,7 @@ public class RenderVisitorTest {
         "{namespace ns1}\n"
             + "\n"
             + "/***/\n"
-            + "{template .callerTemplate}\n"
+            + "{template callerTemplate}\n"
             + "  {delcall myApp.myDelegate allowemptydefault=\"true\"}\n"
             + "    {param boo: 'aaaaaah' /}\n"
             + "  {/delcall}\n"
@@ -1289,7 +1289,7 @@ public class RenderVisitorTest {
         "{namespace ns1}\n"
             + "\n"
             + "/***/\n"
-            + "{template .callerTemplate}\n"
+            + "{template callerTemplate}\n"
             + "  {delcall myApp.myDelegate}\n"
             + "    {param boo: 'aaaaaah' /}\n"
             + "  {/delcall}\n"
@@ -1444,15 +1444,15 @@ public class RenderVisitorTest {
         "{namespace ns}\n"
             + "\n"
             + "/** */\n"
-            + "{template .callerTemplate}\n"
-            + "  {call .calleeTemplate}\n"
+            + "{template callerTemplate}\n"
+            + "  {call calleeTemplate}\n"
             + "    {param foo kind=\"text\"}\n"
             + "      param{log}param{/log}\n"
             + "    {/param}\n"
             + "  {/call}\n"
             + "{/template}\n"
             + "\n"
-            + "{template .calleeTemplate}\n"
+            + "{template calleeTemplate}\n"
             + "  {@param foo: ?}\n"
             + "  callee{log}callee{/log}\n"
             + "  {sp}{$foo}{sp}{$foo}\n"
@@ -1507,7 +1507,7 @@ public class RenderVisitorTest {
     String soyFileContent =
         "{namespace ns}\n"
             + "\n"
-            + "{template .template}\n"
+            + "{template template}\n"
             + "  {@param foo: int}\n"
             + "  Before: {$foo}\n"
             + "{/template}\n";
@@ -1543,7 +1543,7 @@ public class RenderVisitorTest {
     String soyFileContent =
         "{namespace ns}\n"
             + "\n"
-            + "{template .template}\n"
+            + "{template template}\n"
             + "  {@param foo: int}\n"
             + "  Before: {$foo}\n"
             + "{/template}\n";
@@ -1575,16 +1575,16 @@ public class RenderVisitorTest {
             .join(
                 "{namespace ns}",
                 "",
-                "{template .callee}",
+                "{template callee}",
                 "  {@param body: html}",
                 "  <div>",
                 "    {$body}",
                 "  </div>",
                 "{/template}",
                 "",
-                "{template .caller}",
+                "{template caller}",
                 "  {@param future: string}",
-                "  {call .callee}",
+                "  {call callee}",
                 "    {param body kind=\"html\"}",
                 "      static-content{sp}",
                 "      {$future}",

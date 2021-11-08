@@ -120,7 +120,7 @@ public final class ExprEquivalenceTest {
   public void runTestInternal(boolean disableAllTypeChecking, String... templateSourceLines) {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forTemplateAndImports(
-                "{template .aaa}\n"
+                "{template aaa}\n"
                     + "  "
                     + Joiner.on("\n   ").join(templateSourceLines)
                     + "\n"

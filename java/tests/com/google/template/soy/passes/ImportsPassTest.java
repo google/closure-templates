@@ -49,7 +49,7 @@ public final class ImportsPassTest {
     CompilationUnitAndKind dependencyCompilationUnit =
         parseDep(
             Joiner.on("\n")
-                .join("{namespace dep.namespace}", "{template .aTemplate}", " hi!", "{/template}"),
+                .join("{namespace dep.namespace}", "{template aTemplate}", " hi!", "{/template}"),
             SourceFilePath.create("foo.soy"));
 
     parseFileWithDeps(
@@ -58,7 +58,7 @@ public final class ImportsPassTest {
                 .join(
                     "{namespace my.namespace}",
                     "import {aTemplate} from 'foo.soy';",
-                    "{template .mainTemplate}",
+                    "{template mainTemplate}",
                     " hi!",
                     "{/template}"),
             SourceFilePath.create("main.soy")),
@@ -71,7 +71,7 @@ public final class ImportsPassTest {
     CompilationUnitAndKind dependencyCompilationUnit =
         parseDep(
             Joiner.on("\n")
-                .join("{namespace dep.namespace}", "{template .aTemplate}", " hi!", "{/template}"),
+                .join("{namespace dep.namespace}", "{template aTemplate}", " hi!", "{/template}"),
             SourceFilePath.create("foo.soy"));
 
     parseFileWithDeps(
@@ -80,7 +80,7 @@ public final class ImportsPassTest {
                 .join(
                     "{namespace my.namespace}",
                     "import {notATemplate} from 'foo.soy';",
-                    "{template .aTemplate}",
+                    "{template aTemplate}",
                     " hi!",
                     "{/template}"),
             SourceFilePath.create("main.soy")),
@@ -100,17 +100,14 @@ public final class ImportsPassTest {
                     .join(
                         "{namespace my.namespace}",
                         "import {aTemplate} from 'foo.soy';",
-                        "{template .mainTemplate}",
+                        "{template mainTemplate}",
                         " hi!",
                         "{/template}"),
                 SourceFilePath.create("main.soy")),
             createSoyFileSupplier(
                 Joiner.on("\n")
                     .join(
-                        "{namespace dep.namespace}",
-                        "{template .aTemplate}",
-                        " hi!",
-                        "{/template}"),
+                        "{namespace dep.namespace}", "{template aTemplate}", " hi!", "{/template}"),
                 SourceFilePath.create("foo.soy"))));
 
     assertThat(errorReporter.getErrors()).isEmpty();
@@ -125,17 +122,14 @@ public final class ImportsPassTest {
                     .join(
                         "{namespace my.namespace}",
                         "import {notATemplate} from 'foo.soy';",
-                        "{template .aTemplate}",
+                        "{template aTemplate}",
                         " hi!",
                         "{/template}"),
                 SourceFilePath.create("main.soy")),
             createSoyFileSupplier(
                 Joiner.on("\n")
                     .join(
-                        "{namespace dep.namespace}",
-                        "{template .aTemplate}",
-                        " hi!",
-                        "{/template}"),
+                        "{namespace dep.namespace}", "{template aTemplate}", " hi!", "{/template}"),
                 SourceFilePath.create("foo.soy"))));
 
     assertThat(errorReporter.getErrors()).hasSize(1);
@@ -152,7 +146,7 @@ public final class ImportsPassTest {
                     .join(
                         "{namespace my.namespace}",
                         "import {notATemplate} from 'foo.soy';",
-                        "{template .aTemplate}",
+                        "{template aTemplate}",
                         " hi!",
                         "{/template}"),
                 SourceFilePath.create("main.soy"))));

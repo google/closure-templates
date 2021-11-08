@@ -219,7 +219,7 @@ public final class ResolveNamesPassTest {
 
   @Test
   public void testUnknownVariable() {
-    assertResolveNamesFails("Unknown variable.", "{namespace ns}{template .foo}{$ggg}{/template}");
+    assertResolveNamesFails("Unknown variable.", "{namespace ns}{template foo}{$ggg}{/template}");
   }
 
   private void runPass(SoyFileSetNode soyTree) {
@@ -240,7 +240,7 @@ public final class ResolveNamesPassTest {
     return ""
         + "{namespace ns}\n"
         + "/***/\n"
-        + "{template .aaa stricthtml=\"false\"}\n"
+        + "{template aaa stricthtml=\"false\"}\n"
         + "  "
         + Joiner.on("\n   ").join(body)
         + "\n"

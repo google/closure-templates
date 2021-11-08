@@ -1018,7 +1018,7 @@ public final class ResolveExpressionTypesPassTest {
 
   private static String constructTemplateSource(String... body) {
     return "/***/\n"
-        + "{template .aaa}\n"
+        + "{template aaa}\n"
         + "  "
         + Joiner.on("\n   ").join(body)
         + "\n"
@@ -1038,7 +1038,7 @@ public final class ResolveExpressionTypesPassTest {
   }
 
   private static String constructElementSource(String... body) {
-    return "" + "/***/\n" + "{element .aaa}\n" + Joiner.on("\n   ").join(body) + "{/element}\n";
+    return "" + "/***/\n" + "{element aaa}\n" + Joiner.on("\n   ").join(body) + "{/element}\n";
   }
 
   /**

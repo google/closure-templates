@@ -41,19 +41,19 @@ public final class FindCalleesNotInFileTest {
             + "{namespace boo.foo}\n"
             + "import * as booHooTmp from 'no-path-2';\n"
             + "/** Test template 1. */\n"
-            + "{template .goo}\n"
-            + "  {call .goo data=\"all\" /}\n"
-            + "  {call .moo data=\"all\" /}\n"
+            + "{template goo}\n"
+            + "  {call goo data=\"all\" /}\n"
+            + "  {call moo data=\"all\" /}\n"
             + "  {call booHooTmp.hoo data=\"all\" /}\n"
             + "{/template}\n"
             + "\n"
             + "/** Test template 2. */\n"
-            + "{template .moo}\n"
+            + "{template moo}\n"
             + "  {for $i in range(8)}\n"
-            + "    {call .goo data=\"all\" /}\n"
+            + "    {call goo data=\"all\" /}\n"
             + "    {call booHooTmp.too data=\"all\" /}\n"
-            + "    {call .goo}"
-            + "      {param a kind=\"text\"}{call .moo /}{/param}"
+            + "    {call goo}"
+            + "      {param a kind=\"text\"}{call moo /}{/param}"
             + "      {param b kind=\"text\"}{call booHooTmp.zoo /}{/param}"
             + "    {/call}"
             + "  {/for}\n"
@@ -61,8 +61,8 @@ public final class FindCalleesNotInFileTest {
             + "\n"
             + "/** Test template 3. */\n"
             + "{deltemplate booHoo}\n"
-            + "  {call .goo data=\"all\" /}\n"
-            + "  {call .moo data=\"all\" /}\n"
+            + "  {call goo data=\"all\" /}\n"
+            + "  {call moo data=\"all\" /}\n"
             + "  {call booHooTmp.roo data=\"all\" /}\n"
             + "{/deltemplate}\n";
 
@@ -70,10 +70,10 @@ public final class FindCalleesNotInFileTest {
         ""
             + "{namespace boo.hoo}\n"
             + "\n"
-            + "{template .hoo}{@param a: ?}{@param b: ?}{/template}\n"
-            + "{template .too}{/template}\n"
-            + "{template .zoo}{/template}\n"
-            + "{template .roo}{/template}\n";
+            + "{template hoo}{@param a: ?}{@param b: ?}{/template}\n"
+            + "{template too}{/template}\n"
+            + "{template zoo}{/template}\n"
+            + "{template roo}{/template}\n";
 
     ErrorReporter boom = ErrorReporter.exploding();
     SoyFileSetNode soyTree =

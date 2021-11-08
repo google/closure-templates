@@ -37,12 +37,11 @@ public class SoyMsgExtractorTest {
     File soyFile1 = temp.newFile("temp.soy");
     Files.asCharSink(soyFile1, UTF_8)
         .write(
-            "{namespace ns}\n"
-                + "/***/\n{template .a}\n{msg desc=\"a\"}H\uff49{/msg}\n{/template}");
+            "{namespace ns}\n" + "/***/\n{template a}\n{msg desc=\"a\"}H\uff49{/msg}\n{/template}");
     File soyFile2 = temp.newFile("temp2.soy");
     Files.asCharSink(soyFile2, UTF_8)
         .write(
-            "{namespace ns2}\n" + "/***/\n{template .b}\n{msg desc=\"a\"}World{/msg}\n{/template}");
+            "{namespace ns2}\n" + "/***/\n{template b}\n{msg desc=\"a\"}World{/msg}\n{/template}");
     File xmlFile = temp.newFile("temp.xml");
 
     int exitCode =

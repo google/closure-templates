@@ -28,9 +28,9 @@ import java.util.Set;
  * introduced to address inconsistencies in the behavior of {@code private}.
  */
 public enum Visibility {
-  // {template .foo visibility="private"}
+  // {template foo visibility="private"}
   PRIVATE("private"),
-  // {template .foo}
+  // {template foo}
   PUBLIC("public");
 
   private final String attributeValue;

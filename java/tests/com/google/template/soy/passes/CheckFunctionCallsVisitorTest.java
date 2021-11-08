@@ -33,7 +33,7 @@ public final class CheckFunctionCallsVisitorTest {
   public void testCssFunction() {
     assertSuccess(
         "{namespace ns}\n",
-        "{template .foo}",
+        "{template foo}",
         "  {@param x : ?}",
         "  {css('foo')}",
         "  {css($x, 'foo')}",
@@ -43,7 +43,7 @@ public final class CheckFunctionCallsVisitorTest {
     assertFunctionCallsInvalid(
         "Argument to function 'css' must be a string literal.",
         "{namespace ns}\n",
-        "{template .foo}",
+        "{template foo}",
         "  {@param x : ?}",
         "  {css($x)}",
         "{/template}");
@@ -51,7 +51,7 @@ public final class CheckFunctionCallsVisitorTest {
     assertFunctionCallsInvalid(
         "Argument to function 'css' must be a string literal.",
         "{namespace ns}\n",
-        "{template .foo}",
+        "{template foo}",
         "  {@param x : ?}",
         "  {css($x, $x)}",
         "{/template}");
@@ -59,7 +59,7 @@ public final class CheckFunctionCallsVisitorTest {
     assertFunctionCallsInvalid(
         "Argument to function 'css' must be a string literal.",
         "{namespace ns}\n",
-        "{template .foo}",
+        "{template foo}",
         "  {@param x : ?}",
         "  {css($x, 10)}",
         "{/template}");

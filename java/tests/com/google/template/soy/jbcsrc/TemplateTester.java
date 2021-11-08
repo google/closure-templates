@@ -468,7 +468,7 @@ public final class TemplateTester {
 
   private static String toTemplate(String... body) {
     StringBuilder builder = new StringBuilder();
-    builder.append("{namespace ns}\n").append("{template .foo}\n");
+    builder.append("{namespace ns}\n").append("{template foo}\n");
     Joiner.on("\n").appendTo(builder, body);
     builder.append("\n{/template}\n");
     return builder.toString();
@@ -476,7 +476,7 @@ public final class TemplateTester {
 
   private static String toElement(String... body) {
     StringBuilder builder = new StringBuilder();
-    builder.append("{namespace ns}\n").append("{element .foo}\n");
+    builder.append("{namespace ns}\n").append("{element foo}\n");
     Joiner.on("\n").appendTo(builder, body);
     builder.append("\n{/element}\n");
     return builder.toString();

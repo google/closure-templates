@@ -82,16 +82,16 @@ public class CanInitOutputVarVisitorTest {
             + "{if $goo}{for $moo in $moose}{$moo}{/for}{/if}",
         true);
 
-    runTestHelper("{call .foo data=\"all\" /}", true);
+    runTestHelper("{call foo data=\"all\" /}", true);
 
     runTestHelper(
         "{@param boo: ?}\n"
             + "{@param moo: ?}\n"
-            + "{call .foo data=\"$boo\"}{param goo : $moo /}{/call}",
+            + "{call foo data=\"$boo\"}{param goo : $moo /}{/call}",
         true);
 
     runTestHelper(
-        "{@param boo: ?}\n{call .foo data=\"$boo\"}{param goo kind=\"text\"}Blah{/param}{/call}",
+        "{@param boo: ?}\n{call foo data=\"$boo\"}{param goo kind=\"text\"}Blah{/param}{/call}",
         true);
   }
 
@@ -102,7 +102,7 @@ public class CanInitOutputVarVisitorTest {
             .join(
                 "{@param boo : ?}",
                 "{@param moose : ?}",
-                "{call .foo data=\"$boo\"}",
+                "{call foo data=\"$boo\"}",
                 "  {param goo kind=\"text\"}{for $moo in $moose}{$moo}{/for}{/param}",
                 "{/call}"),
         false);
@@ -118,7 +118,7 @@ public class CanInitOutputVarVisitorTest {
   private static void runTestHelper(
       String soyCode, boolean isSameValueAsIsComputableAsJsExprsVisitor, int... indicesToNode) {
     String fileContents = SharedTestUtils.buildTestSoyFileContent(soyCode);
-    if (soyCode.contains("{call .foo")) {
+    if (soyCode.contains("{call foo")) {
       fileContents += "{template foo}{@param? goo: ?}{/template}";
     }
     ErrorReporter boom = ErrorReporter.exploding();

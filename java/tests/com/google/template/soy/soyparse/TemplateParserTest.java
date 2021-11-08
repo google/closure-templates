@@ -480,7 +480,7 @@ public final class TemplateParserTest {
                 + "{, {key, {velog, {skip}, or whitespace");
     assertInvalidTemplate("{print $boo /}");
     assertInvalidTemplate("{if true}aaa{else/}bbb{/if}");
-    assertInvalidTemplate("{call .aaa.bbb /}");
+    assertInvalidTemplate("{call aaa.bbb /}");
     assertInvalidTemplate("{delcall ddd.eee}{param foo: 0}{/call}");
     assertInvalidTemplate("{delcall .dddEee /}");
     assertInvalidTemplate("{call.aaa}{param boo kind=\"html\": 123 /}{/call}\n");
@@ -490,7 +490,7 @@ public final class TemplateParserTest {
     assertInvalidTemplate("{xid a.b-c}");
     assertInvalidTemplate("{msg desc=\"\"}{$boo phname=\"boo.foo\"}{/msg}");
     assertInvalidTemplate("{msg desc=\"\"}<br phname=\"boo-foo\" />{/msg}");
-    assertInvalidTemplate("{msg desc=\"\"}{call .boo phname=\"boo\" phname=\"boo\" /}{/msg}");
+    assertInvalidTemplate("{msg desc=\"\"}{call boo phname=\"boo\" phname=\"boo\" /}{/msg}");
     assertInvalidTemplate("{msg desc=\"\"}<br phname=\"break\" phname=\"break\" />{/msg}");
   }
 
@@ -1427,8 +1427,8 @@ public final class TemplateParserTest {
                 false,
                 "{@param animals:?}\n"
                     + "{msg desc=\"...\"}\n"
-                    + "  {call .booTemplate_ phname=\"booTemplate1_\" /}\n"
-                    + "  {call .booTemplate_ phname=\"booTemplate2_\" /}\n"
+                    + "  {call booTemplate_ phname=\"booTemplate1_\" /}\n"
+                    + "  {call booTemplate_ phname=\"booTemplate2_\" /}\n"
                     + "  {delcall MySecretFeature.zooTemplate data=\"$animals\""
                     + " phname=\"secret_zoo\"}\n"
                     + "    {param zoo: 0 /}\n"
@@ -1447,10 +1447,10 @@ public final class TemplateParserTest {
         MessagePlaceholder.createWithUserSuppliedName(
             "BOO_TEMPLATE_1",
             "booTemplate1_",
-            new SourceLocation(SoyFileSetParserBuilder.FILE_PATH, 6, 30, 6, 44)),
+            new SourceLocation(SoyFileSetParserBuilder.FILE_PATH, 6, 29, 6, 43)),
         cn0.getPlaceholder());
     assertEquals("brittle.test.ns.booTemplate_", cn0.getCalleeName());
-    assertEquals(".booTemplate_", cn0.getSourceCalleeName());
+    assertEquals("booTemplate_", cn0.getSourceCalleeName());
     assertEquals(false, cn0.isPassingData());
     assertEquals(false, cn0.isPassingAllData());
     assertEquals(null, cn0.getDataExpr());
@@ -1847,7 +1847,7 @@ public final class TemplateParserTest {
         .append("{namespace brittle.test.ns ")
         .append(namespaceAttrs)
         .append("}\n\n")
-        .append("{template .brittleTestTemplate")
+        .append("{template brittleTestTemplate")
         .append(
             kind == SanitizedContentKind.HTML
                 ? ""

@@ -79,7 +79,7 @@ abstract class JsSrcSubject<T extends Subject> extends Subject {
 
   static ForFile assertThatTemplateBody(String... lines) {
     String templateBody = JOINER.join(lines);
-    return assertAbout(ForFile::new).that("{template .aaa}\n" + templateBody + "{/template}\n");
+    return assertAbout(ForFile::new).that("{template aaa}\n" + templateBody + "{/template}\n");
   }
 
   /**
@@ -124,7 +124,7 @@ abstract class JsSrcSubject<T extends Subject> extends Subject {
       } else {
         templateBody = paramDecls.toString() + "{" + exprText + "}";
       }
-      return "{template .aaa}\n" + templateBody + "\n{/template}";
+      return "{template aaa}\n" + templateBody + "\n{/template}";
     }
   }
 

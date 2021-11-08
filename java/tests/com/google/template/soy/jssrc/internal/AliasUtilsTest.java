@@ -30,7 +30,7 @@ import org.junit.runners.JUnit4;
 public class AliasUtilsTest {
   @Test
   public void testLocalFunctionAliasing() {
-    String fileBody = "{namespace foo.bar.baz}\n{template .localOne}{/template}\n";
+    String fileBody = "{namespace foo.bar.baz}\n{template localOne}{/template}\n";
 
     ParseResult result = SoyFileSetParserBuilder.forFileContents(fileBody).parse();
     SoyFileSetNode n = result.fileSet();
@@ -49,8 +49,8 @@ public class AliasUtilsTest {
   public void testLocalFunctionCallAliasing() {
     String fileBody =
         "{namespace foo.bar.baz}\n"
-            + "{template .localOne}{call .localTwo /}{/template}\n"
-            + "{template .localTwo}{/template}\n";
+            + "{template localOne}{call localTwo /}{/template}\n"
+            + "{template localTwo}{/template}\n";
 
     ParseResult result = SoyFileSetParserBuilder.forFileContents(fileBody).parse();
     SoyFileSetNode n = result.fileSet();
@@ -69,11 +69,11 @@ public class AliasUtilsTest {
             .join(
                 "{namespace foo.bar.baz}",
                 "import {bam as spaceBam} from 'no-path-2';",
-                "{template .bam}",
+                "{template bam}",
                 "  {call spaceBam /}",
                 "{/template}");
     String otherBody =
-        Joiner.on('\n').join("{namespace other.name.space}", "{template .bam}", "{/template}");
+        Joiner.on('\n').join("{namespace other.name.space}", "{template bam}", "{/template}");
 
     ParseResult result = SoyFileSetParserBuilder.forFileContents(fileBody, otherBody).parse();
     SoyFileSetNode n = result.fileSet();
@@ -95,12 +95,12 @@ public class AliasUtilsTest {
             .join(
                 "{namespace foo.bar.baz}",
                 "import {bam as spaceBam} from 'no-path-2';",
-                "{template .bam}",
+                "{template bam}",
                 "  {call spaceBam /}",
                 "  {call spaceBam /}",
                 "{/template}");
     String otherBody =
-        Joiner.on('\n').join("{namespace other.name.space}", "{template .bam}", "{/template}");
+        Joiner.on('\n').join("{namespace other.name.space}", "{template bam}", "{/template}");
 
     ParseResult result = SoyFileSetParserBuilder.forFileContents(fileBody, otherBody).parse();
     SoyFileSetNode n = result.fileSet();

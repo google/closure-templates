@@ -65,7 +65,7 @@ public final class SourceLocationTest {
     assertSourceRanges(
         JOINER.join(
             "SoyFileNode",
-            "  TemplateBasicNode            {template .foo}{@param wo[...]{call .bar /}{/template}",
+            "  TemplateBasicNode            {template foo}{@param wor[...]!{call bar /}{/template}",
             "    RawTextNode                Hello",
             "    RawTextNode                {lb}",
             "    PrintNode                  {print $world}",
@@ -73,25 +73,24 @@ public final class SourceLocationTest {
             "        VarRefNode             $world",
             "    RawTextNode                {rb}",
             "    RawTextNode                !",
-            "    CallBasicNode              {call .bar /}",
-            "      ExprRootNode             .bar",
-            "        TemplateLiteralNode    .bar",
-            "          VarRefNode           .bar",
-            "  TemplateBasicNode            {template .bar}Gooodbye{/template}",
+            "    CallBasicNode              {call bar /}",
+            "      ExprRootNode             bar",
+            "        VarRefNode             bar",
+            "  TemplateBasicNode            {template bar}Gooodbye{/template}",
             "    RawTextNode                Gooodbye",
             ""),
         JOINER.join(
             "{namespace ns}",
-            "{template .foo}",
+            "{template foo}",
             "{@param world : ?}",
             "  Hello",
             "  {lb}",
             "  {print $world}",
             "  {rb}!",
             "",
-            "  {call .bar /}",
+            "  {call bar /}",
             "{/template}",
-            "{template .bar}",
+            "{template bar}",
             "  Gooodbye",
             "{/template}",
             ""));
@@ -102,11 +101,10 @@ public final class SourceLocationTest {
     assertSourceRanges(
         JOINER.join(
             "SoyFileNode",
-            "  TemplateBasicNode            {template .foo}{call .pla[...]am}{/delcall}{/template}",
-            "    CallBasicNode              {call .planet}{param inde[...]'}Jupiter{/param}{/call}",
-            "      ExprRootNode             .planet",
-            "        TemplateLiteralNode    .planet",
-            "          VarRefNode           .planet",
+            "  TemplateBasicNode            {template foo}{call plane[...]am}{/delcall}{/template}",
+            "    CallBasicNode              {call planet}{param index[...]'}Jupiter{/param}{/call}",
+            "      ExprRootNode             planet",
+            "        VarRefNode             planet",
             "      CallParamValueNode       {param index: 5 /}",
             "        ExprRootNode           5",
             "          IntegerNode          5",
@@ -118,7 +116,7 @@ public final class SourceLocationTest {
             "          IntegerNode          9",
             "      CallParamContentNode     {param name kind='text'}Pluto{/param}",
             "        RawTextNode            Pluto",
-            "  TemplateBasicNode            {template .planet}{@param[...]ex}: {$name}.{/template}",
+            "  TemplateBasicNode            {template planet}{@param [...]ex}: {$name}.{/template}",
             "    RawTextNode                Planet #",
             "    PrintNode                  {$index}",
             "      ExprRootNode             $index",
@@ -131,8 +129,8 @@ public final class SourceLocationTest {
             ""),
         JOINER.join(
             "{namespace ns}",
-            "{template .foo}",
-            "  {call .planet}",
+            "{template foo}",
+            "  {call planet}",
             "    {param index: 5 /}",
             "    {param name kind='text'}",
             "      Jupiter",
@@ -145,7 +143,7 @@ public final class SourceLocationTest {
             "    {/param}",
             "  {/delcall}",
             "{/template}",
-            "{template .planet}",
+            "{template planet}",
             "  {@param index: number}",
             "  {@param name: string}",
             "  Planet #{$index}: {$name}.",
@@ -158,7 +156,7 @@ public final class SourceLocationTest {
     assertSourceRanges(
         JOINER.join(
             "SoyFileNode",
-            "  TemplateBasicNode            {template .foo}{@param i [...]ssy{/switch}!{/template}",
+            "  TemplateBasicNode            {template foo}{@param i :[...]ssy{/switch}!{/template}",
             "    RawTextNode                Hello,",
             "    SwitchNode                 {switch $i}{case 0}Mercur[...]s{default}Gassy{/switch}",
             "      ExprRootNode             $i",
@@ -181,7 +179,7 @@ public final class SourceLocationTest {
             ""),
         JOINER.join(
             "{namespace ns}",
-            "{template .foo}",
+            "{template foo}",
             "{@param i : int}",
             "  Hello,",
             "  {switch $i}",
@@ -204,7 +202,7 @@ public final class SourceLocationTest {
     assertSourceRanges(
         JOINER.join(
             "SoyFileNode",
-            "  TemplateBasicNode            {template .foo}{@param ve[...]</h1>{/velog}{/template}",
+            "  TemplateBasicNode            {template foo}{@param veD[...]</h1>{/velog}{/template}",
             "    VeLogNode                  {velog $veData}<h1>Hello</h1>{/velog}",
             "      ExprRootNode             $veData",
             "        VarRefNode             $veData",
@@ -216,7 +214,7 @@ public final class SourceLocationTest {
             ""),
         JOINER.join(
             "{namespace ns}",
-            "{template .foo}",
+            "{template foo}",
             "  {@param veData: ve_data}",
             "  {velog $veData}",
             "    <h1>Hello</h1>",
@@ -230,7 +228,7 @@ public final class SourceLocationTest {
     assertSourceRanges(
         JOINER.join(
             "SoyFileNode",
-            "  TemplateBasicNode            {template .foo}Hello{for [...]r void{/for}!{/template}",
+            "  TemplateBasicNode            {template foo}Hello{for $[...]r void{/for}!{/template}",
             "    RawTextNode                Hello",
             "    ForNode                    {for $planet in ['mercury[...] interstellar void{/for}",
             "      ExprRootNode             ['mercury', 'mars', 'venus']",
@@ -249,7 +247,7 @@ public final class SourceLocationTest {
             ""),
         JOINER.join(
             "{namespace ns}",
-            "{template .foo}",
+            "{template foo}",
             "  Hello",
             "  {for $planet in ['mercury', 'mars', 'venus']}",
             "    ,",
@@ -267,7 +265,7 @@ public final class SourceLocationTest {
     assertSourceRanges(
         JOINER.join(
             "SoyFileNode",
-            "  TemplateBasicNode            {template .foo}{@param sk[...]cinatti{/if}!{/template}",
+            "  TemplateBasicNode            {template foo}{@param sky[...]cinatti{/if}!{/template}",
             "    RawTextNode                Hello,",
             "    IfNode                     {if $skyIsBlue}Earth{else[...]nus{else}Cincinatti{/if}",
             "      IfCondNode               {if $skyIsBlue}Earth",
@@ -284,7 +282,7 @@ public final class SourceLocationTest {
             ""),
         JOINER.join(
             "{namespace ns}",
-            "{template .foo}",
+            "{template foo}",
             "{@param skyIsBlue : bool}",
             "{@param isReallyReallyHot : bool}",
             "  Hello,",
@@ -305,7 +303,7 @@ public final class SourceLocationTest {
     assertSourceRanges(
         JOINER.join(
             "SoyFileNode",
-            "  TemplateBasicNode            {template .approximateDis[...] {$formatted}{/template}",
+            "  TemplateBasicNode            {template approximateDist[...] {$formatted}{/template}",
             "    LetValueNode               {let $approx: round($distance, 2) /}",
             "      ExprRootNode             round($distance, 2)",
             "        FunctionNode           round($distance, 2)",
@@ -323,7 +321,7 @@ public final class SourceLocationTest {
             ""),
         JOINER.join(
             "{namespace ns}",
-            "{template .approximateDistance}",
+            "{template approximateDistance}",
             "  {@param distance: number}",
             "  {let $approx: round($distance, 2) /}",
             "  {let $formatted kind='text'}",
@@ -339,12 +337,12 @@ public final class SourceLocationTest {
     assertSourceRanges(
         JOINER.join(
             "SoyFileNode",
-            "  TemplateBasicNode            {template .void kind='css[...]; }{/literal}{/template}",
+            "  TemplateBasicNode            {template void kind='css'[...]; }{/literal}{/template}",
             "    RawTextNode                {literal}body { display: none; }{/literal}",
             ""),
         JOINER.join(
             "{namespace ns}",
-            "{template .void kind='css'}",
+            "{template void kind='css'}",
             "  {literal}",
             "    body { display: none; }",
             "  {/literal}",
@@ -357,7 +355,7 @@ public final class SourceLocationTest {
     assertSourceRanges(
         JOINER.join(
             "SoyFileNode",
-            "  TemplateBasicNode            {template .moonCount}{@pa[...] 1 moon{/msg}{/template}",
+            "  TemplateBasicNode            {template moonCount}{@par[...] 1 moon{/msg}{/template}",
             "    MsgFallbackGroupNode       {msg desc='Generic messag[...]t Earth has 1 moon{/msg}",
             "      MsgNode                  {msg desc='Generic messag[...] {$count} moons{/plural}",
             "        MsgPluralNode          {plural $count}{case 0}Pl[...] {$count} moons{/plural}",
@@ -387,7 +385,7 @@ public final class SourceLocationTest {
             "            RawTextNode        moons",
             "      MsgNode                  {fallbackmsg desc='Specif[...]}Planet Earth has 1 moon",
             "        RawTextNode            Planet Earth has 1 moon",
-            "  TemplateBasicNode            {template .moonName}{@par[...]select}{/msg}{/template}",
+            "  TemplateBasicNode            {template moonName}{@para[...]select}{/msg}{/template}",
             "    MsgFallbackGroupNode       {msg desc='The name of a [...]t}{$moon}{/select}{/msg}",
             "      MsgNode                  {msg desc='The name of a [...]default}{$moon}{/select}",
             "        MsgSelectNode          {select $moon}{case 'Luna[...]default}{$moon}{/select}",
@@ -402,7 +400,7 @@ public final class SourceLocationTest {
             ""),
         JOINER.join(
             "{namespace ns}",
-            "{template .moonCount}",
+            "{template moonCount}",
             "  {@param planet: string}",
             "  {@param count: int}",
             "  {msg desc='Generic message about the amount of moons'}",
@@ -416,7 +414,7 @@ public final class SourceLocationTest {
             "  {/msg}",
             "{/template}",
             "",
-            "{template .moonName}",
+            "{template moonName}",
             "  {@param moon: string}",
             "  {msg desc='The name of a moon of the solar system'}",
             "    {select $moon}",
@@ -435,7 +433,7 @@ public final class SourceLocationTest {
     assertSourceRanges(
         JOINER.join(
             "SoyFileNode",
-            "  TemplateBasicNode            {template .math}{@param a[...]r.a.b?.c?[0]}{/template}",
+            "  TemplateBasicNode            {template math}{@param a:[...]r.a.b?.c?[0]}{/template}",
             "    ExprRootNode               [1, 2, 3*4]",
             "      ListLiteralNode          [1, 2, 3*4]",
             "        IntegerNode            1",
@@ -542,7 +540,7 @@ public final class SourceLocationTest {
             ""),
         JOINER.join(
             "{namespace ns}",
-            "{template .math}",
+            "{template math}",
             "  {@param a: int}",
             "  {@param b: int}",
             "  {@param c: int}",
@@ -569,7 +567,7 @@ public final class SourceLocationTest {
     assertSourceRanges(
         JOINER.join(
             "SoyFileNode",
-            "  TemplateBasicNode            {template .foo}<!-- some [...]-><div></div>{/template}",
+            "  TemplateBasicNode            {template foo}<!-- some h[...]-><div></div>{/template}",
             "    HtmlCommentNode            <!-- some html comment -->",
             "      RawTextNode              some html comment",
             "    HtmlOpenTagNode            <div>",
@@ -579,7 +577,7 @@ public final class SourceLocationTest {
             ""),
         JOINER.join(
             "{namespace ns}",
-            "{template .foo}",
+            "{template foo}",
             "  <!-- some html comment -->",
             "  <div></div>",
             "{/template}",
@@ -591,7 +589,7 @@ public final class SourceLocationTest {
     assertSourceRanges(
         JOINER.join(
             "SoyFileNode",
-            "  TemplateBasicNode            {template .foo}{@param fo[...]comment{/msg}{/template}",
+            "  TemplateBasicNode            {template foo}{@param foo[...]comment{/msg}{/template}",
             "    ForNode                    {for $foo in $foolist}{if[...]ld include this...{/for}",
             "      ExprRootNode             $foolist",
             "        VarRefNode             $foolist",
@@ -648,7 +646,7 @@ public final class SourceLocationTest {
             ""),
         JOINER.join(
             "{namespace ns}",
-            "{template .foo}",
+            "{template foo}",
             "{@param foolist: list<string>}",
             "  {for $foo in $foolist}",
             "    {if $foo == 'a'}",
@@ -708,7 +706,7 @@ public final class SourceLocationTest {
     String template =
         JOINER.join(
             "{namespace ns}",
-            "{template .t}",
+            "{template t}",
             "{@param foo : ?}",
             "{@param bar : ?}",
             "  {$foo}{$bar}", // pair 1
@@ -750,7 +748,7 @@ public final class SourceLocationTest {
     String template =
         JOINER.join(
             "{namespace ns}",
-            "{template .t}",
+            "{template t}",
             "{@param foo : ?}",
             "{@param bar : ?}",
             "  {$foo}{$bar}", // pair 1
@@ -900,7 +898,7 @@ public final class SourceLocationTest {
     String template =
         JOINER.join(
             "{namespace ns}",
-            "{template .t}",
+            "{template t}",
             "{@param foo : ?}",
             "{@param bar : ?}",
             "  {$foo}{$bar}", // pair 1
@@ -1070,7 +1068,7 @@ public final class SourceLocationTest {
     String template =
         JOINER.join(
             "{namespace ns}",
-            "{template .foo}",
+            "{template foo}",
             "  Hello,{sp}",
             "  {\\n}{nil}<span>Bob</span>",
             "  // and end of line comment",

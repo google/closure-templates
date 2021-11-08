@@ -218,7 +218,7 @@ import javax.annotation.Nullable;
  *     * &#64;param boo Something scary.
  *     * &#64;param? goo Something slimy (optional).
  *     *&#47;
- *    {template .foo autoescape="..."}
+ *    {template foo autoescape="..."}
  *      {msg desc=""}
  *        {$boo} has a friend named {$goo.firstName}.
  *      {/msg}
@@ -286,8 +286,8 @@ import javax.annotation.Nullable;
  *    {$boo.foo}   // implicit 'print' command
  *    {printer}   // implicit 'print' command (the prefix 'print' here is not a command name)
  *    {\n}   // a command that doesn't take any command text
- *    {call .gooMoo data="all" /}   // self-ending block
- *    {call .gooMoo data="all"}...{/call}   // block with separate start and end tags
+ *    {call gooMoo data="all" /}   // self-ending block
+ *    {call gooMoo data="all"}...{/call}   // block with separate start and end tags
  *
  * 2. Raw text:
  *    + Raw text is fixed text that will be part of the template output. There are 3 types.

@@ -37,7 +37,7 @@ public class TofuHasTemplateTest {
               "{namespace sample}",
               "",
               "/** */",
-              "{template .example}",
+              "{template example}",
               "  hello world",
               "{/template}");
 

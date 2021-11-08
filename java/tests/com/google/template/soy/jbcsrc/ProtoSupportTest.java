@@ -258,13 +258,13 @@ public final class ProtoSupportTest {
   public void testPassingManipulatedFields() {
     String file =
         JOINER.join(
-            "{template .caller}",
+            "{template caller}",
             "  {@param pair : KvPair}",
             "  {let $closeUrl : $pair.value /}",
-            "  {call .callee}{param str : $closeUrl ? $closeUrl : '' /}{/call}",
+            "  {call callee}{param str : $closeUrl ? $closeUrl : '' /}{/call}",
             "{/template}",
             "",
-            "{template .callee}",
+            "{template callee}",
             "  {@param? str : string}",
             "  {if $str}",
             "    {$str}",
@@ -454,7 +454,7 @@ public final class ProtoSupportTest {
     try {
       SoyFileSetParserBuilder builder =
           SoyFileSetParserBuilder.forTemplateAndImports(
-              "{template .foo}\n" + Joiner.on("\n").join(body) + "\n{/template}\n", descriptors);
+              "{template foo}\n" + Joiner.on("\n").join(body) + "\n{/template}\n", descriptors);
       return TemplateTester.assertThatFile(
               Iterables.getOnlyElement(builder.build().soyFileSuppliers().values())
                   .asCharSource()

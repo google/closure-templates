@@ -46,7 +46,7 @@ public final class DesugarStateNodesPassTest {
   private static String runPass(String input) {
     String soyFile =
         Joiner.on('\n')
-            .join("{namespace ns}", "{element .t}", input, "<div>{$foo}</div>", "{/element}");
+            .join("{namespace ns}", "{element t}", input, "<div>{$foo}</div>", "{/element}");
     SoyFileNode node =
         SoyFileSetParserBuilder.forFileContents(soyFile)
             .desugarHtmlAndStateNodes(true)

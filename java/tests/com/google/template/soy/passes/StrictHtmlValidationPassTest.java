@@ -688,7 +688,7 @@ public final class StrictHtmlValidationPassTest {
    */
   private static SoyFileNode parseTemplateBody(String templateBody) {
     String soyFile =
-        Joiner.on('\n').join("{namespace ns}", "", "{template .test}", templateBody, "{/template}");
+        Joiner.on('\n').join("{namespace ns}", "", "{template test}", templateBody, "{/template}");
     return SoyFileSetParserBuilder.forFileContents(soyFile)
         // Tests in this suite run the new Strict HTML Validation passes manually.
         .addPassContinuationRule(

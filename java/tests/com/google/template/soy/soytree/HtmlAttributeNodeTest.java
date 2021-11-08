@@ -60,7 +60,7 @@ public final class HtmlAttributeNodeTest {
   private HtmlOpenTagNode parseTag(String input) {
     String soyFile =
         Joiner.on('\n')
-            .join("{namespace ns}", "{template .t stricthtml=\"false\"}", input, "{/template}");
+            .join("{namespace ns}", "{template t stricthtml=\"false\"}", input, "{/template}");
     SoyFileNode node =
         SoyFileSetParserBuilder.forFileContents(soyFile)
             .desugarHtmlAndStateNodes(false)

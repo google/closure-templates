@@ -603,7 +603,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       try {
         rv.renderTemplate(callee);
       } catch (RenderException re) {
-        // The {call .XXX} failed to render - a new partial stack trace element is added to capture
+        // The {call XXX} failed to render - a new partial stack trace element is added to capture
         // this template call.
         throw re.addStackTraceElement(node);
       }
@@ -618,7 +618,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       try {
         rv.renderTemplate(callee);
       } catch (RenderException re) {
-        // The {call .XXX} failed to render - a new partial stack trace element is added to capture
+        // The {call XXX} failed to render - a new partial stack trace element is added to capture
         // this template call.
         throw re.addStackTraceElement(node);
       }

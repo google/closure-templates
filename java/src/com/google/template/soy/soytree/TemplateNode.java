@@ -444,7 +444,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     return component;
   }
 
-  /** Returns the source location of the template's name (e.g. ".foo" in "{template .foo}". */
+  /** Returns the source location of the template's name (e.g. "foo" in "{template foo}". */
   public SourceLocation getTemplateNameLocation() {
     return partialTemplateName.location();
   }
@@ -722,7 +722,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
         /* declaringClass= */ soyFileHeaderInfo.namespace,
         // The partial template name begins with a '.' that causes the stack trace element to
         // print "namespace..templateName" otherwise.
-        /* methodName= */ partialTemplateName.identifier().substring(1),
+        /* methodName= */ getLocalTemplateSymbol(),
         srcLocation.getFileName(),
         srcLocation.getBeginLine());
   }

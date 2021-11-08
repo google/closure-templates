@@ -1494,7 +1494,7 @@ final class HtmlRewriter {
     protected void visitCallNode(CallNode node) {
       // save/restore the inMsgNode flag to handle call params inside of msg noes.
       // consider
-      // {msg desc="foo"}YYY{call .foo}{param p}ZZZ{/param}{/call}{/msg}
+      // {msg desc="foo"}YYY{call foo}{param p}ZZZ{/param}{/call}{/msg}
       // YYY is inside a msg node but ZZZ is not.
       boolean oldInMsgNode = this.inMsgNode;
       this.inMsgNode = false;

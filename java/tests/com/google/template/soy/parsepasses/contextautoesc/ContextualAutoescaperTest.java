@@ -62,8 +62,8 @@ public final class ContextualAutoescaperTest {
   @Test
   public void testTrivialTemplate() throws Exception {
     assertContextualRewriting(
-        join("{namespace ns}\n\n", "{template .foo}\n", "Hello, World!\n", "{/template}"),
-        join("{namespace ns}\n\n", "{template .foo}\n", "Hello, World!\n", "{/template}"));
+        join("{namespace ns}\n\n", "{template foo}\n", "Hello, World!\n", "{/template}"),
+        join("{namespace ns}\n\n", "{template foo}\n", "Hello, World!\n", "{/template}"));
   }
 
   @Test
@@ -71,15 +71,15 @@ public final class ContextualAutoescaperTest {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
-            "<a href={call .uri /} title={call .title /}></a>\n",
+            "{template foo}\n",
+            "<a href={call uri /} title={call title /}></a>\n",
             "{/template}",
             "\n\n{template uri kind='trusted_resource_uri'}\n/\n{/template}",
             "\n\n{template title kind='text'}\ntitle\n{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
-            "<a href={call .uri /} title={call .title /}></a>\n",
+            "{template foo}\n",
+            "<a href={call uri /} title={call title /}></a>\n",
             "{/template}",
             "\n\n{template uri kind='trusted_resource_uri'}\n/\n{/template}",
             "\n\n{template title kind='text'}\ntitle\n{/template}"));
@@ -92,7 +92,7 @@ public final class ContextualAutoescaperTest {
             + "of the value.",
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param x: ?}\n",
             "  <iframe srcdoc='&lt;script&gt;{$x}&lt;/script&gt;'></iframe>\n",
             "{/template}"));
@@ -103,13 +103,13 @@ public final class ContextualAutoescaperTest {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param world: ?}\n",
             "Hello, {$world |escapeHtml}!\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param world: ?}\n",
             "Hello, {$world}!\n",
             "{/template}"));
@@ -120,13 +120,13 @@ public final class ContextualAutoescaperTest {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .privateFoo visibility=\"private\"}\n",
+            "{template privateFoo visibility=\"private\"}\n",
             "  {@param world: ?}\n",
             "Hello, {$world |escapeHtml}!\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .privateFoo visibility=\"private\"}\n",
+            "{template privateFoo visibility=\"private\"}\n",
             "  {@param world: ?}\n",
             "Hello, {$world}!\n",
             "{/template}"));
@@ -137,7 +137,7 @@ public final class ContextualAutoescaperTest {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param world: ?}\n",
             "Hello,",
             "<a href='worlds?world={$world |escapeUri}'>",
@@ -146,7 +146,7 @@ public final class ContextualAutoescaperTest {
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param world: ?}\n",
             "Hello,\n",
             "<a href='worlds?world={$world}'>\n",
@@ -160,7 +160,7 @@ public final class ContextualAutoescaperTest {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param x: ?}\n",
             "<meta http-equiv=refresh content='{$x |filterNumber}'>",
             "<meta http-equiv=refresh content='"
@@ -188,7 +188,7 @@ public final class ContextualAutoescaperTest {
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param x: ?}\n",
             "<meta http-equiv=refresh content='{$x}'>",
             "<meta http-equiv=refresh content='{$x}; URL={$x}'>",
@@ -218,7 +218,7 @@ public final class ContextualAutoescaperTest {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .bar}\n",
+            "{template bar}\n",
             "  {@param x: ?}\n",
             "  {@param y: ?}\n",
             "  {@param z: ?}\n",
@@ -233,7 +233,7 @@ public final class ContextualAutoescaperTest {
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .bar}\n",
+            "{template bar}\n",
             "  {@param x: ?}\n",
             "  {@param y: ?}\n",
             "  {@param z: ?}\n",
@@ -255,7 +255,7 @@ public final class ContextualAutoescaperTest {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .bar}\n",
+            "{template bar}\n",
             "  {@param url: ?}\n",
             "  {@param name: ?}\n",
             "  {@param value: ?}\n",
@@ -269,7 +269,7 @@ public final class ContextualAutoescaperTest {
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .bar}\n",
+            "{template bar}\n",
             "  {@param url: ?}\n",
             "  {@param name: ?}\n",
             "  {@param value: ?}\n",
@@ -289,7 +289,7 @@ public final class ContextualAutoescaperTest {
     assertContextualRewritingNoop(
         join(
             "{namespace ns}\n\n",
-            "{template .bar}\n",
+            "{template bar}\n",
             "  {@param p: ?}\n",
             "<input{if $p} disabled{/if}>\n",
             "{/template}"));
@@ -297,7 +297,7 @@ public final class ContextualAutoescaperTest {
     assertContextualRewritingNoop(
         join(
             "{namespace ns}\n\n",
-            "{template .bar}\n",
+            "{template bar}\n",
             "  {@param p: ?}\n",
             "  {@param p2: ?}\n",
             "<input{if $p} disabled{/if}{if $p2} checked{/if}>\n",
@@ -306,14 +306,14 @@ public final class ContextualAutoescaperTest {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .bar}\n",
+            "{template bar}\n",
             "  {@param p: ?}\n",
             "  {@param p2: ?}\n",
             "<input{if $p} disabled{/if}{if $p2} checked{/if}>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .bar}\n",
+            "{template bar}\n",
             "  {@param p: ?}\n",
             "  {@param p2: ?}\n",
             "<input {if $p}disabled{/if}{if $p2} checked{/if}>\n",
@@ -322,7 +322,7 @@ public final class ContextualAutoescaperTest {
     assertContextualRewritingNoop(
         join(
             "{namespace ns}\n\n",
-            "{template .good4}\n",
+            "{template good4}\n",
             "  {@param p: ?}\n",
             "<p{if $p} x=x{/if} x=y>\n",
             "{/template}"));
@@ -330,13 +330,13 @@ public final class ContextualAutoescaperTest {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .good4}\n",
+            "{template good4}\n",
             "  {@param p: ?}\n",
             "<p{if $p} onclick=foo(){/if} x=y>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .good4}\n",
+            "{template good4}\n",
             "  {@param p: ?}\n",
             "<p {if $p}onclick=foo() {/if} x=y>\n",
             "{/template}"));
@@ -344,26 +344,26 @@ public final class ContextualAutoescaperTest {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .good4}\n",
+            "{template good4}\n",
             "  {@param p: ?}\n",
             "<p foo=bar{if $p} onclick=foo(){/if} x=y>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .good4}\n",
+            "{template good4}\n",
             "  {@param p: ?}\n",
             "<p foo=bar {if $p}onclick=foo() {/if} x=y>\n",
             "{/template}"));
 
     assertContextualRewriting(
         "{namespace ns}\n\n"
-            + "{template .good4}\n"
+            + "{template good4}\n"
             + "  {@param x: ?}\n"
             + "<input{if $x} onclick={$x |escapeJsValue |escapeHtmlAttributeNospace}{/if}>\n"
             + "{/template}",
         join(
             "{namespace ns}\n\n",
-            "{template .good4}\n",
+            "{template good4}\n",
             "  {@param x: ?}\n",
             "\n" + "<input{if $x} onclick={$x}{/if}>\n",
             "{/template}"));
@@ -371,14 +371,14 @@ public final class ContextualAutoescaperTest {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .good4}\n",
+            "{template good4}\n",
             "  {@param p: ?}\n",
             "<input{if $p} disabled=\"true\"{/if}>",
             "<input{if $p} onclick=\"foo()\"{/if}>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .good4}\n",
+            "{template good4}\n",
             "  {@param p: ?}\n",
             "<input {if $p}disabled=\"true\"{/if}>",
             "<input {if $p}onclick=\"foo()\"{/if}>\n",
@@ -391,7 +391,7 @@ public final class ContextualAutoescaperTest {
     assertContextualRewritingNoop(
         join(
             "{namespace ns}\n\n",
-            "{template .good4}\n",
+            "{template good4}\n",
             "  {@param p: ?}\n",
             "<input class={if $p}\"x\"{else}'y'{/if}>\n",
             "{/template}"));
@@ -402,7 +402,7 @@ public final class ContextualAutoescaperTest {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .bar}\n",
+            "{template bar}\n",
             "  {@param x: ?}\n",
             "  {@param y: ?}\n",
             "  {@param z: ?}\n",
@@ -418,7 +418,7 @@ public final class ContextualAutoescaperTest {
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .bar}\n",
+            "{template bar}\n",
             "  {@param x: ?}\n",
             "  {@param y: ?}\n",
             "  {@param z: ?}\n",
@@ -439,7 +439,7 @@ public final class ContextualAutoescaperTest {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .bar}\n",
+            "{template bar}\n",
             "  {@param a: ?}\n",
             "  {@param b: ?}\n",
             "  {@param c: ?}\n",
@@ -458,7 +458,7 @@ public final class ContextualAutoescaperTest {
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .bar}\n",
+            "{template bar}\n",
             "  {@param a: ?}\n",
             "  {@param b: ?}\n",
             "  {@param c: ?}\n",
@@ -484,7 +484,7 @@ public final class ContextualAutoescaperTest {
     assertContextualRewritingNoop(
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "<script>",
             // the ' " and / characters are important to make sure we detect the '}' first
             "`{\\n}<div a=\"q\">${lb}foo{rb}\"'</div>{\\n}`;",
@@ -494,7 +494,7 @@ public final class ContextualAutoescaperTest {
     assertContextualRewritingNoop(
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "<script>",
             "`<div a=\"q\"></div>`;{\\n}",
             "</script>\n",
@@ -503,20 +503,20 @@ public final class ContextualAutoescaperTest {
     assertContextualRewritingNoop(
         join(
             "{namespace ns}\n\n",
-            "{template .foo kind=\"js\"}\n",
+            "{template foo kind=\"js\"}\n",
             "`<div a=\"q\"></div>`;{\\n}\n",
             "{/template}"));
 
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .foo kind=\"js\"}\n",
+            "{template foo kind=\"js\"}\n",
             "  {@param foo: ?}\n",
             "`<div a=\"q\">${lb} {$foo |escapeJsValue} {rb}</div>`\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .foo kind=\"js\"}\n",
+            "{template foo kind=\"js\"}\n",
             "  {@param foo: ?}\n",
             "`<div a=\"q\">${lb} {$foo} {rb}</div>`\n",
             "{/template}"));
@@ -525,7 +525,7 @@ public final class ContextualAutoescaperTest {
         "Js template literals cannot contain dynamic values",
         join(
             "{namespace ns}\n\n",
-            "{template .foo kind=\"js\"}\n",
+            "{template foo kind=\"js\"}\n",
             "  {@param foo: ?}\n",
             "`<div a=\"q\">{$foo}</div>`\n",
             "{/template}"));
@@ -536,7 +536,7 @@ public final class ContextualAutoescaperTest {
             + "than preceding branches: {else}</div>",
         join(
             "{namespace ns}\n\n",
-            "{template .foo kind=\"js\"}\n",
+            "{template foo kind=\"js\"}\n",
             "  {@param foo: ?}\n",
             "{if $foo}`<div a=\"q\">{else}</div>{/if}`\n",
             "{/template}"));
@@ -547,14 +547,14 @@ public final class ContextualAutoescaperTest {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .bar}\n",
+            "{template bar}\n",
             "<script>",
             "{lb}$a{rb}",
             "</script>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .bar}\n",
+            "{template bar}\n",
             "<script>\n",
             "{literal}{$a}{/literal}\n",
             "</script>\n",
@@ -566,7 +566,7 @@ public final class ContextualAutoescaperTest {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .bar}\n",
+            "{template bar}\n",
             "  {@param n: ?}\n",
             "<style>",
             "{for $i in range($n)}",
@@ -578,7 +578,7 @@ public final class ContextualAutoescaperTest {
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .bar}\n",
+            "{template bar}\n",
             "  {@param n: ?}\n",
             "<style>\n",
             "{for $i in range($n)}\n",
@@ -596,7 +596,7 @@ public final class ContextualAutoescaperTest {
         "{for} body does not end in the same context after repeated entries.",
         join(
             "{namespace ns}\n\n",
-            "{template .bar}\n",
+            "{template bar}\n",
             "  {@param n: ?}\n",
             "  <style>\n",
             "    {for $i in range($n)}\n",
@@ -613,7 +613,7 @@ public final class ContextualAutoescaperTest {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .baz}\n",
+            "{template baz}\n",
             "  {@param foo: ?}\n",
             "<ol>",
             "{for $x in $foo}",
@@ -623,7 +623,7 @@ public final class ContextualAutoescaperTest {
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .baz}\n",
+            "{template baz}\n",
             "  {@param foo: ?}\n",
             "  <ol>\n",
             "    {for $x in $foo}\n",
@@ -638,7 +638,7 @@ public final class ContextualAutoescaperTest {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .baz}\n",
+            "{template baz}\n",
             "  {@param foo: ?}\n",
             "<ol>",
             "{for $x in $foo}",
@@ -650,7 +650,7 @@ public final class ContextualAutoescaperTest {
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .baz}\n",
+            "{template baz}\n",
             "  {@param foo: ?}\n",
             "  <ol>\n",
             "    {for $x in $foo}\n",
@@ -667,21 +667,21 @@ public final class ContextualAutoescaperTest {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param world: ?}\n",
-            "{call .bar data=\"all\" /}\n",
+            "{call bar data=\"all\" /}\n",
             "{/template}\n\n",
-            "{template .bar}\n",
+            "{template bar}\n",
             "  {@param world: ?}\n",
             "Hello, {$world |escapeHtml}!\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param world: ?}\n",
-            "  {call .bar data=\"all\" /}\n",
+            "  {call bar data=\"all\" /}\n",
             "{/template}\n\n",
-            "{template .bar}\n",
+            "{template bar}\n",
             "  {@param world: ?}\n",
             "  Hello, {$world}!\n",
             "{/template}"));
@@ -692,21 +692,21 @@ public final class ContextualAutoescaperTest {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param? x: ?}\n",
-            "{call .bar}{param world: $x + 1 /}{/call}\n",
+            "{call bar}{param world: $x + 1 /}{/call}\n",
             "{/template}\n\n",
-            "{template .bar}\n",
+            "{template bar}\n",
             "  {@param? world: ?}\n",
             "Hello, {$world |escapeHtml}!\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param? x: ?}\n",
-            "{call .bar}{param world: $x + 1 /}{/call}\n",
+            "{call bar}{param world: $x + 1 /}{/call}\n",
             "{/template}\n\n",
-            "{template .bar}\n",
+            "{template bar}\n",
             "  {@param? world: ?}\n",
             "Hello, {$world}!\n",
             "{/template}"));
@@ -720,7 +720,7 @@ public final class ContextualAutoescaperTest {
             + "  Consider adding parentheses to disambiguate",
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param? declare : ?}\n",
             "  <script>\n",
             "    {if $declare}var{sp}{/if}\n",
@@ -739,7 +739,7 @@ public final class ContextualAutoescaperTest {
     assertContextualRewritingNoop(
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param c: ?}\n",
             "<a href=\"",
             "{if $c}",
@@ -755,7 +755,7 @@ public final class ContextualAutoescaperTest {
             + "#fragment, but only on one branch.",
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param x: ?}\n",
             "  {@param c: ?}\n",
             "<a href=\"",
@@ -778,7 +778,7 @@ public final class ContextualAutoescaperTest {
             + " (e.g. {$x}/{$y}, {$x}?y={$y}, {$x}&y={$y}, {$x}#{$y})",
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param x: ?}\n",
             "  {@param y: ?}\n",
             "<a href=\"{$x}{$y}\">Test</a>\n",
@@ -795,7 +795,7 @@ public final class ContextualAutoescaperTest {
             + "or {$x}?foo=:{$y})",
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param x: ?}\n",
             "<a href=\"{$x}:foo()\">Test</a>\n",
             "{/template}"));
@@ -811,7 +811,7 @@ public final class ContextualAutoescaperTest {
             + " (e.g. href=\"{'foo' + $bar}\" instead of href=\"foo{$bar}\").",
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param x: ?}\n",
             "<a href=\"foo{$x}\">Test</a>\n",
             "{/template}"));
@@ -828,7 +828,7 @@ public final class ContextualAutoescaperTest {
         message,
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param x: ?}\n",
             "<a href=\"javas{nil}cript:{$x}\"></a>\n",
             "{/template}"));
@@ -836,7 +836,7 @@ public final class ContextualAutoescaperTest {
         message,
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param x: ?}\n",
             "<style>url('javas{nil}cript:{$x}')</style>\n",
             "{/template}"));
@@ -844,7 +844,7 @@ public final class ContextualAutoescaperTest {
         message,
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param x: ?}\n",
             "<style>url(\"javascript:{$x}\")</style>\n",
             "{/template}"));
@@ -852,7 +852,7 @@ public final class ContextualAutoescaperTest {
         message,
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param x: ?}\n",
             "<style>url(\"javascript:alert({$x})\")</style>\n",
             "{/template}"));
@@ -860,7 +860,7 @@ public final class ContextualAutoescaperTest {
         message,
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param x: ?}\n",
             "<style>url(javascript:{$x})</style>\n",
             "{/template}"));
@@ -869,7 +869,7 @@ public final class ContextualAutoescaperTest {
         message,
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param x: ?}\n",
             "<style>url(data:{$x})</style>\n",
             "{/template}"));
@@ -877,7 +877,7 @@ public final class ContextualAutoescaperTest {
         message,
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param x: ?}\n",
             "<a href=\"data:{$x}\"></a>\n",
             "{/template}"));
@@ -885,7 +885,7 @@ public final class ContextualAutoescaperTest {
         message,
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param x: ?}\n",
             "<a href=\"blob:{$x}\"></a>\n",
             "{/template}"));
@@ -893,7 +893,7 @@ public final class ContextualAutoescaperTest {
         message,
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param x: ?}\n",
             "<a href=\"filesystem:{$x}\"></a>\n",
             "{/template}"));
@@ -901,51 +901,51 @@ public final class ContextualAutoescaperTest {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param x: ?}\n",
             "<a href=\"not-javascript:{$x |escapeHtmlAttribute}\">Test</a>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param x: ?}\n",
             "<a href=\"not-javascript:{$x}\">Test</a>\n",
             "{/template}"));
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param x: ?}\n",
             "<a href=\"javascript-foo:{$x |escapeHtmlAttribute}\">Test</a>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param x: ?}\n",
             "<a href=\"javascript-foo:{$x}\">Test</a>\n",
             "{/template}"));
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param x: ?}\n",
             "<a href=\"not?javascript:{$x |escapeUri}\">Test</a>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param x: ?}\n",
             "<a href=\"not?javascript:{$x}\">Test</a>\n",
             "{/template}"));
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "<a href=\"javascript:hardcoded()\">Test</a>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "<a href=\"javascript:hardcoded()\">Test</a>\n",
             "{/template}"));
   }
@@ -955,7 +955,7 @@ public final class ContextualAutoescaperTest {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .bar}\n",
+            "{template bar}\n",
             "  {@param url: ?}\n",
             "  {@param bgimage: ?}\n",
             "  {@param anchor: ?}\n",
@@ -978,7 +978,7 @@ public final class ContextualAutoescaperTest {
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .bar}\n",
+            "{template bar}\n",
             "  {@param url: ?}\n",
             "  {@param bgimage: ?}\n",
             "  {@param anchor: ?}\n",
@@ -999,7 +999,7 @@ public final class ContextualAutoescaperTest {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param start: ?}\n",
             "  {@param path: ?}\n",
             "  {@param query: ?}\n",
@@ -1009,7 +1009,7 @@ public final class ContextualAutoescaperTest {
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param start: ?}\n",
             "  {@param path: ?}\n",
             "  {@param query: ?}\n",
@@ -1023,13 +1023,13 @@ public final class ContextualAutoescaperTest {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "{let $src kind=\"trusted_resource_uri\"}/foo.js{/let}",
             "<script src='{$src |escapeHtmlAttribute}'></script>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "{let $src kind=\"trusted_resource_uri\"}/foo.js{/let}",
             "<script src='{$src}'></script>\n",
             "{/template}"));
@@ -1038,17 +1038,15 @@ public final class ContextualAutoescaperTest {
   @Test
   public void testCss() throws Exception {
     assertContextualRewriting(
-        join(
-            "{namespace ns}\n\n", "{template .foo}\n", "{css('foo') |escapeHtml}\n", "{/template}"),
-        join("{namespace ns}\n\n", "{template .foo}\n", "{css('foo')}\n", "{/template}"));
+        join("{namespace ns}\n\n", "{template foo}\n", "{css('foo') |escapeHtml}\n", "{/template}"),
+        join("{namespace ns}\n\n", "{template foo}\n", "{css('foo')}\n", "{/template}"));
   }
 
   @Test
   public void testXid() throws Exception {
     assertContextualRewriting(
-        join(
-            "{namespace ns}\n\n", "{template .foo}\n", "{xid('foo') |escapeHtml}\n", "{/template}"),
-        join("{namespace ns}\n\n", "{template .foo}\n", "{xid('foo')}\n", "{/template}"));
+        join("{namespace ns}\n\n", "{template foo}\n", "{xid('foo') |escapeHtml}\n", "{/template}"),
+        join("{namespace ns}\n\n", "{template foo}\n", "{xid('foo')}\n", "{/template}"));
   }
 
   @Test
@@ -1056,7 +1054,7 @@ public final class ContextualAutoescaperTest {
     assertContextualRewritingNoop(
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param FOO: ?}\n",
             "<script>a = \"{$FOO |escapeUri}\";</script>\n",
             "{/template}"));
@@ -1067,13 +1065,13 @@ public final class ContextualAutoescaperTest {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param x: ?}\n",
             "{$x |customOtherDirective |escapeHtml}\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param x: ?}\n",
             "  {$x |customOtherDirective}\n",
             "{/template}"));
@@ -1084,14 +1082,14 @@ public final class ContextualAutoescaperTest {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param msg: ?}\n",
             "<button onclick=alert({$msg |escapeJsValue |escapeHtmlAttributeNospace})>",
             "Launch</button>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param msg: ?}\n",
             "<button onclick=alert({$msg})>Launch</button>\n",
             "{/template}"));
@@ -1102,7 +1100,7 @@ public final class ContextualAutoescaperTest {
     assertContextualRewritingNoop(
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "{msg desc=\"Say hello\"}Hello, <b>World</b>{/msg}\n",
             "{/template}"));
   }
@@ -1114,15 +1112,15 @@ public final class ContextualAutoescaperTest {
         join(
             "{namespace soy.examples.codelab}\n\n",
             "/** */\n",
-            "{template .main}\n",
-            "<title>{call .pagenum data=\"all\" /}</title>",
+            "{template main}\n",
+            "<title>{call pagenum data=\"all\" /}</title>",
             "",
             "<script>",
-            "var pagenum = \"{call .pagenum data=\"all\" /}\"; ",
+            "var pagenum = \"{call pagenum data=\"all\" /}\"; ",
             "...",
             "</script>\n",
             "{/template}\n\n",
-            "{template .pagenum visibility=\"private\" kind=\"text\"}\n",
+            "{template pagenum visibility=\"private\" kind=\"text\"}\n",
             "  {@param pageIndex: ?}\n",
             "  {@param pageCount: ?}\n",
             "{$pageIndex |text} of {$pageCount |text}\n",
@@ -1130,14 +1128,14 @@ public final class ContextualAutoescaperTest {
         join(
             "{namespace soy.examples.codelab}\n\n",
             "/** */\n",
-            "{template .main}\n",
-            "  <title>{call .pagenum data=\"all\" /}</title>\n",
+            "{template main}\n",
+            "  <title>{call pagenum data=\"all\" /}</title>\n",
             "  <script>\n",
-            "    var pagenum = \"{call .pagenum data=\"all\" /}\";\n",
+            "    var pagenum = \"{call pagenum data=\"all\" /}\";\n",
             "    ...\n",
             "  </script>\n",
             "{/template}\n\n",
-            "{template .pagenum visibility=\"private\" kind=\"text\"}\n",
+            "{template pagenum visibility=\"private\" kind=\"text\"}\n",
             "  {@param pageIndex: ?}\n",
             "  {@param pageCount: ?}\n",
             "  {$pageIndex} of {$pageCount}\n",
@@ -1149,13 +1147,13 @@ public final class ContextualAutoescaperTest {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param className: ?}\n",
             "<div{if $className} class=\"{$className |escapeHtmlAttribute}\"{/if}></div>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param className: ?}\n",
             "<div{if $className} class=\"{$className}\"{/if}></div>\n",
             "{/template}"));
@@ -1166,13 +1164,13 @@ public final class ContextualAutoescaperTest {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param className: ?}\n",
             "<div{if $className} class=\"{$className |escapeHtmlAttribute}\"{/if} id=x></div>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param className: ?}\n",
             "<div {if $className} class=\"{$className}\"{/if} id=x></div>\n",
             "{/template}"));
@@ -1183,7 +1181,7 @@ public final class ContextualAutoescaperTest {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .icontemplate}\n",
+            "{template icontemplate}\n",
             "  {@param iconId: ?}\n",
             "  {@param iconClass: ?}\n",
             "  {@param iconPath: ?}\n",
@@ -1212,7 +1210,7 @@ public final class ContextualAutoescaperTest {
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .icontemplate}\n",
+            "{template icontemplate}\n",
             "  {@param iconId: ?}\n",
             "  {@param iconClass: ?}\n",
             "  {@param iconPath: ?}\n",
@@ -1247,7 +1245,7 @@ public final class ContextualAutoescaperTest {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .image}\n",
+            "{template image}\n",
             "  {@param iconPath: ?}\n",
             "<svg>",
             "<image xlink:href=\"{$iconPath |filterNormalizeMediaUri |escapeHtmlAttribute}\">",
@@ -1256,7 +1254,7 @@ public final class ContextualAutoescaperTest {
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .image}\n",
+            "{template image}\n",
             "  {@param iconPath: ?}\n",
             "<svg>",
             "<image xlink:href=\"{$iconPath}\"></image>",
@@ -1269,13 +1267,13 @@ public final class ContextualAutoescaperTest {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param baz: ?}\n",
             "<img src=\"bar\" {$baz |filterHtmlAttributes}=\"boo\">\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param baz: ?}\n",
             "<img src=\"bar\" {$baz}=\"boo\">\n",
             "{/template}"));
@@ -1286,13 +1284,13 @@ public final class ContextualAutoescaperTest {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param baz: ?}\n",
             "<img src=\"bar\"{$baz |filterHtmlAttributes |whitespaceHtmlAttributes}>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param baz: ?}\n",
             "<img src=\"bar\" {$baz}>\n",
             "{/template}"));
@@ -1303,13 +1301,13 @@ public final class ContextualAutoescaperTest {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param baz: ?}\n",
             "<img x=x{$baz |escapeHtmlAttributeNospace}x>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param baz: ?}\n",
             "<img x=x{$baz}x>\n",
             "{/template}"));
@@ -1317,13 +1315,13 @@ public final class ContextualAutoescaperTest {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param baz: ?}\n",
             "<img x='x{$baz |escapeHtmlAttribute}x'>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param baz: ?}\n",
             "<img x='x{$baz}x'>\n",
             "{/template}"));
@@ -1331,13 +1329,13 @@ public final class ContextualAutoescaperTest {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param baz: ?}\n",
             "<img x=\"x{$baz |escapeHtmlAttribute}x\">\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param baz: ?}\n",
             "<img x=\"x{$baz}x\">\n",
             "{/template}"));
@@ -1348,13 +1346,13 @@ public final class ContextualAutoescaperTest {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .foo stricthtml=\"false\"}\n",
+            "{template foo stricthtml=\"false\"}\n",
             "  {@param x: ?}\n",
             "<{$x |filterHtmlElementName}>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .foo stricthtml=\"false\"}\n",
+            "{template foo stricthtml=\"false\"}\n",
             "  {@param x: ?}\n",
             "<{legacyDynamicTag($x)}>\n",
             "{/template}"));
@@ -1367,13 +1365,13 @@ public final class ContextualAutoescaperTest {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param x: ?}\n",
             "{$x |escapeHtml |bidiSpanWrap}\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param x: ?}\n",
             "{$x |bidiSpanWrap}\n",
             "{/template}"));
@@ -1403,7 +1401,7 @@ public final class ContextualAutoescaperTest {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .t}\n",
+            "{template t}\n",
             "  {@param y: ?}\n",
             "<script> var y = '",
             // Note that the contents of the {let} block are escaped in HTML PCDATA context, even
@@ -1415,7 +1413,7 @@ public final class ContextualAutoescaperTest {
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .t}\n",
+            "{template t}\n",
             "  {@param y: ?}\n",
             "<script> var y = '\n",
             "{let $l kind=\"html\"}\n",
@@ -1430,31 +1428,31 @@ public final class ContextualAutoescaperTest {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .caller}\n",
+            "{template caller}\n",
             "  {@param y: ?}\n",
             "<div>",
-            "{call .callee}",
+            "{call callee}",
             "{param x kind=\"html\"}",
             "<script> var y ='{$y |escapeJsString}';</script>",
             "{/param}",
             "{/call}",
             "</div>\n",
             "{/template}\n\n",
-            "{template .callee visibility=\"private\"}\n",
+            "{template callee visibility=\"private\"}\n",
             "  {@param x: ?}\n",
             "<b>{$x |escapeHtml}</b>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .caller}\n",
+            "{template caller}\n",
             "  {@param y: ?}\n",
             "<div>",
-            "{call .callee}{param x kind=\"html\"}",
+            "{call callee}{param x kind=\"html\"}",
             "<script> var y ='{$y}';</script>",
             "{/param}{/call}",
             "</div>\n",
             "{/template}\n\n",
-            "{template .callee visibility=\"private\"}\n",
+            "{template callee visibility=\"private\"}\n",
             "  {@param x: ?}\n",
             "<b>{$x}</b>\n",
             "{/template}"));
@@ -1465,12 +1463,12 @@ public final class ContextualAutoescaperTest {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .caller}\n",
+            "{template caller}\n",
             "  {@param x: ?}\n",
             "  {@param y: ?}\n",
             "  {@param z: ?}\n",
             "<div>",
-            "{call .callee}",
+            "{call callee}",
             "{param x kind=\"text\"}",
             "Hello {$x |text} <{$y |text}, \"{$z |text}\">",
             "{/param}",
@@ -1478,24 +1476,24 @@ public final class ContextualAutoescaperTest {
             "</div>\n",
             "{/template}\n",
             "\n",
-            "{template .callee visibility=\"private\"}\n",
+            "{template callee visibility=\"private\"}\n",
             "  {@param x: ?}\n",
             "<b>{$x |escapeHtml}</b>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .caller}\n",
+            "{template caller}\n",
             "  {@param x: ?}\n",
             "  {@param y: ?}\n",
             "  {@param z: ?}\n",
             "<div>",
-            "{call .callee}{param x kind=\"text\"}",
+            "{call callee}{param x kind=\"text\"}",
             "Hello {$x} <{$y}, \"{$z}\">",
             "{/param}{/call}",
             "</div>\n",
             "{/template}\n",
             "\n",
-            "{template .callee visibility=\"private\"}\n",
+            "{template callee visibility=\"private\"}\n",
             "  {@param x: ?}\n",
             "<b>{$x}</b>\n",
             "{/template}"));
@@ -1506,7 +1504,7 @@ public final class ContextualAutoescaperTest {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param x: ?}\n",
             "  {@param y: ?}\n",
             "  {@param z: ?}\n",
@@ -1517,7 +1515,7 @@ public final class ContextualAutoescaperTest {
             "\n{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param x: ?}\n",
             "  {@param y: ?}\n",
             "  {@param z: ?}\n",
@@ -1533,13 +1531,13 @@ public final class ContextualAutoescaperTest {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .main}\n",
+            "{template main}\n",
             "  {@param foo: ?}\n",
             "<b>{$foo |customOtherDirective |escapeHtml}</b>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .main}\n",
+            "{template main}\n",
             "  {@param foo: ?}\n",
             "<b>{$foo |customOtherDirective}</b>\n",
             "{/template}"));
@@ -1550,7 +1548,7 @@ public final class ContextualAutoescaperTest {
     assertRewriteFails(
         "A block of kind=\"js\" cannot end in context (Context JS_SQ_STRING). "
             + "Likely cause is an unterminated string literal.",
-        join("{namespace ns}\n\n", "{template .main kind=\"js\"}\nvar x='\n{/template}\n"));
+        join("{namespace ns}\n\n", "{template main kind=\"js\"}\nvar x='\n{/template}\n"));
   }
 
   @Test
@@ -1558,7 +1556,7 @@ public final class ContextualAutoescaperTest {
     assertRewriteFails(
         "A block of kind=\"uri\" cannot end in context (Context URI START NORMAL). "
             + "Likely cause is an unterminated or empty URI.",
-        join("{namespace ns}\n\n", "{template .main kind=\"uri\"}\n", "{/template}"));
+        join("{namespace ns}\n\n", "{template main kind=\"uri\"}\n", "{/template}"));
   }
 
   @Test
@@ -1570,19 +1568,19 @@ public final class ContextualAutoescaperTest {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
-            "<a href=\"{call .bar data=\"all\" /}\">Test</a>",
+            "{template foo}\n",
+            "<a href=\"{call bar data=\"all\" /}\">Test</a>",
             "\n{/template}\n\n",
-            "{template .bar kind=\"uri\"}\n",
+            "{template bar kind=\"uri\"}\n",
             "  {@param x: ?}\n",
             "http://www.google.com/search?q={$x |escapeUri}",
             "\n{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
-            "<a href=\"{call .bar data=\"all\" /}\">Test</a>",
+            "{template foo}\n",
+            "<a href=\"{call bar data=\"all\" /}\">Test</a>",
             "\n{/template}\n\n",
-            "{template .bar kind=\"uri\"}\n",
+            "{template bar kind=\"uri\"}\n",
             "  {@param x: ?}\n",
             "http://www.google.com/search?q={$x}",
             "\n{/template}"));
@@ -1593,7 +1591,7 @@ public final class ContextualAutoescaperTest {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .foo kind=\"attributes\"}\n",
+            "{template foo kind=\"attributes\"}\n",
             "  {@param x: ?}\n",
             "  {@param y: ?}\n",
             "  {@param z: ?}\n",
@@ -1605,7 +1603,7 @@ public final class ContextualAutoescaperTest {
             "\n{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .foo kind=\"attributes\"}\n",
+            "{template foo kind=\"attributes\"}\n",
             "  {@param x: ?}\n",
             "  {@param y: ?}\n",
             "  {@param z: ?}\n",
@@ -1626,13 +1624,13 @@ public final class ContextualAutoescaperTest {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .foo kind=\"attributes\"}\n",
+            "{template foo kind=\"attributes\"}\n",
             "  {@param x: ?}\n",
             "onclick={$x |escapeJsValue |escapeHtmlAttributeNospace}",
             "\n{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .foo kind=\"attributes\"}\n",
+            "{template foo kind=\"attributes\"}\n",
             "  {@param x: ?}\n",
             "onclick={$x}",
             "\n{/template}"));
@@ -1640,13 +1638,13 @@ public final class ContextualAutoescaperTest {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .foo kind=\"attributes\"}\n",
+            "{template foo kind=\"attributes\"}\n",
             "  {@param x: ?}\n",
             "title={$x |escapeHtmlAttributeNospace}",
             "\n{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .foo kind=\"attributes\"}\n",
+            "{template foo kind=\"attributes\"}\n",
             "  {@param x: ?}\n",
             "title={$x}",
             "\n{/template}"));
@@ -1660,12 +1658,12 @@ public final class ContextualAutoescaperTest {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .foo kind=\"attributes\"}\n",
+            "{template foo kind=\"attributes\"}\n",
             "foo=bar checked",
             "\n{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .foo kind=\"attributes\"}\n",
+            "{template foo kind=\"attributes\"}\n",
             "foo=bar checked",
             "\n{/template}"));
   }
@@ -1679,19 +1677,19 @@ public final class ContextualAutoescaperTest {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param x: ?}\n",
             "<script>",
-            "{call .bar /}/{$x |escapeJsValue}+/{$x |escapeJsRegex}/g",
+            "{call bar /}/{$x |escapeJsValue}+/{$x |escapeJsRegex}/g",
             "</script>",
             "\n{/template}",
             "\n\n{template bar kind='text'}\n\n{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param x: ?}\n",
             "<script>",
-            "{call .bar /}/{$x}+/{$x}/g",
+            "{call bar /}/{$x}+/{$x}/g",
             "</script>",
             "\n{/template}",
             "\n\n{template bar kind='text'}\n\n{/template}"));
@@ -1701,14 +1699,14 @@ public final class ContextualAutoescaperTest {
   public void testStrictModeEscapesCallSites() {
     String source =
         "{namespace ns}\n\n"
-            + "{template .main}\n"
-            + "{call .htmltemplate /}"
-            + "<script>var x={call .jstemplate /};</script>\n"
+            + "{template main}\n"
+            + "{call htmltemplate /}"
+            + "<script>var x={call jstemplate /};</script>\n"
             + "\n{/template}\n\n"
-            + "{template .htmltemplate}\n"
+            + "{template htmltemplate}\n"
             + "Hello World"
             + "\n{/template}\n\n"
-            + "{template .jstemplate kind=\"js\"}\n"
+            + "{template jstemplate kind=\"js\"}\n"
             + "foo()"
             + "\n{/template}";
 
@@ -1726,7 +1724,7 @@ public final class ContextualAutoescaperTest {
   public void testStrictModeOptimizesDelegates() {
     String source =
         "{namespace ns}\n\n"
-            + "{template .main}\n"
+            + "{template main}\n"
             + "{delcall ns.delegateHtml /}"
             + "{delcall ns.delegateText /}"
             + "\n{/template}\n\n"
@@ -1770,21 +1768,21 @@ public final class ContextualAutoescaperTest {
         getForbiddenMsgError("URI NORMAL URI DOUBLE_QUOTE START NORMAL"),
         join(
             "{namespace ns}\n\n",
-            "{template .main}\n",
+            "{template main}\n",
             "  <a href=\"{msg desc=\"foo\"}message{/msg}\">test</a>\n",
             "{/template}"));
     assertRewriteFails(
         getForbiddenMsgError("URI NORMAL URI DOUBLE_QUOTE START NORMAL"),
         join(
             "{namespace ns}\n\n",
-            "{template .main}\n",
+            "{template main}\n",
             "  <a href=\"{msg desc=\"foo\"}message{/msg}\">test</a>\n",
             "{/template}"));
     assertRewriteFails(
         getForbiddenMsgError("URI START NORMAL"),
         join(
             "{namespace ns}\n\n",
-            "{template .main kind=\"uri\"}\n",
+            "{template main kind=\"uri\"}\n",
             "  {msg desc=\"foo\"}message{/msg}\n",
             "{/template}"));
   }
@@ -1795,21 +1793,21 @@ public final class ContextualAutoescaperTest {
         getForbiddenMsgError("JS REGEX"),
         join(
             "{namespace ns}\n\n",
-            "{template .main}\n",
+            "{template main}\n",
             "  <script>{msg desc=\"foo\"}message{/msg}</script>\n",
             "{/template}"));
     assertRewriteFails(
         getForbiddenMsgError("JS REGEX"),
         join(
             "{namespace ns}\n\n",
-            "{template .main}\n",
+            "{template main}\n",
             "  <script>{msg desc=\"foo\"}message{/msg}</script>\n",
             "{/template}"));
     assertRewriteFails(
         getForbiddenMsgError("JS REGEX"),
         join(
             "{namespace ns}\n\n",
-            "{template .main kind=\"js\"}\n",
+            "{template main kind=\"js\"}\n",
             "  {msg desc=\"foo\"}message{/msg}\n",
             "{/template}"));
   }
@@ -1820,14 +1818,14 @@ public final class ContextualAutoescaperTest {
         getForbiddenMsgError("HTML_TAG NORMAL"),
         join(
             "{namespace ns}\n\n",
-            "{template .main}\n",
+            "{template main}\n",
             "  <div {msg desc=\"foo\"}attributes{/msg}>Test</div>\n",
             "{/template}"));
     assertRewriteFails(
         getForbiddenMsgError("HTML_TAG"),
         join(
             "{namespace ns}\n\n",
-            "{template .main kind=\"attributes\"}\n",
+            "{template main kind=\"attributes\"}\n",
             "  {msg desc=\"foo\"}message{/msg}\n",
             "{/template}"));
   }
@@ -1839,7 +1837,7 @@ public final class ContextualAutoescaperTest {
             + "end the attribute value. Wrap the attribute value into quotes.",
         join(
             "{namespace ns}\n\n",
-            "{template .main}\n",
+            "{template main}\n",
             "  <p title={msg desc=\"\"}a{/msg}>\n",
             "{/template}"));
   }
@@ -1850,21 +1848,21 @@ public final class ContextualAutoescaperTest {
         getForbiddenMsgError("CSS"),
         join(
             "{namespace ns}\n\n",
-            "{template .main}\n",
+            "{template main}\n",
             "  <style>{msg desc=\"foo\"}message{/msg}</style>\n",
             "{/template}"));
     assertRewriteFails(
         getForbiddenMsgError("CSS"),
         join(
             "{namespace ns}\n\n",
-            "{template .main}\n",
+            "{template main}\n",
             "  <style>{msg desc=\"foo\"}message{/msg}</style>\n",
             "{/template}"));
     assertRewriteFails(
         getForbiddenMsgError("CSS"),
         join(
             "{namespace ns}\n\n",
-            "{template .main kind=\"css\"}\n",
+            "{template main kind=\"css\"}\n",
             "  {msg desc=\"foo\"}message{/msg}\n",
             "{/template}"));
   }
@@ -1877,7 +1875,7 @@ public final class ContextualAutoescaperTest {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .main}\n",
+            "{template main}\n",
             "  {@param p: ?}\n",
             "<textarea>{$p |escapeHtmlRcdata}</div></textarea>",
             "{$p |escapeHtml}", // this used to be |escapeHtmlRcData
@@ -1885,7 +1883,7 @@ public final class ContextualAutoescaperTest {
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .main}\n",
+            "{template main}\n",
             "  {@param p: ?}\n",
             "<textarea>{$p}</div></textarea>",
             "{$p}",
@@ -1899,13 +1897,13 @@ public final class ContextualAutoescaperTest {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .main}\n",
+            "{template main}\n",
             "  {@param p: ?}\n",
             "<div style='url(\"{$p |filterNormalizeUri |escapeHtmlAttribute}\");'></div>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .main}\n",
+            "{template main}\n",
             "  {@param p: ?}\n",
             "<div style='url(\"{$p}\");'></div>\n",
             "{/template}"));
@@ -1914,13 +1912,13 @@ public final class ContextualAutoescaperTest {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .main}\n",
+            "{template main}\n",
             "  {@param p: ?}\n",
             "<div style='url(&quot;{$p |filterNormalizeUri |escapeHtmlAttribute}&quot;);'></div>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .main}\n",
+            "{template main}\n",
             "  {@param p: ?}\n",
             "<div style='url(&quot;{$p}&quot;);'></div>\n",
             "{/template}"));
@@ -1932,7 +1930,7 @@ public final class ContextualAutoescaperTest {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .main}\n",
+            "{template main}\n",
             "  {@param untrusted: html}\n",
             "{let $trusted kind=\"html\"}foo{/let}",
             // parameters are not currently trusted but local variables are.
@@ -1940,7 +1938,7 @@ public final class ContextualAutoescaperTest {
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .main}\n",
+            "{template main}\n",
             "  {@param untrusted: html}\n",
             "{let $trusted kind=\"html\"}foo{/let}\n",
             "{$untrusted}{$trusted}\n",
@@ -1949,31 +1947,31 @@ public final class ContextualAutoescaperTest {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .main}\n",
+            "{template main}\n",
             "  {@param untrusted: html}\n",
-            "{call .sub}{param trusted kind=\"html\"}foo{/param}{/call}",
-            "{call .sub2}{param untrusted: $untrusted /}{/call}\n",
+            "{call sub}{param trusted kind=\"html\"}foo{/param}{/call}",
+            "{call sub2}{param untrusted: $untrusted /}{/call}\n",
             "{/template}\n\n",
-            "{template .sub visibility=\"private\"}\n",
+            "{template sub visibility=\"private\"}\n",
             "  {@param trusted: html}\n",
             "{$trusted}\n",
             "{/template}\n\n",
-            "{template .sub2 visibility=\"private\"}\n",
+            "{template sub2 visibility=\"private\"}\n",
             "  {@param untrusted: html}\n",
             "{$untrusted |escapeHtml}\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .main}\n",
+            "{template main}\n",
             "  {@param untrusted: html}\n",
-            "{call .sub}{param trusted kind=\"html\"}foo{/param}{/call}",
-            "{call .sub2}{param untrusted: $untrusted /}{/call}\n",
+            "{call sub}{param trusted kind=\"html\"}foo{/param}{/call}",
+            "{call sub2}{param untrusted: $untrusted /}{/call}\n",
             "{/template}\n\n",
-            "{template .sub visibility=\"private\"}\n",
+            "{template sub visibility=\"private\"}\n",
             "  {@param trusted: html}\n",
             "{$trusted}\n",
             "{/template}\n\n",
-            "{template .sub2 visibility=\"private\"}\n",
+            "{template sub2 visibility=\"private\"}\n",
             "  {@param untrusted: html}\n",
             "{$untrusted}\n",
             "{/template}"));
@@ -1984,14 +1982,14 @@ public final class ContextualAutoescaperTest {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .main}\n",
+            "{template main}\n",
             "  {@param untrusted: ?}\n",
             "<script>{$untrusted |escapeJsValue}</script>",
             "<script type='text/svg'>{$untrusted |filterHtmlScriptPhrasingData}</script>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .main}\n",
+            "{template main}\n",
             "  {@param untrusted: ?}\n",
             "<script>{$untrusted}</script>",
             "<script type='text/svg'>{$untrusted}</script>\n",
@@ -2003,14 +2001,14 @@ public final class ContextualAutoescaperTest {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .main}\n",
+            "{template main}\n",
             "  {@param untrusted: ?}\n",
             "<script type='text/json'>{$untrusted |escapeJsValue}</script>",
             "<script type='text/json'>{lb} 'foo': '{$untrusted |escapeJsString}'{rb}</script>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .main}\n",
+            "{template main}\n",
             "  {@param untrusted: ?}\n",
             "<script type='text/json'>{$untrusted}</script>",
             "<script type='text/json'>{lb} 'foo': '{$untrusted}'{rb}</script>\n",

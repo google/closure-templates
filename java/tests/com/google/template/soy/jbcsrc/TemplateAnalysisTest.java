@@ -436,11 +436,11 @@ public final class TemplateAnalysisTest {
   @Test
   public void testCall() {
     // The tricky thing about calls is how params are handled
-    runTest("{@param p : ?}", "{call .foo data=\"$p\"/}", "{refed($p)}");
-    runTest("{@param p : ?}", "{call .foo data=\"all\"/}", "{notrefed($p)}");
+    runTest("{@param p : ?}", "{call foo data=\"$p\"/}", "{refed($p)}");
+    runTest("{@param p : ?}", "{call foo data=\"all\"/}", "{notrefed($p)}");
     runTest(
         "{@param p : ?}",
-        "{call .foo}",
+        "{call foo}",
         "  {param p1 : notrefed($p) /}",
         "  {param p2 : notrefed($p) /}",
         "{/call}",
@@ -449,7 +449,7 @@ public final class TemplateAnalysisTest {
     runTest(
         "{@param p : ?}",
         "{$p}",
-        "{call .foo}",
+        "{call foo}",
         "  {param p1 : refed($p) /}",
         "  {param p2 : refed($p) /}",
         "{/call}",
@@ -558,12 +558,12 @@ public final class TemplateAnalysisTest {
                 Joiner.on("\n")
                     .join(
                         "{namespace test}",
-                        "{template .caller}",
+                        "{template caller}",
                         Joiner.on("\n").join(lines),
                         "{/template}",
                         "",
                         // add an additional template as a callee.
-                        "{template .foo}",
+                        "{template foo}",
                         "  {@param? p1 : ?}",
                         "  {@param? p2 : ?}",
                         "  {$p1 + $p2}",

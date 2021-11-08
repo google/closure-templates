@@ -108,7 +108,7 @@ public final class DesugarHtmlNodesPassTest {
    * and returns the resulting source string of the template body
    */
   private static String runPass(String input) {
-    String soyFile = Joiner.on('\n').join("{namespace ns}", "{template .t}", input, "{/template}");
+    String soyFile = Joiner.on('\n').join("{namespace ns}", "{template t}", input, "{/template}");
     SoyFileNode node =
         SoyFileSetParserBuilder.forFileContents(soyFile)
             .desugarHtmlAndStateNodes(true)

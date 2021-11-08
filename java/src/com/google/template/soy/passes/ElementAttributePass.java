@@ -407,7 +407,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
      * This will generate the following code:
      *
      * <pre>
-     * {template .foo}
+     * {template foo}
      *   {@param soyInternalAttributes:attributes}
      *   <div {$soyInternalAttributes}></div>
      * {/template}

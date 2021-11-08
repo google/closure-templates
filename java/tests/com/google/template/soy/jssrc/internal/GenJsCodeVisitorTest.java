@@ -80,7 +80,7 @@ public final class GenJsCodeVisitorTest {
             + "        aaa.bbb.ccc\"}\n"
             + "\n"
             + "/** Test template. */\n"
-            + "{template .goo}\n"
+            + "{template goo}\n"
             + "  blah\n"
             + "{/template}\n";
 
@@ -626,7 +626,7 @@ public final class GenJsCodeVisitorTest {
         "{namespace boo.foo}\n"
             + "\n"
             + "/** Test template. */\n"
-            + "{template .goo}\n"
+            + "{template goo}\n"
             + "  {xid('some-id')}\n"
             + "{/template}\n";
 
@@ -1143,7 +1143,7 @@ public final class GenJsCodeVisitorTest {
         "{namespace boo.foo}\n"
             + "\n"
             + "/** Test template. */\n"
-            + "{template .goo visibility=\"private\"}\n"
+            + "{template goo visibility=\"private\"}\n"
             + "  Blah\n"
             + "{/template}\n";
 

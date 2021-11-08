@@ -41,12 +41,12 @@ public final class AbstractSoyNodeVisitorTest {
                 Joiner.on("\n")
                     .join(
                         "{namespace boo}",
-                        "{template .foo}",
+                        "{template foo}",
                         "  {@param goo: ?}",
                         "  {$goo}",
                         "  {2 + 2}",
                         "{/template}",
-                        "{template .moo}",
+                        "{template moo}",
                         "  {'moo'}",
                         "{/template}",
                         ""))

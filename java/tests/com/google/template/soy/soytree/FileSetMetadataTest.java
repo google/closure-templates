@@ -56,7 +56,7 @@ public final class FileSetMetadataTest {
                 SoyFileSupplier.Factory.create(
                     "{namespace ns}\n"
                         + "/** Simple template. */\n"
-                        + "{template .foo}\n"
+                        + "{template foo}\n"
                         + "{/template}\n"
                         + "/** Simple deltemplate. */\n"
                         + "{deltemplate bar.baz}\n"
@@ -87,7 +87,7 @@ public final class FileSetMetadataTest {
                 SoyFileSupplier.Factory.create(
                     "{namespace ns}\n"
                         + "/** Simple template. */\n"
-                        + "{template .foo}\n"
+                        + "{template foo}\n"
                         + "{/template}\n"
                         + "/** Simple deltemplate. */\n"
                         + "{deltemplate bar.baz}\n"
@@ -107,7 +107,7 @@ public final class FileSetMetadataTest {
                 SoyFileSupplier.Factory.create(
                     "{namespace ns}\n"
                         + "/** Simple template. */\n"
-                        + "{template .foo2}\n"
+                        + "{template foo2}\n"
                         + "{/template}\n"
                         + "/** Simple deltemplate. */\n"
                         + "{deltemplate bar.baz2}\n"
@@ -143,13 +143,13 @@ public final class FileSetMetadataTest {
                 SoyFileSupplier.Factory.create(
                     "{namespace ns}\n"
                         + "/** Template. */\n"
-                        + "{template .foo}\n"
+                        + "{template foo}\n"
                         + "{/template}\n",
                     SourceFilePath.create("bar.soy")),
                 SoyFileSupplier.Factory.create(
                     "{namespace ns2}\n"
                         + "/** Template. */\n"
-                        + "{template .foo}\n"
+                        + "{template foo}\n"
                         + "{/template}\n",
                     SourceFilePath.create("baz.soy")))
             .parse()
@@ -196,23 +196,23 @@ public final class FileSetMetadataTest {
     String file =
         "{namespace ns}\n"
             + "/** Foo. */\n"
-            + "{template .foo}\n"
+            + "{template foo}\n"
             + "{/template}\n"
             + "/** Foo. */\n"
-            + "{template .foo}\n"
+            + "{template foo}\n"
             + "{/template}\n";
     ErrorReporter errorReporter = ErrorReporter.createForTest();
     SoyFileSetParserBuilder.forFileContents(file).errorReporter(errorReporter).parse();
     assertThat(errorReporter.getErrors()).hasSize(1);
     assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
-        .isEqualTo("Template name 'foo' conflicts with symbol defined at 3:11-3:14.");
+        .isEqualTo("Template name 'foo' conflicts with symbol defined at 3:11-3:13.");
   }
 
   @Test
   public void testDuplicateBasicTemplates_differentFiles() {
-    String file = "{namespace ns}\n" + "/** Foo. */\n" + "{template .foo}\n" + "{/template}\n";
+    String file = "{namespace ns}\n" + "/** Foo. */\n" + "{template foo}\n" + "{/template}\n";
 
-    String file2 = "{namespace ns}\n" + "/** Foo. */\n" + "{template .foo}\n" + "{/template}\n";
+    String file2 = "{namespace ns}\n" + "/** Foo. */\n" + "{template foo}\n" + "{/template}\n";
 
     ErrorReporter errorReporter = ErrorReporter.createForTest();
     SoyFileSetParserBuilder.forFileContents(file, file2).errorReporter(errorReporter).parse();
@@ -263,7 +263,7 @@ public final class FileSetMetadataTest {
             + "{deltemplate ns.foo}\n"
             + "{/deltemplate}\n"
             + "/** Foo. */\n"
-            + "{template .foo}\n"
+            + "{template foo}\n"
             + "{/template}\n";
     ErrorReporter errorReporter = ErrorReporter.createForTest();
     SoyFileSetParserBuilder.forFileContents(file).errorReporter(errorReporter).parse();
@@ -279,7 +279,7 @@ public final class FileSetMetadataTest {
     String file =
         "{namespace ns1}\n" + "/** Foo. */\n" + "{deltemplate ns.foo}\n" + "{/deltemplate}\n";
 
-    String file2 = "{namespace ns}\n" + "/** Foo. */\n" + "{template .foo}\n" + "{/template}\n";
+    String file2 = "{namespace ns}\n" + "/** Foo. */\n" + "{template foo}\n" + "{/template}\n";
 
     ErrorReporter errorReporter = ErrorReporter.createForTest();
     SoyFileSetParserBuilder.forFileContents(file, file2).errorReporter(errorReporter).parse();
@@ -298,7 +298,7 @@ public final class FileSetMetadataTest {
             + "{deltemplate ns.foo}\n"
             + "{/deltemplate}\n"
             + "/** Foo. */\n"
-            + "{template .bar}\n"
+            + "{template bar}\n"
             + "{/template}\n";
 
     String file2Contents =
@@ -335,7 +335,7 @@ public final class FileSetMetadataTest {
             + "{deltemplate ns.foo}\n"
             + "{/deltemplate}\n"
             + "/** Foo. */\n"
-            + "{template .bar}\n"
+            + "{template bar}\n"
             + "{/template}\n";
 
     String file2Contents =
@@ -344,7 +344,7 @@ public final class FileSetMetadataTest {
             + "{deltemplate ns2.foo}\n"
             + "{/deltemplate}\n"
             + "/** Foo. */\n"
-            + "{template .bar}\n"
+            + "{template bar}\n"
             + "{/template}\n";
 
     String file3Contents =
@@ -432,7 +432,7 @@ public final class FileSetMetadataTest {
                 SoyFileSupplier.Factory.create(
                     "{namespace ns}\n"
                         + "/** Simple template. */\n"
-                        + "{template .foo kind=\"attributes\"}\n"
+                        + "{template foo kind=\"attributes\"}\n"
                         + "{/template}\n",
                     FILE_PATH))
             .parse()
@@ -459,7 +459,7 @@ public final class FileSetMetadataTest {
                 SoyFileSupplier.Factory.create(
                     "{namespace ns}\n"
                         + "/** Simple template. */\n"
-                        + "{template .foo kind=\"attributes\"}\n"
+                        + "{template foo kind=\"attributes\"}\n"
                         + "{/template}\n",
                     FILE_PATH))
             .parse()

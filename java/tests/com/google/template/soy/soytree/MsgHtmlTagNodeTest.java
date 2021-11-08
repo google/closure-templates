@@ -123,7 +123,7 @@ public final class MsgHtmlTagNodeTest {
                     .join(
                         "{namespace ns}",
                         "",
-                        "{template .t stricthtml=\"false\"}",
+                        "{template t stricthtml=\"false\"}",
                         Joiner.on('\n').join(params),
                         "{msg desc=\"...\"}",
                         htmlTag,

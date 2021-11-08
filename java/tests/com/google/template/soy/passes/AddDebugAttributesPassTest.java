@@ -38,28 +38,28 @@ public final class AddDebugAttributesPassTest {
     // multiple 'root' nodes
     assertRewritten(
         join(
-            "{template .foo}\n",
+            "{template foo}\n",
             "<div" + injectedCode(4) + "></div>",
             "<input" + injectedCode(4) + "/>",
             "<a" + injectedCode(4) + "></a>\n",
             "{/template}"),
-        join("{template .foo}\n", "<div></div><input /><a></a>\n", "{/template}"));
+        join("{template foo}\n", "<div></div><input /><a></a>\n", "{/template}"));
 
     // due to the nesting relationship we don't annotate the inner nodes
     assertRewritten(
         join(
-            "{template .foo}\n",
+            "{template foo}\n",
             "<div" + injectedCode(4) + ">",
             "<input/><a></a></div>\n",
             "{/template}"),
-        join("{template .foo}\n", "<div><input /><a></a></div>\n", "{/template}"));
+        join("{template foo}\n", "<div><input /><a></a></div>\n", "{/template}"));
   }
 
   @Test
   public void testRewrite_controlFlow() throws Exception {
     assertRewritten(
         join(
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param b: bool}\n",
             "<div" + injectedCode(5) + ">",
             "{if $b}",
@@ -69,7 +69,7 @@ public final class AddDebugAttributesPassTest {
             "</div>\n",
             "{/template}"),
         join(
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param b: bool}\n",
             "<div>",
             "{if $b}",
@@ -80,7 +80,7 @@ public final class AddDebugAttributesPassTest {
 
     assertRewritten(
         join(
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param b: bool}\n",
             "{if $b}",
             "<div" + injectedCode(5) + "><input/>",
@@ -88,7 +88,7 @@ public final class AddDebugAttributesPassTest {
             "{/if}\n",
             "{/template}"),
         join(
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param b: bool}\n",
             "{if $b}",
             "<div><input/></div>",
@@ -98,14 +98,14 @@ public final class AddDebugAttributesPassTest {
     // In this case we add annotations to the div even though it might be underneath another div
     assertRewritten(
         join(
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param b: bool}\n",
             "{if $b}<div" + injectedCode(5) + ">{/if}",
             "<div" + injectedCode(5) + "></div>",
             "{if $b}</div>{/if}\n",
             "{/template}"),
         join(
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param b: bool}\n",
             "{if $b}<div>{/if}",
             "<div></div>",

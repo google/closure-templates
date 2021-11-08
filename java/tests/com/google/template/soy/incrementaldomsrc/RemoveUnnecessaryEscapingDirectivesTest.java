@@ -80,7 +80,7 @@ public final class RemoveUnnecessaryEscapingDirectivesTest {
   private EscaperAssertion template(final String template) {
     return new EscaperAssertion() {
       private String compose(String template) {
-        return String.format("{namespace ns}\n\n{template .foo}\n%s\n{/template}", template);
+        return String.format("{namespace ns}\n\n{template foo}\n%s\n{/template}", template);
       }
 
       @Override

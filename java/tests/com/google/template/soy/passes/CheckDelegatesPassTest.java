@@ -38,7 +38,7 @@ public final class CheckDelegatesPassTest {
             + "{namespace ns1}\n"
             + "\n"
             + "/***/\n"
-            + "{template .boo}\n"
+            + "{template boo}\n"
             + "  blah\n"
             + "{/template}\n",
         ""
@@ -46,7 +46,7 @@ public final class CheckDelegatesPassTest {
             + "{namespace ns2}\n"
             + "\n"
             + "/***/\n"
-            + "{template .foo}\n"
+            + "{template foo}\n"
             + "  blah\n"
             + "{/template}\n");
   }
@@ -58,7 +58,7 @@ public final class CheckDelegatesPassTest {
             + "{namespace ns1}\n"
             + "\n"
             + "/***/\n"
-            + "{template .boo}\n"
+            + "{template boo}\n"
             + "  blah\n"
             + "{/template}\n"
             + "\n"
@@ -83,7 +83,7 @@ public final class CheckDelegatesPassTest {
             + "{namespace ns1}\n"
             + "\n"
             + "/***/\n"
-            + "{template .boo}\n"
+            + "{template boo}\n"
             + "  {delcall MagicButton}{param foo : '' /}{/delcall}\n"
             + "{/template}\n"
             + "\n"
@@ -109,7 +109,7 @@ public final class CheckDelegatesPassTest {
             + "{namespace ns1}\n"
             + "\n"
             + "/***/\n"
-            + "{template .boo}\n"
+            + "{template boo}\n"
             + "  blah\n"
             + "{/template}\n",
         ""
@@ -134,7 +134,7 @@ public final class CheckDelegatesPassTest {
             + "{namespace ns1}\n"
             + "\n"
             + "/***/\n"
-            + "{template .boo}\n"
+            + "{template boo}\n"
             + "  blah\n"
             + "{/template}\n"
             + "\n"
@@ -160,7 +160,7 @@ public final class CheckDelegatesPassTest {
             + "{namespace ns1}\n"
             + "\n"
             + "/***/\n"
-            + "{template .boo}\n"
+            + "{template boo}\n"
             + "  blah\n"
             + "{/template}\n"
             + "\n"
@@ -221,7 +221,7 @@ public final class CheckDelegatesPassTest {
             + "{namespace ns1}\n"
             + "\n"
             + "/***/\n"
-            + "{template .boo}\n"
+            + "{template boo}\n"
             + "  blah\n"
             + "{/template}\n",
         ""
@@ -229,7 +229,7 @@ public final class CheckDelegatesPassTest {
             + "{namespace ns2}\n"
             + "\n"
             + "/***/\n"
-            + "{template .foo}\n"
+            + "{template foo}\n"
             + // not marked private
             "  blah\n"
             + "{/template}\n");
@@ -243,7 +243,7 @@ public final class CheckDelegatesPassTest {
             + "{namespace ns1}\n"
             + "import {foo} from 'no-path-2';\n"
             + "/***/\n"
-            + "{template .boo}\n"
+            + "{template boo}\n"
             + "  {call foo /}\n"
             + // call to ns2.foo, which is public
             "{/template}\n",
@@ -252,7 +252,7 @@ public final class CheckDelegatesPassTest {
             + "{namespace ns2}\n"
             + "\n"
             + "/***/\n"
-            + "{template .foo}\n"
+            + "{template foo}\n"
             + "  blah\n"
             + "{/template}\n");
   }
@@ -266,7 +266,7 @@ public final class CheckDelegatesPassTest {
             + "{namespace ns1}\n"
             + "import {foo} from 'no-path-2';\n"
             + "/***/\n"
-            + "{template .boo}\n"
+            + "{template boo}\n"
             + "  {call foo /}\n"
             + // call to ns2.foo, which is public
             "{/template}\n",
@@ -275,7 +275,7 @@ public final class CheckDelegatesPassTest {
             + "{namespace ns2}\n"
             + "\n"
             + "/***/\n"
-            + "{template .foo}\n"
+            + "{template foo}\n"
             + "  blah\n"
             + "{/template}\n");
   }
@@ -288,7 +288,7 @@ public final class CheckDelegatesPassTest {
             + "{namespace ns1}\n"
             + "import {foo} from 'no-path-2';\n"
             + "/***/\n"
-            + "{template .boo}\n"
+            + "{template boo}\n"
             + "  {delcall foo /}\n"
             + // delegate call (should be basic call)
             "{/template}\n",
@@ -296,7 +296,7 @@ public final class CheckDelegatesPassTest {
             + "{namespace ns2}\n"
             + "\n"
             + "/***/\n"
-            + "{template .foo}\n"
+            + "{template foo}\n"
             + "  blah\n"
             + "{/template}\n");
   }

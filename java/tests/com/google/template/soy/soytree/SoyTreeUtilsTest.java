@@ -62,10 +62,10 @@ public final class SoyTreeUtilsTest {
   public void testBfs() {
     String testFileContent =
         "{namespace boo}\n"
-            + "{template .foo}\n"
+            + "{template foo}\n"
             + "  {1}\n"
             + "{/template}\n"
-            + "{template .bar}\n"
+            + "{template bar}\n"
             + "  {2 + 3}\n"
             + "{/template}\n";
 
@@ -91,7 +91,7 @@ public final class SoyTreeUtilsTest {
     String testFileContent =
         "{namespace boo}\n"
             + "\n"
-            + "{template .foo}\n"
+            + "{template foo}\n"
             + "  {@param items: ?}\n"
             + "  {length($items) + 5}\n" // 5 nodes
             + "  {for $item in $items}\n" // 2 nodes
@@ -155,7 +155,7 @@ public final class SoyTreeUtilsTest {
           .join(
               "{namespace ns}",
               "/** example for cloning. */",
-              "{template .ex1 visibility=\"private\"}",
+              "{template ex1 visibility=\"private\"}",
               "  {@param a : ?}",
               "  {@param b : ?}",
               "  {@param c : ?}",
@@ -169,7 +169,7 @@ public final class SoyTreeUtilsTest {
               "  {@param world : ?}",
               "  {@param foo : ?}",
               "  Hello, World!",
-              "  {lb}{call .foo data=\"all\"}{param x: $x /}{/call}{rb}",
+              "  {lb}{call foo data=\"all\"}{param x: $x /}{/call}{rb}",
               "  {$x}",
               "  {if $cond0}",
               "    {$a}",
@@ -308,7 +308,7 @@ public final class SoyTreeUtilsTest {
     String testFileContent =
         "{namespace ns}\n"
             + "\n"
-            + "{template .t}\n"
+            + "{template t}\n"
             + "  {@param foo: string}\n"
             + "  {@param bar: string}\n"
             + "  {for $i in range(5)}\n"
@@ -387,7 +387,7 @@ public final class SoyTreeUtilsTest {
     String testFileContent =
         "{namespace boo}\n"
             + "\n"
-            + "{template .foo}\n"
+            + "{template foo}\n"
             + "  {assertIsConst('CONST')}\n"
             + "  {assertIsConst(1 + 2)}\n"
             + "  {assertIsConst(true)}\n"
@@ -406,7 +406,7 @@ public final class SoyTreeUtilsTest {
     String testFileContent =
         "{namespace boo}\n"
             + "\n"
-            + "{template .foo}\n"
+            + "{template foo}\n"
             + "  {@param p : ?}\n"
             + "  {assertIsNonconst($p)}\n"
             + "  {assertIsNonconst(1 + $p)}\n"
@@ -443,7 +443,7 @@ public final class SoyTreeUtilsTest {
             .join(
                 "{namespace boo}",
                 "",
-                "{template .foo}",
+                "{template foo}",
                 "  {@param p : ?}",
                 "  {if $p}",
                 "    {$p + 2}",

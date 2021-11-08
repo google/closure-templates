@@ -302,7 +302,7 @@ public final class InferenceEngineTest {
   private static void assertTransitions(SanitizedContentKind kind, String src) {
     ParseResult result =
         SoyFileSetParserBuilder.forFileContents(
-                "{namespace ns}\n{template .foo"
+                "{namespace ns}\n{template foo"
                     + (kind == SanitizedContentKind.HTML
                         ? ""
                         : " kind=\"" + Ascii.toLowerCase(kind.toString()) + '"')

@@ -42,7 +42,7 @@ public final class ClearSoyDocStringsVisitorTest {
             + "/**\n"
             + " * blah blah blah\n"
             + " */\n"
-            + "{template .foo}\n"
+            + "{template foo}\n"
             + "  /** blah blah */\n"
             + "  {@param goo: ?}\n"
             + "  {$goo}\n"

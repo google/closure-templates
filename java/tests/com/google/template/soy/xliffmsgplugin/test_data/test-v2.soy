@@ -18,17 +18,17 @@
 /**
  * Print information about cow and moose.
  */
-{template .mooseTemplate}
+{template mooseTemplate}
   {@param cow: ?}  /** Don't have one. */
   {@param moose: ?}  /** The moose to print info about. */
 
   {for $moo, $idx in $moose}
     {if $idx == 0}
-      {call .mooHelper_}
+      {call mooHelper_}
         {param moo : $moo /}
       {/call}
     {else}
-      {call .mooHelper_}
+      {call mooHelper_}
         {param moo: $moo /}
       {/call}
     {/if}
@@ -55,7 +55,7 @@
 {/template}
 
 
-{template .mooHelper_ visibility="private"}
+{template mooHelper_ visibility="private"}
   {@param moo: ?}  /** One moo. */
   {msg desc="Tells what a cow says."}
     Cow says {$moo phex="MOOOooooOOOO"}.

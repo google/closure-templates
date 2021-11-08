@@ -219,11 +219,11 @@ public final class VeLogInstrumentationVisitorTest {
     SoyFileSetNode node =
         runPass(
             "{velog Bar}<div>"
-                + "<span {call .attr}{param foo: 'data-ved' /}{/call}></span>"
+                + "<span {call attr}{param foo: 'data-ved' /}{/call}></span>"
                 + "</div>{/velog}"
                 + "{/template}"
                 + ""
-                + "{template .attr kind=\"attributes\"}"
+                + "{template attr kind=\"attributes\"}"
                 + "{@param foo: string}"
                 + "{$foo}={currentVed()}");
     StringBuilder sb = new StringBuilder();
@@ -234,7 +234,7 @@ public final class VeLogInstrumentationVisitorTest {
         .isEqualTo(
             "{velog ve_data(ve(Bar), null)}"
                 + "<div{$$velog(ve_data(ve(Bar), null))}>"
-                + "<span{call .attr}{param foo: 'data-ved' /}{/call}>"
+                + "<span{call attr}{param foo: 'data-ved' /}{/call}>"
                 + "</span>"
                 + "</div>"
                 + "{/velog}");
@@ -266,7 +266,7 @@ public final class VeLogInstrumentationVisitorTest {
 
   /** Parses the given input as a template content. */
   private static SoyFileSetNode runPass(String input) {
-    String soyFile = Joiner.on('\n').join("{template .t}", input, "{/template}");
+    String soyFile = Joiner.on('\n').join("{template t}", input, "{/template}");
     ParseResult result =
         SoyFileSetParserBuilder.forTemplateAndImports(soyFile, Foo.getDescriptor())
             // Disable desguaring pass and manually run it later

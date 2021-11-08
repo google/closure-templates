@@ -278,7 +278,7 @@ public final class HtmlRewriterTest {
 
     node =
         runPass(
-            "<div {call .name /}=x>content</div>{/template}" + "{template .name kind=\"text\"}foo");
+            "<div {call name /}=x>content</div>{/template}" + "{template name kind=\"text\"}foo");
     assertThatASTString(node)
         .isEqualTo(
             ""
@@ -766,7 +766,7 @@ public final class HtmlRewriterTest {
   private static TemplateNode runPass(String input, ErrorReporter errorReporter) {
     String soyFile =
         Joiner.on('\n')
-            .join("{namespace ns}", "", "{template .t stricthtml=\"false\"}", input, "{/template}");
+            .join("{namespace ns}", "", "{template t stricthtml=\"false\"}", input, "{/template}");
     SoyFileNode node =
         new SoyFileParser(
                 new IncrementingIdGenerator(),

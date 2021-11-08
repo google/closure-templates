@@ -149,7 +149,7 @@ public final class HtmlContextVisitorTest {
     String templateBody =
         ""
             + "{@param x: ?}\n"
-            + "<div id=\"{call .blah}{param a kind=\"text\"}{$x}{/param}{/call}\"></div>\n";
+            + "<div id=\"{call blah}{param a kind=\"text\"}{$x}{/param}{/call}\"></div>\n";
 
     SoyFileSetNode n =
         performVisitorFile(
@@ -244,7 +244,7 @@ public final class HtmlContextVisitorTest {
         ""
             + "{namespace test}"
             + "/** */"
-            + "{template .foo kind=\"text\"}"
+            + "{template foo kind=\"text\"}"
             + "  {@param x: string}\n"
             + "  <div id=\"foo\"></div>\n"
             + "  {$x}\n"

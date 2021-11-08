@@ -68,8 +68,8 @@ public class MsgNodeTest {
     //   {$zoo}                              [ZOO]
     //   {$foo.zoo phname="ZOO_4"}           [ZOO_4]
     //   {$foo.zoo phname="ZOO_4"}           [ZOO_4]
-    //   {call .helper phname="ZOO_5" /}     [ZOO_5]
-    //   {call .helper phname="ZOO_6" /}     [ZOO_6]
+    //   {call helper phname="ZOO_5" /}     [ZOO_5]
+    //   {call helper phname="ZOO_6" /}     [ZOO_6]
     // {/msg}
     //
     // Note: The three 'print' tags {$foo.goo}, {$goo}, and {$goo2} end up as placeholders GOO_1,
@@ -79,7 +79,7 @@ public class MsgNodeTest {
     // 3. However, since GOO_2 is already used for {$goo2}, we use GOO_1 and GOO_3 instead.
 
     String template =
-        "{template .brittleTestTemplate}"
+        "{template brittleTestTemplate}"
             + "{@param url1 : ?}"
             + "{@param boo : ?}"
             + "{@param foo : ?}"
@@ -101,8 +101,8 @@ public class MsgNodeTest {
             + "  {$zoo}\n"
             + "  {$foo.zoo phname=\"ZOO_4\"}\n"
             + "  {$foo.zoo phname=\"ZOO_4\"}\n"
-            + "  {call .helper phname=\"ZOO_5\" /}\n"
-            + "  {call .helper phname=\"ZOO_6\" /}\n"
+            + "  {call helper phname=\"ZOO_5\" /}\n"
+            + "  {call helper phname=\"ZOO_6\" /}\n"
             + "{/msg}"
             + "{/template}"
             + "{template helper}"
@@ -395,11 +395,11 @@ public class MsgNodeTest {
   @Test
   public void testGenPlaceholdersForGenders() {
     String template =
-        "{template .brittleTestTemplate}"
+        "{template brittleTestTemplate}"
             + "{@param gender : ?}"
             + "{@param person : ?}"
             + "{msg desc=\"\" genders=\"$gender\"}\n"
-            + "  {$person} invited you to a group conversation with {call .everyoneElse /}"
+            + "  {$person} invited you to a group conversation with {call everyoneElse /}"
             + "{/msg}"
             + "{/template}"
             + "{template everyoneElse}"

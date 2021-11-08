@@ -121,7 +121,7 @@ public final class RawTextNodeTest {
   private static TemplateNode parseTemplate(String input) {
     String soyFile =
         Joiner.on('\n')
-            .join("{namespace ns}", "", "{template .t stricthtml=\"false\"}", input, "{/template}");
+            .join("{namespace ns}", "", "{template t stricthtml=\"false\"}", input, "{/template}");
     SoyFileNode node =
         new SoyFileParser(
                 new IncrementingIdGenerator(),

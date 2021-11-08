@@ -52,7 +52,7 @@ public class SoyConformanceTest {
             + "  error_message: 'foo'"
             + "}",
         "{namespace ns}\n"
-            + "{template .foo}\n"
+            + "{template foo}\n"
             + "{checkNotNull(['xxx', 'bar', 'yyy', 'baz'])}\n"
             + "{/template}");
   }
@@ -67,7 +67,7 @@ public class SoyConformanceTest {
             + "  error_message: 'foo'"
             + "}",
         "{namespace ns}\n"
-            + "{template .checkNotNull}\n"
+            + "{template checkNotNull}\n"
             + "This should be allowed.\n"
             + "{/template}");
   }
@@ -81,7 +81,7 @@ public class SoyConformanceTest {
             + "  }\n"
             + "  error_message: 'foo'"
             + "}",
-        "{namespace ns}\n" + "{template .foo}\n" + "{print 'blah' |escapeUri}\n" + "{/template}");
+        "{namespace ns}\n" + "{template foo}\n" + "{print 'blah' |escapeUri}\n" + "{/template}");
   }
 
   @Test
@@ -94,7 +94,7 @@ public class SoyConformanceTest {
             + "  error_message: 'foo'"
             + "}",
         "{namespace ns}\n"
-            + "{template .filterUri}\n"
+            + "{template filterUri}\n"
             + "This should be allowed.\n"
             + "{/template}");
   }
@@ -108,10 +108,7 @@ public class SoyConformanceTest {
             + "  }\n"
             + "  error_message: 'foo'"
             + "}",
-        "{namespace ns}\n"
-            + "{template .foo}\n"
-            + "{css('goog-inline-block')}\n"
-            + "{/template}\n");
+        "{namespace ns}\n" + "{template foo}\n" + "{css('goog-inline-block')}\n" + "{/template}\n");
   }
 
   @Test
@@ -124,7 +121,7 @@ public class SoyConformanceTest {
             + "  error_message: 'foo'"
             + "}",
         "{namespace ns}\n"
-            + "{template .foo}\n"
+            + "{template foo}\n"
             + "{print 'goog-inline-block'}\n"
             + "{/template}\n");
   }
@@ -139,7 +136,7 @@ public class SoyConformanceTest {
             + "  }\n"
             + "  error_message: 'foo'"
             + "}",
-        "{namespace ns}\n" + "{template .foo}\n" + "{css('mdc-button')}\n" + "{/template}\n");
+        "{namespace ns}\n" + "{template foo}\n" + "{css('mdc-button')}\n" + "{/template}\n");
   }
 
   @Test
@@ -153,7 +150,7 @@ public class SoyConformanceTest {
             + "  error_message: 'foo'"
             + "}",
         "{namespace ns}\n"
-            + "{template .foo}\n"
+            + "{template foo}\n"
             + "{css('other-prefix-mdc-button')}\n"
             + "{/template}\n");
   }
@@ -171,7 +168,7 @@ public class SoyConformanceTest {
         new StableSoyFileSupplier(
             CharSource.wrap(
                 "{namespace ns}\n"
-                    + "{template .foo}\n"
+                    + "{template foo}\n"
                     + "{checkNotNull(['xxx', 'bar', 'yyy', 'baz'])}\n"
                     + "{/template}"),
             SourceFilePath.create("foo/bar/baz.soy")));
@@ -190,7 +187,7 @@ public class SoyConformanceTest {
         new StableSoyFileSupplier(
             CharSource.wrap(
                 "{namespace ns}\n"
-                    + "{template .foo}\n"
+                    + "{template foo}\n"
                     + "{checkNotNull(['xxx', 'bar', 'yyy', 'baz'])}\n"
                     + "{/template}"),
             SourceFilePath.create("a/b/c/foo/bar/baz.soy")));
@@ -209,7 +206,7 @@ public class SoyConformanceTest {
         new StableSoyFileSupplier(
             CharSource.wrap(
                 "{namespace ns}\n"
-                    + "{template .foo}\n"
+                    + "{template foo}\n"
                     + "{checkNotNull(['xxx', 'bar', 'yyy', 'baz'])}\n"
                     + "{/template}"),
             SourceFilePath.create("a/b/c/foo/bar/baz.soy")));
@@ -224,7 +221,7 @@ public class SoyConformanceTest {
             + "  }\n"
             + "  error_message: 'foo'"
             + "}",
-        "{namespace ns}\n" + "{template .bar}\n" + "foo\n" + "{/template}");
+        "{namespace ns}\n" + "{template bar}\n" + "foo\n" + "{/template}");
   }
 
   @Test
@@ -236,7 +233,7 @@ public class SoyConformanceTest {
             + "  }\n"
             + "  error_message: 'foo'"
             + "}",
-        "{namespace ns}\n" + "{template .foo}\n" + "bar\n" + "{/template}");
+        "{namespace ns}\n" + "{template foo}\n" + "bar\n" + "{/template}");
   }
 
   @Test
@@ -248,7 +245,7 @@ public class SoyConformanceTest {
             + "  }\n"
             + "  error_message: 'foo'"
             + "}",
-        "{namespace ns}\n" + "{template .foo}\n" + "<!-- foo -->\n" + "{/template}");
+        "{namespace ns}\n" + "{template foo}\n" + "<!-- foo -->\n" + "{/template}");
   }
 
   @Test
@@ -261,7 +258,7 @@ public class SoyConformanceTest {
             + "  }\n"
             + "  error_message: 'foo'"
             + "}",
-        "{namespace ns}\n" + "{template .foo}\n" + "<a link=\"foo\"></a>\n" + "{/template}");
+        "{namespace ns}\n" + "{template foo}\n" + "<a link=\"foo\"></a>\n" + "{/template}");
   }
 
   @Test
@@ -273,7 +270,7 @@ public class SoyConformanceTest {
             + "  }\n"
             + "  error_message: 'foo'"
             + "}",
-        "{namespace ns}\n" + "{template .bar}\n" + "  <div>test</div>\n" + "{/template}");
+        "{namespace ns}\n" + "{template bar}\n" + "  <div>test</div>\n" + "{/template}");
   }
 
   @Test
@@ -287,7 +284,7 @@ public class SoyConformanceTest {
             + "  error_message: 'foo'"
             + "}",
         "{namespace ns}\n"
-            + "{template .bar}\n"
+            + "{template bar}\n"
             // Tag name is case insensitive.
             + "  <DIV>test</div>\n"
             + "{/template}");
@@ -306,7 +303,7 @@ public class SoyConformanceTest {
             + "  error_message: 'foo'"
             + "}",
         "{namespace ns}\n"
-            + "{template .bar}\n"
+            + "{template bar}\n"
             + "<iframe src='#'>test</iframe>\n"
             + "{/template}");
   }
@@ -322,7 +319,7 @@ public class SoyConformanceTest {
             + "  error_message: 'foo'"
             + "}",
         "{namespace ns}\n"
-            + "{template .bar}\n"
+            + "{template bar}\n"
             + "<iframe src='foo.js'>test</iframe>\n"
             + "{/template}");
 
@@ -335,7 +332,7 @@ public class SoyConformanceTest {
             + "  }\n"
             + "  error_message: 'foo'"
             + "}",
-        "{namespace ns}\n" + "{template .bar}\n" + "<div><p></p></div>\n" + "{/template}");
+        "{namespace ns}\n" + "{template bar}\n" + "<div><p></p></div>\n" + "{/template}");
   }
 
   @Test
@@ -349,7 +346,7 @@ public class SoyConformanceTest {
             + "  error_message: 'foo'"
             + "}",
         "{namespace ns}\n"
-            + "{template .bar}\n"
+            + "{template bar}\n"
             + "  <div contenteditable>test</div>\n"
             + "{/template}");
   }
@@ -365,7 +362,7 @@ public class SoyConformanceTest {
             + "  error_message: 'foo'"
             + "}",
         "{namespace ns}\n"
-            + "{template .bar}\n"
+            + "{template bar}\n"
             + "  <div CONTENTEDITABLE>test</div>\n"
             + "{/template}");
   }
@@ -381,7 +378,7 @@ public class SoyConformanceTest {
             + "  error_message: 'foo'"
             + "}",
         "{namespace ns}\n"
-            + "{template .bar}\n"
+            + "{template bar}\n"
             + "{@param baz: bool}"
             + "  <div {if $baz}contenteditable{/if}>test</div>\n"
             + "{/template}");
@@ -399,7 +396,7 @@ public class SoyConformanceTest {
             + "  error_message: 'foo'"
             + "}",
         "{namespace ns}\n"
-            + "{template .bar}\n"
+            + "{template bar}\n"
             + "  <div contenteditable style='color:red;'>test</div>\n"
             + "{/template}");
   }
@@ -414,7 +411,7 @@ public class SoyConformanceTest {
             + "  }\n"
             + "  error_message: 'foo'"
             + "}",
-        "{namespace ns}\n" + "{template .bar}\n" + "  <div>test</div>\n" + "{/template}");
+        "{namespace ns}\n" + "{template bar}\n" + "  <div>test</div>\n" + "{/template}");
   }
 
   @Test
@@ -429,7 +426,7 @@ public class SoyConformanceTest {
             + "  error_message: 'foo'"
             + "}",
         "{namespace ns}\n"
-            + "{template .bar}\n"
+            + "{template bar}\n"
             + "  <div contenteditable>test</div>\n"
             + "{/template}");
   }
@@ -449,21 +446,21 @@ public class SoyConformanceTest {
     assertNoViolation(
         requirement,
         "{namespace ns}\n"
-            + "{template .bar}\n"
+            + "{template bar}\n"
             + "  <script src=\"foo.js\"></script>\n"
             + "{/template}");
     assertViolation(
         requirement,
-        "{namespace ns}\n" + "{template .bar}\n" + "  <script defer></script>\n" + "{/template}");
+        "{namespace ns}\n" + "{template bar}\n" + "  <script defer></script>\n" + "{/template}");
     assertViolation(
         requirement,
         "{namespace ns}\n"
-            + "{template .bar}\n"
+            + "{template bar}\n"
             + "  <script src=\"foo.js\" defer></script>\n"
             + "{/template}");
     assertViolation(
         requirement,
-        "{namespace ns}\n" + "{template .bar}\n" + "  <script></script>\n" + "{/template}");
+        "{namespace ns}\n" + "{template bar}\n" + "  <script></script>\n" + "{/template}");
   }
 
   @Test
@@ -481,7 +478,7 @@ public class SoyConformanceTest {
     assertViolation(
         requirement,
         "{namespace ns}\n"
-            + "{template .bar}\n"
+            + "{template bar}\n"
             + "  <script>console.log('js is run here');</script>\n"
             + "{/template}");
 
@@ -489,19 +486,19 @@ public class SoyConformanceTest {
     assertNoViolation(
         requirement,
         "{namespace ns}\n"
-            + "{template .bar}\n"
+            + "{template bar}\n"
             + "  <script src=\"foo.js\">console.log('js is ignored here');</script>\n"
             + "{/template}");
     assertNoViolation(
         requirement,
         "{namespace ns}\n"
-            + "{template .bar}\n"
+            + "{template bar}\n"
             + "  <script src=\"\">console.log('js is ignored here');</script>\n"
             + "{/template}");
     assertNoViolation(
         requirement,
         "{namespace ns}\n"
-            + "{template .bar}\n"
+            + "{template bar}\n"
             + "  <script src>console.log('js is ignored here');</script>\n"
             + "{/template}");
   }
@@ -515,7 +512,7 @@ public class SoyConformanceTest {
             + "  }\n"
             + "  error_message: 'foo'"
             + "}",
-        "{namespace ns}\n" + "{template .foo}\n" + "<div onclick='bar'></div>\n" + "{/template}");
+        "{namespace ns}\n" + "{template foo}\n" + "<div onclick='bar'></div>\n" + "{/template}");
     assertViolation(
         "requirement: {\n"
             + "  custom: {\n"
@@ -523,7 +520,7 @@ public class SoyConformanceTest {
             + "  }\n"
             + "  error_message: 'foo'"
             + "}",
-        "{namespace ns}\n" + "{template .foo}\n" + "<div ONCLICK='bar'></div>\n" + "{/template}");
+        "{namespace ns}\n" + "{template foo}\n" + "<div ONCLICK='bar'></div>\n" + "{/template}");
     assertNoViolation(
         "requirement: {\n"
             + "  custom: {\n"
@@ -531,7 +528,7 @@ public class SoyConformanceTest {
             + "  }\n"
             + "  error_message: 'foo'"
             + "}",
-        "{namespace ns}\n" + "{template .foo}\n" + "<div on='bar'></div>\n" + "{/template}");
+        "{namespace ns}\n" + "{template foo}\n" + "<div on='bar'></div>\n" + "{/template}");
   }
 
   @Test
@@ -543,11 +540,11 @@ public class SoyConformanceTest {
             + "  }\n"
             + "  error_message: 'foo'"
             + "}";
-    assertNoViolation(config, "{namespace ns}\n" + "{template .foo}\n" + "{/template}");
+    assertNoViolation(config, "{namespace ns}\n" + "{template foo}\n" + "{/template}");
     assertViolation(
-        config, "{namespace ns}\n" + "{template .foo stricthtml=\"false\"}\n" + "{/template}");
+        config, "{namespace ns}\n" + "{template foo stricthtml=\"false\"}\n" + "{/template}");
     assertNoViolation(
-        config, "{namespace ns}\n" + "{template .foo kind=\"text\"}\n" + "{/template}");
+        config, "{namespace ns}\n" + "{template foo kind=\"text\"}\n" + "{/template}");
   }
 
   // regression test, this used to not be detected since we only issued errors if the attribute was
@@ -562,7 +559,7 @@ public class SoyConformanceTest {
             + "  error_message: 'foo'"
             + "}",
         "{namespace ns}\n"
-            + "{template .foo kind=\"attributes\"}\n"
+            + "{template foo kind=\"attributes\"}\n"
             + "ONCLICK='bar'\n"
             + "{/template}");
   }
@@ -579,7 +576,7 @@ public class SoyConformanceTest {
             + "  error_message: 'foo'"
             + "}",
         "{namespace ns}\n"
-            + "{template .foo}\n"
+            + "{template foo}\n"
             + " {@param jsUrl : ?}{@param callback : ?}\n"
             + "<script id=\"base-js\" src=\"{$jsUrl}\" async onload=\"{$callback}\"></script>\n"
             + "{/template}");
@@ -598,7 +595,7 @@ public class SoyConformanceTest {
         new StableSoyFileSupplier(
             CharSource.wrap(
                 "{namespace ns}\n"
-                    + "{template .foo}\n"
+                    + "{template foo}\n"
                     + "<script onload='foo();'></script>\n"
                     + "{/template}"),
             SourceFilePath.create("foo/bar/baz.soy")));
@@ -619,12 +616,12 @@ public class SoyConformanceTest {
         new StableSoyFileSupplier(
             CharSource.wrap(
                 "{namespace ns}\n"
-                    + "{template .foo}\n"
+                    + "{template foo}\n"
                     + "<script onload='foo();'></script>\n"
                     + "{/template}"),
             SourceFilePath.create("foo/bar/baz.soy")),
         new StableSoyFileSupplier(
-            CharSource.wrap("{namespace ns2}\n" + "{template .noViolation}{/template}"),
+            CharSource.wrap("{namespace ns2}\n" + "{template noViolation}{/template}"),
             SourceFilePath.create("foo/bar/quux.soy")));
   }
 
@@ -638,7 +635,7 @@ public class SoyConformanceTest {
             + "  error_message: 'foo'"
             + " "
             + "}",
-        "{namespace ns}\n" + "{template .foo}\n" + "<div foo='bar'></div>\n" + "{/template}");
+        "{namespace ns}\n" + "{template foo}\n" + "<div foo='bar'></div>\n" + "{/template}");
   }
 
   @Test
@@ -650,7 +647,7 @@ public class SoyConformanceTest {
             + "  }\n"
             + "  error_message: 'foo'"
             + "}",
-        "{namespace ns}\n" + "{template .foo}\n" + "<a href='#foo'></a>" + "{/template}");
+        "{namespace ns}\n" + "{template foo}\n" + "<a href='#foo'></a>" + "{/template}");
     assertNoViolation(
         "requirement: {\n"
             + "  custom: {\n"
@@ -658,7 +655,7 @@ public class SoyConformanceTest {
             + "  }\n"
             + "  error_message: 'foo'"
             + "}",
-        "{namespace ns}\n" + "{template .foo}\n" + "<a href='./#foo'></a>" + "{/template}");
+        "{namespace ns}\n" + "{template foo}\n" + "<a href='./#foo'></a>" + "{/template}");
     assertNoViolation(
         "requirement: {\n"
             + "  custom: {\n"
@@ -666,7 +663,7 @@ public class SoyConformanceTest {
             + "  }\n"
             + "  error_message: 'foo'"
             + "}",
-        "{namespace ns}\n" + "{template .foo}\n" + "<a href='#'></a>" + "{/template}");
+        "{namespace ns}\n" + "{template foo}\n" + "<a href='#'></a>" + "{/template}");
     assertNoViolation(
         "requirement: {\n"
             + "  custom: {\n"
@@ -675,7 +672,7 @@ public class SoyConformanceTest {
             + "  error_message: 'foo'"
             + "}",
         "{namespace ns}\n"
-            + "{template .foo}\n"
+            + "{template foo}\n"
             + "<some-custom-tag href='#'></some-custom-tag>"
             + "{/template}");
   }
@@ -689,7 +686,7 @@ public class SoyConformanceTest {
             + "  }\n"
             + "  error_message: 'foo'"
             + "}",
-        "{namespace ns}{template .bar}{css('foo')}{/template}");
+        "{namespace ns}{template bar}{css('foo')}{/template}");
     assertViolation(
         "requirement: {\n"
             + "  banned_css_selector {\n"
@@ -697,7 +694,7 @@ public class SoyConformanceTest {
             + "  }\n"
             + "  error_message: 'foo'"
             + "}",
-        "{namespace ns}{template .bar}{css('foo')}{/template}");
+        "{namespace ns}{template bar}{css('foo')}{/template}");
     assertViolation(
         "requirement: {\n"
             + "  banned_css_selector {\n"
@@ -705,7 +702,7 @@ public class SoyConformanceTest {
             + "  }\n"
             + "  error_message: 'foo'"
             + "}",
-        "{namespace ns}{template .bar}{@param foo : ?}{css($foo, 'foo')}{/template}");
+        "{namespace ns}{template bar}{@param foo : ?}{css($foo, 'foo')}{/template}");
   }
 
   @Test
@@ -714,21 +711,21 @@ public class SoyConformanceTest {
         "requirement { ban_xid_for_css_obfuscation {} error_message: 'foo' }",
         "{namespace ns}\n"
             + "\n"
-            + "{template .foo}\n"
+            + "{template foo}\n"
             + "  {@param foo: string}\n"
             + "  {let $baz: css('baz') /}\n"
             + "  <div class=\"{css('foo')} {$baz}\n"
             + "              {if $foo == xid('bar')}{css('bar')}{/if}\n"
             + "              {$foo == xid('baz') ? css('a') : css('b')}\n"
-            + "              {call .shouldIgnoreThis}{param foo: xid('foo') /}{/call}\"\n"
+            + "              {call shouldIgnoreThis}{param foo: xid('foo') /}{/call}\"\n"
             + "       data-foo=\"{xid('foo')}\">\n"
-            + "    {call .bar}\n"
+            + "    {call bar}\n"
             + "      {param fooClasses: css('foo') /}\n"
             + "      {param barClasses kind=\"text\"}\n"
             + "        {css('bar')}\n"
             + "      {/param}\n"
             + "      {param complexClass kind=\"text\"}\n"
-            + "        {call .shouldIgnoreThis}{param foo: xid('foo') /}{/call}\n"
+            + "        {call shouldIgnoreThis}{param foo: xid('foo') /}{/call}\n"
             + "      {/param}\n"
             + "      {param foo: xid('foo') /}\n"
             + "      {param bar kind=\"text\"}{xid('bar')}{/param}\n"
@@ -736,7 +733,7 @@ public class SoyConformanceTest {
             + "  </div>\n"
             + "{/template}\n"
             + "\n"
-            + "{template .bar}\n"
+            + "{template bar}\n"
             + "  {@param fooClasses: string}\n"
             + "  {@param barClasses: string}\n"
             + "  {@param complexClass: string}\n"
@@ -745,7 +742,7 @@ public class SoyConformanceTest {
             + "  {$fooClasses + $barClasses + $complexClass + $foo + $bar}\n"
             + "{/template}\n"
             + "\n"
-            + "{template .shouldIgnoreThis}\n"
+            + "{template shouldIgnoreThis}\n"
             + "  {@param foo: string}\n"
             + "  {if $foo == xid('foo')}{css('bar')}{/if}\n"
             + "{/template}\n");
@@ -756,20 +753,20 @@ public class SoyConformanceTest {
     assertViolation(
         "requirement { ban_xid_for_css_obfuscation {} error_message: 'foo' }",
         "{namespace ns}\n"
-            + "{template .foo}\n"
+            + "{template foo}\n"
             + "  <div class=\"{css('foo')} {xid('bar')}\"></div>\n"
             + "{/template}");
     assertViolation(
         "requirement { ban_xid_for_css_obfuscation {} error_message: 'foo' }",
         "{namespace ns}\n"
-            + "{template .foo}\n"
+            + "{template foo}\n"
             + "  {let $bar kind=\"text\"}{xid('bar')}{/let}\n"
             + "  <div class=\"{css('foo')} {$bar}\"></div>\n"
             + "{/template}");
     assertViolation(
         "requirement { ban_xid_for_css_obfuscation {} error_message: 'foo' }",
         "{namespace ns}\n"
-            + "{template .foo}\n"
+            + "{template foo}\n"
             + "  {let $baz: xid('baz') /}\n"
             + "  {let $bar kind=\"text\"}{$baz}{/let}\n"
             + "  <div class=\"{css('foo')} {$bar}\"></div>\n"
@@ -777,7 +774,7 @@ public class SoyConformanceTest {
     assertViolation(
         "requirement { ban_xid_for_css_obfuscation {} error_message: 'foo' }",
         "{namespace ns}\n"
-            + "{template .foo}\n"
+            + "{template foo}\n"
             + "  {@param foo: bool}\n"
             + "  <div class=\"{css('foo')} {$foo ? css('bar') : xid('baz')}\"></div>\n"
             + "{/template}");
@@ -788,42 +785,42 @@ public class SoyConformanceTest {
     assertViolation(
         "requirement { ban_xid_for_css_obfuscation {} error_message: 'foo' }",
         "{namespace ns}\n"
-            + "{template .foo}\n"
-            + "  {call .bar}\n"
+            + "{template foo}\n"
+            + "  {call bar}\n"
             + "    {param classes kind=\"text\"}{css('foo')} {xid('bar')}{/param}\n"
             + "  {/call}\n"
             + "{/template}\n"
-            + "{template .bar}{@param classes: string}<div class=\"{$classes}\"></div>{/template}");
+            + "{template bar}{@param classes: string}<div class=\"{$classes}\"></div>{/template}");
     assertViolation(
         "requirement { ban_xid_for_css_obfuscation {} error_message: 'foo' }",
         "{namespace ns}\n"
-            + "{template .foo}\n"
-            + "  {call .bar}\n"
+            + "{template foo}\n"
+            + "  {call bar}\n"
             + "    {param class: xid('foo') /}\n"
             + "  {/call}\n"
             + "{/template}\n"
-            + "{template .bar}{@param class: string}<div class=\"{$class}\"></div>{/template}");
+            + "{template bar}{@param class: string}<div class=\"{$class}\"></div>{/template}");
     assertViolation(
         "requirement { ban_xid_for_css_obfuscation {} error_message: 'foo' }",
         "{namespace ns}\n"
-            + "{template .foo}\n"
+            + "{template foo}\n"
             + "  {let $bar: xid('bar') /}\n"
-            + "  {call .bar}\n"
+            + "  {call bar}\n"
             + "    {param myClass: $bar /}\n"
             + "  {/call}\n"
             + "{/template}\n"
-            + "{template .bar}{@param myClass: string}<div class=\"{$myClass}\"></div>{/template}");
+            + "{template bar}{@param myClass: string}<div class=\"{$myClass}\"></div>{/template}");
     assertViolation(
         "requirement { ban_xid_for_css_obfuscation {} error_message: 'foo' }",
         "{namespace ns}\n"
-            + "{template .foo}\n"
+            + "{template foo}\n"
             + "  {let $baz: xid('baz') /}\n"
             + "  {let $bar kind=\"text\"}{$baz}{/let}\n"
-            + "  {call .bar}\n"
+            + "  {call bar}\n"
             + "    {param myClasses kind=\"text\"}{$bar}{/param}\n"
             + "  {/call}\n"
             + "{/template}\n"
-            + "{template .bar}\n"
+            + "{template bar}\n"
             + "  {@param myClasses: string}\n"
             + "  <div class=\"{$myClasses}\"></div>\n"
             + "{/template}");

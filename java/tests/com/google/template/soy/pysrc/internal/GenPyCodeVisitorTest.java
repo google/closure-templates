@@ -32,7 +32,7 @@ import org.junit.runners.JUnit4;
 public final class GenPyCodeVisitorTest {
 
   private static final String SOY_NAMESPACE = "{namespace boo.foo}\n";
-  private static final String DUMMY_SOY_FILE = SOY_NAMESPACE + "{template .dummy}{/template}\n";
+  private static final String DUMMY_SOY_FILE = SOY_NAMESPACE + "{template dummy}{/template}\n";
 
   private static final String EXPECTED_PYFILE_START =
       "# coding=utf-8\n"
@@ -98,7 +98,7 @@ public final class GenPyCodeVisitorTest {
 
   @Test
   public void testBlankTemplate() {
-    String soyFile = SOY_NAMESPACE + "{template .helloWorld}\n" + "{/template}\n";
+    String soyFile = SOY_NAMESPACE + "{template helloWorld}\n" + "{/template}\n";
 
     String expectedPyFile =
         EXPECTED_PYFILE_START
@@ -115,7 +115,7 @@ public final class GenPyCodeVisitorTest {
   @Test
   public void testSimpleTemplate() {
     String soyFile =
-        SOY_NAMESPACE + "{template .helloWorld}\n" + "  Hello World!\n" + "{/template}\n";
+        SOY_NAMESPACE + "{template helloWorld}\n" + "  Hello World!\n" + "{/template}\n";
 
     String expectedPyFile =
         EXPECTED_PYFILE_START
@@ -134,7 +134,7 @@ public final class GenPyCodeVisitorTest {
   public void testOutputScope() {
     String soyFile =
         SOY_NAMESPACE
-            + "{template .helloWorld}\n"
+            + "{template helloWorld}\n"
             + "  {@param foo : ?}\n"
             + "  {@param boo : list<string>}\n"
             + "  {if $foo}\n"

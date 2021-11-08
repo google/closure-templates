@@ -107,7 +107,7 @@ public class BytecodeCompilerTest {
                     "{namespace ns1}",
                     "",
                     "/***/",
-                    "{template .callerTemplate}",
+                    "{template callerTemplate}",
                     "  {delcall myApp.myDelegate}",
                     "    {param boo: 'aaaaaah' /}",
                     "  {/delcall}",
@@ -161,7 +161,7 @@ public class BytecodeCompilerTest {
                     "{namespace ns4}",
                     "",
                     "/** */",
-                    "{template .helper}",
+                    "{template helper}",
                     "  {@param boo : string}",
                     "  {$boo}",
                     "{/template}",
@@ -228,15 +228,15 @@ public class BytecodeCompilerTest {
             .join(
                 "{namespace ns}",
                 "",
-                "{template .html}",
+                "{template html}",
                 "  <div>foo</div>",
                 "{/template}",
                 "",
-                "{template .text kind=\"text\"}",
+                "{template text kind=\"text\"}",
                 "  foo",
                 "{/template}",
                 "",
-                "{template .htmlNoTag}",
+                "{template htmlNoTag}",
                 "  foo",
                 "{/template}");
     SoyFileSetParser parser =
@@ -290,7 +290,7 @@ public class BytecodeCompilerTest {
                 "{namespace ns1}",
                 "",
                 "/***/",
-                "{template .callerTemplate}",
+                "{template callerTemplate}",
                 "  {@param variant : string}",
                 "  {delcall ns1.del variant=\"$variant\" allowemptydefault=\"true\"/}",
                 "{/template}",
@@ -351,32 +351,32 @@ public class BytecodeCompilerTest {
             CssRegistry.create(ImmutableSet.of("ns.foo", "ns.bar"), ImmutableMap.of()),
             "{namespace ns requirecss=\"ns.foo\"}",
             "",
-            "{template .callerDataAll requirecss=\"ns.bar\"}",
+            "{template callerDataAll requirecss=\"ns.bar\"}",
             "  {@param foo : string}",
-            "  {call .callee data=\"all\" /}",
+            "  {call callee data=\"all\" /}",
             "{/template}",
             "",
-            "{template .callerDataExpr}",
+            "{template callerDataExpr}",
             "  {@param rec : [foo : string]}",
-            "  {call .callee data=\"$rec\" /}",
+            "  {call callee data=\"$rec\" /}",
             "{/template}",
             "",
-            "{template .callerParams}",
+            "{template callerParams}",
             "  {@param p1 : string}",
-            "  {call .callee}",
+            "  {call callee}",
             "    {param foo : $p1 /}",
             "    {param boo : 'a' + 1 + 'b' /}",
             "  {/call}",
             "{/template}",
             "",
-            "{template .callerParamsAndData}",
+            "{template callerParamsAndData}",
             "  {@param p1 : string}",
-            "  {call .callee data=\"all\"}",
+            "  {call callee data=\"all\"}",
             "    {param foo : $p1 /}",
             "  {/call}",
             "{/template}",
             "",
-            "{template .callee}",
+            "{template callee}",
             "  {@param foo : string}",
             "  {@param? boo : string}",
             "Foo: {$foo}{\\n}",
@@ -427,7 +427,7 @@ public class BytecodeCompilerTest {
             "{namespace ns requirecss=\"ns.foo\"}",
             "",
             "/** */",
-            "{template .requireCss requirecss=\"ns.bar\"}",
+            "{template requireCss requirecss=\"ns.bar\"}",
             "{/template}",
             "");
     TemplateMetadata metadata = getTemplateMetadata(templates, "ns.requireCss");
@@ -443,13 +443,13 @@ public class BytecodeCompilerTest {
         TemplateTester.compileFile(
             "{namespace ns}",
             "",
-            "{template .msg}",
+            "{template msg}",
             "  {msg desc='description'}",
-            "    {call .t data='all' /}",
+            "    {call t data='all' /}",
             "  {/msg}",
             "{/template}",
             "",
-            "{template .t}",
+            "{template t}",
             "  foobar",
             "{/template}");
 
@@ -464,7 +464,7 @@ public class BytecodeCompilerTest {
         TemplateTester.compileFile(
             "{namespace ns}",
             "",
-            "{template .msg kind='text'}",
+            "{template msg kind='text'}",
             "  {@param name:string}",
             "  {msg desc='...'}",
             "    <a href='/'>Hello {$name + '' phname='FOO'}</a>",
@@ -479,7 +479,7 @@ public class BytecodeCompilerTest {
         TemplateTester.compileFile(
             "{namespace ns}",
             "",
-            "{template .msg  kind='text'}",
+            "{template msg  kind='text'}",
             "  {@param name:string}",
             "  {if $name}",
             "    {msg desc='...'}",
@@ -818,7 +818,7 @@ public class BytecodeCompilerTest {
   public void testParam_headerDocParam() {
     assertThatFile(
             "{namespace ns}",
-            "{template .foo}",
+            "{template foo}",
             "  {@param foo: ?}  /** A foo */",
             "  {$foo + 1}",
             "{/template}",
@@ -889,7 +889,7 @@ public class BytecodeCompilerTest {
     CompiledTemplateSubject subject =
         TemplateTester.assertThatFile(
             "{namespace ns}",
-            "{template .foo}",
+            "{template foo}",
             "  {@param? content : string}",
             "  {checkNotNull($content)}",
             "{/template}");
@@ -905,7 +905,7 @@ public class BytecodeCompilerTest {
     CompiledTemplateSubject subject =
         TemplateTester.assertThatFile(
             "{namespace ns}",
-            "{template .foo}",
+            "{template foo}",
             "  {@param? content : string}",
             "  {$content ?: 'empty'}",
             "{/template}");
@@ -922,7 +922,7 @@ public class BytecodeCompilerTest {
     CompiledTemplateSubject subject =
         TemplateTester.assertThatFile(
             "{namespace ns}",
-            "{template .foo}",
+            "{template foo}",
             "  {@param content : string}",
             "  {$content}",
             "{/template}");
@@ -973,7 +973,7 @@ public class BytecodeCompilerTest {
     // make sure you can't access factories for priate tempaltes
     CompiledTemplates templates =
         TemplateTester.compileFile(
-            "{namespace ns}{template .foo visibility=\"private\"}hello world{/template}");
+            "{namespace ns}{template foo visibility=\"private\"}hello world{/template}");
     try {
       templates.getTemplate("ns.foo");
       fail();
@@ -1064,7 +1064,7 @@ public class BytecodeCompilerTest {
             .join(
                 "{namespace ns}",
                 "",
-                "{template .callerTemplate}",
+                "{template callerTemplate}",
                 "  {delcall myApp.myDelegate/}",
                 "{/template}",
                 "");
@@ -1118,7 +1118,7 @@ public class BytecodeCompilerTest {
                 .join(
                     "{namespace ns}",
                     "",
-                    "{template .foo}",
+                    "{template foo}",
                     "  {@param p1 : ?}",
                     "  {@param p2 : ?}",
                     "  {@param p3 : ?}",
@@ -1178,7 +1178,7 @@ public class BytecodeCompilerTest {
                 .join(
                     "{namespace ns}",
                     "",
-                    "{template .foo}",
+                    "{template foo}",
                     "  {@param list : ?}",
                     "  {@param? opt : ?}",
                     "{if not $opt}",
@@ -1298,20 +1298,20 @@ public class BytecodeCompilerTest {
                     .join(
                         "{namespace loader1.a}",
                         "import {publicTemplate2} from 'loader2.soy';",
-                        "{template .publicTemplate1}",
+                        "{template publicTemplate1}",
                         "L1T1",
-                        "{sp}{call .privateTemplate_ /}",
+                        "{sp}{call privateTemplate_ /}",
                         "{sp}{call publicTemplate2 /}",
                         "{/template}",
                         "",
-                        "{template .privateTemplate_ visibility=\"private\"}",
+                        "{template privateTemplate_ visibility=\"private\"}",
                         "PVT",
                         "{/template}"),
                 "loader2.soy",
                 Joiner.on("\n")
                     .join(
                         "{namespace loader1.b}",
-                        "{template .publicTemplate2}",
+                        "{template publicTemplate2}",
                         "L1T2",
                         "{/template}")));
     ParseResult parseResult1 = parser1.parse();
@@ -1329,7 +1329,7 @@ public class BytecodeCompilerTest {
                 Joiner.on("\n")
                     .join(
                         "{namespace loader1.a}",
-                        "{template .publicTemplate1}",
+                        "{template publicTemplate1}",
                         "L1T1 RECOMPILED",
                         "{/template}")));
     ParseResult parseResult1Recompiled = parser1Recompiled.parse();
@@ -1344,7 +1344,7 @@ public class BytecodeCompilerTest {
                     .join(
                         "{namespace loader2}",
                         "import {publicTemplate1} from 'loader1.soy';",
-                        "{template .publicTemplate}",
+                        "{template publicTemplate}",
                         "L2T",
                         "{sp}{call publicTemplate1 /}",
                         "{sp}{call publicTemplate1 /}",
@@ -1387,20 +1387,20 @@ public class BytecodeCompilerTest {
                     .join(
                         "{namespace loader1}",
                         "import {publicTemplate2} from 'loader2.soy';",
-                        "{template .publicTemplate1}",
+                        "{template publicTemplate1}",
                         "L1T1",
-                        "{sp}{call .privateTemplate_ /}",
+                        "{sp}{call privateTemplate_ /}",
                         "{sp}{call publicTemplate2 /}",
                         "{/template}",
                         "",
-                        "{template .privateTemplate_ visibility=\"private\"}",
+                        "{template privateTemplate_ visibility=\"private\"}",
                         "PVT",
                         "{/template}"),
                 "loader2.soy",
                 Joiner.on("\n")
                     .join(
                         "{namespace loader2}",
-                        "{template .publicTemplate2}",
+                        "{template publicTemplate2}",
                         "L1T2",
                         "{/template}")));
     ParseResult parseResult1 = parser1.parse();
@@ -1418,7 +1418,7 @@ public class BytecodeCompilerTest {
                 Joiner.on("\n")
                     .join(
                         "{namespace loader1}",
-                        "{template .publicTemplate1}",
+                        "{template publicTemplate1}",
                         "L1T1 RECOMPILED",
                         "{/template}")));
     ParseResult parseResult1Recompiled = parser1Recompiled.parse();
@@ -1433,14 +1433,14 @@ public class BytecodeCompilerTest {
                     .join(
                         "{namespace loader2}",
                         "import {publicTemplate1} from 'loader1.soy';",
-                        "{template .publicTemplate}",
+                        "{template publicTemplate}",
                         "{@param renderTemplate: bool = true}",
                         "{let $tpl: $renderTemplate ? publicTemplate1 : dummyTemplate /}",
                         "L2T",
                         "{sp}{call $tpl /}",
                         "{sp}{call $tpl /}",
                         "{/template}",
-                        "{template .dummyTemplate visibility=\"private\"}dummy{/template}")),
+                        "{template dummyTemplate visibility=\"private\"}dummy{/template}")),
             ImmutableList.of(dependency1));
     ParseResult parseResult2 = parser2.parse();
     CompilingClassLoader loader2 = createCompilingClassLoader(parser2, parseResult2);

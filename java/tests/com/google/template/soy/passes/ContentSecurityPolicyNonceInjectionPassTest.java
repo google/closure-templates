@@ -45,37 +45,37 @@ public final class ContentSecurityPolicyNonceInjectionPassTest {
   @Test
   public void testTrivialTemplate() {
     assertInjected(
-        join("{template .foo}\n", "Hello, World!\n", "{/template}"),
-        join("{template .foo}\n", "Hello, World!\n", "{/template}"));
+        join("{template foo}\n", "Hello, World!\n", "{/template}"),
+        join("{template foo}\n", "Hello, World!\n", "{/template}"));
   }
 
   @Test
   public void testOneScriptWithBody() {
     assertInjected(
         join(
-            "{template .foo}\n",
+            "{template foo}\n",
             DEFN,
             "<script" + NONCE + ">alert('Hello, World!')</script>\n",
             "{/template}"),
-        join("{template .foo}\n", "<script>alert('Hello, World!')</script>\n", "{/template}"));
+        join("{template foo}\n", "<script>alert('Hello, World!')</script>\n", "{/template}"));
   }
 
   @Test
   public void testOneSrcedScript() {
     assertInjected(
         join(
-            "{template .foo}\n",
+            "{template foo}\n",
             DEFN,
             "<script src=\"app.js\"" + NONCE + "></script>\n",
             "{/template}"),
-        join("{template .foo}\n", "<script src=\"app.js\"></script>\n", "{/template}"));
+        join("{template foo}\n", "<script src=\"app.js\"></script>\n", "{/template}"));
   }
 
   @Test
   public void testManyScripts() {
     assertInjected(
         join(
-            "{template .foo}\n",
+            "{template foo}\n",
             DEFN,
             "<script src=\"one.js\"" + NONCE + "></script>",
             "<script src=two.js" + NONCE + "></script>",
@@ -84,7 +84,7 @@ public final class ContentSecurityPolicyNonceInjectionPassTest {
             "<script type='text/javascript'" + NONCE + ">main()</script>\n",
             "{/template}"),
         join(
-            "{template .foo}\n",
+            "{template foo}\n",
             "<script src=\"one.js\"></script>",
             "<script src=two.js></script>",
             "<script src=three.js ></script>",
@@ -97,7 +97,7 @@ public final class ContentSecurityPolicyNonceInjectionPassTest {
   public void testTooManyNonces() {
     assertInjected(
         join(
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param jsUrls: list<trusted_resource_uri>}\n",
             DEFN,
             "{for $jsUrl in $jsUrls}",
@@ -107,7 +107,7 @@ public final class ContentSecurityPolicyNonceInjectionPassTest {
             "{/for}\n",
             "{/template}"),
         join(
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param jsUrls: list<trusted_resource_uri>}\n",
             "{for $jsUrl in $jsUrls}\n",
             "<script type=\"text/javascript\" src='{$jsUrl}'></script>\n",
@@ -119,7 +119,7 @@ public final class ContentSecurityPolicyNonceInjectionPassTest {
   public void testFakeScripts() {
     assertInjected(
         join(
-            "{template .foo}\n",
+            "{template foo}\n",
             DEFN,
             "<noscript></noscript>",
             "<script" + NONCE + ">alert('Hi');</script>",
@@ -131,7 +131,7 @@ public final class ContentSecurityPolicyNonceInjectionPassTest {
             "<a href=\"//google.com/search?q=<script>hi()</script>\">Link</a>\n",
             "{/template}"),
         join(
-            "{template .foo}\n",
+            "{template foo}\n",
             "<noscript></noscript>",
             // An actual script in a sea of imposters.
             "<script>alert('Hi');</script>",
@@ -147,7 +147,7 @@ public final class ContentSecurityPolicyNonceInjectionPassTest {
   public void testPrintDirectiveInScriptTag() {
     assertInjected(
         join(
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param appScriptUrl: ?}\n",
             DEFN,
             "<script src=",
@@ -156,7 +156,7 @@ public final class ContentSecurityPolicyNonceInjectionPassTest {
             "alert('Hello, World!')</script>\n",
             "{/template}"),
         join(
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param appScriptUrl: ?}\n",
             "<script src='{$appScriptUrl}'>",
             "alert('Hello, World!')</script>\n",
@@ -167,7 +167,7 @@ public final class ContentSecurityPolicyNonceInjectionPassTest {
   public void testOneStyleTag() {
     assertInjected(
         join(
-            "{template .foo}\n",
+            "{template foo}\n",
             DEFN_STYLE,
             "<style type=text/css",
             NONCE_STYLE,
@@ -176,7 +176,7 @@ public final class ContentSecurityPolicyNonceInjectionPassTest {
             "</style>\n",
             "{/template}"),
         join(
-            "{template .foo}\n",
+            "{template foo}\n",
             "<style type=text/css>p {lb} color: purple {rb}</style>\n",
             "{/template}"));
   }
@@ -185,12 +185,12 @@ public final class ContentSecurityPolicyNonceInjectionPassTest {
   public void testTrailingSlashes() {
     assertInjected(
         join(
-            "{template .foo}\n",
+            "{template foo}\n",
             DEFN,
             "<script src=//example.com/unquoted/url/" + NONCE + "></script>\n",
             "{/template}"),
         join(
-            "{template .foo}\n",
+            "{template foo}\n",
             "<script src=//example.com/unquoted/url/></script>\n",
             "{/template}"));
   }
@@ -199,7 +199,7 @@ public final class ContentSecurityPolicyNonceInjectionPassTest {
   public void testInlineEventHandlersAndStyles() {
     assertInjected(
         join(
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param height: int}\n",
             DEFN,
             "<a href='#' style='",
@@ -225,7 +225,7 @@ public final class ContentSecurityPolicyNonceInjectionPassTest {
             ">baz()</script>\n",
             "{/template}"),
         join(
-            "{template .foo}\n",
+            "{template foo}\n",
             "  {@param height: int}\n",
             "<a href='#' style='height:{$height}px;' onclick='foo() &amp;& bar(\"baz\")'></a>",
             "<a href='#' onmouseover=foo() style=color:red></a>",
@@ -244,7 +244,7 @@ public final class ContentSecurityPolicyNonceInjectionPassTest {
     builder.add(
         join(
             "{namespace ns}\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "<script>var innocentJs=\"foo\"</script>\n",
             "{/template}"),
         "test.soy");
@@ -266,7 +266,7 @@ public final class ContentSecurityPolicyNonceInjectionPassTest {
     builder.add(
         join(
             "{namespace ns}\n",
-            "{template .foo}\n",
+            "{template foo}\n",
             "<a href='#' onmouseover='foo()'>click me</a>\n",
             "{/template}"),
         "test.soy");
@@ -287,53 +287,53 @@ public final class ContentSecurityPolicyNonceInjectionPassTest {
   public void testHtmlImport() {
     assertInjected(
         join(
-            "{template .foo}\n",
+            "{template foo}\n",
             DEFN,
             "<link rel=\'Import\' href=\"foo.html\"" + NONCE + ">\n",
             "{/template}"),
-        join("{template .foo}\n", "<link rel=\'Import\' href=\"foo.html\">\n", "{/template}"));
+        join("{template foo}\n", "<link rel=\'Import\' href=\"foo.html\">\n", "{/template}"));
   }
 
   @Test
   public void testHtmlImport_multipleChildren() {
     assertInjected(
         join(
-            "{template .foo}\n",
+            "{template foo}\n",
             "<link rel=\'import{1 |escapeHtmlAttribute}\' href=\"foo.html\">\n",
             "{/template}"),
-        join("{template .foo}\n", "<link rel=\'import{1}\' href=\"foo.html\">\n", "{/template}"));
+        join("{template foo}\n", "<link rel=\'import{1}\' href=\"foo.html\">\n", "{/template}"));
   }
 
   @Test
   public void testHtmlImport_emptyRel() {
     assertInjected(
-        join("{template .foo}\n", "<link rel href=\"foo.html\">\n", "{/template}"),
-        join("{template .foo}\n", "<link rel href=\"foo.html\">\n", "{/template}"));
+        join("{template foo}\n", "<link rel href=\"foo.html\">\n", "{/template}"),
+        join("{template foo}\n", "<link rel href=\"foo.html\">\n", "{/template}"));
   }
 
   @Test
   public void testStylesheet() {
     assertInjected(
         join(
-            "{template .foo}\n",
+            "{template foo}\n",
             DEFN_STYLE,
             "<link rel='stylesheet' href='foo.css'" + NONCE_STYLE + ">\n",
             "{/template}"),
-        join("{template .foo}\n", "<link rel='stylesheet' href='foo.css'>\n", "{/template}"));
+        join("{template foo}\n", "<link rel='stylesheet' href='foo.css'>\n", "{/template}"));
   }
 
   @Test
   public void testScriptAndStylesheet() {
     assertInjected(
         join(
-            "{template .foo}\n",
+            "{template foo}\n",
             DEFN,
             DEFN_STYLE,
             "<script" + NONCE + ">alert('Hello, World!')</script>",
             "<link rel='stylesheet' href='foo.css'" + NONCE_STYLE + ">\n",
             "{/template}"),
         join(
-            "{template .foo}\n",
+            "{template foo}\n",
             "<script>alert('Hello, World!')</script>",
             "<link rel='stylesheet' href='foo.css'>\n",
             "{/template}"));
@@ -343,34 +343,31 @@ public final class ContentSecurityPolicyNonceInjectionPassTest {
   public void testPreload_as_script() {
     assertInjected(
         join(
-            "{template .foo}\n",
+            "{template foo}\n",
             DEFN,
             "<link rel='preload' as='script' href='foo.js'" + NONCE + ">\n",
             "{/template}"),
         join(
-            "{template .foo}\n",
-            "<link rel='preload' as='script' href='foo.js'>\n",
-            "{/template}"));
+            "{template foo}\n", "<link rel='preload' as='script' href='foo.js'>\n", "{/template}"));
   }
 
   @Test
   public void testPreload_as_style() {
     assertInjected(
         join(
-            "{template .foo}\n",
+            "{template foo}\n",
             DEFN_STYLE,
             "<link rel='preload' as='style' href='foo.js'" + NONCE_STYLE + ">\n",
             "{/template}"),
-        join(
-            "{template .foo}\n", "<link rel='preload' as='style' href='foo.js'>\n", "{/template}"));
+        join("{template foo}\n", "<link rel='preload' as='style' href='foo.js'>\n", "{/template}"));
   }
 
   @Test
   public void testPreload_as_wrong() {
     // as='css' is not a valid attribute for link[rel=preload]
     assertInjected(
-        join("{template .foo}\n", "<link rel='preload' as='css' href='foo.js'>\n", "{/template}"),
-        join("{template .foo}\n", "<link rel='preload' as='css' href='foo.js'>\n", "{/template}"));
+        join("{template foo}\n", "<link rel='preload' as='css' href='foo.js'>\n", "{/template}"),
+        join("{template foo}\n", "<link rel='preload' as='css' href='foo.js'>\n", "{/template}"));
   }
 
   private static String join(String... lines) {

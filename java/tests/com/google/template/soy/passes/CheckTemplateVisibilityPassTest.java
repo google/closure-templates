@@ -38,12 +38,12 @@ public final class CheckTemplateVisibilityPassTest {
     SoyFileSetParserBuilder.forFileContents(
             "{namespace ns}\n"
                 + "/** Private template. */\n"
-                + "{template .foo visibility=\"private\"}\n"
+                + "{template foo visibility=\"private\"}\n"
                 + "oops!\n"
                 + "{/template}\n"
                 + "/** Public template. */\n"
-                + "{template .bar}\n"
-                + "{call .foo /}\n"
+                + "{template bar}\n"
+                + "{call foo /}\n"
                 + "{/template}")
         .errorReporter(ErrorReporter.exploding())
         .parse();
@@ -55,13 +55,13 @@ public final class CheckTemplateVisibilityPassTest {
     SoyFileSetParserBuilder.forFileContents(
             "{namespace ns}\n"
                 + "/** Private template. */\n"
-                + "{template .foo visibility=\"private\"}\n"
+                + "{template foo visibility=\"private\"}\n"
                 + "oops!\n"
                 + "{/template}",
             "{namespace ns}\n"
                 + "import {foo} from 'no-path';"
                 + "/** Public template. */\n"
-                + "{template .bar}\n"
+                + "{template bar}\n"
                 + "{call foo /}\n"
                 + "{/template}")
         .errorReporter(errorReporter)
@@ -77,13 +77,13 @@ public final class CheckTemplateVisibilityPassTest {
     SoyFileSetParserBuilder.forFileContents(
             "{namespace ns}\n"
                 + "/** Private template. */\n"
-                + "{template .foo visibility=\"private\"}\n"
+                + "{template foo visibility=\"private\"}\n"
                 + "oops!\n"
                 + "{/template}",
             "{namespace ns}\n"
                 + "import {foo} from 'no-path';"
                 + "/** Public template. */\n"
-                + "{template .bar}\n"
+                + "{template bar}\n"
                 + "{call foo /}\n"
                 + "{/template}")
         .errorReporter(errorReporter)
@@ -99,13 +99,13 @@ public final class CheckTemplateVisibilityPassTest {
     SoyFileSetParserBuilder.forFileContents(
             "{namespace ns}\n"
                 + "/** Private template. */\n"
-                + "{template .foo visibility=\"private\"}\n"
+                + "{template foo visibility=\"private\"}\n"
                 + "oops!\n"
                 + "{/template}",
             "{namespace ns2}\n"
                 + "import {foo} from 'no-path';"
                 + "/** Public template. */\n"
-                + "{template .bar}\n"
+                + "{template bar}\n"
                 + "{call foo /}\n"
                 + "{/template}")
         .errorReporter(errorReporter)
@@ -121,13 +121,13 @@ public final class CheckTemplateVisibilityPassTest {
     SoyFileSetParserBuilder.forFileContents(
             "{namespace ns}\n"
                 + "/** Private template. */\n"
-                + "{template .foo visibility=\"private\"}\n"
+                + "{template foo visibility=\"private\"}\n"
                 + "oops!\n"
                 + "{/template}",
             "{namespace ns2}\n"
                 + "import {foo} from 'no-path';"
                 + "/** Public template. */\n"
-                + "{template .bar}\n"
+                + "{template bar}\n"
                 + "{let $foo: foo /}\n"
                 + "{call $foo /}\n"
                 + "{/template}")
@@ -147,7 +147,7 @@ public final class CheckTemplateVisibilityPassTest {
             SoyFileSupplier.Factory.create(
                 "{namespace ns}\n"
                     + "/** Private template. */\n"
-                    + "{template .foo visibility=\"private\"}\n"
+                    + "{template foo visibility=\"private\"}\n"
                     + "oops!\n"
                     + "{/template}",
                 SourceFilePath.create("foo/bar.soy")),
@@ -155,7 +155,7 @@ public final class CheckTemplateVisibilityPassTest {
                 "{namespace ns2}\n"
                     + "import {foo} from 'foo/bar.soy';"
                     + "/** Public template. */\n"
-                    + "{template .bar}\n"
+                    + "{template bar}\n"
                     + "{call foo /}\n"
                     + "{/template}",
                 SourceFilePath.create("baz/bar.soy")))
@@ -173,7 +173,7 @@ public final class CheckTemplateVisibilityPassTest {
             SoyFileSupplier.Factory.create(
                 "{namespace ns}\n"
                     + "/** Private template. */\n"
-                    + "{template .foo visibility=\"private\"}\n"
+                    + "{template foo visibility=\"private\"}\n"
                     + "oops!\n"
                     + "{/template}",
                 SourceFilePath.create("foo/bar.soy")),
@@ -181,7 +181,7 @@ public final class CheckTemplateVisibilityPassTest {
                 "{namespace ns2}\n"
                     + "import {foo} from 'foo/bar.soy';"
                     + "/** Public template. */\n"
-                    + "{template .bar}\n"
+                    + "{template bar}\n"
                     + "{let $foo: foo /}\n"
                     + "{call $foo /}\n"
                     + "{/template}",

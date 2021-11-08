@@ -31,18 +31,18 @@ public final class FileDependencyOrderPassTest {
 
   @Test
   public void testCycle() {
-    String alpha = "{namespace alpha}\n" + "{template .t1}\n" + "{/template}\n";
+    String alpha = "{namespace alpha}\n" + "{template t1}\n" + "{/template}\n";
 
     String beta =
         "{namespace beta}\n"
             + "import * as gamma from 'no-path-3';\n"
-            + "{template .t2}\n"
+            + "{template t2}\n"
             + "{/template}\n";
 
     String gamma =
         "{namespace gamma}\n"
             + "import * as beta from 'no-path-2';\n"
-            + "{template .t3}\n"
+            + "{template t3}\n"
             + "{/template}\n";
 
     ErrorReporter errorReporter = ErrorReporter.createForTest();

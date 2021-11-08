@@ -15,66 +15,67 @@
 {namespace strict_test}
 
 /** hello html */
-{template .helloHtml}
-  {call .hello /}
+{template helloHtml}
+  {call hello /}
 {/template}
 
 /** hello js */
-{template .helloJs kind="js"}
-  '{call .hello /}'
+{template helloJs kind="js"}
+  '{call hello /}'
 {/template}
 
 /** hello */
-{template .hello kind="text"}
-Hello world
+{template hello kind="text"}
+  Hello world
 {/template}
 
 /** hello uri */
-{template .helloUri kind="uri"}
- https://helloworld.com
+{template helloUri kind="uri"}
+  https://helloworld.com
 {/template}
 
 /** hello trusted resource uri */
-{template .helloTrustedResourceUri kind="trusted_resource_uri"}
- /hello.world
+{template helloTrustedResourceUri kind="trusted_resource_uri"}
+  /hello.world
 {/template}
 
 /** hello css */
-{template .helloCss kind="css"}
+{template helloCss kind="css"}
   {literal}.helloWorld {display: none}{/literal}
 {/template}
 
 /** hello attributes */
-{template .helloAttributes kind="attributes"}
- hello-world="true"
+{template helloAttributes kind="attributes"}
+  hello-world="true"
 {/template}
 
 /** a template with a param */
-{template .withParam}
-  {@param p : string}
+{template withParam}
+  {@param p: string}
 
   Hello, {$p}
 {/template}
 
-{template .withAsyncPluginCall}
+{template withAsyncPluginCall}
   Hello, {testAsyncPlugin()}!
 {/template}
 
 /** a template with a param */
-{template .callsItself}
-  {@param depth : int}
-  {@param p : string}
+{template callsItself}
+  {@param depth: int}
+  {@param p: string}
+
   {if $depth == 0}
     {$p + 1}
   {else}
-    {call .callsItself data="all"}
-      {param depth : $depth - 1/}
+    {call callsItself data="all"}
+      {param depth: $depth - 1 /}
     {/call}
   {/if}
 {/template}
 
-{template .defaultParam}
-  {@param p : int|null = 18}
+{template defaultParam}
+  {@param p: int|null = 18}
 
   {$p}
 {/template}

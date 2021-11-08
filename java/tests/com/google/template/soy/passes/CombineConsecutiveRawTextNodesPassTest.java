@@ -43,7 +43,7 @@ public final class CombineConsecutiveRawTextNodesPassTest {
     String testFileContent =
         "{namespace boo}\n"
             + "\n"
-            + "{template .foo}\n"
+            + "{template foo}\n"
             + "  {@param goo: ?}\n"
             + "  Blah{$goo}blah{sp}blooh\n"
             + "{/template}\n";
@@ -69,7 +69,7 @@ public final class CombineConsecutiveRawTextNodesPassTest {
 
   @Test
   public void testCombineConsecutiveRawTextNodes_preserveSourceLocations() {
-    String testFileContent = "{namespace boo}{template .foo}\nbl\n{nil}ah\n{/template}";
+    String testFileContent = "{namespace boo}{template foo}\nbl\n{nil}ah\n{/template}";
 
     ErrorReporter boom = ErrorReporter.exploding();
     SoyFileSetNode soyTree =
@@ -116,7 +116,7 @@ public final class CombineConsecutiveRawTextNodesPassTest {
   // After the fix it was down to about 1.5s
   @Test
   public void testPathologicalPerformance() {
-    String testFileContent = "{namespace boo}{template .foo}{/template}\n";
+    String testFileContent = "{namespace boo}{template foo}{/template}\n";
 
     ErrorReporter boom = ErrorReporter.exploding();
     SoyFileSetNode soyTree =
@@ -149,7 +149,7 @@ public final class CombineConsecutiveRawTextNodesPassTest {
   public void testForConcurrentModificationBug() {
     String testFileContent =
         "{namespace boo}\n"
-            + "{template .finishedInWrongBlock}\n"
+            + "{template finishedInWrongBlock}\n"
             + "{@param p : ?}\n"
             + "// the whitespace finishes the attribute value, but it was started in another"
             + " block\n"

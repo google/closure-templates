@@ -86,7 +86,7 @@ public final class DesugarGroupNodesPassTest {
   private static SoyFileNode parseAsTemplate(String input) {
     String soyFile =
         Joiner.on('\n')
-            .join("{namespace ns}", "", "{template .t stricthtml=\"false\"}", input, "{/template}");
+            .join("{namespace ns}", "", "{template t stricthtml=\"false\"}", input, "{/template}");
     return new SoyFileParser(
             new IncrementingIdGenerator(),
             new StringReader(soyFile),

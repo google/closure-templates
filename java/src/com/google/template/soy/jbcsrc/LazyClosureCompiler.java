@@ -109,7 +109,7 @@ import org.objectweb.asm.commons.Method;
  * like:
  *
  * <pre>{@code
- * {template .foo}
+ * {template foo}
  *   {{@literal @}param a : int}
  *   {let b : $a  + 1 /}
  *   {$b}

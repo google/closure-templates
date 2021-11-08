@@ -100,26 +100,26 @@ public final class IsComputableAsJsExprsVisitorTest {
 
   @Test
   public void testCallNode() {
-    runTestHelper("{call .foo data=\"all\" /}", true);
+    runTestHelper("{call foo data=\"all\" /}", true);
 
     runTestHelper(
         join(
             "{@param boo: ?}",
             "{@param moo: ?}",
-            "{call .foo data=\"$boo\"}",
+            "{call foo data=\"$boo\"}",
             "{param goo : $moo /}",
             "{/call}"),
         true);
 
     runTestHelper(
-        "{@param boo: ?}\n{call .foo data=\"$boo\"}{param goo kind=\"text\"}Blah{/param}{/call}",
+        "{@param boo: ?}\n{call foo data=\"$boo\"}{param goo kind=\"text\"}Blah{/param}{/call}",
         true);
 
     runTestHelper(
         join(
             "{@param boo: ?}",
             "{@param moose: ?}",
-            "{call .foo data=\"$boo\"}",
+            "{call foo data=\"$boo\"}",
             "  {param goo kind=\"text\"}",
             "  {for $moo in $moose}",
             "    {$moo}",
@@ -140,7 +140,7 @@ public final class IsComputableAsJsExprsVisitorTest {
   /** @param indicesToNode Series of indices for walking down to the node we want to test. */
   private static void runTestHelper(String soyCode, boolean expectedResult, int... indicesToNode) {
     String fileContents = SharedTestUtils.buildTestSoyFileContent(soyCode);
-    if (soyCode.contains("{call .foo")) {
+    if (soyCode.contains("{call foo")) {
       fileContents += "{template foo}{@param? goo: ?}{/template}";
     }
     ErrorReporter boom = ErrorReporter.exploding();

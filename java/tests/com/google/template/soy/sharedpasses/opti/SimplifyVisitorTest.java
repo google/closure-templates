@@ -47,22 +47,22 @@ public class SimplifyVisitorTest {
     String soyFileContent =
         "{namespace boo}\n"
             + "\n"
-            + "{template .foo}\n"
+            + "{template foo}\n"
             + "\n"
             + "  {msg desc=\"\"}\n"
             + "    blah\n"
             + "    {'blah'}\n"
             + "    blah\n"
-            + "    {call .aaa /}\n"
+            + "    {call aaa /}\n"
             + "    blah\n"
-            + "    <div class=\"{call .aaa /}\">\n"
+            + "    <div class=\"{call aaa /}\">\n"
             + "    </div>\n"
             + "    blah\n"
             + "  {/msg}\n"
             + "{/template}\n"
             + "\n"
             + "/***/\n"
-            + "{template .aaa}\n"
+            + "{template aaa}\n"
             + "  blah\n"
             + "{/template}";
 
@@ -192,12 +192,12 @@ public class SimplifyVisitorTest {
   public void testRewriteContentNodes_callParam() {
     assertSimplification(
             "{@param p: ?}",
-            "{call .t}",
+            "{call t}",
             "  {param p kind='text'}",
             "    hello world {$p}",
             "  {/param}",
             "{/call}")
-        .isEqualTo("{@param p: ?}\n{call .t}{param p: 'hello world ' + $p /}{/call}");
+        .isEqualTo("{@param p: ?}\n{call t}{param p: 'hello world ' + $p /}{/call}");
   }
 
   @Test
@@ -205,7 +205,7 @@ public class SimplifyVisitorTest {
     assertSimplification(
             "<{t2()} data-ved=\"{currentVed()}\"></>",
             "{/template}",
-            "{template .t2 kind=\"html<?>\"}",
+            "{template t2 kind=\"html<?>\"}",
             "  {@attribute? data-ved: string}",
             "  <div @data-ved></div>")
         .isEqualTo(
@@ -308,7 +308,7 @@ public class SimplifyVisitorTest {
 
   private static SoyFileSetNode parse(String input) {
     return SoyFileSetParserBuilder.forFileContents(
-            join("{namespace ns}", "{template .t}", input, "{/template}"))
+            join("{namespace ns}", "{template t}", input, "{/template}"))
         .runOptimizer(false)
         .addSoySourceFunction(new CurrentVedFunction())
         .parse()
@@ -317,7 +317,7 @@ public class SimplifyVisitorTest {
 
   private static String toString(SoyNode node) {
     String string = node.toSourceString();
-    return string.replace("{template .t}\n", "").replace("\n{/template}", "").trim();
+    return string.replace("{template t}\n", "").replace("\n{/template}", "").trim();
   }
 
   private static String normalized(String... args) {

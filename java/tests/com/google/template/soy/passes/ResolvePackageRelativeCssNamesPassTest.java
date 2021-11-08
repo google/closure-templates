@@ -45,7 +45,7 @@ public final class ResolvePackageRelativeCssNamesPassTest {
         compileTemplate(
             "{namespace boo cssbase=\"some.test.package\"}\n\n"
                 + "/** Test template.*/\n"
-                + "{template .foo}\n"
+                + "{template foo}\n"
                 + "  <p class=\"{css('%AAA')}\">\n"
                 + "{/template}\n");
     PrintNode printNode =
@@ -60,7 +60,7 @@ public final class ResolvePackageRelativeCssNamesPassTest {
         compileTemplate(
             "{namespace boo}\n\n"
                 + "/** Test template.  */\n"
-                + "{template .foo cssbase=\"some.test.package\"}\n"
+                + "{template foo cssbase=\"some.test.package\"}\n"
                 + "  <p class=\"{css('%AAA')}\">\n"
                 + "{/template}\n");
     PrintNode printNode =
@@ -75,7 +75,7 @@ public final class ResolvePackageRelativeCssNamesPassTest {
         compileTemplate(
             "{namespace boo requirecss=\"some.test.package,some.other.package\"}\n\n"
                 + "/** Test template. */\n"
-                + "{template .foo}\n"
+                + "{template foo}\n"
                 + "  <p class=\"{css('%AAA')}\">\n"
                 + "{/template}\n");
     PrintNode printNode =
@@ -90,7 +90,7 @@ public final class ResolvePackageRelativeCssNamesPassTest {
         compileTemplate(
             "{namespace boo cssbase=\"some.test.package\"}\n\n"
                 + "/** Test template. */\n"
-                + "{template .foo}\n"
+                + "{template foo}\n"
                 + "  <p class=\"{css('AAA')}\">\n"
                 + "{/template}\n");
     PrintNode printNode =
@@ -105,7 +105,7 @@ public final class ResolvePackageRelativeCssNamesPassTest {
     compileTemplate(
         "{namespace boo}\n\n"
             + "/** Test template. */\n"
-            + "{template .foo cssbase=\"ns.bar\"}\n"
+            + "{template foo cssbase=\"ns.bar\"}\n"
             + "  {@param goo: string}\n"
             + "  <p class=\"{css($goo, '%AAA')}\">\n"
             + "{/template}\n",
@@ -121,7 +121,7 @@ public final class ResolvePackageRelativeCssNamesPassTest {
         compileTemplate(
             "{namespace boo requirecss='some.test.package' cssbase='some.other.package'}\n\n"
                 + "/** Test template. */\n"
-                + "{template .foo}\n"
+                + "{template foo}\n"
                 + "  <p class=\"{css('%AAA')}\">\n"
                 + "{/template}\n");
     PrintNode printNode =
@@ -136,7 +136,7 @@ public final class ResolvePackageRelativeCssNamesPassTest {
         compileTemplate(
             "{namespace boo requirecss='some.test.package' cssbase='some.other.package'}\n\n"
                 + "/** Test template. */\n"
-                + "{template .foo cssbase='the.actual.package'}\n"
+                + "{template foo cssbase='the.actual.package'}\n"
                 + "  <p class=\"{css('%AAA')}\">\n"
                 + "{/template}\n");
     PrintNode printNode =
@@ -151,7 +151,7 @@ public final class ResolvePackageRelativeCssNamesPassTest {
         compileTemplate(
             "{namespace boo requirecss='some.test.package'}\n\n"
                 + "/** Test template. */\n"
-                + "{template .foo requirecss='some.other.package'}\n"
+                + "{template foo requirecss='some.other.package'}\n"
                 + "  <p class=\"{css('%AAA')}\">\n"
                 + "{/template}\n");
     PrintNode printNode =

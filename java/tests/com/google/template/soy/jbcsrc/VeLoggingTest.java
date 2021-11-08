@@ -323,7 +323,7 @@ public final class VeLoggingTest {
       throws IOException {
     SoyFileSetParserBuilder builder =
         SoyFileSetParserBuilder.forTemplateAndImports(
-                "{template .foo}\n" + Joiner.on("\n").join(templateBodyLines) + "\n{/template}",
+                "{template foo}\n" + Joiner.on("\n").join(templateBodyLines) + "\n{/template}",
                 Foo.getDescriptor())
             .setLoggingConfig(config)
             .addSoySourceFunction(new DepthFunction())
