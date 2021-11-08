@@ -39,6 +39,7 @@ message Foo {
   map<string, string> map_field = 21;
   map<int32, InnerMessage> map_message_field = 22;
   map<string, InnerMessage> map_string_message_field = 23;
+  map<string, bytes> map_string_bytes_field = 24;
 
   repeated string string_a = 25;
   optional string string_b_map = 26;

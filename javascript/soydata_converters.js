@@ -44,7 +44,9 @@ const googString = goog.require('goog.string');
 const jspbconversions = goog.require('security.html.jspbconversions');
 const soy = goog.require('soy');
 const uncheckedconversions = goog.require('goog.html.uncheckedconversions');
+const {ByteString} = goog.require('jspb.bytestring');
 const {SanitizedCss, SanitizedHtml, SanitizedJs, SanitizedTrustedResourceUri, SanitizedUri} = goog.require('goog.soy.data');
+const {encodeByteArray} = goog.require('goog.crypt.base64');
 
 
 /**
@@ -268,4 +270,40 @@ exports.unpackProtoToSanitizedTrustedResourceUri = function(x) {
         TrustedResourceUrl.unwrap(safeUrl));
   }
   return null;
+};
+
+/**
+ * Processes the return value of a proto bytes field so that it is consistently
+ * formatted as base64 text.
+ *
+ * @return {?string|undefined}
+ */
+exports.unpackBytesToBase64String = function(
+    /** !Uint8Array|string|!ByteString|null|undefined*/ bytes) {
+  if (bytes == null) {
+    return bytes;
+  }
+  if (typeof bytes === 'string') {
+    return bytes;
+  }
+  if (typeof Uint8Array !== 'undefined' && bytes instanceof Uint8Array) {
+    return encodeByteArray(bytes);
+  }
+  if (bytes instanceof ByteString) {
+    return bytes.asBase64();
+  }
+  throw new Error('unsupported bytes value: ' + bytes);
+};
+
+/**
+ * Processes the return value of a proto bytes field so that it is consistently
+ * formatted as base64 text.
+ *
+ * @return {?string}
+ */
+exports.packBase64StringToBytesValuedMap = function(
+    /** string*/ bytes) {
+  // TODO(b/154961283): call ByteString.fromBase64 onces maps in jspb are using
+  // ByteStrings
+  return bytes;
 };

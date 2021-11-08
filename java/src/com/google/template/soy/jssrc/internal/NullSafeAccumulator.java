@@ -24,6 +24,7 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_ARRAY_MAP;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_CHECK_NOT_NULL;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_NEWMAPS_TRANSFORM_VALUES;
 import static com.google.template.soy.jssrc.internal.JsRuntime.extensionField;
+import static com.google.template.soy.jssrc.internal.JsRuntime.protoBytesToBase64ConverterFunction;
 import static com.google.template.soy.jssrc.internal.JsRuntime.protoToSanitizedContentConverterFunction;
 
 import com.google.auto.value.AutoValue;
@@ -311,9 +312,7 @@ final class NullSafeAccumulator {
     Expression extend(Expression prevTip) {
       Expression arg = protoCall.getterArg();
       String getter = protoCall.getter();
-      Expression result =
-          arg == null ? prevTip.dotAccess(getter).call() : prevTip.dotAccess(getter).call(arg);
-      return result;
+      return arg == null ? prevTip.dotAccess(getter).call() : prevTip.dotAccess(getter).call(arg);
     }
 
     @Override
@@ -473,6 +472,11 @@ final class NullSafeAccumulator {
         return protoToSanitizedContentConverterFunction(desc.getMessageType());
       } else if (ProtoUtils.isSanitizedContentMap(desc)) {
         return protoToSanitizedContentConverterFunction(ProtoUtils.getMapValueMessageType(desc));
+      } else if (desc.getType() == FieldDescriptor.Type.BYTES
+          || (desc.isMapField()
+              && ProtoUtils.getMapValueFieldDescriptor(desc).getType()
+                  == FieldDescriptor.Type.BYTES)) {
+        return protoBytesToBase64ConverterFunction();
       } else {
         return null;
       }

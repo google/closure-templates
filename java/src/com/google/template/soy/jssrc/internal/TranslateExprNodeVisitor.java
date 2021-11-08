@@ -49,6 +49,7 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_VISUAL_ELEMEN
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_VISUAL_ELEMENT_DATA;
 import static com.google.template.soy.jssrc.internal.JsRuntime.XID;
 import static com.google.template.soy.jssrc.internal.JsRuntime.extensionField;
+import static com.google.template.soy.jssrc.internal.JsRuntime.protoBytesMapPackFunction;
 import static com.google.template.soy.jssrc.internal.JsRuntime.protoConstructor;
 import static com.google.template.soy.passes.ContentSecurityPolicyNonceInjectionPass.CSP_NONCE_VARIABLE_NAME;
 import static com.google.template.soy.passes.ContentSecurityPolicyNonceInjectionPass.CSP_STYLE_NONCE_VARIABLE_NAME;
@@ -862,6 +863,9 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
               sanitizedContentToProtoConverterFunction(
                   ProtoUtils.getMapValueMessageType(fieldDesc));
           fieldValue = SOY_NEWMAPS_TRANSFORM_VALUES.call(fieldValue, sanitizedContentPackFn);
+        } else if (ProtoUtils.getMapValueFieldDescriptor(fieldDesc).getType()
+            == FieldDescriptor.Type.BYTES) {
+          fieldValue = SOY_NEWMAPS_TRANSFORM_VALUES.call(fieldValue, protoBytesMapPackFunction());
         }
         // JSCompiler cannot infer that jspb.Map and soy.Map or Map are the same.
         proto =

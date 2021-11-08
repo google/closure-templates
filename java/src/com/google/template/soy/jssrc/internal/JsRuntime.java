@@ -217,6 +217,17 @@ public final class JsRuntime {
   public static Expression protoToSanitizedContentConverterFunction(Descriptor messageType) {
     return SOY_CONVERTERS.dotAccess(NodeContentKinds.toJsUnpackFunction(messageType));
   }
+  /**
+   * Returns a function that ensure that proto bytes fields are consistently converted oot base64.
+   */
+  public static Expression protoBytesToBase64ConverterFunction() {
+    return SOY_CONVERTERS.dotAccess("unpackBytesToBase64String");
+  }
+
+  /** Returns a function that ensures that the values of bytes-values maps are coerced. */
+  public static Expression protoBytesMapPackFunction() {
+    return SOY_CONVERTERS.dotAccess("packBase64StringToBytesValuedMap");
+  }
 
   /**
    * Returns an 'ordainer' function that can be used wrap a {@code string} in a {@code

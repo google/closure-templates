@@ -16,6 +16,7 @@
 
 package com.google.template.soy.internal.proto;
 
+import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.common.base.CaseFormat;
 import com.google.common.collect.ImmutableSet;
@@ -87,12 +88,21 @@ public final class ProtoUtils {
    */
   @Nullable
   public static Descriptor getMapValueMessageType(FieldDescriptor mapField) {
-    FieldDescriptor valueDesc = mapField.getMessageType().findFieldByName("value");
+    FieldDescriptor valueDesc = getMapValueFieldDescriptor(mapField);
     if (valueDesc.getType() == FieldDescriptor.Type.MESSAGE) {
       return valueDesc.getMessageType();
     } else {
       return null;
     }
+  }
+  /**
+   * Returns the field descriptor representing the type of the value of the map field. Returns null
+   * if the map value isn't a message.
+   */
+  @Nullable
+  public static FieldDescriptor getMapValueFieldDescriptor(FieldDescriptor mapField) {
+    checkArgument(mapField.isMapField());
+    return mapField.getMessageType().findFieldByName("value");
   }
 
   /** Returns the proper .getDescriptor() call for parse info generation in Tofu. */
