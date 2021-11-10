@@ -764,7 +764,7 @@ public final class JbcSrcRuntime {
           if (placeholderValue == null) {
             throw new IllegalStateException(
                 "No value provided for placeholder: '"
-                    + placeholderValue
+                    + placeholderName
                     + "', expected one of "
                     + placeholders.keySet());
           }
