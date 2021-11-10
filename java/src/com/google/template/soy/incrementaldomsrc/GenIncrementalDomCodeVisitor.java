@@ -291,8 +291,12 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       getJsCodeBuilder().append(generateExportsForSoyElement(elementAccessor));
       getJsCodeBuilder().append(generateRenderInternal(element));
       getJsCodeBuilder().appendNullable(generateSyncStateInternal(element));
-      getJsCodeBuilder().append(generateClassForSoyElement(elementName, elementAccessor, element));
-      getJsCodeBuilder().append(generateExportsForSoyElement(elementName));
+      getJsCodeBuilder().appendNullable(generateInitInternalMethod(element));
+      if (element.jsnamespace == null) {
+        getJsCodeBuilder()
+            .append(generateClassForSoyElement(elementName, elementAccessor, element));
+        getJsCodeBuilder().append(generateExportsForSoyElement(elementName));
+      }
     }
   }
 
@@ -343,12 +347,63 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
         .build();
   }
 
+  private Statement generateInitInternal(TemplateElementNode node) {
+    ImmutableList.Builder<Statement> stateVarInitializations = ImmutableList.builder();
+    IncrementalDomCodeBuilder jsCodeBuilder = getJsCodeBuilder();
+    for (TemplateStateVar stateVar : node.getStateVars()) {
+      JsType jsType = JsType.forIncrementalDomState(stateVar.type());
+      for (GoogRequire require : jsType.getGoogRequires()) {
+        jsCodeBuilder.addGoogRequire(require);
+      }
+      JsDoc stateVarJsdoc =
+          JsDoc.builder().addParameterizedAnnotation("private", jsType.typeExpr()).build();
+      Expression rhsValue;
+      if (isConstantExpr(stateVar.defaultValue())) {
+        rhsValue = translateExpr(stateVar.defaultValue());
+      } else {
+        rhsValue = Expression.LITERAL_UNDEFINED.castAs("?");
+      }
+      stateVarInitializations.add(
+          Statement.assign(
+              Expression.THIS.dotAccess(
+                  (node.jsnamespace == null ? STATE_PREFIX : "") + stateVar.name()),
+              rhsValue,
+              stateVarJsdoc));
+    }
+    return Statement.of(stateVarInitializations.build());
+  }
+
+  private Statement generateInitInternalMethod(TemplateElementNode node) {
+    if (node.jsnamespace == null) {
+      return null;
+    }
+    String soyElementClassName = this.getSoyElementClassName();
+    JsDoc jsDoc =
+        JsDoc.builder()
+            .addParameterizedAnnotation("this", soyElementClassName + "Import." + node.jsclass)
+            .addParameterizedAnnotation("suppress", "checkTypes")
+            .build();
+
+    return VariableDeclaration.builder(soyElementClassName + "Init")
+        .setJsDoc(jsDoc)
+        .setRhs(
+            Expression.function(
+                jsDoc,
+                Statement.of(
+                    // Various parts of the js codegen expects these parameters to be in the local
+                    // scope.
+                    VariableDeclaration.builder(StandardNames.DOLLAR_IJDATA)
+                        .setRhs(Expression.THIS.dotAccess("ijData"))
+                        .build(),
+                    generateInitInternal(node))))
+        .build();
+  }
+
   @Nullable
   private Statement generateSyncStateInternal(TemplateElementNode node) {
     if (!hasNonConstantState) {
       return null;
     }
-
     String soyElementClassName = this.getSoyElementClassName();
     String paramsType = hasOnlyImplicitParams(node) ? "null" : "!" + alias + ".Params";
     boolean isCustomElement = node.jsnamespace != null;
@@ -364,7 +419,6 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
                     : soyElementClassName)
             .addParameterizedAnnotation("suppress", "checkTypes")
             .build();
-
     return VariableDeclaration.builder(soyElementClassName + "SyncStateInternal")
         .setJsDoc(jsDoc)
         .setRhs(
@@ -506,8 +560,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   }
 
   private boolean calcHasNonConstantState(TemplateElementNode node) {
-    return node.getStateVars().stream()
-        .anyMatch(v -> !isConstantExpr(v.defaultValue()));
+    return node.getStateVars().stream().anyMatch(v -> !isConstantExpr(v.defaultValue()));
   }
 
   private Statement genSyncStateCalls(TemplateElementNode node, String alias) {
@@ -520,11 +573,12 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
         headerVars.reverse().stream().filter(isNonConst::get).findFirst().orElse(null);
     boolean haveVisitedLastNonConstVar = lastNonConstVar == null;
 
+    String prefix = node.jsnamespace == null ? STATE_PREFIX : "";
     for (TemplateStateVar headerVar : headerVars) {
       if (isNonConst.get(headerVar)) {
         stateReassignmentBuilder.add(
             Statement.assign(
-                Expression.THIS.dotAccess(STATE_PREFIX + headerVar.name()),
+                Expression.THIS.dotAccess(prefix + headerVar.name()),
                 translateExpr(headerVar.defaultValue())));
       }
       haveVisitedLastNonConstVar = haveVisitedLastNonConstVar || headerVar.equals(lastNonConstVar);
@@ -532,7 +586,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       if (!haveVisitedLastNonConstVar) {
         stateReassignmentBuilder.add(
             VariableDeclaration.builder(STATE_VAR_PREFIX + STATE_PREFIX + headerVar.name())
-                .setRhs(Expression.THIS.dotAccess(STATE_PREFIX + headerVar.name()))
+                .setRhs(Expression.THIS.dotAccess(prefix + headerVar.name()))
                 .build());
       }
     }
@@ -600,6 +654,11 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     if (hasNonConstantState) {
       // This param is TS optional.
       params.add(id(soyElementClassName + "SyncStateInternal"));
+    } else if (node.jsnamespace != null) {
+      params.add(Expression.LITERAL_UNDEFINED);
+    }
+    if (node.jsnamespace != null) {
+      params.add(id(soyElementClassName + "Init"));
     }
     return Statement.of(
         VariableDeclaration.builder("soyEl")
@@ -640,6 +699,9 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   private VariableDeclaration generateClassForSoyElement(
       String soyElementClassName, String soyElementAccessorName, TemplateElementNode node) {
 
+    if (node.jsnamespace != null) {
+      return null;
+    }
     String paramsType = hasOnlyImplicitParams(node) ? "null" : "!" + alias + ".Params";
 
     ImmutableList.Builder<MethodDeclaration> stateMethods = ImmutableList.builder();
@@ -664,24 +726,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     }
 
     ImmutableList.Builder<Statement> stateVarInitializations = ImmutableList.builder();
-    IncrementalDomCodeBuilder jsCodeBuilder = getJsCodeBuilder();
-    for (TemplateStateVar stateVar : node.getStateVars()) {
-      JsType jsType = JsType.forIncrementalDomState(stateVar.type());
-      for (GoogRequire require : jsType.getGoogRequires()) {
-        jsCodeBuilder.addGoogRequire(require);
-      }
-      JsDoc stateVarJsdoc =
-          JsDoc.builder().addParameterizedAnnotation("private", jsType.typeExpr()).build();
-      Expression rhsValue;
-      if (isConstantExpr(stateVar.defaultValue())) {
-        rhsValue = translateExpr(stateVar.defaultValue());
-      } else {
-        rhsValue = Expression.LITERAL_UNDEFINED.castAs("?");
-      }
-      stateVarInitializations.add(
-          Statement.assign(
-              Expression.THIS.dotAccess(STATE_PREFIX + stateVar.name()), rhsValue, stateVarJsdoc));
-    }
+    stateVarInitializations.add(generateInitInternal(node));
     if (hasNonConstantState) {
       stateVarInitializations.add(
           Statement.assign(

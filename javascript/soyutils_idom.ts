@@ -95,7 +95,7 @@ function handleSoyElement<T extends TemplateAcceptor<{}>>(
     incrementaldom: IncrementalDomRenderer, elementClassCtor: new () => T,
     firstElementKey: string, tagNameOrCtor: string|(new () => T), data: {},
     ijData: IjData, template: IdomTemplate<unknown>,
-    syncState?: IdomSyncState<unknown>): T|null {
+    syncState?: IdomSyncState<unknown>, init?: (this: T) => void): T|null {
   // If we're just testing truthiness, record an element but don't do anythng.
   if (incrementaldom instanceof FalsinessRenderer) {
     incrementaldom.open('div');
@@ -139,8 +139,12 @@ function handleSoyElement<T extends TemplateAcceptor<{}>>(
   }
   if (isCustomElement) {
     const customEl = element as unknown as T;
-    customEl.template = template.bind(element);
     if (!customEl.renderInternal) {
+      init!.call(customEl);
+      if (syncState) {
+        customEl.syncState = syncState.bind(element);
+      }
+      customEl.template = template.bind(element);
       customEl.renderInternal =
           customEl.renderInternal || ((idomRenderer, data) => {
             customEl.template(idomRenderer, data);
@@ -151,7 +155,6 @@ function handleSoyElement<T extends TemplateAcceptor<{}>>(
           });
     }
     if (syncState) {
-      customEl.syncState = syncState.bind(element);
       customEl.syncState(data);
     }
     return customEl;
