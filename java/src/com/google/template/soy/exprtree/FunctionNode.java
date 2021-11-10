@@ -46,7 +46,13 @@ import javax.annotation.Nullable;
  */
 public final class FunctionNode extends AbstractParentExprNode implements ExprNode.CallableExpr {
 
-  public static final SoySourceFunction UNRESOLVED = new SoySourceFunction() {};
+  public static final SoySourceFunction UNRESOLVED =
+      new SoySourceFunction() {
+        @Override
+        public String toString() {
+          return "UNRESOLVED";
+        }
+      };
 
   /** All the information a runtime needs to execute a call to an extern. */
   @AutoValue
@@ -273,8 +279,14 @@ public final class FunctionNode extends AbstractParentExprNode implements ExprNo
 
   public void setSoyFunction(Object soyFunction) {
     checkNotNull(soyFunction);
-    checkState(this.state.function == null, "setSoyFunction() was already called");
-    this.state.function = FunctionRef.of(soyFunction);
+    FunctionRef newRef = FunctionRef.of(soyFunction);
+    checkState(
+        this.state.function == null || this.state.function.equals(newRef),
+        "setSoyFunction() was already called; %s; %s (previous) != %s (current)",
+        getSourceLocation().toLineColumnString(),
+        this.state.function,
+        newRef);
+    this.state.function = newRef;
   }
 
   public void setAllowedParamTypes(List<SoyType> allowedParamTypes) {
