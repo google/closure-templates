@@ -453,7 +453,14 @@ final class NullSafeAccumulator {
         getter = prefix.getPrefix() + "Extension";
         arg = extensionField(desc);
       } else {
-        getter = prefix.getPrefix() + LOWER_CAMEL.to(UPPER_CAMEL, fieldName);
+        getter =
+            prefix.getPrefix()
+                + LOWER_CAMEL.to(UPPER_CAMEL, fieldName)
+                // For normal bytes field getters call the asB64 alternate accessors.
+                // TODO(b/154961283): migrate to ByteString accessors when available.
+                + (prefix == Type.GET && desc.getType() == FieldDescriptor.Type.BYTES
+                    ? "_asB64"
+                    : "");
         arg = null;
       }
 
@@ -472,7 +479,7 @@ final class NullSafeAccumulator {
         return protoToSanitizedContentConverterFunction(desc.getMessageType());
       } else if (ProtoUtils.isSanitizedContentMap(desc)) {
         return protoToSanitizedContentConverterFunction(ProtoUtils.getMapValueMessageType(desc));
-      } else if (desc.getType() == FieldDescriptor.Type.BYTES
+      } else if ((desc.getType() == FieldDescriptor.Type.BYTES && desc.isExtension())
           || (desc.isMapField()
               && ProtoUtils.getMapValueFieldDescriptor(desc).getType()
                   == FieldDescriptor.Type.BYTES)) {
