@@ -16,10 +16,10 @@
 
 package com.google.template.soy.shared.internal;
 
+import com.google.errorprone.annotations.CheckReturnValue;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import java.util.ArrayDeque;
-import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 
 /**

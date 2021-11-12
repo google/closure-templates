@@ -28,6 +28,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.net.MediaType;
+import com.google.errorprone.annotations.CheckReturnValue;
 import com.google.errorprone.annotations.ForOverride;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.base.internal.SanitizedContentKind;
@@ -45,7 +46,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.regex.Pattern;
-import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 
 /**

@@ -48,6 +48,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Streams;
+import com.google.errorprone.annotations.CheckReturnValue;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.SanitizedContentKind;
@@ -136,7 +137,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import javax.annotation.CheckReturnValue;
 
 /**
  * Visitor for generating full JS code (i.e. statements) for parse tree nodes.

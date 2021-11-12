@@ -33,6 +33,7 @@ import com.google.common.truth.FailureMetadata;
 import com.google.common.truth.IterableSubject;
 import com.google.common.truth.Subject;
 import com.google.common.truth.ThrowableSubject;
+import com.google.errorprone.annotations.CheckReturnValue;
 import com.google.protobuf.Descriptors.GenericDescriptor;
 import com.google.template.soy.SoyFileSetParser;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
@@ -80,7 +81,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Predicate;
-import javax.annotation.CheckReturnValue;
 
 /** Utilities for testing compiled soy templates. */
 public final class TemplateTester {

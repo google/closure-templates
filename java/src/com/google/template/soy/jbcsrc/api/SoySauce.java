@@ -24,6 +24,7 @@ import static com.google.template.soy.jbcsrc.api.AppendableAsAdvisingAppendable.
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.errorprone.annotations.CheckReturnValue;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyTemplate;
@@ -36,7 +37,6 @@ import com.google.template.soy.shared.SoyIdRenamingMap;
 import java.io.IOException;
 import java.util.Map;
 import java.util.function.Predicate;
-import javax.annotation.CheckReturnValue;
 
 /**
  * Main entry point for rendering Soy templates on the server.

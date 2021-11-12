@@ -27,6 +27,7 @@ import com.google.common.truth.FailureMetadata;
 import com.google.common.truth.StringSubject;
 import com.google.common.truth.Subject;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
+import com.google.errorprone.annotations.CheckReturnValue;
 import com.google.errorprone.annotations.ForOverride;
 import com.google.protobuf.Descriptors.GenericDescriptor;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
@@ -51,7 +52,6 @@ import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import com.google.template.soy.types.SoyTypeRegistryBuilder;
 import java.util.ArrayList;
 import java.util.List;
-import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 
 /** Custom Truth subject to aid testing Soy->JS codegen. */

@@ -17,6 +17,7 @@
 package com.google.template.soy.passes;
 
 import com.google.common.collect.ImmutableTable;
+import com.google.errorprone.annotations.CheckReturnValue;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
@@ -26,7 +27,6 @@ import com.google.template.soy.types.FloatType;
 import com.google.template.soy.types.IntType;
 import com.google.template.soy.types.SoyType;
 import java.util.Collection;
-import javax.annotation.CheckReturnValue;
 
 /** Static utility for adding runtime casts to the Soy AST. */
 final class RuntimeTypeCoercion {

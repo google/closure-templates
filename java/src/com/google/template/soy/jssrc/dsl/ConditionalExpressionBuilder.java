@@ -21,8 +21,8 @@ import static com.google.template.soy.jssrc.dsl.Statement.ifStatement;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import com.google.errorprone.annotations.CheckReturnValue;
 import com.google.template.soy.jssrc.dsl.CodeChunk.Generator;
-import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 
 /**
