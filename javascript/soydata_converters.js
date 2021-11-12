@@ -299,11 +299,9 @@ exports.unpackBytesToBase64String = function(
  * Processes the return value of a proto bytes field so that it is consistently
  * formatted as base64 text.
  *
- * @return {?string}
+ * @return {!ByteString}
  */
 exports.packBase64StringToBytesValuedMap = function(
     /** string*/ bytes) {
-  // TODO(b/154961283): call ByteString.fromBase64 onces maps in jspb are using
-  // ByteStrings
-  return bytes;
+  return ByteString.fromBase64(bytes);
 };
