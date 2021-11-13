@@ -24,7 +24,31 @@ import com.google.template.soy.jssrc.SoyJsSrcOptions;
  * <p>Currently there are no options, this object exists for future expansion.
  */
 public final class SoyIncrementalDomSrcOptions {
-  public SoyIncrementalDomSrcOptions() {}
+
+  /** Whether we should add a requirecss annotation for the generated GSS header file. */
+  private boolean dependOnCssHeader;
+
+  public SoyIncrementalDomSrcOptions() {
+    dependOnCssHeader = false;
+  }
+
+  private SoyIncrementalDomSrcOptions(SoyIncrementalDomSrcOptions orig) {
+    this.dependOnCssHeader = orig.dependOnCssHeader;
+  }
+
+  /**
+   * Sets whether we should add a requirecss annotation for the generated GSS header file.
+   *
+   * @param dependOnCssHeader The value to set.
+   */
+  public void setDependOnCssHeader(boolean dependOnCssHeader) {
+    this.dependOnCssHeader = dependOnCssHeader;
+  }
+
+  /** Returns whether we should add a requirecss annotation for the generated GSS header file. */
+  public boolean dependOnCssHeader() {
+    return dependOnCssHeader;
+  }
 
   /**
    * Convert to {@link SoyJsSrcOptions}. This is necessary since {@code incrementaldomsrc} reuses
@@ -38,13 +62,12 @@ public final class SoyIncrementalDomSrcOptions {
     jsSrcOptions.setGoogMsgsAreExternal(true);
     jsSrcOptions.setBidiGlobalDir(0);
     jsSrcOptions.setUseGoogIsRtlForBidiGlobalDir(true);
+    jsSrcOptions.setDependOnCssHeader(dependOnCssHeader);
     return jsSrcOptions;
   }
 
   @Override
   public SoyIncrementalDomSrcOptions clone() {
-    // this object is currently immutable.  Change this to return a new instance if we ever add real
-    // options
-    return this;
+    return new SoyIncrementalDomSrcOptions(this);
   }
 }
