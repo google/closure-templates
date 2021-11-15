@@ -36,7 +36,6 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_GET_CSS_NAME
 import static com.google.template.soy.jssrc.internal.JsRuntime.IJ_DATA;
 import static com.google.template.soy.jssrc.internal.JsRuntime.JS_TO_PROTO_PACK_FN;
 import static com.google.template.soy.jssrc.internal.JsRuntime.MARK_TEMPLATE;
-import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_DATA;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SERIALIZE_KEY;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_CHECK_NOT_NULL;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_COERCE_TO_BOOLEAN;
@@ -218,14 +217,6 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
       JavaScriptValueFactoryImpl javascriptValueFactory,
       TranslationContext translationContext,
       TemplateAliases templateAliases,
-      ErrorReporter errorReporter) {
-    this(javascriptValueFactory, translationContext, templateAliases, errorReporter, OPT_DATA);
-  }
-
-  public TranslateExprNodeVisitor(
-      JavaScriptValueFactoryImpl javascriptValueFactory,
-      TranslationContext translationContext,
-      TemplateAliases templateAliases,
       ErrorReporter errorReporter,
       Expression dataSource) {
     this.javascriptValueFactory = javascriptValueFactory;
@@ -234,6 +225,10 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     this.codeGenerator = translationContext.codeGenerator();
     this.templateAliases = templateAliases;
     this.dataSource = dataSource;
+  }
+
+  public Expression getDataSource() {
+    return dataSource;
   }
 
   /**

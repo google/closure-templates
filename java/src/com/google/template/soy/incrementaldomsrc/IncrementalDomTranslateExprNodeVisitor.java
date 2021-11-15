@@ -53,8 +53,9 @@ public class IncrementalDomTranslateExprNodeVisitor extends TranslateExprNodeVis
       JavaScriptValueFactoryImpl javaScriptValueFactory,
       TranslationContext translationContext,
       TemplateAliases templateAliases,
-      ErrorReporter errorReporter) {
-    super(javaScriptValueFactory, translationContext, templateAliases, errorReporter);
+      ErrorReporter errorReporter,
+      Expression dataSource) {
+    super(javaScriptValueFactory, translationContext, templateAliases, errorReporter, dataSource);
   }
 
   @Override

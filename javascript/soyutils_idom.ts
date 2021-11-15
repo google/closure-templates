@@ -47,7 +47,7 @@ type LetFunction = (idom: IncrementalDomRenderer) => void;
  */
 interface TemplateAcceptor<TDATA extends {}> {
   template: IdomTemplate<TDATA>;
-  syncState: IdomSyncState<TDATA>;
+  sync: IdomSyncState<TDATA>;
   renderInternal(renderer: IncrementalDomRenderer, data: TDATA): void;
   render(renderer?: IncrementalDomRenderer): void;
 }
@@ -95,7 +95,7 @@ function handleSoyElement<T extends TemplateAcceptor<{}>>(
     incrementaldom: IncrementalDomRenderer, elementClassCtor: new () => T,
     firstElementKey: string, tagNameOrCtor: string|(new () => T), data: {},
     ijData: IjData, template: IdomTemplate<unknown>,
-    syncState?: IdomSyncState<unknown>, init?: (this: T) => void): T|null {
+    sync?: IdomSyncState<unknown>, init?: (this: T) => void): T|null {
   // If we're just testing truthiness, record an element but don't do anythng.
   if (incrementaldom instanceof FalsinessRenderer) {
     incrementaldom.open('div');
@@ -141,9 +141,6 @@ function handleSoyElement<T extends TemplateAcceptor<{}>>(
     const customEl = element as unknown as T;
     if (!customEl.renderInternal) {
       init!.call(customEl);
-      if (syncState) {
-        customEl.syncState = syncState.bind(element);
-      }
       customEl.template = template.bind(element);
       customEl.renderInternal =
           customEl.renderInternal || ((idomRenderer, data) => {
@@ -154,8 +151,10 @@ function handleSoyElement<T extends TemplateAcceptor<{}>>(
             customEl.renderInternal(renderer, customEl);
           });
     }
-    if (syncState) {
-      customEl.syncState(data);
+    if (sync) {
+      // TODO(b/205997375): This needs to be conditionally set depending on
+      // whether the controller split is hydrated or not.
+      sync.call(customEl, data, false);
     }
     return customEl;
   }
