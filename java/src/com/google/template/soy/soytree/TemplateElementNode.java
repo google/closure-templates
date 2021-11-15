@@ -95,10 +95,6 @@ public final class TemplateElementNode extends TemplateNode implements ExprHolde
     return builder.build();
   }
 
-  public boolean hasExternalClassDefinition() {
-    return jsnamespace != null && jsclass != null;
-  }
-
   @Override
   public Kind getKind() {
     return Kind.TEMPLATE_ELEMENT_NODE;

@@ -80,8 +80,7 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<Expression>> 
     public GenJsExprsVisitor create(
         TranslationContext translationContext,
         TemplateAliases templateAliases,
-        ErrorReporter errorReporter,
-        Expression dataSource) {
+        ErrorReporter errorReporter) {
       return new GenJsExprsVisitor(
           javaScriptValueFactory,
           genCallCodeUtils.get(),
@@ -89,8 +88,7 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<Expression>> 
           this,
           translationContext,
           errorReporter,
-          templateAliases,
-          dataSource);
+          templateAliases);
     }
   }
 
@@ -108,8 +106,6 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<Expression>> 
   /** List to collect the results. */
   protected List<Expression> chunks;
 
-  protected final Expression dataSource;
-
   /**
    * Used for looking up the local name for a given template call to a fully qualified template
    * name.
@@ -124,7 +120,6 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<Expression>> 
    * @param genJsExprsVisitorFactory Factory for creating an instance of GenJsExprsVisitor.
    * @param templateAliases A mapping for looking up the function name for a given fully qualified
    *     name.
-   * @param dataSource A data source to map data params from.
    */
   protected GenJsExprsVisitor(
       JavaScriptValueFactoryImpl javaScriptValueFactory,
@@ -133,8 +128,7 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<Expression>> 
       GenJsExprsVisitorFactory genJsExprsVisitorFactory,
       TranslationContext translationContext,
       ErrorReporter errorReporter,
-      TemplateAliases templateAliases,
-      Expression dataSource) {
+      TemplateAliases templateAliases) {
     this.javaScriptValueFactory = javaScriptValueFactory;
     this.genCallCodeUtils = genCallCodeUtils;
     this.isComputableAsJsExprsVisitor = isComputableAsJsExprsVisitor;
@@ -143,7 +137,6 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<Expression>> 
     this.translationContext = translationContext;
     this.errorReporter = errorReporter;
     this.templateAliases = templateAliases;
-    this.dataSource = dataSource;
   }
 
   @Override
@@ -168,31 +161,25 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<Expression>> 
   // -----------------------------------------------------------------------------------------------
   // Implementations for specific nodes.
 
-  @Override
-  protected void visitTemplateNode(TemplateNode node) {
+  @Override protected void visitTemplateNode(TemplateNode node) {
     visitChildren(node);
   }
 
   /**
    * Example:
-   *
    * <pre>
    *   I'm feeling lucky!
    * </pre>
-   *
    * generates
-   *
    * <pre>
    *   'I\'m feeling lucky!'
    * </pre>
    */
-  @Override
-  protected void visitRawTextNode(RawTextNode node) {
+  @Override protected void visitRawTextNode(RawTextNode node) {
     chunks.add(stringLiteral(node.getRawText()));
   }
 
-  @Override
-  protected void visitMsgPlaceholderNode(MsgPlaceholderNode node) {
+  @Override protected void visitMsgPlaceholderNode(MsgPlaceholderNode node) {
     visitChildren(node);
   }
 
@@ -203,39 +190,31 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<Expression>> 
 
   /**
    * Example:
-   *
    * <pre>
    *   &lt;a href="{$url}"&gt;
    * </pre>
-   *
    * might generate
-   *
    * <pre>
    *   '&lt;a href="' + opt_data.url + '"&gt;'
    * </pre>
    */
-  @Override
-  protected void visitMsgHtmlTagNode(MsgHtmlTagNode node) {
+  @Override protected void visitMsgHtmlTagNode(MsgHtmlTagNode node) {
     visitChildren(node);
   }
 
   /**
    * Example:
-   *
    * <pre>
    *   {$boo.foo}
    *   {$goo.moo + 5}
    * </pre>
-   *
    * might generate
-   *
    * <pre>
    *   opt_data.boo.foo
    *   gooData4.moo + 5
    * </pre>
    */
-  @Override
-  protected void visitPrintNode(PrintNode node) {
+  @Override protected void visitPrintNode(PrintNode node) {
     Expression expr = translateExpr(node.getExpr());
 
     // Process directives.
@@ -273,7 +252,7 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<Expression>> 
 
   protected TranslateExprNodeVisitor getExprTranslator() {
     return new TranslateExprNodeVisitor(
-        javaScriptValueFactory, translationContext, templateAliases, errorReporter, dataSource);
+        javaScriptValueFactory, translationContext, templateAliases, errorReporter);
   }
 
   private Expression translateExpr(ExprRootNode argNode) {
@@ -282,7 +261,6 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<Expression>> 
 
   /**
    * Example:
-   *
    * <pre>
    *   {if $boo}
    *     AAA
@@ -292,20 +270,16 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<Expression>> 
    *     CCC
    *   {/if}
    * </pre>
-   *
    * might generate
-   *
    * <pre>
    *   (opt_data.boo) ? AAA : (opt_data.foo) ? BBB : CCC
    * </pre>
    */
-  @Override
-  protected void visitIfNode(IfNode node) {
+  @Override protected void visitIfNode(IfNode node) {
 
     // Create another instance of this visitor class for generating JS expressions from children.
     GenJsExprsVisitor genJsExprsVisitor =
-        genJsExprsVisitorFactory.create(
-            translationContext, templateAliases, errorReporter, dataSource);
+        genJsExprsVisitorFactory.create(translationContext, templateAliases, errorReporter);
     CodeChunk.Generator generator = translationContext.codeGenerator();
 
     List<Expression> ifs = new ArrayList<>();
@@ -345,19 +319,16 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<Expression>> 
     chunks.add(ifChunk);
   }
 
-  @Override
-  protected void visitIfCondNode(IfCondNode node) {
+  @Override protected void visitIfCondNode(IfCondNode node) {
     visitChildren(node);
   }
 
-  @Override
-  protected void visitIfElseNode(IfElseNode node) {
+  @Override protected void visitIfElseNode(IfElseNode node) {
     visitChildren(node);
   }
 
   /**
    * Example:
-   *
    * <pre>
    *   {call some.func data="all" /}
    *   {call some.func data="$boo.foo" /}
@@ -368,9 +339,7 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<Expression>> 
    *     {param key="goo"}Blah{/param}
    *   {/call}
    * </pre>
-   *
    * might generate
-   *
    * <pre>
    *   some.func(opt_data)
    *   some.func(opt_data.boo.foo)
@@ -378,16 +347,14 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<Expression>> 
    *   some.func(soy.$$assignDefaults({goo: 'Blah'}, opt_data.boo))
    * </pre>
    */
-  @Override
-  protected void visitCallNode(CallNode node) {
+  @Override protected void visitCallNode(CallNode node) {
     Expression call =
         genCallCodeUtils.gen(
             node, templateAliases, translationContext, errorReporter, getExprTranslator());
     chunks.add(call);
   }
 
-  @Override
-  protected void visitCallParamContentNode(CallParamContentNode node) {
+  @Override protected void visitCallParamContentNode(CallParamContentNode node) {
     visitChildren(node);
   }
 }

@@ -436,11 +436,7 @@ public class GenCallCodeUtils {
         if (isComputableAsJsExprsVisitor.exec(cpcn)) {
           List<Expression> chunks =
               genJsExprsVisitorFactory
-                  .create(
-                      translationContext,
-                      templateAliases,
-                      errorReporter,
-                      exprTranslator.getDataSource())
+                  .create(translationContext, templateAliases, errorReporter)
                   .exec(cpcn);
           value = CodeChunkUtils.concatChunksForceString(chunks);
         } else {

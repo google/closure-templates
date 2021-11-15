@@ -290,9 +290,9 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       getJsCodeBuilder().append(generateAccessorInterface(elementAccessor, element));
       getJsCodeBuilder().append(generateExportsForSoyElement(elementAccessor));
       getJsCodeBuilder().append(generateRenderInternal(element));
-      getJsCodeBuilder().appendNullable(generateSyncInternal(element));
+      getJsCodeBuilder().appendNullable(generateSyncStateInternal(element));
       getJsCodeBuilder().appendNullable(generateInitInternalMethod(element));
-      if (!element.hasExternalClassDefinition()) {
+      if (element.jsnamespace == null) {
         getJsCodeBuilder()
             .append(generateClassForSoyElement(elementName, elementAccessor, element));
         getJsCodeBuilder().append(generateExportsForSoyElement(elementName));
@@ -304,7 +304,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     String paramsType = hasOnlyImplicitParams(node) ? "null" : "!" + alias + ".Params";
     String soyElementClassName = this.getSoyElementClassName();
     // TODO(b/194302456): Assert that jsnamespace and jsclass are always set together.
-    boolean isCustomElement = node.hasExternalClassDefinition();
+    boolean isCustomElement = node.jsnamespace != null;
     JsDoc jsDoc =
         JsDoc.builder()
             .addParam(INCREMENTAL_DOM_PARAM_NAME, "!incrementaldomlib.IncrementalDomRenderer")
@@ -341,7 +341,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
                                     .build())
                         .collect(toImmutableList())),
                 generateIncrementalDomRenderCalls(node, alias, /*isPositionalStyle=*/ false)));
-    return VariableDeclaration.builder(soyElementClassName + "Render")
+    return VariableDeclaration.builder(soyElementClassName + "Internal")
         .setJsDoc(jsDoc)
         .setRhs(fn)
         .build();
@@ -366,7 +366,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       stateVarInitializations.add(
           Statement.assign(
               Expression.THIS.dotAccess(
-                  (node.hasExternalClassDefinition() ? "" : STATE_PREFIX) + stateVar.name()),
+                  (node.jsnamespace == null ? STATE_PREFIX : "") + stateVar.name()),
               rhsValue,
               stateVarJsdoc));
     }
@@ -374,7 +374,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   }
 
   private Statement generateInitInternalMethod(TemplateElementNode node) {
-    if (!node.hasExternalClassDefinition()) {
+    if (node.jsnamespace == null) {
       return null;
     }
     String soyElementClassName = this.getSoyElementClassName();
@@ -400,13 +400,13 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   }
 
   @Nullable
-  private Statement generateSyncInternal(TemplateElementNode node) {
-    if (!hasNonConstantState && !node.hasExternalClassDefinition()) {
+  private Statement generateSyncStateInternal(TemplateElementNode node) {
+    if (!hasNonConstantState) {
       return null;
     }
     String soyElementClassName = this.getSoyElementClassName();
     String paramsType = hasOnlyImplicitParams(node) ? "null" : "!" + alias + ".Params";
-    boolean isCustomElement = node.hasExternalClassDefinition();
+    boolean isCustomElement = node.jsnamespace != null;
     JsDoc jsDoc =
         JsDoc.builder()
             .addParam(StandardNames.OPT_DATA, paramsType)
@@ -418,9 +418,8 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
                     ? (soyElementClassName + "Import." + node.jsclass)
                     : soyElementClassName)
             .addParameterizedAnnotation("suppress", "checkTypes")
-            .addParam("syncOnlyData", "boolean=")
             .build();
-    return VariableDeclaration.builder(soyElementClassName + "SyncInternal")
+    return VariableDeclaration.builder(soyElementClassName + "SyncStateInternal")
         .setJsDoc(jsDoc)
         .setRhs(
             Expression.function(
@@ -565,19 +564,6 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   }
 
   private Statement genSyncStateCalls(TemplateElementNode node, String alias) {
-    Expression originalDataSource = dataSource;
-    dataSource = JsRuntime.OPT_DATA;
-    Statement typeChecks = genParamTypeChecks(node, alias, false);
-    Statement dataAssignments =
-        Statement.of(
-            node.hasExternalClassDefinition()
-                ? node.getParams().stream()
-                    .map(
-                        param ->
-                            Statement.assign(
-                                Expression.THIS.dotAccess(param.name()), id(param.name())))
-                    .collect(toImmutableList())
-                : ImmutableList.of());
     ImmutableList<TemplateStateVar> headerVars = node.getStateVars();
     ImmutableMap<TemplateStateVar, Boolean> isNonConst =
         headerVars.stream().collect(toImmutableMap(v -> v, v -> !isConstantExpr(v.defaultValue())));
@@ -587,7 +573,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
         headerVars.reverse().stream().filter(isNonConst::get).findFirst().orElse(null);
     boolean haveVisitedLastNonConstVar = lastNonConstVar == null;
 
-    String prefix = node.hasExternalClassDefinition() ? "" : STATE_PREFIX;
+    String prefix = node.jsnamespace == null ? STATE_PREFIX : "";
     for (TemplateStateVar headerVar : headerVars) {
       if (isNonConst.get(headerVar)) {
         stateReassignmentBuilder.add(
@@ -604,13 +590,9 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
                 .build());
       }
     }
-    Statement stateReassignments = Statement.of(stateReassignmentBuilder.build());
-    if (node.hasExternalClassDefinition()) {
-      stateReassignments =
-          Statement.ifStatement(Expression.not(id("syncOnlyData")), stateReassignments).build();
-    }
-    dataSource = originalDataSource;
-    return Statement.of(typeChecks, dataAssignments, stateReassignments);
+    ImmutableList<Statement> stateReassignments = stateReassignmentBuilder.build();
+    Statement typeChecks = genParamTypeChecks(node, alias, false);
+    return Statement.of(typeChecks, Statement.of(stateReassignments));
   }
 
   /** Generates idom#elementOpen, idom#elementClose, etc. function calls for the given node. */
@@ -653,7 +635,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
         // Since Soy element roots cannot have manual keys (see go/soy-element-keyed-roots),
         // this will always be the first element key.
         JsRuntime.XID.call(Expression.stringLiteral(tplName + "-root"));
-    boolean isCustomElement = node.hasExternalClassDefinition();
+    boolean isCustomElement = node.jsnamespace != null;
     List<Expression> params =
         new ArrayList<>(
             Arrays.asList(
@@ -668,12 +650,14 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
                     : Expression.stringLiteral(node.getHtmlElementMetadata().getTag()),
                 JsRuntime.OPT_DATA,
                 JsRuntime.IJ_DATA,
-                id(soyElementClassName + "Render")));
-    if (hasNonConstantState || node.hasExternalClassDefinition()) {
+                id(soyElementClassName + "Internal")));
+    if (hasNonConstantState) {
       // This param is TS optional.
-      params.add(id(soyElementClassName + "SyncInternal"));
+      params.add(id(soyElementClassName + "SyncStateInternal"));
+    } else if (node.jsnamespace != null) {
+      params.add(Expression.LITERAL_UNDEFINED);
     }
-    if (node.hasExternalClassDefinition()) {
+    if (node.jsnamespace != null) {
       params.add(id(soyElementClassName + "Init"));
     }
     return Statement.of(
@@ -683,6 +667,16 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
         Statement.ifStatement(
                 id("soyEl"),
                 Statement.of(
+                    Statement.of(
+                        isCustomElement
+                            ? node.getParams().stream()
+                                .map(
+                                    param ->
+                                        Statement.assign(
+                                            id("soyEl").dotAccess(param.name()),
+                                            JsRuntime.OPT_DATA.dotAccess(param.name())))
+                                .collect(toImmutableList())
+                            : ImmutableList.of()),
                     id("soyEl")
                         .dotAccess("renderInternal")
                         .call(INCREMENTAL_DOM, isCustomElement ? id("soyEl") : JsRuntime.OPT_DATA)
@@ -705,7 +699,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   private VariableDeclaration generateClassForSoyElement(
       String soyElementClassName, String soyElementAccessorName, TemplateElementNode node) {
 
-    if (node.hasExternalClassDefinition()) {
+    if (node.jsnamespace != null) {
       return null;
     }
     String paramsType = hasOnlyImplicitParams(node) ? "null" : "!" + alias + ".Params";
@@ -737,7 +731,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       stateVarInitializations.add(
           Statement.assign(
               Expression.THIS.dotAccess("syncStateFromData"),
-              id(soyElementClassName + "SyncInternal")));
+              id(soyElementClassName + "SyncStateInternal")));
     }
     // Build constructor method.
     Statement ctorBody =
@@ -1175,11 +1169,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   @Override
   protected TranslateExprNodeVisitor getExprTranslator() {
     return new IncrementalDomTranslateExprNodeVisitor(
-        javaScriptValueFactory,
-        templateTranslationContext,
-        templateAliases,
-        errorReporter,
-        dataSource);
+        javaScriptValueFactory, templateTranslationContext, templateAliases, errorReporter);
   }
 
   @Override

@@ -193,7 +193,6 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
   protected List<Statement> staticVarDeclarations;
   protected boolean generatePositionalParamsSignature;
-  protected Expression dataSource = OPT_DATA;
 
   /**
    * Used for looking up the local name for a given template call to a fully qualified template
@@ -773,12 +772,6 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     String templateName = node.getTemplateName();
     String partialName = node.getLocalTemplateSymbol();
     String alias;
-    if (node instanceof TemplateElementNode
-        && ((TemplateElementNode) node).hasExternalClassDefinition()) {
-      dataSource = Expression.THIS;
-    } else {
-      dataSource = OPT_DATA;
-    }
 
     if (jsSrcOptions.shouldGenerateGoogModules() && node instanceof TemplateDelegateNode) {
       alias = partialName;
@@ -795,8 +788,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         TranslationContext.of(
             SoyToJsVariableMappings.startingWith(topLevelSymbols), codeGenerator, nameGenerator);
     genJsExprsVisitor =
-        genJsExprsVisitorFactory.create(
-            templateTranslationContext, templateAliases, errorReporter, dataSource);
+        genJsExprsVisitorFactory.create(templateTranslationContext, templateAliases, errorReporter);
     assistantForMsgs = null;
 
     ImmutableList.Builder<Statement> declarations = ImmutableList.builder();
@@ -1380,11 +1372,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
   protected TranslateExprNodeVisitor getExprTranslator() {
     return new TranslateExprNodeVisitor(
-        javaScriptValueFactory,
-        templateTranslationContext,
-        templateAliases,
-        errorReporter,
-        dataSource);
+        javaScriptValueFactory, templateTranslationContext, templateAliases, errorReporter);
   }
 
   protected Expression translateExpr(ExprNode expr) {
@@ -1866,9 +1854,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       JsType jsType = getJsTypeForParamTypeCheck(paramType);
       // TODO(lukes): for positional style params we should switch to inline defaults in the
       // declaration and let the JS VM handle this.
-      if (param.hasDefault()
-          && !(node instanceof TemplateElementNode
-              && ((TemplateElementNode) node).hasExternalClassDefinition())) {
+      if (param.hasDefault()) {
         if (!isThisParamPositional) {
           // if we haven't captured the param into a mutable temporary allocate one now.
           paramChunk = generator.declarationBuilder().setMutable().setRhs(paramChunk).build().ref();
