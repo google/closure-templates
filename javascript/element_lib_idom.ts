@@ -49,7 +49,6 @@ export abstract class SoyElement<TData extends {}|null, TInterface extends {}>
   // tslint:disable-next-line:no-any Setting this to TData seems to trigger spurious type errors.
   template!: IdomTemplate<any>;
 
-  /** @override */
   dispose() {
     if (!this.disposed) {
       this.disposed = true;
@@ -57,7 +56,6 @@ export abstract class SoyElement<TData extends {}|null, TInterface extends {}>
     }
   }
 
-  /** @override */
   isDisposed() {
     return this.disposed;
   }
