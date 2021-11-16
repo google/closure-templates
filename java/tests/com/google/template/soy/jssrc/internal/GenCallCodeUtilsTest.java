@@ -19,6 +19,7 @@ package com.google.template.soy.jssrc.internal;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
+import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_DATA;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableSet;
@@ -246,7 +247,8 @@ public final class GenCallCodeUtilsTest {
             new JavaScriptValueFactoryImpl(BidiGlobalDir.LTR, errorReporter),
             translationContext,
             AliasUtils.IDENTITY_ALIASES,
-            errorReporter);
+            errorReporter,
+            OPT_DATA);
     CodeChunk call =
         genCallCodeUtils.gen(
             callNode,
