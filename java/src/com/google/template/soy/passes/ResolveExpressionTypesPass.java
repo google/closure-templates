@@ -1959,6 +1959,11 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
           (SoyProtoType) typeRegistry.getProtoRegistry().getProtoType(protoFqn);
       node.setType(protoType);
 
+      if (node.getParamsStyle() == ParamsStyle.POSITIONAL) {
+        errorReporter.report(node.getSourceLocation(), INCORRECT_ARG_STYLE);
+        return;
+      }
+
       // TODO(user): Consider writing a soyProtoTypeImpl.getRequiredFields()
       Set<String> givenParams = new HashSet<>();
       ImmutableSet<String> fields = protoType.getFieldNames();
