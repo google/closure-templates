@@ -18,7 +18,6 @@ package com.google.template.soy.jssrc.internal;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.jssrc.dsl.Expression.id;
-import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_DATA;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
@@ -236,8 +235,7 @@ public final class GenJsExprsVisitorTest {
                     CodeChunk.Generator.create(nameGenerator),
                     nameGenerator),
                 AliasUtils.IDENTITY_ALIASES,
-                boom,
-                OPT_DATA);
+                boom);
     return visitor.exec(node);
   }
 }

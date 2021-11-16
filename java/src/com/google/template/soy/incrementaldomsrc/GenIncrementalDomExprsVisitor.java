@@ -16,7 +16,6 @@
 
 package com.google.template.soy.incrementaldomsrc;
 
-
 import com.google.common.base.Supplier;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jssrc.dsl.Expression;
@@ -48,8 +47,7 @@ public final class GenIncrementalDomExprsVisitor extends GenJsExprsVisitor {
     public GenIncrementalDomExprsVisitor create(
         TranslationContext translationContext,
         TemplateAliases templateAliases,
-        ErrorReporter errorReporter,
-        Expression dataSource) {
+        ErrorReporter errorReporter) {
       return new GenIncrementalDomExprsVisitor(
           javaScriptValueFactory,
           (IncrementalDomGenCallCodeUtils) genCallCodeUtils.get(),
@@ -57,8 +55,7 @@ public final class GenIncrementalDomExprsVisitor extends GenJsExprsVisitor {
           this,
           translationContext,
           errorReporter,
-          templateAliases,
-          dataSource);
+          templateAliases);
     }
   }
 
@@ -69,8 +66,7 @@ public final class GenIncrementalDomExprsVisitor extends GenJsExprsVisitor {
       GenIncrementalDomExprsVisitorFactory genIncrementalDomExprsVisitorFactory,
       TranslationContext translationContext,
       ErrorReporter errorReporter,
-      TemplateAliases templateAliases,
-      Expression dataSource) {
+      TemplateAliases templateAliases) {
     super(
         javaScriptValueFactory,
         genCallCodeUtils,
@@ -78,8 +74,7 @@ public final class GenIncrementalDomExprsVisitor extends GenJsExprsVisitor {
         genIncrementalDomExprsVisitorFactory,
         translationContext,
         errorReporter,
-        templateAliases,
-        dataSource);
+        templateAliases);
   }
 
   @Override
@@ -92,6 +87,6 @@ public final class GenIncrementalDomExprsVisitor extends GenJsExprsVisitor {
   @Override
   protected TranslateExprNodeVisitor getExprTranslator() {
     return new IncrementalDomTranslateExprNodeVisitor(
-        javaScriptValueFactory, translationContext, templateAliases, errorReporter, dataSource);
+        javaScriptValueFactory, translationContext, templateAliases, errorReporter);
   }
 }
