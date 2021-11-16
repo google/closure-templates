@@ -18,6 +18,7 @@ package com.google.template.soy.jssrc.internal;
 
 import static com.google.template.soy.jssrc.dsl.Expression.dottedIdNoRequire;
 import static com.google.template.soy.jssrc.dsl.Statement.assign;
+import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_DATA;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceFilePath;
@@ -377,7 +378,8 @@ public final class GenLitCodeVisitor extends AbstractSoyNodeVisitor<List<String>
         TranslationContext.of(
             SoyToJsVariableMappings.startingWith(topLevelSymbols), codeGenerator, nameGenerator),
         templateAliases,
-        errorReporter);
+        errorReporter,
+        OPT_DATA);
   }
 
   private Expression translateExpr(ExprNode expr) {

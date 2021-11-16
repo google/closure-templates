@@ -193,6 +193,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
   protected List<Statement> staticVarDeclarations;
   protected boolean generatePositionalParamsSignature;
+  protected Expression dataSource = OPT_DATA;
 
   /**
    * Used for looking up the local name for a given template call to a fully qualified template
@@ -772,6 +773,13 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     String templateName = node.getTemplateName();
     String partialName = node.getLocalTemplateSymbol();
     String alias;
+    if (node instanceof TemplateElementNode
+        && ((TemplateElementNode) node).hasExternalClassDefinition()
+        && isIncrementalDom()) {
+      dataSource = Expression.THIS;
+    } else {
+      dataSource = OPT_DATA;
+    }
 
     if (jsSrcOptions.shouldGenerateGoogModules() && node instanceof TemplateDelegateNode) {
       alias = partialName;
@@ -788,7 +796,8 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         TranslationContext.of(
             SoyToJsVariableMappings.startingWith(topLevelSymbols), codeGenerator, nameGenerator);
     genJsExprsVisitor =
-        genJsExprsVisitorFactory.create(templateTranslationContext, templateAliases, errorReporter);
+        genJsExprsVisitorFactory.create(
+            templateTranslationContext, templateAliases, errorReporter, dataSource);
     assistantForMsgs = null;
 
     ImmutableList.Builder<Statement> declarations = ImmutableList.builder();
@@ -1372,7 +1381,11 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
   protected TranslateExprNodeVisitor getExprTranslator() {
     return new TranslateExprNodeVisitor(
-        javaScriptValueFactory, templateTranslationContext, templateAliases, errorReporter);
+        javaScriptValueFactory,
+        templateTranslationContext,
+        templateAliases,
+        errorReporter,
+        dataSource);
   }
 
   protected Expression translateExpr(ExprNode expr) {

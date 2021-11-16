@@ -18,6 +18,7 @@ package com.google.template.soy.jssrc.internal;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.jssrc.dsl.Expression.id;
+import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_DATA;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
@@ -1204,7 +1205,7 @@ public final class GenJsCodeVisitorTest {
     genJsCodeVisitor.templateTranslationContext = translationContext;
     genJsCodeVisitor.genJsExprsVisitor =
         JsSrcTestUtils.createGenJsExprsVisitorFactory()
-            .create(translationContext, TEMPLATE_ALIASES, ErrorReporter.exploding());
+            .create(translationContext, TEMPLATE_ALIASES, ErrorReporter.exploding(), OPT_DATA);
     genJsCodeVisitor.assistantForMsgs = null; // will be created when used
 
     for (SoyNode child : templateNode.getChildren()) {
