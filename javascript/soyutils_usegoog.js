@@ -1351,7 +1351,7 @@ const $$escapeHtmlAttributeNospace = function(value) {
  * Filters out strings that cannot be valid content in a <script> tag with
  * non-JS content.
  *
- * This disallows `<script`, `</script`, and `<!--` as substrings as well as
+ * This disallows `</script`, and `<!--` as substrings as well as
  * prefixes of those strings that occur at the end of the value.  This combined
  * with a similar rule enforced in the parser ensures that these substrings
  * cannot occur.
@@ -1389,8 +1389,7 @@ const $$filterHtmlScriptPhrasingData = function(value) {
   let start = 0;
   let indexOfLt;
   while ((indexOfLt = valueAsString.indexOf('<', start)) != -1) {
-    if (matchPrefixIgnoreCasePastEnd('<script', valueAsString, indexOfLt) ||
-        matchPrefixIgnoreCasePastEnd('</script', valueAsString, indexOfLt) ||
+    if (matchPrefixIgnoreCasePastEnd('</script', valueAsString, indexOfLt) ||
         matchPrefixIgnoreCasePastEnd('<!--', valueAsString, indexOfLt)) {
       asserts.fail(
           'Bad value `%s` for |filterHtmlScriptPhrasingData', [valueAsString]);

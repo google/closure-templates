@@ -460,8 +460,7 @@ def filter_html_script_phrasing_data(value):
       break
     if match_prefix_ignore_case_past_end(
         '<!--', value_str, lt) or match_prefix_ignore_case_past_end(
-            '<script', value_str, lt) or match_prefix_ignore_case_past_end(
-                '</script', value_str, lt):
+            '</script', value_str, lt):
       return 'zSoyz'
     start = lt + 1
   return value_str

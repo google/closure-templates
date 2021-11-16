@@ -647,20 +647,18 @@ public final class Sanitizers {
   /**
    * Filters out strings that cannot be a substring of a valid <script> tag.
    *
-   * <p>In particular, {@code <script}, {@code <!--} and {@code </script} or prefixes of those
-   * strings that occur at the end of the value.
+   * <p>In particular, {@code <!--} and {@code </script} or prefixes of those strings that occur at
+   * the end of the value.
    */
   public static String filterHtmlScriptPhrasingData(String value) {
     // we need to ban sequences that look like
     // <!--
-    // <script
     // </script
     int start = 0;
     int indexOfLt;
     while ((indexOfLt = value.indexOf('<', start)) != -1) {
       start = indexOfLt;
-      if (matchPrefixIgnoreCasePastEnd("<script", value, start)
-          || matchPrefixIgnoreCasePastEnd("</script", value, start)
+      if (matchPrefixIgnoreCasePastEnd("</script", value, start)
           || matchPrefixIgnoreCasePastEnd("<!--", value, start)) {
         logger.atWarning().withStackTrace(MEDIUM).log(
             "|filterHtmlScriptPhrasingData received bad value '%s'. Cannot contain an script"

@@ -849,20 +849,16 @@ final class HtmlRewriter {
                 tagName.toString());
           }
           if (tagName == TagName.RcDataTagName.SCRIPT) {
-            // in scripts we also need to watch out for <script and <!-- since the spec requires
-            // them to be balanced if present but that is typically non-sensical so we just disallow
-            // them.
-            // we also need to be concerned about raw text ending in a prefix of one of these tokens
-            // so that we don't need to worry about partial sequences being completed in dynamic
-            // content.
+            // in scripts we also need to watch out for <!-- since the spec allows it to contain
+            // another <script> but that is typically non-sensical so we just disallow it.
+            // we also need to be concerned about raw text ending in a prefix of this token so that
+            // we don't need to worry about partial sequences being completed in dynamic content.
             // see
             // https://html.spec.whatwg.org/multipage/scripting.html#restrictions-for-contents-of-script-elements
             // TODO(b/144050436): upgrade to error
-            if (matchPrefixIgnoreCase("<script", /* advance= */ false)
-                || matchPrefixIgnoreCase("<!--", /* advance= */ false)) {
+            if (matchPrefixIgnoreCase("<!--", /* advance= */ false)) {
               errorReporter.report(currentLocation(), DISALLOWED_SCRIPT_SEQUENCE);
-            } else if (matchPrefixIgnoreCasePastEnd("<script")
-                || matchPrefixIgnoreCasePastEnd("<!--")) {
+            } else if (matchPrefixIgnoreCasePastEnd("<!--")) {
               errorReporter.report(
                   currentLocation().extend(currentRawTextNode.getSourceLocation().getEndLocation()),
                   DISALLOWED_SCRIPT_SEQUENCE_PREFIX);
