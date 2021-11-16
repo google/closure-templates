@@ -32,6 +32,7 @@ import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.ListComprehensionNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarDefn.Kind;
+import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.ConstNode;
 import com.google.template.soy.soytree.ExternNode;
@@ -107,6 +108,15 @@ final class LocalVariablesNodeVisitor {
     /** Exits the current scope. */
     void exitScope() {
       currentScope.pop();
+    }
+
+    VarDefn lookup(VarRefNode varRef) {
+      VarDefn defn = lookup(varRef.getName());
+      // Only local template references may begin with '.'
+      if (defn != null && varRef.originallyLeadingDot() && defn.kind() != Kind.TEMPLATE) {
+        return null;
+      }
+      return defn;
     }
 
     /**

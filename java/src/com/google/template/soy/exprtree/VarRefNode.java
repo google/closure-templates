@@ -97,6 +97,14 @@ public final class VarRefNode extends AbstractExprNode {
     return name.startsWith("$") ? name.substring(1) : name;
   }
 
+  public String getOriginalName() {
+    return originalName;
+  }
+
+  public boolean originallyLeadingDot() {
+    return originalName.charAt(0) == '.';
+  }
+
   /** Returns Whether this is an injected parameter reference. */
   public boolean isInjected() {
     return defn.isInjected();

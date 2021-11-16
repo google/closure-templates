@@ -70,7 +70,7 @@ public final class RestoreGlobalsPass implements CompilerFilePass {
         return;
       }
 
-      if (getLocalVariables().lookup(varRef.getName()) != null) {
+      if (getLocalVariables().lookup(varRef) != null) {
         return;
       }
 

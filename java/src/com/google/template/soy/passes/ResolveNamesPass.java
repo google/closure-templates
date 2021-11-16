@@ -107,7 +107,8 @@ public final class ResolveNamesPass implements CompilerFilePass {
         errorReporter.report(
             varRef.getSourceLocation(),
             UNKNOWN_VARIABLE,
-            SoyErrors.getDidYouMeanMessage(localVariables.allVariablesInScope(), varRef.getName()));
+            SoyErrors.getDidYouMeanMessage(
+                localVariables.allVariablesInScope(), varRef.getOriginalName()));
         GlobalNode.replaceExprWithError(varRef);
       } else {
         varRef.setDefn(varDefn);

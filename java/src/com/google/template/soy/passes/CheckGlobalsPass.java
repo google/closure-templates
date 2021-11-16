@@ -54,13 +54,8 @@ final class CheckGlobalsPass implements CompilerFilePass {
       }
 
       String sourceName = global.getIdentifier().originalName();
-      String matchName = sourceName;
-      if (sourceName.startsWith(".")) {
-        // Better matches for local template refs unnecessarily starting with ".".
-        matchName = sourceName.substring(1);
-      }
       String extraErrorMessage =
-          SoyErrors.getDidYouMeanMessage(getLocalVariables().allVariablesInScope(), matchName);
+          SoyErrors.getDidYouMeanMessage(getLocalVariables().allVariablesInScope(), sourceName);
       errorReporter.report(
           global.getSourceLocation(), UNBOUND_GLOBAL, sourceName, extraErrorMessage);
     }
