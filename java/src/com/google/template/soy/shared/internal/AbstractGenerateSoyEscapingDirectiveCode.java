@@ -548,7 +548,6 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
    * similar setup tasks.
    *
    * @param outputCode The StringBuilder where generated code should be appended.
-   * @return A string containing the prefix for the generated sanitizer.
    */
   protected void generatePrefix(StringBuilder outputCode) {
     /* NOOP by default. */

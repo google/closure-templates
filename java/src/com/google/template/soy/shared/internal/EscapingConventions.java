@@ -119,7 +119,7 @@ public final class EscapingConventions {
    */
   public abstract static class CrossLanguageStringXform extends Escaper {
     private final String directiveName;
-    private final @Nullable Pattern valueFilter;
+    @Nullable private final Pattern valueFilter;
     private final ImmutableList<Escape> escapes;
     /**
      * A dense mapping mirroring escapes. I.e. for each element of {@link #escapes} {@code e} such
@@ -131,7 +131,7 @@ public final class EscapingConventions {
     /** Values in a sparse mapping corresponding to {@link #nonAsciiCodeUnits}. */
     private final String[] nonAsciiEscapes;
     /** @see #getNonAsciiPrefix */
-    private final @Nullable String nonAsciiPrefix;
+    @Nullable private final String nonAsciiPrefix;
 
     /**
      * @param valueFilter {@code null} if the directive accepts all strings as inputs. Otherwise a
@@ -202,7 +202,8 @@ public final class EscapingConventions {
      * units not in the sparse mapping. If null, then non-ASCII code units outside the sparse map
      * can appear unescaped.
      */
-    public final @Nullable String getNonAsciiPrefix() {
+    @Nullable
+    public final String getNonAsciiPrefix() {
       return nonAsciiPrefix;
     }
 
@@ -210,7 +211,8 @@ public final class EscapingConventions {
      * Null if the escaper accepts all strings as inputs, or otherwise a regular expression that
      * accepts only strings that can be escaped by this escaper.
      */
-    public final @Nullable Pattern getValueFilter() {
+    @Nullable
+    public final Pattern getValueFilter() {
       return valueFilter;
     }
 
@@ -295,7 +297,8 @@ public final class EscapingConventions {
      * @return null if no output buffer was passed in, and s contains no characters that need
      *     escaping. Otherwise out, or a StringBuilder if one needed to be allocated.
      */
-    private @Nullable StringBuilder maybeEscapeOnto(CharSequence s, @Nullable StringBuilder out) {
+    @Nullable
+    private StringBuilder maybeEscapeOnto(CharSequence s, @Nullable StringBuilder out) {
       try {
         return (StringBuilder) maybeEscapeOnto(s, out, 0, s.length());
       } catch (IOException ex) {
@@ -311,8 +314,9 @@ public final class EscapingConventions {
      * @return null if no output buffer was passed in, and s contains no characters that need
      *     escaping. Otherwise out, or a StringBuilder if one needed to be allocated.
      */
-    private @Nullable Appendable maybeEscapeOnto(
-        CharSequence s, @Nullable Appendable out, int start, int end) throws IOException {
+    @Nullable
+    private Appendable maybeEscapeOnto(CharSequence s, @Nullable Appendable out, int start, int end)
+        throws IOException {
       int pos = start;
       for (int i = start; i < end; ++i) {
         char c = s.charAt(i);

@@ -110,6 +110,43 @@ public final class Sanitizers {
     return cleanHtml(value.coerceToString(), valueDir, optionalSafeTags);
   }
 
+  /**
+   * Normalizes the input HTML while preserving "safe" tags. The content directionality is unknown.
+   *
+   * @return the normalized input, in the form of {@link SanitizedContent} of {@link
+   *     ContentKind#HTML}
+   */
+  public static SanitizedContent cleanHtml(String value) {
+    return cleanHtml(value, ImmutableSet.of());
+  }
+
+  /**
+   * Normalizes the input HTML while preserving "safe" tags. The content directionality is unknown.
+   *
+   * @param optionalSafeTags to add to the basic whitelist of formatting safe tags
+   * @return the normalized input, in the form of {@link SanitizedContent} of {@link
+   *     ContentKind#HTML}
+   */
+  public static SanitizedContent cleanHtml(
+      String value, Collection<? extends OptionalSafeTag> optionalSafeTags) {
+    return cleanHtml(value, null, optionalSafeTags);
+  }
+
+  /**
+   * Normalizes the input HTML of a given directionality while preserving "safe" tags.
+   *
+   * @param optionalSafeTags to add to the basic whitelist of formatting safe tags
+   * @return the normalized input, in the form of {@link SanitizedContent} of {@link
+   *     ContentKind#HTML}
+   */
+  public static SanitizedContent cleanHtml(
+      String value, Dir contentDir, Collection<? extends OptionalSafeTag> optionalSafeTags) {
+    return UnsafeSanitizedContentOrdainer.ordainAsSafe(
+        stripHtmlTags(value, TagWhitelist.FORMATTING.withOptionalSafeTags(optionalSafeTags), true),
+        ContentKind.HTML,
+        contentDir);
+  }
+
   /** Streaming version of {@code |cleanHtml}. */
   public static LoggingAdvisingAppendable cleanHtmlStreaming(
       LoggingAdvisingAppendable delegate, Collection<? extends OptionalSafeTag> optionalSafeTags) {
@@ -181,43 +218,6 @@ public final class Sanitizers {
     }
   }
 
-  /**
-   * Normalizes the input HTML while preserving "safe" tags. The content directionality is unknown.
-   *
-   * @return the normalized input, in the form of {@link SanitizedContent} of {@link
-   *     ContentKind#HTML}
-   */
-  public static SanitizedContent cleanHtml(String value) {
-    return cleanHtml(value, ImmutableSet.of());
-  }
-
-  /**
-   * Normalizes the input HTML while preserving "safe" tags. The content directionality is unknown.
-   *
-   * @param optionalSafeTags to add to the basic whitelist of formatting safe tags
-   * @return the normalized input, in the form of {@link SanitizedContent} of {@link
-   *     ContentKind#HTML}
-   */
-  public static SanitizedContent cleanHtml(
-      String value, Collection<? extends OptionalSafeTag> optionalSafeTags) {
-    return cleanHtml(value, null, optionalSafeTags);
-  }
-
-  /**
-   * Normalizes the input HTML of a given directionality while preserving "safe" tags.
-   *
-   * @param optionalSafeTags to add to the basic whitelist of formatting safe tags
-   * @return the normalized input, in the form of {@link SanitizedContent} of {@link
-   *     ContentKind#HTML}
-   */
-  public static SanitizedContent cleanHtml(
-      String value, Dir contentDir, Collection<? extends OptionalSafeTag> optionalSafeTags) {
-    return UnsafeSanitizedContentOrdainer.ordainAsSafe(
-        stripHtmlTags(value, TagWhitelist.FORMATTING.withOptionalSafeTags(optionalSafeTags), true),
-        ContentKind.HTML,
-        contentDir);
-  }
-
   /** Converts the input to HTML suitable for use inside {@code <textarea>} by entity escaping. */
   public static String escapeHtmlRcdata(SoyValue value) {
     value = normalizeNull(value);
@@ -281,14 +281,14 @@ public final class Sanitizers {
     return normalizeHtml(value.coerceToString());
   }
 
-  public static LoggingAdvisingAppendable normalizeHtmlStreaming(
-      LoggingAdvisingAppendable appendable) {
-    return StreamingEscaper.create(appendable, EscapingConventions.NormalizeHtml.INSTANCE);
-  }
-
   /** Normalizes HTML to HTML making sure quotes and other specials are entity encoded. */
   public static String normalizeHtml(String value) {
     return EscapingConventions.NormalizeHtml.INSTANCE.escape(value);
+  }
+
+  public static LoggingAdvisingAppendable normalizeHtmlStreaming(
+      LoggingAdvisingAppendable appendable) {
+    return StreamingEscaper.create(appendable, EscapingConventions.NormalizeHtml.INSTANCE);
   }
 
   /**
@@ -321,17 +321,17 @@ public final class Sanitizers {
     return escapeHtmlAttribute(value.coerceToString());
   }
 
-  public static LoggingAdvisingAppendable escapeHtmlAttributeStreaming(
-      LoggingAdvisingAppendable appendable) {
-    return StreamingAttributeEscaper.create(appendable, EscapingConventions.EscapeHtml.INSTANCE);
-  }
-
   /**
    * Converts plain text to HTML by entity escaping so the result can safely be embedded in an HTML
    * attribute value.
    */
   public static String escapeHtmlAttribute(String value) {
     return EscapingConventions.EscapeHtml.INSTANCE.escape(value);
+  }
+
+  public static LoggingAdvisingAppendable escapeHtmlAttributeStreaming(
+      LoggingAdvisingAppendable appendable) {
+    return StreamingAttributeEscaper.create(appendable, EscapingConventions.EscapeHtml.INSTANCE);
   }
 
   /**
@@ -363,18 +363,18 @@ public final class Sanitizers {
     return escapeHtmlAttributeNospace(value.coerceToString());
   }
 
-  public static LoggingAdvisingAppendable escapeHtmlAttributeNospaceStreaming(
-      LoggingAdvisingAppendable appendable) {
-    return StreamingAttributeEscaper.create(
-        appendable, EscapingConventions.EscapeHtmlNospace.INSTANCE);
-  }
-
   /**
    * Converts plain text to HTML by entity escaping so the result can safely be embedded in an
    * unquoted HTML attribute value.
    */
   public static String escapeHtmlAttributeNospace(String value) {
     return EscapingConventions.EscapeHtmlNospace.INSTANCE.escape(value);
+  }
+
+  public static LoggingAdvisingAppendable escapeHtmlAttributeNospaceStreaming(
+      LoggingAdvisingAppendable appendable) {
+    return StreamingAttributeEscaper.create(
+        appendable, EscapingConventions.EscapeHtmlNospace.INSTANCE);
   }
 
   /** Filters decimal and floating-point numbers. */
@@ -396,14 +396,14 @@ public final class Sanitizers {
     return escapeJsString(value.coerceToString());
   }
 
-  public static LoggingAdvisingAppendable escapeJsStringStreaming(
-      LoggingAdvisingAppendable appendable) {
-    return StreamingEscaper.create(appendable, EscapingConventions.EscapeJsString.INSTANCE);
-  }
-
   /** Converts plain text to the body of a JavaScript string by using {@code \n} style escapes. */
   public static String escapeJsString(String value) {
     return EscapingConventions.EscapeJsString.INSTANCE.escape(value);
+  }
+
+  public static LoggingAdvisingAppendable escapeJsStringStreaming(
+      LoggingAdvisingAppendable appendable) {
+    return StreamingEscaper.create(appendable, EscapingConventions.EscapeJsString.INSTANCE);
   }
 
   /**
@@ -457,15 +457,15 @@ public final class Sanitizers {
     return escapeJsRegex(value.coerceToString());
   }
 
+  /** Converts plain text to the body of a JavaScript regular expression literal. */
+  public static String escapeJsRegex(String value) {
+    return EscapingConventions.EscapeJsRegex.INSTANCE.escape(value);
+  }
+
   /** Converts the input to the body of a JavaScript regular expression literal. */
   public static LoggingAdvisingAppendable escapeJsRegexStreaming(
       LoggingAdvisingAppendable delegate) {
     return StreamingEscaper.create(delegate, EscapingConventions.EscapeJsRegex.INSTANCE);
-  }
-
-  /** Converts plain text to the body of a JavaScript regular expression literal. */
-  public static String escapeJsRegex(String value) {
-    return EscapingConventions.EscapeJsRegex.INSTANCE.escape(value);
   }
 
   /** Converts the input to the body of a CSS string literal. */
@@ -474,15 +474,15 @@ public final class Sanitizers {
     return escapeCssString(value.coerceToString());
   }
 
+  /** Converts plain text to the body of a CSS string literal. */
+  public static String escapeCssString(String value) {
+    return EscapingConventions.EscapeCssString.INSTANCE.escape(value);
+  }
+
   /** Converts the input to the body of a CSS string literal. */
   public static LoggingAdvisingAppendable escapeCssStringStreaming(
       LoggingAdvisingAppendable delegate) {
     return StreamingEscaper.create(delegate, EscapingConventions.EscapeCssString.INSTANCE);
-  }
-
-  /** Converts plain text to the body of a CSS string literal. */
-  public static String escapeCssString(String value) {
-    return EscapingConventions.EscapeCssString.INSTANCE.escape(value);
   }
 
   /**
@@ -539,16 +539,16 @@ public final class Sanitizers {
    * Converts a piece of URI content to a piece of URI content that can be safely embedded in an
    * HTML attribute by percent encoding.
    */
-  public static LoggingAdvisingAppendable normalizeUriStreaming(LoggingAdvisingAppendable value) {
-    return StreamingEscaper.create(value, EscapingConventions.NormalizeUri.INSTANCE);
+  public static String normalizeUri(String value) {
+    return EscapingConventions.NormalizeUri.INSTANCE.escape(value);
   }
 
   /**
    * Converts a piece of URI content to a piece of URI content that can be safely embedded in an
    * HTML attribute by percent encoding.
    */
-  public static String normalizeUri(String value) {
-    return EscapingConventions.NormalizeUri.INSTANCE.escape(value);
+  public static LoggingAdvisingAppendable normalizeUriStreaming(LoggingAdvisingAppendable value) {
+    return StreamingEscaper.create(value, EscapingConventions.NormalizeUri.INSTANCE);
   }
 
   /**
