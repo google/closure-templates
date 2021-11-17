@@ -59,6 +59,7 @@ public final class ExprEquivalence {
         @Override
         protected boolean doEquivalent(ExprNode a, ExprNode b) {
           return a.getKind() == b.getKind() && new EqualsVisitor(a).exec(b);
+          // return a.getKind() == b.getKind();
         }
 
         @Override
@@ -258,7 +259,7 @@ public final class ExprEquivalence {
     @Override
     protected Boolean visitMethodCallNode(MethodCallNode node) {
       MethodCallNode typedOther = (MethodCallNode) other;
-      return node.getMethodName().equals(typedOther.getMethodName())
+      return node.getMethodName().identifier().equals(typedOther.getMethodName().identifier())
           && node.isNullSafe() == typedOther.isNullSafe()
           && compareChildren(node);
     }
