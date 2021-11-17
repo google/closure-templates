@@ -1545,29 +1545,33 @@ final class ExpressionCompiler {
       SoyRuntimeType runtimeType = ExternCompiler.getRuntimeType(type);
       Type javaType = runtimeType.runtimeType();
 
-      if (type.getKind() == Kind.BOOL) {
+      if (javaType.equals(Type.BOOLEAN_TYPE)) {
         return soyExpression.coerceToBoolean().unboxAsBoolean();
-      } else if (type.getKind() == Kind.INT) {
+      } else if (javaType.equals(Type.LONG_TYPE)) {
         return soyExpression.unboxAsLong();
-      } else if (type.getKind() == Kind.STRING) {
+      } else if (javaType.equals(BytecodeUtils.STRING_TYPE)) {
         return soyExpression.coerceToString().unboxAsString();
-      } else if (type.getKind() == Kind.FLOAT) {
+      } else if (javaType.equals(Type.DOUBLE_TYPE)) {
         return soyExpression.coerceToDouble().unboxAsDouble();
-      } else if (type.getKind() == Kind.ANY || type.getKind() == Kind.UNKNOWN) {
-        return soyExpression.box().checkedCast(BytecodeUtils.SOY_VALUE_TYPE);
-      } else if (type.getKind() == Kind.PROTO) {
-        return soyExpression
-            .unboxAsMessage()
-            .checkedCast(
-                ProtoUtils.messageRuntimeType(((SoyProtoType) type).getDescriptor()).type());
-      } else if (type.getKind() == Kind.MESSAGE) {
-        return soyExpression.unboxAsMessage();
-      } else if (type.getKind() == Kind.PROTO_ENUM) {
-        return soyExpression.unboxAsLong();
-      } else if (type.getKind() == Kind.LIST) {
-        return soyExpression.unboxAsList();
+      } else if (javaType.getSort() == Type.OBJECT) {
+        if (type.getKind() == Kind.ANY || type.getKind() == Kind.UNKNOWN) {
+          return soyExpression.box().checkedCast(BytecodeUtils.SOY_VALUE_TYPE);
+        } else if (type.getKind() == Kind.PROTO) {
+          return soyExpression
+              .unboxAsMessage()
+              .checkedCast(
+                  ProtoUtils.messageRuntimeType(((SoyProtoType) type).getDescriptor()).type());
+        } else if (type.getKind() == Kind.MESSAGE) {
+          return soyExpression.unboxAsMessage();
+        } else if (type.getKind() == Kind.PROTO_ENUM) {
+          return soyExpression.unboxAsLong();
+        } else if (type.getKind() == Kind.LIST) {
+          return soyExpression.unboxAsList();
+        } else {
+          return soyExpression.box().checkedCast(javaType);
+        }
       } else {
-        return soyExpression.box().checkedCast(javaType);
+        return soyExpression;
       }
     }
 

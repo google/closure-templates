@@ -317,6 +317,9 @@ public final class ExternCompiler {
           BytecodeUtils.constant(BytecodeUtils.getTypeForSoyType(keyType)),
           BytecodeUtils.constant(BytecodeUtils.getTypeForSoyType(valueType)));
     } else if (javaType.equals(BytecodeUtils.OBJECT.type())) {
+      if (BytecodeUtils.isPrimitive(actualParam.soyRuntimeType().runtimeType())) {
+        return BytecodeUtils.boxJavaPrimitive(actualParam);
+      }
       return actualParam.isBoxed() ? MethodRef.UNBOX_OBJECT.invoke(actualParam) : actualParam;
     }
 

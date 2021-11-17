@@ -1112,4 +1112,23 @@ public final class BytecodeUtils {
         throw new IllegalArgumentException("unsupported type: " + type);
     }
   }
+
+  /** Converts int to Integer, long to Long, etc. Java "boxing", not Soy "boxing". */
+  public static Expression boxJavaPrimitive(SoyExpression actualParam) {
+    Type type = actualParam.soyRuntimeType().runtimeType();
+    switch (type.getSort()) {
+      case Type.INT:
+        return MethodRef.BOX_INTEGER.invoke(actualParam);
+      case Type.LONG:
+        return MethodRef.BOX_LONG.invoke(actualParam);
+      case Type.BOOLEAN:
+        return MethodRef.BOX_BOOLEAN.invoke(actualParam);
+      case Type.FLOAT:
+        return MethodRef.BOX_FLOAT.invoke(actualParam);
+      case Type.DOUBLE:
+        return MethodRef.BOX_DOUBLE.invoke(actualParam);
+      default:
+        throw new IllegalArgumentException(type.getClassName());
+    }
+  }
 }
