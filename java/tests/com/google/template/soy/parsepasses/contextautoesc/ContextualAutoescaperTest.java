@@ -184,6 +184,7 @@ public final class ContextualAutoescaperTest {
             "<link itemprop='url' href='{$x |filterNormalizeUri |escapeHtmlAttribute}'>",
             "<link rel='{$x |escapeHtmlAttribute}' itemprop='url' "
                 + "href='{$x |filterTrustedResourceUri |escapeHtmlAttribute}'>",
+            "<script>{$x |escapeJsValue |filterHtmlScriptPhrasingData}</script>",
             "<script src='{$x |filterTrustedResourceUri |escapeHtmlAttribute}'></script>\n",
             "{/template}"),
         join(
@@ -209,6 +210,7 @@ public final class ContextualAutoescaperTest {
             "<link rel='{$x}' href='{$x}'>\n",
             "<link itemprop='url' href='{$x}'>",
             "<link rel='{$x}' itemprop='url' href='{$x}'>",
+            "<script>{$x}</script>",
             "<script src='{$x}'></script>\n",
             "{/template}\n"));
   }
@@ -226,7 +228,7 @@ public final class ContextualAutoescaperTest {
             "{if $x == 1}",
             "{$y |escapeHtml}",
             "{elseif $x == 2}",
-            "<script>foo({$z |escapeJsValue})</script>",
+            "<script>foo({$z |escapeJsValue |filterHtmlScriptPhrasingData})</script>",
             "{else}",
             "World!",
             "{/if}\n",
@@ -411,7 +413,7 @@ public final class ContextualAutoescaperTest {
             "{case 1}",
             "{$y |escapeHtml}",
             "{case 2}",
-            "<script>foo({$z |escapeJsValue})</script>",
+            "<script>foo({$z |escapeJsValue |filterHtmlScriptPhrasingData})</script>",
             "{default}",
             "World!",
             "{/switch}\n",
@@ -447,10 +449,11 @@ public final class ContextualAutoescaperTest {
             "  {@param e: ?}\n",
             "  {@param f: ?}\n",
             "<script>",
-            "foo({$a |escapeJsValue}); ",
+            "foo({$a |escapeJsValue |filterHtmlScriptPhrasingData}); ",
             "bar(\"{$b |escapeJsString}\"); ",
             "baz(\'{$c |escapeJsString}\'); ",
-            "boo(/{$d |escapeJsRegex}/.test(s) ? 1 / {$e |escapeJsValue}",
+            "boo(/{$d |escapeJsRegex}/.test(s) ? 1 / {$e |escapeJsValue"
+                + " |filterHtmlScriptPhrasingData}",
             " : /{$f |escapeJsRegex}/); ",
             "/* {$a |escapeJsString} */ ",
             "// {$a |escapeJsString}",
@@ -512,7 +515,7 @@ public final class ContextualAutoescaperTest {
             "{namespace ns}\n\n",
             "{template foo kind=\"js\"}\n",
             "  {@param foo: ?}\n",
-            "`<div a=\"q\">${lb} {$foo |escapeJsValue} {rb}</div>`\n",
+            "`<div a=\"q\">${lb} {$foo |escapeJsValue |filterHtmlScriptPhrasingData} {rb}</div>`\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
@@ -1680,7 +1683,7 @@ public final class ContextualAutoescaperTest {
             "{template foo}\n",
             "  {@param x: ?}\n",
             "<script>",
-            "{call bar /}/{$x |escapeJsValue}+/{$x |escapeJsRegex}/g",
+            "{call bar /}/{$x |escapeJsValue |filterHtmlScriptPhrasingData}+/{$x |escapeJsRegex}/g",
             "</script>",
             "\n{/template}",
             "\n\n{template bar kind='text'}\n\n{/template}"),
@@ -1984,7 +1987,7 @@ public final class ContextualAutoescaperTest {
             "{namespace ns}\n\n",
             "{template main}\n",
             "  {@param untrusted: ?}\n",
-            "<script>{$untrusted |escapeJsValue}</script>",
+            "<script>{$untrusted |escapeJsValue |filterHtmlScriptPhrasingData}</script>",
             "<script type='text/svg'>{$untrusted |filterHtmlScriptPhrasingData}</script>\n",
             "{/template}"),
         join(
@@ -2003,7 +2006,8 @@ public final class ContextualAutoescaperTest {
             "{namespace ns}\n\n",
             "{template main}\n",
             "  {@param untrusted: ?}\n",
-            "<script type='text/json'>{$untrusted |escapeJsValue}</script>",
+            "<script type='text/json'>{$untrusted |escapeJsValue"
+                + " |filterHtmlScriptPhrasingData}</script>",
             "<script type='text/json'>{lb} 'foo': '{$untrusted |escapeJsString}'{rb}</script>\n",
             "{/template}"),
         join(

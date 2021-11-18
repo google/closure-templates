@@ -452,6 +452,9 @@ abstract class Context {
         }
         break;
       case NONE:
+        if (escapingMode == EscapingMode.ESCAPE_JS_VALUE) {
+          extraEscapingMode = EscapingMode.FILTER_HTML_SCRIPT_PHRASING_DATA;
+        }
         break;
     }
     // Return and immutable list of (escapingMode, extraEscapingMode)
