@@ -32,9 +32,7 @@ import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.EnumDescriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor.JavaType;
-import com.google.protobuf.Descriptors.FieldDescriptor.Type;
 import com.google.protobuf.Descriptors.FileDescriptor;
-import com.google.protobuf.Descriptors.FileDescriptor.Syntax;
 import com.google.protobuf.Descriptors.GenericDescriptor;
 import com.google.protobuf.Descriptors.OneofDescriptor;
 import com.google.protobuf.ExtensionRegistry;
@@ -66,7 +64,7 @@ public final class ProtoUtils {
 
   /** Returns true if fieldDescriptor holds a sanitized proto type. */
   public static boolean isSanitizedContentField(FieldDescriptor fieldDescriptor) {
-    return fieldDescriptor.getType() == Type.MESSAGE
+    return fieldDescriptor.getType() == FieldDescriptor.Type.MESSAGE
         && SAFE_PROTO_TYPES.contains(fieldDescriptor.getMessageType().getFullName());
   }
 
@@ -151,8 +149,13 @@ public final class ProtoUtils {
   }
 
   /** Only int64 fields can have jstype annotations. */
-  private static final ImmutableSet<Type> JS_TYPEABLE_FIELDS =
-      Sets.immutableEnumSet(Type.INT64, Type.SFIXED64, Type.UINT64, Type.FIXED64, Type.SINT64);
+  private static final ImmutableSet<FieldDescriptor.Type> JS_TYPEABLE_FIELDS =
+      Sets.immutableEnumSet(
+          FieldDescriptor.Type.INT64,
+          FieldDescriptor.Type.SFIXED64,
+          FieldDescriptor.Type.UINT64,
+          FieldDescriptor.Type.FIXED64,
+          FieldDescriptor.Type.SINT64);
 
   /** Returns true if this field has a valid jstype annotation. */
   public static boolean hasJsType(FieldDescriptor fieldDescriptor) {
@@ -211,13 +214,11 @@ public final class ProtoUtils {
    * server side soy.
    */
   static boolean shouldCheckFieldPresenceToEmulateJspbNullability(FieldDescriptor desc) {
-    boolean hasBrokenSemantics = false;
     if (desc.hasDefaultValue() || desc.isRepeated()) {
       return false;
-    } else if (desc.getFile().getSyntax() == Syntax.PROTO3 || !hasBrokenSemantics) {
-      // in proto3 or proto2 with non-broken semantics we only need to check for presence for
-      // message typed fields.
-      return desc.getJavaType() == JavaType.MESSAGE;
+    } else if (desc.getJavaType() == JavaType.MESSAGE) {
+      // messages are always nullable
+      return true;
     } else {
       return true;
     }
