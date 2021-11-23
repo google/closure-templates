@@ -693,12 +693,13 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
     ImmutableList.Builder<Statement> declarations = ImmutableList.builder();
 
+    JsType varType = getJsTypeForParamForDeclaration(var.type());
+
     JsDoc jsDoc =
         addInternalCallerParam(
                 JsDoc.builder()
                     .addAnnotation(node.isExported() ? "public" : "private")
-                    .addParameterizedAnnotation(
-                        "return", getJsTypeForParamForDeclaration(var.type()).typeExpr()))
+                    .addParameterizedAnnotation("return", varType.typeExpr()))
             .build();
 
     String partialName = var.name();
@@ -732,6 +733,9 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     }
 
     jsCodeBuilder.append(Statement.of(declarations.build()));
+    for (GoogRequire require : varType.getGoogRequires()) {
+      jsCodeBuilder.addGoogRequire(require);
+    }
 
     topLevelSymbols.put(var.name(), aliasExp.call(JsRuntime.SOY_INTERNAL_CALL_MARKER));
   }
