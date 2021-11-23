@@ -50,20 +50,6 @@ interface TemplateAcceptor<TDATA extends {}> {
   sync: IdomSyncState<TDATA>;
   renderInternal(renderer: IncrementalDomRenderer, data: TDATA): void;
   render(renderer?: IncrementalDomRenderer): void;
-  handleCustomElementRuntime(internalCallerMarker: {}): boolean;
-}
-
-interface HandleCustomElementOptions<T> {
-  incrementaldom: IncrementalDomRenderer;
-  elementClassCtor: new() => T;
-  firstElementKey: string;
-  tagNameOrCtor: string|(new() => T);
-  data: {};
-  ijData: IjData;
-  template: IdomTemplate<unknown>;
-  element?: HTMLElement;
-  sync?: IdomSyncState<unknown>;
-  init?: (this: T) => void;
 }
 
 attributes['checked'] =
@@ -125,24 +111,11 @@ function handleSoyElement<T extends TemplateAcceptor<{}>>(
    */
   const element = incrementaldom.open(
       tagNameOrCtor as string | ElementConstructor, firstElementKey);
-  if (isCustomElement) {
-    return handleCustomElement({
-      element: element as HTMLElement,
-      incrementaldom,
-      elementClassCtor,
-      firstElementKey,
-      ijData,
-      tagNameOrCtor,
-      data,
-      template,
-      sync,
-      init
-    });
-  }
   const oldOpen = incrementaldom.open;
   incrementaldom.open = (tagNameOrCtor, soyElementKey) => {
     if (element) {
-      if (tagNameOrCtor !== tagNameOrCtor ||
+      if ((isCustomElement ? (element.tagName.toLowerCase()) :
+                             tagNameOrCtor) !== tagNameOrCtor ||
           soyElementKey !== firstElementKey) {
         throw new Error('Expected tag name and key to match.');
       }
@@ -151,12 +124,39 @@ function handleSoyElement<T extends TemplateAcceptor<{}>>(
     return element;
   };
   if (!element) {
-    const soyElement = new elementClassCtor() as unknown as SoyElement<{}, {}>;
-    soyElement.data = data;
-    soyElement.ijData = ijData;
-    template = template.bind(soyElement);
+    // Template still needs to execute in order to trigger logging.
+    if (isCustomElement) {
+      template = template.bind(new elementClassCtor());
+    } else {
+      const soyElement =
+          new elementClassCtor() as unknown as SoyElement<{}, {}>;
+      soyElement.data = data;
+      soyElement.ijData = ijData;
+      template = template.bind(soyElement);
+    }
     template(incrementaldom, data, ijData);
     return null;
+  }
+  if (isCustomElement) {
+    const customEl = element as unknown as T;
+    if (!customEl.renderInternal) {
+      init!.call(customEl);
+      customEl.template = template.bind(element);
+      customEl.renderInternal =
+          customEl.renderInternal || ((idomRenderer, data) => {
+            customEl.template(idomRenderer, data);
+          });
+      customEl.render = (renderer = new IncrementalDomRenderer()) =>
+          patchOuter(element, () => {
+            customEl.renderInternal(renderer, customEl);
+          });
+    }
+    if (sync) {
+      // TODO(b/205997375): This needs to be conditionally set depending on
+      // whether the controller split is hydrated or not.
+      sync.call(customEl, data, false);
+    }
+    return customEl;
   }
   let soyElement: SoyElement<{}, {}>;
   if (!(getSoyUntyped(element as HTMLElement) instanceof elementClassCtor)) {
@@ -179,67 +179,6 @@ function handleSoyElement<T extends TemplateAcceptor<{}>>(
     return null;
   }
   return soyElement as unknown as T;
-}
-
-function handleCustomElement<T extends TemplateAcceptor<{}>>({
-  incrementaldom,
-  elementClassCtor,
-  firstElementKey,
-  ijData,
-  tagNameOrCtor,
-  data,
-  template,
-  element,
-  sync,
-  init
-}: HandleCustomElementOptions<T>): T|null {
-  /**
-   * Suppress the next element open since we've already opened it.
-   */
-  const oldOpen = incrementaldom.open;
-
-  incrementaldom.open = (tagNameOrCtor, soyElementKey) => {
-    if (element) {
-      if (element.tagName.toLowerCase() !== tagNameOrCtor ||
-          soyElementKey !== firstElementKey) {
-        throw new Error('Expected tag name and key to match.');
-      }
-    }
-    incrementaldom.open = oldOpen;
-    return element;
-  };
-  if (!element) {
-    template = template.bind(new elementClassCtor());
-    template(incrementaldom, data, ijData);
-    return null;
-  }
-  const customEl = element as unknown as T;
-  if (!customEl.renderInternal) {
-    init!.call(customEl);
-    customEl.template = template.bind(element);
-    customEl.renderInternal =
-        customEl.renderInternal || ((idomRenderer, data) => {
-          customEl.template(idomRenderer, data);
-        });
-    customEl.render = (renderer = new IncrementalDomRenderer()) =>
-        patchOuter(element, () => {
-          customEl.renderInternal(renderer, customEl);
-        });
-  }
-  if (sync) {
-    // TODO(b/205997375): This needs to be conditionally set depending on
-    // whether the controller split is hydrated or not.
-    sync.call(customEl, data, false);
-  }
-  const maybeSkip =
-      customEl.handleCustomElementRuntime(soy.$$internalCallMarkerDoNotUse);
-  if (maybeSkip) {
-    incrementaldom.skip();
-    incrementaldom.close();
-    incrementaldom.open = oldOpen;
-    return null;
-  }
-  return customEl;
 }
 
 // tslint:disable-next-line:no-any Attaching arbitrary attributes to function.
