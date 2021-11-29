@@ -304,7 +304,8 @@ public final class JsType {
 
       case LIST:
         ListType listType = (ListType) soyType;
-        if (listType.getElementType().getKind() == SoyType.Kind.ANY) {
+        if (listType.equals(ListType.EMPTY_LIST)
+            || listType.getElementType().getKind() == SoyType.Kind.ANY) {
           return RAW_ARRAY_TYPE;
         }
         JsType element = forSoyType(listType.getElementType(), kind, isStrict);
