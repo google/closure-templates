@@ -717,7 +717,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
                 JsRuntime.SOY_ARE_YOU_AN_INTERNAL_CALLER
                     .call(id(StandardNames.ARE_YOU_AN_INTERNAL_CALLER))
                     .asStatement(),
-                returnValue(translateExpr(node.getExpr()))));
+                returnValue(translateExpr(node.getExpr()).castAs(varType.typeExpr()))));
 
     if (jsSrcOptions.shouldGenerateGoogModules()) {
       declarations.add(
