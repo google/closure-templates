@@ -56,6 +56,9 @@ public abstract class AbstractMethodChecker implements MethodChecker {
     }
     ReadMethodData method = methodsForSig.forReturnType(returnType);
     if (method != null) {
+      if (!method.isPublic()) {
+        return Response.error(Code.NOT_PUBLIC);
+      }
       return Response.success(method);
     }
     return Response.error(Code.NO_SUCH_RETURN_TYPE, methodsForSig.returnTypes());

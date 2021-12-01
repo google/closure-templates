@@ -161,16 +161,14 @@ public class CompiledJarsPluginSignatureReader implements PluginSignatureReader,
   public static ClassSignatures indexReflectively(String runtimeClassName) {
     try {
       Class<?> clazz = Class.forName(runtimeClassName);
+      boolean classIsPublic = Modifier.isPublic(clazz.getModifiers());
       Method[] declaredMethods = clazz.getDeclaredMethods();
       ClassSignatures.Builder signatures = new ClassSignatures.Builder();
       for (Method m : declaredMethods) {
-        // Only index public methods.
-        if (!Modifier.isPublic(m.getModifiers())) {
-          continue;
-        }
         signatures.add(
             PartialSignature.create(m),
             ReadMethodData.create(
+                classIsPublic && Modifier.isPublic(m.getModifiers()),
                 !Modifier.isStatic(m.getModifiers()),
                 clazz.isInterface(),
                 m.getReturnType().getName()));
@@ -185,6 +183,7 @@ public class CompiledJarsPluginSignatureReader implements PluginSignatureReader,
   private static class Visitor extends ClassVisitor {
     final ClassSignatures.Builder signatures = new ClassSignatures.Builder();
     boolean classIsInterface;
+    boolean classIsPublic;
 
     Visitor() {
       super(Opcodes.ASM7);
@@ -199,19 +198,17 @@ public class CompiledJarsPluginSignatureReader implements PluginSignatureReader,
         String superName,
         String[] interfaces) {
       classIsInterface = Modifier.isInterface(access);
+      classIsPublic = Modifier.isPublic(access);
     }
 
     @Override
     public MethodVisitor visitMethod(
         int access, String name, String descriptor, String signature, String[] exceptions) {
-      // only index public methods.
-      if (!Modifier.isPublic(access)) {
-        return null;
-      }
       Type methodType = Type.getMethodType(descriptor);
       signatures.add(
           PartialSignature.create(name, methodType),
           ReadMethodData.create(
+              classIsPublic && Modifier.isPublic(access),
               !Modifier.isStatic(access),
               classIsInterface,
               methodType.getReturnType().getClassName()));
@@ -251,8 +248,9 @@ public class CompiledJarsPluginSignatureReader implements PluginSignatureReader,
     static class Builder {
       final Map<PartialSignature, MethodSignatures.Builder> methodsBuilder = new LinkedHashMap<>();
 
-      void add(PartialSignature partialSig, ReadMethodData data) {
+      Builder add(PartialSignature partialSig, ReadMethodData data) {
         methodsBuilder.computeIfAbsent(partialSig, k -> new MethodSignatures.Builder()).add(data);
+        return this;
       }
 
       ClassSignatures build() {

@@ -29,7 +29,8 @@ public interface MethodChecker {
     NO_SUCH_CLASS,
     NO_SUCH_METHOD_NAME,
     NO_SUCH_METHOD_SIG,
-    NO_SUCH_RETURN_TYPE
+    NO_SUCH_RETURN_TYPE,
+    NOT_PUBLIC
   }
 
   /** Response object for {@link #findMethod}. */

@@ -22,6 +22,9 @@ import com.google.auto.value.AutoValue;
 @AutoValue
 public abstract class ReadMethodData {
 
+  /** True if both the method and the containing class are public. */
+  public abstract boolean isPublic();
+
   /** True if the method is an instance method, false if it's static. */
   public abstract boolean instanceMethod();
 
@@ -32,7 +35,7 @@ public abstract class ReadMethodData {
   public abstract String returnType();
 
   public static ReadMethodData create(
-      boolean instance, boolean classIsInterface, String returnType) {
-    return new AutoValue_ReadMethodData(instance, classIsInterface, returnType);
+      boolean isPublic, boolean instance, boolean classIsInterface, String returnType) {
+    return new AutoValue_ReadMethodData(isPublic, instance, classIsInterface, returnType);
   }
 }

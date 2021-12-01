@@ -89,6 +89,8 @@ class ValidateExternsPass implements CompilerFilePass {
       SoyErrorKind.of(
           "Java implementation class not loaded."
           );
+  private static final SoyErrorKind NOT_PUBLIC =
+      SoyErrorKind.of("Both the Java class and method must be public.");
   private static final SoyErrorKind NO_SUCH_JAVA_METHOD_NAME =
       SoyErrorKind.of(
           "No method ''{0}'' exists on implementation class.{1}", StyleAllowance.NO_PUNCTUATION);
@@ -229,30 +231,33 @@ class ValidateExternsPass implements CompilerFilePass {
         ReadMethodData method = response.getMethod();
         if (method.instanceMethod() == java.isStatic()
             || method.classIsInterface() != java.isInterface()) {
-          String properType;
+          String actualType;
           if (method.instanceMethod()) {
             if (method.classIsInterface()) {
-              properType = JavaImplNode.TYPE_INTERFACE;
+              actualType = JavaImplNode.TYPE_INTERFACE;
             } else {
-              properType = JavaImplNode.TYPE_INSTANCE;
+              actualType = JavaImplNode.TYPE_INSTANCE;
             }
           } else {
             if (method.classIsInterface()) {
-              properType = JavaImplNode.TYPE_STATIC_INTERFACE;
+              actualType = JavaImplNode.TYPE_STATIC_INTERFACE;
             } else {
-              properType = JavaImplNode.TYPE_STATIC;
+              actualType = JavaImplNode.TYPE_STATIC;
             }
           }
           SourceLocation loc = java.getAttributeValueLocation(JavaImplNode.TYPE);
           if (loc.equals(SourceLocation.UNKNOWN)) {
             loc = java.getSourceLocation();
           }
-          errorReporter.report(loc, JAVA_METHOD_TYPE_MISMATCH, properType);
+          errorReporter.report(loc, JAVA_METHOD_TYPE_MISMATCH, actualType);
         }
         break;
       case NO_SUCH_CLASS:
         errorReporter.report(
             java.getAttributeValueLocation(JavaImplNode.CLASS), NO_SUCH_JAVA_CLASS);
+        break;
+      case NOT_PUBLIC:
+        errorReporter.report(java.getAttributeValueLocation(JavaImplNode.METHOD), NOT_PUBLIC);
         break;
       case NO_SUCH_METHOD_SIG:
         errorReporter.report(
