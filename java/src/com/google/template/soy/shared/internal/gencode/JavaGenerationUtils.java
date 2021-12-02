@@ -26,7 +26,6 @@ import com.google.common.collect.Streams;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.template.soy.base.internal.IndentedLinesBuilder;
 import com.google.template.soy.exprtree.FunctionNode;
-import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.internal.proto.ProtoUtils;
 import com.google.template.soy.shared.internal.BuiltinFunction;
@@ -34,7 +33,6 @@ import com.google.template.soy.shared.internal.BuiltinMethod;
 import com.google.template.soy.soytree.ImportNode.ImportType;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
-import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
@@ -342,29 +340,25 @@ public final class JavaGenerationUtils {
                     return ((SoyProtoType) type).getDescriptorExpression();
                   } else if (type.getKind() == Kind.PROTO_ENUM) {
                     return ((SoyProtoEnumType) type).getDescriptorExpression();
+                  } else if (type.getKind() == Kind.PROTO_EXTENSION) {
+                    return ((SoyProtoEnumType) type).getDescriptorExpression();
                   }
                   return null;
                 })
             .filter(Objects::nonNull);
 
-    return Streams.concat(
-            fromImports,
-            node.getTemplates().stream().flatMap(template -> getProtoTypes(template, typeRegistry)))
-        .collect(toSet());
-  }
-
-  private static Stream<String> getProtoTypes(TemplateNode template, SoyTypeRegistry typeRegistry) {
     // Collect the following:
     // + for any params whose type is a proto, get the proto name and Java class name.
     Stream<String> fromHeader =
-        template.getHeaderParams().stream()
+        node.getTemplates().stream()
+            .flatMap(t -> t.getHeaderParams().stream())
             .flatMap(varDefn -> findProtoTypes(varDefn.type(), typeRegistry));
 
     // anything else that may have a type now or in the future.
 
     // Add references for return types of getExtension method.
     Stream<String> fromCall =
-        SoyTreeUtils.allNodesOfType(template, MethodCallNode.class)
+        SoyTreeUtils.allNodesOfType(node, MethodCallNode.class)
             .filter(MethodCallNode::isMethodResolved)
             .filter(n -> n.getSoyMethod() instanceof BuiltinMethod)
             .flatMap(
@@ -372,19 +366,9 @@ public final class JavaGenerationUtils {
                     ((BuiltinMethod) methodNode.getSoyMethod())
                         .getProtoDependencyTypes(methodNode).stream());
 
-    // Note: we need to add descriptors from other parts of the expression api that contain direct
-    // proto references.  We do not just scan for all referenced proto types since that would
-    // cause us to add direct references to the parseinfos for protos that are only indirectly
-    // referenced.  If we were to do this it would trigger strict deps issues.
-    // Add enums
-    Stream<String> fromGlobal =
-        SoyTreeUtils.allNodesOfType(template, GlobalNode.class)
-            .filter(global -> global.isResolved() && global.getType().getKind() == Kind.PROTO_ENUM)
-            .map(global -> ((SoyProtoEnumType) global.getType()).getDescriptorExpression());
-
     // Add proto init
     Stream<String> fromProtoInit =
-        SoyTreeUtils.allNodesOfType(template, FunctionNode.class)
+        SoyTreeUtils.allNodesOfType(node, FunctionNode.class)
             .filter(fctNode -> fctNode.getSoyFunction() == BuiltinFunction.PROTO_INIT)
             .filter(fctNode -> fctNode.getType().getKind() == Kind.PROTO)
             .flatMap(
@@ -398,7 +382,7 @@ public final class JavaGenerationUtils {
                           .map(ProtoUtils::getQualifiedOuterClassname));
                 });
 
-    return Streams.concat(fromHeader, fromCall, fromGlobal, fromProtoInit);
+    return Streams.concat(fromImports, fromHeader, fromCall, fromProtoInit).collect(toSet());
   }
 
   /** Recursively search for protocol buffer types within the given type. */
