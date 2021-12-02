@@ -253,7 +253,7 @@ abstract class Context {
    * @param elType The type of element whose tag the attribute appears in.
    * @param attrType The type of attribute whose value the delimiter starts.
    * @param delim The type of delimiter that will mark the end of the attribute value.
-   * @param templateNestDepth The number of (@code <template>} elements on the open element stack.
+   * @param templateNestDepth The number of {@code <template>} elements on the open element stack.
    * @return A context suitable for the start of the attribute value.
    */
   static Context computeContextAfterAttributeDelimiter(

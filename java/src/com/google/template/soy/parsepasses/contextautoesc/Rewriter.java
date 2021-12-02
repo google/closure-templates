@@ -83,7 +83,7 @@ final class Rewriter {
             .collect(toImmutableMap(SoyPrintDirective::getName, Function.identity()));
   }
 
-  /** @return Derived templates that should be added to the parse tree. */
+  /** */
   public void rewrite(SoyNode node) {
     mutator.exec(node);
   }
