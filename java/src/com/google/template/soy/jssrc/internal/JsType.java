@@ -145,8 +145,7 @@ public final class JsType {
 
   private static final JsType LIT_HTML =
       builder()
-          // Always require a thunk to simulate CallParamContent nodes.
-          .addType("function():lit_element.TemplateResult")
+          .addType("lit_element.TemplateResult")
           .addRequire(GoogRequire.createWithAlias("litElement", "lit_element"))
           .setPredicate(TypePredicate.NO_OP)
           .build();
