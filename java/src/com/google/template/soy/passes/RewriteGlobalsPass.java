@@ -43,7 +43,7 @@ final class RewriteGlobalsPass implements CompilerFilePass {
     Identifier original = global.getIdentifier();
     Identifier alias = file.resolveAlias(global.getIdentifier());
     if (!alias.equals(original)) {
-      global.setName(alias.identifier());
+      global.resolve(alias.identifier());
     }
   }
 }

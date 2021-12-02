@@ -175,16 +175,12 @@ public final class TemplateDelegateNode extends TemplateNode {
     ExprNode exprNode = delTemplateVariantExpr.getRoot();
     if (exprNode instanceof GlobalNode) {
       GlobalNode globalNode = (GlobalNode) exprNode;
-      if (globalNode.isResolved()) {
-        exprNode = globalNode.getValue();
-      } else {
-        // This global was not substituted.  This happens when TemplateRegistries are built for
-        // message extraction and parseinfo generation.  To make this 'work' we just use the Global
-        // name for the variant value.  This is fine and will help catch some errors.
-        // Because these nodes won't be used for code generation this should be safe.
-        // For this reason we also don't store the key, instead we just return it.
-        return DelTemplateKey.create(delTemplateName, globalNode.getName());
-      }
+      // This global was not substituted.  This happens when TemplateRegistries are built for
+      // message extraction and parseinfo generation.  To make this 'work' we just use the Global
+      // name for the variant value.  This is fine and will help catch some errors.
+      // Because these nodes won't be used for code generation this should be safe.
+      // For this reason we also don't store the key, instead we just return it.
+      return DelTemplateKey.create(delTemplateName, globalNode.getName());
     }
     if (exprNode instanceof IntegerNode) {
       // Globals were already substituted: We may now create the definitive variant and key fields

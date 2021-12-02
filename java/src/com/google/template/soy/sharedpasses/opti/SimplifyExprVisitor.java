@@ -39,7 +39,6 @@ import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FloatNode;
 import com.google.template.soy.exprtree.FunctionNode;
-import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
@@ -472,8 +471,7 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
   }
 
   static boolean isConstant(ExprNode expr) {
-    return (expr instanceof GlobalNode && ((GlobalNode) expr).isResolved())
-        || expr instanceof PrimitiveNode;
+    return expr instanceof PrimitiveNode;
   }
 
   /** Returns the value of the given expression if it's constant, else returns null. */
@@ -493,10 +491,6 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
       case PROTO_ENUM_VALUE_NODE:
         return IntegerData.forValue(((ProtoEnumValueNode) expr).getValue());
       case GLOBAL_NODE:
-        GlobalNode global = (GlobalNode) expr;
-        if (global.isResolved()) {
-          return getConstantOrNull(global.getValue());
-        }
         return null;
       default:
         return null;

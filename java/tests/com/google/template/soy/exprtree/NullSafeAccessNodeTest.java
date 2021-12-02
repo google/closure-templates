@@ -162,8 +162,9 @@ public class NullSafeAccessNodeTest {
             NEWLINE.join(
                 "NULL_SAFE_ACCESS_NODE: $foo?.someString",
                 "  VAR_REF_NODE: $foo",
-                "  FIELD_ACCESS_NODE: DO_NOT_USE__NULL_SAFE_ACCESS.someString",
-                "    GLOBAL_NODE: DO_NOT_USE__NULL_SAFE_ACCESS",
+                "  FIELD_ACCESS_NODE: (null).someString",
+                "    GROUP_NODE: (null)",
+                "      NULL_NODE: null",
                 ""));
   }
 
@@ -181,15 +182,17 @@ public class NullSafeAccessNodeTest {
             NEWLINE.join(
                 "NULL_SAFE_ACCESS_NODE: $foo?.messageField?.foo?.messageField",
                 "  VAR_REF_NODE: $foo",
-                "  NULL_SAFE_ACCESS_NODE:"
-                    + " DO_NOT_USE__NULL_SAFE_ACCESS.messageField?.foo?.messageField",
-                "    FIELD_ACCESS_NODE: DO_NOT_USE__NULL_SAFE_ACCESS.messageField",
-                "      GLOBAL_NODE: DO_NOT_USE__NULL_SAFE_ACCESS",
-                "    NULL_SAFE_ACCESS_NODE: DO_NOT_USE__NULL_SAFE_ACCESS.foo?.messageField",
-                "      FIELD_ACCESS_NODE: DO_NOT_USE__NULL_SAFE_ACCESS.foo",
-                "        GLOBAL_NODE: DO_NOT_USE__NULL_SAFE_ACCESS",
-                "      FIELD_ACCESS_NODE: DO_NOT_USE__NULL_SAFE_ACCESS.messageField",
-                "        GLOBAL_NODE: DO_NOT_USE__NULL_SAFE_ACCESS",
+                "  NULL_SAFE_ACCESS_NODE:" + " (null).messageField?.foo?.messageField",
+                "    FIELD_ACCESS_NODE: (null).messageField",
+                "      GROUP_NODE: (null)",
+                "        NULL_NODE: null",
+                "    NULL_SAFE_ACCESS_NODE: (null).foo?.messageField",
+                "      FIELD_ACCESS_NODE: (null).foo",
+                "        GROUP_NODE: (null)",
+                "          NULL_NODE: null",
+                "      FIELD_ACCESS_NODE: (null).messageField",
+                "        GROUP_NODE: (null)",
+                "          NULL_NODE: null",
                 ""));
 
     expr =
@@ -203,10 +206,11 @@ public class NullSafeAccessNodeTest {
             NEWLINE.join(
                 "NULL_SAFE_ACCESS_NODE: $foo?.messageField.foo.messageField",
                 "  VAR_REF_NODE: $foo",
-                "  FIELD_ACCESS_NODE: DO_NOT_USE__NULL_SAFE_ACCESS.messageField.foo.messageField",
-                "    FIELD_ACCESS_NODE: DO_NOT_USE__NULL_SAFE_ACCESS.messageField.foo",
-                "      FIELD_ACCESS_NODE: DO_NOT_USE__NULL_SAFE_ACCESS.messageField",
-                "        GLOBAL_NODE: DO_NOT_USE__NULL_SAFE_ACCESS",
+                "  FIELD_ACCESS_NODE: (null).messageField.foo.messageField",
+                "    FIELD_ACCESS_NODE: (null).messageField.foo",
+                "      FIELD_ACCESS_NODE: (null).messageField",
+                "        GROUP_NODE: (null)",
+                "          NULL_NODE: null",
                 ""));
 
     expr =
@@ -221,9 +225,10 @@ public class NullSafeAccessNodeTest {
                 "NULL_SAFE_ACCESS_NODE: $foo.messageField?.foo.messageField",
                 "  FIELD_ACCESS_NODE: $foo.messageField",
                 "    VAR_REF_NODE: $foo",
-                "  FIELD_ACCESS_NODE: DO_NOT_USE__NULL_SAFE_ACCESS.foo.messageField",
-                "    FIELD_ACCESS_NODE: DO_NOT_USE__NULL_SAFE_ACCESS.foo",
-                "      GLOBAL_NODE: DO_NOT_USE__NULL_SAFE_ACCESS",
+                "  FIELD_ACCESS_NODE: (null).foo.messageField",
+                "    FIELD_ACCESS_NODE: (null).foo",
+                "      GROUP_NODE: (null)",
+                "        NULL_NODE: null",
                 ""));
 
     expr =
@@ -239,8 +244,9 @@ public class NullSafeAccessNodeTest {
                 "  FIELD_ACCESS_NODE: $foo.messageField.foo",
                 "    FIELD_ACCESS_NODE: $foo.messageField",
                 "      VAR_REF_NODE: $foo",
-                "  FIELD_ACCESS_NODE: DO_NOT_USE__NULL_SAFE_ACCESS.messageField",
-                "    GLOBAL_NODE: DO_NOT_USE__NULL_SAFE_ACCESS",
+                "  FIELD_ACCESS_NODE: (null).messageField",
+                "    GROUP_NODE: (null)",
+                "      NULL_NODE: null",
                 ""));
 
     expr =
@@ -254,13 +260,14 @@ public class NullSafeAccessNodeTest {
             NEWLINE.join(
                 "NULL_SAFE_ACCESS_NODE: $foo?.messageField?.foo.messageField",
                 "  VAR_REF_NODE: $foo",
-                "  NULL_SAFE_ACCESS_NODE:"
-                    + " DO_NOT_USE__NULL_SAFE_ACCESS.messageField?.foo.messageField",
-                "    FIELD_ACCESS_NODE: DO_NOT_USE__NULL_SAFE_ACCESS.messageField",
-                "      GLOBAL_NODE: DO_NOT_USE__NULL_SAFE_ACCESS",
-                "    FIELD_ACCESS_NODE: DO_NOT_USE__NULL_SAFE_ACCESS.foo.messageField",
-                "      FIELD_ACCESS_NODE: DO_NOT_USE__NULL_SAFE_ACCESS.foo",
-                "        GLOBAL_NODE: DO_NOT_USE__NULL_SAFE_ACCESS",
+                "  NULL_SAFE_ACCESS_NODE:" + " (null).messageField?.foo.messageField",
+                "    FIELD_ACCESS_NODE: (null).messageField",
+                "      GROUP_NODE: (null)",
+                "        NULL_NODE: null",
+                "    FIELD_ACCESS_NODE: (null).foo.messageField",
+                "      FIELD_ACCESS_NODE: (null).foo",
+                "        GROUP_NODE: (null)",
+                "          NULL_NODE: null",
                 ""));
 
     expr =
@@ -274,13 +281,14 @@ public class NullSafeAccessNodeTest {
             NEWLINE.join(
                 "NULL_SAFE_ACCESS_NODE: $foo?.messageField.foo?.messageField",
                 "  VAR_REF_NODE: $foo",
-                "  NULL_SAFE_ACCESS_NODE:"
-                    + " DO_NOT_USE__NULL_SAFE_ACCESS.messageField.foo?.messageField",
-                "    FIELD_ACCESS_NODE: DO_NOT_USE__NULL_SAFE_ACCESS.messageField.foo",
-                "      FIELD_ACCESS_NODE: DO_NOT_USE__NULL_SAFE_ACCESS.messageField",
-                "        GLOBAL_NODE: DO_NOT_USE__NULL_SAFE_ACCESS",
-                "    FIELD_ACCESS_NODE: DO_NOT_USE__NULL_SAFE_ACCESS.messageField",
-                "      GLOBAL_NODE: DO_NOT_USE__NULL_SAFE_ACCESS",
+                "  NULL_SAFE_ACCESS_NODE:" + " (null).messageField.foo?.messageField",
+                "    FIELD_ACCESS_NODE: (null).messageField.foo",
+                "      FIELD_ACCESS_NODE: (null).messageField",
+                "        GROUP_NODE: (null)",
+                "          NULL_NODE: null",
+                "    FIELD_ACCESS_NODE: (null).messageField",
+                "      GROUP_NODE: (null)",
+                "        NULL_NODE: null",
                 ""));
 
     expr =
@@ -295,11 +303,13 @@ public class NullSafeAccessNodeTest {
                 "NULL_SAFE_ACCESS_NODE: $foo.messageField?.foo?.messageField",
                 "  FIELD_ACCESS_NODE: $foo.messageField",
                 "    VAR_REF_NODE: $foo",
-                "  NULL_SAFE_ACCESS_NODE: DO_NOT_USE__NULL_SAFE_ACCESS.foo?.messageField",
-                "    FIELD_ACCESS_NODE: DO_NOT_USE__NULL_SAFE_ACCESS.foo",
-                "      GLOBAL_NODE: DO_NOT_USE__NULL_SAFE_ACCESS",
-                "    FIELD_ACCESS_NODE: DO_NOT_USE__NULL_SAFE_ACCESS.messageField",
-                "      GLOBAL_NODE: DO_NOT_USE__NULL_SAFE_ACCESS",
+                "  NULL_SAFE_ACCESS_NODE: (null).foo?.messageField",
+                "    FIELD_ACCESS_NODE: (null).foo",
+                "      GROUP_NODE: (null)",
+                "        NULL_NODE: null",
+                "    FIELD_ACCESS_NODE: (null).messageField",
+                "      GROUP_NODE: (null)",
+                "        NULL_NODE: null",
                 ""));
   }
 
@@ -318,9 +328,10 @@ public class NullSafeAccessNodeTest {
             NEWLINE.join(
                 "NULL_SAFE_ACCESS_NODE: $foo?.messageField!",
                 "  VAR_REF_NODE: $foo",
-                "  ASSERT_NON_NULL_OP_NODE: DO_NOT_USE__NULL_SAFE_ACCESS.messageField!",
-                "    FIELD_ACCESS_NODE: DO_NOT_USE__NULL_SAFE_ACCESS.messageField",
-                "      GLOBAL_NODE: DO_NOT_USE__NULL_SAFE_ACCESS",
+                "  ASSERT_NON_NULL_OP_NODE: (null).messageField!",
+                "    FIELD_ACCESS_NODE: (null).messageField",
+                "      GROUP_NODE: (null)",
+                "        NULL_NODE: null",
                 ""));
 
     expr =
@@ -336,8 +347,9 @@ public class NullSafeAccessNodeTest {
                 "NULL_SAFE_ACCESS_NODE: $foo.messageField?.foo",
                 "  FIELD_ACCESS_NODE: $foo.messageField",
                 "    VAR_REF_NODE: $foo",
-                "  FIELD_ACCESS_NODE: DO_NOT_USE__NULL_SAFE_ACCESS.foo",
-                "    GLOBAL_NODE: DO_NOT_USE__NULL_SAFE_ACCESS",
+                "  FIELD_ACCESS_NODE: (null).foo",
+                "    GROUP_NODE: (null)",
+                "      NULL_NODE: null",
                 ""));
   }
 

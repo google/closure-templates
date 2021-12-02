@@ -18,7 +18,7 @@ package com.google.template.soy.exprtree;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
-import com.google.template.soy.base.internal.Identifier;
+import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
 
@@ -39,7 +39,7 @@ import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
  */
 public final class NullSafeAccessNode extends AbstractParentExprNode {
 
-  public static final String DO_NOT_USE_NULL_SAFE_ACCESS = "DO_NOT_USE__NULL_SAFE_ACCESS";
+  private static final String BASE_PLACEHOLDER_VALUE = "DO_NOT_USE__NULL_SAFE_ACCESS";
 
   private NullSafeAccessNode(ExprNode base, AccessChainComponentNode access) {
     super(access.getSourceLocation());
@@ -106,6 +106,11 @@ public final class NullSafeAccessNode extends AbstractParentExprNode {
     return getChild(1);
   }
 
+  public static boolean isPlaceholder(ExprNode node) {
+    return node.getKind() == Kind.STRING_NODE
+        && ((StringNode) node).getValue().equals(BASE_PLACEHOLDER_VALUE);
+  }
+
   /**
    * Creates a {@code NullSafeAccessNode} from the given (null safe) {@link DataAccessNode} and
    * inserts it into the correct place of the AST.
@@ -121,8 +126,8 @@ public final class NullSafeAccessNode extends AbstractParentExprNode {
     ExprNode base = node.getBaseExprChild();
     // TODO(spishak): Find a better way to represent this placeholder node, likely by removing it
     // from the AST.
-    GlobalNode basePlaceholder =
-        new GlobalNode(Identifier.create(DO_NOT_USE_NULL_SAFE_ACCESS, base.getSourceLocation()));
+    ExprNode basePlaceholder =
+        new StringNode(BASE_PLACEHOLDER_VALUE, QuoteStyle.DOUBLE, base.getSourceLocation());
 
     DataAccessNode child;
     switch (node.getKind()) {

@@ -37,12 +37,6 @@ final class XidPass implements CompilerFilePass {
           "Argument to function ''xid'' must be a string literal or a (possibly) "
               + "dotted identifier.");
 
-  private static final SoyErrorKind GLOBAL_XID_ARG_IS_RESOLVED =
-      SoyErrorKind.of(
-          "The identifier passed to ''xid'' resolves to a global of type ''{0}''"
-              + " with the value ''{1}''. Identifiers passed to ''xid'' should not collide with"
-              + " registered globals.");
-
   private final ErrorReporter reporter;
 
   XidPass(ErrorReporter reporter) {
@@ -62,15 +56,6 @@ final class XidPass implements CompilerFilePass {
               switch (child.getKind()) {
                 case GLOBAL_NODE:
                   GlobalNode global = (GlobalNode) child;
-                  if (global.isResolved()) {
-                    // This doesn't have to be an error. but it is confusing if it is is since it is
-                    // unclear if the user intended to xid the identifier or the value.
-                    reporter.report(
-                        global.getSourceLocation(),
-                        GLOBAL_XID_ARG_IS_RESOLVED,
-                        global.getType().toString(),
-                        global.getValue().toSourceString());
-                  }
                   fn.replaceChild(
                       0,
                       new StringNode(

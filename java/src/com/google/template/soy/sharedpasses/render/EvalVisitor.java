@@ -72,7 +72,6 @@ import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FloatNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.FunctionNode.ExternRef;
-import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.ListComprehensionNode;
@@ -296,11 +295,6 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
   @Override
   protected SoyValue visitProtoEnumValueNode(ProtoEnumValueNode node) {
     return convertResult(node.getValue());
-  }
-
-  @Override
-  protected SoyValue visitGlobalNode(GlobalNode node) {
-    return visit(node.getValue());
   }
 
   // -----------------------------------------------------------------------------------------------

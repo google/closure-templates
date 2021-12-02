@@ -32,7 +32,6 @@ import com.google.protobuf.Descriptors.Descriptor;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.FunctionNode;
-import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.ProtoEnumValueNode;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.internal.JavaScriptValueFactoryImpl;
@@ -95,14 +94,6 @@ public class IncrementalDomTranslateExprNodeVisitor extends TranslateExprNodeVis
     } else {
       return super.genCodeForBind(template, paramRecord, templateType);
     }
-  }
-
-  @Override
-  protected Expression visitGlobalNode(GlobalNode node) {
-    if (node.isResolved()) {
-      return visit(node.getValue());
-    }
-    return super.visit(node);
   }
 
   @Override

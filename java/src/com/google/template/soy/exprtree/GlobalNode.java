@@ -16,13 +16,9 @@
 
 package com.google.template.soy.exprtree;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Preconditions.checkState;
-
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.UnknownType;
 
@@ -32,28 +28,18 @@ import com.google.template.soy.types.UnknownType;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  */
 public final class GlobalNode extends AbstractExprNode {
-  /** Simple callback interface for hooking into globals resolution. */
-  public interface ResolutionCallback {
-    void onResolve(PrimitiveNode value);
-  }
-
-  public static GlobalNode error(SourceLocation location) {
+  private static GlobalNode error(SourceLocation location) {
     return new GlobalNode(Identifier.create("error", "error", location));
   }
 
   public static void replaceExprWithError(ExprNode expr) {
     GlobalNode errorNode = error(expr.getSourceLocation());
-    errorNode.suppressUnknownGlobalErrors();
+    errorNode.isErrorPlaceholder = true;
     expr.getParent().replaceChild(expr, errorNode);
   }
 
   private Identifier identifier;
-
-  private boolean suppressUnknownGlobalErrors;
-
-  private PrimitiveNode value = null;
-  private SoyType soyType = UnknownType.getInstance();
-  private ResolutionCallback resolveCallback;
+  private boolean isErrorPlaceholder;
 
   public GlobalNode(Identifier identifier) {
     super(identifier.location());
@@ -68,9 +54,6 @@ public final class GlobalNode extends AbstractExprNode {
   private GlobalNode(GlobalNode orig, CopyState copyState) {
     super(orig, copyState);
     this.identifier = orig.identifier;
-    this.soyType = orig.soyType;
-    this.value = orig.value == null ? null : orig.value.copy(copyState);
-    this.resolveCallback = orig.resolveCallback;
   }
 
   @Override
@@ -80,41 +63,7 @@ public final class GlobalNode extends AbstractExprNode {
 
   @Override
   public SoyType getType() {
-    return soyType;
-  }
-
-  public void upgradeTemplateType(SoyType type) {
-    checkState(this.soyType != null);
-    this.soyType = checkNotNull(type);
-  }
-
-  public void resolve(SoyType soyType, PrimitiveNode value) {
-    checkState(this.value == null, "value has already been set");
-    this.soyType = checkNotNull(soyType);
-    this.value = checkNotNull(value);
-    if (this.resolveCallback != null) {
-      this.resolveCallback.onResolve(value);
-      this.resolveCallback = null;
-    }
-  }
-
-  /**
-   * Registers a callback that is invoked when this global is resolved to its actual value.
-   *
-   * <p>NOTE: there is no guarantee that this will ever be called.
-   */
-  public void onResolve(ResolutionCallback callback) {
-    checkState(this.resolveCallback == null, "callback has already been set.");
-    checkState(this.value == null, "value is resolved.");
-    this.resolveCallback = checkNotNull(callback);
-  }
-
-  public boolean isResolved() {
-    return value != null;
-  }
-
-  public PrimitiveNode getValue() {
-    return value;
+    return UnknownType.getInstance();
   }
 
   /** Returns the name of the global. */
@@ -126,22 +75,17 @@ public final class GlobalNode extends AbstractExprNode {
     return identifier;
   }
 
-  public void setName(String name) {
+  public void resolve(String name) {
     this.identifier = Identifier.create(name, identifier.originalName(), identifier.location());
   }
 
   /**
-   * Call this method to suppress unknown global errors for this node. This is appropriate if other
-   * errors have already been reported. TODO(lukes): consider upstreaming to Node. It may be useful
-   * for other kinds of errors.
+   * Returns true if this node is the product of calling {@link #replaceExprWithError} and therefore
+   * an error has already been reported to the compiler. This might be better implemented as a new
+   * node type.
    */
-  public void suppressUnknownGlobalErrors() {
-    this.suppressUnknownGlobalErrors = true;
-  }
-
-  /** Returns true if 'unknown global' errors should not be reported for this node. */
-  public boolean shouldSuppressUnknownGlobalErrors() {
-    return suppressUnknownGlobalErrors;
+  public boolean alreadyReportedError() {
+    return isErrorPlaceholder;
   }
 
   @Override
@@ -153,5 +97,4 @@ public final class GlobalNode extends AbstractExprNode {
   public GlobalNode copy(CopyState copyState) {
     return new GlobalNode(this, copyState);
   }
-
 }

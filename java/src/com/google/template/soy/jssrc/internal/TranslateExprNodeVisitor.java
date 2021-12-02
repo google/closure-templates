@@ -688,9 +688,6 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
 
   @Override
   protected Expression visitGlobalNode(GlobalNode node) {
-    if (node.isResolved()) {
-      return visit(node.getValue());
-    }
     // jssrc supports unknown globals by plopping the global name directly into the output
     // NOTE: this may cause the jscompiler to emit warnings, users will need to whitelist them or
     // fix their use of unknown globals.

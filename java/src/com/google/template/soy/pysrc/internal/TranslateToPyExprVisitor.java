@@ -33,7 +33,6 @@ import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.FunctionNode.ExternRef;
-import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.ListComprehensionNode;
@@ -458,11 +457,6 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
     }
     return accumulateDataAccess(
         (DataAccessNode) dataAccessNode, base, nullSafetyPrefix, hasAssertNonNull);
-  }
-
-  @Override
-  protected PyExpr visitGlobalNode(GlobalNode node) {
-    return visit(node.getValue());
   }
 
   // -----------------------------------------------------------------------------------------------

@@ -415,29 +415,29 @@ final class ExpressionCompiler {
     }
 
     @Override
-    protected final SoyExpression visit(ExprNode node) {
+    protected SoyExpression visit(ExprNode node) {
       return super.visit(node).withSourceLocation(node.getSourceLocation());
     }
 
     @Override
-    protected final SoyExpression visitExprRootNode(ExprRootNode node) {
+    protected SoyExpression visitExprRootNode(ExprRootNode node) {
       return visit(node.getRoot());
     }
 
     // Primitive value constants
 
     @Override
-    protected final SoyExpression visitNullNode(NullNode node) {
+    protected SoyExpression visitNullNode(NullNode node) {
       return SoyExpression.NULL;
     }
 
     @Override
-    protected final SoyExpression visitFloatNode(FloatNode node) {
+    protected SoyExpression visitFloatNode(FloatNode node) {
       return SoyExpression.forFloat(constant(node.getValue()));
     }
 
     @Override
-    protected final SoyExpression visitStringNode(StringNode node) {
+    protected SoyExpression visitStringNode(StringNode node) {
       return SoyExpression.forString(constant(node.getValue()));
     }
 
@@ -447,24 +447,19 @@ final class ExpressionCompiler {
     }
 
     @Override
-    protected final SoyExpression visitBooleanNode(BooleanNode node) {
+    protected SoyExpression visitBooleanNode(BooleanNode node) {
       return node.getValue() ? SoyExpression.TRUE : SoyExpression.FALSE;
     }
 
     @Override
-    protected final SoyExpression visitIntegerNode(IntegerNode node) {
+    protected SoyExpression visitIntegerNode(IntegerNode node) {
       return SoyExpression.forInt(BytecodeUtils.constant(node.getValue()));
-    }
-
-    @Override
-    protected final SoyExpression visitGlobalNode(GlobalNode node) {
-      return visit(node.getValue());
     }
 
     // Collection literals
 
     @Override
-    protected final SoyExpression visitListLiteralNode(ListLiteralNode node) {
+    protected SoyExpression visitListLiteralNode(ListLiteralNode node) {
       // TODO(lukes): this should really box the children as SoyValueProviders, we are boxing them
       // anyway and could additionally delay detach generation. Ditto for RecordLiteralNode.
       return SoyExpression.forList(
@@ -472,7 +467,7 @@ final class ExpressionCompiler {
     }
 
     @Override
-    protected final SoyExpression visitListComprehensionNode(ListComprehensionNode node) {
+    protected SoyExpression visitListComprehensionNode(ListComprehensionNode node) {
       // TODO(lukes): consider adding a special case for when the listExpr is a range() function
       // invocation, as we do for regular loops.
       ExprNode listExpr = node.getListExpr();
@@ -590,7 +585,7 @@ final class ExpressionCompiler {
     }
 
     @Override
-    protected final SoyExpression visitRecordLiteralNode(RecordLiteralNode node) {
+    protected SoyExpression visitRecordLiteralNode(RecordLiteralNode node) {
       final int numItems = node.numChildren();
       List<Expression> keys = new ArrayList<>(numItems);
       List<Expression> values = new ArrayList<>(numItems);
@@ -606,7 +601,7 @@ final class ExpressionCompiler {
     }
 
     @Override
-    protected final SoyExpression visitMapLiteralNode(MapLiteralNode node) {
+    protected SoyExpression visitMapLiteralNode(MapLiteralNode node) {
       final int numItems = node.numChildren() / 2;
       List<Expression> keys = new ArrayList<>(numItems);
       List<Expression> values = new ArrayList<>(numItems);
@@ -621,7 +616,7 @@ final class ExpressionCompiler {
     }
 
     @Override
-    protected final SoyExpression visitMapLiteralFromListNode(MapLiteralFromListNode node) {
+    protected SoyExpression visitMapLiteralFromListNode(MapLiteralFromListNode node) {
       return SoyExpression.forSoyValue(
           node.getType(),
           MethodRef.CONSTRUCT_MAP_FROM_LIST.invoke(visit(node.getListExpr()).unboxAsList()));
@@ -630,7 +625,7 @@ final class ExpressionCompiler {
     // Comparison operators
 
     @Override
-    protected final SoyExpression visitEqualOpNode(EqualOpNode node) {
+    protected SoyExpression visitEqualOpNode(EqualOpNode node) {
       if (node.getChild(0).getKind() == ExprNode.Kind.NULL_NODE) {
         return SoyExpression.forBool(BytecodeUtils.isNull(visit(node.getChild(1))));
       }
@@ -642,7 +637,7 @@ final class ExpressionCompiler {
     }
 
     @Override
-    protected final SoyExpression visitNotEqualOpNode(NotEqualOpNode node) {
+    protected SoyExpression visitNotEqualOpNode(NotEqualOpNode node) {
       if (node.getChild(0).getKind() == ExprNode.Kind.NULL_NODE) {
         return SoyExpression.forBool(BytecodeUtils.isNonNull(visit(node.getChild(1))));
       }
@@ -658,7 +653,7 @@ final class ExpressionCompiler {
     // coercion preserves ordering
 
     @Override
-    protected final SoyExpression visitLessThanOpNode(LessThanOpNode node) {
+    protected SoyExpression visitLessThanOpNode(LessThanOpNode node) {
       SoyExpression left = visit(node.getChild(0));
       SoyExpression right = visit(node.getChild(1));
       if (left.assignableToNullableInt() && right.assignableToNullableInt()) {
@@ -676,7 +671,7 @@ final class ExpressionCompiler {
     }
 
     @Override
-    protected final SoyExpression visitGreaterThanOpNode(GreaterThanOpNode node) {
+    protected SoyExpression visitGreaterThanOpNode(GreaterThanOpNode node) {
       SoyExpression left = visit(node.getChild(0));
       SoyExpression right = visit(node.getChild(1));
       if (left.assignableToNullableInt() && right.assignableToNullableInt()) {
@@ -695,7 +690,7 @@ final class ExpressionCompiler {
     }
 
     @Override
-    protected final SoyExpression visitLessThanOrEqualOpNode(LessThanOrEqualOpNode node) {
+    protected SoyExpression visitLessThanOrEqualOpNode(LessThanOrEqualOpNode node) {
       SoyExpression left = visit(node.getChild(0));
       SoyExpression right = visit(node.getChild(1));
       if (left.assignableToNullableInt() && right.assignableToNullableInt()) {
@@ -714,7 +709,7 @@ final class ExpressionCompiler {
     }
 
     @Override
-    protected final SoyExpression visitGreaterThanOrEqualOpNode(GreaterThanOrEqualOpNode node) {
+    protected SoyExpression visitGreaterThanOrEqualOpNode(GreaterThanOrEqualOpNode node) {
       SoyExpression left = visit(node.getChild(0));
       SoyExpression right = visit(node.getChild(1));
       if (left.assignableToNullableInt() && right.assignableToNullableInt()) {
@@ -749,7 +744,7 @@ final class ExpressionCompiler {
     // otherwise use our boxed runtime methods.
 
     @Override
-    protected final SoyExpression visitPlusOpNode(PlusOpNode node) {
+    protected SoyExpression visitPlusOpNode(PlusOpNode node) {
       SoyExpression left = visit(node.getChild(0));
       SoyRuntimeType leftRuntimeType = left.soyRuntimeType();
       SoyExpression right = visit(node.getChild(1));
@@ -778,7 +773,7 @@ final class ExpressionCompiler {
     }
 
     @Override
-    protected final SoyExpression visitMinusOpNode(MinusOpNode node) {
+    protected SoyExpression visitMinusOpNode(MinusOpNode node) {
       final SoyExpression left = visit(node.getChild(0));
       final SoyExpression right = visit(node.getChild(1));
       // They are both definitely numbers
@@ -796,7 +791,7 @@ final class ExpressionCompiler {
     }
 
     @Override
-    protected final SoyExpression visitTimesOpNode(TimesOpNode node) {
+    protected SoyExpression visitTimesOpNode(TimesOpNode node) {
       final SoyExpression left = visit(node.getChild(0));
       final SoyExpression right = visit(node.getChild(1));
       // They are both definitely numbers
@@ -814,7 +809,7 @@ final class ExpressionCompiler {
     }
 
     @Override
-    protected final SoyExpression visitDivideByOpNode(DivideByOpNode node) {
+    protected SoyExpression visitDivideByOpNode(DivideByOpNode node) {
       // Note: Soy always performs floating-point division, even on two integers (like JavaScript).
       // Note that this *will* lose precision for longs.
       return applyBinaryFloatOperator(
@@ -822,7 +817,7 @@ final class ExpressionCompiler {
     }
 
     @Override
-    protected final SoyExpression visitModOpNode(ModOpNode node) {
+    protected SoyExpression visitModOpNode(ModOpNode node) {
       SoyExpression left = visit(node.getChild(0));
       SoyExpression right = visit(node.getChild(1));
       // They are both definitely numbers
@@ -872,7 +867,7 @@ final class ExpressionCompiler {
     // Unary negation
 
     @Override
-    protected final SoyExpression visitNegativeOpNode(NegativeOpNode node) {
+    protected SoyExpression visitNegativeOpNode(NegativeOpNode node) {
       final SoyExpression child = visit(node.getChild(0));
       if (child.assignableToNullableInt()) {
         final SoyExpression intExpr = child.unboxAsLong();
@@ -903,20 +898,20 @@ final class ExpressionCompiler {
     // Boolean operators
 
     @Override
-    protected final SoyExpression visitNotOpNode(NotOpNode node) {
+    protected SoyExpression visitNotOpNode(NotOpNode node) {
       // All values are convertible to boolean
       return SoyExpression.forBool(logicalNot(visit(node.getChild(0)).coerceToBoolean()));
     }
 
     @Override
-    protected final SoyExpression visitAndOpNode(AndOpNode node) {
+    protected SoyExpression visitAndOpNode(AndOpNode node) {
       SoyExpression left = visit(node.getChild(0)).coerceToBoolean();
       SoyExpression right = visit(node.getChild(1)).coerceToBoolean();
       return SoyExpression.forBool(BytecodeUtils.logicalAnd(left, right));
     }
 
     @Override
-    protected final SoyExpression visitOrOpNode(OrOpNode node) {
+    protected SoyExpression visitOrOpNode(OrOpNode node) {
       SoyExpression left = visit(node.getChild(0)).coerceToBoolean();
       SoyExpression right = visit(node.getChild(1)).coerceToBoolean();
       return SoyExpression.forBool(BytecodeUtils.logicalOr(left, right));
@@ -961,7 +956,7 @@ final class ExpressionCompiler {
     // Ternary operator
 
     @Override
-    protected final SoyExpression visitConditionalOpNode(ConditionalOpNode node) {
+    protected SoyExpression visitConditionalOpNode(ConditionalOpNode node) {
       final SoyExpression condition = visit(node.getChild(0)).coerceToBoolean();
       SoyExpression trueBranch = visit(node.getChild(1));
       SoyExpression falseBranch = visit(node.getChild(2));
@@ -1664,7 +1659,7 @@ final class ExpressionCompiler {
     // Catch-all for unimplemented nodes
 
     @Override
-    protected final SoyExpression visitExprNode(ExprNode node) {
+    protected SoyExpression visitExprNode(ExprNode node) {
       throw new UnsupportedOperationException(
           "Support for " + node.getKind() + " has not been added yet");
     }

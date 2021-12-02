@@ -704,7 +704,7 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
       // NullSafeAccessNode
       //   +--- VarRefNode(x)
       //   +--- FieldAccessNode("field")
-      //          +--- GlobalNode(DO_NOT_USE_NULL_SAFE_ACCESS)
+      //          +--- GroupNode(NullNode())
       //
       // Since the DataAcessNode has a global placeholder for its own base expression, all field
       // accesses with the same name will match each other, regardless of the actual base

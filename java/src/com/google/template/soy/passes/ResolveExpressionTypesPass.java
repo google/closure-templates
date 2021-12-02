@@ -80,6 +80,7 @@ import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.FunctionNode.ExternRef;
 import com.google.template.soy.exprtree.GlobalNode;
+import com.google.template.soy.exprtree.GroupNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.ListComprehensionNode;
@@ -1258,11 +1259,11 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
       }
 
       ExprNode base = dataAccess.getBaseExprChild();
-      if (base.getKind() == ExprNode.Kind.GLOBAL_NODE) {
-        GlobalNode global = (GlobalNode) base;
-        if (!global.isResolved()) {
-          global.resolve(baseType, new NullNode(base.getSourceLocation()));
-        }
+      if (NullSafeAccessNode.isPlaceholder(base)) {
+        GroupNode node =
+            new GroupNode(new NullNode(base.getSourceLocation()), base.getSourceLocation());
+        node.setType(baseType);
+        base.getParent().replaceChild(base, node);
       }
 
       switch (dataAccess.getKind()) {

@@ -49,7 +49,7 @@ final class CheckGlobalsPass implements CompilerFilePass {
 
     @Override
     protected void visitGlobalNode(GlobalNode global) {
-      if (global.isResolved() || global.shouldSuppressUnknownGlobalErrors()) {
+      if (global.alreadyReportedError()) {
         return;
       }
 

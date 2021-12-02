@@ -87,10 +87,10 @@ public final class ResolveNamesPass implements CompilerFilePass {
       LocalVariables localVariables = getLocalVariables();
       VarDefn varDefn = localVariables.lookup("$" + globalName);
       if (varDefn != null) {
-        node.suppressUnknownGlobalErrors();
         // This means that this global has the same name as an in-scope local or param.  It is
         // likely that they just forgot the leading '$'
         errorReporter.report(node.getSourceLocation(), GLOBAL_MATCHES_VARIABLE, globalName);
+        GlobalNode.replaceExprWithError(node);
       }
     }
 
