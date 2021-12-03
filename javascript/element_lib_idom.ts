@@ -71,18 +71,24 @@ export abstract class SoyElement<TData extends {}|null, TInterface extends {}>
   }
 
   /**
+   * Enables or disables automatic log grafting when rendering this SoyElement.
+   */
+  setLogGraft(logGraft: boolean): this {
+    this.logGraft = logGraft;
+    return this;
+  }
+
+  /**
    * State variables that are derived from parameters will continue to be
    * derived until this method is called.
    */
-  setSyncState(syncState: boolean) {
+  setSyncState(syncState: boolean): this {
     this.syncState = syncState;
+    return this;
   }
 
   protected shouldSyncState() {
     return this.syncState;
-  }
-  setLogGraft(logGraft: boolean) {
-    this.logGraft = logGraft;
   }
 
   protected syncStateFromData(data: TData) {}
