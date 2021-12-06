@@ -52,7 +52,7 @@ public final class SoyCmdLineParser extends CmdLineParser {
 
   private final PluginLoader pluginLoader;
 
-  SoyCmdLineParser(PluginLoader loader) {
+  public SoyCmdLineParser(PluginLoader loader) {
     super(/*bean=*/ null);
     this.pluginLoader = loader;
   }
@@ -62,7 +62,7 @@ public final class SoyCmdLineParser extends CmdLineParser {
    *
    * <p>Must be called before {@link #parseArgument}.
    */
-  void registerFlagsObject(Object bean) {
+  public void registerFlagsObject(Object bean) {
     new ClassParser().parse(bean, this);
   }
 
