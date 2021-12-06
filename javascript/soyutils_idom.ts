@@ -247,8 +247,8 @@ function handleCustomElement<T extends TemplateAcceptor<{}>>({
 
 // tslint:disable-next-line:no-any Attaching arbitrary attributes to function.
 function makeHtml(idomFn: any): IdomFunction {
-  const fn = (() => {
-               idomFn(defaultIdomRenderer);
+  const fn = ((renderer: IncrementalDomRenderer = defaultIdomRenderer) => {
+               idomFn(renderer);
              }) as unknown as (SanitizedHtml & IdomFunction);
   // tslint:disable-next-line:no-any Hack :(
   (fn as any).prototype = SanitizedHtml;

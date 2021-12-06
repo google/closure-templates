@@ -259,6 +259,7 @@ export abstract class SoyElement<TData extends {}|null, TInterface extends {}>
  * to strings.
  */
 export interface IdomFunction {
+  (idom: IncrementalDomRenderer): void;
   invoke: (idom: IncrementalDomRenderer) => void;
   isInvokableFn: boolean;
   contentKind: SanitizedContentKind;
