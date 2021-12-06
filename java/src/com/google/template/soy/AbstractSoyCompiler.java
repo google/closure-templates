@@ -66,7 +66,7 @@ import org.kohsuke.args4j.Option;
  *
  * <p>Defines common flags and performs shared initialization routines.
  */
-public abstract class AbstractSoyCompiler {
+public abstract class AbstractSoyCompiler implements SoyCompiler {
   /** The string to prepend to the usage message. */
   private final String usagePrefix =
       "Usage:\n"
@@ -221,6 +221,7 @@ public abstract class AbstractSoyCompiler {
     System.exit(status);
   }
 
+  @Override
   @CheckReturnValue
   public int run(final String[] args, PrintStream err) {
     try {
