@@ -456,7 +456,7 @@ public final class JsType {
           // Trailing comma is important to prevent parsing ambiguity for the unknown type
           String parametersType =
               parameters.isEmpty()
-                  ? "null"
+                  ? "?Object<string, null|undefined>"
                   : "{" + Joiner.on(", ").withKeyValueSeparator(": ").join(parameters) + ",}";
           String ijType = "(goog.soy.IjData|undefined)";
           String returnType = forReturnType.typeExpr();
