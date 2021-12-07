@@ -22,6 +22,7 @@ import java.util.Map;
 /**
  * An invocation of a Soy template, encapsulating both the template name and all the data parameters
  * passed to the template.
+ *
  */
 public interface SoyTemplate {
 
