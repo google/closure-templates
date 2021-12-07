@@ -361,16 +361,6 @@ final class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
     }
 
     /**
-     * Processes a {@code SoyMsgPluralRemainderPart} and appends the rendered output to the {@code
-     * StringBuilder} object in {@code RenderVisitor}. Since this is precomputed when visiting the
-     * {@code SoyMsgPluralPart} object, it is directly used here.
-     */
-    private void appendPluralRemainder(double currentPluralRemainderValue) {
-      RenderVisitor.append(
-          master.getCurrOutputBufForUseByAssistants(), String.valueOf(currentPluralRemainderValue));
-    }
-
-    /**
      * Process a {@code SoyMsgPlaceholderPart} and updates the internal data structures.
      *
      * @param msgPlaceholderPart the Placeholder part.
@@ -380,6 +370,16 @@ final class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
       // Since the content of a placeholder is not altered by translation, just render
       // the corresponding placeholder node.
       visit(msgNode.getRepPlaceholderNode(msgPlaceholderPart.getPlaceholderName()));
+    }
+
+    /**
+     * Processes a {@code SoyMsgPluralRemainderPart} and appends the rendered output to the {@code
+     * StringBuilder} object in {@code RenderVisitor}. Since this is precomputed when visiting the
+     * {@code SoyMsgPluralPart} object, it is directly used here.
+     */
+    private void appendPluralRemainder(double currentPluralRemainderValue) {
+      RenderVisitor.append(
+          master.getCurrOutputBufForUseByAssistants(), String.valueOf(currentPluralRemainderValue));
     }
 
     /**
