@@ -61,10 +61,31 @@ interface HandleCustomElementOptions<T> {
   data: {};
   ijData: IjData;
   template: IdomTemplate<unknown>;
-  skip: () => null;
   element?: HTMLElement;
-  sync?: IdomSyncState<unknown>;
-  init?: (this: T) => void;
+}
+
+/**
+ * Takes a custom element and attaches relevant fields to it necessary for
+ * rendering.
+ */
+function upgrade<X, T extends TemplateAcceptor<X>>(
+    acceptor: new () => T, template: IdomTemplate<X>, sync: IdomSyncState<X>,
+    init: (this: T) => void) {
+  acceptor.prototype.init = init;
+  acceptor.prototype.sync = sync;
+  acceptor.prototype.renderInternal = function(
+      this: T, idomRenderer: IncrementalDomRenderer, data: X) {
+    const self = this as TemplateAcceptor<X>;
+    template.call(self, idomRenderer, data);
+  };
+  acceptor.prototype.render = function(
+      this: T, renderer = new IncrementalDomRenderer()) {
+    const self = this as TemplateAcceptor<X>;
+    patchOuter(this as unknown as HTMLElement, () => {
+      // this cast may be unsafe...
+      self.renderInternal(renderer, self as unknown as X);
+    });
+  };
 }
 
 attributes['checked'] =
@@ -109,8 +130,7 @@ incrementaldom.setKeyAttributeName('ssk');
 function handleSoyElement<T extends TemplateAcceptor<{}>>(
     incrementaldom: IncrementalDomRenderer, elementClassCtor: new () => T,
     firstElementKey: string, tagNameOrCtor: string|(new () => T), data: {},
-    ijData: IjData, template: IdomTemplate<unknown>,
-    sync?: IdomSyncState<unknown>, init?: (this: T) => void): T|null {
+    ijData: IjData, template: IdomTemplate<unknown>): T|null {
   // If we're just testing truthiness, record an element but don't do anythng.
   if (incrementaldom instanceof FalsinessRenderer) {
     incrementaldom.open('div');
@@ -127,12 +147,6 @@ function handleSoyElement<T extends TemplateAcceptor<{}>>(
   const element = incrementaldom.open(
       tagNameOrCtor as string | ElementConstructor, firstElementKey);
   const oldOpen = incrementaldom.open;
-  const skip = () => {
-    incrementaldom.skip();
-    incrementaldom.close();
-    incrementaldom.open = oldOpen;
-    return null;
-  };
   if (isCustomElement) {
     return handleCustomElement({
       element: element as HTMLElement,
@@ -143,9 +157,6 @@ function handleSoyElement<T extends TemplateAcceptor<{}>>(
       tagNameOrCtor,
       data,
       template,
-      sync,
-      init,
-      skip
     });
   }
   incrementaldom.open = (tagNameOrCtor, soyElementKey) => {
@@ -159,12 +170,10 @@ function handleSoyElement<T extends TemplateAcceptor<{}>>(
   };
   if (!element) {
     // Template still needs to execute in order to trigger logging.
-      const soyElement =
-          new elementClassCtor() as unknown as SoyElement<{}, {}>;
-      soyElement.data = data;
-      soyElement.ijData = ijData;
-      template = template.bind(soyElement);
-    template(incrementaldom, data, ijData);
+    const soyElement = new elementClassCtor() as unknown as SoyElement<{}, {}>;
+    soyElement.data = data;
+    soyElement.ijData = ijData;
+    template.call(soyElement, incrementaldom, data, ijData);
     return null;
   }
   let soyElement: SoyElement<{}, {}>;
@@ -178,11 +187,14 @@ function handleSoyElement<T extends TemplateAcceptor<{}>>(
   } else {
     soyElement = getSoyUntyped(element)!;
   }
-  soyElement.template = template.bind(soyElement);
   const maybeSkip =
       soyElement.handleSoyElementRuntime(element as HTMLElement, data);
+  soyElement.template = template.bind(soyElement);
   if (maybeSkip) {
-    return skip();
+    incrementaldom.skip();
+    incrementaldom.close();
+    incrementaldom.open = oldOpen;
+    return null;
   }
   return soyElement as unknown as T;
 }
@@ -196,9 +208,6 @@ function handleCustomElement<T extends TemplateAcceptor<{}>>({
   data,
   template,
   element,
-  sync,
-  init,
-  skip
 }: HandleCustomElementOptions<T>): T|null {
   /**
    * Suppress the next element open since we've already opened it.
@@ -216,31 +225,19 @@ function handleCustomElement<T extends TemplateAcceptor<{}>>({
     return element;
   };
   if (!element) {
-    template = template.bind(new elementClassCtor());
-    template(incrementaldom, data, ijData);
+    template.call(new elementClassCtor(), incrementaldom, data, ijData);
     return null;
   }
   const customEl = element as unknown as T;
-  if (!customEl.renderInternal) {
-    init!.call(customEl);
-    customEl.template = template.bind(element);
-    customEl.renderInternal =
-        customEl.renderInternal || ((idomRenderer, data) => {
-          customEl.template(idomRenderer, data);
-        });
-    customEl.render = (renderer = new IncrementalDomRenderer()) =>
-        patchOuter(element, () => {
-          customEl.renderInternal(renderer, customEl);
-        });
-  }
-  if (sync) {
-    // TODO(b/205997375): This needs to be conditionally set depending on
-    // whether the controller split is hydrated or not.
-    sync.call(customEl, data, false);
-  }
+  // TODO(b/205997375): This needs to be conditionally set depending on
+  // whether the controller split is hydrated or not.
+  customEl.sync(data, false);
   const maybeSkip = customEl.handleCustomElementRuntime();
   if (maybeSkip) {
-    return skip();
+    incrementaldom.skip();
+    incrementaldom.close();
+    incrementaldom.open = oldOpen;
+    return null;
   }
   return customEl;
 }
@@ -558,4 +555,5 @@ export {
   handleSoyElement as $$handleSoyElement,
   printDynamicAttr as $$printDynamicAttr,
   visitHtmlCommentNode as $$visitHtmlCommentNode,
+  upgrade as $$upgrade
 };

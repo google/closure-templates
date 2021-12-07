@@ -292,7 +292,9 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       getJsCodeBuilder().append(generateRenderInternal(element));
       getJsCodeBuilder().appendNullable(generateSyncInternal(element));
       getJsCodeBuilder().appendNullable(generateInitInternalMethod(element));
-      if (!element.hasExternalClassDefinition()) {
+      if (element.hasExternalClassDefinition()) {
+        getJsCodeBuilder().append(generateSetFieldsForSoyElement(element));
+      } else {
         getJsCodeBuilder()
             .append(generateClassForSoyElement(elementName, elementAccessor, element));
         getJsCodeBuilder().append(generateExportsForSoyElement(elementName));
@@ -656,27 +658,19 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
         JsRuntime.XID.call(Expression.stringLiteral(tplName + "-root"));
     boolean isCustomElement = node.hasExternalClassDefinition();
     List<Expression> params =
-        new ArrayList<>(
-            Arrays.asList(
-                INCREMENTAL_DOM,
-                isCustomElement
-                    ? GoogRequire.createWithAlias(node.jsnamespace, soyElementClassName + "Import")
-                        .dotAccess(node.jsclass)
-                    : id(soyElementClassName),
-                firstElementKey,
-                isCustomElement
-                    ? id(soyElementClassName + "Import").dotAccess(node.jsclass)
-                    : Expression.stringLiteral(node.getHtmlElementMetadata().getTag()),
-                JsRuntime.OPT_DATA,
-                JsRuntime.IJ_DATA,
-                id(soyElementClassName + "Render")));
-    if (hasNonConstantState || node.hasExternalClassDefinition()) {
-      // This param is TS optional.
-      params.add(id(soyElementClassName + "SyncInternal"));
-    }
-    if (node.hasExternalClassDefinition()) {
-      params.add(id(soyElementClassName + "Init"));
-    }
+        Arrays.asList(
+            INCREMENTAL_DOM,
+            isCustomElement
+                ? GoogRequire.createWithAlias(node.jsnamespace, soyElementClassName + "Import")
+                    .dotAccess(node.jsclass)
+                : id(soyElementClassName),
+            firstElementKey,
+            isCustomElement
+                ? id(soyElementClassName + "Import").dotAccess(node.jsclass)
+                : Expression.stringLiteral(node.getHtmlElementMetadata().getTag()),
+            JsRuntime.OPT_DATA,
+            JsRuntime.IJ_DATA,
+            id(soyElementClassName + "Render"));
     return Statement.of(
         VariableDeclaration.builder("soyEl")
             .setRhs(SOY_IDOM.dotAccess("$$handleSoyElement").call(params))
@@ -700,6 +694,18 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     for (SoyNode child : node.getChildren()) {
       visit(child);
     }
+  }
+
+  private Statement generateSetFieldsForSoyElement(TemplateElementNode node) {
+    String soyElementClassName = this.getSoyElementClassName();
+    List<Expression> params =
+        Arrays.asList(
+            GoogRequire.createWithAlias(node.jsnamespace, soyElementClassName + "Import")
+                .dotAccess(node.jsclass),
+            id(soyElementClassName + "Render"),
+            id(soyElementClassName + "SyncInternal"),
+            id(soyElementClassName + "Init"));
+    return SOY_IDOM.dotAccess("$$upgrade").call(params).asStatement();
   }
 
   /** Generates class expression for the given template node, provided it is a Soy element. */
