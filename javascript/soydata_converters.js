@@ -46,8 +46,6 @@ const soy = goog.require('soy');
 const uncheckedconversions = goog.require('goog.html.uncheckedconversions');
 const {ByteString} = goog.require('jspb.bytestring');
 const {SanitizedCss, SanitizedHtml, SanitizedJs, SanitizedTrustedResourceUri, SanitizedUri} = goog.require('goog.soy.data');
-const {encodeByteArray} = goog.require('goog.crypt.base64');
-
 
 /**
  * Converts a CSS Sanitized Content object to a corresponding Safe Style Proto.
@@ -278,16 +276,10 @@ exports.unpackProtoToSanitizedTrustedResourceUri = function(x) {
  *
  * @return {?string|undefined}
  */
-exports.unpackBytesToBase64String = function(
-    /** !Uint8Array|string|!ByteString|null|undefined*/ bytes) {
+exports.unpackByteStringToBase64String = function(
+    /** ?ByteString|undefined*/ bytes) {
   if (bytes == null) {
     return bytes;
-  }
-  if (typeof bytes === 'string') {
-    return bytes;
-  }
-  if (typeof Uint8Array !== 'undefined' && bytes instanceof Uint8Array) {
-    return encodeByteArray(bytes);
   }
   if (bytes instanceof ByteString) {
     return bytes.asBase64();
@@ -301,7 +293,6 @@ exports.unpackBytesToBase64String = function(
  *
  * @return {!ByteString}
  */
-exports.packBase64StringToBytesValuedMap = function(
-    /** string*/ bytes) {
+exports.packBase64StringToByteString = function(/** string*/ bytes) {
   return ByteString.fromBase64(bytes);
 };

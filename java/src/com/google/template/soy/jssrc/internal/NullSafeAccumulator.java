@@ -24,7 +24,7 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_ARRAY_MAP;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_CHECK_NOT_NULL;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_NEWMAPS_TRANSFORM_VALUES;
 import static com.google.template.soy.jssrc.internal.JsRuntime.extensionField;
-import static com.google.template.soy.jssrc.internal.JsRuntime.protoBytesToBase64ConverterFunction;
+import static com.google.template.soy.jssrc.internal.JsRuntime.protoByteStringToBase64ConverterFunction;
 import static com.google.template.soy.jssrc.internal.JsRuntime.protoToSanitizedContentConverterFunction;
 
 import com.google.auto.value.AutoValue;
@@ -483,7 +483,7 @@ final class NullSafeAccumulator {
           || (desc.isMapField()
               && ProtoUtils.getMapValueFieldDescriptor(desc).getType()
                   == FieldDescriptor.Type.BYTES)) {
-        return protoBytesToBase64ConverterFunction();
+        return protoByteStringToBase64ConverterFunction();
       } else {
         return null;
       }

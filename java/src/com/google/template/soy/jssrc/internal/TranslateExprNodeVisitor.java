@@ -48,7 +48,7 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_VISUAL_ELEMEN
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_VISUAL_ELEMENT_DATA;
 import static com.google.template.soy.jssrc.internal.JsRuntime.XID;
 import static com.google.template.soy.jssrc.internal.JsRuntime.extensionField;
-import static com.google.template.soy.jssrc.internal.JsRuntime.protoBytesMapPackFunction;
+import static com.google.template.soy.jssrc.internal.JsRuntime.protoBytesPackToByteStringFunction;
 import static com.google.template.soy.jssrc.internal.JsRuntime.protoConstructor;
 import static com.google.template.soy.passes.ContentSecurityPolicyNonceInjectionPass.CSP_NONCE_VARIABLE_NAME;
 import static com.google.template.soy.passes.ContentSecurityPolicyNonceInjectionPass.CSP_STYLE_NONCE_VARIABLE_NAME;
@@ -842,6 +842,12 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
       }
 
       if (fieldDesc.isExtension()) {
+        if (fieldDesc.getType() == FieldDescriptor.Type.BYTES) {
+          fieldValue =
+              fieldDesc.isRepeated()
+                  ? GOOG_ARRAY_MAP.call(fieldValue, protoBytesPackToByteStringFunction())
+                  : protoBytesPackToByteStringFunction().call(fieldValue);
+        }
         Expression extInfo = extensionField(fieldDesc);
         proto = proto.dotAccess("setExtension").call(extInfo, fieldValue);
       } else if (fieldDesc.isMapField()) {
@@ -857,7 +863,8 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
           fieldValue = SOY_NEWMAPS_TRANSFORM_VALUES.call(fieldValue, sanitizedContentPackFn);
         } else if (ProtoUtils.getMapValueFieldDescriptor(fieldDesc).getType()
             == FieldDescriptor.Type.BYTES) {
-          fieldValue = SOY_NEWMAPS_TRANSFORM_VALUES.call(fieldValue, protoBytesMapPackFunction());
+          fieldValue =
+              SOY_NEWMAPS_TRANSFORM_VALUES.call(fieldValue, protoBytesPackToByteStringFunction());
         }
         // JSCompiler cannot infer that jspb.Map and soy.Map or Map are the same.
         proto =

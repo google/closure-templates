@@ -220,13 +220,13 @@ public final class JsRuntime {
   /**
    * Returns a function that ensure that proto bytes fields are consistently converted oot base64.
    */
-  public static Expression protoBytesToBase64ConverterFunction() {
-    return SOY_CONVERTERS.dotAccess("unpackBytesToBase64String");
+  public static Expression protoByteStringToBase64ConverterFunction() {
+    return SOY_CONVERTERS.dotAccess("unpackByteStringToBase64String");
   }
 
   /** Returns a function that ensures that the values of bytes-values maps are coerced. */
-  public static Expression protoBytesMapPackFunction() {
-    return SOY_CONVERTERS.dotAccess("packBase64StringToBytesValuedMap");
+  public static Expression protoBytesPackToByteStringFunction() {
+    return SOY_CONVERTERS.dotAccess("packBase64StringToByteString");
   }
 
   /**
