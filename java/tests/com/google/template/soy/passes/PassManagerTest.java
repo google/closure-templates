@@ -155,7 +155,7 @@ public final class PassManagerTest {
       for (boolean allowUnknownGlobals : bools()) {
         for (boolean allowUnknownJsGlobals : bools()) {
           for (boolean disableAllTypeChecking : bools()) {
-            for (boolean desugarHtmlAndStateNodes : bools()) {
+            for (boolean desugarHtmlNodes : bools()) {
               for (boolean optimize : bools()) {
                 for (boolean insertEscapingDirectives : bools()) {
                   for (boolean addHtmlAttributesForDebugging : bools()) {
@@ -172,7 +172,7 @@ public final class PassManagerTest {
                         builder.disableAllTypeChecking();
                       }
                       builder
-                          .desugarHtmlAndStateNodes(desugarHtmlAndStateNodes)
+                          .desugarHtmlNodes(desugarHtmlNodes)
                           .optimize(optimize)
                           .insertEscapingDirectives(insertEscapingDirectives)
                           .addHtmlAttributesForDebugging(addHtmlAttributesForDebugging);

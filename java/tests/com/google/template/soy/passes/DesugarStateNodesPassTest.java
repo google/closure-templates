@@ -49,7 +49,7 @@ public final class DesugarStateNodesPassTest {
             .join("{namespace ns}", "{element t}", input, "<div>{$foo}</div>", "{/element}");
     SoyFileNode node =
         SoyFileSetParserBuilder.forFileContents(soyFile)
-            .desugarHtmlAndStateNodes(true)
+            .desugarHtmlNodes(true)
             .parse()
             .fileSet()
             .getChild(0);

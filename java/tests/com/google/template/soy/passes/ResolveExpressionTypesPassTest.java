@@ -113,7 +113,8 @@ public final class ResolveExpressionTypesPassTest {
                     "{assertType('list<int>|null', $pd)}",
                     "</div>"))
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
-            .desugarHtmlAndStateNodes(false)
+            .desugarHtmlNodes(false)
+            .desugarIdomFeatures(false)
             .parse()
             .fileSet();
     assertTypes(soyTree);
@@ -166,7 +167,8 @@ public final class ResolveExpressionTypesPassTest {
                     "</div>"),
                 ExampleExtendable.getDescriptor())
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
-            .desugarHtmlAndStateNodes(false)
+            .desugarHtmlNodes(false)
+            .desugarIdomFeatures(false)
             .parse()
             .fileSet();
     assertTypes(soyTree);

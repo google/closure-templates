@@ -52,7 +52,7 @@ public final class HtmlContextVisitorTest {
     SoyFileSetNode sfsn =
         SoyFileSetParserBuilder.forFileContents(fileContents)
             .errorReporter(er)
-            .desugarHtmlAndStateNodes(false)
+            .desugarHtmlNodes(false)
             .parse()
             .fileSet();
 
@@ -252,10 +252,7 @@ public final class HtmlContextVisitorTest {
             + "{/template}";
 
     SoyFileSetNode n =
-        SoyFileSetParserBuilder.forFileContents(fileBody)
-            .desugarHtmlAndStateNodes(false)
-            .parse()
-            .fileSet();
+        SoyFileSetParserBuilder.forFileContents(fileBody).desugarHtmlNodes(false).parse().fileSet();
     new CombineConsecutiveRawTextNodesPass().run(n);
     new HtmlContextVisitor().exec(n);
     assertThat(((RawTextNode) getNode(n, 0)).getRawText()).isEqualTo("<div id=\"foo\"></div>");

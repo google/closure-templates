@@ -63,7 +63,7 @@ public final class HtmlAttributeNodeTest {
             .join("{namespace ns}", "{template t stricthtml=\"false\"}", input, "{/template}");
     SoyFileNode node =
         SoyFileSetParserBuilder.forFileContents(soyFile)
-            .desugarHtmlAndStateNodes(false)
+            .desugarHtmlNodes(false)
             .parse()
             .fileSet()
             .getChild(0);
