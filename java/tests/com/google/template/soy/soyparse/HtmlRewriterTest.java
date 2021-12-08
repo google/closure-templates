@@ -65,6 +65,21 @@ public final class HtmlRewriterTest {
   }
 
   @Test
+  public void testTagCharacters() {
+    TemplateNode node = runPass("<Nn0_:-></Nn0_:->");
+    assertThat(node.getChild(0)).isInstanceOf(HtmlOpenTagNode.class);
+    assertThat(node.getChild(1)).isInstanceOf(HtmlCloseTagNode.class);
+    assertThatSourceString(node).isEqualTo("<Nn0_:-></Nn0_:->");
+    assertThatASTString(node)
+        .isEqualTo(
+            "HTML_OPEN_TAG_NODE\n"
+                + "  RAW_TEXT_NODE\n"
+                + "HTML_CLOSE_TAG_NODE\n"
+                + "  RAW_TEXT_NODE\n"
+                + "");
+  }
+
+  @Test
   public void testAttributes() {
     TemplateNode node = runPass("<div class=\"foo\"></div>");
     assertThatSourceString(node).isEqualTo("<div class=\"foo\"></div>");

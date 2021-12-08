@@ -454,7 +454,7 @@ final class HtmlRewriter {
      * which appears to allow arbitrary Unicode chars after the first char, we only parse ASCII
      * identifier tag names.
      */
-    static final Pattern TAG_NAME = Pattern.compile("[a-z][a-z0-9:-]*", Pattern.CASE_INSENSITIVE);
+    static final Pattern TAG_NAME = Pattern.compile("[a-z][a-z0-9:_-]*", Pattern.CASE_INSENSITIVE);
     /**
      * Regex for allowed attribute names. Intentionally more restrictive than spec:
      * https://html.spec.whatwg.org/multipage/syntax.html#attribute-name-state Allows {@code
