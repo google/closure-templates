@@ -739,7 +739,7 @@ public final class SoyFileSet {
                 passManagerBuilder()
                     .allowUnknownJsGlobals()
                     .astRewrites(AstRewrites.KYTHE)
-                    .desugarHtmlNodes(false)
+                    .desugarHtmlAndStateNodes(false)
                     .optimize(false)
                     .addHtmlAttributesForDebugging(false)
                     // TODO(lukes): kill the pass continuation mechanism
@@ -827,7 +827,7 @@ public final class SoyFileSet {
                     .allowUnknownJsGlobals()
                     // Skip optimization, we could run it but it seems to be a waste of time
                     .optimize(false)
-                    .desugarHtmlNodes(false))
+                    .desugarHtmlAndStateNodes(false))
             .fileSet();
     throwIfErrorsPresent();
     SoyMsgBundle bundle = new ExtractMsgsVisitor(errorReporter).exec(soyTree);
@@ -1011,7 +1011,7 @@ public final class SoyFileSet {
     return entryPoint(
         () -> {
           PassManager.Builder builder =
-              passManagerBuilder().allowUnknownJsGlobals().desugarHtmlNodes(false);
+              passManagerBuilder().allowUnknownJsGlobals().desugarHtmlAndStateNodes(false);
           ParseResult result = parse(builder);
           throwIfErrorsPresent();
           FileSetMetadata registry = result.registry();
@@ -1035,8 +1035,7 @@ public final class SoyFileSet {
         () -> {
           // For incremental dom backend, we don't desugar HTML nodes since it requires HTML
           // context.
-          ParseResult result =
-              parse(passManagerBuilder().desugarHtmlNodes(false).desugarIdomFeatures(false));
+          ParseResult result = parse(passManagerBuilder().desugarHtmlAndStateNodes(false));
           throwIfErrorsPresent();
           return new IncrementalDomSrcMain(scopedData.enterable(), typeRegistry)
               .genJsSrc(result.fileSet(), result.registry(), jsSrcOptions, errorReporter);
@@ -1133,7 +1132,7 @@ public final class SoyFileSet {
                       .addHtmlAttributesForDebugging(false)
                       // skip the autoescaper
                       .insertEscapingDirectives(false)
-                      .desugarHtmlNodes(false)
+                      .desugarHtmlAndStateNodes(false)
                       // TODO(lukes): This is needed for kythe apparently
                       .allowUnknownGlobals()
                       .allowUnknownJsGlobals(),
@@ -1175,7 +1174,7 @@ public final class SoyFileSet {
             .optimize(false)
             // Don't desugar, this is a bit of a waste of time and it destroys type
             // information about @state parameters
-            .desugarHtmlNodes(false));
+            .desugarHtmlAndStateNodes(false));
   }
 
   // Parse the current file set.
