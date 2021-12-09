@@ -79,8 +79,7 @@ public final class SoyFileSetParserBuilder {
   private SoyGeneralOptions options = new SoyGeneralOptions();
   private ValidatedConformanceConfig conformanceConfig = ValidatedConformanceConfig.EMPTY;
   private ValidatedLoggingConfig loggingConfig = ValidatedLoggingConfig.EMPTY;
-  private boolean desugarHtmlNodes = true;
-  private boolean desugarIdomFeatures = true;
+  private boolean desugarHtmlAndStateNodes = true;
   private Optional<CssRegistry> cssRegistry = Optional.empty();
   // TODO(lukes): disabled for compatibility with unit tests.  Fix tests relying on the
   // escaper not running and enable by default.  This configuration bit only really exists
@@ -296,13 +295,8 @@ public final class SoyFileSetParserBuilder {
     return this;
   }
 
-  public SoyFileSetParserBuilder desugarHtmlNodes(boolean desugarHtmlNodes) {
-    this.desugarHtmlNodes = desugarHtmlNodes;
-    return this;
-  }
-
-  public SoyFileSetParserBuilder desugarIdomFeatures(boolean desugarIdomFeatures) {
-    this.desugarIdomFeatures = desugarIdomFeatures;
+  public SoyFileSetParserBuilder desugarHtmlAndStateNodes(boolean desugarHtmlAndStateNodes) {
+    this.desugarHtmlAndStateNodes = desugarHtmlAndStateNodes;
     return this;
   }
 
@@ -379,8 +373,7 @@ public final class SoyFileSetParserBuilder {
         .setErrorReporter(errorReporter)
         .setTypeRegistry(typeRegistry)
         .setJavaPluginValidator(new ReflectiveMethodChecker())
-        .desugarHtmlNodes(desugarHtmlNodes)
-        .desugarIdomFeatures(desugarIdomFeatures)
+        .desugarHtmlAndStateNodes(desugarHtmlAndStateNodes)
         .setGeneralOptions(options)
         .setConformanceConfig(conformanceConfig)
         .setCssRegistry(cssRegistry)

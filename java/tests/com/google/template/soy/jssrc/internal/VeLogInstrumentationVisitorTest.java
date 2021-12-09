@@ -270,7 +270,7 @@ public final class VeLogInstrumentationVisitorTest {
     ParseResult result =
         SoyFileSetParserBuilder.forTemplateAndImports(soyFile, Foo.getDescriptor())
             // Disable desguaring pass and manually run it later
-            .desugarHtmlNodes(false)
+            .desugarHtmlAndStateNodes(false)
             .setLoggingConfig(LOGGING_CONFIG)
             .addSoySourceFunction(new TestLoggingFunction())
             .errorReporter(ErrorReporter.exploding())
