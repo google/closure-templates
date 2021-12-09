@@ -414,6 +414,9 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     JsDoc.Builder jsDocBuilder = JsDoc.builder();
     jsDocBuilder.addAnnotation("fileoverview", fileOverviewDescription);
     jsDocBuilder.addAnnotation("suppress", "{missingRequire} TODO(b/152440355)");
+    if (node.getTemplates().stream().anyMatch(tmpl -> tmpl instanceof TemplateElementNode)) {
+      jsDocBuilder.addParameterizedAnnotation("suppress", "extraRequire");
+    }
     if (node.getDelPackageName() != null) {
       jsDocBuilder.addParameterizedAnnotation("modName", node.getDelPackageName());
     }
@@ -962,6 +965,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     }
     if (node instanceof TemplateElementNode) {
       jsDocBuilder.addParameterizedAnnotation("suppress", "uselessCode");
+      jsDocBuilder.addParameterizedAnnotation("suppress", "suspiciousCode");
     }
     return jsDocBuilder.build();
   }
