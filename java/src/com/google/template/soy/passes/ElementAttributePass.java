@@ -143,8 +143,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
   private final Supplier<FileSetMetadata> templateRegistryFromDeps;
 
   ElementAttributePass(
-      ErrorReporter errorReporter,
-      Supplier<FileSetMetadata> templateRegistryFromDeps) {
+      ErrorReporter errorReporter, Supplier<FileSetMetadata> templateRegistryFromDeps) {
     this.errorReporter = errorReporter;
     this.templateRegistryFromDeps = templateRegistryFromDeps;
   }
@@ -403,6 +402,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
 
               attrNode.getParent().replaceChild(attrNode, replacementNode);
             });
+
     /*
      * This will generate the following code:
      *
@@ -413,28 +413,21 @@ final class ElementAttributePass implements CompilerFileSetPass {
      * {/template}
      * </pre>
      */
-    if (templateNode.getAllowExtraAttributes()) {
-      templateNode.setReservedAttributes(foundNormalAttr.build());
-      if (iAmAnElementCallingAnElement) {
-        delegatingElementsWithAllAttrs.accept(templateNode);
-      }
-
-      TemplateParam attrsParam =
-          new TemplateParam(
-              TemplateType.ATTRIBUTES_HIDDEN_PARAM_NAME,
-              SourceLocation.UNKNOWN,
-              SourceLocation.UNKNOWN,
-              NamedTypeNode.create(
-                  SourceLocation.UNKNOWN, TemplateType.ATTRIBUTES_HIDDEN_PARAM_NAME),
-              /* isInjected= */ false,
-              /* isImplicit= */ true,
-              /* optional= */ true,
-              /* desc= */ "Created by ElementAttributePass.",
-              /* defaultValue= */ null);
-      VarRefNode extraAttributesRef =
-          new VarRefNode("$" + attrsParam.name(), SourceLocation.UNKNOWN, attrsParam);
-      templateNode.addParam(attrsParam);
-      attrsParam.setType(SoyTypes.makeNullable(SanitizedType.AttributesType.getInstance()));
+    TemplateParam attrsParam =
+        new TemplateParam(
+            TemplateType.ATTRIBUTES_HIDDEN_PARAM_NAME,
+            SourceLocation.UNKNOWN,
+            SourceLocation.UNKNOWN,
+            NamedTypeNode.create(SourceLocation.UNKNOWN, TemplateType.ATTRIBUTES_HIDDEN_PARAM_NAME),
+            /* isInjected= */ false,
+            /* isImplicit= */ true,
+            /* optional= */ true,
+            /* desc= */ "Created by ElementAttributePass.",
+            /* defaultValue= */ null);
+    VarRefNode extraAttributesRef =
+        new VarRefNode("$" + attrsParam.name(), SourceLocation.UNKNOWN, attrsParam);
+    templateNode.addParam(attrsParam);
+    attrsParam.setType(SoyTypes.makeNullable(SanitizedType.AttributesType.getInstance()));
 
       // This requires a different handling than SoyTreeUtils.printIfNotNull because we need to
       // put an HTMLAttributeNode inside it so that we can concatenate using a whitespace.
@@ -452,6 +445,12 @@ final class ElementAttributePass implements CompilerFileSetPass {
       ifCondNode.addChild(htmlAttributeNode);
 
       openTagNode.addChild(ifNode);
+
+    if (templateNode.getAllowExtraAttributes()) {
+      templateNode.setReservedAttributes(foundNormalAttr.build());
+      if (iAmAnElementCallingAnElement) {
+        delegatingElementsWithAllAttrs.accept(templateNode);
+      }
     }
 
     warnUnusedAttributes(unseenParams);
