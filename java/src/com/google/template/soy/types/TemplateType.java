@@ -91,7 +91,7 @@ public abstract class TemplateType extends SoyType {
   /** The same as {@link #getParameters} but also includes hidden parameters. */
   @Memoized
   public ImmutableList<Parameter> getActualParameters() {
-    if (getContentKind() instanceof ElementContentKind) {
+    if (getAllowExtraAttributes()) {
       return ImmutableList.<Parameter>builder()
           .addAll(getParameters())
           .add(ATTRIBUTES_HIDDEN_PARAM)
