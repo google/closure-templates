@@ -111,7 +111,7 @@ public final class DesugarHtmlNodesPassTest {
     String soyFile = Joiner.on('\n').join("{namespace ns}", "{template t}", input, "{/template}");
     SoyFileNode node =
         SoyFileSetParserBuilder.forFileContents(soyFile)
-            .desugarHtmlAndStateNodes(true)
+            .desugarHtmlNodes(true)
             .parse()
             .fileSet()
             .getChild(0);

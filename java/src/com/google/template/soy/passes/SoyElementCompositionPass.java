@@ -239,20 +239,18 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
             errorReporter);
     TemplateType templateType = (TemplateType) call.getCalleeExpr().getRoot().getType();
     CallParamContentNode attributesNode =
-        templateType.getAllowExtraAttributes()
-            ? new CallParamContentNode(
-                nodeIdGen.genId(),
-                location,
+        new CallParamContentNode(
+            nodeIdGen.genId(),
+            location,
+            UNKNOWN,
+            Identifier.create(TemplateType.ATTRIBUTES_HIDDEN_PARAM_NAME, UNKNOWN),
+            new CommandTagAttribute(
+                Identifier.create("kind", UNKNOWN),
+                QuoteStyle.SINGLE,
+                "attributes",
                 UNKNOWN,
-                Identifier.create(TemplateType.ATTRIBUTES_HIDDEN_PARAM_NAME, UNKNOWN),
-                new CommandTagAttribute(
-                    Identifier.create("kind", UNKNOWN),
-                    QuoteStyle.SINGLE,
-                    "attributes",
-                    UNKNOWN,
-                    UNKNOWN),
-                errorReporter)
-            : null;
+                UNKNOWN),
+            errorReporter);
     if (!tagNode.getTaggedPairs().isEmpty()) {
       HtmlTagNode closeTag = tagNode.getTaggedPairs().get(0);
       List<String> params =
@@ -469,7 +467,7 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
       Set<String> seenAttr,
       Map<String, SoyType> parameterMap,
       Map<String, AttrParam> attrs,
-      @Nullable CallParamContentNode attributesNode,
+      CallParamContentNode attributesNode,
       CallBasicNode call,
       Optional<ExprNode> condition) {
     SourceLocation unknown = attr.getSourceLocation().clearRange();

@@ -960,6 +960,9 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         jsDocBuilder.addParameterizedAnnotation("suppress", "missingProperties");
       }
     }
+    if (node instanceof TemplateElementNode) {
+      jsDocBuilder.addParameterizedAnnotation("suppress", "uselessCode");
+    }
     return jsDocBuilder.build();
   }
 

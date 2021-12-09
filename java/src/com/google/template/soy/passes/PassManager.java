@@ -214,7 +214,8 @@ public final class PassManager {
     private boolean allowUnknownJsGlobals;
     private boolean disableAllTypeChecking;
     private MethodChecker javaPluginValidator;
-    private boolean desugarHtmlAndStateNodes = true;
+    private boolean desugarHtmlNodes = true;
+    private boolean desugarIdomFeatures = true;
     private boolean optimize = true;
     private ImmutableSet<SourceFilePath> generatedPathsToCheck = ImmutableSet.of();
     private ValidatedConformanceConfig conformanceConfig = ValidatedConformanceConfig.EMPTY;
@@ -309,8 +310,18 @@ public final class PassManager {
      *
      * <p>The default is {@code true}.
      */
-    public Builder desugarHtmlAndStateNodes(boolean desugarHtmlAndStateNodes) {
-      this.desugarHtmlAndStateNodes = desugarHtmlAndStateNodes;
+    public Builder desugarHtmlNodes(boolean desugarHtmlNodes) {
+      this.desugarHtmlNodes = desugarHtmlNodes;
+      return this;
+    }
+
+    /**
+     * Whether to desugar idom features such as @state and keys.
+     *
+     * <p>The default is {@code true}.
+     */
+    public Builder desugarIdomFeatures(boolean desugarIdomFeatures) {
+      this.desugarIdomFeatures = desugarIdomFeatures;
       return this;
     }
 
@@ -530,6 +541,12 @@ public final class PassManager {
             .add(new CheckTemplateCallsPass(errorReporter, accumulatedState::registryFull))
             .add(new ElementCheckCrossTemplatePass(errorReporter))
             .add(new CheckValidVarrefsPass(errorReporter));
+        if (desugarIdomFeatures && astRewrites == AstRewrites.ALL) {
+          // always desugar before the end since the backends (besides incremental dom) cannot
+          // handle
+          // the nodes.
+          passes.add(new DesugarStateNodesPass());
+        }
         passes.add(
             new SoyElementCompositionPass(
                 astRewrites, errorReporter, soyPrintDirectives, accumulatedState::registryFull));
@@ -557,10 +574,10 @@ public final class PassManager {
       // These tend to simplify or canonicalize the tree in order to simplify the task of code
       // generation.
 
-      if (desugarHtmlAndStateNodes) {
+      if (desugarHtmlNodes) {
         // always desugar before the end since the backends (besides incremental dom) cannot handle
         // the nodes.
-        passes.add(new DesugarHtmlNodesPass()).add(new DesugarStateNodesPass());
+        passes.add(new DesugarHtmlNodesPass());
       }
       if (optimize) {
         passes.add(new OptimizationPass(errorReporter));
