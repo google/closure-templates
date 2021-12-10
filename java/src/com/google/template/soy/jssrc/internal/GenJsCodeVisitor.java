@@ -1189,6 +1189,9 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
     // Generate code to define the local var.
     Expression value = translateExpr(node.getExpr());
+    if (value.equals(Expression.LITERAL_NULL)) {
+      value = value.castAs(JsType.forJsSrc(node.getVar().type()).typeExpr());
+    }
     jsCodeBuilder.append(VariableDeclaration.builder(generatedVarName).setRhs(value).build());
 
     // Add a mapping for generating future references to this local var.
