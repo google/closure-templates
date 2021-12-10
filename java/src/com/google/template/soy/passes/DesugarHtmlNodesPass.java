@@ -23,13 +23,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
-import com.google.template.soy.base.internal.QuoteStyle;
-import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basicdirectives.BasicEscapeDirective;
-import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.exprtree.FunctionNode;
-import com.google.template.soy.exprtree.StringNode;
-import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallNode;
@@ -50,7 +44,6 @@ import com.google.template.soy.soytree.MsgSelectNode;
 import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
-import com.google.template.soy.soytree.SkipNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
@@ -58,7 +51,6 @@ import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.types.StringType;
 import java.util.List;
 import java.util.Optional;
 
@@ -145,67 +137,6 @@ public final class DesugarHtmlNodesPass implements CompilerFileSetPass {
 
     @Override
     protected void visitHtmlOpenTagNode(HtmlOpenTagNode openTag) {
-      if (openTag.isSkipRoot() || openTag.getKeyNode() != null) {
-        ImmutableList.Builder<StandaloneNode> builder = ImmutableList.builder();
-        // {skip} + {key} nodes are turned into ssk="{$key}". For more information why,
-        // see go/typed-html-templates. For Incremental DOM, these are handled in
-        // GenIncrementalDomCodeVisitor.
-        // Note: when users do not use their own key, the ssk looks like
-        // "ssk="{soyServerKey(xid('template'-0))}. When users use their own key, we just
-        // use their key verbatim.
-        FunctionNode wrappedFn =
-            FunctionNode.newPositional(
-                Identifier.create(
-                    BuiltinFunction.SOY_SERVER_KEY.getName(), openTag.getSourceLocation()),
-                BuiltinFunction.SOY_SERVER_KEY,
-                openTag.getSourceLocation());
-        wrappedFn.setType(StringType.getInstance());
-        SourceLocation attributeSourceLocation;
-        Optional<SkipNode> skipNode =
-            openTag.getChildren().stream()
-                .filter(c -> c instanceof SkipNode)
-                .map(SkipNode.class::cast)
-                .findFirst();
-        if (skipNode.isPresent()) {
-          openTag.removeChild(skipNode.get());
-        }
-        if (openTag.getKeyNode() != null) {
-          attributeSourceLocation = openTag.getKeyNode().getSourceLocation();
-        } else {
-          attributeSourceLocation = skipNode.get().getSourceLocation();
-        }
-        if (openTag.getKeyNode() == null) {
-          FunctionNode funcNode =
-              FunctionNode.newPositional(
-                  Identifier.create(BuiltinFunction.XID.getName(), attributeSourceLocation),
-                  BuiltinFunction.XID,
-                  openTag.getSourceLocation());
-          funcNode.addChild(
-              new StringNode(openTag.getKeyId(), QuoteStyle.SINGLE, attributeSourceLocation));
-          funcNode.setType(StringType.getInstance());
-          wrappedFn.addChild(funcNode);
-        } else {
-          wrappedFn.addChild(openTag.getKeyNode().getExpr().getRoot().copy(new CopyState()));
-        }
-
-        if (openTag.isSkipRoot()) {
-          builder.add(new RawTextNode(idGenerator.genId(), " soy-skip", SourceLocation.UNKNOWN));
-        }
-
-        builder
-            .add(new RawTextNode(idGenerator.genId(), " ssk=", attributeSourceLocation))
-            .add(new RawTextNode(idGenerator.genId(), "'", SourceLocation.UNKNOWN))
-            .add(
-                new PrintNode(
-                    idGenerator.genId(),
-                    openTag.getSourceLocation(),
-                    /* isImplicit= */ true,
-                    /* expr= */ wrappedFn,
-                    /* attributes= */ ImmutableList.of(),
-                    ErrorReporter.exploding()))
-            .add(new RawTextNode(idGenerator.genId(), "'", SourceLocation.UNKNOWN));
-        openTag.addChildren(builder.build());
-      }
       visitHtmlTagNode(openTag);
     }
 
