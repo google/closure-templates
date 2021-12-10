@@ -143,8 +143,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
   private final Supplier<FileSetMetadata> templateRegistryFromDeps;
 
   ElementAttributePass(
-      ErrorReporter errorReporter,
-      Supplier<FileSetMetadata> templateRegistryFromDeps) {
+      ErrorReporter errorReporter, Supplier<FileSetMetadata> templateRegistryFromDeps) {
     this.errorReporter = errorReporter;
     this.templateRegistryFromDeps = templateRegistryFromDeps;
   }
@@ -583,6 +582,11 @@ final class ElementAttributePass implements CompilerFileSetPass {
 
       String tag = node.getHtmlElementMetadata().getTag();
       if (!"?".equals(tag) && !expectedTagName.equals(tag)) {
+        Optional<HtmlOpenTagNode> maybeTagNode = getElementOpen(node);
+        if (maybeTagNode.isEmpty()) {
+          // Error caught in earlier pass
+          continue;
+        }
         TagName tagName = getElementOpen(node).get().getTagName();
         if (tagName.isStatic()) {
           errorReporter.report(tagName.getTagLocation(), ROOT_TAG_KIND_MISMATCH, expectedTagName);

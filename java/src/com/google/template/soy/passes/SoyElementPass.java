@@ -214,6 +214,8 @@ public final class SoyElementPass implements CompilerFileSetPass {
             break; // skip reporting additional errors
           }
           openTag = maybeOpenTagNode;
+        } else if (template.getTemplateContentKind() instanceof ElementContentKind) {
+          this.errorReporter.report(template.getSourceLocation(), ELEMENT_TEMPLATE_EXACTLY_ONE_TAG);
         } else {
           List<CallBasicNode> callNodes =
               veLogNode.getChildren().stream()
