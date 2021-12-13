@@ -81,6 +81,12 @@ public interface SoyJbcSrcPrintDirective extends SoyPrintDirective {
         return create(expression, /* closeable= */ false);
       }
 
+      private static AppendableAndOptions create(Expression expression, boolean closeable) {
+        expression.checkAssignableTo(BytecodeUtils.LOGGING_ADVISING_APPENDABLE_TYPE);
+        return new AutoValue_SoyJbcSrcPrintDirective_Streamable_AppendableAndOptions(
+            expression, /* closeable= */ closeable);
+      }
+
       /**
        * Creates an appendable that needs to be closed.
        *
@@ -92,12 +98,6 @@ public interface SoyJbcSrcPrintDirective extends SoyPrintDirective {
       public static AppendableAndOptions createCloseable(Expression expression) {
         expression.checkAssignableTo(BytecodeUtils.LOGGING_ADVISING_APPENDABLE_TYPE);
         return create(expression, /* closeable= */ true);
-      }
-
-      private static AppendableAndOptions create(Expression expression, boolean closeable) {
-        expression.checkAssignableTo(BytecodeUtils.LOGGING_ADVISING_APPENDABLE_TYPE);
-        return new AutoValue_SoyJbcSrcPrintDirective_Streamable_AppendableAndOptions(
-            expression, /* closeable= */ closeable);
       }
 
       /**
