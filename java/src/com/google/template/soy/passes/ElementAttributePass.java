@@ -429,22 +429,21 @@ final class ElementAttributePass implements CompilerFileSetPass {
     templateNode.addParam(attrsParam);
     attrsParam.setType(SoyTypes.makeNullable(SanitizedType.AttributesType.getInstance()));
 
-      // This requires a different handling than SoyTreeUtils.printIfNotNull because we need to
-      // put an HTMLAttributeNode inside it so that we can concatenate using a whitespace.
-      IfNode ifNode = new IfNode(id.get(), unknown);
-      IfCondNode ifCondNode =
-          new IfCondNode(id.get(), unknown, unknown, "if", buildNotNull(extraAttributesRef));
-      ifCondNode.getExpr().setType(BoolType.getInstance());
-      ifNode.addChild(ifCondNode);
-      HtmlAttributeNode htmlAttributeNode = new HtmlAttributeNode(id.get(), unknown, null);
-      PrintNode printNode =
-          new PrintNode(
-              id.get(), unknown, true, extraAttributesRef, ImmutableList.of(), exploding());
-      printNode.getExpr().setType(extraAttributesRef.getType());
-      htmlAttributeNode.addChild(printNode);
-      ifCondNode.addChild(htmlAttributeNode);
+    // This requires a different handling than SoyTreeUtils.printIfNotNull because we need to
+    // put an HTMLAttributeNode inside it so that we can concatenate using a whitespace.
+    IfNode ifNode = new IfNode(id.get(), unknown);
+    IfCondNode ifCondNode =
+        new IfCondNode(id.get(), unknown, unknown, "if", buildNotNull(extraAttributesRef));
+    ifCondNode.getExpr().setType(BoolType.getInstance());
+    ifNode.addChild(ifCondNode);
+    HtmlAttributeNode htmlAttributeNode = new HtmlAttributeNode(id.get(), unknown, null);
+    PrintNode printNode =
+        new PrintNode(id.get(), unknown, true, extraAttributesRef, ImmutableList.of(), exploding());
+    printNode.getExpr().setType(extraAttributesRef.getType());
+    htmlAttributeNode.addChild(printNode);
+    ifCondNode.addChild(htmlAttributeNode);
 
-      openTagNode.addChild(ifNode);
+    openTagNode.addChild(ifNode);
 
     if (templateNode.getAllowExtraAttributes()) {
       templateNode.setReservedAttributes(foundNormalAttr.build());
@@ -583,7 +582,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
       String tag = node.getHtmlElementMetadata().getTag();
       if (!"?".equals(tag) && !expectedTagName.equals(tag)) {
         Optional<HtmlOpenTagNode> maybeTagNode = getElementOpen(node);
-        if (maybeTagNode.isEmpty()) {
+        if (!maybeTagNode.isPresent()) {
           // Error caught in earlier pass
           continue;
         }
