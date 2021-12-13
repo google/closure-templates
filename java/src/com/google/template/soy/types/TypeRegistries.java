@@ -200,7 +200,7 @@ public final class TypeRegistries {
             .put("js", JsType.getInstance())
             .put("ve_data", VeDataType.getInstance())
             .put("Message", MessageType.getInstance())
-            .build();
+            .buildOrThrow();
 
     private BuiltinTypeRegistry() {}
 
