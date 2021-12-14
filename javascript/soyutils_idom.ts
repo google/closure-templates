@@ -24,6 +24,7 @@ import SanitizedHtmlAttribute from 'goog:goog.soy.data.SanitizedHtmlAttribute'; 
 import * as soy from 'goog:soy';  // from //javascript/template/soy:soy_usegoog_js
 import {isAttribute} from 'goog:soy.checks';  // from //javascript/template/soy:checks
 import {ordainSanitizedHtml} from 'goog:soydata.VERY_UNSAFE';  // from //javascript/template/soy:soy_usegoog_js
+import {Logger} from 'google3/javascript/template/soy/soyutils_velog';
 import * as incrementaldom from 'incrementaldom';  // from //third_party/javascript/incremental_dom:incrementaldom
 
 import {attributes, ElementConstructor, FalsinessRenderer, IncrementalDomRenderer, patch, patchOuter} from './api_idom';
@@ -47,10 +48,13 @@ type LetFunction = (idom: IncrementalDomRenderer) => void;
  */
 interface TemplateAcceptor<TDATA extends {}> {
   template: IdomTemplate<TDATA>;
-  sync: IdomSyncState<TDATA>;
-  renderInternal(renderer: IncrementalDomRenderer, data: TDATA): void;
+  renderInternal(renderer: IncrementalDomRenderer): void;
   render(renderer?: IncrementalDomRenderer): void;
   handleCustomElementRuntime(): boolean;
+  syncStateFromProps: IdomSyncState<TDATA>;
+  setIdomSkipTemplate(idomSkipTemplate: () => void): void;
+  hasLogger(): boolean;
+  setLogger(logger: Logger|null): void;
 }
 
 interface HandleCustomElementOptions<T> {
@@ -72,18 +76,16 @@ function upgrade<X, T extends TemplateAcceptor<X>>(
     acceptor: new () => T, template: IdomTemplate<X>, sync: IdomSyncState<X>,
     init: (this: T) => void) {
   acceptor.prototype.init = init;
-  acceptor.prototype.sync = sync;
-  acceptor.prototype.renderInternal = function(
-      this: T, idomRenderer: IncrementalDomRenderer, data: X) {
-    const self = this as TemplateAcceptor<X>;
-    template.call(self, idomRenderer, data);
-  };
+  acceptor.prototype.syncStateFromProps = sync;
+  acceptor.prototype.idomRenderer = new IncrementalDomRenderer();
+  acceptor.prototype.idomPatcher = patchOuter;
+  acceptor.prototype.idomTemplate = template;
   acceptor.prototype.render = function(
       this: T, renderer = new IncrementalDomRenderer()) {
     const self = this as TemplateAcceptor<X>;
     patchOuter(this as unknown as HTMLElement, () => {
       // this cast may be unsafe...
-      self.renderInternal(renderer, self as unknown as X);
+      self.renderInternal(renderer);
     });
   };
 }
@@ -229,15 +231,18 @@ function handleCustomElement<T extends TemplateAcceptor<{}>>({
     return null;
   }
   const customEl = element as unknown as T;
-  // TODO(b/205997375): This needs to be conditionally set depending on
-  // whether the controller split is hydrated or not.
-  customEl.sync(data, false);
-  const maybeSkip = customEl.handleCustomElementRuntime();
-  if (maybeSkip) {
+  customEl.syncStateFromProps(data, false);
+  const skip = () => {
     incrementaldom.skip();
     incrementaldom.close();
     incrementaldom.open = oldOpen;
     return null;
+  };
+  // Must be set each time handleCustomElement is called since skip is different
+  // each time.
+  customEl.setIdomSkipTemplate(skip);
+  if (!customEl.hasLogger()) {
+    customEl.setLogger(incrementaldom.getLogger());
   }
   return customEl;
 }
