@@ -52,6 +52,24 @@ public final class JavaQualifiedNames {
     return getPackage(fileDescriptor, ProtoFlavor.PROTO2);
   }
 
+  static String getPackage(FileDescriptor file, ProtoFlavor flavor) {
+    return getPackage(file.toProto(), flavor);
+  }
+
+  static String getPackage(FileDescriptorProto file, ProtoFlavor flavor) {
+    FileOptions fileOptions = file.getOptions();
+    StringBuilder sb = new StringBuilder();
+    if (fileOptions.hasJavaPackage()) {
+      sb.append(fileOptions.getJavaPackage());
+    } else {
+      if (!file.getPackage().isEmpty()) {
+        sb.append(file.getPackage());
+      }
+    }
+
+    return sb.toString();
+  }
+
   /** Derives the outer class name based on the protobuf (.proto) file name. */
   public static String getOuterClassname(Descriptors.FileDescriptor fileDescriptor) {
     return getFileClassName(fileDescriptor, ProtoFlavor.PROTO2);
@@ -192,24 +210,6 @@ public final class JavaQualifiedNames {
       }
     }
     return result.toString();
-  }
-
-  static String getPackage(FileDescriptor file, ProtoFlavor flavor) {
-    return getPackage(file.toProto(), flavor);
-  }
-
-  static String getPackage(FileDescriptorProto file, ProtoFlavor flavor) {
-    FileOptions fileOptions = file.getOptions();
-    StringBuilder sb = new StringBuilder();
-    if (fileOptions.hasJavaPackage()) {
-      sb.append(fileOptions.getJavaPackage());
-    } else {
-      if (!file.getPackage().isEmpty()) {
-        sb.append(file.getPackage());
-      }
-    }
-
-    return sb.toString();
   }
 
   private static String classNameWithoutPackage(Descriptor descriptor, ProtoFlavor flavor) {
