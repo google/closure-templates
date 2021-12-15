@@ -306,8 +306,11 @@ public class CompiledTemplates {
       try {
         return fileClass.getDeclaredMethod(templateMethodName);
       } catch (NoSuchMethodException nsme) {
-        // for private templates the factory() method is package private and so getMethod will
-        // fail.
+        // This may be caused by:
+        //   1. Trying to call a private template. The factory() method is package private and so
+        //      getMethod will fail.
+        //   2. Two Soy files with the same namespace, without the necessary exemption. You should
+        //      also see a build breakage related to go/java-one-version.
         throw new IllegalArgumentException(
             "cannot find the " + templateMethodName + "() method for " + soyTemplateName, nsme);
       }
