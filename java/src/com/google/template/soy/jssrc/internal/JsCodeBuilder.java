@@ -253,13 +253,6 @@ public class JsCodeBuilder {
     return append(codeChunk.getStatementsForInsertingIntoForeignCodeAtIndent(indent.length()));
   }
 
-  public JsCodeBuilder appendNullable(@Nullable CodeChunk codeChunk) {
-    if (codeChunk != null) {
-      return append(codeChunk);
-    }
-    return this;
-  }
-
   /**
    * Serializes the given {@link JsDoc} into the code builder, respecting the code builder's current
    * indentation level.
@@ -271,12 +264,20 @@ public class JsCodeBuilder {
 
   /**
    * Appends one or more strings to the generated code.
+   *
    * @param codeFragments The code string(s) to append.
    * @return This CodeBuilder (for stringing together operations).
    */
   public JsCodeBuilder append(String... codeFragments) {
     for (String codeFragment : codeFragments) {
       code.append(codeFragment);
+    }
+    return this;
+  }
+
+  public JsCodeBuilder appendNullable(@Nullable CodeChunk codeChunk) {
+    if (codeChunk != null) {
+      return append(codeChunk);
     }
     return this;
   }

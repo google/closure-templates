@@ -181,31 +181,6 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
   }
 
   /**
-   * Returns a code chunk representing a variable declaration for an {@link MsgNode} with no
-   * fallback messages.
-   */
-  private Expression generateSingleMsgVariable(MsgNode msgNode, String tmpVarName) {
-    String googMsgVarName = buildGoogMsgVarNameHelper(msgNode);
-
-    // Generate the goog.getMsg call.
-    GoogMsgCodeGenInfo googMsgCodeGenInfo = genGoogGetMsgCallHelper(googMsgVarName, msgNode);
-
-    if (!msgNode.isPlrselMsg()) {
-      // No postprocessing is needed. Simply use the original goog.getMsg var.
-      return googMsgCodeGenInfo.googMsgVar;
-    }
-    // For plural/select messages, generate the goog.i18n.MessageFormat call.
-    // We don't want to output the result of goog.getMsg() directly. Instead, we send that
-    // string to goog.i18n.MessageFormat for postprocessing. This postprocessing is where we're
-    // handling all placeholder replacements, even ones that have nothing to do with
-    // plural/select.
-    return VariableDeclaration.builder(tmpVarName)
-        .setRhs(getMessageFormatCall(googMsgCodeGenInfo))
-        .build()
-        .ref();
-  }
-
-  /**
    * Returns a code chunk representing a variable declaration for an {@link MsgFallbackGroupNode}
    * that contains fallback(s).
    */
@@ -262,6 +237,31 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
               .build();
     }
     return Expression.id(tmpVarName).withInitialStatement(condition);
+  }
+
+  /**
+   * Returns a code chunk representing a variable declaration for an {@link MsgNode} with no
+   * fallback messages.
+   */
+  private Expression generateSingleMsgVariable(MsgNode msgNode, String tmpVarName) {
+    String googMsgVarName = buildGoogMsgVarNameHelper(msgNode);
+
+    // Generate the goog.getMsg call.
+    GoogMsgCodeGenInfo googMsgCodeGenInfo = genGoogGetMsgCallHelper(googMsgVarName, msgNode);
+
+    if (!msgNode.isPlrselMsg()) {
+      // No postprocessing is needed. Simply use the original goog.getMsg var.
+      return googMsgCodeGenInfo.googMsgVar;
+    }
+    // For plural/select messages, generate the goog.i18n.MessageFormat call.
+    // We don't want to output the result of goog.getMsg() directly. Instead, we send that
+    // string to goog.i18n.MessageFormat for postprocessing. This postprocessing is where we're
+    // handling all placeholder replacements, even ones that have nothing to do with
+    // plural/select.
+    return VariableDeclaration.builder(tmpVarName)
+        .setRhs(getMessageFormatCall(googMsgCodeGenInfo))
+        .build()
+        .ref();
   }
 
   /** Builds the googMsgVarName for an MsgNode. */
