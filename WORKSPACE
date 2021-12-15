@@ -44,16 +44,16 @@ maven_install(
         "com.google.code.findbugs:jsr305:3.0.2",
         "com.google.code.gson:gson:2.7",
         "com.google.common.html.types:types:1.0.7",
-        "com.google.errorprone:error_prone_annotations:2.4.0",
+        "com.google.errorprone:error_prone_annotations:2.10.0",
         "com.google.escapevelocity:escapevelocity:0.9.1",
         "com.google.flogger:flogger:0.5.1",
         "com.google.flogger:flogger-system-backend:0.5.1",
         "com.google.flogger:google-extensions:0.5.1",
-        "com.google.guava:guava:29.0-jre",
+        "com.google.guava:guava:31.0.1-jre",
         maven.artifact(
             "com.google.guava",
             "guava-testlib",
-            "29.0-jre",
+            "31.0.1-jre",
             testonly = True
         ),
         "com.google.inject.extensions:guice-multibindings:4.1.0",
@@ -183,10 +183,11 @@ rules_java_toolchains()
 # Apache 2.0
 http_archive(
     name = "rules_proto",
-    sha256 = "57001a3b33ec690a175cdf0698243431ef27233017b9bed23f96d44b9c98242f",
-    strip_prefix = "rules_proto-9cd4f8f1ede19d81c6d48910429fe96776e567b1",
+    sha256 = "66bfdf8782796239d3875d37e7de19b1d94301e8972b3cbd2446b332429b4df1",
+    strip_prefix = "rules_proto-4.0.0",
     urls = [
-        "https://github.com/bazelbuild/rules_proto/archive/9cd4f8f1ede19d81c6d48910429fe96776e567b1.tar.gz",
+        "https://mirror.bazel.build/github.com/bazelbuild/rules_proto/archive/refs/tags/4.0.0.tar.gz",
+        "https://github.com/bazelbuild/rules_proto/archive/refs/tags/4.0.0.tar.gz",
     ],
 )
 

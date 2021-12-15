@@ -103,7 +103,7 @@ public final class ProtoSupportTest {
             ProtoMap.newBuilder()
                 .putMapMessageField(2390, InnerMessage.newBuilder().setField(4837).build())));
     tester.rendersAs(
-        "0",
+        "bar",
         ImmutableMap.of(
             "proto",
             ProtoMap.newBuilder().putMapMessageField(2390, InnerMessage.getDefaultInstance())));

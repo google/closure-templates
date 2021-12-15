@@ -219,6 +219,7 @@ java_library(
         ":soy",
         ":soy_cmdline",
         "//java/src/com/google/template/soy/incrementaldomsrc:options",
+        "@maven//:args4j_args4j",
         "@maven//:com_google_guava_guava",
     ],
 )

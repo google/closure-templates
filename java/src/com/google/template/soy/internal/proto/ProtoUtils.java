@@ -33,6 +33,7 @@ import com.google.protobuf.Descriptors.EnumDescriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor.JavaType;
 import com.google.protobuf.Descriptors.FileDescriptor;
+import com.google.protobuf.Descriptors.FileDescriptor.Syntax;
 import com.google.protobuf.Descriptors.GenericDescriptor;
 import com.google.protobuf.Descriptors.OneofDescriptor;
 import com.google.protobuf.ExtensionRegistry;
@@ -219,6 +220,9 @@ public final class ProtoUtils {
     } else if (desc.getJavaType() == JavaType.MESSAGE) {
       // messages are always nullable
       return true;
+    } else if (desc.getFile().getSyntax() == Syntax.PROTO3
+    ) {
+      return false;
     } else {
       return true;
     }
