@@ -7,8 +7,8 @@
 
 import './skiphandler';
 
-import {assert, assertInstanceof} from 'goog:goog.asserts';  // from //third_party/javascript/closure/asserts
-import {IjData} from 'goog:goog.soy';  // from //third_party/javascript/closure/soy
+import {assert, assertInstanceof} from 'google3/third_party/javascript/closure/asserts/asserts';
+import {IjData} from 'google3/third_party/javascript/closure/soy/soy';
 import {isDataInitialized} from 'incrementaldom';  // from //third_party/javascript/incremental_dom:incrementaldom
 
 import {SoyElement} from './element_lib_idom';

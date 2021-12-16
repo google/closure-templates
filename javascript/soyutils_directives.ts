@@ -15,9 +15,9 @@
  */
 
 import SanitizedContentKind from 'goog:goog.soy.data.SanitizedContentKind'; // from //third_party/javascript/closure/soy:data
-import * as soy from 'goog:soy';  // from //javascript/template/soy:soy_usegoog_js
-import {isAttribute} from 'goog:soy.checks';  // from //javascript/template/soy:checks
 import {ordainSanitizedHtml} from 'goog:soydata.VERY_UNSAFE';  // from //javascript/template/soy:soy_usegoog_js
+import {isAttribute} from 'google3/javascript/template/soy/checks';
+import * as soy from 'google3/javascript/template/soy/soyutils_usegoog';
 
 import {IncrementalDomRenderer} from './api_idom';
 import {IdomFunction} from './element_lib_idom';

@@ -5,10 +5,10 @@
 
 import './skiphandler';
 
-import {assert, assertExists} from 'goog:goog.asserts';  // from //third_party/javascript/closure/asserts
-import IDisposable from 'goog:goog.disposable.IDisposable'; // from //third_party/javascript/closure/disposable:idisposable
 import SanitizedContentKind from 'goog:goog.soy.data.SanitizedContentKind'; // from //third_party/javascript/closure/soy:data
-import {Logger} from 'goog:soy.velog';  // from //javascript/template/soy:soyutils_velog
+import {Logger} from 'google3/javascript/template/soy/soyutils_velog';
+import {assert, assertExists} from 'google3/third_party/javascript/closure/asserts/asserts';
+import {IDisposable} from 'google3/third_party/javascript/closure/disposable/idisposable';
 
 import {IncrementalDomRenderer, patchOuter} from './api_idom';
 import {getGlobalSkipHandler, isTaggedForSkip} from './global';
