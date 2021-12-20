@@ -45,11 +45,6 @@ public final class TemplateBasicNode extends TemplateNode {
     super(nodeBuilder, "template", soyFileHeaderInfo, visibility, params);
   }
 
-  @Override
-  public String getTemplateNameForUserMsgs() {
-    return getTemplateName();
-  }
-
   /**
    * Copy constructor.
    *
@@ -57,6 +52,11 @@ public final class TemplateBasicNode extends TemplateNode {
    */
   private TemplateBasicNode(TemplateBasicNode orig, CopyState copyState) {
     super(orig, copyState);
+  }
+
+  @Override
+  public String getTemplateNameForUserMsgs() {
+    return getTemplateName();
   }
 
   @Override

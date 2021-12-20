@@ -48,14 +48,6 @@ public final class HtmlAttributeNode extends AbstractParentSoyNode<StandaloneNod
     this.equalsSignLocation = equalsSignLocation;
   }
 
-  @Nullable
-  public String getConcatenationDelimiter() {
-    if (getStaticKey() != null && CONCATENATED_ATTRIBUTES.containsKey(getStaticKey())) {
-      return CONCATENATED_ATTRIBUTES.get(this.getStaticKey());
-    }
-    return null;
-  }
-
   public HtmlAttributeNode(
       int id,
       SourceLocation location,
@@ -68,6 +60,14 @@ public final class HtmlAttributeNode extends AbstractParentSoyNode<StandaloneNod
   private HtmlAttributeNode(HtmlAttributeNode orig, CopyState copyState) {
     super(orig, copyState);
     this.equalsSignLocation = orig.equalsSignLocation;
+  }
+
+  @Nullable
+  public String getConcatenationDelimiter() {
+    if (getStaticKey() != null && CONCATENATED_ATTRIBUTES.containsKey(getStaticKey())) {
+      return CONCATENATED_ATTRIBUTES.get(this.getStaticKey());
+    }
+    return null;
   }
 
   public boolean hasValue() {

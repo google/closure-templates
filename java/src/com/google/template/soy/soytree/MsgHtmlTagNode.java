@@ -184,6 +184,11 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
     return lcTagName;
   }
 
+  /** Returns the lower-case HTML tag name (includes '/' for end tags). */
+  public String getLcTagName() {
+    return lcTagName;
+  }
+
   /**
    * Map from lower-case HTML tag name to human-readable placeholder name. For HTML tags not listed
    * here, the base placeholder name should simply be the tag name in all caps.
@@ -246,11 +251,6 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
   @Override
   public Kind getKind() {
     return Kind.MSG_HTML_TAG_NODE;
-  }
-
-  /** Returns the lower-case HTML tag name (includes '/' for end tags). */
-  public String getLcTagName() {
-    return lcTagName;
   }
 
   @Override

@@ -139,15 +139,6 @@ public final class SoyTreeUtils {
     return allNodes(node, SoyTreeUtils::visitAll);
   }
 
-  public static <T extends Node> Stream<T> allNodesOfType(Node rootSoyNode, Class<T> classObject) {
-    // optimization to avoid navigating into expr trees if we can't possibly match anything
-    boolean exploreExpressions = ExprNode.class.isAssignableFrom(classObject);
-    return allNodes(
-            rootSoyNode, exploreExpressions ? SoyTreeUtils::visitAll : SoyTreeUtils::visitNonExpr)
-        .filter(classObject::isInstance)
-        .map(classObject::cast);
-  }
-
   /**
    * Returns a breadth-first stream traversal of the AST tree starting at {@code node}. {@code
    * visitor} can return {@link VisitDirective#SKIP_CHILDREN} to skip sections of the tree.
@@ -171,6 +162,15 @@ public final class SoyTreeUtils {
           }
           return ImmutableList.of();
         });
+  }
+
+  public static <T extends Node> Stream<T> allNodesOfType(Node rootSoyNode, Class<T> classObject) {
+    // optimization to avoid navigating into expr trees if we can't possibly match anything
+    boolean exploreExpressions = ExprNode.class.isAssignableFrom(classObject);
+    return allNodes(
+            rootSoyNode, exploreExpressions ? SoyTreeUtils::visitAll : SoyTreeUtils::visitNonExpr)
+        .filter(classObject::isInstance)
+        .map(classObject::cast);
   }
 
   /**
