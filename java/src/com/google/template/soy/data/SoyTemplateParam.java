@@ -66,7 +66,7 @@ public abstract class SoyTemplateParam<T> {
 
   public abstract TypeToken<T> getType();
 
-  boolean isRequiredAndNotIndirect() {
+  public boolean isRequiredAndNotIndirect() {
     return isRequired() && !isIndirect();
   }
 }
