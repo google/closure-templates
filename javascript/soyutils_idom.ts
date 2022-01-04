@@ -51,6 +51,14 @@ interface TemplateAcceptor<TDATA extends {}> {
   renderInternal(renderer: IncrementalDomRenderer): void;
   render(renderer?: IncrementalDomRenderer): void;
   handleCustomElementRuntime(): boolean;
+  /**
+   * This is the idom template sync state function. Should not call this
+   * directly.
+   */
+  idomSyncFn: IdomSyncState<TDATA>;
+  /**
+   * This is a wrapper around idomSyncFn. Only this should be called directly.
+   */
   syncStateFromProps: IdomSyncState<TDATA>;
   setIdomSkipTemplate(idomSkipTemplate: () => void): void;
   hasLogger(): boolean;
@@ -76,7 +84,7 @@ function upgrade<X, T extends TemplateAcceptor<X>>(
     acceptor: new () => T, template: IdomTemplate<X>, sync: IdomSyncState<X>,
     init: (this: T) => void) {
   acceptor.prototype.init = init;
-  acceptor.prototype.syncStateFromProps = sync;
+  acceptor.prototype.idomSyncFn = sync;
   acceptor.prototype.idomRenderer = new IncrementalDomRenderer();
   acceptor.prototype.idomPatcher = patchOuter;
   acceptor.prototype.idomTemplate = template;
