@@ -311,14 +311,6 @@ final class TemplateVariableManager implements LocalVariableManager {
     return getVariable(VarKey.create(name));
   }
 
-  LocalVariable getStackFrameVar() {
-    if (stackFrameVariable == null) {
-      this.stackFrameVariable =
-          delegate.unsafeBorrowSlot(StandardNames.STACK_FRAME, BytecodeUtils.STACK_FRAME_TYPE);
-    }
-    return stackFrameVariable;
-  }
-
   private Expression getVariable(VarKey varKey) {
     AbstractVariable var = variablesByKey.get(varKey);
     if (var != null) {
@@ -326,6 +318,14 @@ final class TemplateVariableManager implements LocalVariableManager {
     }
     throw new IllegalArgumentException(
         "No variable: '" + varKey + "' is bound. " + variablesByKey.keySet() + " are in scope");
+  }
+
+  LocalVariable getStackFrameVar() {
+    if (stackFrameVariable == null) {
+      this.stackFrameVariable =
+          delegate.unsafeBorrowSlot(StandardNames.STACK_FRAME, BytecodeUtils.STACK_FRAME_TYPE);
+    }
+    return stackFrameVariable;
   }
 
   /** Statements for saving and restoring local variables in class fields. */
