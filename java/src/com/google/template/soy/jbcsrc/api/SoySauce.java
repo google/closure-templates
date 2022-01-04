@@ -92,6 +92,25 @@ public interface SoySauce {
   }
 
   /**
+   * Returns all css paths that might be needed to render this template. This follows css through
+   * deltemplate mods and optionally follows delvariants.
+   *
+   * <p>NOTE: this will return a superset of the css files that will actually be used at runtime;
+   * this is because it doesn't take conditional logic into account. Additionally, this treats all
+   * references to template literals as though they may be called.
+   */
+  ImmutableList<String> getAllRequiredCssPaths(
+      String templateName, Predicate<String> enabledDelpackages, boolean collectCssFromDelvariants);
+
+  /** As above, but given a SoyTemplate instead of a template name. */
+  default ImmutableList<String> getAllRequiredCssPaths(
+      SoyTemplate template,
+      Predicate<String> enabledDelpackages,
+      boolean collectCssFromDelvariants) {
+    return getAllRequiredCssPaths(
+        template.getTemplateName(), enabledDelpackages, collectCssFromDelvariants);
+  }
+  /**
    * Indicates whether the current {@link SoySauce} instance holds a given template.
    *
    * @return `true` if the template is valid and `false` if it is unrecognized.

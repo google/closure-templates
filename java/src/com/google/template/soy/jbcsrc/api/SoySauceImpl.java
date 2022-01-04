@@ -113,6 +113,15 @@ public final class SoySauceImpl implements SoySauce {
   }
 
   @Override
+  public ImmutableList<String> getAllRequiredCssPaths(
+      String templateName,
+      Predicate<String> enabledDelpackages,
+      boolean collectCssFromDelvariants) {
+    return templates.getAllRequiredCssPaths(
+        templateName, enabledDelpackages, collectCssFromDelvariants);
+  }
+
+  @Override
   public boolean hasTemplate(String template) {
     try {
       templates.getTemplate(template);

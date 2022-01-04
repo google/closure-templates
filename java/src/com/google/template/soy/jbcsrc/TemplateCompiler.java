@@ -259,9 +259,18 @@ final class TemplateCompiler {
         .filter(p -> p != null)
         .forEach(namespaces::add);
     namespaces.addAll(templateNode.getRequiredCssNamespaces());
+
+    // Require paths.
+    Set<String> cssPaths = Sets.newLinkedHashSet();
+    templateNode.getParent().getRequiredCssPaths().stream()
+        // Temporary, to avoid double requesting w/ the above.
+        .filter(p -> p.getNamespace() == null)
+        .filter(p -> p.resolvedPath().isPresent())
+        .forEach(p -> cssPaths.add(p.resolvedPath().get()));
+
     TemplateMetadata metadata =
         createTemplateMetadata(
-            kind, namespaces, uniqueIjs, callees, delCallees, deltemplateMetadata);
+            kind, namespaces, cssPaths, uniqueIjs, callees, delCallees, deltemplateMetadata);
     TEMPLATE_METADATA_REF.write(metadata, builder);
   }
 
@@ -269,12 +278,19 @@ final class TemplateCompiler {
   static TemplateMetadata createTemplateMetadata(
       ContentKind contentKind,
       Set<String> requiredCssNames,
+      Set<String> requiredCssPaths,
       Set<String> injectedParams,
       Set<String> callees,
       Set<String> delCallees,
       TemplateMetadata.DelTemplateMetadata deltemplateMetadata) {
     return new AutoAnnotation_TemplateCompiler_createTemplateMetadata(
-        contentKind, requiredCssNames, injectedParams, callees, delCallees, deltemplateMetadata);
+        contentKind,
+        requiredCssNames,
+        requiredCssPaths,
+        injectedParams,
+        callees,
+        delCallees,
+        deltemplateMetadata);
   }
 
   @AutoAnnotation

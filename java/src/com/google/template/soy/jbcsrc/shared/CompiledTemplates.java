@@ -125,6 +125,11 @@ public class CompiledTemplates {
     return getTemplateData(templateName).requiredCssNamespaces.asList();
   }
 
+  /** Returns the immediate css namespaces that might be used by this template. */
+  public ImmutableList<String> getRequiredCssPaths(String templateName) {
+    return getTemplateData(templateName).requiredCssPaths.asList();
+  }
+
   /**
    * Returns the transitive closure of all the css namespaces that might be used by this template.
    */
@@ -142,6 +147,25 @@ public class CompiledTemplates {
       requiredNamespaces.addAll(callee.requiredCssNamespaces);
     }
     return ImmutableList.copyOf(requiredNamespaces);
+  }
+
+  /**
+   * Returns the transitive closure of all the css namespaces that might be used by this template.
+   */
+  public ImmutableList<String> getAllRequiredCssPaths(
+      String templateName,
+      Predicate<String> enabledDelpackages,
+      boolean collectCssFromDelvariants) {
+    TemplateData templateData = getTemplateData(templateName);
+    Set<TemplateData> orderedTemplateCalls = Sets.newLinkedHashSet();
+    Set<TemplateData> visited = Sets.newLinkedHashSet();
+    collectTransitiveCallees(
+        templateData, orderedTemplateCalls, visited, enabledDelpackages, collectCssFromDelvariants);
+    LinkedHashSet<String> requiredPaths = Sets.newLinkedHashSet();
+    for (TemplateData callee : orderedTemplateCalls) {
+      requiredPaths.addAll(callee.requiredCssPaths);
+    }
+    return ImmutableList.copyOf(requiredPaths);
   }
 
   /** Returns an active delegate for the given name, variant and active package selector. */
@@ -260,6 +284,7 @@ public class CompiledTemplates {
     final ImmutableSet<String> delCallees;
     final ImmutableSet<String> injectedParams;
     final ImmutableSet<String> requiredCssNamespaces;
+    final ImmutableSet<String> requiredCssPaths;
 
     // If this is a deltemplate then delTemplateName will be present
     final Optional<String> delTemplateName;
@@ -287,6 +312,7 @@ public class CompiledTemplates {
       this.delCallees = ImmutableSet.copyOf(annotation.delCallees());
       this.injectedParams = ImmutableSet.copyOf(annotation.injectedParams());
       this.requiredCssNamespaces = ImmutableSet.copyOf(annotation.requiredCssNames());
+      this.requiredCssPaths = ImmutableSet.copyOf(annotation.requiredCssPaths());
       DelTemplateMetadata deltemplateMetadata = annotation.deltemplateMetadata();
       variant = deltemplateMetadata.variant();
       if (!deltemplateMetadata.name().isEmpty()) {
