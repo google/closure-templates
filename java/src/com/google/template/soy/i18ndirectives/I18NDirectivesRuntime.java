@@ -51,6 +51,55 @@ public final class I18NDirectivesRuntime {
     }
   }
 
+  public static String format(Object number, ULocale uLocale) {
+    return format(number, "decimal", null, null, null, uLocale);
+  }
+
+  public static String format(Object number, String formatType, ULocale uLocale) {
+    return format(number, formatType, null, null, null, uLocale);
+  }
+
+  public static String format(
+      Object number, String formatType, String numbersKeyword, ULocale uLocale) {
+    return format(number, formatType, numbersKeyword, null, null, uLocale);
+  }
+
+  public static String format(
+      Object number,
+      String formatType,
+      String numbersKeyword,
+      Integer minFractionDigits,
+      ULocale uLocale) {
+    return format(number, formatType, numbersKeyword, minFractionDigits, null, uLocale);
+  }
+
+  public static String format(
+      Object number,
+      String formatType,
+      String numbersKeyword,
+      Integer minFractionDigits,
+      Integer maxFractionDigits,
+      ULocale uLocale) {
+    if (number == null) {
+      return "";
+    }
+    if (number instanceof Number) {
+      Double val;
+      if (number instanceof Double) {
+        val = (Double) number;
+      } else if (number instanceof Long) {
+        val = ((Long) number).doubleValue();
+      } else if (number instanceof Integer) {
+        val = ((Integer) number).doubleValue();
+      } else {
+        val = Double.parseDouble(number.toString());
+      }
+      return formatInternal(
+          uLocale, val, formatType, numbersKeyword, minFractionDigits, maxFractionDigits);
+    }
+    return "NaN";
+  }
+
   /**
    * Formats a number using ICU4J. Note: If min or max fraction digits is null, the param will be
    * ignored.
