@@ -46,6 +46,7 @@ import com.google.template.soy.soytree.SwitchNode;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 /**
  * A compiler pass that performs HTML validation that is always enabled, as opposed to
@@ -57,6 +58,11 @@ final class BasicHtmlValidationPass implements CompilerFilePass {
 
   private static final SoyErrorKind UNEXPECTED_CLOSE_TAG_CONTENT =
       SoyErrorKind.of("Unexpected close tag content, only whitespace is allowed in close tags.");
+  private static final SoyErrorKind BAD_ID_VALUE =
+      SoyErrorKind.of(
+          "Html id attributes should not be valid JavaScript identifiers, consider hyphenating the"
+              + " id."
+          );
 
   private final ErrorReporter errorReporter;
 
@@ -77,6 +83,8 @@ final class BasicHtmlValidationPass implements CompilerFilePass {
     SoyTreeUtils.allNodesOfType(file, RenderUnitNode.class)
         .filter(unit -> unit.getContentKind() == SanitizedContentKind.ATTRIBUTES)
         .forEach(this::checkForDuplicateAttributes);
+    SoyTreeUtils.allNodesOfType(file, HtmlAttributeNode.class)
+        .forEach(this::warnOnIdAttributesMatchingJsIdentifiers);
   }
 
   /**
@@ -92,6 +100,19 @@ final class BasicHtmlValidationPass implements CompilerFilePass {
     }
     for (SoyNode child : children) {
       visitor.exec(child);
+    }
+  }
+
+  // https://developer.mozilla.org/en-US/docs/Glossary/Identifier
+  private static final Pattern JS_IDENTIFIER_PATTERN =
+      Pattern.compile("^[$_\\p{IsLetter}][$_\\p{IsLetter}\\p{IsDigit}]*$");
+
+  private void warnOnIdAttributesMatchingJsIdentifiers(HtmlAttributeNode attributeNode) {
+    if (attributeNode.definitelyMatchesAttributeName("id")) {
+      String staticId = attributeNode.getStaticContent();
+      if (staticId != null && JS_IDENTIFIER_PATTERN.matcher(staticId).matches()) {
+        errorReporter.warn(attributeNode.getChild(1).getSourceLocation(), BAD_ID_VALUE);
+      }
     }
   }
 

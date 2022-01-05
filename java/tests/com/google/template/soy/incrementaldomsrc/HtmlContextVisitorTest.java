@@ -64,13 +64,13 @@ public final class HtmlContextVisitorTest {
 
   @Test
   public void testMultipleAttributes() {
-    String templateBody = "<div id=\"foo\" data-bam=\"baz\"></div>\n";
+    String templateBody = "<div id=\"foo-id\" data-bam=\"baz\"></div>\n";
 
     SoyFileSetNode n = performVisitor(templateBody, FAIL);
     assertThat(((HtmlOpenTagNode) getNode(n, 0)).getTagName().getStaticTagNameAsLowerCase())
         .isEqualTo("div");
     assertThat(((HtmlAttributeNode) getNode(n, 0, 1)).getChild(0).toSourceString()).isEqualTo("id");
-    assertThat(((RawTextNode) getNode(n, 0, 1, 1, 0)).getRawText()).isEqualTo("foo");
+    assertThat(((RawTextNode) getNode(n, 0, 1, 1, 0)).getRawText()).isEqualTo("foo-id");
     assertThat(((HtmlAttributeNode) getNode(n, 0, 2)).getChild(0).toSourceString())
         .isEqualTo("data-bam");
     assertThat(getNode(n, 1)).isInstanceOf(HtmlCloseTagNode.class);
@@ -187,7 +187,7 @@ public final class HtmlContextVisitorTest {
   @Test
   public void testLetKindHtml() {
     String templateBody =
-        "{let $content kind=\"html\"}\n" + "  <div id=\"foo\"></div>\n" + "{/let}";
+        "{let $content kind=\"html\"}\n" + "  <div id=\"foo-bar\"></div>\n" + "{/let}";
 
     SoyFileSetNode n = performVisitor(templateBody, FAIL);
     assertThat(((LetContentNode) getNode(n, 0)).getContentKind())
