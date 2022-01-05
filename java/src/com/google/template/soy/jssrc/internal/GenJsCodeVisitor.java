@@ -621,7 +621,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       }
     }
     for (String delTemplateName : delTemplateNames) {
-      header.addParameterizedAnnotation("hassoydeltemplate", delTemplateName);
+      header.addParameterizedAnnotation("deltemplate", delTemplateName);
     }
   }
 
@@ -633,7 +633,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       delTemplateNames.add(delTemplateNamer.getDelegateName(delCall));
     }
     for (String delTemplateName : delTemplateNames) {
-      header.addParameterizedAnnotation("hassoydelcall", delTemplateName);
+      header.addParameterizedAnnotation("delcall", delTemplateName);
     }
   }
 
