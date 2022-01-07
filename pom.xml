@@ -82,7 +82,7 @@
     <guava.version>31.0.1-jre</guava.version>
     <asm.version>7.0</asm.version>
     <autovalue.version>1.7.4</autovalue.version>
-    <proto.version>3.3.0</proto.version>
+    <proto.version>3.16.1</proto.version>
     <truth.version>0.45</truth.version>
     <flogger.version>0.5.1</flogger.version>
     <soy.examples.path>examples</soy.examples.path>
