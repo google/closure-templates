@@ -63,11 +63,11 @@ public abstract class SoyMsg {
   public static final class Builder {
     private long id;
     private OptionalLong alternateId = OptionalLong.empty();
-    private @Nullable String localeString;
-    private @Nullable String meaning;
-    private @Nullable String desc;
+    @Nullable private String localeString;
+    @Nullable private String meaning;
+    @Nullable private String desc;
     private boolean isHidden;
-    private @Nullable String contentType;
+    @Nullable private String contentType;
     private final ImmutableSet.Builder<SourceLocationAndTemplate> sourceLocations =
         ImmutableSet.builder();
     private boolean isPlrselMsg;
