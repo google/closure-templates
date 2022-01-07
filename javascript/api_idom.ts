@@ -4,6 +4,7 @@
  * Functions necessary to interact with the Soy-Idom runtime.
  */
 
+import {toObjectForTesting} from 'google3/javascript/apps/jspb/debug';
 import {Message} from 'google3/javascript/apps/jspb/message';
 import * as soy from 'google3/javascript/template/soy/soyutils_usegoog';
 import {$$VisualElementData, ElementMetadata, Logger} from 'google3/javascript/template/soy/soyutils_velog';
@@ -24,22 +25,21 @@ export interface ElementConstructor {
 }
 
 const patchConfig: incrementaldom.PatchConfig = {
-  matches:
-      (matchNode, nameOrCtor, expectedNameOrCtor, proposedKey,
-       currentPointerKey) => {
-        if (typeof expectedNameOrCtor === 'function' &&
-            matchNode instanceof Element) {
-          expectedNameOrCtor = matchNode.tagName.toLowerCase();
-        }
-        if (typeof nameOrCtor === 'function' &&
-            typeof (nameOrCtor as ElementConstructor).getTagName ===
-                'function') {
-          // Reverse map constructor to tag name for validation.
-          nameOrCtor = (nameOrCtor as ElementConstructor).getTagName();
-        }
-        return nameOrCtor === expectedNameOrCtor &&
-            isMatchingKey(proposedKey, currentPointerKey);
-      }
+  matches: (
+      matchNode, nameOrCtor, expectedNameOrCtor, proposedKey,
+      currentPointerKey) => {
+    if (typeof expectedNameOrCtor === 'function' &&
+        matchNode instanceof Element) {
+      expectedNameOrCtor = matchNode.tagName.toLowerCase();
+    }
+    if (typeof nameOrCtor === 'function' &&
+        typeof (nameOrCtor as ElementConstructor).getTagName === 'function') {
+      // Reverse map constructor to tag name for validation.
+      nameOrCtor = (nameOrCtor as ElementConstructor).getTagName();
+    }
+    return nameOrCtor === expectedNameOrCtor &&
+        isMatchingKey(proposedKey, currentPointerKey);
+  }
 };
 
 /** PatchInner using Soy-IDOM semantics. */
@@ -130,7 +130,7 @@ export class IncrementalDomRenderer implements IdomRendererApi {
     this.visit(el);
 
     // `data` is only passed by {skip} elements that are roots of templates.
-    if (goog.DEBUG && el && data) {
+    if (!COMPILED && goog.DEBUG && el && data) {
       maybeReportErrors(el, data);
     }
 
@@ -396,7 +396,21 @@ export function isMatchingKey(
 }
 
 function maybeReportErrors(el: HTMLElement, data: unknown) {
-  const stringifiedParams = JSON.stringify(data, jsonProtoReplacer, 2);
+  // Serializes JSPB protos using toObjectForTesting. This is important as
+  // jspb protos modify themselves sometimes just by reading them (e.g. when a
+  // nested proto is created it will fill in empty repeated fields
+  // into the internal array).
+  // Note that we can't use the replacer argument of JSON.stringify as Message
+  // contains a toJSON method, which prevents the message instance to be passed
+  // to the JSON.stringify replacer.
+  // tslint:disable-next-line:no-any Replace private function.
+  const msgProto = Message.prototype as any;
+  const msgProtoToJSON = msgProto['toJSON'];
+  msgProto['toJSON'] = function(this: Message) {
+    return toObjectForTesting(this);
+  };
+  const stringifiedParams = JSON.stringify(data, null, 2);
+  msgProto['toJSON'] = msgProtoToJSON;
   if (!el.__lastParams) {
     el.__lastParams = stringifiedParams;
     return;
@@ -414,19 +428,6 @@ Element:
 ${el.dataset['debugSoy'] || el.outerHTML}`);
   }
 }
-
-/** Serializes JSPB protos using toObject if available. */
-function jsonProtoReplacer(key: string, value: unknown) {
-  if (value instanceof Message && !COMPILED &&
-      // tslint:disable-next-line:no-any Call undeclared function.
-      typeof (value as any)['toObject'] === 'function') {
-    // tslint:disable-next-line:no-any Call undeclared function.
-    JSON.stringify((value as any)['toObject'](), null, 2);
-  }
-  // All other values are serialized as-is, which will recursibly call this.
-  return value;
-}
-
 
 /**
  * A Renderer that keeps track of whether it was ever called to render anything,
