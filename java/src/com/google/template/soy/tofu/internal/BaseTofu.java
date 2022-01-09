@@ -130,8 +130,8 @@ public final class BaseTofu implements SoyTofu {
     }
     this.basicTemplates = basicTemplates.build();
     this.delTemplates = delTemplates.build();
-    this.constants = constants.build();
-    this.externs = externs.build();
+    this.constants = constants.buildOrThrow();
+    this.externs = externs.buildOrThrow();
     this.templateToIjParamsInfoMap =
         buildTemplateToIjParamsInfoMap(this.basicTemplates, this.delTemplates);
     this.pluginInstances = pluginInstances;
