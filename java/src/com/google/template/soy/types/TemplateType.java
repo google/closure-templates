@@ -43,11 +43,20 @@ import javax.annotation.Nullable;
 public abstract class TemplateType extends SoyType {
 
   public static final String ATTRIBUTES_HIDDEN_PARAM_NAME = "__soyInternalAttributes";
+  public static final String KEY_HIDDEN_ATTRIBUTE_NAME = "ssk";
   private static final Parameter ATTRIBUTES_HIDDEN_PARAM =
       Parameter.builder()
           .setName(ATTRIBUTES_HIDDEN_PARAM_NAME)
           .setType(SanitizedType.AttributesType.getInstance())
           .setKind(ParameterKind.PARAM)
+          .setRequired(false)
+          .setImplicit(true)
+          .build();
+  private static final Parameter KEY_HIDDEN_ATTRIBUTE =
+      Parameter.builder()
+          .setName("ssk")
+          .setType(StringType.getInstance())
+          .setKind(ParameterKind.ATTRIBUTE)
           .setRequired(false)
           .setImplicit(true)
           .build();
@@ -91,13 +100,15 @@ public abstract class TemplateType extends SoyType {
   /** The same as {@link #getParameters} but also includes hidden parameters. */
   @Memoized
   public ImmutableList<Parameter> getActualParameters() {
+    ImmutableList.Builder<Parameter> builder =
+        ImmutableList.<Parameter>builder().addAll(getParameters());
     if (getContentKind() instanceof ElementContentKind) {
-      return ImmutableList.<Parameter>builder()
-          .addAll(getParameters())
-          .add(ATTRIBUTES_HIDDEN_PARAM)
-          .build();
+      builder.add(KEY_HIDDEN_ATTRIBUTE);
     }
-    return getParameters();
+    if (getAllowExtraAttributes()) {
+      builder.add(ATTRIBUTES_HIDDEN_PARAM);
+    }
+    return builder.build();
   }
 
   public final ImmutableMap<String, SoyType> getParameterMap() {

@@ -469,7 +469,9 @@ public final class PassManager {
         passes.add(new AddDebugAttributesPass());
       }
       if (astRewrites == AstRewrites.ALL) {
-        passes.add(new ElementAttributePass(errorReporter, accumulatedState::registryFromDeps));
+        passes.add(
+            new ElementAttributePass(
+                errorReporter, accumulatedState::registryFromDeps, desugarIdomFeatures));
       }
       if (!disableAllTypeChecking) {
         passes
@@ -549,7 +551,11 @@ public final class PassManager {
         }
         passes.add(
             new SoyElementCompositionPass(
-                astRewrites, errorReporter, soyPrintDirectives, accumulatedState::registryFull));
+                astRewrites,
+                errorReporter,
+                soyPrintDirectives,
+                accumulatedState::registryFull,
+                desugarIdomFeatures));
       }
       passes
           .add(new CallAnnotationPass())

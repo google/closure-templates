@@ -57,6 +57,7 @@ java_library(
         "//java/src/com/google/template/soy/soytree",
         "//java/src/com/google/template/soy/soytree:soynode",
         "//java/src/com/google/template/soy/soytree/defn",
+        "//java/src/com/google/template/soy/treebuilder",
         "//java/src/com/google/template/soy/types",
         "//java/src/com/google/template/soy/types/ast",
         "//src/main/protobuf:template_call_metadata_java_proto",

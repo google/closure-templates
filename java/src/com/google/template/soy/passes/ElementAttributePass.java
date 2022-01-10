@@ -46,6 +46,7 @@ import com.google.template.soy.exprtree.OperatorNodes.NotEqualOpNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
+import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.HtmlAttributeValueNode;
@@ -67,6 +68,7 @@ import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.AttrParam;
 import com.google.template.soy.soytree.defn.TemplateParam;
+import com.google.template.soy.treebuilder.ExprNodes;
 import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SoyType;
@@ -141,11 +143,15 @@ final class ElementAttributePass implements CompilerFileSetPass {
 
   private final ErrorReporter errorReporter;
   private final Supplier<FileSetMetadata> templateRegistryFromDeps;
+  private final boolean desugarIdomPasses;
 
   ElementAttributePass(
-      ErrorReporter errorReporter, Supplier<FileSetMetadata> templateRegistryFromDeps) {
+      ErrorReporter errorReporter,
+      Supplier<FileSetMetadata> templateRegistryFromDeps,
+      boolean desugarIdomPasses) {
     this.errorReporter = errorReporter;
     this.templateRegistryFromDeps = templateRegistryFromDeps;
+    this.desugarIdomPasses = desugarIdomPasses;
   }
 
   private static ExprNode buildNotNull(ExprNode node) {
@@ -402,56 +408,128 @@ final class ElementAttributePass implements CompilerFileSetPass {
 
               attrNode.getParent().replaceChild(attrNode, replacementNode);
             });
-
-    /*
-     * This will generate the following code:
-     *
-     * <pre>
-     * {template foo}
-     *   {@param soyInternalAttributes:attributes}
-     *   <div {$soyInternalAttributes}></div>
-     * {/template}
-     * </pre>
-     */
-    TemplateParam attrsParam =
+    // This param is added unconditionally because TemplateType expects it to be populated. However,
+    // outside of IDOM this is unused.
+    TemplateParam keyParam =
         new TemplateParam(
-            TemplateType.ATTRIBUTES_HIDDEN_PARAM_NAME,
+            TemplateType.KEY_HIDDEN_ATTRIBUTE_NAME,
             SourceLocation.UNKNOWN,
             SourceLocation.UNKNOWN,
-            NamedTypeNode.create(SourceLocation.UNKNOWN, TemplateType.ATTRIBUTES_HIDDEN_PARAM_NAME),
+            NamedTypeNode.create(SourceLocation.UNKNOWN, TemplateType.KEY_HIDDEN_ATTRIBUTE_NAME),
             /* isInjected= */ false,
             /* isImplicit= */ true,
             /* optional= */ true,
             /* desc= */ "Created by ElementAttributePass.",
             /* defaultValue= */ null);
-    VarRefNode extraAttributesRef =
-        new VarRefNode("$" + attrsParam.name(), SourceLocation.UNKNOWN, attrsParam);
-    templateNode.addParam(attrsParam);
-    attrsParam.setType(SoyTypes.makeNullable(SanitizedType.AttributesType.getInstance()));
+    keyParam.setType(SoyTypes.makeNullable(StringType.getInstance()));
+    templateNode.addParam(keyParam);
 
-    // This requires a different handling than SoyTreeUtils.printIfNotNull because we need to
-    // put an HTMLAttributeNode inside it so that we can concatenate using a whitespace.
-    IfNode ifNode = new IfNode(id.get(), unknown);
-    IfCondNode ifCondNode =
-        new IfCondNode(id.get(), unknown, unknown, "if", buildNotNull(extraAttributesRef));
-    ifCondNode.getExpr().setType(BoolType.getInstance());
-    ifNode.addChild(ifCondNode);
-    HtmlAttributeNode htmlAttributeNode = new HtmlAttributeNode(id.get(), unknown, null);
-    PrintNode printNode =
-        new PrintNode(id.get(), unknown, true, extraAttributesRef, ImmutableList.of(), exploding());
-    printNode.getExpr().setType(extraAttributesRef.getType());
-    htmlAttributeNode.addChild(printNode);
-    ifCondNode.addChild(htmlAttributeNode);
+    if (desugarIdomPasses && openTagNode.getTagName().isStatic()) {
+      VarRefNode keyParamRef =
+          new VarRefNode("$" + keyParam.name(), SourceLocation.UNKNOWN, keyParam);
 
-    openTagNode.addChild(ifNode);
+      // This produces the following code:
+      // {if $ssk}ssk="{$ssk + xid('some-template-root')}"{/if}
+      IfNode ifNode = new IfNode(id.get(), unknown);
+      IfCondNode ifCondNode =
+          new IfCondNode(id.get(), unknown, unknown, "if", buildNotNull(keyParamRef));
+      ifCondNode.getExpr().setType(BoolType.getInstance());
+      ifNode.addChild(ifCondNode);
+      HtmlAttributeNode htmlAttributeNode =
+          new HtmlAttributeNode(
+              id.get(), SourceLocation.UNKNOWN, SourceLocation.Point.UNKNOWN_POINT);
+      htmlAttributeNode.addChild(
+          new RawTextNode(
+              id.get(), TemplateType.KEY_HIDDEN_ATTRIBUTE_NAME, SourceLocation.UNKNOWN));
+      HtmlAttributeValueNode valueNode =
+          new HtmlAttributeValueNode(id.get(), SourceLocation.UNKNOWN, Quotes.SINGLE);
+      String tplName =
+          templateNode.getHtmlElementMetadata().getFinalCallee().isEmpty()
+              ? templateNode.getTemplateName()
+              : templateNode.getHtmlElementMetadata().getFinalCallee();
+      FunctionNode wrappedFn =
+          FunctionNode.newPositional(
+              Identifier.create(BuiltinFunction.SOY_SERVER_KEY.getName(), SourceLocation.UNKNOWN),
+              BuiltinFunction.SOY_SERVER_KEY,
+              SourceLocation.UNKNOWN);
+      wrappedFn.setType(StringType.getInstance());
+      ExprNode result;
+      if (openTagNode.getKeyNode() == null) {
+        FunctionNode funcNode =
+            FunctionNode.newPositional(
+                Identifier.create(BuiltinFunction.XID.getName(), SourceLocation.UNKNOWN),
+                BuiltinFunction.XID,
+                SourceLocation.UNKNOWN);
+        funcNode.addChild(
+            new StringNode(tplName + "-root", QuoteStyle.SINGLE, SourceLocation.UNKNOWN));
+        funcNode.setType(StringType.getInstance());
+        wrappedFn.addChild(funcNode);
+        result = ExprNodes.plus(wrappedFn, keyParamRef);
+      } else {
+        wrappedFn.addChild(openTagNode.getKeyNode().getExpr().getRoot().copy(new CopyState()));
+        result = wrappedFn;
+      }
+      PrintNode printNode =
+          new PrintNode(id.get(), unknown, true, result, ImmutableList.of(), exploding());
+      printNode.getExpr().setType(wrappedFn.getType());
+      valueNode.addChild(printNode);
+      htmlAttributeNode.addChild(valueNode);
+      ifCondNode.addChild(htmlAttributeNode);
+
+      openTagNode.addChild(ifNode);
+      if (openTagNode.getKeyNode() != null) {
+        openTagNode.removeChild(openTagNode.getKeyNode());
+      }
+    }
 
     if (templateNode.getAllowExtraAttributes()) {
+      /*
+       * This will generate the following code:
+       *
+       * <pre>
+       * {template foo}
+       *   {@param soyInternalAttributes:attributes}
+       *   <div {$soyInternalAttributes}></div>
+       * {/template}
+       * </pre>
+       */
+      TemplateParam attrsParam =
+          new TemplateParam(
+              TemplateType.ATTRIBUTES_HIDDEN_PARAM_NAME,
+              SourceLocation.UNKNOWN,
+              SourceLocation.UNKNOWN,
+              NamedTypeNode.create(
+                  SourceLocation.UNKNOWN, TemplateType.ATTRIBUTES_HIDDEN_PARAM_NAME),
+              /* isInjected= */ false,
+              /* isImplicit= */ true,
+              /* optional= */ true,
+              /* desc= */ "Created by ElementAttributePass.",
+              /* defaultValue= */ null);
+      VarRefNode extraAttributesRef =
+          new VarRefNode("$" + attrsParam.name(), SourceLocation.UNKNOWN, attrsParam);
+      templateNode.addParam(attrsParam);
+      attrsParam.setType(SoyTypes.makeNullable(SanitizedType.AttributesType.getInstance()));
+      // This requires a different handling than SoyTreeUtils.printIfNotNull because we need to
+      // put an HTMLAttributeNode inside it so that we can concatenate using a whitespace.
+      IfNode ifNode = new IfNode(id.get(), unknown);
+      IfCondNode ifCondNode =
+          new IfCondNode(id.get(), unknown, unknown, "if", buildNotNull(extraAttributesRef));
+      ifCondNode.getExpr().setType(BoolType.getInstance());
+      ifNode.addChild(ifCondNode);
+      HtmlAttributeNode htmlAttributeNode = new HtmlAttributeNode(id.get(), unknown, null);
+      PrintNode printNode =
+          new PrintNode(
+              id.get(), unknown, true, extraAttributesRef, ImmutableList.of(), exploding());
+      printNode.getExpr().setType(extraAttributesRef.getType());
+      htmlAttributeNode.addChild(printNode);
+      ifCondNode.addChild(htmlAttributeNode);
+
+      openTagNode.addChild(ifNode);
       templateNode.setReservedAttributes(foundNormalAttr.build());
       if (iAmAnElementCallingAnElement) {
         delegatingElementsWithAllAttrs.accept(templateNode);
       }
     }
-
     warnUnusedAttributes(unseenParams);
   }
 
@@ -582,7 +660,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
       String tag = node.getHtmlElementMetadata().getTag();
       if (!"?".equals(tag) && !expectedTagName.equals(tag)) {
         Optional<HtmlOpenTagNode> maybeTagNode = getElementOpen(node);
-        if (!maybeTagNode.isPresent()) {
+        if (maybeTagNode.isEmpty()) {
           // Error caught in earlier pass
           continue;
         }

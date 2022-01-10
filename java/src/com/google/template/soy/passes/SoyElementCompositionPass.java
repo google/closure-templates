@@ -21,6 +21,7 @@ import static java.util.stream.Collectors.toCollection;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
@@ -65,6 +66,8 @@ import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TagName;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.AttrParam;
+import com.google.template.soy.soytree.defn.TemplateParam;
+import com.google.template.soy.treebuilder.ExprNodes;
 import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.SanitizedType.AttributesType;
 import com.google.template.soy.types.SanitizedType.StyleType;
@@ -72,6 +75,7 @@ import com.google.template.soy.types.SanitizedType.TrustedResourceUriType;
 import com.google.template.soy.types.SanitizedType.UriType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypes;
+import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.TemplateImportType;
 import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.TemplateType.Parameter;
@@ -110,16 +114,19 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
   private final ImmutableList<? extends SoyPrintDirective> printDirectives;
   private final Supplier<FileSetMetadata> templateRegistryFull;
   private final AstRewrites astRewrites;
+  private final boolean desugarIdomFeatures;
 
   SoyElementCompositionPass(
       AstRewrites astRewrites,
       ErrorReporter errorReporter,
       ImmutableList<? extends SoyPrintDirective> printDirectives,
-      Supplier<FileSetMetadata> templateRegistryFull) {
+      Supplier<FileSetMetadata> templateRegistryFull,
+      boolean desugarIdomFeatures) {
     this.errorReporter = errorReporter;
     this.printDirectives = printDirectives;
     this.templateRegistryFull = templateRegistryFull;
     this.astRewrites = astRewrites;
+    this.desugarIdomFeatures = desugarIdomFeatures;
   }
 
   @Override
@@ -207,15 +214,6 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
       return;
     }
 
-    if (tagNode instanceof HtmlOpenTagNode) {
-      ContextualAutoescaper.annotateAndRewriteHtmlTag(
-          (HtmlOpenTagNode) tagNode,
-          templateRegistryFull.get(),
-          nodeIdGen,
-          errorReporter,
-          printDirectives);
-    }
-
     Preconditions.checkState(tagNode.getTaggedPairs().size() <= 1);
     SourceLocation unknown = template.getSourceLocation().clearRange();
     Map<String, AttrParam> attrs =
@@ -237,6 +235,48 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
             ImmutableList.of(),
             false,
             errorReporter);
+
+    if (tagNode instanceof HtmlOpenTagNode) {
+      HtmlOpenTagNode openTagNode = (HtmlOpenTagNode) tagNode;
+      ContextualAutoescaper.annotateAndRewriteHtmlTag(
+          openTagNode, templateRegistryFull.get(), nodeIdGen, errorReporter, printDirectives);
+      // When element compositioning a template, check the following cases:
+      // 1. A key is present (an element type is element compositioning) - The key must be passed
+      // forward in addition to the key on the current element.
+      // 2. The key is not null - must be passed forward
+      // 3. Key is null. No need to pass along anyhting.
+      if (desugarIdomFeatures) {
+        Optional<TemplateParam> keyParam =
+            template.getParams().stream()
+                .filter(p -> p.name().equals(TemplateType.KEY_HIDDEN_ATTRIBUTE_NAME))
+                .findFirst();
+        ExprNode expr;
+        if (openTagNode.getKeyNode() == null) {
+          if (keyParam.isPresent()) {
+            VarRefNode keyParamRef =
+                new VarRefNode("$" + keyParam.get().name(), SourceLocation.UNKNOWN, keyParam.get());
+            expr =
+                ExprNodes.conditional(
+                    keyParamRef.copy(new CopyState()), keyParamRef, ExprNodes.nullLiteral());
+            ((ConditionalOpNode) expr)
+                .setType(UnionType.of(StringType.getInstance(), NullType.getInstance()));
+          } else {
+            expr = ExprNodes.nullLiteral();
+          }
+        } else {
+          expr = DesugarStateNodesPass.extractKeyFunctionFromHtmlTag(openTagNode, nodeIdGen);
+        }
+
+        call.addChild(
+            new CallParamValueNode(
+                nodeIdGen.genId(),
+                openTagNode.getSourceLocation(),
+                Identifier.create(
+                    TemplateType.KEY_HIDDEN_ATTRIBUTE_NAME, openTagNode.getSourceLocation()),
+                expr));
+      }
+    }
+
     TemplateType templateType = (TemplateType) call.getCalleeExpr().getRoot().getType();
     CallParamContentNode attributesNode =
         new CallParamContentNode(
@@ -295,7 +335,7 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
     call.setHtmlContext(HtmlContext.HTML_PCDATA);
     tagNode.getParent().replaceChild(tagNode, call);
 
-    Map<String, SoyType> parameterMap = templateType.getParameterMap();
+    ImmutableMap<String, SoyType> parameterMap = templateType.getParameterMap();
 
     Set<String> seenAttr = new HashSet<>();
     tagNode.getChildren().stream()
