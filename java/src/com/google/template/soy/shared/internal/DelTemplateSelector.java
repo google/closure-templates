@@ -65,7 +65,7 @@ public final class DelTemplateSelector<T> {
       }
       delTemplateNameToValuesBuilder.putAll(delTemplateName, group.delpackageToValue.values());
     }
-    this.nameAndVariantToGroup = nameAndVariantBuilder.build();
+    this.nameAndVariantToGroup = nameAndVariantBuilder.buildOrThrow();
     this.delTemplateNameToValues = delTemplateNameToValuesBuilder.build();
   }
 
