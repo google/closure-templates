@@ -374,6 +374,7 @@ public class SanitizersTest {
           "http://google.com/",
           "https://google.com/",
           "HTTP://google.com/",
+          "ftp://google.com/",
           "?a=b&c=d",
           "?a=b:c&d=e",
           "//foo.com:80/",

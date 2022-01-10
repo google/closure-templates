@@ -912,8 +912,8 @@ public final class EscapingConventions {
     private FilterNormalizeUri() {
       // Disallows any protocol that is not in a whitelist.
       // The below passes if there is
-      // (1) Either a protocol in a whitelist (http, https, mailto).  This could be expanded but
-      //     talk to your friendly local go/ise-team-yaqs first.
+      // (1) Either a protocol in an allowlist (ftp, http, https, mailto).  This could be expanded
+      //     but talk to your friendly local go/ise-team-yaqs first.
       // (2) or no protocol.  A protocol must be followed by a colon.  The below allows that by
       //     allowing colons only after one of the characters [/?#].
       //     A colon after a hash (#) must be in the fragment.
@@ -930,7 +930,7 @@ public final class EscapingConventions {
       // More importantly, it disallows masking of a colon, e.g. "javascript&#58;...".
       super(
           Pattern.compile(
-              "^(?:(?:https?|mailto):|[^&:/?#]*(?:[/?#]|\\z))", Pattern.CASE_INSENSITIVE),
+              "^(?:(?:https?|mailto|ftp):|[^&:/?#]*(?:[/?#]|\\z))", Pattern.CASE_INSENSITIVE),
           null);
     }
 
@@ -970,8 +970,9 @@ public final class EscapingConventions {
           Pattern.compile(
               // Allow relative URIs.
               "^[^&:/?#]*(?:[/?#]|\\z)"
-                  // Allow http and https URIs.
+                  // Allow http, https and ftp URIs.
                   + "|^https?:"
+                  + "|^ftp:"
                   // Allow image data URIs. Ignore the subtype because browsers ignore them anyways.
                   // In fact, most browsers happily accept text/html or a completely empty MIME, but
                   // it doesn't hurt to verify that it at least looks vaguely correct.
