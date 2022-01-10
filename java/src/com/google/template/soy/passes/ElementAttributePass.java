@@ -660,7 +660,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
       String tag = node.getHtmlElementMetadata().getTag();
       if (!"?".equals(tag) && !expectedTagName.equals(tag)) {
         Optional<HtmlOpenTagNode> maybeTagNode = getElementOpen(node);
-        if (maybeTagNode.isEmpty()) {
+        if (!maybeTagNode.isPresent()) {
           // Error caught in earlier pass
           continue;
         }
