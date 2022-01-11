@@ -4777,6 +4777,41 @@ private Identifier Identifier() :
   }
 }
 
+private Identifier DottedOrDashedIdent() :
+{
+  Token first, next = null;
+  Token delim = null, prevDelim = null;
+  StringBuilder sb = null;  // lazily allocated
+}
+{
+  first = <IDENT>
+  (
+    (
+      delim = <MINUS>
+    |
+      delim = <DOT>
+    )
+    next = <IDENT>
+    {
+      if (prevDelim != null && !prevDelim.image.equals(delim.image)) {
+        errorReporter.report(
+            createSrcLoc(delim), PARSER_ERROR, delim.image, "'" + prevDelim.image + "'");
+      }
+      if (sb == null) {
+        sb = new StringBuilder();
+        sb.append(first.image);
+      }
+      sb.append(delim.image).append(next.image);
+      prevDelim = delim;
+    }
+  )*
+  {
+    return sb == null
+      ? Identifier.create(first.image, createSrcLoc(first))
+      : Identifier.create(sb.toString(), createSrcLoc(first, next));
+  }
+}
+
 
 /**
  * A helper to parse identifiers as keywords.
@@ -5094,7 +5129,7 @@ private TypeNode NamedType() :
 }
 {
 
-  identifier = Identifier()
+  identifier = DottedOrDashedIdent()
   {
     fullLocation = identifier.location();
   }

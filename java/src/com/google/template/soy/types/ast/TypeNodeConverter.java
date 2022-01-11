@@ -86,6 +86,12 @@ public final class TypeNodeConverter
   public static final SoyErrorKind SAFE_PROTO_TYPE =
       SoyErrorKind.of("Please use Soy''s native ''{0}'' type instead of the ''{1}'' type.");
 
+  public static final SoyErrorKind DASH_NOT_ALLOWED =
+      SoyErrorKind.of(
+          "parse error at ''-'': expected identifier",
+          StyleAllowance.NO_CAPS,
+          StyleAllowance.NO_PUNCTUATION);
+
   private static final ImmutableSet<Kind> ALLOWED_TEMPLATE_RETURN_TYPES =
       Sets.immutableEnumSet(
           Kind.ELEMENT,
@@ -263,6 +269,15 @@ public final class TypeNodeConverter
   @Override
   public SoyType visit(NamedTypeNode node) {
     String name = node.name().identifier();
+
+    // This is OK to check unconditionally because where '-' is allowed (in the TemplateType return
+    // type generics) NamedTypeNode is not parsed here. It is processed with TypeNode::toString.
+    if (name.contains("-")) {
+      errorReporter.report(node.sourceLocation(), DASH_NOT_ALLOWED);
+      node.setResolvedType(UnknownType.getInstance());
+      return UnknownType.getInstance();
+    }
+
     SoyType type =
         typeRegistry instanceof SoyTypeRegistry
             ? TypeRegistries.getTypeOrProtoFqn(
