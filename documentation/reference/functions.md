@@ -158,7 +158,7 @@ not modified.
 
 <!-- {#list-string|int_join} -->
 
-Joins a list of strings or integers with a string separator.
+Joins a list of strings or numbers with a string separator.
 
 Also callable as deprecated global function: `join(list, separator)`
 

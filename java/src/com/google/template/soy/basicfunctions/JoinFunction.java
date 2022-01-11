@@ -41,7 +41,7 @@ import java.util.List;
     name = "join",
     value = {
       @Signature(
-          parameterTypes = {"list<string|int>", "string"},
+          parameterTypes = {"list<string|number>", "string"},
           returnType = "string"),
     })
 @SoyMethodSignature(
