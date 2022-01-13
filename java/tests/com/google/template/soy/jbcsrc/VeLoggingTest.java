@@ -21,6 +21,7 @@ import static org.junit.Assert.fail;
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.html.types.SafeHtml;
 import com.google.template.soy.SoyFileSetParser;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.data.LogStatement;
@@ -42,6 +43,7 @@ import com.google.template.soy.testing.Foo;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import java.io.IOException;
 import java.util.Map;
+import java.util.Optional;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -77,17 +79,19 @@ public final class VeLoggingTest {
     int depth;
 
     @Override
-    public void enter(LogStatement statement) {
+    public Optional<SafeHtml> enter(LogStatement statement) {
       if (builder.length() > 0) {
         builder.append('\n');
       }
       builder.append(Strings.repeat("  ", depth)).append(statement);
       depth++;
+      return Optional.empty();
     }
 
     @Override
-    public void exit() {
+    public Optional<SafeHtml> exit() {
       depth--;
+      return Optional.empty();
     }
 
     @Override
