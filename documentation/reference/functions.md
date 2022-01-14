@@ -603,10 +603,9 @@ It takes 1 required and 4 optional arguments.
     NOTE: see http://userguide.icu-project.org/locale for more "numbers"
     keywords
 
-1.  The minimum number of fractional digits to display. If this is specified but
-    the fourth parameter (maximum number of fractional digits), then this is
-    interpreted as significant digits. If you wish to have trailing zeros
-    removed, minFractionalDigits should be set to 0.
+1.  If called with 4 arguments only, the number of significant digits, otherwise
+    the minimum number of fractional digits to display. A value of 0 removes
+    trailing zeros.
 
 1.  The maximum number of fractional digits to display.
 
