@@ -578,6 +578,41 @@ already bound to the template type may not be bound again.
 
 </section>
 
+### `uniqueAttribute(attributeName)` {#uniqueAttribute}
+
+This function generates an attribute with a stable, unique value:
+
+```soy
+<div {uniqueAttribute('data-my-id')}>
+```
+
+The attribute's value will be preserved across idom rerenders, including the
+initial hydration from a server-side render.
+
+Note that this cannot be used for references like `aria-labelledby`, because
+there is no way to capture the generated ID to reference elsewhere.
+
+> Warning: If you call this function in a `{let}` variable, and print the
+> variable multiple times, it will print unique values when rendering an idom
+> template (because `{let}`s in idom compile to functions), but will print
+> identical values when rendering classic Soy (including from Java). Do not
+> write code like this:
+>
+> ```soy
+> {let $myAttributes kind="attributes"}
+>   {uniqueAttribute('data-foo-bar')}
+> {/let}
+> // Or
+> {let $myAttributes: uniqueAttribute('data-foo-bar') /}
+>
+> <a {$myAttributes}>Hi!</a>
+> <b {$myAttributes}>Hi!</b>
+> ```
+>
+> Similarly, do not call `uniqueAttribute()` inside a `{param}` block if the
+> callee template prints the parameter in multiple places (which should be
+> rare).
+
 ## Localization (l10n) Functions
 
 ### `remainder(length)` {#remainder}
