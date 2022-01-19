@@ -370,7 +370,7 @@ public final class SoyProtoValue extends SoyAbstractValue implements SoyLegacyOb
 
   @Override
   public void render(LoggingAdvisingAppendable appendable) throws IOException {
-    TextFormat.print(proto, appendable);
+    TextFormat.printer().print(proto, appendable);
   }
 
   // -----------------------------------------------------------------------------------------------
