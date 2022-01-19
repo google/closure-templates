@@ -329,7 +329,7 @@ loop:
   {@param l: list<string>}
   <ul>
   {for $el in $l}
-    <li>{$el}
+    <li>{$el}</li>
   {/for}
   </ul>
 {/template}
