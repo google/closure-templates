@@ -76,6 +76,11 @@ interface TemplateParameterLookup {
       public Expression getAllRequiredCssNamespaces(SoyExpression template) {
         return getRenderContext().getAllRequiredCssNamespaces(template);
       }
+
+      @Override
+      public Expression getAllRequiredCssPaths(SoyExpression template) {
+        return getRenderContext().getAllRequiredCssPaths(template);
+      }
     };
   }
 

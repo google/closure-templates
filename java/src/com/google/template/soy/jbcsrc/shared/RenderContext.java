@@ -119,6 +119,10 @@ public final class RenderContext {
     return templates.getAllRequiredCssNamespaces(template, activeDelPackageSelector, false);
   }
 
+  public ImmutableList<String> getAllRequiredCssPaths(String template) {
+    return templates.getAllRequiredCssPaths(template, activeDelPackageSelector, false);
+  }
+
   public BidiGlobalDir getBidiGlobalDir() {
     return BidiGlobalDir.forStaticIsRtl(msgBundle.isRtl());
   }

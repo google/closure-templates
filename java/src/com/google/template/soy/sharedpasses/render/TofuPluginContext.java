@@ -50,4 +50,9 @@ final class TofuPluginContext implements JavaPluginContext {
     throw new UnsupportedOperationException(
         "Tofu does not support getting required css namespaces.");
   }
+
+  @Override
+  public TofuJavaValue getAllRequiredCssPaths(JavaValue template) {
+    throw new UnsupportedOperationException("Tofu does not support getting required css paths.");
+  }
 }

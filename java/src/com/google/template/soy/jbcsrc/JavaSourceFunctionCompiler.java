@@ -103,6 +103,11 @@ final class JavaSourceFunctionCompiler {
                   }
 
                   @Override
+                  public Expression getAllRequiredCssPaths(SoyExpression template) {
+                    return error();
+                  }
+
+                  @Override
                   public Expression getULocale() {
                     return error();
                   }

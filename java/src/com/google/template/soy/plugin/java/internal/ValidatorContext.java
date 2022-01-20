@@ -44,4 +44,9 @@ final class ValidatorContext implements JavaPluginContext {
   public ValidatorValue getAllRequiredCssNamespaces(JavaValue template) {
     return ValidatorValue.forClazz(ImmutableList.class, reporter);
   }
+
+  @Override
+  public ValidatorValue getAllRequiredCssPaths(JavaValue template) {
+    return ValidatorValue.forClazz(ImmutableList.class, reporter);
+  }
 }

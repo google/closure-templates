@@ -101,6 +101,9 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
   private static final MethodRef GET_ALL_REQUIRED_CSS_NAMESPACES =
       MethodRef.create(RenderContext.class, "getAllRequiredCssNamespaces", String.class);
 
+  private static final MethodRef GET_ALL_REQUIRED_CSS_PATHS =
+      MethodRef.create(RenderContext.class, "getAllRequiredCssPaths", String.class);
+
   private static final MethodRef GET_ESCAPING_DIRECTIVE_AS_FUNCTION =
       MethodRef.create(RenderContext.class, "getEscapingDirectiveAsFunction", String.class);
 
@@ -136,6 +139,11 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
   @Override
   public Expression getAllRequiredCssNamespaces(SoyExpression template) {
     return delegate.invoke(GET_ALL_REQUIRED_CSS_NAMESPACES, template.unboxAsString());
+  }
+
+  @Override
+  public Expression getAllRequiredCssPaths(SoyExpression template) {
+    return delegate.invoke(GET_ALL_REQUIRED_CSS_PATHS, template.unboxAsString());
   }
 
   Expression getRenderCssHelper() {
