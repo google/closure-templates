@@ -124,11 +124,12 @@ public final class SoySauceBuilder {
 
   /** Walks all resources with the META_INF_DELTEMPLATE_PATH and collects the deltemplates. */
   private static ImmutableSet<String> readDelTemplatesFromMetaInf(ClassLoader loader) {
+    URL url = null;
     try {
       ImmutableSet.Builder<String> builder = ImmutableSet.builder();
       Enumeration<URL> resources = loader.getResources(Names.META_INF_DELTEMPLATE_PATH);
       while (resources.hasMoreElements()) {
-        URL url = resources.nextElement();
+        url = resources.nextElement();
         try (InputStream in = url.openStream()) {
           BufferedReader reader = new BufferedReader(new InputStreamReader(in, UTF_8));
           for (String line = reader.readLine(); line != null; line = reader.readLine()) {
@@ -138,7 +139,7 @@ public final class SoySauceBuilder {
       }
       return builder.build();
     } catch (IOException iox) {
-      throw new RuntimeException("Unable to read deltemplate listing", iox);
+      throw new RuntimeException("Unable to read deltemplate listing in " + url, iox);
     }
   }
 }
