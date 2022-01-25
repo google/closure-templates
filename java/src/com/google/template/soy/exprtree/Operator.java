@@ -195,7 +195,7 @@ public enum Operator {
     for (Operator op : Operator.values()) {
       builder.put(op.getTokenString(), op.getNumOperands(), op);
     }
-    OPERATOR_TABLE = builder.build();
+    OPERATOR_TABLE = builder.buildOrThrow();
   }
 
   /**
