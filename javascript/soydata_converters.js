@@ -65,14 +65,18 @@ exports.packSanitizedCssToSafeStyleProtoSoyRuntimeOnly = function(
   // quoted strings.
   //
   // This is a best-effort attempt to preserve SafeStyle's semantic guarantees.
-  if (sanitizedCss && googString.contains(sanitizedCss.getContent(), '{')) {
+  if (sanitizedCss &&
+      googString.contains(
+          /** @type {!SanitizedCss} */ (sanitizedCss).getContent(), '{')) {
     throw new Error('Consider using packSanitizedCssToSafeStyleSheetProto().');
   }
 
   const safeStyle =
       uncheckedconversions.safeStyleFromStringKnownToSatisfyTypeContract(
           Const.from('from Soy SanitizedCss object'),
-          sanitizedCss ? sanitizedCss.getContent() : '');
+          sanitizedCss ?
+              /** @type {!SanitizedCss} */ (sanitizedCss).getContent() :
+              '');
   return jspbconversions.safeStyleToProto(safeStyle);
 };
 
@@ -96,15 +100,19 @@ exports.packSanitizedCssToSafeStyleSheetProtoSoyRuntimeOnly = function(
   //
   // This is a best-effort attempt to preserve SafeStyleSheet's semantic
   // guarantees.
-  if (sanitizedCss && sanitizedCss.getContent().length > 0 &&
-      !googString.contains(sanitizedCss.getContent(), '{')) {
+  if (sanitizedCss &&
+      /** @type {!SanitizedCss} */ (sanitizedCss).getContent().length > 0 &&
+      !googString.contains(
+          /** @type {!SanitizedCss} */ (sanitizedCss).getContent(), '{')) {
     throw new Error('Consider using packSanitizedCssToSafeStyleProto().');
   }
 
   const safeStyleSheet =
       uncheckedconversions.safeStyleSheetFromStringKnownToSatisfyTypeContract(
           Const.from('from Soy SanitizedCss object'),
-          sanitizedCss ? sanitizedCss.getContent() : '');
+          sanitizedCss ?
+              /** @type {!SanitizedCss} */ (sanitizedCss).getContent() :
+              '');
   return jspbconversions.safeStyleSheetToProto(safeStyleSheet);
 };
 
@@ -121,8 +129,12 @@ exports.packSanitizedHtmlToProtoSoyRuntimeOnly = function(sanitizedHtml) {
     throw new Error(
         'expected SanitizedHtml, got ' + googDebug.runtimeType(sanitizedHtml));
   }
-  const content = sanitizedHtml ? sanitizedHtml.getContent() : '';
-  const contentDir = sanitizedHtml ? sanitizedHtml.contentDir : null;
+  const content = sanitizedHtml ?
+      /** @type {!SanitizedHtml} */ (sanitizedHtml).getContent() :
+      '';
+  const contentDir = sanitizedHtml ?
+      /** @type {!SanitizedHtml} */ (sanitizedHtml).contentDir :
+      null;
   const safeHtml =
       uncheckedconversions.safeHtmlFromStringKnownToSatisfyTypeContract(
           Const.from('from Soy SanitizedHtml object'), content, contentDir);
@@ -143,7 +155,8 @@ exports.packSanitizedJsToProtoSoyRuntimeOnly = function(sanitizedJs) {
   const safeScript =
       uncheckedconversions.safeScriptFromStringKnownToSatisfyTypeContract(
           Const.from('from Soy SanitizedJs object'),
-          sanitizedJs ? sanitizedJs.getContent() : '');
+          sanitizedJs ? /** @type {!SanitizedJs} */ (sanitizedJs).getContent() :
+                        '');
   return jspbconversions.safeScriptToProto(safeScript);
 };
 
@@ -168,7 +181,9 @@ exports.packSanitizedTrustedResourceUriToProtoSoyRuntimeOnly = function(
           .trustedResourceUrlFromStringKnownToSatisfyTypeContract(
               Const.from('from Soy SanitizedTrustedResourceUri object'),
               sanitizedTrustedResourceUri ?
-                  sanitizedTrustedResourceUri.getContent() :
+                  /** @type {!SanitizedTrustedResourceUri} */ (
+                      sanitizedTrustedResourceUri)
+                      .getContent() :
                   '');
   return jspbconversions.trustedResourceUrlToProto(trustedResourceUrl);
 };
@@ -187,7 +202,9 @@ exports.packSanitizedUriToProtoSoyRuntimeOnly = function(sanitizedUri) {
   const safeUrl =
       uncheckedconversions.safeUrlFromStringKnownToSatisfyTypeContract(
           Const.from('from Soy SanitizedUri object'),
-          sanitizedUri ? sanitizedUri.getContent() : '');
+          sanitizedUri ?
+              /** @type {!SanitizedUri} */ (sanitizedUri).getContent() :
+              '');
   return jspbconversions.safeUrlToProto(safeUrl);
 };
 
