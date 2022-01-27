@@ -260,8 +260,6 @@ function makeHtml(idomFn: any): IdomFunction {
   const fn = ((renderer: IncrementalDomRenderer = defaultIdomRenderer) => {
                idomFn(renderer);
              }) as unknown as (SanitizedHtml & IdomFunction);
-  // tslint:disable-next-line:no-any Hack :(
-  (fn as any).prototype = SanitizedHtml;
   fn.invoke = (renderer: IncrementalDomRenderer = defaultIdomRenderer) =>
       idomFn(renderer);
   fn.toString = (renderer: IncrementalDomRenderer = htmlToStringRenderer) =>
@@ -273,18 +271,28 @@ function makeHtml(idomFn: any): IdomFunction {
   return fn as IdomFunction;
 }
 
-// tslint:disable-next-line:no-any Attaching arbitrary attributes to function.
-function makeAttributes(idomFn: any): IdomFunction&SanitizedHtmlAttribute {
+/**
+ * Wraps an idom callback into an `attributes`-typed IdomFunction.
+ *
+ * The returned object can also be used as a non-idom SanitizedHtmlAttribute
+ *
+ * @param idomFn A callback from a Soy template.
+ * @param stringContent The correctly-escaped content that the callback renders.
+ *     If this is omitted, calling `toString()` will execute the callback into a
+ *     temporary element, which is slow.
+ */ // tslint:disable-next-line:no-any Attaching arbitrary attributes to function.
+function makeAttributes(idomFn: any, stringContent?: string): IdomFunction&
+    SanitizedHtmlAttribute {
   const fn = (() => {
                throw new Error('Should not be called directly');
              }) as unknown as (SanitizedHtmlAttribute & IdomFunction);
   // tslint:disable-next-line:no-any Hack :(
-  (fn as any).prototype = SanitizedHtmlAttribute;
+  Object.setPrototypeOf(fn, SanitizedHtmlAttribute.prototype);
   fn.invoke = (renderer: IncrementalDomRenderer = defaultIdomRenderer) =>
       idomFn(renderer);
-  fn.toString = () => attributesToString(idomFn);
+  fn.toString = () => stringContent ?? attributesToString(idomFn);
   fn.getContent = fn.toString;
-  fn.toBoolean = () => isTruthy(idomFn);
+  fn.toBoolean = () => !!(stringContent ?? isTruthy(idomFn));
   fn.contentKind = SanitizedContentKind.ATTRIBUTES;
   fn.isInvokableFn = true;
   return fn as IdomFunction & SanitizedHtmlAttribute;
@@ -551,6 +559,28 @@ function isTruthy(expr: unknown): boolean {
   return true;
 }
 
+let uidCounter = 0;
+
+/**
+ * Returns an idom- and classic- Soy compatible attribute with a unique value.
+ *
+ * When called from idom, it will preserve any already-rendered value.
+ *
+ * This is exposed via the `uniqueAttribute()` Soy extern function.
+ */
+function stableUniqueAttribute(attributeName: string): IdomFunction&
+    SanitizedHtmlAttribute {
+  attributeName = soy.$$filterHtmlAttributes(attributeName);
+
+  // Note that the prefix must be different from other unique-value functions.
+  return makeAttributes((idomRenderer: IncrementalDomRenderer) => {
+    idomRenderer.attr(
+        attributeName,
+        incrementaldom.tryGetCurrentElement()?.getAttribute(attributeName) ??
+            `ucc-${uidCounter++}`);
+  }, `${attributeName}="${soy.$$escapeHtmlAttribute(`ucc-${uidCounter++}`)}"`);
+}
+
 export {
   SoyTemplate as $SoyTemplate,
   SoyElement as $SoyElement,
@@ -567,6 +597,7 @@ export {
   callDynamicText as $$callDynamicText,
   handleSoyElement as $$handleSoyElement,
   printDynamicAttr as $$printDynamicAttr,
+  stableUniqueAttribute as $$stableUniqueAttribute,
   visitHtmlCommentNode as $$visitHtmlCommentNode,
   upgrade as $$upgrade
 };

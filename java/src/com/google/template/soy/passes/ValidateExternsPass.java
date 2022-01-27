@@ -33,6 +33,7 @@ import com.google.common.primitives.Primitives;
 import com.google.protobuf.Message;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -387,6 +388,8 @@ class ValidateExternsPass implements CompilerFilePass {
         return javaType == SafeUrl.class || javaType == SafeUrlProto.class;
       case TRUSTED_RESOURCE_URI:
         return javaType == TrustedResourceUrl.class || javaType == TrustedResourceUrlProto.class;
+      case ATTRIBUTES:
+        return javaType == SanitizedContent.class;
       case HTML:
         return javaType == SafeHtml.class || javaType == SafeHtmlProto.class;
       case PROTO:
