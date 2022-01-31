@@ -55,6 +55,7 @@ java_library(
     deps = [
         "//java/src/com/google/template/soy/data",
         "//java/src/com/google/template/soy/plugin/restricted",
+        "@maven//:com_google_common_html_types_types",
     ],
 )
 
