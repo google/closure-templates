@@ -43,6 +43,7 @@ import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
+import com.google.template.soy.types.SoyTypes;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -231,12 +232,16 @@ public final class ExternCompiler {
     } else if (javaType.equals(BytecodeUtils.NUMBER_TYPE)) {
       return actualParam.coerceToNumber();
     }
+
+    SoyType nonNullableSoyType = SoyTypes.removeNull(soyType);
+
     // For protos, we need to unbox as Message & then cast.
-    if (soyType.getKind() == Kind.MESSAGE) {
+    if (nonNullableSoyType.getKind() == Kind.MESSAGE) {
       return actualParam;
-    } else if (soyType.getKind() == Kind.PROTO) {
+    } else if (nonNullableSoyType.getKind() == Kind.PROTO) {
       return actualParam.checkedCast(
-          ProtoUtils.messageRuntimeType(((SoyProtoType) soyType).getDescriptor()).type());
+          ProtoUtils.messageRuntimeType(((SoyProtoType) nonNullableSoyType).getDescriptor())
+              .type());
     }
     // For protocol enums, we need to call forNumber on the type w/ the param (as casted to an int).
     // This is because Soy internally stores enums as ints. We know this is safe because we
@@ -307,7 +312,7 @@ public final class ExternCompiler {
       }
     } else if (javaType.equals(BytecodeUtils.MAP_TYPE)
         || javaType.equals(BytecodeUtils.IMMUTIBLE_MAP_TYPE)) {
-      if (soyType.getKind() == Kind.RECORD) {
+      if (nonNullableSoyType.getKind() == Kind.RECORD) {
         return MethodRef.UNBOX_RECORD.invoke(actualParam);
       }
       SoyType keyType = ((MapType) soyType).getKeyType();

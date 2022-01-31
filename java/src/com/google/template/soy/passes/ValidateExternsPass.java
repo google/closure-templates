@@ -406,6 +406,7 @@ class ValidateExternsPass implements CompilerFilePass {
   }
 
   private static boolean protoTypesAreCompatible(String javaType, SoyType soyType) {
+    soyType = SoyTypes.removeNull(soyType);
     switch (soyType.getKind()) {
       case PROTO:
         SoyProtoType protoType = (SoyProtoType) soyType;
