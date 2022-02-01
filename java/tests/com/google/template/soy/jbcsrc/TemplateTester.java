@@ -397,7 +397,7 @@ public final class TemplateTester {
         this.template = compiledTemplates.getTemplate(templateName);
         defaultContext =
             createDefaultBuilder(compiledTemplates)
-                .withPluginInstances(PluginInstances.of(pluginInstances.build()))
+                .withPluginInstances(PluginInstances.of(pluginInstances.buildOrThrow()))
                 .withCssRenamingMap(cssRenamingMap)
                 .withXidRenamingMap(xidRenamingMap)
                 .build();

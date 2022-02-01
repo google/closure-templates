@@ -53,7 +53,7 @@ public final class NodeContentKinds {
               SanitizedContentKind.TRUSTED_RESOURCE_URI,
               "goog.soy.data.SanitizedTrustedResourceUri")
           .put(SanitizedContentKind.TEXT, "string")
-          .build();
+          .buildOrThrow();
 
   /** The Javascript sanitized ordainer functions. */
   private static final ImmutableMap<SanitizedContentKind, String> KIND_TO_JS_ORDAINER_NAME =
@@ -68,7 +68,7 @@ public final class NodeContentKinds {
               SanitizedContentKind.TRUSTED_RESOURCE_URI,
               "soy.VERY_UNSAFE.ordainSanitizedTrustedResourceUri")
           .put(SanitizedContentKind.TEXT, "")
-          .build();
+          .buildOrThrow();
 
   /**
    * The specialized ordainers used for param and let blocks. These ones do not wrap if the input is
@@ -96,7 +96,7 @@ public final class NodeContentKinds {
                   SanitizedContentKind.TRUSTED_RESOURCE_URI,
                   "soy.VERY_UNSAFE.$$ordainSanitizedTrustedResourceUriForInternalBlocks")
               .put(SanitizedContentKind.TEXT, "")
-              .build();
+              .buildOrThrow();
 
   /** The JavaScript method to unpack a safe proto to sanitized object. */
   private static final ImmutableMap<String, String> PROTO_TO_JS_UNPACK_FN =
@@ -109,7 +109,7 @@ public final class NodeContentKinds {
           .put(
               TrustedResourceUrlProto.getDescriptor().getFullName(),
               "unpackProtoToSanitizedTrustedResourceUri")
-          .build();
+          .buildOrThrow();
 
   /** The Python sanitized classes. */
   private static final ImmutableMap<SanitizedContentKind, String> KIND_TO_PY_SANITIZED_NAME =
@@ -122,7 +122,7 @@ public final class NodeContentKinds {
           .put(SanitizedContentKind.CSS, "sanitize.SanitizedCss")
           .put(SanitizedContentKind.TRUSTED_RESOURCE_URI, "sanitize.SanitizedTrustedResourceUri")
           .put(SanitizedContentKind.TEXT, "")
-          .build();
+          .buildOrThrow();
 
   static {
     Set<SanitizedContentKind> allKinds = EnumSet.allOf(SanitizedContentKind.class);

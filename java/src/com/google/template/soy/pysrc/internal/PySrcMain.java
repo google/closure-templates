@@ -173,7 +173,7 @@ public final class PySrcMain {
     for (SoyFileNode soyFile : soyTree.getChildren()) {
       namespaces.put(soyFile.getFilePath(), soyFile.getNamespace());
     }
-    return namespaces.build();
+    return namespaces.buildOrThrow();
   }
 
   @VisibleForTesting

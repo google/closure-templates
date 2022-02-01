@@ -225,7 +225,7 @@ public final class DictImpl extends SoyAbstractValue implements SoyDict, SoyMap 
     for (Map.Entry<String, ? extends SoyValueProvider> entry : providerMap.entrySet()) {
       builder.put(StringData.forValue(entry.getKey()), entry.getValue());
     }
-    return builder.build();
+    return builder.buildOrThrow();
   }
 
   private String getStringKey(SoyValue key) {

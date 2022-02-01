@@ -168,7 +168,7 @@ final class ProtoUtils {
           .put(
               TrustedResourceUrlProto.getDescriptor().getFullName(),
               createSafeProtoToSanitizedContentFactoryMethod(TrustedResourceUrlProto.class))
-          .build();
+          .buildOrThrow();
 
   private static MethodRef createSafeProtoToSanitizedContentFactoryMethod(Class<?> clazz) {
     return MethodRef.create(SanitizedContents.class, "from" + clazz.getSimpleName(), clazz)
@@ -195,7 +195,7 @@ final class ProtoUtils {
           .put(
               TrustedResourceUrlProto.getDescriptor().getFullName(),
               MethodRef.create(SanitizedContent.class, "toTrustedResourceUrlProto"))
-          .build();
+          .buildOrThrow();
 
   private static final RepeatedFieldInterpreter REPEATED_FIELD_INTERPRETER =
       new RepeatedFieldInterpreter();

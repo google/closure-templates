@@ -1674,7 +1674,7 @@ public class RenderVisitorTest {
         }
       }
     }
-    return basicTemplates.build();
+    return basicTemplates.buildOrThrow();
   }
 
   static DelTemplateSelector<TemplateDelegateNode> getDeltemplateSelector(SoyFileSetNode fileSet) {

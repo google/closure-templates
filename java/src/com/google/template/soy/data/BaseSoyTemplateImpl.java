@@ -240,7 +240,7 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
       for (int i = 0; i < more.length; i += 2) {
         map.put((String) more[i], (SoyValueProvider) more[i + 1]);
       }
-      return new SoyRecordImpl(map.build());
+      return new SoyRecordImpl(map.buildOrThrow());
     }
 
     /**
@@ -378,7 +378,7 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
       ImmutableMap.Builder<SoyValue, SoyValueProvider> builder =
           ImmutableMap.builderWithExpectedSize(map.size());
       map.forEach((k, v) -> builder.put(keyMapper.apply(k), valueMapper.apply(v)));
-      return SoyMapImpl.forProviderMap(builder.build());
+      return SoyMapImpl.forProviderMap(builder.buildOrThrow());
     }
 
     protected static <K, V> SoyValue asNullableMap(
@@ -396,7 +396,7 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
         // coerce key to a string, legacy object maps always coerce keys to strings.
         builder.put(entry.getKey().toString(), valueMapper.apply(entry.getValue()));
       }
-      return new SoyLegacyObjectMapImpl(builder.build());
+      return new SoyLegacyObjectMapImpl(builder.buildOrThrow());
     }
 
     protected static <K, V> SoyValue asNullableLegacyObjectMap(
@@ -423,7 +423,7 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
       // Use forEach instead of looping over the entry set to avoid allocating entrySet+entry
       // objects
       data.forEach((k, v) -> finalDataBuilder.put(k.getName(), v));
-      ImmutableMap<String, SoyValueProvider> finalData = finalDataBuilder.build();
+      ImmutableMap<String, SoyValueProvider> finalData = finalDataBuilder.buildOrThrow();
 
       if (checkRequired) {
         List<String> missingParams = getMissingParamNames(finalData);

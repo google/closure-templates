@@ -127,7 +127,7 @@ public final class LazyProtoToSoyValueMap<K, V> extends AbstractSoyMap {
     for (SoyValue key : keys()) {
       map.put(key, get(key));
     }
-    return map.build();
+    return map.buildOrThrow();
   }
 
   private K soyValueToKey(SoyValue soyValue) {

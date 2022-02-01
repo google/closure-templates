@@ -550,7 +550,7 @@ public class ExpressionCompilerTest {
     // The fake function allows us to work around the 'can't print bool' restrictions
     String createTemplateBody =
         SharedTestUtils.createTemplateBodyForExpression(
-            "fakeFunction(" + soyExpr + ")", types.build());
+            "fakeFunction(" + soyExpr + ")", types.buildOrThrow());
     ParseResult result =
         SoyFileSetParserBuilder.forTemplateContents(createTemplateBody)
             .errorReporter(ErrorReporter.explodeOnErrorsAndIgnoreWarnings())

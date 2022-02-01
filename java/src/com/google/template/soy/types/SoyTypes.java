@@ -62,7 +62,7 @@ public final class SoyTypes {
           .put(
               TrustedResourceUrlProto.getDescriptor().getFullName(),
               SanitizedType.TrustedResourceUriType.getInstance())
-          .build();
+          .buildOrThrow();
 
   private static final ImmutableSet<SoyType.Kind> ALWAYS_COMPARABLE_KINDS =
       Sets.immutableEnumSet(SoyType.Kind.UNKNOWN, SoyType.Kind.ANY, SoyType.Kind.NULL);

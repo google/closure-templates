@@ -45,7 +45,7 @@ public final class JavaQualifiedNames {
           .put("cached_size", "CachedSize_")
           .put("class", "Class_")
           .put("serialized_size", "SerializedSize_")
-          .build();
+          .buildOrThrow();
 
   /** Returns the expected java package for protos based on the .proto file. */
   public static String getPackage(Descriptors.FileDescriptor fileDescriptor) {

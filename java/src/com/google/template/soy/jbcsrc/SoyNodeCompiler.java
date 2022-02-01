@@ -1515,7 +1515,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       }
       builder.put(child, valueExpr);
     }
-    return builder.build();
+    return builder.buildOrThrow();
   }
 
   /**

@@ -326,7 +326,7 @@ public class SoyMapData extends CollectionData implements SoyDict, SoyMap {
     for (Map.Entry<String, SoyValue> entry : map.entrySet()) {
       builder.put(StringData.forValue(entry.getKey()), entry.getValue());
     }
-    return builder.build();
+    return builder.buildOrThrow();
   }
 
   /**

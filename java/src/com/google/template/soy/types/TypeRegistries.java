@@ -176,7 +176,7 @@ public final class TypeRegistries {
       } else {
         throw new AssertionError(d.getClass().getName());
       }
-      return index.build();
+      return index.buildOrThrow();
     }
   }
 

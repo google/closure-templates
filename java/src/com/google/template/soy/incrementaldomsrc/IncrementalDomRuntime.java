@@ -132,7 +132,7 @@ final class IncrementalDomRuntime {
               GoogRequire.createWithAlias("soydata.converters.idom", "$soyDataConverters")
                   .reference()
                   .dotAccess("packSanitizedHtmlToProtoSoyRuntimeOnly"))
-          .build();
+          .buildOrThrow();
 
   private IncrementalDomRuntime() {}
 }

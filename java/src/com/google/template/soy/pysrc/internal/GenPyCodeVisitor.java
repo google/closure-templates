@@ -121,7 +121,7 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         new ImmutableMap.Builder<String, String>()
             .putAll(pySrcOptions.getNamespaceManifest())
             .putAll(currentManifest)
-            .build();
+            .buildOrThrow();
   }
 
   public List<String> gen(SoyFileSetNode node, ErrorReporter errorReporter) {

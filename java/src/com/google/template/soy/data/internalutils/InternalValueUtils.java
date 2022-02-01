@@ -142,6 +142,6 @@ public class InternalValueUtils {
       resultMapBuilder.put(entry.getKey(), value);
     }
 
-    return resultMapBuilder.build();
+    return resultMapBuilder.buildOrThrow();
   }
 }

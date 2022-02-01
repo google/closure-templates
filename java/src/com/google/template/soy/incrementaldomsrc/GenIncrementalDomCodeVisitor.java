@@ -1321,7 +1321,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     for (HtmlAttributeNode child : nodesToRemove) {
       node.removeChild(child);
     }
-    return builder.build();
+    return builder.buildOrThrow();
   }
 
   /**

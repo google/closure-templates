@@ -55,7 +55,7 @@ public abstract class Field {
       // Store fully qualified name of extension fields.
       fields.put(field.getFullyQualifiedName(), field);
     }
-    return fields.build();
+    return fields.buildOrThrow();
   }
 
   private final FieldDescriptor fieldDesc;
