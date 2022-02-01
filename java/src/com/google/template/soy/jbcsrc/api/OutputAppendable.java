@@ -20,11 +20,14 @@ import static com.google.template.soy.jbcsrc.api.AppendableAsAdvisingAppendable.
 
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
+import com.google.common.flogger.GoogleLogger;
+import com.google.common.html.types.SafeHtml;
 import com.google.template.soy.data.AbstractLoggingAdvisingAppendable;
 import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingFunctionInvocation;
 import com.google.template.soy.logging.SoyLogger;
 import java.io.IOException;
+import java.util.Optional;
 
 /**
  * The outermost logger used in rendering.
@@ -40,6 +43,8 @@ public final class OutputAppendable extends AbstractLoggingAdvisingAppendable {
   public static OutputAppendable create(final StringBuilder sb, SoyLogger logger) {
     return new OutputAppendable(asAdvisingAppendable(sb), logger);
   }
+
+  private static final GoogleLogger googleLogger = GoogleLogger.forEnclosingClass();
 
   private final SoyLogger logger;
   private final AdvisingAppendable outputAppendable;
@@ -82,16 +87,36 @@ public final class OutputAppendable extends AbstractLoggingAdvisingAppendable {
 
   @Override
   protected void doEnterLoggableElement(LogStatement statement) {
-    logger.enter(statement);
+    Optional<SafeHtml> veDebugOutput = logger.enter(statement);
+    if (veDebugOutput.isPresent()) {
+      try {
+        appendDebugOutput(veDebugOutput.get().getSafeHtmlString());
+      } catch (IOException ioException) {
+        googleLogger.atWarning().withCause(ioException).log(
+            "Something went wrong while outputting VE debug info to the DOM");
+      }
+    }
   }
 
   @Override
   protected void doExitLoggableElement() {
-    logger.exit();
+    Optional<SafeHtml> veDebugOutput = logger.exit();
+    if (veDebugOutput.isPresent()) {
+      try {
+        appendDebugOutput(veDebugOutput.get().getSafeHtmlString());
+      } catch (IOException ioException) {
+        googleLogger.atWarning().withCause(ioException).log(
+            "Something went wrong while outputting VE debug info to the DOM");
+      }
+    }
   }
 
   @Override
   public void flushBuffers(int depth) {
     throw new AssertionError("shouldn't be called");
+  }
+
+  private void appendDebugOutput(CharSequence csq) throws IOException {
+    outputAppendable.append(csq);
   }
 }
