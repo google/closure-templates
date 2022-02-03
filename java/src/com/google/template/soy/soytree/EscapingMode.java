@@ -196,6 +196,6 @@ public enum EscapingMode {
     for (EscapingMode mode : EscapingMode.values()) {
       builder.put(mode.directiveName, mode);
     }
-    DIRECTIVE_TO_ESCAPING_MODE = builder.build();
+    DIRECTIVE_TO_ESCAPING_MODE = builder.buildOrThrow();
   }
 }

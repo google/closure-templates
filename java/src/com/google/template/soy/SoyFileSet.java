@@ -241,7 +241,7 @@ public final class SoyFileSet {
               .addAll(InternalPlugins.internalMethods())
               .addAll(sourceMethods.build())
               .build(),
-          filesBuilder.build(),
+          filesBuilder.buildOrThrow(),
           compilationUnitsBuilder.build(),
           getGeneralOptions(),
           cache,

@@ -170,6 +170,6 @@ public final class SoyToPySrcCompiler extends AbstractSoyCompiler {
       }
     }
 
-    return manifest.build();
+    return manifest.buildOrThrow();
   }
 }

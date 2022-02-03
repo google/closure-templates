@@ -205,7 +205,7 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
           .put("p", "paragraph")
           .put("img", "image")
           .put("em", "emphasis")
-          .build();
+          .buildOrThrow();
 
   /** The lower-case HTML tag name (includes '/' for end tags). */
   private final String lcTagName;

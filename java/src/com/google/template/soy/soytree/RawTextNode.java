@@ -83,7 +83,7 @@ public final class RawTextNode extends AbstractSoyNode
           .put("{", "{lb}")
           .put("}", "{rb}")
           .put("\u00A0", "{nbsp}")
-          .build();
+          .buildOrThrow();
 
   /** The raw text string (after processing of special chars and literal blocks). */
   private final String rawText;

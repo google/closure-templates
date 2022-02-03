@@ -198,7 +198,7 @@ public final class Metadata {
                                   SourceFilePath.create(f.getFilePath()),
                                   new AutoValue_Metadata_DepsFileMetadata(
                                       f, u.fileKind(), context()))));
-      return builder.build();
+      return builder.buildOrThrow();
     }
 
     @Memoized

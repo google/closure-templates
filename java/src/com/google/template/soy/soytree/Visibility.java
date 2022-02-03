@@ -50,7 +50,7 @@ public enum Visibility {
     for (Visibility v : Visibility.values()) {
       builder.put(v.attributeValue, v);
     }
-    attrValuesToVisibilityLevels = builder.build();
+    attrValuesToVisibilityLevels = builder.buildOrThrow();
   }
 
   public static Set<String> getAttributeValues() {

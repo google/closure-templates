@@ -54,7 +54,7 @@ public enum WhitespaceMode {
       builder.put(value.getAttributeValue(), value);
     }
 
-    MODES_BY_ATTRIBUTE_VALUE = builder.build();
+    MODES_BY_ATTRIBUTE_VALUE = builder.buildOrThrow();
   }
 
   /**

@@ -466,7 +466,7 @@ public final class SoyCmdLineParser extends CmdLineParser {
           builder.put(key, val);
         }
       }
-      setter.addValue(builder.build());
+      setter.addValue(builder.buildOrThrow());
       return 1;
     }
 

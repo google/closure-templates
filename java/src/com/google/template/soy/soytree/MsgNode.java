@@ -135,8 +135,7 @@ public final class MsgNode extends AbstractBlockCommandNode
         builder.put(oldToNew.get(entry.getKey()), entry.getValue());
       }
       return new SubstUnitInfo(
-          Maps.transformValues(varNameToRepNodeMap, oldToNewFunction),
-          builder.build());
+          Maps.transformValues(varNameToRepNodeMap, oldToNewFunction), builder.buildOrThrow());
     }
   }
 

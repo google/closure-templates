@@ -97,7 +97,7 @@ final class CacheLoaders {
               fileProto.getName(), WELL_KNOWN_PROTOS.get(fileProto.getName()));
         }
       }
-      this.protosByFileName = protosByFileNameBuilder.build();
+      this.protosByFileName = protosByFileNameBuilder.buildOrThrow();
     }
 
     File getFile() {
