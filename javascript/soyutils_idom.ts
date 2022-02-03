@@ -596,7 +596,7 @@ so that the first element calls uniqueAttribute(), and the second element prints
     return this.backing;
   }
   set id(value: string|undefined) {
-    if (this.backing) {
+    if (this.backing && this.backing !== value) {
       throw new Error('Cannot render the same idHolder instance twice.');
     }
     this.backing = value;
