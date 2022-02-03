@@ -71,6 +71,9 @@ java_library(
         ":helpers",
         "//java/src/com/google/template/soy/data",
         "//java/src/com/google/template/soy/logging:public",
+        "@maven//:com_google_common_html_types_types",
+        "@maven//:com_google_flogger_flogger",
+        "@maven//:com_google_flogger_google_extensions",
         "@maven//:com_google_guava_guava",
     ],
 )
