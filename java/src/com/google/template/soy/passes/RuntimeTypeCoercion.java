@@ -34,7 +34,7 @@ final class RuntimeTypeCoercion {
       AVAILABLE_CALL_SITE_COERCIONS =
           new ImmutableTable.Builder<SoyType, SoyType, BuiltinFunction>()
               .put(IntType.getInstance(), FloatType.getInstance(), BuiltinFunction.TO_FLOAT)
-              .build();
+              .buildOrThrow();
 
   /**
    * For int values passed into template param float, perform automatic type coercion from the call
