@@ -48,7 +48,7 @@ final class BannedCssSelector extends Rule<FunctionNode> {
     // more targeted bans which we can better control. Not only because this would yeild better
     // error messages, but also because the BanTextEverywhereExceptComments is super slow and adds
     // latency to compile times
-    if ("css".equals(node.getFunctionName())) {
+    if ("css".equals(node.getFunctionName()) && node.numChildren() > 0) {
       ExprNode selectorTextNode = node.numChildren() == 2 ? node.getChild(1) : node.getChild(0);
       if (selectorTextNode instanceof StringNode) {
         String selector = ((StringNode) selectorTextNode).getValue();
