@@ -613,6 +613,7 @@
             <exclude>com/google/template/soy/exprtree/testing/**</exclude>
             <exclude>com/google/template/soy/logging/testing/**</exclude>
           </excludes>
+        	<fork>true</fork>
         </configuration>
       </plugin>
 
