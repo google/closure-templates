@@ -19,7 +19,9 @@ package com.google.template.soy.shared.internal;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.base.Ascii;
+import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.escape.Escaper;
 import java.io.IOException;
@@ -797,6 +799,11 @@ public final class EscapingConventions {
    * CSS property names, keyword values, quantities, hex colors, or ID or class literals.
    */
   public static final class FilterCssValue extends CrossLanguageStringXform {
+
+    /** CSS functions are safe to call and allow through the escaper. */
+    private static final ImmutableSet<String> ALLOWED_CSS_FUNCTIONS =
+        ImmutableSet.of("rgb", "rgba", "hsl", "hsla", "calc");
+
     /**
      * Matches a CSS token that can appear unquoted as part of an ID, class, font-family-name, or
      * CSS keyword value.
@@ -810,8 +817,12 @@ public final class EscapingConventions {
                 + "(?:(?:"
                 + // A latin class name or ID, CSS identifier, hex color or unicode range.
                 "[.#]?-?(?:[_a-z0-9-]+)(?:-[_a-z0-9-]+)*-?|"
-                + // A non-hex color
-                "(?:rgb|hsl)a?\\([0-9.%, ]+\\)|"
+                + // A CSS function call. This allows the same characters as
+                // except for / and *, because those can make comments which we want to exclude, but
+                // don't have an easy way of doing that in this regex.
+                "(?:"
+                + Joiner.on('|').join(ALLOWED_CSS_FUNCTIONS)
+                + ")\\([- \t,+.!#%_0-9a-zA-Z]+\\)|"
                 + // A quantity, with an optional unit
                 // Note that this matches "1." even though that is not valid per the spec.
                 "[-+]?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)(?:e-?[0-9]+)?(?:[a-z]{1,4}|%)?|"

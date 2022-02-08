@@ -186,6 +186,7 @@ public class SanitizersTest {
     assertThat(Sanitizers.filterCssValue("rgb(1,2,3) 14px")).isEqualTo("rgb(1,2,3) 14px");
     assertThat(Sanitizers.filterCssValue("hello  ,  maybe ,goodbye , "))
         .isEqualTo("hello  ,  maybe ,goodbye , ");
+    assertThat(Sanitizers.filterCssValue("calc(100% - 30px)")).isEqualTo("calc(100% - 30px)");
 
     assertThat(Sanitizers.filterCssValue(" ")).isEqualTo("zSoyz");
     assertThat(Sanitizers.filterCssValue("expression")).isEqualTo("zSoyz");
@@ -199,6 +200,10 @@ public class SanitizersTest {
     assertThat(Sanitizers.filterCssValue("color:expression('whatever')")).isEqualTo("zSoyz");
     assertThat(Sanitizers.filterCssValue(",hello")).isEqualTo("zSoyz");
     assertThat(Sanitizers.filterCssValue("rgb(1,2,3)14px")).isEqualTo("zSoyz");
+    assertThat(Sanitizers.filterCssValue("calc(no & no)")).isEqualTo("zSoyz");
+    assertThat(Sanitizers.filterCssValue("calc(3rem / 4)")).isEqualTo("zSoyz");
+    assertThat(Sanitizers.filterCssValue("calc(3; vuln")).isEqualTo("zSoyz");
+    assertThat(Sanitizers.filterCssValue("calc(3); vuln")).isEqualTo("zSoyz");
 
     assertThat(
             Sanitizers.filterCssValue(
