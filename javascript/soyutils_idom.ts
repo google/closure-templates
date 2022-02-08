@@ -266,7 +266,6 @@ function makeHtml(idomFn: any): IdomFunction {
   fn.toString = (renderer: IncrementalDomRenderer = htmlToStringRenderer) =>
       htmlToString(idomFn, renderer);
   fn.getContent = fn.toString;
-  fn.toBoolean = () => isTruthy(idomFn);
   fn.contentKind = SanitizedContentKind.HTML;
   fn.isInvokableFn = true;
   return fn as IdomFunction;
@@ -298,8 +297,6 @@ function makeAttributes(idomFn: any, stringContent?: string|(() => string)):
   } else {
     fn.toString = () => attributesToString(idomFn);
   }
-  // This must not call `toString()` to avoid breaking idHolder.
-  fn.toBoolean = () => isTruthy(idomFn);
 
   fn.getContent = fn.toString;
   fn.contentKind = SanitizedContentKind.ATTRIBUTES;

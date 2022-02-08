@@ -264,5 +264,4 @@ export interface IdomFunction {
   isInvokableFn: boolean;
   contentKind: SanitizedContentKind;
   toString: (renderer?: IncrementalDomRenderer) => string;
-  toBoolean: () => boolean;
 }
