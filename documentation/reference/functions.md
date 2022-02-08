@@ -578,7 +578,7 @@ already bound to the template type may not be bound again.
 
 </section>
 
-### `uniqueAttribute(attributeName)` {#uniqueAttribute}
+### `uniqueAttribute(attributeName[, idHolder])` and `idHolder()` {#uniqueAttribute}
 
 This function generates an attribute with a stable, unique value:
 
@@ -589,8 +589,49 @@ This function generates an attribute with a stable, unique value:
 The attribute's value will be preserved across idom rerenders, including the
 initial hydration from a server-side render.
 
-Note that this cannot be used for references like `aria-labelledby`, because
-there is no way to capture the generated ID to reference elsewhere.
+To access the attribute's value (eg, to refer to a unique ID in attributes like
+`aria-labelledby`), use `idHolder()` to create an object that captures the
+value:
+
+```soy
+{let $idHolder: idHolder() /}
+<button {uniqueAttribute('aria-labelledby', $idHolder)}><img></button>
+<label id="{$idHolder.id}">Label!</label>
+
+// Or
+
+<div {uniqueAttribute('id', $idHolder)}></div>
+{call textField}
+  {param ariaDescribedBy: $idHolder.id /}
+  // Other parameters...
+{/call}
+```
+
+> Warning: When rendering with idom, you can only read `$idHolder.id` after
+> *rendering* the element with the corresponding `uniqueAttribute()` call (since
+> it needs to read the attribute's value from the existing DOM element). In
+> debug builds, reading the `$idHolder.id` before the `uniqueAttribute()` call
+> is rendered will throw an error. To fix this error, swap the callsites so that
+> `uniqueAttribute()` is called on the element that is printed first.
+
+> Tip: If this restriction is impractical (eg, if the ID is always passed as a
+> parameter to other templates), you can call `uniqueAttribute()` in an unused
+> attribute in an earlier function instead, then pass the ID from `idHolder()`
+> everywhere you need it.
+>
+> For example:
+>
+> ```soy
+> {let $idHolder: idHolder() /}
+> <div {uniqueAttribute('data-irrelevant-id', $idHolder)}>
+>   {call someTemplate}
+>     {param id: $idHolder.id /}
+>   {/call}
+>   {call otherTemplate}
+>     {param referencedId: $idHolder.id /}
+>   {/call}
+> </div>
+> ```
 
 > Warning: If you call this function in a `{let}` variable, and print the
 > variable multiple times, it will print unique values when rendering an idom

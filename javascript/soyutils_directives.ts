@@ -24,9 +24,8 @@ import {IdomFunction} from './element_lib_idom';
 
 
 function isIdomFunctionType(
-// tslint:disable-next-line:no-any
-    value: any, type: SanitizedContentKind): value is IdomFunction {
-  return value && value.isInvokableFn &&
+    value: unknown, type: SanitizedContentKind): value is IdomFunction {
+  return typeof value === 'function' && (value as IdomFunction).isInvokableFn &&
       (value as IdomFunction).contentKind === type;
 }
 
@@ -35,8 +34,7 @@ function isIdomFunctionType(
  * attribute functions gracefully. In any other situation, this delegates to
  * the regular escaping directive.
  */
-// tslint:disable-next-line:no-any
-function filterHtmlAttributes(value: any) {
+function filterHtmlAttributes(value: unknown) {
   if (isIdomFunctionType(value, SanitizedContentKind.ATTRIBUTES) ||
       isAttribute(value)) {
     return value;
@@ -49,8 +47,7 @@ function filterHtmlAttributes(value: any) {
  * html functions gracefully. In any other situation, this delegates to
  * the regular escaping directive.
  */
-// tslint:disable-next-line:no-any
-function escapeHtml(value: any, renderer: IncrementalDomRenderer) {
+function escapeHtml(value: unknown, renderer: IncrementalDomRenderer) {
   if (isIdomFunctionType(value, SanitizedContentKind.HTML)) {
     return ordainSanitizedHtml(value.toString(renderer));
   }
@@ -63,8 +60,7 @@ function escapeHtml(value: any, renderer: IncrementalDomRenderer) {
  * the regular escaping directive.
  */
 function bidiUnicodeWrap(
-    // tslint:disable-next-line:no-any
-    bidiGlobalDir: number, value: any, renderer: IncrementalDomRenderer) {
+    bidiGlobalDir: number, value: unknown, renderer: IncrementalDomRenderer) {
   if (isIdomFunctionType(value, SanitizedContentKind.HTML)) {
     return soy.$$bidiUnicodeWrap(
         bidiGlobalDir, ordainSanitizedHtml(value.toString(renderer)));

@@ -23,11 +23,12 @@ import {ordainSanitizedHtml} from 'goog:soydata.VERY_UNSAFE';  // from //javascr
 import {isAttribute} from 'google3/javascript/template/soy/checks';
 import * as soy from 'google3/javascript/template/soy/soyutils_usegoog';
 import {Logger} from 'google3/javascript/template/soy/soyutils_velog';
+import {cacheReturnValue} from 'google3/third_party/javascript/closure/functions/functions';
 import {SafeHtml} from 'google3/third_party/javascript/closure/html/safehtml';
 import * as googSoy from 'google3/third_party/javascript/closure/soy/soy';
 import * as incrementaldom from 'incrementaldom';  // from //third_party/javascript/incremental_dom:incrementaldom
 
-import {attributes, ElementConstructor, FalsinessRenderer, IncrementalDomRenderer, patch, patchOuter} from './api_idom';
+import {attributes, ElementConstructor, FalsinessRenderer, IncrementalDomRenderer, NullRenderer, patch, patchOuter} from './api_idom';
 import {splitAttributes} from './attributes';
 import {IdomFunction, PatchFunction, SoyElement} from './element_lib_idom';
 import {getSoyUntyped} from './global';
@@ -39,7 +40,6 @@ import {IdomSyncState, IdomTemplate, IjData, SoyTemplate, Template} from './temp
 const defaultIdomRenderer = new IncrementalDomRenderer();
 const htmlToStringRenderer = new IncrementalDomRenderer();
 
-type LetFunction = (idom: IncrementalDomRenderer) => void;
 
 /**
  * A template acceptor is an object that a template can receive context from.
@@ -98,35 +98,30 @@ function upgrade<X, T extends TemplateAcceptor<X>>(
   };
 }
 
-attributes['checked'] =
-    // tslint:disable-next-line:no-any
-    (el: Element, name: string, value: any) => {
-      // We don't use !!value because:
-      // 1. If value is '' (this is the case where a user uses <div checked />),
-      //    the checked value should be true, but '' is falsy.
-      // 2. If value is 'false', the checked value should be false, but
-      //    'false' is truthy.
-      if (value == null) {
-        el.removeAttribute('checked');
-        (el as HTMLInputElement).checked = false;
-      } else {
-        el.setAttribute('checked', value);
-        (el as HTMLInputElement).checked =
-            !(value === false || value === 'false');
-      }
-    };
+attributes['checked'] = (el: Element, name: string, value: unknown) => {
+  // We don't use !!value because:
+  // 1. If value is '' (this is the case where a user uses <div checked />),
+  //    the checked value should be true, but '' is falsy.
+  // 2. If value is 'false', the checked value should be false, but
+  //    'false' is truthy.
+  if (value == null) {
+    el.removeAttribute('checked');
+    (el as HTMLInputElement).checked = false;
+  } else {
+    el.setAttribute('checked', String(value));
+    (el as HTMLInputElement).checked = !(value === false || value === 'false');
+  }
+};
 
-attributes['value'] =
-    // tslint:disable-next-line:no-any
-    (el: Element, name: string, value: any) => {
-      if (value == null) {
-        el.removeAttribute('value');
-        (el as HTMLInputElement).value = '';
-      } else {
-        el.setAttribute('value', value);
-        (el as HTMLInputElement).value = value;
-      }
-    };
+attributes['value'] = (el: Element, name: string, value: unknown) => {
+  if (value == null) {
+    el.removeAttribute('value');
+    (el as HTMLInputElement).value = '';
+  } else {
+    el.setAttribute('value', String(value));
+    (el as HTMLInputElement).value = String(value);
+  }
+};
 
 // Soy uses the {key} command syntax, rather than HTML attributes, to
 // indicate element keys.
@@ -255,8 +250,7 @@ function handleCustomElement<T extends TemplateAcceptor<{}>>({
   return customEl;
 }
 
-// tslint:disable-next-line:no-any Attaching arbitrary attributes to function.
-function makeHtml(idomFn: any): IdomFunction {
+function makeHtml(idomFn: PatchFunction): IdomFunction {
   const fn = ((renderer: IncrementalDomRenderer = defaultIdomRenderer) => {
                idomFn(renderer);
              }) as unknown as (SanitizedHtml & IdomFunction);
@@ -265,10 +259,9 @@ function makeHtml(idomFn: any): IdomFunction {
   fn.toString = (renderer: IncrementalDomRenderer = htmlToStringRenderer) =>
       htmlToString(idomFn, renderer);
   fn.getContent = fn.toString;
-  fn.toBoolean = () => isTruthy(idomFn);
   fn.contentKind = SanitizedContentKind.HTML;
   fn.isInvokableFn = true;
-  return fn as IdomFunction;
+  return fn;
 }
 
 /**
@@ -279,23 +272,35 @@ function makeHtml(idomFn: any): IdomFunction {
  * @param idomFn A callback from a Soy template.
  * @param stringContent The correctly-escaped content that the callback renders.
  *     If this is omitted, calling `toString()` will execute the callback into a
- *     temporary element, which is slow.
- */ // tslint:disable-next-line:no-any Attaching arbitrary attributes to function.
-function makeAttributes(idomFn: any, stringContent?: string): IdomFunction&
+ *     temporary element, which is slow.  If this is a function, it will only be
+ *     called on demand, but will be cached.
+ */
+function makeAttributes(
+    idomFn: PatchFunction, stringContent?: string|(() => string)): IdomFunction&
     SanitizedHtmlAttribute {
   const fn = (() => {
                throw new Error('Should not be called directly');
              }) as unknown as (SanitizedHtmlAttribute & IdomFunction);
-  // tslint:disable-next-line:no-any Hack :(
+
   Object.setPrototypeOf(fn, SanitizedHtmlAttribute.prototype);
   fn.invoke = (renderer: IncrementalDomRenderer = defaultIdomRenderer) =>
       idomFn(renderer);
-  fn.toString = () => stringContent ?? attributesToString(idomFn);
+
+  if (stringContent) {
+    fn.toString = toLazyFunction(stringContent);
+  } else {
+    fn.toString = () => attributesToString(idomFn);
+  }
+
   fn.getContent = fn.toString;
-  fn.toBoolean = () => !!(stringContent ?? isTruthy(idomFn));
   fn.contentKind = SanitizedContentKind.ATTRIBUTES;
   fn.isInvokableFn = true;
-  return fn as IdomFunction & SanitizedHtmlAttribute;
+  return fn;
+}
+
+function toLazyFunction<T extends string|number>(fn: T|(() => T)): () => T {
+  if (typeof fn === 'function') return cacheReturnValue(fn);
+  return () => fn;
 }
 
 /**
@@ -303,7 +308,8 @@ function makeAttributes(idomFn: any, stringContent?: string): IdomFunction&
  * expensive behavior is happening.
  */
 function htmlToString(
-    fn: LetFunction, renderer: IncrementalDomRenderer = htmlToStringRenderer) {
+    fn: PatchFunction,
+    renderer: IncrementalDomRenderer = htmlToStringRenderer) {
   const el = document.createElement('div');
   patch(el, () => {
     fn(renderer);
@@ -327,7 +333,8 @@ function attributesFactory(fn: PatchFunction): PatchFunction {
 function attributesToString(fn: PatchFunction): string {
   const elFn = attributesFactory(fn);
   const el = document.createElement('div');
-  patchOuter(el, elFn);
+  // idom's PatchFunction type has an optional parameter.
+  patchOuter(el, elFn as (a?: IncrementalDomRenderer) => void);
   const s: string[] = [];
   for (let i = 0; i < el.attributes.length; i++) {
     if (el.attributes[i].value === '') {
@@ -358,7 +365,7 @@ function renderDynamicContent(
 /** Determines whether the template is idom */
 function isIdom<TParams>(template: Template<TParams>):
     template is IdomTemplate<TParams> {
-  const contentKind = (template as unknown as IdomFunction).contentKind;
+  const contentKind = (template as IdomFunction).contentKind;
   return contentKind &&
       // idom generates regular templates for all other content kinds.
       (contentKind === SanitizedContentKind.HTML ||
@@ -372,7 +379,7 @@ function callDynamicAttributes<TParams>(
     incrementaldom: IncrementalDomRenderer, expr: Template<TParams>,
     data: TParams, ij: IjData) {
   if (isIdom(expr)) {
-    switch ((expr as unknown as IdomFunction).contentKind) {
+    switch ((expr as IdomFunction).contentKind) {
       case SanitizedContentKind.ATTRIBUTES:
         expr(incrementaldom, data, ij);
         break;
@@ -429,7 +436,7 @@ function callDynamicHTML<TParams>(
     incrementaldom: IncrementalDomRenderer, expr: Template<TParams>,
     data: TParams, ij: IjData) {
   if (isIdom(expr)) {
-    switch ((expr as unknown as IdomFunction).contentKind) {
+    switch ((expr as IdomFunction).contentKind) {
       case SanitizedContentKind.HTML:
         expr(incrementaldom, data, ij);
         break;
@@ -471,7 +478,7 @@ function callDynamicText<TParams>(
     escFn?: (i: string) => string) {
   const transformFn = escFn ? escFn : (a: string) => a;
   if (isIdom(expr)) {
-    switch ((expr as unknown as IdomFunction).contentKind) {
+    switch ((expr as IdomFunction).contentKind) {
       case SanitizedContentKind.HTML:
         return transformFn(htmlToString(() => {
           expr(defaultIdomRenderer, data, ij);
@@ -542,7 +549,6 @@ function visitHtmlCommentNode(
 
 function isTruthy(expr: unknown): boolean {
   if (!expr) return false;
-  if (expr instanceof SanitizedContent) return !!expr.getContent();
 
   // idom callbacks.
   if ((expr as IdomFunction).isInvokableFn) {
@@ -551,6 +557,8 @@ function isTruthy(expr: unknown): boolean {
         .invoke(renderer as unknown as IncrementalDomRenderer);
     return renderer.didRender();
   }
+
+  if (expr instanceof SanitizedContent) return !!expr.getContent();
 
   // true, numbers, strings.
   if (typeof expr !== 'object') return !!String(expr);
@@ -562,23 +570,87 @@ function isTruthy(expr: unknown): boolean {
 let uidCounter = 0;
 
 /**
+ * Holds an ID, and gives a useful error if you read it before it was set.
+ *
+ * This class is only used in DEBUG builds; in production, a simple object (that
+ * does no validation) is used instead.
+ */
+class IdHolderForDebug implements IdHolder {
+  backing?: string;
+  get id(): string|undefined {
+    if (!this.backing) {
+      throw new Error(`
+Cannot read 'idHolder.id' until the element with the 'uniqueAttribute()' call is
+patched.  If you're trying to print {$idHolder.id} first, swap the usage around,
+so that the first element calls uniqueAttribute(), and the second element prints
+{$idHolder.id}.`.trim());
+    }
+    return this.backing;
+  }
+  set id(value: string|undefined) {
+    if (this.backing) {
+      throw new Error('Cannot render the same idHolder instance twice.');
+    }
+    this.backing = value;
+  }
+}
+interface IdHolder {
+  id?: string;
+}
+
+function passToIdHolder(value: string, idHolder?: IdHolder) {
+  if (idHolder) idHolder.id = value;
+  return value;
+}
+
+/**
  * Returns an idom- and classic- Soy compatible attribute with a unique value.
  *
  * When called from idom, it will preserve any already-rendered value.
  *
  * This is exposed via the `uniqueAttribute()` Soy extern function.
  */
-function stableUniqueAttribute(attributeName: string): IdomFunction&
-    SanitizedHtmlAttribute {
+function stableUniqueAttribute(attributeName: string, idHolder?: IdHolder):
+    IdomFunction&SanitizedHtmlAttribute {
   attributeName = soy.$$filterHtmlAttributes(attributeName);
 
   // Note that the prefix must be different from other unique-value functions.
-  return makeAttributes((idomRenderer: IncrementalDomRenderer) => {
-    idomRenderer.attr(
-        attributeName,
-        incrementaldom.tryGetCurrentElement()?.getAttribute(attributeName) ??
-            `ucc-${uidCounter++}`);
-  }, `${attributeName}="${soy.$$escapeHtmlAttribute(`ucc-${uidCounter++}`)}"`);
+  return makeAttributes(
+      // idom callback:
+      (idomRenderer: IncrementalDomRenderer) => {
+        // If we aren't rendering into actual elements, don't affect any state.
+        // This prevents {if} truthiness checks for affecting idHolder.
+        if (idomRenderer instanceof NullRenderer ||
+            idomRenderer instanceof FalsinessRenderer) {
+          // This should never actually render anywhere.
+          idomRenderer.attr(attributeName, 'zSoyz: no id');
+          return;
+        }
+
+        // If the current element already has an ID, reuse it.
+        const existingId =
+            incrementaldom.tryGetCurrentElement()?.getAttribute(attributeName);
+        idomRenderer.attr(
+            attributeName,
+            passToIdHolder(existingId ?? `ucc-${uidCounter++}`, idHolder));
+      },
+      // Callback to generate a string for classic Soy:
+      () => {
+        return `${attributeName}="${
+            soy.$$escapeHtmlAttribute(
+                passToIdHolder(`ucc-${uidCounter++}`, idHolder))}"`;
+      });
+}
+
+/**
+ * Creates an IdHolder object to pass to `uniqueAttribute()`.
+ *
+ * This is exposed via the `idHolder()` Soy extern function.
+ *
+ * Note: This returns a mutable object; this implementation is a bit hacky.
+ */
+function stableUniqueAttributeIdHolder(): IdHolder {
+  return goog.DEBUG ? new IdHolderForDebug() : {};
 }
 
 export {
@@ -598,6 +670,7 @@ export {
   handleSoyElement as $$handleSoyElement,
   printDynamicAttr as $$printDynamicAttr,
   stableUniqueAttribute as $$stableUniqueAttribute,
+  stableUniqueAttributeIdHolder as $$stableUniqueAttributeIdHolder,
   visitHtmlCommentNode as $$visitHtmlCommentNode,
   upgrade as $$upgrade
 };

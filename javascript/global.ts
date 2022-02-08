@@ -39,8 +39,7 @@ export function setGlobalSkipHandler(
 }
 
 interface ElementCtor<TElement extends SoyElement<{}|null, {}>> {
-  // tslint:disable-next-line:no-any Real parameter type is only used privately.
-  new(data: any, ijData: IjData): TElement;
+  new(data: unknown, ijData: IjData): TElement;
 }
 
 /**
