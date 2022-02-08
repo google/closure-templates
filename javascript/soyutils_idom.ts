@@ -40,7 +40,6 @@ import {IdomSyncState, IdomTemplate, IjData, SoyTemplate, Template} from './temp
 const defaultIdomRenderer = new IncrementalDomRenderer();
 const htmlToStringRenderer = new IncrementalDomRenderer();
 
-type LetFunction = (idom: IncrementalDomRenderer) => void;
 
 /**
  * A template acceptor is an object that a template can receive context from.
@@ -99,35 +98,30 @@ function upgrade<X, T extends TemplateAcceptor<X>>(
   };
 }
 
-attributes['checked'] =
-    // tslint:disable-next-line:no-any
-    (el: Element, name: string, value: any) => {
-      // We don't use !!value because:
-      // 1. If value is '' (this is the case where a user uses <div checked />),
-      //    the checked value should be true, but '' is falsy.
-      // 2. If value is 'false', the checked value should be false, but
-      //    'false' is truthy.
-      if (value == null) {
-        el.removeAttribute('checked');
-        (el as HTMLInputElement).checked = false;
-      } else {
-        el.setAttribute('checked', value);
-        (el as HTMLInputElement).checked =
-            !(value === false || value === 'false');
-      }
-    };
+attributes['checked'] = (el: Element, name: string, value: unknown) => {
+  // We don't use !!value because:
+  // 1. If value is '' (this is the case where a user uses <div checked />),
+  //    the checked value should be true, but '' is falsy.
+  // 2. If value is 'false', the checked value should be false, but
+  //    'false' is truthy.
+  if (value == null) {
+    el.removeAttribute('checked');
+    (el as HTMLInputElement).checked = false;
+  } else {
+    el.setAttribute('checked', String(value));
+    (el as HTMLInputElement).checked = !(value === false || value === 'false');
+  }
+};
 
-attributes['value'] =
-    // tslint:disable-next-line:no-any
-    (el: Element, name: string, value: any) => {
-      if (value == null) {
-        el.removeAttribute('value');
-        (el as HTMLInputElement).value = '';
-      } else {
-        el.setAttribute('value', value);
-        (el as HTMLInputElement).value = value;
-      }
-    };
+attributes['value'] = (el: Element, name: string, value: unknown) => {
+  if (value == null) {
+    el.removeAttribute('value');
+    (el as HTMLInputElement).value = '';
+  } else {
+    el.setAttribute('value', String(value));
+    (el as HTMLInputElement).value = String(value);
+  }
+};
 
 // Soy uses the {key} command syntax, rather than HTML attributes, to
 // indicate element keys.
@@ -256,8 +250,7 @@ function handleCustomElement<T extends TemplateAcceptor<{}>>({
   return customEl;
 }
 
-// tslint:disable-next-line:no-any Attaching arbitrary attributes to function.
-function makeHtml(idomFn: any): IdomFunction {
+function makeHtml(idomFn: PatchFunction): IdomFunction {
   const fn = ((renderer: IncrementalDomRenderer = defaultIdomRenderer) => {
                idomFn(renderer);
              }) as unknown as (SanitizedHtml & IdomFunction);
@@ -268,7 +261,7 @@ function makeHtml(idomFn: any): IdomFunction {
   fn.getContent = fn.toString;
   fn.contentKind = SanitizedContentKind.HTML;
   fn.isInvokableFn = true;
-  return fn as IdomFunction;
+  return fn;
 }
 
 /**
@@ -281,13 +274,14 @@ function makeHtml(idomFn: any): IdomFunction {
  *     If this is omitted, calling `toString()` will execute the callback into a
  *     temporary element, which is slow.  If this is a function, it will only be
  *     called on demand, but will be cached.
- */ // tslint:disable-next-line:no-any Attaching arbitrary attributes to function.
-function makeAttributes(idomFn: any, stringContent?: string|(() => string)):
-    IdomFunction&SanitizedHtmlAttribute {
+ */
+function makeAttributes(
+    idomFn: PatchFunction, stringContent?: string|(() => string)): IdomFunction&
+    SanitizedHtmlAttribute {
   const fn = (() => {
                throw new Error('Should not be called directly');
              }) as unknown as (SanitizedHtmlAttribute & IdomFunction);
-  // tslint:disable-next-line:no-any Hack :(
+
   Object.setPrototypeOf(fn, SanitizedHtmlAttribute.prototype);
   fn.invoke = (renderer: IncrementalDomRenderer = defaultIdomRenderer) =>
       idomFn(renderer);
@@ -301,7 +295,7 @@ function makeAttributes(idomFn: any, stringContent?: string|(() => string)):
   fn.getContent = fn.toString;
   fn.contentKind = SanitizedContentKind.ATTRIBUTES;
   fn.isInvokableFn = true;
-  return fn as IdomFunction & SanitizedHtmlAttribute;
+  return fn;
 }
 
 function toLazyFunction<T extends string|number>(fn: T|(() => T)): () => T {
@@ -314,7 +308,8 @@ function toLazyFunction<T extends string|number>(fn: T|(() => T)): () => T {
  * expensive behavior is happening.
  */
 function htmlToString(
-    fn: LetFunction, renderer: IncrementalDomRenderer = htmlToStringRenderer) {
+    fn: PatchFunction,
+    renderer: IncrementalDomRenderer = htmlToStringRenderer) {
   const el = document.createElement('div');
   patch(el, () => {
     fn(renderer);
@@ -338,7 +333,8 @@ function attributesFactory(fn: PatchFunction): PatchFunction {
 function attributesToString(fn: PatchFunction): string {
   const elFn = attributesFactory(fn);
   const el = document.createElement('div');
-  patchOuter(el, elFn);
+  // idom's PatchFunction type has an optional parameter.
+  patchOuter(el, elFn as (a?: IncrementalDomRenderer) => void);
   const s: string[] = [];
   for (let i = 0; i < el.attributes.length; i++) {
     if (el.attributes[i].value === '') {
@@ -369,7 +365,7 @@ function renderDynamicContent(
 /** Determines whether the template is idom */
 function isIdom<TParams>(template: Template<TParams>):
     template is IdomTemplate<TParams> {
-  const contentKind = (template as unknown as IdomFunction).contentKind;
+  const contentKind = (template as IdomFunction).contentKind;
   return contentKind &&
       // idom generates regular templates for all other content kinds.
       (contentKind === SanitizedContentKind.HTML ||
@@ -383,7 +379,7 @@ function callDynamicAttributes<TParams>(
     incrementaldom: IncrementalDomRenderer, expr: Template<TParams>,
     data: TParams, ij: IjData) {
   if (isIdom(expr)) {
-    switch ((expr as unknown as IdomFunction).contentKind) {
+    switch ((expr as IdomFunction).contentKind) {
       case SanitizedContentKind.ATTRIBUTES:
         expr(incrementaldom, data, ij);
         break;
@@ -440,7 +436,7 @@ function callDynamicHTML<TParams>(
     incrementaldom: IncrementalDomRenderer, expr: Template<TParams>,
     data: TParams, ij: IjData) {
   if (isIdom(expr)) {
-    switch ((expr as unknown as IdomFunction).contentKind) {
+    switch ((expr as IdomFunction).contentKind) {
       case SanitizedContentKind.HTML:
         expr(incrementaldom, data, ij);
         break;
@@ -482,7 +478,7 @@ function callDynamicText<TParams>(
     escFn?: (i: string) => string) {
   const transformFn = escFn ? escFn : (a: string) => a;
   if (isIdom(expr)) {
-    switch ((expr as unknown as IdomFunction).contentKind) {
+    switch ((expr as IdomFunction).contentKind) {
       case SanitizedContentKind.HTML:
         return transformFn(htmlToString(() => {
           expr(defaultIdomRenderer, data, ij);

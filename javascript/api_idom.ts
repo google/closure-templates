@@ -42,10 +42,34 @@ const patchConfig: incrementaldom.PatchConfig = {
   }
 };
 
+/**
+ * Wraps an idom `createPatch*<T>()` method to return a generic function instead
+ * of taking a type parameter and returning a function fixed to that type.
+ *
+ * This lets our exported `patch()` methods be called type-safely with any type.
+ *
+ * In short, this function moves `<T>` from the `createPatchInner()` call to the
+ * actual (returned) `patchInner()` function.
+ *
+ * @return A `PatchFunction` that has its own type parameter, instead of coupled
+ *     to a specific `<T>`
+ */
+function wrapAsGeneric<R>(
+    fnCreator: <T>(patchConfig: incrementaldom.PatchConfig) =>
+        incrementaldom.PatchFunction<T, R>,
+    patchConfig: incrementaldom.PatchConfig,
+    ):
+    <T>(node: Element|DocumentFragment, template: (a: T|undefined) => void,
+        data?: T|undefined) => R {
+  return fnCreator(patchConfig);
+}
+
 /** PatchInner using Soy-IDOM semantics. */
-export const patchInner = incrementaldom.createPatchInner(patchConfig);
+export const patchInner =
+    wrapAsGeneric(incrementaldom.createPatchInner, patchConfig);
 /** PatchOuter using Soy-IDOM semantics. */
-export const patchOuter = incrementaldom.createPatchOuter(patchConfig);
+export const patchOuter =
+    wrapAsGeneric(incrementaldom.createPatchOuter, patchConfig);
 /** PatchInner using Soy-IDOM semantics. */
 export const patch = patchInner;
 

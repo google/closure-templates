@@ -14,8 +14,12 @@ import {IncrementalDomRenderer, patchOuter} from './api_idom';
 import {getGlobalSkipHandler, isTaggedForSkip} from './global';
 import {IdomTemplate, IjData} from './templates';
 
-/** Function that executes Idom instructions */
-export type PatchFunction = (a?: unknown) => void;
+/**
+ * An HTML or attributes idom callback from a `soy.idom.js` file.
+ *
+ * These callbacks are never exposed directly; they're wrapped in IdomFunction.
+ */
+export type PatchFunction = (a: IncrementalDomRenderer) => void;
 
 /**
  * Function that executes before a patch and determines whether to proceed. If
@@ -46,8 +50,8 @@ export abstract class SoyElement<TData extends {}|null, TInterface extends {}>
   private disposed = false;
   data!: TData;
   ijData!: IjData;
-  // tslint:disable-next-line:no-any Setting this to TData seems to trigger spurious type errors.
-  template!: IdomTemplate<any>;
+  // Setting this to TData makes this type invariant.
+  template!: IdomTemplate<unknown>;
 
   dispose() {
     if (!this.disposed) {
