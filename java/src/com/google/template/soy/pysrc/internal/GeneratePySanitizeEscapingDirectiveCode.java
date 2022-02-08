@@ -122,6 +122,7 @@ public final class GeneratePySanitizeEscapingDirectiveCode
   protected void generatePrefix(StringBuilder outputCode) {
     // Emulate Python 3 style unicode string literals, and import necessary libraries.
     outputCode
+        .append("# pylint:skip-file\n")
         .append("from __future__ import unicode_literals\n")
         .append("\n")
         .append("import re\n")

@@ -1,4 +1,5 @@
 # START GENERATED CODE FOR ESCAPERS.
+# pylint:skip-file
 from __future__ import unicode_literals
 
 import re
