@@ -39,8 +39,20 @@ public final class HtmlAttributeNode extends AbstractParentSoyNode<StandaloneNod
       ImmutableMap.of(
           "@class", " ", "@style", ";", "@jsdata", ";", "@jsaction", ";", "@jsmodel", ";");
 
+  /**
+   * Indicates if in IDOM backend, the attribute value needs to be converted into a trusted type.
+   */
+  public enum TrustedTypeValue {
+    TRUSTED_RESOURCE_URI,
+    TRUSTED_SCRIPT,
+    TRUSTED_HTML,
+    NONE
+  }
+
   /** Will be null if this attribute node doesn't have a value. */
   @Nullable private final SourceLocation.Point equalsSignLocation;
+
+  private TrustedTypeValue trustedTypeValue = TrustedTypeValue.NONE;
 
   public HtmlAttributeNode(
       int id, SourceLocation location, @Nullable SourceLocation.Point equalsSignLocation) {
@@ -60,6 +72,7 @@ public final class HtmlAttributeNode extends AbstractParentSoyNode<StandaloneNod
   private HtmlAttributeNode(HtmlAttributeNode orig, CopyState copyState) {
     super(orig, copyState);
     this.equalsSignLocation = orig.equalsSignLocation;
+    this.trustedTypeValue = orig.trustedTypeValue;
   }
 
   @Nullable
@@ -68,6 +81,14 @@ public final class HtmlAttributeNode extends AbstractParentSoyNode<StandaloneNod
       return CONCATENATED_ATTRIBUTES.get(this.getStaticKey());
     }
     return null;
+  }
+
+  public TrustedTypeValue getTrustedTypeValue() {
+    return trustedTypeValue;
+  }
+
+  public void setTrustedTypeValue(TrustedTypeValue trustedTypeValue) {
+    this.trustedTypeValue = trustedTypeValue;
   }
 
   public boolean hasValue() {
