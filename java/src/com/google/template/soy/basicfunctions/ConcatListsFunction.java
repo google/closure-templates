@@ -35,9 +35,7 @@ import com.google.template.soy.shared.restricted.SoyPureFunction;
 import java.lang.reflect.Method;
 import java.util.List;
 
-/**
- * Soy function that concatenates two or more lists together.
- */
+/** Soy function that concatenates two or more lists together. */
 @SoyFunctionSignature(
     name = "concatLists",
     value = {
@@ -128,6 +126,90 @@ import java.util.List;
       @Signature(parameterTypes = "list<any>", returnType = "list<any>"),
       @Signature(
           parameterTypes = {"list<any>", "list<any>"},
+          returnType = "list<any>"),
+      @Signature(
+          parameterTypes = {"list<any>", "list<any>", "list<any>"},
+          returnType = "list<any>"),
+      @Signature(
+          parameterTypes = {"list<any>", "list<any>", "list<any>", "list<any>"},
+          returnType = "list<any>"),
+      @Signature(
+          parameterTypes = {"list<any>", "list<any>", "list<any>", "list<any>", "list<any>"},
+          returnType = "list<any>"),
+      @Signature(
+          parameterTypes = {
+            "list<any>",
+            "list<any>",
+            "list<any>",
+            "list<any>",
+            "list<any>",
+            "list<any>"
+          },
+          returnType = "list<any>"),
+      @Signature(
+          parameterTypes = {
+            "list<any>",
+            "list<any>",
+            "list<any>",
+            "list<any>",
+            "list<any>",
+            "list<any>",
+            "list<any>"
+          },
+          returnType = "list<any>"),
+      @Signature(
+          parameterTypes = {
+            "list<any>",
+            "list<any>",
+            "list<any>",
+            "list<any>",
+            "list<any>",
+            "list<any>",
+            "list<any>",
+            "list<any>"
+          },
+          returnType = "list<any>"),
+      @Signature(
+          parameterTypes = {
+            "list<any>",
+            "list<any>",
+            "list<any>",
+            "list<any>",
+            "list<any>",
+            "list<any>",
+            "list<any>",
+            "list<any>",
+            "list<any>"
+          },
+          returnType = "list<any>"),
+      @Signature(
+          parameterTypes = {
+            "list<any>",
+            "list<any>",
+            "list<any>",
+            "list<any>",
+            "list<any>",
+            "list<any>",
+            "list<any>",
+            "list<any>",
+            "list<any>",
+            "list<any>"
+          },
+          returnType = "list<any>"),
+      @Signature(
+          parameterTypes = {
+            "list<any>",
+            "list<any>",
+            "list<any>",
+            "list<any>",
+            "list<any>",
+            "list<any>",
+            "list<any>",
+            "list<any>",
+            "list<any>",
+            "list<any>",
+            "list<any>"
+          },
           returnType = "list<any>")
     })
 @SoyPureFunction
