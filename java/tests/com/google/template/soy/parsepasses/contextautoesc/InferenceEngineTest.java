@@ -312,7 +312,7 @@ public final class InferenceEngineTest {
             .addSoyFunction(new AssertFunction())
             // typically the default is what we want but in this case disable desugaring so the
             // html nodes are preserved and the autoescaper can see them
-            .desugarHtmlNodes(false)
+            .desugarHtmlAndStateNodes(false)
             .errorReporter(ErrorReporter.explodeOnErrorsAndIgnoreWarnings())
             .parse();
     Inferences inferences = new Inferences();
