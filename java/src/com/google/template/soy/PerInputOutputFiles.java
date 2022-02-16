@@ -81,6 +81,14 @@ final class PerInputOutputFiles {
               + "\n\nThis flag may not be used if --outputPathFormat is set")
   private Path outputDirectory;
 
+  @Option(
+      name = "--subdir",
+      usage =
+          "[Optional] A subdirectory (relative to the input file) to put the corresponding output"
+              + " file in. For example, if the input is my/path/foo.soy, and the subdir is"
+              + " 'jsouts', then the output file would be located at: my/path/jsouts/foo.soy.js'.")
+  private String subdir;
+
   private final String extension;
   private final Optional<Joiner> fileJoiner;
 
@@ -103,10 +111,19 @@ final class PerInputOutputFiles {
   }
 
   void writeFiles(List<File> srcs, List<String> outFileContents) {
-    writeFiles(srcs, outFileContents, /* locale= */ null);
+    writeFiles(srcs, outFileContents, /* locale= */ null, /* omitIfEmpty = */ false);
   }
 
   void writeFiles(List<File> srcs, List<String> outFileContents, @Nullable String locale) {
+    writeFiles(srcs, outFileContents, locale, /* omitIfEmpty = */ false);
+  }
+
+  /**
+   * Writes per-input output files. When omitIfEmpty is true, this will skip writing a file if its
+   * outFileContents are empty.
+   */
+  void writeFiles(
+      List<File> srcs, List<String> outFileContents, @Nullable String locale, boolean omitIfEmpty) {
     if (srcs.size() != outFileContents.size()) {
       throw new AssertionError(
           String.format(
@@ -127,15 +144,22 @@ final class PerInputOutputFiles {
         if (fileJoiner.isPresent()) {
           // Having multiple input files map to the same output file is only possible with the
           // --outputPathFormat flag
-          MoreFiles.asCharSink(outputPath, UTF_8)
-              .write(fileJoiner.get().join(outputPathToContents.get(outputPath)));
+          String contents = fileJoiner.get().join(outputPathToContents.get(outputPath));
+          if (omitIfEmpty && contents.isEmpty()) {
+            continue;
+          }
+          MoreFiles.asCharSink(outputPath, UTF_8).write(contents);
         } else {
           checkState(
               outputPathToContents.get(outputPath).size() == 1,
               "A file joiner must be specified if multiple sources will map to a single output"
                   + " file");
-          MoreFiles.asCharSink(outputPath, UTF_8)
-              .write(Iterables.getOnlyElement(outputPathToContents.get(outputPath)));
+
+          String contents = Iterables.getOnlyElement(outputPathToContents.get(outputPath));
+          if (omitIfEmpty && contents.isEmpty()) {
+            continue;
+          }
+          MoreFiles.asCharSink(outputPath, UTF_8).write(contents);
         }
 
       } catch (IOException ioe) {
@@ -166,7 +190,11 @@ final class PerInputOutputFiles {
           break;
         }
       }
+
       String fileName = inputPath.getFileName().toString();
+      if (subdir != null && subdir.length() > 0) {
+        fileName = subdir + "/" + fileName;
+      }
       int extensionLocation = fileName.lastIndexOf('.');
       if (extensionLocation == -1) {
         // consider making this an error, possibly an error if it isn't .soy
