@@ -33,6 +33,7 @@ import com.google.common.html.types.SafeScript;
 import com.google.common.html.types.SafeUrl;
 import com.google.common.html.types.TrustedResourceUrl;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.errorprone.annotations.CheckReturnValue;
 import com.google.errorprone.annotations.ForOverride;
 import com.google.protobuf.Message;
 import com.google.protobuf.ProtocolMessageEnum;
@@ -128,6 +129,7 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
       this.data = new IdentityHashMap<>(/* expectedMaxSize= */ numParams);
     }
 
+    @CheckReturnValue
     @Override
     public final T build() {
       ImmutableMap<String, SoyValueProvider> finalData =
