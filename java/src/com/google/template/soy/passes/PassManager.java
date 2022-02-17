@@ -189,7 +189,7 @@ public final class PassManager {
     executed.add(pass.getClass());
   }
 
-  /** @see Builder#astRewrites */
+  /** See {@link Builder#astRewrites}. */
   public enum AstRewrites {
     /** No AST rewrites whatsoever. */
     NONE,
@@ -535,12 +535,12 @@ public final class PassManager {
       }
       passes.add(new CheckTemplateHeaderVarsPass(errorReporter, accumulatedState::registryFull));
       if (!disableAllTypeChecking) {
-        // Needs to come after types have been set.
         passes
             .add(
                 new EnforceExperimentalFeaturesPass(
                     options.getExperimentalFeatures(), errorReporter))
             .add(new CheckTemplateCallsPass(errorReporter, accumulatedState::registryFull))
+            .add(new ShortFormCallPass(astRewrites, errorReporter))
             .add(new ElementCheckCrossTemplatePass(errorReporter))
             .add(new CheckValidVarrefsPass(errorReporter));
         if (desugarIdomFeatures && astRewrites == AstRewrites.ALL) {
