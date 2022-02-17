@@ -661,7 +661,7 @@ public final class Sanitizers {
       if (matchPrefixIgnoreCasePastEnd("</script", value, start)
           || matchPrefixIgnoreCasePastEnd("<!--", value, start)) {
         logger.atWarning().withStackTrace(MEDIUM).log(
-            "|filterHtmlScriptPhrasingData received bad value '%s'. Cannot contain an script"
+            "|filterHtmlScriptPhrasingData received bad value '%s'. Cannot contain a script"
                 + " tag, and html comment, or end with a prefix of either",
             value);
         return EscapingConventions.INNOCUOUS_OUTPUT;
