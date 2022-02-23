@@ -542,43 +542,35 @@ public final class PassManager {
             .add(new CheckTemplateCallsPass(errorReporter, accumulatedState::registryFull))
             .add(new ShortFormCallPass(astRewrites, errorReporter))
             .add(new ElementCheckCrossTemplatePass(errorReporter))
-            .add(new CheckValidVarrefsPass(errorReporter))
-            .add(new CheckTemplateVisibilityPass(errorReporter, accumulatedState::registryFull))
-            .add(new CheckDelegatesPass(errorReporter, accumulatedState::registryFull))
-            .add(new CheckIndirectDepsPass(errorReporter, accumulatedState::registryFull));
+            .add(new CheckValidVarrefsPass(errorReporter));
         if (desugarIdomFeatures && astRewrites == AstRewrites.ALL) {
           // always desugar before the end since the backends (besides incremental dom) cannot
           // handle
           // the nodes.
           passes.add(new DesugarStateNodesPass());
         }
-        passes
-            .add(new CombineConsecutiveRawTextNodesPass())
-            .add(
-                new AutoescaperPass(
-                    errorReporter,
-                    soyPrintDirectives,
-                    insertEscapingDirectives,
-                    accumulatedState::registryFull))
-            .add(
-                new SoyElementCompositionPass(
-                    astRewrites,
-                    errorReporter,
-                    soyPrintDirectives,
-                    accumulatedState::registryFull,
-                    desugarIdomFeatures));
-      } else {
-        passes
-            .add(new CombineConsecutiveRawTextNodesPass())
-            .add(
-                new AutoescaperPass(
-                    errorReporter,
-                    soyPrintDirectives,
-                    insertEscapingDirectives,
-                    accumulatedState::registryFull));
+        passes.add(
+            new SoyElementCompositionPass(
+                astRewrites,
+                errorReporter,
+                soyPrintDirectives,
+                accumulatedState::registryFull,
+                desugarIdomFeatures));
       }
-      passes.add(new CallAnnotationPass());
+      passes
+          .add(new CallAnnotationPass())
+          .add(new CheckTemplateVisibilityPass(errorReporter, accumulatedState::registryFull))
+          .add(new CheckDelegatesPass(errorReporter, accumulatedState::registryFull))
+          .add(new CheckIndirectDepsPass(errorReporter, accumulatedState::registryFull));
 
+      passes
+          .add(new CombineConsecutiveRawTextNodesPass())
+          .add(
+              new AutoescaperPass(
+                  errorReporter,
+                  soyPrintDirectives,
+                  insertEscapingDirectives,
+                  accumulatedState::registryFull));
       // Relies on information from the autoescaper and valid type information
       if (!disableAllTypeChecking && insertEscapingDirectives) {
         passes.add(new CheckBadContextualUsagePass(errorReporter, accumulatedState::registryFull));

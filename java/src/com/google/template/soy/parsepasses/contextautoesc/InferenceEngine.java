@@ -426,21 +426,15 @@ final class InferenceEngine {
     }
 
     private void visitHtmlTagNode(HtmlTagNode tag) {
-      boolean isSelfClosing =
-          tag instanceof HtmlOpenTagNode && ((HtmlOpenTagNode) tag).isSelfClosing();
       context =
           context.transitionToState(
-              (tag.getKind() == Kind.HTML_OPEN_TAG_NODE && !isSelfClosing)
+              tag.getKind() == Kind.HTML_OPEN_TAG_NODE
                   ? HtmlContext.HTML_BEFORE_OPEN_TAG_NAME
                   : HtmlContext.HTML_BEFORE_CLOSE_TAG_NAME);
       // if the tag name is a constant, transition to an appropriate tag state
-      if (tag.getTagName().isStatic() || tag.getTagName().isTemplateCall()) {
+      if (tag.getTagName().isStatic()) {
         context = context.transitionToTagName(tag);
-        if (tag.getTagName().isStatic()) {
-          ((RawTextNode) tag.getChild(0)).setHtmlContext(HtmlContext.HTML_TAG_NAME);
-        } else {
-          tag.getTagName().getDynamicTagName().setHtmlContext(HtmlContext.HTML_TAG_NAME);
-        }
+        ((RawTextNode) tag.getChild(0)).setHtmlContext(HtmlContext.HTML_TAG_NAME);
       } else {
         // dynamic tag name
         visit(tag.getChild(0));

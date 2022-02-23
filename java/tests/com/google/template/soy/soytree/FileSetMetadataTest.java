@@ -245,7 +245,7 @@ public final class FileSetMetadataTest {
         "{namespace ns}\n" + "/** Foo. */\n" + "{deltemplate foo.bar}\n" + "{/deltemplate}\n";
 
     String file2 =
-        "{namespace ns2}\n" + "/** Foo. */\n" + "{deltemplate foo.bar}\n" + "{/deltemplate}\n";
+        "{namespace ns}\n" + "/** Foo. */\n" + "{deltemplate foo.bar}\n" + "{/deltemplate}\n";
 
     ErrorReporter errorReporter = ErrorReporter.createForTest();
     SoyFileSetParserBuilder.forFileContents(file, file2).errorReporter(errorReporter).parse();
@@ -413,7 +413,7 @@ public final class FileSetMetadataTest {
 
     String file2 =
         "{delpackage foo}\n"
-            + "{namespace ns2}\n"
+            + "{namespace ns}\n"
             + "/** Foo. */\n"
             + "{deltemplate foo.bar}\n"
             + "{/deltemplate}\n";

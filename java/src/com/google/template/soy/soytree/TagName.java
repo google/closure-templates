@@ -29,7 +29,7 @@ import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
-import com.google.template.soy.types.StringType;
+import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.TemplateType;
 import java.util.Objects;
 import javax.annotation.Nullable;
@@ -270,10 +270,16 @@ public final class TagName {
    * It must also return a html<?> type.
    */
   public boolean isTemplateCall() {
-    return !isStatic()
-        && !isLegacyDynamicTagName()
-        && (getDynamicTagName().getExpr().getType() != null
-            && !getDynamicTagName().getExpr().getType().equals(StringType.getInstance()));
+    if (isStatic()
+        || isLegacyDynamicTagName()
+        || getDynamicTagName().getExpr().getType().getKind() != SoyType.Kind.TEMPLATE) {
+      return false;
+    }
+    TemplateType templateType = (TemplateType) getDynamicTagName().getExpr().getType();
+    if (!(templateType.getContentKind() instanceof TemplateContentKind.ElementContentKind)) {
+      return false;
+    }
+    return true;
   }
 
   public boolean isWildCard() {

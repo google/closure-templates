@@ -28,7 +28,6 @@ import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.passes.PassManager.AstRewrites;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallParamValueNode;
-import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
@@ -67,9 +66,7 @@ final class ShortFormCallPass implements CompilerFileSetPass {
       // to make sure that we are only rewriting human-written call nodes.
       if (astRewrites != AstRewrites.TRICORDER && astRewrites != AstRewrites.NONE) {
         for (PrintNode printNode : SoyTreeUtils.getAllNodesOfType(template, PrintNode.class)) {
-          if (!(printNode.getParent() instanceof HtmlOpenTagNode)) {
-            process(printNode, nodeIdGen);
-          }
+          process(printNode, nodeIdGen);
         }
       }
     }
