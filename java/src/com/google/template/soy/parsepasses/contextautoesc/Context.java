@@ -32,15 +32,12 @@ import com.google.errorprone.annotations.CheckReturnValue;
 import com.google.errorprone.annotations.ForOverride;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.base.internal.SanitizedContentKind;
-import com.google.template.soy.base.internal.TemplateContentKind.ElementContentKind;
 import com.google.template.soy.soytree.EscapingMode;
 import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.HtmlContext;
-import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.HtmlTagNode;
 import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.types.TemplateType;
 import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.Iterator;
@@ -1036,24 +1033,7 @@ abstract class Context {
 
   @CheckReturnValue
   Context transitionToTagName(HtmlTagNode node) {
-    boolean isEndTag = state() == HtmlContext.HTML_BEFORE_CLOSE_TAG_NAME;
-    int newTemplateNestDepth = templateNestDepth();
-    if (node.getTagName().isStatic() && node.getTagName().getTagString().equals("template")) {
-      newTemplateNestDepth += isEndTag ? -1 : 1;
-      if (newTemplateNestDepth < 0) {
-        throw SoyAutoescapeException.createWithNode(
-            "Saw an html5 </template> without encountering <template>.", node);
-      }
-    }
-    if (node instanceof HtmlOpenTagNode) {
-      return getTagNameContext((HtmlOpenTagNode) node, state(), newTemplateNestDepth, toBuilder());
-    }
-    return toBuilder()
-        .withState(HtmlContext.HTML_TAG_NAME)
-        .withoutAttrContext()
-        .withElType(ElementType.NORMAL)
-        .withTemplateNestDepth(newTemplateNestDepth)
-        .build();
+    return getTagNameContext(node, state(), templateNestDepth(), toBuilder());
   }
 
   /**
@@ -1065,103 +1045,100 @@ abstract class Context {
    */
   @CheckReturnValue
   static Context getTagNameContext(
-      HtmlOpenTagNode node, HtmlContext state, int templateNestDepth, Context.Builder builder) {
+      HtmlTagNode node, HtmlContext state, int templateNestDepth, Context.Builder builder) {
     // according to spec ascii case is not meaningful for tag names.
-    String tagName;
-    if (node.getTagName().isStatic()) {
-      tagName = node.getTagName().getTagString();
-      if (tagName == null) {
-        tagName = "";
-      } else {
-        tagName = Ascii.toLowerCase(tagName);
-      }
-    } else if (node.getTagName().isTemplateCall()) {
-      // This is enforced in InferenceEngine
-      TemplateType templateType =
-          (TemplateType) node.getTagName().getDynamicTagName().getExpr().getType();
-      // This is type checked.
-      ElementContentKind elementContentKind = (ElementContentKind) templateType.getContentKind();
-      tagName = Ascii.toLowerCase(elementContentKind.getTagName());
-    } else {
+    String tagName = node.getTagName().getTagString();
+    if (tagName == null) {
       tagName = "";
+    } else {
+      tagName = Ascii.toLowerCase(tagName);
     }
+    boolean isEndTag = state == HtmlContext.HTML_BEFORE_CLOSE_TAG_NAME;
     Context.ElementType elType = ElementType.NORMAL;
-    // We currently only treat <img> and SVG's <image> as a media type, since for <video> and
-    // <audio> there are concerns that attackers could introduce rich video or audio that
-    // facilitates social engineering.  Upon further review, it's possible we may allow them.
-    switch (tagName) {
-      case "img":
-      case "image":
-        elType = ElementType.MEDIA;
-        break;
-      case "iframe":
-        elType = ElementType.IFRAME;
-        break;
-      case "script":
-        // If the script has a type attribute and it is not known to be a javascript type then
-        // browsers will treat the contents as uninterpreted data.
-        // If the type attribute is dynamic in any way, treat the content as JS
-        HtmlAttributeNode typeNode = node.getDirectAttributeNamed("type");
-        switch (getScriptType(typeNode)) {
-          case JAVASCRIPT:
-            elType = ElementType.SCRIPT;
-            break;
-          case JSON:
-            // TODO(b/73539542): We should create a different element type for json and teach
-            // the autoescaper the difference, for now treat as Javascript which is pretty close
-            // 😬.
-            elType = ElementType.SCRIPT;
-            break;
-          case UNKNOWN:
-            elType = ElementType.SCRIPT_DATA;
-            break;
-        }
-        break;
-      case "style":
-        elType = ElementType.STYLE;
-        break;
-      case "base":
-        elType = ElementType.BASE;
-        break;
-      case "link":
-        if (node.getDirectAttributeNamed("rel") == null
-            && node.getDirectAttributeNamed("itemprop") != null) {
-          elType = ElementType.NORMAL;
-        } else {
-          String rel = getStaticAttributeValue(node, "rel");
+    int newTemplateNestDepth = templateNestDepth;
+    if (tagName.equals("template")) {
+      newTemplateNestDepth += isEndTag ? -1 : 1;
+      if (newTemplateNestDepth < 0) {
+        throw SoyAutoescapeException.createWithNode(
+            "Saw an html5 </template> without encountering <template>.", node);
+      }
+    } else if (!isEndTag) {
+      // We currently only treat <img> and SVG's <image> as a media type, since for <video> and
+      // <audio> there are concerns that attackers could introduce rich video or audio that
+      // facilitates social engineering.  Upon further review, it's possible we may allow them.
+      switch (tagName) {
+        case "img":
+        case "image":
+          elType = ElementType.MEDIA;
+          break;
+        case "iframe":
+          elType = ElementType.IFRAME;
+          break;
+        case "script":
+          // If the script has a type attribute and it is not known to be a javascript type then
+          // browsers will treat the contents as uninterpreted data.
+          // If the type attribute is dynamic in any way, treat the content as JS
+          HtmlAttributeNode typeNode = node.getDirectAttributeNamed("type");
+          switch (getScriptType(typeNode)) {
+            case JAVASCRIPT:
+              elType = ElementType.SCRIPT;
+              break;
+            case JSON:
+              // TODO(b/73539542): We should create a different element type for json and teach
+              // the autoescaper the difference, for now treat as Javascript which is pretty close
+              // 😬.
+              elType = ElementType.SCRIPT;
+              break;
+            case UNKNOWN:
+              elType = ElementType.SCRIPT_DATA;
+              break;
+          }
+          break;
+        case "style":
+          elType = ElementType.STYLE;
+          break;
+        case "base":
+          elType = ElementType.BASE;
+          break;
+        case "link":
+          if (node.getDirectAttributeNamed("rel") == null
+              && node.getDirectAttributeNamed("itemprop") != null) {
+            elType = ElementType.NORMAL;
+          } else {
+            String rel = getStaticAttributeValue(node, "rel");
+            elType =
+                rel != null && REGULAR_LINK_PATTERN.matcher(rel).matches()
+                    ? ElementType.NORMAL
+                    : ElementType.LINK_EXECUTABLE;
+          }
+          break;
+        case "meta":
+          String httpEquiv = getStaticAttributeValue(node, "http-equiv");
           elType =
-              rel != null && REGULAR_LINK_PATTERN.matcher(rel).matches()
-                  ? ElementType.NORMAL
-                  : ElementType.LINK_EXECUTABLE;
-        }
-        break;
-      case "meta":
-        String httpEquiv = getStaticAttributeValue(node, "http-equiv");
-        elType =
-            httpEquiv != null && Ascii.equalsIgnoreCase("refresh", httpEquiv)
-                ? ElementType.META_REFRESH
-                : ElementType.NORMAL;
-        break;
-      case "object":
-        elType = ElementType.OBJECT;
-        break;
-      case "textarea":
-        elType = ElementType.TEXTAREA;
-        break;
-      case "title":
-        elType = ElementType.TITLE;
-        break;
-      case "xmp":
-        elType = ElementType.XMP;
-        break;
-      default: // fall out
+              httpEquiv != null && Ascii.equalsIgnoreCase("refresh", httpEquiv)
+                  ? ElementType.META_REFRESH
+                  : ElementType.NORMAL;
+          break;
+        case "object":
+          elType = ElementType.OBJECT;
+          break;
+        case "textarea":
+          elType = ElementType.TEXTAREA;
+          break;
+        case "title":
+          elType = ElementType.TITLE;
+          break;
+        case "xmp":
+          elType = ElementType.XMP;
+          break;
+        default: // fall out
+      }
     }
-
     return builder
         .withState(HtmlContext.HTML_TAG_NAME)
         .withoutAttrContext()
         .withElType(elType)
-        .withTemplateNestDepth(templateNestDepth)
+        .withTemplateNestDepth(newTemplateNestDepth)
         .build();
   }
 
@@ -1322,15 +1299,15 @@ abstract class Context {
       attr = Context.AttributeType.SCRIPT;
     } else if ("style".equals(localName)) {
       attr = Context.AttributeType.STYLE;
-    } else if (isElTypeOf(elType, Context.ElementType.MEDIA)
+    } else if (elType == Context.ElementType.MEDIA
         && ("src".equals(attrName) || "xlink:href".equals(attrName))) {
       attr = Context.AttributeType.URI;
       uriType = UriType.MEDIA;
-    } else if ((isElTypeOf(elType, ElementType.SCRIPT) && "src".equals(attrName))
-        || (isElTypeOf(elType, ElementType.IFRAME) && "src".equals(attrName))
-        || (isElTypeOf(elType, ElementType.LINK_EXECUTABLE) && "href".equals(attrName))
-        || (isElTypeOf(elType, ElementType.OBJECT) && "data".equals(attrName))
-        || (isElTypeOf(elType, ElementType.BASE) && "href".equals(attrName))) {
+    } else if ((elType == ElementType.SCRIPT && "src".equals(attrName))
+        || (elType == ElementType.IFRAME && "src".equals(attrName))
+        || (elType == ElementType.LINK_EXECUTABLE && "href".equals(attrName))
+        || (elType == ElementType.OBJECT && "data".equals(attrName))
+        || (elType == ElementType.BASE && "href".equals(attrName))) {
       attr = Context.AttributeType.URI;
       uriType = UriType.TRUSTED_RESOURCE;
     } else if (Constants.URI_ATTR_NAMES.contains(localName)
@@ -1339,9 +1316,9 @@ abstract class Context {
         || attrName.startsWith("xmlns:")) {
       attr = Context.AttributeType.URI;
       uriType = UriType.NORMAL;
-    } else if (isElTypeOf(elType, ElementType.META_REFRESH) && "content".equals(attrName)) {
+    } else if (elType == ElementType.META_REFRESH && "content".equals(attrName)) {
       attr = AttributeType.META_REFRESH_CONTENT;
-    } else if (isElTypeOf(elType, ElementType.IFRAME) && "srcdoc".equals(attrName)) {
+    } else if (elType == ElementType.IFRAME && "srcdoc".equals(attrName)) {
       attr = Context.AttributeType.HTML;
     } else {
       attr = Context.AttributeType.PLAIN_TEXT;
@@ -1352,10 +1329,6 @@ abstract class Context {
         .withAttrType(attr)
         .withUriType(uriType)
         .build();
-  }
-
-  private static boolean isElTypeOf(ElementType src, ElementType target) {
-    return src == target;
   }
 
   /** Returns a new context that is in attribute value using the given attribute delimiter. */

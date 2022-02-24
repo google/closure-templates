@@ -94,6 +94,7 @@ import javax.annotation.Nullable;
  * <p>Rewrites {@code <{legacyTagName($tag)}>} to {@code <{$tag}>} and disallows all other print
  * nodes that name HTML tags.
  */
+@RunBefore(AutoescaperPass.class /* Creates trusted_resource_uri params. */)
 @RunAfter({ResolveExpressionTypesPass.class, FinalizeTemplateRegistryPass.class})
 final class SoyElementCompositionPass implements CompilerFileSetPass {
 
