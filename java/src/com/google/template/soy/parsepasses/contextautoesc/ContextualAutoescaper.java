@@ -26,7 +26,6 @@ import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.HtmlContext;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
-import com.google.template.soy.soytree.HtmlTagNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.types.SanitizedType;
@@ -130,7 +129,7 @@ public final class ContextualAutoescaper {
   }
 
   public static Optional<SoyType> getRequiredTypeFromAttributeName(
-      String attrName, HtmlTagNode tagNode) {
+      String attrName, HtmlOpenTagNode tagNode) {
     Context tagContext =
         Context.getTagNameContext(
             tagNode, HtmlContext.HTML_PCDATA, 0, Context.HTML_PCDATA.toBuilder());

@@ -58,7 +58,7 @@ public final class CheckTemplateVisibilityPassTest {
                 + "{template foo visibility=\"private\"}\n"
                 + "oops!\n"
                 + "{/template}",
-            "{namespace ns}\n"
+            "{namespace ns2}\n"
                 + "import {foo} from 'no-path';"
                 + "/** Public template. */\n"
                 + "{template bar}\n"
@@ -80,7 +80,7 @@ public final class CheckTemplateVisibilityPassTest {
                 + "{template foo visibility=\"private\"}\n"
                 + "oops!\n"
                 + "{/template}",
-            "{namespace ns}\n"
+            "{namespace ns2}\n"
                 + "import {foo} from 'no-path';"
                 + "/** Public template. */\n"
                 + "{template bar}\n"
