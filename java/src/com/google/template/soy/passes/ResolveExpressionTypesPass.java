@@ -1745,14 +1745,23 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
     protected void visitFunctionNode(FunctionNode node) {
       visitChildren(node);
       if (!node.hasStaticName()) {
-        if (!node.allowedToInvokeAsFunction()
-            && (node.getNameExpr().getType() instanceof TemplateImportType
-                || node.getNameExpr().getType() instanceof TemplateType)) {
-          node.setType(UnknownType.getInstance());
-          errorReporter.report(node.getSourceLocation(), MUST_USE_TEMPLATES_IMMEDIATELY);
-          // Suppress a followup error that this is unknown.
-          node.setAllowedToInvokeAsFunction(true);
-          return;
+        if (!node.allowedToInvokeAsFunction()) {
+          ExprNode nameExpr = node.getNameExpr();
+          if (nameExpr.getKind() == ExprNode.Kind.VAR_REF_NODE
+              && !((VarRefNode) nameExpr).hasType()) {
+            // This is an extern call that hasn't been resolved yet. It should be possible to infer
+            // this type, but would probably be some pretty large refactorings, which is hard to
+            // justify given that workaround is just to write the type.
+            node.setType(UnknownType.getInstance());
+            node.setAllowedToInvokeAsFunction(true);
+          } else if (nameExpr.getType() instanceof TemplateImportType
+              || nameExpr.getType() instanceof TemplateType) {
+            node.setType(UnknownType.getInstance());
+            errorReporter.report(node.getSourceLocation(), MUST_USE_TEMPLATES_IMMEDIATELY);
+            // Suppress a followup error that this is unknown.
+            node.setAllowedToInvokeAsFunction(true);
+            return;
+          }
         }
         visit(node.getNameExpr());
         if (node.getNameExpr().getType().getKind() == Kind.TEMPLATE_TYPE) {
