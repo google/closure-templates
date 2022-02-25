@@ -426,27 +426,38 @@ final class InferenceEngine {
     }
 
     private void visitHtmlTagNode(HtmlTagNode tag) {
+      Context oldContext = context;
+      boolean isSelfClosing =
+          tag instanceof HtmlOpenTagNode && ((HtmlOpenTagNode) tag).isSelfClosing();
       context =
           context.transitionToState(
-              tag.getKind() == Kind.HTML_OPEN_TAG_NODE
+              (tag.getKind() == Kind.HTML_OPEN_TAG_NODE && !isSelfClosing)
                   ? HtmlContext.HTML_BEFORE_OPEN_TAG_NAME
                   : HtmlContext.HTML_BEFORE_CLOSE_TAG_NAME);
       // if the tag name is a constant, transition to an appropriate tag state
-      if (tag.getTagName().isStatic()) {
+      if (tag.getTagName().isStatic() || tag.getTagName().isTemplateCall()) {
         context = context.transitionToTagName(tag);
-        ((RawTextNode) tag.getChild(0)).setHtmlContext(HtmlContext.HTML_TAG_NAME);
+        if (tag.getTagName().isStatic()) {
+          ((RawTextNode) tag.getChild(0)).setHtmlContext(HtmlContext.HTML_TAG_NAME);
+        } else {
+          tag.getTagName().getDynamicTagName().setHtmlContext(HtmlContext.HTML_TAG_NAME);
+        }
       } else {
         // dynamic tag name
         visit(tag.getChild(0));
       }
       // Make sure the element type was pre-determined when setting the tag name.
       Preconditions.checkArgument(context.elType() != Context.ElementType.NONE);
-      context = context.transitionToTagBody();
+      context = context.transitionToTagAttributes();
       // 0 is the tag name
       for (int i = 1; i < tag.numChildren(); i++) {
         visit(tag.getChild(i));
       }
-      context = context.transitionToAfterTag();
+      if (isSelfClosing) {
+        context = oldContext;
+      } else {
+        context = context.transitionToAfterTag();
+      }
     }
 
     @Override
@@ -461,7 +472,7 @@ final class InferenceEngine {
       if (node.hasValue()) {
         visit(node.getChild(1));
       }
-      context = context.transitionToTagBody();
+      context = context.transitionToTagAttributes();
     }
 
     @Override
@@ -482,7 +493,7 @@ final class InferenceEngine {
       }
       context = context.transitionToAttrValue(delim);
       visitChildren(node);
-      context = context.transitionToTagBody();
+      context = context.transitionToTagAttributes();
     }
 
     /** Handle conjunction nodes. */
