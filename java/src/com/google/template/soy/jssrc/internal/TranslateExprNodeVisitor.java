@@ -835,19 +835,18 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
                 ? GOOG_ARRAY_MAP.call(fieldValue, sanitizedContentPackFn)
                 : sanitizedContentPackFn.call(fieldValue);
       }
-
+      if (fieldDesc.getType() == FieldDescriptor.Type.BYTES) {
+        fieldValue =
+            fieldDesc.isRepeated()
+                ? GOOG_ARRAY_MAP.call(fieldValue, protoBytesPackToByteStringFunction())
+                : protoBytesPackToByteStringFunction().call(fieldValue);
+      }
       if (fieldDesc.getType() == FieldDescriptor.Type.ENUM && !fieldDesc.isRepeated()) {
         fieldValue =
             fieldValue.castAs("!" + ProtoUtils.calculateJsEnumName(fieldDesc.getEnumType()));
       }
 
       if (fieldDesc.isExtension()) {
-        if (fieldDesc.getType() == FieldDescriptor.Type.BYTES) {
-          fieldValue =
-              fieldDesc.isRepeated()
-                  ? GOOG_ARRAY_MAP.call(fieldValue, protoBytesPackToByteStringFunction())
-                  : protoBytesPackToByteStringFunction().call(fieldValue);
-        }
         Expression extInfo = extensionField(fieldDesc);
         proto = proto.dotAccess("setExtension").call(extInfo, fieldValue);
       } else if (fieldDesc.isMapField()) {
