@@ -16,7 +16,6 @@
 
 package com.google.template.soy.internal.proto;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.protobuf.DescriptorProtos.DescriptorProto;
 import com.google.protobuf.DescriptorProtos.EnumDescriptorProto;
 import com.google.protobuf.DescriptorProtos.FileDescriptorProto;
@@ -26,26 +25,14 @@ import com.google.protobuf.Descriptors;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.EnumDescriptor;
 import com.google.protobuf.Descriptors.FileDescriptor;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Locale;
+import java.util.Set;
 
-/**
- * Helper class for generating fully qualified Java/GWT identfiers for descriptors.
- */
+/** Helper class for generating fully qualified Java/GWT identfiers for descriptors. */
 public final class JavaQualifiedNames {
   private JavaQualifiedNames() {}
-
-  /**
-   * A map that stores special cases for underscoresToCamelCase.
-   *
-   * forbidden words (names that should be avoided as field names). For a forbidden word, helpers.cc
-   * adds a trailing "_" for converting underscores to camel case. An example is a proto field named
-   * "class" -- it will generate hasClass_ or getClass_ method to avoid colliding method names.
-   */
-  private static final ImmutableMap<String, String> SPECIAL_CASES =
-      ImmutableMap.<String, String>builder()
-          .put("cached_size", "CachedSize_")
-          .put("class", "Class_")
-          .put("serialized_size", "SerializedSize_")
-          .build();
 
   /** Returns the expected java package for protos based on the .proto file. */
   public static String getPackage(Descriptors.FileDescriptor fileDescriptor) {
@@ -157,19 +144,43 @@ public final class JavaQualifiedNames {
     return sb.toString();
   }
 
+  /**
+   * Special cases for underscoresToCamelCase. In
+   * https://github.com/protocolbuffers/protobuf/blob/master/src/google/protobuf/compiler/java/java_helpers.h
+   * there is a list of forbidden words (names that should be avoided as field names). For a
+   * forbidden word, java_helpers.cc adds a trailing "_" after converting underscores to camel case.
+   * An example is a proto field named "class". It will generate hasClass_ or getClass_ method to
+   * avoid colliding method names.
+   */
+  private static final String[] forbiddenWords = {
+    "InitializationErrorString",
+    "CachedSize",
+    "Class",
+    "SerializedSize",
+    "DefaultInstanceForType",
+    "ParserForType",
+    "AllFields",
+    "DescriptorForType"
+  };
+
+  private static final Set<String> specialCases = new HashSet<>(Arrays.asList(forbiddenWords));
+
+  static {
+    for (String word : forbiddenWords) {
+      String lowerCase = word.toLowerCase(Locale.US).charAt(0) + word.substring(1);
+      specialCases.add(lowerCase);
+    }
+  }
+
   /** Returns the Java name for a proto field. */
   public static String getFieldName(
       Descriptors.FieldDescriptor field, boolean capitalizeFirstLetter) {
     String fieldName = field.getName();
-    if (SPECIAL_CASES.containsKey(fieldName)) {
-      String output = SPECIAL_CASES.get(fieldName);
-      if (capitalizeFirstLetter) {
-        return output;
-      } else {
-        return ((char) (output.charAt(0) + ('a' - 'A'))) + output.substring(1);
-      }
+    String javaName = underscoresToCamelCase(fieldName, capitalizeFirstLetter);
+    if (specialCases.contains(javaName)) {
+      return javaName + '_';
     }
-    return underscoresToCamelCase(fieldName, capitalizeFirstLetter);
+    return javaName;
   }
 
   /** Returns the class name for the enum descriptor (uses '$' inner class seperator). */
