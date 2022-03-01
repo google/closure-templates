@@ -96,10 +96,10 @@ public final class SharedTestUtils {
   }
 
   public static String buildTestTemplateContent(boolean strictHtml, String soyCode) {
-    String templateName = ".brittleTestTemplate";
+    String templateName = "brittleTestTemplate";
 
     return String.format(
-        "/** Test template. */\n" + "{template %s%s}\n" + "%s\n" + "{/template}\n",
+        "/** Test template. */\n{template %s%s}\n%s\n{/template}\n",
         templateName, strictHtml ? "" : " stricthtml=\"false\"", soyCode);
   }
 
