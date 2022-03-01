@@ -27,7 +27,7 @@ you don't intend to send code for unused delegate implementations to the client
 {namespace ...}
 
 /** Caller (basic template, not delegate template). */
-{template ...}
+{template aTemplate}
   {delcall aaa.bbb.myButton allowemptydefault="true" data="..." /}
 {/template}
 
@@ -123,7 +123,7 @@ Syntax:
 
 ```soy
 /** Caller (basic template, not delegate template). */
-{template ...}
+{template aTemplate}
   {delcall aaa.bbb.myButton variant="$variantToUse" /}
 {/template}
 
