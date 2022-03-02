@@ -440,8 +440,6 @@ public class SoyFileParser {
       SoyErrorKind.of("An alias must be a single identifier. Found ''{0}''.");
   private static final SoyErrorKind INVALID_CALLEE_NAME =
       SoyErrorKind.of("Invalid callee name ''{0}''.");
-  private static final SoyErrorKind INVALID_DELTEMPLATE_NAME =
-      SoyErrorKind.of("Deltemplate ''{0}'' must have a fully qualified name.");
   private static final SoyErrorKind INVALID_TEMPLATE_NAME =
       SoyErrorKind.of("Template name ''{0}'' must be relative to the file namespace, i.e. a dot "
           + "followed by an identifier.");
@@ -2110,13 +2108,9 @@ private Identifier TemplateNameInDef(boolean isDeltemplate) :
   templateName = TemplateName()
   {
     if (!isDeltemplate &&
-        templateName.type() != Identifier.Type.DOT_IDENT &&
         templateName.type() != Identifier.Type.SINGLE_IDENT) {
       errorReporter.report(
           templateName.location(), INVALID_TEMPLATE_NAME, templateName.identifier());
-    } else if (isDeltemplate && templateName.type() == Identifier.Type.DOT_IDENT) {
-      errorReporter.report(
-          templateName.location(), INVALID_DELTEMPLATE_NAME, templateName.identifier());
     }
   }
 
@@ -2132,19 +2126,10 @@ private Identifier TemplateNameInDef(boolean isDeltemplate) :
  */
 private Identifier TemplateName() :
 {
-  Token dot, name;
   Identifier ident;
 }
 {
-  (
-    // Partial name.
-    dot = <CMD_DOT>
-    name = <NAME>
-    { ident = Identifier.create("." + name.image, createSrcLoc(dot, name)); }
-  |
-    // Fully qualified name.
-    ident = DottedIdent()
-  )
+  ident = DottedIdent()
   { return ident; }
 }
 
@@ -3578,11 +3563,7 @@ private CallNode CallStmt() :
     tagBegin = <CMD_BEGIN_CALL>
 
     try {
-      (
-        calleeExpr = Expr()
-      |
-        calleeName = PartialTemplateNameInExpression()
-      )
+      calleeExpr = Expr()
       attributes = Attributes()
       (
         tagClose = <CMD_SELF_CLOSE>
@@ -3646,9 +3627,6 @@ private CallNode CallStmt() :
     }
 
     {
-      if (calleeName.type() == Identifier.Type.DOT_IDENT) {
-        errorReporter.report(calleeName.location(), INVALID_CALLEE_NAME, calleeName.identifier());
-      }
       validateAttributes(calleeName.location(), attributes, errorReporter);
       SourceLocation tag = createSrcLoc(tagBegin, tagClose);
       CallDelegateNode node = new CallDelegateNode(
@@ -4732,16 +4710,6 @@ private StringNode StringLiteral() :
   }
 }
 
-
-private Identifier PartialTemplateNameInExpression() :
-{
-  Token dot, name;
-}
-{
-  dot = <DOT>
-  name = <IDENT>
-  { return Identifier.create("." + name.image, createSrcLoc(dot, name)); }
-}
 
 /**
  * A helper to parse a dotted identifier.

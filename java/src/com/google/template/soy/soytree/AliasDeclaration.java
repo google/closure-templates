@@ -29,7 +29,6 @@ import com.google.template.soy.base.internal.Identifier;
 public abstract class AliasDeclaration {
 
   public static AliasDeclaration create(SourceLocation location, Identifier namespace) {
-    checkArgument(namespace.type() != Identifier.Type.DOT_IDENT);
     Identifier alias = namespace.extractPartAfterLastDot();
     checkArgument(alias.type() == Identifier.Type.SINGLE_IDENT);
     return new AutoValue_AliasDeclaration(location, namespace, alias, /* isImplicit */ true);
@@ -37,7 +36,6 @@ public abstract class AliasDeclaration {
 
   public static AliasDeclaration create(
       SourceLocation location, Identifier namespace, Identifier alias) {
-    checkArgument(namespace.type() != Identifier.Type.DOT_IDENT);
     checkArgument(alias.type() == Identifier.Type.SINGLE_IDENT);
     return new AutoValue_AliasDeclaration(location, namespace, alias, /* isImplicit */ false);
   }

@@ -20,17 +20,8 @@ With all optional attributes:
 {/template}
 ```
 
-<!-- TODO(b/205176130): Keep this up to date for removal. -->
-
-**Note:** Earlier versions of Soy required template names to start with a dot
-(`.`). This is in the process of being removed from the language and any
-existing dots are ignored by the Soy compiler. In particular, `{template foo}`
-and `{template .foo}` both define the same template, and `{call foo}` and `{call
-.foo}` both call the same template.
-{@paragraph #leading-dot}
 
 These are the `template` tag's attributes:
-{@paragraph #leading-dot}
 
 *   `visibility`: Optional. Default `public`. Set this to `private` if you want
     this to be a private template. A private template can be called by other

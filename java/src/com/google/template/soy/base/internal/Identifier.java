@@ -41,8 +41,6 @@ public abstract class Identifier {
   public enum Type {
     /** A single identifier, for example: {@code foo} */
     SINGLE_IDENT,
-    /** A partial identifier, for example: {@code .foo} */
-    DOT_IDENT,
     /**
      * A dotted identifier, for example: {@code foo.bar.baz}.
      *
@@ -85,13 +83,9 @@ public abstract class Identifier {
   @Memoized
   public Type type() {
     int dotIndex = identifier().indexOf('.');
-    if (dotIndex == 0) {
-      checkArgument(BaseUtils.isIdentifierWithLeadingDot(identifier()));
-      return Type.DOT_IDENT;
-    } else {
-      checkArgument(BaseUtils.isDottedIdentifier(identifier()));
-      return dotIndex == -1 ? Type.SINGLE_IDENT : Type.DOTTED_IDENT;
-    }
+    checkArgument(dotIndex != 0);
+    checkArgument(BaseUtils.isDottedIdentifier(identifier()));
+    return dotIndex == -1 ? Type.SINGLE_IDENT : Type.DOTTED_IDENT;
   }
 
   /**
