@@ -31,28 +31,21 @@ import com.google.template.soy.plugin.python.restricted.PythonValue;
 import com.google.template.soy.plugin.python.restricted.PythonValueFactory;
 import com.google.template.soy.plugin.python.restricted.SoyPythonSourceFunction;
 import com.google.template.soy.shared.restricted.Signature;
-import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyMethodSignature;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
 import java.lang.reflect.Method;
 import java.util.List;
 
 /**
- * Soy function for checking if an item is contained in a list.
+ * Soy function for checking the index an item is contained in a list.
  *
- * <p>Usage: {@code listContains(list, item)}
+ * <p>Usage: {@code list.indexOf(item)}
  *
  * <ul>
  *   <li>list: The list in which to look for the item.
  *   <li>item: The item to search for in the list.
  * </ul>
  */
-@SoyFunctionSignature(
-    name = "listIndexOf",
-    value =
-        @Signature(
-            parameterTypes = {"list<any>", "any"},
-            returnType = "int"))
 @SoyMethodSignature(
     name = "indexOf",
     baseType = "list<any>",

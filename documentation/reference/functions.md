@@ -141,8 +141,6 @@ Return the index of the value in list, or -1. This method implements JavaScript
 semantics, comparing elements with `==`. Therefore it only works on lists of
 primitive values.
 
-Also callable as deprecated global function: `listIndexOf(list, value)`
-
 ### `list.slice(from[, to])` {#list-any_slice}
 
 Returns a sublist of a list from index `from` inclusive to index `to` exclusive.
