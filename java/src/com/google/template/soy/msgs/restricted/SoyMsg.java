@@ -66,7 +66,6 @@ public abstract class SoyMsg {
     @Nullable private String localeString;
     @Nullable private String meaning;
     @Nullable private String desc;
-    private boolean isHidden;
     @Nullable private String contentType;
     private final ImmutableSet.Builder<SourceLocationAndTemplate> sourceLocations =
         ImmutableSet.builder();
@@ -116,15 +115,6 @@ public abstract class SoyMsg {
     /** @param desc The description for translators. */
     public Builder setDesc(String desc) {
       this.desc = checkNotNull(desc);
-      return this;
-    }
-
-    /**
-     * @param isHidden Whether this message should be hidden. May not be applicable to all message
-     *     plugins.
-     */
-    public Builder setIsHidden(boolean isHidden) {
-      this.isHidden = isHidden;
       return this;
     }
 
@@ -185,7 +175,6 @@ public abstract class SoyMsg {
           alternateId,
           meaning,
           desc,
-          isHidden,
           contentType,
           isPlrselMsg,
           parts,
@@ -203,7 +192,6 @@ public abstract class SoyMsg {
     Builder builder =
         builder()
             .setId(getId())
-            .setIsHidden(isHidden())
             .setParts(getParts())
             .addAllSourceLocations(getSourceLocations())
             .setIsPlrselMsg(isPlrselMsg())
@@ -241,9 +229,6 @@ public abstract class SoyMsg {
   /** Returns the description for translators. */
   @Nullable
   public abstract String getDesc();
-
-  /** Returns whether this message should be hidden. */
-  public abstract boolean isHidden();
 
   /** Returns the content type of the document that this message will appear in. */
   @Nullable

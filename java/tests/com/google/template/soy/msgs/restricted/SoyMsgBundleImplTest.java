@@ -57,7 +57,6 @@ public class SoyMsgBundleImplTest {
             .setLocaleString("x-zz")
             .setMeaning("abc")
             .setDesc("")
-            .setIsHidden(true)
             .setContentType("text/html")
             .setParts(
                 ImmutableList.of(
@@ -80,7 +79,6 @@ public class SoyMsgBundleImplTest {
     assertThat(booMsg.getLocaleString()).isEqualTo("x-zz");
     assertThat(booMsg.getMeaning()).isEqualTo(null);
     assertThat(booMsg.getDesc()).isEqualTo("Boo message.");
-    assertThat(booMsg.isHidden()).isFalse();
     assertThat(booMsg.getContentType()).isEqualTo(null);
     assertThat(booMsg.getSourceLocations()).hasSize(1);
     assertThat(booMsg.getSourceLocations().asList().get(0).template()).isEqualTo(TEMPLATE);
@@ -95,7 +93,7 @@ public class SoyMsgBundleImplTest {
     assertThat(helloMsg.getLocaleString()).isEqualTo("x-zz");
     assertThat(helloMsg.getMeaning()).isEqualTo("abc");
     assertThat(helloMsg.getDesc()).isEmpty();
-    assertThat(helloMsg.isHidden()).isTrue();
+
     assertThat(helloMsg.getContentType()).isEqualTo("text/html");
     assertThat(helloMsg.getSourceLocations()).isEmpty();
     List<SoyMsgPart> helloMsgParts = helloMsg.getParts();

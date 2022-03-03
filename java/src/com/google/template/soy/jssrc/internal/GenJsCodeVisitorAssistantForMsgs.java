@@ -136,7 +136,7 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
    *
    * <pre>
    *   {msg desc="Link to help content."}Learn more{/msg}
-   *   {msg desc="Tells user how to access a product." hidden="true"}
+   *   {msg desc="Tells user how to access a product."}
    *     Click &lt;a href="{$url}"&gt;here&lt;/a&gt; to access {$productName}.
    *   {/msg}
    * </pre>
@@ -310,9 +310,6 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
     // since afaict there is no escaping syntax in jsdoc.
     jsDocBuilder.addAnnotation(
         "desc", LINE_BOUNDARY_PATTERN.matcher(msgNode.getDesc()).replaceAll(" "));
-    if (msgNode.isHidden()) {
-      jsDocBuilder.addAnnotation("hidden");
-    }
     if (msgNode.getAlternateId().isPresent()) {
       jsDocBuilder.addAnnotation(
           "alternateMessageId", String.valueOf(msgNode.getAlternateId().getAsLong()));

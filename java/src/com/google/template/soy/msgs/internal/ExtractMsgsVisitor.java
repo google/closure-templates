@@ -22,7 +22,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.internal.MsgUtils.MsgPartsAndIds;
 import com.google.template.soy.msgs.restricted.SoyMsg;
@@ -50,21 +49,13 @@ import java.util.regex.Pattern;
  * returned in a {@code SoyMsgBundle} (locale "en").
  */
 public final class ExtractMsgsVisitor extends AbstractSoyNodeVisitor<SoyMsgBundle> {
-  private static final SoyErrorKind MISMATCHED_MSG_ATTRIBUTE =
-      SoyErrorKind.of(
-          "This message has the same id as a message @{0}, but they have inconsistent ''{1}''"
-              + " properties.");
 
   /** List of messages collected during the pass. */
   private List<SoyMsg> msgs;
 
   private String currentTemplate;
 
-  private final ErrorReporter errorReporter;
-
-  public ExtractMsgsVisitor(ErrorReporter errorReporter) {
-    this.errorReporter = errorReporter;
-  }
+  public ExtractMsgsVisitor(ErrorReporter errorReporter) {}
 
   /**
    * Returns a SoyMsgBundle containing all messages extracted from the given SoyFileSetNode or
@@ -84,14 +75,6 @@ public final class ExtractMsgsVisitor extends AbstractSoyNodeVisitor<SoyMsgBundl
   }
 
   private Optional<SoyMsg> merge(SoyMsg m1, SoyMsg m2) {
-    if (m1.isHidden() != m2.isHidden()) {
-      errorReporter.report(
-          m1.getExampleSourceLocation(),
-          MISMATCHED_MSG_ATTRIBUTE,
-          m2.getExampleSourceLocation(),
-          "hidden");
-      return Optional.empty();
-    }
     // TODO(b/173828073): consider comparing things like contentType
     return Optional.of(
         m1.toBuilder()
@@ -130,7 +113,6 @@ public final class ExtractMsgsVisitor extends AbstractSoyNodeVisitor<SoyMsgBundl
     SoyMsg msg =
         builder
             .setDesc(node.getDesc())
-            .setIsHidden(node.isHidden())
             .setContentType(node.getContentType())
             .addSourceLocation(node.getSourceLocation(), currentTemplate)
             .setIsPlrselMsg(node.isPlrselMsg())

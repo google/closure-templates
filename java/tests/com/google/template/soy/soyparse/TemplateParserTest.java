@@ -395,7 +395,7 @@ public final class TemplateParserTest {
         "{@param foo : ?}\n"
             + "{@param fooUrl : ?}\n"
             + "{@param boo : ?}\n"
-            + "{msg desc=\"blah\" hidden=\"true\"}\n"
+            + "{msg desc=\"blah\"}\n"
             + "  {$boo} is a <a href=\"{$fooUrl}\">{$foo}</a>.\n"
             + "{/msg}");
     assertValidTemplate(
@@ -1011,7 +1011,7 @@ public final class TemplateParserTest {
             + "    <a href=\"{$learnMoreUrl}\">Learn more</A>\n"
             + "    <br /><br />\n"
             + "  {/msg}\n"
-            + "  {msg meaning=\"noun\" desc=\"\" hidden=\"true\"}Archive{/msg}\n"
+            + "  {msg meaning=\"noun\" desc=\"\"}Archive{/msg}\n"
             + "  {msg meaning=\"noun\" desc=\"The archive (noun).\"}Archive{/msg}\n"
             + "  {msg meaning=\"verb\" desc=\"\"}Archive{/msg}\n"
             + "  {msg desc=\"\"}Archive{/msg}\n";
@@ -1022,7 +1022,6 @@ public final class TemplateParserTest {
     MsgNode mn0 = ((MsgFallbackGroupNode) nodes.get(0)).getMsg();
     assertEquals("Tells user's quota usage.", mn0.getDesc());
     assertEquals(null, mn0.getMeaning());
-    assertEquals(false, mn0.isHidden());
     assertEquals(8, mn0.numChildren());
 
     assertEquals("You're currently using ", ((RawTextNode) mn0.getChild(0)).getRawText());
@@ -1057,12 +1056,10 @@ public final class TemplateParserTest {
     assertFalse(mpn5.shouldUseSameVarNameAs(mpn3, exprEquivalence));
 
     MsgFallbackGroupNode mfgn1 = (MsgFallbackGroupNode) nodes.get(1);
-    assertEquals(
-        "{msg meaning=\"noun\" desc=\"\" hidden=\"true\"}Archive{/msg}", mfgn1.toSourceString());
+    assertEquals("{msg meaning=\"noun\" desc=\"\"}Archive{/msg}", mfgn1.toSourceString());
     MsgNode mn1 = mfgn1.getMsg();
     assertEquals("", mn1.getDesc());
     assertEquals("noun", mn1.getMeaning());
-    assertEquals(true, mn1.isHidden());
     assertEquals(1, mn1.numChildren());
     assertEquals("Archive", ((RawTextNode) mn1.getChild(0)).getRawText());
   }

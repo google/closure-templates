@@ -72,6 +72,9 @@ import javax.annotation.Nullable;
 public final class MsgNode extends AbstractBlockCommandNode
     implements ExprHolderNode, MsgBlockNode, CommandTagAttributesHolder {
 
+  private static final SoyErrorKind HIDDEN_DEPRECATED =
+      SoyErrorKind.of("Attribute ''hidden'' is deprecated and has no effect.");
+
   private static final SoyErrorKind WRONG_NUMBER_OF_GENDER_EXPRS =
       SoyErrorKind.of("Attribute ''genders'' should contain 1-3 expressions.");
 
@@ -148,9 +151,6 @@ public final class MsgNode extends AbstractBlockCommandNode
   /** The description string for translators. Required. */
   private final String desc;
 
-  /** Whether the message should be added as 'hidden' in the TC. */
-  private final boolean isHidden;
-
   /** Used for formatting */
   private final List<CommandTagAttribute> attributes;
 
@@ -182,7 +182,6 @@ public final class MsgNode extends AbstractBlockCommandNode
 
     String meaning = null;
     String desc = null;
-    boolean hidden = false;
     ImmutableList<ExprRootNode> genders = null;
     Optional<CommandTagAttribute> alternateIdAttribute = Optional.empty();
 
@@ -203,7 +202,8 @@ public final class MsgNode extends AbstractBlockCommandNode
           desc = attr.getValue();
           break;
         case "hidden":
-          hidden = attr.valueAsEnabled(errorReporter);
+          // TODO(b/178370844): Remove case when no uses in the wild.
+          errorReporter.warn(attr.getName().location(), HIDDEN_DEPRECATED);
           break;
         case "genders":
           genders = attr.valueAsExprList();
@@ -220,7 +220,7 @@ public final class MsgNode extends AbstractBlockCommandNode
               UNSUPPORTED_ATTRIBUTE_KEY,
               name,
               commandName,
-              ImmutableList.of("meaning", "desc", "hidden", "genders", "alternateId"));
+              ImmutableList.of("meaning", "desc", "genders", "alternateId"));
           break;
       }
     }
@@ -232,7 +232,6 @@ public final class MsgNode extends AbstractBlockCommandNode
 
     this.meaning = meaning;
     this.desc = desc;
-    this.isHidden = hidden;
     this.genderExprs = genders;
     this.alternateIdAttribute = alternateIdAttribute;
     this.alternateId =
@@ -266,7 +265,6 @@ public final class MsgNode extends AbstractBlockCommandNode
 
     this.meaning = orig.meaning;
     this.desc = orig.desc;
-    this.isHidden = orig.isHidden;
     if (orig.substUnitInfo != null) {
       // we need to fix references in the substUnitInfo
       final IdentityHashMap<MsgSubstUnitNode, MsgSubstUnitNode> oldToNew = new IdentityHashMap<>();
@@ -364,11 +362,6 @@ public final class MsgNode extends AbstractBlockCommandNode
   /** Returns the description string for translators. */
   public String getDesc() {
     return desc;
-  }
-
-  /** Returns whether the message should be added as 'hidden' in the TC. */
-  public boolean isHidden() {
-    return isHidden;
   }
 
   /** Returns the optional alternate id attribute. */
@@ -493,9 +486,6 @@ public final class MsgNode extends AbstractBlockCommandNode
     }
     if (desc != null) {
       commandText.append(" desc=\"").append(desc).append('"');
-    }
-    if (isHidden) {
-      commandText.append(" hidden=\"").append(isHidden).append('"');
     }
     if (genderExprsString != null) {
       commandText.append(" genders=\"").append(genderExprsString).append('"');

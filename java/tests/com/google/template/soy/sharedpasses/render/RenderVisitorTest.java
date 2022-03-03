@@ -417,7 +417,7 @@ public class RenderVisitorTest {
             + "    <a href=\"{$foo.bar}\">Learn more</A>\n"
             + "    <br /><br />\n"
             + "  {/msg}\n"
-            + "  {msg meaning=\"noun\" desc=\"\" hidden=\"true\"}Archive{/msg}\n"
+            + "  {msg meaning=\"noun\" desc=\"\"}Archive{/msg}\n"
             + "  {msg meaning=\"noun\" desc=\"The archive (noun).\"}Archive{/msg}\n"
             + "  {msg meaning=\"verb\" desc=\"\"}Archive{/msg}\n"
             + "  {msg desc=\"\"}Archive{/msg}\n";

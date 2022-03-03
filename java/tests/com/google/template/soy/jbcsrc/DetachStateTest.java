@@ -382,7 +382,7 @@ public final class DetachStateTest {
             new GenericDescriptor[] {Foo.getDescriptor()},
             "{template t}",
             "  {@param myBool : bool}",
-            "  {msg desc=\"foo\" hidden=\"true\"}",
+            "  {msg desc=\"foo\"}",
             "    No definitions found for this word.{sp}",
             "    {velog ve_data(WithData, Foo(stringField: $myBool ? 'www.google.es' :"
                 + " 'www.google.com'))}",
