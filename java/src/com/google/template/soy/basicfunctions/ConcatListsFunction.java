@@ -29,100 +29,20 @@ import com.google.template.soy.plugin.python.restricted.PythonValue;
 import com.google.template.soy.plugin.python.restricted.PythonValueFactory;
 import com.google.template.soy.plugin.python.restricted.SoyPythonSourceFunction;
 import com.google.template.soy.shared.restricted.Signature;
-import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyMethodSignature;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
 import java.lang.reflect.Method;
 import java.util.List;
 
 /** Soy function that concatenates two or more lists together. */
-@SoyFunctionSignature(
-    name = "concatLists",
+@SoyMethodSignature(
+    name = "concat",
+    baseType = "list<any>",
     value = {
       // Note: These signatures exist solely to inform the # of parameters we allow.
       // The return type is overridden in ResolveExpressionTypePass.
       // ConcatLists would be varadic if soy allowed varadic functions. Instead we're giving the
       // function a high enough upper limit that it's close enough to being varadic in practice.
-      @Signature(
-          parameterTypes = {"list<any>"},
-          returnType = "list<any>"),
-      @Signature(
-          parameterTypes = {"list<any>", "list<any>"},
-          returnType = "list<any>"),
-      @Signature(
-          parameterTypes = {"list<any>", "list<any>", "list<any>"},
-          returnType = "list<any>"),
-      @Signature(
-          parameterTypes = {"list<any>", "list<any>", "list<any>", "list<any>"},
-          returnType = "list<any>"),
-      @Signature(
-          parameterTypes = {"list<any>", "list<any>", "list<any>", "list<any>", "list<any>"},
-          returnType = "list<any>"),
-      @Signature(
-          parameterTypes = {
-            "list<any>",
-            "list<any>",
-            "list<any>",
-            "list<any>",
-            "list<any>",
-            "list<any>"
-          },
-          returnType = "list<any>"),
-      @Signature(
-          parameterTypes = {
-            "list<any>",
-            "list<any>",
-            "list<any>",
-            "list<any>",
-            "list<any>",
-            "list<any>",
-            "list<any>"
-          },
-          returnType = "list<any>"),
-      @Signature(
-          parameterTypes = {
-            "list<any>",
-            "list<any>",
-            "list<any>",
-            "list<any>",
-            "list<any>",
-            "list<any>",
-            "list<any>",
-            "list<any>"
-          },
-          returnType = "list<any>"),
-      @Signature(
-          parameterTypes = {
-            "list<any>",
-            "list<any>",
-            "list<any>",
-            "list<any>",
-            "list<any>",
-            "list<any>",
-            "list<any>",
-            "list<any>",
-            "list<any>"
-          },
-          returnType = "list<any>"),
-      @Signature(
-          parameterTypes = {
-            "list<any>",
-            "list<any>",
-            "list<any>",
-            "list<any>",
-            "list<any>",
-            "list<any>",
-            "list<any>",
-            "list<any>",
-            "list<any>",
-            "list<any>"
-          },
-          returnType = "list<any>")
-    })
-@SoyMethodSignature(
-    name = "concat",
-    baseType = "list<any>",
-    value = {
       @Signature(parameterTypes = "list<any>", returnType = "list<any>"),
       @Signature(
           parameterTypes = {"list<any>", "list<any>"},

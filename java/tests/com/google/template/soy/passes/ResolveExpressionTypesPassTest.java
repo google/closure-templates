@@ -809,13 +809,13 @@ public final class ResolveExpressionTypesPassTest {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
                 constructFileSource(
-                    "{assertType('list<string>', concatLists(['1'], ['2']))}",
-                    "{assertType('list<int>', concatLists([1], [2]))}",
-                    "{assertType('list<int>', concatLists([1], []))}",
-                    "{assertType('list<int>', concatLists([], [1]))}",
-                    "{assertType('list<int>', concatLists(true ? [] : [1], [2]))}",
-                    "{assertType('list<null>', concatLists([], []))}",
-                    "{assertType('list<int|string>', concatLists([1], [\"2\"]))}"))
+                    "{assertType('list<string>', ['1'].concat(['2']))}",
+                    "{assertType('list<int>', [1].concat([2]))}",
+                    "{assertType('list<int>', [1].concat([]))}",
+                    "{assertType('list<int>', [].concat([1]))}",
+                    "{assertType('list<int>', (true ? [] : [1]).concat([2]))}",
+                    "{assertType('list<null>', [].concat([]))}",
+                    "{assertType('list<int|string>', [1].concat([\"2\"]))}"))
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
             .parse()
             .fileSet();

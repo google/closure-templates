@@ -121,8 +121,6 @@ Also callable as deprecated global function: `length(list)`
 
 Joins two or more lists together.
 
-Also callable as deprecated global function: `concatLists(list, list...)`
-
 <span id="list-any_contains"></span>
 
 ### `list.contains(value)` {#listContains}
