@@ -129,8 +129,6 @@ Checks if the given value is inside the list. This method implements JavaScript
 semantics, comparing elements with `==`. Therefore it only works on lists of
 primitive values.
 
-Also callable as deprecated global function: `listContains(list, value)`
-
 <span id="list-any_indexOf"></span>
 
 ### `list.indexOf(value)` {#listIndexOf}
