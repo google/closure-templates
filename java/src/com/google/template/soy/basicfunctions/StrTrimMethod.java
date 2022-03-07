@@ -43,7 +43,7 @@ final class StrTrimMethod
   @Override
   public JavaScriptValue applyForJavaScriptSource(
       JavaScriptValueFactory factory, List<JavaScriptValue> args, JavaScriptPluginContext context) {
-    return factory.callNamespaceFunction("soy", "soy.$$strTrim", args.get(0));
+    return args.get(0).invokeMethod("trim");
   }
 
   @Override

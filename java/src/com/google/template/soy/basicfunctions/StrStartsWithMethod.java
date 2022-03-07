@@ -46,7 +46,7 @@ final class StrStartsWithMethod
   @Override
   public JavaScriptValue applyForJavaScriptSource(
       JavaScriptValueFactory factory, List<JavaScriptValue> args, JavaScriptPluginContext context) {
-    return factory.callNamespaceFunction("soy", "soy.$$strStartsWith", args.get(0), args.get(1));
+    return args.get(0).invokeMethod("startsWith", args.get(1));
   }
 
   @Override

@@ -1433,7 +1433,7 @@ const $$whitespaceHtmlAttributes = function(value) {
   if (soyChecks.isAttribute(value)) {
     value = value.getContent();
   }
-  return (value && !$$strStartsWith(value, ' ') ? ' ' : '') + value;
+  return (value && !value.startsWith(' ') ? ' ' : '') + value;
 };
 
 /**
@@ -2094,48 +2094,6 @@ const $$strToAsciiUpperCase = function(s) {
 
 
 /**
- * Trims a string.
- * @param {string} s
- * @return {string}
- */
-const $$strTrim = function(s) {
-  return s.trim();
-};
-
-/**
- * Returns whether s starts with val.
- * @param {string} s
- * @param {string} val
- * @return {boolean}
- */
-const $$strStartsWith = function(s, val) {
-  return s.length >= val.length && s.substring(0, val.length) === val;
-};
-
-
-/**
- * Returns whether s ends with val.
- * @param {string} s
- * @param {string} val
- * @return {boolean}
- */
-const $$strEndsWith = function(s, val) {
-  return s.length >= val.length && s.substring(s.length - val.length) === val;
-};
-
-
-/**
- * Splits a string.
- * @param {string} s
- * @param {string} sep
- * @return {!Array<string>}
- */
-const $$strSplit = function(s, sep) {
-  return s.split(sep);
-};
-
-
-/**
  * Replaces all occurrences in s of match with token.
  * @param {string} s
  * @param {string} match
@@ -2500,10 +2458,6 @@ exports = {
   $$stringListSort,
   $$strToAsciiLowerCase,
   $$strToAsciiUpperCase,
-  $$strTrim,
-  $$strStartsWith,
-  $$strEndsWith,
-  $$strSplit,
   $$strReplaceAll,
   $$bidiDirAttr,
   $$bidiTextDir,

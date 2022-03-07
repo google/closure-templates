@@ -46,7 +46,7 @@ final class StrSplitMethod
   @Override
   public JavaScriptValue applyForJavaScriptSource(
       JavaScriptValueFactory factory, List<JavaScriptValue> args, JavaScriptPluginContext context) {
-    return factory.callNamespaceFunction("soy", "soy.$$strSplit", args.get(0), args.get(1));
+    return args.get(0).invokeMethod("split", args.get(1));
   }
 
   @Override
