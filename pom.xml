@@ -82,7 +82,7 @@
     <guava.version>31.0.1-jre</guava.version>
     <asm.version>7.0</asm.version>
     <autovalue.version>1.7.4</autovalue.version>
-    <proto.version>3.3.0</proto.version>
+    <proto.version>3.19.4</proto.version>
     <truth.version>0.45</truth.version>
     <flogger.version>0.5.1</flogger.version>
     <soy.examples.path>examples</soy.examples.path>
@@ -1013,19 +1013,40 @@
         </dependencies>
       </plugin>
       <plugin>
-        <groupId>no.hassle.maven.plugins</groupId>
-        <artifactId>protoc-bundled-plugin</artifactId>
-        <version>2.0.0</version>
-        <configuration>
-          <importDirectories>
-            <importDirectory>${project.basedir}</importDirectory>
-          </importDirectories>
-        </configuration>
+        <groupId>com.github.os72</groupId>
+        <artifactId>protoc-jar-maven-plugin</artifactId>
+        <version>3.11.4</version>
         <executions>
           <execution>
+            <phase>generate-sources</phase>
             <goals>
               <goal>run</goal>
             </goals>
+            <configuration>
+              <protocArtifact>com.google.protobuf:protoc:${proto.version}</protocArtifact>
+              <includeDirectories>
+                <include>${project.basedir}</include>
+              </includeDirectories>
+              <outputTargets>
+                <outputTarget>
+                  <type>java</type>
+                </outputTarget>
+              </outputTargets>
+            </configuration>
+          </execution>
+          <execution>
+            <id>protoc-tests</id>
+            <phase>generate-test-sources</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <protocArtifact>com.google.protobuf:protoc:${proto.version}</protocArtifact>
+              <addSources>test</addSources>
+              <inputDirectories>
+                <include>src/test/protobuf</include>
+              </inputDirectories>
+            </configuration>
           </execution>
         </executions>
       </plugin>
