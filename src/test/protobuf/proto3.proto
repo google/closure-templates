@@ -39,6 +39,8 @@ message Proto3ImplicitDefaults {
   message SubMessage {
     string field = 1;
   }
+  optional string opt = 8;
+  optional SubMessage subopt = 9;
 }
 
 message Foo3 {

@@ -134,7 +134,7 @@ public enum BuiltinMethod implements SoyMethod {
         return false;
       }
       if (fd.getFile().getSyntax() == Syntax.PROTO3) {
-        return false;
+        return fd.hasOptionalKeyword();
       }
 
       return true;
