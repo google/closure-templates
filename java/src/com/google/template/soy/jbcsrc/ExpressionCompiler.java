@@ -1549,18 +1549,21 @@ final class ExpressionCompiler {
       } else if (javaType.equals(Type.DOUBLE_TYPE)) {
         return soyExpression.coerceToDouble().unboxAsDouble();
       } else if (javaType.getSort() == Type.OBJECT) {
-        if (type.getKind() == Kind.ANY || type.getKind() == Kind.UNKNOWN) {
+        SoyType nonNullableType = SoyTypes.tryRemoveNull(type);
+        if (nonNullableType.getKind() == Kind.ANY || nonNullableType.getKind() == Kind.UNKNOWN) {
           return soyExpression.box().checkedCast(BytecodeUtils.SOY_VALUE_TYPE);
-        } else if (type.getKind() == Kind.PROTO) {
+        } else if (nonNullableType.getKind() == Kind.PROTO) {
           return soyExpression
               .unboxAsMessage()
               .checkedCast(
-                  ProtoUtils.messageRuntimeType(((SoyProtoType) type).getDescriptor()).type());
-        } else if (type.getKind() == Kind.MESSAGE) {
+                  ProtoUtils.messageRuntimeType(((SoyProtoType) nonNullableType).getDescriptor())
+                      .type());
+        } else if (nonNullableType.getKind() == Kind.MESSAGE) {
           return soyExpression.unboxAsMessage();
         } else if (type.getKind() == Kind.PROTO_ENUM) {
+          // TODO(b/217186858): support nullable proto enum parameters.
           return soyExpression.unboxAsLong();
-        } else if (type.getKind() == Kind.LIST) {
+        } else if (nonNullableType.getKind() == Kind.LIST) {
           return soyExpression.unboxAsList();
         } else {
           return soyExpression.box().checkedCast(javaType);
