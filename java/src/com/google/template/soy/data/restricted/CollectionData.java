@@ -100,7 +100,8 @@ public abstract class CollectionData extends SoyAbstractValue {
         throw new SoyDataException(
             "Attempting to add a mapping containing a non-string key (key type "
                 + data[i].getClass().getName()
-                + ").");
+                + ").",
+            cce);
       }
     }
   }
@@ -131,7 +132,7 @@ public abstract class CollectionData extends SoyAbstractValue {
         // part of keys[i+1] to know whether to create a SoyMapData or SoyListData (checking the
         // first char is sufficient).
         nextCollectionData =
-            (Character.isDigit(keys.get(i + 1).charAt(0))) ? new SoyListData() : new SoyMapData();
+             Character.isDigit(keys.get(i + 1).charAt(0)) ? new SoyListData() : new SoyMapData();
         collectionData.putSingle(keys.get(i), nextCollectionData);
       }
       collectionData = nextCollectionData;
