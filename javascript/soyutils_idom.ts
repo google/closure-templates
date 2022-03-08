@@ -30,6 +30,7 @@ import * as incrementaldom from 'incrementaldom';  // from //third_party/javascr
 
 import {attributes, ElementConstructor, FalsinessRenderer, IncrementalDomRenderer, NullRenderer, patch, patchOuter} from './api_idom';
 import {splitAttributes} from './attributes';
+import {upgradeElement} from './custom_elements_shim';
 import {IdomFunction, PatchFunction, SoyElement} from './element_lib_idom';
 import {getSoyUntyped} from './global';
 import {IdomSyncState, IdomTemplate, IjData, SoyTemplate, Template} from './templates';
@@ -233,6 +234,13 @@ function handleCustomElement<T extends TemplateAcceptor<{}>>({
     template.call(new elementClassCtor(), incrementaldom, data, ijData);
     return null;
   }
+  // When a custom element is newly created by idom, idom invokes the
+  // constructor which will handle the upgrade. But if the element is SSR'ed and
+  // subsequently hydrated by idom, we need to upgrade the element when idom
+  // first encounters it. There's not a good spot to catch idom's first
+  // encounter with an element, so `upgradeElement` has an early return if the
+  // CE is already hydrated.
+  upgradeElement(element);
   const customEl = element as unknown as T;
   customEl.syncStateFromProps(data, false);
   const skip = () => {
