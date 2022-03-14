@@ -72,9 +72,6 @@ import javax.annotation.Nullable;
 public final class MsgNode extends AbstractBlockCommandNode
     implements ExprHolderNode, MsgBlockNode, CommandTagAttributesHolder {
 
-  private static final SoyErrorKind HIDDEN_DEPRECATED =
-      SoyErrorKind.of("Attribute ''hidden'' is deprecated and has no effect.");
-
   private static final SoyErrorKind WRONG_NUMBER_OF_GENDER_EXPRS =
       SoyErrorKind.of("Attribute ''genders'' should contain 1-3 expressions.");
 
@@ -200,10 +197,6 @@ public final class MsgNode extends AbstractBlockCommandNode
           break;
         case "desc":
           desc = attr.getValue();
-          break;
-        case "hidden":
-          // TODO(b/178370844): Remove case when no uses in the wild.
-          errorReporter.warn(attr.getName().location(), HIDDEN_DEPRECATED);
           break;
         case "genders":
           genders = attr.valueAsExprList();
