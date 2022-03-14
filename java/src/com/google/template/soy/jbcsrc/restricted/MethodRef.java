@@ -221,9 +221,9 @@ public abstract class MethodRef {
   public static final MethodRef LONG_TO_STRING = create(Long.class, "toString", long.class);
 
   public static final MethodRef NUMBER_DOUBLE_VALUE = create(Number.class, "doubleValue").asCheap();
-
   public static final MethodRef NUMBER_LONG_VALUE = create(Number.class, "longValue").asCheap();
   public static final MethodRef NUMBER_INT_VALUE = create(Number.class, "intValue").asCheap();
+  public static final MethodRef NUMBER_FLOAT_VALUE = create(Number.class, "floatValue").asCheap();
 
   public static final MethodRef OBJECT_TO_STRING = create(Object.class, "toString");
 

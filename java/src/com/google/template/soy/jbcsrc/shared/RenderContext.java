@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.data.Dir;
@@ -40,6 +41,8 @@ import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.ibm.icu.util.ULocale;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
@@ -68,6 +71,12 @@ public final class RenderContext {
   private final ImmutableMap<String, SoyJavaPrintDirective> soyJavaDirectivesMap;
   /** The bundle of translated messages */
   private final SoyMsgBundle msgBundle;
+
+  /**
+   * Stores memoized {const} values, which in SSR are actually request-scoped values, not Java
+   * static values.
+   */
+  private final Map<String, Object> constValues = new ConcurrentHashMap<>();
 
   private final boolean debugSoyTemplateInfo;
   private final SoyLogger logger;
@@ -306,6 +315,17 @@ public final class RenderContext {
     } catch (ReflectiveOperationException e) {
       throw new AssertionError(e);
     }
+  }
+
+  @Nullable
+  public Object getConst(String key) {
+    return constValues.get(key);
+  }
+
+  public void storeConst(String key, Object value) {
+    Preconditions.checkNotNull(value);
+    Object lastValue = constValues.put(key, value);
+    Preconditions.checkArgument(lastValue == null, "Cannot overwrite value %s", key);
   }
 
   /**

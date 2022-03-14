@@ -178,6 +178,12 @@ public final class SoyClassWriter extends ClassVisitor {
 
     @Override
     protected String getCommonSuperClass(String left, String right) {
+      if ("java/lang/Object".equals(left)) {
+        return left;
+      }
+      if ("java/lang/Object".equals(right)) {
+        return right;
+      }
       // TODO(lukes): we know the names and superclasses of all the classes we generate prior to
       // this method being called, so we could build a smarter system just by building up that
       // graph as we generate classes.

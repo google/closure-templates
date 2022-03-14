@@ -16,7 +16,9 @@
 
 package com.google.template.soy.jbcsrc;
 
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.boxJavaPrimitive;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.isDefinitelyAssignableFrom;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.unboxJavaPrimitive;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -24,6 +26,8 @@ import com.google.template.soy.exprtree.AbstractLocalVarDefn;
 import com.google.template.soy.exprtree.DataAccessNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.jbcsrc.ExpressionCompiler.BasicExpressionCompiler;
+import com.google.template.soy.jbcsrc.TemplateVariableManager.SaveStrategy;
+import com.google.template.soy.jbcsrc.TemplateVariableManager.Variable;
 import com.google.template.soy.jbcsrc.internal.SoyClassWriter;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
@@ -90,24 +94,25 @@ public final class ConstantsCompiler {
   }
 
   public void compile() {
+    String javaClassName =
+        Names.javaClassNameFromSoyNamespace(
+            constant.getNearestAncestor(SoyFileNode.class).getNamespace());
     Method method = getConstantMethod(constant.getVar().name(), constant.getVar().type());
+    Type methodType = method.getReturnType();
 
     Label start = new Label();
     Label end = new Label();
     TemplateVariableManager variableSet =
         new TemplateVariableManager(
-            TypeInfo.createClass(
-                    Names.javaClassNameFromSoyNamespace(
-                        constant.getNearestAncestor(SoyFileNode.class).getNamespace()))
-                .type(),
+            TypeInfo.createClass(javaClassName).type(),
             method,
             ImmutableList.of(StandardNames.RENDER_CONTEXT),
             start,
             end,
             /*isStatic=*/ true);
     Expression renderContext = variableSet.getVariable(StandardNames.RENDER_CONTEXT);
-    TemplateParameterLookup variables =
-        new ConstantVariables(variableSet, new RenderContextExpression(renderContext));
+    RenderContextExpression renderContextExpr = new RenderContextExpression(renderContext);
+    TemplateParameterLookup variables = new ConstantVariables(variableSet, renderContextExpr);
 
     BasicExpressionCompiler expressionCompiler =
         ExpressionCompiler.createBasicCompiler(
@@ -118,16 +123,56 @@ public final class ConstantsCompiler {
             javaSourceFunctionCompiler,
             fileSetMetadata);
 
-    SoyExpression body = expressionCompiler.compile(constant.getExpr());
+    SoyExpression buildConstValue = expressionCompiler.compile(constant.getExpr());
     Preconditions.checkArgument(
-        isDefinitelyAssignableFrom(body.soyRuntimeType().runtimeType(), method.getReturnType()));
+        isDefinitelyAssignableFrom(buildConstValue.soyRuntimeType().runtimeType(), methodType));
 
+    String constKey = javaClassName + "#" + constant.getVar().name();
+
+    boolean constIsPrimitive = BytecodeUtils.isPrimitive(methodType);
+    Variable tmpVar =
+        variableSet
+            .enterScope()
+            .create("tmp", renderContextExpr.getConst(constKey), SaveStrategy.STORE);
+    Statement storeLocal =
+        tmpVar
+            .local()
+            .store(
+                constIsPrimitive ? boxJavaPrimitive(methodType, buildConstValue) : buildConstValue);
+    Statement storeConst = renderContextExpr.storeConst(constKey, tmpVar.accessor());
+    Expression returnValue =
+        constIsPrimitive
+            ? unboxJavaPrimitive(methodType, tmpVar.accessor())
+            : tmpVar.accessor().checkedCast(method.getReturnType());
+
+    // Implements a lazily initialized, memoized value. Memoization ensures that values appear
+    // constant even if their initializer is not idempotent. The value is memoized into the
+    // RenderContext, which is more or less request scoped. Request scoped storage (rather than Java
+    // static memory) is necessary because constants can be initialized via externs that depend on
+    // request scoped data (via type="instance").
     new Statement() {
       @Override
       protected void doGen(CodeBuilder adapter) {
+        /*
+          public static T constant(RenderContext r) {
+            Object tmp = r.getConst("key");
+            if (tmp == null) {
+              goto END;
+            }
+            tmp = ...;
+            r.storeConst("key", tmp);
+            END;
+            return (T) tmp;
+          }
+        */
         adapter.mark(start);
-        body.gen(adapter);
+        tmpVar.initializer().gen(adapter);
+        tmpVar.accessor().gen(adapter);
+        adapter.ifNonNull(end);
+        storeLocal.gen(adapter);
+        storeConst.gen(adapter);
         adapter.mark(end);
+        returnValue.gen(adapter);
         adapter.returnValue();
         variableSet.generateTableEntries(adapter);
       }

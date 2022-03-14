@@ -1115,18 +1115,38 @@ public final class BytecodeUtils {
 
   /** Converts int to Integer, long to Long, etc. Java "boxing", not Soy "boxing". */
   public static Expression boxJavaPrimitive(SoyExpression actualParam) {
-    Type type = actualParam.soyRuntimeType().runtimeType();
+    return boxJavaPrimitive(actualParam.soyRuntimeType().runtimeType(), actualParam);
+  }
+
+  public static Expression boxJavaPrimitive(Type type, Expression expr) {
     switch (type.getSort()) {
       case Type.INT:
-        return MethodRef.BOX_INTEGER.invoke(actualParam);
+        return MethodRef.BOX_INTEGER.invoke(expr);
       case Type.LONG:
-        return MethodRef.BOX_LONG.invoke(actualParam);
+        return MethodRef.BOX_LONG.invoke(expr);
       case Type.BOOLEAN:
-        return MethodRef.BOX_BOOLEAN.invoke(actualParam);
+        return MethodRef.BOX_BOOLEAN.invoke(expr);
       case Type.FLOAT:
-        return MethodRef.BOX_FLOAT.invoke(actualParam);
+        return MethodRef.BOX_FLOAT.invoke(expr);
       case Type.DOUBLE:
-        return MethodRef.BOX_DOUBLE.invoke(actualParam);
+        return MethodRef.BOX_DOUBLE.invoke(expr);
+      default:
+        throw new IllegalArgumentException(type.getClassName());
+    }
+  }
+
+  public static Expression unboxJavaPrimitive(Type type, Expression expr) {
+    switch (type.getSort()) {
+      case Type.INT:
+        return MethodRef.NUMBER_INT_VALUE.invoke(expr.checkedCast(BytecodeUtils.NUMBER_TYPE));
+      case Type.LONG:
+        return MethodRef.NUMBER_LONG_VALUE.invoke(expr.checkedCast(BytecodeUtils.NUMBER_TYPE));
+      case Type.BOOLEAN:
+        return MethodRef.BOOLEAN_VALUE.invoke(expr.checkedCast(BytecodeUtils.BOXED_BOOLEAN_TYPE));
+      case Type.FLOAT:
+        return MethodRef.NUMBER_FLOAT_VALUE.invoke(expr.checkedCast(BytecodeUtils.NUMBER_TYPE));
+      case Type.DOUBLE:
+        return MethodRef.NUMBER_DOUBLE_VALUE.invoke(expr.checkedCast(BytecodeUtils.NUMBER_TYPE));
       default:
         throw new IllegalArgumentException(type.getClassName());
     }

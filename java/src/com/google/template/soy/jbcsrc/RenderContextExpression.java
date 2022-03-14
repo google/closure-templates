@@ -24,6 +24,7 @@ import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective;
+import com.google.template.soy.jbcsrc.restricted.Statement;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.types.UnknownType;
@@ -115,6 +116,12 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
   private static final MethodRef GET_RENDER_CSS_HELPER =
       MethodRef.create(RenderContext.class, "getRenderCssHelper");
 
+  private static final MethodRef GET_CONST =
+      MethodRef.create(RenderContext.class, "getConst", String.class);
+
+  private static final MethodRef STORE_CONST =
+      MethodRef.create(RenderContext.class, "storeConst", String.class, Object.class);
+
   private final Expression delegate;
 
   RenderContextExpression(Expression renderContext) {
@@ -192,6 +199,14 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
 
   Expression getEscapingDirectiveAsFunction(String name) {
     return delegate.invoke(GET_ESCAPING_DIRECTIVE_AS_FUNCTION, constant(name));
+  }
+
+  Expression getConst(String name) {
+    return delegate.invoke(GET_CONST, constant(name));
+  }
+
+  Statement storeConst(String name, Expression value) {
+    return delegate.invokeVoid(STORE_CONST, constant(name), value);
   }
 
   SoyExpression applyPrintDirective(SoyPrintDirective directive, SoyExpression value) {

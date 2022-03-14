@@ -237,7 +237,9 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     }
   }
 
-  /** @deprecated Call {@link #gen} instead. */
+  /**
+   * @deprecated Call {@link #gen} instead.
+   */
   @Override
   @Deprecated
   public final List<String> exec(SoyNode node) {
@@ -317,17 +319,17 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     }
   }
 
-  /** @return A new CodeBuilder to create the contents of a file with. */
+  /** Returns a new CodeBuilder to create the contents of a file with. */
   protected JsCodeBuilder createCodeBuilder() {
     return new JsCodeBuilder();
   }
 
-  /** @return A child CodeBuilder that inherits from the current builder. */
+  /** Returns a child CodeBuilder that inherits from the current builder. */
   protected JsCodeBuilder createChildJsCodeBuilder() {
     return new JsCodeBuilder(jsCodeBuilder);
   }
 
-  /** @return The CodeBuilder used for generating file contents. */
+  /** Returns the CodeBuilder used for generating file contents. */
   protected JsCodeBuilder getJsCodeBuilder() {
     return jsCodeBuilder;
   }
@@ -704,14 +706,22 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
                     .addAnnotation(node.isExported() ? "public" : "private")
                     .addParameterizedAnnotation("return", varType.typeExpr()))
             .build();
+    JsDoc fieldJsDoc = JsDoc.builder().addAnnotation("private").build();
 
     String partialName = var.name();
     String alias =
         jsSrcOptions.shouldGenerateGoogModules()
             ? partialName
             : file.getNamespace() + "." + partialName;
-
     Expression aliasExp = dottedIdNoRequire(alias);
+
+    // Define a private field storing the value so we can memoize the value.
+    String partialFieldName = "_" + partialName + "$memoized";
+    String fieldAlias =
+        jsSrcOptions.shouldGenerateGoogModules()
+            ? partialFieldName
+            : file.getNamespace() + "." + partialFieldName;
+    Expression fieldAliasExp = dottedIdNoRequire(fieldAlias);
 
     Expression constantGetterFunction =
         Expression.function(
@@ -720,9 +730,19 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
                 JsRuntime.SOY_ARE_YOU_AN_INTERNAL_CALLER
                     .call(id(StandardNames.ARE_YOU_AN_INTERNAL_CALLER))
                     .asStatement(),
-                returnValue(translateExpr(node.getExpr()).castAs(varType.typeExpr()))));
+                ifStatement(
+                        fieldAliasExp.tripleEquals(Expression.LITERAL_UNDEFINED),
+                        assign(fieldAliasExp, JsRuntime.FREEZE.call(translateExpr(node.getExpr()))))
+                    .build(),
+                returnValue(fieldAliasExp.castAs(varType.typeExpr()))));
 
     if (jsSrcOptions.shouldGenerateGoogModules()) {
+      declarations.add(
+          VariableDeclaration.builder(fieldAlias)
+              .setJsDoc(fieldJsDoc)
+              .setMutable()
+              .setRhs(Expression.LITERAL_UNDEFINED)
+              .build());
       declarations.add(
           VariableDeclaration.builder(alias)
               .setJsDoc(jsDoc)
@@ -732,6 +752,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         declarations.add(assign(JsRuntime.EXPORTS.dotAccess(partialName), aliasExp));
       }
     } else {
+      declarations.add(Statement.assign(fieldAliasExp, Expression.LITERAL_UNDEFINED, fieldJsDoc));
       declarations.add(Statement.assign(aliasExp, constantGetterFunction, jsDoc));
     }
 
@@ -740,7 +761,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       jsCodeBuilder.addGoogRequire(require);
     }
 
-    topLevelSymbols.put(var.name(), aliasExp.call(JsRuntime.SOY_INTERNAL_CALL_MARKER));
+    topLevelSymbols.put(partialName, aliasExp.call(JsRuntime.SOY_INTERNAL_CALL_MARKER));
   }
 
   /**

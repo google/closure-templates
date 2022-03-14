@@ -2390,9 +2390,36 @@ function $$getDebugSoyTemplateInfo() {
   return $$debugSoyTemplateInfo;
 }
 
+/**
+ * Best effort to freeze a data structure in DEBUG mode (to poison tests that
+ * may try to mutate Soy constants in application JS code).
+ *
+ * @param {T} object
+ * @return {T}
+ * @template T
+ */
+function $$freeze(object) {
+  if (goog.DEBUG && Object.freeze) {
+    if (!object || typeof object !== 'object' ||
+        Object.isFrozen(/** @type {!Object} */ (object))) {
+      return object;
+    }
+    const prototype = Object.getPrototypeOf(object);
+    // Only freeze objects and literals. In particular JSPBs will break.
+    if (prototype !== Object.prototype && prototype !== Array.prototype) {
+      return object;
+    }
+    Object.freeze(object);
+    Object.getOwnPropertyNames(object).forEach(function(name) {
+      const property = object[name];
+      exports.$$freeze(property);
+    });
+  }
+  return object;
+}
+
 // -----------------------------------------------------------------------------
 // Generated code.
-
 
 
 
@@ -2404,6 +2431,7 @@ exports = {
   $$checkNotNull,
   $$parseInt,
   $$equals,
+  $$freeze,
   $$isFunction,
   $$parseFloat,
   $$randomInt,
