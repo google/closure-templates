@@ -376,7 +376,7 @@ field `past_height`, it would be accessed as follows:
 
 ## Other Functions
 
-### `legacyDynamicTag($ag)` {#legacyDynamicTag}
+### `legacyDynamicTag($tagName)` {#legacyDynamicTag}
 
 The `legacyDynamicTag` function is used to create an HTML tag whose name is
 determined dynamically by a print node. Wrapping the tag name expression in
