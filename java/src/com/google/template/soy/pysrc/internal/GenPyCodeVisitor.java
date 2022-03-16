@@ -251,6 +251,7 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       // Add code to define Python namespaces and add import calls for libraries.
       pyCodeBuilder.appendLine();
       addCodeToRequireGeneralDeps();
+      pyCodeBuilder.appendLine("PROTOS_NAMESPACE = {}");
       addCodeToRequireSoyNamespaces(node);
       addCodeToFixUnicodeStrings();
       if (SoyTreeUtils.hasNodesOfType(node, DebuggerNode.class)) {
@@ -898,6 +899,25 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
           }
           pyCodeBuilder.appendLineEnd(")");
         }
+      }
+
+      List<ImportNode> importProtoNodes =
+          soyFile.getImports().stream()
+              .filter(i -> i.getImportType() == ImportType.PROTO)
+              .collect(toCollection(ArrayList::new));
+
+      for (ImportNode importProtoNode : importProtoNodes) {
+        String protoFile = importProtoNode.getSourceFilePath().path();
+        List<String> identifiers =
+            importProtoNode.getIdentifiers().stream()
+                .map(i -> "'" + i.name() + "': '" + i.getSymbol() + "'")
+                .collect(toCollection(ArrayList::new));
+        pyCodeBuilder.appendLine(
+            "runtime.import_protos(PROTOS_NAMESPACE, '",
+            protoFile,
+            "', {",
+            String.join(",", identifiers),
+            "})");
       }
 
       // Store the entire manifest for use at runtime.

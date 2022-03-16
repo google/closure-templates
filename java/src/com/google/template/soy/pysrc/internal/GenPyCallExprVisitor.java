@@ -43,9 +43,7 @@ import com.google.template.soy.soytree.defn.TemplateParam;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/**
- * Functions for generating Python code for template calls and their parameters.
- */
+/** Functions for generating Python code for template calls and their parameters. */
 final class GenPyCallExprVisitor extends AbstractReturningSoyNodeVisitor<PyExpr> {
 
   private final IsComputableAsPyExprVisitor isComputableAsPyExprVisitor;

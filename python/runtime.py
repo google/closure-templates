@@ -22,7 +22,9 @@ from __future__ import unicode_literals
 
 __author__ = 'dcphillips@google.com (David Phillips)'
 
+import glob
 import importlib
+import importlib.util
 import math
 import os
 import re
@@ -52,6 +54,13 @@ _DELEGATE_REGISTRY = {}
 # All number types for use during custom type functions.
 _NUMBER_TYPES = six.integer_types + (float,)
 _STRUCT_TYPES = (list, dict)
+
+# Constants defined in google.protobuf.descriptor.
+# Redefined here to not create dependency on protobuff. Runtime will keep
+# working without protobuff messages.
+_DESCRIPTOR_TYPE_MESSAGE = 11
+_DESCRIPTOR_LABEL_REPEATED = 3
+
 
 # The mapping of css class names for get_css_name.
 _css_name_mapping = None
@@ -324,6 +333,11 @@ def key_safe_data_access(data, key):
     return data[key]
   except (KeyError, IndexError):
     return None
+  except TypeError:
+    # Ignore in case data is proto map and key is Kone.
+    if hasattr(data, 'GetEntryClass') and key is None:
+      return None
+    raise
 
 
 def register_delegate_fn(template_id, variant, priority, fn, fn_name):
@@ -416,6 +430,9 @@ def list_contains(l, item):
 
 def list_indexof(l, item):
   """Equivalent getting the index of `item in l` but using soy's equality algorithm."""
+  if hasattr(item, 'DESCRIPTOR'):
+    # Javascript semantics:
+    return -1
   for i in range(len(l)):
     if type_safe_eq(l[i], item):
       return i
@@ -461,6 +478,7 @@ def type_safe_eq(first, second):
 
   This function emulates JavaScript's equality behavior. In JS, Objects will be
   converted to strings when compared to a string primitive.
+  There is also no distinction between bytes and strings.
 
   Args:
     first: The first value to compare.
@@ -482,9 +500,14 @@ def type_safe_eq(first, second):
     # TODO(dcphillips): This potentially loses precision for very large numbers.
     # See b/16241488.
     if isinstance(first, _NUMBER_TYPES) and not isinstance(first, bool):
-      return first == float(second)
+      return float(first) == float(second)
     if isinstance(second, _NUMBER_TYPES) and not isinstance(second, bool):
-      return float(first) == second
+      return float(first) == float(second)
+
+    if isinstance(first, six.binary_type):
+      first = six.ensure_str(first)
+    if isinstance(second, six.binary_type):
+      second = six.ensure_str(second)
 
     if isinstance(first, six.string_types):
       return first == str(second)
@@ -756,6 +779,180 @@ def create_template_type(template, name):
 def bind_template_params(template, params):
   """Binds the given parameters to the given template."""
   return lambda data, ij: template(dict(data, **params), ij)
+
+
+def add_extensions(proto, extensions, repeated_extensions, message_extensions):
+  """Adds extensions to proto message and returns it."""
+  for key, value in extensions.items():
+    proto.Extensions[key] = value
+  for key, value in repeated_extensions.items():
+    proto.Extensions[key].extend(value)
+  for key, value in message_extensions.items():
+    proto.Extensions[key].CopyFrom(value)
+  return proto
+
+
+def ensure_type(value, convert):
+  """Allows to assign strings to int or bytes fields."""
+  if isinstance(value, list):
+    return [convert(i) for i in value]
+  return convert(value)
+
+
+def ensure_map_type(value, convert_key, convert_value):
+  """Allows to assign strings to maps keys or values of int or bytes type."""
+  convert_key = convert_key or (lambda x: x)
+  convert_value = convert_value or (lambda x: x)
+  return {convert_key(k): convert_value(v) for k, v in value.items()}
+
+
+def convert_to_bytes(value):
+  """Converts string to bytes type."""
+  if isinstance(value, str):
+    return value.encode('utf-8')
+  return value
+
+
+def is_proto_default(proto):
+  """Check if proto is default."""
+  default = type(proto)()
+  return proto == default
+
+
+def try_multiple_fields(container, fields, key):
+  """Gets first field from list from proto or key from dictonary."""
+  if hasattr(container, 'DESCRIPTOR'):
+    for field_name in fields:
+      if field_name in container.DESCRIPTOR.fields_by_name:
+        field = container.DESCRIPTOR.fields_by_name[field_name]
+        return _get_soy_value_from_proto(container, field)
+  elif key is not None:
+    return container.get(key)
+  raise KeyError(f'{type(container)} does not have key {key}')
+
+
+def get_field_through_introspection(container, key):
+  """Finds matching value for soy field in proto or gets key from dictionary."""
+  if hasattr(container, 'DESCRIPTOR'):
+    lower_key = key.lower()
+    for field in container.DESCRIPTOR.fields:
+      if _get_soy_field_name_lowercase(field) == lower_key:
+        return _get_soy_value_from_proto(container, field)
+  else:
+    return container.get(key)
+  raise KeyError(f'{type(container)} does not have key {key}')
+
+
+def _get_soy_field_name_lowercase(field):
+  """Compute proto soy field name in lowercase."""
+  suffix = ''
+  if _field_is_map_entry(field):
+    suffix = 'map'
+  elif _field_is_list_entry(field):
+    suffix = 'list'
+  return (field.camelcase_name + suffix).lower()
+
+
+def _field_is_map_entry(field):
+  """Checks if descriptor is for map type field."""
+  return (field.type == _DESCRIPTOR_TYPE_MESSAGE and
+          field.message_type.has_options and
+          field.message_type.GetOptions().map_entry)
+
+
+def _field_is_list_entry(field):
+  """Checks if descriptor is for repeated field."""
+  return field.label == _DESCRIPTOR_LABEL_REPEATED
+
+
+def _get_soy_value_from_proto(container, field):
+  """Gets value from proto, or None if field is not present submessage."""
+  if _field_is_null(container, field):
+    return None
+  return getattr(container, field.name)
+
+
+def _field_is_null(container, field):
+  """Check if field is of message type and not present in container."""
+  return (field.type == _DESCRIPTOR_TYPE_MESSAGE and
+          field.label != _DESCRIPTOR_LABEL_REPEATED and
+          not container.HasField(field.name))
+
+
+def get_extension(container, extension):
+  """Gets value from proto, or None if extension is not present submessage."""
+  if _extension_is_null(container, extension):
+    return None
+  return container.Extensions[extension]
+
+
+def _extension_is_null(container, extension):
+  """Check if extension is of message type and not present in container."""
+  return (extension.label != _DESCRIPTOR_LABEL_REPEATED and
+          not container.HasExtension(extension))
+
+
+def unpack_any(any_proto, expected_instance, type_name):
+  """Implement soy UnpackAny function."""
+  new_instance = type(expected_instance)()
+  if any_proto.TypeName() == type_name and any_proto.Unpack(new_instance):
+    return new_instance
+  else:
+    return None
+
+
+def import_protos(namespace, proto_file, symbols_dict):
+  """Imports symbols from proto module and write it to namespace dictionary."""
+  module = import_module_for_proto_file(proto_file)
+
+  soy_extensions_map = generate_extensions_map(module)
+  for key, symbol in symbols_dict.items():
+    namespace[key] = find_proto_in_module(module, soy_extensions_map, symbol)
+
+
+def import_module_for_proto_file(proto_file):
+  """Imports module generated from given proto file.
+
+  Assumes that module is located at the same path as proto file and is named
+  with _pb2 suffix with - replaced by _.
+  Args:
+    proto_file: full path to proto file
+
+  Returns:
+    python module with definitions from proto file.
+
+  Raises:
+    ImportError: raised if module is not found in assumed location.
+  """
+  path = os.path.dirname(proto_file)
+  file_with_ext = os.path.basename(proto_file)
+  base = os.path.splitext(file_with_ext)[0].replace('-', '_') + '_pb2'
+  python_src_prefix = os.path.join(path, base)
+  files = glob.glob(python_src_prefix + '*.py?')
+  if not files:
+    raise ImportError(f'{base} module was not found in {path}')
+  spec = importlib.util.spec_from_file_location(base, files[0])
+  module = importlib.util.module_from_spec(spec)
+  spec.loader.exec_module(module)
+  return module
+
+
+def generate_extensions_map(module):
+  """Builds map of soy names of extensions to extensions from a module."""
+  result = {}
+  for value in module.__dict__.values():
+    if getattr(value, 'is_extension', False):
+      result[_get_soy_field_name_lowercase(value)] = value
+  return result
+
+
+def find_proto_in_module(module, soy_extensions_map, symbol):
+  """Checks if given symbol is in module or extensions map."""
+  if hasattr(module, symbol):
+    return getattr(module, symbol)
+  if symbol.lower() in soy_extensions_map:
+    return soy_extensions_map[symbol.lower()]
+  raise ImportError(f'Can not import {symbol} from {module.__name__}')
 
 
 class _TemplateWrapper:
