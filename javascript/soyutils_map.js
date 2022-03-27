@@ -21,7 +21,7 @@
 goog.module('soy.map');
 goog.module.declareLegacyNamespace();
 
-const Message = goog.require('jspb.Message');
+const {Message} = goog.require('jspb');
 const {assertString} = goog.require('goog.asserts');
 const {shuffle} = goog.require('goog.array');
 /**

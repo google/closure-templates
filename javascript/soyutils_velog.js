@@ -28,7 +28,7 @@
 goog.module('soy.velog');
 
 const LoggableElementMetadata = goog.require('proto.soy.LoggableElementMetadata');
-const Message = goog.require('jspb.Message');
+const {Message} = goog.require('jspb');
 const {assert} = goog.require('goog.asserts');
 const {startsWith} = goog.require('goog.string');
 
