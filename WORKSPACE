@@ -196,3 +196,9 @@ load("@rules_proto//proto:repositories.bzl", "rules_proto_dependencies", "rules_
 rules_proto_dependencies()
 
 rules_proto_toolchains()
+
+http_archive(
+    name = "rbe_default",
+    sha256 = "c5f784299a319f39bbe51e38a49e2e779cc2eb3b1b06ce4e71d5e537ac95e134",
+    urls = ["https://storage.googleapis.com/rbe-toolchain/bazel-configs/bazel_4.1.0/rbe-ubuntu1604/latest/rbe_default.tar"],
+)
