@@ -210,6 +210,11 @@ public final class JavaScriptValueFactoryImpl extends JavaScriptValueFactory {
   }
 
   @Override
+  public JavaScriptValue emptyObjLiteral() {
+    return new JavaScriptValueImpl(Expression.EMPTY_OBJECT_LITERAL);
+  }
+
+  @Override
   public JavaScriptValueImpl global(String globalSymbol) {
     return new JavaScriptValueImpl(Expression.dottedIdNoRequire(globalSymbol));
   }

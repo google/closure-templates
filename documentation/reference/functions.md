@@ -167,7 +167,8 @@ is not found, please check the type of your list.
 
 ### `list<string>.asciiSort()` {#list-string_asciiSort}
 
-Sorts the list in alphabetical order. Do not use for user visible strings.
+Sorts the list in alphabetical order according to the ASCII specification. Do
+not use for user visible strings, instead use `localeSort()`.
 
 This method is only defined on lists of non-nullable strings. If the method is
 not found, please check the type of your list.
@@ -178,6 +179,24 @@ should not use this method to sort any user-visible string. Only use this method
 for non-user visible strings, e.g. to normalize the order of a list of
 identifiers. See go/unicode-codelab-cc#sorting-in-alphabetical-order for more
 information on i18n-safe string sorting.
+
+### `list<string>.localeSort([options])` {#list-string_localeSort}
+
+Sorts the list in alphabetical order according to the user's locale.
+
+The method allows an optional parameter of type record that affects sort order.
+The record may contain any of the following properties:
+
+*   caseFirst: `"upper"`, `"lower"`
+*   numeric: `true`, `false`
+*   sensitivity: `"base"`, `"accent"`, `"case"`, `"variant"`
+
+See
+[Intl.Collator](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/Collator/Collator)
+for a description of these options.
+
+This method is only defined on lists of non-nullable strings. If the method is
+not found, please check the type of your list.
 
 ## Map Methods
 
