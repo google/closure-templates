@@ -640,14 +640,6 @@ public final class JsType {
       builder.addRequire(JsRuntime.SOY);
       builder.addType("!" + type);
       builder.addRequire(GoogRequire.create(type));
-      if (!isStrict) {
-        // All the sanitized types have an .isCompatibleWith method for testing for allowed types
-        // NOTE: this actually allows 'string' to be passed, which is inconsistent with other
-        // backends.
-        // We allow string or unsanitized type to be passed where a sanitized type is specified - it
-        // just means that the text will be escaped.
-        builder.addType("string");
-      }
     }
     // add extra alternate types
     // TODO(lukes): instead of accepting alternates we should probably just coerce to sanitized
