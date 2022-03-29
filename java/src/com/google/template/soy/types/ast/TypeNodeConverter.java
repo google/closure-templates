@@ -385,7 +385,9 @@ public final class TypeNodeConverter
     for (RecordTypeNode.Property property : node.properties()) {
       RecordType.Member oldType =
           map.put(
-              property.name(), RecordType.memberOf(property.name(), property.type().accept(this)));
+              property.name(),
+              RecordType.memberOf(
+                  property.name(), property.optional(), property.type().accept(this)));
       if (oldType != null) {
         errorReporter.report(property.nameLocation(), DUPLICATE_RECORD_FIELD, property.name());
         // restore old mapping and keep going

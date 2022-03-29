@@ -77,7 +77,7 @@ public final class TypeNodeTest {
     assertThat(
             RecordTypeNode.create(
                     SOURCE_LOCATION,
-                    ImmutableList.of(Property.create(SOURCE_LOCATION, "x", TYPE_ABC)))
+                    ImmutableList.of(Property.create(SOURCE_LOCATION, "x", false, TYPE_ABC)))
                 .toString())
         .isEqualTo("[x: abc]");
 
@@ -85,8 +85,8 @@ public final class TypeNodeTest {
             RecordTypeNode.create(
                     SOURCE_LOCATION,
                     ImmutableList.of(
-                        Property.create(SOURCE_LOCATION, "x", TYPE_ABC),
-                        Property.create(SOURCE_LOCATION, "y", TYPE_DEF)))
+                        Property.create(SOURCE_LOCATION, "x", false, TYPE_ABC),
+                        Property.create(SOURCE_LOCATION, "y", false, TYPE_DEF)))
                 .toString())
         .isEqualTo("[x: abc, y: def]");
 
@@ -94,12 +94,12 @@ public final class TypeNodeTest {
             RecordTypeNode.create(
                     SOURCE_LOCATION,
                     ImmutableList.of(
-                        Property.create(SOURCE_LOCATION, "x", TYPE_ABC),
-                        Property.create(SOURCE_LOCATION, "y", TYPE_DEF),
-                        Property.create(SOURCE_LOCATION, "z", TYPE_GHI),
-                        Property.create(SOURCE_LOCATION, "w", TYPE_JKL)))
+                        Property.create(SOURCE_LOCATION, "x", false, TYPE_ABC),
+                        Property.create(SOURCE_LOCATION, "y", false, TYPE_DEF),
+                        Property.create(SOURCE_LOCATION, "z", false, TYPE_GHI),
+                        Property.create(SOURCE_LOCATION, "w", true, TYPE_JKL)))
                 .toString())
-        .isEqualTo("[\n  x: abc,\n  y: def,\n  z: ghi,\n  w: jkl\n]");
+        .isEqualTo("[\n  x: abc,\n  y: def,\n  z: ghi,\n  w?: jkl\n]");
   }
 
   @Test

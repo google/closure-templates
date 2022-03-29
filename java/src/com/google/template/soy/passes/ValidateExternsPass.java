@@ -380,7 +380,7 @@ class ValidateExternsPass implements CompilerFilePass {
         RecordType recordType = (RecordType) soyType;
         return (javaType == Map.class || javaType == ImmutableMap.class)
             && recordType.getMembers().stream()
-                .map(m -> m.type().getKind())
+                .map(m -> m.declaredType().getKind())
                 .allMatch(ALLOWED_RECORD_MEMBERS::contains);
       case MESSAGE:
         return javaType == Message.class;

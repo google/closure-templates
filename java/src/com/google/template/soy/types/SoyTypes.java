@@ -322,7 +322,7 @@ public final class SoyTypes {
               return true;
             }
             for (RecordType.Member member : type.getMembers()) {
-              if (member.type().accept(this)) {
+              if (member.declaredType().accept(this)) {
                 return true;
               }
             }
@@ -638,7 +638,9 @@ public final class SoyTypes {
 
         case RECORD:
           return ((RecordType) type)
-              .getMembers().stream().map(RecordType.Member::type).collect(Collectors.toList());
+              .getMembers().stream()
+                  .map(RecordType.Member::declaredType)
+                  .collect(Collectors.toList());
 
         case VE:
           VeType veType = (VeType) type;

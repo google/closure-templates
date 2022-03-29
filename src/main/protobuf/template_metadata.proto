@@ -66,7 +66,12 @@ message SoyTypeP {
     repeated string reserved_attributes = 3;
   }
   message RecordTypeP {
-    map<string, SoyTypeP> field = 1;
+    repeated RecordMemberP members = 1;
+  }
+  message RecordMemberP {
+    string name = 1;
+    bool optional = 2;
+    SoyTypeP type = 3;
   }
   message LegacyObjectMapTypeP {
     SoyTypeP key = 1;

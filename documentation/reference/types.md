@@ -421,6 +421,12 @@ For example,
 {/template}
 ```
 
+A record property is optional if its name ends with a `?`:
+
+```soy
+  {@param person: [age: int, name: string, email?: string]}
+```
+
 In many cases, defining a protocol buffer is superior to using records since it
 is less verbose
 

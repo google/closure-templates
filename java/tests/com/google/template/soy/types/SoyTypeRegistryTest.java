@@ -97,27 +97,33 @@ public class SoyTypeRegistryTest {
     RecordType r1 =
         typeRegistry.getOrCreateRecordType(
             ImmutableList.of(
-                RecordType.memberOf("a", IntType.getInstance()),
-                RecordType.memberOf("b", FloatType.getInstance())));
+                RecordType.memberOf("a", false, IntType.getInstance()),
+                RecordType.memberOf("b", false, FloatType.getInstance())));
     RecordType r2 =
         typeRegistry.getOrCreateRecordType(
             ImmutableList.of(
-                RecordType.memberOf("a", IntType.getInstance()),
-                RecordType.memberOf("b", FloatType.getInstance())));
+                RecordType.memberOf("a", false, IntType.getInstance()),
+                RecordType.memberOf("b", false, FloatType.getInstance())));
     RecordType r3 =
         typeRegistry.getOrCreateRecordType(
             ImmutableList.of(
-                RecordType.memberOf("a", IntType.getInstance()),
-                RecordType.memberOf("b", StringType.getInstance())));
+                RecordType.memberOf("a", false, IntType.getInstance()),
+                RecordType.memberOf("b", false, StringType.getInstance())));
     RecordType r4 =
         typeRegistry.getOrCreateRecordType(
             ImmutableList.of(
-                RecordType.memberOf("a", IntType.getInstance()),
-                RecordType.memberOf("c", FloatType.getInstance())));
+                RecordType.memberOf("a", false, IntType.getInstance()),
+                RecordType.memberOf("c", false, FloatType.getInstance())));
+    RecordType r5 =
+        typeRegistry.getOrCreateRecordType(
+            ImmutableList.of(
+                RecordType.memberOf("a", false, IntType.getInstance()),
+                RecordType.memberOf("c", true, FloatType.getInstance())));
 
     assertThat(r2).isSameInstanceAs(r1);
     assertThat(r3).isNotSameInstanceAs(r1);
     assertThat(r4).isNotSameInstanceAs(r1);
+    assertThat(r4).isNotSameInstanceAs(r5);
   }
 
   @Test

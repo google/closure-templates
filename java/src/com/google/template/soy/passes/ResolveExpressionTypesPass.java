@@ -1055,7 +1055,8 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
 
       List<RecordType.Member> members = new ArrayList<>();
       for (int i = 0; i < numChildren; i++) {
-        members.add(RecordType.memberOf(node.getKey(i).identifier(), node.getChild(i).getType()));
+        members.add(
+            RecordType.memberOf(node.getKey(i).identifier(), false, node.getChild(i).getType()));
       }
       node.setType(typeRegistry.getOrCreateRecordType(members));
 
@@ -1359,7 +1360,9 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
           node.setType(
               ListType.of(
                   RecordType.of(
-                      ImmutableMap.of("key", type.getKeyType(), "value", type.getValueType()))));
+                      ImmutableList.of(
+                          RecordType.memberOf("key", false, type.getKeyType()),
+                          RecordType.memberOf("value", false, type.getValueType())))));
         } else if (sourceFunction instanceof ListSliceMethod
             || sourceFunction instanceof ListReverseMethod) {
           // list<T>.slice(...) and list<T>.reverse() return list<T>
@@ -2514,13 +2517,14 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
         case MSG_WITH_ID:
           node.setType(
               RecordType.of(
-                  ImmutableMap.of(
-                      "id",
-                      StringType.getInstance(),
-                      "msg",
-                      node.numChildren() > 0
-                          ? node.getChild(0).getType()
-                          : UnknownType.getInstance())));
+                  ImmutableList.of(
+                      RecordType.memberOf("id", false, StringType.getInstance()),
+                      RecordType.memberOf(
+                          "msg",
+                          false,
+                          node.numChildren() > 0
+                              ? node.getChild(0).getType()
+                              : UnknownType.getInstance()))));
           break;
         case LEGACY_DYNAMIC_TAG:
           node.setType(StringType.getInstance());

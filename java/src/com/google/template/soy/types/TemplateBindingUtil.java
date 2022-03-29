@@ -85,13 +85,13 @@ public final class TemplateBindingUtil {
         reportedErrors = true;
         continue;
       }
-      if (!base.getParameterMap().get(member.name()).isAssignableFromLoose(member.type())) {
+      if (!base.getParameterMap().get(member.name()).isAssignableFromLoose(member.checkedType())) {
         errorReporter.report(
             PARAMETER_TYPE_MISMATCH,
             member.name(),
             base,
             base.getParameterMap().get(member.name()),
-            member.type());
+            member.checkedType());
         reportedErrors = true;
       }
       unboundParameters.remove(member.name());

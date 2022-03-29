@@ -333,6 +333,13 @@ public class SoyTypesTest {
 
     // Field type mismatch on a
     assertThatSoyType("[a:int, b:any]").isNotAssignableFromStrict("[a:string, c:any]");
+
+    // Optional
+    assertThatSoyType("[a:int, b?:string]").isAssignableFromStrict("[a:int]");
+    assertThatSoyType("[a:int, b?:string]").isAssignableFromStrict("[a:int, b?:string]");
+    assertThatSoyType("[a:int, b?:string]").isAssignableFromStrict("[a:int, b:string]");
+    assertThatSoyType("[a:int, b?:string]").isNotAssignableFromStrict("[a:int, b:int]");
+    assertThatSoyType("[a:int]").isAssignableFromStrict("[a:int, b?:string]");
   }
 
   @Test

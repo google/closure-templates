@@ -5055,15 +5055,20 @@ private TypeNode RecordType() :
 private RecordTypeNode.Property RecordField() :
 {
   Token fieldName;
+  Token colon;
   TypeNode fieldType;
 }
 {
   fieldName = <IDENT>
-  <COLON>
+  (
+    colon = <QCOLON>
+  |
+    colon = <COLON>
+  )
   fieldType = TypeExpr()
 
   {
-    return RecordTypeNode.Property.create(createSrcLoc(fieldName), fieldName.image, fieldType);
+    return RecordTypeNode.Property.create(createSrcLoc(fieldName), fieldName.image, "?:".equals(colon.image), fieldType);
   }
 }
 

@@ -188,7 +188,7 @@ public final class JavaTypeUtils {
 
     ImmutableMap.Builder<String, JavaType> javaTypeMap = ImmutableMap.builder();
     for (RecordType.Member member : recordType.getMembers()) {
-      List<JavaType> types = getJavaTypes(member.type(), skipSoyTypes);
+      ImmutableList<JavaType> types = getJavaTypes(member.checkedType(), skipSoyTypes);
       if (types.size() != 1) {
         // No overloaded record setters.
         return ImmutableList.of();

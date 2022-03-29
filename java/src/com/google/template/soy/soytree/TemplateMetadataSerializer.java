@@ -397,11 +397,12 @@ public final class TemplateMetadataSerializer {
         {
           List<RecordType.Member> members = new ArrayList<>();
           // TODO: this relies on proto map insertion order, which is not guaranteed by the spec.
-          for (Map.Entry<String, SoyTypeP> entry : proto.getRecord().getFieldMap().entrySet()) {
+          for (SoyTypeP.RecordMemberP member : proto.getRecord().getMembersList()) {
             members.add(
                 RecordType.memberOf(
-                    entry.getKey(),
-                    fromProto(entry.getValue(), typeRegistry, filePath, errorReporter)));
+                    member.getName(),
+                    member.getOptional(),
+                    fromProto(member.getType(), typeRegistry, filePath, errorReporter)));
           }
           return typeRegistry.getOrCreateRecordType(members);
         }

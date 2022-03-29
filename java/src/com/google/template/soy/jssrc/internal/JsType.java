@@ -381,7 +381,7 @@ public final class JsType {
           Builder builder = builder();
           Map<String, String> members = new LinkedHashMap<>();
           for (RecordType.Member member : recordType.getMembers()) {
-            JsType forSoyType = forSoyType(member.type(), kind, isStrict);
+            JsType forSoyType = forSoyType(member.checkedType(), kind, isStrict);
             builder.addRequires(forSoyType.getGoogRequires());
             members.put(member.name(), forSoyType.typeExprForRecordMember(/* isOptional= */ false));
           }
