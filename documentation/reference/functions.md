@@ -692,9 +692,11 @@ It takes 1 required and 4 optional arguments.
     NOTE: see http://userguide.icu-project.org/locale for more "numbers"
     keywords
 
-1.  If called with 4 arguments only, the number of significant digits, otherwise
-    the minimum number of fractional digits to display. A value of 0 removes
-    trailing zeros.
+1.  The minimum number of fractional digits to display after the decimal point.
+    If argument 5 (maximum fractional digits) is not specificied, then maximum
+    fractional digits will be set to the same value as minimum fractional
+    digits. When minimum fractional digits is set to 0, any trailing zeros will
+    be removed.
 
 1.  The maximum number of fractional digits to display.
 
@@ -706,7 +708,11 @@ For example:
 *   `{formatNum($value, 'decimal')}`
 *   `{formatNum($value, 'decimal', 'native')}`
 *   `{formatNum($value, 'decimal', 'native', 2)}`
+    *   Prints exactly two digits after the decimal point.
 *   `{formatNum($value, 'decimal', 'native', 0, 3)}`
+    *   Prints up to 3 digits after the decimal point, removing any trailing
+        zeros. "4.1234" would be formatted as "4.123", but "4.100" would be
+        formatted as "4.1".
 
 ### `bidiDirAttr(text, opt_isHtml)` {#bidiDirAttr}
 
