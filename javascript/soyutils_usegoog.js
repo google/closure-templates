@@ -97,6 +97,19 @@ const getContentDir = function(value) {
 };
 
 /**
+ * Sets the value's contentDir property if it exists to a bidi.Dir dir value.
+ *
+ * @param {?} value The value whose contentDir property, if any, is to be set.
+ * @param {?bidi.Dir} dir The dir value to set.
+ * @package
+ */
+const cacheContentDir_ = function(value, dir) {
+  if (value != null && value.contentDir !== undefined) {
+    value.contentDir = dir;
+  }
+};
+
+/**
  * Returns a SanitizedHtml object for a particular value. The content direction
  * is preserved.
  *
@@ -2147,7 +2160,9 @@ const $$bidiTextDir = function(text, isHtml) {
     return contentDir;
   }
   isHtml = isHtml || isContentKind_(text, SanitizedContentKind.HTML);
-  return bidi.estimateDirection(text + '', isHtml);
+  const estimatedDir = bidi.estimateDirection(text + '', isHtml);
+  cacheContentDir_(text, estimatedDir);
+  return estimatedDir;
 };
 
 
@@ -2175,6 +2190,7 @@ const $$bidiDirAttr = function(bidiGlobalDir, text, isHtml) {
   if (contentDir == null) {
     isHtml = isHtml || isContentKind_(text, SanitizedContentKind.HTML);
     contentDir = bidi.estimateDirection(text + '', isHtml);
+    cacheContentDir_(text, contentDir);
   }
   return VERY_UNSAFE.ordainSanitizedHtmlAttribute(
       formatter.knownDirAttr(contentDir));
@@ -2231,7 +2247,12 @@ const $$bidiMark = function(/** number */ dir) {
 const $$bidiMarkAfter = function(bidiGlobalDir, text, isHtml) {
   const formatter = getBidiFormatterInstance_(bidiGlobalDir);
   isHtml = isHtml || isContentKind_(text, SanitizedContentKind.HTML);
-  return formatter.markAfterKnownDir(getContentDir(text), text + '', isHtml);
+  let dir = getContentDir(text);
+  if (dir == null) {
+    dir = bidi.estimateDirection(text + '', isHtml);
+    cacheContentDir_(text, dir);
+  }
+  return formatter.markAfterKnownDir(dir, text + '', isHtml);
 };
 
 
@@ -2264,8 +2285,12 @@ const $$bidiSpanWrap = function(bidiGlobalDir, text) {
       uncheckedconversions.safeHtmlFromStringKnownToSatisfyTypeContract(
           Const.from('Soy |bidiSpanWrap is applied on an autoescaped text.'),
           String(text));
-  const wrappedHtml =
-      formatter.spanWrapSafeHtmlWithKnownDir(getContentDir(text), html);
+  let dir = getContentDir(text);
+  if (dir == null) {
+    dir = bidi.estimateDirection(text + '', true);
+    cacheContentDir_(text, dir);
+  }
+  const wrappedHtml = formatter.spanWrapSafeHtmlWithKnownDir(dir, html);
 
   // Like other directives whose Java class implements SanitizedContentOperator,
   // |bidiSpanWrap is called after the escaping (if any) has already been done,
@@ -2295,8 +2320,12 @@ const $$bidiUnicodeWrap = function(bidiGlobalDir, text) {
 
   // We treat the value as HTML if and only if it says it's HTML.
   const isHtml = isContentKind_(text, SanitizedContentKind.HTML);
-  const wrappedText =
-      formatter.unicodeWrapWithKnownDir(getContentDir(text), text + '', isHtml);
+  let dir = getContentDir(text);
+  if (dir == null) {
+    dir = bidi.estimateDirection(text + '', isHtml);
+    cacheContentDir_(text, dir);
+  }
+  const wrappedText = formatter.unicodeWrapWithKnownDir(dir, text + '', isHtml);
 
   // Bidi-wrapping a value converts it to the context directionality. Since it
   // does not cost us anything, we will indicate this known direction in the
