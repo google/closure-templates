@@ -37,7 +37,7 @@ public abstract class VariableDeclaration extends Statement {
         .setIsMutable(false);
   }
 
-  abstract String varName();
+  public abstract String varName();
 
   @Nullable
   abstract Expression rhs();

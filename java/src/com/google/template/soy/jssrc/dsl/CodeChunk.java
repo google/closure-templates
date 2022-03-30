@@ -185,13 +185,21 @@ public abstract class CodeChunk {
       return new Generator(nameGenerator);
     }
 
+    private String newVarName(String prefix) {
+      return nameGenerator.generateName(prefix);
+    }
+
     private String newVarName() {
-      return nameGenerator.generateName("$tmp");
+      return newVarName("$tmp");
     }
 
     /** Creates a code chunk declaring an automatically-named variable with no initializer. */
     public VariableDeclaration.Builder declarationBuilder() {
       return VariableDeclaration.builder(newVarName());
+    }
+    /** Creates a code chunk declaring an automatically-named variable with no initializer. */
+    public VariableDeclaration.Builder declarationBuilder(String prefix) {
+      return VariableDeclaration.builder(newVarName(prefix));
     }
 
     /**
