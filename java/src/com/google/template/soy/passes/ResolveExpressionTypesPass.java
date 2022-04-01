@@ -92,6 +92,9 @@ import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.NullSafeAccessNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.BitwiseAndOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.BitwiseOrOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.BitwiseXorOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.DivideByOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.EqualOpNode;
@@ -107,6 +110,8 @@ import com.google.template.soy.exprtree.OperatorNodes.NotOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.ShiftLeftOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.ShiftRightOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
@@ -296,7 +301,8 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
   private static final SoyErrorKind STATE_CYCLE =
       SoyErrorKind.of("Illegal cycle in state param initializers: {0}.");
   private static final SoyErrorKind INCOMPATIBLE_ARITHMETIC_OP =
-      SoyErrorKind.of("Using arithmetic operators on Soy types ''{0}'' and ''{1}'' is illegal.");
+      SoyErrorKind.of(
+          "Using arithmetic operator ''{0}'' on Soy types ''{1}'' and ''{2}'' is illegal.");
   private static final SoyErrorKind INCOMPATIBLE_ARITHMETIC_OP_UNARY =
       SoyErrorKind.of("Using arithmetic operators on the Soy type ''{0}'' is illegal.");
   private static final SoyErrorKind INCORRECT_ARG_TYPE =
@@ -1513,7 +1519,12 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
       SoyType result =
           SoyTypes.getSoyTypeForBinaryOperator(left, right, new SoyTypes.SoyTypePlusOperator());
       if (result == null) {
-        errorReporter.report(node.getOperatorLocation(), INCOMPATIBLE_ARITHMETIC_OP, left, right);
+        errorReporter.report(
+            node.getOperatorLocation(),
+            INCOMPATIBLE_ARITHMETIC_OP,
+            node.getOperator().getTokenString(),
+            left,
+            right);
         result = UnknownType.getInstance();
       }
       node.setType(result);
@@ -1523,6 +1534,48 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
     @Override
     protected void visitMinusOpNode(MinusOpNode node) {
       visitArithmeticOpNode(node);
+    }
+
+    private void visitLongOnlyOpNode(AbstractOperatorNode node) {
+      visitChildren(node);
+      SoyType result = IntType.getInstance();
+      SoyType left = node.getChild(0).getType();
+      SoyType right = node.getChild(1).getType();
+      if (left.getKind() != Kind.INT || right.getKind() != Kind.INT) {
+        errorReporter.report(
+            node.getOperatorLocation(),
+            INCOMPATIBLE_ARITHMETIC_OP,
+            node.getOperator().getTokenString(),
+            left,
+            right);
+        result = UnknownType.getInstance();
+      }
+      node.setType(result);
+    }
+
+    @Override
+    protected void visitShiftLeftOpNode(ShiftLeftOpNode node) {
+      visitLongOnlyOpNode(node);
+    }
+
+    @Override
+    protected void visitShiftRightOpNode(ShiftRightOpNode node) {
+      visitLongOnlyOpNode(node);
+    }
+
+    @Override
+    protected void visitBitwiseOrOpNode(BitwiseOrOpNode node) {
+      visitLongOnlyOpNode(node);
+    }
+
+    @Override
+    protected void visitBitwiseXorOpNode(BitwiseXorOpNode node) {
+      visitLongOnlyOpNode(node);
+    }
+
+    @Override
+    protected void visitBitwiseAndOpNode(BitwiseAndOpNode node) {
+      visitLongOnlyOpNode(node);
     }
 
     @Override
@@ -2177,7 +2230,12 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
           SoyTypes.getSoyTypeForBinaryOperator(
               left, right, new SoyTypes.SoyTypeArithmeticOperator());
       if (result == null) {
-        errorReporter.report(node.getOperatorLocation(), INCOMPATIBLE_ARITHMETIC_OP, left, right);
+        errorReporter.report(
+            node.getOperatorLocation(),
+            INCOMPATIBLE_ARITHMETIC_OP,
+            node.getOperator().getTokenString(),
+            left,
+            right);
         result = UnknownType.getInstance();
       }
       // Division is special. it is always coerced to a float. For other operators, use the value

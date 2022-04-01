@@ -161,14 +161,18 @@ Here are the supported operators, listed in decreasing order of precedence
 (highest precedence at the top):
 
 1.  `( <expr> )` `.` `?.` `[]`, `?[]`
-1.    `-` (unary)   `not`
-1.    `*`   `/`   `%`
-1.    `+`   `-` (binary)
-1.    `<`   `>`   `<=`   `>=`
-1.    `==`   `!=`
-1.    `and`
-1.    `or`
-1.    `?:` (binary)   `? :` (ternary)
+2.  `-`(unary) `not`
+3.  `*` `/` `%`
+4.  `+` `-`(binary)
+5.  `>>` `<<`
+6.  `<` `>` `<=` `>=`
+7.  `==` `!=`
+8.  `&`
+9.  `^`
+10. `|`
+11. `and`
+12. `or`
+13. `?:`(binary) `? :`(ternary)
 
 The Soy programming language respects the order of evaluation indicated
 explicitly by parentheses and implicitly by operator precedence.
@@ -282,6 +286,16 @@ The subtraction operator always performs numeric subtraction.
 For example,
 
 *   `$foo - 1`
+
+### Bitwise operators `<<`, `>>`, `&`, `|`, `^`
+
+These operators all require both operands to be integers.
+
+*   `(16 >> 2) == 4` - shift right
+*   `(4 << 2) == 16` - shift left
+*   `(6 & 3) == 2` - bitwise AND
+*   `(6 | 3) == 7` - bitwise OR
+*   `(6 ^ 3) == 5` - bitwise XOR
 
 ### Relative comparison operators `<`, `>`, `<=`, `>=`
 

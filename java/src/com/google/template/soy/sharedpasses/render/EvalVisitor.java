@@ -18,6 +18,9 @@ package com.google.template.soy.sharedpasses.render;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.template.soy.shared.internal.SharedRuntime.bitwiseAnd;
+import static com.google.template.soy.shared.internal.SharedRuntime.bitwiseOr;
+import static com.google.template.soy.shared.internal.SharedRuntime.bitwiseXor;
 import static com.google.template.soy.shared.internal.SharedRuntime.checkMapFromListConstructorCondition;
 import static com.google.template.soy.shared.internal.SharedRuntime.constructMapFromList;
 import static com.google.template.soy.shared.internal.SharedRuntime.dividedBy;
@@ -28,6 +31,8 @@ import static com.google.template.soy.shared.internal.SharedRuntime.minus;
 import static com.google.template.soy.shared.internal.SharedRuntime.mod;
 import static com.google.template.soy.shared.internal.SharedRuntime.negative;
 import static com.google.template.soy.shared.internal.SharedRuntime.plus;
+import static com.google.template.soy.shared.internal.SharedRuntime.shiftLeft;
+import static com.google.template.soy.shared.internal.SharedRuntime.shiftRight;
 import static com.google.template.soy.shared.internal.SharedRuntime.soyServerKey;
 import static com.google.template.soy.shared.internal.SharedRuntime.times;
 
@@ -84,6 +89,9 @@ import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.NullSafeAccessNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.BitwiseAndOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.BitwiseOrOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.BitwiseXorOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.DivideByOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.EqualOpNode;
@@ -99,6 +107,8 @@ import com.google.template.soy.exprtree.OperatorNodes.NotOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.ShiftLeftOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.ShiftRightOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
 import com.google.template.soy.exprtree.ProtoEnumValueNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
@@ -692,7 +702,6 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
 
   @Override
   protected SoyValue visitModOpNode(ModOpNode node) {
-
     SoyValue operand0 = visit(node.getChild(0));
     SoyValue operand1 = visit(node.getChild(1));
     return mod(operand0, operand1);
@@ -706,6 +715,31 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
   @Override
   protected SoyValue visitMinusOpNode(MinusOpNode node) {
     return minus(visit(node.getChild(0)), visit(node.getChild(1)));
+  }
+
+  @Override
+  protected SoyValue visitShiftLeftOpNode(ShiftLeftOpNode node) {
+    return shiftLeft(visit(node.getChild(0)), visit(node.getChild(1)));
+  }
+
+  @Override
+  protected SoyValue visitShiftRightOpNode(ShiftRightOpNode node) {
+    return shiftRight(visit(node.getChild(0)), visit(node.getChild(1)));
+  }
+
+  @Override
+  protected SoyValue visitBitwiseOrOpNode(BitwiseOrOpNode node) {
+    return bitwiseOr(visit(node.getChild(0)), visit(node.getChild(1)));
+  }
+
+  @Override
+  protected SoyValue visitBitwiseXorOpNode(BitwiseXorOpNode node) {
+    return bitwiseXor(visit(node.getChild(0)), visit(node.getChild(1)));
+  }
+
+  @Override
+  protected SoyValue visitBitwiseAndOpNode(BitwiseAndOpNode node) {
+    return bitwiseAnd(visit(node.getChild(0)), visit(node.getChild(1)));
   }
 
   @Override

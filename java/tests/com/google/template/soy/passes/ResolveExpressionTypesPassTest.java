@@ -314,7 +314,7 @@ public final class ResolveExpressionTypesPassTest {
   @Test
   public void testArithmeticTypesError() {
     assertResolveExpressionTypesFails(
-        "Using arithmetic operators on Soy types 'string' and 'string' is illegal.",
+        "Using arithmetic operator '/' on Soy types 'string' and 'string' is illegal.",
         constructFileSource("{'a' / 'b'}"));
   }
 

@@ -102,6 +102,26 @@ public final class SharedRuntime {
     }
   }
 
+  public static NumberData shiftRight(SoyValue operand0, SoyValue operand1) {
+    return IntegerData.forValue(operand0.longValue() >> (int) operand1.longValue());
+  }
+
+  public static NumberData shiftLeft(SoyValue operand0, SoyValue operand1) {
+    return IntegerData.forValue(operand0.longValue() << (int) operand1.longValue());
+  }
+
+  public static NumberData bitwiseOr(SoyValue operand0, SoyValue operand1) {
+    return IntegerData.forValue(operand0.longValue() | operand1.longValue());
+  }
+
+  public static NumberData bitwiseXor(SoyValue operand0, SoyValue operand1) {
+    return IntegerData.forValue(operand0.longValue() ^ operand1.longValue());
+  }
+
+  public static NumberData bitwiseAnd(SoyValue operand0, SoyValue operand1) {
+    return IntegerData.forValue(operand0.longValue() & operand1.longValue());
+  }
+
   /** Performs the {@code <} operator on the two values. */
   public static boolean lessThan(SoyValue left, SoyValue right) {
     if (left instanceof StringData && right instanceof StringData) {

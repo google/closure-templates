@@ -23,6 +23,9 @@ import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.BitwiseAndOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.BitwiseOrOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.BitwiseXorOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.DivideByOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.EqualOpNode;
@@ -38,6 +41,8 @@ import com.google.template.soy.exprtree.OperatorNodes.NotOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.ShiftLeftOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.ShiftRightOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
 
 /**
@@ -183,6 +188,21 @@ public abstract class AbstractExprNodeVisitor<R> extends AbstractNodeVisitor<Exp
         break;
       case CONDITIONAL_OP_NODE:
         visitConditionalOpNode((ConditionalOpNode) node);
+        break;
+      case SHIFT_LEFT_OP_NODE:
+        visitShiftLeftOpNode((ShiftLeftOpNode) node);
+        break;
+      case SHIFT_RIGHT_OP_NODE:
+        visitShiftRightOpNode((ShiftRightOpNode) node);
+        break;
+      case BITWISE_OR_OP_NODE:
+        visitBitwiseOrOpNode((BitwiseOrOpNode) node);
+        break;
+      case BITWISE_XOR_OP_NODE:
+        visitBitwiseXorOpNode((BitwiseXorOpNode) node);
+        break;
+      case BITWISE_AND_OP_NODE:
+        visitBitwiseAndOpNode((BitwiseAndOpNode) node);
         break;
 
       case FUNCTION_NODE:
@@ -397,6 +417,26 @@ public abstract class AbstractExprNodeVisitor<R> extends AbstractNodeVisitor<Exp
   }
 
   protected void visitConditionalOpNode(ConditionalOpNode node) {
+    visitOperatorNode(node);
+  }
+
+  protected void visitShiftLeftOpNode(ShiftLeftOpNode node) {
+    visitOperatorNode(node);
+  }
+
+  protected void visitShiftRightOpNode(ShiftRightOpNode node) {
+    visitOperatorNode(node);
+  }
+
+  protected void visitBitwiseOrOpNode(BitwiseOrOpNode node) {
+    visitOperatorNode(node);
+  }
+
+  protected void visitBitwiseXorOpNode(BitwiseXorOpNode node) {
+    visitOperatorNode(node);
+  }
+
+  protected void visitBitwiseAndOpNode(BitwiseAndOpNode node) {
     visitOperatorNode(node);
   }
 

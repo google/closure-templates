@@ -434,4 +434,114 @@ public class OperatorNodes {
       return new AssertNonNullOpNode(this, copyState);
     }
   }
+
+  /** Node representing the shift left '<<' operator. */
+  public static final class ShiftLeftOpNode extends AbstractOperatorNode {
+
+    public ShiftLeftOpNode(SourceLocation sourceLocation, SourceLocation operatorLocation) {
+      super(sourceLocation, Operator.SHIFT_LEFT, operatorLocation);
+    }
+
+    private ShiftLeftOpNode(ShiftLeftOpNode orig, CopyState copyState) {
+      super(orig, copyState);
+    }
+
+    @Override
+    public Kind getKind() {
+      return Kind.SHIFT_LEFT_OP_NODE;
+    }
+
+    @Override
+    public ShiftLeftOpNode copy(CopyState copyState) {
+      return new ShiftLeftOpNode(this, copyState);
+    }
+  }
+
+  /** Node representing the shift right '>>' operator. */
+  public static final class ShiftRightOpNode extends AbstractOperatorNode {
+
+    public ShiftRightOpNode(SourceLocation sourceLocation, SourceLocation operatorLocation) {
+      super(sourceLocation, Operator.SHIFT_RIGHT, operatorLocation);
+    }
+
+    private ShiftRightOpNode(ShiftRightOpNode orig, CopyState copyState) {
+      super(orig, copyState);
+    }
+
+    @Override
+    public Kind getKind() {
+      return Kind.SHIFT_RIGHT_OP_NODE;
+    }
+
+    @Override
+    public ShiftRightOpNode copy(CopyState copyState) {
+      return new ShiftRightOpNode(this, copyState);
+    }
+  }
+
+  /** Node representing the bitwise OR '|' operator. */
+  public static final class BitwiseOrOpNode extends AbstractOperatorNode {
+
+    public BitwiseOrOpNode(SourceLocation sourceLocation, SourceLocation operatorLocation) {
+      super(sourceLocation, Operator.BITWISE_OR, operatorLocation);
+    }
+
+    private BitwiseOrOpNode(BitwiseOrOpNode orig, CopyState copyState) {
+      super(orig, copyState);
+    }
+
+    @Override
+    public Kind getKind() {
+      return Kind.BITWISE_OR_OP_NODE;
+    }
+
+    @Override
+    public BitwiseOrOpNode copy(CopyState copyState) {
+      return new BitwiseOrOpNode(this, copyState);
+    }
+  }
+
+  /** Node representing the bitwise XOR '^' operator. */
+  public static final class BitwiseXorOpNode extends AbstractOperatorNode {
+
+    public BitwiseXorOpNode(SourceLocation sourceLocation, SourceLocation operatorLocation) {
+      super(sourceLocation, Operator.BITWISE_XOR, operatorLocation);
+    }
+
+    private BitwiseXorOpNode(BitwiseXorOpNode orig, CopyState copyState) {
+      super(orig, copyState);
+    }
+
+    @Override
+    public Kind getKind() {
+      return Kind.BITWISE_XOR_OP_NODE;
+    }
+
+    @Override
+    public BitwiseXorOpNode copy(CopyState copyState) {
+      return new BitwiseXorOpNode(this, copyState);
+    }
+  }
+
+  /** Node representing the bitwise AND '&' operator. */
+  public static final class BitwiseAndOpNode extends AbstractOperatorNode {
+
+    public BitwiseAndOpNode(SourceLocation sourceLocation, SourceLocation operatorLocation) {
+      super(sourceLocation, Operator.BITWISE_AND, operatorLocation);
+    }
+
+    private BitwiseAndOpNode(BitwiseAndOpNode orig, CopyState copyState) {
+      super(orig, copyState);
+    }
+
+    @Override
+    public Kind getKind() {
+      return Kind.BITWISE_AND_OP_NODE;
+    }
+
+    @Override
+    public BitwiseAndOpNode copy(CopyState copyState) {
+      return new BitwiseAndOpNode(this, copyState);
+    }
+  }
 }

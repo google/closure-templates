@@ -777,6 +777,29 @@ public class SoyFileParser {
   // An error that can be thrown to abort parsing.  This is useful if an error has been reported
   // and it is known that parsing cannot continue.
   private static final class AbortParsingError extends Error {}
+
+  /** Propagates advice to ParseErrors in a more natural way. Always avoids double logging. */
+  static final class ParseExceptionWithAdvice extends ParseException {
+    final ParseException original;
+    final String advice;
+
+    ParseExceptionWithAdvice(ParseException original, String advice) {
+      this.original = original;
+      this.advice = advice;
+    }
+  }
+
+  /** State available while parsing a single expression. */
+  static final class ExprState {
+    // If this is the expression of a print command.
+    final boolean isPrint;
+    // How many () nestings deep we are.
+    int groupNesting = 0;
+
+    ExprState(boolean isPrint) {
+      this.isPrint = isPrint;
+    }
+  }
 }
 
 PARSER_END(SoyFileParser)
@@ -837,6 +860,9 @@ TOKEN_MGR_DECLS: {
     prevState = -1;
   }
 
+  private void resetToDefault() {
+    SwitchTo(isInTemplate ? TEMPLATE_DEFAULT : DEFAULT);
+  }
 
   /**
    * If the matched whitespace token contains a blank line, stores the blank line as a "comment" for
@@ -1221,16 +1247,16 @@ TOKEN_MGR_DECLS: {
 // ------------ Step 2: Match the command text and closing delimiter ------------
 
 <IN_CMD_TAG, EXPR> TOKEN: {
-  < CMD_END : "}" > { SwitchTo(isInTemplate ? TEMPLATE_DEFAULT : DEFAULT); }
+  < CMD_END : "}" > { resetToDefault(); }
   // there are technically no self closing tags in DEFAULT, but this should yield better error
   // recovery
-| < CMD_SELF_CLOSE : "/}" > { SwitchTo(isInTemplate ? TEMPLATE_DEFAULT : DEFAULT); }
+| < CMD_SELF_CLOSE : "/}" > { resetToDefault(); }
 }
 
 <IN_CMD_TAG> TOKEN: {
   < NAME: <RAW_IDENT> >
 | < ATTRIBUTE: <RAW_IDENT_WITH_DASH> >
-| < CMD_COLON: ":" > : EXPR  // for type expressions or param/let expressions
+| < CMD_COLON: ":" > : EXPR  // extern type, param type
 | < CMD_COLON_EQ: ":=" > : EXPR  // @state declarations where the type is inferred
 | < CMD_EQ: "=" >
 | < CMD_DASH: "-" >
@@ -1330,21 +1356,26 @@ TOKEN_MGR_DECLS: {
 | < QCOLON: "?:" >
 | < OR: "or" >            // Precedence 2 operators
 | < AND: "and" >          // Precedence 3 operators
-| < DOUBLE_EQ: "==">      // Precedence 4 operators
+//| < BITWISE_OR: "|" >   // Precedence 4 operators. Actually VBAR.
+| < BITWISE_XOR: "^" >    // Precedence 5 operators
+| < BITWISE_AND: "&" >    // Precedence 6 operators
+| < DOUBLE_EQ: "==">      // Precedence 7 operators
 | < NOT_EQ: "!=" >
-| < LANGLE: "<" >         // Precedence 5 operators
+| < LANGLE: "<" >         // Precedence 8 operators
 | < RANGLE: ">" >
 | < LT_EQ: "<=" >
 | < GT_EQ: ">=" >
-| < PLUS: "+">            // Precedence 6 operators
-| < MINUS: "-">           // Precedence 6 as a binary operator and 8 as a unary operator
-| < TIMES: "*">           // Precedence 7 operators
+| < SHIFT_LEFT: "<<" >    // Precedence 9 operators.
+//| < SHIFT_RIGHT: ">>" >    Actually implemented with 2x RANGLE.
+| < PLUS: "+">            // Precedence 10 operators
+| < MINUS: "-">           // Precedence 10 as a binary operator and 12 as a unary operator
+| < TIMES: "*">           // Precedence 11 operators
 | < DIV: "/">
 | < MOD: "%">
-| < NOT: "not" >          // Precedence 8 as a unary operator (along with MINUS)
-| < DOT: "." >            // Precedence 9 operators
+| < NOT: "not" >          // Precedence 12 as a unary operator (along with MINUS)
 | < QDOT: "?." >
-| < LBRACKET: "[" >       // Precedence 9 data access operators and part of legacy map literal syntax
+| < DOT: "." >            // Precedence 13 operators
+| < LBRACKET: "[" >       // Precedence 13 data access operators and part of legacy map literal syntax
 | < RBRACKET: "]" >
 | < QLBRACKET: "?[" >
 | < COMMA: "," >          // Not actually an operator, part of map/list literal syntax
@@ -1358,7 +1389,6 @@ TOKEN_MGR_DECLS: {
 | < FORWARD_ARROW: "=>" > // Part of template type syntax.
 | < ASSERT_NON_NULL: "!" >
 }
-
 
 // -------------------------------------------------------------------------------------------------
 // Identifiers.
@@ -1892,7 +1922,7 @@ private CommandTagAttribute Attribute() :
         // Allow this to be optional to yield a better error message below. Otherwise we will report
         // that double quotes aren't usable as soy strings.
         [
-          exprList = ExprList()
+          exprList = ExprList(false)
         ]
         qToken = <END_DQ_EXPR_ATTR>
       } catch (ParseException e) {
@@ -1911,7 +1941,7 @@ private CommandTagAttribute Attribute() :
         // Allow this to be optional to yield a better error message below. Otherwise we will report
         // that double quotes aren't usable as soy strings.
         [
-          exprList = ExprList()
+          exprList = ExprList(false)
         ]
         qToken = <END_SQ_EXPR_ATTR>
       } catch (ParseException e) {
@@ -2990,7 +3020,7 @@ private PrintNode PrintStmt() :
   )
 
   try {
-    expr = Expr()
+    expr = PrintExpr()
     directives = PrintDirectives()
     attributes = Attributes()
     tagEnd = <CMD_END>
@@ -3044,16 +3074,21 @@ private List<PrintDirectiveNode> PrintDirectives() :
  */
 private PrintDirectiveNode PrintDirective() :
 {
-  Token vbar, directive;
+  Token vbar, directive = null;
   ImmutableList<ExprNode> args = ImmutableList.of();
 }
 {
   vbar = <VBAR>
-  directive = <IDENT>
+  try {
+    directive = <IDENT>
+  } catch (ParseException e) {
+    throw new ParseExceptionWithAdvice(e,
+        " (Disambiguate bitwise OR (|) from print directive by placing the expression inside parentheses.)");
+  }
 
   [
     <COLON>
-    args = ExprList()
+    args = ExprList(true)
   ]
 
   {
@@ -3410,7 +3445,7 @@ private SwitchNode SwitchStmt() :
   try {
     (
       caseTag = <CMD_BEGIN_CASE>
-      caseExprs = ExprList()
+      caseExprs = ExprList(false)
       caseTagEnd = <CMD_END>
       templateBlock = TemplateBlock()
       {
@@ -3810,19 +3845,20 @@ private ExprNode ExprInput() :
  *
  * ExprList -> Expr ( "," Expr )*
  */
-private ImmutableList<ExprNode> ExprList() :
+private ImmutableList<ExprNode> ExprList(boolean printNode) :
 {
   ExprNode expr;
   ImmutableList.Builder<ExprNode> exprList = ImmutableList.builder();
+  ExprState state = new ExprState(printNode);
 }
 {
 
-  expr = Expr()
+  expr = NestedExpr(state)
   { exprList.add(expr); }
 
   (
     <COMMA>
-    expr = Expr()
+    expr = NestedExpr(state)
     { exprList.add(expr); }
   )*
 
@@ -3924,7 +3960,6 @@ private CallArgs CallArgs() :
   }
 }
 
-
 /**
  * Matches a full expression.
  *
@@ -3933,12 +3968,31 @@ private CallArgs CallArgs() :
 private ExprNode Expr() :
 {
   ExprNode expr;
+  ExprState state = new ExprState(false);
 }
 {
-  expr = PrecExpr1()
+  expr = PrecExpr1(state)
   { return expr; }
 }
 
+private ExprNode PrintExpr() :
+{
+  ExprNode expr;
+  ExprState state = new ExprState(true);
+}
+{
+  expr = PrecExpr1(state)
+  { return expr; }
+}
+
+private ExprNode NestedExpr(ExprState state) :
+{
+  ExprNode expr;
+}
+{
+  expr = PrecExpr1(state)
+  { return expr; }
+}
 
 // For implementing operators with multiple precedence levels we implement the 'classic solution'
 // as documented here: http://www.engr.mun.ca/~theo/Misc/exp_parsing.htm#classic
@@ -3968,7 +4022,7 @@ private ExprNode Expr() :
  *
  * PrecExpr1 -> PrecExpr2 [ ( "?:" PrecExpr1 | "?" PrecExpr1 ":" PrecExpr1 ) ]
  */
-private ExprNode PrecExpr1() :
+private ExprNode PrecExpr1(ExprState state) :
 {
   ExprNode expr1, expr2;
   Token op, op2;
@@ -3976,20 +4030,20 @@ private ExprNode PrecExpr1() :
 {
   { ExprNode expr; }
 
-  expr = PrecExpr2()
+  expr = PrecExpr2(state)
 
   // These operators are right associative, the right recursion on PrecExpr1
   // accomplishes this
   [
     op = <QCOLON>
-    expr1 = PrecExpr1()
+    expr1 = PrecExpr1(state)
 
     { expr = Operator.NULL_COALESCING.createNode(createSrcLoc(expr, expr1), createSrcLoc(op), expr, expr1); }
   |
     op = <QMARK>
-    expr1 = PrecExpr1()
+    expr1 = PrecExpr1(state)
     op2 = <COLON>
-    expr2 = PrecExpr1()
+    expr2 = PrecExpr1(state)
 
     { expr = Operator.CONDITIONAL.createNode(
         expr.getSourceLocation().extend(expr2.getSourceLocation()), createSrcLoc(op, op2), expr, expr1, expr2);
@@ -4003,7 +4057,7 @@ private ExprNode PrecExpr1() :
 /**
  * Matches expressions with precedence levels 2 and higher.
  */
-private ExprNode PrecExpr2() :
+private ExprNode PrecExpr2(ExprState state) :
 {
   ExprNode rightHand;
   Token op;
@@ -4011,10 +4065,10 @@ private ExprNode PrecExpr2() :
 {
   { ExprNode expr; }
 
-  expr = PrecExpr3()
+  expr = PrecExpr3(state)
   (
     op = <OR>
-    rightHand = PrecExpr3()
+    rightHand = PrecExpr3(state)
 
     { expr = createOperatorNode(
         createSrcLoc(expr, rightHand),
@@ -4032,7 +4086,7 @@ private ExprNode PrecExpr2() :
 /**
  * Matches expressions with precedence levels 3 and higher.
  */
-private ExprNode PrecExpr3() :
+private ExprNode PrecExpr3(ExprState state) :
 {
   ExprNode rightHand;
   Token op;
@@ -4040,10 +4094,10 @@ private ExprNode PrecExpr3() :
 {
   { ExprNode expr; }
 
-  expr = PrecExpr4()
+  expr = PrecExpr4(state)
   (
     op = <AND>
-    rightHand = PrecExpr4()
+    rightHand = PrecExpr4(state)
 
     { expr = createOperatorNode(
         createSrcLoc(expr, rightHand),
@@ -4062,7 +4116,7 @@ private ExprNode PrecExpr3() :
 /**
  * Matches expressions with precedence levels 4 and higher.
  */
-private ExprNode PrecExpr4() :
+private ExprNode PrecExpr4(ExprState state) :
 {
   ExprNode rightHand;
   Token op;
@@ -4070,14 +4124,20 @@ private ExprNode PrecExpr4() :
 {
   { ExprNode expr; }
 
-  expr = PrecExpr5()
+  expr = PrecExpr5(state)
+  {
+    if (state.isPrint && state.groupNesting == 0) {
+      // If this is a print node expression and we aren't in a grouping then
+      // don't interpret | as an operator. It should be a print directive.
+      return expr;
+    }
+  }
   (
-    (
-      op = <DOUBLE_EQ>
-    |
-      op = <NOT_EQ>
-    )
-    rightHand = PrecExpr5()
+    // Need to lookahead to disambiguate between this bitwise OR and print
+    // directive delimiter allowed in print statements.
+    LOOKAHEAD(2)
+    op = <VBAR>
+    rightHand = PrecExpr5(state)
 
     { expr = createOperatorNode(
         createSrcLoc(expr, rightHand),
@@ -4088,15 +4148,13 @@ private ExprNode PrecExpr4() :
         rightHand);
     }
   )*
-
   { return expr; }
 }
-
 
 /**
  * Matches expressions with precedence levels 5 and higher.
  */
-private ExprNode PrecExpr5() :
+private ExprNode PrecExpr5(ExprState state) :
 {
   ExprNode rightHand;
   Token op;
@@ -4104,18 +4162,10 @@ private ExprNode PrecExpr5() :
 {
   { ExprNode expr; }
 
-  expr = PrecExpr6()
+  expr = PrecExpr6(state)
   (
-    (
-      op = <LANGLE>
-    |
-      op = <RANGLE>
-    |
-      op = <LT_EQ>
-    |
-      op = <GT_EQ>
-    )
-    rightHand = PrecExpr6()
+    op = <BITWISE_XOR>
+    rightHand = PrecExpr6(state)
 
     { expr = createOperatorNode(
         createSrcLoc(expr, rightHand),
@@ -4130,11 +4180,10 @@ private ExprNode PrecExpr5() :
   { return expr; }
 }
 
-
 /**
  * Matches expressions with precedence levels 6 and higher.
  */
-private ExprNode PrecExpr6() :
+private ExprNode PrecExpr6(ExprState state) :
 {
   ExprNode rightHand;
   Token op;
@@ -4142,14 +4191,10 @@ private ExprNode PrecExpr6() :
 {
   { ExprNode expr; }
 
-  expr = PrecExpr7()
+  expr = PrecExpr7(state)
   (
-    (
-      op = <PLUS>
-    |
-      op = <MINUS>
-    )
-    rightHand = PrecExpr7()
+    op = <BITWISE_AND>
+    rightHand = PrecExpr7(state)
 
     { expr = createOperatorNode(
         createSrcLoc(expr, rightHand),
@@ -4164,11 +4209,10 @@ private ExprNode PrecExpr6() :
   { return expr; }
 }
 
-
 /**
  * Matches expressions with precedence levels 7 and higher.
  */
-private ExprNode PrecExpr7() :
+private ExprNode PrecExpr7(ExprState state) :
 {
   ExprNode rightHand;
   Token op;
@@ -4176,16 +4220,14 @@ private ExprNode PrecExpr7() :
 {
   { ExprNode expr; }
 
-  expr = PrecExpr8()
+  expr = PrecExpr8(state)
   (
     (
-      op = <TIMES>
+      op = <DOUBLE_EQ>
     |
-      op = <DIV>
-    |
-      op = <MOD>
+      op = <NOT_EQ>
     )
-    rightHand = PrecExpr8()
+    rightHand = PrecExpr8(state)
 
     { expr = createOperatorNode(
         createSrcLoc(expr, rightHand),
@@ -4203,10 +4245,162 @@ private ExprNode PrecExpr7() :
 
 /**
  * Matches expressions with precedence levels 8 and higher.
+ */
+private ExprNode PrecExpr8(ExprState state) :
+{
+  ExprNode rightHand;
+  Token op;
+}
+{
+  { ExprNode expr; }
+
+  expr = PrecExpr9(state)
+  (
+    (
+      op = <LANGLE>
+    |
+      op = <RANGLE>
+    |
+      op = <LT_EQ>
+    |
+      op = <GT_EQ>
+    )
+    rightHand = PrecExpr9(state)
+
+    { expr = createOperatorNode(
+        createSrcLoc(expr, rightHand),
+        op.image,
+        createSrcLoc(op),
+        8,
+        expr,
+        rightHand);
+    }
+  )*
+
+  { return expr; }
+}
+
+
+/**
+ * Matches expressions with precedence levels 9 and higher.
+ */
+private ExprNode PrecExpr9(ExprState state) :
+{
+  ExprNode rightHand;
+  Token op1, op2 = null;
+}
+{
+  { ExprNode expr; }
+
+  expr = PrecExpr10(state)
+  (
+    // Need to lookahead to disambiguate between this left right (>>) and two
+    // right angles (>) next to each other allowed in parameterized types.
+    LOOKAHEAD(2)
+    (
+      op1 = <SHIFT_LEFT>
+    |
+      op1 = <RANGLE>
+      op2 = <RANGLE>
+    )
+    rightHand = PrecExpr10(state)
+
+    {
+      SourceLocation opLoc = createSrcLoc(op1);
+      String opImage = op1.image;
+      if (op2 != null) {
+        opLoc = createSrcLoc(op1, op2);
+        opImage += op2.image;
+        if (!opLoc.isSingleLine() || opLoc.getLength() != 2) {
+          // Guard against whitespace between > and >.
+          throw generateParseException();
+        }
+      }
+      expr = createOperatorNode(
+        createSrcLoc(expr, rightHand), opImage, opLoc, 9, expr, rightHand);
+    }
+  )*
+
+  { return expr; }
+}
+
+
+/**
+ * Matches expressions with precedence levels 10 and higher.
+ */
+private ExprNode PrecExpr10(ExprState state) :
+{
+  ExprNode rightHand;
+  Token op;
+}
+{
+  { ExprNode expr; }
+
+  expr = PrecExpr11(state)
+  (
+    (
+      op = <PLUS>
+    |
+      op = <MINUS>
+    )
+    rightHand = PrecExpr11(state)
+
+    { expr = createOperatorNode(
+        createSrcLoc(expr, rightHand),
+        op.image,
+        createSrcLoc(op),
+        10,
+        expr,
+        rightHand);
+    }
+  )*
+
+  { return expr; }
+}
+
+
+/**
+ * Matches expressions with precedence levels 11 and higher.
+ */
+private ExprNode PrecExpr11(ExprState state) :
+{
+  ExprNode rightHand;
+  Token op;
+}
+{
+  { ExprNode expr; }
+
+  expr = PrecExpr12(state)
+  (
+    (
+      op = <TIMES>
+    |
+      op = <DIV>
+    |
+      op = <MOD>
+    )
+    rightHand = PrecExpr12(state)
+
+    { expr = createOperatorNode(
+        createSrcLoc(expr, rightHand),
+        op.image,
+        createSrcLoc(op),
+        11,
+        expr,
+        rightHand);
+    }
+  )*
+
+  { return expr; }
+}
+
+
+/**
+ * Matches expressions with precedence levels 12 and higher.
  *
  * <p>This level has our right associative unary operators '-' and 'not'
  */
-private ExprNode PrecExpr8() :
+private ExprNode PrecExpr12(ExprState state) :
 {
   Token op;
 }
@@ -4214,7 +4408,7 @@ private ExprNode PrecExpr8() :
   { ExprNode expr; }
 
   (
-    expr = PrecExpr9()
+    expr = PrecExpr13(state)
   |
     (
       op = <NOT>
@@ -4229,7 +4423,7 @@ private ExprNode PrecExpr8() :
         op.image = "not";
       }
     )
-    expr = PrecExpr8()
+    expr = PrecExpr12(state)
 
     {
       SourceLocation opLocation = createSrcLoc(op);
@@ -4246,7 +4440,7 @@ private ExprNode PrecExpr8() :
             location,
             op.image,
             opLocation,
-            8,
+            12,
             expr);
       }
     }
@@ -4256,19 +4450,19 @@ private ExprNode PrecExpr8() :
 
 
 /**
- * Matches expressions with precedence level 9.
+ * Matches expressions with precedence level 13.
  *
  * <p>This level has our data access 'operators' and the nonnull assertion operator and is currently
  * our highest precedence level.
  */
-private ExprNode PrecExpr9() :
+private ExprNode PrecExpr13(ExprState state) :
 {
   ExprNode expr, keyExpr;
   Token ident, open, close, op;
   CallArgs callArgs;
 }
 {
-  expr = Primary()
+  expr = Primary(state)
   (
     (
       (
@@ -4305,7 +4499,7 @@ private ExprNode PrecExpr9() :
       |
         open = <QLBRACKET>
       )
-      keyExpr = Expr()
+      keyExpr = NestedExpr(state)
       close = <RBRACKET>
       { expr =
             new ItemAccessNode(
@@ -4323,7 +4517,7 @@ private ExprNode PrecExpr9() :
           expr.getSourceLocation().extend(opLocation),
           op.image,
           opLocation,
-          10,
+          13,
           expr);
     }
   )*
@@ -4335,18 +4529,18 @@ private ExprNode PrecExpr9() :
 /**
  * Primary -> "(" Expr ")" | VarRef | VarRefOrFunctionCallLike | List | Primitive
  */
-private ExprNode Primary() :
+private ExprNode Primary(ExprState state) :
 {
   ExprNode primary;
   Token lParen,rParen;
 }
 {
   (
-    primary = GroupNode()
+    primary = GroupNode(state)
   |
-    primary = VarRefOrFunctionCallLike()
+    primary = VarRefOrFunctionCallLike(state)
   |
-    primary = List()
+    primary = List(state)
   |
     primary = Primitive()
   )
@@ -4357,16 +4551,20 @@ private ExprNode Primary() :
 /**
  * GroupNode -> (Expr)
  */
-private GroupNode GroupNode() :
+private GroupNode GroupNode(ExprState state) :
 {
   ExprNode primary;
-  Token lParen,rParen;
+  Token lParen, rParen;
+  state.groupNesting++;
 }
 {
   lParen = <LPAREN>
-  primary = Expr()
+  primary = NestedExpr(state)
   rParen = <RPAREN>
-  {return new GroupNode(primary, createSrcLoc(lParen, rParen));}
+  {
+    state.groupNesting--;
+    return new GroupNode(primary, createSrcLoc(lParen, rParen));
+  }
 }
 
 
@@ -4378,7 +4576,7 @@ private GroupNode GroupNode() :
  *     Identifier [ "(" [ Expr ( ( "," Expr )* | ":" Expr ( "," Ident ":" Expr )* ) ] ")" ]
  *     | "map(" [ Expr ":" Expr ("," Expr ":" Expr)* ] ")"
  */
-private ExprNode VarRefOrFunctionCallLike() :
+private ExprNode VarRefOrFunctionCallLike(ExprState state) :
 {
   Token identToken;
   Identifier ident;
@@ -4398,7 +4596,7 @@ private ExprNode VarRefOrFunctionCallLike() :
     (
       LOOKAHEAD( {identToken.image.equals("map")} )
       {
-        return MapLiteral(ident);
+        return MapLiteral(state, ident);
       }
     |
       LOOKAHEAD( {identToken.image.equals("ve")} )
@@ -4451,7 +4649,7 @@ private ExprNode VarRefOrFunctionCallLike() :
 /** Parses a map literal or a list to map constructor:
  *  {@code map('key': 'value', $key: $value)} or {@code map($list)}
  */
-private ExprNode MapLiteral(Identifier ident) :
+private ExprNode MapLiteral(ExprState state, Identifier ident) :
 {
   ExprNode key = null, val;
   Token closeParen;
@@ -4460,13 +4658,13 @@ private ExprNode MapLiteral(Identifier ident) :
 }
 {
   [
-    key = Expr()
+    key = NestedExpr(state)
     {
       fromList = true;
     }
     [
       <COLON>
-      val = Expr()
+      val = NestedExpr(state)
       {
         kvPairs.put(key, val);
         fromList = false;
@@ -4475,9 +4673,9 @@ private ExprNode MapLiteral(Identifier ident) :
         // Disambiguate with a trailing comma
         LOOKAHEAD( { getToken(1).kind == COMMA && getToken(2).kind != RPAREN } )
         <COMMA>
-        key = Expr()
+        key = NestedExpr(state)
         <COLON>
-        val = Expr()
+        val = NestedExpr(state)
         { kvPairs.put(key, val); }
       )*
       [ <COMMA> ]  // trailing comma
@@ -4515,7 +4713,7 @@ private ExprNode VeLiteral(Identifier ident) :
  * until partway through parsing, so this method parses the common tokens until we have enough info
  * to branch).
 */
-private ExprNode List() :
+private ExprNode List(ExprState state) :
 {
   Token begin, end;
   ExprNode firstExpr;
@@ -4528,12 +4726,12 @@ private ExprNode List() :
       end = <RBRACKET>
       { return new ListLiteralNode(new ArrayList<ExprNode>(), createSrcLoc(begin, end), ImmutableList.of()); }
     |
-      firstExpr = Expr()
+      firstExpr = NestedExpr(state)
       ( // After the first expr, we have enough info to branch: list comprehensions will have "FOR"
         // as the next token; list literals will either have a comma or a closing "]".
-        listNode = ListComprehension(begin, firstExpr)
+        listNode = ListComprehension(state, begin, firstExpr)
         |
-        listNode = ListLiteral(begin, firstExpr)
+        listNode = ListLiteral(state, begin, firstExpr)
 
       )
       { return listNode; }
@@ -4547,7 +4745,7 @@ private ExprNode List() :
  * @param begin token for the opening left bracket ("[").
  * @param itemExpr expr to perform on each item in the list (e.g. "$a+$i" in [$a+$i for $a, $i in $foo]).
  */
-private ExprNode ListComprehension(Token begin, ExprNode itemExpr) :
+private ExprNode ListComprehension(ExprState state, Token begin, ExprNode itemExpr) :
 {
   Token end, listIterVar = null;
   Token indexVar = null;
@@ -4565,10 +4763,10 @@ private ExprNode ListComprehension(Token begin, ExprNode itemExpr) :
       indexVar = <IDENT>
     ]
     <IN>
-    listExpr = Expr()
+    listExpr = NestedExpr(state)
     [
       <IF>
-      filterExpr = Expr()
+      filterExpr = NestedExpr(state)
     ]
     end = <RBRACKET>
   } catch (ParseException e) {
@@ -4597,7 +4795,7 @@ private ExprNode ListComprehension(Token begin, ExprNode itemExpr) :
  * @param begin token for the opening left bracket ("[").
  * @param itemExpr first expr after the opening bracket.
  */
-private ExprNode ListLiteral(Token begin, ExprNode firstItem) :
+private ExprNode ListLiteral(ExprState state, Token begin, ExprNode firstItem) :
 {
   Token end;
   ExprNode itemExpr;
@@ -4617,7 +4815,7 @@ private ExprNode ListLiteral(Token begin, ExprNode firstItem) :
     ( // this lookahead is necessary to make this loop unambiguous with the trailing comma
       LOOKAHEAD( { getToken(1).kind == COMMA && getToken(2).kind != RBRACKET } )
       comma = <COMMA>
-      itemExpr = Expr()
+      itemExpr = NestedExpr(state)
       {
         items.add(itemExpr);
         commaLocations.add(createSrcLoc(comma).getBeginPoint());

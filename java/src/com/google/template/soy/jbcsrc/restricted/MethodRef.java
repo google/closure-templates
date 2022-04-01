@@ -424,6 +424,21 @@ public abstract class MethodRef {
   public static final MethodRef RUNTIME_MOD =
       create(SharedRuntime.class, "mod", SoyValue.class, SoyValue.class).asNonNullable();
 
+  public static final MethodRef RUNTIME_SHIFT_RIGHT =
+      create(SharedRuntime.class, "shiftRight", SoyValue.class, SoyValue.class).asNonNullable();
+
+  public static final MethodRef RUNTIME_SHIFT_LEFT =
+      create(SharedRuntime.class, "shiftLeft", SoyValue.class, SoyValue.class).asNonNullable();
+
+  public static final MethodRef RUNTIME_BITWISE_OR =
+      create(SharedRuntime.class, "bitwiseOr", SoyValue.class, SoyValue.class).asNonNullable();
+
+  public static final MethodRef RUNTIME_BITWISE_XOR =
+      create(SharedRuntime.class, "bitwiseXor", SoyValue.class, SoyValue.class).asNonNullable();
+
+  public static final MethodRef RUNTIME_BITWISE_AND =
+      create(SharedRuntime.class, "bitwiseAnd", SoyValue.class, SoyValue.class).asNonNullable();
+
   public static final MethodRef CONSTRUCT_MAP_FROM_LIST =
       create(SharedRuntime.class, "constructMapFromList", List.class).asNonNullable();
 

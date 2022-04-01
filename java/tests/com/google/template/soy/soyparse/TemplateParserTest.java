@@ -1226,8 +1226,8 @@ public final class TemplateParserTest {
     // Test error case.
     assertThatTemplateContent("{let $alpha: $boo.foo}{/let}")
         .causesError(
-            "parse error at '}': expected /}, ?, '?:', or, and, ==, !=, <, >, <=, >=, +, -, *, /, "
-                + "%, ., ?., [, ?[, (, or !")
+            "parse error at '}': expected /}, ?, '?:', or, and, ^, &, ==, !=, <, >, <=, >=, +, -,"
+                + " *, /, %, ?., ., [, ?[, (, or !")
         .at(1, 22);
   }
 

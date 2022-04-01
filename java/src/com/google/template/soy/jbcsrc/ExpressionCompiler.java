@@ -24,6 +24,7 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.compare;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.firstNonNull;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.logicalNot;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.numericConversion;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.ternary;
 
 import com.google.common.base.Preconditions;
@@ -34,6 +35,7 @@ import com.google.template.soy.data.SoyLegacyObjectMap;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.exprtree.AbstractLocalVarDefn;
+import com.google.template.soy.exprtree.AbstractOperatorNode;
 import com.google.template.soy.exprtree.AbstractReturningExprNodeVisitor;
 import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.DataAccessNode;
@@ -60,6 +62,9 @@ import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.NullSafeAccessNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.BitwiseAndOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.BitwiseOrOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.BitwiseXorOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.DivideByOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.EqualOpNode;
@@ -75,6 +80,8 @@ import com.google.template.soy.exprtree.OperatorNodes.NotOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.ShiftLeftOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.ShiftRightOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
 import com.google.template.soy.exprtree.ProtoEnumValueNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
@@ -502,7 +509,7 @@ final class ExpressionCompiler {
           userIndexVar == null
               ? null
               : userIndexVar.store(
-                  SoyExpression.forInt(BytecodeUtils.numericConversion(indexVar, Type.LONG_TYPE))
+                  SoyExpression.forInt(numericConversion(indexVar, Type.LONG_TYPE))
                       .boxAsSoyValueProvider()
                       .checkedCast(SOY_VALUE_PROVIDER_TYPE),
                   userIndexVar.start());
@@ -772,40 +779,32 @@ final class ExpressionCompiler {
           SoyTypes.NUMBER_TYPE, MethodRef.RUNTIME_PLUS.invoke(left.box(), right.box()));
     }
 
-    @Override
-    protected SoyExpression visitMinusOpNode(MinusOpNode node) {
+    private SoyExpression visitBinaryOperator(
+        AbstractOperatorNode node, int longOpcode, int doubleOpcode, MethodRef runtimeMethod) {
       final SoyExpression left = visit(node.getChild(0));
       final SoyExpression right = visit(node.getChild(1));
       // They are both definitely numbers
       if (left.assignableToNullableNumber() && right.assignableToNullableNumber()) {
         if (left.assignableToNullableInt() && right.assignableToNullableInt()) {
-          return applyBinaryIntOperator(Opcodes.LSUB, left, right);
+          return applyBinaryIntOperator(longOpcode, left, right);
         }
         // if either is definitely a float, then we are definitely coercing so just do it now
         if (left.assignableToNullableFloat() || right.assignableToNullableFloat()) {
-          return applyBinaryFloatOperator(Opcodes.DSUB, left, right);
+          return applyBinaryFloatOperator(doubleOpcode, left, right);
         }
       }
       return SoyExpression.forSoyValue(
-          SoyTypes.NUMBER_TYPE, MethodRef.RUNTIME_MINUS.invoke(left.box(), right.box()));
+          SoyTypes.NUMBER_TYPE, runtimeMethod.invoke(left.box(), right.box()));
+    }
+
+    @Override
+    protected SoyExpression visitMinusOpNode(MinusOpNode node) {
+      return visitBinaryOperator(node, Opcodes.LSUB, Opcodes.DSUB, MethodRef.RUNTIME_MINUS);
     }
 
     @Override
     protected SoyExpression visitTimesOpNode(TimesOpNode node) {
-      final SoyExpression left = visit(node.getChild(0));
-      final SoyExpression right = visit(node.getChild(1));
-      // They are both definitely numbers
-      if (left.assignableToNullableNumber() && right.assignableToNullableNumber()) {
-        if (left.assignableToNullableInt() && right.assignableToNullableInt()) {
-          return applyBinaryIntOperator(Opcodes.LMUL, left, right);
-        }
-        // if either is definitely a float, then we are definitely coercing so just do it now
-        if (left.assignableToNullableFloat() || right.assignableToNullableFloat()) {
-          return applyBinaryFloatOperator(Opcodes.DMUL, left, right);
-        }
-      }
-      return SoyExpression.forSoyValue(
-          SoyTypes.NUMBER_TYPE, MethodRef.RUNTIME_TIMES.invoke(left.box(), right.box()));
+      return visitBinaryOperator(node, Opcodes.LMUL, Opcodes.DMUL, MethodRef.RUNTIME_TIMES);
     }
 
     @Override
@@ -818,20 +817,62 @@ final class ExpressionCompiler {
 
     @Override
     protected SoyExpression visitModOpNode(ModOpNode node) {
-      SoyExpression left = visit(node.getChild(0));
-      SoyExpression right = visit(node.getChild(1));
-      // They are both definitely numbers
-      if (left.assignableToNullableNumber() && right.assignableToNullableNumber()) {
-        if (left.assignableToNullableInt() && right.assignableToNullableInt()) {
-          return applyBinaryIntOperator(Opcodes.LREM, left, right);
-        }
-        // if either is definitely a float, then we are definitely coercing so just do it now
-        if (left.assignableToNullableFloat() || right.assignableToNullableFloat()) {
-          return applyBinaryFloatOperator(Opcodes.DREM, left, right);
-        }
+      return visitBinaryOperator(node, Opcodes.LREM, Opcodes.DREM, MethodRef.RUNTIME_MOD);
+    }
+
+    @Override
+    protected SoyExpression visitShiftLeftOpNode(ShiftLeftOpNode node) {
+      return applyBitwiseIntOperator(
+          node, Opcodes.LSHL, Type.INT_TYPE, MethodRef.RUNTIME_SHIFT_LEFT);
+    }
+
+    @Override
+    protected SoyExpression visitShiftRightOpNode(ShiftRightOpNode node) {
+      return applyBitwiseIntOperator(
+          node, Opcodes.LSHR, Type.INT_TYPE, MethodRef.RUNTIME_SHIFT_RIGHT);
+    }
+
+    @Override
+    protected SoyExpression visitBitwiseOrOpNode(BitwiseOrOpNode node) {
+      return applyBitwiseIntOperator(
+          node, Opcodes.LOR, Type.LONG_TYPE, MethodRef.RUNTIME_BITWISE_OR);
+    }
+
+    @Override
+    protected SoyExpression visitBitwiseXorOpNode(BitwiseXorOpNode node) {
+      return applyBitwiseIntOperator(
+          node, Opcodes.LXOR, Type.LONG_TYPE, MethodRef.RUNTIME_BITWISE_XOR);
+    }
+
+    @Override
+    protected SoyExpression visitBitwiseAndOpNode(BitwiseAndOpNode node) {
+      return applyBitwiseIntOperator(
+          node, Opcodes.LAND, Type.LONG_TYPE, MethodRef.RUNTIME_BITWISE_AND);
+    }
+
+    private SoyExpression applyBitwiseIntOperator(
+        AbstractOperatorNode node, int operator, Type rht, MethodRef runtimeMethod) {
+
+      SoyExpression lhe = visit(node.getChild(0));
+      SoyExpression rhe = visit(node.getChild(1));
+
+      if (lhe.assignableToNullableInt() && rhe.assignableToNullableInt()) {
+        Expression left = lhe.unboxAsLong();
+        // Shift operators require INT on right side.
+        Expression right = numericConversion(rhe.unboxAsLong(), rht);
+        return SoyExpression.forInt(
+            new Expression(Type.LONG_TYPE) {
+              @Override
+              protected void doGen(CodeBuilder mv) {
+                left.gen(mv);
+                right.gen(mv);
+                mv.visitInsn(operator);
+              }
+            });
       }
+
       return SoyExpression.forSoyValue(
-          SoyTypes.NUMBER_TYPE, MethodRef.RUNTIME_MOD.invoke(left.box(), right.box()));
+          SoyTypes.NUMBER_TYPE, runtimeMethod.invoke(lhe.box(), rhe.box()));
     }
 
     private static SoyExpression applyBinaryIntOperator(
@@ -1470,8 +1511,7 @@ final class ExpressionCompiler {
     @Override
     SoyExpression visitToFloatFunction(FunctionNode node) {
       SoyExpression arg = visit(node.getChild(0));
-      return SoyExpression.forFloat(
-          BytecodeUtils.numericConversion(arg.unboxAsLong(), Type.DOUBLE_TYPE));
+      return SoyExpression.forFloat(numericConversion(arg.unboxAsLong(), Type.DOUBLE_TYPE));
     }
 
     @Override

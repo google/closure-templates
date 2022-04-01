@@ -23,6 +23,9 @@ import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.BitwiseAndOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.BitwiseOrOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.BitwiseXorOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.DivideByOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.EqualOpNode;
@@ -38,6 +41,8 @@ import com.google.template.soy.exprtree.OperatorNodes.NotOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.ShiftLeftOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.ShiftRightOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
 import java.util.List;
 
@@ -154,6 +159,16 @@ public abstract class AbstractReturningExprNodeVisitor<R>
         return visitNullCoalescingOpNode((NullCoalescingOpNode) node);
       case CONDITIONAL_OP_NODE:
         return visitConditionalOpNode((ConditionalOpNode) node);
+      case SHIFT_LEFT_OP_NODE:
+        return visitShiftLeftOpNode((ShiftLeftOpNode) node);
+      case SHIFT_RIGHT_OP_NODE:
+        return visitShiftRightOpNode((ShiftRightOpNode) node);
+      case BITWISE_OR_OP_NODE:
+        return visitBitwiseOrOpNode((BitwiseOrOpNode) node);
+      case BITWISE_XOR_OP_NODE:
+        return visitBitwiseXorOpNode((BitwiseXorOpNode) node);
+      case BITWISE_AND_OP_NODE:
+        return visitBitwiseAndOpNode((BitwiseAndOpNode) node);
 
       case FUNCTION_NODE:
         return visitFunctionNode((FunctionNode) node);
@@ -343,6 +358,26 @@ public abstract class AbstractReturningExprNodeVisitor<R>
   }
 
   protected R visitConditionalOpNode(ConditionalOpNode node) {
+    return visitOperatorNode(node);
+  }
+
+  protected R visitShiftLeftOpNode(ShiftLeftOpNode node) {
+    return visitOperatorNode(node);
+  }
+
+  protected R visitShiftRightOpNode(ShiftRightOpNode node) {
+    return visitOperatorNode(node);
+  }
+
+  protected R visitBitwiseOrOpNode(BitwiseOrOpNode node) {
+    return visitOperatorNode(node);
+  }
+
+  protected R visitBitwiseXorOpNode(BitwiseXorOpNode node) {
+    return visitOperatorNode(node);
+  }
+
+  protected R visitBitwiseAndOpNode(BitwiseAndOpNode node) {
     return visitOperatorNode(node);
   }
 

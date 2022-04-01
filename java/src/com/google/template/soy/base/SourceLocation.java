@@ -211,6 +211,15 @@ public final class SourceLocation implements Comparable<SourceLocation> {
     return new SourceLocation(filePath, begin.offset(0, beginOffset), end.offset(0, endOffset));
   }
 
+  public boolean isSingleLine() {
+    return begin.line() == end.line();
+  }
+
+  public int getLength() {
+    Preconditions.checkState(isSingleLine());
+    return end.column() - begin.column() + 1;
+  }
+
   /**
    * Returns a location representing a substring of this location. The begin and end index are
    * relative to the start point of this location.
@@ -218,7 +227,7 @@ public final class SourceLocation implements Comparable<SourceLocation> {
    * @throws IllegalStateException if this location spans multiple lines.
    */
   public SourceLocation substring(int beginIndex, int endIndexExcl) {
-    Preconditions.checkState(begin.line() == end.line());
+    Preconditions.checkState(isSingleLine());
     return new SourceLocation(
         filePath, begin.offset(0, beginIndex), begin.offset(0, endIndexExcl - 1));
   }

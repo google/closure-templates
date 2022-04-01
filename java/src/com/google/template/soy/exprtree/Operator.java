@@ -31,6 +31,9 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.exprtree.ExprNode.OperatorNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.BitwiseAndOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.BitwiseOrOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.BitwiseXorOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.DivideByOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.EqualOpNode;
@@ -46,6 +49,8 @@ import com.google.template.soy.exprtree.OperatorNodes.NotOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.ShiftLeftOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.ShiftRightOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
 import java.util.List;
 import javax.annotation.Nullable;
@@ -56,85 +61,130 @@ import javax.annotation.Nullable;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  */
 public enum Operator {
-  NEGATIVE(ImmutableList.of(new Token("-"), OPERAND_0), 8, RIGHT, "- (unary)") {
+  // Precedence borrowed at least in part from JavaScript:
+  // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Operator_Precedence
+
+  ASSERT_NON_NULL(ImmutableList.of(OPERAND_0, new Token("!")), 13, LEFT) {
+    @Override
+    public OperatorNode createNode(SourceLocation location, SourceLocation operatorLocation) {
+      return new AssertNonNullOpNode(location, operatorLocation);
+    }
+  },
+
+  NEGATIVE(ImmutableList.of(new Token("-"), OPERAND_0), 12, RIGHT, "- (unary)") {
     @Override
     public OperatorNode createNode(SourceLocation location, SourceLocation operatorLocation) {
       return new NegativeOpNode(location, operatorLocation);
     }
   },
-  NOT(ImmutableList.of(new Token("not"), SP, OPERAND_0), 8, RIGHT) {
+  NOT(ImmutableList.of(new Token("not"), SP, OPERAND_0), 12, RIGHT) {
     @Override
     public OperatorNode createNode(SourceLocation location, SourceLocation operatorLocation) {
       return new NotOpNode(location, operatorLocation);
     }
   },
-  TIMES(ImmutableList.of(OPERAND_0, SP, new Token("*"), SP, OPERAND_1), 7, LEFT) {
+
+  TIMES(ImmutableList.of(OPERAND_0, SP, new Token("*"), SP, OPERAND_1), 11, LEFT) {
     @Override
     public OperatorNode createNode(SourceLocation location, SourceLocation operatorLocation) {
       return new TimesOpNode(location, operatorLocation);
     }
   },
-  DIVIDE_BY(ImmutableList.of(OPERAND_0, SP, new Token("/"), SP, OPERAND_1), 7, LEFT) {
+  DIVIDE_BY(ImmutableList.of(OPERAND_0, SP, new Token("/"), SP, OPERAND_1), 11, LEFT) {
     @Override
     public OperatorNode createNode(SourceLocation location, SourceLocation operatorLocation) {
       return new DivideByOpNode(location, operatorLocation);
     }
   },
-  MOD(ImmutableList.of(OPERAND_0, SP, new Token("%"), SP, OPERAND_1), 7, LEFT) {
+  MOD(ImmutableList.of(OPERAND_0, SP, new Token("%"), SP, OPERAND_1), 11, LEFT) {
     @Override
     public OperatorNode createNode(SourceLocation location, SourceLocation operatorLocation) {
       return new ModOpNode(location, operatorLocation);
     }
   },
 
-  PLUS(ImmutableList.of(OPERAND_0, SP, new Token("+"), SP, OPERAND_1), 6, LEFT) {
+  PLUS(ImmutableList.of(OPERAND_0, SP, new Token("+"), SP, OPERAND_1), 10, LEFT) {
     @Override
     public OperatorNode createNode(SourceLocation location, SourceLocation operatorLocation) {
       return new PlusOpNode(location, operatorLocation);
     }
   },
-  MINUS(ImmutableList.of(OPERAND_0, SP, new Token("-"), SP, OPERAND_1), 6, LEFT, "- (binary)") {
+  MINUS(ImmutableList.of(OPERAND_0, SP, new Token("-"), SP, OPERAND_1), 10, LEFT, "- (binary)") {
     @Override
     public OperatorNode createNode(SourceLocation location, SourceLocation operatorLocation) {
       return new MinusOpNode(location, operatorLocation);
     }
   },
 
-  LESS_THAN(ImmutableList.of(OPERAND_0, SP, new Token("<"), SP, OPERAND_1), 5, LEFT) {
+  SHIFT_RIGHT(ImmutableList.of(OPERAND_0, SP, new Token(">>"), SP, OPERAND_1), 9, LEFT) {
+    @Override
+    public OperatorNode createNode(SourceLocation location, SourceLocation operatorLocation) {
+      return new ShiftRightOpNode(location, operatorLocation);
+    }
+  },
+  SHIFT_LEFT(ImmutableList.of(OPERAND_0, SP, new Token("<<"), SP, OPERAND_1), 9, LEFT) {
+    @Override
+    public OperatorNode createNode(SourceLocation location, SourceLocation operatorLocation) {
+      return new ShiftLeftOpNode(location, operatorLocation);
+    }
+  },
+
+  LESS_THAN(ImmutableList.of(OPERAND_0, SP, new Token("<"), SP, OPERAND_1), 8, LEFT) {
     @Override
     public OperatorNode createNode(SourceLocation location, SourceLocation operatorLocation) {
       return new LessThanOpNode(location, operatorLocation);
     }
   },
-  GREATER_THAN(ImmutableList.of(OPERAND_0, SP, new Token(">"), SP, OPERAND_1), 5, LEFT) {
+  GREATER_THAN(ImmutableList.of(OPERAND_0, SP, new Token(">"), SP, OPERAND_1), 8, LEFT) {
     @Override
     public OperatorNode createNode(SourceLocation location, SourceLocation operatorLocation) {
       return new GreaterThanOpNode(location, operatorLocation);
     }
   },
-  LESS_THAN_OR_EQUAL(ImmutableList.of(OPERAND_0, SP, new Token("<="), SP, OPERAND_1), 5, LEFT) {
+  LESS_THAN_OR_EQUAL(ImmutableList.of(OPERAND_0, SP, new Token("<="), SP, OPERAND_1), 8, LEFT) {
     @Override
     public OperatorNode createNode(SourceLocation location, SourceLocation operatorLocation) {
       return new LessThanOrEqualOpNode(location, operatorLocation);
     }
   },
-  GREATER_THAN_OR_EQUAL(ImmutableList.of(OPERAND_0, SP, new Token(">="), SP, OPERAND_1), 5, LEFT) {
+  GREATER_THAN_OR_EQUAL(ImmutableList.of(OPERAND_0, SP, new Token(">="), SP, OPERAND_1), 8, LEFT) {
     @Override
     public OperatorNode createNode(SourceLocation location, SourceLocation operatorLocation) {
       return new GreaterThanOrEqualOpNode(location, operatorLocation);
     }
   },
 
-  EQUAL(ImmutableList.of(OPERAND_0, SP, new Token("=="), SP, OPERAND_1), 4, LEFT) {
+  EQUAL(ImmutableList.of(OPERAND_0, SP, new Token("=="), SP, OPERAND_1), 7, LEFT) {
     @Override
     public OperatorNode createNode(SourceLocation location, SourceLocation operatorLocation) {
       return new EqualOpNode(location, operatorLocation);
     }
   },
-  NOT_EQUAL(ImmutableList.of(OPERAND_0, SP, new Token("!="), SP, OPERAND_1), 4, LEFT) {
+  NOT_EQUAL(ImmutableList.of(OPERAND_0, SP, new Token("!="), SP, OPERAND_1), 7, LEFT) {
     @Override
     public OperatorNode createNode(SourceLocation location, SourceLocation operatorLocation) {
       return new NotEqualOpNode(location, operatorLocation);
+    }
+  },
+
+  BITWISE_AND(ImmutableList.of(OPERAND_0, SP, new Token("&"), SP, OPERAND_1), 6, LEFT) {
+    @Override
+    public OperatorNode createNode(SourceLocation location, SourceLocation operatorLocation) {
+      return new BitwiseAndOpNode(location, operatorLocation);
+    }
+  },
+
+  BITWISE_XOR(ImmutableList.of(OPERAND_0, SP, new Token("^"), SP, OPERAND_1), 5, LEFT) {
+    @Override
+    public OperatorNode createNode(SourceLocation location, SourceLocation operatorLocation) {
+      return new BitwiseXorOpNode(location, operatorLocation);
+    }
+  },
+
+  BITWISE_OR(ImmutableList.of(OPERAND_0, SP, new Token("|"), SP, OPERAND_1), 4, LEFT) {
+    @Override
+    public OperatorNode createNode(SourceLocation location, SourceLocation operatorLocation) {
+      return new BitwiseOrOpNode(location, operatorLocation);
     }
   },
 
@@ -169,12 +219,6 @@ public enum Operator {
     }
   },
 
-  ASSERT_NON_NULL(ImmutableList.of(OPERAND_0, new Token("!")), 10, LEFT) {
-    @Override
-    public OperatorNode createNode(SourceLocation location, SourceLocation operatorLocation) {
-      return new AssertNonNullOpNode(location, operatorLocation);
-    }
-  },
   ;
 
   /** Constants used in the enum definitions above. */
@@ -266,7 +310,7 @@ public enum Operator {
    * @param associativity This operator's associativity.
    * @param description A short description of this operator.
    */
-  private Operator(
+  Operator(
       ImmutableList<SyntaxElement> syntax,
       int precedence,
       Associativity associativity,

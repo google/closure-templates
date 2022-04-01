@@ -89,6 +89,11 @@ final class ParseErrors {
       int currentLexicalState,
       String optionalAdvice) {
 
+    if (e instanceof SoyFileParser.ParseExceptionWithAdvice) {
+      optionalAdvice = ((SoyFileParser.ParseExceptionWithAdvice) e).advice;
+      e = ((SoyFileParser.ParseExceptionWithAdvice) e).original;
+    }
+
     Token currentToken = e.currentToken;
 
     // currentToken is the 'last successfully consumed token', but the error is usually due to the
