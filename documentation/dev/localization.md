@@ -9,11 +9,6 @@ files. To mark a message for translation, you can surround the text with the
 `msg` tag as described in the
 [Translation commands chapter](../reference/messages).
 
-WARNING: When a new message is added to a `.soy` file, **there is no translation
-available for that message yet**. If the message is immediately used in your
-product, it may appear in English to users of other languages. Therefore, the
-message must be introduced to be translated before it is actually used.
-
 To introduce a new message, add the message to an unused template first:
 
 ```soy
