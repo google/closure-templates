@@ -132,12 +132,9 @@ exports.packSanitizedHtmlToProtoSoyRuntimeOnly = function(sanitizedHtml) {
   const content = sanitizedHtml ?
       /** @type {!SanitizedHtml} */ (sanitizedHtml).getContent() :
       '';
-  const contentDir = sanitizedHtml ?
-      /** @type {!SanitizedHtml} */ (sanitizedHtml).contentDir :
-      null;
   const safeHtml =
       uncheckedconversions.safeHtmlFromStringKnownToSatisfyTypeContract(
-          Const.from('from Soy SanitizedHtml object'), content, contentDir);
+          Const.from('from Soy SanitizedHtml object'), content);
   return jspbconversions.safeHtmlToProto(safeHtml);
 };
 
