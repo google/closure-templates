@@ -225,7 +225,7 @@ _FILTER_FOR_FILTER_SIP_URI = re.compile(r"""^sip:[0-9a-z;=\-+._!~*' /():&$#?@,]+
 
 _FILTER_FOR_FILTER_SMS_URI = re.compile(r"""^sms:[0-9a-z;=\-+._!~*' /():&$#?@,]+\Z""", re.U | re.I)
 
-_FILTER_FOR_FILTER_TEL_URI = re.compile(r"""^tel:[0-9a-z;=\-+._!~*' /():&$#?@,]+\Z""", re.U | re.I)
+_FILTER_FOR_FILTER_TEL_URI = re.compile(r"""^tel:(?:[0-9a-z;=\-+._!~*' /():&$#?@,]|%23|%2C|%3B)+\Z""", re.U | re.I)
 
 _FILTER_FOR_FILTER_HTML_ATTRIBUTES = re.compile(r"""^(?!on|src|(?:action|archive|background|cite|classid|codebase|content|data|dsync|href|http-equiv|longdesc|style|usemap)\s*$)(?:[a-z0-9_$:-]*)\Z""", re.U | re.I)
 

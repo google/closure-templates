@@ -2846,7 +2846,7 @@ const $$FILTER_FOR_FILTER_SMS_URI_ = /^sms:[0-9a-z;=\-+._!~*'\u0020\/():&$#?@,]+
  * A pattern that vets values produced by the named directives.
  * @type {!RegExp}
  */
-const $$FILTER_FOR_FILTER_TEL_URI_ = /^tel:[0-9a-z;=\-+._!~*'\u0020\/():&$#?@,]+$/i;
+const $$FILTER_FOR_FILTER_TEL_URI_ = /^tel:(?:[0-9a-z;=\-+._!~*'\u0020\/():&$#?@,]|%23|%2C|%3B)+$/i;
 
 /**
  * A pattern that vets values produced by the named directives.

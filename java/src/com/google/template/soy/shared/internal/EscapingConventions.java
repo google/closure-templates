@@ -132,7 +132,9 @@ public final class EscapingConventions {
     private final char[] nonAsciiCodeUnits;
     /** Values in a sparse mapping corresponding to {@link #nonAsciiCodeUnits}. */
     private final String[] nonAsciiEscapes;
-    /** @see #getNonAsciiPrefix */
+    /**
+     * @see #getNonAsciiPrefix
+     */
     @Nullable private final String nonAsciiPrefix;
 
     /**
@@ -1127,7 +1129,16 @@ public final class EscapingConventions {
 
     private FilterTelUri() {
       super(
-          Pattern.compile("^tel:[0-9a-z;=\\-+._!~*' /():&$#?@,]+\\z", Pattern.CASE_INSENSITIVE),
+          Pattern.compile(
+              "^tel:(?:[0-9a-z;=\\-+._!~*' /():&$#?@,]"
+                  // Percent encoded '#'
+                  + "|%23"
+                  // Percent encoded ','
+                  + "|%2C"
+                  // Percent encoded ';'
+                  + "|%3B"
+                  + ")+\\z",
+              Pattern.CASE_INSENSITIVE),
           null);
     }
 

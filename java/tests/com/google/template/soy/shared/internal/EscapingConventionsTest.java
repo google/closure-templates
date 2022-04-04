@@ -20,6 +20,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.Sets;
 import java.lang.reflect.Modifier;
+import java.net.URLEncoder;
 import java.util.Set;
 import org.junit.Rule;
 import org.junit.Test;
@@ -89,5 +90,44 @@ public class EscapingConventionsTest {
         .append('\u0085')
         .append('\u1234');
     assertThat(sb.toString()).isEqualTo("Hi%0A%C2%85%E1%88%B4");
+  }
+
+  @Test
+  public void testFilterTelUri() throws Exception {
+    String[] shouldReject =
+        new String[] {
+          "",
+          "tel:",
+          "tel:%",
+          "tel:+12345678901%,1234#",
+          "tel:+12345678901,1234%#",
+          "tel:+12345678901%01234%#",
+          "tel:+12345678901%,1234%#",
+          "tel:+12345678901%00,1234" + URLEncoder.encode("#", "UTF-8"),
+          "tel" + URLEncoder.encode(":", "UTF-8") + "+12345678901"
+        };
+    String[] shouldAccept =
+        new String[] {
+          "tel:0",
+          "tel:+",
+          "tel:+12345678901",
+          "tel:+12345678901,1234#",
+          "tel:+12345678901"
+              + URLEncoder.encode(",", "UTF-8")
+              + "1234"
+              + URLEncoder.encode("#", "UTF-8"),
+          "tel:+12345678901;1234#",
+          "tel:+12345678901"
+              + URLEncoder.encode(";", "UTF-8")
+              + "1234"
+              + URLEncoder.encode("#", "UTF-8"),
+        };
+
+    for (String uri : shouldReject) {
+      assertThat(uri).doesNotMatch(EscapingConventions.FilterTelUri.INSTANCE.getValueFilter());
+    }
+    for (String uri : shouldAccept) {
+      assertThat(uri).matches(EscapingConventions.FilterTelUri.INSTANCE.getValueFilter());
+    }
   }
 }
