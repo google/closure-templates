@@ -320,7 +320,9 @@ public final class GenPyExprsVisitorTest {
             + "###, "
             + "'Hello {BAR}', "
             + "('BAR',)), "
-            + "{'BAR': str(sanitize.escape_html(data.get('foo').get('bar')))}, True)";
+            + "{'BAR': str(sanitize.escape_html("
+            + "runtime.get_field_through_introspection(data.get('foo'), 'bar')"
+            + "))}, True)";
 
     assertThatSoyExpr(soyCode).compilesTo(new PyExpr(expectedPyCode, Integer.MAX_VALUE));
   }
@@ -575,16 +577,20 @@ public final class GenPyExprsVisitorTest {
             + "{"
             + "'PEOPLE_0_GENDER': None "
             + "if runtime.key_safe_data_access(data.get('people'), 0) is None "
-            + "else runtime.key_safe_data_access(data.get('people'), 0).get('gender'), "
+            + "else runtime.get_field_through_introspection("
+            + "runtime.key_safe_data_access(data.get('people'), 0), 'gender'), "
             + "'PEOPLE_1_GENDER': None "
             + "if runtime.key_safe_data_access(data.get('people'), 1) is None "
-            + "else runtime.key_safe_data_access(data.get('people'), 1).get('gender'), "
+            + "else runtime.get_field_through_introspection("
+            + "runtime.key_safe_data_access(data.get('people'), 1), 'gender'), "
             + "'NUM': len(data.get('people')), "
             + "'NAME_1': str(sanitize.escape_html("
-            + "runtime.key_safe_data_access(data.get('people'), 0).get('name'))), "
+            + "runtime.get_field_through_introspection("
+            + "runtime.key_safe_data_access(data.get('people'), 0), 'name'))), "
             + "'NAME_2': str(sanitize.escape_html(None "
             + "if runtime.key_safe_data_access(data.get('people'), 1) is None "
-            + "else runtime.key_safe_data_access(data.get('people'), 1).get('name')))"
+            + "else runtime.get_field_through_introspection("
+            + "runtime.key_safe_data_access(data.get('people'), 1), 'name')))"
             + "}"
             + ")";
 

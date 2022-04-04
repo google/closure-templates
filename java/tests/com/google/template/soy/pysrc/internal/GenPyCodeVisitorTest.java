@@ -56,6 +56,7 @@ public final class GenPyCodeVisitorTest {
           + "from example.runtime import runtime\n"
           + "from example.runtime import sanitize\n"
           + "\n"
+          + "PROTOS_NAMESPACE = {}\n"
           + "NAMESPACE_MANIFEST = {\n"
           + "}\n"
           + "\n"

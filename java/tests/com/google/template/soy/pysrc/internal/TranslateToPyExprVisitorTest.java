@@ -73,10 +73,13 @@ public class TranslateToPyExprVisitorTest {
   @Test
   public void testDataRef() {
     assertThatSoyExpr("$boo").translatesTo("data.get('boo')", Integer.MAX_VALUE);
-    assertThatSoyExpr("$boo.goo").translatesTo("data.get('boo').get('goo')", Integer.MAX_VALUE);
+    assertThatSoyExpr("$boo.goo")
+        .translatesTo(
+            "runtime.get_field_through_introspection(data.get('boo'), 'goo')", Integer.MAX_VALUE);
     assertThatSoyExpr("$boo?.goo")
         .translatesTo(
-            "None if data.get('boo') is None else data.get('boo').get('goo')",
+            "None if data.get('boo') is None else"
+                + " runtime.get_field_through_introspection(data.get('boo'), 'goo')",
             Operator.CONDITIONAL);
   }
 
@@ -88,7 +91,8 @@ public class TranslateToPyExprVisitorTest {
     assertThatSoyExpr("$zoo").with(frame).translatesTo("zooData8", Integer.MAX_VALUE);
     assertThatSoyExpr("$zoo.boo")
         .with(frame)
-        .translatesTo("zooData8.get('boo')", Integer.MAX_VALUE);
+        .translatesTo(
+            "runtime.get_field_through_introspection(zooData8, 'boo')", Integer.MAX_VALUE);
   }
 
   @Test

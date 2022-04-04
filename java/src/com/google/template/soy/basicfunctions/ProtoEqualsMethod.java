@@ -25,6 +25,10 @@ import com.google.template.soy.plugin.javascript.restricted.JavaScriptPluginCont
 import com.google.template.soy.plugin.javascript.restricted.JavaScriptValue;
 import com.google.template.soy.plugin.javascript.restricted.JavaScriptValueFactory;
 import com.google.template.soy.plugin.javascript.restricted.SoyJavaScriptSourceFunction;
+import com.google.template.soy.plugin.python.restricted.PythonPluginContext;
+import com.google.template.soy.plugin.python.restricted.PythonValue;
+import com.google.template.soy.plugin.python.restricted.PythonValueFactory;
+import com.google.template.soy.plugin.python.restricted.SoyPythonSourceFunction;
 import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyMethodSignature;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
@@ -37,7 +41,8 @@ import java.util.List;
     baseType = "Message",
     value = @Signature(parameterTypes = "Message", returnType = "bool"))
 @SoyPureFunction
-public final class ProtoEqualsMethod implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction {
+public final class ProtoEqualsMethod
+    implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPythonSourceFunction {
 
   @Override
   public JavaScriptValue applyForJavaScriptSource(
@@ -57,5 +62,11 @@ public final class ProtoEqualsMethod implements SoyJavaSourceFunction, SoyJavaSc
   public JavaValue applyForJavaSource(
       JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
     return factory.callStaticMethod(Methods.PROTO_EQUALS_FN, args.get(0), args.get(1));
+  }
+
+  @Override
+  public PythonValue applyForPythonSource(
+      PythonValueFactory factory, List<PythonValue> args, PythonPluginContext context) {
+    return factory.global("runtime").getProp("type_safe_eq").call(args.get(0), args.get(1));
   }
 }

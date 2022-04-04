@@ -20,6 +20,9 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableSet;
+import com.google.protobuf.Descriptors.Descriptor;
+import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.AbstractReturningExprNodeVisitor;
@@ -51,6 +54,7 @@ import com.google.template.soy.exprtree.OperatorNodes.EqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
+import com.google.template.soy.exprtree.ProtoEnumValueNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
@@ -75,12 +79,18 @@ import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateElementNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
+import com.google.template.soy.types.ProtoExtensionImportType;
+import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
+import com.google.template.soy.types.UnionType;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
@@ -137,10 +147,6 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
     }
   }
 
-  private static final SoyErrorKind PROTO_ACCESS_NOT_SUPPORTED =
-      SoyErrorKind.of("Proto accessors are not supported in pysrc.");
-  private static final SoyErrorKind PROTO_INIT_NOT_SUPPORTED =
-      SoyErrorKind.of("Proto init is not supported in pysrc.");
   private static final SoyErrorKind SOY_PY_SRC_FUNCTION_NOT_FOUND =
       SoyErrorKind.of("Failed to find SoyPySrcFunction ''{0}''.");
   private static final SoyErrorKind SOY_PY_SRC_METHOD_NOT_FOUND =
@@ -165,6 +171,15 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
 
   private static final PyExpr DATA = new PyExpr("data", Integer.MAX_VALUE);
   private static final PyExpr IJ_DATA = new PyExpr("ijData", Integer.MAX_VALUE);
+  private static final PyExpr PROTOS_NAMESPACE = new PyExpr("PROTOS_NAMESPACE", Integer.MAX_VALUE);
+
+  private static final ImmutableSet<FieldDescriptor.Type> INTEGER_FIELD_TYPES =
+      ImmutableSet.of(
+          FieldDescriptor.Type.INT32, FieldDescriptor.Type.INT64,
+          FieldDescriptor.Type.UINT32, FieldDescriptor.Type.UINT64,
+          FieldDescriptor.Type.SINT32, FieldDescriptor.Type.SINT64,
+          FieldDescriptor.Type.FIXED32, FieldDescriptor.Type.FIXED64,
+          FieldDescriptor.Type.SFIXED32, FieldDescriptor.Type.SFIXED64);
 
   private final LocalVariableStack localVarExprs;
 
@@ -216,6 +231,11 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
   protected PyExpr visitBooleanNode(BooleanNode node) {
     // Specifically set booleans to 'True' and 'False' given python's strict naming for booleans.
     return new PyExpr(node.getValue() ? "True" : "False", Integer.MAX_VALUE);
+  }
+
+  @Override
+  protected PyExpr visitProtoEnumValueNode(ProtoEnumValueNode node) {
+    return new PyExpr(Long.toString(node.getValue()), Integer.MAX_VALUE);
   }
 
   // -----------------------------------------------------------------------------------------------
@@ -309,6 +329,27 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
   // -----------------------------------------------------------------------------------------------
   // Implementations for data references.
 
+  private PyExpr getProtoReference(String name) {
+    List<String> nameParts = Arrays.asList(name.split("\\."));
+    String result = genCodeForLiteralKeyAccess(PROTOS_NAMESPACE, nameParts.get(0));
+    for (String part : nameParts.subList(1, nameParts.size())) {
+      result += "." + part;
+    }
+    return new PyExpr(result, Integer.MAX_VALUE);
+  }
+
+  private PyExpr getExtensionReference(String name, FieldDescriptor extension) {
+    List<String> nameParts = Arrays.asList(name.split("\\."));
+    String result = genCodeForLiteralKeyAccess(PROTOS_NAMESPACE, nameParts.get(0));
+    if (nameParts.size() > 1) {
+      for (String part : nameParts.subList(1, nameParts.size() - 1)) {
+        result += "." + part;
+      }
+      result += "." + extension.getName();
+    }
+    return new PyExpr(result, Integer.MAX_VALUE);
+  }
+
   @Override
   protected PyExpr visitVarRefNode(VarRefNode node) {
     if (node.getDefnDecl().kind() == VarDefn.Kind.STATE) {
@@ -324,6 +365,16 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
         // Case 2: In-scope local var.
         return new PyExpr(translation.getText(), Integer.MAX_VALUE);
       } else {
+        SoyType varType = node.getDefnDecl().type();
+        if (varType.getKind() == SoyType.Kind.PROTO_TYPE) {
+          return getProtoReference(node.getNameWithoutLeadingDollar());
+        }
+        if (varType.getKind() == SoyType.Kind.PROTO_EXTENSION) {
+          return getExtensionReference(
+              node.getNameWithoutLeadingDollar(),
+              ((ProtoExtensionImportType) varType).getDescriptor());
+        }
+
         // Case 3: Data reference.
         NotFoundBehavior notFoundBehavior = NotFoundBehavior.throwException();
         if (node.getDefnDecl().kind() == VarDefn.Kind.PARAM
@@ -623,8 +674,7 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
         // should have been removed earlier in the compiler
         throw new AssertionError();
       case PROTO_INIT:
-        errorReporter.report(node.getSourceLocation(), PROTO_INIT_NOT_SUPPORTED);
-        return ERROR;
+        return visitProtoInitFunction(node);
     }
     throw new AssertionError();
   }
@@ -656,6 +706,72 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
 
   private PyExpr visitSoyServerKeyFunction(FunctionNode node) {
     return visit(node.getChild(0));
+  }
+
+  private PyExpr pythonConversionFunction(FieldDescriptor.Type type) {
+    if (INTEGER_FIELD_TYPES.contains(type)) {
+      return new PyExpr("int", Integer.MAX_VALUE);
+    } else if (type == FieldDescriptor.Type.BYTES) {
+      return new PyExpr("runtime.convert_to_bytes", Integer.MAX_VALUE);
+    }
+    return NONE;
+  }
+
+  private PyExpr visitProtoInitFunction(FunctionNode node) {
+    SoyProtoType type = (SoyProtoType) node.getType();
+    PyFunctionExprBuilder builder = new PyFunctionExprBuilder(visit(node.getNameExpr()).getText());
+    Map<PyExpr, PyExpr> extensions = new LinkedHashMap<>();
+    Map<PyExpr, PyExpr> repeatedExtensions = new LinkedHashMap<>();
+    Map<PyExpr, PyExpr> messageExtensions = new LinkedHashMap<>();
+    for (int i = 0; i < node.numChildren(); i++) {
+      String soyFieldName = node.getParamName(i).identifier();
+      FieldDescriptor fieldDesc = type.getFieldDescriptor(soyFieldName);
+      PyExpr fieldValue = visit(node.getChild(i));
+      PyExpr conversionFunction = pythonConversionFunction(fieldDesc.getType());
+      if (!conversionFunction.equals(NONE)) {
+        fieldValue =
+            new PyFunctionExprBuilder("runtime.ensure_type")
+                .addArg(fieldValue)
+                .addArg(conversionFunction)
+                .asPyExpr();
+      } else if (fieldDesc.isMapField()) {
+        Descriptor mapDescriptor = fieldDesc.getMessageType();
+        FieldDescriptor.Type keyType = mapDescriptor.getFields().get(0).getType();
+        FieldDescriptor.Type valueType = mapDescriptor.getFields().get(1).getType();
+        PyExpr keyConversionFunction = pythonConversionFunction(keyType);
+        PyExpr valueConversionFunction = pythonConversionFunction(valueType);
+        if (!keyConversionFunction.equals(NONE) || !valueConversionFunction.equals(NONE)) {
+          fieldValue =
+              new PyFunctionExprBuilder("runtime.ensure_map_type")
+                  .addArg(fieldValue)
+                  .addArg(keyConversionFunction)
+                  .addArg(valueConversionFunction)
+                  .asPyExpr();
+        }
+      }
+      if (fieldDesc.isExtension()) {
+        Map<PyExpr, PyExpr> extensionsMap = extensions;
+        if (fieldDesc.isRepeated()) {
+          extensionsMap = repeatedExtensions;
+        } else if (fieldDesc.getType() == FieldDescriptor.Type.MESSAGE) {
+          extensionsMap = messageExtensions;
+        }
+        extensionsMap.put(
+            getExtensionReference(node.getParamName(i).originalName(), fieldDesc), fieldValue);
+      } else {
+        builder.addKwarg(fieldDesc.getName(), fieldValue);
+      }
+    }
+    PyExpr proto = builder.asPyExpr();
+    if (extensions.isEmpty() && repeatedExtensions.isEmpty() && messageExtensions.isEmpty()) {
+      return proto;
+    }
+    return new PyFunctionExprBuilder("runtime.add_extensions")
+        .addArg(proto)
+        .addArg(PyExprUtils.convertMapToPyExpr(extensions))
+        .addArg(PyExprUtils.convertMapToPyExpr(repeatedExtensions))
+        .addArg(PyExprUtils.convertMapToPyExpr(messageExtensions))
+        .asPyExpr();
   }
 
   private PyExpr visitIsPrimaryMsgInUseFunction(FunctionNode node) {
@@ -725,11 +841,8 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
    */
   private String genCodeForFieldAccess(
       ExprNode node, SoyType baseType, PyExpr containerExpr, String fieldName) {
-    if (baseType != null && baseType.getKind() == SoyType.Kind.PROTO) {
-      errorReporter.report(node.getSourceLocation(), PROTO_ACCESS_NOT_SUPPORTED);
-      return ".ERROR";
-    }
-    return genCodeForLiteralKeyAccess(containerExpr, fieldName);
+    FieldAccessStrategy strategy = FieldAccessStrategy.build(baseType, fieldName);
+    return strategy.apply(node, containerExpr, errorReporter);
   }
 
   private String genCodeForMethodCall(MethodCallNode methodCallNode, PyExpr containerExpr) {
@@ -748,12 +861,19 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
               .asPyExpr()
               .getText();
         case GET_EXTENSION:
+          return new PyFunctionExprBuilder("runtime.get_extension")
+              .addArg(containerExpr)
+              .addArg(visit(methodCallNode.getChild(1)))
+              .asPyExpr()
+              .getText();
         case HAS_PROTO_FIELD:
-          errorReporter.report(
-              methodCallNode.getAccessSourceLocation(),
-              SOY_PY_SRC_METHOD_NOT_FOUND,
-              methodCallNode.getMethodName());
-          return ".ERROR";
+          String soyField = BuiltinMethod.getProtoFieldNameFromMethodCall(methodCallNode);
+          FieldDescriptor descriptor =
+              ((SoyProtoType) methodCallNode.getBaseType(true)).getFieldDescriptor(soyField);
+          return new PyFunctionExprBuilder(containerExpr.getText() + ".HasField")
+              .addArg(descriptor.getName())
+              .asPyExpr()
+              .getText();
       }
     } else if (method instanceof SoySourceFunctionMethod) {
       SoySourceFunction function = ((SoySourceFunctionMethod) method).getImpl();
@@ -853,5 +973,53 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
       }
     }
     return null;
+  }
+
+  private static class FieldAccessStrategy {
+    Set<PyExpr> fieldsToCheck = new LinkedHashSet<>();
+    String keyToCheck = null;
+    String useIntrospectionKey = null;
+
+    private FieldAccessStrategy() {}
+    ;
+
+    private void populate(SoyType baseType, String fieldName) {
+      if (baseType.getKind() == SoyType.Kind.UNION) {
+        for (SoyType child : ((UnionType) baseType).getMembers()) {
+          populate(child, fieldName);
+        }
+      } else if (baseType.getKind() == SoyType.Kind.PROTO) {
+        FieldDescriptor fieldDesc = ((SoyProtoType) baseType).getFieldDescriptor(fieldName);
+        fieldsToCheck.add(new PyStringExpr("'" + fieldDesc.getName() + "'"));
+      } else if (baseType.getKind() == SoyType.Kind.ANY
+          || baseType.getKind() == SoyType.Kind.UNKNOWN) {
+        useIntrospectionKey = fieldName;
+      } else {
+        keyToCheck = fieldName;
+      }
+    }
+
+    public static FieldAccessStrategy build(SoyType baseType, String fieldName) {
+      FieldAccessStrategy strategy = new FieldAccessStrategy();
+      strategy.populate(baseType, fieldName);
+      return strategy;
+    }
+
+    public String apply(ExprNode node, PyExpr containerExpr, ErrorReporter errorReporter) {
+      if (useIntrospectionKey != null) {
+        return new PyFunctionExprBuilder("runtime.get_field_through_introspection")
+            .addArg(containerExpr)
+            .addArg(useIntrospectionKey)
+            .build();
+      } else if (fieldsToCheck.isEmpty()) {
+        return genCodeForLiteralKeyAccess(containerExpr, keyToCheck);
+      } else {
+        return new PyFunctionExprBuilder("runtime.try_multiple_fields")
+            .addArg(containerExpr)
+            .addArg(PyExprUtils.convertIterableToPyListExpr(fieldsToCheck))
+            .addArg(keyToCheck)
+            .build();
+      }
+    }
   }
 }

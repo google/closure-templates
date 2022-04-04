@@ -69,7 +69,7 @@ public final class MapKeysFunction
   @Override
   public PythonValue applyForPythonSource(
       PythonValueFactory factory, List<PythonValue> args, PythonPluginContext context) {
-    return args.get(0).getProp("keys").call();
+    return factory.global("list").call(args.get(0).getProp("keys").call());
   }
 
   // lazy singleton pattern, allows other backends to avoid the work.
