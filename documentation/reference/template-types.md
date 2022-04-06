@@ -69,13 +69,17 @@ To pass a template as a parameter, directly use a template as a value.
 ```soy
 {template foo}
   {@param content: html}
+
   {$content}
 {/template}
 
 {template bar}
-  {@param tpl: (content:html) => html}
+  {@param tpl: (content: html) => html}
+
   {call $tpl}
-    {param}<div></div>{/param}
+    {param content kind="html"}
+      <div></div>
+    {/param}
   {/call}
 {/template}
 
@@ -89,14 +93,18 @@ To pass a template as a parameter, directly use a template as a value.
 ###### Element Composition {.pg-tab}
 
 ```soy
-{template foo}
+{template foo kind="html<?>"}
   {@param content: html}
-  {$content}
+
+  <div>
+    {$content}
+  </div>
 {/template}
 
 {template bar kind="html<?>"}
-  {@param tpl: (content:html) => html}
- <{$tpl}>
+  {@param tpl: (content: html) => html<?>}
+
+  <{$tpl}>
     <parameter slot="content">
       <div></div>
     </parameter>
