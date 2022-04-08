@@ -437,14 +437,15 @@ const $$checkNotNull = function(val) {
 
 
 /**
- * Parses the given string into a base 10 integer. Returns null if parse is
+ * Parses the given string into the given integer base. Returns null if parse is
  * unsuccessful.
  * @param {?string} str The string to parse
- * @return {?number} The string parsed as a base 10 integer, or null if
- * unsuccessful
+ * @param {number} radix The base of the integer
+ * @return {?number} The string parsed as an integer of the given radix base,
+ * or null if unsuccessful
  */
-const $$parseInt = function(str) {
-  const parsed = parseInt(String(str), 10);
+const $$parseInt = function(str, radix) {
+  const parsed = parseInt(String(str), radix);
   return isNaN(parsed) ? null : parsed;
 };
 
