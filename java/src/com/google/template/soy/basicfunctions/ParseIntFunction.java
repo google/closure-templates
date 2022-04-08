@@ -48,11 +48,15 @@ import java.util.List;
 @SoyPureFunction
 @SoyFunctionSignature(
     name = "parseInt",
-    value =
-        @Signature(
-            parameterTypes = {"string"},
-            // TODO(b/70946095): should be nullable
-            returnType = "int"))
+    value = {
+      @Signature(
+          parameterTypes = {"string"},
+          // TODO(b/70946095): should be nullable
+          returnType = "int"),
+      @Signature(
+          parameterTypes = {"string", "int"},
+          returnType = "int|null")
+    })
 public final class ParseIntFunction
     implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPythonSourceFunction {
   @Override
