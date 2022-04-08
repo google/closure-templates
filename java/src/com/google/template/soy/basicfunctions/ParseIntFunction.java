@@ -37,46 +37,62 @@ import java.util.List;
 /**
  * Soy function that converts a string to an integer.
  *
- * <p>This function accepts a single string. If the string is a valid base 10 integer, then the
- * function will return that integer. Otherwise, it will return {@code null}.
+ * <p>This function accepts a single string or a string and a int radix. If just a single string is
+ * given and it is a valid base 10 integer, then the function will return that integer. If a string
+ * and a radix is given and the string is in the base of radix, and the radix is >2 and <36, then
+ * the function will return a integer. Otherwise, it will return {@code null}.
  *
  * <p>Ex: <code>
  *   {parseInt('10') + 20}  // evaluates to 30
+ *   {parseInt('10',2) + 20}  // evaluates to 22
  *   {parseInt('garbage') ?: -1}  // evaluates to -1
  * </code>
  */
 @SoyPureFunction
 @SoyFunctionSignature(
     name = "parseInt",
-    value =
-        @Signature(
-            parameterTypes = {"string"},
-            // TODO(b/70946095): should be nullable
-            returnType = "int"))
+    value = {
+      @Signature(
+          parameterTypes = {"string"},
+          // TODO(b/70946095): should be nullable
+          returnType = "int"),
+      @Signature(
+          parameterTypes = {"string", "int"},
+          returnType = "int|null")
+    })
 public final class ParseIntFunction
     implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPythonSourceFunction {
   @Override
   public JavaScriptValue applyForJavaScriptSource(
       JavaScriptValueFactory factory, List<JavaScriptValue> args, JavaScriptPluginContext context) {
     // TODO(user): parseInt('123abc', 10) == 123; JS parseInt tries to parse as much as it can.
-    return factory.callNamespaceFunction("soy", "soy.$$parseInt", args.get(0));
+    return factory.callNamespaceFunction(
+        "soy", "soy.$$parseInt", args.get(0), getRadixValue(args, factory.constant(10)));
   }
 
   @Override
   public PythonValue applyForPythonSource(
       PythonValueFactory factory, List<PythonValue> args, PythonPluginContext context) {
-    return factory.global("runtime.parse_int").call(args.get(0));
+    return factory
+        .global("runtime.parse_int")
+        .call(args.get(0), getRadixValue(args, factory.constant(10)));
   }
 
   // lazy singleton pattern, allows other backends to avoid the work.
   private static final class Methods {
     static final Method PARSE_INT =
-        JavaValueFactory.createMethod(BasicFunctionsRuntime.class, "parseInt", String.class);
+        JavaValueFactory.createMethod(
+            BasicFunctionsRuntime.class, "parseInt", String.class, int.class);
+  }
+
+  private <T> T getRadixValue(List<T> args, T defaultValue) {
+    return args.size() == 2 ? args.get(1) : defaultValue;
   }
 
   @Override
   public JavaValue applyForJavaSource(
       JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
-    return factory.callStaticMethod(Methods.PARSE_INT, args.get(0));
+    return factory.callStaticMethod(
+        Methods.PARSE_INT, args.get(0), getRadixValue(args, factory.constant(10)));
   }
 }

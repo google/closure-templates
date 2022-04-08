@@ -527,19 +527,20 @@ def is_set(field, container):
   return field in container
 
 
-def parse_int(s):
+def parse_int(s, radix):
   """A function that attempts to convert the input string into an int.
 
   Returns None if the input is not a valid int.
 
   Args:
     s: String to convert.
+    radix: The base of the provided string
 
   Returns:
     int if s is a valid int string, otherwise None.
   """
   try:
-    return int(s)
+    return int(s, radix)
   except ValueError:
     return None
 
