@@ -258,8 +258,11 @@ public final class BasicFunctionsRuntime {
     return (d == null || d.isNaN()) ? null : FloatData.forValue(d);
   }
 
-  public static IntegerData parseInt(String str) {
-    Long l = Longs.tryParse(str);
+  public static IntegerData parseInt(String str, int radix) {
+    if (radix < 2 || radix > 36) {
+      return null;
+    }
+    Long l = Longs.tryParse(str, radix);
     return (l == null) ? null : IntegerData.forValue(l);
   }
 
