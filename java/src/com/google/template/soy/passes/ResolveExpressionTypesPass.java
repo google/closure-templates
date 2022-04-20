@@ -1268,7 +1268,10 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
       ExprNode base = dataAccess.getBaseExprChild();
       if (NullSafeAccessNode.isPlaceholder(base)) {
         GroupNode node =
-            new GroupNode(new NullNode(base.getSourceLocation()), base.getSourceLocation());
+            new GroupNode(
+                new NullNode(base.getSourceLocation()),
+                base.getSourceLocation(),
+                /* nullSafePlaceholder= */ true);
         node.setType(baseType);
         base.getParent().replaceChild(base, node);
       }

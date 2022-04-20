@@ -107,8 +107,9 @@ public final class NullSafeAccessNode extends AbstractParentExprNode {
   }
 
   public static boolean isPlaceholder(ExprNode node) {
-    return node.getKind() == Kind.STRING_NODE
-        && ((StringNode) node).getValue().equals(BASE_PLACEHOLDER_VALUE);
+    return (node.getKind() == Kind.STRING_NODE
+            && ((StringNode) node).getValue().equals(BASE_PLACEHOLDER_VALUE))
+        || (node.getKind() == Kind.GROUP_NODE && ((GroupNode) node).isNullSafeAccessPlaceHolder());
   }
 
   /**

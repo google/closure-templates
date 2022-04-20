@@ -29,18 +29,35 @@ import com.google.template.soy.basetree.CopyState;
  */
 public final class GroupNode extends AbstractParentExprNode {
 
+  private final boolean nullSafePlaceholder;
+
   /**
    * @param expr The base expression inside the parentheses
    * @param sourceLocation The node's source location.
    */
   public GroupNode(ExprNode expr, SourceLocation sourceLocation) {
+    this(expr, sourceLocation, /* nullSafePlaceholder= */ false);
+  }
+
+  /**
+   * @param expr The base expression inside the parentheses
+   * @param sourceLocation The node's source location.
+   * @param nullSafePlaceholder Whether or not this node is a placeholder for a NullSafeAccessNode.
+   */
+  public GroupNode(ExprNode expr, SourceLocation sourceLocation, boolean nullSafePlaceholder) {
     super(sourceLocation);
     checkArgument(expr != null);
     addChild(expr);
+    this.nullSafePlaceholder = nullSafePlaceholder;
   }
 
   private GroupNode(GroupNode orig, CopyState copyState) {
     super(orig, copyState);
+    this.nullSafePlaceholder = orig.nullSafePlaceholder;
+  }
+
+  public boolean isNullSafeAccessPlaceHolder() {
+    return nullSafePlaceholder;
   }
 
   @Override
