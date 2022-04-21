@@ -631,7 +631,8 @@ function stableUniqueAttribute(attributeName: string, idHolder?: IdHolder):
         if (idomRenderer instanceof NullRenderer ||
             idomRenderer instanceof FalsinessRenderer) {
           // This should never actually render anywhere.
-          idomRenderer.attr(attributeName, 'zSoyz: no id');
+          idomRenderer.attr(
+              attributeName, passToIdHolder('zSoyz: no id', idHolder));
           return;
         }
 
