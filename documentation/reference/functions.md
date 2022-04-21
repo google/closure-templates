@@ -249,10 +249,11 @@ Checks whether a string ends with a particular substring.
 
 <span id="string_indexOf"></span>
 
-### `str.indexOf(subStr)` {#strIndexOf}
+### `str.indexOf(subStr[, position])` {#strIndexOf}
 
 Returns the character index of the first occurrence of `substr` within `str`, or
-`-1`. Case-sensitive, 0-based index.
+`-1`. Case-sensitive, 0-based index. Given a value for position, it returns the
+first index greater than or equal to position.
 
 Also callable as deprecated global function: `strIndexOf(str, subStr)`
 

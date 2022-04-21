@@ -329,9 +329,11 @@ public final class BasicFunctionsRuntime {
     return left.stringValue().contains(right);
   }
 
-  public static int strIndexOf(SoyValue left, SoyValue right) {
+  public static int strIndexOf(SoyValue str, SoyValue searchStr, NumberData start) {
     // TODO(b/74259210) -- Change the params to String & avoid using stringValue().
-    return left.stringValue().indexOf(right.stringValue());
+    // Add clamping behavior for start index to match js implementation
+    int clampedStart = Math.max(0, (int) start.numberValue());
+    return str.stringValue().indexOf(searchStr.stringValue(), clampedStart);
   }
 
   public static int strLen(SoyValue str) {

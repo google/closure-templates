@@ -17,6 +17,7 @@
 package com.google.template.soy.basicfunctions;
 
 import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
@@ -34,6 +35,7 @@ import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyMethodSignature;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -48,14 +50,23 @@ import java.util.List;
  */
 @SoyFunctionSignature(
     name = "strIndexOf",
-    value =
-        @Signature(
-            returnType = "int",
-            parameterTypes = {"string", "string"}))
+    value = {
+      @Signature(
+          returnType = "int",
+          parameterTypes = {"string", "string"}),
+      @Signature(
+          returnType = "int",
+          parameterTypes = {"string", "string", "number"})
+    })
 @SoyMethodSignature(
     name = "indexOf",
     baseType = "string",
-    value = @Signature(parameterTypes = "string", returnType = "int"))
+    value = {
+      @Signature(parameterTypes = "string", returnType = "int"),
+      @Signature(
+          parameterTypes = {"string", "number"},
+          returnType = "int")
+    })
 @SoyPureFunction
 final class StrIndexOfFunction
     implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPythonSourceFunction {
@@ -63,26 +74,45 @@ final class StrIndexOfFunction
   @Override
   public JavaScriptValue applyForJavaScriptSource(
       JavaScriptValueFactory factory, List<JavaScriptValue> args, JavaScriptPluginContext context) {
-    return args.get(0).coerceToString().invokeMethod("indexOf", args.get(1).coerceToString());
+    List<JavaScriptValue> transformedArgs = new ArrayList<>();
+    transformedArgs.add(args.get(1).coerceToString());
+    if (args.size() == 3) {
+      transformedArgs.add(args.get(2));
+    }
+    return args.get(0).coerceToString().invokeMethod("indexOf", transformedArgs);
   }
 
   @Override
   public PythonValue applyForPythonSource(
       PythonValueFactory factory, List<PythonValue> args, PythonPluginContext context) {
+    List<PythonValue> transformedArgs = new ArrayList<>();
     // Coerce SanitizedContent args to strings.
-    return args.get(0).coerceToString().getProp("find").call(args.get(1).coerceToString());
+    transformedArgs.add(args.get(0).coerceToString());
+    transformedArgs.add(args.get(1).coerceToString());
+    if (args.size() == 3) {
+      transformedArgs.add(args.get(2));
+    }
+    return factory.global("runtime.str_indexof").call(transformedArgs);
   }
 
   // lazy singleton pattern, allows other backends to avoid the work.
   private static final class Methods {
     static final Method INDEX_OF =
         JavaValueFactory.createMethod(
-            BasicFunctionsRuntime.class, "strIndexOf", SoyValue.class, SoyValue.class);
+            BasicFunctionsRuntime.class,
+            "strIndexOf",
+            SoyValue.class,
+            SoyValue.class,
+            NumberData.class);
   }
 
   @Override
   public JavaValue applyForJavaSource(
       JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
-    return factory.callStaticMethod(Methods.INDEX_OF, args.get(0), args.get(1));
+    return factory.callStaticMethod(
+        Methods.INDEX_OF,
+        args.get(0),
+        args.get(1),
+        args.size() == 3 ? args.get(2) : factory.constant(0));
   }
 }

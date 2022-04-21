@@ -635,6 +635,11 @@ def str_substring(s, start, end):
   return s[start:end]
 
 
+def str_indexof(s, search_str, start=0):
+  """Implements the indexOf method according to the Javascript spec."""
+  return s.find(search_str, int(start) if start > 0 else 0)
+
+
 def soy_round(num, precision=0):
   """Implements the soy rounding logic for the round() function.
 
