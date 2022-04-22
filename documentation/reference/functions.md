@@ -81,10 +81,11 @@ The min of the two numbers.
 
 The max of the two numbers.
 
-### `parseInt(str)` {#parseInt}
+### `parseInt(str[, base])` {#parseInt}
 
-Parses the string argument as a signed base 10 integer. Returns `null` if the
-string cannot be parsed.
+Parses the string argument as a signed base 10 integer of the specified base.
+Returns `null` if the string cannot be parsed. Base defaults to 10 and must be
+between 2 and 36, if specified.
 
 ### `parseFloat(str)` {#parseFloat}
 
