@@ -414,9 +414,10 @@ def list_contains(l, item):
   return list_indexof(l, item) >= 0
 
 
-def list_indexof(l, item):
+def list_indexof(l, item, start_index=0):
   """Equivalent getting the index of `item in l` but using soy's equality algorithm."""
-  for i in range(len(l)):
+  clamped_start_index = clamp_list_start_index(l, start_index)
+  for i in range(clamped_start_index, len(l)):
     if type_safe_eq(l[i], item):
       return i
   return -1
@@ -597,14 +598,16 @@ def str_to_ascii_upper_case(s):
   return ''.join([c.upper() if 'a' <= c <= 'z' else c for c in s])
 
 
-def str_starts_with(s, val):
+def str_starts_with(s, val, start=0):
   """Returns whether s starts with val."""
-  return s.startswith(val)
+  return s.startswith(val, clamp_str_index(s, start))
 
 
-def str_ends_with(s, val):
+def str_ends_with(s, val, length=None):
   """Returns whether s ends with val."""
-  return s.endswith(val)
+  if length is None:
+    return s.endswith(val)
+  return s.endswith(val, 0, int(length))
 
 
 def str_replace_all(s, match, token):
@@ -762,6 +765,15 @@ def create_template_type(template, name):
 def bind_template_params(template, params):
   """Binds the given parameters to the given template."""
   return lambda data, ij: template(dict(data, **params), ij)
+
+
+def clamp_list_start_index(l, start_index):
+  return int(max(0, start_index if start_index >= 0 else len(l) + start_index))
+
+
+def clamp_str_index(s, index):
+  lower_bound = max(0, index)
+  return int(min(len(s), lower_bound))
 
 
 class _TemplateWrapper:

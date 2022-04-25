@@ -92,8 +92,14 @@ public final class BasicFunctionsRuntime {
   }
 
   /** Checks if list contains a value. */
-  public static int listIndexOf(SoyList list, SoyValue value) {
-    return list.asResolvedJavaList().indexOf(value);
+  public static int listIndexOf(SoyList list, SoyValue value, NumberData startIndex) {
+    List<? extends SoyValue> javaList = list.asResolvedJavaList();
+    int clampedStartIndex = clampListIndex(javaList, startIndex);
+    if (clampedStartIndex >= list.length()) {
+      return -1;
+    }
+    int indexInSubList = javaList.subList(clampedStartIndex, list.length()).indexOf(value);
+    return indexInSubList == -1 ? -1 : indexInSubList + clampedStartIndex;
   }
 
   /** Joins the list elements by a separator. */
@@ -134,24 +140,18 @@ public final class BasicFunctionsRuntime {
    * behavior.
    */
   public static List<? extends SoyValueProvider> listSlice(
-      SoyList list, int from, IntegerData optionalTo) {
+      SoyList list, IntegerData from, IntegerData optionalTo) {
     int length = list.length();
-    if (from < 0) {
-      from = length + from;
+    List<? extends SoyValueProvider> javaList = list.asJavaList();
+    int intFrom = clampListIndex(javaList, from);
+    if (optionalTo == null) {
+      return javaList.subList(intFrom, length);
     }
-    int to = length;
-    if (optionalTo != null) {
-      to = optionalTo.integerValue();
-      if (to < 0) {
-        to = length + to;
-      }
-    }
-    from = Math.max(0, Math.min(from, length));
-    to = Math.max(0, Math.min(to, length));
-    if (from >= to) {
+    int to = clampListIndex(javaList, optionalTo);
+    if (to < intFrom) {
       return ImmutableList.of();
     }
-    return list.asJavaList().subList(from, to);
+    return javaList.subList(intFrom, to);
   }
 
   /** Reverses an array. The original list passed is not modified. */
@@ -329,8 +329,9 @@ public final class BasicFunctionsRuntime {
   public static int strIndexOf(SoyValue str, SoyValue searchStr, NumberData start) {
     // TODO(b/74259210) -- Change the params to String & avoid using stringValue().
     // Add clamping behavior for start index to match js implementation
-    int clampedStart = Math.max(0, (int) start.numberValue());
-    return str.stringValue().indexOf(searchStr.stringValue(), clampedStart);
+    String strValue = str.stringValue();
+    int clampedStart = clampStrIndex(strValue, start);
+    return strValue.indexOf(searchStr.stringValue(), clampedStart);
   }
 
   public static int strLen(SoyValue str) {
@@ -358,12 +359,23 @@ public final class BasicFunctionsRuntime {
     return string.substring(start, end);
   }
 
-  public static boolean strStartsWith(String str, String arg) {
-    return str.startsWith(arg);
+  public static boolean strStartsWith(String str, String arg, NumberData start) {
+    int clampedStart = clampStrIndex(str, start);
+    if (clampedStart + arg.length() > str.length()) {
+      return false;
+    }
+    return str.substring(clampedStart).startsWith(arg);
   }
 
-  public static boolean strEndsWith(String str, String arg) {
-    return str.endsWith(arg);
+  public static boolean strEndsWith(String str, String arg, NumberData length) {
+    if (length == null) {
+      return str.endsWith(arg);
+    }
+    int clampedLength = clampStrIndex(str, length);
+    if (clampedLength - arg.length() < 0) {
+      return false;
+    }
+    return str.substring(0, clampedLength).endsWith(arg);
   }
 
   public static ImmutableList<StringData> strSplit(String str, String sep) {
@@ -397,5 +409,19 @@ public final class BasicFunctionsRuntime {
 
   public static boolean protoEquals(Message proto1, Message proto2) {
     return proto1.equals(proto2);
+  }
+
+  private static int clampListIndex(List<?> list, NumberData index) {
+    int truncIndex = (int) index.numberValue();
+    int size = list.size();
+    int clampLowerBound = Math.max(0, truncIndex >= 0 ? truncIndex : size + truncIndex);
+    // Clamp upper bound
+    return Math.min(size, clampLowerBound);
+  }
+
+  private static int clampStrIndex(String str, NumberData position) {
+    int clampLowerBound = Math.max(0, (int) position.numberValue());
+    // Clamp upper bound
+    return Math.min(str.length(), clampLowerBound);
   }
 }

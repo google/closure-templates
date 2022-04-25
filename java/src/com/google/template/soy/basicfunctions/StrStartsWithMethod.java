@@ -16,6 +16,7 @@
 
 package com.google.template.soy.basicfunctions;
 
+import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
@@ -38,7 +39,12 @@ import java.util.List;
 @SoyMethodSignature(
     name = "startsWith",
     baseType = "string",
-    value = @Signature(parameterTypes = "string", returnType = "bool"))
+    value = {
+      @Signature(parameterTypes = "string", returnType = "bool"),
+      @Signature(
+          parameterTypes = {"string", "number"},
+          returnType = "bool")
+    })
 @SoyPureFunction
 final class StrStartsWithMethod
     implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPythonSourceFunction {
@@ -46,25 +52,33 @@ final class StrStartsWithMethod
   @Override
   public JavaScriptValue applyForJavaScriptSource(
       JavaScriptValueFactory factory, List<JavaScriptValue> args, JavaScriptPluginContext context) {
-    return args.get(0).invokeMethod("startsWith", args.get(1));
+    return args.get(0).invokeMethod("startsWith", args.subList(1, args.size()));
   }
 
   @Override
   public PythonValue applyForPythonSource(
       PythonValueFactory factory, List<PythonValue> args, PythonPluginContext context) {
-    return factory.global("runtime.str_starts_with").call(args.get(0), args.get(1));
+    return factory.global("runtime.str_starts_with").call(args);
   }
 
   // lazy singleton pattern, allows other backends to avoid the work.
   private static final class Methods {
     static final Method STR_STARTS_WITH =
         JavaValueFactory.createMethod(
-            BasicFunctionsRuntime.class, "strStartsWith", String.class, String.class);
+            BasicFunctionsRuntime.class,
+            "strStartsWith",
+            String.class,
+            String.class,
+            NumberData.class);
   }
 
   @Override
   public JavaValue applyForJavaSource(
       JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
-    return factory.callStaticMethod(Methods.STR_STARTS_WITH, args.get(0), args.get(1));
+    return factory.callStaticMethod(
+        Methods.STR_STARTS_WITH,
+        args.get(0),
+        args.get(1),
+        args.size() == 3 ? args.get(2) : factory.constant(0));
   }
 }
