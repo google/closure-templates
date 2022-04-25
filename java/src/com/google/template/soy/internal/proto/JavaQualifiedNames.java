@@ -160,7 +160,8 @@ public final class JavaQualifiedNames {
     "DefaultInstanceForType",
     "ParserForType",
     "AllFields",
-    "DescriptorForType"
+    "DescriptorForType",
+    "UnknownFields"
   };
 
   private static final Set<String> specialCases = new HashSet<>(Arrays.asList(forbiddenWords));
