@@ -170,8 +170,6 @@ public final class JsRuntime {
 
   public static final Expression MARK_TEMPLATE =
       SOY_TEMPLATES.googModuleGet().dotAccess("$$markTemplate");
-  public static final Expression ASSERT_TEMPLATE =
-      SOY_TEMPLATES.googModuleGet().dotAccess("$$assertTemplate");
   public static final Expression BIND_TEMPLATE_PARAMS =
       SOY_TEMPLATES.googModuleGet().dotAccess("$$bindTemplateParams");
   public static final Expression BIND_TEMPLATE_PARAMS_FOR_IDOM =

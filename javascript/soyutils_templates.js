@@ -25,11 +25,8 @@
  */
 
 goog.module('soy.templates');
-const asserts = goog.require('goog.asserts');
 const incrementaldomlib = goog.requireType('google3.javascript.template.soy.api_idom');
 const {IjData} = goog.requireType('goog.soy');
-
-const /** !Object */ marker = new Object();
 
 /**
  * Marks a function as being a Soy template type.
@@ -40,7 +37,6 @@ const /** !Object */ marker = new Object();
  */
 exports.$$markTemplate = function(fn, name = undefined) {
   if (goog.DEBUG) {
-    fn.isTemplateLiteral = marker;
     fn.toString = function() {
       return '** FOR DEBUGGING ONLY: ' + name + ' **';
     };
@@ -53,26 +49,11 @@ exports.$$markTemplate = function(fn, name = undefined) {
 };
 
 /**
- * Asserts that the argument function has been marked as a Soy template
- * type.
- * @param {T} fn
- * @return {T} fn
- * @template T
- */
-exports.$$assertTemplate = function(fn) {
-  if (goog.DEBUG) {
-    asserts.assert(fn.isTemplateLiteral == marker);
-  }
-  return fn;
-};
-
-/**
  * @param {function(*, ?IjData)} fn
  * @param {?} data
  * @return {function(!Object, ?IjData)}
  */
 exports.$$bindTemplateParams = function(fn, data) {
-  exports.$$assertTemplate(fn);
   const boundTemplate = function(opt_data, opt_ijData) {
     return fn(opt_data == null ? data : {...data, ...opt_data}, opt_ijData);
   };
@@ -86,7 +67,6 @@ exports.$$bindTemplateParams = function(fn, data) {
  * @template T
  */
 exports.$$bindTemplateParamsForIdom = function(fn, data) {
-  exports.$$assertTemplate(fn);
   const boundTemplate = function(idomRenderer, opt_data, opt_ijData) {
     fn(idomRenderer, opt_data == null ? data : {...data, ...opt_data},
        opt_ijData);

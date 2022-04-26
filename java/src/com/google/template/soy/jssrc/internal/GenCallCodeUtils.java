@@ -25,7 +25,6 @@ import static com.google.template.soy.jssrc.dsl.Expression.dottedIdNoRequire;
 import static com.google.template.soy.jssrc.dsl.Expression.fromExpr;
 import static com.google.template.soy.jssrc.dsl.Expression.id;
 import static com.google.template.soy.jssrc.dsl.Expression.stringLiteral;
-import static com.google.template.soy.jssrc.internal.JsRuntime.ASSERT_TEMPLATE;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_ASSIGN_DEFAULTS;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_GET_DELEGATE_FN;
 import static com.google.template.soy.jssrc.internal.JsRuntime.sanitizedContentOrdainerFunctionForInternalBlocks;
@@ -290,9 +289,7 @@ public class GenCallCodeUtils {
         // Skip checks for the common case of synthetic template literals.
         callee = Expression.dottedIdNoRequire(templateAliases.get(callBasicNode.getCalleeName()));
       } else {
-        Expression calleeExpression = exprTranslator.exec(callBasicNode.getCalleeExpr());
-        // Skip checks for the common case of static calls.
-        callee = ASSERT_TEMPLATE.call(calleeExpression);
+        callee = exprTranslator.exec(callBasicNode.getCalleeExpr());
       }
     } else {
       // Case 2: Delegate call.
