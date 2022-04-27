@@ -23,7 +23,6 @@ import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static com.google.template.soy.jssrc.dsl.Expression.EMPTY_OBJECT_LITERAL;
 import static com.google.template.soy.jssrc.dsl.Expression.dottedIdNoRequire;
 import static com.google.template.soy.jssrc.dsl.Expression.id;
-import static com.google.template.soy.jssrc.dsl.Expression.iife;
 import static com.google.template.soy.jssrc.dsl.Expression.number;
 import static com.google.template.soy.jssrc.dsl.Expression.stringLiteral;
 import static com.google.template.soy.jssrc.dsl.Statement.assign;
@@ -1782,11 +1781,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
               ? JsRuntime.EXPORTS
               : dottedIdNoRequire(file.getNamespace());
       Expression export = exportAlias.dotAccess(externName);
-      // Have to wrap iife when using goog.provide, since goog.module.get can't be called in global
-      // scope.
-      Expression exportedReference =
-          jsSrcOptions.shouldGenerateGoogModules() ? externReference : iife(externReference);
-      jsCodeBuilder.append(Statement.assign(export, exportedReference));
+      jsCodeBuilder.append(Statement.assign(export, externReference));
     }
   }
 
