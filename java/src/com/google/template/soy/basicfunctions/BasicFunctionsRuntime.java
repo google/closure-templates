@@ -121,9 +121,6 @@ public final class BasicFunctionsRuntime {
     if (rValue.isEmpty()) {
       return lValue;
     }
-    if (lValue.isEmpty() && rValue.isEmpty()) {
-      return "";
-    }
     return lValue + delimiter + rValue;
   }
 
