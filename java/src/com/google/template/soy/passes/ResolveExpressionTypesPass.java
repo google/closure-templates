@@ -1360,18 +1360,30 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
           node.setType(getGenericMapType(node.getChildren()));
         } else if (sourceFunction instanceof MapKeysFunction) {
           MapType type = (MapType) node.getChild(0).getType();
-          node.setType(ListType.of(type.getKeyType()));
+          if (type.equals(MapType.EMPTY_MAP)) {
+            node.setType(ListType.EMPTY_LIST);
+          } else {
+            node.setType(ListType.of(type.getKeyType()));
+          }
         } else if (sourceFunction instanceof MapValuesMethod) {
           MapType type = (MapType) node.getChild(0).getType();
-          node.setType(ListType.of(type.getValueType()));
+          if (type.equals(MapType.EMPTY_MAP)) {
+            node.setType(ListType.EMPTY_LIST);
+          } else {
+            node.setType(ListType.of(type.getValueType()));
+          }
         } else if (sourceFunction instanceof MapEntriesMethod) {
           MapType type = (MapType) node.getChild(0).getType();
-          node.setType(
-              ListType.of(
-                  RecordType.of(
-                      ImmutableList.of(
-                          RecordType.memberOf("key", false, type.getKeyType()),
-                          RecordType.memberOf("value", false, type.getValueType())))));
+          if (type.equals(MapType.EMPTY_MAP)) {
+            node.setType(ListType.EMPTY_LIST);
+          } else {
+            node.setType(
+                ListType.of(
+                    RecordType.of(
+                        ImmutableList.of(
+                            RecordType.memberOf("key", false, type.getKeyType()),
+                            RecordType.memberOf("value", false, type.getValueType())))));
+          }
         } else if (sourceFunction instanceof ListSliceMethod
             || sourceFunction instanceof ListReverseMethod) {
           // list<T>.slice(...) and list<T>.reverse() return list<T>
