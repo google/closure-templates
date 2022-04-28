@@ -543,9 +543,7 @@ export class FalsinessRenderer implements IdomRendererApi {
 
   key(val: string) {}
 
-  currentElement() {
-    return {} as unknown as HTMLElement;
-  }
+  currentElement() {}
 
   skipNode() {
     this.rendered = true;
