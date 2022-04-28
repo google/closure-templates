@@ -119,10 +119,10 @@ public final class SimplifyExprVisitorTest {
 
     // With functions.
     // Note: Currently, ListLiteralNode and MapLiteralNode are never considered to be constant even
-    // though in reality, they can be constant. So in the current implementation, this mapKeys()
-    // call cannot be simplified away.
-    assertThat(new ExpressionParser("mapKeys(map('a' + 'b': 1 - 3))").parseForParentNode())
-        .simplifiesTo("mapKeys(map('ab': -2))");
+    // though in reality, they can be constant. So in the current implementation, this keys() call
+    // cannot be simplified away.
+    assertThat(new ExpressionParser("map('a' + 'b': 1 - 3).keys()").parseForParentNode())
+        .simplifiesTo("map('ab': -2).keys()");
   }
 
   @Test

@@ -847,8 +847,8 @@ public final class ResolveExpressionTypesPassTest {
         SoyFileSetParserBuilder.forFileContents(
                 constructFileSource(
                     "{@param m: map<string, int>}",
-                    "{assertType('list<string>', mapKeys($m))}",
-                    "{assertType('list<null>', mapKeys(map()))}",
+                    "{assertType('list<string>', $m.keys())}",
+                    "{assertType('list<null>', map().keys())}",
                     ""))
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
             .parse()

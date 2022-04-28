@@ -206,8 +206,6 @@ not found, please check the type of your list.
 
 The keys of a [map](types.md#map) as a list. There is no guarantee on order.
 
-Also callable as deprecated global function: `mapKeys(map)`
-
 ### `map.values()` {#map-any,any_values}
 
 The values of a [map](types.md#map) as a list. There is no guarantee on order.

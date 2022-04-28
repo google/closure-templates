@@ -1972,15 +1972,6 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
       node.setType(listType);
     }
 
-    private void visitMapKeysFunction(FunctionNode node) {
-      SoyType argType = node.getChild(0).getType();
-      if (argType.equals(MapType.EMPTY_MAP)) {
-        node.setType(ListType.EMPTY_LIST);
-      } else {
-        node.setType(typeRegistry.getOrCreateListType(((MapType) argType).getKeyType()));
-      }
-    }
-
     private void visitLegacyObjectMapToMapFunction(FunctionNode node) {
       SoyType argType = node.getChild(0).getType();
       if (argType.equals(LegacyObjectMapType.EMPTY_MAP)) {
@@ -2655,13 +2646,6 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
         }
       } else if (fn instanceof KeysFunction) {
         visitKeysFunction(node);
-      } else if (fn instanceof MapKeysFunction) {
-        // We disallow unknown for this function in order to ensure that maps remain strongly typed
-        if (checkArgType(node.getChild(0), MapType.ANY_MAP, node, UnknownPolicy.DISALLOWED)) {
-          visitMapKeysFunction(node);
-        } else {
-          node.setType(UnknownType.getInstance());
-        }
       } else if (fn instanceof ConcatListsFunction) {
         node.setType(getGenericListType(node.getChildren()));
       } else if (fn instanceof LoggingFunction) {
