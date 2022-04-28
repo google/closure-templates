@@ -48,10 +48,10 @@ import java.util.List;
 @SoyFunctionSignature(
     name = "round",
     value = {
-      // TODO(b/70946095): these should take number values and return either an int or a number
-      @Signature(returnType = "?", parameterTypes = "?"),
+      // TODO(b/70946095): the parameters should be number values
+      @Signature(returnType = "int", parameterTypes = "?"),
       @Signature(
-          returnType = "?",
+          returnType = "number",
           parameterTypes = {"?", "?"}),
     })
 @SoyPureFunction
