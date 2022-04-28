@@ -363,8 +363,15 @@ public final class BasicFunctionsRuntime {
     return str.startsWith(arg);
   }
 
-  public static boolean strEndsWith(String str, String arg) {
-    return str.endsWith(arg);
+  public static boolean strEndsWith(String str, String arg, NumberData length) {
+    if (length == null) {
+      return str.endsWith(arg);
+    }
+    int clampedLength = clampStrIndex(str, length);
+    if (clampedLength - arg.length() < 0) {
+      return false;
+    }
+    return str.substring(0, clampedLength).endsWith(arg);
   }
 
   public static ImmutableList<StringData> strSplit(String str, String sep) {

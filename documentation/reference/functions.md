@@ -243,9 +243,10 @@ Checks whether a string contains a particular substring.
 
 Also callable as deprecated global function: `strContains(str, subStr)`
 
-### `str.endsWith(subStr)` {#string_endsWith}
+### `str.endsWith(subStr[, length])` {#string_endsWith}
 
-Checks whether a string ends with a particular substring.
+Checks whether a string ends with a particular substring. If length is provided,
+it is used as the length of str. Defaults to str.length.
 
 <span id="string_indexOf"></span>
 

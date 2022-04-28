@@ -603,9 +603,11 @@ def str_starts_with(s, val):
   return s.startswith(val)
 
 
-def str_ends_with(s, val):
+def str_ends_with(s, val, length=None):
   """Returns whether s ends with val."""
-  return s.endswith(val)
+  if length is None:
+    return s.endswith(val)
+  return s.endswith(val, 0, int(length))
 
 
 def str_replace_all(s, match, token):
