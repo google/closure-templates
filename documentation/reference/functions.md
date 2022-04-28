@@ -131,11 +131,12 @@ primitive values.
 
 <span id="list-any_indexOf"></span>
 
-### `list.indexOf(value)` {#listIndexOf}
+### `list.indexOf(value[, startIndex])` {#listIndexOf}
 
-Return the index of the value in list, or -1. This method implements JavaScript
-semantics, comparing elements with `==`. Therefore it only works on lists of
-primitive values.
+Return the first index of the value in list, or -1. Given a value for
+startIndex, it returns the first index greater than or equal to startIndex. This
+method implements JavaScript semantics, comparing elements with `==`. Therefore
+it only works on lists of primitive values.
 
 ### `list.slice(from[, to])` {#list-any_slice}
 

@@ -18,6 +18,7 @@ package com.google.template.soy.basicfunctions;
 
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
@@ -49,7 +50,12 @@ import java.util.List;
 @SoyMethodSignature(
     name = "indexOf",
     baseType = "list<any>",
-    value = @Signature(parameterTypes = "any", returnType = "int"))
+    value = {
+      @Signature(parameterTypes = "any", returnType = "int"),
+      @Signature(
+          parameterTypes = {"any", "number"},
+          returnType = "int")
+    })
 @SoyPureFunction
 public class ListIndexOfFunction
     implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPythonSourceFunction {
@@ -57,25 +63,33 @@ public class ListIndexOfFunction
   @Override
   public JavaScriptValue applyForJavaScriptSource(
       JavaScriptValueFactory factory, List<JavaScriptValue> args, JavaScriptPluginContext context) {
-    return factory.callNamespaceFunction("soy", "soy.$$listIndexOf", args.get(0), args.get(1));
+    return factory.callNamespaceFunction("soy", "soy.$$listIndexOf", args);
   }
 
   @Override
   public PythonValue applyForPythonSource(
       PythonValueFactory factory, List<PythonValue> args, PythonPluginContext context) {
-    return factory.global("runtime.list_indexof").call(args.get(0), args.get(1));
+    return factory.global("runtime.list_indexof").call(args);
   }
 
   // lazy singleton pattern, allows other backends to avoid the work.
   private static final class Methods {
     static final Method LIST_CONTAINS_FN =
         JavaValueFactory.createMethod(
-            BasicFunctionsRuntime.class, "listIndexOf", SoyList.class, SoyValue.class);
+            BasicFunctionsRuntime.class,
+            "listIndexOf",
+            SoyList.class,
+            SoyValue.class,
+            NumberData.class);
   }
 
   @Override
   public JavaValue applyForJavaSource(
       JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
-    return factory.callStaticMethod(Methods.LIST_CONTAINS_FN, args.get(0), args.get(1));
+    return factory.callStaticMethod(
+        Methods.LIST_CONTAINS_FN,
+        args.get(0),
+        args.get(1),
+        args.size() == 3 ? args.get(2) : factory.constant(0));
   }
 }

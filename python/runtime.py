@@ -414,9 +414,10 @@ def list_contains(l, item):
   return list_indexof(l, item) >= 0
 
 
-def list_indexof(l, item):
+def list_indexof(l, item, start_index=0):
   """Equivalent getting the index of `item in l` but using soy's equality algorithm."""
-  for i in range(len(l)):
+  clamped_start_index = clamp_list_start_index(l, start_index)
+  for i in range(clamped_start_index, len(l)):
     if type_safe_eq(l[i], item):
       return i
   return -1
@@ -762,6 +763,10 @@ def create_template_type(template, name):
 def bind_template_params(template, params):
   """Binds the given parameters to the given template."""
   return lambda data, ij: template(dict(data, **params), ij)
+
+
+def clamp_list_start_index(l, start_index):
+  return int(max(0, start_index if start_index >= 0 else len(l) + start_index))
 
 
 class _TemplateWrapper:

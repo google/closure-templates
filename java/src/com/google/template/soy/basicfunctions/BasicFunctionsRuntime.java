@@ -92,8 +92,14 @@ public final class BasicFunctionsRuntime {
   }
 
   /** Checks if list contains a value. */
-  public static int listIndexOf(SoyList list, SoyValue value) {
-    return list.asResolvedJavaList().indexOf(value);
+  public static int listIndexOf(SoyList list, SoyValue value, NumberData startIndex) {
+    List<? extends SoyValue> javaList = list.asResolvedJavaList();
+    int clampedStartIndex = clampListStartIndex(javaList, startIndex);
+    if (clampedStartIndex >= list.length()) {
+      return -1;
+    }
+    int indexInSubList = javaList.subList(clampedStartIndex, list.length()).indexOf(value);
+    return indexInSubList == -1 ? -1 : indexInSubList + clampedStartIndex;
   }
 
   /** Joins the list elements by a separator. */
@@ -329,7 +335,7 @@ public final class BasicFunctionsRuntime {
   public static int strIndexOf(SoyValue str, SoyValue searchStr, NumberData start) {
     // TODO(b/74259210) -- Change the params to String & avoid using stringValue().
     // Add clamping behavior for start index to match js implementation
-    int clampedStart = Math.max(0, (int) start.numberValue());
+    int clampedStart = clampStrStartIndex(start);
     return str.stringValue().indexOf(searchStr.stringValue(), clampedStart);
   }
 
@@ -397,5 +403,14 @@ public final class BasicFunctionsRuntime {
 
   public static boolean protoEquals(Message proto1, Message proto2) {
     return proto1.equals(proto2);
+  }
+
+  private static int clampListStartIndex(List<?> list, NumberData startIndex) {
+    int truncStartIndex = (int) startIndex.numberValue();
+    return Math.max(0, truncStartIndex >= 0 ? truncStartIndex : list.size() + truncStartIndex);
+  }
+
+  private static int clampStrStartIndex(NumberData startIndex) {
+    return Math.max(0, (int) startIndex.numberValue());
   }
 }

@@ -1989,10 +1989,14 @@ const $$listContains = function(list, val) {
  * Returns the index of val in list or -1
  * @param {!Array<?>} list
  * @param {*} val
+ * @param {number=} startIndex
  * @return {number}
  */
-const $$listIndexOf = function(list, val) {
-  return googArray.findIndex(list, (el) => $$equals(val, el));
+const $$listIndexOf = function(list, val, startIndex = 0) {
+  const clampedStartIndex = clampArrayStartIndex(list, startIndex);
+  const indexInSublist = googArray.findIndex(
+      list.slice(clampedStartIndex), (el) => $$equals(val, el));
+  return indexInSublist === -1 ? -1 : indexInSublist + clampedStartIndex;
 };
 
 
@@ -2018,6 +2022,18 @@ const $$listSlice = function(list, from, to) {
 const $$listReverse = function(list) {
   let listCopy = [...list];
   return listCopy.reverse();
+};
+
+/**
+ * A helper for Array methods that have optional startIndex
+ *
+ * @param {Array!} arr
+ * @param {number} startIndex
+ * @return {number}
+ */
+const clampArrayStartIndex = function(arr, startIndex) {
+  return Math.floor(
+      Math.max(0, startIndex >= 0 ? startIndex : arr.length + startIndex));
 };
 
 /**
