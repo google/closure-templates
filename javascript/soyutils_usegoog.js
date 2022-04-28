@@ -1999,20 +1999,6 @@ const $$listIndexOf = function(list, val, startIndex = 0) {
   return indexInSublist === -1 ? -1 : indexInSublist + clampedStartIndex;
 };
 
-
-/**
- * Returns an array slice of list.
- * @param {!Array<T>} list
- * @param {number} from
- * @param {?number} to
- * @return {!Array<T>}
- * @template T
- */
-const $$listSlice = function(list, from, to) {
-  return to == null ? list.slice(from) : list.slice(from, to);
-};
-
-
 /**
  * Reverses a list and returns it. The original list passed is unaffected.
  * @param {!Array<T>} list
@@ -2523,7 +2509,6 @@ exports = {
   $$truncate,
   $$listContains,
   $$listIndexOf,
-  $$listSlice,
   $$listReverse,
   $$makeArray,
   $$filterAndMap,

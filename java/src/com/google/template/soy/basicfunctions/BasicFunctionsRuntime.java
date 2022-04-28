@@ -94,7 +94,7 @@ public final class BasicFunctionsRuntime {
   /** Checks if list contains a value. */
   public static int listIndexOf(SoyList list, SoyValue value, NumberData startIndex) {
     List<? extends SoyValue> javaList = list.asResolvedJavaList();
-    int clampedStartIndex = clampListStartIndex(javaList, startIndex);
+    int clampedStartIndex = clampListIndex(javaList, startIndex);
     if (clampedStartIndex >= list.length()) {
       return -1;
     }
@@ -140,24 +140,18 @@ public final class BasicFunctionsRuntime {
    * behavior.
    */
   public static List<? extends SoyValueProvider> listSlice(
-      SoyList list, int from, IntegerData optionalTo) {
+      SoyList list, IntegerData from, IntegerData optionalTo) {
     int length = list.length();
-    if (from < 0) {
-      from = length + from;
+    List<? extends SoyValueProvider> javaList = list.asJavaList();
+    int intFrom = clampListIndex(javaList, from);
+    if (optionalTo == null) {
+      return javaList.subList(intFrom, length);
     }
-    int to = length;
-    if (optionalTo != null) {
-      to = optionalTo.integerValue();
-      if (to < 0) {
-        to = length + to;
-      }
-    }
-    from = Math.max(0, Math.min(from, length));
-    to = Math.max(0, Math.min(to, length));
-    if (from >= to) {
+    int to = clampListIndex(javaList, optionalTo);
+    if (to < intFrom) {
       return ImmutableList.of();
     }
-    return list.asJavaList().subList(from, to);
+    return javaList.subList(intFrom, to);
   }
 
   /** Reverses an array. The original list passed is not modified. */
@@ -335,8 +329,9 @@ public final class BasicFunctionsRuntime {
   public static int strIndexOf(SoyValue str, SoyValue searchStr, NumberData start) {
     // TODO(b/74259210) -- Change the params to String & avoid using stringValue().
     // Add clamping behavior for start index to match js implementation
-    int clampedStart = clampStrStartIndex(start);
-    return str.stringValue().indexOf(searchStr.stringValue(), clampedStart);
+    String strValue = str.stringValue();
+    int clampedStart = clampStrIndex(strValue, start);
+    return strValue.indexOf(searchStr.stringValue(), clampedStart);
   }
 
   public static int strLen(SoyValue str) {
@@ -405,12 +400,17 @@ public final class BasicFunctionsRuntime {
     return proto1.equals(proto2);
   }
 
-  private static int clampListStartIndex(List<?> list, NumberData startIndex) {
-    int truncStartIndex = (int) startIndex.numberValue();
-    return Math.max(0, truncStartIndex >= 0 ? truncStartIndex : list.size() + truncStartIndex);
+  private static int clampListIndex(List<?> list, NumberData index) {
+    int truncIndex = (int) index.numberValue();
+    int size = list.size();
+    int clampLowerBound = Math.max(0, truncIndex >= 0 ? truncIndex : size + truncIndex);
+    // Clamp upper bound
+    return Math.min(size, clampLowerBound);
   }
 
-  private static int clampStrStartIndex(NumberData startIndex) {
-    return Math.max(0, (int) startIndex.numberValue());
+  private static int clampStrIndex(String str, NumberData position) {
+    int clampLowerBound = Math.max(0, (int) position.numberValue());
+    // Clamp upper bound
+    return Math.min(str.length(), clampLowerBound);
   }
 }

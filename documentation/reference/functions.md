@@ -138,9 +138,10 @@ startIndex, it returns the first index greater than or equal to startIndex. This
 method implements JavaScript semantics, comparing elements with `==`. Therefore
 it only works on lists of primitive values.
 
-### `list.slice(from[, to])` {#list-any_slice}
+### `list.slice([from, to])` {#list-any_slice}
 
 Returns a sublist of a list from index `from` inclusive to index `to` exclusive.
+If `from` is not specified, it returns a list with the same elements in it.
 Negative indices are supported and match the
 [JavaScript spec](https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/Array/slice).
 

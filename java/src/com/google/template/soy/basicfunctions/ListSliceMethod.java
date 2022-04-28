@@ -45,6 +45,7 @@ import java.util.List;
     name = "slice",
     baseType = "list<any>",
     value = {
+      @Signature(returnType = "list<any>"),
       @Signature(parameterTypes = "int", returnType = "list<any>"),
       @Signature(
           parameterTypes = {"int", "int"},
@@ -57,12 +58,7 @@ public class ListSliceMethod
   @Override
   public JavaScriptValue applyForJavaScriptSource(
       JavaScriptValueFactory factory, List<JavaScriptValue> args, JavaScriptPluginContext context) {
-    return factory.callNamespaceFunction(
-        "soy",
-        "soy.$$listSlice",
-        args.get(0),
-        args.get(1),
-        args.size() == 3 ? args.get(2) : factory.constantNull());
+    return args.get(0).invokeMethod("slice", args.subList(1, args.size()));
   }
 
   @Override
@@ -70,14 +66,21 @@ public class ListSliceMethod
       PythonValueFactory factory, List<PythonValue> args, PythonPluginContext context) {
     return factory
         .global("runtime.list_slice")
-        .call(args.get(0), args.get(1), args.size() == 3 ? args.get(2) : factory.constantNull());
+        .call(
+            args.get(0),
+            args.size() > 1 ? args.get(1) : factory.constantNull(),
+            args.size() == 3 ? args.get(2) : factory.constantNull());
   }
 
   // lazy singleton pattern, allows other backends to avoid the work.
   private static final class Methods {
     static final Method LIST_SLICE_FN =
         JavaValueFactory.createMethod(
-            BasicFunctionsRuntime.class, "listSlice", SoyList.class, int.class, IntegerData.class);
+            BasicFunctionsRuntime.class,
+            "listSlice",
+            SoyList.class,
+            IntegerData.class,
+            IntegerData.class);
   }
 
   @Override
@@ -86,7 +89,7 @@ public class ListSliceMethod
     return factory.callStaticMethod(
         Methods.LIST_SLICE_FN,
         args.get(0),
-        args.get(1),
+        args.size() > 1 ? args.get(1) : factory.constant(0),
         args.size() == 3 ? args.get(2) : factory.constantNull());
   }
 }
