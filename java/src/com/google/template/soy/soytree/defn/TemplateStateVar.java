@@ -21,6 +21,7 @@ import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.exprtree.AbstractVarDefn;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.ast.TypeNode;
 import javax.annotation.Nullable;
@@ -34,25 +35,40 @@ public final class TemplateStateVar extends AbstractVarDefn implements TemplateH
   private String desc;
   private final SourceLocation sourceLocation;
   @Nullable private final TypeNode typeNode;
-  private final ExprRootNode initialValue;
+  private final TypeNode originalTypeNode;
+  @Nullable private final ExprRootNode initialValue;
+  private final boolean isExplicitlyOptional;
 
   public TemplateStateVar(
       String name,
       @Nullable TypeNode typeNode,
-      ExprNode initialValue,
+      boolean optional,
+      @Nullable ExprNode initialValue,
       @Nullable String desc,
       @Nullable SourceLocation nameLocation,
       SourceLocation sourceLocation) {
     super(name, nameLocation, /*type=*/ null);
-    this.typeNode = typeNode;
+    this.originalTypeNode = typeNode;
+    this.isExplicitlyOptional = optional;
     this.desc = desc;
-    this.initialValue = new ExprRootNode(initialValue);
+    this.initialValue =
+        initialValue == null
+            ? new ExprRootNode(new NullNode(sourceLocation))
+            : new ExprRootNode(initialValue);
     this.sourceLocation = sourceLocation;
+
+    // Optional params become nullable
+    if (optional && typeNode != null) {
+      typeNode = TemplateParam.getNullableTypeNode(typeNode);
+    }
+    this.typeNode = typeNode;
   }
 
   private TemplateStateVar(TemplateStateVar old, CopyState copyState) {
     super(old);
+    this.originalTypeNode = old.originalTypeNode == null ? null : old.originalTypeNode.copy();
     this.typeNode = old.typeNode == null ? null : old.typeNode.copy();
+    this.isExplicitlyOptional = old.isExplicitlyOptional;
     this.desc = old.desc;
     this.initialValue = old.initialValue.copy(copyState);
     this.sourceLocation = old.sourceLocation;
@@ -76,7 +92,7 @@ public final class TemplateStateVar extends AbstractVarDefn implements TemplateH
 
   @Override
   public TypeNode getOriginalTypeNode() {
-    return typeNode;
+    return originalTypeNode;
   }
 
   @Override
@@ -109,7 +125,7 @@ public final class TemplateStateVar extends AbstractVarDefn implements TemplateH
 
   @Override
   public boolean isExplicitlyOptional() {
-    return false;
+    return isExplicitlyOptional;
   }
 
   @Override

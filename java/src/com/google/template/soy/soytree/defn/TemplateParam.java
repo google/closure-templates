@@ -93,15 +93,7 @@ public class TemplateParam extends AbstractVarDefn implements TemplateHeaderVarD
     }
     // Optional params become nullable
     if (optional && !isNullable && typeNode != null) {
-      NamedTypeNode nullType = NamedTypeNode.create(typeNode.sourceLocation(), "null");
-      typeNode =
-          typeNode instanceof UnionTypeNode
-              ? UnionTypeNode.create(
-                  ImmutableList.<TypeNode>builder()
-                      .addAll(((UnionTypeNode) typeNode).candidates())
-                      .add(nullType)
-                      .build())
-              : UnionTypeNode.create(ImmutableList.of(typeNode, nullType));
+      typeNode = getNullableTypeNode(typeNode);
     }
     this.typeNode = typeNode;
     this.isRequired = defaultValue == null && !optional && !isNullable;
@@ -206,5 +198,16 @@ public class TemplateParam extends AbstractVarDefn implements TemplateHeaderVarD
   @Override
   public TemplateParam copy(CopyState copyState) {
     return new TemplateParam(this, copyState);
+  }
+
+  public static TypeNode getNullableTypeNode(TypeNode typeNode) {
+    NamedTypeNode nullType = NamedTypeNode.create(typeNode.sourceLocation(), "null");
+    return typeNode instanceof UnionTypeNode
+        ? UnionTypeNode.create(
+            ImmutableList.<TypeNode>builder()
+                .addAll(((UnionTypeNode) typeNode).candidates())
+                .add(nullType)
+                .build())
+        : UnionTypeNode.create(ImmutableList.of(typeNode, nullType));
   }
 }
