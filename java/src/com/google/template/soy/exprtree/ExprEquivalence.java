@@ -89,7 +89,7 @@ public final class ExprEquivalence {
 
         @Override
         protected Integer visitMethodCallNode(MethodCallNode node) {
-          return 31 * (node.getMethodName().hashCode() * 31 + hashChildren(node))
+          return 31 * (node.getMethodName().identifier().hashCode() * 31 + hashChildren(node))
               + Boolean.hashCode(node.isNullSafe());
         }
 
