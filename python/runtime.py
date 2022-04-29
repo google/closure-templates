@@ -598,9 +598,9 @@ def str_to_ascii_upper_case(s):
   return ''.join([c.upper() if 'a' <= c <= 'z' else c for c in s])
 
 
-def str_starts_with(s, val):
+def str_starts_with(s, val, start=0):
   """Returns whether s starts with val."""
-  return s.startswith(val)
+  return s.startswith(val, clamp_str_index(s, start))
 
 
 def str_ends_with(s, val, length=None):
@@ -769,6 +769,11 @@ def bind_template_params(template, params):
 
 def clamp_list_start_index(l, start_index):
   return int(max(0, start_index if start_index >= 0 else len(l) + start_index))
+
+
+def clamp_str_index(s, index):
+  lower_bound = max(0, index)
+  return int(min(len(s), lower_bound))
 
 
 class _TemplateWrapper:

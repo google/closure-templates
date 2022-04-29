@@ -359,8 +359,12 @@ public final class BasicFunctionsRuntime {
     return string.substring(start, end);
   }
 
-  public static boolean strStartsWith(String str, String arg) {
-    return str.startsWith(arg);
+  public static boolean strStartsWith(String str, String arg, NumberData start) {
+    int clampedStart = clampStrIndex(str, start);
+    if (clampedStart + arg.length() > str.length()) {
+      return false;
+    }
+    return str.substring(clampedStart).startsWith(arg);
   }
 
   public static boolean strEndsWith(String str, String arg, NumberData length) {
