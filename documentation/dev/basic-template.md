@@ -146,6 +146,25 @@ import * as myNamespace from 'path/to/hello.soy';
 This template uses the `{call ...}` command to invoke the template we defined
 above.
 
+If you don't need to use `{param}` blocks -- such as to pass an HTML value --
+you can omit the `call` keyword and use a more function-like syntax:
+
+```soy
+{namespace my.other.namespace}
+import * as myNamespace from 'path/to/hello.soy';
+
+{template helloEveryone}
+  {@param names: list<string>}
+  <ul>
+    {for $name in $names}
+      <li>
+      {myNamespace.hello(name: $name)}
+      </li>
+    {/for}
+  </ul>
+{/template}
+```
+
 ## How to render non-HTML content
 
 The examples above demonstrate how to render simple snippets of HTML which is a
