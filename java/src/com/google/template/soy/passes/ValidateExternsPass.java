@@ -192,7 +192,8 @@ class ValidateExternsPass implements CompilerFilePass {
           java.returnType(),
           extern.getType().getReturnType(),
           INCOMPATIBLE_RETURN_TYPE,
-          () -> java.getAttributeValueLocation(JavaImplNode.RETURN));
+          () -> java.getAttributeValueLocation(JavaImplNode.RETURN),
+          extern);
     }
 
     List<String> paramTypes = new ArrayList<>(java.params());
@@ -222,7 +223,8 @@ class ValidateExternsPass implements CompilerFilePass {
             paramType,
             extern.getType().getParameters().get(i).getType(),
             INCOMPATIBLE_PARAM_TYPE,
-            () -> java.getAttributeValueLocation(JavaImplNode.PARAMS));
+            () -> java.getAttributeValueLocation(JavaImplNode.PARAMS),
+            extern);
       }
     }
     MethodChecker.Response response =
@@ -290,11 +292,12 @@ class ValidateExternsPass implements CompilerFilePass {
       String javaTypeName,
       SoyType soyType,
       SoyErrorKind compatibleErrorKind,
-      Supplier<SourceLocation> loc) {
+      Supplier<SourceLocation> loc,
+      ExternNode extern) {
     Class<?> javaType = getType(javaTypeName);
     if (javaType != null) {
       // Verify that the soy param type and the java param type are compatible.
-      if (!typesAreCompatible(javaType, soyType)) {
+      if (!typesAreCompatible(javaType, soyType, extern)) {
         errorReporter.report(loc.get(), compatibleErrorKind, javaType.getName(), soyType);
       }
     } else if (!protoTypesAreCompatible(javaTypeName, soyType)) {
@@ -337,7 +340,7 @@ class ValidateExternsPass implements CompilerFilePass {
           .add(SoyType.Kind.CSS)
           .build();
 
-  private static boolean typesAreCompatible(Class<?> javaType, SoyType soyType) {
+  private static boolean typesAreCompatible(Class<?> javaType, SoyType soyType, ExternNode extern) {
     boolean nullable = SoyTypes.isNullable(soyType);
     boolean isPrimitive = Primitives.allPrimitiveTypes().contains(javaType);
     if (nullable && isPrimitive) {
@@ -369,8 +372,7 @@ class ValidateExternsPass implements CompilerFilePass {
         return javaType == Object.class || javaType == SoyValue.class;
       case LIST:
         return (javaType == List.class || javaType == ImmutableList.class)
-            && ALLOWED_PARAMETERIZED_TYPES.contains(
-                ((ListType) soyType).getElementType().getKind());
+            && isAllowedParameterizedType(((ListType) soyType).getElementType().getKind(), extern);
       case MAP:
         MapType mapType = (MapType) soyType;
         return (javaType == Map.class || javaType == ImmutableMap.class)
@@ -403,6 +405,10 @@ class ValidateExternsPass implements CompilerFilePass {
       default:
         return false;
     }
+  }
+
+  private static boolean isAllowedParameterizedType(SoyType.Kind type, ExternNode extern) {
+    return ALLOWED_PARAMETERIZED_TYPES.contains(type);
   }
 
   private static boolean protoTypesAreCompatible(String javaType, SoyType soyType) {
