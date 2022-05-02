@@ -79,6 +79,7 @@ import com.google.template.soy.jssrc.dsl.ClassExpression;
 import com.google.template.soy.jssrc.dsl.ClassExpression.MethodDeclaration;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
+import com.google.template.soy.jssrc.dsl.ConditionalBuilder;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.GoogRequire;
 import com.google.template.soy.jssrc.dsl.JsDoc;
@@ -1528,7 +1529,10 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       GoogRequire require = GoogRequire.createWithAlias("goog.html.SafeScript", "SafeScript");
       Expression unwrapped = require.dotAccess("unwrapTrustedScript").call(safeScript);
       Expression currentElement = INCREMENTAL_DOM.dotAccess("currentElement").call();
-      getJsCodeBuilder().append(currentElement.dotAccess("textContent").assign(unwrapped));
+      Expression textContentAssignment = currentElement.dotAccess("textContent").assign(unwrapped);
+      ConditionalBuilder ifCurrentElementExists =
+          Statement.ifStatement(currentElement, textContentAssignment.asStatement());
+      getJsCodeBuilder().append(ifCurrentElementExists.build());
       getJsCodeBuilder().append(INCREMENTAL_DOM.dotAccess("skipNode").call());
       getJsCodeBuilder().setContentKind(SanitizedContentKind.HTML);
     }
