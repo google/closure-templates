@@ -37,6 +37,7 @@ java_library(
         "//java/src/com/google/template/soy/jbcsrc/restricted",
         "//java/src/com/google/template/soy/plugin/internal",
         "//java/src/com/google/template/soy/plugin/java/restricted",
+        "//java/src/com/google/template/soy/shared/restricted",
         "//java/src/com/google/template/soy/types",
         "@maven//:com_google_guava_guava",
     ],

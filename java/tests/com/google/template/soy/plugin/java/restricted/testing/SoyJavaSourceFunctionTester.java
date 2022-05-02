@@ -21,6 +21,7 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.template.soy.jbcsrc.restricted.FieldRef.staticFieldReference;
 import static java.util.Arrays.stream;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
@@ -41,6 +42,7 @@ import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jbcsrc.JbcSrcJavaValues;
@@ -56,6 +58,8 @@ import com.google.template.soy.jbcsrc.restricted.testing.ExpressionEvaluator;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
+import com.google.template.soy.shared.restricted.SoyMethodSignature;
+import com.google.template.soy.shared.restricted.SoySourceFunctionMethod;
 import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.SanitizedType;
@@ -126,17 +130,7 @@ public class SoyJavaSourceFunctionTester {
     FunctionNode fnNode =
         FunctionNode.newPositional(
             Identifier.create(fnSig.name(), SourceLocation.UNKNOWN), fn, SourceLocation.UNKNOWN);
-    Signature matchingSig = null;
-    for (Signature sig : fnSig.value()) {
-      if (sig.parameterTypes().length == args.length) {
-        matchingSig = sig;
-        break;
-      }
-    }
-    if (matchingSig == null) {
-      throw new IllegalArgumentException(
-          "No signature on " + fn.getClass().getName() + " with " + args.length + " parameters");
-    }
+    Signature matchingSig = findMatchingSignature(fnSig.value(), args.length);
     // Setting the allowed param types requires the node have that # of children,
     // so we add fake children.
     for (int i = 0; i < matchingSig.parameterTypes().length; i++) {
@@ -162,6 +156,53 @@ public class SoyJavaSourceFunctionTester {
   /** See {@link #callFunction(Object...)}. */
   public final Object callFunction(Iterable<Object> args) {
     return callFunction(Iterables.toArray(args, Object.class));
+  }
+
+  public Object callMethod(Object base, Object... args) {
+    SoyMethodSignature methodSig = fn.getClass().getAnnotation(SoyMethodSignature.class);
+    Signature matchingSig = findMatchingSignature(methodSig.value(), args.length);
+
+    SoyType returnType = parseType(matchingSig.returnType());
+
+    MethodCallNode methodCallNode =
+        MethodCallNode.newWithPositionalArgs(
+            new NullNode(SourceLocation.UNKNOWN),
+            ImmutableList.of(),
+            Identifier.create(methodSig.name(), SourceLocation.UNKNOWN),
+            SourceLocation.UNKNOWN,
+            /* isNullSafe= */ false);
+    methodCallNode.setSoyMethod(
+        new SoySourceFunctionMethod(
+            fn,
+            parseType(methodSig.baseType()),
+            returnType,
+            stream(matchingSig.parameterTypes()).map(this::parseType).collect(toImmutableList()),
+            methodSig.name()));
+    methodCallNode.setType(returnType);
+
+    try {
+      return ExpressionEvaluator.evaluate(
+          JbcSrcJavaValues.computeForJavaSource(
+              methodCallNode,
+              new InternalContext(),
+              this::getFunctionRuntime,
+              Stream.concat(Stream.of(base), stream(args))
+                  .map(this::transform)
+                  .collect(toImmutableList()),
+              new TestExpressionDetacher()));
+    } catch (ReflectiveOperationException roe) {
+      throw new RuntimeException(roe);
+    }
+  }
+
+  private Signature findMatchingSignature(Signature[] sigs, int numArgs) {
+    for (Signature sig : sigs) {
+      if (sig.parameterTypes().length == numArgs) {
+        return sig;
+      }
+    }
+    throw new IllegalArgumentException(
+        "No signature on " + fn.getClass().getName() + " with " + numArgs + " parameters");
   }
 
   private SoyType parseType(String type) {

@@ -37,6 +37,7 @@ java_library(
         "//java/src/com/google/template/soy/plugin/python/restricted",
         "//java/src/com/google/template/soy/plugin/restricted",
         "//java/src/com/google/template/soy/shared/restricted",
+        "//java/src/com/google/template/soy/shared/restricted:method_annotation",
         "//java/src/com/google/template/soy/soyparse",
         "//java/src/com/google/template/soy/types",
         "//java/src/com/google/template/soy/types/ast",
