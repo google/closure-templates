@@ -328,8 +328,6 @@ NOTE: This function doesn't consider locales when tranforming the string and it
 only transforms ASCII characters `a-z`. Do not use it to uppercase string that
 are localized and/or UNICODE.
 
-Also callable as deprecated global function: `strToAsciiUpperCase(str)`
-
 ### `strSmsUriToUri(string)` {#strSmsUriToUri}
 
 Returns a sanitized uri given an SMS uri string.
