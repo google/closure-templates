@@ -620,9 +620,14 @@ def str_trim(s):
   return s.strip()
 
 
-def str_split(s, sep):
+def str_split(s, sep, limit=None):
   """Splits s into an array on sep."""
-  return s.split(sep) if sep else list(s)
+  if limit == 0:
+    return []
+  split_str = s.split(sep) if sep else list(s)
+  if limit is None or limit == -1:
+    return split_str
+  return split_str[:int(limit)]
 
 
 def str_substring(s, start, end):

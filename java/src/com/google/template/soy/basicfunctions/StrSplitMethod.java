@@ -16,6 +16,7 @@
 
 package com.google.template.soy.basicfunctions;
 
+import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
@@ -38,7 +39,12 @@ import java.util.List;
 @SoyMethodSignature(
     name = "split",
     baseType = "string",
-    value = @Signature(parameterTypes = "string", returnType = "list<string>"))
+    value = {
+      @Signature(parameterTypes = "string", returnType = "list<string>"),
+      @Signature(
+          parameterTypes = {"string", "number"},
+          returnType = "list<string>")
+    })
 @SoyPureFunction
 final class StrSplitMethod
     implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPythonSourceFunction {
@@ -46,25 +52,33 @@ final class StrSplitMethod
   @Override
   public JavaScriptValue applyForJavaScriptSource(
       JavaScriptValueFactory factory, List<JavaScriptValue> args, JavaScriptPluginContext context) {
+    if (args.size() == 3) {
+      return args.get(0).invokeMethod("split", args.get(1), args.get(2));
+    }
+
     return args.get(0).invokeMethod("split", args.get(1));
   }
 
   @Override
   public PythonValue applyForPythonSource(
       PythonValueFactory factory, List<PythonValue> args, PythonPluginContext context) {
-    return factory.global("runtime.str_split").call(args.get(0), args.get(1));
+    return factory.global("runtime.str_split").call(args);
   }
 
   // lazy singleton pattern, allows other backends to avoid the work.
   private static final class Methods {
     static final Method STR_SPLIT =
         JavaValueFactory.createMethod(
-            BasicFunctionsRuntime.class, "strSplit", String.class, String.class);
+            BasicFunctionsRuntime.class, "strSplit", String.class, String.class, NumberData.class);
   }
 
   @Override
   public JavaValue applyForJavaSource(
       JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
-    return factory.callStaticMethod(Methods.STR_SPLIT, args.get(0), args.get(1));
+    return factory.callStaticMethod(
+        Methods.STR_SPLIT,
+        args.get(0),
+        args.get(1),
+        args.size() == 3 ? args.get(2) : factory.constantNull());
   }
 }

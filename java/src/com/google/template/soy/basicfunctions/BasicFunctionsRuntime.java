@@ -378,10 +378,22 @@ public final class BasicFunctionsRuntime {
     return str.substring(0, clampedLength).endsWith(arg);
   }
 
-  public static ImmutableList<StringData> strSplit(String str, String sep) {
+  public static ImmutableList<StringData> strSplit(String str, String sep, NumberData limit) {
     ImmutableList.Builder<StringData> builder = ImmutableList.builder();
+    int truncLimit = -1;
+    if (limit != null) {
+      truncLimit = (int) limit.numberValue();
+    }
+    if (truncLimit == 0) {
+      return builder.build();
+    }
+    int count = 0;
     for (String string : (sep.isEmpty() ? Splitter.fixedLength(1) : Splitter.on(sep)).split(str)) {
+      if (count == truncLimit) {
+        return builder.build();
+      }
       builder.add(StringData.forValue(string));
+      count++;
     }
     return builder.build();
   }
