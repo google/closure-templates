@@ -17,7 +17,7 @@
 package com.google.template.soy.basicfunctions;
 
 import com.google.template.soy.data.SoyList;
-import com.google.template.soy.data.restricted.IntegerData;
+import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
@@ -46,9 +46,9 @@ import java.util.List;
     baseType = "list<any>",
     value = {
       @Signature(returnType = "list<any>"),
-      @Signature(parameterTypes = "int", returnType = "list<any>"),
+      @Signature(parameterTypes = "number", returnType = "list<any>"),
       @Signature(
-          parameterTypes = {"int", "int"},
+          parameterTypes = {"number", "number"},
           returnType = "list<any>")
     })
 @SoyPureFunction
@@ -79,8 +79,8 @@ public class ListSliceMethod
             BasicFunctionsRuntime.class,
             "listSlice",
             SoyList.class,
-            IntegerData.class,
-            IntegerData.class);
+            NumberData.class,
+            NumberData.class);
   }
 
   @Override

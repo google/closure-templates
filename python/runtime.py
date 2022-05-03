@@ -437,7 +437,9 @@ def map_entries(m):
 
 def list_slice(l, start, stop):
   """Equivalent of JavaScript Array.prototype.slice."""
-  return l[slice(start, stop)]
+  return l[slice(
+      int(start) if start is not None else 0,
+      int(stop) if stop is not None else len(l))]
 
 
 def list_reverse(l):

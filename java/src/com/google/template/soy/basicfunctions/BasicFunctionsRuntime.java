@@ -140,7 +140,7 @@ public final class BasicFunctionsRuntime {
    * behavior.
    */
   public static List<? extends SoyValueProvider> listSlice(
-      SoyList list, IntegerData from, IntegerData optionalTo) {
+      SoyList list, NumberData from, NumberData optionalTo) {
     int length = list.length();
     List<? extends SoyValueProvider> javaList = list.asJavaList();
     int intFrom = clampListIndex(javaList, from);
