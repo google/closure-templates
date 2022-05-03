@@ -313,11 +313,9 @@ Also callable as deprecated global function: `strSub(str, start[, end])`
 
 Returns the lowercase representation of the given string.
 
-NOTE: This function doesn't consider locales when tranforming the string and it
+NOTE: This function doesn't consider locales when transforming the string and it
 only transforms ASCII characters `A-Z`. Do not use it to lowercase string that
 are localized and/or UNICODE.
-
-Also callable as deprecated global function: `strToAsciiLowerCase(str)`
 
 <span id="string_toAsciiUpperCase"></span>
 
@@ -325,7 +323,7 @@ Also callable as deprecated global function: `strToAsciiLowerCase(str)`
 
 Returns the uppercase representation of the given string.
 
-NOTE: This function doesn't consider locales when tranforming the string and it
+NOTE: This function doesn't consider locales when transforming the string and it
 only transforms ASCII characters `a-z`. Do not use it to uppercase string that
 are localized and/or UNICODE.
 
