@@ -161,6 +161,11 @@ public final class BasicFunctionsRuntime {
     return javaList;
   }
 
+  /** Removes all duplicates from a list. The original list passed is not modified. */
+  public static ImmutableList<? extends SoyValueProvider> listUniq(SoyList list) {
+    return list.asJavaList().stream().distinct().collect(toImmutableList());
+  }
+
   /**
    * Sorts a list in numerical order.
    *

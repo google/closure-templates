@@ -2023,6 +2023,19 @@ const clampArrayStartIndex = function(arr, startIndex) {
 };
 
 /**
+ * Removes duplicates from a list and returns it.
+ * The original list passed is unaffected.
+ * @param {!Array<T>} list
+ * @return {!Array<T>}
+ * @template T
+ */
+const $$listUniq = function(list) {
+  // Javascript preserves insertion order for set iteration, so this method
+  // doesn't change the order of elements within the list.
+  return [...new Set(list)];
+};
+
+/**
  * A helper function to provide tight type inference on array literals.
  * @param {...T} args
  * @return {!Array<T>}
@@ -2510,6 +2523,7 @@ exports = {
   $$listContains,
   $$listIndexOf,
   $$listReverse,
+  $$listUniq,
   $$makeArray,
   $$filterAndMap,
   $$numberListSort,

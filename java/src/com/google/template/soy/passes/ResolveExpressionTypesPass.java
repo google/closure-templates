@@ -51,6 +51,7 @@ import com.google.template.soy.basicfunctions.KeysFunction;
 import com.google.template.soy.basicfunctions.LegacyObjectMapToMapFunction;
 import com.google.template.soy.basicfunctions.ListReverseMethod;
 import com.google.template.soy.basicfunctions.ListSliceMethod;
+import com.google.template.soy.basicfunctions.ListUniqMethod;
 import com.google.template.soy.basicfunctions.MapEntriesMethod;
 import com.google.template.soy.basicfunctions.MapKeysFunction;
 import com.google.template.soy.basicfunctions.MapToLegacyObjectMapFunction;
@@ -1385,8 +1386,9 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
                             RecordType.memberOf("value", false, type.getValueType())))));
           }
         } else if (sourceFunction instanceof ListSliceMethod
-            || sourceFunction instanceof ListReverseMethod) {
-          // list<T>.slice(...) and list<T>.reverse() return list<T>
+            || sourceFunction instanceof ListReverseMethod
+            || sourceFunction instanceof ListUniqMethod) {
+          // list<T>.slice(...), list<T>.uniq(), and list<T>.reverse() return list<T>
           node.setType(node.getBaseExprChild().getType());
         } else if (sourceFunction instanceof NumberListSortMethod) {
           // list<T>.sort() returns list<T>

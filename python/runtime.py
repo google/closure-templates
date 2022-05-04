@@ -447,6 +447,13 @@ def list_reverse(l):
   return l[::-1]
 
 
+def list_uniq(l):
+  """Removes duplicates from list. The original list passed is not modified."""
+  # dict preserves insertion order when fromKeys is called, so this function
+  #   doesn't change the order of elements in our list.
+  return [x for i, x in enumerate(l) if not any([y is x for y in l[:i]])]
+
+
 def number_list_sort(l):
   """Sorts in numerical order."""
   # Lists of numbers are sorted numerically by default.

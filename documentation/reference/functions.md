@@ -151,6 +151,15 @@ Negative indices are supported and match the
 Reverses a shallow copy of the list and returns it. The original list passed is
 not modified.
 
+### `list.uniq()` {#list-any_uniq}
+
+Removes duplicates from a shallow copy of the list and returns it. The original
+list passed is not modified.
+
+NOTE: We do not test for deep equality in the implementation. Hence, this
+function does not remove duplicate records or protobufs. Only primitive types
+(null, bool, int, float, number, string) are successfully deduplicated.
+
 <span id="list-string|int_join"></span>
 
 ### `list.join(separator)` {#join}
