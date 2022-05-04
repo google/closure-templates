@@ -339,24 +339,19 @@ public final class BasicFunctionsRuntime {
     return str.stringValue().length();
   }
 
-  public static String strSub(SoyValue str, int start) {
+  public static String strSub(SoyValue str, NumberData start) {
     // TODO(b/74259210) -- Change the first param to String & avoid using stringValue().
     String string = str.stringValue();
-    int length = string.length();
-    start = Math.max(0, Math.min(length, start));
-    return string.substring(start);
+    return string.substring(clampStrIndex(string, start));
   }
 
-  public static String strSub(SoyValue str, int start, int end) {
+  public static String strSub(SoyValue str, NumberData start, NumberData end) {
     // TODO(b/74259210) -- Change the first param to String & avoid using stringValue().
-    if (start > end) {
+    if (start.numberValue() > end.numberValue()) {
       return strSub(str, end, start);
     }
     String string = str.stringValue();
-    int length = string.length();
-    start = Math.max(0, Math.min(length, start));
-    end = Math.max(0, Math.min(length, end));
-    return string.substring(start, end);
+    return string.substring(clampStrIndex(string, start), clampStrIndex(string, end));
   }
 
   public static boolean strStartsWith(String str, String arg, NumberData start) {

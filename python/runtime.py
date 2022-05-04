@@ -634,15 +634,13 @@ def str_split(s, sep, limit=None):
 
 def str_substring(s, start, end):
   """Implements the substring method according to the JavaScript spec."""
-  if start < 0:
-    start = 0
+  clamped_start = clamp_str_index(s, start)
   if end is not None:
-    if end < 0:
-      end = 0
     if start > end:
       # pylint: disable=arguments-out-of-order
       return str_substring(s, end, start)
-  return s[start:end]
+    return s[clamped_start:clamp_str_index(s, end)]
+  return s[clamp_str_index(s, start):]
 
 
 def str_indexof(s, search_str, start=0):

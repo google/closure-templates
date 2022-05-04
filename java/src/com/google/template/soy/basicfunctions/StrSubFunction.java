@@ -17,6 +17,7 @@
 package com.google.template.soy.basicfunctions;
 
 import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
@@ -53,18 +54,18 @@ import java.util.List;
     value = {
       @Signature(
           returnType = "string",
-          parameterTypes = {"string", "int"}),
+          parameterTypes = {"string", "number"}),
       @Signature(
           returnType = "string",
-          parameterTypes = {"string", "int", "int"}),
+          parameterTypes = {"string", "number", "number"}),
     })
 @SoyMethodSignature(
     name = "substring",
     baseType = "string",
     value = {
-      @Signature(parameterTypes = "int", returnType = "string"),
+      @Signature(parameterTypes = "number", returnType = "string"),
       @Signature(
-          parameterTypes = {"int", "int"},
+          parameterTypes = {"number", "number"},
           returnType = "string"),
     })
 @SoyPureFunction
@@ -74,9 +75,7 @@ final class StrSubFunction
   @Override
   public JavaScriptValue applyForJavaScriptSource(
       JavaScriptValueFactory factory, List<JavaScriptValue> args, JavaScriptPluginContext context) {
-    return args.get(0)
-        .coerceToString()
-        .invokeMethod("substring", args.subList(1, args.size()).toArray(new JavaScriptValue[0]));
+    return args.get(0).coerceToString().invokeMethod("substring", args.subList(1, args.size()));
   }
 
   @Override
@@ -93,19 +92,23 @@ final class StrSubFunction
   private static final class Methods {
     static final Method STR_SUB_START =
         JavaValueFactory.createMethod(
-            BasicFunctionsRuntime.class, "strSub", SoyValue.class, int.class);
+            BasicFunctionsRuntime.class, "strSub", SoyValue.class, NumberData.class);
     static final Method STR_SUB_START_END =
         JavaValueFactory.createMethod(
-            BasicFunctionsRuntime.class, "strSub", SoyValue.class, int.class, int.class);
+            BasicFunctionsRuntime.class,
+            "strSub",
+            SoyValue.class,
+            NumberData.class,
+            NumberData.class);
   }
 
   @Override
   public JavaValue applyForJavaSource(
       JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
     if (args.size() == 2) {
-      return factory.callStaticMethod(Methods.STR_SUB_START, args.get(0), args.get(1).asSoyInt());
+      return factory.callStaticMethod(Methods.STR_SUB_START, args.get(0), args.get(1));
     }
     return factory.callStaticMethod(
-        Methods.STR_SUB_START_END, args.get(0), args.get(1).asSoyInt(), args.get(2).asSoyInt());
+        Methods.STR_SUB_START_END, args.get(0), args.get(1), args.get(2));
   }
 }
