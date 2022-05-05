@@ -314,8 +314,6 @@ characters), not Unicode codepoints or more useful concepts like graphemes. It
 is almost never valid to use this to break text meant for users into parts since
 it will be very easy to break the string (e.g. split an emoji in half).
 
-Also callable as deprecated global function: `strSub(str, start[, end])`
-
 <span id="string_toAsciiLowerCase"></span>
 
 ### `str.toAsciiLowerCase()` {#strToAsciiLowerCase}

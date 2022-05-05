@@ -31,7 +31,6 @@ import com.google.template.soy.plugin.python.restricted.PythonValue;
 import com.google.template.soy.plugin.python.restricted.PythonValueFactory;
 import com.google.template.soy.plugin.python.restricted.SoyPythonSourceFunction;
 import com.google.template.soy.shared.restricted.Signature;
-import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyMethodSignature;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
 import java.lang.reflect.Method;
@@ -49,16 +48,6 @@ import java.util.List;
  * specified, the substring will extend to the end of <code>expr1</code>. Otherwise it will extend
  * to the character at index <code>expr3 - 1</code>.
  */
-@SoyFunctionSignature(
-    name = "strSub",
-    value = {
-      @Signature(
-          returnType = "string",
-          parameterTypes = {"string", "number"}),
-      @Signature(
-          returnType = "string",
-          parameterTypes = {"string", "number", "number"}),
-    })
 @SoyMethodSignature(
     name = "substring",
     baseType = "string",

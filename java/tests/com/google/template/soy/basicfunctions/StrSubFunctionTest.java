@@ -33,24 +33,24 @@ public class StrSubFunctionTest {
   @Test
   public void testComputeForJavaSource_noEndIndex() {
     SoyJavaSourceFunctionTester tester = new SoyJavaSourceFunctionTester(new StrSubFunction());
-    assertThat(tester.callFunction("foobarfoo", 2)).isEqualTo("obarfoo");
+    assertThat(tester.callMethod("foobarfoo", 2)).isEqualTo("obarfoo");
   }
 
   @Test
   public void testComputeForJavaSource_noEndIndex_SanitizedContent() {
     SoyJavaSourceFunctionTester tester = new SoyJavaSourceFunctionTester(new StrSubFunction());
-    assertThat(tester.callFunction(StringData.forValue("foobarfoo"), 2)).isEqualTo("obarfoo");
+    assertThat(tester.callMethod(StringData.forValue("foobarfoo"), 2)).isEqualTo("obarfoo");
   }
 
   @Test
   public void testComputeForJavaSource_endIndex() {
     SoyJavaSourceFunctionTester tester = new SoyJavaSourceFunctionTester(new StrSubFunction());
-    assertThat(tester.callFunction("foobarfoo", 2, 7)).isEqualTo("obarf");
+    assertThat(tester.callMethod("foobarfoo", 2, 7)).isEqualTo("obarf");
   }
 
   @Test
   public void testComputeForJavaSource_endIndex_SanitizedContent() {
     SoyJavaSourceFunctionTester tester = new SoyJavaSourceFunctionTester(new StrSubFunction());
-    assertThat(tester.callFunction(StringData.forValue("foobarfoo"), 2, 7)).isEqualTo("obarf");
+    assertThat(tester.callMethod(StringData.forValue("foobarfoo"), 2, 7)).isEqualTo("obarf");
   }
 }
