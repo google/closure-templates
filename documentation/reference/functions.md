@@ -266,8 +266,6 @@ Returns the character index of the first occurrence of `substr` within `str`, or
 `-1`. Case-sensitive, 0-based index. Given a value for position, it returns the
 first index greater than or equal to position.
 
-Also callable as deprecated global function: `strIndexOf(str, subStr)`
-
 WARNING: The index is based on characters (aka java `char` or utf-16
 characters), not Unicode codepoints or more useful concepts like graphemes. It
 is almost never valid to use this to break text meant for users into parts since

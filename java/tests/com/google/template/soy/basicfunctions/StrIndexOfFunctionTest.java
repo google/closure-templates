@@ -24,36 +24,33 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-/**
- * Unit tests for {@link com.google.template.soy.basicfunctions.StrIndexOfFunction}.
- */
+/** Unit tests for {@link com.google.template.soy.basicfunctions.StrIndexOfFunction}. */
 @RunWith(JUnit4.class)
 public class StrIndexOfFunctionTest {
 
   @Test
   public void testComputeForJavaSource_containsString() {
     SoyJavaSourceFunctionTester tester = new SoyJavaSourceFunctionTester(new StrIndexOfFunction());
-    assertThat(tester.callFunction("foobarfoo", "bar")).isEqualTo(3);
+    assertThat(tester.callMethod("foobarfoo", "bar")).isEqualTo(3);
   }
 
   @Test
   public void testComputeForJavaSource_containsSanitizedContent() {
     SoyJavaSourceFunctionTester tester = new SoyJavaSourceFunctionTester(new StrIndexOfFunction());
-    assertThat(tester.callFunction(StringData.forValue("foobarfoo"), StringData.forValue("bar")))
+    assertThat(tester.callMethod(StringData.forValue("foobarfoo"), StringData.forValue("bar")))
         .isEqualTo(3);
   }
 
   @Test
   public void testComputeForJavaSource_doesNotContainString() {
     SoyJavaSourceFunctionTester tester = new SoyJavaSourceFunctionTester(new StrIndexOfFunction());
-    assertThat(tester.callFunction("foobarfoo", "baz")).isEqualTo(-1);
+    assertThat(tester.callMethod("foobarfoo", "baz")).isEqualTo(-1);
   }
 
   @Test
   public void testComputeForJavaSource_doesNotContainSanitizedContent() {
     SoyJavaSourceFunctionTester tester = new SoyJavaSourceFunctionTester(new StrIndexOfFunction());
-    assertThat(tester.callFunction(StringData.forValue("foobarfoo"), StringData.forValue("baz")))
+    assertThat(tester.callMethod(StringData.forValue("foobarfoo"), StringData.forValue("baz")))
         .isEqualTo(-1);
   }
-
 }

@@ -31,7 +31,6 @@ import com.google.template.soy.plugin.python.restricted.PythonValue;
 import com.google.template.soy.plugin.python.restricted.PythonValueFactory;
 import com.google.template.soy.plugin.python.restricted.SoyPythonSourceFunction;
 import com.google.template.soy.shared.restricted.Signature;
-import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyMethodSignature;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
 import java.lang.reflect.Method;
@@ -48,16 +47,6 @@ import java.util.List;
  * specified substring <code>expr2</code>. If no such index exists, then <code>-1</code>is returned.
  * <code>strIndexOf</code> is case sensitive and the string indices are zero based.
  */
-@SoyFunctionSignature(
-    name = "strIndexOf",
-    value = {
-      @Signature(
-          returnType = "int",
-          parameterTypes = {"string", "string"}),
-      @Signature(
-          returnType = "int",
-          parameterTypes = {"string", "string", "number"})
-    })
 @SoyMethodSignature(
     name = "indexOf",
     baseType = "string",
