@@ -307,6 +307,11 @@ public final class ExternCompiler {
               JavaQualifiedNames.getClassName(((SoyProtoEnumType) elmType).getDescriptor());
           return MethodRef.LIST_UNBOX_ENUMS.invoke(
               unboxedList, BytecodeUtils.constant(BytecodeUtils.getTypeForClassName(javaClass)));
+        case UNION:
+          if (SoyTypes.NUMBER_TYPE.equals(elmType)) {
+            return MethodRef.LIST_UNBOX_NUMBERS.invoke(unboxedList);
+          }
+          // fall through
         default:
           throw new AssertionError("ValidateExternsPass should prevent this.");
       }
@@ -386,8 +391,16 @@ public final class ExternCompiler {
     } else if (soyReturnType.getKind() == SoyType.Kind.PROTO_ENUM) {
       return BytecodeUtils.numericConversion(
           MethodRef.PROTOCOL_ENUM_GET_NUMBER.invoke(externCall), Type.LONG_TYPE);
+    } else if (BytecodeUtils.SOY_VALUE_TYPE.equals(getRuntimeType(soyReturnType).runtimeType())) {
+      // If the Soy return type of the extern is SoyValue, then we need to make sure the value
+      // returned from the implementation is boxed.
+      if (BytecodeUtils.isPrimitive(externCall.resultType())) {
+        // convertObjectToSoyValueProvider requires values to be Java-boxed (i.e. int to Integer) so
+        // do that first if needed.
+        externCall = BytecodeUtils.boxJavaPrimitive(externCall.resultType(), externCall);
+      }
+      return MethodRef.CONVERT_OBJECT_TO_SOY_VALUE_PROVIDER.invoke(externCall);
     }
-
     return externCall;
   }
 }

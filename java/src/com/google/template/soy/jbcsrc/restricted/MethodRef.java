@@ -245,6 +245,8 @@ public abstract class MethodRef {
       create(JbcSrcRuntime.class, "listUnboxInts", List.class);
   public static final MethodRef LIST_UNBOX_FLOATS =
       create(JbcSrcRuntime.class, "listUnboxFloats", List.class);
+  public static final MethodRef LIST_UNBOX_NUMBERS =
+      create(JbcSrcRuntime.class, "listUnboxNumbers", List.class);
   public static final MethodRef LIST_UNBOX_BOOLS =
       create(JbcSrcRuntime.class, "listUnboxBools", List.class);
   public static final MethodRef LIST_UNBOX_STRINGS =

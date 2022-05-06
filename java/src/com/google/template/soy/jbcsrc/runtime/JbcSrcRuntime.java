@@ -386,6 +386,13 @@ public final class JbcSrcRuntime {
     return values.stream().map(SoyValue::floatValue).collect(toImmutableList());
   }
 
+  public static ImmutableList<Double> listUnboxNumbers(List<SoyValue> values) {
+    if (values == null) {
+      return null;
+    }
+    return values.stream().map(SoyValue::numberValue).collect(toImmutableList());
+  }
+
   public static ImmutableList<Boolean> listUnboxBools(List<SoyValue> values) {
     if (values == null) {
       return null;
