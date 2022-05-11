@@ -33,6 +33,7 @@ import com.google.common.html.types.SafeScript;
 import com.google.common.html.types.SafeUrl;
 import com.google.common.html.types.TrustedResourceUrl;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.errorprone.annotations.CheckReturnValue;
 import com.google.errorprone.annotations.ForOverride;
 import com.google.protobuf.Message;
@@ -156,6 +157,7 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
      * @throws SoyDataException if {@code value} is not convertable to a {@link SoyValueProvider}
      */
     @SuppressWarnings("unchecked")
+    @CanIgnoreReturnValue
     protected final B setParamInternal(SoyTemplateParam<?> name, SoyValueProvider soyValue) {
       checkNotNull(name);
       checkNotNull(soyValue);
@@ -483,6 +485,7 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
      * @throws SoyDataException if {@code value} is not convertable to a {@link SoyValueProvider}
      */
     @SuppressWarnings("unchecked")
+    @CanIgnoreReturnValue
     protected final B addToListParam(SoyTemplateParam<?> name, SoyValueProvider soyValue) {
       checkNotNull(name);
       // for required parameters the list will be eagerly initialized via initListParam, for others
@@ -492,6 +495,7 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
     }
 
     @SuppressWarnings("unchecked")
+    @CanIgnoreReturnValue
     protected final B initListParam(SoyTemplateParam<?> name) {
       checkNotNull(name);
       accummulatorData.computeIfAbsent(name, s -> new ArrayList<>());
