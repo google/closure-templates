@@ -251,8 +251,6 @@ likely to break the emoji and subvert user intention.
 
 Checks whether a string contains a particular substring.
 
-Also callable as deprecated global function: `strContains(str, subStr)`
-
 ### `str.endsWith(subStr[, length])` {#string_endsWith}
 
 Checks whether a string ends with a particular substring. If length is provided,

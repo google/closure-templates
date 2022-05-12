@@ -31,7 +31,6 @@ import com.google.template.soy.plugin.python.restricted.PythonValue;
 import com.google.template.soy.plugin.python.restricted.PythonValueFactory;
 import com.google.template.soy.plugin.python.restricted.SoyPythonSourceFunction;
 import com.google.template.soy.shared.restricted.Signature;
-import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyMethodSignature;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
 import java.lang.reflect.Method;
@@ -44,12 +43,6 @@ import java.util.List;
  * be of type string or {@link SanitizedContent}. It evaluates to <code>true</code> iff <code>expr1
  * </code> contains <code>expr2</code>. <code>strContains</code> is case sensitive.
  */
-@SoyFunctionSignature(
-    name = "strContains",
-    value =
-        @Signature(
-            returnType = "bool",
-            parameterTypes = {"string", "string"}))
 @SoyMethodSignature(
     name = "contains",
     baseType = "string",
