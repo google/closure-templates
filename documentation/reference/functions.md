@@ -277,8 +277,6 @@ it will be very easy to break the string (e.g. split an emoji in half).
 
 Returns the length of a string in characters.
 
-Also callable as deprecated global function: `strLen(str)`
-
 WARNING: The length is based on characters (aka java `char` or utf-16
 characters), not Unicode codepoints or more useful concepts like graphemes. It
 is almost never valid to use this to break text meant for users into parts since

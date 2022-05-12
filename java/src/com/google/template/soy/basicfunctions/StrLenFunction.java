@@ -30,7 +30,6 @@ import com.google.template.soy.plugin.python.restricted.PythonValue;
 import com.google.template.soy.plugin.python.restricted.PythonValueFactory;
 import com.google.template.soy.plugin.python.restricted.SoyPythonSourceFunction;
 import com.google.template.soy.shared.restricted.Signature;
-import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyMethodSignature;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
 import java.lang.reflect.Method;
@@ -45,12 +44,6 @@ import java.util.List;
  * <p>TODO(lukes,dcphillips): This function has inconsistent behavior between the backends when it
  * comes to astral plane codepoints. Python is the only backend doing it right.
  */
-@SoyFunctionSignature(
-    name = "strLen",
-    value =
-        @Signature(
-            returnType = "int",
-            parameterTypes = {"string"}))
 @SoyMethodSignature(name = "length", baseType = "string", value = @Signature(returnType = "int"))
 @SoyPureFunction
 final class StrLenFunction

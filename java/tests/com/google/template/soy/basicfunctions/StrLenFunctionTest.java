@@ -33,12 +33,12 @@ public class StrLenFunctionTest {
   @Test
   public void testComputeForJavaSource_containsString() {
     SoyJavaSourceFunctionTester tester = new SoyJavaSourceFunctionTester(new StrLenFunction());
-    assertThat(tester.callFunction("foobarfoo")).isEqualTo(9);
+    assertThat(tester.callMethod("foobarfoo")).isEqualTo(9);
   }
 
   @Test
   public void testComputeForJavaSource_containsSanitizedContent() {
     SoyJavaSourceFunctionTester tester = new SoyJavaSourceFunctionTester(new StrLenFunction());
-    assertThat(tester.callFunction(StringData.forValue("foobarfoo"))).isEqualTo(9);
+    assertThat(tester.callMethod(StringData.forValue("foobarfoo"))).isEqualTo(9);
   }
 }
