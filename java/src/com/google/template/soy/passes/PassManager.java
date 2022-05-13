@@ -435,6 +435,14 @@ public final class PassManager {
             // Needs to come after any pass that manipulates msg placeholders.
             .add(new CalculateMsgSubstitutionInfoPass(errorReporter));
       }
+      // CalculateMsgSubstitutionInfo for Tricorder. This makes it possible to calculate msgId of
+      // msg node with placeholders during SoyChecks.
+      if (astRewrites == AstRewrites.TRICORDER) {
+        passes
+            .add(new RewriteRemaindersPass(errorReporter))
+            .add(new RewriteGenderMsgsPass(errorReporter))
+            .add(new CalculateMsgSubstitutionInfoPass(errorReporter));
+      }
       passes.add(new CheckNonEmptyMsgNodesPass(errorReporter));
 
       // Run before the RewriteGlobalsPass as it removes some globals.
