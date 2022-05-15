@@ -32,7 +32,6 @@ const {Message} = goog.require('jspb');
 const {assert} = goog.require('goog.asserts');
 const {startsWith} = goog.require('goog.string');
 
-
 /** @final */
 class ElementMetadata {
   /**
@@ -310,7 +309,7 @@ function replaceFunctionAttributes(element, logger) {
   let elementWithAttribute = element;
   if (element.tagName === 'VEATTR') {
     // The attribute being replaced belongs on the direct child.
-    elementWithAttribute = element.firstElementChild;
+    elementWithAttribute = /** @type {!Element} */ (element.firstElementChild);
   }
   for (let i = element.attributes.length - 1; i >= 0; --i) {
     const attributeName = element.attributes[i].name;
