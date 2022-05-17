@@ -360,7 +360,8 @@ public final class JsType {
         return MESSAGE_TYPE;
       case PROTO:
         final SoyProtoType protoType = (SoyProtoType) soyType;
-        final String protoTypeName = protoType.getNameForBackend(SoyBackendKind.JS_SRC);
+        final String protoTypeName =
+            protoType.getNameForBackend(SoyBackendKind.JS_SRC, /* typeOnly = */ true);
         return builder()
             .addType(
                 isStrict

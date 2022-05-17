@@ -137,7 +137,7 @@ public final class JsTypeTest {
         .isEqualTo("!proto.soy.test3.Proto3Message.AnEnum");
 
     assertThatTypeExprStrict(SoyProtoType.newForTest(Proto3Message.getDescriptor()))
-        .isEqualTo("!proto.soy.test3.Proto3Message");
+        .isEqualTo("!proto.soy.test3.ReadonlyProto3Message");
 
     assertThatTypeExprStrict(HtmlType.getInstance())
         .isEqualTo(
