@@ -16,30 +16,40 @@
 package com.google.template.soy.passes;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.parsepasses.contextautoesc.ContextualAutoescaper;
+import com.google.template.soy.parsepasses.contextautoesc.Inferences;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
+import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.SoyFileNode;
-import com.google.template.soy.soytree.TemplateRegistry;
+import java.util.function.Supplier;
 
 /** A shim around ContextualAutoescaper to make it conform to the pass interface. */
-final class AutoescaperPass extends CompilerFileSetPass {
+@RunAfter(FinalizeTemplateRegistryPass.class)
+final class AutoescaperPass implements CompilerFileSetPass {
 
-  private final ContextualAutoescaper autoescaper;
   private final ErrorReporter errorReporter;
+  private final ImmutableList<? extends SoyPrintDirective> printDirectives;
+  private final boolean autoescaperEnabled;
+  private final Supplier<FileSetMetadata> templateRegistryFull;
 
   AutoescaperPass(
       ErrorReporter errorReporter,
-      ImmutableMap<String, ? extends SoyPrintDirective> printDirectives) {
+      ImmutableList<? extends SoyPrintDirective> printDirectives,
+      boolean autoescaperEnabled,
+      Supplier<FileSetMetadata> templateRegistryFull) {
     this.errorReporter = errorReporter;
-    this.autoescaper = new ContextualAutoescaper(errorReporter, printDirectives);
+    this.printDirectives = printDirectives;
+    this.autoescaperEnabled = autoescaperEnabled;
+    this.templateRegistryFull = templateRegistryFull;
   }
 
   @Override
-  public Result run(
-      ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator, TemplateRegistry registry) {
+  public Result run(ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator) {
+    ContextualAutoescaper autoescaper =
+        new ContextualAutoescaper(errorReporter, printDirectives, templateRegistryFull.get());
+
     // The autoescaper depends on certain amounts of template validation having been done, so we
     // can't safely run on broken trees.
     //  * that all deltemplates have compatible content kinds
@@ -48,9 +58,13 @@ final class AutoescaperPass extends CompilerFileSetPass {
     if (errorReporter.hasErrors()) {
       return Result.STOP;
     }
-    // TODO(lukes): consider inlining ContextualAutoescaper here.  It really doesn't do that much
-    // anymore.
-    autoescaper.rewrite(sourceFiles, idGenerator, registry);
+    Inferences inferences = autoescaper.annotate(sourceFiles);
+    if (inferences == null) {
+      return Result.STOP;
+    }
+    if (autoescaperEnabled) {
+      autoescaper.rewrite(sourceFiles, idGenerator, inferences);
+    }
     // for historical reasons compiler passes that run after the autoescaper depend on the metadata
     // addded by the escaping being present. So for now we abort compilation on autoescaper errors.
     if (errorReporter.hasErrors()) {

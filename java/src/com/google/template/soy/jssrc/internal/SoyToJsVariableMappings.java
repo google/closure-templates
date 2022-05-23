@@ -19,6 +19,7 @@ package com.google.template.soy.jssrc.internal;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
+import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import java.util.HashMap;
@@ -31,23 +32,27 @@ import javax.annotation.Nullable;
  * inside a single template.
  */
 public final class SoyToJsVariableMappings {
-  /** TODO(brndn): change the key type to {@link com.google.template.soy.exprtree.VarDefn}. */
+  /** TODO(user): change the key type to {@link com.google.template.soy.exprtree.VarDefn}. */
   private final Map<String, Expression> mappings;
 
   /**
    * The MsgFallbackGroupNode to an expression that evaluates to whether or not the primary message
    * is in use.
    */
-  private final Map<MsgFallbackGroupNode, Expression> isPrimaryMsgInUseForFallbackGroup =
-      new IdentityHashMap<>();
+  private final IdentityHashMap<MsgFallbackGroupNode, Expression>
+      isPrimaryMsgInUseForFallbackGroup = new IdentityHashMap<>();
 
-  private SoyToJsVariableMappings(ImmutableMap<String, ? extends Expression> initialMappings) {
+  private SoyToJsVariableMappings(Map<String, ? extends Expression> initialMappings) {
     mappings = new HashMap<>(initialMappings);
   }
 
   /** Returns a new {@link SoyToJsVariableMappings} suitable for translating an entire template. */
-  public static SoyToJsVariableMappings forNewTemplate() {
+  public static SoyToJsVariableMappings newEmpty() {
     return new SoyToJsVariableMappings(ImmutableMap.of());
+  }
+
+  static SoyToJsVariableMappings startingWith(SoyToJsVariableMappings initialMappings) {
+    return new SoyToJsVariableMappings(initialMappings.mappings);
   }
 
   /** Returns a {@link SoyToJsVariableMappings} seeded with the given mappings. For testing only. */
@@ -57,11 +62,15 @@ public final class SoyToJsVariableMappings {
     return new SoyToJsVariableMappings(initialMappings);
   }
 
+  public SoyToJsVariableMappings put(VarDefn var, Expression translation) {
+    return put(var.refName(), translation);
+  }
+
   /**
    * Maps the Soy variable named {@code name} to the given translation. Any previous mapping for the
    * variable is lost.
    *
-   * <p>TODO(brndn): this API requires callers to mangle the names they pass in to ensure
+   * <p>TODO(user): this API requires callers to mangle the names they pass in to ensure
    * uniqueness. Do the mangling internally.
    */
   public SoyToJsVariableMappings put(String var, Expression translation) {
@@ -76,7 +85,11 @@ public final class SoyToJsVariableMappings {
 
   /** Returns the JavaScript translation for the Soy variable with the given name, */
   public Expression get(String name) {
-    return Preconditions.checkNotNull(mappings.get(name));
+    return Preconditions.checkNotNull(
+        mappings.get(name),
+        "No value for key %s. Available keys: %s",
+        name,
+        String.join(",", mappings.keySet()));
   }
 
   public Expression isPrimaryMsgInUse(MsgFallbackGroupNode msg) {
@@ -87,11 +100,16 @@ public final class SoyToJsVariableMappings {
    * Returns the JavaScript translation for the Soy variable with the given name, or null if no
    * mapping exists for that variable.
    *
-   * <p>TODO(brndn): the null case is only for handling template params. Eliminate the @Nullable by
-   * seeding {@link #forNewTemplate()} with the params.
+   * <p>TODO(user): the null case is only for handling template params. Eliminate the @Nullable by
+   * seeding {@link #newEmpty()} with the params.
    */
   @Nullable
   public Expression maybeGet(String name) {
     return mappings.get(name);
+  }
+
+  /** Returns true if there is an existing variable mapping for the given name. */
+  public boolean has(String name) {
+    return mappings.get(name) != null;
   }
 }

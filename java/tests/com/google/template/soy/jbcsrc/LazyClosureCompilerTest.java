@@ -16,14 +16,15 @@
 
 package com.google.template.soy.jbcsrc;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.template.soy.data.SoyValueConverter.EMPTY_DICT;
 import static com.google.template.soy.jbcsrc.TemplateTester.asRecord;
 import static com.google.template.soy.jbcsrc.TemplateTester.assertThatTemplateBody;
 import static com.google.template.soy.jbcsrc.TemplateTester.compileTemplateBody;
 import static com.google.template.soy.jbcsrc.TemplateTester.getDefaultContext;
 import static java.util.Arrays.asList;
 
+import com.google.common.collect.ContiguousSet;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -32,8 +33,10 @@ import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.SettableFuture;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
+import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.restricted.SoyString;
+import com.google.template.soy.data.internal.ParamStore;
+import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jbcsrc.TemplateTester.CompiledTemplateSubject;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
@@ -47,10 +50,8 @@ import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import java.io.IOException;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import org.junit.Test;
@@ -83,6 +84,11 @@ public class LazyClosureCompilerTest {
         .rendersAs("foo bar baz");
   }
 
+  @FunctionalInterface
+  interface TemplateRenderer {
+    RenderResult render() throws IOException;
+  }
+
   @Test
   public void testLetContentNode_detaching() throws IOException {
     SettableFuture<String> bar = SettableFuture.create();
@@ -93,23 +99,26 @@ public class LazyClosureCompilerTest {
             "  hello {$bar}",
             "{/let}",
             "{$foo}");
-    CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.foo");
+    CompiledTemplate template = templates.getTemplate("ns.foo");
     RenderContext context = getDefaultContext(templates);
-    CompiledTemplate template = factory.create(asRecord(ImmutableMap.of("bar", bar)), EMPTY_DICT);
     BufferingAppendable output = LoggingAdvisingAppendable.buffering();
-    RenderResult result = template.render(output, context);
+    TemplateRenderer renderer =
+        () ->
+            template.render(
+                asRecord(ImmutableMap.of("bar", bar)), ParamStore.EMPTY_INSTANCE, output, context);
+    RenderResult result = renderer.render();
     assertThat(result.type()).isEqualTo(RenderResult.Type.DETACH);
     assertThat(result.future()).isSameInstanceAs(bar); // we found bar!
     assertThat(output.toString()).isEqualTo("hello ");
 
     // make sure no progress is made
-    result = template.render(output, context);
+    result = renderer.render();
     assertThat(result.type()).isEqualTo(RenderResult.Type.DETACH);
     assertThat(result.future()).isSameInstanceAs(bar);
     assertThat(output.toString()).isEqualTo("hello ");
     bar.set("bar");
 
-    assertThat(template.render(output, context)).isEqualTo(RenderResult.done());
+    assertThat(renderer.render()).isEqualTo(RenderResult.done());
     assertThat(output.toString()).isEqualTo("hello bar");
   }
 
@@ -127,33 +136,6 @@ public class LazyClosureCompilerTest {
   public void testLetValueNode_captureParameter() {
     assertThatTemplateBody("{@param param: string}", "{let $foo : $param + '_suffix' /}", "{$foo}")
         .rendersAs("string_suffix", ImmutableMap.of("param", "string"));
-  }
-
-  // Regression test for a bug where captures of synthetic variables wouldn't be deduped properly
-  // and we would recapture the same synthetic multiple times.
-  @Test
-  public void testLetValueNode_captureSyntheticParameter() {
-    // make sure that if we capture a synthetic we only capture it once
-    CompiledTemplates templates =
-        compileTemplateBody(
-            "{@param l : list<string>}",
-            "{for $s in $l}",
-            // the index function is implemented via a synthetic loop index
-            "  {let $bar : index($s) + index($s) /}",
-            "  {$bar}",
-            "{/for}");
-    CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.foo");
-    CompiledTemplate template = factory.create(EMPTY_DICT, EMPTY_DICT);
-    List<Class<?>> innerClasses = Lists.newArrayList(template.getClass().getDeclaredClasses());
-    innerClasses.remove(factory.getClass());
-    Class<?> let = Iterables.getOnlyElement(innerClasses);
-    assertThat(let.getSimpleName()).isEqualTo("let_bar");
-    // the closures capture variables as constructor parameters.
-    // in this case since index() always returns an unboxed integer the parameter should be a single
-    // int.  In a previous version, we passed 2 ints.
-    assertThat(let.getDeclaredConstructors()).hasLength(1);
-    Constructor<?> cStruct = let.getDeclaredConstructors()[0];
-    assertThat(Arrays.asList(cStruct.getParameterTypes())).isEqualTo(Arrays.asList(int.class));
   }
 
   @Test
@@ -189,7 +171,7 @@ public class LazyClosureCompilerTest {
             "{@param comments: list<string>}",
             "{@param? numComments: number}",
             "  {let $numNotShown: ",
-            "      isNonnull($numComments) and length($comments) > $numComments + 2 ?",
+            "      ($numComments != null) and length($comments) > $numComments + 2 ?",
             "          length($comments) - $numComments : 0 /}",
             "  {$numNotShown}");
     tester.rendersAs("0", ImmutableMap.of("comments", ImmutableList.of(), "numComments", 2));
@@ -199,28 +181,49 @@ public class LazyClosureCompilerTest {
   }
 
   @Test
+  public void testLetValueNode_complexConstant() throws Exception {
+    CompiledTemplates templates =
+        compileTemplateBody(
+            "{let $fancyList: [$a + 1 for $a in range(100)] /}", "{join($fancyList,',')}");
+    Class<?> fileClass = templates.getTemplateData("ns.foo").templateClass();
+    Field fancyListField = fileClass.getDeclaredField("let_fancyList");
+    assertThat(Modifier.toString(fancyListField.getModifiers())).isEqualTo("private static final");
+    assertThat(fancyListField.getType()).isAssignableTo(SoyList.class);
+    fancyListField.setAccessible(true);
+    ImmutableList<Long> list =
+        ((SoyList) fancyListField.get(null))
+            .asJavaList().stream()
+                .map(svp -> ((SoyValue) svp).longValue())
+                .collect(toImmutableList());
+    assertThat(list).containsExactlyElementsIn(ContiguousSet.closedOpen(1L, 101L));
+  }
+
+  @Test
   public void testDetachOnFutureLazily() throws IOException {
     SettableFuture<String> bar = SettableFuture.create();
     CompiledTemplates templates =
         compileTemplateBody(
             "{@param bar : string }", "{let $foo : $bar + $bar /}", "before use", "{$foo}");
-    CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.foo");
+    CompiledTemplate template = templates.getTemplate("ns.foo");
     RenderContext context = getDefaultContext(templates);
-    CompiledTemplate template = factory.create(asRecord(ImmutableMap.of("bar", bar)), EMPTY_DICT);
     BufferingAppendable output = LoggingAdvisingAppendable.buffering();
-    RenderResult result = template.render(output, context);
+    TemplateRenderer renderer =
+        () ->
+            template.render(
+                asRecord(ImmutableMap.of("bar", bar)), ParamStore.EMPTY_INSTANCE, output, context);
+    RenderResult result = renderer.render();
     assertThat(result.type()).isEqualTo(RenderResult.Type.DETACH);
     assertThat(result.future()).isSameInstanceAs(bar); // we found bar!
     assertThat(output.toString()).isEqualTo("before use");
 
     // make sure no progress is made
-    result = template.render(output, context);
+    result = renderer.render();
     assertThat(result.type()).isEqualTo(RenderResult.Type.DETACH);
     assertThat(result.future()).isSameInstanceAs(bar);
     assertThat(output.toString()).isEqualTo("before use");
     bar.set(" bar");
 
-    assertThat(template.render(output, context)).isEqualTo(RenderResult.done());
+    assertThat(renderer.render()).isEqualTo(RenderResult.done());
     assertThat(output.toString()).isEqualTo("before use bar bar");
   }
 
@@ -229,15 +232,14 @@ public class LazyClosureCompilerTest {
     // make sure we don't break normal reflection apis
     CompiledTemplates templates =
         compileTemplateBody("{let $bar : 'a' /}", "{let $foo : $bar + 1 /}");
-    CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.foo");
-    CompiledTemplate template = factory.create(EMPTY_DICT, EMPTY_DICT);
 
-    assertThat(template.getClass().getDeclaredClasses()).hasLength(2);
-    List<Class<?>> innerClasses = Lists.newArrayList(template.getClass().getDeclaredClasses());
-    innerClasses.remove(factory.getClass());
+    Class<?> fileClass = templates.getTemplateData("ns.foo").templateClass();
+
+    assertThat(fileClass.getDeclaredClasses()).hasLength(1);
+    List<Class<?>> innerClasses = Lists.newArrayList(fileClass.getDeclaredClasses());
     Class<?> let = Iterables.getOnlyElement(innerClasses);
     assertThat(let.getSimpleName()).isEqualTo("let_foo");
-    assertThat(let.getDeclaringClass()).isEqualTo(template.getClass());
+    assertThat(let.getDeclaringClass()).isEqualTo(fileClass);
   }
 
   private static final class IdentityJavaFunction implements SoyJavaFunction {
@@ -304,15 +306,13 @@ public class LazyClosureCompilerTest {
   public void testTrivialLetClassStructure() throws Exception {
     CompiledTemplates templates =
         compileTemplateBody("{let $bar : 'a' /}", "{let $foo : $bar /} {$foo}");
-    CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.foo");
-    Class<?> template = factory.create(EMPTY_DICT, EMPTY_DICT).getClass();
+    Class<?> fileClass = templates.getTemplateData("ns.foo").templateClass();
     // no inner classes besides the factory
-    assertThat(asList(template.getDeclaredClasses())).containsExactly(factory.getClass());
+    assertThat(asList(fileClass.getDeclaredClasses())).isEmpty();
     // we only store bar in a private static field
-    Field barField = template.getDeclaredField("let_bar");
-    assertThat(asList(template.getDeclaredFields()))
-        .containsExactly(template.getDeclaredField("$state"), barField);
-    assertThat(barField.getType()).isEqualTo(SoyString.class);
+    Field barField = fileClass.getDeclaredField("let_bar");
+    assertThat(asList(fileClass.getDeclaredFields())).containsExactly(barField);
+    assertThat(barField.getType()).isEqualTo(StringData.class);
     assertThat(barField.getModifiers())
         .isEqualTo(Modifier.PRIVATE | Modifier.STATIC | Modifier.FINAL);
   }

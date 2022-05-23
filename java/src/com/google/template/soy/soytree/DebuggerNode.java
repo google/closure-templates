@@ -23,7 +23,6 @@ import com.google.template.soy.soytree.SoyNode.StatementNode;
 
 /**
  * Node representing the 'debugger' statement.
- *
  */
 public final class DebuggerNode extends AbstractCommandNode
     implements StandaloneNode, StatementNode {

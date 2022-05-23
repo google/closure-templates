@@ -19,17 +19,18 @@ package com.google.template.soy.passes;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.collect.HashMultimap;
-import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Multimap;
+import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
+import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.TemplateMetadata;
-import com.google.template.soy.soytree.TemplateMetadata.DataAllCallSituation;
-import com.google.template.soy.soytree.TemplateMetadata.Parameter;
-import com.google.template.soy.soytree.TemplateRegistry;
+import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.TemplateType;
+import com.google.template.soy.types.TemplateType.Parameter;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
@@ -41,7 +42,6 @@ import java.util.Set;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  * <p>{@link #exec} should be called on a {@code TemplateNode}.
- *
  */
 public final class IndirectParamsCalculator {
 
@@ -50,15 +50,15 @@ public final class IndirectParamsCalculator {
     // TODO(lukes): combine indirectParams and indirectParamTypes, they are largely redundant
 
     /** Map from indirect param key to param object. */
-    public final ImmutableSortedMap<String, TemplateMetadata.Parameter> indirectParams;
+    public final ImmutableSortedMap<String, Parameter> indirectParams;
 
     /**
      * Multimap from param key (direct or indirect) to transitive callees that declare the param.
      */
-    public final ImmutableMultimap<String, TemplateMetadata> paramKeyToCalleesMultimap;
+    public final ImmutableSetMultimap<String, TemplateMetadata> paramKeyToCalleesMultimap;
 
     /** Multimap from indirect param key to param types. */
-    public final ImmutableMultimap<String, SoyType> indirectParamTypes;
+    public final ImmutableSetMultimap<String, SoyType> indirectParamTypes;
 
     /**
      * Whether the template (that the pass was run on) may have indirect params in external basic
@@ -82,9 +82,9 @@ public final class IndirectParamsCalculator {
      *     on) may have indirect params in external delegate calls.
      */
     public IndirectParamsInfo(
-        ImmutableSortedMap<String, TemplateMetadata.Parameter> indirectParams,
-        ImmutableMultimap<String, TemplateMetadata> paramKeyToCalleesMultimap,
-        ImmutableMultimap<String, SoyType> indirectParamTypes,
+        ImmutableSortedMap<String, Parameter> indirectParams,
+        ImmutableSetMultimap<String, TemplateMetadata> paramKeyToCalleesMultimap,
+        ImmutableSetMultimap<String, SoyType> indirectParamTypes,
         boolean mayHaveIndirectParamsInExternalCalls,
         boolean mayHaveIndirectParamsInExternalDelCalls) {
       this.indirectParams = indirectParams;
@@ -152,7 +152,7 @@ public final class IndirectParamsCalculator {
   }
 
   /** Registry of all templates in the Soy tree. */
-  private TemplateRegistry templateRegistry;
+  private final FileSetMetadata fileSetMetadata;
 
   /** The set of calls we've visited already (during pass). */
   private Set<TransitiveCallSituation> visitedCallSituations;
@@ -161,10 +161,10 @@ public final class IndirectParamsCalculator {
   private Map<String, Parameter> indirectParams;
 
   /** Multimap from param key (direct or indirect) to callees that explicitly list the param. */
-  private Multimap<String, TemplateMetadata> paramKeyToCalleesMultimap;
+  private SetMultimap<String, TemplateMetadata> paramKeyToCalleesMultimap;
 
   /** Multimap from indirect param key to param types. */
-  private Multimap<String, SoyType> indirectParamTypes;
+  private SetMultimap<String, SoyType> indirectParamTypes;
 
   /**
    * Whether the template (that the pass was run on) may have indirect params in external basic
@@ -178,12 +178,16 @@ public final class IndirectParamsCalculator {
    */
   private boolean mayHaveIndirectParamsInExternalDelCalls;
 
-  /** @param templateRegistry Map from template name to TemplateNode to use during the pass. */
-  public IndirectParamsCalculator(TemplateRegistry templateRegistry) {
-    this.templateRegistry = checkNotNull(templateRegistry);
+  /** @param fileSetMetadata Map from template name to TemplateNode to use during the pass. */
+  public IndirectParamsCalculator(FileSetMetadata fileSetMetadata) {
+    this.fileSetMetadata = checkNotNull(fileSetMetadata);
   }
 
-  public IndirectParamsInfo calculateIndirectParams(TemplateMetadata template) {
+  public IndirectParamsInfo calculateIndirectParams(TemplateNode node) {
+    return calculateIndirectParams(fileSetMetadata.getTemplate(node).getTemplateType());
+  }
+
+  public IndirectParamsInfo calculateIndirectParams(TemplateType template) {
 
     visitedCallSituations = Sets.newHashSet();
     indirectParams = Maps.newHashMap();
@@ -195,18 +199,18 @@ public final class IndirectParamsCalculator {
 
     return new IndirectParamsInfo(
         ImmutableSortedMap.copyOf(indirectParams),
-        ImmutableMultimap.copyOf(paramKeyToCalleesMultimap),
-        ImmutableMultimap.copyOf(indirectParamTypes),
+        ImmutableSetMultimap.copyOf(paramKeyToCalleesMultimap),
+        ImmutableSetMultimap.copyOf(indirectParamTypes),
         mayHaveIndirectParamsInExternalCalls,
         mayHaveIndirectParamsInExternalDelCalls);
   }
 
   private void visit(
-      TemplateMetadata template, Set<String> allCallParamKeys, Set<TemplateMetadata> allCallers) {
+      TemplateType template, Set<String> allCallParamKeys, Set<TemplateType> allCallers) {
     if (!allCallers.add(template)) {
       return;
     }
-    for (DataAllCallSituation call : template.getDataAllCallSituations()) {
+    for (TemplateType.DataAllCallSituation call : template.getDataAllCallSituations()) {
       // only construct a new set if we are adding more parameters.
       // ideally we would use some kind of persistent datastructure, but this is probably fine since
       // the sets are small.
@@ -222,7 +226,7 @@ public final class IndirectParamsCalculator {
         mayHaveIndirectParamsInExternalDelCalls = true;
         // TODO(lukes): this should probably take variants into account if they are present
         for (TemplateMetadata delCallee :
-            templateRegistry
+            fileSetMetadata
                 .getDelTemplateSelector()
                 .delTemplateNameToValues()
                 .get(call.getTemplateName())) {
@@ -230,7 +234,7 @@ public final class IndirectParamsCalculator {
         }
       } else {
         TemplateMetadata basicCallee =
-            templateRegistry.getBasicTemplateOrElement(call.getTemplateName());
+            fileSetMetadata.getBasicTemplateOrElement(call.getTemplateName());
         if (basicCallee == null) {
           mayHaveIndirectParamsInExternalCalls = true;
         } else {
@@ -242,15 +246,16 @@ public final class IndirectParamsCalculator {
   }
 
   private void processCall(
-      TemplateMetadata caller,
+      TemplateType caller,
       TemplateMetadata callee,
       Set<String> allCallParamKeys,
-      Set<TemplateMetadata> allCallers) {
-    if (caller.equals(callee) || allCallers.contains(callee)) {
+      Set<TemplateType> allCallers) {
+    TemplateType calleeSignature = callee.getTemplateType();
+    if (caller.equals(calleeSignature) || allCallers.contains(calleeSignature)) {
       // We never recursive calls to bring in an indirect param.
       return;
     }
-    for (Parameter p : callee.getParameters()) {
+    for (Parameter p : callee.getTemplateType().getParameters()) {
       if (!allCallParamKeys.contains(p.getName())) {
         // For some reason we only record the first one.
         indirectParams.putIfAbsent(p.getName(), p);
@@ -264,6 +269,6 @@ public final class IndirectParamsCalculator {
     if (!visitedCallSituations.add(transitiveCallSituation)) {
       return;
     }
-    visit(callee, allCallParamKeys, allCallers);
+    visit(calleeSignature, allCallParamKeys, allCallers);
   }
 }

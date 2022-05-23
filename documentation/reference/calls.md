@@ -1,9 +1,5 @@
 # Calls
 
-<!--#include file="commands-blurb-include.md"-->
-
-This chapter describes the call commands.
-
 [TOC]
 
 ## call {#call}
@@ -28,6 +24,12 @@ current template (the caller).
     {/call}
     ```
 
+*   With parameter names and values (notice that `call` is not needed):
+
+    ```soy
+    {<TEMPLATE_NAME>(<KEY1>: <EXPRESSION1>, <KEY2>: <EXPRESSION2>)}
+    ```
+
 *   With values from the caller template's data:
 
     ```soy
@@ -40,6 +42,7 @@ The following sections discuss these five options for passing values to a callee
 template:
 
 1.  Pass values using `param` commands.
+1.  Pass values using parameter names.
 1.  Pass values using the `data` attribute.
 1.  Pass all of the caller template's `data`.
 1.  Construct values to pass using `param` commands.
@@ -48,24 +51,27 @@ template:
 We'll use this callee template for the following examples:
 
 ```soy
-{template .exampleCallee}
+{template exampleCallee}
   {@param largerNum: int} /** An integer larger than 'smallerNum'. */
   {@param smallerNum: int} /** An integer smaller than 'largerNum'. */
   {$largerNum} is greater than {$smallerNum}.
 {/template}
 ```
 
-#### Pass values using `param` commands (recommended)
+For information about passing templates as parameters, see
+[Passing Templates as Parameters](template-types.md#how-do-you-pass-in-a-template).
+
+#### Pass values using `param` commands (recommended) {#param}
 
 To pass values to the callee, use `param` commands inside the `call` function
 with names that match the callee's parameters.
 
 ```soy
-{template .exampleCaller}
+{template exampleCaller}
   {let $largerNum: 20 /}
   {let $smallerNum: 10 /}
 
-  {call .exampleCallee}
+  {call exampleCallee}
     {param largerNum: $largerNum /}
     {param smallerNum: $smallerNum /}
   {/call}
@@ -75,39 +81,51 @@ with names that match the callee's parameters.
 This is the *recommended* way of calling templates in Soy as explicit data
 passing makes code more readable and easier to debug.
 
+#### Pass values using parameter names (recommended)
+
+In cases where all parameters are passed without blocks, the call can be
+shortened to a function-like call.
+
+```soy
+{template exampleCaller}
+  {let $largerNum: 20 /}
+  {let $smallerNum: 10 /}
+
+  {exampleCallee(largerNum: $largerNum, smallerNum: $smallerNum)}
+{/template}
+```
+
 #### Pass values using the `data` attribute
 
-**WARNING**: This is not supported by JSWire. b/123785421
-
 You can also pass data to the callee with the `call` command's `data` attribute.
-This accepts a variable of type
-[record](/third_party/java_src/soy/g3doc/reference/types.md#record). The `call`
-command sets the values of any parameters in the callee whose names match fields
-in the record.
+This accepts a variable of type [record](types.md#record). The `call` command
+sets the values of any parameters in the callee whose names match fields in the
+record.
 
 For example, the following call sets the value of the `largerNum` parameter to
 20 and the `smallerNum` parameter to 10. It is equivalent to the call in the
 previous section.
 
 ```soy
-{template .exampleCaller}
+{template exampleCaller}
   {let $pair : record(largerNum: 20, smallerNum: 10)}
-  {call .exampleCallee data="$pair" /}
+  {call exampleCallee data="$pair" /}
 {/template}
 ```
 
-**WARNING**: When passing data in this way much of the call-site type checking
+**Warning:** When passing data in this way much of the call-site type checking
 that Soy normally performs is *disabled*. So it can be easy to make simple
 mistakes like forgetting to pass a required parameter or passing a parameter of
-the wrong type.
+the wrong type. See b/168852179
 
 If the record contains fields whose names do not match any parameter names,
 these are ignored by the callee. Similarly, if there are any parameters whose
 names do not match any field names, these are not set; whether this causes an
-error depends on [whether the parameter is
-required](/third_party/java_src/soy/g3doc/reference/templates.md#param).
+error depends on [whether the parameter is required](templates.md#param).
 
-#### Pass all of the caller's `data`
+#### Pass all of the caller's `data` (discouraged) {#data-all}
+
+**Warning:** This technique is discouraged.
 
 A template's *data* is a record that contains:
 
@@ -118,14 +136,14 @@ A template's *data* is a record that contains:
 If a call includes a `param` command with the same name as a field in the `data`
 record, the value from the `param` command is used.
 
-For example, in the following call, the data of `.exampleCallee` will be a
-record containing the fields `largerNum`, `smallerNum`, and `otherNum`:
+For example, in the following call, the data of `exampleCallee` will be a record
+containing the fields `largerNum`, `smallerNum`, and `otherNum`:
 
 ```soy
-{template .exampleCaller}
+{template exampleCaller}
   {let $pair : record(largerNum: 20, smallerNum: 10) /}
   {let $otherNum : 5 /}
-  {call .exampleCallee data="$pair"}
+  {call exampleCallee data="$pair"}
     {param otherNum: $otherNum /}
   {/call}
 {/template}
@@ -140,8 +158,8 @@ callee (with the same parameter names), you can simply set `data="all"`.
 
 ```soy {.bad}
 // Discouraged.
-{template .exampleCaller}
-  {call .exampleCallee data="all" /}
+{template exampleCaller}
+  {call exampleCallee data="all" /}
 {/template}
 ```
 
@@ -227,7 +245,7 @@ As a more complex example, assume that the caller's parameters include a list
 
 ```soy
 {for $pair in $pairs}
-  {call .exampleCallee}
+  {call exampleCallee}
     {param largerNum: $pair.largerInt /}
     {param smallerNum kind="text"}
       {if $pair.smallerInt}
@@ -261,10 +279,10 @@ The second issue is if `$pair.smallerInt == 0`, then it would be falsy and so
 should be passed. This is why you should generally avoid using sometimes-defined
 field values. If you do use them, consider the possibility of falsy values. In
 this example, if there's a possibility that `$pair.smallerInt == 0`, you could
-correct the bug by rewriting the EXPRESSION using the function `isNonnull`:
+correct the bug by adding a comparison to `null` to the EXPRESSION:
 
 ```soy
-{param smallerNum: isNonnull($pair.smallerInt) ? $pair.smallerInt : $pair.largerInt - 100 /}
+{param smallerNum: $pair.smallerInt != null ? $pair.smallerInt : $pair.largerInt - 100 /}
 ```
 
 or better yet, use the null-coalescing operator:
@@ -283,7 +301,7 @@ template:
 
 ```soy
 {for $smallerNum in $smallerNums}
-  {call .exampleCallee data="record(largerNum: $largerNum)"}
+  {call exampleCallee data="record(largerNum: $largerNum)"}
     {param smallerNum: $smallerNum /}
   {/call}
 {/for}
@@ -293,29 +311,31 @@ If a call includes a `param` command with the same name as a field in the `data`
 record, the value from the `param` command is used. In subsequent calls that use
 `data="all"`, the value of the field is the `param` value.
 
-### Calling a template in a different namespace
+### Calling a template in a different file
 
-All of the above examples demonstrate calling a template in the same namespace,
-hence the partial template name (beginning with a dot) used in the `call`
-command text. To call a template from a different namespace, use the full
-template name including namespace. For example:
-
-```soy
-{call myproject.mymodule.myfeature.exampleCallee}
-  {param pair: $pair /}
-{/call}
-```
-
-Or, if you've aliased the namespace of the template you're calling to its last
-identifier, then
+All of the above examples demonstrate calling a template in the same file. To
+call a template in a different file, you must
+[import the template](file-declarations.md#import), and then you can call it
+using the usual syntax:
 
 ```soy
-{call myfeature.exampleCallee}
-  {param pair: $pair /}
-{/call}
+import {button, dialog} from 'path/to/soy/file/foo.soy'
+
+{template myTemplate}
+  {call button /}
+  {call dialog}
+    {param someParam: 1 /}
+  {/call}
+{/template}
 ```
 
-### Aliasing
+In case of naming collisions, or if the imported template name is unclear from a
+readability perspective (e.g. "content"), you can alias the imported template:
 
-Check out how to shorten calls with [alias
-declarations](file-declarations.md#alias).
+```soy
+import {content as hotelReviewContent} from 'path/to/soy/file/bar.soy'
+
+{template myTemplate}
+  {call hotelReviewContent /}
+{/template}
+```

@@ -1,6 +1,5 @@
 # Debugging
 
-
 Soy has a few features to aid debugging of templates.
 
 [TOC]
@@ -48,16 +47,13 @@ rendered document.
 There are also JavaScript libraries that can read these annotations to give a
 simple debugging UI. See below for how to configure this.
 
-
 ### Enabling the instrumentation
-
 
 Enabling this feature by yourself is also possible.
 
 *   In server side, you need to tell the Soy renderer that you want to add
     additional HTML attributes for debug usages. Use the
     `SoySauce.Renderer.setDebugSoyTemplateInfo(boolean)` method API.
-
 
 *   On the client you need to call `soy.setDebugSoyTemplateInfo(true)` to enable
     the instrumentation.

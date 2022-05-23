@@ -66,14 +66,17 @@ public final class TestUtils {
   }
 
   public static ExprNode soyExprNode(String exprText) {
-    return SoyFileParser.parseExpression(
-        exprText,
-        ErrorReporter.exploding());
+    return SoyFileParser.parseExpression(exprText, ErrorReporter.exploding());
   }
 
   public static IfCondNode soyIfCondNode(String exprText) {
     IfCondNode soyNode =
-        new IfCondNode(idGenerator.genId(), SourceLocation.UNKNOWN, "if", soyExprNode(exprText));
+        new IfCondNode(
+            idGenerator.genId(),
+            SourceLocation.UNKNOWN,
+            SourceLocation.UNKNOWN,
+            "if",
+            soyExprNode(exprText));
     IfNode parentIfNode = new IfNode(idGenerator.genId(), SourceLocation.UNKNOWN);
     parentIfNode.addChild(soyNode);
     return soyNode;
@@ -82,7 +85,11 @@ public final class TestUtils {
   public static IfCondNode soyIfElseCondNode(String exprText) {
     IfCondNode soyNode =
         new IfCondNode(
-            idGenerator.genId(), SourceLocation.UNKNOWN, "elseif", soyExprNode(exprText));
+            idGenerator.genId(),
+            SourceLocation.UNKNOWN,
+            SourceLocation.UNKNOWN,
+            "elseif",
+            soyExprNode(exprText));
     IfNode parentIfNode = new IfNode(idGenerator.genId(), SourceLocation.UNKNOWN);
     parentIfNode.addChild(soyNode);
     return soyNode;
@@ -91,7 +98,10 @@ public final class TestUtils {
   public static SwitchCaseNode soySwitchCaseNode(String exprText) {
     SwitchCaseNode soyNode =
         new SwitchCaseNode(
-            idGenerator.genId(), SourceLocation.UNKNOWN, ImmutableList.of(soyExprNode(exprText)));
+            idGenerator.genId(),
+            SourceLocation.UNKNOWN,
+            SourceLocation.UNKNOWN,
+            ImmutableList.of(soyExprNode(exprText)));
     IfNode parentIfNode = new IfNode(idGenerator.genId(), SourceLocation.UNKNOWN);
     parentIfNode.addChild(soyNode);
     return soyNode;

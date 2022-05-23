@@ -22,6 +22,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.exprtree.Operator.Associativity;
+import java.util.function.Consumer;
 
 /** Represents a JavaScript computed member access ({@code []}) expression. */
 @AutoValue
@@ -54,7 +55,7 @@ abstract class Bracket extends Operation {
   }
 
   @Override
-  public void collectRequires(RequiresCollector collector) {
+  public void collectRequires(Consumer<GoogRequire> collector) {
     receiver().collectRequires(collector);
     key().collectRequires(collector);
   }
@@ -69,5 +70,10 @@ abstract class Bracket extends Operation {
     formatOperand(receiver(), OperandPosition.LEFT, ctx);
     // No need to protect the expression in the bracket with parens. it's unambiguous.
     ctx.append('[').appendOutputExpression(key()).append(']');
+  }
+
+  @Override
+  boolean initialExpressionIsObjectLiteral() {
+    return receiver().initialExpressionIsObjectLiteral();
   }
 }

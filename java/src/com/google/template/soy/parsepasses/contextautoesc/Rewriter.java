@@ -16,6 +16,8 @@
 
 package com.google.template.soy.parsepasses.contextautoesc;
 
+import static com.google.common.collect.ImmutableMap.toImmutableMap;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
@@ -24,7 +26,9 @@ import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SanitizedContentOperator;
+import com.google.template.soy.data.internal.Converters;
 import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.shared.internal.ShortCircuitable;
 import com.google.template.soy.shared.internal.ShortCircuitables;
@@ -41,22 +45,21 @@ import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
-import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
-import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.SanitizedType;
+import com.google.template.soy.types.TemplateType;
+import java.util.function.Function;
 import javax.annotation.Nullable;
 
 /**
  * Applies changes specified in {@link Inferences} to a Soy parse tree.
- *
  */
 final class Rewriter {
 
@@ -71,15 +74,18 @@ final class Rewriter {
   Rewriter(
       Inferences inferences,
       IdGenerator idGen,
-      ImmutableMap<String, ? extends SoyPrintDirective> printDirectives) {
+      ImmutableList<? extends SoyPrintDirective> printDirectives) {
     this.inferences = inferences;
     this.idGen = idGen;
-    this.printDirectives = printDirectives;
+    this.printDirectives =
+        printDirectives.stream()
+            .filter(d -> EscapingMode.fromDirective(d.getName()) != null)
+            .collect(toImmutableMap(SoyPrintDirective::getName, Function.identity()));
   }
 
-  /** @return Derived templates that should be added to the parse tree. */
-  public void rewrite(SoyFileNode file) {
-    mutator.exec(file);
+  /** */
+  public void rewrite(SoyNode node) {
+    mutator.exec(node);
   }
 
   /** A visitor that applies the changes in Inferences to a Soy tree. */
@@ -90,12 +96,17 @@ final class Rewriter {
     protected void visitPrintNode(PrintNode printNode) {
       ImmutableList<EscapingMode> escapingModes = inferences.getEscapingModesForNode(printNode);
       for (EscapingMode escapingMode : escapingModes) {
+        SoyPrintDirective directive = printDirectives.get(escapingMode.directiveName);
+        if (directive == null) {
+          throw new IllegalStateException(
+              "Couldn't find directive for EscapingMode " + escapingMode);
+        }
         PrintDirectiveNode newPrintDirective =
             PrintDirectiveNode.createSyntheticNode(
                 idGen.genId(),
                 Identifier.create(escapingMode.directiveName, printNode.getSourceLocation()),
                 printNode.getSourceLocation(),
-                printDirectives.get(escapingMode.directiveName));
+                directive);
         // Figure out where to put the new directive.
         // Normally they go at the end to ensure that the value printed is of the appropriate type,
         // but if there are SanitizedContentOperators at the end, then make sure that their input
@@ -184,6 +195,15 @@ final class Rewriter {
       if (!param.type().getKind().isKnownSanitizedContent()) {
         return null; // only care about sanitized types
       }
+      if (SoyTreeUtils.allNodesOfType(template.getParent(), TemplateLiteralNode.class)
+          .anyMatch(
+              (templateLiteral) ->
+                  !templateLiteral.isStaticCall()
+                      && templateLiteral.getResolvedName().equals(template.getTemplateName()))) {
+        // If a template is passed around into other templates, we cannot be sure of the trusted
+        // content kind.
+        return null;
+      }
       SanitizedContentKind expectedKind = ((SanitizedType) param.type()).getContentKind();
 
       // if it is private we know that all callers are in this file.  Find them and check
@@ -193,7 +213,8 @@ final class Rewriter {
       }
       for (CallBasicNode callNode :
           SoyTreeUtils.getAllNodesOfType(template.getParent(), CallBasicNode.class)) {
-        if (callNode.getCalleeName().equals(template.getTemplateName())
+        if (callNode.isStaticCall()
+            && callNode.getCalleeName().equals(template.getTemplateName())
             && !doesCallPassCompatibleContentForParameter(callNode, expectedKind, param.name())) {
           return null;
         }
@@ -249,15 +270,17 @@ final class Rewriter {
     @Override
     protected void visitCallNode(CallNode node) {
       ImmutableList<SoyPrintDirective> directives = getDirectivesForNode(node);
-      // only handle CalllBasicNode. The compiler attempts to enforce consistency in the type of
+      // Only handle CallBasicNode.  The compiler attempts to enforce consistency in the type of
       // deltemplates but there is currently no strong guarantee that they are compatible.  So be
       // conservative here.
       if (node instanceof CallBasicNode) {
-        ImmutableList<TemplateMetadata> targets = inferences.lookupTemplates(node);
+        ImmutableList<TemplateType> targets = inferences.lookupTemplates(node);
         if (!targets.isEmpty()) {
           directives =
               ShortCircuitables.filterDirectivesForKind(
-                  ContentKind.valueOf(targets.get(0).getContentKind().name()), directives);
+                  Converters.contentKindfromSanitizedContentKind(
+                      targets.get(0).getContentKind().getSanitizedContentKind()),
+                  directives);
         }
       }
       node.setEscapingDirectives(directives);

@@ -1,15 +1,10 @@
 # Coercions
 
-
-<!--#include file="commands-blurb-include.md"-->
-
-[TOC]
-
-This chapter describes implicit coercions that Soy performs.
-
 Some Soy operations will take an expression of a given type and coerce it to
 another type. This page will describe how these operations behave and when they
 trigger.
+
+[TOC]
 
 TODO(lukes): this page is insufficiently exhaustive, but it is a start
 
@@ -18,7 +13,7 @@ TODO(lukes): this page is insufficiently exhaustive, but it is a start
 There are a few ways to cause an implicit string coercion in Soy.
 
 *   [print commands](print) implicitly coerce their expression to a string
-*   [concatentation](expressions#plus) with a string will coerce a value to a
+*   [concatenation](expressions#plus) with a string will coerce a value to a
     string
 
 While every value in Soy can be coerced to a string, not every value has a

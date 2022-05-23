@@ -30,7 +30,6 @@ import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
  * the 'if' block or an 'elseif' block).
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public final class IfCondNode extends AbstractBlockCommandNode
     implements ConditionalBlockNode, ExprHolderNode {
@@ -44,8 +43,13 @@ public final class IfCondNode extends AbstractBlockCommandNode
    * @param commandName The command name -- either 'if' or 'elseif'.
    * @param expr The if condition.
    */
-  public IfCondNode(int id, SourceLocation location, String commandName, ExprNode expr) {
-    super(id, location, commandName);
+  public IfCondNode(
+      int id,
+      SourceLocation location,
+      SourceLocation openTagLocation,
+      String commandName,
+      ExprNode expr) {
+    super(id, location, openTagLocation, commandName);
     Preconditions.checkArgument(commandName.equals("if") || commandName.equals("elseif"));
     this.expr = new ExprRootNode(expr);
   }

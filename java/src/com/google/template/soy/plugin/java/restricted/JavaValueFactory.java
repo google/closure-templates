@@ -86,14 +86,16 @@ public abstract class JavaValueFactory {
       if (params.length == 0) {
         throw new IllegalArgumentException(
             String.format(
-                "No such public method: %s.%s (with no parameters)", clazz.getName(), methodName));
+                "No such public method: %s.%s (with no parameters)", clazz.getName(), methodName),
+            e);
       } else {
         throw new IllegalArgumentException(
             String.format(
                 "No such public method: %s.%s(%s)",
                 clazz.getName(),
                 methodName,
-                Arrays.stream(params).map(Class::getName).collect(Collectors.joining(","))));
+                Arrays.stream(params).map(Class::getName).collect(Collectors.joining(","))),
+            e);
       }
     } catch (SecurityException e) {
       throw new IllegalArgumentException(e);

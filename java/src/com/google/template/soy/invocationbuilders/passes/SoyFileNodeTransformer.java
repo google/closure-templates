@@ -16,7 +16,8 @@
 
 package com.google.template.soy.invocationbuilders.passes;
 
-import static com.google.template.soy.invocationbuilders.passes.InvocationBuilderTypeUtils.upcastTypesForIndirectParams;
+import static com.google.template.soy.base.SourceLocation.UNKNOWN;
+import static com.google.template.soy.invocationbuilders.javatypes.JavaTypeUtils.upcastTypesForIndirectParams;
 import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.makeUpperCamelCase;
 
 import com.google.auto.value.AutoValue;
@@ -24,25 +25,28 @@ import com.google.common.base.Ascii;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Streams;
+import com.google.template.soy.base.SourceFilePath;
+import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.invocationbuilders.javatypes.JavaType;
+import com.google.template.soy.invocationbuilders.javatypes.JavaTypeUtils;
 import com.google.template.soy.passes.IndirectParamsCalculator;
 import com.google.template.soy.passes.IndirectParamsCalculator.IndirectParamsInfo;
+import com.google.template.soy.shared.internal.gencode.JavaGenerationUtils;
+import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.TemplateMetadata;
-import com.google.template.soy.soytree.TemplateMetadata.Parameter;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
+import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypes;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import com.google.template.soy.types.TemplateType.Parameter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -61,12 +65,22 @@ import java.util.stream.Collectors;
  * detection, unhandled parameter types, and more.
  */
 public class SoyFileNodeTransformer {
+  public static final ImmutableList<String> RESERVED_IDENTIFIERS = ImmutableList.of("Builder");
+
+  // Soy types that are not supported for invocation builders.
+  private static final ImmutableSet<SoyType.Kind> UNSUPPORTED_SOY_TYPES =
+      ImmutableSet.of(
+          SoyType.Kind.TEMPLATE,
+          SoyType.Kind.VE,
+          SoyType.Kind.VE_DATA);
 
   /** The transformed {@link SoyFileNode}. */
   @AutoValue
   public abstract static class FileInfo {
 
-    abstract Path soyFilePath();
+    abstract SoyFileNode fileNode();
+
+    abstract SourceFilePath soyFilePath();
 
     /**
      * Returns the fully qualified name of the outer class created to hold the SoyTemplate
@@ -82,7 +96,7 @@ public class SoyFileNodeTransformer {
     }
 
     public String soyFileName() {
-      return soyFilePath().getFileName().toString();
+      return soyFilePath().fileName();
     }
 
     public String packageName() {
@@ -99,13 +113,16 @@ public class SoyFileNodeTransformer {
     public TemplateInfo findTemplate(TemplateNode node) {
       return templates().stream().filter(t -> t.template().equals(node)).findFirst().get();
     }
+
+    public Set<String> getProtoTypes(SoyTypeRegistry typeRegistry) {
+      return JavaGenerationUtils.getProtoTypes(fileNode(), typeRegistry);
+    }
   }
 
   /** Status categories for {@link TemplateInfo}. */
   public enum TemplateStatus {
     HANDLED,
     NAME_COLLISION,
-    RESERVED_NAME
   }
 
   /** The transformed {@link TemplateNode}. */
@@ -114,7 +131,11 @@ public class SoyFileNodeTransformer {
 
     static TemplateInfo error(TemplateNode template, TemplateStatus status) {
       return new AutoValue_SoyFileNodeTransformer_TemplateInfo(
-          "", ImmutableList.of(), status, template);
+          generateTemplateClassName(template),
+          ImmutableList.of(),
+          status,
+          template,
+          template.getTemplateNameLocation());
     }
 
     /** Returns the fully qualified name of the generated SoyTemplate implementation. */
@@ -125,6 +146,8 @@ public class SoyFileNodeTransformer {
     public abstract TemplateStatus status();
 
     protected abstract TemplateNode template();
+
+    public abstract SourceLocation sourceLocation();
 
     public boolean complete() {
       return status() == TemplateStatus.HANDLED
@@ -159,6 +182,7 @@ public class SoyFileNodeTransformer {
     HANDLED,
     NAME_COLLISION,
     INDIRECT_INCOMPATIBLE_TYPES,
+    INDIRECT_PROTO,
     UNHANDLED_TYPE,
     JAVA_INCOMPATIBLE
   }
@@ -175,20 +199,26 @@ public class SoyFileNodeTransformer {
   public abstract static class ParamInfo {
     static ParamInfo of(TemplateParam param, ParamStatus status) {
       return of(
-          Parameter.fromParam(param), status, false, param.isInjected(), ParamFutureStatus.HANDLED);
+          TemplateMetadata.parameterFromTemplateParam(param),
+          status,
+          false,
+          param.isInjected(),
+          ParamFutureStatus.HANDLED,
+          param.getSourceLocation());
     }
 
     static ParamInfo of(TemplateParam param, ParamStatus status, boolean indirect) {
       return of(
-          Parameter.fromParam(param),
+          TemplateMetadata.parameterFromTemplateParam(param),
           status,
           indirect,
           param.isInjected(),
-          ParamFutureStatus.HANDLED);
+          ParamFutureStatus.HANDLED,
+          param.getSourceLocation());
     }
 
     static ParamInfo of(Parameter param, ParamStatus status, boolean indirect) {
-      return of(param, status, indirect, false, ParamFutureStatus.HANDLED);
+      return of(param, status, indirect, false, ParamFutureStatus.HANDLED, UNKNOWN);
     }
 
     static ParamInfo of(
@@ -196,10 +226,13 @@ public class SoyFileNodeTransformer {
         ParamStatus status,
         boolean indirect,
         boolean injected,
-        ParamFutureStatus futureStatus) {
+        ParamFutureStatus futureStatus,
+        SourceLocation sourceLocation) {
       return new AutoValue_SoyFileNodeTransformer_ParamInfo(
-          param, status, indirect, injected, futureStatus);
+          param, status, indirect, injected, futureStatus, sourceLocation);
     }
+
+    private int uniqueSerial = 0;
 
     public abstract Parameter param();
 
@@ -211,8 +244,19 @@ public class SoyFileNodeTransformer {
 
     public abstract ParamFutureStatus futureStatus();
 
+    public abstract SourceLocation sourceLocation();
+
     public String name() {
       return param().getName();
+    }
+
+    public String constantFieldName() {
+      String baseName = BaseUtils.convertToUpperUnderscore(name());
+      return uniqueSerial == 0 ? baseName : baseName + "__" + uniqueSerial;
+    }
+
+    public void updateConstantFieldName() {
+      uniqueSerial++;
     }
 
     public String setterName() {
@@ -238,35 +282,38 @@ public class SoyFileNodeTransformer {
     }
 
     public List<JavaType> javaTypes() {
-      return InvocationBuilderTypeUtils.getJavaTypes(type());
+      return JavaTypeUtils.getJavaTypes(type(), UNSUPPORTED_SOY_TYPES);
+    }
+
+    public boolean required() {
+      return param().isRequired();
+    }
+
+    public boolean requiredAndNotIndirect() {
+      return required() && !indirect();
     }
   }
 
-  private static final ImmutableSet<String> RESERVED_NAMES =
-      ImmutableSet.of("String", "Override", "Number", "Integer", "Long", "Future");
-
   private final String javaPackage;
-  private final IndirectParamsCalculator indirectParamsCalculator;
+  private final FileSetMetadata registry;
 
-  public SoyFileNodeTransformer(String javaPackage, TemplateRegistry templateRegistry) {
+  public SoyFileNodeTransformer(String javaPackage, FileSetMetadata registry) {
     this.javaPackage = javaPackage;
-    this.indirectParamsCalculator = new IndirectParamsCalculator(templateRegistry);
+    this.registry = registry;
   }
 
   public FileInfo transform(SoyFileNode node) {
-    Path path = Paths.get(node.getFilePath());
     String fqClassName = javaPackage + "." + convertSoyFileNameToJavaClassName(node);
     List<TemplateInfo> templates = new ArrayList<>();
 
     Set<String> uniqueTemplateClassNames = new HashSet<>();
-    for (TemplateNode template : node.getChildren()) {
+    for (TemplateNode template : node.getTemplates()) {
       if (template.getVisibility() == Visibility.PUBLIC
           && template.getKind() != SoyNode.Kind.TEMPLATE_DELEGATE_NODE) {
 
         String templateClassName = generateTemplateClassName(template);
-        if (RESERVED_NAMES.contains(templateClassName)) {
-          templates.add(TemplateInfo.error(template, TemplateStatus.RESERVED_NAME));
-        } else if (uniqueTemplateClassNames.add(templateClassName)) {
+        if (!RESERVED_IDENTIFIERS.contains(templateClassName)
+            && uniqueTemplateClassNames.add(templateClassName)) {
           templates.add(transform(template, fqClassName + "." + templateClassName));
         } else {
           templates.add(TemplateInfo.error(template, TemplateStatus.NAME_COLLISION));
@@ -275,20 +322,26 @@ public class SoyFileNodeTransformer {
     }
 
     return new AutoValue_SoyFileNodeTransformer_FileInfo(
-        path, fqClassName, ImmutableList.copyOf(templates));
+        node, node.getFilePath(), fqClassName, ImmutableList.copyOf(templates));
   }
 
   private TemplateInfo transform(TemplateNode template, String className) {
     List<ParamInfo> params = getAllParams(template);
     return new AutoValue_SoyFileNodeTransformer_TemplateInfo(
-        className, ImmutableList.copyOf(params), TemplateStatus.HANDLED, template);
+        className,
+        ImmutableList.copyOf(params),
+        TemplateStatus.HANDLED,
+        template,
+        template.getTemplateNameLocation());
   }
 
   private List<ParamInfo> getAllParams(TemplateNode template) {
     Map<String, ParamInfo> params = new LinkedHashMap<>();
 
     for (TemplateParam param : template.getAllParams()) {
-      params.put(param.name(), ParamInfo.of(param, ParamStatus.HANDLED));
+      if (!param.isImplicit()) {
+        params.put(param.name(), ParamInfo.of(param, ParamStatus.HANDLED));
+      }
     }
 
     addIndirectParams(template, params);
@@ -300,55 +353,47 @@ public class SoyFileNodeTransformer {
 
   private void addIndirectParams(TemplateNode template, Map<String, ParamInfo> params) {
     Set<String> directParamNames = ImmutableSet.copyOf(params.keySet());
-    Map<String, SoyType> directParamTypes =
-        params.entrySet().stream()
-            .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, e -> e.getValue().type()));
 
     IndirectParamsInfo idi =
-        indirectParamsCalculator.calculateIndirectParams(TemplateMetadata.fromTemplate(template));
+        new IndirectParamsCalculator(registry)
+            .calculateIndirectParams(TemplateMetadata.fromTemplate(template).getTemplateType());
 
     for (Map.Entry<String, Parameter> entry : idi.indirectParams.entrySet()) {
       String paramName = entry.getKey();
+      if (directParamNames.contains(paramName)) {
+        // if the param is direct, just use that definition of the type preferably
+        continue;
+      }
       Parameter param = entry.getValue();
 
-      boolean overridesDirectParam = directParamNames.contains(paramName);
-
       // Combine the types from all parameters, direct and indirect, with the same name.
-      Set<SoyType> allTypes = new HashSet<>(idi.indirectParamTypes.get(paramName));
-      if (overridesDirectParam) {
-        allTypes.add(directParamTypes.get(paramName));
-      }
-      Optional<SoyType> superType = upcastTypesForIndirectParams(allTypes);
+      Optional<SoyType> superType =
+          upcastTypesForIndirectParams(idi.indirectParamTypes.get(paramName));
 
       // If we can't combine all those types into a single supported type then fail.
-      if (overridesDirectParam) {
-        if (!superType.isPresent()) {
-          changeParamStatus(params, paramName, ParamStatus.INDIRECT_INCOMPATIBLE_TYPES);
-          continue;
-        }
-        // Possibly upcast the existing direct parameter.
-        changeParamType(params, paramName, superType.get());
-      } else {
-        if (!superType.isPresent() || hasProtoDep(superType.get())) {
-          // Temporarily skip any indirect params with proto dependencies since they can cause java
-          // build errors.
-          params.put(paramName, ParamInfo.of(param, ParamStatus.INDIRECT_INCOMPATIBLE_TYPES, true));
-          continue;
-        }
-        // Create a new indirect parameter.
-        params.put(
-            paramName,
-            ParamInfo.of(
-                param.toBuilder()
-                    .setRequired(false) // Indirect params must always be optional.
-                    .setType(superType.get())
-                    .setDescription(
-                        modifyIndirectDesc(
-                            param.getDescription(), idi.paramKeyToCalleesMultimap.get(paramName)))
-                    .build(),
-                ParamStatus.HANDLED,
-                true));
+
+      if (!superType.isPresent()) {
+        params.put(paramName, ParamInfo.of(param, ParamStatus.INDIRECT_INCOMPATIBLE_TYPES, true));
+        continue;
+      } else if (hasProtoDep(superType.get())) {
+        // Temporarily skip any indirect params with proto dependencies since they can cause java
+        // build errors.
+        params.put(paramName, ParamInfo.of(param, ParamStatus.INDIRECT_PROTO, true));
+        continue;
       }
+
+      // Create a new indirect parameter.
+      params.put(
+          paramName,
+          ParamInfo.of(
+              param.toBuilder()
+                  .setType(superType.get())
+                  .setDescription(
+                      modifyIndirectDesc(
+                          param.getDescription(), idi.paramKeyToCalleesMultimap.get(paramName)))
+                  .build(),
+              ParamStatus.HANDLED,
+              true));
     }
   }
 
@@ -363,13 +408,13 @@ public class SoyFileNodeTransformer {
       String paramName = entry.getKey();
       ParamInfo param = entry.getValue();
 
-      if (InvocationBuilderTypeUtils.isJavaIncompatible(param.type())) {
+      if (JavaTypeUtils.isJavaIncompatible(param.type())) {
         changeParamStatus(params, paramName, ParamStatus.JAVA_INCOMPATIBLE);
         continue;
       }
 
       String setterName = getParamSetterSuffix(paramName);
-      if (!setterNames.add(setterName)) {
+      if (RESERVED_IDENTIFIERS.contains(paramName) || !setterNames.add(setterName)) {
         changeParamStatus(params, paramName, ParamStatus.NAME_COLLISION);
         continue;
       }
@@ -419,20 +464,8 @@ public class SoyFileNodeTransformer {
             previous.status(),
             previous.indirect(),
             previous.injected(),
-            futureStatus));
-  }
-
-  private static void changeParamType(
-      Map<String, ParamInfo> params, String paramName, SoyType type) {
-    ParamInfo previous = params.get(paramName);
-    params.put(
-        paramName,
-        ParamInfo.of(
-            previous.param().toBuilder().setType(type).build(),
-            previous.status(),
-            previous.indirect(),
-            previous.injected(),
-            previous.futureStatus()));
+            futureStatus,
+            previous.sourceLocation()));
   }
 
   private static void changeParamStatus(
@@ -445,7 +478,8 @@ public class SoyFileNodeTransformer {
             newStatus,
             previous.indirect(),
             previous.injected(),
-            previous.futureStatus()));
+            previous.futureStatus(),
+            previous.sourceLocation()));
   }
 
   private static String modifyIndirectDesc(
@@ -476,7 +510,11 @@ public class SoyFileNodeTransformer {
     if (Ascii.toLowerCase(fileName).endsWith(".soy")) {
       fileName = fileName.substring(0, fileName.length() - 4);
     }
-    return makeUpperCamelCase(fileName) + "Templates";
+    String prefix = makeUpperCamelCase(fileName);
+    if (Character.isDigit(prefix.charAt(0))) {
+      prefix = "_" + prefix;
+    }
+    return prefix + "Templates";
   }
 
   private static String generateTemplateClassName(TemplateNode template) {

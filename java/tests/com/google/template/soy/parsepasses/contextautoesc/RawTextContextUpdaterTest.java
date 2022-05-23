@@ -264,6 +264,7 @@ public final class RawTextContextUpdaterTest {
   @Test
   public void testJsDqString() throws Exception {
     assertTransition("JS_DQ_STRING", "", "JS_DQ_STRING");
+    assertTransition("JS_DQ_STRING", "\n", "ERROR");
     assertTransition("JS_DQ_STRING", "Hello, World!", "JS_DQ_STRING");
     assertTransition("JS_DQ_STRING", M1500, "JS_DQ_STRING"); // Check for stack overflow
     assertTransition(
@@ -307,6 +308,7 @@ public final class RawTextContextUpdaterTest {
     assertTransition("JS_REGEX", "Hello, World!", "JS_REGEX");
     assertTransition("JS_REGEX", "\\/*", "JS_REGEX");
     assertTransition("JS_REGEX", "[/*]", "JS_REGEX");
+    assertTransition("JS_REGEX", "[a", "ERROR"); // can't end in a character class
     assertTransition("JS_REGEX", "\"", "JS_REGEX");
     assertTransition("JS_REGEX", "\\x27", "JS_REGEX");
     assertTransition("JS_REGEX", "\\'", "JS_REGEX");

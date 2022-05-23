@@ -16,23 +16,43 @@
 
 package com.google.template.soy.data;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.common.collect.ImmutableMap.toImmutableMap;
+import static com.google.common.collect.Streams.stream;
 
-import com.google.common.base.Functions;
 import com.google.common.base.Joiner;
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Streams;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.html.types.SafeHtml;
+import com.google.common.html.types.SafeScript;
+import com.google.common.html.types.SafeUrl;
+import com.google.common.html.types.TrustedResourceUrl;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
+import com.google.errorprone.annotations.CheckReturnValue;
 import com.google.errorprone.annotations.ForOverride;
+import com.google.protobuf.Message;
+import com.google.protobuf.ProtocolMessageEnum;
+import com.google.template.soy.data.internal.ListImpl;
+import com.google.template.soy.data.internal.SoyLegacyObjectMapImpl;
+import com.google.template.soy.data.internal.SoyMapImpl;
+import com.google.template.soy.data.internal.SoyRecordImpl;
+import com.google.template.soy.data.restricted.BooleanData;
+import com.google.template.soy.data.restricted.FloatData;
+import com.google.template.soy.data.restricted.IntegerData;
+import com.google.template.soy.data.restricted.NullData;
+import com.google.template.soy.data.restricted.NumberData;
+import com.google.template.soy.data.restricted.StringData;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.concurrent.Future;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
@@ -45,22 +65,26 @@ import javax.annotation.Nullable;
  */
 public abstract class BaseSoyTemplateImpl implements SoyTemplate {
 
-  private final String name;
   private final ImmutableMap<String, SoyValueProvider> data;
 
-  protected BaseSoyTemplateImpl(String name, Map<String, SoyValueProvider> data) {
-    this.name = name;
-    this.data = ImmutableMap.copyOf(data);
+  protected BaseSoyTemplateImpl(ImmutableMap<String, SoyValueProvider> data) {
+    this.data = data;
   }
 
   @Override
-  public String getTemplateName() {
-    return name;
-  }
-
-  @Override
-  public Map<String, ?> getParamsAsMap() {
+  public final ImmutableMap<String, ?> getParamsAsMap() {
     return data;
+  }
+
+  /**
+   * Returns the parameters as a map. Values are not wrapped with SoyValueProvider. This method is
+   * intended to be called only by test code.
+   */
+  public final ImmutableMap<String, Object> getRawParamsAsMap() {
+    // This is the only place where SoyValueUnconverter escapes this package.
+    return data.entrySet().stream()
+        .collect(
+            toImmutableMap(Map.Entry::getKey, e -> SoyValueUnconverter.unconvert(e.getValue())));
   }
 
   @Override
@@ -76,6 +100,14 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
     return Objects.hashCode(getClass(), data);
   }
 
+  @Override
+  public String toString() {
+    return MoreObjects.toStringHelper(getClass())
+        .add("name", getTemplateName())
+        .add("data", getParamsAsMap())
+        .toString();
+  }
+
   /**
    * The abstract superclass for generated per-template parameter builders. Each public template
    * will have a corresponding generated subtype of this class. Do not extend outside of Soy
@@ -84,41 +116,39 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
    * <p>Instances of this abstract class are not thread safe.
    */
   public abstract static class AbstractBuilder<
-      B extends AbstractBuilder<?, T>, T extends BaseSoyTemplateImpl> {
-    private final String templateName;
-    private final ImmutableMap<String, SoyTemplateParam<?>> params;
-    private final SoyValueConverter soyValueConverter;
-    private final Map<String, SoyValueProvider> data;
-    private final Map<String, List<SoyValueProvider>> accummulatorData;
+          B extends AbstractBuilder<?, T>, T extends SoyTemplate>
+      implements Builder<T> {
+    // Use IdentityHashMaps instead of HashMaps since:
+    //  1. They use less memory internally
+    //  2. We have an appropriate key object that we know will be a singleton
+    //  3. They tend to be faster.
+    //  One downside is that they have less efficient entrySet() implementations, but we can
+    // easily workaround that.
+    private final IdentityHashMap<SoyTemplateParam<?>, SoyValueProvider> data;
 
-    protected AbstractBuilder(String templateName, Iterable<SoyTemplateParam<?>> params) {
-      this.templateName = templateName;
-      this.params =
-          Streams.stream(params)
-              .collect(
-                  ImmutableMap.toImmutableMap(SoyTemplateParam::getName, Functions.identity()));
-      this.soyValueConverter = SoyValueConverter.INSTANCE;
-      this.data = new HashMap<>();
-      this.accummulatorData = new HashMap<>();
+    protected AbstractBuilder(int numParams) {
+      this.data = new IdentityHashMap<>(/* expectedMaxSize= */ numParams);
     }
 
-    public T build() {
-      ImmutableMap<String, SoyValueProvider> finalData = buildDataMapWithChecks(true, false);
-      return buildInternal(templateName, finalData);
+    @CheckReturnValue
+    @Override
+    public final T build() {
+      ImmutableMap<String, SoyValueProvider> finalData =
+          buildDataMapWithChecks(/* checkRequired= */ true);
+      return buildInternal(finalData);
     }
 
-    T buildPartialForTests() {
-      ImmutableMap<String, SoyValueProvider> finalData = buildDataMapWithChecks(false, false);
-      return buildInternal(templateName, finalData);
+    final T buildPartialForTests() {
+      ImmutableMap<String, SoyValueProvider> finalData =
+          buildDataMapWithChecks(/* checkRequired= */ false);
+      return buildInternal(finalData);
     }
 
     @ForOverride
-    protected abstract T buildInternal(String name, ImmutableMap<String, SoyValueProvider> data);
+    protected abstract ImmutableSet<SoyTemplateParam<?>> allParams();
 
-    //
-    // The following are protected utility methods used by generated code in order to make the
-    // generated code more succinct and less error prone.
-    //
+    @ForOverride
+    protected abstract T buildInternal(ImmutableMap<String, SoyValueProvider> data);
 
     /**
      * Sets an arbitrary parameter to an arbitrary value.
@@ -127,11 +157,325 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
      * @throws SoyDataException if {@code value} is not convertable to a {@link SoyValueProvider}
      */
     @SuppressWarnings("unchecked")
-    protected B setParam(String name, Object value) {
-      Preconditions.checkNotNull(name);
-      SoyValueProvider soyValue = soyValueConverter.convert(value);
+    @CanIgnoreReturnValue
+    protected final B setParamInternal(SoyTemplateParam<?> name, SoyValueProvider soyValue) {
+      checkNotNull(name);
+      checkNotNull(soyValue);
       data.put(name, soyValue);
       return (B) this;
+    }
+
+    @Override
+    public final <V> B setParam(SoyTemplateParam<? super V> param, V value) {
+      // TODO(lukes): allParams uses .equals, perhaps we should use == so people don't use one
+      // templates param that happens to have the same name/type in a different template.
+      // Or maybe we should add some kind of 'cast' method to adapt one builder to another?
+      if (!allParams().contains(param)) {
+        throw new IllegalArgumentException(
+            "No param in " + this.getClass().getName() + " like " + param);
+      }
+      return setParamInternal(param, SoyValueConverter.INSTANCE.convert(value));
+    }
+
+    @Override
+    public final <V> B setParamFuture(
+        SoyTemplateParam<? super V> param, ListenableFuture<V> value) {
+      if (!allParams().contains(param)) {
+        throw new IllegalArgumentException(
+            "No param in " + this.getClass().getName() + " like " + param);
+      }
+      return setParamInternal(param, SoyValueConverter.INSTANCE.convert(value));
+    }
+
+    @Override
+    public final boolean hasParam(SoyTemplateParam<?> param) {
+      return allParams().contains(param);
+    }
+
+    //
+    // The following are protected utility methods used by generated code in order to make the
+    // generated code more succinct and less error prone.
+    //
+
+    /** Converts any Iterable to a Collection. Used by ListJavaType. */
+    protected static <T> SoyList asList(
+        Iterable<T> iterable, Function<? super T, ? extends SoyValueProvider> mapper) {
+      return ListImpl.forProviderList(stream(iterable).map(mapper).collect(toImmutableList()));
+    }
+
+    protected static <T> SoyValue asNullableList(
+        @Nullable Iterable<T> iterable, Function<? super T, ? extends SoyValueProvider> mapper) {
+      return iterable == null ? NullData.INSTANCE : asList(iterable, mapper);
+    }
+
+    protected static SoyProtoValue asProto(Message proto) {
+      return SoyProtoValue.create(proto);
+    }
+
+    protected static SoyValue asNullableProto(@Nullable Message proto) {
+      return proto == null ? NullData.INSTANCE : SoyProtoValue.create(proto);
+    }
+
+    protected static BooleanData asBool(boolean b) {
+      return b ? BooleanData.TRUE : BooleanData.FALSE;
+    }
+
+    protected static SoyValue asNullableBool(@Nullable Boolean b) {
+      return b == null ? NullData.INSTANCE : asBool(b);
+    }
+
+    protected static StringData asString(String s) {
+      return StringData.forValue(s);
+    }
+
+    protected static SoyValue asNullableString(@Nullable String s) {
+      return s == null ? NullData.INSTANCE : asString(s);
+    }
+
+    /**
+     * Used in code generated for Soy record types. The parameters are interleaved key-value pairs.
+     */
+    protected static SoyRecord asRecord(
+        String firstKey, SoyValueProvider firstValue, Object... more) {
+      checkArgument((more.length % 2) == 0);
+      ImmutableMap.Builder<String, SoyValueProvider> map =
+          ImmutableMap.<String, SoyValueProvider>builderWithExpectedSize(1 + more.length / 2)
+              .put(firstKey, firstValue);
+      for (int i = 0; i < more.length; i += 2) {
+        map.put((String) more[i], (SoyValueProvider) more[i + 1]);
+      }
+      return new SoyRecordImpl(map.build());
+    }
+
+    /**
+     * Converts a {@code Number} into a number type supported by Soy.
+     *
+     * @throws NullPointerException if n is null.
+     */
+    protected static NumberData asNumber(Number n) {
+      return n instanceof Float || n instanceof Double
+          ? FloatData.forValue(n.doubleValue())
+          : IntegerData.forValue(n.longValue());
+    }
+
+    /** Converts a {@code Number} into a number type supported by Soy. */
+    protected static SoyValue asNullableNumber(@Nullable Number n) {
+      return n == null ? NullData.INSTANCE : asNumber(n);
+    }
+
+    protected static IntegerData asInt(long n) {
+      return IntegerData.forValue(n);
+    }
+
+    protected static IntegerData asBoxedInt(Number n) {
+      return asInt(n.longValue());
+    }
+
+    /** Converts a {@code Number} into a number type supported by Soy. */
+    protected static SoyValue asNullableInt(@Nullable Number n) {
+      return n == null ? NullData.INSTANCE : asInt(n.longValue());
+    }
+
+    protected static FloatData asFloat(double n) {
+      return FloatData.forValue(n);
+    }
+
+    protected static FloatData asBoxedFloat(Number n) {
+      return asFloat(n.doubleValue());
+    }
+
+    /** Converts a {@code Number} into a number type supported by Soy. */
+    protected static SoyValue asNullableFloat(@Nullable Number n) {
+      return n == null ? NullData.INSTANCE : asFloat(n.doubleValue());
+    }
+
+    protected static IntegerData asProtoEnum(ProtocolMessageEnum protoEnum) {
+      return IntegerData.forValue(protoEnum.getNumber());
+    }
+
+    /** Converts a {@code Number} into a number type supported by Soy. */
+    protected static SoyValue asNullableProtoEnum(@Nullable ProtocolMessageEnum protoEnum) {
+      return protoEnum == null ? NullData.INSTANCE : asProtoEnum(protoEnum);
+    }
+
+    @SuppressWarnings("unchecked")
+    protected static <T> SoyFutureValueProvider asFuture(
+        Future<? extends T> future, Function<? super T, SoyValueProvider> mapper) {
+      return new SoyFutureValueProvider(future, (Function) mapper);
+    }
+
+    protected static SanitizedContent asHtml(SafeHtml html) {
+      return SanitizedContents.fromSafeHtml(html);
+    }
+
+    protected static SoyValue asNullableHtml(@Nullable SafeHtml html) {
+      return html == null ? NullData.INSTANCE : asHtml(html);
+    }
+
+    protected static SanitizedContent asUri(SafeUrl url) {
+      return SanitizedContents.fromSafeUrl(url);
+    }
+
+    protected static SoyValue asNullableUri(@Nullable SafeUrl url) {
+      return url == null ? NullData.INSTANCE : asUri(url);
+    }
+
+    protected static SanitizedContent asJs(SafeScript script) {
+      return SanitizedContents.fromSafeScript(script);
+    }
+
+    protected static SoyValue asNullableJs(@Nullable SafeScript script) {
+      return script == null ? NullData.INSTANCE : asJs(script);
+    }
+
+    protected static SanitizedContent asTrustedResourceUri(TrustedResourceUrl url) {
+      return SanitizedContents.fromTrustedResourceUrl(url);
+    }
+
+    protected static SoyValue asNullableTrustedResourceUri(@Nullable TrustedResourceUrl url) {
+      return url == null ? NullData.INSTANCE : asTrustedResourceUri(url);
+    }
+
+    /**
+     * Validates that {@code content} is of type ATTRIBUTES.
+     *
+     * @throws NullPointerException if content is null.
+     */
+    protected static SanitizedContent asAttributes(SanitizedContent content) {
+      checkArgument(
+          content.getContentKind() == SanitizedContent.ContentKind.ATTRIBUTES,
+          "expected %s but got %s",
+          SanitizedContent.ContentKind.ATTRIBUTES,
+          content.getContentKind());
+      return content;
+    }
+
+    /** Validates that {@code content} is of type ATTRIBUTES. */
+    protected static SoyValue asNullableAttributes(@Nullable SanitizedContent content) {
+      return content == null ? NullData.INSTANCE : asAttributes(content);
+    }
+
+    /**
+     * Converts CssParam into a value that Soy can use.
+     *
+     * @throws NullPointerException if css is null.
+     */
+    protected static SanitizedContent asCss(CssParam css) {
+      switch (css.type()) {
+        case SAFE_STYLE:
+          return SanitizedContents.fromSafeStyle(css.safeStyle());
+        case SAFE_STYLE_SHEET:
+          return SanitizedContents.fromSafeStyleSheet(css.safeStyleSheet());
+      }
+      throw new AssertionError();
+    }
+
+    /** Converts CssParam into a value that Soy can use. */
+    protected static SoyValue asNullableCss(@Nullable CssParam css) {
+      return css == null ? NullData.INSTANCE : asCss(css);
+    }
+
+    protected static <K, V> SoyMap asMap(
+        Map<K, V> map,
+        Function<? super K, ? extends SoyValue> keyMapper,
+        Function<? super V, ? extends SoyValueProvider> valueMapper) {
+      ImmutableMap.Builder<SoyValue, SoyValueProvider> builder =
+          ImmutableMap.builderWithExpectedSize(map.size());
+      map.forEach((k, v) -> builder.put(keyMapper.apply(k), valueMapper.apply(v)));
+      return SoyMapImpl.forProviderMap(builder.build());
+    }
+
+    protected static <K, V> SoyValue asNullableMap(
+        @Nullable Map<K, V> map,
+        Function<? super K, ? extends SoyValue> keyMapper,
+        Function<? super V, ? extends SoyValueProvider> valueMapper) {
+      return map == null ? NullData.INSTANCE : asMap(map, keyMapper, valueMapper);
+    }
+
+    protected static <V> SoyLegacyObjectMap asLegacyObjectMap(
+        Map<?, V> map, Function<? super V, ? extends SoyValueProvider> valueMapper) {
+      ImmutableMap.Builder<String, SoyValueProvider> builder =
+          ImmutableMap.builderWithExpectedSize(map.size());
+      for (Map.Entry<?, V> entry : map.entrySet()) {
+        // coerce key to a string, legacy object maps always coerce keys to strings.
+        builder.put(entry.getKey().toString(), valueMapper.apply(entry.getValue()));
+      }
+      return new SoyLegacyObjectMapImpl(builder.build());
+    }
+
+    protected static <K, V> SoyValue asNullableLegacyObjectMap(
+        @Nullable Map<?, V> map, Function<? super V, ? extends SoyValueProvider> valueMapper) {
+      return map == null ? NullData.INSTANCE : asLegacyObjectMap(map, valueMapper);
+    }
+
+    protected static SoyValueProvider asSoyValue(@Nullable Object object) {
+      return SoyValueConverter.INSTANCE.convert(object);
+    }
+
+    @ForOverride
+    void prepareDataForBuild() {}
+
+    /**
+     * @param checkRequired Whether or not to enforce that all required parameters are set.
+     * @return the fully built parameter map
+     */
+    private ImmutableMap<String, SoyValueProvider> buildDataMapWithChecks(boolean checkRequired) {
+      // checkRequired=false could be used in the future for "build partial"
+      prepareDataForBuild();
+      ImmutableMap.Builder<String, SoyValueProvider> finalDataBuilder =
+          ImmutableMap.<String, SoyValueProvider>builderWithExpectedSize(data.size());
+      // Use forEach instead of looping over the entry set to avoid allocating entrySet+entry
+      // objects
+      data.forEach((k, v) -> finalDataBuilder.put(k.getName(), v));
+      ImmutableMap<String, SoyValueProvider> finalData = finalDataBuilder.build();
+
+      if (checkRequired) {
+        List<String> missingParams = getMissingParamNames(finalData);
+        if (!missingParams.isEmpty()) {
+          throw new IllegalStateException(
+              "Missing required params: " + Joiner.on(", ").join(missingParams));
+        }
+      }
+      return finalData;
+    }
+
+    private List<String> getMissingParamNames(Map<String, ?> data) {
+      List<String> missing = ImmutableList.of();
+      ImmutableList<SoyTemplateParam<?>> params = allParams().asList();
+      for (int i = 0; i < params.size(); i++) {
+        SoyTemplateParam<?> param = params.get(i);
+        if (param.isRequired() && !param.isIndirect() && !data.containsKey(param.getName())) {
+          if (missing.isEmpty()) {
+            missing = new ArrayList<>();
+          }
+          missing.add(param.getName());
+        }
+      }
+      return missing;
+    }
+  }
+
+  /**
+   * An {@link AbstractBuilder} that supports accumulator parameters.
+   *
+   * <p>Instances of this abstract class are not thread safe.
+   *
+   * @param <B> The type of the concrete Builder subclass
+   * @param <T> The type of the concrete SoyTemplate class
+   */
+  public abstract static class AbstractBuilderWithAccumulatorParameters<
+          B extends AbstractBuilderWithAccumulatorParameters<?, T>, T extends SoyTemplate>
+      extends AbstractBuilder<B, T> {
+    private final Map<SoyTemplateParam<?>, List<SoyValueProvider>> accummulatorData =
+        new IdentityHashMap<>();
+
+    protected AbstractBuilderWithAccumulatorParameters(int numParams) {
+      super(numParams);
+    }
+
+    @Override
+    void prepareDataForBuild() {
+      accummulatorData.forEach((k, v) -> setParamInternal(k, ListImpl.forProviderList(v)));
     }
 
     /**
@@ -141,180 +485,21 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
      * @throws SoyDataException if {@code value} is not convertable to a {@link SoyValueProvider}
      */
     @SuppressWarnings("unchecked")
-    protected B addToListParam(String name, Object value) {
-      Preconditions.checkNotNull(name);
-      SoyValueProvider soyValue = soyValueConverter.convert(value);
+    @CanIgnoreReturnValue
+    protected final B addToListParam(SoyTemplateParam<?> name, SoyValueProvider soyValue) {
+      checkNotNull(name);
+      // for required parameters the list will be eagerly initialized via initListParam, for others
+      // we need to check when adding
       accummulatorData.computeIfAbsent(name, s -> new ArrayList<>()).add(soyValue);
       return (B) this;
     }
 
     @SuppressWarnings("unchecked")
-    protected B initListParam(String name) {
-      Preconditions.checkNotNull(name);
+    @CanIgnoreReturnValue
+    protected final B initListParam(SoyTemplateParam<?> name) {
+      checkNotNull(name);
       accummulatorData.computeIfAbsent(name, s -> new ArrayList<>());
       return (B) this;
-    }
-
-    /** Converts any Iterable to a Collection. Used by ListJavaType. */
-    protected <I> Collection<I> asCollection(Iterable<I> iterable) {
-      return iterable instanceof Collection
-          ? (Collection<I>) iterable
-          : ImmutableList.copyOf(iterable);
-    }
-
-    /**
-     * Makes sure that a {@code List<? extends Number>} actually contains a type of Number supported
-     * by Soy.
-     */
-    protected Collection<Number> asNumberCollection(Iterable<? extends Number> iterable) {
-      return Streams.stream(iterable).map(this::asNumber).collect(toImmutableList());
-    }
-
-    /**
-     * Makes sure that a {@code List<? extends Number>} actually contains Doubles. Used by
-     * ListJavaType.
-     */
-    protected List<Double> asListOfDoubles(Iterable<? extends Number> value) {
-      return Streams.stream(value).map(Number::doubleValue).collect(toImmutableList());
-    }
-
-    /**
-     * Makes sure that a {@code List<? extends Number>} actually contains Longs. Used by
-     * ListJavaType.
-     */
-    protected List<Long> asListOfLongs(Iterable<? extends Number> value) {
-      return Streams.stream(value).map(Number::longValue).collect(toImmutableList());
-    }
-
-    /**
-     * Used in code generated for Soy record types. The parameters are interleaved key-value pairs.
-     */
-    protected Map<String, Object> asRecord(String firstKey, Object firstValue, Object... more) {
-      Preconditions.checkArgument((more.length % 2) == 0);
-      // Uses soyValueConverter.convert to allow NULL values in the ImmutableMap.
-      ImmutableMap.Builder<String, Object> map =
-          ImmutableMap.<String, Object>builder()
-              .put(firstKey, soyValueConverter.convert(firstValue));
-      for (int i = 0; i < more.length; i += 2) {
-        map.put((String) more[i], soyValueConverter.convert(more[i + 1]));
-      }
-      return map.build();
-    }
-
-    /**
-     * Converts a {@code Number} into a number type supported by Soy.
-     *
-     * @throws NullPointerException if n is null.
-     */
-    protected Number asNumber(Number n) {
-      return n instanceof Float || n instanceof Double ? n.doubleValue() : n.longValue();
-    }
-
-    /** Converts a {@code Number} into a number type supported by Soy. */
-    protected Number asNullableNumber(@Nullable Number n) {
-      return n == null ? null : asNumber(n);
-    }
-
-    /**
-     * Validates that {@code content} is of type ATTRIBUTES.
-     *
-     * @throws NullPointerException if content is null.
-     */
-    protected SanitizedContent asAttributes(SanitizedContent content) {
-      Preconditions.checkArgument(
-          content.getContentKind() == SanitizedContent.ContentKind.ATTRIBUTES);
-      return content;
-    }
-
-    /** Validates that {@code content} is of type ATTRIBUTES. */
-    protected SanitizedContent asNullableAttributes(@Nullable SanitizedContent content) {
-      return content == null ? null : asAttributes(content);
-    }
-
-    /**
-     * Converts CssParam into a value that Soy can use.
-     *
-     * @throws NullPointerException if css is null.
-     */
-    protected Object asCss(CssParam css) {
-      return css.toSoyValue();
-    }
-
-    /** Converts CssParam into a value that Soy can use. */
-    protected Object asNullableCss(@Nullable CssParam css) {
-      return css == null ? null : asCss(css);
-    }
-
-    protected Function<Object, Object> longMapper = t -> ((Number) t).longValue();
-    protected Function<Object, Object> doubleMapper = t -> ((Number) t).doubleValue();
-    protected Function<Object, Object> numberMapper = t -> asNumber((Number) t);
-
-    /**
-     * Makes sure that a Map with key or value type {@code <? extends Number>} has keys and/or
-     * values that are actually Long/Double. This is necessary because Soy doesn't support any
-     * implementation of Number.
-     *
-     * @see #longMapper
-     * @see #doubleMapper
-     */
-    protected Map<?, ?> asMapOfNumbers(
-        Map<?, ?> map,
-        @Nullable Function<Object, Object> keyMapper,
-        @Nullable Function<Object, Object> valueMapper) {
-      Function<Object, Object> key = keyMapper != null ? keyMapper : l -> l;
-      Function<Object, Object> value = valueMapper != null ? valueMapper : l -> l;
-      return map.entrySet().stream()
-          .collect(
-              ImmutableMap.toImmutableMap(
-                  e -> key.apply(e.getKey()), e -> value.apply(e.getValue())));
-    }
-
-    private ImmutableMap<String, SoyValueProvider> buildDataMapWithChecks(
-        boolean checkRequired, boolean checkNoExtras) {
-      // checkNoExtras=true only needed in the future if we add a public setter that takes an
-      // arbitrary String param name.
-      // checkRequired=false could be used in the future for "build partial"
-      ImmutableMap.Builder<String, SoyValueProvider> finalDataBuilder =
-          ImmutableMap.<String, SoyValueProvider>builder().putAll(data);
-      for (Map.Entry<String, List<SoyValueProvider>> entry : accummulatorData.entrySet()) {
-        finalDataBuilder.put(entry.getKey(), soyValueConverter.convert(entry.getValue()));
-      }
-      ImmutableMap<String, SoyValueProvider> finalData = finalDataBuilder.build();
-
-      if (checkRequired) {
-        Set<String> missingParams = getMissingParamNames(finalData);
-        if (!missingParams.isEmpty()) {
-          throw new IllegalStateException(
-              "Missing required params: " + Joiner.on(", ").join(missingParams));
-        }
-      }
-      if (checkNoExtras) {
-        Set<String> extraParams = getExtraParamNames(finalData);
-        if (!extraParams.isEmpty()) {
-          throw new IllegalStateException("Illegal params: " + Joiner.on(", ").join(extraParams));
-        }
-      }
-      return finalData;
-    }
-
-    private Set<String> getMissingParamNames(Map<String, ?> data) {
-      Set<String> missing = new HashSet<>();
-      for (SoyTemplateParam<?> param : params.values()) {
-        if (param.isRequired() && !data.containsKey(param.getName())) {
-          missing.add(param.getName());
-        }
-      }
-      return missing;
-    }
-
-    private Set<String> getExtraParamNames(Map<String, ?> data) {
-      Set<String> extra = new HashSet<>();
-      for (String name : data.keySet()) {
-        if (!params.containsKey(name)) {
-          extra.add(name);
-        }
-      }
-      return extra;
     }
   }
 }

@@ -23,7 +23,6 @@ import com.google.template.soy.types.SoyType;
 
 /**
  * A local variable declaration.
- *
  */
 public class LocalVar extends AbstractLocalVarDefn<LocalVarNode> {
 

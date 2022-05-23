@@ -16,6 +16,8 @@
 
 package com.google.template.soy.jssrc.internal;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
+
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
@@ -31,10 +33,15 @@ import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.passes.DesugarHtmlNodesPass;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
+import com.google.template.soy.soytree.CallNode;
+import com.google.template.soy.soytree.CallParamContentNode;
+import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.HtmlAttributeValueNode;
 import com.google.template.soy.soytree.HtmlAttributeValueNode.Quotes;
+import com.google.template.soy.soytree.HtmlCloseTagNode;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
+import com.google.template.soy.soytree.HtmlTagNode.TagExistence;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
@@ -44,7 +51,6 @@ import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
-import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.VeLogNode;
 
 /**
@@ -52,13 +58,8 @@ import com.google.template.soy.soytree.VeLogNode;
  * tags with logging functions.
  */
 final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
-  private final TemplateRegistry templateRegistry;
   /** The node id generator for the parse tree. Retrieved from the root SoyFileSetNode. */
   private IdGenerator nodeIdGen;
-
-  VeLogInstrumentationVisitor(TemplateRegistry templateRegistry) {
-    this.templateRegistry = templateRegistry;
-  }
 
   @Override
   protected void visitSoyFileSetNode(SoyFileSetNode node) {
@@ -69,7 +70,115 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
       visitSoyFileNode(fileNode);
     }
     // Run the desugaring pass and combine raw text nodes after we instrument velog node.
-    new DesugarHtmlNodesPass().run(sourceFiles, nodeIdGen, templateRegistry);
+    new DesugarHtmlNodesPass().run(sourceFiles, nodeIdGen);
+  }
+
+  private static FunctionNode getLoggingFunction(CallParamNode paramNode) {
+    if (!(paramNode instanceof CallParamContentNode)) {
+      return null;
+    }
+    CallParamContentNode callParamNode = (CallParamContentNode) paramNode;
+    if (callParamNode.numChildren() != 1 || !(callParamNode.getChild(0) instanceof PrintNode)) {
+      return null;
+    }
+    PrintNode printNode = (PrintNode) callParamNode.getChild(0);
+    if (!(printNode.getExpr().getRoot() instanceof FunctionNode)) {
+      return null;
+    }
+    FunctionNode fnNode = (FunctionNode) printNode.getExpr().getRoot();
+    if (fnNode.getSoyFunction() instanceof LoggingFunction) {
+      return fnNode;
+    }
+    return null;
+  }
+
+  /**
+   * Element composition calls are deconstructed into call nodes. However, some of the attributes
+   * contain velogging functions. This takes those attributes and puts them on a wrapping `veAttr`
+   * element, which the runtime libarary then manages. So the overall DOM structure becomes
+   *
+   * <pre>{@code
+   * <velog>
+   *   <veattr data-loggingsoyfunction-{ATTR}="...">
+   *      <tag {ATTR}="placeholder"></tag>
+   *   </veattr>
+   * </velog>
+   * }</pre>
+   *
+   * Both <velog> and <vattr> become reparented at some point.
+   */
+  @Override
+  protected void visitCallNode(CallNode node) {
+    ImmutableList<CallParamContentNode> paramsContainingVelogFunctions =
+        node.getChildren().stream()
+            .filter(c -> getLoggingFunction(c) != null)
+            .map(c -> (CallParamContentNode) c)
+            .collect(toImmutableList());
+    if (paramsContainingVelogFunctions.isEmpty()) {
+      visitChildrenAllowingConcurrentModification(node);
+      return;
+    }
+    HtmlOpenTagNode openTagNode = soyHtmlOpenTagNode(nodeIdGen);
+    for (CallParamContentNode callParamContentNode : paramsContainingVelogFunctions) {
+      // Construct the data-loggingsoyfunction-{ATTR}() call below.
+      FunctionNode funcNode =
+          FunctionNode.newPositional(
+              Identifier.create(VeLogJsSrcLoggingFunction.NAME, SourceLocation.UNKNOWN),
+              VeLogJsSrcLoggingFunction.INSTANCE,
+              SourceLocation.UNKNOWN);
+      FunctionNode function = getLoggingFunction(callParamContentNode);
+      funcNode.addChild(
+          new StringNode(
+              function.getStaticFunctionName(), QuoteStyle.SINGLE, SourceLocation.UNKNOWN));
+      funcNode.addChild(new ListLiteralNode(function.getChildren(), SourceLocation.UNKNOWN));
+      funcNode.addChild(
+          new StringNode(
+              callParamContentNode.getOriginalName(), QuoteStyle.SINGLE, SourceLocation.UNKNOWN));
+      PrintNode loggingFunctionAttribute =
+          new PrintNode(
+              nodeIdGen.genId(),
+              SourceLocation.UNKNOWN,
+              /* isImplicit= */ true,
+              /* expr= */ funcNode,
+              /* attributes= */ ImmutableList.of(),
+              ErrorReporter.exploding());
+      // Add the attribute to our synthetic tag
+      openTagNode.addChild(loggingFunctionAttribute);
+      // Replace the call param content with a placeholder
+      callParamContentNode.replaceChild(
+          0,
+          new PrintNode(
+              nodeIdGen.genId(),
+              SourceLocation.UNKNOWN,
+              /* isImplicit= */ true,
+              /* expr= */ new StringNode(
+                  ((LoggingFunction) function.getSoyFunction()).getPlaceholder(),
+                  QuoteStyle.SINGLE,
+                  SourceLocation.UNKNOWN),
+              /* attributes= */ ImmutableList.of(),
+              ErrorReporter.exploding()));
+    }
+    node.getParent().addChild(node.getParent().getChildIndex(node), openTagNode);
+    node.getParent()
+        .addChild(node.getParent().getChildIndex(node) + 1, soyHtmlCloseTagNode(nodeIdGen));
+  }
+
+  private static HtmlOpenTagNode soyHtmlOpenTagNode(IdGenerator idGenerator) {
+    return new HtmlOpenTagNode(
+        idGenerator.genId(),
+        new RawTextNode(idGenerator.genId(), "veAttr", SourceLocation.UNKNOWN),
+        SourceLocation.UNKNOWN,
+        /** selfClosing */
+        false,
+        TagExistence.IN_TEMPLATE);
+  }
+
+  private static HtmlCloseTagNode soyHtmlCloseTagNode(IdGenerator idGenerator) {
+    return new HtmlCloseTagNode(
+        idGenerator.genId(),
+        new RawTextNode(idGenerator.genId(), "veAttr", SourceLocation.UNKNOWN),
+        SourceLocation.UNKNOWN,
+        TagExistence.IN_TEMPLATE);
   }
 
   /** Adds data-soylog attribute to the top-level DOM node in this {velog} block. */
@@ -78,33 +187,32 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
     // VeLogValidationPass marks nodes where the first child is not either an open tag or a call as
     // needing a synthetic VE log node. Synthetic ve log nodes are handled separately in
     // GenJSCodeVisitor, so this only handles the case where the open tag is visible.
-    if (node.needsSyntheticVelogNode()) {
-      return;
+    if (!node.needsSyntheticVelogNode()) {
+      HtmlOpenTagNode tag = node.getOpenTagNode();
+      SourceLocation insertionLocation =
+          tag.getSourceLocation()
+              .getEndPoint()
+              .offset(0, tag.isSelfClosing() ? -2 : -1)
+              .asLocation(tag.getSourceLocation().getFilePath());
+      FunctionNode funcNode =
+          FunctionNode.newPositional(
+              Identifier.create(VeLogFunction.NAME, insertionLocation),
+              VeLogFunction.INSTANCE,
+              insertionLocation);
+      funcNode.addChild(node.getVeDataExpression().copy(new CopyState()));
+      if (node.getLogonlyExpression() != null) {
+        funcNode.addChild(node.getLogonlyExpression().copy(new CopyState()));
+      }
+      PrintNode attributeNode =
+          new PrintNode(
+              nodeIdGen.genId(),
+              insertionLocation,
+              /* isImplicit= */ true,
+              /* expr= */ funcNode,
+              /* attributes= */ ImmutableList.of(),
+              ErrorReporter.exploding());
+      tag.addChild(attributeNode);
     }
-    HtmlOpenTagNode tag = node.getOpenTagNode();
-    SourceLocation insertionLocation =
-        tag.getSourceLocation()
-            .getEndPoint()
-            .offset(0, tag.isSelfClosing() ? -2 : -1)
-            .asLocation(tag.getSourceLocation().getFilePath());
-    FunctionNode funcNode =
-        new FunctionNode(
-            Identifier.create(VeLogFunction.NAME, insertionLocation),
-            VeLogFunction.INSTANCE,
-            insertionLocation);
-    funcNode.addChild(node.getVeDataExpression().copy(new CopyState()));
-    if (node.getLogonlyExpression() != null) {
-      funcNode.addChild(node.getLogonlyExpression().copy(new CopyState()));
-    }
-    PrintNode attributeNode =
-        new PrintNode(
-            nodeIdGen.genId(),
-            insertionLocation,
-            /* isImplicit= */ true,
-            /* expr= */ funcNode,
-            /* attributes= */ ImmutableList.of(),
-            ErrorReporter.exploding());
-    tag.addChild(attributeNode);
     visitChildrenAllowingConcurrentModification(node);
   }
 
@@ -125,12 +233,12 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
         continue;
       }
       FunctionNode funcNode =
-          new FunctionNode(
+          FunctionNode.newPositional(
               Identifier.create(VeLogJsSrcLoggingFunction.NAME, insertionLocation),
               VeLogJsSrcLoggingFunction.INSTANCE,
               insertionLocation);
       funcNode.addChild(
-          new StringNode(function.getFunctionName(), QuoteStyle.SINGLE, insertionLocation));
+          new StringNode(function.getStaticFunctionName(), QuoteStyle.SINGLE, insertionLocation));
       funcNode.addChild(new ListLiteralNode(function.getChildren(), insertionLocation));
       StandaloneNode attributeName = node.getChild(0);
       if (attributeName instanceof RawTextNode) {
@@ -158,13 +266,13 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
                 insertionLocation,
                 /* isImplicit= */ true,
                 /* expr= */ new VarRefNode(
-                    letNode.getVar().name(), insertionLocation, letNode.getVar()),
+                    "$" + letNode.getVar().name(), insertionLocation, letNode.getVar()),
                 /* attributes= */ ImmutableList.of(),
                 ErrorReporter.exploding()));
         letNode.addChild(attributeName);
         node.getParent().addChild(node.getParent().getChildIndex(node), letNode);
         funcNode.addChild(
-            new VarRefNode(letNode.getVar().name(), insertionLocation, letNode.getVar()));
+            new VarRefNode("$" + letNode.getVar().name(), insertionLocation, letNode.getVar()));
       }
       PrintNode loggingFunctionAttribute =
           new PrintNode(

@@ -28,7 +28,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
-import com.google.template.soy.base.internal.SanitizedContentKind;
+import com.google.template.soy.base.internal.TemplateContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
@@ -44,7 +44,6 @@ import javax.annotation.Nullable;
  * Builder for TemplateNode.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
   // TODO(b/78790262): Remove once people get used to it.
@@ -80,7 +79,7 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
    * This template's partial name. Only applicable for V2. This is private instead of protected to
    * enforce use of setTemplateNames().
    */
-  private String partialTemplateName;
+  private Identifier partialTemplateName;
 
   /** This template's visibility level. */
   protected Visibility visibility;
@@ -94,10 +93,14 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
   /** Base CSS namespace for package-relative CSS selectors. */
   private String cssBaseNamespace;
 
+  private boolean component;
+
+  SourceLocation allowExtraAttributesLoc = null;
+
   /**
    * Strict mode context. This is private instead of protected to enforce use of setContentKind().
    */
-  private SanitizedContentKind contentKind;
+  private TemplateContentKind contentKind;
 
   /** The full SoyDoc, including the start/end tokens, or null. */
   protected String soyDoc;
@@ -109,6 +112,9 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
   @Nullable protected ImmutableList<TemplateHeaderVarDefn> params;
 
   protected boolean strictHtmlDisabled;
+
+  /** Used for formatting */
+  private List<CommandTagAttribute> attributes;
 
   SourceLocation sourceLocation;
   SourceLocation openTagLocation;
@@ -130,6 +136,10 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
     return self();
   }
 
+  public List<CommandTagAttribute> getAttributes() {
+    return attributes;
+  }
+
   /** Sets the source location. */
   public T setSourceLocation(SourceLocation location) {
     checkState(sourceLocation == null);
@@ -144,6 +154,11 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
     return self();
   }
 
+  public T setAllowExtraAttributes(SourceLocation loc) {
+    this.allowExtraAttributesLoc = loc;
+    return self();
+  }
+
   /**
    * Set the parsed data from the command tag.
    *
@@ -153,23 +168,25 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
   public abstract T setCommandValues(Identifier name, List<CommandTagAttribute> attrs);
 
   protected static final ImmutableSet<String> COMMON_ATTRIBUTE_NAMES =
-      ImmutableSet.of("kind", "requirecss", "cssbase", "stricthtml", "whitespace");
+      ImmutableSet.of("kind", "requirecss", "cssbase", "stricthtml", "whitespace", "component");
 
   protected void setCommonCommandValues(List<CommandTagAttribute> attrs) {
-    SanitizedContentKind kind = SanitizedContentKind.HTML;
+    this.attributes = attrs;
+    TemplateContentKind kind = TemplateContentKind.DEFAULT;
     for (CommandTagAttribute attribute : attrs) {
       Identifier name = attribute.getName();
       switch (name.identifier()) {
         case "kind":
-          Optional<SanitizedContentKind> parsedKind = attribute.valueAsContentKind(errorReporter);
-          if (parsedKind.orElse(null) == SanitizedContentKind.HTML) {
+          Optional<TemplateContentKind> parsedKind =
+              attribute.valueAsTemplateContentKind(errorReporter);
+          if (parsedKind.orElse(null) == TemplateContentKind.DEFAULT) {
             errorReporter.report(
                 attribute.getValueLocation(),
                 CommandTagAttribute.EXPLICIT_DEFAULT_ATTRIBUTE,
                 "kind",
                 "html");
           }
-          kind = parsedKind.orElse(SanitizedContentKind.HTML);
+          kind = parsedKind.orElse(TemplateContentKind.DEFAULT);
           break;
         case "requirecss":
           setRequiredCssNamespaces(attribute.valueAsRequireCss(errorReporter));
@@ -182,6 +199,9 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
           break;
         case "whitespace":
           whitespaceMode = attribute.valueAsWhitespaceMode(errorReporter);
+          break;
+        case "component":
+          setComponent(attribute.valueAsEnabled(errorReporter));
           break;
         default:
           break;
@@ -240,7 +260,7 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
   // -----------------------------------------------------------------------------------------------
   // Protected helpers for fields that need extra logic when being set.
 
-  protected void setContentKind(SanitizedContentKind contentKind) {
+  protected void setContentKind(TemplateContentKind contentKind) {
     this.contentKind = contentKind;
   }
 
@@ -265,7 +285,7 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
   }
 
   /** @return Strict mode context. */
-  public SanitizedContentKind getContentKind() {
+  public TemplateContentKind getContentKind() {
     return contentKind;
   }
 
@@ -292,8 +312,20 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
     this.cssBaseNamespace = cssBaseNamespace;
   }
 
-  protected final void setTemplateNames(String templateName, String partialTemplateName) {
-    this.templateName = checkNotNull(templateName);
+  protected boolean getComponent() {
+    return component;
+  }
+
+  protected void setComponent(boolean component) {
+    this.component = component;
+  }
+
+  public static String combineNsAndName(String namespace, String templateName) {
+    return namespace + (templateName.startsWith(".") ? "" : ".") + templateName;
+  }
+
+  protected final void setTemplateNames(Identifier partialTemplateName, String namespace) {
+    this.templateName = combineNsAndName(namespace, partialTemplateName.identifier());
     this.partialTemplateName = checkNotNull(partialTemplateName);
   }
 
@@ -305,7 +337,7 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
     return templateName;
   }
 
-  protected String getPartialTemplateName() {
+  protected Identifier getPartialTemplateName() {
     return partialTemplateName;
   }
 

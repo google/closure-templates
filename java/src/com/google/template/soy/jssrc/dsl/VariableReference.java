@@ -20,6 +20,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.jssrc.restricted.JsExpr;
+import java.util.function.Consumer;
 
 /** Represents a reference to a previously declared variable. */
 @AutoValue
@@ -38,6 +39,14 @@ abstract class VariableReference extends Expression {
   }
 
   @Override
+  public Expression assign(Expression rhs) {
+    if (!declaration().isMutable()) {
+      throw new IllegalStateException("Can't assign const variables");
+    }
+    return super.assign(rhs);
+  }
+
+  @Override
   public boolean isCheap() {
     return true;
   }
@@ -48,7 +57,7 @@ abstract class VariableReference extends Expression {
   }
 
   @Override
-  public void collectRequires(RequiresCollector collector) {
+  public void collectRequires(Consumer<GoogRequire> collector) {
     declaration().collectRequires(collector);
   }
 

@@ -27,32 +27,24 @@ import com.google.common.html.types.SafeHtmls;
 import com.google.common.html.types.SafeScript;
 import com.google.common.html.types.SafeScriptProto;
 import com.google.common.html.types.SafeScripts;
+import com.google.common.html.types.SafeStyle;
 import com.google.common.html.types.SafeStyleSheet;
 import com.google.common.html.types.SafeStyleSheetProto;
 import com.google.common.html.types.SafeStyleSheets;
+import com.google.common.html.types.SafeStyles;
 import com.google.common.html.types.SafeUrl;
 import com.google.common.html.types.SafeUrlProto;
 import com.google.common.html.types.SafeUrls;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
-import com.google.template.soy.data.restricted.StringData;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for SanitizedContents utility class.
- *
  */
 @RunWith(JUnit4.class)
 public class SanitizedContentsTest {
-
-  @Test
-  public void testUnsanitizedText() {
-    SanitizedContent unsanitized = SanitizedContents.unsanitizedText("Hello World");
-    assertThat(unsanitized.getContent()).isEqualTo("Hello World");
-    assertThat(unsanitized.getContentKind()).isEqualTo(ContentKind.TEXT);
-    assertThat(unsanitized.getContentDirection()).isEqualTo(null);
-  }
 
   @Test
   public void testConcatCombinesHtml() throws Exception {
@@ -219,6 +211,27 @@ public class SanitizedContentsTest {
   }
 
   @Test
+  public void testCssTypeConversions() {
+    final String testStyleSheetContent = "div { display: none; }";
+    final SafeStyleSheet safeStyleSheet = SafeStyleSheets.fromConstant(testStyleSheetContent);
+    final CssParam styleSheetParam = CssParam.of(safeStyleSheet);
+    final SanitizedContent sanitizedStyleSheet = SanitizedContents.fromCss(styleSheetParam);
+
+    assertThat(sanitizedStyleSheet.getContentKind()).isEqualTo(ContentKind.CSS);
+    assertThat(sanitizedStyleSheet.getContent()).isEqualTo(testStyleSheetContent);
+    assertThat(sanitizedStyleSheet.toSafeStyleSheet()).isEqualTo(safeStyleSheet);
+
+    final String testStyleContent = "display: none;";
+    final SafeStyle safeStyle = SafeStyles.fromConstant(testStyleContent);
+    final CssParam styleParam = CssParam.of(safeStyle);
+    final SanitizedContent sanitizedStyle = SanitizedContents.fromCss(styleParam);
+
+    assertThat(sanitizedStyle.getContentKind()).isEqualTo(ContentKind.CSS);
+    assertThat(sanitizedStyle.getContent()).isEqualTo(testStyleContent);
+    assertThat(sanitizedStyle.toSafeStyle()).isEqualTo(safeStyle);
+  }
+
+  @Test
   public void testCommonSafeHtmlTypeConversions() {
     final String helloWorldHtml = "Hello <em>World</em>";
     final SafeHtml safeHtml =
@@ -370,22 +383,5 @@ public class SanitizedContentsTest {
       } catch (IllegalStateException expected) {
       }
     }
-  }
-
-  @Test
-  public void testUnsanizitedEqualsStringData() {
-    UnsanitizedString san = SanitizedContents.unsanitizedText("test string");
-    StringData data = StringData.forValue("test string");
-
-    assertThat(data).isEqualTo(san);
-    assertThat(san).isEqualTo(data);
-  }
-
-  @Test
-  public void testHashCodeStringData() {
-    UnsanitizedString san = SanitizedContents.unsanitizedText("test string");
-    StringData data = StringData.forValue("test string");
-
-    assertThat(san.hashCode()).isEqualTo(data.hashCode());
   }
 }

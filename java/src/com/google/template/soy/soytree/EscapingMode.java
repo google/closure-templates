@@ -24,7 +24,6 @@ import javax.annotation.Nullable;
 /**
  * Ways of escaping dynamic content in a template. This is only used by the contextautoesc package,
  * but lives in soytree since it's reference by the HtmlContext enum.
- *
  */
 public enum EscapingMode {
 
@@ -36,6 +35,15 @@ public enum EscapingMode {
 
   /** Like {@link #ESCAPE_HTML} but normalizes known safe HTML since RCDATA can't contain tags. */
   ESCAPE_HTML_RCDATA(true, null, /* internalOnly= */ true),
+
+  /**
+   * Escapes the content so that it is suitable to embed in a <script> tag.
+   *
+   * <p>See
+   * https://html.spec.whatwg.org/multipage/scripting.html#restrictions-for-contents-of-script-elements
+   * which describes the character sequences which must be escaped inside of a s
+   */
+  FILTER_HTML_SCRIPT_PHRASING_DATA(false, null, /* internalOnly=*/ true),
 
   /**
    * Encodes HTML special characters, including quotes, so that the value can appear as part of a
@@ -188,6 +196,6 @@ public enum EscapingMode {
     for (EscapingMode mode : EscapingMode.values()) {
       builder.put(mode.directiveName, mode);
     }
-    DIRECTIVE_TO_ESCAPING_MODE = builder.build();
+    DIRECTIVE_TO_ESCAPING_MODE = builder.buildOrThrow();
   }
 }

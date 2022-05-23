@@ -18,84 +18,86 @@ package com.google.template.soy.jbcsrc;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyCompilationException;
 import com.google.template.soy.error.SoyError;
+import com.google.template.soy.internal.exemptions.NamespaceExemptions;
 import com.google.template.soy.jbcsrc.internal.AbstractMemoryClassLoader;
 import com.google.template.soy.jbcsrc.internal.ClassData;
+import com.google.template.soy.jbcsrc.shared.Names;
+import com.google.template.soy.soytree.PartialFileSetMetadata;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /** A classloader that can compile templates on demand. */
 final class CompilingClassLoader extends AbstractMemoryClassLoader {
-  static {
-    // See http://docs.oracle.com/javase/7/docs/technotes/guides/lang/cl-mt.html
-    ClassLoader.registerAsParallelCapable();
-  }
-
   // Synchronized hashmap is sufficient for our usecase since we are only calling remove(), CHM
   // would just use more memory.
   private final Map<String, ClassData> classesByName = Collections.synchronizedMap(new HashMap<>());
 
-  private final CompiledTemplateRegistry registry;
-  private final ImmutableMap<String, SoyFileSupplier> filePathsToSuppliers;
-  private final ImmutableMap<String, TemplateNode> classNameToTemplateNode;
+  private final ImmutableMap<SourceFilePath, SoyFileSupplier> filePathsToSuppliers;
+  private final ImmutableMap<String, SoyFileNode> javaClassNameToFile;
   private final SoyTypeRegistry typeRegistry;
+  private final PartialFileSetMetadata fileSetMetadata;
 
   CompilingClassLoader(
-      CompiledTemplateRegistry registry,
       SoyFileSetNode fileSet,
-      ImmutableMap<String, SoyFileSupplier> filePathsToSuppliers,
-      SoyTypeRegistry typeRegistry) {
-    this.registry = registry;
-    ImmutableMap.Builder<String, TemplateNode> classNameToTemplateNode = ImmutableMap.builder();
+      ImmutableMap<SourceFilePath, SoyFileSupplier> filePathsToSuppliers,
+      SoyTypeRegistry typeRegistry,
+      PartialFileSetMetadata fileSetMetadata) {
+    Map<String, SoyFileNode> javaClassNameToFile = new LinkedHashMap<>();
     for (SoyFileNode file : fileSet.getChildren()) {
-      for (TemplateNode template : file.getChildren()) {
-        CompiledTemplateMetadata meta =
-            registry.getTemplateInfoByTemplateName(template.getTemplateName());
-        classNameToTemplateNode.put(meta.typeInfo().className(), template);
+      if (NamespaceExemptions.isKnownDuplicateNamespace(file.getNamespace())) {
+        // TODO(b/180904763):For the vast majority of files all templates share the same class, but
+        // there are some exceptions due to this bug.  Remove this loop when that is cleaned up.
+        for (TemplateNode template : file.getTemplates()) {
+          javaClassNameToFile.put(
+              Names.javaClassNameFromSoyTemplateName(template.getTemplateName()), file);
+        }
+      } else {
+        javaClassNameToFile.put(Names.javaClassNameFromSoyNamespace(file.getNamespace()), file);
       }
     }
-    this.classNameToTemplateNode = classNameToTemplateNode.build();
+    this.javaClassNameToFile = ImmutableMap.copyOf(javaClassNameToFile);
     this.typeRegistry = typeRegistry;
     this.filePathsToSuppliers = filePathsToSuppliers;
+    this.fileSetMetadata = fileSetMetadata;
   }
 
   @Override
   protected ClassData getClassData(String name) {
-    ClassData classDef = classesByName.get(name);
+    if (!name.startsWith(Names.CLASS_PREFIX)) {
+      // this means we couldn't possibly compile it.
+      return null;
+    }
+    // Remove because ClassLoader itself maintains a cache so we don't need it after loading
+    ClassData classDef = classesByName.remove(name);
     if (classDef != null) {
       return classDef;
     }
     // We haven't already compiled it (and haven't already loaded it) so try to find the matching
     // template.
 
-    // For each template we compile there are only two 'public' classes that could be loaded prior
-    // to compiling the template. The CompiledTemplate.Factory class and the CompiledTemplate itself
-    boolean isFactory = name.endsWith("$" + StandardNames.FACTORY_CLASS);
-    String compiledTemplateName =
-        isFactory
-            ? name.substring(0, name.length() - (StandardNames.FACTORY_CLASS.length() + 1))
-            : name;
-    CompiledTemplateMetadata meta = registry.getTemplateInfoByClassName(compiledTemplateName);
-    if (meta == null) {
+    // For each template we compile there is only one 'public' class that could be loaded prior
+    // to compiling the template, CompiledTemplate itself.
+    SoyFileNode node = javaClassNameToFile.get(name);
+    if (node == null) {
+      // typo in template name?
       return null;
     }
     ClassData clazzToLoad = null;
     ErrorReporter reporter = ErrorReporter.create(filePathsToSuppliers);
     for (ClassData clazz :
-        new TemplateCompiler(
-                registry,
-                meta,
-                classNameToTemplateNode.get(compiledTemplateName),
-                reporter,
-                typeRegistry)
+        new SoyFileCompiler(
+                node, new JavaSourceFunctionCompiler(typeRegistry, reporter), fileSetMetadata)
             .compile()) {
       String className = clazz.type().className();
       if (className.equals(name)) {

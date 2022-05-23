@@ -43,7 +43,7 @@ public final class ValidatedConformanceConfig {
    * @throws IllegalArgumentException if there is an error in the config object.
    */
   public static ValidatedConformanceConfig create(ConformanceConfig config) {
-    ImmutableList.Builder<RuleWithWhitelists> rulesBuilder = new ImmutableList.Builder<>();
+    ImmutableList.Builder<RuleWithExemptions> rulesBuilder = new ImmutableList.Builder<>();
     for (Requirement requirement : config.getRequirementList()) {
       Preconditions.checkArgument(
           !requirement.getErrorMessage().isEmpty(), "requirement missing error message");
@@ -51,21 +51,21 @@ public final class ValidatedConformanceConfig {
           requirement.getRequirementTypeCase() != RequirementTypeCase.REQUIREMENTTYPE_NOT_SET,
           "requirement missing type");
       Rule<? extends Node> rule = forRequirement(requirement);
-      ImmutableList<String> whitelists = ImmutableList.copyOf(requirement.getWhitelistList());
+      ImmutableList<String> exemptedFilePaths = ImmutableList.copyOf(requirement.getExemptList());
       ImmutableList<String> onlyApplyToPaths =
           ImmutableList.copyOf(requirement.getOnlyApplyToList());
-      rulesBuilder.add(RuleWithWhitelists.create(rule, whitelists, onlyApplyToPaths));
+      rulesBuilder.add(RuleWithExemptions.create(rule, exemptedFilePaths, onlyApplyToPaths));
     }
     return new ValidatedConformanceConfig(rulesBuilder.build());
   }
 
-  private final ImmutableList<RuleWithWhitelists> rules;
+  private final ImmutableList<RuleWithExemptions> rules;
 
-  private ValidatedConformanceConfig(ImmutableList<RuleWithWhitelists> rules) {
+  private ValidatedConformanceConfig(ImmutableList<RuleWithExemptions> rules) {
     this.rules = rules;
   }
 
-  ImmutableList<RuleWithWhitelists> getRules() {
+  ImmutableList<RuleWithExemptions> getRules() {
     return rules;
   }
 
@@ -78,7 +78,8 @@ public final class ValidatedConformanceConfig {
         return createCustomRule(requirement.getCustom().getJavaClass(), error);
       case BANNED_CSS_SELECTOR:
         Requirement.BannedCssSelector bannedCss = requirement.getBannedCssSelector();
-        return new BannedCssSelector(ImmutableSet.copyOf(bannedCss.getSelectorList()), error);
+        return new BannedCssSelector(
+            ImmutableSet.copyOf(bannedCss.getSelectorList()), bannedCss.getWhenPrefix(), error);
       case BANNED_DIRECTIVE:
         Requirement.BannedDirective bannedDirective = requirement.getBannedDirective();
         return new BannedDirective(ImmutableSet.copyOf(bannedDirective.getDirectiveList()), error);
@@ -94,7 +95,10 @@ public final class ValidatedConformanceConfig {
       case BANNED_HTML_TAG:
         Requirement.BannedHtmlTag bannedHtmlTag = requirement.getBannedHtmlTag();
         return new BannedHtmlTag(
-            bannedHtmlTag.getTagList(), bannedHtmlTag.getWhenAttributePossiblyPresentList(), error);
+            bannedHtmlTag.getTagList(),
+            bannedHtmlTag.getWhenAttributePossiblyPresentList(),
+            bannedHtmlTag.getWhenAttributePossiblyMissingList(),
+            error);
       case BAN_XID_FOR_CSS_OBFUSCATION:
         return new BanXidForCssObfuscation(error);
       case REQUIREMENTTYPE_NOT_SET:
@@ -136,6 +140,6 @@ public final class ValidatedConformanceConfig {
 
   public ValidatedConformanceConfig concat(ValidatedConformanceConfig other) {
     return new ValidatedConformanceConfig(
-        ImmutableList.<RuleWithWhitelists>builder().addAll(rules).addAll(other.rules).build());
+        ImmutableList.<RuleWithExemptions>builder().addAll(rules).addAll(other.rules).build());
   }
 }

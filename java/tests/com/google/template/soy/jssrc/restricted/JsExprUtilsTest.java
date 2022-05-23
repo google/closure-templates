@@ -27,7 +27,6 @@ import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for JsExprUtils.
- *
  */
 @RunWith(JUnit4.class)
 public class JsExprUtilsTest {
@@ -73,7 +72,7 @@ public class JsExprUtilsTest {
         .isEqualTo("new Frob('foo' + 'bar')");
 
     assertThat(JsExprUtils.maybeWrapAsSanitizedContent(ContentKind.HTML, expr).getText())
-        .isEqualTo("soydata.VERY_UNSAFE.ordainSanitizedHtml('foo' + 'bar')");
+        .isEqualTo("soy.VERY_UNSAFE.ordainSanitizedHtml('foo' + 'bar')");
     assertThat(JsExprUtils.maybeWrapAsSanitizedContent(ContentKind.TEXT, expr).getText())
         .isEqualTo("'foo' + 'bar'");
   }

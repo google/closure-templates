@@ -32,7 +32,6 @@ import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for BidiDirAttrFunction.
- *
  */
 @RunWith(JUnit4.class)
 public class BidiDirAttrFunctionTest {

@@ -20,14 +20,12 @@ import static com.google.template.soy.jbcsrc.TemplateTester.assertThatTemplateBo
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.STRING_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constantNull;
-import static org.junit.Assert.fail;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.template.soy.SoyFileSetParserBuilder;
+import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.base.internal.SanitizedContentKind;
-import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SanitizedContents;
@@ -36,7 +34,6 @@ import com.google.template.soy.data.SoyDict;
 import com.google.template.soy.data.SoyLegacyObjectMap;
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.internal.DictImpl;
 import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
 import com.google.template.soy.data.restricted.BooleanData;
@@ -44,6 +41,7 @@ import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.exprtree.AbstractLocalVarDefn;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.jbcsrc.TemplateTester.CompiledTemplateSubject;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
@@ -52,13 +50,12 @@ import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.testing.ExpressionSubject;
-import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
-import com.google.template.soy.jbcsrc.shared.RenderContext;
-import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.PrintNode;
-import com.google.template.soy.soytree.defn.LocalVar;
+import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
+import com.google.template.soy.testing.SharedTestUtils;
+import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import com.google.template.soy.types.FloatType;
 import com.google.template.soy.types.IntType;
 import com.google.template.soy.types.LegacyObjectMapType;
@@ -66,108 +63,24 @@ import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.SoyTypeRegistry;
+import com.google.template.soy.types.SoyTypeRegistryBuilder;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.UnknownType;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.commons.Method;
 
 /** Tests for {@link ExpressionCompiler} */
 @RunWith(JUnit4.class)
 public class ExpressionCompilerTest {
   private final Map<String, SoyExpression> variables = new HashMap<>();
-  private final FieldManager fields = new FieldManager(null);
-  private final ExpressionCompiler testExpressionCompiler =
-      ExpressionCompiler.create(
-          new ExpressionDetacher.Factory() {
-            @Override
-            public ExpressionDetacher createExpressionDetacher(Label label) {
-              return new ExpressionDetacher() {
-                @Override
-                public Expression resolveSoyValueProvider(Expression soyValueProvider) {
-                  if (variables.containsValue(soyValueProvider)) {
-                    // This is hacky, but our variables are not SVPs, just SoyValues.  This is
-                    // inconsistent with reality but makes the tests easier to write.
-                    // A better solution may be to have the variables map just hold expressions for
-                    // SoyValueProviders, but that is annoying.
-                    return soyValueProvider;
-                  }
-                  return MethodRef.SOY_VALUE_PROVIDER_RESOLVE.invoke(soyValueProvider);
-                }
-
-                @Override
-                public Expression resolveSoyValueProviderList(Expression soyValueProviderList) {
-                  throw new UnsupportedOperationException();
-                }
-
-                @Override
-                public Expression resolveSoyValueProviderMap(Expression soyValueProviderMap) {
-                  throw new UnsupportedOperationException();
-                }
-              };
-            }
-          },
-          new TemplateParameterLookup() {
-            @Override
-            public Expression getParam(TemplateParam paramName) {
-              return variables.get(paramName.name());
-            }
-
-            @Override
-            public Expression getLocal(SyntheticVarName varName) {
-              throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public Expression getLocal(LocalVar localName) {
-              throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public RenderContextExpression getRenderContext() {
-              return new RenderContextExpression(
-                  BytecodeUtils.constantNull(BytecodeUtils.RENDER_CONTEXT_TYPE));
-            }
-
-            @Override
-            public JbcSrcPluginContext getPluginContext() {
-              return getRenderContext();
-            }
-
-            @Override
-            public Expression getParamsRecord() {
-              throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public Expression getIjRecord() {
-              throw new UnsupportedOperationException();
-            }
-          },
-          new TemplateVariableManager(fields, null, getRenderMethod()),
-          fields,
-          ErrorReporter.exploding(),
-          new SoyTypeRegistry());
-
-  private static Method getRenderMethod() {
-    try {
-      return Method.getMethod(
-          CompiledTemplate.class.getMethod(
-              "render", LoggingAdvisingAppendable.class, RenderContext.class));
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
-  }
 
   @Before
   public void setUp() {
@@ -198,8 +111,6 @@ public class ExpressionCompilerTest {
 
   @Test
   public void testCollectionLiterals_record() {
-    assertExpression("record()").evaluatesTo(SoyValueConverter.EMPTY_DICT);
-
     // Record values are always boxed.  SoyMaps use == for equality, so check equivalence by
     // comparing their string representations.
     SoyExpression compile =
@@ -232,18 +143,17 @@ public class ExpressionCompilerTest {
   public void testModOpNode() {
     assertExpression("3 % 2").evaluatesTo(1L);
     assertExpression("5 % 3").evaluatesTo(2L);
-    // TODO(b/19833234): the soy type checker should flag this, but it doesn't.
-    try {
-      compileExpression("5.0 % 3.0");
-      fail();
-    } catch (Exception expected) {
-    }
+    assertExpression("5.0 % 3.0").evaluatesTo(2D);
 
     variables.put("foo", untypedBoxedSoyExpression(SoyExpression.forInt(constant(3L))));
     variables.put("bar", untypedBoxedSoyExpression(SoyExpression.forInt(constant(2L))));
-    assertExpression("$foo % $bar").evaluatesTo(1L);
+    assertExpression("$foo % $bar").evaluatesTo(IntegerData.forValue(1));
 
     variables.put("foo", untypedBoxedSoyExpression(SoyExpression.forFloat(constant(3.0))));
+    variables.put("bar", untypedBoxedSoyExpression(SoyExpression.forFloat(constant(2.0))));
+    assertExpression("$foo % $bar").evaluatesTo(FloatData.forValue(1));
+
+    variables.put("foo", untypedBoxedSoyExpression(SoyExpression.forString(constant("foo"))));
     variables.put("bar", untypedBoxedSoyExpression(SoyExpression.forFloat(constant(2.0))));
     assertExpression("$foo % $bar").throwsException(SoyDataException.class);
   }
@@ -641,28 +551,112 @@ public class ExpressionCompilerTest {
     String createTemplateBody =
         SharedTestUtils.createTemplateBodyForExpression(
             "fakeFunction(" + soyExpr + ")", types.build());
-    PrintNode code =
-        (PrintNode)
-            SoyFileSetParserBuilder.forTemplateContents(createTemplateBody)
-                .errorReporter(ErrorReporter.explodeOnErrorsAndIgnoreWarnings())
-                .addSoyFunction(
-                    new SoyFunction() {
-                      @Override
-                      public String getName() {
-                        return "fakeFunction";
-                      }
+    ParseResult result =
+        SoyFileSetParserBuilder.forTemplateContents(createTemplateBody)
+            .errorReporter(ErrorReporter.explodeOnErrorsAndIgnoreWarnings())
+            .addSoyFunction(
+                new SoyFunction() {
+                  @Override
+                  public String getName() {
+                    return "fakeFunction";
+                  }
 
-                      @Override
-                      public Set<Integer> getValidArgsSizes() {
-                        return ImmutableSet.of(1);
-                      }
-                    })
-                .parse()
-                .fileSet()
-                .getChild(0)
-                .getChild(0)
-                .getChild(0);
-    return testExpressionCompiler.compile(((FunctionNode) code.getExpr().getChild(0)).getChild(0));
+                  @Override
+                  public ImmutableSet<Integer> getValidArgsSizes() {
+                    return ImmutableSet.of(1);
+                  }
+                })
+            .parse();
+
+    TemplateNode templateNode = (TemplateNode) result.fileSet().getChild(0).getChild(0);
+    PrintNode code = (PrintNode) templateNode.getChild(0);
+    ExpressionCompiler testExpressionCompiler =
+        ExpressionCompiler.create(
+            templateNode,
+            TemplateAnalysisImpl.analyze(templateNode),
+            new TemplateParameterLookup() {
+              @Override
+              public Expression getParam(TemplateParam paramName) {
+                return variables.get(paramName.name());
+              }
+
+              @Override
+              public Expression getLocal(SyntheticVarName varName) {
+                throw new UnsupportedOperationException();
+              }
+
+              @Override
+              public Expression getLocal(AbstractLocalVarDefn<?> localName) {
+                throw new UnsupportedOperationException();
+              }
+
+              @Override
+              public RenderContextExpression getRenderContext() {
+                return new RenderContextExpression(
+                    BytecodeUtils.constantNull(BytecodeUtils.RENDER_CONTEXT_TYPE));
+              }
+
+              @Override
+              public JbcSrcPluginContext getPluginContext() {
+                return getRenderContext();
+              }
+
+              @Override
+              public Expression getParamsRecord() {
+                throw new UnsupportedOperationException();
+              }
+
+              @Override
+              public Expression getIjRecord() {
+                throw new UnsupportedOperationException();
+              }
+            },
+            new TemplateVariableManager(
+                BytecodeUtils.OBJECT.type(),
+                BytecodeUtils.CLASS_INIT,
+                ImmutableList.of(),
+                null,
+                null,
+                /*isStatic=*/ true),
+            new JavaSourceFunctionCompiler(
+                SoyTypeRegistryBuilder.create(), ErrorReporter.exploding()),
+            result.registry());
+
+    return testExpressionCompiler.compileRootExpression(
+        ((FunctionNode) code.getExpr().getChild(0)).getChild(0),
+        new ExpressionDetacher.Factory() {
+          @Override
+          public ExpressionDetacher createExpressionDetacher(Label label) {
+            return new ExpressionDetacher() {
+              @Override
+              public Expression resolveSoyValueProvider(Expression soyValueProvider) {
+                if (variables.containsValue(soyValueProvider)) {
+                  // This is hacky, but our variables are not SVPs, just SoyValues.  This is
+                  // inconsistent with reality but makes the tests easier to write.
+                  // A better solution may be to have the variables map just hold expressions for
+                  // SoyValueProviders, but that is annoying.
+                  return soyValueProvider;
+                }
+                return MethodRef.SOY_VALUE_PROVIDER_RESOLVE.invoke(soyValueProvider);
+              }
+
+              @Override
+              public Expression waitForSoyValueProvider(Expression soyValueProvider) {
+                return soyValueProvider;
+              }
+
+              @Override
+              public Expression resolveSoyValueProviderList(Expression soyValueProviderList) {
+                throw new UnsupportedOperationException();
+              }
+
+              @Override
+              public Expression resolveSoyValueProviderMap(Expression soyValueProviderMap) {
+                throw new UnsupportedOperationException();
+              }
+            };
+          }
+        });
   }
 
   /**

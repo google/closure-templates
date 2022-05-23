@@ -22,8 +22,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 
 /** Reads files from the file system. */
-final class FileSystemSoyFileReader implements SoyCompilerFileReader {
-  static final FileSystemSoyFileReader INSTANCE = new FileSystemSoyFileReader();
+public final class FileSystemSoyFileReader implements SoyCompilerFileReader {
+  public static final FileSystemSoyFileReader INSTANCE = new FileSystemSoyFileReader();
 
   private FileSystemSoyFileReader() {}
 

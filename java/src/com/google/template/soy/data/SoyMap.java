@@ -16,7 +16,10 @@
 
 package com.google.template.soy.data;
 
+import com.google.template.soy.data.restricted.PrimitiveData;
+import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 import javax.annotation.Nonnull;
 import javax.annotation.ParametersAreNonnullByDefault;
 
@@ -55,6 +58,14 @@ public interface SoyMap extends SoyValue {
   @Nonnull
   Iterable<? extends SoyValue> keys();
 
+  default Collection<? extends SoyValueProvider> values() {
+    return asJavaMap().values();
+  }
+
+  default Set<? extends Map.Entry<? extends SoyValue, ? extends SoyValueProvider>> entrySet() {
+    return asJavaMap().entrySet();
+  }
+
   /**
    * Checks whether this SoyMap has an item with the given key.
    *
@@ -87,4 +98,10 @@ public interface SoyMap extends SoyValue {
    */
   @Nonnull
   Map<? extends SoyValue, ? extends SoyValueProvider> asJavaMap();
+
+  // LINT.IfChange(allowed_soy_map_key_types)
+  static boolean isAllowedKeyType(SoyValue key) {
+    return key instanceof PrimitiveData;
+  }
+  // LINT.ThenChange(../types/MapType.java:allowed_soy_map_key_types)
 }

@@ -16,32 +16,34 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.template.soy.data.SoyValueConverter.EMPTY_DICT;
+import static org.junit.Assert.fail;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.html.types.SafeHtml;
 import com.google.template.soy.SoyFileSetParser;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
-import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingFunctionInvocation;
+import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jbcsrc.api.OutputAppendable;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.logging.LoggableElement;
-import com.google.template.soy.logging.LoggingConfig;
 import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.logging.SoyLogger;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
+import com.google.template.soy.logging.testing.LoggingConfigs;
 import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
-import com.google.template.soy.types.SoyTypeRegistry;
+import com.google.template.soy.testing.Foo;
+import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import java.io.IOException;
 import java.util.Map;
+import java.util.Optional;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -50,28 +52,26 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public final class VeLoggingTest {
   private static final ValidatedLoggingConfig config =
-      ValidatedLoggingConfig.create(
-          LoggingConfig.newBuilder()
-              .addElement(
-                  LoggableElement.newBuilder()
-                      .setName("Foo")
-                      .setId(1L)
-                      .setProtoType("soy.test.Foo"))
-              .addElement(
-                  LoggableElement.newBuilder()
-                      .setName("Bar")
-                      .setId(2L)
-                      .setProtoType("soy.test.Foo"))
-              .addElement(
-                  LoggableElement.newBuilder()
-                      .setName("Baz")
-                      .setId(3L)
-                      .setProtoType("soy.test.Foo"))
-              .addElement(
-                  LoggableElement.newBuilder()
-                      .setName("Quux")
-                      .setId(4L)
-                      .setProtoType("soy.test.Foo"))
+      LoggingConfigs.createLoggingConfig(
+          LoggableElement.newBuilder()
+              .setName("FooVe")
+              .setId(1L)
+              .setProtoType("soy.test.Foo")
+              .build(),
+          LoggableElement.newBuilder()
+              .setName("Bar")
+              .setId(2L)
+              .setProtoType("soy.test.Foo")
+              .build(),
+          LoggableElement.newBuilder()
+              .setName("Baz")
+              .setId(3L)
+              .setProtoType("soy.test.Foo")
+              .build(),
+          LoggableElement.newBuilder()
+              .setName("Quux")
+              .setId(4L)
+              .setProtoType("soy.test.Foo")
               .build());
 
   private static class TestLogger implements SoyLogger {
@@ -79,17 +79,19 @@ public final class VeLoggingTest {
     int depth;
 
     @Override
-    public void enter(LogStatement statement) {
+    public Optional<SafeHtml> enter(LogStatement statement) {
       if (builder.length() > 0) {
         builder.append('\n');
       }
       builder.append(Strings.repeat("  ", depth)).append(statement);
       depth++;
+      return Optional.empty();
     }
 
     @Override
-    public void exit() {
+    public Optional<SafeHtml> exit() {
       depth--;
+      return Optional.empty();
     }
 
     @Override
@@ -118,7 +120,7 @@ public final class VeLoggingTest {
     renderTemplate(
         OutputAppendable.create(sb, testLogger),
         testLogger,
-        "{velog Foo}<div data-id=1>{velog Bar}<div data-id=2></div>"
+        "{velog FooVe}<div data-id=1>{velog Bar}<div data-id=2></div>"
             + "{/velog}{velog Baz}<div data-id=3></div>{/velog}</div>{/velog}");
     assertThat(sb.toString())
         .isEqualTo("<div data-id=1><div data-id=2></div><div data-id=3></div></div>");
@@ -133,7 +135,7 @@ public final class VeLoggingTest {
     renderTemplate(
         OutputAppendable.create(sb, testLogger),
         testLogger,
-        "{velog ve_data(Foo, soy.test.Foo(intField: 123))}<div data-id=1></div>{/velog}");
+        "{velog ve_data(FooVe, Foo(intField: 123))}<div data-id=1></div>{/velog}");
     assertThat(sb.toString()).isEqualTo("<div data-id=1></div>");
     assertThat(testLogger.builder.toString())
         .isEqualTo("velog{id=1, data=soy.test.Foo{int_field: 123}}");
@@ -146,7 +148,7 @@ public final class VeLoggingTest {
     renderTemplate(
         OutputAppendable.create(sb, testLogger),
         testLogger,
-        "{velog Foo logonly=\"true\"}<div data-id=1></div>{/velog}");
+        "{velog FooVe logonly=\"true\"}<div data-id=1></div>{/velog}");
     // logonly ve's disable content generation
     assertThat(sb.toString()).isEmpty();
     assertThat(testLogger.builder.toString()).isEqualTo("velog{id=1, logonly}");
@@ -166,11 +168,42 @@ public final class VeLoggingTest {
         // add the let as a regression test for a bug where we would generate code in the wrong
         // order which would cause us to try to save/restore the let value which hadn't been defined
         // yet!
-        "{velog Foo logonly=\"$t\"}<div data-id=1>{let $foo: 1 + $n /}{$foo + $foo}</div>{/velog}",
+        "{velog FooVe logonly=\"$t\"}<div data-id=1>{let $foo: 1 + $n /}{$foo +"
+            + " $foo}</div>{/velog}",
         "{velog Bar logonly=\"$f\"}<div data-id=2></div>{/velog}");
     // logonly ve's disable content generation
     assertThat(sb.toString()).isEqualTo("<div data-id=2></div>");
     assertThat(testLogger.builder.toString()).isEqualTo("velog{id=1, logonly}\nvelog{id=2}");
+  }
+
+  @Test
+  public void testBasicLogging_logonly_false_noLogger() throws Exception {
+    StringBuilder sb = new StringBuilder();
+    renderTemplate(
+        ImmutableMap.of("b", false),
+        OutputAppendable.create(sb, SoyLogger.NO_OP),
+        SoyLogger.NO_OP,
+        "{@param b : bool}",
+        "{velog FooVe logonly=\"$b\"}<div></div>{/velog}");
+    // logonly ve's disable content generation
+    assertThat(sb.toString()).isEqualTo("<div></div>");
+  }
+
+  @Test
+  public void testBasicLogging_logonly_true_noLogger() throws Exception {
+    try {
+      renderTemplate(
+          ImmutableMap.of("b", true),
+          OutputAppendable.create(new StringBuilder(), SoyLogger.NO_OP),
+          SoyLogger.NO_OP,
+          "{@param b : bool}",
+          "{velog FooVe logonly=\"$b\"}<div></div>{/velog}");
+      fail();
+    } catch (IllegalStateException expected) {
+      assertThat(expected)
+          .hasMessageThat()
+          .isEqualTo("Cannot set logonly=\"true\" unless there is a logger configured");
+    }
   }
 
   @Test
@@ -180,7 +213,7 @@ public final class VeLoggingTest {
     renderTemplate(
         OutputAppendable.create(sb, testLogger),
         testLogger,
-        "{let $foo kind=\"html\"}{velog Foo}<div data-id=1></div>{/velog}{/let}{$foo}{$foo}");
+        "{let $foo kind=\"html\"}{velog FooVe}<div data-id=1></div>{/velog}{/let}{$foo}{$foo}");
     assertThat(testLogger.builder.toString()).isEqualTo("velog{id=1}\nvelog{id=1}");
     assertThat(sb.toString()).isEqualTo("<div data-id=1></div><div data-id=1></div>");
   }
@@ -194,9 +227,26 @@ public final class VeLoggingTest {
         testLogger,
         ""
             + "{msg desc=\"a message!\"}\n"
-            + "  Greetings, {velog Foo}<a href='./wiki?human'>Human</a>{/velog}\n"
+            + "  Greetings, {velog FooVe}<a href='./wiki?human'>Human</a>{/velog}\n"
             + "{/msg}");
     assertThat(sb.toString()).isEqualTo("Greetings, <a href='./wiki?human'>Human</a>");
+    assertThat(testLogger.builder.toString()).isEqualTo("velog{id=1}");
+  }
+
+  // Regression test for a bug where logging would get dropped if there was a velog, in a msg around
+  // a void element.
+  @Test
+  public void testLogging_msg_void_element() throws Exception {
+    StringBuilder sb = new StringBuilder();
+    TestLogger testLogger = new TestLogger();
+    renderTemplate(
+        OutputAppendable.create(sb, testLogger),
+        testLogger,
+        ""
+            + "{msg desc=\"a message!\"}\n"
+            + "  Greetings, {velog FooVe}<input type=text>{/velog}\n"
+            + "{/msg}");
+    assertThat(sb.toString()).isEqualTo("Greetings, <input type=text>");
     assertThat(testLogger.builder.toString()).isEqualTo("velog{id=1}");
   }
 
@@ -207,9 +257,9 @@ public final class VeLoggingTest {
     renderTemplate(
         OutputAppendable.create(sb, testLogger),
         testLogger,
-        "{velog Foo logonly=\"true\"}<div data-id=1>{velog Foo logonly=\"false\"}<div data-id=1>"
-            + "{velog Foo logonly=\"true\"}<div data-id=1>"
-            + "{velog Foo logonly=\"true\"}<div data-id=1></div>{/velog}"
+        "{velog FooVe logonly=\"true\"}<div data-id=1>{velog FooVe logonly=\"false\"}<div"
+            + " data-id=1>{velog FooVe logonly=\"true\"}<div data-id=1>{velog FooVe"
+            + " logonly=\"true\"}<div data-id=1></div>{/velog}"
             + "</div>{/velog}</div>{/velog}</div>{/velog}");
     assertThat(sb.toString()).isEmpty();
     assertThat(testLogger.builder.toString())
@@ -228,7 +278,7 @@ public final class VeLoggingTest {
         OutputAppendable.create(sb, testLogger),
         testLogger,
         "<div data-depth={depth()}></div>"
-            + "{velog Foo}<div data-depth={depth()}></div>{/velog}"
+            + "{velog FooVe}<div data-depth={depth()}></div>{/velog}"
             + "<div data-depth={depth()}></div>");
     assertThat(testLogger.builder.toString()).isEqualTo("velog{id=1}");
     assertThat(sb.toString())
@@ -242,12 +292,29 @@ public final class VeLoggingTest {
     renderTemplate(
         OutputAppendable.create(sb, testLogger),
         testLogger,
-        "{let $html kind=\"html\"}{velog Foo}<div data-depth={depth()}></div>{/velog}{/let}"
+        "{let $html kind=\"html\"}{velog FooVe}<div data-depth={depth()}></div>{/velog}{/let}"
             + "<script>{'' + $html}</script>");
     // nothing is logged because no elements were rendered
     assertThat(testLogger.builder.toString()).isEmpty();
     // everything is escaped, and the placeholder is used instead of a 'real value'
     assertThat(sb.toString()).contains("depth_placeholder");
+  }
+
+  @Test
+  public void testLogging_elvis() throws Exception {
+    StringBuilder sb = new StringBuilder();
+    TestLogger testLogger = new TestLogger();
+    renderTemplate(
+        OutputAppendable.create(sb, testLogger),
+        testLogger,
+        "{let $log kind='html'}",
+        "  {velog FooVe}",
+        "    <div>hello</div>",
+        "  {/velog}",
+        "{/let}",
+        "{$log ?: ''}");
+    assertThat(testLogger.builder.toString()).isEqualTo("velog{id=1}");
+    assertThat(sb.toString()).isEqualTo("<div>hello</div>");
   }
 
   private void renderTemplate(
@@ -258,38 +325,29 @@ public final class VeLoggingTest {
   private void renderTemplate(
       Map<String, ?> params, OutputAppendable output, SoyLogger logger, String... templateBodyLines)
       throws IOException {
-    SoyTypeRegistry typeRegistry =
-        new SoyTypeRegistry.Builder()
-            .addDescriptors(ImmutableList.of(com.google.template.soy.testing.Foo.getDescriptor()))
-            .build();
-    SoyFileSetParser parser =
-        SoyFileSetParserBuilder.forFileContents(
-                "{namespace ns}\n"
-                    + "{template .foo}\n"
-                    + Joiner.on("\n").join(templateBodyLines)
-                    + "\n{/template}")
-            .typeRegistry(typeRegistry)
+    SoyFileSetParserBuilder builder =
+        SoyFileSetParserBuilder.forTemplateAndImports(
+                "{template foo}\n" + Joiner.on("\n").join(templateBodyLines) + "\n{/template}",
+                Foo.getDescriptor())
             .setLoggingConfig(config)
             .addSoySourceFunction(new DepthFunction())
-            .runAutoescaper(true)
-            .build();
+            .runAutoescaper(true);
+    SoyFileSetParser parser = builder.build();
     ParseResult parseResult = parser.parse();
     CompiledTemplates templates =
         BytecodeCompiler.compile(
                 parseResult.registry(),
                 parseResult.fileSet(),
-                false,
                 ErrorReporter.exploding(),
                 parser.soyFileSuppliers(),
-                typeRegistry)
+                builder.getTypeRegistry())
             .get();
     RenderContext ctx =
         TemplateTester.getDefaultContext(templates).toBuilder().withLogger(logger).build();
     RenderResult result =
         templates
-            .getTemplateFactory("ns.foo")
-            .create(TemplateTester.asRecord(params), EMPTY_DICT)
-            .render(output, ctx);
+            .getTemplate("ns.foo")
+            .render(TemplateTester.asRecord(params), ParamStore.EMPTY_INSTANCE, output, ctx);
     assertThat(result).isEqualTo(RenderResult.done());
   }
 }

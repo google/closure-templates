@@ -26,12 +26,15 @@ import com.google.template.soy.basetree.CopyState;
  * Abstract node representing a 'param'.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public abstract class CallParamNode extends AbstractCommandNode {
 
   /** The param key. */
   private final Identifier key;
+
+  // This parameter may be synthetically generated from an HTML attribute. Within velogging,
+  // we need to reconstruct the original name.
+  private String originalName = null;
 
   protected CallParamNode(int id, SourceLocation sourceLocation, Identifier key) {
     super(id, sourceLocation, "param");
@@ -46,11 +49,20 @@ public abstract class CallParamNode extends AbstractCommandNode {
   protected CallParamNode(CallParamNode orig, CopyState copyState) {
     super(orig, copyState);
     this.key = orig.key;
+    this.originalName = orig.originalName;
   }
 
   /** Returns the param key. */
   public Identifier getKey() {
     return key;
+  }
+
+  public String getOriginalName() {
+    return originalName;
+  }
+
+  public void setOriginalName(String originalName) {
+    this.originalName = originalName;
   }
 
   @Override

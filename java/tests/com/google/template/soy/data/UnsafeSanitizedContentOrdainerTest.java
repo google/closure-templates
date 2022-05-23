@@ -26,15 +26,12 @@ import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for UnsafeSanitizedContentOrdainer utility class.
- *
  */
 @RunWith(JUnit4.class)
 public class UnsafeSanitizedContentOrdainerTest {
 
   @Test
   public void testOrdainAsSafe() {
-    assertThat(UnsafeSanitizedContentOrdainer.ordainAsSafe("Hello World", ContentKind.TEXT))
-        .isEqualTo(SanitizedContents.unsanitizedText("Hello World"));
     assertThat(UnsafeSanitizedContentOrdainer.ordainAsSafe("Hello <b>World</b>", ContentKind.HTML))
         .isEqualTo(SanitizedContent.create("Hello <b>World</b>", ContentKind.HTML, null));
     assertThat(UnsafeSanitizedContentOrdainer.ordainAsSafe("hello_world();", ContentKind.JS))
@@ -48,12 +45,14 @@ public class UnsafeSanitizedContentOrdainerTest {
   }
 
   @Test
-  public void testTextDoesntSupportDir() {
+  public void testTextIsntSupported() {
     try {
       UnsafeSanitizedContentOrdainer.ordainAsSafe("Hello World", ContentKind.TEXT, Dir.LTR);
       fail();
     } catch (IllegalArgumentException iae) {
-      assertThat(iae).hasMessageThat().isEqualTo("TEXT objects don't support contend directions.");
+      assertThat(iae)
+          .hasMessageThat()
+          .isEqualTo("Use plain strings instead SanitizedContent with kind of TEXT");
     }
   }
 

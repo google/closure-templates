@@ -19,14 +19,12 @@ package com.google.template.soy.pysrc.internal;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.truth.Truth.assertAbout;
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.template.soy.shared.SharedTestUtils.untypedTemplateBodyForExpression;
+import static com.google.template.soy.testing.SharedTestUtils.untypedTemplateBodyForExpression;
 
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.truth.FailureMetadata;
 import com.google.common.truth.Subject;
-import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.Operator;
@@ -34,11 +32,12 @@ import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.pysrc.internal.GenPyExprsVisitor.GenPyExprsVisitorFactory;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyExprUtils;
-import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
+import com.google.template.soy.testing.SharedTestUtils;
+import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import java.util.List;
 import java.util.Map;
 
@@ -46,15 +45,15 @@ import java.util.Map;
  * Truth assertion which compiles the provided soy code and asserts that the generated PyExprs match
  * the expected expressions. This subject is only valid for soy code which can be represented as one
  * or more Python expressions.
- *
  */
 public final class SoyExprForPySubject extends Subject {
 
-  // disable optimizer for backwards compatibility
   private final String actual;
-  private final SoyGeneralOptions opts = new SoyGeneralOptions().disableOptimizer();
+  private final SoyGeneralOptions opts = new SoyGeneralOptions();
 
   private final LocalVariableStack localVarExprs;
+
+  private ImmutableList<String> experimentalFeatures = ImmutableList.of();
 
   private SoyExprForPySubject(FailureMetadata failureMetadata, String expr) {
     super(failureMetadata, expr);
@@ -76,16 +75,8 @@ public final class SoyExprForPySubject extends Subject {
     return this;
   }
 
-  /**
-   * Sets a map of key to {@link com.google.template.soy.data.restricted.PrimitiveData} values as
-   * the current globally available data. Any compilation step will use these globals to replace
-   * unrecognized variables.
-   *
-   * @param globals a map of keys to PrimitiveData values
-   * @return the current subject for chaining
-   */
-  public SoyExprForPySubject withGlobals(ImmutableMap<String, ?> globals) {
-    opts.setCompileTimeGlobals(globals);
+  public SoyExprForPySubject withExperimentalFeatures(ImmutableList<String> experimetalFeatures) {
+    this.experimentalFeatures = experimetalFeatures;
     return this;
   }
 
@@ -108,7 +99,11 @@ public final class SoyExprForPySubject extends Subject {
    */
   public void compilesTo(List<PyExpr> expectedPyExprs) {
     SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forTemplateContents(actual).runAutoescaper(true).parse().fileSet();
+        SoyFileSetParserBuilder.forTemplateContents(actual)
+            .enableExperimentalFeatures(experimentalFeatures)
+            .runAutoescaper(true)
+            .parse()
+            .fileSet();
     SoyNode node = SharedTestUtils.getNode(soyTree, 0);
 
     final IsComputableAsPyExprVisitor isComputableAsPyExprs = new IsComputableAsPyExprVisitor();
@@ -172,6 +167,8 @@ public final class SoyExprForPySubject extends Subject {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forTemplateContents(untypedTemplateBodyForExpression(actual))
             .options(opts)
+            // disable optimizer for backwards compatibility
+            .runOptimizer(false)
             .parse()
             .fileSet();
     PrintNode node = (PrintNode) SharedTestUtils.getNode(soyTree, 0);
@@ -181,6 +178,7 @@ public final class SoyExprForPySubject extends Subject {
         new TranslateToPyExprVisitor(
                 localVarExprs,
                 new PythonValueFactoryImpl(ErrorReporter.exploding(), BidiGlobalDir.LTR),
+                node,
                 ErrorReporter.exploding())
             .exec(exprNode);
     assertThat(actualPyExpr.getText()).isEqualTo(expectedPyExpr.getText());

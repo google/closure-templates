@@ -21,7 +21,6 @@ import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import java.io.IOException;
-import javax.annotation.Nullable;
 
 /** A simple forwarding implementation, forwards all calls to a delegate. */
 public abstract class ForwardingLoggingAdvisingAppendable extends LoggingAdvisingAppendable {
@@ -67,13 +66,8 @@ public abstract class ForwardingLoggingAdvisingAppendable extends LoggingAdvisin
   }
 
   @Override
-  protected void notifyContentKind(ContentKind kind) throws IOException {
-    delegate.setSanitizedContentKind(kind);
-  }
-
-  @Override
-  protected void notifyContentDirectionality(@Nullable Dir contentDir) throws IOException {
-    delegate.setSanitizedContentDirectionality(contentDir);
+  protected void notifyKindAndDirectionality(ContentKind kind, Dir dir) throws IOException {
+    delegate.setKindAndDirectionality(kind, dir);
   }
 
   @Override
@@ -82,5 +76,12 @@ public abstract class ForwardingLoggingAdvisingAppendable extends LoggingAdvisin
       throws IOException {
     delegate.appendLoggingFunctionInvocation(funCall, escapers);
     return this;
+  }
+
+  @Override
+  public void flushBuffers(int depth) throws IOException {
+    if (depth > 0) {
+      delegate.flushBuffers(depth - 1);
+    }
   }
 }

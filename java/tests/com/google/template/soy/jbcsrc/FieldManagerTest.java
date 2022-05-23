@@ -30,10 +30,10 @@ public final class FieldManagerTest {
   @Test
   public void testCantAddDuplicateNames() {
     FieldManager fields = new FieldManager(TypeInfo.create(getClass()));
-    fields.addField("foo", Type.INT_TYPE);
+    fields.addFinalField("foo", Type.INT_TYPE);
 
     try {
-      fields.addField("foo", Type.INT_TYPE);
+      fields.addFinalField("foo", Type.INT_TYPE);
       fail();
     } catch (IllegalArgumentException t) {
       assertThat(t).hasMessageThat().isEqualTo("Name: foo was already claimed!");
@@ -59,7 +59,7 @@ public final class FieldManagerTest {
     } catch (IllegalStateException expected) {
     }
     try {
-      fields.addField("foo", Type.INT_TYPE);
+      fields.addFinalField("foo", Type.INT_TYPE);
       fail();
     } catch (IllegalStateException expected) {
     }

@@ -18,12 +18,12 @@ package com.google.template.soy.exprtree;
 
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.exprtree.ExprNode.AccessChainComponentNode;
 
 /**
  * Container of nodes representing operators.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public class OperatorNodes {
 
@@ -32,8 +32,8 @@ public class OperatorNodes {
   /** Node representing the unary '-' (negative) operator. */
   public static final class NegativeOpNode extends AbstractOperatorNode {
 
-    public NegativeOpNode(SourceLocation sourceLocation) {
-      super(Operator.NEGATIVE, sourceLocation);
+    public NegativeOpNode(SourceLocation sourceLocation, SourceLocation operatorLocation) {
+      super(sourceLocation, Operator.NEGATIVE, operatorLocation);
     }
 
     private NegativeOpNode(NegativeOpNode orig, CopyState copyState) {
@@ -54,8 +54,8 @@ public class OperatorNodes {
   /** Node representing the 'not' operator. */
   public static final class NotOpNode extends AbstractOperatorNode {
 
-    public NotOpNode(SourceLocation sourceLocation) {
-      super(Operator.NOT, sourceLocation);
+    public NotOpNode(SourceLocation sourceLocation, SourceLocation operatorLocation) {
+      super(sourceLocation, Operator.NOT, operatorLocation);
     }
 
     private NotOpNode(NotOpNode orig, CopyState copyState) {
@@ -76,8 +76,8 @@ public class OperatorNodes {
   /** Node representing the '*' (times) operator. */
   public static final class TimesOpNode extends AbstractOperatorNode {
 
-    public TimesOpNode(SourceLocation sourceLocation) {
-      super(Operator.TIMES, sourceLocation);
+    public TimesOpNode(SourceLocation sourceLocation, SourceLocation operatorLocation) {
+      super(sourceLocation, Operator.TIMES, operatorLocation);
     }
 
     private TimesOpNode(TimesOpNode orig, CopyState copyState) {
@@ -98,8 +98,8 @@ public class OperatorNodes {
   /** Node representing the '/' (divde by) operator. */
   public static final class DivideByOpNode extends AbstractOperatorNode {
 
-    public DivideByOpNode(SourceLocation sourceLocation) {
-      super(Operator.DIVIDE_BY, sourceLocation);
+    public DivideByOpNode(SourceLocation sourceLocation, SourceLocation operatorLocation) {
+      super(sourceLocation, Operator.DIVIDE_BY, operatorLocation);
     }
 
     private DivideByOpNode(DivideByOpNode orig, CopyState copyState) {
@@ -120,8 +120,8 @@ public class OperatorNodes {
   /** Node representing the '%' (mod) operator. */
   public static final class ModOpNode extends AbstractOperatorNode {
 
-    public ModOpNode(SourceLocation sourceLocation) {
-      super(Operator.MOD, sourceLocation);
+    public ModOpNode(SourceLocation sourceLocation, SourceLocation operatorLocation) {
+      super(sourceLocation, Operator.MOD, operatorLocation);
     }
 
     private ModOpNode(ModOpNode orig, CopyState copyState) {
@@ -142,8 +142,8 @@ public class OperatorNodes {
   /** Node representing the '+' (plus) operator. */
   public static final class PlusOpNode extends AbstractOperatorNode {
 
-    public PlusOpNode(SourceLocation sourceLocation) {
-      super(Operator.PLUS, sourceLocation);
+    public PlusOpNode(SourceLocation sourceLocation, SourceLocation operatorLocation) {
+      super(sourceLocation, Operator.PLUS, operatorLocation);
     }
 
     private PlusOpNode(PlusOpNode orig, CopyState copyState) {
@@ -164,8 +164,8 @@ public class OperatorNodes {
   /** Node representing the binary '-' (minus) operator. */
   public static final class MinusOpNode extends AbstractOperatorNode {
 
-    public MinusOpNode(SourceLocation sourceLocation) {
-      super(Operator.MINUS, sourceLocation);
+    public MinusOpNode(SourceLocation sourceLocation, SourceLocation operatorLocation) {
+      super(sourceLocation, Operator.MINUS, operatorLocation);
     }
 
     private MinusOpNode(MinusOpNode orig, CopyState copyState) {
@@ -186,8 +186,8 @@ public class OperatorNodes {
   /** Node representing the '&lt;' (less than) operator. */
   public static final class LessThanOpNode extends AbstractOperatorNode {
 
-    public LessThanOpNode(SourceLocation sourceLocation) {
-      super(Operator.LESS_THAN, sourceLocation);
+    public LessThanOpNode(SourceLocation sourceLocation, SourceLocation operatorLocation) {
+      super(sourceLocation, Operator.LESS_THAN, operatorLocation);
     }
 
     private LessThanOpNode(LessThanOpNode orig, CopyState copyState) {
@@ -208,8 +208,8 @@ public class OperatorNodes {
   /** Node representing the '&gt;' (greater than) operator. */
   public static final class GreaterThanOpNode extends AbstractOperatorNode {
 
-    public GreaterThanOpNode(SourceLocation sourceLocation) {
-      super(Operator.GREATER_THAN, sourceLocation);
+    public GreaterThanOpNode(SourceLocation sourceLocation, SourceLocation operatorLocation) {
+      super(sourceLocation, Operator.GREATER_THAN, operatorLocation);
     }
 
     private GreaterThanOpNode(GreaterThanOpNode orig, CopyState copyState) {
@@ -230,8 +230,8 @@ public class OperatorNodes {
   /** Node representing the '&lt;=' (less than or equal) operator. */
   public static final class LessThanOrEqualOpNode extends AbstractOperatorNode {
 
-    public LessThanOrEqualOpNode(SourceLocation sourceLocation) {
-      super(Operator.LESS_THAN_OR_EQUAL, sourceLocation);
+    public LessThanOrEqualOpNode(SourceLocation sourceLocation, SourceLocation operatorLocation) {
+      super(sourceLocation, Operator.LESS_THAN_OR_EQUAL, operatorLocation);
     }
 
     private LessThanOrEqualOpNode(LessThanOrEqualOpNode orig, CopyState copyState) {
@@ -252,8 +252,9 @@ public class OperatorNodes {
   /** Node representing the '&gt;=' (greater than or equal) operator. */
   public static final class GreaterThanOrEqualOpNode extends AbstractOperatorNode {
 
-    public GreaterThanOrEqualOpNode(SourceLocation sourceLocation) {
-      super(Operator.GREATER_THAN_OR_EQUAL, sourceLocation);
+    public GreaterThanOrEqualOpNode(
+        SourceLocation sourceLocation, SourceLocation operatorLocation) {
+      super(sourceLocation, Operator.GREATER_THAN_OR_EQUAL, operatorLocation);
     }
 
     private GreaterThanOrEqualOpNode(GreaterThanOrEqualOpNode orig, CopyState copyState) {
@@ -274,8 +275,8 @@ public class OperatorNodes {
   /** Node representing the '==' (equal) operator. */
   public static final class EqualOpNode extends AbstractOperatorNode {
 
-    public EqualOpNode(SourceLocation sourceLocation) {
-      super(Operator.EQUAL, sourceLocation);
+    public EqualOpNode(SourceLocation sourceLocation, SourceLocation operatorLocation) {
+      super(sourceLocation, Operator.EQUAL, operatorLocation);
     }
 
     private EqualOpNode(EqualOpNode orig, CopyState copyState) {
@@ -296,8 +297,8 @@ public class OperatorNodes {
   /** Node representing the '!=' (not equal) operator. */
   public static final class NotEqualOpNode extends AbstractOperatorNode {
 
-    public NotEqualOpNode(SourceLocation sourceLocation) {
-      super(Operator.NOT_EQUAL, sourceLocation);
+    public NotEqualOpNode(SourceLocation sourceLocation, SourceLocation operatorLocation) {
+      super(sourceLocation, Operator.NOT_EQUAL, operatorLocation);
     }
 
     private NotEqualOpNode(NotEqualOpNode orig, CopyState copyState) {
@@ -318,8 +319,8 @@ public class OperatorNodes {
   /** Node representing the 'and' operator. */
   public static final class AndOpNode extends AbstractOperatorNode {
 
-    public AndOpNode(SourceLocation sourceLocation) {
-      super(Operator.AND, sourceLocation);
+    public AndOpNode(SourceLocation sourceLocation, SourceLocation operatorLocation) {
+      super(sourceLocation, Operator.AND, operatorLocation);
     }
 
     private AndOpNode(AndOpNode orig, CopyState copyState) {
@@ -340,8 +341,8 @@ public class OperatorNodes {
   /** Node representing the 'or' operator. */
   public static final class OrOpNode extends AbstractOperatorNode {
 
-    public OrOpNode(SourceLocation sourceLocation) {
-      super(Operator.OR, sourceLocation);
+    public OrOpNode(SourceLocation sourceLocation, SourceLocation operatorLocation) {
+      super(sourceLocation, Operator.OR, operatorLocation);
     }
 
     private OrOpNode(OrOpNode orig, CopyState copyState) {
@@ -362,8 +363,8 @@ public class OperatorNodes {
   /** Node representing the '?:' (null-coalescing) operator. */
   public static final class NullCoalescingOpNode extends AbstractOperatorNode {
 
-    public NullCoalescingOpNode(SourceLocation sourceLocation) {
-      super(Operator.NULL_COALESCING, sourceLocation);
+    public NullCoalescingOpNode(SourceLocation sourceLocation, SourceLocation operatorLocation) {
+      super(sourceLocation, Operator.NULL_COALESCING, operatorLocation);
     }
 
     private NullCoalescingOpNode(NullCoalescingOpNode orig, CopyState copyState) {
@@ -392,8 +393,8 @@ public class OperatorNodes {
   /** Node representing the ternary '? :' (conditional) operator. */
   public static final class ConditionalOpNode extends AbstractOperatorNode {
 
-    public ConditionalOpNode(SourceLocation sourceLocation) {
-      super(Operator.CONDITIONAL, sourceLocation);
+    public ConditionalOpNode(SourceLocation sourceLocation, SourceLocation operatorLocation) {
+      super(sourceLocation, Operator.CONDITIONAL, operatorLocation);
     }
 
     private ConditionalOpNode(ConditionalOpNode orig, CopyState copyState) {
@@ -408,6 +409,139 @@ public class OperatorNodes {
     @Override
     public ConditionalOpNode copy(CopyState copyState) {
       return new ConditionalOpNode(this, copyState);
+    }
+  }
+
+  /** Node representing the non-null assertion '!' operator. */
+  public static final class AssertNonNullOpNode extends AbstractOperatorNode
+      implements AccessChainComponentNode {
+
+    public AssertNonNullOpNode(SourceLocation sourceLocation, SourceLocation operatorLocation) {
+      super(sourceLocation, Operator.ASSERT_NON_NULL, operatorLocation);
+    }
+
+    private AssertNonNullOpNode(AssertNonNullOpNode orig, CopyState copyState) {
+      super(orig, copyState);
+    }
+
+    @Override
+    public Kind getKind() {
+      return Kind.ASSERT_NON_NULL_OP_NODE;
+    }
+
+    @Override
+    public AssertNonNullOpNode copy(CopyState copyState) {
+      return new AssertNonNullOpNode(this, copyState);
+    }
+  }
+
+  /** Node representing the shift left '<<' operator. */
+  public static final class ShiftLeftOpNode extends AbstractOperatorNode {
+
+    public ShiftLeftOpNode(SourceLocation sourceLocation, SourceLocation operatorLocation) {
+      super(sourceLocation, Operator.SHIFT_LEFT, operatorLocation);
+    }
+
+    private ShiftLeftOpNode(ShiftLeftOpNode orig, CopyState copyState) {
+      super(orig, copyState);
+    }
+
+    @Override
+    public Kind getKind() {
+      return Kind.SHIFT_LEFT_OP_NODE;
+    }
+
+    @Override
+    public ShiftLeftOpNode copy(CopyState copyState) {
+      return new ShiftLeftOpNode(this, copyState);
+    }
+  }
+
+  /** Node representing the shift right '>>' operator. */
+  public static final class ShiftRightOpNode extends AbstractOperatorNode {
+
+    public ShiftRightOpNode(SourceLocation sourceLocation, SourceLocation operatorLocation) {
+      super(sourceLocation, Operator.SHIFT_RIGHT, operatorLocation);
+    }
+
+    private ShiftRightOpNode(ShiftRightOpNode orig, CopyState copyState) {
+      super(orig, copyState);
+    }
+
+    @Override
+    public Kind getKind() {
+      return Kind.SHIFT_RIGHT_OP_NODE;
+    }
+
+    @Override
+    public ShiftRightOpNode copy(CopyState copyState) {
+      return new ShiftRightOpNode(this, copyState);
+    }
+  }
+
+  /** Node representing the bitwise OR '|' operator. */
+  public static final class BitwiseOrOpNode extends AbstractOperatorNode {
+
+    public BitwiseOrOpNode(SourceLocation sourceLocation, SourceLocation operatorLocation) {
+      super(sourceLocation, Operator.BITWISE_OR, operatorLocation);
+    }
+
+    private BitwiseOrOpNode(BitwiseOrOpNode orig, CopyState copyState) {
+      super(orig, copyState);
+    }
+
+    @Override
+    public Kind getKind() {
+      return Kind.BITWISE_OR_OP_NODE;
+    }
+
+    @Override
+    public BitwiseOrOpNode copy(CopyState copyState) {
+      return new BitwiseOrOpNode(this, copyState);
+    }
+  }
+
+  /** Node representing the bitwise XOR '^' operator. */
+  public static final class BitwiseXorOpNode extends AbstractOperatorNode {
+
+    public BitwiseXorOpNode(SourceLocation sourceLocation, SourceLocation operatorLocation) {
+      super(sourceLocation, Operator.BITWISE_XOR, operatorLocation);
+    }
+
+    private BitwiseXorOpNode(BitwiseXorOpNode orig, CopyState copyState) {
+      super(orig, copyState);
+    }
+
+    @Override
+    public Kind getKind() {
+      return Kind.BITWISE_XOR_OP_NODE;
+    }
+
+    @Override
+    public BitwiseXorOpNode copy(CopyState copyState) {
+      return new BitwiseXorOpNode(this, copyState);
+    }
+  }
+
+  /** Node representing the bitwise AND '&' operator. */
+  public static final class BitwiseAndOpNode extends AbstractOperatorNode {
+
+    public BitwiseAndOpNode(SourceLocation sourceLocation, SourceLocation operatorLocation) {
+      super(sourceLocation, Operator.BITWISE_AND, operatorLocation);
+    }
+
+    private BitwiseAndOpNode(BitwiseAndOpNode orig, CopyState copyState) {
+      super(orig, copyState);
+    }
+
+    @Override
+    public Kind getKind() {
+      return Kind.BITWISE_AND_OP_NODE;
+    }
+
+    @Override
+    public BitwiseAndOpNode copy(CopyState copyState) {
+      return new BitwiseAndOpNode(this, copyState);
     }
   }
 }

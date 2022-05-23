@@ -31,7 +31,6 @@ import java.util.List;
  * children for the master ParentNode. E.g. for a Soy parse tree node, N is usually SoyNode, but for
  * SoyFileSetNode N is SoyFileNode, for SoyFileNode N is TemplateNode, etc; for a Soy expression
  * parse tree, N is usually ExprNode.
- *
  */
 public final class MixinParentNode<N extends Node> {
 

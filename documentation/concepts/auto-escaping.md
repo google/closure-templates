@@ -40,7 +40,7 @@ manually define its `kind` attribute. For example, a strict template that
 produces a URI might look like this:
 
 ```soy
-{template .googleUri kind="uri"}
+{template googleUri kind="uri"}
   http://www.google.com/
 {/template}
 ```

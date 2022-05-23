@@ -17,12 +17,12 @@
 package com.google.template.soy.sharedpasses.render;
 
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.template.soy.shared.SharedTestUtils.untypedTemplateBodyForExpression;
+import static com.google.template.soy.testing.SharedTestUtils.untypedTemplateBodyForExpression;
 import static org.junit.Assert.fail;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.template.soy.SoyFileSetParserBuilder;
+import com.google.common.collect.ImmutableTable;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyDict;
 import com.google.template.soy.data.SoyList;
@@ -37,10 +37,13 @@ import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.plugin.java.PluginInstances;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.PrintNode;
+import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import java.util.Set;
 import javax.annotation.Nullable;
 import org.junit.Before;
@@ -48,10 +51,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-/**
- * Unit tests for EvalVisitor.
- *
- */
+/** Unit tests for EvalVisitor. */
 @RunWith(JUnit4.class)
 public class EvalVisitorTest {
 
@@ -126,25 +126,27 @@ public class EvalVisitorTest {
   private SoyValue eval(String expression) throws Exception {
     PrintNode code =
         (PrintNode)
-            SoyFileSetParserBuilder.forTemplateContents(
-                    // wrap in a function so we don't run into the 'can't print bools' error message
-                    untypedTemplateBodyForExpression("fakeFunction(" + expression + ")"))
-                .addSoyFunction(
-                    new SoyFunction() {
-                      @Override
-                      public String getName() {
-                        return "fakeFunction";
-                      }
+            ((TemplateNode)
+                    SoyFileSetParserBuilder.forTemplateContents(
+                            // wrap in a function so we don't run into the 'can't print bools' error
+                            // message
+                            untypedTemplateBodyForExpression("fakeFunction(" + expression + ")"))
+                        .addSoyFunction(
+                            new SoyFunction() {
+                              @Override
+                              public String getName() {
+                                return "fakeFunction";
+                              }
 
-                      @Override
-                      public Set<Integer> getValidArgsSizes() {
-                        return ImmutableSet.of(1);
-                      }
-                    })
-                .parse()
-                .fileSet()
-                .getChild(0)
-                .getChild(0)
+                              @Override
+                              public Set<Integer> getValidArgsSizes() {
+                                return ImmutableSet.of(1);
+                              }
+                            })
+                        .parse()
+                        .fileSet()
+                        .getChild(0)
+                        .getChild(0))
                 .getChild(0);
     ExprNode expr = ((FunctionNode) code.getExpr().getChild(0)).getChild(0);
 
@@ -156,7 +158,10 @@ public class EvalVisitorTest {
                 xidRenamingMap,
                 null,
                 /* debugSoyTemplateInfo= */ false,
-                /* pluginInstances= */ ImmutableMap.of());
+                PluginInstances.empty(),
+                ImmutableTable.of(),
+                null,
+                null);
     return evalVisitor.exec(expr);
   }
 
@@ -280,11 +285,7 @@ public class EvalVisitorTest {
 
   @Test
   public void testEvalRecordLiteral() throws Exception {
-
-    SoyDict result = (SoyDict) eval("record()");
-    assertThat(result.getItemKeys()).isEmpty();
-
-    result = (SoyDict) eval("record(aaa: 'blah', bbb: 123, ccc: $boo)");
+    SoyDict result = (SoyDict) eval("record(aaa: 'blah', bbb: 123, ccc: $boo)");
     assertThat(result.getItemKeys()).hasSize(3);
     assertThat(result.getField("aaa").stringValue()).isEqualTo("blah");
     assertThat(result.getField("bbb").integerValue()).isEqualTo(123);
@@ -306,24 +307,24 @@ public class EvalVisitorTest {
     assertThat(eval("$foo.goo2[22]")).isInstanceOf(UndefinedData.class);
 
     // TODO: If enabling exception for undefined LHS (see EvalVisitor), uncomment tests below.
-    //assertRenderException(
+    // assertRenderException(
     //    "$foo.bar.moo.tar", "encountered undefined LHS just before accessing \".tar\"");
     assertThat(eval("$foo.bar.moo.tar")).isInstanceOf(UndefinedData.class);
-    //assertRenderException(
+    // assertRenderException(
     //    "$foo.baz.moo.tar", "encountered undefined LHS just before accessing \".moo\"");
     assertThat(eval("$foo.baz.moo.tar")).isInstanceOf(UndefinedData.class);
-    assertRenderException("$boo?[2]", "encountered non-map/list just before accessing \"?[2]\"");
+    assertRenderException("$boo?[2]", "encountered non-map/list just before accessing \"[2]\"");
     assertRenderException(
-        "$boo?['xyz']", "encountered non-map/list just before accessing \"?['xyz']\"");
+        "$boo?['xyz']", "encountered non-map/list just before accessing \"['xyz']\"");
     assertDataException(
         "$foo[2]",
         "SoyDict accessed with non-string key (got key type"
             + " com.google.template.soy.data.restricted.IntegerData).");
     assertThat(eval("$moo.too")).isInstanceOf(UndefinedData.class);
-    //assertRenderException(
+    // assertRenderException(
     //    "$roo.too", "encountered undefined LHS just before accessing \".too\"");
     assertThat(eval("$roo.too")).isInstanceOf(UndefinedData.class);
-    //assertRenderException("$roo[2]", "encountered undefined LHS just before accessing \"[2]\"");
+    // assertRenderException("$roo[2]", "encountered undefined LHS just before accessing \"[2]\"");
     assertThat(eval("$roo[2]")).isInstanceOf(UndefinedData.class);
   }
 
@@ -333,13 +334,13 @@ public class EvalVisitorTest {
     // Note: Null-safe access only helps when left side is undefined or null, not when it's the
     // wrong type.
     assertRenderException(
-        "$foo?.bar?.moo.tar", "encountered non-record just before accessing \"?.moo\"");
+        "$foo?.bar?.moo.tar", "encountered non-record just before accessing \".moo\"");
     assertThat(eval("$foo?.baz?.moo.tar")).isInstanceOf(NullData.class);
     assertDataException(
         "$foo[2]",
         "SoyDict accessed with non-string key (got key type"
             + " com.google.template.soy.data.restricted.IntegerData).");
-    assertRenderException("$moo?.too", "encountered non-record just before accessing \"?.too\"");
+    assertRenderException("$moo?.too", "encountered non-record just before accessing \".too\"");
     assertThat(eval("$roo?.too")).isInstanceOf(NullData.class);
     assertThat(eval("$roo?[2]")).isInstanceOf(NullData.class);
   }
@@ -488,18 +489,17 @@ public class EvalVisitorTest {
 
   @Test
   public void testEvalFunctions() throws Exception {
-
-    assertEval("isNonnull(null)", false);
-    assertEval("isNonnull(0)", true);
-    assertEval("isNonnull(1)", true);
-    assertEval("isNonnull(false)", true);
-    assertEval("isNonnull(true)", true);
-    assertEval("isNonnull('')", true);
-    assertEval("isNonnull($undefined)", false);
-    assertEval("isNonnull($n)", false);
-    assertEval("isNonnull($boo)", true);
-    assertEval("isNonnull($foo.goo2)", true);
-    assertEval("isNonnull($map0)", true);
+    assertEval("null != null", false);
+    assertEval("0 != null", true);
+    assertEval("1 != null", true);
+    assertEval("false != null", true);
+    assertEval("true != null", true);
+    assertEval("'' != null", true);
+    assertEval("$undefined != null", false);
+    assertEval("$n != null", false);
+    assertEval("$boo != null", true);
+    assertEval("$foo.goo2 != null", true);
+    assertEval("$map0 != null", true);
   }
 
   @Test

@@ -23,13 +23,12 @@ import com.google.template.soy.soytree.SoyNode.StatementNode;
 
 /**
  * Node representing the 'log' statement.
- *
  */
 public final class LogNode extends AbstractBlockCommandNode
     implements StandaloneNode, StatementNode {
 
   public LogNode(int id, SourceLocation sourceLocation) {
-    super(id, sourceLocation, "log");
+    super(id, sourceLocation, sourceLocation, "log");
   }
 
   /**

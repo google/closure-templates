@@ -16,13 +16,11 @@
 
 package com.google.template.soy.soytree;
 
-
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.internal.Identifier;
-import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
@@ -32,24 +30,28 @@ import java.util.List;
  * Builder for TemplateElementNode.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public final class TemplateElementNodeBuilder
     extends TemplateNodeBuilder<TemplateElementNodeBuilder> {
 
-  protected static final ImmutableSet<String> BANNED_ATTRIBUTE_NAMES =
-      ImmutableSet.of("autoescape", "kind", "stricthtml", "visibility");
+  static final ImmutableSet<String> BANNED_ATTRIBUTE_NAMES =
+      ImmutableSet.of("autoescape", "stricthtml", "visibility");
 
   private static final SoyErrorKind BANNED_ATTRIBUTE_NAMES_ERROR =
       SoyErrorKind.of("Attribute ''{0}'' is not allowed on Soy elements.");
 
+  private static final SoyErrorKind INVALID_ELEMENT_KIND =
+      SoyErrorKind.of("Soy element kind must be html or html<...>.");
+
   private List<CommandTagAttribute> attrs = ImmutableList.of();
+
+  public String jsNamespace = null;
+  public String jsClass = null;
 
   /** @param soyFileHeaderInfo Info from the containing Soy file's header declarations. */
   public TemplateElementNodeBuilder(
       SoyFileHeaderInfo soyFileHeaderInfo, ErrorReporter errorReporter) {
     super(soyFileHeaderInfo, errorReporter);
-    setContentKind(SanitizedContentKind.HTML);
   }
 
   @Override
@@ -59,8 +61,7 @@ public final class TemplateElementNodeBuilder
     this.cmdText = templateName.identifier() + " " + Joiner.on(' ').join(attrs);
     setCommonCommandValues(attrs);
 
-    setTemplateNames(
-        soyFileHeaderInfo.getNamespace() + templateName.identifier(), templateName.identifier());
+    setTemplateNames(templateName, soyFileHeaderInfo.getNamespace());
     return this;
   }
 
@@ -68,12 +69,22 @@ public final class TemplateElementNodeBuilder
   public TemplateElementNode build() {
     Preconditions.checkState(id != null && cmdText != null);
     for (CommandTagAttribute attr : attrs) {
-      if (BANNED_ATTRIBUTE_NAMES.contains(attr.getName().identifier())) {
+      if (attr.getName().identifier().equals("kind")) {
+        if (!getContentKind().getSanitizedContentKind().isHtml()) {
+          errorReporter.report(attr.getValueLocation(), INVALID_ELEMENT_KIND);
+        }
+      } else if (BANNED_ATTRIBUTE_NAMES.contains(attr.getName().identifier())) {
         this.errorReporter.report(
-            this.sourceLocation, BANNED_ATTRIBUTE_NAMES_ERROR, attr.getName().identifier());
+            attr.getName().location(), BANNED_ATTRIBUTE_NAMES_ERROR, attr.getName().identifier());
+      }
+      if (attr.getName().identifier().equals("jsnamespace")) {
+        jsNamespace = attr.getValue();
+      }
+      if (attr.getName().identifier().equals("jsclass")) {
+        jsClass = attr.getValue();
       }
     }
-    return new TemplateElementNode(this, soyFileHeaderInfo, params);
+    return new TemplateElementNode(this, soyFileHeaderInfo, params, jsNamespace, jsClass);
   }
 
   @Override

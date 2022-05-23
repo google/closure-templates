@@ -18,6 +18,7 @@ package com.google.template.soy.jssrc.dsl;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.jssrc.restricted.JsExpr;
+import java.util.function.Consumer;
 
 /**
  * Represents an anonymous JavaScript function declaration.
@@ -33,7 +34,7 @@ abstract class FunctionDeclaration extends Expression {
 
   abstract JsDoc jsDoc();
 
-  abstract Statement body();
+  abstract CodeChunk body();
 
   abstract boolean isArrowFunction();
 
@@ -43,6 +44,11 @@ abstract class FunctionDeclaration extends Expression {
   }
 
   static FunctionDeclaration createArrowFunction(JsDoc jsDoc, Statement body) {
+    return new AutoValue_FunctionDeclaration(
+        /* initialStatements= */ ImmutableList.of(), jsDoc, body, true);
+  }
+
+  static FunctionDeclaration createArrowFunction(JsDoc jsDoc, Expression body) {
     return new AutoValue_FunctionDeclaration(
         /* initialStatements= */ ImmutableList.of(), jsDoc, body, true);
   }
@@ -60,7 +66,7 @@ abstract class FunctionDeclaration extends Expression {
   }
 
   @Override
-  public void collectRequires(RequiresCollector collector) {
+  public void collectRequires(Consumer<GoogRequire> collector) {
     body().collectRequires(collector);
     jsDoc().collectRequires(collector);
   }
@@ -70,14 +76,38 @@ abstract class FunctionDeclaration extends Expression {
     if (!isArrowFunction()) {
       ctx.append("function");
     }
-    ctx.append("(");
-    ctx.append(CodeChunkUtils.generateParamList(jsDoc()));
-    ctx.append(") ");
-    if (isArrowFunction()) {
-      ctx.append("=> ");
+    boolean paramsNeedParens = !isArrowFunction() || jsDoc().params().size() != 1;
+    if (paramsNeedParens) {
+      ctx.append("(");
     }
-    try (FormattingContext ignored = ctx.enterBlock()) {
-      ctx.appendAll(body());
+    ctx.append(
+        CodeChunkUtils.generateParamList(
+            jsDoc(), /* addInlineTypeAnnotations= */ isArrowFunction()));
+    if (paramsNeedParens) {
+      ctx.append(") ");
+    }
+    if (isArrowFunction()) {
+      ctx.append(" => ");
+    }
+    if (isArrowFunction() && body() instanceof Expression) {
+      Expression exprBody = (Expression) body();
+      if (exprBody.isRepresentableAsSingleExpression()) {
+        // protect with parens to avoid parsing ambiguity
+        // see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/Arrow_functions#Returning_object_literals
+        if (exprBody.initialExpressionIsObjectLiteral()) {
+          exprBody = Group.create(exprBody);
+        }
+        // simplified arrow function body
+        ctx.appendOutputExpression(exprBody);
+      } else {
+        try (FormattingContext ignored = ctx.enterBlock()) {
+          ctx.appendAll(Return.create(exprBody));
+        }
+      }
+    } else {
+      try (FormattingContext ignored = ctx.enterBlock()) {
+        ctx.appendAll(body());
+      }
     }
   }
 }

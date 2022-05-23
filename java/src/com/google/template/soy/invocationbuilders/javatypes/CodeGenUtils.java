@@ -16,12 +16,10 @@
 
 package com.google.template.soy.invocationbuilders.javatypes;
 
-import com.google.common.base.Preconditions;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.data.BaseSoyTemplateImpl.AbstractBuilder;
+import com.google.template.soy.data.BaseSoyTemplateImpl.AbstractBuilderWithAccumulatorParameters;
 import com.google.template.soy.data.SoyTemplateParam;
-import com.google.template.soy.data.SoyValueConverter;
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
 /**
@@ -33,47 +31,24 @@ public final class CodeGenUtils {
 
   private CodeGenUtils() {}
 
-  public static final Member AS_MAP_OF_NUMBERS =
-      MethodImpl.method(AbstractBuilder.class, "asMapOfNumbers");
-  public static final Member SET_PARAM = MethodImpl.method(AbstractBuilder.class, "setParam");
+  public static final Member SET_PARAM_INTERNAL =
+      MethodImpl.method(AbstractBuilder.class, "setParamInternal");
   public static final Member ADD_TO_LIST_PARAM =
-      MethodImpl.method(AbstractBuilder.class, "addToListParam");
+      MethodImpl.method(AbstractBuilderWithAccumulatorParameters.class, "addToListParam");
   public static final Member INIT_LIST_PARAM =
-      MethodImpl.method(AbstractBuilder.class, "initListParam");
-  public static final Member CHECK_NOT_NULL =
-      MethodImpl.method(Preconditions.class, "checkNotNull");
-  public static final Member AS_RECORD = MethodImpl.method(AbstractBuilder.class, "asRecord");
-  public static final Member AS_NUMBER = MethodImpl.method(AbstractBuilder.class, "asNumber");
-  public static final Member AS_NULLABLE_NUMBER =
-      MethodImpl.method(AbstractBuilder.class, "asNullableNumber");
-  public static final Member AS_NUMBER_COLLECTION =
-      MethodImpl.method(AbstractBuilder.class, "asNumberCollection");
-  public static final Member AS_COLLECTION =
-      MethodImpl.method(AbstractBuilder.class, "asCollection");
-  public static final Member AS_LIST_OF_DOUBLES =
-      MethodImpl.method(AbstractBuilder.class, "asListOfDoubles");
-  public static final Member DOUBLE_MAPPER =
-      MethodImpl.field(AbstractBuilder.class, "doubleMapper");
-  public static final Member LONG_MAPPER = MethodImpl.field(AbstractBuilder.class, "longMapper");
-  public static final Member NUMBER_MAPPER =
-      MethodImpl.field(AbstractBuilder.class, "numberMapper");
-  public static final Member AS_LIST_OF_LONGS =
-      MethodImpl.method(AbstractBuilder.class, "asListOfLongs");
-  public static final Member MARK_AS_SOY_MAP =
-      MethodImpl.method(SoyValueConverter.class, "markAsSoyMap");
-  public static final Member AS_NULLABLE_ATTRIBUTES =
-      MethodImpl.method(AbstractBuilder.class, "asNullableAttributes");
-  public static final Member AS_ATTRIBUTES =
-      MethodImpl.method(AbstractBuilder.class, "asAttributes");
-  public static final Member AS_NULLABLE_CSS =
-      MethodImpl.method(AbstractBuilder.class, "asNullableCss");
-  public static final Member AS_CSS = MethodImpl.method(AbstractBuilder.class, "asCss");
-  public static final Member TO_IMMUTABLE_MAP = unchecked("ImmutableMap.copyOf");
+      MethodImpl.method(AbstractBuilderWithAccumulatorParameters.class, "initListParam");
+  public static final Member AS_RECORD = castFunction("asRecord");
 
-  public static final Member OPTIONAL_P = MethodImpl.method(SoyTemplateParam.class, "optional");
-  public static final Member REQUIRED_P = MethodImpl.method(SoyTemplateParam.class, "required");
-  public static final Member INDIRECT_P = MethodImpl.method(SoyTemplateParam.class, "indirect");
-  public static final Member INJECTED_P = MethodImpl.method(SoyTemplateParam.class, "injected");
+  public static final Member STANDARD_P =
+      MethodImpl.fullyQualifiedMethod(SoyTemplateParam.class, "standard");
+  public static final Member INDIRECT_P =
+      MethodImpl.fullyQualifiedMethod(SoyTemplateParam.class, "indirect");
+  public static final Member INJECTED_P =
+      MethodImpl.fullyQualifiedMethod(SoyTemplateParam.class, "injected");
+
+  static Member castFunction(String name) {
+    return MethodImpl.method(AbstractBuilder.class, name);
+  }
 
   /** A field or method that can be printed in code generation. */
   @Immutable
@@ -82,29 +57,20 @@ public final class CodeGenUtils {
     String toString();
   }
 
-  private static Member unchecked(String s) {
-    return new Member() {
-      @Override
-      public String toString() {
-        return s;
-      }
-    };
-  }
-
   @Immutable
   private static class MethodImpl implements Member {
     private final String name;
 
-    private MethodImpl(java.lang.reflect.Member method) {
-      this.name = method.getName();
+    private MethodImpl(java.lang.reflect.Method method, boolean qualified) {
+      this.name = (qualified ? method.getDeclaringClass().getName() + "." : "") + method.getName();
     }
 
     private static MethodImpl method(Class<?> type, String methodName) {
-      return new MethodImpl(findAnyMethod(type, methodName));
+      return new MethodImpl(findAnyMethod(type, methodName), /*qualified=*/ false);
     }
 
-    private static MethodImpl field(Class<?> type, String fieldName) {
-      return new MethodImpl(findAnyField(type, fieldName));
+    private static MethodImpl fullyQualifiedMethod(Class<?> type, String methodName) {
+      return new MethodImpl(findAnyMethod(type, methodName), /*qualified=*/ true);
     }
 
     @Override
@@ -114,19 +80,11 @@ public final class CodeGenUtils {
   }
 
   private static Method findAnyMethod(Class<?> type, String methodName) {
-    return findAny(type.getDeclaredMethods(), methodName);
-  }
-
-  private static Field findAnyField(Class<?> type, String fieldName) {
-    return findAny(type.getDeclaredFields(), fieldName);
-  }
-
-  private static <T extends java.lang.reflect.Member> T findAny(T[] members, String name) {
-    for (T member : members) {
-      if (name.equals(member.getName())) {
-        return member;
+    for (Method method : type.getDeclaredMethods()) {
+      if (methodName.equals(method.getName())) {
+        return method;
       }
     }
-    throw new IllegalArgumentException();
+    throw new IllegalArgumentException("Can't find a method named: " + methodName + " in: " + type);
   }
 }

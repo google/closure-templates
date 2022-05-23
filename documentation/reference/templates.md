@@ -1,10 +1,5 @@
 # Templates
 
-
-<!--#include file="commands-blurb-include.md"-->
-
-This chapter describes the template commands.
-
 [TOC]
 
 ## template {#template}
@@ -20,15 +15,11 @@ Syntax (basic form):
 With all optional attributes:
 
 ```soy
-{template <TEMPLATE_NAME> visibility="<private/public>" kind="html" stricthtml="true" requirecss="<NAMESPACE>.<CSS_ELEMENT>" cssbase="<NAMESPACE>.<CSS_BASE>"}
+{template <TEMPLATE_NAME> visibility="<private/public>" kind="html" stricthtml="true" requirecsspath="./foo" cssprefix="<PREFIX> requirecss="<NAMESPACE>.<CSS_ELEMENT>" cssbase="<NAMESPACE>.<CSS_BASE>"}
   ...
 {/template}
 ```
 
-The template name must be a dot followed by an identifier because it is a
-partial name relative to the file's namespace. For example, if the file's
-namespace is `ui.settings.login` and the template's partial name is
-`.newPassword`, then the full template name is `ui.settings.login.newPassword`.
 
 These are the `template` tag's attributes:
 
@@ -47,7 +38,19 @@ These are the `template` tag's attributes:
 *   `kind`: Optional. Default `html`. See the security guide for other
     [content kinds](../dev/security.md#content_kinds).
 
-<!--#include file="common-attributes-include.md"-->
+*   `requirecss`: Deprecated. Use the `requirecsspath` attribute on
+    [`{namespace}`](file-declarations.md#namespace) instead.
+
+    Takes a list of CSS namespaces (dotted identifiers). This is used to add
+    `@requirecss` annotations in the generated JavaScript. Also, if there is no
+    `cssbase` attribute, the first `requirecss` namespace can be used for
+    autoprefixing in [`css` function](functions.md#css) calls.
+
+*   `cssbase`: Deprecated. Use the `cssprefix` attribute on
+    [`{namespace}`](file-declarations.md#namespace) instead.
+
+    Takes a single CSS namespace (dotted identifier). This is used for
+    autoprefixing in [`css` function](functions.md#css) calls.
 
 *   `stricthtml`: Optional. Default `true`. Configures
     [strict html support](html.md)
@@ -66,7 +69,7 @@ These are the `template` tag's attributes:
     ```soy
      {namespace example}
 
-     {template .article whitespace="preserve"}
+     {template article whitespace="preserve"}
      {@param title: string}
      {@param body: string}
      <article>
@@ -163,7 +166,7 @@ Syntax:
 
 `{@inject}` declares an [injected template parameter](../concepts/ij-data.md).
 The syntax is identical to the [required param](#param-param) syntax with the
-exception of the keyword.
+exception of the keyword. The injected parameter may be optional (`{@inject?}`).
 
 See the [types reference](types.md) for instructions on how to declare types.
 
@@ -176,7 +179,7 @@ comment must start on the same line as the parameter declaration.
 Example:
 
 ```soy
-{template .example}
+{template example}
   /** A leading doc comment. */
   {@param name: string}
   {@param? height: int} /** A trailing doc comment. */

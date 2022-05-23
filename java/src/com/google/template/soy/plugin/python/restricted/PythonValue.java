@@ -18,7 +18,6 @@ package com.google.template.soy.plugin.python.restricted;
 
 import com.google.common.collect.Iterables;
 import com.google.template.soy.plugin.restricted.SoySourceValue;
-import javax.annotation.Nullable;
 
 /** A value that resolves to a SoyValue or supported native type at runtime. */
 public interface PythonValue extends SoySourceValue {
@@ -41,8 +40,6 @@ public interface PythonValue extends SoySourceValue {
 
   /** Tests if {@code this in other}. */
   PythonValue in(PythonValue other);
-
-  PythonValue slice(@Nullable PythonValue start, @Nullable PythonValue end);
 
   PythonValue getItem(PythonValue key);
 }

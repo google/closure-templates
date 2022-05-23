@@ -16,6 +16,7 @@
 package com.google.template.soy.soytree;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.template.soy.soytree.SoyTreeUtils.getNodeAsHtmlTagNode;
 
 import com.google.common.collect.ImmutableList;
@@ -26,18 +27,19 @@ import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprEquivalence;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.soytree.CommandTagAttribute.CommandTagAttributesHolder;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 import javax.annotation.Nullable;
 
 /**
  * Node for a <code {@literal {}velog...}</code> statement.
  */
 public final class VeLogNode extends AbstractBlockCommandNode
-    implements ExprHolderNode, StatementNode, MsgBlockNode {
+    implements ExprHolderNode, StatementNode, MsgBlockNode, CommandTagAttributesHolder {
 
   private static final SoyErrorKind DATA_ATTRIBUTE_UNSUPPORTED =
       SoyErrorKind.of(
@@ -51,10 +53,24 @@ public final class VeLogNode extends AbstractBlockCommandNode
    * is useful for deciding placeholder equivalence for velog nodes in messages.
    */
   static final class SamenessKey {
-    private final VeLogNode delegate;
+    private VeLogNode delegate;
 
     private SamenessKey(VeLogNode delegate) {
       this.delegate = delegate;
+    }
+
+    private SamenessKey(SamenessKey orig, CopyState copyState) {
+      // store the original, this may still be valid if we are only copying a subtree
+      this.delegate = orig.delegate;
+      copyState.registerRefListener(
+          orig.delegate,
+          newDelegate -> {
+            this.delegate = newDelegate;
+          });
+    }
+
+    SamenessKey copy(CopyState copyState) {
+      return new SamenessKey(this, copyState);
     }
 
     @Override
@@ -62,36 +78,39 @@ public final class VeLogNode extends AbstractBlockCommandNode
       if (!(other instanceof SamenessKey)) {
         return false;
       }
+      ExprEquivalence exprEquivalence = new ExprEquivalence();
+
       SamenessKey otherKey = (SamenessKey) other;
-      return ExprEquivalence.get().equivalent(delegate.veDataExpr, otherKey.delegate.veDataExpr)
-          && ExprEquivalence.get().equivalent(delegate.logonlyExpr, otherKey.delegate.logonlyExpr);
+      return exprEquivalence.equivalent(delegate.veDataExpr, otherKey.delegate.veDataExpr)
+          && exprEquivalence.equivalent(delegate.logonlyExpr, otherKey.delegate.logonlyExpr);
     }
 
     @Override
     public int hashCode() {
-      return Objects.hash(
-          ExprEquivalence.get().wrap(delegate.veDataExpr),
-          ExprEquivalence.get().wrap(delegate.logonlyExpr));
+      return new ExprEquivalence().hash(Arrays.asList(delegate.veDataExpr, delegate.logonlyExpr));
     }
   }
 
   private final ExprRootNode veDataExpr;
   private boolean needsSyntheticVelogNode = false;
+  private final List<CommandTagAttribute> attributes;
   @Nullable private final ExprRootNode logonlyExpr;
 
   public VeLogNode(
       int id,
       SourceLocation location,
+      SourceLocation openTagLocation,
       ExprNode veDataExpr,
       List<CommandTagAttribute> attributes,
       ErrorReporter errorReporter) {
-    super(id, location, "velog");
+    super(id, location, openTagLocation, "velog");
     this.veDataExpr = new ExprRootNode(checkNotNull(veDataExpr));
     ExprRootNode logonlyExpr = null;
+    this.attributes = attributes;
     for (CommandTagAttribute attr : attributes) {
       switch (attr.getName().identifier()) {
         case "logonly":
-          logonlyExpr = new ExprRootNode(attr.valueAsExpr(errorReporter));
+          logonlyExpr = attr.valueAsExpr(errorReporter);
           break;
         case "data":
           // TODO(b/124762130): Remove this after 2019-08-26, when people are used to the new syntax
@@ -113,8 +132,17 @@ public final class VeLogNode extends AbstractBlockCommandNode
   private VeLogNode(VeLogNode orig, CopyState copyState) {
     super(orig, copyState);
     this.veDataExpr = orig.veDataExpr.copy(copyState);
+    this.attributes =
+        orig.attributes.stream().map(c -> c.copy(copyState)).collect(toImmutableList());
     this.logonlyExpr = orig.logonlyExpr == null ? null : orig.logonlyExpr.copy(copyState);
     this.needsSyntheticVelogNode = orig.needsSyntheticVelogNode;
+    // See SamenessKey copy constructor
+    copyState.updateRefs(orig, this);
+  }
+
+  @Override
+  public List<CommandTagAttribute> getAttributes() {
+    return this.attributes;
   }
 
   SamenessKey getSamenessKey() {

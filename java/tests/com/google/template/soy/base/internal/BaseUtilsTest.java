@@ -24,7 +24,6 @@ import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for BaseUtils.
- *
  */
 @RunWith(JUnit4.class)
 public final class BaseUtilsTest {
@@ -92,4 +91,93 @@ public final class BaseUtilsTest {
     assertThat(BaseUtils.convertToUpperUnderscore("boo_foo8")).isEqualTo("BOO_FOO_8");
     assertThat(BaseUtils.convertToUpperUnderscore("_BOO__8_FOO_")).isEqualTo("BOO_8_FOO");
   }
+
+  @Test
+  public void testEscapeToSoyString() {
+    assertThat(BaseUtils.escapeToSoyString("xXx", false, QuoteStyle.SINGLE)).isEqualTo("xXx");
+    assertThat(BaseUtils.escapeToSoyString("\\\"\'`\b\f\n\r\t", true, QuoteStyle.SINGLE))
+        .isEqualTo("\\\\\"\\\'`\\b\\f\\n\\r\\t");
+
+    assertThat(BaseUtils.escapeToSoyString("\u2028 \u2029", false, QuoteStyle.SINGLE))
+        .isEqualTo("\u2028 \u2029");
+    assertThat(BaseUtils.escapeToSoyString("<body onload='jscode'>", false, QuoteStyle.SINGLE))
+        .isEqualTo("<body onload=\\'jscode\\'>");
+
+    assertThat(BaseUtils.escapeToSoyString("\0" + "7", false, QuoteStyle.SINGLE))
+        .isEqualTo("\0" + "7");
+
+    // Properly escape supplementary codepoints
+    assertThat(
+            BaseUtils.escapeToSoyString(
+                new StringBuilder().appendCodePoint(0x1D177).toString(), false, QuoteStyle.SINGLE))
+        .isEqualTo("\ud834\udd77");
+    assertThat(Character.toCodePoint((char) 0xD834, (char) 0xDD77)).isEqualTo(0x1D177);
+
+    // Supplemental code points that aren't format controls need not be escaped
+    assertThat(
+            BaseUtils.escapeToSoyString(
+                new StringBuilder().appendCodePoint(0x1D120).toString(), false, QuoteStyle.SINGLE))
+        .isEqualTo(new StringBuilder().appendCodePoint(0x1D120).toString());
+  }
+
+  @Test
+  public void testEscapeToSoyString_toAscii() {
+    assertThat(BaseUtils.escapeToSoyString("xXx", true, QuoteStyle.SINGLE)).isEqualTo("xXx");
+    assertThat(BaseUtils.escapeToSoyString("\\\"\'`\b\f\n\r\t", true, QuoteStyle.SINGLE))
+        .isEqualTo("\\\\\"\\\'`\\b\\f\\n\\r\\t");
+
+    assertThat(BaseUtils.escapeToSoyString("\u2028 \u2029", true, QuoteStyle.SINGLE))
+        .isEqualTo("\\u2028 \\u2029");
+    assertThat(BaseUtils.escapeToSoyString("<body onload='jscode'>", true, QuoteStyle.SINGLE))
+        .isEqualTo("<body onload=\\'jscode\\'>");
+
+    assertThat(BaseUtils.escapeToSoyString("\0" + "7", true, QuoteStyle.SINGLE))
+        .isEqualTo("\\u00007");
+
+    // Properly escape all supplementary codepoints
+    assertThat(
+            BaseUtils.escapeToSoyString(
+                new StringBuilder().appendCodePoint(0x1D177).toString(), true, QuoteStyle.SINGLE))
+        .isEqualTo("\\uD834\\uDD77");
+    assertThat(Character.toCodePoint((char) 0xD834, (char) 0xDD77)).isEqualTo(0x1D177);
+    assertThat(
+            BaseUtils.escapeToSoyString(
+                new StringBuilder().appendCodePoint(0x1D120).toString(), true, QuoteStyle.SINGLE))
+        .isEqualTo("\\uD834\\uDD20");
+    assertThat(Character.toCodePoint((char) 0xD834, (char) 0xDD20)).isEqualTo(0x1D120);
+  }
+
+  @Test
+  public void testEscapeToSoyString_doubleQuoteStyle() {
+    assertThat(
+            BaseUtils.escapeToSoyString(
+                "console.log(\"test's\", `quote$`);", false, QuoteStyle.DOUBLE))
+        .isEqualTo("console.log(\\\"test's\\\", `quote$`);");
+  }
+
+  @Test
+  public void testEscapeToSoyString_backtickQuoteStyle() {
+    assertThat(
+            BaseUtils.escapeToSoyString(
+                "console.log(\"test's\", `quote$`);", false, QuoteStyle.BACKTICK))
+        .isEqualTo("console.log(\"test's\", \\`quote\\$\\`);");
+  }
+
+  @Test
+  public void testEscapeToWrappedSoyString() {
+    assertThat(
+            BaseUtils.escapeToWrappedSoyString(
+                "they said, \"this'll be a `string` literal\"", false, QuoteStyle.SINGLE))
+        .isEqualTo("'they said, \"this\\'ll be a `string` literal\"'");
+    assertThat(
+            BaseUtils.escapeToWrappedSoyString(
+                "they said, \"this'll be a `string` literal\"", false, QuoteStyle.DOUBLE))
+        .isEqualTo("\"they said, \\\"this'll be a `string` literal\\\"\"");
+    assertThat(
+            BaseUtils.escapeToWrappedSoyString(
+                "they said, \"this'll be a `string` literal\"", false, QuoteStyle.BACKTICK))
+        .isEqualTo("`they said, \"this'll be a \\`string\\` literal\"`");
+  }
+
+  // TODO: fix callers of wrapped
 }

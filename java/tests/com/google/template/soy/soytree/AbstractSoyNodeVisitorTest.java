@@ -19,16 +19,15 @@ package com.google.template.soy.soytree;
 import static org.junit.Assert.assertEquals;
 
 import com.google.common.base.Joiner;
-import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for AbstractSoyNodeVisitor.
- *
  */
 @RunWith(JUnit4.class)
 public final class AbstractSoyNodeVisitorTest {
@@ -42,12 +41,12 @@ public final class AbstractSoyNodeVisitorTest {
                 Joiner.on("\n")
                     .join(
                         "{namespace boo}",
-                        "{template .foo}",
+                        "{template foo}",
                         "  {@param goo: ?}",
                         "  {$goo}",
                         "  {2 + 2}",
                         "{/template}",
-                        "{template .moo}",
+                        "{template moo}",
                         "  {'moo'}",
                         "{/template}",
                         ""))

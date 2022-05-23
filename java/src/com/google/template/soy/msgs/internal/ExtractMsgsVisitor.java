@@ -21,6 +21,7 @@ import static java.util.Comparator.comparing;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.internal.MsgUtils.MsgPartsAndIds;
 import com.google.template.soy.msgs.restricted.SoyMsg;
@@ -31,8 +32,13 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+import com.google.template.soy.soytree.TemplateDelegateNode;
+import com.google.template.soy.soytree.TemplateNode;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Visitor for extracting messages from a Soy parse tree.
@@ -41,12 +47,15 @@ import java.util.List;
  *
  * <p>{@link #exec} should be called on a full parse tree. All messages will be extracted and
  * returned in a {@code SoyMsgBundle} (locale "en").
- *
  */
 public final class ExtractMsgsVisitor extends AbstractSoyNodeVisitor<SoyMsgBundle> {
 
   /** List of messages collected during the pass. */
   private List<SoyMsg> msgs;
+
+  private String currentTemplate;
+
+  public ExtractMsgsVisitor(ErrorReporter errorReporter) {}
 
   /**
    * Returns a SoyMsgBundle containing all messages extracted from the given SoyFileSetNode or
@@ -60,10 +69,36 @@ public final class ExtractMsgsVisitor extends AbstractSoyNodeVisitor<SoyMsgBundl
     visit(node);
     // the messages in this list only have one source location.
     // messages gain extra source locations when merged together in a bundle.
-    Collections.sort(msgs, comparing(m -> Iterables.getOnlyElement(m.getSourceLocations())));
-    return new SoyMsgBundleImpl(null, msgs);
+    Collections.sort(
+        msgs, comparing(m -> Iterables.getOnlyElement(m.getSourceLocations()).sourceLocation()));
+    return new SoyMsgBundleImpl(null, msgs, this::merge);
   }
 
+  private Optional<SoyMsg> merge(SoyMsg m1, SoyMsg m2) {
+    // TODO(b/173828073): consider comparing things like contentType
+    return Optional.of(
+        m1.toBuilder()
+            .setHasFallback(m1.hasFallback() && m2.hasFallback())
+            .setDesc(m1.getDesc() + extractAttributes(m2))
+            .addAllSourceLocations(m2.getSourceLocations())
+            .build());
+  }
+
+  /** Regex pattern for extracting message attributes from the message description. */
+  private static final Pattern MESSAGE_ATTRIBUTE_PATTERN = Pattern.compile("\\[[^\\[\\]]*\\]");
+
+  /**
+   * Extracts message attributes from the message description. Returns an empty {@link String} if
+   * the description doesn't contain any message attribute.
+   */
+  private static String extractAttributes(SoyMsg msg) {
+    StringBuilder attributes = new StringBuilder();
+    Matcher matcher = MESSAGE_ATTRIBUTE_PATTERN.matcher(msg.getDesc());
+    while (matcher.find()) {
+      attributes.append(matcher.group());
+    }
+    return attributes.toString();
+  }
   // -----------------------------------------------------------------------------------------------
   // Implementations for specific nodes.
 
@@ -74,16 +109,32 @@ public final class ExtractMsgsVisitor extends AbstractSoyNodeVisitor<SoyMsgBundl
     if (node.getMeaning() != null) {
       builder.setMeaning(node.getMeaning());
     }
+    node.getAlternateId().ifPresent(builder::setAlternateId);
     SoyMsg msg =
         builder
             .setDesc(node.getDesc())
-            .setIsHidden(node.isHidden())
             .setContentType(node.getContentType())
-            .addSourceLocation(node.getSourceLocation())
+            .addSourceLocation(node.getSourceLocation(), currentTemplate)
             .setIsPlrselMsg(node.isPlrselMsg())
             .setParts(msgPartsAndIds.parts)
+            .setHasFallback(
+                // we have a fallback if our parent has 2 children (the msg and the fallbackmsg) and
+                // we are the msg
+                node.getParent().numChildren() == 2 && node.getParent().getChildIndex(node) == 0)
             .build();
     msgs.add(msg);
+
+    // Nested msg are allowed, e.g. as params of a nested call node.
+    visitChildren(node);
+  }
+
+  @Override
+  protected void visitTemplateNode(TemplateNode node) {
+    if (node instanceof TemplateDelegateNode) {
+      currentTemplate = ((TemplateDelegateNode) node).getDelTemplateName();
+    }
+    currentTemplate = node.getTemplateName();
+    super.visitTemplateNode(node);
   }
 
   // -----------------------------------------------------------------------------------------------

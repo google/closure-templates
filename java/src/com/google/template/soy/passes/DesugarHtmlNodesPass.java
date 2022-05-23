@@ -23,13 +23,10 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
-import com.google.template.soy.base.internal.QuoteStyle;
-import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.exprtree.FunctionNode;
-import com.google.template.soy.exprtree.StringNode;
-import com.google.template.soy.shared.internal.BuiltinFunction;
+import com.google.template.soy.basicdirectives.BasicEscapeDirective;
+import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
+import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.HtmlAttributeNode;
@@ -44,9 +41,9 @@ import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.MsgPluralNode;
 import com.google.template.soy.soytree.MsgSelectNode;
+import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
-import com.google.template.soy.soytree.SkipNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
@@ -54,8 +51,6 @@ import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.TemplateRegistry;
-import com.google.template.soy.types.StringType;
 import java.util.List;
 import java.util.Optional;
 
@@ -65,11 +60,10 @@ import java.util.Optional;
  *
  * <p>This pass ensures that the rest of the compiler can remain agnostic about these nodes.
  */
-public final class DesugarHtmlNodesPass extends CompilerFileSetPass {
+public final class DesugarHtmlNodesPass implements CompilerFileSetPass {
 
   @Override
-  public Result run(
-      ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator, TemplateRegistry registry) {
+  public Result run(ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator) {
     for (SoyFileNode fileNode : sourceFiles) {
       run(fileNode, idGenerator);
     }
@@ -89,7 +83,7 @@ public final class DesugarHtmlNodesPass extends CompilerFileSetPass {
 
     /**
      * Tracks whether we need a space character before the '/' of a self closing tag. This is only
-     * necessary if there is an unquoted attribute as the final attribute.
+     * necessary if there is an unquoted or dynamic attribute as the final attribute.
      */
     boolean needsSpaceSelfClosingTag;
 
@@ -142,44 +136,8 @@ public final class DesugarHtmlNodesPass extends CompilerFileSetPass {
     }
 
     @Override
-    protected void visitSkipNode(SkipNode skipNode) {
-      HtmlOpenTagNode openTag = (HtmlOpenTagNode) skipNode.getParent();
-      ImmutableList.Builder<StandaloneNode> builder = ImmutableList.builder();
-      // {skip} + {key} nodes are turned into soy-server-key="{$key}". For more information why,
-      // see go/typed-html-templates. For Incremental DOM, these are handled in
-      // GenIncrementalDomCodeVisitor.
-      // Note: when users do not use their own key, the soy-server-key looks like
-      // "soy-server-key="{xid('template'-0)}. When users use their own key, we just use their
-      // key verbatim.
-      FunctionNode funcNode =
-          new FunctionNode(
-              Identifier.create(BuiltinFunction.XID.getName(), openTag.getSourceLocation()),
-              BuiltinFunction.XID,
-              openTag.getSourceLocation());
-      funcNode.addChild(
-          new StringNode(skipNode.getSkipId(), QuoteStyle.SINGLE, openTag.getSourceLocation()));
-      funcNode.setType(StringType.getInstance());
-      builder
-          .add(
-              new RawTextNode(idGenerator.genId(), " soy-server-key=", openTag.getSourceLocation()))
-          .add(createPrefix("'", skipNode))
-          .add(
-              new PrintNode(
-                  idGenerator.genId(),
-                  openTag.getSourceLocation(),
-                  /* isImplicit= */ true,
-                  /* expr= */ openTag.getKeyNode() == null
-                      ? funcNode
-                      : openTag.getKeyNode().getExpr().getRoot().copy(new CopyState()),
-                  /* attributes= */ ImmutableList.of(),
-                  ErrorReporter.exploding()))
-          .add(createSuffix("'", skipNode));
-      replacements = Optional.of(builder.build());
-    }
-
-    @Override
-    protected void visitHtmlOpenTagNode(HtmlOpenTagNode node) {
-      visitHtmlTagNode(node);
+    protected void visitHtmlOpenTagNode(HtmlOpenTagNode openTag) {
+      visitHtmlTagNode(openTag);
     }
 
     @Override
@@ -234,7 +192,7 @@ public final class DesugarHtmlNodesPass extends CompilerFileSetPass {
       // location points to the last character, so if the content is longer than one character
       // extend the source location to cover it.  e.g. content might be "/>"
       if (suffix.length() > 1) {
-        location = location.offsetStartCol(suffix.length() - 1);
+        location = location.offsetEndCol(suffix.length() - 1);
       }
       return new RawTextNode(idGenerator.genId(), suffix, location);
     }
@@ -243,20 +201,36 @@ public final class DesugarHtmlNodesPass extends CompilerFileSetPass {
     protected void visitHtmlAttributeNode(HtmlAttributeNode node) {
       visitChildren(node);
 
-      // prefix the value with a single whitespace character.  This makes it unambiguous with the
-      // preceding attribute/tag name.
-      // There are some cases where we don't need this:
-      // 1. if the attribute children don't render anything, e.g. {$foo ?: ''}
-      //    -This would only be fixable by modifying the code generators to dynamically insert the
-      //     space character
-      // 2. if the preceding node is a quoted attribute value
-      //    -This would always work, but is technically out of spec so we should probably avoid it.
       ImmutableList.Builder<StandaloneNode> builder = ImmutableList.builder();
-      if (needsSpaceForAttribute) {
-        // TODO(lukes): in this case, if the attribute is dynamic and ultimately renders the
-        // empty string, we will render an extra space.
+      boolean needsDynamicSpace = node.getStaticKey() == null && !node.hasValue();
+      if (needsSpaceForAttribute && !needsDynamicSpace) {
+        // prefix the value with a single whitespace character when the attribute is static. This
+        // makes it unambiguous with the preceding attribute/tag name.
         builder.add(
             new RawTextNode(idGenerator.genId(), " ", node.getSourceLocation().getBeginLocation()));
+      } else if (needsSpaceForAttribute && node.getStaticKey() == null) {
+        // use a print directive to conditionally add a whitespace for dynamic attributes.
+        SoyPrintDirective whitespaceDirective =
+            new BasicEscapeDirective.WhitespaceHtmlAttributesDirective();
+        if (node.getChild(0) instanceof PrintNode) {
+          PrintDirectiveNode whitespaceDirectiveNode =
+              PrintDirectiveNode.createSyntheticNode(
+                  idGenerator.genId(),
+                  Identifier.create("|whitespaceHtmlAttributes", node.getSourceLocation()),
+                  node.getSourceLocation());
+          whitespaceDirectiveNode.setPrintDirective(whitespaceDirective);
+          ((PrintNode) node.getChild(0)).addChild(whitespaceDirectiveNode);
+        } else if (node.getChild(0) instanceof CallNode) {
+          CallNode typed = (CallNode) node.getChild(0);
+          typed.setEscapingDirectives(
+              ImmutableList.<SoyPrintDirective>builder()
+                  .addAll(typed.getEscapingDirectives())
+                  .add(whitespaceDirective)
+                  .build());
+        } else {
+          throw new AssertionError(
+              "Found node that is not PrintNode or CallNode inside HtmlAttributeNode");
+        }
       } else {
         // After any attribute, the next attribute will need a space character.
         needsSpaceForAttribute = true;
@@ -266,6 +240,11 @@ public final class DesugarHtmlNodesPass extends CompilerFileSetPass {
         builder.add(new RawTextNode(idGenerator.genId(), "=", node.getEqualsLocation()));
         // normally there would only be 1 child, but rewriting may have split it into multiple
         builder.addAll(node.getChildren().subList(1, node.numChildren()));
+      }
+      if (!node.hasValue() && node.getStaticKey() == null) {
+        // Add a space after the last attribute if it is dynamic and the tag is self-closing. If the
+        // attribute value isn't quoted, a space is needed to disambiguate with the "/" character.
+        needsSpaceSelfClosingTag = true;
       }
       replacements = Optional.of(builder.build());
     }

@@ -33,13 +33,13 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
  * <p>To create a visitor:
  *
  * <ol>
- *   <li> Subclass this class.
- *   <li> Implement {@code visit*Node()} methods for some specific node types.
- *   <li> Implement fallback methods for node types not specifically handled. The most general
+ *   <li>Subclass this class.
+ *   <li>Implement {@code visit*Node()} methods for some specific node types.
+ *   <li>Implement fallback methods for node types not specifically handled. The most general
  *       fallback method is {@link #visitSoyNode visitSoyNode()}, which is usually needed. Other
  *       fallback methods include {@code visitLoopNode()} and {@code visitCallParamNode()}.
- *   <li> Maybe implement a constructor, taking appropriate parameters for your visitor call.
- *   <li> Maybe implement {@link #exec exec()} if this visitor needs to return a non-null final
+ *   <li>Maybe implement a constructor, taking appropriate parameters for your visitor call.
+ *   <li>Maybe implement {@link #exec exec()} if this visitor needs to return a non-null final
  *       result and/or if this visitor has state that needs to be setup/reset before each unrelated
  *       use of {@code visit()}.
  * </ol>
@@ -58,6 +58,10 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
         break;
       case SOY_FILE_NODE:
         visitSoyFileNode((SoyFileNode) node);
+        break;
+
+      case IMPORT_NODE:
+        visitImportNode((ImportNode) node);
         break;
 
       case TEMPLATE_ELEMENT_NODE:
@@ -112,6 +116,9 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
         visitPrintDirectiveNode((PrintDirectiveNode) node);
         break;
 
+      case CONST_NODE:
+        visitConstNode((ConstNode) node);
+        break;
       case LET_VALUE_NODE:
         visitLetValueNode((LetValueNode) node);
         break;
@@ -196,9 +203,14 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
       case DEBUGGER_NODE:
         visitDebuggerNode((DebuggerNode) node);
         break;
-
-      case LINE_COMMENT_NODE:
-        visitLineCommentNode((LineCommentNode) node);
+      case EXTERN_NODE:
+        visitExternNode((ExternNode) node);
+        break;
+      case JAVA_IMPL_NODE:
+        visitJavaImplNode((JavaImplNode) node);
+        break;
+      case JS_IMPL_NODE:
+        visitJsImplNode((JsImplNode) node);
         break;
 
       default:
@@ -238,6 +250,22 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
   }
 
   protected void visitSoyFileNode(SoyFileNode node) {
+    visitSoyNode(node);
+  }
+
+  protected void visitExternNode(ExternNode node) {
+    visitSoyNode(node);
+  }
+
+  protected void visitJavaImplNode(JavaImplNode node) {
+    visitSoyNode(node);
+  }
+
+  protected void visitJsImplNode(JsImplNode node) {
+    visitSoyNode(node);
+  }
+
+  protected void visitImportNode(ImportNode node) {
     visitSoyNode(node);
   }
 
@@ -317,6 +345,9 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
     visitSoyNode(node);
   }
 
+  protected void visitConstNode(ConstNode node) {
+    visitSoyNode(node);
+  }
 
   protected void visitLetValueNode(LetValueNode node) {
     visitLetNode(node);
@@ -423,10 +454,6 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
   }
 
   protected void visitDebuggerNode(DebuggerNode node) {
-    visitSoyNode(node);
-  }
-
-  protected void visitLineCommentNode(LineCommentNode node) {
     visitSoyNode(node);
   }
 

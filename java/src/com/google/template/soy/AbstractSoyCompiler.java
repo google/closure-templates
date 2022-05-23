@@ -15,26 +15,34 @@
  */
 package com.google.template.soy;
 
+import static java.util.stream.Collectors.joining;
+
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Joiner;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.SetMultimap;
+import com.google.errorprone.annotations.CheckReturnValue;
 import com.google.errorprone.annotations.ForOverride;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.protobuf.Descriptors.DescriptorValidationException;
 import com.google.protobuf.Descriptors.FileDescriptor;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.internal.SoyFileKind;
-import com.google.template.soy.data.restricted.PrimitiveData;
 import com.google.template.soy.error.SoyCompilationException;
-import com.google.template.soy.logging.LoggingConfig;
+import com.google.template.soy.logging.AnnotatedLoggingConfig;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
+import com.google.template.soy.plugin.java.DelegatingMethodChecker;
+import com.google.template.soy.plugin.java.MethodChecker;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
+import com.google.template.soy.shared.restricted.SoyFunction;
+import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -46,9 +54,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import javax.annotation.CheckReturnValue;
 import org.kohsuke.args4j.Argument;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.Option;
@@ -65,7 +73,7 @@ public abstract class AbstractSoyCompiler {
           + "java "
           + getClass().getName()
           + " \\\n"
-          + "     [<flag1> <flag2> ...] --jar <jarName>  \\\n"
+          + "     [<flag1> <flag2> ...] --java_extern_defn_jars <jarName>  \\\n"
           + "     --srcs <soyFilePath>,... [--deps <soyFilePath>,...]\n";
 
   @Option(
@@ -75,6 +83,12 @@ public abstract class AbstractSoyCompiler {
               + " Sources are typically required and read from this flag or as extra arguments.",
       handler = SoyCmdLineParser.FileListOptionHandler.class)
   List<File> srcs = new ArrayList<>();
+
+  @Option(
+      name = "--generated_files",
+      usage = "A map of generated files that map back to their short name",
+      handler = SoyCmdLineParser.StringStringMapHandler.class)
+  private Map<String, String> generatedFiles = new HashMap<>();
 
   @Option(
       name = "--depHeaders",
@@ -93,27 +107,11 @@ public abstract class AbstractSoyCompiler {
   private List<File> indirectDepHeaders = new ArrayList<>();
 
   @Option(
-      name = "--compileTimeGlobalsFile",
-      aliases = "--compileTimeGlobalsFiles",
+      name = "--pluginModules",
       usage =
-          "The path to a file containing the mappings for global names to be substituted"
-              + " at compile time. Each line of the file should have the format"
-              + " \"<global_name> = <primitive_data>\" where primitive_data is a valid Soy"
-              + " expression literal for a primitive type (null, boolean, integer, float, or"
-              + " string). Empty lines and lines beginning with \"//\" are ignored. The file"
-              + " should be encoded in UTF-8. If you need to generate a file in this format"
-              + " from Java, consider using the utility"
-              + " SoyUtils.generateCompileTimeGlobalsFile().",
-      handler = SoyCmdLineParser.FileListOptionHandler.class)
-  private List<File> globalsFiles = new ArrayList<>();
-
-  @Option(
-    name = "--pluginModules",
-    usage =
-        "Specifies the full class names of Guice modules for function plugins and"
-            + " print directive plugins (comma-delimited list).",
-    handler = SoyCmdLineParser.ModuleListOptionHandler.class
-  )
+          "Specifies the full class names of Guice modules for function plugins and"
+              + " print directive plugins (comma-delimited list).",
+      handler = SoyCmdLineParser.ModuleListOptionHandler.class)
   private List<Module> pluginModules = new ArrayList<>();
 
   @Option(
@@ -131,13 +129,33 @@ public abstract class AbstractSoyCompiler {
       handler = SoyCmdLineParser.FileListOptionHandler.class)
   private List<File> protoFileDescriptors = new ArrayList<>();
 
-
   @Option(
       name = "--loggingConfig",
       aliases = "--loggingConfigs",
       usage = "Location of logging config protos in binary proto format. Optional.",
       handler = SoyCmdLineParser.FileListOptionHandler.class)
   private List<File> loggingConfigs = new ArrayList<>();
+
+  @Option(
+      name = "--cssMetadata",
+      aliases = "--cssMetadata",
+      usage =
+          "List of css metadata files used to check strict deps against css dependencies and css()"
+              + " calls.",
+      handler = SoyCmdLineParser.FileListOptionHandler.class)
+  private List<File> cssMetadata = new ArrayList<>();
+
+  @Option(
+      name = "--check_css_list",
+      usage =
+          "Filename for list of files to exempt from checking css() calls for classes in CSS"
+              + " files.")
+  private File checkCssList = null;
+
+  @Option(
+      name = "--skip_css_reference_check",
+      usage = "Whether to skip the go/css-conformance#check-css-references check.")
+  private boolean skipCssReferenceCheck = false;
 
   @Option(
       name = "--enableExperimentalFeatures",
@@ -150,23 +168,35 @@ public abstract class AbstractSoyCompiler {
   private List<String> experimentalFeatures = new ArrayList<>();
 
   @Option(
-    name = "--disableOptimizerForTestingUseOnly",
-    usage =
-        "Disable optimizer in Soy compiler. Optimzer tries to simplify the Soy AST and improves "
-            + "the performance in general. "
-            + "This flag should only be set in integration test environment."
-  )
+      name = "--java_extern_defn_jars",
+      usage =
+          "Java jars that are used to validate that java implementations of externs are valid"
+              + " references.",
+      handler = SoyCmdLineParser.FileListOptionHandler.class)
+  private List<File> javaDeps = new ArrayList<>();
+
+  @Option(
+      name = "--disableOptimizerForTestingUseOnly",
+      usage =
+          "Disable optimizer in Soy compiler. Optimzer tries to simplify the Soy AST and improves "
+              + "the performance in general. "
+              + "This flag should only be set in integration test environment.")
   private boolean disableOptimizer = false;
+
+  @Option(
+      name = "--allow_unblessed_generated_files",
+      usage = "Whether to allow generated source files without the blessed comment.")
+  private boolean allowUnblessedGeneratedFiles = true;
 
   /** The remaining arguments after parsing command-line flags. */
   @Argument private List<String> arguments = new ArrayList<>();
 
-  private final SoyCompilerFileReader soyCompilerFileReader;
+  protected final SoyCompilerFileReader soyCompilerFileReader;
 
   final PluginLoader pluginLoader;
   private final SoyInputCache cache;
 
-  AbstractSoyCompiler(
+  protected AbstractSoyCompiler(
       PluginLoader pluginLoader, SoyInputCache cache, SoyCompilerFileReader soyCompilerFileReader) {
     this.cache = cache;
     this.pluginLoader = pluginLoader;
@@ -178,11 +208,11 @@ public abstract class AbstractSoyCompiler {
     this(pluginLoader, SoyInputCache.DEFAULT, soyCompilerFileReader);
   }
 
-  AbstractSoyCompiler(PluginLoader pluginLoader, SoyInputCache cache) {
+  protected AbstractSoyCompiler(PluginLoader pluginLoader, SoyInputCache cache) {
     this(pluginLoader, cache, FileSystemSoyFileReader.INSTANCE);
   }
 
-  AbstractSoyCompiler() {
+  protected AbstractSoyCompiler() {
     this(new PluginLoader.Default(), SoyInputCache.DEFAULT);
   }
 
@@ -191,7 +221,6 @@ public abstract class AbstractSoyCompiler {
     System.exit(status);
   }
 
-  @VisibleForTesting
   @CheckReturnValue
   public int run(final String[] args, PrintStream err) {
     try {
@@ -229,26 +258,26 @@ public abstract class AbstractSoyCompiler {
       StringWriter sw = new StringWriter();
       cmdLineParser.setUsageWidth(100);
       cmdLineParser.printUsage(sw, /* resource bundle = */ null);
-      exitWithError(String.format("%s\n\n%s\n%s", cle.getMessage(), usagePrefix, sw.toString()));
+      exitWithError(String.format("%s\n\n%s\n%s", cle.getMessage(), usagePrefix, sw));
     }
 
     validateFlags();
     if (!arguments.isEmpty()) {
       exitWithError(
-          "Found extra arguments passed on the command line. If these are sources, use --srcs=..."
-              + " instead.");
+          "Found unexpected extra arguments passed on the command line:\n  "
+              + Joiner.on(" ").join(arguments));
     }
     if (requireSources() && srcs.isEmpty()) {
       exitWithError("Must provide list of source Soy files (--srcs).");
     }
 
-    SoyFileSet.Builder sfsBuilder;
+    SoyFileSet.Builder sfsBuilder = new SoyFileSet.Builder(/*ignored=*/ true);
+
     if (!pluginModules.isEmpty()) {
       guiceTimer.start();
       // Only create the Builder through an Injector if the user passed pluginModules.
       // Otherwise, we don't need to go through Guice at all.
       List<Module> modules = new ArrayList<>();
-      modules.add(new SoyModule());
       modules.addAll(pluginModules);
       Injector injector;
       try {
@@ -259,24 +288,40 @@ public abstract class AbstractSoyCompiler {
                 + "--pluginModules?",
             t);
       }
-      sfsBuilder = injector.getInstance(SoyFileSet.Builder.class);
+      Optional.ofNullable(injector.getExistingBinding(new Key<Set<SoyFunction>>() {}))
+          .ifPresent(b -> sfsBuilder.addSoyFunctions(b.getProvider().get()));
+
+      Optional.ofNullable(injector.getExistingBinding(new Key<Set<SoyPrintDirective>>() {}))
+          .ifPresent(b -> sfsBuilder.addSoyPrintDirectives(b.getProvider().get()));
       guiceTimer.stop();
-    } else {
-      sfsBuilder = SoyFileSet.builder();
+    }
+
+    ImmutableList.Builder<MethodChecker> builder = ImmutableList.builder();
+    for (File dep : javaDeps) {
+      builder.add(cache.read(dep, CacheLoaders.JAVA_DEPS, soyCompilerFileReader));
     }
     sfsBuilder
         .addSourceFunctions(sourceFunctions)
         .setWarningSink(err)
+        .setJavaPluginValidator(new DelegatingMethodChecker(builder.build()))
         .setValidatedLoggingConfig(parseLoggingConfig())
         // Set experimental features that are not generally available.
         .setExperimentalFeatures(experimentalFeatures)
         .addProtoDescriptors(parseProtos(protoFileDescriptors, cache, soyCompilerFileReader, err))
-        .setCompileTimeGlobals(parseGlobals());
+        .setSoyAstCache(cache.astCache());
+
+    if (!allowUnblessedGeneratedFiles) {
+      sfsBuilder.setGeneratedPathsToCheck(
+          generatedFiles.values().stream().map(SourceFilePath::create).collect(Collectors.toSet()));
+    }
 
     // add sources
     for (File src : srcs) {
       try {
-        sfsBuilder.addFile(cache.read(src, CacheLoaders.SOY_FILE_LOADER, soyCompilerFileReader));
+        // TODO(b/162524005): model genfiles in SourceFilePath directly.
+        SourceFilePath normalizedPath =
+            SourceFilePath.create(generatedFiles.getOrDefault(src.getPath(), src.getPath()));
+        sfsBuilder.add(cache.createFileSupplier(src, normalizedPath, soyCompilerFileReader));
       } catch (FileNotFoundException fnfe) {
         throw new CommandLineError(
             "File: " + src.getPath() + " passed to --srcs does not exist", fnfe);
@@ -287,6 +332,7 @@ public abstract class AbstractSoyCompiler {
     if (disableOptimizer) {
       sfsBuilder.disableOptimizer();
     }
+
     compile(sfsBuilder);
     timer.stop();
     // Unless the build is faster than 1 second, issue a warning if more than half of the build is
@@ -342,7 +388,7 @@ public abstract class AbstractSoyCompiler {
                 + entry.getValue().stream()
                     .map(c -> c.getFile().getPath())
                     .sorted()
-                    .collect(Collectors.joining(", "))
+                    .collect(joining(", "))
                 + ". Do your proto_library rules have overlapping sources?");
       }
     }
@@ -379,7 +425,6 @@ public abstract class AbstractSoyCompiler {
       try {
         sfsBuilder.addCompilationUnit(
             depKind,
-            depFile.getPath(),
             cache.read(depFile, CacheLoaders.COMPILATION_UNIT_LOADER, soyCompilerFileReader));
       } catch (IOException e) {
         throw new CommandLineError(
@@ -388,8 +433,12 @@ public abstract class AbstractSoyCompiler {
     }
   }
 
+  protected Map<String, String> getGeneratedFiles() {
+    return generatedFiles;
+  }
+
   private ValidatedLoggingConfig parseLoggingConfig() {
-    LoggingConfig.Builder configBuilder = LoggingConfig.newBuilder();
+    AnnotatedLoggingConfig.Builder configBuilder = AnnotatedLoggingConfig.newBuilder();
     for (File loggingConfig : loggingConfigs) {
       try {
         configBuilder.mergeFrom(
@@ -408,42 +457,11 @@ public abstract class AbstractSoyCompiler {
     return ValidatedLoggingConfig.create(configBuilder.build());
   }
 
-  private Map<String, PrimitiveData> parseGlobals() {
-    Map<String, PrimitiveData> globals = new HashMap<>();
-    Map<String, File> globalsToFilePath = new HashMap<>();
-    for (File globalsFile : globalsFiles) {
-      try {
-        ImmutableMap<String, PrimitiveData> parsedGlobals =
-            cache.read(globalsFile, CacheLoaders.GLOBALS_LOADER, soyCompilerFileReader);
-        for (Map.Entry<String, PrimitiveData> entry : parsedGlobals.entrySet()) {
-          PrimitiveData oldValue = globals.put(entry.getKey(), entry.getValue());
-          if (oldValue != null && !entry.getValue().equals(oldValue)) {
-            throw new CommandLineError(
-                String.format(
-                    "Found 2 values for the global '%s': '%s' was provided in %s and '%s' was "
-                        + "provided in %s",
-                    entry.getKey(),
-                    oldValue,
-                    globalsToFilePath.get(entry.getKey()),
-                    entry.getValue(),
-                    globalsFile));
-          }
-          globalsToFilePath.put(entry.getKey(), globalsFile);
-        }
-      } catch (IOException e) {
-        throw new CommandLineError(
-            "Unable to soy globals file: " + globalsFile + ": " + e.getMessage());
-      }
-    }
-    return globals;
-  }
-
-
   /**
    * Extension point for subtypes to perform additional logic to validate compiler specific flags.
    */
   @ForOverride
-  void validateFlags() {}
+  protected void validateFlags() throws IOException {}
 
   /** Extension point for subclasses to disable soy sources being required. */
   @ForOverride
@@ -466,9 +484,8 @@ public abstract class AbstractSoyCompiler {
   /**
    * Performs the actual compilation.
    *
-   * @param sfsBuilder The builder, already populated with sources, globals (if set) and plugins.
-   *     subclasses may set additional compilation options on the builder.
-   * @throws IOException
+   * @param sfsBuilder The builder, already populated with sources and plugins. subclasses may set
+   *     additional compilation options on the builder.
    */
   @ForOverride
   protected abstract void compile(SoyFileSet.Builder sfsBuilder) throws IOException;
@@ -478,7 +495,7 @@ public abstract class AbstractSoyCompiler {
    *
    * @param errorMsg The error message to print.
    */
-  static final RuntimeException exitWithError(String errorMsg) {
+  protected static final RuntimeException exitWithError(String errorMsg) {
     throw new CommandLineError(errorMsg);
   }
 }

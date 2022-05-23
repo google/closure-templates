@@ -29,11 +29,9 @@ import com.google.template.soy.soytree.SoyTreeUtils;
  * contextual autoescaping inference engine.
  *
  * <p>Checks that internal-only directives such as {@code |text} are not used.
- *
- * <p>{@link #exec} should be called on a full parse tree.
- *
  */
-final class CheckEscapingSanityFilePass extends CompilerFilePass {
+@RunAfter(ContentSecurityPolicyNonceInjectionPass.class)
+final class CheckEscapingSanityFilePass implements CompilerFilePass {
 
   private static final SoyErrorKind ILLEGAL_PRINT_DIRECTIVE =
       SoyErrorKind.of("{0} can only be used internally by the Soy compiler.");
@@ -48,7 +46,11 @@ final class CheckEscapingSanityFilePass extends CompilerFilePass {
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
     for (PrintDirectiveNode node : SoyTreeUtils.getAllNodesOfType(file, PrintDirectiveNode.class)) {
       EscapingMode escapingMode = EscapingMode.fromDirective(node.getName());
-      if (escapingMode != null && escapingMode.isInternalOnly) {
+      if ((escapingMode != null && escapingMode.isInternalOnly)
+          // This directive should only be inserted by the ContentSecurityPolicyNonceInjectionPass
+          // pass, all other uses are an error.
+          || (node.getName().equals(ContentSecurityPolicyNonceInjectionPass.FILTER_NAME)
+              && !node.isSynthetic())) {
         errorReporter.report(node.getSourceLocation(), ILLEGAL_PRINT_DIRECTIVE, node.getName());
       }
     }

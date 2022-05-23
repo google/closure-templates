@@ -39,6 +39,8 @@ public enum SanitizedContentKind {
    * domain.
    */
   HTML,
+  /** Similar to HTML, but exactly one element. */
+  HTML_ELEMENT,
 
   /**
    * Executable Javascript code or expression, safe for insertion in a script-tag or event handler
@@ -89,6 +91,15 @@ public enum SanitizedContentKind {
   /** Returns the kind formatted as it would be for an attribute value. */
   public String asAttributeValue() {
     return attributeValue;
+  }
+
+  public boolean isHtml() {
+    return this == HTML || this == HTML_ELEMENT;
+  }
+
+  /** Returns whether the sanitized types are equal. */
+  public boolean isAssignableFrom(SanitizedContentKind sanitizedType) {
+    return this == sanitizedType || (this == HTML && sanitizedType == HTML_ELEMENT);
   }
 
   /** Returns the kind for the given attribute value. Or {@code null} if it is invalid. */

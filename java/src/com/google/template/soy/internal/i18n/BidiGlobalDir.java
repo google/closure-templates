@@ -30,7 +30,6 @@ import javax.annotation.Nullable;
  * snippet yielding such a value when evaluated at template runtime.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 @Immutable
 public final class BidiGlobalDir {

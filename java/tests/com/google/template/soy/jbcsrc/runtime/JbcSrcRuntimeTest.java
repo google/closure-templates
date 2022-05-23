@@ -17,10 +17,15 @@
 package com.google.template.soy.jbcsrc.runtime;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.util.concurrent.Futures.immediateFuture;
 import static org.junit.Assert.assertThrows;
 
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.data.LoggingAdvisingAppendable;
+import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.restricted.StringData;
+import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.runtime.JbcSrcRuntime.MsgRenderer;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPlaceholderPart;
@@ -32,6 +37,7 @@ import org.junit.runners.JUnit4;
 
 @RunWith(JUnit4.class)
 public final class JbcSrcRuntimeTest {
+
   @Test
   public void testChainOfOrderConstraints() {
     MsgRenderer renderer = createRenderer(SoyMsgRawTextPart.of("Hello "));
@@ -64,7 +70,7 @@ public final class JbcSrcRuntimeTest {
     MsgRenderer renderer =
         createRenderer(
             SoyMsgRawTextPart.of("Hello "),
-            new SoyMsgPlaceholderPart("NAME", null),
+            new SoyMsgPlaceholderPart("NAME"),
             SoyMsgRawTextPart.of("."));
     renderer.setPlaceholder("NAME", StringData.forValue("world"));
     assertRendersAs(renderer, "Hello world.");
@@ -75,9 +81,9 @@ public final class JbcSrcRuntimeTest {
     MsgRenderer renderer =
         createRenderer(
             SoyMsgRawTextPart.of("Hello "),
-            new SoyMsgPlaceholderPart("LINK_START", null),
+            new SoyMsgPlaceholderPart("LINK_START"),
             SoyMsgRawTextPart.of("world."),
-            new SoyMsgPlaceholderPart("LINK_END", null));
+            new SoyMsgPlaceholderPart("LINK_END"));
     renderer.setPlaceholderAndOrdering("LINK_START", StringData.forValue("<a>"), "LINK_END");
     renderer.setPlaceholder("LINK_END", StringData.forValue("</a>"));
     assertRendersAs(renderer, "Hello <a>world.</a>");
@@ -89,9 +95,9 @@ public final class JbcSrcRuntimeTest {
     MsgRenderer renderer =
         createRenderer(
             SoyMsgRawTextPart.of("Hello "),
-            new SoyMsgPlaceholderPart("LINK_END", null),
+            new SoyMsgPlaceholderPart("LINK_END"),
             SoyMsgRawTextPart.of("world."),
-            new SoyMsgPlaceholderPart("LINK_START", null));
+            new SoyMsgPlaceholderPart("LINK_START"));
     renderer.setPlaceholderAndOrdering("LINK_START", StringData.forValue("<a>"), "LINK_END");
     renderer.setPlaceholder("LINK_END", StringData.forValue("</a>"));
     assertThat(assertThrows(IllegalStateException.class, renderer::status))
@@ -107,7 +113,7 @@ public final class JbcSrcRuntimeTest {
         createRenderer(
             SoyMsgRawTextPart.of("Hello "),
             SoyMsgRawTextPart.of("world."),
-            new SoyMsgPlaceholderPart("LINK_END", null));
+            new SoyMsgPlaceholderPart("LINK_END"));
     renderer.setPlaceholderAndOrdering("LINK_START", StringData.forValue("<a>"), "LINK_END");
     renderer.setPlaceholder("LINK_END", StringData.forValue("</a>"));
     assertThat(assertThrows(IllegalStateException.class, renderer::status))
@@ -122,7 +128,7 @@ public final class JbcSrcRuntimeTest {
     MsgRenderer renderer =
         createRenderer(
             SoyMsgRawTextPart.of("Hello "),
-            new SoyMsgPlaceholderPart("LINK_START", null),
+            new SoyMsgPlaceholderPart("LINK_START"),
             SoyMsgRawTextPart.of("world."));
     renderer.setPlaceholderAndOrdering("LINK_START", StringData.forValue("<a>"), "LINK_END");
     renderer.setPlaceholder("LINK_END", StringData.forValue("</a>"));
@@ -139,17 +145,89 @@ public final class JbcSrcRuntimeTest {
     // placeholder
     MsgRenderer renderer =
         createRenderer(
-            new SoyMsgPlaceholderPart("LINK_START_1", null),
+            new SoyMsgPlaceholderPart("LINK_START_1"),
             SoyMsgRawTextPart.of("Hello"),
-            new SoyMsgPlaceholderPart("LINK_END", null),
-            new SoyMsgPlaceholderPart("LINK_START_2", null),
+            new SoyMsgPlaceholderPart("LINK_END"),
+            new SoyMsgPlaceholderPart("LINK_START_2"),
             SoyMsgRawTextPart.of("world."),
-            new SoyMsgPlaceholderPart("LINK_END", null));
+            new SoyMsgPlaceholderPart("LINK_END"));
     renderer.setPlaceholderAndOrdering("LINK_START_1", StringData.forValue("<a>"), "LINK_END");
     renderer.setPlaceholderAndOrdering("LINK_START_2", StringData.forValue("<a>"), "LINK_END");
     renderer.setPlaceholder("LINK_END", StringData.forValue("</a>"));
     // renders fine
     assertRendersAs(renderer, "<a>Hello</a><a>world.</a>");
+  }
+
+  static class FakeProvider implements SoyValueProvider {
+    RenderResult result;
+    int calls;
+
+    FakeProvider() {}
+
+    FakeProvider(RenderResult result) {
+      this.result = result;
+    }
+
+    @Override
+    public RenderResult renderAndResolve(
+        LoggingAdvisingAppendable advisingAppendable, boolean isLast) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public SoyValue resolve() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public RenderResult status() {
+      calls++;
+      return result;
+    }
+  }
+
+  @Test
+  public void testAwaitProvider_done() {
+    FakeProvider provider = new FakeProvider(RenderResult.done());
+    JbcSrcRuntime.awaitProvider(provider);
+    assertThat(provider.calls).isEqualTo(1);
+  }
+
+  @Test
+  public void testAwaitProvider_limited() {
+    FakeProvider provider = new FakeProvider(RenderResult.limited());
+    assertThrows(AssertionError.class, () -> JbcSrcRuntime.awaitProvider(provider));
+    assertThat(provider.calls).isEqualTo(1);
+  }
+
+  @Test
+  public void testAwaitProvider_detachOnce() {
+    FakeProvider provider =
+        new FakeProvider() {
+          @Override
+          public RenderResult status() {
+            return calls++ == 0
+                ? RenderResult.continueAfter(immediateFuture("hello"))
+                : RenderResult.done();
+          }
+        };
+    JbcSrcRuntime.awaitProvider(provider);
+    assertThat(provider.calls).isEqualTo(2);
+  }
+
+  @Test
+  public void testAwaitProvider_detachManyTimes() {
+    FakeProvider provider =
+        new FakeProvider() {
+          @Override
+          public RenderResult status() {
+            return calls++ < 19
+                ? RenderResult.continueAfter(immediateFuture("hello"))
+                : RenderResult.done();
+          }
+        };
+    JbcSrcRuntime.awaitProvider(provider);
+    assertThat(provider.calls).isEqualTo(20);
   }
 
   private void assertRendersAs(MsgRenderer renderer, String expected) {

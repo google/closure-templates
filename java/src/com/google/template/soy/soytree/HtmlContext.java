@@ -34,6 +34,9 @@ public enum HtmlContext {
    */
   HTML_RCDATA(EscapingMode.ESCAPE_HTML_RCDATA),
 
+  /** Inside an <script> element with a non-JS type attribute. */
+  HTML_SCRIPT_PHRASING_DATA(EscapingMode.FILTER_HTML_SCRIPT_PHRASING_DATA),
+
   /** Just before a tag name on an open tag. */
   HTML_BEFORE_OPEN_TAG_NAME(EscapingMode.FILTER_HTML_ELEMENT_NAME),
 
@@ -123,6 +126,11 @@ public enum HtmlContext {
 
   @Nullable private final EscapingMode escapingMode;
   @Nullable private final String errorMessage;
+
+  /** Whether a class contains information about HTML context */
+  public interface HtmlContextHolder {
+    HtmlContext getHtmlContext();
+  }
 
   /**
    * The escaping mode appropriate for dynamic content inserted at this state. Null if there is no

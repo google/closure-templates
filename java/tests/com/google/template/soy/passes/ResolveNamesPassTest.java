@@ -21,7 +21,6 @@ import static com.google.common.truth.Truth.assertThat;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
@@ -37,19 +36,20 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import com.google.template.soy.types.SoyTypeRegistry;
+import com.google.template.soy.types.SoyTypeRegistryBuilder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for ResolveNamesPass.
- *
  */
 @RunWith(JUnit4.class)
 public final class ResolveNamesPassTest {
 
-  private static final SoyTypeRegistry typeRegistry = new SoyTypeRegistry();
+  private static final SoyTypeRegistry typeRegistry = SoyTypeRegistryBuilder.create();
 
   @Test
   public void testParamNameLookupSuccess() {
@@ -59,7 +59,7 @@ public final class ResolveNamesPassTest {
             .parse()
             .fileSet();
     runPass(soyTree);
-    TemplateNode n = soyTree.getChild(0).getChild(0);
+    TemplateNode n = (TemplateNode) soyTree.getChild(0).getChild(0);
     VarRefNode varRef =
         Iterables.getOnlyElement(SoyTreeUtils.getAllNodesOfType(n, VarRefNode.class));
     assertThat(varRef.getDefnDecl()).isSameInstanceAs(n.getParams().get(0));
@@ -73,7 +73,7 @@ public final class ResolveNamesPassTest {
             .parse()
             .fileSet();
     runPass(soyTree);
-    TemplateNode n = soyTree.getChild(0).getChild(0);
+    TemplateNode n = (TemplateNode) soyTree.getChild(0).getChild(0);
     VarRefNode varRef =
         Iterables.getOnlyElement(SoyTreeUtils.getAllNodesOfType(n, VarRefNode.class));
     assertThat(varRef.getDefnDecl()).isSameInstanceAs(n.getInjectedParams().get(0));
@@ -86,7 +86,7 @@ public final class ResolveNamesPassTest {
             .parse()
             .fileSet();
     runPass(soyTree);
-    TemplateNode n = soyTree.getChild(0).getChild(0);
+    TemplateNode n = (TemplateNode) soyTree.getChild(0).getChild(0);
     LetValueNode letNode =
         Iterables.getOnlyElement(SoyTreeUtils.getAllNodesOfType(n, LetValueNode.class));
     VarRefNode varRef =
@@ -108,7 +108,7 @@ public final class ResolveNamesPassTest {
             .parse()
             .fileSet();
     runPass(soyTree);
-    TemplateNode n = soyTree.getChild(0).getChild(0);
+    TemplateNode n = (TemplateNode) soyTree.getChild(0).getChild(0);
     LetNode la = (LetNode) n.getChild(0);
     ForNonemptyNode loop = (ForNonemptyNode) ((ForNode) n.getChild(1)).getChild(0);
 
@@ -128,7 +128,7 @@ public final class ResolveNamesPassTest {
             .parse()
             .fileSet();
     runPass(soyTree);
-    TemplateNode n = soyTree.getChild(0).getChild(0);
+    TemplateNode n = (TemplateNode) soyTree.getChild(0).getChild(0);
     LetValueNode firstLet = (LetValueNode) n.getChild(0);
     LetValueNode secondLet = (LetValueNode) n.getChild(1);
     LetValueNode thirdLet = (LetValueNode) n.getChild(2);
@@ -141,17 +141,17 @@ public final class ResolveNamesPassTest {
   @Test
   public void testVariableNameRedefinition() {
     assertResolveNamesFails(
-        "Variable '$la' already defined at line 4.",
+        "Local variable '$la' conflicts with symbol defined at 4:8-4:10.",
         constructTemplateSource("{let $la: 1 /}", "{let $la: $la /}"));
     assertResolveNamesFails(
-        "Variable '$pa' already defined at line 4.",
+        "Local variable '$pa' conflicts with symbol defined at 4:11-4:12.",
         constructTemplateSource("{@param pa: bool}", "{let $pa: not $pa /}"));
     assertResolveNamesFails(
-        "Variable '$la' already defined at line 4.",
+        "Local variable '$la' conflicts with symbol defined at 4:8-4:10.",
         constructTemplateSource(
             "{let $la: 1 /}", "{for $item in ['a', 'b']}", "  {let $la: $la /}", "{/for}"));
     assertResolveNamesFails(
-        "Variable '$group' already defined at line 4.",
+        "Local variable '$group' conflicts with symbol defined at 4:11-4:15.",
         constructTemplateSource(
             "{@param group: string}", "{for $group in ['a', 'b']}", "  {$group}", "{/for}"));
     // valid, $item and $la are defined in non-overlapping scopes
@@ -163,8 +163,7 @@ public final class ResolveNamesPassTest {
                 "{for $item in ['a', 'b']}",
                 "  {let $la: 1 /}",
                 "{/for}"))
-        .parse()
-        .fileSet();
+        .parse();
   }
 
   @Test
@@ -176,7 +175,7 @@ public final class ResolveNamesPassTest {
         "Found global reference aliasing a local variable 'group', did you mean '$group'?",
         constructTemplateSource("{let $group: 'foo' /}", "{if group}{$group}{/if}"));
     assertResolveNamesFails(
-        "Unbound global 'global'.",
+        "Undefined symbol 'global'. Did you mean '$local'?",
         constructTemplateSource("{let $local: 'foo' /}", "{if global}{$local}{/if}"));
   }
 
@@ -195,7 +194,7 @@ public final class ResolveNamesPassTest {
             .parse()
             .fileSet();
     runPass(soyTree);
-    TemplateNode n = soyTree.getChild(0).getChild(0);
+    TemplateNode n = (TemplateNode) soyTree.getChild(0).getChild(0);
     LetContentNode aLetNode = (LetContentNode) n.getChild(0);
     VarRefNode aVarRef = (VarRefNode) ((PrintNode) n.getChild(1)).getExpr().getRoot();
     assertThat(aVarRef.getDefnDecl()).isSameInstanceAs(aLetNode.getVar());
@@ -206,16 +205,21 @@ public final class ResolveNamesPassTest {
     assertThat(innerAVarRef.getDefnDecl()).isSameInstanceAs(innerALetNode.getVar());
   }
 
-
   @Test
   public void testLetReferencedInsideAttributeValue() {
     SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forFileContents(constructTemplateSource("{let $t: 1 /}<{$t}>"))
+        SoyFileSetParserBuilder.forFileContents(
+                constructTemplateSource("{let $t: 1 /}<{legacyDynamicTag($t)}>"))
             .parse()
             .fileSet();
-    TemplateNode n = soyTree.getChild(0).getChild(0);
+    TemplateNode n = (TemplateNode) soyTree.getChild(0).getChild(0);
     VarRefNode node = Iterables.getOnlyElement(SoyTreeUtils.getAllNodesOfType(n, VarRefNode.class));
     assertThat(node.getDefnDecl().kind()).isEqualTo(VarDefn.Kind.LOCAL_VAR);
+  }
+
+  @Test
+  public void testUnknownVariable() {
+    assertResolveNamesFails("Unknown variable.", "{namespace ns}{template foo}{$ggg}{/template}");
   }
 
   private void runPass(SoyFileSetNode soyTree) {
@@ -236,7 +240,7 @@ public final class ResolveNamesPassTest {
     return ""
         + "{namespace ns}\n"
         + "/***/\n"
-        + "{template .aaa stricthtml=\"false\"}\n"
+        + "{template aaa stricthtml=\"false\"}\n"
         + "  "
         + Joiner.on("\n   ").join(body)
         + "\n"

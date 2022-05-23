@@ -22,7 +22,6 @@ import javax.annotation.ParametersAreNonnullByDefault;
  * A mutable list with additional methods for ease-of-use.
  *
  * <p>Important: Do not use. Use java.util.List instead.
- *
  */
 @Deprecated
 @ParametersAreNonnullByDefault

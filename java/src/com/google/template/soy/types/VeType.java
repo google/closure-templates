@@ -25,6 +25,8 @@ public final class VeType extends SoyType {
 
   public static final VeType NO_DATA = new VeType(Optional.empty());
 
+  // This isn't a soyType to avoid triggering issues with strict deps and protos.  Not sure if that
+  // makes sense though given imports.
   private final Optional<String> dataType;
 
   private VeType(Optional<String> dataType) {
@@ -50,7 +52,14 @@ public final class VeType extends SoyType {
 
   @Override
   boolean doIsAssignableFromNonUnionType(SoyType srcType) {
-    return srcType.getKind() == Kind.VE && this.dataType.equals(((VeType) srcType).dataType);
+    if (srcType.getKind() == Kind.VE) {
+      VeType otherVe = (VeType) srcType;
+      if (dataType.isPresent() && dataType.get().equals(AnyType.getInstance().toString())) {
+        return true;
+      }
+      return dataType.equals(otherVe.dataType);
+    }
+    return false;
   }
 
   @Override
@@ -75,5 +84,10 @@ public final class VeType extends SoyType {
   @Override
   public int hashCode() {
     return Objects.hash(this.getClass(), dataType);
+  }
+
+  @Override
+  public <T> T accept(SoyTypeVisitor<T> visitor) {
+    return visitor.visit(this);
   }
 }

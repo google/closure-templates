@@ -1,0 +1,379 @@
+/*
+ * Copyright 2020 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+options {
+  JDK_VERSION = "1.8";
+  STATIC = false;
+  UNICODE_INPUT = true;
+  SUPPORT_CLASS_VISIBILITY_PUBLIC = false;
+  DEBUG_TOKEN_MANAGER = false;
+}
+
+PARSER_BEGIN(JsLexer)
+
+package com.google.template.soy.parsepasses.contextautoesc;
+
+import static com.google.common.base.Preconditions.checkState;
+
+import com.google.template.soy.parsepasses.contextautoesc.Context.UriPart;
+import com.google.template.soy.soytree.HtmlContext;
+import java.io.IOException;
+import java.io.StringReader;
+
+class JsLexer {
+  // We don't want to generate a Parser, but our maven plugin for javacc crashes when we disable
+  // parser generation.  So we build a broken class and exclude it from the internal build rules.
+  static {
+    if (true) {
+      throw new AssertionError("this class should not be used");
+    }
+  }
+}
+
+PARSER_END(JsLexer)
+
+
+TOKEN_MGR_DECLS: {
+  static Context calculateTransitions(Context starting, String text, int offset) {
+    StringReader reader = new StringReader(text);
+    if (offset > 0) {
+      try {
+        reader.skip(offset);
+      } catch (IOException ioe) {
+        // StringReader only throws IOE if it is closed, and we definitely haven't closed it yet.
+        throw new AssertionError(ioe);
+      }
+    } else if (offset < 0) {
+      throw new IllegalArgumentException("negative offset?: " + offset);
+    }
+    JsLexerTokenManager mgr =
+        new JsLexerTokenManager(new SimpleCharStream(reader), lexicalStateFromContext(starting));
+    mgr.currentContext = starting;
+    Token tok = mgr.getNextToken();
+    if (tok.kind != EOF) {
+      throw new IllegalStateException("Failed to process all of the text");
+    }
+    // We currently don't support dynamic printing within a js regex character class.  Supporting
+    // this wouldn't be difficult (just need to add a new Context bit), but it isn't clear that it
+    // is important
+    if (mgr.curLexState == REGEX_CHARACTER_CLASS) {
+      mgr.error("Invalid JS regular expression character class.  Expected ']'.");
+    }
+    return mgr.currentContext;
+  }
+
+  private static int lexicalStateFromContext(Context context) {
+    // TODO(lukes): consider handling all the non-trivial states in a lexer like this.
+    switch(context.state()) {
+      case HTML_PCDATA:
+      case HTML_RCDATA:
+      case HTML_BEFORE_OPEN_TAG_NAME:
+      case HTML_BEFORE_CLOSE_TAG_NAME:
+      case HTML_TAG_NAME:
+      case HTML_TAG:
+      case HTML_ATTRIBUTE_NAME:
+      case HTML_COMMENT:
+      case HTML_NORMAL_ATTR_VALUE:
+      case HTML_HTML_ATTR_VALUE:
+      case HTML_META_REFRESH_CONTENT:
+      case CSS:
+      case CSS_COMMENT:
+      case CSS_DQ_STRING:
+      case CSS_SQ_STRING:
+      case CSS_URI:
+      case CSS_DQ_URI:
+      case CSS_SQ_URI:
+      case URI:
+      case TEXT:
+      case HTML_SCRIPT_PHRASING_DATA:
+        throw new IllegalArgumentException("the js lexer doesn't support this context: " + context);
+      case JS:
+        return context.jsTemplateLiteralNestDepth() > 0 ? TEMPLATE_LITERAL_EXPRESSION : DEFAULT;
+      case JS_LINE_COMMENT:
+        return LINE_COMMENT;
+      case JS_BLOCK_COMMENT:
+        return BLOCK_COMMENT;
+      case JS_DQ_STRING:
+        return DQ_STRING;
+      case JS_SQ_STRING:
+        return SQ_STRING;
+      case JS_REGEX:
+        return REGEX;
+      case JS_TEMPLATE_LITERAL:
+        return TEMPLATE_LITERAL;
+    }
+    throw new AssertionError("unhandled state: " + context);
+  }
+  private Context currentContext;
+
+  private void transitionToState(HtmlContext state) {
+    currentContext = currentContext.transitionToState(state);
+  }
+
+  private void transitionToJsStringLiteral(HtmlContext state) {
+    currentContext =
+        currentContext.toBuilder()
+            .withState(state)
+            .withSlashType(Context.JsFollowingSlash.NONE)
+            .withUriPart(UriPart.NONE)
+            .build();
+  }
+
+  private void switchToDefaultOrTemplateLiteral() {
+    if (currentContext.jsTemplateLiteralNestDepth() > 0) {
+      SwitchTo(TEMPLATE_LITERAL_EXPRESSION);
+    } else {
+      SwitchTo(DEFAULT);
+    }
+  }
+
+  private void transitionToJsDivPreceder() {
+    checkState(
+        currentContext.state() == HtmlContext.JS
+            || currentContext.state() == HtmlContext.JS_TEMPLATE_LITERAL,
+        "Expected state to be JS was: %s", currentContext);
+    currentContext = currentContext.derive(Context.JsFollowingSlash.DIV_OP);
+  }
+
+  private void transitionToJsRegexPreceder() {
+    checkState(
+        currentContext.state() == HtmlContext.JS
+            || currentContext.state() == HtmlContext.JS_TEMPLATE_LITERAL,
+        "Expected state to be JS was: %s", currentContext);
+    currentContext = currentContext.derive(Context.JsFollowingSlash.REGEX);
+  }
+
+  private void error(String explanation) {
+   throw new LexerError(explanation, input_stream.bufpos);
+  }
+
+  @Override
+  public String toString() {
+    return "TokenManager{" + lexStateNames[curLexState] + ", context=" + currentContext + "}";
+  }
+}
+
+<*> TOKEN: {
+   < #NL: ["\n", "\r", "\u2028", "\u2029"] | "\r\n" >
+|  < #WS: [" ", "\t"] | <NL> >
+}
+
+// This is for js expressions within template literals e.g. `foo${bar}baz`
+<TEMPLATE_LITERAL_EXPRESSION> SKIP: {
+  < "}" > { transitionToState(HtmlContext.JS_TEMPLATE_LITERAL); } : TEMPLATE_LITERAL
+}
+<DEFAULT> SKIP: {
+  < "}" > { transitionToJsRegexPreceder(); }
+}
+<DEFAULT, TEMPLATE_LITERAL_EXPRESSION> SKIP: {
+   < <WS> >
+|  < "/*" > { transitionToState(HtmlContext.JS_BLOCK_COMMENT); } : BLOCK_COMMENT
+|  < "//" > { transitionToState(HtmlContext.JS_LINE_COMMENT); } : LINE_COMMENT
+|  < "\"" > { transitionToJsStringLiteral(HtmlContext.JS_DQ_STRING); } : DQ_STRING
+|  < "'"  > { transitionToJsStringLiteral(HtmlContext.JS_SQ_STRING); } : SQ_STRING
+|  < "`"  > { currentContext = currentContext.toBuilder()
+                          .withState(HtmlContext.JS_TEMPLATE_LITERAL)
+                          .withJsTemplateLiteralNestDepth(
+                              currentContext.jsTemplateLiteralNestDepth() + 1)
+                          .build();
+            } : TEMPLATE_LITERAL
+| < "/" > {
+  switch (currentContext.slashType()) {
+    case DIV_OP:
+      currentContext = currentContext.toBuilder()
+          .withState(HtmlContext.JS)
+          .withSlashType(Context.JsFollowingSlash.REGEX)
+          .build();
+      break;
+    case REGEX:
+      currentContext = currentContext.toBuilder()
+          .withState(HtmlContext.JS_REGEX)
+          .withSlashType(Context.JsFollowingSlash.NONE)
+          .build();
+       SwitchTo(REGEX);
+       break;
+    case NONE:
+    case UNKNOWN:
+      error(
+          "Slash (/) cannot follow the preceding branches since it is unclear "
+              + "whether the slash is a RegExp literal or division operator.  "
+              + "Consider adding parentheses to disambiguate");
+  }
+}
+// We need to determine if the next character is a '/' whether it is starting a regex literal or
+// it is a division operator.
+// We implement the 'single token lookbehind' algorithm documented here:
+// https://www-archive.mozilla.org/js/language/js20-2000-07/rationale/syntax.html
+//
+| < "++"> { transitionToJsDivPreceder(); }
+| < "--"> { transitionToJsDivPreceder(); }
+
+| < "!" > { transitionToJsRegexPreceder(); }
+| < "!=" > { transitionToJsRegexPreceder(); }
+| < "!==" > { transitionToJsRegexPreceder(); }
+| < "#" > { transitionToJsRegexPreceder(); }
+| < "%" > { transitionToJsRegexPreceder(); }
+| < "%=" > { transitionToJsRegexPreceder(); }
+| < "&" > { transitionToJsRegexPreceder(); }
+| < "&&" > { transitionToJsRegexPreceder(); }
+| < "&&=" > { transitionToJsRegexPreceder(); }
+| < "(" > { transitionToJsRegexPreceder(); }
+| < "*" > { transitionToJsRegexPreceder(); }
+| < "*=" > { transitionToJsRegexPreceder(); }
+| < "+" > { transitionToJsRegexPreceder(); }
+| < "+=" > { transitionToJsRegexPreceder(); }
+| < "," > { transitionToJsRegexPreceder(); }
+| < "-" > { transitionToJsRegexPreceder(); }
+| < "-=" > { transitionToJsRegexPreceder(); }
+| < "->" > { transitionToJsRegexPreceder(); }
+| < "." > { transitionToJsRegexPreceder(); }
+| < ".." > { transitionToJsRegexPreceder(); }
+| < "..." > { transitionToJsRegexPreceder(); }
+| < "/=" > { transitionToJsRegexPreceder(); }
+| < ":" > { transitionToJsRegexPreceder(); }
+| < "::" > { transitionToJsRegexPreceder(); }
+| < ";" > { transitionToJsRegexPreceder(); }
+| < "<" > { transitionToJsRegexPreceder(); }
+| < "<=" > { transitionToJsRegexPreceder(); }
+| < "<<" > { transitionToJsRegexPreceder(); }
+| < "<<=" > { transitionToJsRegexPreceder(); }
+| < "=" > { transitionToJsRegexPreceder(); }
+| < "==" > { transitionToJsRegexPreceder(); }
+| < "===" > { transitionToJsRegexPreceder(); }
+| < ">" > { transitionToJsRegexPreceder(); }
+| < ">=" > { transitionToJsRegexPreceder(); }
+| < ">>" > { transitionToJsRegexPreceder(); }
+| < ">>=" > { transitionToJsRegexPreceder(); }
+| < ">>>" > { transitionToJsRegexPreceder(); }
+| < ">>>=" > { transitionToJsRegexPreceder(); }
+| < "?" > { transitionToJsRegexPreceder(); }
+| < "@" > { transitionToJsRegexPreceder(); }
+| < "[" > { transitionToJsRegexPreceder(); }
+| < "^" > { transitionToJsRegexPreceder(); }
+| < "^=" > { transitionToJsRegexPreceder(); }
+| < "^^" > { transitionToJsRegexPreceder(); }
+| < "^^=" > { transitionToJsRegexPreceder(); }
+| < "{" > { transitionToJsRegexPreceder(); }
+| < "|" > { transitionToJsRegexPreceder(); }
+| < "|=" > { transitionToJsRegexPreceder(); }
+| < "||" > { transitionToJsRegexPreceder(); }
+| < "||=" > { transitionToJsRegexPreceder(); }
+| < "~" > { transitionToJsRegexPreceder(); }
+| < "break" > { transitionToJsRegexPreceder(); }
+| < "case" > { transitionToJsRegexPreceder(); }
+| < "continue" > { transitionToJsRegexPreceder(); }
+| < "delete" > { transitionToJsRegexPreceder(); }
+| < "do" > { transitionToJsRegexPreceder(); }
+| < "else" > { transitionToJsRegexPreceder(); }
+| < "finally" > { transitionToJsRegexPreceder(); }
+| < "instanceof" > { transitionToJsRegexPreceder(); }
+| < "return" > { transitionToJsRegexPreceder(); }
+| < "typeof" > { transitionToJsRegexPreceder(); }
+| < "try" > { transitionToJsRegexPreceder(); }
+| < "throw" > { transitionToJsRegexPreceder(); }
+
+// we need numeric literals since '.' within a number is different than the operator
+| < ["1"-"9"] (["0"-"9"])* > { transitionToJsDivPreceder(); }
+| < "0" ["x","X"] (["0"-"9","a"-"f","A"-"F"])+ > { transitionToJsDivPreceder(); }
+| < "0" (["0"-"7"])* >  { transitionToJsDivPreceder(); }
+| < (["0"-"9"])+ "." (["0"-"9"])* (<EXPONENT>)?
+     | "." (["0"-"9"])+ (<EXPONENT>)?
+     | (["0"-"9"])+ (<EXPONENT>)?
+  > { transitionToJsDivPreceder(); }
+| < #EXPONENT: ["e","E"] (["+","-"])? (["0"-"9"])+ >
+// collect every non-special operator non-whitespace here as an identifier or other non regex
+// preceder keyword
+| < IDENTIFIER: (~[" ", "\t", "\n", "\r", "\"", "'", "`", "/", "+", "-", "!", "=", "#", "%", "&",
+    "(", ")", "{", "}", "*", ".", ":", ";", "<", ">", "?", "@", "[", "]", "^", "|", "~" ])+
+        > { transitionToJsDivPreceder(); }
+// collect all other single unmatched characters here, these will be unknown operators or other
+// unexpected syntax.
+| < REST: ~[] > { transitionToJsDivPreceder(); }
+}
+
+
+<BLOCK_COMMENT> SKIP: {
+  < "*/" > { transitionToState(HtmlContext.JS);  switchToDefaultOrTemplateLiteral();}
+}
+
+<LINE_COMMENT> SKIP: {
+  < <NL> > { transitionToState(HtmlContext.JS);  switchToDefaultOrTemplateLiteral();}
+}
+
+// a JsRegex is a lot like a string, it is illegally terminated by a newline
+// it supports escapes and character classes
+<REGEX> SKIP: {
+   < <NL> > {error("unexpected end of line in JavaScript regex literal");}
+|  < "\\/" >
+|  < "\\[" >
+|  < "[" > : REGEX_CHARACTER_CLASS
+|  < "/"> {
+            transitionToState(HtmlContext.JS);
+            transitionToJsDivPreceder();
+            switchToDefaultOrTemplateLiteral();
+          }
+}
+
+// Within a character class, the rules are a bit different
+<REGEX_CHARACTER_CLASS> SKIP: {
+  < "]"> : REGEX
+| < "\\]" > // escaped square bracket
+| < <NL> > {error("unexpected end of line in JavaScript regex literal");}
+}
+
+<DQ_STRING> SKIP: {
+  < "\"" > {
+             transitionToState(HtmlContext.JS);
+             transitionToJsDivPreceder();
+             switchToDefaultOrTemplateLiteral();
+           }
+|  < "\\\"" >  // escaped quotation mark
+}
+
+<SQ_STRING> SKIP: {
+  < "'" >  {
+             transitionToState(HtmlContext.JS);
+             transitionToJsDivPreceder();
+             switchToDefaultOrTemplateLiteral();
+           }
+|  < "\\'" >  // escaped quotation mark
+}
+
+<DQ_STRING, SQ_STRING> SKIP: {
+   < <NL> > {error("unexpected end of line in JavaScript String literal"); }
+|  < "\\" <NL> >  // escaped newline characters are fine
+}
+
+<TEMPLATE_LITERAL> SKIP: {
+   < "\\$" >
+|  < "\\{" >
+|  < "\\`" >
+|  < "${" > { transitionToState(HtmlContext.JS); } : TEMPLATE_LITERAL_EXPRESSION
+|  < "`" >  { currentContext = currentContext.toBuilder()
+                          .withState(HtmlContext.JS)
+                          .withJsTemplateLiteralNestDepth(
+                              currentContext.jsTemplateLiteralNestDepth() - 1)
+                          .withSlashType(Context.JsFollowingSlash.REGEX)
+                          .build();
+              switchToDefaultOrTemplateLiteral();
+            }
+}
+
+// needs to come last so that explicit single character matches take precedence
+<BLOCK_COMMENT, LINE_COMMENT, DQ_STRING, SQ_STRING, TEMPLATE_LITERAL, REGEX, REGEX_CHARACTER_CLASS>
+SKIP: {
+  < REMAINDER: ~[] >
+}

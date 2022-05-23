@@ -23,14 +23,12 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import com.google.template.soy.SoyFileSetParserBuilder;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VeLiteralNode;
 import com.google.template.soy.logging.LoggableElement;
-import com.google.template.soy.logging.LoggingConfig;
-import com.google.template.soy.logging.ValidatedLoggingConfig;
+import com.google.template.soy.logging.testing.LoggingConfigs;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -40,7 +38,10 @@ import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateElementNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
+import com.google.template.soy.testing.Example;
 import com.google.template.soy.testing.ExampleExtendable;
+import com.google.template.soy.testing.SomeExtension;
+import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import com.google.template.soy.types.AnyType;
 import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.IntType;
@@ -50,20 +51,19 @@ import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypeRegistry;
+import com.google.template.soy.types.SoyTypeRegistryBuilder;
 import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.UnknownType;
 import com.google.template.soy.types.VeType;
 import com.google.template.soy.types.ast.TypeNode;
 import com.google.template.soy.types.ast.TypeNodeConverter;
 import java.util.List;
-import java.util.Set;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for {@link ResolveExpressionTypesPass}.
- *
  */
 @RunWith(JUnit4.class)
 public final class ResolveExpressionTypesPassTest {
@@ -75,19 +75,18 @@ public final class ResolveExpressionTypesPassTest {
         }
 
         @Override
-        public Set<Integer> getValidArgsSizes() {
+        public ImmutableSet<Integer> getValidArgsSizes() {
           return ImmutableSet.of(2);
         }
       };
 
-  private static final SoyTypeRegistry TYPE_REGISTRY = new SoyTypeRegistry();
-
+  private static final SoyTypeRegistry TYPE_REGISTRY = SoyTypeRegistryBuilder.create();
 
   @Test
   public void testOptionalParamTypes() {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
-                constructTemplateSource(
+                constructFileSource(
                     "{@param? pa: bool}",
                     "{@param? pb: list<int>}",
                     "{assertType('bool|null', $pa)}",
@@ -102,7 +101,7 @@ public final class ResolveExpressionTypesPassTest {
   public void testState() {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
-                constructElementSource(
+                constructElementFileSource(
                     "{@state pa:= true}",
                     "{@state pb:= [1,2,3]}",
                     "{@param pc: bool|null = null}",
@@ -114,7 +113,8 @@ public final class ResolveExpressionTypesPassTest {
                     "{assertType('list<int>|null', $pd)}",
                     "</div>"))
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
-            .desugarHtmlAndStateNodes(false)
+            .desugarHtmlNodes(false)
+            .desugarIdomFeatures(false)
             .parse()
             .fileSet();
     assertTypes(soyTree);
@@ -134,7 +134,7 @@ public final class ResolveExpressionTypesPassTest {
   public void testDefaultParam() {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
-                constructTemplateSource(
+                constructFileSource(
                     "{@param pa:= map('cats': true, 'dogs': false)}",
                     "{@param pb: string|null = null}",
                     "{assertType('map<string,bool>', $pa)}",
@@ -154,29 +154,26 @@ public final class ResolveExpressionTypesPassTest {
 
   @Test
   public void testStateTypeInference() {
-    SoyTypeRegistry typeRegistry =
-        new SoyTypeRegistry.Builder()
-            .addDescriptors(ImmutableList.of(ExampleExtendable.getDescriptor()))
-            .build();
-
     SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forFileContents(
+        SoyFileSetParserBuilder.forTemplateAndImports(
                 constructElementSource(
                     "{@state pa:= true}",
                     "{@state pb:= [1,2,3]}",
-                    "{@state proto:= example.ExampleExtendable()}",
+                    "{@state proto:= ExampleExtendable()}",
                     "<div>",
                     "{assertType('bool', $pa)}",
                     "{assertType('list<int>', $pb)}",
                     "{assertType('example.ExampleExtendable', $proto)}",
-                    "</div>"))
+                    "</div>"),
+                ExampleExtendable.getDescriptor())
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
-            .typeRegistry(typeRegistry)
-            .desugarHtmlAndStateNodes(false)
+            .desugarHtmlNodes(false)
+            .desugarIdomFeatures(false)
             .parse()
             .fileSet();
     assertTypes(soyTree);
-    TemplateElementNode node = (TemplateElementNode) soyTree.getChild(0).getChild(0);
+    TemplateElementNode node =
+        SoyTreeUtils.getAllNodesOfType(soyTree, TemplateElementNode.class).get(0);
     List<TemplateStateVar> stateVars = node.getStateVars();
 
     assertThat(stateVars.get(0).name()).isEqualTo("pa");
@@ -186,15 +183,15 @@ public final class ResolveExpressionTypesPassTest {
     assertThat(stateVars.get(1).type()).isEqualTo(ListType.of(IntType.getInstance()));
 
     assertThat(stateVars.get(2).name()).isEqualTo("proto");
-    assertThat(stateVars.get(2).type())
-        .isEqualTo(typeRegistry.getType("example.ExampleExtendable"));
+    assertThat(stateVars.get(2).type().toString())
+        .isEqualTo(ExampleExtendable.getDescriptor().getFullName());
   }
 
   @Test
   public void testDataRefTypes() {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
-                constructTemplateSource(
+                constructFileSource(
                     "{@param pa: bool}",
                     "{@param pb: list<int>}",
                     "{@param pe: map<int, map<int, string>>}",
@@ -214,7 +211,7 @@ public final class ResolveExpressionTypesPassTest {
   public void testRecordTypes() {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
-                constructTemplateSource(
+                constructFileSource(
                     "{@param pa: [a:int, b:string]}",
                     "{assertType('int', $pa.a)}",
                     "{assertType('string', $pa.b)}"))
@@ -229,7 +226,7 @@ public final class ResolveExpressionTypesPassTest {
     // Test that data with the 'unknown' type is allowed to function as a map or list.
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
-                constructTemplateSource(
+                constructFileSource(
                     "{@param pa: ?}",
                     "{@param pb: map<string, float>}",
                     "{@param pc: map<int, string>}",
@@ -249,25 +246,43 @@ public final class ResolveExpressionTypesPassTest {
   public void testDataRefTypesError() {
     assertResolveExpressionTypesFails(
         "Bad key type int for map<string,float>.",
-        constructTemplateSource("{@param pa: map<string, float>}", "{$pa[0]}"));
+        constructFileSource("{@param pa: map<string, float>}", "{$pa[0]}"));
 
     assertResolveExpressionTypesFails(
         "Bad key type bool for map<int,float>.",
-        constructTemplateSource("{@param pa: map<int, float>}", "{@param pb: bool}", "{$pa[$pb]}"));
+        constructFileSource("{@param pa: map<int, float>}", "{@param pb: bool}", "{$pa[$pb]}"));
   }
 
   @Test
   public void testRecordTypesError() {
     assertResolveExpressionTypesFails(
         "Undefined field 'c' for record type [a: int, bb: float]. Did you mean 'a'?",
-        constructTemplateSource("{@param pa: [a:int, bb:float]}", "{$pa.c}"));
+        constructFileSource("{@param pa: [a:int, bb:float]}", "{$pa.c}"));
+  }
+
+  @Test
+  public void testGetExtensionMethodTyping() {
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forTemplateAndImports(
+                constructTemplateSource(
+                    "{@param proto: ExampleExtendable}",
+                    "{assertType('bool', $proto.getExtension(someBoolExtension))}",
+                    "{assertType('int', $proto.getExtension("
+                        + "SomeExtension.someExtensionField).someExtensionNum)}"),
+                ExampleExtendable.getDescriptor(),
+                SomeExtension.getDescriptor(),
+                Example.someBoolExtension.getDescriptor())
+            .addSoyFunction(ASSERT_TYPE_FUNCTION)
+            .parse()
+            .fileSet();
+    assertTypes(soyTree);
   }
 
   @Test
   public void testArithmeticOps() {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
-                constructTemplateSource(
+                constructFileSource(
                     "{@param pa: ?}",
                     "{@param pi: int}",
                     "{@param pf: float}",
@@ -299,15 +314,15 @@ public final class ResolveExpressionTypesPassTest {
   @Test
   public void testArithmeticTypesError() {
     assertResolveExpressionTypesFails(
-        "Using arithmetic operators on Soy types 'string' and 'string' is illegal.",
-        constructTemplateSource("{'a' / 'b'}"));
+        "Using arithmetic operator '/' on Soy types 'string' and 'string' is illegal.",
+        constructFileSource("{'a' / 'b'}"));
   }
 
   @Test
   public void testStringConcatenation() {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
-                constructTemplateSource(
+                constructFileSource(
                     "{@param ps: string}",
                     "{@param pi: int}",
                     "{@param pf: float}",
@@ -327,7 +342,7 @@ public final class ResolveExpressionTypesPassTest {
   public void testLogicalOps() {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
-                constructTemplateSource(
+                constructFileSource(
                     "{@param pa: ?}",
                     "{@param pi: int}",
                     "{@param pf: float}",
@@ -351,7 +366,7 @@ public final class ResolveExpressionTypesPassTest {
   public void testComparisonOps() {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
-                constructTemplateSource(
+                constructFileSource(
                     "{@param pa: ?}",
                     "{@param pi: int}",
                     "{@param pf: float}",
@@ -384,7 +399,7 @@ public final class ResolveExpressionTypesPassTest {
   public void testNullCoalescingAndConditionalOps() {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
-                constructTemplateSource(
+                constructFileSource(
                     "{@param pa: ?}",
                     "{@param pi: int}",
                     "{@param pf: float}",
@@ -404,7 +419,7 @@ public final class ResolveExpressionTypesPassTest {
   public void testNullCoalescingAndConditionalOps_complexCondition() {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
-                constructTemplateSource("{@param? l: [a :int]}", "{assertType('int', $l?.a ?: 0)}"))
+                constructFileSource("{@param? l: [a :int]}", "{assertType('int', $l?.a ?: 0)}"))
             .typeRegistry(TYPE_REGISTRY)
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
             .parse()
@@ -416,7 +431,7 @@ public final class ResolveExpressionTypesPassTest {
   public void testListLiteral() {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
-                constructTemplateSource(
+                constructFileSource(
                     "{@param pi: int}",
                     "{@param pf: float}",
                     "{let $list: [$pi, $pf]/}",
@@ -433,7 +448,7 @@ public final class ResolveExpressionTypesPassTest {
   public void testMapLiteral() {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
-                constructTemplateSource(
+                constructFileSource(
                     "{@param pi: int}",
                     "{@param pf: float}",
                     "{let $map: map(1: $pi, 2:$pf)/}",
@@ -449,7 +464,7 @@ public final class ResolveExpressionTypesPassTest {
   public void testMapLiteralWithStringKeysAsMap() {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
-                constructTemplateSource(
+                constructFileSource(
                     "{@param v1: int}",
                     "{@param v2: string}",
                     "{@param k1: string}",
@@ -466,7 +481,7 @@ public final class ResolveExpressionTypesPassTest {
   public void testMapLiteralWithStringLiteralKeysDoesNotCreateRecord() {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
-                constructTemplateSource(
+                constructFileSource(
                     "{@param pi: int}",
                     "{@param pf: float}",
                     // With the old map syntax, this would create a record type (see next test)
@@ -483,7 +498,7 @@ public final class ResolveExpressionTypesPassTest {
   public void testRecordLiteralAsRecord() {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
-                constructTemplateSource(
+                constructFileSource(
                     "{@param pi: int}",
                     "{@param pf: float}",
                     "{let $record: record(a: $pi, b: $pf)/}",
@@ -499,20 +514,20 @@ public final class ResolveExpressionTypesPassTest {
   public void testRecordLiteral_duplicateKeys() {
     ErrorReporter reporter = ErrorReporter.createForTest();
     SoyFileSetParserBuilder.forFileContents(
-            constructTemplateSource("{let $record: record(a: 1, a: 2)/}"))
+            constructFileSource("{let $record: record(a: 1, a: 2)/}"))
         .errorReporter(reporter)
         .typeRegistry(TYPE_REGISTRY)
         .parse()
         .fileSet();
     assertThat(Iterables.getOnlyElement(reporter.getErrors()).message())
-        .isEqualTo("Duplicate record key 'a'.");
+        .isEqualTo("Duplicate argument 'a'.");
   }
 
   @Test
   public void testDataFlowTypeNarrowing() {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
-                constructTemplateSource(
+                constructFileSource(
                     "{@param pa: bool|null}",
                     "{@param pb: bool}",
                     "{if $pa != null}",
@@ -556,12 +571,12 @@ public final class ResolveExpressionTypesPassTest {
                     "    {assertType('bool', $pa)}", // #13 must be non-null
                     "  {/if}",
                     "{/if}",
-                    "{if isNonnull($pa)}", // isNonnull function
+                    "{if $pa != null}", // != null
                     "  {assertType('bool', $pa)}", // #14 must be non-null
                     "{else}",
                     "  {assertType('null', $pa)}", // #15 must be null
                     "{/if}",
-                    "{if isNull($pa)}", // isNull function
+                    "{if $pa == null}", // == null
                     "  {assertType('null', $pa)}", // #16 must be null
                     "{else}",
                     "  {assertType('bool', $pa)}", // #17 must be non-null
@@ -589,7 +604,7 @@ public final class ResolveExpressionTypesPassTest {
   public void testDataFlowTypeNarrowing_complexExpressions() {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
-                constructTemplateSource(
+                constructFileSource(
                     "{@param map: map<string, int|null>}",
                     "{@param record: "
                         + "[a : [nullableInt : int|null, nullableBool : bool|null]|null]}",
@@ -610,7 +625,7 @@ public final class ResolveExpressionTypesPassTest {
   public void testDataFlowTypeNarrowing_deadExpression() {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
-                constructTemplateSource(
+                constructFileSource(
                     "{@param record: ?}",
                     "{if $record.unknownField}",
                     "  {assertType('?', $record.unknownField)}",
@@ -631,12 +646,12 @@ public final class ResolveExpressionTypesPassTest {
   public void testDataFlowTypeNarrowing_logicalExpressions() {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
-                constructTemplateSource(
+                constructFileSource(
                     "{@param? record: [active : bool|null]}",
                     "{@param? selected: map<string,bool>}",
                     "{assertType('bool', $selected and $selected['a'])}",
                     "{assertType('bool', $selected == null or $selected['a'])}",
-                    "{if isNonnull($record.active) and (not $record.active)}",
+                    "{if ($record.active != null) and (not $record.active)}",
                     "  {assertType('bool', $record.active)}",
                     "{/if}",
                     ""))
@@ -651,7 +666,7 @@ public final class ResolveExpressionTypesPassTest {
     // Test for places where type narrowing shouldn't work
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
-                constructTemplateSource(
+                constructFileSource(
                     "{@param pa: bool|null}",
                     "{@param pb: bool}",
                     "{if ($pa != null) != ($pb != null)}",
@@ -675,7 +690,7 @@ public final class ResolveExpressionTypesPassTest {
   public void testDataFlowTypeNarrowing_switch() {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
-                constructTemplateSource(
+                constructFileSource(
                     "{@param? p: string|bool|int}",
                     "{switch $p}",
                     "  {case 'str'}",
@@ -713,7 +728,7 @@ public final class ResolveExpressionTypesPassTest {
   public void testConditionalOperatorDataFlowTypeNarrowing() {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
-                constructTemplateSource(
+                constructFileSource(
                     "{@param pa: bool|null}",
                     "{@param pb: bool}",
                     "{@param pc: [a : int|null]}",
@@ -724,7 +739,7 @@ public final class ResolveExpressionTypesPassTest {
                     "{if not $pc.a}{assertType('int|null', $pc.a)}{/if}"))
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
             .parse()
-            .fileSet(); // #2 must be non-null (re-written to (isNonnull($pa) ? $pa : $pb))
+            .fileSet(); // #2 must be non-null (re-written to ($pa != null ? $pa : $pb))
     assertTypes(soyTree);
   }
 
@@ -732,18 +747,16 @@ public final class ResolveExpressionTypesPassTest {
   public void testBuiltinFunctionTyping() {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
-                constructTemplateSource(
+                constructFileSource(
                     "{@inject list: list<int|null>}",
                     "{for $item in $list}",
-                    "   {assertType('int', index($item))}",
-                    "   {assertType('bool', isLast($item))}",
-                    "   {assertType('bool', isFirst($item))}",
                     "   {assertType('int|null', $item)}",
                     "   {assertType('int', checkNotNull($item))}",
                     "   {assertType('string', css('foo'))}",
                     "   {assertType('string', xid('bar'))}",
                     "{/for}"))
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
+            .errorReporter(ErrorReporter.explodeOnErrorsAndIgnoreDeprecations())
             .parse()
             .fileSet();
     assertTypes(soyTree);
@@ -751,18 +764,13 @@ public final class ResolveExpressionTypesPassTest {
 
   @Test
   public void testProtoInitTyping() {
-    SoyTypeRegistry typeRegistry =
-        new SoyTypeRegistry.Builder()
-            .addDescriptors(ImmutableList.of(ExampleExtendable.getDescriptor()))
-            .build();
-
     SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forFileContents(
+        SoyFileSetParserBuilder.forTemplateAndImports(
                 constructTemplateSource(
-                    "{let $proto: example.ExampleExtendable() /}",
-                    "{assertType('example.ExampleExtendable', $proto)}"))
+                    "{let $proto: ExampleExtendable() /}",
+                    "{assertType('example.ExampleExtendable', $proto)}"),
+                ExampleExtendable.getDescriptor())
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
-            .typeRegistry(typeRegistry)
             .parse()
             .fileSet();
     assertTypes(soyTree);
@@ -772,20 +780,20 @@ public final class ResolveExpressionTypesPassTest {
   public void testBadForEach() {
     assertResolveExpressionTypesFails(
         "Cannot iterate over $p of type int.",
-        constructTemplateSource("{@param p: int}", "{for $item in $p}{/for}"));
+        constructFileSource("{@param p: int}", "{for $item in $p}{/for}"));
     assertResolveExpressionTypesFails(
         "Cannot iterate over $p of type int|string.",
-        constructTemplateSource("{@param p: int|string}", "{for $item in $p}{/for}"));
+        constructFileSource("{@param p: int|string}", "{for $item in $p}{/for}"));
     assertResolveExpressionTypesFails(
         "Cannot iterate over $p of type list<string>|string|uri.",
-        constructTemplateSource("{@param p: list<string>|string|uri}", "{for $item in $p}{/for}"));
+        constructFileSource("{@param p: list<string>|string|uri}", "{for $item in $p}{/for}"));
   }
 
   @Test
   public void testInjectedParamTypes() {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
-                constructTemplateSource(
+                constructFileSource(
                     "{@inject pa: bool}",
                     "{@inject? pb: list<int>}",
                     "{assertType('bool', $pa)}",
@@ -800,14 +808,33 @@ public final class ResolveExpressionTypesPassTest {
   public void testConcatLists() {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
-                constructTemplateSource(
-                    "{assertType('list<string>', concatLists(['1'], ['2']))}",
-                    "{assertType('list<int>', concatLists([1], [2]))}",
-                    "{assertType('list<int>', concatLists([1], []))}",
-                    "{assertType('list<int>', concatLists([], [1]))}",
-                    "{assertType('list<int>', concatLists(true ? [] : [1], [2]))}",
-                    "{assertType('list<null>', concatLists([], []))}",
-                    "{assertType('list<int|string>', concatLists([1], [\"2\"]))}"))
+                constructFileSource(
+                    "{assertType('list<string>', ['1'].concat(['2']))}",
+                    "{assertType('list<int>', [1].concat([2]))}",
+                    "{assertType('list<int>', [1].concat([]))}",
+                    "{assertType('list<int>', [].concat([1]))}",
+                    "{assertType('list<int>', (true ? [] : [1]).concat([2]))}",
+                    "{assertType('list<null>', [].concat([]))}",
+                    "{assertType('list<int|string>', [1].concat([\"2\"]))}"))
+            .addSoyFunction(ASSERT_TYPE_FUNCTION)
+            .parse()
+            .fileSet();
+    assertTypes(soyTree);
+  }
+
+  @Test
+  public void testConcatMaps() {
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(
+                constructFileSource(
+                    "{assertType('map<string,string>', map('1' : '2').concat(map('3':'4')))}",
+                    "{assertType('map<int,int>', map(1: 2).concat(map(3: 4)))}",
+                    "{assertType('map<int,int>', map(1: 2).concat(map()))}",
+                    "{assertType('map<int,int>', map().concat(map(3: 4)))}",
+                    "{assertType('map<int,int>', map().concat(true ? map() : map(3: 4)))}",
+                    "{assertType('map<int,int>', (true ? map() : map(1:2)).concat(map()))}",
+                    "{assertType('map<?,?>', map().concat(map()))}",
+                    "{assertType('map<int,int|string>', map(1: '2').concat(map(3: 4)))}"))
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
             .parse()
             .fileSet();
@@ -818,10 +845,10 @@ public final class ResolveExpressionTypesPassTest {
   public void testMapKeys() {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
-                constructTemplateSource(
+                constructFileSource(
                     "{@param m: map<string, int>}",
-                    "{assertType('list<string>', mapKeys($m))}",
-                    "{assertType('list<null>', mapKeys(map()))}",
+                    "{assertType('list<string>', $m.keys())}",
+                    "{assertType('list<null>', map().keys())}",
                     ""))
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
             .parse()
@@ -833,7 +860,7 @@ public final class ResolveExpressionTypesPassTest {
   public void testMapToLegacyObjectMap() {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
-                constructTemplateSource(
+                constructFileSource(
                     "{@param m: map<string, int>}",
                     "{assertType('legacy_object_map<string,int>', mapToLegacyObjectMap($m))}",
                     "{assertType('legacy_object_map<null,null>', mapToLegacyObjectMap(map()))}",
@@ -846,28 +873,21 @@ public final class ResolveExpressionTypesPassTest {
 
   @Test
   public void testVeLiteral() {
-    SoyTypeRegistry typeRegistry =
-        new SoyTypeRegistry.Builder()
-            .addDescriptors(ImmutableList.of(ExampleExtendable.getDescriptor()))
-            .build();
-
     SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forFileContents(
+        SoyFileSetParserBuilder.forTemplateAndImports(
                 constructTemplateSource(
                     "{assertType('ve<example.ExampleExtendable>', ve(VeData))}",
-                    "{assertType('ve<null>', ve(VeNoData))}"))
+                    "{assertType('ve<null>', ve(VeNoData))}"),
+                ExampleExtendable.getDescriptor())
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
-            .typeRegistry(typeRegistry)
             .setLoggingConfig(
-                ValidatedLoggingConfig.create(
-                    LoggingConfig.newBuilder()
-                        .addElement(
-                            LoggableElement.newBuilder()
-                                .setId(1)
-                                .setName("VeData")
-                                .setProtoType("example.ExampleExtendable"))
-                        .addElement(LoggableElement.newBuilder().setId(2).setName("VeNoData"))
-                        .build()))
+                LoggingConfigs.createLoggingConfig(
+                    LoggableElement.newBuilder()
+                        .setId(1)
+                        .setName("VeData")
+                        .setProtoType("example.ExampleExtendable")
+                        .build(),
+                    LoggableElement.newBuilder().setId(2).setName("VeNoData").build()))
             .parse()
             .fileSet();
     assertTypes(soyTree);
@@ -886,28 +906,21 @@ public final class ResolveExpressionTypesPassTest {
 
   @Test
   public void testVeDataLiteral() {
-    SoyTypeRegistry typeRegistry =
-        new SoyTypeRegistry.Builder()
-            .addDescriptors(ImmutableList.of(ExampleExtendable.getDescriptor()))
-            .build();
-
     SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forFileContents(
+        SoyFileSetParserBuilder.forTemplateAndImports(
                 constructTemplateSource(
-                    "{assertType('ve_data', ve_data(ve(VeData), example.ExampleExtendable()))}",
-                    "{assertType('ve_data', ve_data(ve(VeNoData), null))}"))
+                    "{assertType('ve_data', ve_data(ve(VeData), ExampleExtendable()))}",
+                    "{assertType('ve_data', ve_data(ve(VeNoData), null))}"),
+                ExampleExtendable.getDescriptor())
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
-            .typeRegistry(typeRegistry)
             .setLoggingConfig(
-                ValidatedLoggingConfig.create(
-                    LoggingConfig.newBuilder()
-                        .addElement(
-                            LoggableElement.newBuilder()
-                                .setId(1)
-                                .setName("VeData")
-                                .setProtoType("example.ExampleExtendable"))
-                        .addElement(LoggableElement.newBuilder().setId(2).setName("VeNoData"))
-                        .build()))
+                LoggingConfigs.createLoggingConfig(
+                    LoggableElement.newBuilder()
+                        .setId(1)
+                        .setName("VeData")
+                        .setProtoType("example.ExampleExtendable")
+                        .build(),
+                    LoggableElement.newBuilder().setId(2).setName("VeNoData").build()))
             .parse()
             .fileSet();
     assertTypes(soyTree);
@@ -917,18 +930,18 @@ public final class ResolveExpressionTypesPassTest {
   public void testErrorMessagesInUnionTypes() {
     assertResolveExpressionTypesFails(
         "Type float does not support bracket access.",
-        constructTemplateSource("{@param p: float|int}", "{$p[1]}"));
+        constructFileSource("{@param p: float|int}", "{$p[1]}"));
 
     assertResolveExpressionTypesFails(
         "Type float does not support dot access.",
-        constructTemplateSource("{@param p: float|int}", "{$p.a}"));
+        constructFileSource("{@param p: float|int}", "{$p.a}"));
   }
 
   @Test
   public void testTypeNarrowingError() {
     assertResolveExpressionTypesFails(
         "Expected expression of type 'string', found 'null'.",
-        constructTemplateSource(
+        constructFileSource(
             "{@param p: [a: string]}",
             "{if $p.a != null}",
             "  x: {$p.a}",
@@ -952,6 +965,32 @@ public final class ResolveExpressionTypesPassTest {
     assertThat(((MapType) type).getValueType()).isEqualTo(UnknownType.getInstance());
   }
 
+  @Test
+  public void testNonNullAssertion() {
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(
+                constructFileSource(
+                    "{@param i: int|null}",
+                    "{@param n: int|null}",
+                    "{@param b: bool}",
+                    "{@param r: [a: null|[b: null|[c: null|string]]]}",
+                    "{assertType('int', $i!)}",
+                    "{assertType('int|null', $i != null ? $i! : null)}",
+                    "{assertType('string', $r.a.b.c!)}",
+                    "{assertType('[c: null|string]', $r.a.b!)}",
+                    "{assertType('int', $i ?: $n!)}",
+                    "{assertType('int', ($b ? $i : $n)!)}",
+                    "{assertType('int|null', $b ? $i : $n!)}",
+                    "{assertType('[c: null|string]|null', $r!.a?.b)}",
+                    "{assertType('[c: null|string]|null', $r?.a!.b)}",
+                    "{assertType('string', $r?.a.b.c!)}",
+                    "{assertType('null|string', $r!.a!.b!.c)}"))
+            .addSoyFunction(ASSERT_TYPE_FUNCTION)
+            .enableExperimentalFeatures(ImmutableList.of("enableNonNullAssertionOperator"))
+            .parse()
+            .fileSet();
+    assertTypes(soyTree);
+  }
 
   private SoyType parseSoyType(String type) {
     return parseSoyType(type, ErrorReporter.exploding());
@@ -959,8 +998,12 @@ public final class ResolveExpressionTypesPassTest {
 
   private SoyType parseSoyType(String type, ErrorReporter errorReporter) {
     TypeNode parsed =
-        SoyFileParser.parseType(type, "com.google.foo.bar.FakeSoyFunction", errorReporter);
-    return new TypeNodeConverter(errorReporter, TYPE_REGISTRY).getOrCreateType(parsed);
+        SoyFileParser.parseType(
+            type, SourceFilePath.create("com.google.foo.bar.FakeSoyFunction"), errorReporter);
+    return TypeNodeConverter.builder(errorReporter)
+        .setTypeRegistry(TYPE_REGISTRY)
+        .build()
+        .getOrCreateType(parsed);
   }
 
   /**
@@ -971,11 +1014,13 @@ public final class ResolveExpressionTypesPassTest {
    * @param body The body statements.
    * @return The combined template.
    */
+  private static String constructFileSource(String... body) {
+    return "{namespace ns}\n" + constructTemplateSource(body);
+  }
+
   private static String constructTemplateSource(String... body) {
-    return ""
-        + "{namespace ns}\n"
-        + "/***/\n"
-        + "{template .aaa}\n"
+    return "/***/\n"
+        + "{template aaa}\n"
         + "  "
         + Joiner.on("\n   ").join(body)
         + "\n"
@@ -990,13 +1035,12 @@ public final class ResolveExpressionTypesPassTest {
    * @param body The body statements.
    * @return The combined template.
    */
+  private static String constructElementFileSource(String... body) {
+    return "{namespace ns}\n" + constructElementSource(body);
+  }
+
   private static String constructElementSource(String... body) {
-    return ""
-        + "{namespace ns}\n"
-        + "/***/\n"
-        + "{element .aaa}\n"
-        + Joiner.on("\n   ").join(body)
-        + "{/element}\n";
+    return "" + "/***/\n" + "{element aaa}\n" + Joiner.on("\n   ").join(body) + "{/element}\n";
   }
 
   /**
@@ -1018,12 +1062,14 @@ public final class ResolveExpressionTypesPassTest {
 
   /** Traverses the tree and checks all the calls to {@code assertType} */
   private void assertTypes(SoyNode node) {
-    for (FunctionNode fn : SoyTreeUtils.getAllFunctionInvocations(node, ASSERT_TYPE_FUNCTION)) {
-      StringNode expected = (StringNode) fn.getChild(0);
-      SoyType actualType = fn.getChild(1).getType();
-      assertWithMessage("assertion @ " + fn.getSourceLocation())
-          .that(actualType.toString())
-          .isEqualTo(expected.getValue());
-    }
+    SoyTreeUtils.allFunctionInvocations(node, ASSERT_TYPE_FUNCTION)
+        .forEach(
+            fn -> {
+              StringNode expected = (StringNode) fn.getChild(0);
+              SoyType actualType = fn.getChild(1).getType();
+              assertWithMessage("assertion @ " + fn.getSourceLocation())
+                  .that(actualType.toString())
+                  .isEqualTo(expected.getValue());
+            });
   }
 }

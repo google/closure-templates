@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.Operator.Associativity;
+import java.util.function.Consumer;
 
 /** Represents a JavaScript binary operation. */
 @AutoValue
@@ -70,7 +71,7 @@ abstract class BinaryOperation extends Operation {
     }
     // Otherwise, generate explicit short-circuiting code.
     // rhs should be evaluated only if lhs evaluates to true.
-    Expression tmp = codeGenerator.declarationBuilder().setRhs(lhs).build().ref();
+    Expression tmp = codeGenerator.declarationBuilder().setMutable().setRhs(lhs).build().ref();
     return Composite.create(
         ImmutableList.of(Statement.ifStatement(tmp, tmp.assign(rhs).asStatement()).build()), tmp);
   }
@@ -83,14 +84,14 @@ abstract class BinaryOperation extends Operation {
     }
     // Otherwise, generate explicit short-circuiting code.
     // rhs should be evaluated only if lhs evaluates to false.
-    Expression tmp = codeGenerator.declarationBuilder().setRhs(lhs).build().ref();
+    Expression tmp = codeGenerator.declarationBuilder().setMutable().setRhs(lhs).build().ref();
     return Composite.create(
         ImmutableList.of(Statement.ifStatement(not(tmp), tmp.assign(rhs).asStatement()).build()),
         tmp);
   }
 
   @Override
-  public void collectRequires(RequiresCollector collector) {
+  public void collectRequires(Consumer<GoogRequire> collector) {
     arg1().collectRequires(collector);
     arg2().collectRequires(collector);
   }
@@ -105,5 +106,10 @@ abstract class BinaryOperation extends Operation {
   @Override
   void doFormatInitialStatements(FormattingContext ctx) {
     ctx.appendInitialStatements(arg1()).appendInitialStatements(arg2());
+  }
+  
+  @Override
+  boolean initialExpressionIsObjectLiteral() {
+    return arg1().initialExpressionIsObjectLiteral();
   }
 }

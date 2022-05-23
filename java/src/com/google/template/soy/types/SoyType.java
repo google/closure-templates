@@ -34,7 +34,6 @@ import com.google.template.soy.soytree.SoyTypeP;
  * <p>All type objects are immutable.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public abstract class SoyType {
 
@@ -72,6 +71,7 @@ public abstract class SoyType {
    *         <li>RECORD: Open-ended record type.
    *         <li>LEGACY_OBJECT_MAP: Deprecated map type.
    *         <li>MAP: Map type that supports proto map (and ES6 map in JS backend).
+   *         <li>BASE_PROTO: A generic proto, this type is mostly useful for plugins
    *         <li>PROTO: Protobuf object.
    *         <li>PROTO_ENUM: Protobuf enum object.
    *         <li>UNION: Used to indicate a parameter that can accept multiple alternatives, e.g.
@@ -84,7 +84,6 @@ public abstract class SoyType {
     // Special types
     ANY,
     UNKNOWN,
-    ERROR,
     // Primitive types
     NULL,
     BOOL,
@@ -93,6 +92,7 @@ public abstract class SoyType {
     STRING,
     // Sanitized types (subtypes of string)
     HTML,
+    ELEMENT,
     ATTRIBUTES,
     JS,
     CSS,
@@ -103,17 +103,28 @@ public abstract class SoyType {
     RECORD,
     LEGACY_OBJECT_MAP,
     MAP,
+    MESSAGE,
     PROTO,
     PROTO_ENUM,
+    TEMPLATE,
+    FUNCTION,
     UNION,
     VE,
     VE_DATA,
+    // Imported symbol types
+    PROTO_TYPE,
+    PROTO_ENUM_TYPE,
+    PROTO_EXTENSION,
+    PROTO_MODULE,
+    TEMPLATE_TYPE,
+    TEMPLATE_MODULE,
     ;
 
     private static final ImmutableSet<Kind> STRING_KINDS =
         Sets.immutableEnumSet(
             Kind.STRING,
             Kind.HTML,
+            Kind.ELEMENT,
             Kind.ATTRIBUTES,
             Kind.JS,
             Kind.CSS,
@@ -121,7 +132,7 @@ public abstract class SoyType {
             Kind.TRUSTED_RESOURCE_URI);
 
     private static final ImmutableSet<Kind> ILLEGAL_OPERAND_KINDS_PLUS_OP =
-        Sets.immutableEnumSet(Kind.BOOL, Kind.LIST, Kind.LEGACY_OBJECT_MAP, Kind.MAP, Kind.RECORD);
+        Sets.immutableEnumSet(Kind.LIST, Kind.LEGACY_OBJECT_MAP, Kind.MAP, Kind.RECORD);
 
     /** Returns true for SoyTypes that are plain strings or sanitized subtypes of strings. */
     public boolean isKnownStringOrSanitizedContent() {
@@ -141,6 +152,11 @@ public abstract class SoyType {
     }
   }
 
+  enum UnknownAssignmentPolicy {
+    ALLOWED,
+    DISALLOWED
+  }
+
   // memoize the proto version.  SoyTypes are immutable so this is safe/correct and types are likely
   // to be serialized many times (think, 'string'), so we can save some work by not calculating it
   // repeatedly.
@@ -156,35 +172,64 @@ public abstract class SoyType {
    * Returns true if a parameter or field of this type can be assigned from a value of {@code
    * srcType}.
    *
+   * <p><i>loose</i> assignment means that the type is only possibly assignable. {@code ?} types are
+   * considered to be possibly assignable. Use this in cases where the compiler may insert a runtime
+   * test (as in {@code call} commands) or we expect some other part of the runtime to enforce types
+   * (e.g. dispatching to plugin methods).
+   *
    * @param srcType The type of the incoming value.
    * @return True if the assignment is valid.
    */
-  public final boolean isAssignableFrom(SoyType srcType) {
+  public final boolean isAssignableFromLoose(SoyType srcType) {
+    return isAssignableFromInternal(srcType, UnknownAssignmentPolicy.ALLOWED);
+  }
+
+  /**
+   * Returns true if a parameter or field of this type can be strictly assigned from a value of
+   * {@code srcType}.
+   *
+   * <p><i>strict</i> assignment means that the type is definitly assignable. {@code ?} types are
+   * not considered to be definitely assignable. Use this in cases where we require certainty, such
+   * as when selecting methods based on receiver types or when making code generation decisions.
+   *
+   * @param srcType The type of the incoming value.
+   * @return True if the assignment is valid.
+   */
+  public final boolean isAssignableFromStrict(SoyType srcType) {
+    return isAssignableFromInternal(srcType, UnknownAssignmentPolicy.DISALLOWED);
+  }
+
+  /** Internal helper method for assignment analysis. This should only be used by subclasses. */
+  final boolean isAssignableFromInternal(SoyType soyType, UnknownAssignmentPolicy unknownPolicy) {
+    if (unknownPolicy == UnknownAssignmentPolicy.ALLOWED && soyType == UnknownType.getInstance()) {
+      return true;
+    }
     // Handle unions generically.  A type is assignable from a union if it is assignable from _all_
     // members.
-    if (srcType instanceof UnionType) {
-      // By construction union types are guaranteed
-      // 1. not to be empty
-      // 2. not to contain union types
-      UnionType asUnion = (UnionType) srcType;
-      for (SoyType member : asUnion.getMembers()) {
-        if (!doIsAssignableFromNonUnionType(member)) {
-          return false;
-        }
+    for (SoyType type : SoyTypes.expandUnions(soyType)) {
+      if (!doIsAssignableFromNonUnionType(type, unknownPolicy)) {
+        return false;
       }
-      return true;
-    } else {
-      return doIsAssignableFromNonUnionType(srcType);
     }
+    return true;
   }
 
   /**
    * Subclass integration point to implement assignablility.
    *
    * @param type The target type, guaranteed to <b>not be a union type</b>.
+   * @param unknownPolicy How assignments from the unknown type should be treated. This should be
+   *     passed along to {@link #isAssignableFromInternal} calls made on member types.
    */
   @ForOverride
-  abstract boolean doIsAssignableFromNonUnionType(SoyType type);
+  boolean doIsAssignableFromNonUnionType(SoyType type, UnknownAssignmentPolicy unknownPolicy) {
+    return doIsAssignableFromNonUnionType(type);
+  }
+
+  @ForOverride
+  boolean doIsAssignableFromNonUnionType(SoyType type) {
+    throw new AbstractMethodError();
+  }
 
   /** The type represented in a fully parseable format. */
   @Override
@@ -204,4 +249,6 @@ public abstract class SoyType {
 
   @ForOverride
   abstract void doToProto(SoyTypeP.Builder builder);
+
+  public abstract <T> T accept(SoyTypeVisitor<T> visitor);
 }

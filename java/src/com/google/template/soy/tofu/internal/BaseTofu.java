@@ -20,19 +20,28 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Supplier;
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedSet;
+import com.google.common.collect.ImmutableTable;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Sets;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyTemplate;
 import com.google.template.soy.data.SoyValueConverter;
+import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
+import com.google.template.soy.data.internal.ParamStore;
+import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.parseinfo.SoyTemplateInfo;
+import com.google.template.soy.plugin.java.PluginInstances;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.internal.DelTemplateSelector;
@@ -40,9 +49,9 @@ import com.google.template.soy.shared.internal.SoyScopedData;
 import com.google.template.soy.sharedpasses.render.EvalVisitorFactoryImpl;
 import com.google.template.soy.sharedpasses.render.RenderException;
 import com.google.template.soy.sharedpasses.render.RenderVisitor;
-import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
-import com.google.template.soy.soytree.CallNode;
+import com.google.template.soy.soytree.ConstNode;
+import com.google.template.soy.soytree.ExternNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
@@ -64,7 +73,6 @@ import javax.annotation.Nullable;
  * Represents a compiled Soy file set. This is the result of compiling Soy to a Java object.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public final class BaseTofu implements SoyTofu {
 
@@ -73,22 +81,38 @@ public final class BaseTofu implements SoyTofu {
 
   private final ImmutableMap<String, TemplateNode> basicTemplates;
   private final DelTemplateSelector<TemplateDelegateNode> delTemplates;
+  private final ImmutableTable<SourceFilePath, String, ConstNode> constants;
+  private final ImmutableTable<SourceFilePath, String, ImmutableList<ExternNode>> externs;
 
   private final ImmutableMap<String, ImmutableSortedSet<String>> templateToIjParamsInfoMap;
 
-  private final ImmutableMap<String, Supplier<Object>> pluginInstances;
+  private final PluginInstances pluginInstances;
 
   /** @param apiCallScope The scope object that manages the API call scope. */
   public BaseTofu(
       SoyScopedData.Enterable apiCallScope,
       SoyFileSetNode fileSet,
-      Map<String, Supplier<Object>> pluginInstances) {
+      PluginInstances pluginInstances) {
     this.apiCallScope = apiCallScope;
     ImmutableMap.Builder<String, TemplateNode> basicTemplates = ImmutableMap.builder();
     DelTemplateSelector.Builder<TemplateDelegateNode> delTemplates =
         new DelTemplateSelector.Builder<>();
+    ImmutableTable.Builder<SourceFilePath, String, ConstNode> constants = ImmutableTable.builder();
+    ImmutableTable.Builder<SourceFilePath, String, ImmutableList<ExternNode>> externs =
+        ImmutableTable.builder();
     for (SoyFileNode fileNode : fileSet.getChildren()) {
-      for (TemplateNode template : fileNode.getChildren()) {
+      for (ConstNode constNode : fileNode.getConstants()) {
+        constants.put(fileNode.getFilePath(), constNode.getVar().name(), constNode);
+      }
+      ListMultimap<String, ExternNode> externMap = ArrayListMultimap.create();
+      for (ExternNode externNode : fileNode.getExterns()) {
+        externMap.put(externNode.getIdentifier().identifier(), externNode);
+      }
+      for (String externName : externMap.keySet()) {
+        externs.put(
+            fileNode.getFilePath(), externName, ImmutableList.copyOf(externMap.get(externName)));
+      }
+      for (TemplateNode template : fileNode.getTemplates()) {
         if (template instanceof TemplateDelegateNode) {
           TemplateDelegateNode delegateNode = (TemplateDelegateNode) template;
           String delTemplateName = delegateNode.getDelTemplateName();
@@ -106,9 +130,11 @@ public final class BaseTofu implements SoyTofu {
     }
     this.basicTemplates = basicTemplates.build();
     this.delTemplates = delTemplates.build();
+    this.constants = constants.buildOrThrow();
+    this.externs = externs.buildOrThrow();
     this.templateToIjParamsInfoMap =
         buildTemplateToIjParamsInfoMap(this.basicTemplates, this.delTemplates);
-    this.pluginInstances = ImmutableMap.copyOf(pluginInstances);
+    this.pluginInstances = pluginInstances;
   }
 
   private static ImmutableMap<String, ImmutableSortedSet<String>> buildTemplateToIjParamsInfoMap(
@@ -137,20 +163,17 @@ public final class BaseTofu implements SoyTofu {
         }
         // otherwise we need to add these ijs and then push all if its direct callees
         collectIjParams(currentTemplate, ijsForTemplate);
-        for (CallNode call : SoyTreeUtils.getAllNodesOfType(currentTemplate, CallNode.class)) {
-          if (call instanceof CallBasicNode) {
-            TemplateNode callee = basicTemplates.get(((CallBasicNode) call).getCalleeName());
-            if (callee != null) {
-              toVisit.add(callee);
-            }
-          } else if (call instanceof CallDelegateNode) {
-            toVisit.addAll(
-                delTemplates
-                    .delTemplateNameToValues()
-                    .get(((CallDelegateNode) call).getDelCalleeName()));
-          } else {
-            throw new AssertionError("Unexpected CallNode: " + call);
+        for (TemplateLiteralNode templateLiteralNode :
+            SoyTreeUtils.getAllNodesOfType(currentTemplate, TemplateLiteralNode.class)) {
+          TemplateNode callee = basicTemplates.get(templateLiteralNode.getResolvedName());
+          if (callee != null) {
+            toVisit.add(callee);
           }
+        }
+        for (CallDelegateNode callDelegateNode :
+            SoyTreeUtils.getAllNodesOfType(currentTemplate, CallDelegateNode.class)) {
+          toVisit.addAll(
+              delTemplates.delTemplateNameToValues().get(callDelegateNode.getDelCalleeName()));
         }
       }
       // when we exit the loop we have calculated everything for this template.
@@ -169,16 +192,6 @@ public final class BaseTofu implements SoyTofu {
     for (TemplateParam param : template.getInjectedParams()) {
       into.add(param.name());
     }
-  }
-
-  /**
-   * {@inheritDoc}
-   *
-   * <p>For objects of this class, the namespace is always null.
-   */
-  @Override
-  public String getNamespace() {
-    return null;
   }
 
   /**
@@ -256,7 +269,7 @@ public final class BaseTofu implements SoyTofu {
       @Nullable SoyIdRenamingMap idRenamingMap,
       @Nullable SoyCssRenamingMap cssRenamingMap,
       boolean debugSoyTemplateInfo,
-      ImmutableMap<String, Supplier<Object>> pluginInstances) {
+      PluginInstances pluginInstances) {
 
     if (activeDelPackageNames == null) {
       activeDelPackageNames = arg -> false;
@@ -301,7 +314,7 @@ public final class BaseTofu implements SoyTofu {
       @Nullable SoyIdRenamingMap idRenamingMap,
       @Nullable SoyCssRenamingMap cssRenamingMap,
       boolean debugSoyTemplateInfo,
-      ImmutableMap<String, Supplier<Object>> pluginInstances) {
+      PluginInstances pluginInstances) {
 
     // templateNode is always guaranteed to be non-null because for a tofu compile all templates are
     // considered source files
@@ -313,10 +326,10 @@ public final class BaseTofu implements SoyTofu {
     }
 
     if (data == null) {
-      data = SoyValueConverter.EMPTY_DICT;
+      data = ParamStore.EMPTY_INSTANCE;
     }
     if (ijData == null) {
-      ijData = SoyValueConverter.EMPTY_DICT;
+      ijData = ParamStore.EMPTY_INSTANCE;
     }
 
     try {
@@ -326,6 +339,8 @@ public final class BaseTofu implements SoyTofu {
               outputBuf,
               basicTemplates,
               delTemplates,
+              constants,
+              externs,
               data,
               ijData,
               activeDelPackageNames,
@@ -380,24 +395,44 @@ public final class BaseTofu implements SoyTofu {
       }
     }
 
+    private static ParamStore mapAsParamStore(Map<String, ?> source) {
+      ParamStore dest = new ParamStore(source.size());
+      for (Map.Entry<String, ?> entry : source.entrySet()) {
+        String key = entry.getKey();
+        SoyValueProvider value;
+        try {
+          value = SoyValueConverter.INSTANCE.convert(entry.getValue());
+        } catch (Exception e) {
+          throw new IllegalArgumentException(
+              "Unable to convert param " + key + " to a SoyValue", e);
+        }
+        dest.setField(key, value);
+      }
+      return dest;
+    }
+
     @Override
     public RendererImpl setData(Map<String, ?> data) {
       Preconditions.checkState(
           !dataSetInConstructor,
           "May not call setData on a Renderer created from a TemplateParams");
 
-      return setData(data != null ? SoyValueConverter.INSTANCE.newDictFromMap(data) : null);
+      this.data = data != null ? mapAsParamStore(data) : null;
+      return this;
     }
 
     @Override
     public RendererImpl setData(SoyRecord data) {
+      Preconditions.checkState(
+          !dataSetInConstructor,
+          "May not call setData on a Renderer created from a TemplateParams");
       this.data = data;
       return this;
     }
 
     @Override
     public RendererImpl setIjData(Map<String, ?> ijData) {
-      this.ijData = (ijData == null) ? null : SoyValueConverter.INSTANCE.newDictFromMap(ijData);
+      this.ijData = (ijData == null) ? null : mapAsParamStore(ijData);
       return this;
     }
 
@@ -445,12 +480,6 @@ public final class BaseTofu implements SoyTofu {
     }
 
     @Override
-    public RendererImpl setContentKind(SanitizedContent.ContentKind contentKind) {
-      this.expectedContentKind = checkNotNull(contentKind);
-      return this;
-    }
-
-    @Override
     @Deprecated
     public String render() {
       StringBuilder sb = new StringBuilder();
@@ -458,13 +487,28 @@ public final class BaseTofu implements SoyTofu {
       return sb.toString();
     }
 
-    private ImmutableMap<String, Supplier<Object>> getPluginInstances() {
+    @Override
+    @Deprecated
+    public SanitizedContent.ContentKind render(Appendable out) {
+      TemplateNode template =
+          baseTofu.renderMain(
+              out,
+              templateName,
+              data,
+              ijData,
+              activeDelPackageNames,
+              msgBundle,
+              idRenamingMap,
+              cssRenamingMap,
+              debugSoyTemplateInfo,
+              getPluginInstances());
+      enforceContentKind(template);
+      return SanitizedContent.ContentKind.valueOf(template.getContentKind().name());
+    }
 
+    private PluginInstances getPluginInstances() {
       if (perRenderPluginInstances != null) {
-        return ImmutableMap.<String, Supplier<Object>>builder()
-            .putAll(baseTofu.pluginInstances)
-            .putAll(perRenderPluginInstances)
-            .build();
+        return baseTofu.pluginInstances.combine(perRenderPluginInstances);
       }
       return baseTofu.pluginInstances;
     }
@@ -539,25 +583,6 @@ public final class BaseTofu implements SoyTofu {
       StringBuilder sb = new StringBuilder();
       renderMain(sb);
       return sb.toString();
-    }
-
-    @Override
-    @Deprecated
-    public SanitizedContent.ContentKind render(Appendable out) {
-      TemplateNode template =
-          baseTofu.renderMain(
-              out,
-              templateName,
-              data,
-              ijData,
-              activeDelPackageNames,
-              msgBundle,
-              idRenamingMap,
-              cssRenamingMap,
-              debugSoyTemplateInfo,
-              getPluginInstances());
-      enforceContentKind(template);
-      return SanitizedContent.ContentKind.valueOf(template.getContentKind().name());
     }
 
     @Override
@@ -640,38 +665,5 @@ public final class BaseTofu implements SoyTofu {
     private void enforceContentKind(TemplateNode template) {
       enforceContentKind(template, expectedContentKind);
     }
-  }
-
-  // -----------------------------------------------------------------------------------------------
-  // Old render methods.
-
-  @Deprecated
-  @Override
-  public String render(
-      SoyTemplateInfo templateInfo, @Nullable SoyRecord data, @Nullable SoyMsgBundle msgBundle) {
-    return new RendererImpl(this, templateInfo.getName(), null)
-        .setData(data)
-        .setMsgBundle(msgBundle)
-        .render();
-  }
-
-  @Deprecated
-  @Override
-  public String render(
-      String templateName, @Nullable Map<String, ?> data, @Nullable SoyMsgBundle msgBundle) {
-    return new RendererImpl(this, templateName, null)
-        .setData(data)
-        .setMsgBundle(msgBundle)
-        .render();
-  }
-
-  @Deprecated
-  @Override
-  public String render(
-      String templateName, @Nullable SoyRecord data, @Nullable SoyMsgBundle msgBundle) {
-    return new RendererImpl(this, templateName, null)
-        .setData(data)
-        .setMsgBundle(msgBundle)
-        .render();
   }
 }

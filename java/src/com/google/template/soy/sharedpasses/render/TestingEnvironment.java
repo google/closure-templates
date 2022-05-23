@@ -51,23 +51,18 @@ public final class TestingEnvironment extends Environment {
   }
 
   @Override
-  void bindLoopPosition(VarDefn loopVar, SoyValueProvider value, int index, boolean isLast) {
+  void bindLoopPosition(VarDefn loopVar, SoyValueProvider value) {
     throw new UnsupportedOperationException();
+  }
+
+  @Override
+  boolean hasVar(VarDefn var) {
+    return params.hasField(var.name());
   }
 
   @Override
   SoyValue getVar(VarDefn var) {
     return getVarProvider(var).resolve();
-  }
-
-  @Override
-  boolean isLast(VarDefn loopVar) {
-    return doGetProvider(loopVar.name() + "__isLast").resolve().booleanValue();
-  }
-
-  @Override
-  int getIndex(VarDefn loopVar) {
-    return doGetProvider(loopVar.name() + "__index").resolve().integerValue();
   }
 
   @Override

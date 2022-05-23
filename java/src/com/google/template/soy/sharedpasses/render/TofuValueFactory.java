@@ -16,51 +16,84 @@
 
 package com.google.template.soy.sharedpasses.render;
 
-import com.google.common.base.Supplier;
+import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.common.collect.ImmutableMap.toImmutableMap;
+
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import com.google.common.html.types.SafeHtml;
+import com.google.common.html.types.SafeHtmlProto;
+import com.google.common.html.types.SafeUrl;
+import com.google.common.html.types.SafeUrlProto;
 import com.google.common.primitives.Primitives;
 import com.google.protobuf.Message;
 import com.google.protobuf.ProtocolMessageEnum;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyList;
+import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyProtoValue;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueConverter;
+import com.google.template.soy.data.SoyValueProvider;
+import com.google.template.soy.data.SoyValueUnconverter;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
+import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
-import com.google.template.soy.exprtree.FunctionNode;
-import com.google.template.soy.internal.i18n.BidiGlobalDir;
+import com.google.template.soy.internal.proto.JavaQualifiedNames;
+import com.google.template.soy.plugin.internal.JavaPluginExecContext;
+import com.google.template.soy.plugin.java.PluginInstances;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
 import com.google.template.soy.plugin.java.restricted.MethodSignature;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
-import com.ibm.icu.util.ULocale;
+import com.google.template.soy.types.FunctionType;
+import com.google.template.soy.types.ListType;
+import com.google.template.soy.types.MapType;
+import com.google.template.soy.types.SoyProtoEnumType;
+import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.SoyType.Kind;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Supplier;
+import javax.annotation.Nullable;
 
 /** Adapts JavaValueFactory to work with Tofu, wrapping the JavaValues in TofuJavaValues. */
 // TODO(b/19252021): Add unit tests after things shape up.
 class TofuValueFactory extends JavaValueFactory {
-  private final FunctionNode fn;
-  private final ImmutableMap<String, Supplier<Object>> pluginInstances;
+  private final SourceLocation fnSourceLocation;
+  private final String instanceKey;
+  private final PluginInstances pluginInstances;
+  @Nullable private final FunctionType externSig;
 
-  TofuValueFactory(FunctionNode fn, ImmutableMap<String, Supplier<Object>> pluginInstances) {
-    this.fn = fn;
+  TofuValueFactory(JavaPluginExecContext fn, PluginInstances pluginInstances) {
+    this(fn.getSourceLocation(), fn.getFunctionName(), pluginInstances, null);
+  }
+
+  TofuValueFactory(
+      SourceLocation fnSourceLocation,
+      String instanceKey,
+      PluginInstances pluginInstances,
+      FunctionType externSig) {
+    this.fnSourceLocation = fnSourceLocation;
+    this.instanceKey = instanceKey;
     this.pluginInstances = pluginInstances;
+    this.externSig = externSig;
   }
 
   SoyValue computeForJava(
       SoyJavaSourceFunction srcFn, List<SoyValue> args, TofuPluginContext context) {
     List<JavaValue> javaArgs =
-        Lists.transform(args, soyArg -> TofuJavaValue.forSoyValue(soyArg, fn.getSourceLocation()));
+        Lists.transform(args, soyArg -> TofuJavaValue.forSoyValue(soyArg, fnSourceLocation));
     TofuJavaValue result = (TofuJavaValue) srcFn.applyForJavaSource(this, javaArgs, context);
     if (!result.hasSoyValue()) {
       throw RenderException.create(
@@ -71,7 +104,7 @@ class TofuValueFactory extends JavaValueFactory {
   }
 
   @Override
-  public JavaValue callStaticMethod(MethodSignature methodSig, JavaValue... params) {
+  public TofuJavaValue callStaticMethod(MethodSignature methodSig, JavaValue... params) {
     return callStaticMethod(toMethod(methodSig), params);
   }
 
@@ -85,16 +118,19 @@ class TofuValueFactory extends JavaValueFactory {
   }
 
   @Override
-  public JavaValue callInstanceMethod(MethodSignature methodSig, JavaValue... params) {
+  public TofuJavaValue callInstanceMethod(MethodSignature methodSig, JavaValue... params) {
     return callInstanceMethod(toMethod(methodSig), params);
   }
 
   @Override
   public TofuJavaValue callInstanceMethod(Method method, JavaValue... params) {
-    Supplier<Object> instanceSupplier = pluginInstances.get(fn.getFunctionName());
+    Supplier<Object> instanceSupplier = pluginInstances.get(instanceKey);
     if (instanceSupplier == null) {
       throw RenderException.create(
-          "No plugin instance registered for function '" + fn.getFunctionName() + "'");
+          "No plugin instance registered for key '"
+              + instanceKey
+              + "'. Available keys are: "
+              + pluginInstances.keys());
     }
     try {
       return wrapInTofuValue(
@@ -119,7 +155,7 @@ class TofuValueFactory extends JavaValueFactory {
               return tjv.soyValue();
             });
     return TofuJavaValue.forSoyValue(
-        SoyValueConverter.INSTANCE.convert(values).resolve(), fn.getSourceLocation());
+        SoyValueConverter.INSTANCE.convert(values).resolve(), fnSourceLocation);
   }
 
   @Override
@@ -149,11 +185,11 @@ class TofuValueFactory extends JavaValueFactory {
 
   private TofuJavaValue wrapInTofuValue(Method method, Object object) {
     if (object instanceof SoyValue) {
-      return TofuJavaValue.forSoyValue((SoyValue) object, fn.getSourceLocation());
+      return TofuJavaValue.forSoyValue((SoyValue) object, fnSourceLocation);
     }
     try {
       return TofuJavaValue.forSoyValue(
-          SoyValueConverter.INSTANCE.convert(object).resolve(), fn.getSourceLocation());
+          SoyValueConverter.INSTANCE.convert(object).resolve(), fnSourceLocation);
     } catch (SoyDataException e) {
       throw RenderException.create("Invalid return value from `" + method + "`", e);
     }
@@ -185,7 +221,7 @@ class TofuValueFactory extends JavaValueFactory {
    * an {@code Object[]} of the adapted types. This essentially unboxes SoyValues into their native
    * counterparts if the method wants a non-SoyValue parameter.
    */
-  private static Object[] adaptParams(Method method, JavaValue[] tofuValues) {
+  private Object[] adaptParams(Method method, JavaValue[] tofuValues) {
     Class<?>[] paramTypes = method.getParameterTypes();
     if (tofuValues.length != paramTypes.length) {
       throw RenderException.create(
@@ -198,72 +234,147 @@ class TofuValueFactory extends JavaValueFactory {
     }
     Object[] params = new Object[tofuValues.length];
     for (int i = 0; i < tofuValues.length; i++) {
-      TofuJavaValue tofuVal = (TofuJavaValue) tofuValues[i];
-      Class<?> type = Primitives.unwrap(paramTypes[i]);
-      if (type == BidiGlobalDir.class) {
-        params[i] = tofuVal.bidiGlobalDir();
-      } else if (type == ULocale.class) {
-        params[i] = tofuVal.locale();
-      } else {
-        if (!tofuVal.hasSoyValue()) {
-          throw RenderException.create("Invalid parameter: " + tofuVal);
-        }
-        SoyValue value = tofuVal.soyValue();
-        if (value instanceof NullData || value instanceof UndefinedData) {
-          if (Primitives.allPrimitiveTypes().contains(type)) {
-            throw RenderException.create(
-                "cannot call method "
-                    + method.getDeclaringClass().getName()
-                    + "."
-                    + method.getName()
-                    + " because parameter["
-                    + i
-                    + "] expects a primitive type ["
-                    + type
-                    + "], but actual value is null [ "
-                    + tofuVal
-                    + "]");
-          }
-          params[i] = null;
-        } else if (type.isInstance(value)) {
-          params[i] = value;
-        } else if (type == boolean.class) {
-          params[i] = value.booleanValue();
-        } else if (type == int.class) {
-          params[i] = value.integerValue();
-        } else if (type == long.class) {
-          params[i] = value.longValue();
-        } else if (type == double.class) {
-          params[i] = value.numberValue();
-        } else if (type == String.class) {
-          params[i] = value.stringValue();
-        } else if (type == List.class) {
-          params[i] = ((SoyList) value).asJavaList();
-        } else if (Message.class.isAssignableFrom(type)) {
-          params[i] = type.cast(((SoyProtoValue) value).getProto());
-        } else if (type.isEnum() && ProtocolMessageEnum.class.isAssignableFrom(type)) {
-          try {
-            params[i] =
-                type.getDeclaredMethod("forNumber", int.class).invoke(null, value.integerValue());
-          } catch (ReflectiveOperationException roe) {
-            throw RenderException.create("Invalid parameter: " + tofuVal, roe);
-          }
-        } else {
-          throw new UnsupportedOperationException(
+      params[i] = adaptParam((TofuJavaValue) tofuValues[i], paramTypes[i], method, i);
+    }
+    return params;
+  }
+
+  private Object adaptParam(TofuJavaValue tofuVal, Class<?> type, Method method, int i) {
+    // Some conversions here are only supported in the newer extern API, not the older plugin API.
+    boolean isExternApi = externSig != null;
+
+    if (!tofuVal.hasSoyValue()) {
+      return tofuVal.rawValue();
+    } else {
+      SoyValue value = tofuVal.soyValue();
+      if (value instanceof NullData || value instanceof UndefinedData) {
+        if (Primitives.allPrimitiveTypes().contains(type)) {
+          throw RenderException.create(
               "cannot call method "
                   + method.getDeclaringClass().getName()
                   + "."
                   + method.getName()
                   + " because parameter["
                   + i
-                  + "] expects a "
+                  + "] expects a primitive type ["
                   + type
-                  + ", but actual value is a `"
-                  + value
-                  + "`");
+                  + "], but actual value is null [ "
+                  + tofuVal
+                  + "]");
         }
+        return null;
+      } else if (isExternApi && type == Object.class) {
+        return SoyValueUnconverter.unconvert(value);
+      } else if (isExternApi && type == Number.class) {
+        return value instanceof NumberData
+            ? ((NumberData) value).javaNumberValue()
+            : value.numberValue();
+      } else if (type.isInstance(value)) {
+        return value;
+      }
+
+      Class<?> primitiveType = Primitives.unwrap(type);
+      if (primitiveType == boolean.class) {
+        return value.booleanValue();
+      } else if (primitiveType == int.class) {
+        return value.integerValue();
+      } else if (primitiveType == long.class) {
+        return value.longValue();
+      } else if (primitiveType == double.class) {
+        return value.numberValue();
+      } else if (primitiveType == float.class) {
+        return (float) value.numberValue();
+      } else if (type == String.class) {
+        return value.stringValue();
+      } else if (type == List.class || type == ImmutableList.class) {
+        if (isExternApi) {
+          return ((SoyList) value)
+              .asJavaList().stream()
+                  .map(
+                      item ->
+                          adaptParamItem(
+                              item,
+                              ((ListType) externSig.getParameters().get(i).getType())
+                                  .getElementType()))
+                  .collect(toImmutableList());
+        } else {
+          return ((SoyList) value).asJavaList();
+        }
+      } else if ((type == Map.class || type == ImmutableMap.class) && isExternApi) {
+        SoyType paramType = externSig.getParameters().get(i).getType();
+        if (paramType.getKind() == Kind.RECORD) {
+          return ((SoyMap) value)
+              .entrySet().stream()
+                  .collect(
+                      toImmutableMap(
+                          e -> e.getKey().coerceToString(),
+                          e -> SoyValueUnconverter.unconvert(e.getValue())));
+        }
+        MapType mapType = (MapType) paramType;
+        return ((SoyMap) value)
+            .entrySet().stream()
+                .collect(
+                    toImmutableMap(
+                        e -> adaptParamItem(e.getKey(), mapType.getKeyType()),
+                        e -> adaptParamItem(e.getValue(), mapType.getValueType())));
+      } else if (type.isEnum() && ProtocolMessageEnum.class.isAssignableFrom(type)) {
+        try {
+          return type.getDeclaredMethod("forNumber", int.class).invoke(null, value.integerValue());
+        } catch (ReflectiveOperationException roe) {
+          throw RenderException.create("Invalid parameter: " + tofuVal, roe);
+        }
+      } else if (type == SafeHtml.class) {
+        return ((SanitizedContent) value).toSafeHtml();
+      } else if (type == SafeUrl.class) {
+        return ((SanitizedContent) value).toSafeUrl();
+      } else if (type == SafeUrlProto.class) {
+        return ((SanitizedContent) value).toSafeUrlProto();
+      } else if (type == SafeHtmlProto.class) {
+        return ((SanitizedContent) value).toSafeHtmlProto();
+      } else if (Message.class.isAssignableFrom(type)) {
+        return type.cast(((SoyProtoValue) value).getProto());
+      } else {
+        throw new UnsupportedOperationException(
+            "cannot call method "
+                + method.getDeclaringClass().getName()
+                + "."
+                + method.getName()
+                + " because parameter["
+                + i
+                + "] expects a "
+                + type
+                + ", but actual value is a `"
+                + value
+                + "`");
       }
     }
-    return params;
+  }
+
+  private Object adaptParamItem(SoyValueProvider item, SoyType elmType) {
+    SoyValue val = item.resolve();
+    switch (elmType.getKind()) {
+      case INT:
+        return val.longValue();
+      case FLOAT:
+        return val.floatValue();
+      case STRING:
+        return val.coerceToString();
+      case BOOL:
+        return val.coerceToBoolean();
+      case PROTO:
+        return ((SoyProtoValue) val).getProto();
+      case PROTO_ENUM:
+        String javaClass =
+            JavaQualifiedNames.getClassName(((SoyProtoEnumType) elmType).getDescriptor());
+        try {
+          return Class.forName(javaClass)
+              .getDeclaredMethod("forNumber", int.class)
+              .invoke(null, val.integerValue());
+        } catch (ReflectiveOperationException roe) {
+          throw RenderException.create("Invalid parameter: " + item, roe);
+        }
+      default:
+        throw new AssertionError();
+    }
   }
 }

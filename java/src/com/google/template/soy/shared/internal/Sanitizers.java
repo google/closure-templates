@@ -16,15 +16,20 @@
 
 package com.google.template.soy.shared.internal;
 
+import static com.google.common.flogger.StackSize.MEDIUM;
+import static java.lang.Math.min;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Ascii;
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
+import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.escape.Escaper;
+import com.google.common.flogger.GoogleLogger;
 import com.google.common.net.PercentEscaper;
 import com.google.common.primitives.Chars;
 import com.google.template.soy.data.Dir;
@@ -39,12 +44,9 @@ import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.shared.internal.TagWhitelist.OptionalSafeTag;
-import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
@@ -53,12 +55,11 @@ import javax.annotation.Nullable;
  * Java implementations of functions that escape, normalize, and filter untrusted strings to allow
  * them to be safely embedded in particular contexts. These correspond to the {@code soy.$$escape*},
  * {@code soy.$$normalize*}, and {@code soy.$$filter*} functions defined in "soyutils.js".
- *
  */
 public final class Sanitizers {
 
   /** Receives messages about unsafe values that were filtered out. */
-  private static final Logger logger = Logger.getLogger(Sanitizers.class.getName());
+  private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 
   private Sanitizers() {
     // Not instantiable.
@@ -109,87 +110,6 @@ public final class Sanitizers {
     return cleanHtml(value.coerceToString(), valueDir, optionalSafeTags);
   }
 
-  /** Streaming version of {@code |cleanHtml}. */
-  public static LoggingAdvisingAppendable cleanHtmlStreaming(
-      LoggingAdvisingAppendable delegate, Collection<? extends OptionalSafeTag> optionalSafeTags) {
-    return new CleanHtmlAppendable(delegate, optionalSafeTags);
-  }
-
-  private static final class CleanHtmlAppendable extends AbstractStreamingHtmlEscaper
-      implements Closeable {
-    private final Collection<? extends OptionalSafeTag> optionalSafeTags;
-
-    CleanHtmlAppendable(
-        LoggingAdvisingAppendable delegate,
-        Collection<? extends OptionalSafeTag> optionalSafeTags) {
-      super(delegate, new StringBuilder());
-      this.optionalSafeTags = optionalSafeTags;
-    }
-
-    @Override
-    protected void notifyContentKind(ContentKind kind) throws IOException {
-      if (isInHtml()) {
-        activeAppendable = delegate;
-        delegate.setSanitizedContentKind(kind);
-      }
-    }
-
-    @Override
-    protected void notifyContentDirectionality(@Nullable Dir contentDir) throws IOException {
-      if (isInHtml()) {
-        delegate.setSanitizedContentDirectionality(contentDir);
-      }
-    }
-
-    @Override
-    public LoggingAdvisingAppendable enterLoggableElement(LogStatement statement) {
-      if (isInHtml()) {
-        delegate.enterLoggableElement(statement);
-      } else {
-        throw new AssertionError(
-            "Logging statements should've already been removed as they're only allowed in HTML");
-      }
-      return this;
-    }
-
-    @Override
-    public LoggingAdvisingAppendable exitLoggableElement() {
-      if (isInHtml()) {
-        delegate.exitLoggableElement();
-      }
-      return this;
-    }
-
-    @Override
-    public LoggingAdvisingAppendable appendLoggingFunctionInvocation(
-        LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
-        throws IOException {
-      if (isInHtml()) {
-        delegate.appendLoggingFunctionInvocation(funCall, escapers);
-      } else {
-        throw new AssertionError(
-            "Logging statements should've already been removed as they're only allowed in HTML");
-      }
-      return this;
-    }
-
-    @Override
-    public void close() throws IOException {
-      if (!isInHtml()) {
-        StringBuilder buffer = (StringBuilder) activeAppendable;
-        if (buffer.length() > 0) {
-          SanitizedContent content =
-              cleanHtml(buffer.toString(), getSanitizedContentDirectionality(), optionalSafeTags);
-          delegate
-              .setSanitizedContentKind(content.getContentKind())
-              .setSanitizedContentDirectionality(content.getContentDirection())
-              .append(content.getContent());
-          buffer.setLength(0);
-        }
-      }
-    }
-  }
-
   /**
    * Normalizes the input HTML while preserving "safe" tags. The content directionality is unknown.
    *
@@ -227,6 +147,77 @@ public final class Sanitizers {
         contentDir);
   }
 
+  /** Streaming version of {@code |cleanHtml}. */
+  public static LoggingAdvisingAppendable cleanHtmlStreaming(
+      LoggingAdvisingAppendable delegate, Collection<? extends OptionalSafeTag> optionalSafeTags) {
+    return new CleanHtmlAppendable(delegate, optionalSafeTags);
+  }
+
+  private static final class CleanHtmlAppendable extends AbstractStreamingHtmlEscaper {
+    private final Collection<? extends OptionalSafeTag> optionalSafeTags;
+
+    CleanHtmlAppendable(
+        LoggingAdvisingAppendable delegate,
+        Collection<? extends OptionalSafeTag> optionalSafeTags) {
+      super(delegate, new StringBuilder());
+      this.optionalSafeTags = optionalSafeTags;
+    }
+
+    @Override
+    protected void notifyKindAndDirectionality(ContentKind kind, @Nullable Dir contentDir)
+        throws IOException {
+      if (isInHtml()) {
+        activeAppendable = delegate;
+        delegate.setKindAndDirectionality(kind, contentDir);
+      }
+    }
+
+    @Override
+    public LoggingAdvisingAppendable enterLoggableElement(LogStatement statement) {
+      if (isInHtml()) {
+        delegate.enterLoggableElement(statement);
+      } else {
+        throw new AssertionError(
+            "Logging statements should've already been removed as they're only allowed in HTML");
+      }
+      return this;
+    }
+
+    @Override
+    public LoggingAdvisingAppendable exitLoggableElement() {
+      if (isInHtml()) {
+        delegate.exitLoggableElement();
+      }
+      return this;
+    }
+
+    @Override
+    public LoggingAdvisingAppendable appendLoggingFunctionInvocation(
+        LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
+        throws IOException {
+      if (isInHtml()) {
+        delegate.appendLoggingFunctionInvocation(funCall, escapers);
+      } else {
+        throw new AssertionError(
+            "Logging statements should've already been removed as they're only allowed in HTML");
+      }
+      return this;
+    }
+
+    @Override
+    public void flushBuffers(int depth) throws IOException {
+      if (!isInHtml()) {
+        StringBuilder buffer = (StringBuilder) activeAppendable;
+        if (buffer.length() > 0) {
+          cleanHtml(buffer.toString(), getSanitizedContentDirectionality(), optionalSafeTags)
+              .render(delegate);
+          buffer.setLength(0);
+        }
+      }
+      super.flushBuffers(depth);
+    }
+  }
+
   /** Converts the input to HTML suitable for use inside {@code <textarea>} by entity escaping. */
   public static String escapeHtmlRcdata(SoyValue value) {
     value = normalizeNull(value);
@@ -238,7 +229,11 @@ public final class Sanitizers {
       return normalizeHtml(value.coerceToString());
     }
 
-    return escapeHtml(value.coerceToString());
+    return escapeHtmlRcdata(value.coerceToString());
+  }
+
+  public static String escapeHtmlRcdata(String value) {
+    return escapeHtml(value);
   }
 
   /** Streaming version of {@code |escapeHtmlRcData}. */
@@ -253,10 +248,12 @@ public final class Sanitizers {
     }
 
     @Override
-    protected void notifyContentKind(ContentKind kind) throws IOException {
+    protected void notifyKindAndDirectionality(ContentKind kind, @Nullable Dir directionality)
+        throws IOException {
       if (isInHtml()) {
         activeAppendable = EscapingConventions.NormalizeHtml.INSTANCE.escape(delegate);
       }
+      delegate.setKindAndDirectionality(kind, directionality);
     }
 
     @Override
@@ -284,14 +281,14 @@ public final class Sanitizers {
     return normalizeHtml(value.coerceToString());
   }
 
-  public static LoggingAdvisingAppendable normalizeHtmlStreaming(
-      LoggingAdvisingAppendable appendable) {
-    return StreamingEscaper.create(appendable, EscapingConventions.NormalizeHtml.INSTANCE);
-  }
-
   /** Normalizes HTML to HTML making sure quotes and other specials are entity encoded. */
   public static String normalizeHtml(String value) {
     return EscapingConventions.NormalizeHtml.INSTANCE.escape(value);
+  }
+
+  public static LoggingAdvisingAppendable normalizeHtmlStreaming(
+      LoggingAdvisingAppendable appendable) {
+    return StreamingEscaper.create(appendable, EscapingConventions.NormalizeHtml.INSTANCE);
   }
 
   /**
@@ -332,6 +329,11 @@ public final class Sanitizers {
     return EscapingConventions.EscapeHtml.INSTANCE.escape(value);
   }
 
+  public static LoggingAdvisingAppendable escapeHtmlAttributeStreaming(
+      LoggingAdvisingAppendable appendable) {
+    return StreamingAttributeEscaper.create(appendable, EscapingConventions.EscapeHtml.INSTANCE);
+  }
+
   /**
    * Escapes HTML special characters in an HTML attribute value containing HTML code, such as {@code
    * <iframe srcdoc>}.
@@ -369,6 +371,12 @@ public final class Sanitizers {
     return EscapingConventions.EscapeHtmlNospace.INSTANCE.escape(value);
   }
 
+  public static LoggingAdvisingAppendable escapeHtmlAttributeNospaceStreaming(
+      LoggingAdvisingAppendable appendable) {
+    return StreamingAttributeEscaper.create(
+        appendable, EscapingConventions.EscapeHtmlNospace.INSTANCE);
+  }
+
   /** Filters decimal and floating-point numbers. */
   public static String filterNumber(SoyValue value) {
     return filterNumber(value.coerceToString());
@@ -388,14 +396,14 @@ public final class Sanitizers {
     return escapeJsString(value.coerceToString());
   }
 
-  public static LoggingAdvisingAppendable escapeJsStringStreaming(
-      LoggingAdvisingAppendable appendable) {
-    return StreamingEscaper.create(appendable, EscapingConventions.EscapeJsString.INSTANCE);
-  }
-
   /** Converts plain text to the body of a JavaScript string by using {@code \n} style escapes. */
   public static String escapeJsString(String value) {
     return EscapingConventions.EscapeJsString.INSTANCE.escape(value);
+  }
+
+  public static LoggingAdvisingAppendable escapeJsStringStreaming(
+      LoggingAdvisingAppendable appendable) {
+    return StreamingEscaper.create(appendable, EscapingConventions.EscapeJsString.INSTANCE);
   }
 
   /**
@@ -416,22 +424,31 @@ public final class Sanitizers {
     } else if (value instanceof BooleanData) {
       return " " + value.booleanValue() + " ";
     } else if (isSanitizedContentOfKind(value, SanitizedContent.ContentKind.JS)) {
-      String jsCode = value.coerceToString();
       // This value may not be embeddable if it contains the substring "</script".
       // TODO(msamuel): Fixup.  We need to be careful because mucking with '<' can
       // break code like
       //    while (i</foo/.exec(str).length)
       // and mucking with / can break
       //    return untrustedHTML.replace(/</g, '&lt;');
-      return jsCode;
+      return value.coerceToString();
     } else {
       return escapeJsValue(value.coerceToString());
     }
   }
 
   /** Converts plain text to a quoted javaScript string value. */
+  public static String escapeJsValue(double value) {
+    return " " + value + " ";
+  }
+
+  /** Converts plain text to a quoted javaScript string value. */
+  public static String escapeJsValue(boolean value) {
+    return " " + value + " ";
+  }
+
+  /** Converts plain text to a quoted javaScript string value. */
   public static String escapeJsValue(String value) {
-    return value != null ? "'" + escapeJsString(value) + "'" : " null ";
+    return "'" + escapeJsString(value) + "'";
   }
 
   /** Converts the input to the body of a JavaScript regular expression literal. */
@@ -440,15 +457,15 @@ public final class Sanitizers {
     return escapeJsRegex(value.coerceToString());
   }
 
+  /** Converts plain text to the body of a JavaScript regular expression literal. */
+  public static String escapeJsRegex(String value) {
+    return EscapingConventions.EscapeJsRegex.INSTANCE.escape(value);
+  }
+
   /** Converts the input to the body of a JavaScript regular expression literal. */
   public static LoggingAdvisingAppendable escapeJsRegexStreaming(
       LoggingAdvisingAppendable delegate) {
     return StreamingEscaper.create(delegate, EscapingConventions.EscapeJsRegex.INSTANCE);
-  }
-
-  /** Converts plain text to the body of a JavaScript regular expression literal. */
-  public static String escapeJsRegex(String value) {
-    return EscapingConventions.EscapeJsRegex.INSTANCE.escape(value);
   }
 
   /** Converts the input to the body of a CSS string literal. */
@@ -457,15 +474,15 @@ public final class Sanitizers {
     return escapeCssString(value.coerceToString());
   }
 
+  /** Converts plain text to the body of a CSS string literal. */
+  public static String escapeCssString(String value) {
+    return EscapingConventions.EscapeCssString.INSTANCE.escape(value);
+  }
+
   /** Converts the input to the body of a CSS string literal. */
   public static LoggingAdvisingAppendable escapeCssStringStreaming(
       LoggingAdvisingAppendable delegate) {
     return StreamingEscaper.create(delegate, EscapingConventions.EscapeCssString.INSTANCE);
-  }
-
-  /** Converts plain text to the body of a CSS string literal. */
-  public static String escapeCssString(String value) {
-    return EscapingConventions.EscapeCssString.INSTANCE.escape(value);
   }
 
   /**
@@ -494,7 +511,7 @@ public final class Sanitizers {
     if (EscapingConventions.FilterCssValue.INSTANCE.getValueFilter().matcher(value).find()) {
       return value;
     }
-    logger.log(Level.WARNING, "|filterCssValue received bad value ''{0}''", value);
+    logger.atWarning().withStackTrace(MEDIUM).log("|filterCssValue received bad value '%s'", value);
     return EscapingConventions.FilterCssValue.INSTANCE.getInnocuousOutput();
   }
 
@@ -522,16 +539,16 @@ public final class Sanitizers {
    * Converts a piece of URI content to a piece of URI content that can be safely embedded in an
    * HTML attribute by percent encoding.
    */
-  public static LoggingAdvisingAppendable normalizeUriStreaming(LoggingAdvisingAppendable value) {
-    return StreamingEscaper.create(value, EscapingConventions.NormalizeUri.INSTANCE);
+  public static String normalizeUri(String value) {
+    return EscapingConventions.NormalizeUri.INSTANCE.escape(value);
   }
 
   /**
    * Converts a piece of URI content to a piece of URI content that can be safely embedded in an
    * HTML attribute by percent encoding.
    */
-  public static String normalizeUri(String value) {
-    return EscapingConventions.NormalizeUri.INSTANCE.escape(value);
+  public static LoggingAdvisingAppendable normalizeUriStreaming(LoggingAdvisingAppendable value) {
+    return StreamingEscaper.create(value, EscapingConventions.NormalizeUri.INSTANCE);
   }
 
   /**
@@ -555,7 +572,8 @@ public final class Sanitizers {
     if (EscapingConventions.FilterNormalizeUri.INSTANCE.getValueFilter().matcher(value).find()) {
       return EscapingConventions.FilterNormalizeUri.INSTANCE.escape(value);
     }
-    logger.log(Level.WARNING, "|filterNormalizeUri received bad value ''{0}''", value);
+    logger.atWarning().withStackTrace(MEDIUM).log(
+        "|filterNormalizeUri received bad value '%s'", value);
     return EscapingConventions.FilterNormalizeUri.INSTANCE.getInnocuousOutput();
   }
 
@@ -585,7 +603,8 @@ public final class Sanitizers {
         .find()) {
       return EscapingConventions.FilterNormalizeMediaUri.INSTANCE.escape(value);
     }
-    logger.log(Level.WARNING, "|filterNormalizeMediaUri received bad value ''{0}''", value);
+    logger.atWarning().withStackTrace(MEDIUM).log(
+        "|filterNormalizeMediaUri received bad value '%s'", value);
     return EscapingConventions.FilterNormalizeMediaUri.INSTANCE.getInnocuousOutput();
   }
 
@@ -608,13 +627,61 @@ public final class Sanitizers {
     if (isSanitizedContentOfKind(value, SanitizedContent.ContentKind.TRUSTED_RESOURCE_URI)) {
       return value.coerceToString();
     }
-    logger.log(Level.WARNING, "|filterTrustedResourceUri received bad value ''{0}''", value);
-    return "about:invalid#" + EscapingConventions.INNOCUOUS_OUTPUT;
+    return filterTrustedResourceUri(value.coerceToString());
   }
 
   /** For string inputs this function just returns the input string itself. */
   public static String filterTrustedResourceUri(String value) {
+    logger.atWarning().withStackTrace(MEDIUM).log(
+        "|filterTrustedResourceUri received bad value '%s'", value);
+    return "about:invalid#" + EscapingConventions.INNOCUOUS_OUTPUT;
+  }
+
+  /** Filters out strings that cannot be a substring of a valid <script> tag. */
+  public static String filterHtmlScriptPhrasingData(SoyValue value) {
+    value = normalizeNull(value);
+    // no content types are safe for this context
+    return filterHtmlScriptPhrasingData(value.coerceToString());
+  }
+
+  /**
+   * Filters out strings that cannot be a substring of a valid <script> tag.
+   *
+   * <p>In particular, {@code <!--} and {@code </script} or prefixes of those strings that occur at
+   * the end of the value.
+   */
+  public static String filterHtmlScriptPhrasingData(String value) {
+    // we need to ban sequences that look like
+    // <!--
+    // </script
+    int start = 0;
+    int indexOfLt;
+    while ((indexOfLt = value.indexOf('<', start)) != -1) {
+      start = indexOfLt;
+      if (matchPrefixIgnoreCasePastEnd("</script", value, start)
+          || matchPrefixIgnoreCasePastEnd("<!--", value, start)) {
+        logger.atWarning().withStackTrace(MEDIUM).log(
+            "|filterHtmlScriptPhrasingData received bad value '%s'. Cannot contain a script"
+                + " tag, and html comment, or end with a prefix of either",
+            value);
+        return EscapingConventions.INNOCUOUS_OUTPUT;
+      }
+      start++;
+    }
     return value;
+  }
+
+  private static boolean matchPrefixIgnoreCasePastEnd(String needle, String haystack, int offset) {
+    int charsLeft = haystack.length() - offset;
+    int charsToScan = min(needle.length(), charsLeft);
+    for (int i = 0; i < charsToScan; i++) {
+      char c1 = needle.charAt(i);
+      char c2 = haystack.charAt(i + offset);
+      if (c1 != c2 && Ascii.toLowerCase(c1) != Ascii.toLowerCase(c2)) {
+        return false;
+      }
+    }
+    return true;
   }
 
   /**
@@ -634,7 +701,8 @@ public final class Sanitizers {
       // NOTE: No need to escape.
       return UnsafeSanitizedContentOrdainer.ordainAsSafe(value, ContentKind.URI);
     }
-    logger.log(Level.WARNING, "|filterImageDataUri received bad value ''{0}''", value);
+    logger.atWarning().withStackTrace(MEDIUM).log(
+        "|filterImageDataUri received bad value '%s'", value);
     return UnsafeSanitizedContentOrdainer.ordainAsSafe(
         EscapingConventions.FilterImageDataUri.INSTANCE.getInnocuousOutput(),
         SanitizedContent.ContentKind.URI);
@@ -652,7 +720,7 @@ public final class Sanitizers {
       // NOTE: No need to escape. Escaping for other contexts (e.g. HTML) happen after this.
       return UnsafeSanitizedContentOrdainer.ordainAsSafe(value, ContentKind.URI);
     }
-    logger.log(Level.WARNING, "|filterSipUri received bad value ''{0}''", value);
+    logger.atWarning().withStackTrace(MEDIUM).log("|filterSipUri received bad value '%s'", value);
     return UnsafeSanitizedContentOrdainer.ordainAsSafe(
         EscapingConventions.FilterSipUri.INSTANCE.getInnocuousOutput(),
         SanitizedContent.ContentKind.URI);
@@ -670,7 +738,7 @@ public final class Sanitizers {
       // NOTE: No need to escape. Escaping for other contexts (e.g. HTML) happen after this.
       return UnsafeSanitizedContentOrdainer.ordainAsSafe(value, ContentKind.URI);
     }
-    logger.log(Level.WARNING, "|filterSmsUri received bad value ''{0}''", value);
+    logger.atWarning().withStackTrace(MEDIUM).log("|filterSmsUri received bad value '%s'", value);
     return UnsafeSanitizedContentOrdainer.ordainAsSafe(
         EscapingConventions.FilterSmsUri.INSTANCE.getInnocuousOutput(),
         SanitizedContent.ContentKind.URI);
@@ -688,7 +756,7 @@ public final class Sanitizers {
       // NOTE: No need to escape. Escaping for other contexts (e.g. HTML) happen after this.
       return UnsafeSanitizedContentOrdainer.ordainAsSafe(value, ContentKind.URI);
     }
-    logger.log(Level.WARNING, "|filterTelUri received bad value ''{0}''", value);
+    logger.atWarning().withStackTrace(MEDIUM).log("|filterTelUri received bad value '%s'", value);
     return UnsafeSanitizedContentOrdainer.ordainAsSafe(
         EscapingConventions.FilterTelUri.INSTANCE.getInnocuousOutput(),
         SanitizedContent.ContentKind.URI);
@@ -699,27 +767,11 @@ public final class Sanitizers {
    * known safe attribute content.
    */
   public static String filterHtmlAttributes(SoyValue value) {
-    value = normalizeNull(value);
+    String str = normalizeNull(value).coerceToString();
     if (isSanitizedContentOfKind(value, SanitizedContent.ContentKind.ATTRIBUTES)) {
-      // We're guaranteed to be in a case where key=value pairs are expected. However, if it would
-      // cause issues to directly abut this with more attributes, add a space. For example:
-      // {$a}{$b} where $a is foo=bar and $b is boo=baz requires a space in between to be parsed
-      // correctly, but not in the case where $a is foo="bar".
-      // TODO: We should be able to get rid of this if the compiler can guarantee spaces between
-      // adjacent print statements in attribute context at compile time.
-      String content = value.coerceToString();
-      if (content.length() > 0) {
-        if (shouldAppendSpace(content.charAt(content.length() - 1))) {
-          content += ' ';
-        }
-      }
-      return content;
+      return str;
     }
-    return filterHtmlAttributes(value.coerceToString());
-  }
-
-  private static boolean shouldAppendSpace(char lastChar) {
-    return lastChar != '"' && lastChar != '\'' && !Character.isWhitespace(lastChar);
+    return filterHtmlAttributes(str);
   }
 
   /**
@@ -729,7 +781,8 @@ public final class Sanitizers {
     if (EscapingConventions.FilterHtmlAttributes.INSTANCE.getValueFilter().matcher(value).find()) {
       return value;
     }
-    logger.log(Level.WARNING, "|filterHtmlAttributes received bad value ''{0}''", value);
+    logger.atWarning().withStackTrace(MEDIUM).log(
+        "|filterHtmlAttributes received bad value '%s'", value);
     return EscapingConventions.FilterHtmlAttributes.INSTANCE.getInnocuousOutput();
   }
 
@@ -738,56 +791,54 @@ public final class Sanitizers {
     return new FilterHtmlAttributesAppendable(appendable);
   }
 
-  private static final class FilterHtmlAttributesAppendable extends LoggingAdvisingAppendable
-      implements Closeable {
+  private static final class FilterHtmlAttributesAppendable extends LoggingAdvisingAppendable {
     private final LoggingAdvisingAppendable delegate;
     private Appendable activeAppendable;
-    private char lastChar;
 
     FilterHtmlAttributesAppendable(LoggingAdvisingAppendable delegate) {
       this.delegate = delegate;
-      activeAppendable = new StringBuilder();
+    }
+
+    private Appendable getActiveAppendable() {
+      if (activeAppendable == null) {
+        activeAppendable = new StringBuilder();
+      }
+      return activeAppendable;
     }
 
     @Override
-    protected void notifyContentKind(ContentKind kind) throws IOException {
+    protected void notifyKindAndDirectionality(ContentKind kind, @Nullable Dir dir)
+        throws IOException {
       if (kind == ContentKind.ATTRIBUTES) {
         activeAppendable = delegate;
       }
+      delegate.setKindAndDirectionality(kind, dir);
     }
 
     @Override
     public LoggingAdvisingAppendable append(CharSequence csq) throws IOException {
-      activeAppendable.append(csq);
-      if (csq.length() > 0) {
-        lastChar = csq.charAt(csq.length() - 1);
-      }
+      getActiveAppendable().append(csq);
       return this;
     }
 
     @Override
     public LoggingAdvisingAppendable append(CharSequence csq, int start, int end)
         throws IOException {
-      activeAppendable.append(csq, start, end);
-      if (end - start > 0) {
-        lastChar = csq.charAt(end - 1);
-      }
+      getActiveAppendable().append(csq, start, end);
       return this;
     }
 
     @Override
     public LoggingAdvisingAppendable append(char c) throws IOException {
-      activeAppendable.append(c);
-      lastChar = c;
+      getActiveAppendable().append(c);
       return this;
     }
 
     @Override
     public LoggingAdvisingAppendable enterLoggableElement(LogStatement statement) {
-      logger.log(
-          Level.WARNING,
+      logger.atWarning().withStackTrace(MEDIUM).log(
           "Visual element logging behavior is undefined when used with the |filterHtmlAttributes "
-              + "directive. This logging call has been dropped: {0}",
+              + "directive. This logging call has been dropped: %s",
           statement);
       return this;
     }
@@ -803,14 +854,9 @@ public final class Sanitizers {
         throws IOException {
       if (getSanitizedContentKind() == ContentKind.ATTRIBUTES) {
         delegate.appendLoggingFunctionInvocation(funCall, escapers);
-        // Reset lastChar to a dummy character so that we add a space after.
-        lastChar = 'a';
       } else {
         String placeholder = escapePlaceholder(funCall.placeholderValue(), escapers);
-        activeAppendable.append(placeholder);
-        if (placeholder.length() > 0) {
-          lastChar = placeholder.charAt(placeholder.length() - 1);
-        }
+        getActiveAppendable().append(placeholder);
       }
       return this;
     }
@@ -821,13 +867,12 @@ public final class Sanitizers {
     }
 
     @Override
-    public void close() throws IOException {
-      if (getSanitizedContentKind() == ContentKind.ATTRIBUTES) {
-        if (lastChar != 0 && shouldAppendSpace(lastChar)) {
-          delegate.append(' ');
-        }
-      } else {
-        delegate.append(filterHtmlAttributes(activeAppendable.toString()));
+    public void flushBuffers(int depth) throws IOException {
+      if (getSanitizedContentKind() != ContentKind.ATTRIBUTES) {
+        delegate.append(filterHtmlAttributes(getActiveAppendable().toString()));
+      }
+      if (depth > 0) {
+        delegate.flushBuffers(depth - 1);
       }
     }
   }
@@ -843,8 +888,142 @@ public final class Sanitizers {
     if (EscapingConventions.FilterHtmlElementName.INSTANCE.getValueFilter().matcher(value).find()) {
       return value;
     }
-    logger.log(Level.WARNING, "|filterHtmlElementName received bad value ''{0}''", value);
+    logger.atWarning().withStackTrace(MEDIUM).log(
+        "|filterHtmlElementName received bad value '%s'", value);
     return EscapingConventions.FilterHtmlElementName.INSTANCE.getInnocuousOutput();
+  }
+
+  /** Filters bad csp values. */
+  public static String filterCspNonceValue(SoyValue value) {
+    value = normalizeNull(value);
+    return filterCspNonceValue(value.coerceToString());
+  }
+
+  public static String filterCspNonceValue(String value) {
+    if (EscapingConventions.FilterCspNonceValue.INSTANCE.getValueFilter().matcher(value).find()) {
+      return value;
+    }
+    logger.atWarning().withStackTrace(MEDIUM).log(
+        "|filterCspNonceValue received bad value '%s'", value);
+    return EscapingConventions.FilterCspNonceValue.INSTANCE.getInnocuousOutput();
+  }
+
+  public static String whitespaceHtmlAttributes(SoyValue value) {
+    return whitespaceHtmlAttributes(normalizeNull(value).coerceToString());
+  }
+
+  public static String whitespaceHtmlAttributes(String value) {
+    return ((!value.isEmpty() && !value.startsWith(" ")) ? " " : "") + value;
+  }
+
+  public static LoggingAdvisingAppendable whitespaceHtmlAttributesStreaming(
+      LoggingAdvisingAppendable appendable) {
+    return new WhitespaceHtmlAttributesAppendable(appendable);
+  }
+
+  private static final class WhitespaceHtmlAttributesAppendable extends LoggingAdvisingAppendable {
+    private final LoggingAdvisingAppendable delegate;
+    private Appendable activeAppendable;
+    private boolean first;
+
+    WhitespaceHtmlAttributesAppendable(LoggingAdvisingAppendable delegate) {
+      this.delegate = delegate;
+      this.first = true;
+    }
+
+    private Appendable getActiveAppendable() {
+      if (activeAppendable == null) {
+        Preconditions.checkState(first);
+        activeAppendable = new StringBuilder();
+      }
+      return activeAppendable;
+    }
+
+    @Override
+    protected void notifyKindAndDirectionality(ContentKind kind, @Nullable Dir dir)
+        throws IOException {
+      if (kind == ContentKind.ATTRIBUTES) {
+        activeAppendable = delegate;
+      }
+      delegate.setKindAndDirectionality(kind, dir);
+    }
+
+    @Override
+    public LoggingAdvisingAppendable append(CharSequence csq) throws IOException {
+      if (first && csq.length() > 0 && getSanitizedContentKind() == ContentKind.ATTRIBUTES) {
+        if (csq.charAt(0) != ' ') {
+          getActiveAppendable().append(" ");
+        }
+        first = false;
+      }
+      getActiveAppendable().append(csq);
+      return this;
+    }
+
+    @Override
+    public LoggingAdvisingAppendable append(CharSequence csq, int start, int end)
+        throws IOException {
+      if (first && csq.length() > 0 && getSanitizedContentKind() == ContentKind.ATTRIBUTES) {
+        if (csq.charAt(0) != ' ') {
+          getActiveAppendable().append(" ");
+        }
+        first = false;
+      }
+      getActiveAppendable().append(csq, start, end);
+      return this;
+    }
+
+    @Override
+    public LoggingAdvisingAppendable append(char c) throws IOException {
+      if (first && c != ' ' && getSanitizedContentKind() == ContentKind.ATTRIBUTES) {
+        getActiveAppendable().append(" ");
+        first = false;
+      }
+      getActiveAppendable().append(c);
+      return this;
+    }
+
+    @Override
+    public LoggingAdvisingAppendable enterLoggableElement(LogStatement statement) {
+      logger.atWarning().withStackTrace(MEDIUM).log(
+          "Visual element logging behavior is undefined when used with the"
+              + " |whitespaceHtmlAttributes directive. This logging call has been dropped: %s",
+          statement);
+      return this;
+    }
+
+    @Override
+    public LoggingAdvisingAppendable exitLoggableElement() {
+      return this;
+    }
+
+    @Override
+    public LoggingAdvisingAppendable appendLoggingFunctionInvocation(
+        LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
+        throws IOException {
+      if (getSanitizedContentKind() == ContentKind.ATTRIBUTES) {
+        delegate.appendLoggingFunctionInvocation(funCall, escapers);
+      } else {
+        String placeholder = escapePlaceholder(funCall.placeholderValue(), escapers);
+        getActiveAppendable().append(placeholder);
+      }
+      return this;
+    }
+
+    @Override
+    public boolean softLimitReached() {
+      return delegate.softLimitReached();
+    }
+
+    @Override
+    public void flushBuffers(int depth) throws IOException {
+      if (getSanitizedContentKind() != ContentKind.ATTRIBUTES) {
+        delegate.append(whitespaceHtmlAttributes(getActiveAppendable().toString()));
+      }
+      if (depth > 0) {
+        delegate.flushBuffers(depth - 1);
+      }
+    }
   }
 
   /** True iff the given value is sanitized content of the given kind. */
@@ -864,8 +1043,8 @@ public final class Sanitizers {
    * @param rawSpacesAllowed true if spaces are allowed in the output unescaped as is the case when
    *     the output is embedded in a regular text node, or in a quoted attribute.
    */
-  @VisibleForTesting
-  static String stripHtmlTags(String value, TagWhitelist safeTags, boolean rawSpacesAllowed) {
+  public static String stripHtmlTags(
+      String value, TagWhitelist safeTags, boolean rawSpacesAllowed) {
     EscapingConventions.CrossLanguageStringXform normalizer =
         rawSpacesAllowed
             ? EscapingConventions.NormalizeHtml.INSTANCE
@@ -1005,7 +1184,7 @@ public final class Sanitizers {
   }
 
   /** From http://www.w3.org/TR/html-markup/syntax.html#syntax-elements */
-  private static final ImmutableSet<String> HTML5_VOID_ELEMENTS =
+  public static final ImmutableSet<String> HTML5_VOID_ELEMENTS =
       ImmutableSet.of(
           "area", "base", "br", "col", "command", "embed", "hr", "img", "input", "keygen", "link",
           "meta", "param", "source", "track", "wbr");
@@ -1103,7 +1282,7 @@ public final class Sanitizers {
       if (indexOfEndCData != -1) {
         return embedCssIntoHtmlSlow(
             css,
-            Math.min(indexOfEndTag, indexOfEndCData),
+            min(indexOfEndTag, indexOfEndCData),
             /* searchForEndCData= */ true,
             /* searchForEndTag= */ true);
       }
@@ -1169,7 +1348,7 @@ public final class Sanitizers {
           searchForEndCData = false;
         } else {
           nextReplacement =
-              nextReplacement == -1 ? indexOfEndCData : Math.min(nextReplacement, indexOfEndCData);
+              nextReplacement == -1 ? indexOfEndCData : min(nextReplacement, indexOfEndCData);
         }
       }
     } while (nextReplacement != -1);

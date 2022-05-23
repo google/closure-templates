@@ -32,7 +32,8 @@ public abstract class GenericTypeNode extends TypeNode {
     return new AutoValue_GenericTypeNode(sourceLocation, name, ImmutableList.copyOf(arguments));
   }
 
-  abstract Identifier identifier();
+  /** The identifier of this type's raw type (before '<'). */
+  public abstract Identifier identifier();
 
   public String name() {
     return identifier().identifier();

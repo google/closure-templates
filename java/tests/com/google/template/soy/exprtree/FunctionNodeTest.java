@@ -18,14 +18,16 @@ package com.google.template.soy.exprtree;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
+import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.basicfunctions.RoundFunction;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
+import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import java.util.List;
 import java.util.Set;
 import org.junit.Test;
@@ -34,7 +36,6 @@ import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for FunctionNode.
- *
  */
 @RunWith(JUnit4.class)
 public final class FunctionNodeTest {
@@ -42,7 +43,7 @@ public final class FunctionNodeTest {
   @Test
   public void testToSourceString() {
     FunctionNode fn =
-        new FunctionNode(
+        FunctionNode.newPositional(
             Identifier.create("round", SourceLocation.UNKNOWN),
             new RoundFunction(),
             SourceLocation.UNKNOWN);
@@ -94,5 +95,21 @@ public final class FunctionNodeTest {
     assertThat(functionNodes).hasSize(2);
     assertThat(functionNodes.get(0).getSoyFunction()).isSameInstanceAs(foo);
     assertThat(functionNodes.get(1).getSoyFunction()).isSameInstanceAs(bar);
+  }
+
+  @Test
+  public void testToSourceStringNamed() {
+    FunctionNode fn =
+        FunctionNode.newNamed(
+            Identifier.create("my.awesome.Proto", SourceLocation.UNKNOWN),
+            ImmutableList.of(
+                Identifier.create("f", SourceLocation.UNKNOWN),
+                Identifier.create("i", SourceLocation.UNKNOWN),
+                Identifier.create("s", SourceLocation.UNKNOWN)),
+            SourceLocation.UNKNOWN);
+    fn.addChild(new FloatNode(3.14159, SourceLocation.UNKNOWN));
+    fn.addChild(new IntegerNode(2, SourceLocation.UNKNOWN));
+    fn.addChild(new StringNode("str", QuoteStyle.SINGLE, SourceLocation.UNKNOWN));
+    assertThat(fn.toSourceString()).isEqualTo("my.awesome.Proto(f: 3.14159, i: 2, s: 'str')");
   }
 }

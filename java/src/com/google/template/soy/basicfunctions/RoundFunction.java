@@ -44,15 +44,14 @@ import java.util.List;
  * should deprecated the 2 argument overload by adding a new function {@code brokenRound()} and then
  * we can encourage people to migrate to a less broken approach. (or we could just add a pow
  * function and inline it).
- *
  */
 @SoyFunctionSignature(
     name = "round",
     value = {
-      // TODO(b/70946095): these should take number values and return either an int or a number
-      @Signature(returnType = "?", parameterTypes = "?"),
+      // TODO(b/70946095): the parameters should be number values
+      @Signature(returnType = "int", parameterTypes = "?"),
       @Signature(
-          returnType = "?",
+          returnType = "number",
           parameterTypes = {"?", "?"}),
     })
 @SoyPureFunction

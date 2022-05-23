@@ -16,35 +16,61 @@
 
 package com.google.template.soy.soytree;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
+
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.basetree.AbstractNodeVisitor;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.Node;
 import com.google.template.soy.basetree.NodeVisitor;
 import com.google.template.soy.basetree.ParentNode;
+import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.exprtree.ListComprehensionNode;
+import com.google.template.soy.exprtree.MapLiteralFromListNode;
+import com.google.template.soy.exprtree.VarDefn;
+import com.google.template.soy.exprtree.VarRefNode;
+import com.google.template.soy.internal.util.BreadthFirstStream;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.Kind;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
-import java.util.ArrayDeque;
+import com.google.template.soy.types.ast.FunctionTypeNode;
+import com.google.template.soy.types.ast.GenericTypeNode;
+import com.google.template.soy.types.ast.NamedTypeNode;
+import com.google.template.soy.types.ast.RecordTypeNode;
+import com.google.template.soy.types.ast.TemplateTypeNode;
+import com.google.template.soy.types.ast.TypeNode;
+import com.google.template.soy.types.ast.TypeNodeVisitor;
+import com.google.template.soy.types.ast.UnionTypeNode;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Predicate;
+import java.util.function.BiConsumer;
+import java.util.stream.Stream;
 
 /**
  * Shared utilities for the 'soytree' package.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public final class SoyTreeUtils {
+
+  static final ImmutableSet<SoyNode.Kind> NODES_THAT_DONT_CONTRIBUTE_OUTPUT =
+      Sets.immutableEnumSet(
+          SoyNode.Kind.LET_CONTENT_NODE,
+          SoyNode.Kind.LET_VALUE_NODE,
+          SoyNode.Kind.DEBUGGER_NODE,
+          SoyNode.Kind.LOG_NODE);
 
   private static final Joiner COMMA_JOINER = Joiner.on(", ");
 
@@ -52,35 +78,33 @@ public final class SoyTreeUtils {
 
   /** Returns true if the given {@code node} contains any children of the given types. */
   @SafeVarargs
-  public static boolean hasNodesOfType(Node node, final Class<? extends Node>... types) {
-    class Visitor implements NodeVisitor<Node, VisitDirective> {
-      boolean found;
-
-      @Override
-      public VisitDirective exec(Node node) {
-        for (Class<?> type : types) {
-          if (type.isInstance(node)) {
-            found = true;
-            return VisitDirective.ABORT;
-          }
-        }
-        return VisitDirective.CONTINUE;
-      }
-    }
-    Visitor v = new Visitor();
-    visitAllNodes(node, v);
-    return v.found;
+  public static boolean hasNodesOfType(Node node, Class<? extends Node>... types) {
+    return allNodes(node)
+        .anyMatch(
+            n -> {
+              for (Class<?> type : types) {
+                if (type.isInstance(n)) {
+                  return true;
+                }
+              }
+              return false;
+            });
   }
 
-  /** Returns true if the given {@code node} contains any children that are HTML nodes. */
-  public static boolean hasHtmlNodes(Node node) {
-    return hasNodesOfType(
-        node,
-        HtmlOpenTagNode.class,
-        HtmlCloseTagNode.class,
-        HtmlCommentNode.class,
-        HtmlAttributeNode.class,
-        HtmlAttributeValueNode.class);
+  /** Returns the next sibling of {@code node} or {@code null} if none exists. */
+  public static SoyNode nextSibling(SoyNode node) {
+    return (SoyNode) nextSiblingNode(node);
+  }
+
+  public static Node nextSiblingNode(Node node) {
+    ParentNode<?> parent = node.getParent();
+    if (parent == null) {
+      return null;
+    }
+    int index = parent.getChildIndex(node);
+    Preconditions.checkState(index >= 0);
+    int nextIndex = index + 1;
+    return parent.numChildren() > nextIndex ? parent.getChild(nextIndex) : null;
   }
 
   /** An enum that allows a {#visitAllNodes} visitor to control how the AST is traversed. */
@@ -90,39 +114,63 @@ public final class SoyTreeUtils {
      * continue.
      */
     SKIP_CHILDREN,
-    /** This means that the whole visit operation should be abrubptly halted. */
-    ABORT,
     /** This means that traversal should continue as normal. */
     CONTINUE;
+  }
+
+  private static VisitDirective visitAll(Node n) {
+    return VisitDirective.CONTINUE;
+  }
+
+  private static VisitDirective visitNonExpr(Node n) {
+    return n instanceof ExprNode ? VisitDirective.SKIP_CHILDREN : VisitDirective.CONTINUE;
   }
 
   /**
    * Runs the visitor on all nodes (including {@link ExprNode expr nodes}) reachable from the given
    * node. The order of visiting is breadth first.
-   *
-   * <p>If the visitor return {@code false} from {@link NodeVisitor#exec(Node)} we will short
-   * circuit visiting.
    */
   public static void visitAllNodes(Node node, NodeVisitor<? super Node, VisitDirective> visitor) {
-    ArrayDeque<Node> queue = new ArrayDeque<>();
-    queue.add(node);
-    Node current;
-    while ((current = queue.poll()) != null) {
-      switch (visitor.exec(current)) {
-        case ABORT:
-          return;
-        case CONTINUE:
-          if (current instanceof ParentNode<?>) {
-            queue.addAll(((ParentNode<?>) current).getChildren());
+    long unused = allNodes(node, visitor).count();
+  }
+
+  /** Returns a breadth-first stream traversal of the AST tree starting at {@code node}. */
+  public static Stream<? extends Node> allNodes(Node node) {
+    return allNodes(node, SoyTreeUtils::visitAll);
+  }
+
+  /**
+   * Returns a breadth-first stream traversal of the AST tree starting at {@code node}. {@code
+   * visitor} can return {@link VisitDirective#SKIP_CHILDREN} to skip sections of the tree.
+   */
+  public static Stream<? extends Node> allNodes(
+      Node root, NodeVisitor<? super Node, VisitDirective> visitor) {
+    return BreadthFirstStream.of(
+        root,
+        next -> {
+          if (visitor.exec(next) == VisitDirective.CONTINUE) {
+            if (next instanceof ParentNode<?>) {
+              if (next instanceof ExprHolderNode) {
+                return Iterables.concat(
+                    ((ParentNode<?>) next).getChildren(), ((ExprHolderNode) next).getExprList());
+              }
+              return ((ParentNode<?>) next).getChildren();
+            }
+            if (next instanceof ExprHolderNode) {
+              return ((ExprHolderNode) next).getExprList();
+            }
           }
-          if (current instanceof ExprHolderNode) {
-            queue.addAll(((ExprHolderNode) current).getExprList());
-          }
-          continue;
-        case SKIP_CHILDREN:
-          continue;
-      }
-    }
+          return ImmutableList.of();
+        });
+  }
+
+  public static <T extends Node> Stream<T> allNodesOfType(Node rootSoyNode, Class<T> classObject) {
+    // optimization to avoid navigating into expr trees if we can't possibly match anything
+    boolean exploreExpressions = ExprNode.class.isAssignableFrom(classObject);
+    return allNodes(
+            rootSoyNode, exploreExpressions ? SoyTreeUtils::visitAll : SoyTreeUtils::visitNonExpr)
+        .filter(classObject::isInstance)
+        .map(classObject::cast);
   }
 
   /**
@@ -135,47 +183,29 @@ public final class SoyTreeUtils {
    */
   public static <T extends Node> ImmutableList<T> getAllNodesOfType(
       Node rootSoyNode, final Class<T> classObject) {
-    return getAllMatchingNodesOfType(rootSoyNode, classObject, arg -> true);
+    return allNodesOfType(rootSoyNode, classObject).collect(toImmutableList());
   }
 
-  /**
-   * Retrieves all nodes in a tree that are an instance of a particular class and match the given
-   * predicate.
-   */
-  private static <T extends Node> ImmutableList<T> getAllMatchingNodesOfType(
-      Node rootSoyNode, final Class<T> classObject, final Predicate<T> filter) {
-    final ImmutableList.Builder<T> matchedNodesBuilder = ImmutableList.builder();
-    // optimization to avoid navigating into expr trees if we can't possibly match anything
-    final boolean exploreExpressions = ExprNode.class.isAssignableFrom(classObject);
-    visitAllNodes(
-        rootSoyNode,
-        new NodeVisitor<Node, VisitDirective>() {
-          @Override
-          public VisitDirective exec(Node node) {
-            if (classObject.isInstance(node)) {
-              T typedNode = classObject.cast(node);
-              if (filter.test(typedNode)) {
-                matchedNodesBuilder.add(typedNode);
-              }
-            }
-            if (!exploreExpressions && node instanceof ExprNode) {
-              return VisitDirective.SKIP_CHILDREN;
-            }
-            return VisitDirective.CONTINUE;
-          }
-        });
-    return matchedNodesBuilder.build();
+  public static Stream<FunctionNode> allFunctionInvocations(
+      Node rootSoyNode, SoyFunction functionToMatch) {
+    return allNodesOfType(rootSoyNode, FunctionNode.class)
+        .filter(
+            function -> function.isResolved() && functionToMatch.equals(function.getSoyFunction()));
   }
 
-  /**
-   * Returns all {@link FunctionNode}s in a tree that are calls of the given {@link SoyFunction}.
-   */
-  public static ImmutableList<FunctionNode> getAllFunctionInvocations(
-      Node rootSoyNode, final SoyFunction functionToMatch) {
-    return getAllMatchingNodesOfType(
-        rootSoyNode,
-        FunctionNode.class,
-        function -> functionToMatch.equals(function.getSoyFunction()));
+  public static void visitExprNodesWithHolder(
+      SoyNode root, BiConsumer<ExprHolderNode, ExprNode> visitor) {
+    visitExprNodesWithHolder(root, ExprNode.class, visitor);
+  }
+
+  public static <T extends ExprNode> void visitExprNodesWithHolder(
+      SoyNode root, Class<T> exprType, BiConsumer<ExprHolderNode, T> visitor) {
+    SoyTreeUtils.allNodesOfType(root, ExprHolderNode.class)
+        .forEach(
+            exprHolder ->
+                exprHolder.getExprList().stream()
+                    .flatMap(rootExpr -> SoyTreeUtils.allNodesOfType(rootExpr, exprType))
+                    .forEach(expr -> visitor.accept(exprHolder, expr)));
   }
 
   /**
@@ -196,31 +226,47 @@ public final class SoyTreeUtils {
    * </pre></code>
    *
    * @param node The root of the AST.
+   * @return The String instance.
+   */
+  public static String buildAstString(ParentSoyNode<?> node) {
+    return buildAstStringHelper(node, 0, new StringBuilder()).toString();
+  }
+  /**
+   * Given an expr node, returns a {@code StringBuilder} that can be used to pretty print the AST
+   * structure.
+   *
+   * <p>For example, for the following soy source <code><pre>
+   * {for i in range(5)}
+   *   {if $i % 2 == 0}
+   *     foo
+   *   {/if}
+   * {/for}
+   * </pre></code> This method prints the AST string as follow: <code><pre>
+   * FOR_NODE
+   *   IF_NODE
+   *     IF_COND_NODE
+   *       PRINT_NODE
+   * </pre></code>
+   *
+   * @param node The root of the AST.
+   * @return The String instance.
+   */
+  public static String buildAstString(ParentExprNode node) {
+    return buildAstStringHelper(node, 0, new StringBuilder()).toString();
+  }
+
+  /**
+   * @param node The root of the AST.
    * @param indent The indentation for each level.
    * @param sb The StringBuilder instance used for recursion.
    * @return The StringBuilder instance.
    */
-  public static StringBuilder buildAstString(ParentSoyNode<?> node, int indent, StringBuilder sb) {
-    for (SoyNode child : node.getChildren()) {
+  private static StringBuilder buildAstStringHelper(
+      ParentNode<?> node, int indent, StringBuilder sb) {
+    for (Node child : node.getChildren()) {
       sb.append(Strings.repeat("  ", indent)).append(child.getKind()).append('\n');
-      if (child instanceof ParentSoyNode) {
-        buildAstString((ParentSoyNode<?>) child, indent + 1, sb);
-      }
-    }
-    return sb;
-  }
-
-  /** Similar to {@link #buildAstString}, but also print the source string for debug usages. */
-  public static StringBuilder buildAstStringWithPreview(
-      ParentSoyNode<?> node, int indent, StringBuilder sb) {
-    for (SoyNode child : node.getChildren()) {
-      sb.append(Strings.repeat("  ", indent))
-          .append(child.getKind())
-          .append(": ")
-          .append(child.toSourceString())
-          .append('\n');
-      if (child instanceof ParentSoyNode) {
-        buildAstString((ParentSoyNode<?>) child, indent + 1, sb);
+      if (child instanceof ParentNode) {
+        buildAstStringHelper((ParentNode<?>) child, indent + 1, sb);
       }
     }
     return sb;
@@ -241,21 +287,11 @@ public final class SoyTreeUtils {
    */
   public static <R> void execOnAllV2Exprs(
       SoyNode node, final AbstractNodeVisitor<ExprNode, R> exprNodeVisitor) {
-    visitAllNodes(
-        node,
-        new NodeVisitor<Node, VisitDirective>() {
-          @Override
-          public VisitDirective exec(Node node) {
-            if (node instanceof ExprHolderNode) {
-              for (ExprRootNode expr : ((ExprHolderNode) node).getExprList()) {
-                exprNodeVisitor.exec(expr);
-              }
-            } else if (node instanceof ExprNode) {
-              return VisitDirective.SKIP_CHILDREN;
-            }
-            return VisitDirective.CONTINUE;
-          }
-        });
+    allNodes(node, SoyTreeUtils::visitNonExpr)
+        .filter(n -> n instanceof ExprHolderNode)
+        .map(ExprHolderNode.class::cast)
+        .flatMap(n -> n.getExprList().stream())
+        .forEach(exprNodeVisitor::exec);
   }
 
   // -----------------------------------------------------------------------------------------------
@@ -285,7 +321,7 @@ public final class SoyTreeUtils {
     T clone = (T) origNode.copy(new CopyState());
 
     // Generate new ids.
-    (new GenNewIdsVisitor(nodeIdGen)).exec(clone);
+    new GenNewIdsVisitor(nodeIdGen).exec(clone);
 
     return clone;
   }
@@ -315,7 +351,7 @@ public final class SoyTreeUtils {
     for (T origNode : origNodes) {
       @SuppressWarnings("unchecked")
       T clone = (T) origNode.copy(new CopyState());
-      (new GenNewIdsVisitor(nodeIdGen)).exec(clone);
+      new GenNewIdsVisitor(nodeIdGen).exec(clone);
       clones.add(clone);
     }
 
@@ -326,7 +362,7 @@ public final class SoyTreeUtils {
   private static class GenNewIdsVisitor extends AbstractNodeVisitor<SoyNode, Void> {
 
     /** The generator for new node ids. */
-    private IdGenerator nodeIdGen;
+    private final IdGenerator nodeIdGen;
 
     /** @param nodeIdGen The generator for new node ids. */
     public GenNewIdsVisitor(IdGenerator nodeIdGen) {
@@ -336,9 +372,50 @@ public final class SoyTreeUtils {
     @Override
     protected void visit(SoyNode node) {
       node.setId(nodeIdGen.genId());
+      if (node instanceof ExprHolderNode) {
+        ExprHolderNode exprHolderNode = (ExprHolderNode) node;
+        for (ExprRootNode expr : exprHolderNode.getExprList()) {
+          new GenNewIdsExprVisitor(nodeIdGen).exec(expr);
+        }
+      }
+
       if (node instanceof ParentSoyNode<?>) {
         visitChildren((ParentSoyNode<?>) node);
       }
+    }
+  }
+
+  private static class GenNewIdsExprVisitor extends AbstractExprNodeVisitor<Void> {
+    /** The generator for new node ids. */
+    private final IdGenerator nodeIdGen;
+
+    /** @param nodeIdGen The generator for new node ids. */
+    public GenNewIdsExprVisitor(IdGenerator nodeIdGen) {
+      this.nodeIdGen = nodeIdGen;
+    }
+
+    @Override
+    protected void visitExprRootNode(ExprRootNode node) {
+      visitChildren(node);
+    }
+
+    @Override
+    protected void visitExprNode(ExprNode node) {
+      if (node instanceof ParentExprNode) {
+        visitChildren((ParentExprNode) node);
+      }
+    }
+
+    @Override
+    protected void visitListComprehensionNode(ListComprehensionNode node) {
+      node.setNodeId(nodeIdGen.genId());
+      visitChildren(node);
+    }
+
+    @Override
+    protected void visitMapLiteralFromListNode(MapLiteralFromListNode node) {
+      node.setNodeId(nodeIdGen.genId());
+      visitChildren(node);
     }
   }
 
@@ -346,7 +423,44 @@ public final class SoyTreeUtils {
   // Miscellaneous.
 
   /** Returns true if {@code node} is a descendant of {@code ancestor}. */
+  public static boolean isDescendantOf(Node node, Node ancestor) {
+    if (node instanceof ExprNode) {
+      ExprNode nodeAsExpr = (ExprNode) node;
+      if (ancestor instanceof ExprNode) {
+        return isDescendantOf(nodeAsExpr, (ExprNode) ancestor);
+      }
+      return isDescendantOf(nodeAsExpr, (SoyNode) ancestor);
+    }
+    if (ancestor instanceof ExprNode) {
+      return false;
+    }
+    return isDescendantOf((SoyNode) node, (SoyNode) ancestor);
+  }
+
+  /** Returns true if {@code node} is a descendant of {@code ancestor}. */
   public static boolean isDescendantOf(SoyNode node, SoyNode ancestor) {
+    return doIsDescendantOf(node, ancestor);
+  }
+
+  /** Returns true if {@code node} is a descendant of {@code ancestor}. */
+  public static boolean isDescendantOf(ExprNode node, ExprNode ancestor) {
+    return doIsDescendantOf(node, ancestor);
+  }
+
+  /** Returns true if {@code node} is a descendant of {@code ancestor}. */
+  public static boolean isDescendantOf(ExprNode node, SoyNode ancestor) {
+    // first find the root of the expression tree
+    while (node.getParent() != null) {
+      node = node.getParent();
+    }
+    Node nodeRoot = node;
+    // compare against all reachable expr roots.
+    return allNodesOfType(ancestor, ExprHolderNode.class)
+        .flatMap(holder -> holder.getExprList().stream())
+        .anyMatch(root -> root == nodeRoot);
+  }
+
+  private static boolean doIsDescendantOf(Node node, Node ancestor) {
     for (; node != null; node = node.getParent()) {
       if (ancestor == node) {
         return true;
@@ -363,6 +477,38 @@ public final class SoyTreeUtils {
     return COMMA_JOINER.join(strings);
   }
 
+  private static boolean isNonConstant(ExprNode expr) {
+    switch (expr.getKind()) {
+      case VAR_REF_NODE:
+        VarRefNode refNode = (VarRefNode) expr;
+        VarDefn varDefs = refNode.getDefnDecl();
+        if (varDefs != null
+            && (varDefs.kind() == VarDefn.Kind.CONST
+                || varDefs.kind() == VarDefn.Kind.IMPORT_VAR)) {
+          // This method is called while inferring parameter types, before the type has been set on
+          // refNode.
+          return false;
+        }
+        if (refNode.hasType()) {
+          switch (refNode.getType().getKind()) {
+            case TEMPLATE_TYPE:
+            case TEMPLATE_MODULE:
+            case PROTO_TYPE:
+            case PROTO_ENUM_TYPE:
+            case PROTO_MODULE:
+              return false;
+            default:
+              return true;
+          }
+        }
+        return true;
+      case FUNCTION_NODE:
+        return !((FunctionNode) expr).isPure();
+      default:
+        return false;
+    }
+  }
+
   /**
    * Return whether the given root node is a constant expression or not. Pure functions are
    * considered constant iff their parameters are all constant expressions.
@@ -371,7 +517,8 @@ public final class SoyTreeUtils {
    * @return {@code true} if the expression is constant in evaluation, {@code false} otherwise.
    */
   public static boolean isConstantExpr(ExprNode rootSoyNode) {
-    return getNonConstantChildren(rootSoyNode, /*all=*/ false).isEmpty();
+    // Note: ExprNodes only contain other ExprNodes, so this down-cast is safe.
+    return allNodes(rootSoyNode).map(ExprNode.class::cast).noneMatch(SoyTreeUtils::isNonConstant);
   }
 
   /**
@@ -381,39 +528,10 @@ public final class SoyTreeUtils {
    * @param rootSoyNode the root of the expression tree.
    */
   public static ImmutableList<ExprNode> getNonConstantChildren(ExprNode rootSoyNode) {
-    return getNonConstantChildren(rootSoyNode, /*all=*/ true);
-  }
-
-  private static ImmutableList<ExprNode> getNonConstantChildren(ExprNode rootSoyNode, boolean all) {
-    class ConstantNodeVisitor implements NodeVisitor<Node, VisitDirective> {
-      ImmutableList.Builder<ExprNode> nonConstantExpressions = ImmutableList.builder();
-
-      @Override
-      public VisitDirective exec(Node node) {
-        // Note: ExprNodes only contain other ExprNodes, so this down-cast is safe.
-        ExprNode expr = (ExprNode) node;
-        switch (expr.getKind()) {
-          case VAR_REF_NODE:
-            nonConstantExpressions.add(expr);
-            return all ? VisitDirective.CONTINUE : VisitDirective.ABORT;
-          case FUNCTION_NODE:
-            FunctionNode fn = (FunctionNode) node;
-            if (fn.isPure()) {
-              // Continue to evaluate the const-ness of the pure function's parameters.
-              return VisitDirective.CONTINUE;
-            } else {
-              nonConstantExpressions.add(expr);
-              return all ? VisitDirective.CONTINUE : VisitDirective.ABORT;
-            }
-          default:
-            return VisitDirective.CONTINUE;
-        }
-      }
-    }
-
-    ConstantNodeVisitor visitor = new ConstantNodeVisitor();
-    visitAllNodes(rootSoyNode, visitor);
-    return visitor.nonConstantExpressions.build();
+    return allNodes(rootSoyNode)
+        .map(ExprNode.class::cast)
+        .filter(SoyTreeUtils::isNonConstant)
+        .collect(toImmutableList());
   }
 
   /**
@@ -421,8 +539,14 @@ public final class SoyTreeUtils {
    * MsgPlaceholderNode). Otherwise, returns null.
    */
   public static HtmlTagNode getNodeAsHtmlTagNode(SoyNode node, boolean openTag) {
+    if (node == null) {
+      return null;
+    }
     SoyNode.Kind tagKind =
         openTag ? SoyNode.Kind.HTML_OPEN_TAG_NODE : SoyNode.Kind.HTML_CLOSE_TAG_NODE;
+    if (NODES_THAT_DONT_CONTRIBUTE_OUTPUT.contains(node.getKind())) {
+      return getNodeAsHtmlTagNode(nextSibling(node), openTag);
+    }
     if (node.getKind() == tagKind) {
       return (HtmlTagNode) node;
     }
@@ -439,4 +563,48 @@ public final class SoyTreeUtils {
     }
     return null;
   }
+
+  private static final TypeNodeVisitor<List<? extends TypeNode>> TRAVERSING =
+      new TypeNodeVisitor<List<? extends TypeNode>>() {
+        @Override
+        public ImmutableList<? extends TypeNode> visit(NamedTypeNode node) {
+          return ImmutableList.of();
+        }
+
+        @Override
+        public ImmutableList<? extends TypeNode> visit(GenericTypeNode node) {
+          return node.arguments();
+        }
+
+        @Override
+        public ImmutableList<? extends TypeNode> visit(UnionTypeNode node) {
+          return node.candidates();
+        }
+
+        @Override
+        public ImmutableList<? extends TypeNode> visit(RecordTypeNode node) {
+          return node.properties().stream().map(p -> p.type()).collect(toImmutableList());
+        }
+
+        @Override
+        public ImmutableList<? extends TypeNode> visit(TemplateTypeNode node) {
+          ImmutableList.Builder<TypeNode> types = ImmutableList.builder();
+          types.add(node.returnType());
+          node.parameters().forEach(p -> types.add(p.type()));
+          return types.build();
+        }
+
+        @Override
+        public List<? extends TypeNode> visit(FunctionTypeNode node) {
+          ImmutableList.Builder<TypeNode> types = ImmutableList.builder();
+          types.add(node.returnType());
+          node.parameters().forEach(p -> types.add(p.type()));
+          return types.build();
+        }
+      };
+
+  public static Stream<? extends TypeNode> allTypeNodes(TypeNode root) {
+    return BreadthFirstStream.of(root, next -> next.accept(TRAVERSING));
+  }
+
 }

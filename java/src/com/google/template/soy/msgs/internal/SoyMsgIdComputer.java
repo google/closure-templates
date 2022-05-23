@@ -27,7 +27,6 @@ import javax.annotation.Nullable;
 
 /**
  * Static methods to compute the unique message id for a message.
- *
  */
 final class SoyMsgIdComputer {
 
@@ -254,6 +253,9 @@ final class SoyMsgIdComputer {
         a += (str[i + 1] & 0xff) << 8;
       case 1:
         a += (str[i + 0] & 0xff);
+        break;
+      default: // fall out
+
         // case 0 : nothing left to add
     }
 

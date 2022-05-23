@@ -30,6 +30,6 @@ public interface JavaPluginContext {
   /** Returns all required css namespaces as a {@code List<String>} for the given template. */
   JavaValue getAllRequiredCssNamespaces(JavaValue template);
 
-  /** Returns all rendered css so far. */
-  JavaValue getRenderedCssNamespaces();
+  /** Returns all required css paths as a {@code List<String>} for the given template. */
+  JavaValue getAllRequiredCssPaths(JavaValue template);
 }

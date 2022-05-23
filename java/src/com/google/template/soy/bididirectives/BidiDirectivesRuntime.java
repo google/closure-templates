@@ -32,8 +32,8 @@ import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.internal.i18n.BidiFormatter;
 import com.google.template.soy.internal.i18n.BidiFormatter.BidiWrappingText;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
-import java.io.Closeable;
 import java.io.IOException;
+import javax.annotation.Nullable;
 
 /** Java implementations of the bididirectives. */
 public final class BidiDirectivesRuntime {
@@ -109,8 +109,7 @@ public final class BidiDirectivesRuntime {
     UNICODE
   }
 
-  private static final class BidiWrapAppendable extends ForwardingLoggingAdvisingAppendable
-      implements Closeable {
+  private static final class BidiWrapAppendable extends ForwardingLoggingAdvisingAppendable {
     private final BidiGlobalDir globalDir;
     private final WrapType wrapType;
     private final StringBuilder buffer;
@@ -126,8 +125,9 @@ public final class BidiDirectivesRuntime {
     }
 
     @Override
-    protected void notifyContentKind(ContentKind kind) throws IOException {
-      commandBuffer.setSanitizedContentKind(kind);
+    protected void notifyKindAndDirectionality(ContentKind kind, @Nullable Dir dir)
+        throws IOException {
+      commandBuffer.setKindAndDirectionality(kind, dir);
     }
 
     @Override
@@ -173,7 +173,7 @@ public final class BidiDirectivesRuntime {
     }
 
     @Override
-    public void close() throws IOException {
+    public void flushBuffers(int depth) throws IOException {
       BidiFormatter formatter = BidiFormatter.getInstance(globalDir.toDir());
       BidiWrappingText wrappingText;
       switch (wrapType) {
@@ -195,6 +195,7 @@ public final class BidiDirectivesRuntime {
       delegate.append(wrappingText.beforeText());
       commandBuffer.replayOn(delegate);
       delegate.append(wrappingText.afterText());
+      super.flushBuffers(depth);
     }
   }
 }

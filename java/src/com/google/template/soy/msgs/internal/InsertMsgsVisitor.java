@@ -16,7 +16,10 @@
 
 package com.google.template.soy.msgs.internal;
 
+import static java.util.stream.Collectors.toList;
+
 import com.google.common.collect.Lists;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -58,7 +61,6 @@ import javax.annotation.Nullable;
  * <p>Note that the Soy tree is usually simplifiable after this pass is run (e.g. it usually
  * contains consecutive RawTextNodes). It's usually advisable to run a simplification pass after
  * this pass.
- *
  */
 public final class InsertMsgsVisitor {
 
@@ -93,10 +95,8 @@ public final class InsertMsgsVisitor {
         SoyTreeUtils.getAllNodesOfType(node, MsgFallbackGroupNode.class)) {
       replaceMsgNode(msgNode);
     }
-    for (FunctionNode fnNode :
-        SoyTreeUtils.getAllFunctionInvocations(node, BuiltinFunction.IS_PRIMARY_MSG_IN_USE)) {
-      replaceIsPrimaryMsgInUseFunction(fnNode);
-    }
+    SoyTreeUtils.allFunctionInvocations(node, BuiltinFunction.IS_PRIMARY_MSG_IN_USE)
+        .forEach(this::replaceIsPrimaryMsgInUseFunction);
   }
 
   private void replaceMsgNode(MsgFallbackGroupNode node) {
@@ -146,7 +146,7 @@ public final class InsertMsgsVisitor {
         // Append a new RawTextNode to the currReplacementNodes list.
         String rawText = ((SoyMsgRawTextPart) msgPart).getRawText();
         currReplacementNodes.add(
-            new RawTextNode(nodeIdGen.genId(), rawText, msg.getSourceLocation()));
+            new RawTextNode(nodeIdGen.genId(), rawText, SourceLocation.UNKNOWN));
 
       } else if (msgPart instanceof SoyMsgPlaceholderPart) {
         // Get the representative placeholder node and iterate through its contents.
@@ -157,9 +157,13 @@ public final class InsertMsgsVisitor {
           // consecutive siblings. This is done by visiting the MsgHtmlTagNode. Otherwise, we
           // simply add the content node to the currReplacementNodes list being built.
           if (contentNode instanceof MsgHtmlTagNode) {
-            currReplacementNodes.addAll(((MsgHtmlTagNode) contentNode).getChildren());
+            currReplacementNodes.addAll(
+                ((MsgHtmlTagNode) contentNode)
+                    .getChildren().stream()
+                        .map(InsertMsgsVisitor::maybeRewriteSourceLocation)
+                        .collect(toList()));
           } else {
-            currReplacementNodes.add(contentNode);
+            currReplacementNodes.add(maybeRewriteSourceLocation(contentNode));
           }
         }
 
@@ -167,6 +171,17 @@ public final class InsertMsgsVisitor {
         throw new AssertionError();
       }
     }
+  }
+
+  // because translations reoder placeholders and message parts, stip the source locations since
+  // they are no longer useful or accurate.  This also prevents the CombineConsecutiveRawTextNodes
+  // pass from blowing up.
+  private static StandaloneNode maybeRewriteSourceLocation(StandaloneNode node) {
+    if (node instanceof RawTextNode) {
+      RawTextNode textNode = (RawTextNode) node;
+      return new RawTextNode(textNode.getId(), textNode.getRawText(), SourceLocation.UNKNOWN);
+    }
+    return node;
   }
 
   /**

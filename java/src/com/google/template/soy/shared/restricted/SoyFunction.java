@@ -43,4 +43,8 @@ public interface SoyFunction {
    * @return The set of valid args list sizes.
    */
   Set<Integer> getValidArgsSizes();
+
+  default boolean isPure() {
+    return false;
+  }
 }

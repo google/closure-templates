@@ -24,7 +24,6 @@ import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
  * Abstract implementation of a PrimitiveNode.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 abstract class AbstractPrimitiveNode extends AbstractExprNode implements PrimitiveNode {
 

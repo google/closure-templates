@@ -22,10 +22,11 @@ import java.util.Locale;
 public interface SoyMsgBundleLoader {
 
   /**
-   * Gets the Message bundle for a particular locale.
+   * Gets the Message bundle for a particular locale. Returns the bundle of the best available match
+   * for {@code locale}.
    *
    * @return The bundle. The Soy API expects {@link SoyMsgBundle#EMPTY} if there are no translations
    *     and the in-template messages should be used.
    */
-  public SoyMsgBundle getSoyMsgBundleForLocale(Locale locale);
+  SoyMsgBundle getSoyMsgBundleForLocale(Locale locale);
 }

@@ -20,22 +20,19 @@ import static com.google.template.soy.exprtree.Operator.CONDITIONAL;
 import static com.google.template.soy.exprtree.Operator.OR;
 import static com.google.template.soy.exprtree.Operator.PLUS;
 import static com.google.template.soy.jssrc.dsl.Expression.id;
-import static com.google.template.soy.jssrc.dsl.Expression.number;
 import static com.google.template.soy.jssrc.internal.JsSrcSubject.assertThatSoyExpr;
-import static com.google.template.soy.jssrc.internal.JsSrcSubject.assertThatSoyFile;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.jssrc.dsl.Expression;
+import com.google.template.soy.logging.AnnotatedLoggableElement;
 import com.google.template.soy.logging.LoggableElement;
-import com.google.template.soy.logging.LoggingConfig;
-import com.google.template.soy.logging.ValidatedLoggingConfig;
+import com.google.template.soy.logging.testing.LoggingConfigs;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for {@link TranslateExprNodeVisitor}.
- *
  */
 @RunWith(JUnit4.class)
 public final class TranslateExprNodeVisitorTest {
@@ -43,10 +40,7 @@ public final class TranslateExprNodeVisitorTest {
   // Let 'goo' simulate a local variable from a 'foreach' loop.
   private static final ImmutableMap<String, Expression> LOCAL_VAR_TRANSLATIONS =
       ImmutableMap.<String, Expression>builder()
-          .put("goo", id("gooData8"))
-          .put("goo__isFirst", id("gooIndex8").doubleEquals(number(0)))
-          .put("goo__isLast", id("gooIndex8").doubleEquals(id("gooListLen8").minus(number(1))))
-          .put("goo__index", id("gooIndex8"))
+          .put("$goo", id("gooData8"))
           .build();
 
   @Test
@@ -59,14 +53,13 @@ public final class TranslateExprNodeVisitorTest {
 
   @Test
   public void testListLiteral() {
-    assertThatSoyExpr("['blah', 123, $foo]").generatesCode("['blah', 123, opt_data.foo];");
+    assertThatSoyExpr("['blah', 123, $foo]")
+        .generatesCode("soy.$$makeArray('blah', 123, opt_data.foo);");
     assertThatSoyExpr("[]").generatesCode("[];");
   }
 
   @Test
   public void testRecordLiteral() {
-    assertThatSoyExpr("record()").generatesCode("{};");
-
     assertThatSoyExpr("record(aaa: 123, bbb: 'blah')").generatesCode("{aaa: 123, bbb: 'blah'};");
     assertThatSoyExpr("record(aaa: $foo, bbb: 'blah')")
         .generatesCode("{aaa: opt_data.foo, bbb: 'blah'};");
@@ -100,7 +93,7 @@ public final class TranslateExprNodeVisitorTest {
   @Test
   public void testGlobal() {
     assertThatSoyExpr("MOO_2").generatesCode("MOO_2;");
-    assertThatSoyExpr("aaa.BBB").generatesCode("aaa.BBB;");
+    assertThatSoyExpr("aax.BBB").generatesCode("aax.BBB;");
   }
 
   @Test
@@ -113,35 +106,35 @@ public final class TranslateExprNodeVisitorTest {
     assertThatSoyExpr("( (8-4) + (2-1) )").generatesCode("8 - 4 + (2 - 1);").withPrecedence(PLUS);
 
     assertThatSoyExpr("$foo ?: 0")
-        .generatesCode("var $tmp = opt_data.foo;", "$tmp != null ? $tmp : 0;");
+        .generatesCode("const $tmp = opt_data.foo;", "$tmp != null ? $tmp : 0;");
   }
 
   @Test
   public void testNullCoalescingNested() {
     assertThatSoyExpr("$boo ?: -1")
-        .generatesCode("var $tmp = opt_data.boo;", "$tmp != null ? $tmp : -1;");
+        .generatesCode("const $tmp = opt_data.boo;", "$tmp != null ? $tmp : -1;");
 
     assertThatSoyExpr("$a ?: $b ?: $c")
         .generatesCode(
-            "var $tmp$$2;",
-            "var $tmp$$1 = opt_data.a;",
+            "let $tmp$$2;",
+            "const $tmp$$1 = opt_data.a;",
             "if ($tmp$$1 != null) {",
             "  $tmp$$2 = $tmp$$1;",
             "} else {",
-            "  var $tmp = opt_data.b;",
+            "  const $tmp = opt_data.b;",
             "  $tmp$$2 = $tmp != null ? $tmp : opt_data.c;",
             "}");
 
     assertThatSoyExpr("$a ?: $b ? $c : $d")
         .generatesCode(
-            "var $tmp = opt_data.a;",
+            "const $tmp = opt_data.a;",
             "$tmp != null ? $tmp : opt_data.b ? opt_data.c : opt_data.d;");
 
     assertThatSoyExpr("$a ? $b ?: $c : $d")
         .generatesCode(
-            "var $tmp$$1;",
+            "let $tmp$$1;",
             "if (opt_data.a) {",
-            "  var $tmp = opt_data.b;",
+            "  const $tmp = opt_data.b;",
             "  $tmp$$1 = $tmp != null ? $tmp : opt_data.c;",
             "} else {",
             "  $tmp$$1 = opt_data.d;",
@@ -149,53 +142,35 @@ public final class TranslateExprNodeVisitorTest {
 
     assertThatSoyExpr("$a ? $b : $c ?: $d")
         .generatesCode(
-            "var $tmp$$1;",
+            "let $tmp$$1;",
             "if (opt_data.a) {",
             "  $tmp$$1 = opt_data.b;",
             "} else {",
-            "  var $tmp = opt_data.c;",
+            "  const $tmp = opt_data.c;",
             "  $tmp$$1 = $tmp != null ? $tmp : opt_data.d;",
             "}");
 
     assertThatSoyExpr("($a ?: $b) ?: $c")
         .generatesCode(
-            "var $tmp = opt_data.a;",
-            "var $tmp$$1 = $tmp != null ? $tmp : opt_data.b;",
+            "const $tmp = opt_data.a;",
+            "const $tmp$$1 = $tmp != null ? $tmp : opt_data.b;",
             "$tmp$$1 != null ? $tmp$$1 : opt_data.c;");
 
     assertThatSoyExpr("$a ?: ($b ?: $c)")
         .generatesCode(
-            "var $tmp$$2;",
-            "var $tmp$$1 = opt_data.a;",
+            "let $tmp$$2;",
+            "const $tmp$$1 = opt_data.a;",
             "if ($tmp$$1 != null) {",
             "  $tmp$$2 = $tmp$$1;",
             "} else {",
-            "  var $tmp = opt_data.b;",
+            "  const $tmp = opt_data.b;",
             "  $tmp$$2 = $tmp != null ? $tmp : opt_data.c;",
             "}");
 
     assertThatSoyExpr("($a ?: $b) ? $c : $d")
         .generatesCode(
-            "var $tmp = opt_data.a;",
+            "const $tmp = opt_data.a;",
             "($tmp != null ? $tmp : opt_data.b) ? opt_data.c : opt_data.d;");
-  }
-
-  @Test
-  public void testForeachFunctions() {
-    assertThatSoyExpr("isFirst($goo) ? 1 : 0")
-        .withInitialLocalVarTranslations(LOCAL_VAR_TRANSLATIONS)
-        .generatesCode("gooIndex8 == 0 ? 1 : 0;")
-        .withPrecedence(CONDITIONAL);
-
-    assertThatSoyExpr("not isLast($goo) ? 1 : 0")
-        .withInitialLocalVarTranslations(LOCAL_VAR_TRANSLATIONS)
-        .generatesCode("!(gooIndex8 == gooListLen8 - 1) ? 1 : 0;")
-        .withPrecedence(CONDITIONAL);
-
-    assertThatSoyExpr("index($goo) + 1")
-        .withInitialLocalVarTranslations(LOCAL_VAR_TRANSLATIONS)
-        .generatesCode("gooIndex8 + 1;")
-        .withPrecedence(PLUS);
   }
 
   @Test
@@ -221,53 +196,39 @@ public final class TranslateExprNodeVisitorTest {
   }
 
   @Test
-  public void testV1Expression() {
-    String soyFile =
-        ""
-            + "{namespace ns}\n"
-            + "{template .foo}\n"
-            + "  {@param goo: ?}\n"
-            + "  {v1Expression('$goo.length()')}\n"
-            + "{/template}";
-    String expectedJs =
-        "/**\n"
-            + " * @param {ns.foo.Params} opt_data\n"
-            + " * @param {(?goog.soy.IjData|?Object<string, *>)=} opt_ijData\n"
-            + " * @param {(?goog.soy.IjData|?Object<string, *>)=} opt_ijData_deprecated\n"
-            + " * @return {!goog.soy.data.SanitizedHtml}\n"
-            + " * @suppress {checkTypes}\n"
-            + " */\n"
-            + "ns.foo = function(opt_data, opt_ijData, opt_ijData_deprecated) {\n"
-            + "  opt_ijData = /** @type {!goog.soy.IjData} */ (opt_ijData_deprecated ||"
-            + " opt_ijData);\n"
-            + "  /** @type {?} */\n"
-            + "  var goo = opt_data.goo;\n"
-            + "  return soydata.VERY_UNSAFE.ordainSanitizedHtml((goo.length()));\n"
-            + "};\n"
-            + "/**\n"
-            + " * @typedef {{\n"
-            + " *  goo: ?,\n"
-            + " * }}\n"
-            + " */\n"
-            + "ns.foo.Params;\n"
-            + "if (goog.DEBUG) {\n"
-            + "  ns.foo.soyTemplateName = 'ns.foo';\n"
-            + "}\n";
-
-    assertThatSoyFile(soyFile).generatesTemplateThat().isEqualTo(expectedJs);
-  }
-
-  @Test
   public void testVeLiteral() {
     assertThatSoyExpr("ve(MyVe)")
         .withLoggingConfig(
-            ValidatedLoggingConfig.create(
-                LoggingConfig.newBuilder()
-                    .addElement(LoggableElement.newBuilder().setId(8675309).setName("MyVe"))
+            LoggingConfigs.createLoggingConfig(
+                LoggableElement.newBuilder().setId(8675309).setName("MyVe").build()))
+        .generatesCode(
+            "goog.DEBUG ? new (goog.module.get('soy.velog').$$VisualElement)(8675309, undefined,"
+                + " 'MyVe') : new (goog.module.get('soy.velog').$$VisualElement)(8675309,"
+                + " undefined);");
+  }
+
+  @Test
+  public void testVeLiteralWithMetadata() {
+    assertThatSoyExpr("ve(MyMetadataVe)")
+        .withLoggingConfig(
+            LoggingConfigs.createLoggingConfig(
+                AnnotatedLoggableElement.newBuilder()
+                    .setElement(LoggableElement.newBuilder().setId(2383).setName("MyMetadataVe"))
+                    .setHasMetadata(true)
+                    .setClassName("MyTestLoggingConfig")
+                    .setJsPackage("root.this.is.a.package.logging_config")
                     .build()))
         .generatesCode(
-            "goog.DEBUG "
-                + "? new soy.velog.$$VisualElement(8675309, 'MyVe') "
-                + ": new soy.velog.$$VisualElement(8675309);");
+            "goog.DEBUG ? new (goog.module.get('soy.velog').$$VisualElement)(2383,"
+                + " goog.module.get('root.this.is.a.package.logging_config').MyTestLoggingConfig.v2383(),"
+                + " 'MyMetadataVe') : new (goog.module.get('soy.velog').$$VisualElement)(2383,"
+                + " goog.module.get('root.this.is.a.package.logging_config').MyTestLoggingConfig"
+                + ".v2383());");
+  }
+
+  @Test
+  public void tesUnknownJsGlobal() {
+    assertThatSoyExpr("unknownJsGlobal('foo.Bar')")
+        .generatesCode("/** @suppress {missingRequire} */", "const $tmp = foo.Bar;", "$tmp;");
   }
 }

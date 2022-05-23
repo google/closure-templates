@@ -17,8 +17,8 @@
 package com.google.template.soy.soytree;
 
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.exprtree.ExprEquivalence;
 import com.google.template.soy.soytree.SoyNode.MsgSubstUnitNode;
-import javax.annotation.Nullable;
 
 /**
  * A node that is the direct child of a MsgBlockNode and will turn into a placeholder.
@@ -28,15 +28,11 @@ import javax.annotation.Nullable;
  * <p>Note: there is no guarantee that the child of this node is a {@link
  * SoyNode.MsgPlaceholderInitialNode}, the optimizer may inline and replace constant placeholders as
  * {@link RawTextNode}s.
- *
  */
 public final class MsgPlaceholderNode extends AbstractBlockNode implements MsgSubstUnitNode {
 
   /** The base placeholder name (what the translator sees). */
-  private final String basePhName;
-
-  /** A user supplied example for the placeholder, or null if it doesn't exist. */
-  @Nullable private final String phExample;
+  private final MessagePlaceholder placeholder;
 
   /** The initial child's SoyNode kind. */
   private final SoyNode.Kind initialNodeKind;
@@ -45,7 +41,7 @@ public final class MsgPlaceholderNode extends AbstractBlockNode implements MsgSu
    * Key object for determining whether this node and another node should be represented by the same
    * placeholder.
    */
-  private final Object samenessKey;
+  private MsgPlaceholderInitialNode.SamenessKey samenessKey;
 
   /**
    * @param id The id for this node.
@@ -55,8 +51,7 @@ public final class MsgPlaceholderNode extends AbstractBlockNode implements MsgSu
    */
   public MsgPlaceholderNode(int id, MsgPlaceholderInitialNode initialNode) {
     super(id, initialNode.getSourceLocation());
-    this.basePhName = initialNode.genBasePhName();
-    this.phExample = initialNode.getUserSuppliedPhExample();
+    this.placeholder = initialNode.getPlaceholder();
     this.initialNodeKind = initialNode.getKind();
     this.samenessKey = initialNode.genSamenessKey();
     this.addChild(initialNode);
@@ -69,11 +64,20 @@ public final class MsgPlaceholderNode extends AbstractBlockNode implements MsgSu
    */
   private MsgPlaceholderNode(MsgPlaceholderNode orig, CopyState copyState) {
     super(orig, copyState);
-    this.basePhName = orig.basePhName;
-    this.phExample = orig.phExample;
+    this.placeholder = orig.placeholder;
     this.initialNodeKind = orig.initialNodeKind;
-    this.samenessKey = orig.samenessKey;
+    this.samenessKey = orig.samenessKey.copy(copyState);
     copyState.updateRefs(orig, this);
+  }
+
+  /**
+   * Copies the samenesskey from another placeholder. This will force other parts of the translation
+   * system to treat these placeholders as being identical.
+   *
+   * <p>See RewriteGendersPass for the usecase
+   */
+  public void copySamenessKey(MsgPlaceholderNode placeholderNode) {
+    this.samenessKey = placeholderNode.samenessKey;
   }
 
   @Override
@@ -83,13 +87,8 @@ public final class MsgPlaceholderNode extends AbstractBlockNode implements MsgSu
 
   /** Returns the base placeholder name (what the translator sees). */
   @Override
-  public String getBaseVarName() {
-    return basePhName;
-  }
-
-  @Nullable
-  public String getPhExample() {
-    return phExample;
+  public MessagePlaceholder getPlaceholder() {
+    return placeholder;
   }
 
   /**
@@ -97,7 +96,7 @@ public final class MsgPlaceholderNode extends AbstractBlockNode implements MsgSu
    * represented by the same placeholder.
    */
   @Override
-  public boolean shouldUseSameVarNameAs(MsgSubstUnitNode other) {
+  public boolean shouldUseSameVarNameAs(MsgSubstUnitNode other, ExprEquivalence exprEquivalence) {
     return (other instanceof MsgPlaceholderNode)
         && this.initialNodeKind == ((MsgPlaceholderNode) other).initialNodeKind
         && this.samenessKey.equals(((MsgPlaceholderNode) other).samenessKey);

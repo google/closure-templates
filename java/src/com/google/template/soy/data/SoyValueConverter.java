@@ -19,7 +19,6 @@ package com.google.template.soy.data;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
-import com.google.common.base.Function;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -55,12 +54,11 @@ import com.google.template.soy.jbcsrc.api.RenderResult;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import javax.inject.Inject;
 
 /**
  * A converter that knows how to convert all expected Java objects into SoyValues or
@@ -70,35 +68,21 @@ import javax.inject.Inject;
  * {@link #convert} and the static fields. But do not use the {@code new*} methods. Consider the
  * {@code new*} methods internal to Soy, since we haven't yet decided whether or not to make them
  * directly available.
- *
  */
 public final class SoyValueConverter {
 
-  /**
-   * Static instance of this class that does not include any custom value converters.
-   *
-   * @deprecated Use {@link #INSTANCE} instead
-   */
-  @Deprecated public static final SoyValueConverter UNCUSTOMIZED_INSTANCE = new SoyValueConverter();
+  /** Static instance of this class */
+  public static final SoyValueConverter INSTANCE = new SoyValueConverter();
 
-  public static final SoyValueConverter INSTANCE = UNCUSTOMIZED_INSTANCE;
+  private final TypeMap<SoyValueProvider> cheapConverterMap = new TypeMap<>();
+  private final TypeMap<SoyValueProvider> expensiveConverterMap = new TypeMap<>();
 
-  /** An immutable empty dict. */
-  public static final SoyDict EMPTY_DICT =
-      DictImpl.forProviderMap(ImmutableMap.of(), RuntimeMapTypeTracker.Type.UNKNOWN);
-
-  /** An immutable empty list. */
-  public static final SoyList EMPTY_LIST = ListImpl.forProviderList(ImmutableList.of());
-
-  /** An immutable empty map. */
-  public static final SoyMapImpl EMPTY_MAP = SoyMapImpl.forProviderMap(ImmutableMap.of());
-
-  private final TypeMap cheapConverterMap = new TypeMap();
-  private final TypeMap expensiveConverterMap = new TypeMap();
-
-  @Inject
-  SoyValueConverter() {
-    cheapConverterMap.put(SoyValueProvider.class, input -> input);
+  private SoyValueConverter() {
+    cheapConverterMap.put(
+        SoyValueProvider.class,
+        input -> {
+          throw new AssertionError("shouldn't get here.");
+        });
     cheapConverterMap.put(String.class, StringData::forValue);
     cheapConverterMap.put(Boolean.class, BooleanData::forValue);
     cheapConverterMap.put(Integer.class, input -> IntegerData.forValue(input.longValue()));
@@ -106,13 +90,14 @@ public final class SoyValueConverter {
 
     cheapConverterMap.put(Float.class, input -> FloatData.forValue(input.doubleValue()));
     cheapConverterMap.put(Double.class, FloatData::forValue);
-    cheapConverterMap.put(Future.class, SoyFutureValueProvider::new);
+    cheapConverterMap.put(Future.class, (f) -> new SoyFutureValueProvider(f, this::convert));
     // Proto enum that was obtained via reflection (e.g. from SoyProtoValue)
     cheapConverterMap.put(
         EnumValueDescriptor.class, input -> IntegerData.forValue(input.getNumber()));
     // Proto enum that was directly passed into the template
     cheapConverterMap.put(
         ProtocolMessageEnum.class, input -> IntegerData.forValue(input.getNumber()));
+    cheapConverterMap.put(CssParam.class, SanitizedContents::fromCss);
     cheapConverterMap.put(SafeHtml.class, SanitizedContents::fromSafeHtml);
     cheapConverterMap.put(SafeHtmlProto.class, SanitizedContents::fromSafeHtmlProto);
     cheapConverterMap.put(SafeScript.class, SanitizedContents::fromSafeScript);
@@ -132,8 +117,7 @@ public final class SoyValueConverter {
     expensiveConverterMap.put(
         ByteString.class,
         input -> StringData.forValue(BaseEncoding.base64().encode(input.toByteArray())));
-    expensiveConverterMap.put(SoyGlobalsValue.class, input -> convert(input.getSoyGlobalValue()));
-    expensiveConverterMap.putStringMap(this::newDictFromMap);
+    expensiveConverterMap.put(Map.class, this::newDictFromMap);
     expensiveConverterMap.put(MarkAsSoyMap.class, input -> newSoyMapFromJavaMap(input.delegate()));
     expensiveConverterMap.put(Collection.class, this::newListFromIterable);
     // NOTE: We don't convert plain Iterables, because many types extend from Iterable but are not
@@ -148,13 +132,13 @@ public final class SoyValueConverter {
    * Creates a Soy dictionary from a Java string map. While this is O(n) in the map's shallow size,
    * the Java values are converted into Soy values lazily and only once.
    */
-  public SoyDict newDictFromMap(Map<String, ?> javaStringMap) {
+  SoyDict newDictFromMap(Map<?, ?> javaStringMap) {
     // Create a dictionary backed by a map which has eagerly converted each value into a lazy
     // value provider. Specifically, the map iteration is done eagerly so that the lazy value
     // provider can cache its value.
     ImmutableMap.Builder<String, SoyValueProvider> builder = ImmutableMap.builder();
-    for (Map.Entry<String, ?> entry : javaStringMap.entrySet()) {
-      builder.put(entry.getKey(), convertLazy(entry.getValue()));
+    for (Map.Entry<?, ?> entry : javaStringMap.entrySet()) {
+      builder.put((String) entry.getKey(), convertLazy(entry.getValue()));
     }
     return DictImpl.forProviderMap(
         builder.build(),
@@ -336,41 +320,13 @@ public final class SoyValueConverter {
     if (obj == null) {
       return NullData.INSTANCE;
     }
+    if (obj instanceof SoyValueProvider) {
+      return (SoyValueProvider) obj;
+    }
     return cheapConverterMap.convert(obj);
   }
 
-  private interface Converter<T> extends Function<T, SoyValueProvider> {}
-
-  private static final class TypeMap {
-    // An explicit marker used to record failed lookups.
-    private static final Object NULL_MARKER = new Object();
-    private final Map<Class<?>, Object> map = new ConcurrentHashMap<>();
-
-    <T> SoyValueProvider convert(T o) {
-      @SuppressWarnings("unchecked")
-      Converter<T> converter = getConverter((Class<T>) o.getClass());
-      if (converter != null) {
-        return converter.apply(o);
-      }
-      return null;
-    }
-
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    <T> Converter<T> getConverter(Class<T> clz) {
-      Object o = resolveConverter(checkNotNull(clz));
-      if (o == NULL_MARKER) {
-        return null;
-      }
-      return (Converter) o;
-    }
-
-    <T> void put(Class<T> clazz, Converter<? extends T> converter) {
-      checkState(map.put(clazz, checkNotNull(converter)) == null);
-    }
-
-    void putStringMap(Converter<Map<String, ?>> converter) {
-      put(Map.class, converter);
-    }
+  static final class TypeMap<V> {
 
     /**
      * Returns the converter for the given type. The lookup algorithm is:
@@ -381,32 +337,71 @@ public final class SoyValueConverter {
      *   <li>Check each interface
      * </ul>
      *
-     * @param clazz the type to lookup
-     * @return the registered handler, or null if none could be found
+     * <p>This caches converters for types that aren't explicitly configured. These are types like
+     * protos and subtypes of explicitly configured types. This caches the created converter, but
+     * with a weak reference to the Class instance, so the Class can be garbage collected if this is
+     * the last reference to it.
      */
-    private Object resolveConverter(@Nullable Class<?> clazz) {
-      if (clazz == null) {
-        // recursive base case
-        return NULL_MARKER;
-      }
-      Object c = map.get(clazz);
-      if (c != null) {
-        return c;
-      }
-      // Walk the ancestors classes and interfaces.
-      c = resolveConverter(clazz.getSuperclass());
-      if (c == NULL_MARKER) {
-        for (Class<?> iface : clazz.getInterfaces()) {
-          c = resolveConverter(iface);
-          if (c != NULL_MARKER) {
-            break;
+    private final ClassValue<Function<?, ?>> converterValue =
+        new ClassValue<Function<?, ?>>() {
+
+          @Override
+          protected Function<?, ?> computeValue(Class<?> clz) {
+            // See if we are bootstrapping a value.
+            Function<?, ?> c = toLoad;
+            if (c != null) {
+              toLoad = null;
+              return c;
+            }
+            // Otherwise recurse through the type hierarchy.
+            c = getConverterOrNull(clz.getSuperclass());
+            if (c == null) {
+              for (Class<?> iface : clz.getInterfaces()) {
+                c = getConverterOrNull(iface);
+                if (c != null) {
+                  return c;
+                }
+              }
+            }
+            return c;
           }
-        }
+
+          private Function<?, ?> getConverterOrNull(Class<?> clz) {
+            if (clz == null) {
+              return null;
+            }
+            return get(clz);
+          }
+        };
+
+    private Function<?, ?> toLoad;
+
+    <T> V convert(T o) {
+      @SuppressWarnings("unchecked")
+      Function<T, V> converter = getConverter((Class<T>) o.getClass());
+      if (converter != null) {
+        return converter.apply(o);
       }
-      // at this point c is either a valid converter or NULL_MARKER, store the result to speed
-      // future lookups
-      map.put(clazz, c);
-      return c;
+      return null;
+    }
+
+    @SuppressWarnings({"unchecked"})
+    <T> Function<T, V> getConverter(Class<T> clz) {
+      return (Function<T, V>) converterValue.get(checkNotNull(clz));
+    }
+
+    <T> void put(Class<T> clazz, Function<? super T, ? extends V> converter) {
+      // bootstrap the ClassValue by putting the converter to use in a field and then eagerly
+      // fetching from the ClassValue.
+      // This is a little unusual however, this put() method is called only ever from a single
+      // thread at SoyValueConverter initialization time.
+      toLoad = converter;
+      // Fetch the value from the classValue to initialize it.
+      Function<?, ?> loaded = converterValue.get(clazz);
+      // check that we actually loaded the expected converter
+      checkState(loaded == converter);
+      // Check that the classValue cleared the field.
+      checkState(toLoad == null);
     }
   }
 

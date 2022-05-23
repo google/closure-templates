@@ -25,15 +25,15 @@ import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
  * Node representing a 'case' block in a 'plural' block.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public final class MsgPluralCaseNode extends CaseOrDefaultNode implements MsgBlockNode {
 
   /** The number for this case. Plural 'case' nodes can only have numbers. */
   private final int caseNumber;
 
-  public MsgPluralCaseNode(int id, SourceLocation location, int caseNumber) {
-    super(id, location, "case");
+  public MsgPluralCaseNode(
+      int id, SourceLocation location, SourceLocation openTagLocation, int caseNumber) {
+    super(id, location, openTagLocation, "case");
     Preconditions.checkArgument(caseNumber >= 0);
     this.caseNumber = caseNumber;
   }

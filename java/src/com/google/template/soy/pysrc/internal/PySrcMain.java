@@ -20,10 +20,9 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Supplier;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Multimap;
 import com.google.common.io.Files;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -31,24 +30,24 @@ import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.internal.i18n.SoyBidiUtils;
 import com.google.template.soy.pysrc.SoyPySrcOptions;
 import com.google.template.soy.pysrc.internal.GenPyExprsVisitor.GenPyExprsVisitorFactory;
-import com.google.template.soy.shared.internal.MainEntryPointUtils;
 import com.google.template.soy.shared.internal.SoyScopedData;
+import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Main entry point for the Python Src backend (output target).
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public final class PySrcMain {
 
@@ -78,12 +77,18 @@ public final class PySrcMain {
       SoyFileSetNode soyTree,
       SoyPySrcOptions pySrcOptions,
       ImmutableMap<String, String> currentManifest,
+      FileSetMetadata fileSetMetadata,
       ErrorReporter errorReporter) {
 
     BidiGlobalDir bidiGlobalDir =
         SoyBidiUtils.decodeBidiGlobalDirFromPyOptions(pySrcOptions.getBidiIsRtlFn());
     try (SoyScopedData.InScope inScope = apiCallScope.enter(/* msgBundle= */ null, bidiGlobalDir)) {
-      return createVisitor(pySrcOptions, inScope.getBidiGlobalDir(), errorReporter, currentManifest)
+      return createVisitor(
+              pySrcOptions,
+              inScope.getBidiGlobalDir(),
+              errorReporter,
+              currentManifest,
+              fileSetMetadata)
           .gen(soyTree, errorReporter);
     }
   }
@@ -94,45 +99,33 @@ public final class PySrcMain {
    *
    * @param soyTree The Soy parse tree to generate Python source code for.
    * @param pySrcOptions The compilation options relevant to this backend.
-   * @param outputPathFormat The format string defining how to build the output file path
-   *     corresponding to an input file path.
    * @param errorReporter The Soy error reporter that collects errors during code generation.
    * @throws IOException If there is an error in opening/writing an output Python file.
    */
-  public void genPyFiles(
+  public List<String> genPyFiles(
       SoyFileSetNode soyTree,
+      FileSetMetadata fileSetMetadata,
       SoyPySrcOptions pySrcOptions,
-      String outputPathFormat,
       ErrorReporter errorReporter)
       throws IOException {
 
-    ImmutableList<SoyFileNode> srcsToCompile = ImmutableList.copyOf(soyTree.getChildren());
-
-    // Determine the output paths.
-    List<String> soyNamespaces = getSoyNamespaces(soyTree);
-    Multimap<String, Integer> outputs =
-        MainEntryPointUtils.mapOutputsToSrcs(null, outputPathFormat, srcsToCompile);
-
     // Generate the manifest and add it to the current manifest.
-    ImmutableMap<String, String> manifest = generateManifest(soyNamespaces, outputs, errorReporter);
+    ImmutableMap<String, String> manifest =
+        generateManifest(
+            getSoyNamespaces(soyTree),
+            pySrcOptions.getInputToOutputFilePaths(),
+            pySrcOptions.getOutputDirectoryFlag(),
+            errorReporter);
 
     // Generate the Python source.
-    List<String> pyFileContents = genPySrc(soyTree, pySrcOptions, manifest, errorReporter);
+    List<String> pyFileContents =
+        genPySrc(soyTree, pySrcOptions, manifest, fileSetMetadata, errorReporter);
 
-    if (srcsToCompile.size() != pyFileContents.size()) {
+    if (soyTree.getChildren().size() != pyFileContents.size()) {
       throw new AssertionError(
           String.format(
               "Expected to generate %d code chunk(s), got %d",
-              srcsToCompile.size(), pyFileContents.size()));
-    }
-
-    // Write out the Python outputs.
-    for (String outputFilePath : outputs.keySet()) {
-      try (Writer out = Files.newWriter(new File(outputFilePath), StandardCharsets.UTF_8)) {
-        for (int inputFileIndex : outputs.get(outputFilePath)) {
-          out.write(pyFileContents.get(inputFileIndex));
-        }
-      }
+              soyTree.getChildren().size(), pyFileContents.size()));
     }
 
     // Write out the manifest file.
@@ -144,6 +137,9 @@ public final class PySrcMain {
         }
       }
     }
+
+    // Return the python outputs.
+    return pyFileContents;
   }
 
   /**
@@ -151,29 +147,33 @@ public final class PySrcMain {
    * import format.
    */
   private static ImmutableMap<String, String> generateManifest(
-      List<String> soyNamespaces, Multimap<String, Integer> outputs, ErrorReporter errorReporter) {
+      Map<SourceFilePath, String> soyNamespaces,
+      Map<SourceFilePath, Path> inputToOutputPaths,
+      Optional<Path> outputDirectoryFlag,
+      ErrorReporter errorReporter) {
     Map<String, String> manifest = new HashMap<>();
-    for (String outputFilePath : outputs.keySet()) {
-      for (int inputFileIndex : outputs.get(outputFilePath)) {
-        String pythonPath = outputFilePath.replace(".py", "").replace('/', '.');
 
-        String namespace = soyNamespaces.get(inputFileIndex);
-        if (manifest.containsKey(namespace)) {
-          errorReporter.report(SourceLocation.UNKNOWN, DUPLICATE_NAMESPACE_ERROR, namespace);
-        }
+    for (SourceFilePath inputFilePath : inputToOutputPaths.keySet()) {
+      String outputFilePath = inputToOutputPaths.get(inputFilePath).toString();
+      String pythonPath = outputFilePath.replace(".py", "").replace('/', '.');
 
-        manifest.put(namespace, pythonPath);
+      String namespace = soyNamespaces.get(inputFilePath);
+      if (manifest.containsKey(namespace)) {
+        errorReporter.report(SourceLocation.UNKNOWN, DUPLICATE_NAMESPACE_ERROR, namespace);
       }
+
+      manifest.put(namespace, pythonPath);
     }
+
     return ImmutableMap.copyOf(manifest);
   }
 
-  private List<String> getSoyNamespaces(SoyFileSetNode soyTree) {
-    List<String> namespaces = new ArrayList<>();
+  private static ImmutableMap<SourceFilePath, String> getSoyNamespaces(SoyFileSetNode soyTree) {
+    ImmutableMap.Builder<SourceFilePath, String> namespaces = new ImmutableMap.Builder<>();
     for (SoyFileNode soyFile : soyTree.getChildren()) {
-      namespaces.add(soyFile.getNamespace());
+      namespaces.put(soyFile.getFilePath(), soyFile.getNamespace());
     }
-    return namespaces;
+    return namespaces.build();
   }
 
   @VisibleForTesting
@@ -181,7 +181,8 @@ public final class PySrcMain {
       SoyPySrcOptions pySrcOptions,
       BidiGlobalDir bidiGlobalDir,
       ErrorReporter errorReporter,
-      ImmutableMap<String, String> currentManifest) {
+      ImmutableMap<String, String> currentManifest,
+      FileSetMetadata fileSetMetadata) {
     final IsComputableAsPyExprVisitor isComputableAsPyExprs = new IsComputableAsPyExprVisitor();
     // There is a circular dependency between the GenPyExprsVisitorFactory and GenPyCallExprVisitor
     // here we resolve it with a mutable field in a custom provider
@@ -204,6 +205,7 @@ public final class PySrcMain {
     return new GenPyCodeVisitor(
         pySrcOptions,
         currentManifest,
+        fileSetMetadata,
         isComputableAsPyExprs,
         genPyExprsFactory,
         provider.get(),

@@ -16,11 +16,18 @@
 
 package com.google.template.soy;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
+import com.google.template.soy.base.SourceFilePath;
+import com.google.template.soy.base.internal.SoyFileSupplier;
+import com.google.template.soy.shared.SoyAstCache;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import javax.annotation.Nullable;
 
 /** A simple cache interface for reading soy compiler inputs. */
-interface SoyInputCache {
+public interface SoyInputCache {
   /** Default implementation that does no caching. */
   SoyInputCache DEFAULT =
       new SoyInputCache() {
@@ -35,6 +42,19 @@ interface SoyInputCache {
 
         @Override
         public void declareDependency(File file, File dependency) {}
+
+        @Override
+        public SoyAstCache astCache() {
+          // null is interpreted as 'no cache' throughout the compiler.
+          return null;
+        }
+
+        @Override
+        public SoyFileSupplier createFileSupplier(
+            File file, SourceFilePath pathToUse, SoyCompilerFileReader reader)
+            throws FileNotFoundException {
+          return SoyFileSupplier.Factory.create(reader.read(file).asCharSource(UTF_8), pathToUse);
+        }
       };
 
   /** A Reader can read a file as a structured object. */
@@ -71,4 +91,21 @@ interface SoyInputCache {
    * file} should be evicted.
    */
   void declareDependency(File file, File dependency);
+
+  /**
+   * Returns the cache to use for Soy ASTs.
+   *
+   * <p>May return null if ASTs should not be cached.
+   */
+  @Nullable
+  SoyAstCache astCache();
+
+  /**
+   * Returns a SoyFileSupplier to read the given source file.
+   *
+   * <p>This supplier will use versioning information supplied by the cache implementation
+   */
+  SoyFileSupplier createFileSupplier(
+      File file, SourceFilePath pathToUse, SoyCompilerFileReader reader)
+      throws FileNotFoundException;
 }

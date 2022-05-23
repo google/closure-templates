@@ -1,4 +1,20 @@
 /*
+ * Copyright 2019 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/*
  * @fileoverview Helper utilities for incremental dom code generation in Soy.
  * Copyright 2016 Google Inc.
  *
@@ -14,9 +30,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/** @fileoverview @suppress {lintChecks} */
 goog.module('google3.javascript.template.soy.soyutils_idom');
 var module = module || { id: 'javascript/template/soy/soyutils_idom.js' };
-var tslib_1 = goog.require('google3.third_party.javascript.tslib.tslib_closure');
+var tslib_1 = goog.require('google3.third_party.javascript.tslib.tslib');
 var googSoy = goog.require('goog.soy'); // from //javascript/closure/soy
 var goog_goog_soy_data_SanitizedContent_1 = goog.require('goog.soy.data.SanitizedContent');  // from //javascript/closure/soy:data
 var goog_goog_soy_data_SanitizedContentKind_1 = goog.require('goog.soy.data.SanitizedContentKind'); // from //javascript/closure/soy:data
@@ -52,7 +69,7 @@ attributes['value'] = function (el, name, value) {
 };
 // Soy uses the {key} command syntax, rather than HTML attributes, to
 // indicate element keys.
-incrementaldom.setKeyAttributeName('soy-server-key');
+incrementaldom.setKeyAttributeName('ssk');
 /**
  * Tries to find an existing Soy element, if it exists. Otherwise, it creates
  * one. Afterwards, it queues up a Soy element (see docs for queueSoyElement)
@@ -219,11 +236,12 @@ exports.$$callDynamicAttributes = callDynamicAttributes;
  */
 function printDynamicAttr(incrementaldom, expr) {
     var e_1, _a;
-    if (goog.isFunction(expr) &&
-        expr.contentKind === goog_goog_soy_data_SanitizedContentKind_1.ATTRIBUTES) {
-        // tslint:disable-next-line:no-any
-        expr(incrementaldom);
-        return;
+    if (typeof expr === 'function' &&
+        expr.contentKind ===
+            goog_goog_soy_data_SanitizedContentKind_1.ATTRIBUTES) {
+      // tslint:disable-next-line:no-any
+      expr(incrementaldom);
+      return;
     }
     var attributes = splitAttributes(expr.toString());
     var isExprAttribute = goog_soy_checks_1.isAttribute(expr);

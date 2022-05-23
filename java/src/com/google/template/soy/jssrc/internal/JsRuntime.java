@@ -18,6 +18,7 @@ package com.google.template.soy.jssrc.internal;
 import static com.google.template.soy.jssrc.dsl.Expression.dottedIdNoRequire;
 import static com.google.template.soy.jssrc.dsl.Expression.id;
 
+import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.html.types.SafeHtmlProto;
 import com.google.common.html.types.SafeScriptProto;
@@ -47,11 +48,22 @@ public final class JsRuntime {
   private static final GoogRequire GOOG_ASSERTS = GoogRequire.create("goog.asserts");
   private static final GoogRequire GOOG_STRING = GoogRequire.create("goog.string");
 
-  private static final GoogRequire SOY = GoogRequire.create("soy");
+  static final GoogRequire SOY = GoogRequire.create("soy");
   private static final GoogRequire SOY_MAP = GoogRequire.create("soy.map");
   private static final GoogRequire SOY_NEWMAPS = GoogRequire.create("soy.newmaps");
-  private static final GoogRequire SOY_ASSERTS = GoogRequire.create("soy.asserts");
   public static final GoogRequire SOY_VELOG = GoogRequire.create("soy.velog");
+  public static final GoogRequire GOOG_SOY_ALIAS =
+      GoogRequire.createWithAlias("goog.soy", "$googSoy");
+
+  private static final GoogRequire SOY_TEMPLATES = GoogRequire.create("soy.templates");
+
+  public static final GoogRequire GOOG_SOY = GoogRequire.create("goog.soy");
+
+  public static final Expression FREEZE = SOY.dotAccess("$$freeze");
+  public static final Expression SOY_EMPTY_OBJECT = SOY.dotAccess("$$EMPTY_OBJECT");
+  public static final Expression SOY_INTERCEPT_SOY_TEMPLATES =
+      SOY.dotAccess("INTERCEPT_SOY_TEMPLATES");
+  public static final Expression SOY_STUBS_MAP = SOY.dotAccess("$$stubsMap");
 
   private static final GoogRequire XID_REQUIRE = GoogRequire.create("xid");
 
@@ -67,18 +79,30 @@ public final class JsRuntime {
 
   public static final Expression GOOG_GET_MSG = dottedIdNoRequire("goog.getMsg");
 
-  public static final Expression GOOG_IS_ARRAY = dottedIdNoRequire("goog.isArray");
+  public static final Expression ARRAY_IS_ARRAY = dottedIdNoRequire("Array.isArray");
 
-  public static final Expression GOOG_IS_FUNCTION = dottedIdNoRequire("goog.isFunction");
+  public static final Expression GOOG_IS_FUNCTION = SOY.dotAccess("$$isFunction");
 
   public static final Expression SOY_EQUALS = SOY.dotAccess("$$equals");
+
+  public static final Expression SOY_MAKE_ARRAY = SOY.dotAccess("$$makeArray");
+
+  public static final Expression SOY_FILTER_AND_MAP = SOY.dotAccess("$$filterAndMap");
 
   public static final Expression GOOG_IS_OBJECT = dottedIdNoRequire("goog.isObject");
 
   public static final Expression GOOG_REQUIRE = dottedIdNoRequire("goog.require");
 
+  public static final Expression GOOG_MODULE_GET = dottedIdNoRequire("goog.module.get");
+
   public static final Expression GOOG_SOY_DATA_SANITIZED_CONTENT =
       GoogRequire.create("goog.soy.data.SanitizedContent").reference();
+
+  public static final Expression GOOG_HTML_SAFE_HTML =
+      GoogRequire.create("goog.html.SafeHtml").reference();
+
+  public static final Expression GOOG_HTML_SAFE_ATTRIBUTE =
+      GoogRequire.create("goog.soy.data.SanitizedHtmlAttribute").reference();
 
   public static final Expression GOOG_STRING_UNESCAPE_ENTITIES =
       GOOG_STRING.dotAccess("unescapeEntities");
@@ -86,11 +110,13 @@ public final class JsRuntime {
   public static final Expression GOOG_I18N_MESSAGE_FORMAT =
       GoogRequire.create("goog.i18n.MessageFormat").reference();
 
-  public static final Expression SOY_ASSERTS_ASSERT_TYPE = SOY_ASSERTS.dotAccess("assertType");
+  public static final Expression SOY_ASSERT_PARAM_TYPE = SOY.dotAccess("assertParamType");
 
   public static final Expression SOY_ASSIGN_DEFAULTS = SOY.dotAccess("$$assignDefaults");
 
   public static final Expression SOY_CHECK_NOT_NULL = SOY.dotAccess("$$checkNotNull");
+
+  public static final Expression SERIALIZE_KEY = SOY.dotAccess("$$serializeKey");
 
   public static final Expression SOY_COERCE_TO_BOOLEAN = SOY.dotAccess("$$coerceToBoolean");
 
@@ -105,59 +131,77 @@ public final class JsRuntime {
   public static final Expression SOY_IS_LOCALE_RTL = SOY.dotAccess("$$IS_LOCALE_RTL");
 
   public static final Expression SOY_DEBUG_SOY_TEMPLATE_INFO =
-      SOY.dotAccess("$$debugSoyTemplateInfo");
+      SOY.dotAccess("$$getDebugSoyTemplateInfo");
+
+  public static final Expression SOY_ARE_YOU_AN_INTERNAL_CALLER =
+      SOY.dotAccess("$$areYouAnInternalCaller");
+  public static final Expression SOY_INTERNAL_CALL_MARKER =
+      SOY.dotAccess("$$internalCallMarkerDoNotUse");
 
   public static final Expression SOY_MAP_POPULATE = SOY_MAP.dotAccess("$$populateMap");
 
   public static final Expression SOY_MAP_IS_SOY_MAP = SOY_MAP.dotAccess("$$isSoyMap");
 
   public static final Expression SOY_NEWMAPS_TRANSFORM_VALUES =
-      SOY_NEWMAPS.dotAccess("$$transformValues");
+      SOY_NEWMAPS.googModuleGet().dotAccess("$$transformValues");
 
-  public static final Expression SOY_VISUAL_ELEMENT = SOY_VELOG.dotAccess("$$VisualElement");
+  // Explicitly group() these calls because they return constructors and the new operator has
+  // curious precedence semantics if the constructor expression contains parens.
+  public static final Expression SOY_VISUAL_ELEMENT =
+      Expression.group(SOY_VELOG.googModuleGet().dotAccess("$$VisualElement"));
   public static final Expression SOY_VISUAL_ELEMENT_DATA =
-      SOY_VELOG.dotAccess("$$VisualElementData");
+      Expression.group(SOY_VELOG.googModuleGet().dotAccess("$$VisualElementData"));
 
   public static final Expression WINDOW_CONSOLE_LOG = dottedIdNoRequire("window.console.log");
 
   public static final Expression XID = XID_REQUIRE.reference();
 
-  /** A constant for the template parameter {@code opt_data}. */
-  public static final Expression OPT_DATA = id("opt_data");
+  /**
+   * A constant for the template parameter {@code opt_data}.
+   *
+   * <p>TODO(b/177856412): rename to something that doesn't begin with {@code opt_}
+   */
+  public static final Expression OPT_DATA = id(StandardNames.OPT_DATA);
 
-  /** A constant for the template parameter {@code opt_ijData}. */
-  public static final Expression OPT_IJ_DATA = id("opt_ijData");
+  /** A constant for the template parameter {@code $ijData}. */
+  public static final Expression IJ_DATA = id(StandardNames.DOLLAR_IJDATA);
 
   public static final Expression EXPORTS = id("exports");
 
+  public static final Expression MARK_TEMPLATE =
+      SOY_TEMPLATES.googModuleGet().dotAccess("$$markTemplate");
+  public static final Expression BIND_TEMPLATE_PARAMS =
+      SOY_TEMPLATES.googModuleGet().dotAccess("$$bindTemplateParams");
+  public static final Expression BIND_TEMPLATE_PARAMS_FOR_IDOM =
+      SOY_TEMPLATES.googModuleGet().dotAccess("$$bindTemplateParamsForIdom");
+
+  private static final Expression SOY_CONVERTERS =
+      GoogRequire.create("soy.converters").googModuleGet();
   /** The JavaScript method to pack a sanitized object into a safe proto. */
   public static final ImmutableMap<String, Expression> JS_TO_PROTO_PACK_FN_BASE =
       ImmutableMap.<String, Expression>builder()
           .put(
               SafeScriptProto.getDescriptor().getFullName(),
-              GoogRequire.create("soydata.packSanitizedJsToProtoSoyRuntimeOnly").reference())
+              SOY_CONVERTERS.dotAccess("packSanitizedJsToProtoSoyRuntimeOnly"))
           .put(
               SafeUrlProto.getDescriptor().getFullName(),
-              GoogRequire.create("soydata.packSanitizedUriToProtoSoyRuntimeOnly").reference())
+              SOY_CONVERTERS.dotAccess("packSanitizedUriToProtoSoyRuntimeOnly"))
           .put(
               SafeStyleProto.getDescriptor().getFullName(),
-              GoogRequire.create("soydata.packSanitizedCssToSafeStyleProtoSoyRuntimeOnly")
-                  .reference())
+              SOY_CONVERTERS.dotAccess("packSanitizedCssToSafeStyleProtoSoyRuntimeOnly"))
           .put(
               SafeStyleSheetProto.getDescriptor().getFullName(),
-              GoogRequire.create("soydata.packSanitizedCssToSafeStyleSheetProtoSoyRuntimeOnly")
-                  .reference())
+              SOY_CONVERTERS.dotAccess("packSanitizedCssToSafeStyleSheetProtoSoyRuntimeOnly"))
           .put(
               TrustedResourceUrlProto.getDescriptor().getFullName(),
-              GoogRequire.create("soydata.packSanitizedTrustedResourceUriToProtoSoyRuntimeOnly")
-                  .reference())
+              SOY_CONVERTERS.dotAccess("packSanitizedTrustedResourceUriToProtoSoyRuntimeOnly"))
           .build();
 
   public static final ImmutableMap<String, Expression> JS_TO_PROTO_PACK_FN =
       ImmutableMap.<String, Expression>builder()
           .put(
               SafeHtmlProto.getDescriptor().getFullName(),
-              GoogRequire.create("soydata.packSanitizedHtmlToProtoSoyRuntimeOnly").reference())
+              SOY_CONVERTERS.dotAccess("packSanitizedHtmlToProtoSoyRuntimeOnly"))
           .putAll(JS_TO_PROTO_PACK_FN_BASE)
           .build();
 
@@ -170,7 +214,18 @@ public final class JsRuntime {
 
   /** Returns a function that can 'unpack' safe proto types into sanitized content types.. */
   public static Expression protoToSanitizedContentConverterFunction(Descriptor messageType) {
-    return GoogRequire.create(NodeContentKinds.toJsUnpackFunction(messageType)).reference();
+    return SOY_CONVERTERS.dotAccess(NodeContentKinds.toJsUnpackFunction(messageType));
+  }
+  /**
+   * Returns a function that ensure that proto bytes fields are consistently converted oot base64.
+   */
+  public static Expression protoByteStringToBase64ConverterFunction() {
+    return SOY_CONVERTERS.dotAccess("unpackByteStringToBase64String");
+  }
+
+  /** Returns a function that ensures that the values of bytes-values maps are coerced. */
+  public static Expression protoBytesPackToByteStringFunction() {
+    return SOY_CONVERTERS.dotAccess("packBase64StringToByteString");
   }
 
   /**
@@ -217,7 +272,11 @@ public final class JsRuntime {
     if (fullyQualifiedSymbol.equals(require.symbol())) {
       return require.reference();
     }
-    String ident = fullyQualifiedSymbol.substring(require.symbol().length() + 1);
-    return require.dotAccess(ident);
+    String suffix = fullyQualifiedSymbol.substring(require.symbol().length() + 1);
+    Expression e = require.reference();
+    for (String ident : Splitter.on('.').splitToList(suffix)) {
+      e = e.dotAccess(ident);
+    }
+    return e;
   }
 }

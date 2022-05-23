@@ -1,5 +1,16 @@
-// Copyright 2008 Google Inc. All Rights Reserved.
-// Author: Kai Huang
+// Copyright 2008 Google Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 {namespace boo.foo}
 
@@ -7,17 +18,17 @@
 /**
  * Print information about cow and moose.
  */
-{template .mooseTemplate}
+{template mooseTemplate}
   {@param cow: ?}  /** Don't have one. */
   {@param moose: ?}  /** The moose to print info about. */
 
-  {for $moo in $moose}
-    {if isFirst($moo)}
-      {call .mooHelper_}
+  {for $moo, $idx in $moose}
+    {if $idx == 0}
+      {call mooHelper_}
         {param moo : $moo /}
       {/call}
     {else}
-      {call .mooHelper_}
+      {call mooHelper_}
         {param moo: $moo /}
       {/call}
     {/if}
@@ -34,7 +45,7 @@
       Camels
     {/msg}
   {else}
-    {msg desc="Our secret location." hidden="true"}
+    {msg desc="Our secret location."}
       Moscow
     {/msg}
   {/if}{\n}
@@ -44,7 +55,7 @@
 {/template}
 
 
-{template .mooHelper_ visibility="private"}
+{template mooHelper_ visibility="private"}
   {@param moo: ?}  /** One moo. */
   {msg desc="Tells what a cow says."}
     Cow says {$moo phex="MOOOooooOOOO"}.

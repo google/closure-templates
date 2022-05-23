@@ -16,30 +16,46 @@
 
 package com.google.template.soy.sharedpasses.render;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.template.soy.shared.internal.SharedRuntime.bitwiseAnd;
+import static com.google.template.soy.shared.internal.SharedRuntime.bitwiseOr;
+import static com.google.template.soy.shared.internal.SharedRuntime.bitwiseXor;
+import static com.google.template.soy.shared.internal.SharedRuntime.checkMapFromListConstructorCondition;
+import static com.google.template.soy.shared.internal.SharedRuntime.constructMapFromList;
 import static com.google.template.soy.shared.internal.SharedRuntime.dividedBy;
 import static com.google.template.soy.shared.internal.SharedRuntime.equal;
 import static com.google.template.soy.shared.internal.SharedRuntime.lessThan;
 import static com.google.template.soy.shared.internal.SharedRuntime.lessThanOrEqual;
 import static com.google.template.soy.shared.internal.SharedRuntime.minus;
+import static com.google.template.soy.shared.internal.SharedRuntime.mod;
 import static com.google.template.soy.shared.internal.SharedRuntime.negative;
 import static com.google.template.soy.shared.internal.SharedRuntime.plus;
+import static com.google.template.soy.shared.internal.SharedRuntime.shiftLeft;
+import static com.google.template.soy.shared.internal.SharedRuntime.shiftRight;
+import static com.google.template.soy.shared.internal.SharedRuntime.soyServerKey;
 import static com.google.template.soy.shared.internal.SharedRuntime.times;
 
-import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableTable;
 import com.google.common.collect.Iterables;
 import com.google.errorprone.annotations.ForOverride;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.internal.Identifier;
-import com.google.template.soy.data.LoggingAdvisingAppendable;
-import com.google.template.soy.data.SoyAbstractValue;
+import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyLegacyObjectMap;
+import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyProtoValue;
 import com.google.template.soy.data.SoyRecord;
+import com.google.template.soy.data.SoyRecords;
 import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.data.SoyValueConverter;
+import com.google.template.soy.data.SoyValueProvider;
+import com.google.template.soy.data.SoyVisualElement;
+import com.google.template.soy.data.SoyVisualElementData;
+import com.google.template.soy.data.TofuTemplateValue;
 import com.google.template.soy.data.internal.DictImpl;
 import com.google.template.soy.data.internal.ListImpl;
 import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
@@ -54,17 +70,28 @@ import com.google.template.soy.exprtree.AbstractReturningExprNodeVisitor;
 import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.DataAccessNode;
 import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.ExprNode.AccessChainComponentNode;
+import com.google.template.soy.exprtree.ExprNode.Kind;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FloatNode;
 import com.google.template.soy.exprtree.FunctionNode;
-import com.google.template.soy.exprtree.GlobalNode;
+import com.google.template.soy.exprtree.FunctionNode.ExternRef;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
+import com.google.template.soy.exprtree.ListComprehensionNode;
+import com.google.template.soy.exprtree.ListComprehensionNode.ComprehensionVarDefn;
 import com.google.template.soy.exprtree.ListLiteralNode;
+import com.google.template.soy.exprtree.MapLiteralFromListNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
+import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.NullNode;
+import com.google.template.soy.exprtree.NullSafeAccessNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.BitwiseAndOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.BitwiseOrOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.BitwiseXorOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.DivideByOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.EqualOpNode;
@@ -80,32 +107,52 @@ import com.google.template.soy.exprtree.OperatorNodes.NotOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.ShiftLeftOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.ShiftRightOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
-import com.google.template.soy.exprtree.ProtoInitNode;
+import com.google.template.soy.exprtree.ProtoEnumValueNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
+import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.exprtree.VeLiteralNode;
 import com.google.template.soy.logging.LoggingFunction;
+import com.google.template.soy.logging.SoyLogger;
+import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.msgs.SoyMsgBundle;
+import com.google.template.soy.plugin.internal.JavaPluginExecContext;
+import com.google.template.soy.plugin.java.PluginInstances;
+import com.google.template.soy.plugin.java.RenderCssHelper;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
+import com.google.template.soy.plugin.java.restricted.MethodSignature;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.internal.BuiltinFunction;
+import com.google.template.soy.shared.internal.BuiltinMethod;
+import com.google.template.soy.shared.internal.DelTemplateSelector;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
+import com.google.template.soy.shared.restricted.SoyMethod;
+import com.google.template.soy.shared.restricted.SoySourceFunctionMethod;
+import com.google.template.soy.soytree.ExternNode;
+import com.google.template.soy.soytree.JavaImplNode;
+import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.UnionType;
-import java.io.IOException;
+import com.ibm.icu.util.ULocale;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.OptionalInt;
+import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 /**
@@ -116,9 +163,25 @@ import javax.annotation.Nullable;
  * <p>{@link #exec} may be called on any expression. The result of evaluating the expression (in the
  * context of the {@code data} and {@code env} passed into the constructor) is returned as a {@code
  * SoyValue} object.
- *
  */
 public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
+
+  static final SoyVisualElement UNDEFINED_VE =
+      SoyVisualElement.create(SoyLogger.UNDEFINED_VE_ID, ValidatedLoggingConfig.UNDEFINED_VE_NAME);
+
+  static final SoyVisualElementData UNDEFINED_VE_DATA =
+      SoyVisualElementData.create(UNDEFINED_VE, /* data= */ null);
+
+  /** Defines how we deal with and produce UndefinedData instanes. */
+  public enum UndefinedDataHandlingMode {
+    /**
+     * In 'bugged' mode we will produce instances of undefined data when dereferencing null instead
+     * of throwing an exception.
+     */
+    BUGGED,
+    /** Normal mode just means not doing the bugged behavior. */
+    NORMAL;
+  }
 
   /** Interface for a factory that creates an EvalVisitor. */
   public interface EvalVisitorFactory {
@@ -139,7 +202,10 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
         @Nullable SoyIdRenamingMap xidRenamingMap,
         @Nullable SoyMsgBundle msgBundle,
         boolean debugSoyTemplateInfo,
-        ImmutableMap<String, Supplier<Object>> pluginInstances);
+        PluginInstances pluginInstances,
+        ImmutableTable<SourceFilePath, String, ImmutableList<ExternNode>> externs,
+        DelTemplateSelector<TemplateDelegateNode> deltemplates,
+        Predicate<String> activeDelPackageSelector);
   }
 
   /** The current environment. */
@@ -163,7 +229,14 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
    * The instances for functions that implement {@link SoyJavaSourceFunction} and call {@link
    * JavaValueFactory#callInstanceMethod}.
    */
-  private final ImmutableMap<String, Supplier<Object>> pluginInstances;
+  private final PluginInstances pluginInstances;
+
+  /** How to manage old data handling bugs. */
+  private final UndefinedDataHandlingMode undefinedDataHandlingMode;
+
+  private final ImmutableTable<SourceFilePath, String, ImmutableList<ExternNode>> externs;
+  private final DelTemplateSelector<TemplateDelegateNode> deltemplates;
+  private final Predicate<String> activeDelPackageSelector;
 
   /**
    * @param env The current environment.
@@ -175,7 +248,11 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       @Nullable SoyIdRenamingMap xidRenamingMap,
       @Nullable SoyMsgBundle msgBundle,
       boolean debugSoyTemplateInfo,
-      ImmutableMap<String, Supplier<Object>> pluginInstances) {
+      PluginInstances pluginInstances,
+      UndefinedDataHandlingMode undefinedDataHandlingMode,
+      ImmutableTable<SourceFilePath, String, ImmutableList<ExternNode>> externs,
+      DelTemplateSelector<TemplateDelegateNode> deltemplates,
+      Predicate<String> activeDelPackageSelector) {
     this.env = checkNotNull(env);
     this.msgBundle = msgBundle;
     this.cssRenamingMap = (cssRenamingMap == null) ? SoyCssRenamingMap.EMPTY : cssRenamingMap;
@@ -183,6 +260,10 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     this.debugSoyTemplateInfo = debugSoyTemplateInfo;
     this.context = new TofuPluginContext(msgBundle);
     this.pluginInstances = checkNotNull(pluginInstances);
+    this.undefinedDataHandlingMode = checkNotNull(undefinedDataHandlingMode);
+    this.externs = externs;
+    this.deltemplates = deltemplates;
+    this.activeDelPackageSelector = activeDelPackageSelector;
   }
 
   // -----------------------------------------------------------------------------------------------
@@ -222,8 +303,8 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
   }
 
   @Override
-  protected SoyValue visitGlobalNode(GlobalNode node) {
-    return visit(node.getValue());
+  protected SoyValue visitProtoEnumValueNode(ProtoEnumValueNode node) {
+    return convertResult(node.getValue());
   }
 
   // -----------------------------------------------------------------------------------------------
@@ -233,6 +314,34 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
   protected SoyValue visitListLiteralNode(ListLiteralNode node) {
     List<SoyValue> values = this.visitChildren(node);
     return ListImpl.forProviderList(values);
+  }
+
+  @Override
+  protected SoyValue visitListComprehensionNode(ListComprehensionNode node) {
+    ExprNode listExpr = node.getListExpr();
+    SoyValue listValue = visit(listExpr);
+    if (!(listValue instanceof SoyList)) {
+      throw RenderException.create(String.format("List expression is not a list: %s", listValue));
+    }
+    ExprNode mapExpr = node.getListItemTransformExpr();
+    ExprNode filterExpr = node.getFilterExpr();
+    ComprehensionVarDefn itemName = node.getListIterVar();
+    ImmutableList.Builder<SoyValueProvider> mappedValues = ImmutableList.builder();
+    List<? extends SoyValueProvider> list = ((SoyList) listValue).asJavaList();
+    for (int i = 0; i < list.size(); i++) {
+      env.bind(itemName, list.get(i));
+      if (node.getIndexVar() != null) {
+        env.bind(node.getIndexVar(), SoyValueConverter.INSTANCE.convert(i));
+      }
+      if (filterExpr != null) {
+        if (!visit(filterExpr).coerceToBoolean()) {
+          continue;
+        }
+      }
+      SoyValue mappedValue = visit(mapExpr);
+      mappedValues.add(mappedValue);
+    }
+    return ListImpl.forProviderList(mappedValues.build());
   }
 
   @Override
@@ -262,101 +371,121 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     return SoyMapImpl.forProviderMap(map);
   }
 
+  @Override
+  protected SoyValue visitMapLiteralFromListNode(MapLiteralFromListNode node) {
+    ExprNode listExpr = node.getListExpr();
+    SoyValue listValue = visit(listExpr);
+    try {
+      checkMapFromListConstructorCondition(
+          listValue instanceof SoyList, listValue, OptionalInt.empty());
+
+      List<? extends SoyValueProvider> list = ((SoyList) listValue).asJavaList();
+      return constructMapFromList(list);
+    } catch (IllegalArgumentException e) {
+      throw RenderException.create(
+          e.getMessage() + " at " + node.getListExpr().getSourceLocation(), e);
+    }
+  }
+
   // -----------------------------------------------------------------------------------------------
   // Implementations for data references.
 
   @Override
   protected SoyValue visitVarRefNode(VarRefNode node) {
-    return visitNullSafeNode(node);
-  }
-
-  @Override
-  protected SoyValue visitDataAccessNode(DataAccessNode node) {
-    return visitNullSafeNode(node);
-  }
-
-  /**
-   * Helper function which ensures that {@link NullSafetySentinel} instances don't escape from this
-   * visitor.
-   *
-   * @param node The node to evaluate.
-   * @return The result of evaluating the node.
-   */
-  private SoyValue visitNullSafeNode(ExprNode node) {
-    SoyValue value = visitNullSafeNodeRecurse(node);
-    // Transform null sentinel into a normal null value.
-    if (value == NullSafetySentinel.INSTANCE) {
-      return NullData.INSTANCE;
-    }
-    return value;
-  }
-
-  /**
-   * Helper function which recursively evaluates data references. This bypasses the normal visitor
-   * mechanism as follows: As soon as the EvalVisitor sees a node which is a data reference, it
-   * calls this function which evaluates that data reference and any descendant data references,
-   * returning either the result of the evaluation, or a special sentinel value which indicates that
-   * a null-safety check failed. Internally this sentinel value is used to short-circuit evaluations
-   * that would otherwise fail because of the null value.
-   *
-   * <p>If any descendant node is not a data reference, then this uses the normal visitor mechanism
-   * to evaluate that node.
-   *
-   * <p>The reason for bypassing the normal visitor mechanism is that we want to detect the
-   * transition between data-reference nodes and non-data-reference nodes. So for example, if a
-   * FieldAccessNode has a parent node which is a data reference, we want to propagate the sentinel
-   * value upward, whereas if the parent is not a data reference, then we want to convert the
-   * sentinel value into a regular null value.
-   *
-   * @param node The node to evaluate.
-   * @return The result of evaluating the node.
-   */
-  private SoyValue visitNullSafeNodeRecurse(ExprNode node) {
-    switch (node.getKind()) {
-      case VAR_REF_NODE:
-        return visitNullSafeVarRefNode((VarRefNode) node);
-
-      case FIELD_ACCESS_NODE:
-        return visitNullSafeFieldAccessNode((FieldAccessNode) node);
-
-      case ITEM_ACCESS_NODE:
-        return visitNullSafeItemAccessNode((ItemAccessNode) node);
-
-      default:
-        return visit(node);
-    }
-  }
-
-  private SoyValue visitNullSafeVarRefNode(VarRefNode varRef) {
-    if (varRef.getDefnDecl().kind() == VarDefn.Kind.STATE) {
+    if (node.getDefnDecl().kind() == VarDefn.Kind.STATE) {
       throw new AssertionError(); // should have been desugared
     } else {
-      SoyValue value = env.getVar(varRef.getDefnDecl());
-      if (varRef.getDefnDecl().kind() == VarDefn.Kind.PARAM
-          && ((TemplateParam) varRef.getDefnDecl()).hasDefault()
+      SoyValue value = env.getVar(node.getDefnDecl());
+      if (node.getDefnDecl().kind() == VarDefn.Kind.PARAM
+          && ((TemplateParam) node.getDefnDecl()).hasDefault()
           && (UndefinedData.INSTANCE == value)) {
         // Use the default value if it has one and the parameter is undefined.
-        value = visit(((TemplateParam) varRef.getDefnDecl()).defaultValue());
+        value = visit(((TemplateParam) node.getDefnDecl()).defaultValue());
       }
       return value;
     }
   }
 
-  private SoyValue visitNullSafeFieldAccessNode(FieldAccessNode fieldAccess) {
-    SoyValue base = visitNullSafeNodeRecurse(fieldAccess.getBaseExprChild());
+  @Override
+  protected SoyValue visitDataAccessNode(DataAccessNode node) {
+    // All null safe accesses should've already been converted to NullSafeAccessNodes.
+    checkArgument(!node.isNullSafe());
+    SoyValue base = visit(node.getBaseExprChild());
+    return visitDataAccessNode(node, base, /*nullSafe=*/ false, /* hasAssertNonNull= */ false);
+  }
 
+  private SoyValue visitDataAccessNode(
+      DataAccessNode node, SoyValue base, boolean nullSafe, boolean hasAssertNonNull) {
+    SoyValue result;
+    switch (node.getKind()) {
+      case FIELD_ACCESS_NODE:
+        result = visitFieldAccessNode((FieldAccessNode) node, base, nullSafe);
+        break;
+      case ITEM_ACCESS_NODE:
+        result = visitItemAccessNode((ItemAccessNode) node, base, nullSafe);
+        break;
+      case METHOD_CALL_NODE:
+        result = visitMethodCallNode((MethodCallNode) node, base);
+        break;
+      default:
+        throw new AssertionError(node.getKind());
+    }
+    if (hasAssertNonNull) {
+      result = assertNotNull(result, node);
+    }
+    return result;
+  }
+
+  @Override
+  protected SoyValue visitNullSafeAccessNode(NullSafeAccessNode nullSafeAccessNode) {
+    SoyValue value = visit(nullSafeAccessNode.getBase());
+    ExprNode dataAccess = nullSafeAccessNode.getDataAccess();
+    while (!isNullOrUndefinedBase(value) && dataAccess.getKind() == Kind.NULL_SAFE_ACCESS_NODE) {
+      NullSafeAccessNode node = (NullSafeAccessNode) dataAccess;
+      value =
+          accumulateDataAccess(
+              (DataAccessNode) node.getBase(), value, /* hasAssertNonNull= */ false);
+      dataAccess = node.getDataAccess();
+    }
+    if (isNullOrUndefinedBase(value)) {
+      return NullData.INSTANCE;
+    }
+    return accumulateDataAccessTail((AccessChainComponentNode) dataAccess, value);
+  }
+
+  private SoyValue accumulateDataAccess(
+      DataAccessNode dataAccessNode, SoyValue base, boolean hasAssertNonNull) {
+    boolean accessChain = false;
+    if (dataAccessNode.getBaseExprChild() instanceof DataAccessNode) {
+      base =
+          accumulateDataAccess(
+              (DataAccessNode) dataAccessNode.getBaseExprChild(),
+              base,
+              /* hasAssertNonNull= */ false);
+      accessChain = true;
+    }
+    return visitDataAccessNode(dataAccessNode, base, !accessChain, hasAssertNonNull);
+  }
+
+  private SoyValue accumulateDataAccessTail(
+      AccessChainComponentNode dataAccessNode, SoyValue base) {
+    boolean hasAssertNonNull = false;
+    if (dataAccessNode.getKind() == ExprNode.Kind.ASSERT_NON_NULL_OP_NODE) {
+      AssertNonNullOpNode assertNonNull = (AssertNonNullOpNode) dataAccessNode;
+      dataAccessNode = (AccessChainComponentNode) assertNonNull.getChild(0);
+      hasAssertNonNull = true;
+    }
+    return accumulateDataAccess((DataAccessNode) dataAccessNode, base, hasAssertNonNull);
+  }
+
+  private SoyValue visitFieldAccessNode(
+      FieldAccessNode fieldAccess, SoyValue base, boolean nullSafe) {
+    // All null safe accesses should've already been converted to NullSafeAccessNodes.
+    checkArgument(!fieldAccess.isNullSafe());
     // attempting field access on non-SoyRecord
     if (!(base instanceof SoyRecord) && !(base instanceof SoyProtoValue)) {
-      if (base == NullSafetySentinel.INSTANCE) {
-        // Bail out if base expression failed a null-safety check.
-        return NullSafetySentinel.INSTANCE;
-      }
-
-      if (fieldAccess.isNullSafe()) {
-        if (isNullOrUndefinedBase(base)) {
-          // Return the sentinel value that indicates that a null-safety check failed.
-          return NullSafetySentinel.INSTANCE;
-        } else {
+      if (nullSafe) {
+        if (!isNullOrUndefinedBase(base)) {
           throw RenderException.create(
               String.format(
                   "While evaluating \"%s\", encountered non-record just before accessing \"%s\".",
@@ -366,7 +495,17 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
 
       // This behavior is not ideal, but needed for compatibility with existing code.
       // TODO: If feasible, find and fix existing instances, then throw RenderException here.
-      return UndefinedData.INSTANCE;
+      if (undefinedDataHandlingMode == UndefinedDataHandlingMode.BUGGED) {
+        return UndefinedData.INSTANCE;
+      }
+      if (isNullOrUndefinedBase(base)) {
+        throw RenderException.create(
+            String.format("Attempted to access field \"%s\" of null.", fieldAccess.getFieldName()));
+      }
+      throw RenderException.create(
+          String.format(
+              "Attempted to access field \"%s\" of non-record type: %s.",
+              fieldAccess.getFieldName(), base.getClass().getName()));
     }
 
     // If the static type is a proto, access it using proto semantics
@@ -392,7 +531,11 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
               fieldAccess.getType(), value.getClass().getSimpleName()));
     }
 
-    return (value != null) ? value : UndefinedData.INSTANCE;
+    return (value != null)
+        ? value
+        : (undefinedDataHandlingMode == UndefinedDataHandlingMode.BUGGED
+            ? UndefinedData.INSTANCE
+            : NullData.INSTANCE);
   }
 
   private static boolean isProtoOrUnionOfProtos(SoyType type) {
@@ -411,21 +554,13 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     return false;
   }
 
-  private SoyValue visitNullSafeItemAccessNode(ItemAccessNode itemAccess) {
-    SoyValue base = visitNullSafeNodeRecurse(itemAccess.getBaseExprChild());
-
+  private SoyValue visitItemAccessNode(ItemAccessNode itemAccess, SoyValue base, boolean nullSafe) {
+    // All null safe accesses should've already been converted to NullSafeAccessNodes.
+    checkArgument(!itemAccess.isNullSafe());
     // attempting item access on non-SoyMap
     if (!(base instanceof SoyLegacyObjectMap || base instanceof SoyMap)) {
-      if (base == NullSafetySentinel.INSTANCE) {
-        // Bail out if base expression failed a null-safety check.
-        return NullSafetySentinel.INSTANCE;
-      }
-
-      if (itemAccess.isNullSafe()) {
-        if (isNullOrUndefinedBase(base)) {
-          // Return the sentinel value that indicates that a null-safety check failed.
-          return NullSafetySentinel.INSTANCE;
-        } else {
+      if (nullSafe) {
+        if (!isNullOrUndefinedBase(base)) {
           throw RenderException.create(
               String.format(
                   "While evaluating \"%s\", encountered non-map/list just before accessing \"%s\".",
@@ -435,20 +570,31 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
 
       // This behavior is not ideal, but needed for compatibility with existing code.
       // TODO: If feasible, find and fix existing instances, then throw RenderException here.
-      return UndefinedData.INSTANCE;
+      if (undefinedDataHandlingMode == UndefinedDataHandlingMode.BUGGED) {
+        return UndefinedData.INSTANCE;
+      }
+      if (isNullOrUndefinedBase(base)) {
+        throw RenderException.create(
+            String.format(
+                "Attempted to access item \"%s\" of null.", itemAccess.getSourceStringSuffix()));
+      }
+      throw RenderException.create(
+          String.format(
+              "While evaluating \"%s\", encountered non-map/list just before accessing \"%s\".",
+              itemAccess.toSourceString(), itemAccess.getSourceStringSuffix()));
     }
 
     // base is a valid SoyMap or SoyLegacyObjectMap: get value
     maybeMarkBadProtoAccess(itemAccess, base);
     SoyValue key = visit(itemAccess.getKeyExprChild());
 
-    SoyType baseType = SoyTypes.tryRemoveNull(itemAccess.getBaseExprChild().getType());
+    SoyType baseType = SoyTypes.removeNull(itemAccess.getBaseExprChild().getType());
 
     // We need to know whether to invoke the SoyMap or SoyLegacyObjectMap method.
     // An instanceof check on the runtime value of base is insufficient, since
     // DictImpl implements both interfaces. Instead, look at the declared type of the base
     // expression.
-    boolean shouldUseNewMap = MapType.ANY_MAP.isAssignableFrom(baseType);
+    boolean shouldUseNewMap = MapType.ANY_MAP.isAssignableFromStrict(baseType);
     SoyValue value =
         shouldUseNewMap ? ((SoyMap) base).get(key) : ((SoyLegacyObjectMap) base).getItem(key);
 
@@ -463,7 +609,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
 
     if (value != null) {
       return value;
-    } else if (shouldUseNewMap) {
+    } else if (shouldUseNewMap || undefinedDataHandlingMode != UndefinedDataHandlingMode.BUGGED) {
       // UndefinedData is a misfeature. The new map type should return null for failed lookups.
       return NullData.INSTANCE;
     } else {
@@ -481,12 +627,52 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     }
   }
 
+  private SoyValue visitMethodCallNode(MethodCallNode methodNode, SoyValue base) {
+    // All null safe accesses should've already been converted to NullSafeAccessNodes.
+    checkArgument(!methodNode.isNullSafe());
+    // TODO(b/147372851): Handle case when the implementation of the method cannot be determined
+    // from the base type during compile time and the node has multiple SoySourceFunctions.
+    checkArgument(methodNode.isMethodResolved());
+
+    // Never allow a null method receiver.
+    base = assertNotNull(base, methodNode.getBaseExprChild());
+
+    SoyMethod method = methodNode.getSoyMethod();
+    if (method instanceof BuiltinMethod) {
+      BuiltinMethod builtinMethod = (BuiltinMethod) method;
+      switch (builtinMethod) {
+        case GET_EXTENSION:
+          return ((SoyProtoValue) base)
+              .getProtoField(
+                  BuiltinMethod.getProtoExtensionIdFromMethodCall(methodNode),
+                  /* useBrokenProtoSemantics= */ true);
+        case HAS_PROTO_FIELD:
+          return BooleanData.forValue(
+              ((SoyProtoValue) base)
+                  .hasProtoField(BuiltinMethod.getProtoFieldNameFromMethodCall(methodNode)));
+        case BIND:
+          TofuTemplateValue template = (TofuTemplateValue) base;
+          SoyRecord params = (SoyRecord) visit(methodNode.getParams().get(0));
+          return TofuTemplateValue.createWithBoundParameters(
+              template.getTemplateName(),
+              template.getBoundParameters().isPresent()
+                  ? SoyRecords.merge(template.getBoundParameters().get(), params)
+                  : params);
+      }
+    } else if (method instanceof SoySourceFunctionMethod) {
+      SoySourceFunctionMethod sourceMethod = (SoySourceFunctionMethod) method;
+      List<SoyValue> args = new ArrayList<>(methodNode.numParams() + 1);
+      args.add(base);
+      methodNode.getParams().forEach(n -> args.add(visit(n)));
+      return computeFunctionHelper(
+          args, JavaPluginExecContext.forMethodCallNode(methodNode, sourceMethod));
+    }
+    throw new AssertionError(method.getClass());
+  }
+
   // Returns true if the base SoyValue of a data access chain is null or undefined.
   private static boolean isNullOrUndefinedBase(SoyValue base) {
-    return base == null
-        || base instanceof NullData
-        || base instanceof UndefinedData
-        || base == NullSafetySentinel.INSTANCE;
+    return base == null || base instanceof NullData || base instanceof UndefinedData;
   }
 
   // -----------------------------------------------------------------------------------------------
@@ -516,10 +702,9 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
 
   @Override
   protected SoyValue visitModOpNode(ModOpNode node) {
-
     SoyValue operand0 = visit(node.getChild(0));
     SoyValue operand1 = visit(node.getChild(1));
-    return convertResult(operand0.longValue() % operand1.longValue());
+    return mod(operand0, operand1);
   }
 
   @Override
@@ -530,6 +715,31 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
   @Override
   protected SoyValue visitMinusOpNode(MinusOpNode node) {
     return minus(visit(node.getChild(0)), visit(node.getChild(1)));
+  }
+
+  @Override
+  protected SoyValue visitShiftLeftOpNode(ShiftLeftOpNode node) {
+    return shiftLeft(visit(node.getChild(0)), visit(node.getChild(1)));
+  }
+
+  @Override
+  protected SoyValue visitShiftRightOpNode(ShiftRightOpNode node) {
+    return shiftRight(visit(node.getChild(0)), visit(node.getChild(1)));
+  }
+
+  @Override
+  protected SoyValue visitBitwiseOrOpNode(BitwiseOrOpNode node) {
+    return bitwiseOr(visit(node.getChild(0)), visit(node.getChild(1)));
+  }
+
+  @Override
+  protected SoyValue visitBitwiseXorOpNode(BitwiseXorOpNode node) {
+    return bitwiseXor(visit(node.getChild(0)), visit(node.getChild(1)));
+  }
+
+  @Override
+  protected SoyValue visitBitwiseAndOpNode(BitwiseAndOpNode node) {
+    return bitwiseAnd(visit(node.getChild(0)), visit(node.getChild(1)));
   }
 
   @Override
@@ -606,11 +816,16 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
   @Override
   protected SoyValue visitNullCoalescingOpNode(NullCoalescingOpNode node) {
     SoyValue operand0 = visit(node.getChild(0));
-    // identical to the implementation of isNonnull
+    // identical to the implementation of != null
     if (operand0 instanceof NullData || operand0 instanceof UndefinedData) {
       return visit(node.getChild(1));
     }
     return operand0;
+  }
+
+  @Override
+  protected SoyValue visitAssertNonNullOpNode(AssertNonNullOpNode node) {
+    return assertNotNull(node.getChild(0));
   }
 
   // -----------------------------------------------------------------------------------------------
@@ -623,32 +838,32 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     if (soyFunction instanceof BuiltinFunction) {
       BuiltinFunction nonpluginFn = (BuiltinFunction) soyFunction;
       switch (nonpluginFn) {
-        case IS_FIRST:
-          return visitIsFirstFunction(node);
-        case IS_LAST:
-          return visitIsLastFunction(node);
-        case INDEX:
-          return visitIndexFunction(node);
+        case IS_PARAM_SET:
+          return visitIsSetFunction(node);
         case CHECK_NOT_NULL:
-          return visitCheckNotNullFunction(node.getChild(0));
+          return assertNotNull(node.getChild(0));
         case CSS:
           return visitCssFunction(node);
         case XID:
           return visitXidFunction(node);
+        case SOY_SERVER_KEY:
+          return visitSoyServerKeyFunction(node);
         case IS_PRIMARY_MSG_IN_USE:
           return visitIsPrimaryMsgInUseFunction(node);
+        case PROTO_INIT:
+          return visitProtoInitFunction(node);
         case UNKNOWN_JS_GLOBAL:
+        case LEGACY_DYNAMIC_TAG:
           throw new UnsupportedOperationException(
-              "the unknownJsGlobal function can't be used in templates compiled to Java");
-        case V1_EXPRESSION:
-          throw new UnsupportedOperationException(
-              "the v1Expression function can't be used in templates compiled to Java");
+              "the "
+                  + nonpluginFn.getName()
+                  + " function can't be used in templates compiled to Java");
         case TO_FLOAT:
           return visitToFloatFunction(node);
         case DEBUG_SOY_TEMPLATE_INFO:
           return BooleanData.forValue(debugSoyTemplateInfo);
         case VE_DATA:
-          return NullData.INSTANCE;
+          return UNDEFINED_VE_DATA;
         case MSG_WITH_ID:
         case REMAINDER:
           // should have been removed earlier in the compiler
@@ -664,22 +879,93 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       List<SoyValue> args = this.visitChildren(node);
       SoyJavaSourceFunction fn = (SoyJavaSourceFunction) soyFunction;
       // Note: Arity has already been checked by CheckFunctionCallsVisitor.
-      return computeFunctionHelper(fn, args, node);
+      return computeFunctionHelper(args, JavaPluginExecContext.forFunctionNode(node, fn));
     } else if (soyFunction instanceof LoggingFunction) {
       return StringData.forValue(((LoggingFunction) soyFunction).getPlaceholder());
+    } else if (soyFunction instanceof ExternRef) {
+      return visitExternRef(node, (ExternRef) soyFunction);
     } else {
-      throw RenderException.create(
-          "Failed to find Soy function with name '"
-              + node.getFunctionName()
-              + "'"
-              + " (function call \""
-              + node.toSourceString()
-              + "\").");
+      throw RenderException.createF(
+          "Failed to find Soy function with name '%s' (function call \"%s\").",
+          node.getStaticFunctionName(), node.toSourceString());
     }
   }
 
-  @Override
-  protected SoyValue visitProtoInitNode(ProtoInitNode node) {
+  private SoyValue visitExternRef(FunctionNode node, ExternRef soyFunction) {
+    ImmutableList<ExternNode> externNodes = externs.get(soyFunction.path(), soyFunction.name());
+    if (externNodes == null) {
+      externNodes = ImmutableList.of();
+    }
+    Optional<ExternNode> matching =
+        externNodes.stream().filter(e -> e.getType().equals(soyFunction.signature())).findFirst();
+    if (!matching.isPresent()) {
+      throw RenderException.createF(
+          "No extern named '%s' matching signature %s.",
+          soyFunction.name(), soyFunction.signature());
+    }
+    Optional<JavaImplNode> impl = matching.get().getJavaImpl();
+    if (!impl.isPresent()) {
+      throw RenderException.createF("No java implementation for extern '%s'.", soyFunction.name());
+    }
+    JavaImplNode java = impl.get();
+    int numJavaParams = java.params().size();
+    MethodSignature method;
+    try {
+      Class<?> rt = MethodSignature.forName(java.returnType());
+      Class<?>[] args = new Class<?>[numJavaParams];
+      for (int i = 0; i < numJavaParams; i++) {
+        args[i] = MethodSignature.forName(java.params().get(i));
+      }
+      method =
+          java.isInterface()
+              ? MethodSignature.createInterfaceMethod(java.className(), java.methodName(), rt, args)
+              : MethodSignature.create(java.className(), java.methodName(), rt, args);
+    } catch (ClassNotFoundException e) {
+      throw RenderException.create("Required Java runtime class not found.", e);
+    }
+
+    List<ExprNode> params = node.getParams();
+    TofuJavaValue[] javaValues = new TofuJavaValue[numJavaParams];
+    for (int i = 0; i < params.size(); i++) {
+      ExprNode param = params.get(i);
+      javaValues[i] = TofuJavaValue.forSoyValue(visit(param), param.getSourceLocation());
+    }
+    // Add implicit params.
+    for (int i = params.size(); i < numJavaParams; i++) {
+      Class<?> implicitType = method.arguments().get(i);
+      if (implicitType == Dir.class) {
+        javaValues[i] = TofuJavaValue.forRaw(context.getBidiGlobalDir().toDir());
+      } else if (implicitType == ULocale.class) {
+        javaValues[i] = context.getULocale();
+      } else if (implicitType == RenderCssHelper.class) {
+        javaValues[i] = TofuJavaValue.forRaw(getRenderCssHelper());
+      } else {
+        throw new IllegalArgumentException(implicitType.getName());
+      }
+    }
+
+    TofuValueFactory factory =
+        new TofuValueFactory(
+            node.getSourceLocation(),
+            java.className(), // Use java class as instance key.
+            pluginInstances,
+            soyFunction.signature());
+    TofuJavaValue value =
+        java.isStatic()
+            ? factory.callStaticMethod(method, javaValues)
+            : factory.callInstanceMethod(method, javaValues);
+    return value.soyValue();
+  }
+
+  private RenderCssHelper getRenderCssHelper() {
+    return (delTemplate, variant) -> {
+      TemplateDelegateNode data =
+          deltemplates.selectTemplate(delTemplate, variant, activeDelPackageSelector);
+      return data != null ? data.getTemplateName() : null;
+    };
+  }
+
+  protected SoyValue visitProtoInitFunction(FunctionNode node) {
     // The downcast is safe because if it was anything else, compilation would have already failed.
     SoyProtoType soyProto = (SoyProtoType) node.getType();
     ImmutableList<Identifier> paramNames = node.getParamNames();
@@ -695,12 +981,15 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     return builder.build();
   }
 
-  private SoyValue visitCheckNotNullFunction(ExprNode child) {
-    SoyValue childValue = visit(child);
-    if (childValue instanceof NullData || childValue instanceof UndefinedData) {
-      throw new SoyDataException(child.toSourceString() + " is null");
+  private SoyValue assertNotNull(ExprNode child) {
+    return assertNotNull(visit(child), child);
+  }
+
+  private static SoyValue assertNotNull(SoyValue value, ExprNode node) {
+    if (value instanceof NullData || value instanceof UndefinedData) {
+      throw new SoyDataException(node.toSourceString() + " is null");
     }
-    return childValue;
+    return value;
   }
 
   /**
@@ -725,59 +1014,23 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
   /**
    * Protected helper for {@code computeFunction}.
    *
-   * @param fn The function object.
    * @param args The arguments to the function.
    * @param fnNode The function node. Only used for error reporting.
    * @return The result of the function called on the given arguments.
    */
   @ForOverride
-  protected SoyValue computeFunctionHelper(
-      SoyJavaSourceFunction fn, List<SoyValue> args, final FunctionNode fnNode) {
+  protected SoyValue computeFunctionHelper(List<SoyValue> args, JavaPluginExecContext fnNode) {
     try {
-      return new TofuValueFactory(fnNode, pluginInstances).computeForJava(fn, args, context);
+      return new TofuValueFactory(fnNode, pluginInstances)
+          .computeForJava(fnNode.getSourceFunction(), args, context);
     } catch (Exception e) {
       throw RenderException.create(
           "While computing function \"" + fnNode.toSourceString() + "\": " + e.getMessage(), e);
     }
   }
 
-  private SoyValue visitIsFirstFunction(FunctionNode node) {
-
-    int localVarIndex;
-    try {
-      VarRefNode dataRef = (VarRefNode) node.getChild(0);
-      localVarIndex = env.getIndex(dataRef.getDefnDecl());
-    } catch (Exception e) {
-      throw RenderException.create(
-          "Failed to evaluate function call " + node.toSourceString() + ".", e);
-    }
-    return convertResult(localVarIndex == 0);
-  }
-
-  private SoyValue visitIsLastFunction(FunctionNode node) {
-
-    boolean isLast;
-    try {
-      VarRefNode dataRef = (VarRefNode) node.getChild(0);
-      isLast = env.isLast(dataRef.getDefnDecl());
-    } catch (Exception e) {
-      throw RenderException.create(
-          "Failed to evaluate function call " + node.toSourceString() + ".", e);
-    }
-    return convertResult(isLast);
-  }
-
-  private SoyValue visitIndexFunction(FunctionNode node) {
-
-    int localVarIndex;
-    try {
-      VarRefNode dataRef = (VarRefNode) node.getChild(0);
-      localVarIndex = env.getIndex(dataRef.getDefnDecl());
-    } catch (Exception e) {
-      throw RenderException.create(
-          "Failed to evaluate function call " + node.toSourceString() + ".", e);
-    }
-    return convertResult(localVarIndex);
+  private SoyValue visitIsSetFunction(FunctionNode node) {
+    return BooleanData.forValue(env.hasVar(((VarRefNode) node.getChild(0)).getDefnDecl()));
   }
 
   private SoyValue visitCssFunction(FunctionNode node) {
@@ -803,6 +1056,13 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     return (renamed != null) ? StringData.forValue(renamed) : StringData.forValue(xid + "_");
   }
 
+  private SoyValue visitSoyServerKeyFunction(FunctionNode node) {
+    SoyValue value = visit(node.getChild(0));
+    // map tofu null to soysauce null since that is what this function expects.
+    return StringData.forValue(
+        soyServerKey(value instanceof NullData || value instanceof UndefinedData ? null : value));
+  }
+
   private SoyValue visitIsPrimaryMsgInUseFunction(FunctionNode node) {
     if (msgBundle == null) {
       return BooleanData.TRUE;
@@ -824,7 +1084,12 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
 
   @Override
   protected SoyValue visitVeLiteralNode(VeLiteralNode node) {
-    return NullData.INSTANCE;
+    return UNDEFINED_VE;
+  }
+
+  @Override
+  protected SoyValue visitTemplateLiteralNode(TemplateLiteralNode node) {
+    return TofuTemplateValue.create(node.getResolvedName());
   }
 
   // -----------------------------------------------------------------------------------------------
@@ -864,43 +1129,5 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
    */
   private SoyValue convertResult(String s) {
     return StringData.forValue(s);
-  }
-
-  /**
-   * Class that represents a sentinel value indicating that a null-safety check failed. This value
-   * should never "leak" outside this class, in other words, no code outside of this class should
-   * ever see a value of this type.
-   */
-  private static final class NullSafetySentinel extends SoyAbstractValue {
-
-    /** Static singleton instance of SafeNullData. */
-    public static final NullSafetySentinel INSTANCE = new NullSafetySentinel();
-
-    private NullSafetySentinel() {}
-
-    @Override
-    public boolean equals(Object other) {
-      return other == this;
-    }
-
-    @Override
-    public int hashCode() {
-      return System.identityHashCode(this);
-    }
-
-    @Override
-    public boolean coerceToBoolean() {
-      return false;
-    }
-
-    @Override
-    public String coerceToString() {
-      return "null";
-    }
-
-    @Override
-    public void render(LoggingAdvisingAppendable appendable) throws IOException {
-      appendable.append(coerceToString());
-    }
   }
 }

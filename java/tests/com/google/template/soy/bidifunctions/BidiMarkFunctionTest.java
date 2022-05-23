@@ -26,7 +26,6 @@ import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for BidiMarkFunction.
- *
  */
 @RunWith(JUnit4.class)
 public class BidiMarkFunctionTest {

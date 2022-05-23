@@ -20,9 +20,9 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.base.Joiner;
 import com.google.common.truth.StringSubject;
-import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.soytree.SoyFileNode;
-import com.google.template.soy.soytree.SoyTreeUtils;
+import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -46,16 +46,16 @@ public final class DesugarStateNodesPassTest {
   private static String runPass(String input) {
     String soyFile =
         Joiner.on('\n')
-            .join("{namespace ns}", "{element .t}", input, "<div>{$foo}</div>", "{/element}");
+            .join("{namespace ns}", "{element t}", input, "<div>{$foo}</div>", "{/element}");
     SoyFileNode node =
         SoyFileSetParserBuilder.forFileContents(soyFile)
-            .desugarHtmlAndStateNodes(true)
+            .desugarHtmlNodes(true)
             .parse()
             .fileSet()
             .getChild(0);
-    assertThat(SoyTreeUtils.hasHtmlNodes(node)).isFalse();
+    assertThat(DesugarHtmlNodesPassTest.hasHtmlNodes(node)).isFalse();
     StringBuilder sb = new StringBuilder();
-    node.getChild(0).appendSourceStringForChildren(sb);
+    ((TemplateNode) node.getChild(0)).appendSourceStringForChildren(sb);
     return sb.toString();
   }
 }

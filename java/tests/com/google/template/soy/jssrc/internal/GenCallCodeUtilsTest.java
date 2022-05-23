@@ -19,23 +19,24 @@ package com.google.template.soy.jssrc.internal;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
+import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_DATA;
 
 import com.google.common.base.Joiner;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.template.soy.SoyFileSetParserBuilder;
+import com.google.common.collect.ImmutableSet;
+import com.google.protobuf.Descriptors.GenericDescriptor;
 import com.google.template.soy.base.internal.UniqueNameGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
-import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.Expression;
-import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.shared.internal.InternalPlugins;
 import com.google.template.soy.shared.internal.NoOpScopedData;
-import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
+import com.google.template.soy.soytree.SoyTreeUtils;
+import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.testing.SharedTestUtils;
+import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import java.util.regex.Pattern;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -43,44 +44,43 @@ import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for {@link GenCallCodeUtils}.
- *
  */
 @RunWith(JUnit4.class)
 public final class GenCallCodeUtilsTest {
 
   @Test
   public void testGenCallExprForBasicCalls() {
-    assertThat(getCallExprTextHelper("{call some.func data=\"all\" /}"))
-        .isEqualTo("some.func(/** @type {?} */ (opt_data), opt_ijData);");
+    assertThat(getCallExprTextHelper("{call someFunc data=\"all\" /}"))
+        .isEqualTo("ns.someFunc(/** @type {?} */ (opt_data), $ijData);");
 
-    assertThat(getCallExprTextHelper("{@param boo : ?}", "{call some.func data=\"$boo.foo\" /}"))
-        .isEqualTo("some.func(/** @type {?} */ (boo.foo), opt_ijData);");
+    assertThat(getCallExprTextHelper("{@param boo : ?}", "{call someFunc data=\"$boo.foo\" /}"))
+        .isEqualTo("ns.someFunc(/** @type {?} */ (boo.foo), $ijData);");
 
     assertThat(
             getCallExprTextHelper(
-                "{@param moo : ?}", "{call some.func}", "  {param goo: $moo /}", "{/call}"))
-        .isEqualTo("some.func(/** @type {?} */ ({goo: opt_data.moo}), opt_ijData);");
+                "{@param moo : ?}", "{call someFunc}", "  {param goo: $moo /}", "{/call}"))
+        .isEqualTo("ns.someFunc$(soy.$$internalCallMarkerDoNotUse, $ijData, opt_data.moo);");
 
     assertThat(
             getCallExprTextHelper(
                 "{@param boo : ?}",
-                "{call some.func data=\"$boo\"}",
+                "{call someFunc data=\"$boo\"}",
                 "  {param goo kind=\"text\"}Blah{/param}",
                 "{/call}"))
-        .isEqualTo("some.func(soy.$$assignDefaults({goo: 'Blah'}, boo), opt_ijData);");
+        .isEqualTo("ns.someFunc(soy.$$assignDefaults({goo: 'Blah'}, boo), $ijData);");
 
     String callExprText =
         getCallExprTextHelper(
-            "{call some.func}\n"
+            "{call someFunc}\n"
                 + "  {param goo kind=\"text\"}\n"
                 + "    {for $i in range(3)}{$i}{/for}\n"
                 + "  {/param}\n"
                 + "{/call}\n");
     assertThat(callExprText)
         .matches(
-            Pattern.quote("some.func(/** @type {?} */ ({goo: param")
+            Pattern.quote("ns.someFunc$(soy.$$internalCallMarkerDoNotUse, $ijData, param")
                 + "[0-9]+"
-                + Pattern.quote("}), opt_ijData);"));
+                + Pattern.quote(");"));
   }
 
   @Test
@@ -88,29 +88,30 @@ public final class GenCallCodeUtilsTest {
     assertThat(
             getCallExprTextHelper(
                 "{@param boo : ?}",
-                "{call some.func data=\"$boo\"}",
+                "{call someFunc data=\"$boo\"}",
                 "  {param goo kind=\"html\"}Blah{/param}",
                 "{/call}"))
         .isEqualTo(
-            "some.func(soy.$$assignDefaults("
-                + "{goo: soydata.VERY_UNSAFE.$$ordainSanitizedHtmlForInternalBlocks('Blah')}, "
-                + "boo), opt_ijData);");
+            "ns.someFunc(soy.$$assignDefaults("
+                + "{goo: soy.VERY_UNSAFE.$$ordainSanitizedHtmlForInternalBlocks('Blah')}, "
+                + "boo), $ijData);");
 
     final String callExprText =
         getCallExprTextHelper(
-            "{call some.func}\n"
+            "{call someFunc}\n"
                 + "  {param goo kind=\"html\"}\n"
                 + "    {for $i in range(3)}{$i}{/for}\n"
                 + "  {/param}\n"
                 + "{/call}\n");
     // NOTE: Soy generates a param### variable to store the output of the for loop.
     assertWithMessage("Actual result: " + callExprText)
-        .that(
-            callExprText.matches(
-                "some[.]func[(]/[*][*] @type [{?}]{3} [*]/ [(][{]goo: soydata.VERY_UNSAFE.[$][$]"
-                    + "ordainSanitizedHtmlForInternalBlocks["
-                    + "(]param[0-9]+[)][}][)], opt_ijData[)];"))
-        .isTrue();
+        .that(callExprText)
+        .matches(
+            Pattern.quote(
+                    "ns.someFunc$(soy.$$internalCallMarkerDoNotUse, $ijData,"
+                        + " soy.VERY_UNSAFE.$$ordainSanitizedHtmlForInternalBlocks(param")
+                + "[0-9]+"
+                + Pattern.quote("));"));
   }
 
   @Test
@@ -119,14 +120,14 @@ public final class GenCallCodeUtilsTest {
         .isEqualTo(
             "soy.$$getDelegateFn("
                 + "soy.$$getDelTemplateId('myDelegate'), '', false)(/** @type {?} */ (opt_data), "
-                + "opt_ijData);");
+                + "$ijData);");
 
     assertThat(
             getCallExprTextHelper("{delcall myDelegate data=\"all\" allowemptydefault=\"true\" /}"))
         .isEqualTo(
             "soy.$$getDelegateFn("
                 + "soy.$$getDelTemplateId('myDelegate'), '', true)(/** @type {?} */ (opt_data), "
-                + "opt_ijData);");
+                + "$ijData);");
 
     assertThat(
             getCallExprTextHelper(
@@ -137,7 +138,7 @@ public final class GenCallCodeUtilsTest {
         .isEqualTo(
             "soy.$$getDelegateFn("
                 + "soy.$$getDelTemplateId('my.other.delegate'), '', false)("
-                + "/** @type {?} */ ({goo: opt_data.moo}), opt_ijData);");
+                + "/** @type {?} */ ({goo: opt_data.moo}), $ijData);");
   }
 
   @Test
@@ -145,7 +146,7 @@ public final class GenCallCodeUtilsTest {
     assertThat(getCallExprTextHelper("{delcall myDelegate variant=\"'voo'\" data=\"all\" /}"))
         .isEqualTo(
             "soy.$$getDelegateFn(soy.$$getDelTemplateId('myDelegate'), 'voo', false)"
-                + "(/** @type {?} */ (opt_data), opt_ijData);");
+                + "(/** @type {?} */ (opt_data), $ijData);");
 
     assertThat(
             getCallExprTextHelper(
@@ -153,7 +154,7 @@ public final class GenCallCodeUtilsTest {
                 "{delcall myDelegate variant=\"$voo\" data=\"all\" allowemptydefault=\"true\" /}"))
         .isEqualTo(
             "soy.$$getDelegateFn(soy.$$getDelTemplateId('myDelegate'), opt_data.voo, true)"
-                + "(/** @type {?} */ (opt_data), opt_ijData);");
+                + "(/** @type {?} */ (opt_data), $ijData);");
   }
 
   @Test
@@ -164,10 +165,10 @@ public final class GenCallCodeUtilsTest {
                 "  {param goo kind=\"html\"}Blah{/param}",
                 "{/delcall}"))
         .isEqualTo(
-            "soy.$$getDelegateFn(soy.$$getDelTemplateId('my.other.delegate'), '', false)("
-                + "/** @type {?} */ ({goo: soydata.VERY_UNSAFE"
-                + ".$$ordainSanitizedHtmlForInternalBlocks('Blah')}), "
-                + "opt_ijData);");
+            "soy.$$getDelegateFn(soy.$$getDelTemplateId('my.other.delegate'), '',"
+                + " false)(/** @type {?} */ ({goo:"
+                + " soy.VERY_UNSAFE.$$ordainSanitizedHtmlForInternalBlocks('Blah')}), "
+                + "$ijData);");
 
     String callExprText =
         getCallExprTextHelper(
@@ -177,14 +178,14 @@ public final class GenCallCodeUtilsTest {
             "  {/param}",
             "{/delcall}");
     assertWithMessage("Actual text:" + callExprText)
-        .that(
-            callExprText.matches(
-                "soy.\\$\\$getDelegateFn\\("
-                    + "soy.\\$\\$getDelTemplateId\\('my.other.delegate'\\), '', false\\)"
-                    + "[(]/[*][*] @type [{?}]{3} [*]/ [(][{]goo: soydata.VERY_UNSAFE"
-                    + ".[$][$]ordainSanitizedHtmlForInternalBlocks"
-                    + "[(]param[0-9]+[)][}][)], opt_ijData[)];"))
-        .isTrue();
+        .that(callExprText)
+        .matches(
+            Pattern.quote(
+                    "soy.$$getDelegateFn(soy.$$getDelTemplateId('my.other.delegate'), '',"
+                        + " false)(/** @type {?} */ ({goo:"
+                        + " soy.VERY_UNSAFE.$$ordainSanitizedHtmlForInternalBlocks(param")
+                + "\\d+"
+                + Pattern.quote(")})," + " $ijData);"));
   }
 
   @Test
@@ -193,52 +194,61 @@ public final class GenCallCodeUtilsTest {
             getCallExprTextHelper(
                 "{@param boo:= 'default'}",
                 "{@param goo:= 12}",
-                "{call some.func data='all'}",
+                "{call someFunc data='all'}",
                 "  {param goo: 59 /}",
                 "{/call}"))
-        .isEqualTo("some.func(soy.$$assignDefaults({boo: boo, goo: 59}, opt_data), opt_ijData);");
+        .isEqualTo("ns.someFunc(soy.$$assignDefaults({boo: boo, goo: 59}, opt_data), $ijData);");
   }
 
   @Test
   public void testGenCallExprForStrictCall() {
-    assertThat(getCallExprTextHelper("{call some.func /}\n", ImmutableList.of("|escapeHtml")))
-        .isEqualTo("soy.$$escapeHtml(some.func(null, opt_ijData));");
+    assertThat(getCallExprTextHelper("{call someFunc /}\n", ImmutableSet.of("|escapeHtml")))
+        .isEqualTo("soy.$$escapeHtml(ns.someFunc$(soy.$$internalCallMarkerDoNotUse, $ijData));");
   }
 
   private static String getCallExprTextHelper(String... callSourceLines) {
-    return getCallExprTextHelper(Joiner.on('\n').join(callSourceLines), ImmutableList.of());
+    return getCallExprTextHelper(Joiner.on('\n').join(callSourceLines), ImmutableSet.of());
   }
 
   private static String getCallExprTextHelper(
-      String callSource, ImmutableList<String> escapingDirectives) {
+      String callSource, ImmutableSet<String> escapingDirectives) {
+
+    GenericDescriptor[] desc =
+        new GenericDescriptor[0];
 
     SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forTemplateContents(callSource)
+        SoyFileSetParserBuilder.forTemplateAndImports(
+                SharedTestUtils.buildTestTemplateContent(false, callSource)
+                    + "\n{template someFunc}{@param? goo: ?}{/template}",
+                desc)
             .parse()
             .fileSet();
 
-    CallNode callNode = (CallNode) SharedTestUtils.getNode(soyTree, 0);
+    CallNode callNode =
+        (CallNode) SoyTreeUtils.getAllNodesOfType(soyTree, TemplateNode.class).get(0).getChild(0);
     // Manually setting the escaping directives.
-    ImmutableMap<String, ? extends SoyPrintDirective> directives =
-        InternalPlugins.internalDirectiveMap(new NoOpScopedData());
     callNode.setEscapingDirectives(
-        escapingDirectives.stream().map(directives::get).collect(toImmutableList()));
+        InternalPlugins.internalDirectives(new NoOpScopedData()).stream()
+            .filter(d -> escapingDirectives.contains(d.getName()))
+            .collect(toImmutableList()));
 
     GenCallCodeUtils genCallCodeUtils = JsSrcTestUtils.createGenCallCodeUtils();
     UniqueNameGenerator nameGenerator = JsSrcNameGenerators.forLocalVariables();
     TranslationContext translationContext =
         TranslationContext.of(
-            SoyToJsVariableMappings.forNewTemplate()
-                .put("boo", Expression.id("boo"))
-                .put("goo", Expression.id("goo")),
+            SoyToJsVariableMappings.newEmpty()
+                .put("$boo", Expression.id("boo"))
+                .put("$goo", Expression.id("goo")),
             CodeChunk.Generator.create(nameGenerator),
             nameGenerator);
     ErrorReporter errorReporter = ErrorReporter.exploding();
     TranslateExprNodeVisitor exprTranslator =
         new TranslateExprNodeVisitor(
-            new JavaScriptValueFactoryImpl(new SoyJsSrcOptions(), BidiGlobalDir.LTR, errorReporter),
+            new JavaScriptValueFactoryImpl(BidiGlobalDir.LTR, errorReporter),
             translationContext,
-            errorReporter);
+            AliasUtils.IDENTITY_ALIASES,
+            errorReporter,
+            OPT_DATA);
     CodeChunk call =
         genCallCodeUtils.gen(
             callNode,

@@ -17,11 +17,14 @@
 package com.google.template.soy.soytree;
 
 import static com.google.template.soy.soytree.SoyTreeUtils.getAllNodesOfType;
+import static com.google.template.soy.soytree.TemplateSubject.assertThatFileContent;
 import static com.google.template.soy.soytree.TemplateSubject.assertThatTemplateContent;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import com.google.common.collect.ImmutableSet;
@@ -34,10 +37,18 @@ import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for MsgNode.
- *
  */
 @RunWith(JUnit4.class)
 public class MsgNodeTest {
+
+  private static void assertSubstUnitInfo(MsgNode msg) {
+    assertThrows(
+        IllegalStateException.class,
+        () -> {
+          msg.ensureSubstUnitInfoHasNotBeenAccessed();
+        });
+    assertNotNull(msg.getSubstUnitInfo());
+  }
 
   @Test
   public void testGenPlaceholderNames() throws Exception {
@@ -51,14 +62,14 @@ public class MsgNodeTest {
     //   <a href="{$url2}">                  [START_LINK_2]
     //     {$boo}{$goo}{$goo2}{2 + 2}        [BOO, GOO_3, GOO_2, XXX_2]
     //   </a>                                [END_LINK]
-    //   <br phname="zoo">                   [ZOO_1]
-    //   <br phname="zoo">                   [ZOO_1]
-    //   {$zoo phname="zoo"}                 [ZOO_2]
-    //   {$zoo}                              [ZOO_3]
-    //   {$foo.zoo phname="zoo"}             [ZOO_4]
-    //   {$foo.zoo phname="zoo"}             [ZOO_4]
-    //   {call .helper phname="zoo" /}       [ZOO_5]
-    //   {call .helper phname="zoo" /}       [ZOO_6]
+    //   <br phname="ZOO_1">                 [ZOO_1]
+    //   <br phname="ZOO_1">                 [ZOO_1]
+    //   {$zoo phname="ZOO_2"}               [ZOO_2]
+    //   {$zoo}                              [ZOO]
+    //   {$foo.zoo phname="ZOO_4"}           [ZOO_4]
+    //   {$foo.zoo phname="ZOO_4"}           [ZOO_4]
+    //   {call helper phname="ZOO_5" /}     [ZOO_5]
+    //   {call helper phname="ZOO_6" /}     [ZOO_6]
     // {/msg}
     //
     // Note: The three 'print' tags {$foo.goo}, {$goo}, and {$goo2} end up as placeholders GOO_1,
@@ -68,7 +79,8 @@ public class MsgNodeTest {
     // 3. However, since GOO_2 is already used for {$goo2}, we use GOO_1 and GOO_3 instead.
 
     String template =
-        "{@param url1 : ?}"
+        "{template brittleTestTemplate}"
+            + "{@param url1 : ?}"
             + "{@param boo : ?}"
             + "{@param foo : ?}"
             + "{@param url2 : ?}"
@@ -83,17 +95,22 @@ public class MsgNodeTest {
             + "  <a href=\"{$url2}\">\n"
             + "    {$boo}{$goo}{$goo2}{2 + 2}\n"
             + "  </a>\n"
-            + "  <br phname=\"zoo\">\n"
-            + "  <br phname=\"zoo\">\n"
-            + "  {$zoo phname=\"zoo\"}\n"
+            + "  <br phname=\"ZOO_1\">\n"
+            + "  <br phname=\"ZOO_1\">\n"
+            + "  {$zoo phname=\"ZOO_2\"}\n"
             + "  {$zoo}\n"
-            + "  {$foo.zoo phname=\"zoo\"}\n"
-            + "  {$foo.zoo phname=\"zoo\"}\n"
-            + "  {call .helper phname=\"zoo\" /}\n"
-            + "  {call .helper phname=\"zoo\" /}\n"
-            + "{/msg}";
-    TemplateNode templateNode = assertThatTemplateContent(template).getTemplateNode();
+            + "  {$foo.zoo phname=\"ZOO_4\"}\n"
+            + "  {$foo.zoo phname=\"ZOO_4\"}\n"
+            + "  {call helper phname=\"ZOO_5\" /}\n"
+            + "  {call helper phname=\"ZOO_6\" /}\n"
+            + "{/msg}"
+            + "{/template}"
+            + "{template helper}"
+            + "{/template}";
+    TemplateNode templateNode = assertThatFileContent(template).getTemplateNode();
     MsgNode msg = getAllNodesOfType(templateNode, MsgFallbackGroupNode.class).get(0).getMsg();
+    assertSubstUnitInfo(msg);
+
     List<MsgPlaceholderNode> placeholders = getAllNodesOfType(msg, MsgPlaceholderNode.class);
 
     assertEquals("START_LINK_1", msg.getPlaceholder(placeholders.get(0)).name());
@@ -116,7 +133,7 @@ public class MsgNodeTest {
     assertEquals("ZOO_1", msg.getPlaceholder(placeholders.get(17)).name());
     assertEquals("ZOO_1", msg.getPlaceholder(placeholders.get(18)).name());
     assertEquals("ZOO_2", msg.getPlaceholder(placeholders.get(19)).name());
-    assertEquals("ZOO_3", msg.getPlaceholder(placeholders.get(20)).name());
+    assertEquals("ZOO", msg.getPlaceholder(placeholders.get(20)).name());
     assertEquals("ZOO_4", msg.getPlaceholder(placeholders.get(21)).name());
     assertEquals("ZOO_4", msg.getPlaceholder(placeholders.get(22)).name());
     assertEquals("ZOO_5", msg.getPlaceholder(placeholders.get(23)).name());
@@ -140,7 +157,7 @@ public class MsgNodeTest {
     assertSame(placeholders.get(17), msg.getRepPlaceholderNode("ZOO_1"));
     assertNotSame(placeholders.get(18), msg.getRepPlaceholderNode("ZOO_1"));
     assertSame(placeholders.get(19), msg.getRepPlaceholderNode("ZOO_2"));
-    assertSame(placeholders.get(20), msg.getRepPlaceholderNode("ZOO_3"));
+    assertSame(placeholders.get(20), msg.getRepPlaceholderNode("ZOO"));
     assertSame(placeholders.get(21), msg.getRepPlaceholderNode("ZOO_4"));
     assertNotSame(placeholders.get(22), msg.getRepPlaceholderNode("ZOO_4"));
     assertSame(placeholders.get(23), msg.getRepPlaceholderNode("ZOO_5"));
@@ -180,6 +197,7 @@ public class MsgNodeTest {
 
     TemplateNode templateNode = assertThatTemplateContent(template).getTemplateNode();
     MsgNode msg = getAllNodesOfType(templateNode, MsgFallbackGroupNode.class).get(0).getMsg();
+    assertSubstUnitInfo(msg);
 
     // Test.
     MsgSelectNode nodeSelect = (MsgSelectNode) msg.getChild(0);
@@ -235,6 +253,7 @@ public class MsgNodeTest {
 
     TemplateNode templateNode = assertThatTemplateContent(template).getTemplateNode();
     MsgNode msg = getAllNodesOfType(templateNode, MsgFallbackGroupNode.class).get(0).getMsg();
+    assertSubstUnitInfo(msg);
 
     // Test.
     MsgSelectNode nodeSelect = (MsgSelectNode) msg.getChild(0);
@@ -282,6 +301,7 @@ public class MsgNodeTest {
 
     TemplateNode templateNode = assertThatTemplateContent(template).getTemplateNode();
     MsgNode msg = getAllNodesOfType(templateNode, MsgFallbackGroupNode.class).get(0).getMsg();
+    assertSubstUnitInfo(msg);
 
     // Test.
     MsgSelectNode nodeSelect = (MsgSelectNode) msg.getChild(0);
@@ -345,6 +365,7 @@ public class MsgNodeTest {
 
     TemplateNode templateNode = assertThatTemplateContent(template).getTemplateNode();
     MsgNode msg = getAllNodesOfType(templateNode, MsgFallbackGroupNode.class).get(0).getMsg();
+    assertSubstUnitInfo(msg);
 
     // Test.
     MsgSelectNode nodeSelect = (MsgSelectNode) msg.getChild(0);
@@ -374,14 +395,19 @@ public class MsgNodeTest {
   @Test
   public void testGenPlaceholdersForGenders() {
     String template =
-        "{@param gender : ?}"
+        "{template brittleTestTemplate}"
+            + "{@param gender : ?}"
             + "{@param person : ?}"
             + "{msg desc=\"\" genders=\"$gender\"}\n"
-            + "  {$person} invited you to a group conversation with {call .everyoneElse /}"
-            + "{/msg}";
+            + "  {$person} invited you to a group conversation with {call everyoneElse /}"
+            + "{/msg}"
+            + "{/template}"
+            + "{template everyoneElse}"
+            + "{/template}";
 
-    TemplateNode templateNode = assertThatTemplateContent(template).getTemplateNode();
+    TemplateNode templateNode = assertThatFileContent(template).getTemplateNode();
     MsgNode msg = getAllNodesOfType(templateNode, MsgFallbackGroupNode.class).get(0).getMsg();
+    assertSubstUnitInfo(msg);
 
     // Test.
     MsgSelectNode nodeSelect = (MsgSelectNode) msg.getChild(0);
@@ -389,11 +415,15 @@ public class MsgNodeTest {
     assertSame(nodeSelect, msg.getRepSelectNode("GENDER"));
 
     CaseOrDefaultNode firstCase = nodeSelect.getChild(0);
-    assertEquals("PERSON", ((MsgPlaceholderNode) firstCase.getChild(0)).getBaseVarName());
+    assertEquals(
+        MessagePlaceholder.create("PERSON"),
+        ((MsgPlaceholderNode) firstCase.getChild(0)).getPlaceholder());
     assertEquals(
         " invited you to a group conversation with ",
         ((RawTextNode) firstCase.getChild(1)).getRawText());
-    assertEquals("XXX", ((MsgPlaceholderNode) firstCase.getChild(2)).getBaseVarName());
+    assertEquals(
+        MessagePlaceholder.create("XXX"),
+        ((MsgPlaceholderNode) firstCase.getChild(2)).getPlaceholder());
     Set<String> placeholders = new TreeSet<>();
     for (MsgPlaceholderNode placeholder :
         SoyTreeUtils.getAllNodesOfType(msg, MsgPlaceholderNode.class)) {
@@ -420,6 +450,7 @@ public class MsgNodeTest {
 
     TemplateNode templateNode = assertThatTemplateContent(template).getTemplateNode();
     MsgNode msg = getAllNodesOfType(templateNode, MsgFallbackGroupNode.class).get(0).getMsg();
+    assertSubstUnitInfo(msg);
 
     // Test.
     assertFalse(msg.isPluralMsg());
@@ -441,6 +472,7 @@ public class MsgNodeTest {
 
     TemplateNode templateNode = assertThatTemplateContent(template).getTemplateNode();
     MsgNode msg = getAllNodesOfType(templateNode, MsgFallbackGroupNode.class).get(0).getMsg();
+    assertSubstUnitInfo(msg);
 
     // Test.
     assertTrue(msg.isPluralMsg());
@@ -454,6 +486,7 @@ public class MsgNodeTest {
 
     TemplateNode templateNode = assertThatTemplateContent(template).getTemplateNode();
     MsgNode msg = getAllNodesOfType(templateNode, MsgFallbackGroupNode.class).get(0).getMsg();
+    assertSubstUnitInfo(msg);
 
     // Test.
     assertTrue(msg.isRawTextMsg());

@@ -19,7 +19,6 @@ package com.google.template.soy.jssrc.dsl;
 import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_EMPTY_STRING;
 
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.jssrc.dsl.CodeChunk.RequiresCollector;
 import com.google.template.soy.jssrc.restricted.JsExprUtils;
 import java.util.ArrayList;
 import java.util.List;
@@ -69,17 +68,15 @@ public final class CodeChunkUtils {
   public static Expression concatChunksForceString(List<? extends Expression> chunks) {
     if (!chunks.isEmpty()
         && chunks.get(0).isRepresentableAsSingleExpression()
-        && JsExprUtils.isStringLiteral(
-            chunks.get(0).assertExprAndCollectRequires(RequiresCollector.NULL))) {
+        && JsExprUtils.isStringLiteral(chunks.get(0).assertExprAndCollectRequires(r -> {}))) {
       return concatChunks(chunks);
     } else if (chunks.size() > 1
         && chunks.get(1).isRepresentableAsSingleExpression()
-        && JsExprUtils.isStringLiteral(
-            chunks.get(1).assertExprAndCollectRequires(RequiresCollector.NULL))) {
+        && JsExprUtils.isStringLiteral(chunks.get(1).assertExprAndCollectRequires(r -> {}))) {
       return concatChunks(chunks);
     } else {
       return concatChunks(
-          ImmutableList.of(LITERAL_EMPTY_STRING, Group.create(concatChunks(chunks))));
+          ImmutableList.<Expression>builder().add(LITERAL_EMPTY_STRING).addAll(chunks).build());
     }
   }
 
@@ -87,12 +84,16 @@ public final class CodeChunkUtils {
    * Outputs a stringified parameter list (e.g. `foo, bar, baz`) from JsDoc. Used e.g. in function
    * and method declarations.
    */
-  static String generateParamList(JsDoc jsDoc) {
+  static String generateParamList(JsDoc jsDoc, boolean addInlineTypeAnnotations) {
     ImmutableList<JsDoc.Param> params = jsDoc.params();
     List<String> functionParameters = new ArrayList<>();
     for (JsDoc.Param param : params) {
       if ("param".equals(param.annotationType())) {
-        functionParameters.add(param.paramTypeName());
+        if (addInlineTypeAnnotations) {
+          functionParameters.add(String.format("/* %s */ %s", param.type(), param.paramTypeName()));
+        } else {
+          functionParameters.add(param.paramTypeName());
+        }
       }
     }
     StringBuilder sb = new StringBuilder();

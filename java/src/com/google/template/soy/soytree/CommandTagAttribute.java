@@ -19,6 +19,7 @@ package com.google.template.soy.soytree;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
@@ -26,16 +27,20 @@ import com.google.common.collect.Iterables;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.Identifier;
-import com.google.template.soy.base.internal.Identifier.Type;
 import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.base.internal.SanitizedContentKind;
+import com.google.template.soy.base.internal.TemplateContentKind;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.ExprRootNode;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Optional;
+import java.util.OptionalInt;
+import java.util.OptionalLong;
 import java.util.Set;
 import javax.annotation.Nullable;
 
@@ -64,8 +69,20 @@ public final class CommandTagAttribute {
       SoyErrorKind.of("''stricthtml=\"false\"'' can only be set on individual templates.");
   static final SoyErrorKind EXPLICIT_DEFAULT_ATTRIBUTE =
       SoyErrorKind.of("''{0}=\"{1}\"'' is the default, no need to set it.");
+  static final SoyErrorKind CSS_PREFIX_AND_CSS_BASE =
+      SoyErrorKind.of("Cssbase and cssprefix cannot both be set at the same time.");
 
   private static final Splitter SPLITTER = Splitter.on(',').trimResults();
+
+  /**
+   * A node that contains command tag attributes. Some examples of this include calls, templates,
+   * msg, etc.
+   */
+  public static interface CommandTagAttributesHolder extends SoyNode {
+    List<CommandTagAttribute> getAttributes();
+
+    SourceLocation getOpenTagLocation();
+  }
 
   /**
    * Identifies duplicate attributes, reports an error for each one, and removes them from the
@@ -88,33 +105,51 @@ public final class CommandTagAttribute {
   private final Identifier key;
   private final SourceLocation valueLocation;
   private final QuoteStyle quoteStyle;
+  private final SourceLocation sourceLocation;
   // either value or valueExprList must be set, but not both.
   @Nullable private final String value;
-  @Nullable private final ImmutableList<ExprNode> valueExprList;
+  @Nullable private final ImmutableList<ExprRootNode> valueExprList;
 
   public CommandTagAttribute(
-      Identifier key, QuoteStyle quoteStyle, String value, SourceLocation valueLocation) {
-    checkArgument(key.type() == Type.SINGLE_IDENT, "expected a single identifier, got: %s", key);
+      Identifier key,
+      QuoteStyle quoteStyle,
+      String value,
+      SourceLocation valueLocation,
+      SourceLocation wholeAttributeLocation) {
+    checkArgument(
+        key.type() == Identifier.Type.SINGLE_IDENT, "expected a single identifier, got: %s", key);
     this.key = checkNotNull(key);
+    checkArgument(
+        quoteStyle == QuoteStyle.SINGLE || quoteStyle == QuoteStyle.DOUBLE,
+        "CommandTagAttribute quote style must be SINGLE or DOUBLE");
     this.quoteStyle = checkNotNull(quoteStyle);
+    this.sourceLocation = wholeAttributeLocation;
     this.valueLocation = checkNotNull(valueLocation);
     this.value = checkNotNull(value);
     this.valueExprList = null;
   }
 
   public CommandTagAttribute(
-      Identifier key, QuoteStyle quoteStyle, ImmutableList<ExprNode> valueExprList) {
-    checkArgument(key.type() == Type.SINGLE_IDENT, "expected a single identifier, got: %s", key);
+      Identifier key,
+      QuoteStyle quoteStyle,
+      ImmutableList<ExprNode> valueExprList,
+      SourceLocation sourceLocation) {
+    checkArgument(
+        key.type() == Identifier.Type.SINGLE_IDENT, "expected a single identifier, got: %s", key);
     checkArgument(valueExprList.size() >= 1);
     this.key = checkNotNull(key);
+    checkArgument(
+        quoteStyle == QuoteStyle.SINGLE || quoteStyle == QuoteStyle.DOUBLE,
+        "CommandTagAttribute quote style must be SINGLE or DOUBLE");
     this.quoteStyle = checkNotNull(quoteStyle);
+    this.sourceLocation = sourceLocation;
     this.valueLocation =
         valueExprList
             .get(0)
             .getSourceLocation()
             .extend(Iterables.getLast(valueExprList).getSourceLocation());
     this.value = null;
-    this.valueExprList = valueExprList;
+    this.valueExprList = ExprRootNode.wrap(valueExprList);
   }
 
   public CommandTagAttribute copy(CopyState copyState) {
@@ -123,10 +158,11 @@ public final class CommandTagAttribute {
           key,
           quoteStyle,
           valueExprList.stream()
-              .map(expr -> expr.copy(copyState))
-              .collect(ImmutableList.toImmutableList()));
+              .map(expr -> expr.getRoot().copy(copyState))
+              .collect(toImmutableList()),
+          sourceLocation);
     }
-    return new CommandTagAttribute(key, quoteStyle, value, valueLocation);
+    return new CommandTagAttribute(key, quoteStyle, value, valueLocation, sourceLocation);
   }
 
   /** Returns the name. It is guaranteed to be a single identifier. */
@@ -137,6 +173,11 @@ public final class CommandTagAttribute {
   /** Returns true if the attribute name is equal to the given string. */
   public boolean hasName(String name) {
     return key.identifier().equals(name);
+  }
+
+  /** Gets the source location of the attribute. */
+  public SourceLocation getSourceLocation() {
+    return sourceLocation;
   }
 
   /** Returns the string value. Do not call on an expression attribute. */
@@ -152,14 +193,25 @@ public final class CommandTagAttribute {
     return quoteStyle;
   }
 
-  public int valueAsInteger(ErrorReporter errorReporter, int defaultValue) {
+  public OptionalInt valueAsOptionalInt(ErrorReporter errorReporter) {
     checkState(valueExprList == null);
 
     try {
-      return Integer.parseInt(value);
+      return OptionalInt.of(Integer.parseInt(value));
     } catch (NumberFormatException e) {
-      errorReporter.report(valueLocation, INVALID_ATTRIBUTE, key.identifier(), "an integer");
-      return defaultValue;
+      errorReporter.report(valueLocation, INVALID_ATTRIBUTE, key.identifier(), "a number");
+      return OptionalInt.empty();
+    }
+  }
+
+  public OptionalLong valueAsOptionalLong(ErrorReporter errorReporter) {
+    checkState(valueExprList == null);
+
+    try {
+      return OptionalLong.of(Long.parseLong(value));
+    } catch (NumberFormatException e) {
+      errorReporter.report(valueLocation, INVALID_ATTRIBUTE, key.identifier(), "a number");
+      return OptionalLong.empty();
     }
   }
 
@@ -201,6 +253,12 @@ public final class CommandTagAttribute {
       }
     }
     return hasError ? ImmutableList.of() : ImmutableList.copyOf(namespaces);
+  }
+
+  ImmutableList<String> valueAsRequireCssPath() {
+    checkState(valueExprList == null);
+
+    return ImmutableList.copyOf(SPLITTER.split(value));
   }
 
   @Nullable
@@ -261,6 +319,16 @@ public final class CommandTagAttribute {
     return contentKind;
   }
 
+  public Optional<TemplateContentKind> valueAsTemplateContentKind(ErrorReporter errorReporter) {
+    checkState(valueExprList == null);
+
+    Optional<TemplateContentKind> contentKind = TemplateContentKind.fromAttributeValue(value);
+    if (!contentKind.isPresent()) {
+      errorReporter.report(valueLocation, TemplateContentKind.INVALID_ATTRIBUTE_VALUE);
+    }
+    return contentKind;
+  }
+
   String valueAsCssBase(ErrorReporter errorReporter) {
     checkState(valueExprList == null);
 
@@ -270,20 +338,28 @@ public final class CommandTagAttribute {
     return value;
   }
 
-  /** Returns the value as an expression. Only call on an expression attribute. */
-  public ExprNode valueAsExpr(ErrorReporter reporter) {
+  void checkAsExpr(ErrorReporter reporter) {
     checkState(value == null);
-    if (valueExprList.size() > 1) {
-      reporter.report(
-          valueExprList.get(1).getSourceLocation(), EXPECTED_A_SINGLE_EXPRESSION, key.identifier());
-      // Return the first expr to avoid an NPE in CallNode ctor.
-      return valueExprList.get(0);
+    if (valueExprList.size() != 1) {
+      SourceLocation loc =
+          valueExprList.isEmpty() ? getSourceLocation() : valueExprList.get(1).getSourceLocation();
+      reporter.report(loc, EXPECTED_A_SINGLE_EXPRESSION, key.identifier());
     }
-    return Iterables.getOnlyElement(valueExprList);
+  }
+
+  /** Returns the value as an expression. Only call on an expression attribute. */
+  public ExprRootNode valueAsExpr(ErrorReporter reporter) {
+    checkAsExpr(reporter);
+    // Return the first expr to avoid an NPE in CallNode ctor.
+    return valueExprList.get(0);
+  }
+
+  public boolean hasExprValue() {
+    return valueExprList != null;
   }
 
   /** Returns the value as an expression list. Only call on an expression list attribute. */
-  public ImmutableList<ExprNode> valueAsExprList() {
+  public ImmutableList<ExprRootNode> valueAsExprList() {
     checkState(value == null);
     return checkNotNull(valueExprList);
   }
@@ -292,10 +368,18 @@ public final class CommandTagAttribute {
   public String toString() {
     String valueStr =
         (value != null)
-            ? BaseUtils.escapeToSoyString(value, false, quoteStyle)
+            ? BaseUtils.escapeToWrappedSoyString(value, false, quoteStyle)
             : quoteStyle.getQuoteChar()
                 + SoyTreeUtils.toSourceString(valueExprList)
                 + quoteStyle.getQuoteChar();
+    return key.identifier() + "=" + valueStr;
+  }
+
+  public String toSourceString() {
+    String valueStr =
+        quoteStyle.getQuoteChar()
+            + ((value != null) ? value : SoyTreeUtils.toSourceString(valueExprList))
+            + quoteStyle.getQuoteChar();
     return key.identifier() + "=" + valueStr;
   }
 }

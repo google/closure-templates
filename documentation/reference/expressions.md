@@ -1,6 +1,5 @@
 # Expressions
 
-
 Expressions are written within templates to reference template data, variables,
 or compute intermediate values. Soy uses a language-neutral expression syntax.
 This section describes the expression grammar, including how to reference data,
@@ -16,10 +15,10 @@ in [print commands](print.md), but they are also used in
 places. Here are a few examples:
 
 ```soy
-{template .foo}
+{template foo}
   {@param p: ?}
   {if $p > 2}
-    {call .bar}{param p : $p == 3 ? 'a' : 'b' /}{/call}
+    {call bar}{param p : $p == 3 ? 'a' : 'b' /}{/call}
   {/if}
 {/template}
 ```
@@ -107,16 +106,28 @@ For example:
 
 ### map {#map}
 
-Map literals are delimited by `map()` and contain a comma-delimited sequence of
-key-value pairs separated by `:` characters. For example,
+There are two different syntaxes for creating map literals. They are both
+delimited by `map()`.
 
-*   `map()`: the empty map
-*   `map(1: 'one', 2: 'two')`
+1.  They can contain a comma-delimited sequence of key-value pairs separated by
+    `:` characters. For example,
+
+    *   `map()`: the empty map
+    *   `map(1: 'one', 2: 'two')`
+
+2.  They can contain a list whose elements are each a [record](#record) with
+    exactly two fields named **key** and **value**. The following examples
+    produce the same maps as the above ones:
+
+    *   `{let $arr: [] /} map($arr)`
+    *   `map([record(key: 1, value: 'one'), record(key: 2, value: 'two')])`
+
+    Note: This syntax is most useful when used in conjunction with list
+    comprehensions. For more details, see [this section](#map-from-list)
 
 These expressions create [map](types.md#map) values. For more details about the
 difference between maps and legacy object maps see the [map](types.md#map)
 documentation.
-
 
 ### record {#record}
 
@@ -124,9 +135,9 @@ Record literals are delimited by `record()` and contain a comma-delimited
 sequence of key-value pairs separated by `:` characters. Each key must be an
 identifier. For example,
 
-*   `record()`: the empty record
 *   `record(aaa: 'blah', bbb: 123, ccc: $foo)`
 
+Empty records are not allowed.
 
 ## Variables
 
@@ -142,22 +153,6 @@ Parameters and locals are introduced by:
 To reference a variable, use a dollar sign `$` followed by the variable name.
 For example: `$foo`
 
-### globals
-
-A global is a reference that looks like a simple dotted identifier sequence.
-
-`foo.bar.Baz`
-
-Globals can be configured with the compiler via the `--compileTimeGlobalsFile`
-flag, proto enum values are also represented as global references.
-
-TIP: You can use the [`{alias ...}`](file-declarations.md#alias) directive to
-abbreviate globals.
-
-It is an error in the compiler to reference a global that doesn't have a
-definition at compile time, however, if you are only compiling for JavaScript
-then this is allowed for backwards compatibility reasons.
-
 ## Operators
 
 ### Precedence
@@ -166,14 +161,18 @@ Here are the supported operators, listed in decreasing order of precedence
 (highest precedence at the top):
 
 1.  `( <expr> )` `.` `?.` `[]`, `?[]`
-1.    `-` (unary)   `not`
-1.    `*`   `/`   `%`
-1.    `+`   `-` (binary)
-1.    `<`   `>`   `<=`   `>=`
-1.    `==`   `!=`
-1.    `and`
-1.    `or`
-1.    `?:` (binary)   `? :` (ternary)
+2.  `-`(unary) `not`
+3.  `*` `/` `%`
+4.  `+` `-`(binary)
+5.  `>>` `<<`
+6.  `<` `>` `<=` `>=`
+7.  `==` `!=`
+8.  `&`
+9.  `^`
+10. `|`
+11. `and`
+12. `or`
+13. `?:`(binary) `? :`(ternary)
 
 The Soy programming language respects the order of evaluation indicated
 explicitly by parentheses and implicitly by operator precedence.
@@ -185,7 +184,7 @@ Parenthesis have no affect other than to manipulate the order of evaluation.
 ### Data access operators `.` `?.` {#data-access}
 
 The dot operator and question-dot operator are for accessing fields of a
-`record` or a `proto`.
+`record` or a `proto`, or to make method calls.
 
 The question-dot operator is for null safe access. If the value of the preceding
 operand is `null` then the access will return `null` rather than failing. This
@@ -230,7 +229,7 @@ false == true`)
 For example,
 
 *   `not $bar`
-*   `not isLast($foo)`
+*   `not $foo.contains('x')`
 
 ### Times operator `*`
 
@@ -288,6 +287,16 @@ For example,
 
 *   `$foo - 1`
 
+### Bitwise operators `<<`, `>>`, `&`, `|`, `^`
+
+These operators all require both operands to be integers.
+
+*   `(16 >> 2) == 4` - shift right
+*   `(4 << 2) == 16` - shift left
+*   `(6 & 3) == 2` - bitwise AND
+*   `(6 | 3) == 7` - bitwise OR
+*   `(6 ^ 3) == 5` - bitwise XOR
+
 ### Relative comparison operators `<`, `>`, `<=`, `>=`
 
 Relative comparison operators, used for comparing numeric values.
@@ -327,10 +336,11 @@ For example,
 Using a constant expression for the `or` operator produces a compiler warning.
 Using a boolean constant renders the `or` expression meaningless; using a
 constant of another type means the expression does not evaluate to a boolean
-type. Further, the falsy rules are different in Java and JavaScript (`''` in
-Java is truthy; but in JavaScript it is falsy). Using non-boolean constants
-might produce slightly different results when rendering in Java versus
-JavaScript.
+type.
+
+WARNING: While `''` is falsy in all backends, it does not compare to `true` and `false`
+equivalently in all backends. It is therefore safe to use a string as the first
+argument of a ternary statement but not safe to compare strings to booleans.
 
 Rather than using the short-circuit property of the `or` operator, you should
 use `?:`, the [null coalescing operator](#null-coalescing-operator). This more
@@ -376,7 +386,52 @@ For example,
 
 NOTE: The checks done by the binary operator `?:` and the ternary operator `? :`
 are different. Specifically, `$a ?: $b` is not equivalent to `$a ? $a : $b`.
-Rather, the former expression is equivalent to `isNonnull($a) ? $a : $b`.
+Rather, the former expression is equivalent to `$a != null ? $a : $b`.
+
+## List comprehensions
+
+List comprehensions can be used to transform and/or filter a list into a new
+list.
+
+For example:
+
+`[$a + 1 for $a in $myList]`
+
+If `$myList` were `[1, 2, 3, 4, 5]`, the expression above would evaluate to:
+
+`[2, 3, 4, 5, 6]`
+
+List comprehensions also accept an optional, zero-based **position index** and
+an optional **filter expression**, such as:
+
+`[$a + $i for $a, $i in $myList if $a >= 3]`
+
+For the original `$myList` value above, this would evaluate to:
+
+`[5, 7, 9]`
+
+### Using list comprehensions to create maps {#map-from-list}
+
+List comprehensions can be particularly useful for constructing and manipulating
+maps. To illustrate, we'll construct three maps (`result1`, `result2` and
+`result3`) in the code snippet below. Each map is constructed using a list
+comprehension and evaluates to `map('a': 1, 'b': 2, 'c': 3)`.
+
+```soy
+{let $result1: map([record(key: $c, value: $i + 1) for $c, $i in ['a', 'b', 'c']]) /}
+
+{let $oldMap: map('a': 10, 'b': 20, 'c': 30, 'd': 40, 'e': 50) /}
+{let $result2: map([record(key : $x, value : $oldMap[$x] / 10) for $x in $oldMap.keys() if $oldMap[$x] < 35]) /}
+
+// 'Person' is a proto with the following signature:
+//
+// message Person {
+//   string name = 1;
+//   int32 age = 2;
+// }
+{let $arr: [Person(name: 'a', age: 1), Person(name: 'b', age: 2), Person(name: 'c', age: 3)] /}
+{let $result3: map([record(key: $x.name, value: $x.age) for $x in $arr]) /}
+```
 
 ## Function calls
 
@@ -384,14 +439,30 @@ Function calls consist of an identifier with a number of positional parameters:
 
 `<IDENT>(<EXPR>,...)`
 
-See the [dev guide](../dev/plugins.md) for how to register a custom function and
-the [functions reference](functions.md) for a list of all functions that are
-available by default.
+See the [dev guide](../dev/externs.md) for how to define a custom external
+function and the [functions reference](functions.md) for a list of all functions
+that are available by default.
 
 For example:
 
-*   `isNonnull($foo)`
 *   `max($foo, $bar)`
+
+## Method calls
+
+Method calls consist of an expression followed by the dot or question-dot
+operator, and an identifier with a number of arguments for positional
+parameters:
+
+`<EXPR>.<IDENT>(<EXPR>,...)`
+
+For example:
+
+*   `$foo.bar($baz)` calls the `bar` method on `$foo` with an argument of `$baz`
+*   `$foo?.bar(1, 2)` calls the `bar` method on `$foo` with the arguments `1`
+    and `2` only if `$foo` is non-`null`
+
+See the [methods reference](functions.md) for a list of all methods that are
+available.
 
 ## Proto initialization
 
@@ -402,7 +473,10 @@ sequence of key value pairs where the keys correspond to fields in the proto.
 
 For example:
 
-*   `foo.bar.Baz(quux: 3)`
+```soy
+import {Baz} from 'foo/baz.proto';
 
-TIP: You can use the [`{alias ...}`](file-declarations.md#alias) directive to
-abbreviate proto names used in initialization expressions.
+{template bar}
+  {let $b: Baz(quux: 3) /}
+{/template}
+```

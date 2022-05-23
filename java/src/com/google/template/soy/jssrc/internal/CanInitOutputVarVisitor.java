@@ -26,7 +26,6 @@ import com.google.template.soy.soytree.SoyNode;
  * initialize the current variable (if not already initialized).
  *
  * <p>Precondition: MsgNode should not exist in the tree.
- *
  */
 public final class CanInitOutputVarVisitor extends AbstractReturningSoyNodeVisitor<Boolean> {
 

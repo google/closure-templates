@@ -26,9 +26,9 @@
  */
 
 goog.module('soy.velog');
-goog.module.declareLegacyNamespace();
 
-const Message = goog.require('jspb.Message');
+const LoggableElementMetadata = goog.require('proto.soy.LoggableElementMetadata');
+const {Message} = goog.require('jspb');
 const {assert} = goog.require('goog.asserts');
 const {startsWith} = goog.require('goog.string');
 
@@ -196,16 +196,15 @@ function $$getLoggingFunctionAttribute(name, args, attr) {
  */
 function emitLoggingCommands(element, logger) {
   if (element instanceof Element) {
-    const children = Array.from(element.childNodes);
-    visit(element, logger);
-    if (element.tagName !== 'VELOG') {
-      return element;
+    const newElements = visit(element, logger);
+    if (element.parentNode !== null) {
+      replaceChild(element.parentNode, element, newElements);
     }
-    if (children.length === 1) {
-      return children[0];
+    if (newElements.length === 1) {
+      return newElements[0];
     }
     const fragment = document.createDocumentFragment();
-    for (const child of children) {
+    for (const child of newElements) {
       fragment.appendChild(child);
     }
     return fragment;
@@ -214,7 +213,8 @@ function emitLoggingCommands(element, logger) {
     for (let i = 0; i < children.length; i++) {
       const child = children[i];
       if (child instanceof Element) {
-        visit(child, logger);
+        const newChildren = visit(child, logger);
+        replaceChild(element, child, newChildren);
       }
     }
     return element;
@@ -223,13 +223,17 @@ function emitLoggingCommands(element, logger) {
 
 /**
  *
- * @param {!Node} element The rendered HTML element.
+ * @param {!Element|!DocumentFragment} element The rendered HTML element.
  * @param {!Logger} logger The logger that actually does stuffs.
+ * @return {!Array<!Element|!DocumentFragment>} The element(s) to replace the
+ *     incoming element with. This can be of length zero (which means remove the
+ *     element) or contain only the incoming element (which means leave the
+ *     element as is).
  */
 function visit(element, logger) {
   let logIndex = -1;
   if (!(element instanceof Element)) {
-    return;
+    return [element];
   }
   if (element.hasAttribute(ELEMENT_ATTR)) {
     logIndex = getDataAttribute(element, ELEMENT_ATTR);
@@ -239,28 +243,56 @@ function visit(element, logger) {
     }
   }
   replaceFunctionAttributes(element, logger);
-  if (element.childNodes) {
-    const children = Array.from(element.childNodes);
+  if (element.children) {
+    let children = Array.from(element.children);
     for (let i = 0; i < children.length; i++) {
-      visit(children[i], logger);
+      const newChildren = visit(children[i], logger);
+      // VEATTR nodes only have one children and are a direct replacement.
+      if (children[i].tagName === 'VEATTR') {
+        replaceChild(
+            element, children[i], visit(children[i].children[0], logger));
+      } else {
+        replaceChild(element, children[i], newChildren);
+      }
     }
   }
   if (logIndex === -1) {
-    return;
+    return [element];
   }
   logger.exit();
   if (metadata.elements[logIndex].logOnly) {
-    element.parentNode.removeChild(element);
-    return;
+    return [];
   }
   if (element.tagName !== 'VELOG') {
     element.removeAttribute(ELEMENT_ATTR);
+    return [element];
   } else if (element.childNodes) {
-    const children = Array.from(element.childNodes);
-    for (let i = 0; i < children.length; i++) {
-      element.parentNode.insertBefore(children[i], element);
+    return Array.from(element.childNodes);
+  }
+  return [element];
+}
+
+/**
+ * Replaces oldChild (a child of parent) with newChildren. If newChildren is
+ * length zero, this removes oldChild. If newChildren contains only oldChild,
+ * this does nothing.
+ *
+ * @param {!Node} parent
+ * @param {!Node} oldChild
+ * @param {!Array<!Element|!DocumentFragment>} newChildren
+ */
+function replaceChild(parent, oldChild, newChildren) {
+  if (newChildren.length === 0) {
+    parent.removeChild(oldChild);
+  } else if (newChildren.length === 1) {
+    if (oldChild !== newChildren[0]) {
+      parent.replaceChild(newChildren[0], oldChild);
     }
-    element.parentNode.removeChild(element);
+  } else {
+    for (const newChild of newChildren) {
+      parent.insertBefore(newChild, oldChild);
+    }
+    parent.removeChild(oldChild);
   }
 }
 
@@ -274,9 +306,21 @@ function replaceFunctionAttributes(element, logger) {
   const attributeMap = {};
   // Iterates from the end to the beginning, since we are removing attributes
   // in place.
+  let elementWithAttribute = element;
+  if (element.tagName === 'VEATTR') {
+    // The attribute being replaced belongs on the direct child.
+    elementWithAttribute = /** @type {!Element} */ (element.firstElementChild);
+  }
   for (let i = element.attributes.length - 1; i >= 0; --i) {
     const attributeName = element.attributes[i].name;
     if (startsWith(attributeName, FUNCTION_ATTR)) {
+      // Delay evaluation of the attributes until we reach the element itself.
+      if (elementWithAttribute.hasAttribute(ELEMENT_ATTR) &&
+          element.tagName === 'VEATTR') {
+        elementWithAttribute.setAttribute(
+            attributeName, element.attributes[i].value);
+        continue;
+      }
       const funcIndex = parseInt(element.attributes[i].value, 10);
       assert(
           !Number.isNaN(funcIndex) && funcIndex < metadata.functions.length,
@@ -285,11 +329,12 @@ function replaceFunctionAttributes(element, logger) {
       const attr = attributeName.substring(FUNCTION_ATTR.length);
       attributeMap[attr] =
           logger.evalLoggingFunction(funcMetadata.name, funcMetadata.args);
-      element.removeAttribute(attributeName);
+      elementWithAttribute.removeAttribute(attributeName);
     }
   }
   for (const attributeName in attributeMap) {
-    element.setAttribute(attributeName, attributeMap[attributeName]);
+    elementWithAttribute.setAttribute(
+        attributeName, attributeMap[attributeName]);
   }
 }
 
@@ -328,12 +373,27 @@ class Logger {
   exit() {}
 
   /**
+   * Called in Incremental DOM when a Soy element is or root template is
+   * about to be rerendered. This is meant to be used to implement INSERT_DEDUPE
+   * grafting.
+   * @param {!Element} el
+   * @param {!Function} fn Used for rendering and needs to be called directly.
+   */
+  logGraft(el, fn) {}
+
+  /**
    * Called when a logging function is evaluated.
    * @param {string} name function name, as obfuscated by the `xid` function.
    * @param {!Array<?>} args List of arguments needed for the function.
    * @return {string} The evaluated return value that will be shown in the DOM.
    */
   evalLoggingFunction(name, args) {}
+
+  /**
+   * Resets the logger so that subsequent logging calls will use the provided
+   * builder (if set), or a new, separate VE tree builder.
+   */
+  resetBuilder() {}
 }
 
 /** The ID of the UndefinedVe. */
@@ -345,16 +405,21 @@ const UNDEFINED_VE_ID = -1;
  * <p>This is for use only in Soy internal code and Soy generated JS. DO NOT use
  * this from handwritten code.
  *
+ * create instances for tests.
+ *
  * @final
  */
 class $$VisualElement {
   /**
    * @param {number} id
+   * @param {!LoggableElementMetadata|undefined} metadata
    * @param {string=} name
    */
-  constructor(id, name = undefined) {
+  constructor(id, metadata, name = undefined) {
     /** @private @const {number} */
     this.id_ = id;
+    /** @private @const {!LoggableElementMetadata|undefined} */
+    this.metadata_ = metadata;
     /** @private @const {string|undefined} */
     this.name_ = name;
   }
@@ -362,6 +427,12 @@ class $$VisualElement {
   /** @return {number} */
   getId() {
     return this.id_;
+  }
+
+  /** @return {!LoggableElementMetadata} */
+  getMetadata() {
+    return this.metadata_ === undefined ? new LoggableElementMetadata() :
+                                          this.metadata_;
   }
 
   /** @package @return {string} */
@@ -377,6 +448,11 @@ class $$VisualElement {
       return 'zSoyVez';
     }
   }
+
+  /** @return {string} */
+  getNameForDebugging() {
+    return goog.DEBUG ? this.name_ || '' : '';
+  }
 }
 
 /**
@@ -384,6 +460,8 @@ class $$VisualElement {
  *
  * <p>This is for use only in Soy internal code and Soy generated JS. DO NOT use
  * this from handwritten code.
+ *
+ * create instances for tests.
  *
  * @final
  */
@@ -420,6 +498,22 @@ class $$VisualElementData {
   }
 }
 
+/**
+ * @param {!$$VisualElement} ve
+ * @return {!LoggableElementMetadata}
+ */
+function $$getMetadata(ve) {
+  return ve.getMetadata();
+}
+
+/**
+ * @param {!$$VisualElementData} veData
+ * @return {!LoggableElementMetadata}
+ */
+function $$getVeMetadata(veData) {
+  return $$getMetadata(veData.getVe());
+}
+
 exports = {
   $$hasMetadata,
   $$getLoggingAttribute,
@@ -437,4 +531,6 @@ exports = {
   setMetadataTestOnly,
   setUpLogging,
   tearDownLogging,
+  $$getMetadata,
+  $$getVeMetadata,
 };

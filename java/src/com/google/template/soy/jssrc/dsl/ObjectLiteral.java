@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 /** Represents a JavaScript object literal expression. */
@@ -35,10 +36,6 @@ abstract class ObjectLiteral extends Expression {
     return create(object, Expression::id);
   }
 
-  static ObjectLiteral createWithQuotedKeys(Map<String, Expression> object) {
-    return create(object, Expression::stringLiteral);
-  }
-
   private static ObjectLiteral create(
       Map<String, Expression> object, Function<String, Expression> createKeyFn) {
     ImmutableList.Builder<Statement> initialStatements = ImmutableList.builder();
@@ -48,6 +45,10 @@ abstract class ObjectLiteral extends Expression {
       values.put(createKeyFn.apply(entry.getKey()), entry.getValue());
     }
     return new AutoValue_ObjectLiteral(initialStatements.build(), values.build());
+  }
+
+  static ObjectLiteral createWithQuotedKeys(Map<String, Expression> object) {
+    return create(object, Expression::stringLiteral);
   }
 
   @Override
@@ -81,9 +82,14 @@ abstract class ObjectLiteral extends Expression {
   }
 
   @Override
-  public void collectRequires(RequiresCollector collector) {
+  public void collectRequires(Consumer<GoogRequire> collector) {
     for (Expression value : values().values()) {
       value.collectRequires(collector);
     }
+  }
+
+  @Override
+  boolean initialExpressionIsObjectLiteral() {
+    return true;
   }
 }

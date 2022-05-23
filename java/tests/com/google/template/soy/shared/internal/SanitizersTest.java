@@ -177,6 +177,17 @@ public class SanitizersTest {
     assertThat(Sanitizers.filterCssValue("#aabbcc")).isEqualTo("#aabbcc");
     assertThat(Sanitizers.filterCssValue("0px 5px 10px  rgba(0,0,0, 0.3)"))
         .isEqualTo("0px 5px 10px  rgba(0,0,0, 0.3)");
+    assertThat(Sanitizers.filterCssValue("hello, goodbye")).isEqualTo("hello, goodbye");
+    assertThat(Sanitizers.filterCssValue("hello, goodbye, ")).isEqualTo("hello, goodbye, ");
+    assertThat(Sanitizers.filterCssValue("hello,goodbye")).isEqualTo("hello,goodbye");
+    assertThat(Sanitizers.filterCssValue("hello, goodbye,")).isEqualTo("hello, goodbye,");
+    assertThat(Sanitizers.filterCssValue("rgb(1,2,3),hsl(4,5,6)"))
+        .isEqualTo("rgb(1,2,3),hsl(4,5,6)");
+    assertThat(Sanitizers.filterCssValue("rgb(1,2,3) 14px")).isEqualTo("rgb(1,2,3) 14px");
+    assertThat(Sanitizers.filterCssValue("hello  ,  maybe ,goodbye , "))
+        .isEqualTo("hello  ,  maybe ,goodbye , ");
+    assertThat(Sanitizers.filterCssValue("calc(100% - 30px)")).isEqualTo("calc(100% - 30px)");
+
     assertThat(Sanitizers.filterCssValue(" ")).isEqualTo("zSoyz");
     assertThat(Sanitizers.filterCssValue("expression")).isEqualTo("zSoyz");
     assertThat(Sanitizers.filterCssValue(StringData.forValue("expression"))).isEqualTo("zSoyz");
@@ -187,6 +198,13 @@ public class SanitizersTest {
     assertThat(Sanitizers.filterCssValue("</style><script>alert('foo')</script>/*"))
         .isEqualTo("zSoyz");
     assertThat(Sanitizers.filterCssValue("color:expression('whatever')")).isEqualTo("zSoyz");
+    assertThat(Sanitizers.filterCssValue(",hello")).isEqualTo("zSoyz");
+    assertThat(Sanitizers.filterCssValue("rgb(1,2,3)14px")).isEqualTo("zSoyz");
+    assertThat(Sanitizers.filterCssValue("calc(no & no)")).isEqualTo("zSoyz");
+    assertThat(Sanitizers.filterCssValue("calc(3rem / 4)")).isEqualTo("zSoyz");
+    assertThat(Sanitizers.filterCssValue("calc(3; vuln")).isEqualTo("zSoyz");
+    assertThat(Sanitizers.filterCssValue("calc(3); vuln")).isEqualTo("zSoyz");
+
     assertThat(
             Sanitizers.filterCssValue(
                 UnsafeSanitizedContentOrdainer.ordainAsSafe(
@@ -215,18 +233,6 @@ public class SanitizersTest {
                 UnsafeSanitizedContentOrdainer.ordainAsSafe(
                     "a=1 b=2 dir=\"ltr\"", SanitizedContent.ContentKind.ATTRIBUTES)))
         .isEqualTo("a=1 b=2 dir=\"ltr\"");
-    assertWithMessage("Should append a space to parse correctly")
-        .that(
-            Sanitizers.filterHtmlAttributes(
-                UnsafeSanitizedContentOrdainer.ordainAsSafe(
-                    "foo=\"bar\" dir=ltr", SanitizedContent.ContentKind.ATTRIBUTES)))
-        .isEqualTo("foo=\"bar\" dir=ltr ");
-    assertWithMessage("Should append a space to parse correctly")
-        .that(
-            Sanitizers.filterHtmlAttributes(
-                UnsafeSanitizedContentOrdainer.ordainAsSafe(
-                    "foo=\"bar\" checked", SanitizedContent.ContentKind.ATTRIBUTES)))
-        .isEqualTo("foo=\"bar\" checked ");
     assertWithMessage("No duplicate space should be added")
         .that(
             Sanitizers.filterHtmlAttributes(
@@ -367,20 +373,13 @@ public class SanitizersTest {
     assertThat(Sanitizers.filterNormalizeUri("javascript\uff1aalert(1337);"))
         .doesNotContain("javascript\uff1a");
 
-    // Tests of filtering hierarchy within uri path (/.. etc )
-    assertThat(Sanitizers.filterNormalizeUri("a/../")).isEqualTo("about:invalid#zSoyz");
-    assertThat(Sanitizers.filterNormalizeUri("/..?")).isEqualTo("about:invalid#zSoyz");
-    assertThat(Sanitizers.filterNormalizeUri("http://bad.url.com../../s../.#.."))
-        .isEqualTo("about:invalid#zSoyz");
-    assertThat(Sanitizers.filterNormalizeUri("http://badurl.com/normal/../unsafe"))
-        .isEqualTo("about:invalid#zSoyz");
-
     // Things we should accept.
     String[] goodForAllFilters =
         new String[] {
           "http://google.com/",
           "https://google.com/",
           "HTTP://google.com/",
+          "ftp://google.com/",
           "?a=b&c=d",
           "?a=b:c&d=e",
           "//foo.com:80/",
@@ -390,15 +389,7 @@ public class SanitizersTest {
           "#",
           "/",
           "",
-          "../",
-          ".%2E",
-          "..",
-          "%2E%2E",
-          "%2e%2e",
-          "%2e.",
-          "http://goodurl.com/.stuff/?/../.",
-          "http://good.url.com../..s../.#..",
-          "http://goodurl.com/normal/%2e/unsafe?",
+          "../"
         };
 
     for (String goodCase : goodForAllFilters) {
@@ -814,5 +805,34 @@ public class SanitizersTest {
     assertThat(Sanitizers.embedCssIntoHtml("</")).isEqualTo("<\\/");
     assertThat(Sanitizers.embedCssIntoHtml("</</</")).isEqualTo("<\\/<\\/<\\/");
   }
-  
+
+  @Test
+  public void testFilterHtmlScriptPhrasingData() {
+    assertThat(Sanitizers.filterHtmlScriptPhrasingData("foobar")).isEqualTo("foobar");
+
+    // simple bans
+    assertThat(Sanitizers.filterHtmlScriptPhrasingData("<script>")).isEqualTo("<script>");
+    assertThat(Sanitizers.filterHtmlScriptPhrasingData("</script>")).isEqualTo("zSoyz");
+    assertThat(Sanitizers.filterHtmlScriptPhrasingData("<!-- hello -->")).isEqualTo("zSoyz");
+
+    // case insensitive simple bans
+    assertThat(Sanitizers.filterHtmlScriptPhrasingData("<sCrIpT>")).isEqualTo("<sCrIpT>");
+    assertThat(Sanitizers.filterHtmlScriptPhrasingData("</sCrIpT>")).isEqualTo("zSoyz");
+    assertThat(Sanitizers.filterHtmlScriptPhrasingData("<!-- hello -->")).isEqualTo("zSoyz");
+
+    // matches at the end
+    assertThat(Sanitizers.filterHtmlScriptPhrasingData("< < <!--")).isEqualTo("zSoyz");
+    assertThat(Sanitizers.filterHtmlScriptPhrasingData("< < <script")).isEqualTo("< < <script");
+    assertThat(Sanitizers.filterHtmlScriptPhrasingData("< < </script")).isEqualTo("zSoyz");
+
+    // prefixes at the end
+    assertThat(Sanitizers.filterHtmlScriptPhrasingData("< < <!-")).isEqualTo("zSoyz");
+    assertThat(Sanitizers.filterHtmlScriptPhrasingData("< < <scr")).isEqualTo("< < <scr");
+    assertThat(Sanitizers.filterHtmlScriptPhrasingData("< < </")).isEqualTo("zSoyz");
+    assertThat(Sanitizers.filterHtmlScriptPhrasingData("< < <")).isEqualTo("zSoyz");
+
+    // near miss
+    assertThat(Sanitizers.filterHtmlScriptPhrasingData("< < <!- -")).isEqualTo("< < <!- -");
+    assertThat(Sanitizers.filterHtmlScriptPhrasingData("< < <scrip- -")).isEqualTo("< < <scrip- -");
+  }
 }

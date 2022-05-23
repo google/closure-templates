@@ -28,7 +28,6 @@ import java.util.List;
  * Builder for TemplateBasicNode.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public class TemplateBasicNodeBuilder extends TemplateNodeBuilder<TemplateBasicNodeBuilder> {
 
@@ -64,8 +63,7 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder<TemplateBasicN
       }
     }
 
-    setTemplateNames(
-        soyFileHeaderInfo.getNamespace() + templateName.identifier(), templateName.identifier());
+    setTemplateNames(templateName, soyFileHeaderInfo.getNamespace());
     return this;
   }
 

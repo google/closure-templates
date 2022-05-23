@@ -25,6 +25,6 @@ public final class I18nFunctions {
   private I18nFunctions() {}
 
   public static ImmutableList<SoySourceFunction> functions() {
-    return ImmutableList.of(new FormatNumFunction());
+    return ImmutableList.of(new FormatNumFunction(), new LocaleSortMethod());
   }
 }

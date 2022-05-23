@@ -44,7 +44,6 @@ import javax.annotation.ParametersAreNonnullByDefault;
  *
  * <p>There must be exactly one {@code <output>} element which specifies where the output should be
  * written. That output contains the input sources and the generated helper functions.
- *
  */
 @ParametersAreNonnullByDefault
 public final class GeneratePySanitizeEscapingDirectiveCode
@@ -123,6 +122,7 @@ public final class GeneratePySanitizeEscapingDirectiveCode
   protected void generatePrefix(StringBuilder outputCode) {
     // Emulate Python 3 style unicode string literals, and import necessary libraries.
     outputCode
+        .append("# pylint:skip-file\n")
         .append("from __future__ import unicode_literals\n")
         .append("\n")
         .append("import re\n")
@@ -131,6 +131,10 @@ public final class GeneratePySanitizeEscapingDirectiveCode
         .append("  from urllib.parse import quote  # Python 3\n")
         .append("except ImportError:\n")
         .append("  from urllib import quote  # Python 2\n")
+        .append("\n")
+        .append("# An empty string which is 'str' type in Python 2 (i.e. a bytestring)\n")
+        .append("# and 'str' type in Python 3 (i.e. a unicode string).\n")
+        .append("ACTUALLY_STR_EMPTY_STRING = str()\n")
         .append("\n")
         .append("try:\n")
         .append("  str = unicode\n")
@@ -155,9 +159,10 @@ public final class GeneratePySanitizeEscapingDirectiveCode
 
   @Override
   protected void generateReplacerFunction(StringBuilder outputCode, String mapName) {
+    String fnName = CaseFormat.UPPER_UNDERSCORE.to(CaseFormat.LOWER_UNDERSCORE, mapName);
     outputCode
-        .append("\ndef _REPLACER_FOR_")
-        .append(mapName)
+        .append("\ndef _replacer_for_")
+        .append(fnName)
         .append("(match):\n")
         .append("  ch = match.group(0)\n")
         .append("  return _ESCAPE_MAP_FOR_")
@@ -180,7 +185,7 @@ public final class GeneratePySanitizeEscapingDirectiveCode
         .append("_helper(v):\n")
         .append("  return ")
         .append(existingFunction)
-        .append("(str(v), \'\')\n")
+        .append("(str(v), ACTUALLY_STR_EMPTY_STRING)\n")
         .append("\n");
   }
 
@@ -209,13 +214,14 @@ public final class GeneratePySanitizeEscapingDirectiveCode
       throw new UnsupportedOperationException("Non ASCII prefix escapers not implemented yet.");
     }
     if (digest.getEscapesName() != null) {
-      String escapeMapName = digest.getEscapesName();
+      String escapeMapName =
+          CaseFormat.UPPER_UNDERSCORE.to(CaseFormat.LOWER_UNDERSCORE, digest.getEscapesName());
       String matcherName = digest.getMatcherName();
       outputCode
           .append("  return _MATCHER_FOR_")
           .append(matcherName)
           .append(".sub(\n")
-          .append("      _REPLACER_FOR_")
+          .append("      _replacer_for_")
           .append(escapeMapName)
           .append(", value)\n");
     } else {

@@ -38,13 +38,13 @@ import java.util.Set;
  * com.google.template.soy.parsepasses.contextautoesc.Context#forContentKind(SanitizedContentKind)}).
  *
  * <p>TODO(lukes): delete this class, move the backend specific functionality into the backends
- *
  */
 public final class NodeContentKinds {
 
   private static final ImmutableMap<SanitizedContentKind, String> KIND_TO_JS_CTOR_NAME =
       ImmutableMap.<SanitizedContentKind, String>builder()
           .put(SanitizedContentKind.HTML, "goog.soy.data.SanitizedHtml")
+          .put(SanitizedContentKind.HTML_ELEMENT, "goog.soy.data.SanitizedHtml")
           .put(SanitizedContentKind.ATTRIBUTES, "goog.soy.data.SanitizedHtmlAttribute")
           .put(SanitizedContentKind.JS, "goog.soy.data.SanitizedJs")
           .put(SanitizedContentKind.URI, "goog.soy.data.SanitizedUri")
@@ -58,14 +58,15 @@ public final class NodeContentKinds {
   /** The Javascript sanitized ordainer functions. */
   private static final ImmutableMap<SanitizedContentKind, String> KIND_TO_JS_ORDAINER_NAME =
       ImmutableMap.<SanitizedContentKind, String>builder()
-          .put(SanitizedContentKind.HTML, "soydata.VERY_UNSAFE.ordainSanitizedHtml")
-          .put(SanitizedContentKind.ATTRIBUTES, "soydata.VERY_UNSAFE.ordainSanitizedHtmlAttribute")
-          .put(SanitizedContentKind.JS, "soydata.VERY_UNSAFE.ordainSanitizedJs")
-          .put(SanitizedContentKind.URI, "soydata.VERY_UNSAFE.ordainSanitizedUri")
-          .put(SanitizedContentKind.CSS, "soydata.VERY_UNSAFE.ordainSanitizedCss")
+          .put(SanitizedContentKind.HTML, "soy.VERY_UNSAFE.ordainSanitizedHtml")
+          .put(SanitizedContentKind.HTML_ELEMENT, "soy.VERY_UNSAFE.ordainSanitizedHtml")
+          .put(SanitizedContentKind.ATTRIBUTES, "soy.VERY_UNSAFE.ordainSanitizedHtmlAttribute")
+          .put(SanitizedContentKind.JS, "soy.VERY_UNSAFE.ordainSanitizedJs")
+          .put(SanitizedContentKind.URI, "soy.VERY_UNSAFE.ordainSanitizedUri")
+          .put(SanitizedContentKind.CSS, "soy.VERY_UNSAFE.ordainSanitizedCss")
           .put(
               SanitizedContentKind.TRUSTED_RESOURCE_URI,
-              "soydata.VERY_UNSAFE.ordainSanitizedTrustedResourceUri")
+              "soy.VERY_UNSAFE.ordainSanitizedTrustedResourceUri")
           .put(SanitizedContentKind.TEXT, "")
           .build();
 
@@ -79,43 +80,41 @@ public final class NodeContentKinds {
           ImmutableMap.<SanitizedContentKind, String>builder()
               .put(
                   SanitizedContentKind.HTML,
-                  "soydata.VERY_UNSAFE.$$ordainSanitizedHtmlForInternalBlocks")
+                  "soy.VERY_UNSAFE.$$ordainSanitizedHtmlForInternalBlocks")
+              .put(
+                  SanitizedContentKind.HTML_ELEMENT,
+                  "soy.VERY_UNSAFE.$$ordainSanitizedHtmlForInternalBlocks")
               .put(
                   SanitizedContentKind.ATTRIBUTES,
-                  "soydata.VERY_UNSAFE.$$ordainSanitizedAttributesForInternalBlocks")
+                  "soy.VERY_UNSAFE.$$ordainSanitizedAttributesForInternalBlocks")
+              .put(SanitizedContentKind.JS, "soy.VERY_UNSAFE.$$ordainSanitizedJsForInternalBlocks")
               .put(
-                  SanitizedContentKind.JS,
-                  "soydata.VERY_UNSAFE.$$ordainSanitizedJsForInternalBlocks")
+                  SanitizedContentKind.URI, "soy.VERY_UNSAFE.$$ordainSanitizedUriForInternalBlocks")
               .put(
-                  SanitizedContentKind.URI,
-                  "soydata.VERY_UNSAFE.$$ordainSanitizedUriForInternalBlocks")
-              .put(
-                  SanitizedContentKind.CSS,
-                  "soydata.VERY_UNSAFE.$$ordainSanitizedCssForInternalBlocks")
+                  SanitizedContentKind.CSS, "soy.VERY_UNSAFE.$$ordainSanitizedCssForInternalBlocks")
               .put(
                   SanitizedContentKind.TRUSTED_RESOURCE_URI,
-                  "soydata.VERY_UNSAFE.$$ordainSanitizedTrustedResourceUriForInternalBlocks")
+                  "soy.VERY_UNSAFE.$$ordainSanitizedTrustedResourceUriForInternalBlocks")
               .put(SanitizedContentKind.TEXT, "")
               .build();
 
   /** The JavaScript method to unpack a safe proto to sanitized object. */
   private static final ImmutableMap<String, String> PROTO_TO_JS_UNPACK_FN =
       ImmutableMap.<String, String>builder()
-          .put(SafeHtmlProto.getDescriptor().getFullName(), "soydata.unpackProtoToSanitizedHtml")
-          .put(SafeScriptProto.getDescriptor().getFullName(), "soydata.unpackProtoToSanitizedJs")
-          .put(SafeUrlProto.getDescriptor().getFullName(), "soydata.unpackProtoToSanitizedUri")
-          .put(SafeStyleProto.getDescriptor().getFullName(), "soydata.unpackProtoToSanitizedCss")
-          .put(
-              SafeStyleSheetProto.getDescriptor().getFullName(),
-              "soydata.unpackProtoToSanitizedCss")
+          .put(SafeHtmlProto.getDescriptor().getFullName(), "unpackProtoToSanitizedHtml")
+          .put(SafeScriptProto.getDescriptor().getFullName(), "unpackProtoToSanitizedJs")
+          .put(SafeUrlProto.getDescriptor().getFullName(), "unpackProtoToSanitizedUri")
+          .put(SafeStyleProto.getDescriptor().getFullName(), "unpackProtoToSanitizedCss")
+          .put(SafeStyleSheetProto.getDescriptor().getFullName(), "unpackProtoToSanitizedCss")
           .put(
               TrustedResourceUrlProto.getDescriptor().getFullName(),
-              "soydata.unpackProtoToSanitizedTrustedResourceUri")
+              "unpackProtoToSanitizedTrustedResourceUri")
           .build();
 
   /** The Python sanitized classes. */
   private static final ImmutableMap<SanitizedContentKind, String> KIND_TO_PY_SANITIZED_NAME =
       ImmutableMap.<SanitizedContentKind, String>builder()
+          .put(SanitizedContentKind.HTML_ELEMENT, "sanitize.SanitizedHtml")
           .put(SanitizedContentKind.HTML, "sanitize.SanitizedHtml")
           .put(SanitizedContentKind.ATTRIBUTES, "sanitize.SanitizedHtmlAttribute")
           .put(SanitizedContentKind.JS, "sanitize.SanitizedJs")
@@ -180,11 +179,9 @@ public final class NodeContentKinds {
    * Returns the namespace to {@code goog.require} to access the ordainer functions provided by
    * {@link #toJsSanitizedContentOrdainer(SanitizedContentKind)} and {@link
    * #toJsSanitizedContentOrdainerForInternalBlocks(SanitizedContentKind)}.
-   *
-   * @param contentKind
    */
   public static String getJsImportForOrdainersFunctions(SanitizedContentKind contentKind) {
-    return "soydata.VERY_UNSAFE";
+    return "soy";
   }
 
   /** Returns the unpack function for converting safe protos to JS SanitizedContent. */

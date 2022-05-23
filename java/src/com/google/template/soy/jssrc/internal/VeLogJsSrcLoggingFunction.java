@@ -40,9 +40,9 @@ public final class VeLogJsSrcLoggingFunction implements SoyJavaScriptSourceFunct
   @Override
   public JavaScriptValue applyForJavaScriptSource(
       JavaScriptValueFactory factory, List<JavaScriptValue> args, JavaScriptPluginContext context) {
-    return factory.callNamespaceFunction(
+    return factory.callModuleFunction(
         "soy.velog",
-        "soy.velog.$$getLoggingFunctionAttribute",
+        "$$getLoggingFunctionAttribute",
         factory.callNamespaceFunction("xid", "xid", args.get(0)),
         args.get(1),
         args.get(2));

@@ -56,11 +56,9 @@ final class UnescapingVisitor {
     }
     String unescaped = UnescapeUtils.unescapeHtml(node.getRawText());
     if (!unescaped.equals(node.getRawText())) {
-      node.getParent()
-          .replaceChild(
-              node,
-              new RawTextNode(
-                  node.getId(), unescaped, node.getSourceLocation(), node.getHtmlContext()));
+      RawTextNode textNode = new RawTextNode(node.getId(), unescaped, node.getSourceLocation());
+      textNode.setHtmlContext(node.getHtmlContext());
+      node.getParent().replaceChild(node, textNode);
     }
   }
 }

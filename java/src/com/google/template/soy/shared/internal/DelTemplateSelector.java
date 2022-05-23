@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableTable;
 import com.google.common.collect.Table;
+import com.google.common.collect.Table.Cell;
 import com.google.common.collect.Tables;
 import com.google.errorprone.annotations.Immutable;
 import java.util.LinkedHashMap;
@@ -64,7 +65,7 @@ public final class DelTemplateSelector<T> {
       }
       delTemplateNameToValuesBuilder.putAll(delTemplateName, group.delpackageToValue.values());
     }
-    this.nameAndVariantToGroup = nameAndVariantBuilder.build();
+    this.nameAndVariantToGroup = nameAndVariantBuilder.buildOrThrow();
     this.delTemplateNameToValues = delTemplateNameToValuesBuilder.build();
   }
 
@@ -106,6 +107,15 @@ public final class DelTemplateSelector<T> {
       }
     }
     return null;
+  }
+
+  public Builder<T> toBuilder() {
+    Builder<T> builder = new Builder<>();
+    for (Cell<String, String, Group<T>> cell : nameAndVariantToGroup.cellSet()) {
+      builder.nameAndVariantToGroup.put(
+          cell.getRowKey(), cell.getColumnKey(), cell.getValue().toBuilder());
+    }
+    return builder;
   }
 
   /** A Builder for DelTemplateSelector. */
@@ -157,12 +167,19 @@ public final class DelTemplateSelector<T> {
      */
     T select(Predicate<String> activeDelPackageSelector) {
       Map.Entry<String, T> selected = null;
+      // Select whatever delpackage is active and ensure that only one is activated.  If none are
+      // active use the default.
+      // This is analagous to what happens in JavaScript, see soy.$$registerDelegateFn.  The main
+      // difference is that in JavaScript delegate conflicts are resolved/detected at code loading
+      // time.  In Java it is only at rendering time because that is when the set of active packages
+      // is determined.
+      // In theory we could validate the Predicate against the whole DelTemplateSelector at the
+      // start of rendering which would flag erroneous Predicates even if no deltempate group
+      // containing the conflict is ever rendered. However, this sounds like a potentially expensive
+      // operation, so for now we delay detecting conflicts until selection time.
       for (Map.Entry<String, T> entry : delpackageToValue.entrySet()) {
         if (activeDelPackageSelector.test(entry.getKey())) {
           if (selected != null) {
-            // how important is this?  maybe instead of checking at deltemplate selection time we
-            // should validate active packages at the beginning of rendering (this is what the js
-            // impl does, see soy.$$registerDelegateFn)
             throw new IllegalArgumentException(
                 String.format(
                     "For delegate template '%s', found two active implementations with equal"
@@ -176,6 +193,13 @@ public final class DelTemplateSelector<T> {
         return selected.getValue();
       }
       return defaultValue;
+    }
+
+    Builder<T> toBuilder() {
+      Builder<T> builder = new Builder<>(formattedName);
+      builder.defaultValue = defaultValue;
+      builder.delpackageToValue.putAll(delpackageToValue);
+      return builder;
     }
 
     static final class Builder<T> {

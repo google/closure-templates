@@ -21,12 +21,14 @@ import static org.junit.Assert.assertThrows;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.template.soy.SoyFileSetParserBuilder;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.SoyFileSetNode;
+import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import java.util.Set;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -43,8 +45,8 @@ public class PrintDirectiveRewritingTest {
     testRewritten("{@param a : ?}{$a |hola: 1, 'x'}", "{hola($a, 1, 'x')}");
     testRewritten("{@param a : ?}{@param y : ?}{$a |hola: 1, 'x', $y}", "{hola($a, 1, 'x', $y)}");
     testRewritten(
-        "{@param a : ?}{@param y : ?}{$a |hola: 1, 'x', $y, isNonnull($y)}",
-        "{hola($a, 1, 'x', $y, isNonnull($y))}");
+        "{@param a : ?}{@param y : ?}{$a |hola: 1, 'x', $y, $y != null}",
+        "{hola($a, 1, 'x', $y, $y != null)}");
     testRewritten("{@param a : ?}{$a |hola: 1 |hola: 2}", "{hola(hola($a, 1), 2)}");
   }
 
@@ -74,9 +76,11 @@ public class PrintDirectiveRewritingTest {
             .fileSet();
     SimplifyVisitor simplifyVisitor =
         SimplifyVisitor.create(
-            fileSet.getNodeIdGenerator(), ImmutableList.copyOf(fileSet.getChildren()));
+            fileSet.getNodeIdGenerator(),
+            ImmutableList.copyOf(fileSet.getChildren()),
+            ErrorReporter.exploding());
     simplifyVisitor.simplify(fileSet.getChild(0));
-    return fileSet.getChild(0).getChild(0).getChild(0).toSourceString();
+    return ((TemplateNode) fileSet.getChild(0).getChild(0)).getChild(0).toSourceString();
   }
 
   @SoyFunctionSignature(

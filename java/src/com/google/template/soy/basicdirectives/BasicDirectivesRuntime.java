@@ -17,6 +17,7 @@ package com.google.template.soy.basicdirectives;
 
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.ForwardingLoggingAdvisingAppendable;
 import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
@@ -26,7 +27,6 @@ import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.restricted.StringData;
-import java.io.Closeable;
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -76,8 +76,7 @@ public final class BasicDirectivesRuntime {
     return new TruncateAppendable(appendable, maxLength, addEllipsis);
   }
 
-  private static final class TruncateAppendable extends LoggingAdvisingAppendable
-      implements Closeable {
+  private static final class TruncateAppendable extends LoggingAdvisingAppendable {
     private final StringBuilder buffer;
     private final LoggingAdvisingAppendable delegate;
     private final int maxLength;
@@ -124,11 +123,12 @@ public final class BasicDirectivesRuntime {
     }
 
     @Override
-    protected void notifyContentKind(ContentKind kind) throws IOException {
+    protected void notifyKindAndDirectionality(ContentKind kind, @Nullable Dir dir)
+        throws IOException {
       // |truncate converts all input to TEXT, so label the output appendable as such. This isn't
       // strictly necessary, as the autoescaper will have already made sure the output is properly
       // escaped, but it helps make the intent clear.
-      delegate.setSanitizedContentKind(ContentKind.TEXT);
+      delegate.setKindAndDirectionality(ContentKind.TEXT, dir);
     }
 
     @Override
@@ -144,8 +144,11 @@ public final class BasicDirectivesRuntime {
     }
 
     @Override
-    public void close() throws IOException {
+    public void flushBuffers(int depth) throws IOException {
       delegate.append(truncate(buffer.toString(), maxLength, addEllipsis));
+      if (depth > 0) {
+        delegate.flushBuffers(depth - 1);
+      }
     }
   }
 
@@ -384,4 +387,6 @@ public final class BasicDirectivesRuntime {
   private static String coerceToString(@Nullable SoyValue v) {
     return v == null ? "null" : v.coerceToString();
   }
+
+  private BasicDirectivesRuntime() {}
 }

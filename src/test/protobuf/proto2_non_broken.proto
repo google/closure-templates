@@ -1,6 +1,5 @@
 syntax = "proto2";
 
-
 option java_package = "com.google.template.soy.testing.nonbroken";
 
 package soy.test.nonbroken;
@@ -16,4 +15,9 @@ message Proto2ImplicitDefaults {
   message SubMessage {
     optional string field = 1;
   }
+}
+
+message Foo {
+  optional string string_field = 1;
+  optional int32 bool_field = 2;
 }

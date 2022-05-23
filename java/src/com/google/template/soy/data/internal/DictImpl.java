@@ -32,6 +32,7 @@ import com.google.template.soy.data.restricted.StringData;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import javax.annotation.Nonnull;
 import javax.annotation.ParametersAreNonnullByDefault;
 
@@ -64,15 +65,15 @@ import javax.annotation.ParametersAreNonnullByDefault;
  * RuntimeMapTypeTracker.Type#LEGACY_OBJECT_MAP_OR_RECORD} state, and later invocations of SoyMap
  * methods cause runtime errors.
  *
- * every {@code legacy_object_map} to {@code map} and delete {@code legacy_object_map}. This will
- * require changing every plain JS object passed in to Soy to be an ES6 Map with the same entries.
- * It should not require any changes to Java renderers: every java.util.Map becomes a DictImpl
- * instance that can act as a {@code map}. After the migration, Java renderers that want to take
- * advantage of nonstring keys must wrap their java.util.Maps in {@link
- * com.google.template.soy.data.SoyValueConverter#markAsSoyMap}.
+ * <p>
+ * We want to migrate every {@code legacy_object_map} to {@code map} and delete {@code
+ * legacy_object_map}. This will require changing every plain JS object passed in to Soy to be an
+ * ES6 Map with the same entries. It should not require any changes to Java renderers: every
+ * java.util.Map becomes a DictImpl instance that can act as a {@code map}. After the migration,
+ * Java renderers that want to take advantage of nonstring keys must wrap their java.util.Maps in
+ * {@link com.google.template.soy.data.SoyValueConverter#markAsSoyMap}.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 @ParametersAreNonnullByDefault
 public final class DictImpl extends SoyAbstractValue implements SoyDict, SoyMap {
@@ -123,6 +124,24 @@ public final class DictImpl extends SoyAbstractValue implements SoyDict, SoyMap 
   public final SoyValueProvider getFieldProvider(String name) {
     typeTracker.maybeSetLegacyObjectMapOrRecordType();
     return providerMap.get(name);
+  }
+
+  @Override
+  public final ImmutableMap<String, SoyValueProvider> recordAsMap() {
+    typeTracker.maybeSetLegacyObjectMapOrRecordType();
+    return ImmutableMap.copyOf(providerMap);
+  }
+
+  @Override
+  public void forEach(BiConsumer<String, ? super SoyValueProvider> action) {
+    typeTracker.maybeSetLegacyObjectMapOrRecordType();
+    providerMap.forEach(action);
+  }
+
+  @Override
+  public int recordSize() {
+    typeTracker.maybeSetLegacyObjectMapOrRecordType();
+    return providerMap.size();
   }
 
   @Override
@@ -196,7 +215,7 @@ public final class DictImpl extends SoyAbstractValue implements SoyDict, SoyMap 
   @Override
   @Nonnull
   public final Map<String, ? extends SoyValue> asResolvedJavaStringMap() {
-    return Maps.transformValues(asJavaStringMap(), Transforms.RESOLVE_FUNCTION);
+    return Maps.transformValues(asJavaStringMap(), SoyValueProvider::resolve);
   }
 
   @Nonnull
@@ -214,7 +233,8 @@ public final class DictImpl extends SoyAbstractValue implements SoyDict, SoyMap 
       return key.stringValue();
     } catch (SoyDataException e) {
       throw new SoyDataException(
-          "SoyDict accessed with non-string key (got key type " + key.getClass().getName() + ").");
+          "SoyDict accessed with non-string key (got key type " + key.getClass().getName() + ").",
+          e);
     }
   }
 
@@ -249,7 +269,12 @@ public final class DictImpl extends SoyAbstractValue implements SoyDict, SoyMap 
       }
       key.render(appendable);
       appendable.append(": ");
-      value.render(appendable);
+      // TODO: Remove this once we box record values as SoyValueProvider
+      if (value == null) {
+        appendable.append("null");
+      } else {
+        value.render(appendable);
+      }
     }
     appendable.append('}');
   }

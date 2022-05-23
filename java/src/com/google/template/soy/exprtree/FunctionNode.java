@@ -16,54 +16,182 @@
 
 package com.google.template.soy.exprtree;
 
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
+import com.google.auto.value.AutoOneOf;
+import com.google.auto.value.AutoValue;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.SourceLocation.Point;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.restricted.SoyFunction;
+import com.google.template.soy.shared.restricted.SoyFunctions;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
+import com.google.template.soy.types.FunctionType;
 import com.google.template.soy.types.SoyType;
 import java.util.List;
+import java.util.Optional;
 import javax.annotation.Nullable;
 
 /**
  * A node representing a function (with args as children).
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
-public final class FunctionNode extends AbstractParentExprNode {
+public final class FunctionNode extends AbstractParentExprNode implements ExprNode.CallableExpr {
 
-  private final Identifier name;
+  public static final SoySourceFunction UNRESOLVED =
+      new SoySourceFunction() {
+        @Override
+        public String toString() {
+          return "UNRESOLVED";
+        }
+      };
+
+  /** All the information a runtime needs to execute a call to an extern. */
+  @AutoValue
+  public abstract static class ExternRef {
+    public static ExternRef of(SourceFilePath path, String name, FunctionType signature) {
+      return new AutoValue_FunctionNode_ExternRef(path, name, signature);
+    }
+
+    public abstract SourceFilePath path();
+
+    public abstract String name();
+
+    public abstract FunctionType signature();
+  }
 
   /**
    * Either a {@link SoyFunction} or a {@link SoySourceFunction}. TODO(b/19252021): use
    * SoySourceFunction everywhere.
    */
-  private Object soyFunction;
+  @AutoOneOf(FunctionRef.Type.class)
+  public abstract static class FunctionRef {
+    enum Type {
+      SOY_FUNCTION,
+      SOY_SOURCE_FUNCTION,
+      EXTERN
+    }
 
-  /** The parameter types this function allows. */
-  @Nullable private ImmutableList<SoyType> allowedParamTypes;
+    public static FunctionRef of(Object soyFunction) {
+      if (soyFunction instanceof SoyFunction) {
+        return of((SoyFunction) soyFunction);
+      } else if (soyFunction instanceof SoySourceFunction) {
+        return of((SoySourceFunction) soyFunction);
+      } else if (soyFunction instanceof ExternRef) {
+        return of((ExternRef) soyFunction);
+      } else {
+        throw new ClassCastException(String.valueOf(soyFunction));
+      }
+    }
 
-  /** Convenience constructor for when the function is available. */
-  public FunctionNode(Identifier name, Object soyFunction, SourceLocation sourceLocation) {
-    this(name, sourceLocation);
-    setSoyFunction(soyFunction);
+    public static FunctionRef of(SoyFunction soyFunction) {
+      return AutoOneOf_FunctionNode_FunctionRef.soyFunction(soyFunction);
+    }
+
+    public static FunctionRef of(SoySourceFunction soySourceFunction) {
+      return AutoOneOf_FunctionNode_FunctionRef.soySourceFunction(soySourceFunction);
+    }
+
+    public static FunctionRef of(ExternRef functionType) {
+      return AutoOneOf_FunctionNode_FunctionRef.extern(functionType);
+    }
+
+    abstract Type type();
+
+    abstract SoyFunction soyFunction();
+
+    abstract SoySourceFunction soySourceFunction();
+
+    abstract ExternRef extern();
+
+    public Object either() {
+      switch (type()) {
+        case SOY_FUNCTION:
+          return soyFunction();
+        case SOY_SOURCE_FUNCTION:
+          return soySourceFunction();
+        case EXTERN:
+          return extern();
+      }
+      throw new AssertionError();
+    }
   }
 
-  /**
-   * @param soyFunction The SoyFunction.
-   * @param sourceLocation The node's source location.
-   */
-  public FunctionNode(Identifier name, SourceLocation sourceLocation) {
+  private static final class FunctionState {
+    @Nullable private FunctionRef function;
+    @Nullable private ImmutableList<SoyType> allowedParamTypes;
+    private boolean allowedToInvokeAsFunction = false;
+  }
+
+  public static FunctionNode newPositional(
+      Identifier name, BuiltinFunction soyFunction, SourceLocation sourceLocation) {
+    FunctionNode fn =
+        new FunctionNode(
+            sourceLocation, name, null, ParamsStyle.POSITIONAL, ImmutableList.of(), null);
+    fn.setSoyFunction(soyFunction);
+    return fn;
+  }
+
+  public static FunctionNode newPositional(
+      Identifier name, SoySourceFunction soyFunction, SourceLocation sourceLocation) {
+    FunctionNode fn =
+        new FunctionNode(
+            sourceLocation, name, null, ParamsStyle.POSITIONAL, ImmutableList.of(), null);
+    fn.setSoyFunction(soyFunction);
+    return fn;
+  }
+
+  public static FunctionNode newPositional(
+      Identifier name, SourceLocation sourceLocation, @Nullable List<Point> commaLocations) {
+    return new FunctionNode(
+        sourceLocation,
+        name,
+        null,
+        ParamsStyle.POSITIONAL,
+        ImmutableList.of(),
+        commaLocations == null ? null : ImmutableList.copyOf(commaLocations));
+  }
+
+  public static FunctionNode newNamed(
+      Identifier name, Iterable<Identifier> paramNames, SourceLocation sourceLocation) {
+    return new FunctionNode(
+        sourceLocation, name, null, ParamsStyle.NAMED, ImmutableList.copyOf(paramNames), null);
+  }
+
+  private final Identifier name;
+  private final ExprNode nameExpr;
+  private final ParamsStyle paramsStyle;
+  /** When paramsStyle is NAMED this contains the list of named parameters. Otherwise empty. */
+  private final ImmutableList<Identifier> paramNames;
+
+  @Nullable private final ImmutableList<SourceLocation.Point> commaLocations;
+
+  // Mutable state stored in this AST node from various passes.
+  private final FunctionState state = new FunctionState();
+
+  FunctionNode(
+      SourceLocation sourceLocation,
+      Identifier name,
+      ExprNode nameExpr,
+      ParamsStyle paramsStyle,
+      ImmutableList<Identifier> paramNames,
+      @Nullable ImmutableList<Point> commaLocations) {
     super(sourceLocation);
+    Preconditions.checkArgument(paramNames.isEmpty() || paramsStyle == ParamsStyle.NAMED);
+    Preconditions.checkArgument((name == null) != (nameExpr == null));
     this.name = name;
+    this.nameExpr = nameExpr;
+    this.paramsStyle = paramsStyle;
+    this.paramNames = paramNames;
+    this.commaLocations = commaLocations;
   }
 
   /**
@@ -74,8 +202,18 @@ public final class FunctionNode extends AbstractParentExprNode {
   private FunctionNode(FunctionNode orig, CopyState copyState) {
     super(orig, copyState);
     this.name = orig.name;
-    this.soyFunction = orig.soyFunction;
-    this.allowedParamTypes = orig.allowedParamTypes;
+    this.nameExpr = orig.nameExpr != null ? orig.nameExpr.copy(copyState) : null;
+    this.paramsStyle = orig.paramsStyle;
+    this.paramNames = orig.paramNames;
+    this.state.function = orig.state.function;
+    this.state.allowedParamTypes = orig.state.allowedParamTypes;
+    this.state.allowedToInvokeAsFunction = orig.state.allowedToInvokeAsFunction;
+    this.commaLocations = orig.commaLocations;
+  }
+
+  @Override
+  public Optional<ImmutableList<SourceLocation.Point>> getCommaLocations() {
+    return Optional.ofNullable(commaLocations);
   }
 
   @Override
@@ -83,60 +221,127 @@ public final class FunctionNode extends AbstractParentExprNode {
     return Kind.FUNCTION_NODE;
   }
 
+  /** Returns whether this function has a static name. */
+  public boolean hasStaticName() {
+    return name != null;
+  }
+
   /** Returns the function name. */
-  public String getFunctionName() {
+  public String getStaticFunctionName() {
     return name.identifier();
+  }
+
+  /** Returns the function name or empty string if there is no static name. */
+  public String getFunctionName() {
+    return name != null ? name.identifier() : "";
+  }
+
+  /** If this function does not have a static name then it has a name expression. */
+  public ExprNode getNameExpr() {
+    return Preconditions.checkNotNull(nameExpr);
+  }
+
+  @Override
+  public ParamsStyle getParamsStyle() {
+    return paramsStyle;
+  }
+
+  @Override
+  public Identifier getIdentifier() {
+    return name;
   }
 
   /** Returns the location of the function name. */
   public SourceLocation getFunctionNameLocation() {
-    return name.location();
+    return name != null ? name.location() : nameExpr.getSourceLocation();
+  }
+
+  public boolean isResolved() {
+    return state.function != null;
+  }
+
+  public boolean allowedToInvokeAsFunction() {
+    return this.state.allowedToInvokeAsFunction;
+  }
+
+  public void setAllowedToInvokeAsFunction(boolean cond) {
+    this.state.allowedToInvokeAsFunction = cond;
   }
 
   public Object getSoyFunction() {
-    checkState(this.soyFunction != null, "setSoyFunction() hasn't been called yet");
-    return soyFunction;
+    checkState(
+        this.state.function != null,
+        "setSoyFunction() hasn't been called yet %s %s",
+        name,
+        getSourceLocation());
+    return state.function.either();
   }
 
   public void setSoyFunction(Object soyFunction) {
     checkNotNull(soyFunction);
-    checkState(soyFunction instanceof SoyFunction || soyFunction instanceof SoySourceFunction);
-    checkState(this.soyFunction == null, "setSoyFunction() was already called");
-    if (soyFunction instanceof SoyFunction) {
-      checkArgument(name.identifier().equals(((SoyFunction) soyFunction).getName()));
-    }
-    this.soyFunction = soyFunction;
+    FunctionRef newRef = FunctionRef.of(soyFunction);
+    checkState(
+        this.state.function == null || this.state.function.equals(newRef),
+        "setSoyFunction() was already called; %s; %s (previous) != %s (current)",
+        getSourceLocation().toLineColumnString(),
+        this.state.function,
+        newRef);
+    this.state.function = newRef;
   }
 
   public void setAllowedParamTypes(List<SoyType> allowedParamTypes) {
+    checkState(paramsStyle == ParamsStyle.POSITIONAL || numChildren() == 0);
     checkState(
         allowedParamTypes.size() == numChildren(),
         "allowedParamTypes.size (%s) != numChildren (%s)",
         allowedParamTypes.size(),
         numChildren());
-    this.allowedParamTypes = ImmutableList.copyOf(allowedParamTypes);
+    this.state.allowedParamTypes = ImmutableList.copyOf(allowedParamTypes);
   }
 
   /** Returns null if ResolveExpressionTypesPass has not run yet. */
   @Nullable
   public ImmutableList<SoyType> getAllowedParamTypes() {
-    return allowedParamTypes;
+    checkState(paramsStyle == ParamsStyle.POSITIONAL || numChildren() == 0);
+    return state.allowedParamTypes;
+  }
+
+  /**
+   * Returns the list of proto initialization call param names.
+   *
+   * <p>Each param name corresponds to each of this node's children, which are the param values.
+   */
+  @Override
+  public ImmutableList<Identifier> getParamNames() {
+    Preconditions.checkState(paramsStyle == ParamsStyle.NAMED || numChildren() == 0);
+    return paramNames;
   }
 
   @Override
   public String toSourceString() {
-
     StringBuilder sourceSb = new StringBuilder();
-    sourceSb.append(getFunctionName()).append('(');
+    sourceSb
+        .append(hasStaticName() ? getStaticFunctionName() : nameExpr.toSourceString())
+        .append('(');
 
-    boolean isFirst = true;
-    for (ExprNode child : getChildren()) {
-      if (isFirst) {
-        isFirst = false;
-      } else {
-        sourceSb.append(", ");
+    if (paramsStyle == ParamsStyle.POSITIONAL) {
+      boolean isFirst = true;
+      for (ExprNode child : getChildren()) {
+        if (isFirst) {
+          isFirst = false;
+        } else {
+          sourceSb.append(", ");
+        }
+        sourceSb.append(child.toSourceString());
       }
-      sourceSb.append(child.toSourceString());
+    } else if (paramsStyle == ParamsStyle.NAMED) {
+      for (int i = 0; i < numChildren(); i++) {
+        if (i > 0) {
+          sourceSb.append(", ");
+        }
+        sourceSb.append(paramNames.get(i)).append(": ");
+        sourceSb.append(getChild(i).toSourceString());
+      }
     }
 
     sourceSb.append(')');
@@ -154,9 +359,22 @@ public final class FunctionNode extends AbstractParentExprNode {
    * <p>See {@link SoyPureFunction} for the definition of a pure function.
    */
   public boolean isPure() {
-    if (soyFunction instanceof BuiltinFunction) {
-      return ((BuiltinFunction) soyFunction).isPure();
+    if (!isResolved()) {
+      return false;
     }
-    return soyFunction.getClass().isAnnotationPresent(SoyPureFunction.class);
+    if (state.function.type() == FunctionRef.Type.EXTERN) {
+      return false;
+    }
+    return SoyFunctions.isPure(state.function.either());
+  }
+
+  @Override
+  public List<ExprNode> getParams() {
+    return getChildren();
+  }
+
+  @Override
+  public int numParams() {
+    return numChildren();
   }
 }

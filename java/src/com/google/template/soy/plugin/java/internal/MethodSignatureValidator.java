@@ -18,8 +18,8 @@ package com.google.template.soy.plugin.java.internal;
 
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.plugin.java.ReadMethodData;
 import com.google.template.soy.plugin.java.internal.PluginAnalyzer.PluginMetadata;
-import com.google.template.soy.plugin.java.internal.PluginSignatureReader.ReadMethodData;
 import com.google.template.soy.plugin.java.restricted.MethodSignature;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import java.io.File;
@@ -37,7 +37,7 @@ public class MethodSignatureValidator {
   private final CompiledJarsPluginSignatureReader sigReader;
 
   public MethodSignatureValidator(List<File> pluginRuntimeJars, ErrorReporter errorReporter) {
-    this.sigReader = new CompiledJarsPluginSignatureReader(pluginRuntimeJars);
+    this.sigReader = new CompiledJarsPluginSignatureReader(pluginRuntimeJars, true);
     this.errorReporter = errorReporter;
   }
 

@@ -16,22 +16,36 @@
 
 package com.google.template.soy.exprtree;
 
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * A node representing a list literal (with items as children).
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public final class ListLiteralNode extends AbstractParentExprNode {
+
+  private final Optional<ImmutableList<SourceLocation.Point>> commaLocations;
+
+  /** @param items The expressions for the items in this list. */
+  public ListLiteralNode(
+      List<ExprNode> items,
+      SourceLocation sourceLocation,
+      List<SourceLocation.Point> commaLocations) {
+    super(sourceLocation);
+    addChildren(items);
+    this.commaLocations = Optional.of(ImmutableList.copyOf(commaLocations));
+  }
 
   /** @param items The expressions for the items in this list. */
   public ListLiteralNode(List<ExprNode> items, SourceLocation sourceLocation) {
     super(sourceLocation);
     addChildren(items);
+    this.commaLocations = Optional.empty();
   }
 
   /**
@@ -41,6 +55,11 @@ public final class ListLiteralNode extends AbstractParentExprNode {
    */
   private ListLiteralNode(ListLiteralNode orig, CopyState copyState) {
     super(orig, copyState);
+    this.commaLocations = orig.commaLocations;
+  }
+
+  public Optional<ImmutableList<SourceLocation.Point>> getCommaLocations() {
+    return commaLocations;
   }
 
   @Override

@@ -20,13 +20,11 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPlaceholderPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPluralCaseSpec;
-import com.google.template.soy.msgs.restricted.SoyMsgPluralCaseSpec.Type;
 import com.google.template.soy.msgs.restricted.SoyMsgPluralPart;
 import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
 import com.google.template.soy.msgs.restricted.SoyMsgSelectPart;
 import com.google.template.soy.soytree.CaseOrDefaultNode;
 import com.google.template.soy.soytree.MsgNode;
-import com.google.template.soy.soytree.MsgNode.PlaceholderInfo;
 import com.google.template.soy.soytree.MsgPlaceholderNode;
 import com.google.template.soy.soytree.MsgPluralCaseNode;
 import com.google.template.soy.soytree.MsgPluralDefaultNode;
@@ -41,7 +39,6 @@ import com.google.template.soy.soytree.VeLogNode;
 
 /**
  * Soy-specific utilities for working with messages.
- *
  */
 public class MsgUtils {
 
@@ -185,8 +182,7 @@ public class MsgUtils {
         String rawText = ((RawTextNode) child).getRawText();
         msgParts.add(SoyMsgRawTextPart.of(rawText));
       } else if (child instanceof MsgPlaceholderNode) {
-        PlaceholderInfo placeholder = msgNode.getPlaceholder((MsgPlaceholderNode) child);
-        msgParts.add(new SoyMsgPlaceholderPart(placeholder.name(), placeholder.example()));
+        msgParts.add(new SoyMsgPlaceholderPart(msgNode.getPlaceholder((MsgPlaceholderNode) child)));
       } else if (child instanceof MsgPluralNode) {
         msgParts.add(buildMsgPartForPlural((MsgPluralNode) child, msgNode));
       } else if (child instanceof MsgSelectNode) {
@@ -223,7 +219,7 @@ public class MsgUtils {
         caseSpec = new SoyMsgPluralCaseSpec(((MsgPluralCaseNode) child).getCaseNumber());
 
       } else if (child instanceof MsgPluralDefaultNode) {
-        caseSpec = new SoyMsgPluralCaseSpec(Type.OTHER);
+        caseSpec = SoyMsgPluralCaseSpec.forType(SoyMsgPluralCaseSpec.Type.OTHER);
 
       } else {
         throw new AssertionError("Unidentified node under a plural node.");

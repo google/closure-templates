@@ -17,12 +17,14 @@
 package com.google.template.soy.pysrc;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.template.soy.base.SourceFilePath;
+import java.nio.file.Path;
 import java.util.Map;
+import java.util.Optional;
 import javax.annotation.Nullable;
 
 /**
  * Compilation options for the Python backend.
- *
  */
 public final class SoyPySrcOptions implements Cloneable {
   /** The full module and fn path to a runtime library for determining global directionality. */
@@ -40,6 +42,10 @@ public final class SoyPySrcOptions implements Cloneable {
   /** A namespace manifest mapping soy namespaces to their python path. */
   private final ImmutableMap<String, String> namespaceManifest;
 
+  private final ImmutableMap<SourceFilePath, Path> inputToOutputFilePaths;
+
+  private final Optional<Path> outputDirectoryFlag;
+
   /** The name of a manifest file to generate, or null. */
   @Nullable private final String namespaceManifestFile;
 
@@ -49,12 +55,16 @@ public final class SoyPySrcOptions implements Cloneable {
       String bidiIsRtlFn,
       String translationClass,
       ImmutableMap<String, String> namespaceManifest,
+      ImmutableMap<SourceFilePath, Path> inputToOutputFilePaths,
+      Optional<Path> outputDirectoryFlag,
       String namespaceManifestFile) {
     this.runtimePath = runtimePath;
     this.environmentModulePath = environmentModulePath;
     this.bidiIsRtlFn = bidiIsRtlFn;
     this.translationClass = translationClass;
     this.namespaceManifest = namespaceManifest;
+    this.inputToOutputFilePaths = inputToOutputFilePaths;
+    this.outputDirectoryFlag = outputDirectoryFlag;
     this.namespaceManifestFile = namespaceManifestFile;
   }
 
@@ -64,6 +74,8 @@ public final class SoyPySrcOptions implements Cloneable {
     this.bidiIsRtlFn = orig.bidiIsRtlFn;
     this.translationClass = orig.translationClass;
     this.namespaceManifest = orig.namespaceManifest;
+    this.inputToOutputFilePaths = orig.inputToOutputFilePaths;
+    this.outputDirectoryFlag = orig.outputDirectoryFlag;
     this.namespaceManifestFile = orig.namespaceManifestFile;
   }
 
@@ -90,6 +102,15 @@ public final class SoyPySrcOptions implements Cloneable {
   @Nullable
   public String namespaceManifestFile() {
     return namespaceManifestFile;
+  }
+
+  public ImmutableMap<SourceFilePath, Path> getInputToOutputFilePaths() {
+    return inputToOutputFilePaths;
+  }
+
+  /** Returns the genfiles root directory (e.g. "blaze-out/k8-opt/bin/"). */
+  public Optional<Path> getOutputDirectoryFlag() {
+    return outputDirectoryFlag;
   }
 
   @Override

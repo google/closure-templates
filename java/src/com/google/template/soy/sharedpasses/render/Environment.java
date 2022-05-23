@@ -16,7 +16,7 @@
 
 package com.google.template.soy.sharedpasses.render;
 
-
+import com.google.common.base.Preconditions;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
@@ -27,7 +27,6 @@ import com.google.template.soy.exprtree.VarDefn.Kind;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import java.util.IdentityHashMap;
-import java.util.Map;
 
 /**
  * The local variable table.
@@ -69,30 +68,25 @@ public abstract class Environment {
    * Binds the data about the current loop position to support the isLast and index builtin
    * functions.
    */
-  abstract void bindLoopPosition(
-      VarDefn loopVar, SoyValueProvider value, int index, boolean isLast);
+  abstract void bindLoopPosition(VarDefn loopVar, SoyValueProvider value);
 
   /** Returns the resolved SoyValue for the given VarDefn. Guaranteed to not return null. */
   abstract SoyValue getVar(VarDefn var);
 
+  /** Returns {@code true} if SoyRecord has a field of the given VarDefn. */
+  abstract boolean hasVar(VarDefn var);
+
   /** Returns the resolved SoyValue for the given VarDefn. Guaranteed to not return null. */
   abstract SoyValueProvider getVarProvider(VarDefn var);
 
-  /** Returns {@code true} if we are the last iteration for the given loop variable. */
-  abstract boolean isLast(VarDefn loopVar);
-
-  /** Returns the current iterator inject for the given loop variable. */
-  abstract int getIndex(VarDefn loopVar);
-
   private static final class Impl extends Environment {
     private static final class LoopPosition {
-      boolean isLast;
-      int index;
       SoyValueProvider item;
     }
 
-    final Map<VarDefn, Object> localVariables = new IdentityHashMap<>();
+    final IdentityHashMap<VarDefn, Object> localVariables = new IdentityHashMap<>();
     final SoyRecord data;
+
     Impl(TemplateNode template, SoyRecord data, SoyRecord ijData) {
       this.data = data;
       for (TemplateParam param : template.getAllParams()) {
@@ -112,12 +106,10 @@ public abstract class Environment {
     }
 
     @Override
-    void bindLoopPosition(VarDefn loopVar, SoyValueProvider value, int index, boolean isLast) {
+    void bindLoopPosition(VarDefn loopVar, SoyValueProvider value) {
       LoopPosition position =
           (LoopPosition) localVariables.computeIfAbsent(loopVar, ignored -> new LoopPosition());
       position.item = value;
-      position.index = index;
-      position.isLast = isLast;
     }
 
     @Override
@@ -137,17 +129,18 @@ public abstract class Environment {
 
     @Override
     SoyValue getVar(VarDefn var) {
-      return getVarProvider(var).resolve();
+      return Preconditions.checkNotNull(
+              getVarProvider(var),
+              "No value for %s at %s. All: %s",
+              var.name(),
+              var.nameLocation().toLineColumnString(),
+              localVariables.keySet())
+          .resolve();
     }
 
     @Override
-    boolean isLast(VarDefn var) {
-      return ((LoopPosition) localVariables.get(var)).isLast;
-    }
-
-    @Override
-    int getIndex(VarDefn var) {
-      return ((LoopPosition) localVariables.get(var)).index;
+    boolean hasVar(VarDefn var) {
+      return data.hasField(var.name());
     }
   }
 
@@ -159,7 +152,7 @@ public abstract class Environment {
     }
 
     @Override
-    void bindLoopPosition(VarDefn loopVar, SoyValueProvider value, int index, boolean isLast) {
+    void bindLoopPosition(VarDefn loopVar, SoyValueProvider value) {
       throw new UnsupportedOperationException();
     }
 
@@ -174,13 +167,8 @@ public abstract class Environment {
     }
 
     @Override
-    boolean isLast(VarDefn loopVar) {
-      return UndefinedData.INSTANCE.booleanValue();
-    }
-
-    @Override
-    int getIndex(VarDefn loopVar) {
-      return UndefinedData.INSTANCE.integerValue();
+    boolean hasVar(VarDefn var) {
+      return false;
     }
   }
 }

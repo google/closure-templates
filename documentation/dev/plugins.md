@@ -1,14 +1,18 @@
 [TOC]
 
-# Creating a Custom Plugin
+# Creating a Plugin
 
-Soy allows users to write functions that templates can call. This is useful for
-when there is some logic that is difficult or impossible to express using Soy
-language features. Soy actually has a number of these built in. For example, the
-`mapKeys` function which can be used to get the keys of a map for iteration.
+**Warning:** For new custom functions, use an [external function](externs.md)
+instead of a plugin.
+
+Soy allows users to write custom functions that templates can call. This is
+useful for when there is some logic that is difficult or impossible to express
+using Soy language features. Soy actually has a number of these built in. For
+example, the `mapKeys` function which can be used to get the keys of a map for
+iteration.
 
 ```soy
-{template .foo}
+{template foo}
   {@param m: map<string, string>}
   {for $key in mapKeys($m)}
     Key: {$key}, Value: {$m[$key]}
@@ -17,7 +21,11 @@ language features. Soy actually has a number of these built in. For example, the
 ```
 
 However, it isn't possible for Soy to supply all possible desired functionality
-so Soy allows users to supply custom plugin function definitions.
+so Soy allows users to write their own functions.
+
+There are two ways to define custom functions: via the
+[`{extern}` command](externs) and via plugins (this page). All new custom
+functions should use the `{extern}` command.
 
 ## When to define a custom function
 
@@ -109,11 +117,11 @@ public class UniqueIdFunction implements
 }
 ```
 
-Given this implementation, the `applyForJavaSource` method will invoked by the
-compiler to generate Java bytecode to call the "nextId" method for server-side
-rendering, and the `computeForJsSrc` method will be invoked by the compiler to
-generate JS code for client-side rendering (the implementation will call the
-given JS library function).
+Given this implementation, the value returned from the `applyForJavaSource`
+method will tell the compiler how to generate Java bytecode which calls the
+`nextId` method, and the value returned from the `applyforJavaScriptSource`
+method will tell the compiler how to generate JS code that invokes the specified
+function.
 
 If the Java implementation needs any non-static dependencies at runtime, the
 `applyForJavaSource` method can use `JavaValueFactory.callInstanceMethod`. For
@@ -164,12 +172,18 @@ compiler.
 
 #### Contextual data available to plugins
 
-For Java, JavaPluginContext provides some contextual data.
+For Java,
+[`JavaPluginContext`](https://github.com/google/closure-templates/blob/master/java/src/com/google/template/soy/plugin/java/restricted/JavaPluginContext.java)
+provides some contextual data.
 
-*   getULocale
+*   JavaPluginContext#getULocale
 
     Provides the current locale being used for rendering, as a
     `com.ibm.icu.util.ULocale`.
+
+In JavaScript, you can use the Closure API
+[goog.LOCALE](https://google.github.io/closure-library/api/goog.locale.html) to
+get the same information.
 
 ### 3. Register your plugin with the compiler
 
@@ -187,7 +201,7 @@ At this point, you can start calling your new plugin function from your
 templates. For example:
 
 ```soy
-{template .foo}
+{template foo}
   {let $id : uniqueId() /}
   <div id={$id}>
     Some content
@@ -203,7 +217,6 @@ classes must be supplied to `SoySauce` or `Tofu` constructor (or
 `Renderer.setPluginInstances` if the former is infeasible). When compiled for
 JS, the compiler will output a `goog.require('some.js.lib');` and invoke
 `some.js.lib.uniqueId()` for each call to `uniqueId()`.
-
 
 ## More about SoyFunctionSignature...
 
@@ -233,6 +246,12 @@ overloads that have the same amount of arguments. Second, generic overloads are
 unsupported. It is impossible to say this function will return `T` when the
 input is `list<T>`.
 
+## Note on supported Java types
+
+Java functions called from Soy may use either the unboxed (e.g.: `String`,
+`Object`) or boxed (e.g.: `SoyValue`) types in their signatures, for both
+parameters and return types. Additionally, return types may be a `Future` which
+resolves to a valid unboxed or boxed type.
 
 ## Pure functions {#pure}
 

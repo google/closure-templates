@@ -18,19 +18,16 @@ package com.google.template.soy.exprtree;
 
 import static com.google.common.truth.Truth.assertWithMessage;
 
-import com.google.common.base.Equivalence.Wrapper;
 import com.google.common.base.Joiner;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.truth.StandardSubjectBuilder;
-import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
-import com.google.template.soy.testing.Example;
-import com.google.template.soy.types.SoyTypeRegistry;
+import com.google.template.soy.testing.KvPair;
+import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import java.util.Set;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -47,8 +44,8 @@ public final class ExprEquivalenceTest {
     runTest("{assertReflexive(true)}");
     runTest("{assertReflexive(false)}");
     runTest("{assertReflexive(1.2)}");
-    runTest("{assertReflexive(['a', 1.2, true, example.KvPair()])}");
-    runTest("{assertReflexive(map('a': 1.2, 'b': true, 'c': example.KvPair()))}");
+    runTest("{assertReflexive(['a', 1.2, true, KvPair()])}");
+    runTest("{assertReflexive(map('a': 1.2, 'b': true, 'c': KvPair()))}");
     runTest("{@param map: map<string, string>}", "{assertReflexive($map)}");
     runTest("{@param map: map<string, string>}", "{assertReflexive($map['a'])}");
     runTest(
@@ -63,9 +60,9 @@ public final class ExprEquivalenceTest {
     runTest("{@param rec: [a: string, b: [a: string]]}", "{assertReflexive($rec.a)}");
     runTest("{@param rec: [a: string, b: [a: string]]}", "{assertReflexive($rec.b)}");
     runTest("{@param rec: [a: string, b: [a: string]]}", "{assertReflexive($rec.b.a)}");
-    runTest("{@param proto: example.KvPair}", "{assertReflexive($proto)}");
-    runTest("{@param proto: example.KvPair}", "{assertReflexive($proto.key)}");
-    runTest("{@param proto: example.KvPair}", "{assertReflexive($proto.value)}");
+    runTest("{@param proto: KvPair}", "{assertReflexive($proto)}");
+    runTest("{@param proto: KvPair}", "{assertReflexive($proto.key)}");
+    runTest("{@param proto: KvPair}", "{assertReflexive($proto.value)}");
   }
 
   @Test
@@ -79,8 +76,13 @@ public final class ExprEquivalenceTest {
     // proto inits
     runTest(
         "{assertEquals(",
-        "  example.KvPair(key: 'a', value: 'b'),",
-        "  example.KvPair(value: 'b', key: 'a')",
+        "  KvPair(key: 'a', value: 'b'),",
+        "  KvPair(value: 'b', key: 'a')",
+        ")}");
+    runTest(
+        "{assertNotEquals(",
+        "  KvPair(key: 'a', value: 'b'),",
+        "  KvPair(key: 'b', value: 'b')",
         ")}");
     // TODO(b/78775420): randomInt isn't a pure function so it shouldn't ever be equivalent :/
     // fixing this behavior requires a cleanup.
@@ -91,31 +93,43 @@ public final class ExprEquivalenceTest {
     runTest("{assertNotEquals(1 + 2, 2 + 1)}");
     runTest("{assertEquals(1 + 2, 1 + 2)}");
     runTest("{assertNotEquals(1 + 2, 1 - 2)}");
+    runTest(
+        "{assertNotEquals([$a for $a, $b in [1,2,3] if $a < 0], [$a for $a, $b in [1,2,3] if $a <"
+            + " 0])}");
+    runTest("{let $a: [$a for $a, $b in [1,2,3] if $a < 0] /}", "{assertEquals($a, $a)}");
 
     // null safe matters, though perhaps it shouldn't.  The two expressions will evaluate to the
     // same thing (because if it wouldn't then some kind of runtime error would occur).
     runTest("{@param rec: [a: string, b: [a: string]]}", "{assertNotEquals($rec.a, $rec?.a)}");
   }
 
-  private static final SoyTypeRegistry TYPE_REGISTRY =
-      new SoyTypeRegistry.Builder()
-          .addDescriptors(ImmutableList.of(Example.getDescriptor()))
-          .build();
-
   public void runTest(String... templateSourceLines) {
+    runTestForNormal(templateSourceLines);
+    runTestForXmbGen(templateSourceLines);
+  }
+
+  public void runTestForNormal(String... templateSourceLines) {
+    runTestInternal(/* disableAllTypeChecking= */ false, templateSourceLines);
+  }
+
+  public void runTestForXmbGen(String... templateSourceLines) {
+    // XMB generation runs with disableAllTypeChecking but depends heavily on ExprEquivalence.
+    runTestInternal(/* disableAllTypeChecking= */ true, templateSourceLines);
+  }
+
+  public void runTestInternal(boolean disableAllTypeChecking, String... templateSourceLines) {
     SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forFileContents(
-                ""
-                    + "{namespace ns}\n"
-                    + "{template .aaa}\n"
+        SoyFileSetParserBuilder.forTemplateAndImports(
+                "{template aaa}\n"
                     + "  "
                     + Joiner.on("\n   ").join(templateSourceLines)
                     + "\n"
-                    + "{/template}\n")
+                    + "{/template}\n",
+                KvPair.getDescriptor())
             .addSoyFunction(ASSERT_REFLEXIVE_FUNCTION)
             .addSoyFunction(ASSERT_EQUALS_FUNCTION)
             .addSoyFunction(ASSERT_NOT_EQUALS_FUNCTION)
-            .typeRegistry(TYPE_REGISTRY)
+            .disableAllTypeChecking(disableAllTypeChecking)
             .parse()
             .fileSet();
     for (FunctionNode fn : SoyTreeUtils.getAllNodesOfType(soyTree, FunctionNode.class)) {
@@ -170,8 +184,9 @@ public final class ExprEquivalenceTest {
 
   private void assertEquivalent(SourceLocation location, ExprNode left, ExprNode right) {
     StandardSubjectBuilder assertion = assertWithMessage("assertion @ " + location);
-    Wrapper<ExprNode> wrappedLeft = ExprEquivalence.get().wrap(left);
-    Wrapper<ExprNode> wrappedRight = ExprEquivalence.get().wrap(right);
+    ExprEquivalence exprEquivalence = new ExprEquivalence();
+    ExprEquivalence.Wrapper wrappedLeft = exprEquivalence.wrap(left);
+    ExprEquivalence.Wrapper wrappedRight = exprEquivalence.wrap(right);
 
     assertion.that(wrappedLeft).isEqualTo(wrappedRight);
     // Test symmetry
@@ -183,8 +198,9 @@ public final class ExprEquivalenceTest {
   private static void assertNotEquivalent(SourceLocation location, ExprNode left, ExprNode right) {
     StandardSubjectBuilder assertion = assertWithMessage("assertion @ " + location);
     // test symmetry
-    Wrapper<ExprNode> wrappedLeft = ExprEquivalence.get().wrap(left);
-    Wrapper<ExprNode> wrappedRight = ExprEquivalence.get().wrap(right);
+    ExprEquivalence exprEquivalence = new ExprEquivalence();
+    ExprEquivalence.Wrapper wrappedLeft = exprEquivalence.wrap(left);
+    ExprEquivalence.Wrapper wrappedRight = exprEquivalence.wrap(right);
     assertion.that(wrappedRight).isNotEqualTo(wrappedLeft);
     assertion.that(wrappedLeft).isNotEqualTo(wrappedRight);
   }

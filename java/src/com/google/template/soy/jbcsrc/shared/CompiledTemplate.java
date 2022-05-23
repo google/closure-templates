@@ -18,23 +18,74 @@ package com.google.template.soy.jbcsrc.shared;
 
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
-import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.data.SoyAbstractValue;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import java.io.IOException;
 
 /** A compiled Soy template. Each instance is suitable for being rendered exactly once. */
+@Immutable
 public interface CompiledTemplate {
-  /** A factory interface for constructing a {@link CompiledTemplate}. */
-  @Immutable
-  interface Factory {
-    /** Returns a new {@link CompiledTemplate} with the given {@link SoyRecord params}. */
-    CompiledTemplate create(SoyRecord params, SoyRecord ij);
+
+  // TODO(lukes): move to the runtime package?
+  /** A factory subtype for representing factories as SoyValues. */
+  final class TemplateValue extends SoyAbstractValue {
+    public static TemplateValue create(String templateName, CompiledTemplate template) {
+      return new TemplateValue(templateName, template);
+    }
+
+    private final String templateName;
+    private final CompiledTemplate delegate;
+
+    private TemplateValue(String templateName, CompiledTemplate delegate) {
+      this.templateName = templateName;
+      this.delegate = delegate;
+    }
+
+    public CompiledTemplate getTemplate() {
+      return delegate;
+    }
+
+    public String getTemplateName() {
+      return templateName;
+    }
+
+    @Override
+    public final boolean coerceToBoolean() {
+      return true;
+    }
+
+    @Override
+    public final String coerceToString() {
+      return String.format("** FOR DEBUGGING ONLY: %s **", templateName);
+    }
+
+    @Override
+    public final void render(LoggingAdvisingAppendable appendable) {
+      throw new IllegalStateException("Printing template types is not allowed.");
+    }
+
+    @Override
+    public final boolean equals(Object other) {
+      return this == other;
+    }
+
+    @Override
+    public final int hashCode() {
+      return System.identityHashCode(this);
+    }
+
+    @Override
+    public final String toString() {
+      return coerceToString();
+    }
   }
 
   /**
    * Renders the template.
    *
+   * @param params the explicit params of the template
+   * @param ij the explicit injected params of the template
    * @param appendable The output target
    * @param context The rendering context
    * @return {@link RenderResult#done()} if rendering has completed successfully, {@link
@@ -45,11 +96,7 @@ public interface CompiledTemplate {
    * @throws IOException If the output stream throws an exception. This is a fatal error and
    *     rendering cannot be continued.
    */
-  RenderResult render(LoggingAdvisingAppendable appendable, RenderContext context)
+  RenderResult render(
+      SoyRecord params, SoyRecord ij, LoggingAdvisingAppendable appendable, RenderContext context)
       throws IOException;
-
-  /**
-   * The content kind of the compiled template, used for making runtime content escaping decisions.
-   */
-  ContentKind kind();
 }

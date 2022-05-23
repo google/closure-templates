@@ -18,20 +18,20 @@ package com.google.template.soy.jssrc.internal;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.base.Joiner;
-import com.google.common.collect.ImmutableList;
 import com.google.common.truth.StringSubject;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
-import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.logging.LoggableElement;
-import com.google.template.soy.logging.LoggingConfig;
 import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
+import com.google.template.soy.logging.testing.LoggingConfigs;
 import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.soytree.SoyFileSetNode;
-import com.google.template.soy.soytree.TemplateRegistry;
-import com.google.template.soy.types.SoyTypeRegistry;
+import com.google.template.soy.soytree.SoyTreeUtils;
+import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.testing.Foo;
+import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -39,26 +39,23 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public final class VeLogInstrumentationVisitorTest {
   private static final ValidatedLoggingConfig LOGGING_CONFIG =
-      ValidatedLoggingConfig.create(
-          LoggingConfig.newBuilder()
-              .addElement(
-                  LoggableElement.newBuilder()
-                      .setName("Foo")
-                      .setId(1L)
-                      .setProtoType("soy.test.Foo")
-                      .build())
-              .addElement(LoggableElement.newBuilder().setName("Bar").setId(2L).build())
-              .addElement(LoggableElement.newBuilder().setName("Baz").setId(3L).build())
-              .build());
+      LoggingConfigs.createLoggingConfig(
+          LoggableElement.newBuilder()
+              .setName("FooVe")
+              .setId(1L)
+              .setProtoType("soy.test.Foo")
+              .build(),
+          LoggableElement.newBuilder().setName("Bar").setId(2L).build(),
+          LoggableElement.newBuilder().setName("Baz").setId(3L).build());
 
   @Test
   public void testVeLogInstrumentation() throws Exception {
     assertThatSourceString(runPass("")).isEqualTo("");
     assertThatSourceString(runPass("<div></div>")).isEqualTo("<div></div>");
-    assertThatSourceString(runPass("{velog Foo}<div></div>{/velog}"))
+    assertThatSourceString(runPass("{velog FooVe}<div></div>{/velog}"))
         .isEqualTo(
-            "{velog ve_data(ve(Foo), null)}"
-                + "<div{$$velog(ve_data(ve(Foo), null))}>"
+            "{velog ve_data(ve(FooVe), null)}"
+                + "<div{$$velog(ve_data(ve(FooVe), null))}>"
                 + "</div>"
                 + "{/velog}");
     assertThatSourceString(runPass("{velog Bar}<input/>{/velog}"))
@@ -94,23 +91,24 @@ public final class VeLogInstrumentationVisitorTest {
                 + "{/velog}");
     assertThatSourceString(
             runPass(
-                "{velog ve_data(Foo, soy.test.Foo(intField: 123))}"
+                "{velog ve_data(FooVe, Foo(intField: 123))}"
                     + "<input id=\"1\" class=\"fooClass\"/>"
                     + "{/velog}"))
         .isEqualTo(
-            "{velog ve_data(ve(Foo), soy.test.Foo(intField: 123))}"
+            "{velog ve_data(ve(FooVe), Foo(intField: 123))}"
                 + "<input id=\"1\" class=\"fooClass\""
-                + "{$$velog(ve_data(ve(Foo), soy.test.Foo(intField: 123)))}/>"
+                + "{$$velog(ve_data(ve(FooVe), Foo(intField: 123)))}/>"
                 + "{/velog}");
   }
 
   @Test
   public void testVeLogInstrumentationMultipleVeLogs() throws Exception {
     // Multiple velogs
-    assertThatSourceString(runPass("{velog Foo}<div></div>{/velog}{velog Bar}<div></div>{/velog}"))
+    assertThatSourceString(
+            runPass("{velog FooVe}<div></div>{/velog}{velog Bar}<div></div>{/velog}"))
         .isEqualTo(
-            "{velog ve_data(ve(Foo), null)}"
-                + "<div{$$velog(ve_data(ve(Foo), null))}>"
+            "{velog ve_data(ve(FooVe), null)}"
+                + "<div{$$velog(ve_data(ve(FooVe), null))}>"
                 + "</div>{/velog}"
                 + "{velog ve_data(ve(Bar), null)}"
                 + "<div{$$velog(ve_data(ve(Bar), null))}>"
@@ -164,9 +162,9 @@ public final class VeLogInstrumentationVisitorTest {
             "{let $foo : 'data-ved' /}{velog ve_data(ve(Bar), null)}"
                 + "<div{$$velog(ve_data(ve(Bar), null))}>"
                 + "<span"
-                + "{let $soy_logging_function_attribute_16 kind=\"text\"}{$foo}{/let} "
-                + "{$soy_logging_function_attribute_16}=\"placeholder\""
-                + "{$$loggingFunction('currentVed', [], $soy_logging_function_attribute_16)}"
+                + "{let $soy_logging_function_attribute_10 kind=\"text\"}{$foo}{/let} "
+                + "{$soy_logging_function_attribute_10}=\"placeholder\""
+                + "{$$loggingFunction('currentVed', [], $soy_logging_function_attribute_10)}"
                 + "></span>"
                 + "</div>"
                 + "{/velog}");
@@ -181,12 +179,12 @@ public final class VeLogInstrumentationVisitorTest {
             "{velog ve_data(ve(Bar), null)}"
                 + "<div{$$velog(ve_data(ve(Bar), null))}>"
                 + "<span"
-                + "{let $soy_logging_function_attribute_19 kind=\"text\"}{$foo}{/let} "
-                + "{$soy_logging_function_attribute_19}=\"placeholder\""
-                + "{$$loggingFunction('currentVed', [], $soy_logging_function_attribute_19)}"
-                + "{let $soy_logging_function_attribute_21 kind=\"text\"}{$bar}{/let} "
-                + "{$soy_logging_function_attribute_21}=\"placeholder\""
-                + "{$$loggingFunction('currentVed', [1], $soy_logging_function_attribute_21)}"
+                + "{let $soy_logging_function_attribute_9 kind=\"text\"}{$foo}{/let} "
+                + "{$soy_logging_function_attribute_9}=\"placeholder\""
+                + "{$$loggingFunction('currentVed', [], $soy_logging_function_attribute_9)}"
+                + "{let $soy_logging_function_attribute_13 kind=\"text\"}{$bar}{/let} "
+                + "{$soy_logging_function_attribute_13}=\"placeholder\""
+                + "{$$loggingFunction('currentVed', [1], $soy_logging_function_attribute_13)}"
                 + ">"
                 + "</span>"
                 + "</div>"
@@ -206,13 +204,13 @@ public final class VeLogInstrumentationVisitorTest {
             "{velog ve_data(ve(Bar), null)}"
                 + "<div{$$velog(ve_data(ve(Bar), null))}>"
                 + "<span"
-                + "{let $soy_logging_function_attribute_24 kind=\"text\"}{$foo}{/let} "
-                + "{$soy_logging_function_attribute_24}=\"placeholder\""
-                + "{$$loggingFunction('currentVed', [], $soy_logging_function_attribute_24)}"
+                + "{let $soy_logging_function_attribute_9 kind=\"text\"}{$foo}{/let} "
+                + "{$soy_logging_function_attribute_9}=\"placeholder\""
+                + "{$$loggingFunction('currentVed', [], $soy_logging_function_attribute_9)}"
                 + "{let $baz kind=\"html\"}<input>{/let}"
-                + "{let $soy_logging_function_attribute_26 kind=\"text\"}{$bar}{/let} "
-                + "{$soy_logging_function_attribute_26}=\"placeholder\""
-                + "{$$loggingFunction('currentVed', [1], $soy_logging_function_attribute_26)}"
+                + "{let $soy_logging_function_attribute_16 kind=\"text\"}{$bar}{/let} "
+                + "{$soy_logging_function_attribute_16}=\"placeholder\""
+                + "{$$loggingFunction('currentVed', [1], $soy_logging_function_attribute_16)}"
                 + ">"
                 + "</span>"
                 + "</div>"
@@ -221,30 +219,34 @@ public final class VeLogInstrumentationVisitorTest {
     SoyFileSetNode node =
         runPass(
             "{velog Bar}<div>"
-                + "<span {call .attr}{param foo: 'data-ved' /}{/call}></span>"
+                + "<span {call attr}{param foo: 'data-ved' /}{/call}></span>"
                 + "</div>{/velog}"
                 + "{/template}"
                 + ""
-                + "{template .attr kind=\"attributes\"}"
+                + "{template attr kind=\"attributes\"}"
                 + "{@param foo: string}"
                 + "{$foo}={currentVed()}");
     StringBuilder sb = new StringBuilder();
-    node.getChild(0).getChild(0).appendSourceStringForChildren(sb);
+    SoyTreeUtils.getAllNodesOfType(node, TemplateNode.class)
+        .get(0)
+        .appendSourceStringForChildren(sb);
     assertThat(sb.toString())
         .isEqualTo(
             "{velog ve_data(ve(Bar), null)}"
                 + "<div{$$velog(ve_data(ve(Bar), null))}>"
-                + "<span {call .attr}{param foo: 'data-ved' /}{/call}>"
+                + "<span{call attr}{param foo: 'data-ved' /}{/call}>"
                 + "</span>"
                 + "</div>"
                 + "{/velog}");
     sb = new StringBuilder();
-    node.getChild(0).getChild(1).appendSourceStringForChildren(sb);
+    SoyTreeUtils.getAllNodesOfType(node, TemplateNode.class)
+        .get(1)
+        .appendSourceStringForChildren(sb);
     assertThat(sb.toString())
         .isEqualTo(
-            "{let $soy_logging_function_attribute_24 kind=\"text\"}{$foo}{/let}"
-                + "{$soy_logging_function_attribute_24}=\"placeholder\""
-                + "{$$loggingFunction('currentVed', [], $soy_logging_function_attribute_24)}");
+            "{let $soy_logging_function_attribute_17 kind=\"text\"}{$foo}{/let}"
+                + "{$soy_logging_function_attribute_17}=\"placeholder\""
+                + "{$$loggingFunction('currentVed', [], $soy_logging_function_attribute_17)}");
   }
 
   @SoyFunctionSignature(
@@ -264,30 +266,25 @@ public final class VeLogInstrumentationVisitorTest {
 
   /** Parses the given input as a template content. */
   private static SoyFileSetNode runPass(String input) {
-    String soyFile =
-        Joiner.on('\n').join("{namespace ns}", "", "{template .t}", input, "{/template}");
+    String soyFile = Joiner.on('\n').join("{template t}", input, "{/template}");
     ParseResult result =
-        SoyFileSetParserBuilder.forFileContents(soyFile)
+        SoyFileSetParserBuilder.forTemplateAndImports(soyFile, Foo.getDescriptor())
             // Disable desguaring pass and manually run it later
-            .desugarHtmlAndStateNodes(false)
-            .typeRegistry(
-                new SoyTypeRegistry.Builder()
-                    .addDescriptors(
-                        ImmutableList.of(com.google.template.soy.testing.Foo.getDescriptor()))
-                    .build())
+            .desugarHtmlNodes(false)
             .setLoggingConfig(LOGGING_CONFIG)
             .addSoySourceFunction(new TestLoggingFunction())
             .errorReporter(ErrorReporter.exploding())
             .parse();
-    TemplateRegistry templateRegistry = result.registry();
     SoyFileSetNode soyTree = result.fileSet();
-    new VeLogInstrumentationVisitor(templateRegistry).exec(soyTree);
+    new VeLogInstrumentationVisitor().exec(soyTree);
     return soyTree;
   }
 
   private static StringSubject assertThatSourceString(SoyFileSetNode node) {
     StringBuilder sb = new StringBuilder();
-    node.getChild(0).getChild(0).appendSourceStringForChildren(sb);
+    SoyTreeUtils.getAllNodesOfType(node, TemplateNode.class)
+        .get(0)
+        .appendSourceStringForChildren(sb);
     return assertThat(sb.toString());
   }
 }

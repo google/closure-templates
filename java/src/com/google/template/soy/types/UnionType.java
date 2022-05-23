@@ -28,12 +28,10 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Objects;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
  * Type representing a set of possible alternative types.
- *
  */
 public final class UnionType extends SoyType {
 
@@ -77,7 +75,6 @@ public final class UnionType extends SoyType {
     for (SoyType type : members) {
       // simplify unions containing these types
       if (type.getKind() == Kind.UNKNOWN
-          || type.getKind() == Kind.ERROR
           || type.getKind() == Kind.ANY) {
         return type;
       }
@@ -100,16 +97,16 @@ public final class UnionType extends SoyType {
   }
 
   /** Return the set of types contained in this union. */
-  public Set<SoyType> getMembers() {
+  public ImmutableSet<SoyType> getMembers() {
     return members;
   }
 
   @Override
-  boolean doIsAssignableFromNonUnionType(SoyType srcType) {
+  boolean doIsAssignableFromNonUnionType(SoyType srcType, UnknownAssignmentPolicy unknownPolicy) {
     // A type can be assigned to a union iff it is assignable to at least one
     // member of the union.
     for (SoyType memberType : members) {
-      if (memberType.isAssignableFrom(srcType)) {
+      if (memberType.isAssignableFromInternal(srcType, unknownPolicy)) {
         return true;
       }
     }
@@ -155,5 +152,10 @@ public final class UnionType extends SoyType {
   @Override
   public int hashCode() {
     return Objects.hash(this.getClass(), members);
+  }
+
+  @Override
+  public <T> T accept(SoyTypeVisitor<T> visitor) {
+    return visitor.visit(this);
   }
 }

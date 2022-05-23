@@ -25,7 +25,6 @@ import com.google.template.soy.basetree.CopyState;
  *
  * <p>The source location of this node is the location of the {@code .field} and doesn't include the
  * base expression.
- *
  */
 public final class FieldAccessNode extends DataAccessNode {
 
@@ -34,13 +33,13 @@ public final class FieldAccessNode extends DataAccessNode {
   /**
    * @param base The base expression, that is a reference to the object containing the named field.
    * @param fieldName The name of the field.
-   * @param location The location of the access expression
+   * @param accessLocation The location of the access expression, i.e. the dot and the field name.
    * @param isNullSafe If true, checks during evaluation whether the base expression is null and
    *     returns null instead of causing an invalid dereference.
    */
   public FieldAccessNode(
-      ExprNode base, String fieldName, SourceLocation location, boolean isNullSafe) {
-    super(base, location, isNullSafe);
+      ExprNode base, String fieldName, SourceLocation accessLocation, boolean isNullSafe) {
+    super(base, accessLocation, isNullSafe);
     Preconditions.checkArgument(fieldName != null);
     this.fieldName = fieldName;
   }

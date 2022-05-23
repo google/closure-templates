@@ -21,9 +21,7 @@ import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_STRING_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_TYPE;
 
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
+import com.google.common.base.Objects;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
@@ -61,56 +59,20 @@ public abstract class SoyRuntimeType {
    * <p>Types will fail to have unboxed representations mostly for unknown, any and union types.
    */
   public static Optional<SoyRuntimeType> getUnboxedType(SoyType soyType) {
-    // Optional is immutable so Optional<Subclass> can always be safely cast to Optional<SuperClass>
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    Optional<SoyRuntimeType> typed = (Optional) primitiveTypeCache.getUnchecked(soyType);
-    return typed;
+    return Optional.ofNullable(unboxedTypeImpl(soyType));
   }
 
   /** Returns the boxed representation of the given type. */
   public static SoyRuntimeType getBoxedType(SoyType soyType) {
-    return boxedTypeCache.getUnchecked(soyType);
-  }
-
-  // These caches should have a relatively fixed size (the universe of SoyTypes).  One potential
-  // source of concern is that in the case of protos, if a user is hot swapping in new class
-  // definitions and adding/removing fields.  We won't modify the SoyType definitions (or
-  // SoyRuntimeType) definitions in these caches.  This is a limitation in the design of the proto
-  // type definition (because we never try to re-read the proto descriptors).  In theory this could
-  // be fixed by flushing the whole type registry between compiles.  This would solve the problem,
-  // but then these caches would start leaking!  Any easy fix would be to give these caches weak
-  // keys.
-
-  private static final LoadingCache<SoyType, Optional<PrimitiveSoyType>> primitiveTypeCache =
-      CacheBuilder.newBuilder()
-          .build(
-              new CacheLoader<SoyType, Optional<PrimitiveSoyType>>() {
-                @Override
-                public Optional<PrimitiveSoyType> load(SoyType key) throws Exception {
-                  return Optional.ofNullable(unboxedTypeImpl(key));
-                }
-              });
-
-  private static final LoadingCache<SoyType, BoxedSoyType> boxedTypeCache =
-      CacheBuilder.newBuilder()
-          .build(
-              new CacheLoader<SoyType, BoxedSoyType>() {
-                @Override
-                public BoxedSoyType load(SoyType key) throws Exception {
-                  return boxedSoyTypeImpl(key);
-                }
-              });
-
-  @Nullable
-  private static BoxedSoyType boxedSoyTypeImpl(SoyType soyType) {
-    Optional<PrimitiveSoyType> primitive = primitiveTypeCache.getUnchecked(soyType);
-    if (primitive.isPresent()) {
-      return primitive.get().box();
+    PrimitiveSoyType primitive = unboxedTypeImpl(soyType);
+    if (primitive != null) {
+      return primitive.box();
     }
     switch (soyType.getKind()) {
       case ATTRIBUTES:
       case CSS:
       case URI:
+      case ELEMENT:
       case HTML:
       case JS:
       case TRUSTED_RESOURCE_URI:
@@ -127,6 +89,8 @@ public abstract class SoyRuntimeType {
         return new BoxedSoyType(soyType, BytecodeUtils.SOY_VISUAL_ELEMENT_TYPE);
       case VE_DATA:
         return new BoxedSoyType(soyType, BytecodeUtils.SOY_VISUAL_ELEMENT_DATA_TYPE);
+      case TEMPLATE:
+        return new BoxedSoyType(soyType, BytecodeUtils.COMPILED_TEMPLATE_TEMPLATE_VALUE_TYPE);
       case UNION:
         {
           // unions generally don't have a runtime type except in 2 special cases
@@ -156,7 +120,6 @@ public abstract class SoyRuntimeType {
       case ANY:
         // SoyValue
         return new BoxedSoyType(soyType, BytecodeUtils.SOY_VALUE_TYPE);
-      case ERROR:
       default:
         throw new AssertionError("can't map " + soyType + " to a boxed soy runtime type");
     }
@@ -185,11 +148,15 @@ public abstract class SoyRuntimeType {
       case ATTRIBUTES:
       case CSS:
       case URI:
+      case ELEMENT:
       case HTML:
       case JS:
       case TRUSTED_RESOURCE_URI:
         // sanitized strings cannot be unboxed
         return null;
+      case MESSAGE:
+        return new PrimitiveSoyType(
+            soyType, BytecodeUtils.MESSAGE_TYPE, BytecodeUtils.SOY_PROTO_VALUE_TYPE);
       case PROTO:
         return soyTypeFromProto((SoyProtoType) soyType);
       case LIST:
@@ -198,6 +165,7 @@ public abstract class SoyRuntimeType {
       case LEGACY_OBJECT_MAP:
       case MAP:
       case RECORD:
+      case TEMPLATE:
       case VE:
       case VE_DATA:
         // no unboxed representation at all.  We could add something for these, but there is
@@ -241,8 +209,13 @@ public abstract class SoyRuntimeType {
       case ANY:
         // no unique unboxed representation
         return null;
-      case ERROR:
-        // continue
+      case PROTO_TYPE:
+      case PROTO_ENUM_TYPE:
+      case PROTO_EXTENSION:
+      case PROTO_MODULE:
+      case TEMPLATE_TYPE:
+      case TEMPLATE_MODULE:
+      case FUNCTION:
     }
     throw new AssertionError("can't map " + soyType + " to an unboxed soy runtime type");
   }
@@ -254,11 +227,11 @@ public abstract class SoyRuntimeType {
 
   /** Returns the runtime type for the message correspdoning to the given descriptor.. */
   public static Type protoType(Descriptor descriptor) {
-    return Type.getType('L' + JavaQualifiedNames.getClassName(descriptor).replace('.', '/') + ';');
+    return BytecodeUtils.getTypeForClassName(JavaQualifiedNames.getClassName(descriptor));
   }
 
-  private static PrimitiveSoyType enumType(SoyProtoEnumType enumType) {
-    return new PrimitiveSoyType(enumType, Type.INT_TYPE, BytecodeUtils.INTEGER_DATA_TYPE);
+  public static PrimitiveSoyType enumType(SoyProtoEnumType enumType) {
+    return new PrimitiveSoyType(enumType, Type.LONG_TYPE, BytecodeUtils.INTEGER_DATA_TYPE);
   }
 
   private final SoyType soyType;
@@ -296,8 +269,9 @@ public abstract class SoyRuntimeType {
   }
 
   private boolean assignableToNullableType(SoyType type) {
-    return type.isAssignableFrom(soyType)
-        || (soyType.getKind() == Kind.UNION && type.isAssignableFrom(SoyTypes.removeNull(soyType)));
+    return type.isAssignableFromStrict(soyType)
+        || (soyType.getKind() == Kind.UNION
+            && type.isAssignableFromStrict(SoyTypes.removeNull(soyType)));
   }
 
   /**
@@ -339,7 +313,7 @@ public abstract class SoyRuntimeType {
    * <em>not</em> a int, just that it is not <em>known</em> to be a int at compile time.
    */
   public boolean isKnownInt() {
-    return soyType.getKind() == Kind.INT;
+    return soyType.getKind() == Kind.INT || SoyTypes.isKindOrUnionOfKind(soyType, Kind.PROTO_ENUM);
   }
 
   /**
@@ -395,7 +369,7 @@ public abstract class SoyRuntimeType {
    * <em>not</em> a number, just that it is not <em>known</em> to be a number at compile time.
    */
   public final boolean isKnownNumber() {
-    return SoyTypes.NUMBER_TYPE.isAssignableFrom(soyType);
+    return SoyTypes.NUMBER_TYPE.isAssignableFromStrict(soyType);
   }
 
   public final SoyRuntimeType asNonNullable() {
@@ -420,12 +394,28 @@ public abstract class SoyRuntimeType {
     return this;
   }
 
-  abstract boolean isBoxed();
+  public abstract boolean isBoxed();
 
-  abstract SoyRuntimeType box();
+  public abstract SoyRuntimeType box();
 
-  // NOTE: we have identity semantics.  This is fine because our caches ensure we never produce
-  // two otherwise identical objects
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (!(o instanceof SoyRuntimeType)) {
+      return false;
+    }
+    SoyRuntimeType that = (SoyRuntimeType) o;
+    return Objects.equal(soyType, that.soyType)
+        && Objects.equal(runtimeType, that.runtimeType)
+        && isBoxed() == that.isBoxed();
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(soyType, runtimeType, isBoxed());
+  }
 
   @Override
   public String toString() {
@@ -446,7 +436,7 @@ public abstract class SoyRuntimeType {
     }
 
     @Override
-    BoxedSoyType box() {
+    public BoxedSoyType box() {
       return boxedType;
     }
   }
@@ -462,7 +452,7 @@ public abstract class SoyRuntimeType {
     }
 
     @Override
-    SoyRuntimeType box() {
+    public SoyRuntimeType box() {
       return this;
     }
   }

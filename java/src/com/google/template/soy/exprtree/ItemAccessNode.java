@@ -26,19 +26,19 @@ import com.google.template.soy.basetree.CopyState;
  *
  * <p>The source location of this node is the location of the {@code [<expr>]} and doesn't include
  * the base expression.
- *
  */
 public final class ItemAccessNode extends DataAccessNode {
 
   /**
    * @param base The base expression, that is a reference to the object containing the item.
    * @param key An expression representing either an array index or a map key.
-   * @param location The location of the access expression
+   * @param accessLocation The location of the access expression, i.e. only the brackets portion.
    * @param isNullSafe If true, checks during evaluation whether the base expression is null and
    *     returns null instead of causing an invalid dereference.
    */
-  public ItemAccessNode(ExprNode base, ExprNode key, SourceLocation location, boolean isNullSafe) {
-    super(base, location, isNullSafe);
+  public ItemAccessNode(
+      ExprNode base, ExprNode key, SourceLocation accessLocation, boolean isNullSafe) {
+    super(base, accessLocation, isNullSafe);
     addChild(key); // Key is child 1, Base is child 0.
   }
 

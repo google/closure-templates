@@ -22,6 +22,7 @@ import java.util.Map;
 /**
  * An invocation of a Soy template, encapsulating both the template name and all the data parameters
  * passed to the template.
+ *
  */
 public interface SoyTemplate {
 
@@ -33,6 +34,44 @@ public interface SoyTemplate {
    * framework.
    */
   Map<String, ?> getParamsAsMap();
+
+  /**
+   * The superclass of all generated builders.
+   *
+   * @param <T> the type of template that this builder builds.
+   */
+  interface Builder<T extends SoyTemplate> {
+
+    /**
+     * Builds and returns an immutable `SoyTemplate` instance from the state of this builder.
+     *
+     * @throws IllegalStateException if any required, non-indirect parameter is unset.
+     */
+    T build();
+
+    /**
+     * Sets any template parameter of this builder. SoyTemplateParam ensures type safety.
+     *
+     * @throws IllegalArgumentException if the template corresponding to this builder does not have
+     *     a parameter equal to {@code param}.
+     */
+    <V> Builder<T> setParam(SoyTemplateParam<? super V> param, V value);
+
+    /**
+     * Sets any template parameter of this builder to a future value. SoyTemplateParam ensures type
+     * safety.
+     *
+     * @throws IllegalArgumentException if the template corresponding to this builder does not have
+     *     a parameter equal to {@code param}.
+     */
+    <V> Builder<T> setParamFuture(SoyTemplateParam<? super V> param, ListenableFuture<V> value);
+
+    /**
+     * Returns whether this builder has a param equal to {@code param}. If this method returns true
+     * then {@link #setParam} should not throw an {@link IllegalArgumentException}.
+     */
+    boolean hasParam(SoyTemplateParam<?> param);
+  }
 
   /**
    * Wraps a {@link SoyTemplate} but grants synchronous access to {@link #getTemplateName()}. This

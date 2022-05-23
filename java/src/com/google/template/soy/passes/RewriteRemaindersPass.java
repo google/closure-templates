@@ -46,9 +46,9 @@ import com.google.template.soy.soytree.SoyTreeUtils;
  *   <li>It must used the same expression as its corresponding {@code plural}.
  *   <li>If it is used as the root expression in a print node, then there can be no phname
  * </ul>
- *
  */
-final class RewriteRemaindersPass extends CompilerFilePass {
+@RunAfter(ResolvePluginsPass.class)
+final class RewriteRemaindersPass implements CompilerFilePass {
 
   private static final SoyErrorKind REMAINDER_OUTSIDE_PLURAL =
       SoyErrorKind.of("Special function ''remainder'' is for use in plural messages only.");
@@ -103,7 +103,7 @@ final class RewriteRemaindersPass extends CompilerFilePass {
         return;
       }
       // 'remainder' with a different expression than the enclosing 'plural'. Bad!
-      if (!ExprEquivalence.get()
+      if (!new ExprEquivalence()
           .equivalent(functionNode.getChild(0), currPluralNode.getExpr().getRoot())) {
         errorReporter.report(functionNode.getSourceLocation(), REMAINDER_PLURAL_EXPR_MISMATCH);
         removeBadRemainder(functionNode);
@@ -118,7 +118,7 @@ final class RewriteRemaindersPass extends CompilerFilePass {
 
       if (currPrintNode != null
           && currPrintNode.getExpr() == functionNode.getParent()
-          && currPrintNode.getUserSuppliedPhName() != null) {
+          && currPrintNode.getPlaceholder().userSuppliedName().isPresent()) {
         // if the remainder call is the only expression in a print node, then there shouldn't be
         // a phname attribute
         errorReporter.report(functionNode.getSourceLocation(), REMAINDER_WITH_PHNAME);
@@ -132,7 +132,10 @@ final class RewriteRemaindersPass extends CompilerFilePass {
           new IntegerNode(currPluralNode.getOffset(), functionNode.getSourceLocation());
       ExprNode remainder =
           Operator.MINUS.createNode(
-              plural.getSourceLocation().extend(offset.getSourceLocation()), plural, offset);
+              plural.getSourceLocation().extend(offset.getSourceLocation()),
+              /*operatorLocation=*/ functionNode.getSourceLocation(),
+              plural,
+              offset);
       functionNode.getParent().replaceChild(functionNode, remainder);
     }
 
@@ -146,10 +149,8 @@ final class RewriteRemaindersPass extends CompilerFilePass {
       }
       if (node instanceof ExprHolderNode) {
         for (ExprNode expr : ((ExprHolderNode) node).getExprList()) {
-          for (FunctionNode functionNode :
-              SoyTreeUtils.getAllFunctionInvocations(expr, BuiltinFunction.REMAINDER)) {
-            rewriteRemainder(functionNode);
-          }
+          SoyTreeUtils.allFunctionInvocations(expr, BuiltinFunction.REMAINDER)
+              .forEach(this::rewriteRemainder);
         }
       }
     }

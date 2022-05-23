@@ -18,13 +18,24 @@ package com.google.template.soy.passes.htmlmatcher;
 
 import static com.google.common.base.Preconditions.checkState;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.SoyNode;
+import com.google.template.soy.soytree.SwitchCaseNode;
 import java.util.Optional;
 import javax.annotation.Nullable;
 
+/**
+ * Represents an {@link IfCondNode} or a {@link SwitchCaseNode}.
+ *
+ * <p>Note that there is no explicit representation for {@link IfElseNode} or {@link
+ * SwitchDefaultNode}. When an {@code {else}} command is encountered, it is represented by a link
+ * along the false edge of a {@link HtmlMatcherConditionNode}
+ *
+ */
 public final class HtmlMatcherConditionNode extends HtmlMatcherGraphNode {
 
   private final SoyNode soyNode;
@@ -58,17 +69,17 @@ public final class HtmlMatcherConditionNode extends HtmlMatcherGraphNode {
     return this.expression;
   }
 
-  public boolean isInternallyBalanced(boolean inForeignContent, IdGenerator idGenerator) {
-    ErrorReporter errorReporter = ErrorReporter.createForTest();
+  public boolean isInternallyBalanced(int foreignContentTagDepth, IdGenerator idGenerator) {
+    ErrorReporter errorReporter = ErrorReporter.create(ImmutableMap.of());
     HtmlTagMatchingPass pass =
         new HtmlTagMatchingPass(
             errorReporter,
             idGenerator,
             /** inCondition */
             true,
-            inForeignContent,
+            foreignContentTagDepth,
             "condition");
-    if (inForeignContent) {
+    if (foreignContentTagDepth > 0) {
       if (!isInternallyBalancedForForeignContent.isPresent()) {
         pass.run(graph);
         isInternallyBalancedForForeignContent = Optional.of(errorReporter.getErrors().isEmpty());

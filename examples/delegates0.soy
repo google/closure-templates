@@ -13,7 +13,6 @@
 // limitations under the License.
 
 // Delegates examples (total 3 files).
-// Author: Kai Huang
 
 {namespace soy.examples.delegates}
 
@@ -21,7 +20,7 @@
 /**
  * Main template that calls delegates.
  */
-{template .main}
+{template main}
   {@param moo: ?}
   {delcall delegateBoo allowemptydefault="true" /}{\n}
   {delcall myDelegates.foo data="all" /}

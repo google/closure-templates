@@ -18,29 +18,27 @@ package com.google.template.soy.error;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import com.google.common.base.Strings;
+import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.SoyFileSupplier;
-import java.io.BufferedReader;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 /**
  * Simple {@link com.google.template.soy.error.ErrorReporter} implementation.
- *
- * @author brndn@google.com (Brendan Linn)
  */
 final class ErrorReporterImpl extends ErrorReporter {
 
   private final List<RecordedError> reports = new ArrayList<>();
   private int errorCount;
-  private final ImmutableMap<String, SoyFileSupplier> filePathsToSuppliers;
+  private final ImmutableMap<SourceFilePath, SoyFileSupplier> filePathsToSuppliers;
+  private static final SourceSnippetPrinter snippetPrinter = new SourceSnippetPrinter();
 
-  ErrorReporterImpl(ImmutableMap<String, SoyFileSupplier> filePathsToSuppliers) {
+  ErrorReporterImpl(ImmutableMap<SourceFilePath, SoyFileSupplier> filePathsToSuppliers) {
     this.filePathsToSuppliers = filePathsToSuppliers;
   }
 
@@ -89,6 +87,19 @@ final class ErrorReporterImpl extends ErrorReporter {
     return errorCount;
   }
 
+  @Override
+  int getCurrentNumberOfReports() {
+    return reports.size();
+  }
+
+  @Override
+  public String toString() {
+    return MoreObjects.toStringHelper(getClass())
+        .add("errors", errorCount)
+        .add("warnings", reports.size() - errorCount)
+        .toString();
+  }
+
   private static final class RecordedError {
     final SourceLocation location;
     final SoyErrorKind kind;
@@ -110,55 +121,14 @@ final class ErrorReporterImpl extends ErrorReporter {
       }
     }
 
-    SoyError asSoyError(ImmutableMap<String, SoyFileSupplier> filePathsToSuppliers) {
-      return SoyError.create(
-          location, kind, kind.format(args), getSnippet(filePathsToSuppliers), isWarning);
-    }
-
-    /** Returns a source line snippet with a caret pointing at the error column offset. */
-    private Optional<String> getSnippet(
-        ImmutableMap<String, SoyFileSupplier> filePathsToSuppliers) {
-      // Try to find a snippet of source code associated with the exception and print it.
-      Optional<String> snippet = getSourceLine(filePathsToSuppliers);
-      // TODO(b/19269289): this is a result of calling SoySyntaxException#createWithoutMetaInfo,
-      // which occurs almost 100 times. Clean them up.
-      if (snippet.isPresent()) {
-        StringBuilder builder = new StringBuilder();
-        builder.append(snippet.get()).append("\n");
-        // Print a caret below the error.
-        // TODO(brndn): SourceLocation.beginColumn is occasionally -1. Review all SoySyntaxException
-        // instantiations and ensure the SourceLocation is well-formed.
-        int beginColumn = Math.max(location.getBeginColumn(), 1);
-        String caretLine = Strings.repeat(" ", beginColumn - 1) + "^";
-        builder.append(caretLine).append("\n");
-        return Optional.of(builder.toString());
-      }
-      return Optional.empty();
-    }
-
-    /**
-     * Returns a snippet of source code surrounding the given {@link SourceLocation}, or {@link
-     * Optional#absent()} if source code is unavailable. (This happens, for example, when anyone
-     * uses {@link SourceLocation#UNKNOWN}, which is why no one should use it.)
-     */
-    Optional<String> getSourceLine(ImmutableMap<String, SoyFileSupplier> filePathsToSuppliers) {
-      // Try to find a snippet of source code associated with the exception and print it.
-      SoyFileSupplier supplier = filePathsToSuppliers.get(location.getFilePath());
-      if (supplier == null) {
-        return Optional.empty();
-      }
-      String result;
-      try (BufferedReader reader = new BufferedReader(supplier.open())) {
-        // Line numbers are 1-indexed
-        for (int linenum = 1; linenum < location.getBeginLine(); ++linenum) {
-          // Skip preceding lines
-          reader.readLine();
-        }
-        result = reader.readLine(); // returns null on EOF
-      } catch (IOException ioe) {
-        return Optional.empty();
-      }
-      return Optional.ofNullable(result);
+    SoyError asSoyError(ImmutableMap<SourceFilePath, SoyFileSupplier> filePathsToSuppliers) {
+      final Optional<String> snippet =
+          Optional
+              // Sometimes we report errors against things like plugins, in which case we won't have
+              // a file.
+              .ofNullable(filePathsToSuppliers.get(location.getFilePath()))
+              .flatMap(supplier -> snippetPrinter.getSnippet(supplier, location));
+      return SoyError.create(location, kind, kind.format(args), snippet, isWarning);
     }
   }
 }

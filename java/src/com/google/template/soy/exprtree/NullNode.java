@@ -24,7 +24,6 @@ import com.google.template.soy.types.NullType;
  * Node representing a null value.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public final class NullNode extends AbstractPrimitiveNode {
 

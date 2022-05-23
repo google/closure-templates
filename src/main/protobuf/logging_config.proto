@@ -14,9 +14,12 @@
  * limitations under the License.
  */
 
-syntax = "proto3";
+syntax = "proto2";
 
 package soy;
+
+import "src/main/protobuf/ve_metadata.proto";
+
 option java_package = "com.google.template.soy.logging";
 option java_multiple_files = true;
 
@@ -28,17 +31,22 @@ message LoggingConfig {
   // unit.
   repeated LoggableElement element = 1;
 }
-  // Defines a loggable element
+
+// Defines a loggable element
 message LoggableElement {
   // The name specified by users in the soy file.  This should be a valid
   // soy identifier (it should match:
   // '[a-zA-Z_][a-zA-Z_0-9]*([.][a-zA-Z_][a-zA-Z_0-9]*)*' )
   // Must be unique.
-  string name = 1;
+  optional string name = 1;
   // The id that will be logged.  Must be unique.
-  int64 id = 2;
+  optional int64 id = 2;
   // The fully qualified name of the protocol buffer that
   // will be used to specify metadata for the element.  Allowed to be the empty
   // string if there is no such proto.
-  string proto_type = 3;
+  optional string proto_type = 3;
+  // Additional metadata to be included with this loggable element. Use this to
+  // set compile-time constant VE metadata, that will be available from Soy
+  // source code.
+  optional LoggableElementMetadata metadata = 4;
 }

@@ -18,6 +18,7 @@ package com.google.template.soy.jbcsrc.internal;
 
 import com.google.common.collect.ImmutableMap;
 
+// TODO(lukes): move to a testonly package
 /** A {@link ClassLoader} that can load classes from a configured set of {@code byte[]}s. */
 public final class MemoryClassLoader extends AbstractMemoryClassLoader {
   static {

@@ -21,8 +21,8 @@ import static com.google.template.soy.jssrc.dsl.Statement.ifStatement;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import com.google.errorprone.annotations.CheckReturnValue;
 import com.google.template.soy.jssrc.dsl.CodeChunk.Generator;
-import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 
 /**
@@ -78,7 +78,7 @@ public final class ConditionalExpressionBuilder {
       return ternary;
     }
     // Otherwise we need to introduce a temporary and assign to it in each branch
-    VariableDeclaration decl = codeGenerator.declarationBuilder().build();
+    VariableDeclaration decl = codeGenerator.declarationBuilder().setMutable().build();
     Expression var = decl.ref();
     ConditionalBuilder builder = null;
     for (IfThenPair<Expression> oldCondition : pairs) {

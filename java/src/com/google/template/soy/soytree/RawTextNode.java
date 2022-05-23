@@ -23,6 +23,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SourceLocation.Point;
 import com.google.template.soy.basetree.CopyState;
@@ -30,6 +31,7 @@ import com.google.template.soy.soytree.RawTextNode.SourceOffsets.Reason;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
@@ -38,9 +40,36 @@ import javax.annotation.Nullable;
  * Node representing a contiguous raw text section.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
-public final class RawTextNode extends AbstractSoyNode implements StandaloneNode {
+public final class RawTextNode extends AbstractSoyNode
+    implements HtmlContext.HtmlContextHolder, StandaloneNode {
+
+  /** Specifies how this text node was created. */
+  public enum Provenance {
+    /** The node is a regular text node (not a literal or special command character). */
+    NORMAL,
+
+    /**
+     * The node represents a single command character (e.g. "{sp}" or "{\t}"). This type allows the
+     * formatter to distinguish between "{sp}" and " ", for example.
+     */
+    COMMAND_CHARACTER,
+
+    /** The node was created from a {literal} command */
+    LITERAL,
+
+    /**
+     * The node was created via calling {@link #substring(int, int)} on a node that was created with
+     * a {literal} command.
+     */
+    LITERAL_SUBSTRING,
+
+    /**
+     * The node was created via calling {@link #concat}, probably during
+     * CombineConsecutiveRawTextNodesPass.
+     */
+    CONCATENATED
+  }
 
   /** The special chars we need to re-escape for toSourceString(). */
   private static final Pattern SPECIAL_CHARS_TO_ESCAPE = Pattern.compile("[\n\r\t{}\u00A0]");
@@ -54,10 +83,16 @@ public final class RawTextNode extends AbstractSoyNode implements StandaloneNode
           .put("{", "{lb}")
           .put("}", "{rb}")
           .put("\u00A0", "{nbsp}")
-          .build();
+          .buildOrThrow();
 
   /** The raw text string (after processing of special chars and literal blocks). */
   private final String rawText;
+
+  // For COMMAND_CHARACTER nodes only. The character this node represents (e.g. "{sp}" or "{nbsp}").
+  private final Optional<CommandChar> commandChar;
+
+  /** Whether this raw text was created from the {literal} command. */
+  private final Provenance provenance;
 
   @Nullable private final SourceOffsets offsets;
 
@@ -69,20 +104,39 @@ public final class RawTextNode extends AbstractSoyNode implements StandaloneNode
    * @param sourceLocation The node's source location.
    */
   public RawTextNode(int id, String rawText, SourceLocation sourceLocation) {
-    this(id, rawText, sourceLocation, SourceOffsets.fromLocation(sourceLocation, rawText.length()));
-  }
-
-  public RawTextNode(
-      int id, String rawText, SourceLocation sourceLocation, HtmlContext htmlContext) {
-    super(id, sourceLocation);
-    this.rawText = checkNotNull(rawText);
-    this.htmlContext = htmlContext;
-    this.offsets = SourceOffsets.fromLocation(sourceLocation, rawText.length());
+    this(
+        id,
+        rawText,
+        Optional.empty(),
+        sourceLocation,
+        SourceOffsets.fromLocation(sourceLocation, rawText.length()),
+        Provenance.NORMAL);
   }
 
   public RawTextNode(int id, String rawText, SourceLocation sourceLocation, SourceOffsets offsets) {
+    this(id, rawText, Optional.empty(), sourceLocation, offsets, Provenance.NORMAL);
+  }
+
+  private RawTextNode(
+      int id,
+      String rawText,
+      SourceLocation sourceLocation,
+      SourceOffsets offsets,
+      Provenance provenance) {
+    this(id, rawText, Optional.empty(), sourceLocation, offsets, provenance);
+  }
+
+  private RawTextNode(
+      int id,
+      String rawText,
+      Optional<CommandChar> commandChar,
+      SourceLocation sourceLocation,
+      @Nullable SourceOffsets offsets,
+      Provenance provenance) {
     super(id, sourceLocation);
-    this.rawText = checkNotNull(rawText);
+    this.rawText = rawText;
+    this.commandChar = commandChar;
+    this.provenance = provenance;
     this.offsets = offsets;
   }
 
@@ -94,14 +148,50 @@ public final class RawTextNode extends AbstractSoyNode implements StandaloneNode
   private RawTextNode(RawTextNode orig, CopyState copyState) {
     super(orig, copyState);
     this.rawText = orig.rawText;
+    this.commandChar = orig.commandChar;
+    this.provenance = orig.provenance;
     this.htmlContext = orig.htmlContext;
     this.offsets = orig.offsets;
+  }
+
+  public static RawTextNode newLiteral(int id, String rawText, SourceLocation loc) {
+    SourceOffsets.Builder builder = new SourceOffsets.Builder();
+    if (rawText.length() > 0) {
+      builder.add(0, loc.getBeginLine(), loc.getBeginColumn(), Reason.NONE);
+    }
+    SourceOffsets offsets =
+        builder
+            .setEndLocation(loc.getEndLine(), loc.getEndColumn())
+            .build(rawText.length(), Reason.LITERAL);
+    return new RawTextNode(id, rawText, loc, offsets, Provenance.LITERAL);
+  }
+
+  public static RawTextNode newCommandCharNode(
+      int id, CommandChar commandChar, SourceLocation loc) {
+    SourceOffsets.Builder offsetsBuilder = new SourceOffsets.Builder();
+    if (!commandChar.equals(CommandChar.NIL)) {
+      // {nil} has length 0, so we only need one index (the "end" index below).
+      offsetsBuilder.add(0, loc.getBeginLine(), loc.getBeginColumn(), Reason.NONE);
+    }
+    SourceOffsets offsets =
+        offsetsBuilder
+            .setEndLocation(loc.getEndLine(), loc.getEndColumn())
+            .build(commandChar.processedString().length(), Reason.COMMAND);
+
+    return new RawTextNode(
+        id,
+        /* rawText= */ commandChar.processedString(),
+        Optional.of(commandChar),
+        loc,
+        offsets,
+        Provenance.COMMAND_CHARACTER);
   }
 
   /**
    * Gets the HTML source context (typically tag, attribute value, HTML PCDATA, or plain text) which
    * this node emits in. This is used for incremental DOM codegen.
    */
+  @Override
   public HtmlContext getHtmlContext() {
     return Preconditions.checkNotNull(
         htmlContext, "Cannot access HtmlContext before HtmlContextVisitor");
@@ -123,6 +213,28 @@ public final class RawTextNode extends AbstractSoyNode implements StandaloneNode
 
   public boolean isEmpty() {
     return rawText.isEmpty();
+  }
+
+  public Provenance getProvenance() {
+    return provenance;
+  }
+
+  /** Whether or not this node represents a command character (e.g. "{sp}"). */
+  public boolean isCommandCharacter() {
+    return provenance.equals(Provenance.COMMAND_CHARACTER);
+  }
+
+  /** Whether this node represents the {nil} command character. */
+  public boolean isNilCommandChar() {
+    return commandChar.isPresent() && commandChar.get().equals(CommandChar.NIL);
+  }
+
+  /**
+   * Gets the command character this node represents. Should only be called for nodes of type
+   * COMMAND_CHARACTER.
+   */
+  public CommandChar getCommandChar() {
+    return commandChar.get();
   }
 
   /**
@@ -224,7 +336,12 @@ public final class RawTextNode extends AbstractSoyNode implements StandaloneNode
       newOffsets = offsets.substring(start, end, rawText);
       newLocation = newOffsets.getSourceLocation(getSourceLocation().getFilePath());
     }
-    return new RawTextNode(newId, newText, newLocation, newOffsets);
+    return new RawTextNode(
+        newId,
+        newText,
+        newLocation,
+        newOffsets,
+        provenance == Provenance.LITERAL ? Provenance.LITERAL_SUBSTRING : Provenance.NORMAL);
   }
 
   /** Concatenates the non-empty set of RawTextNodes, preserving source location information. */
@@ -308,21 +425,30 @@ public final class RawTextNode extends AbstractSoyNode implements StandaloneNode
         id,
         text,
         location,
-        indexes == null ? null : new SourceOffsets(indexes, lines, columns, reasons));
+        indexes == null ? null : new SourceOffsets(indexes, lines, columns, reasons),
+        Provenance.CONCATENATED);
   }
 
   @Override
   public String toSourceString() {
+    // If it's a command character node, don't use the rawText (which is already processed). Use the
+    // character's source string instead.
+    if (this.provenance.equals(Provenance.COMMAND_CHARACTER)) {
+      return this.commandChar.get().sourceString();
+    }
 
     StringBuffer sb = new StringBuffer();
-
-    // Must escape special chars to create valid source text.
-    Matcher matcher = SPECIAL_CHARS_TO_ESCAPE.matcher(rawText);
-    while (matcher.find()) {
-      String specialCharTag = SPECIAL_CHAR_TO_TAG.get(matcher.group());
-      matcher.appendReplacement(sb, Matcher.quoteReplacement(specialCharTag));
+    if (provenance == Provenance.LITERAL) {
+      sb.append("{literal}").append(rawText).append("{/literal}");
+    } else {
+      // Must escape special chars to create valid source text.
+      Matcher matcher = SPECIAL_CHARS_TO_ESCAPE.matcher(rawText);
+      while (matcher.find()) {
+        String specialCharTag = SPECIAL_CHAR_TO_TAG.get(matcher.group());
+        matcher.appendReplacement(sb, Matcher.quoteReplacement(specialCharTag));
+      }
+      matcher.appendTail(sb);
     }
-    matcher.appendTail(sb);
 
     return sb.toString();
   }
@@ -332,7 +458,6 @@ public final class RawTextNode extends AbstractSoyNode implements StandaloneNode
   public ParentSoyNode<StandaloneNode> getParent() {
     return (ParentSoyNode<StandaloneNode>) super.getParent();
   }
-
 
   @Override
   public RawTextNode copy(CopyState copyState) {
@@ -510,7 +635,11 @@ public final class RawTextNode extends AbstractSoyNode implements StandaloneNode
       if (startTextIndex == endTextIndex) {
         // special case
         builder.setEndLocation(startLine, startColumn);
-        return builder.build(substringLength, startReason);
+
+        Reason afterLastCharacter =
+            endTextIndex + 1 == text.length() ? getReasonAt(text.length()) : startReason;
+
+        return builder.build(substringLength, /*reason=*/ afterLastCharacter);
       }
 
       // copy over all offsets, taking care to modify the indexes
@@ -532,12 +661,15 @@ public final class RawTextNode extends AbstractSoyNode implements StandaloneNode
         }
         i++;
       }
+      if (endTextIndex + 1 == text.length()) {
+        endReason = getReasonAt(text.length());
+      }
 
       return builder.build(substringLength, endReason);
     }
 
     /** Returns the sourcelocation for the whole span. */
-    public SourceLocation getSourceLocation(String filePath) {
+    public SourceLocation getSourceLocation(SourceFilePath filePath) {
       return new SourceLocation(
           filePath, lines[0], columns[0], lines[lines.length - 1], columns[columns.length - 1]);
     }

@@ -20,7 +20,6 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.restricted.SoyMsg;
@@ -28,7 +27,6 @@ import com.google.template.soy.msgs.restricted.SoyMsgBundleImpl;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPlaceholderPart;
 import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
-import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.MsgHtmlTagNode;
 import com.google.template.soy.soytree.MsgNode;
@@ -37,6 +35,8 @@ import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.testing.SharedTestUtils;
+import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -44,7 +44,6 @@ import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for {@link InsertMsgsVisitor}.
- *
  */
 @RunWith(JUnit4.class)
 public final class InsertMsgsVisitorTest {
@@ -59,7 +58,7 @@ public final class InsertMsgsVisitorTest {
           + "{namespace boo}\n"
           + "\n"
           + "/** Test template. */\n"
-          + "{template .foo}\n"
+          + "{template foo}\n"
           + "  {@param boo: ?}\n"
           + "  {@param foo: ?}\n"
           + "  {@param moo: ?}\n"
@@ -139,10 +138,10 @@ public final class InsertMsgsVisitorTest {
             .setLocaleString("x-zz")
             .setParts(
                 ImmutableList.of(
-                    new SoyMsgPlaceholderPart("START_LINK", /* placeholderExample= */ null),
+                    new SoyMsgPlaceholderPart("START_LINK"),
                     SoyMsgRawTextPart.of("zslimy"),
-                    new SoyMsgPlaceholderPart("END_LINK", /* placeholderExample= */ null),
-                    new SoyMsgPlaceholderPart("FOO", /* placeholderExample= */ null),
+                    new SoyMsgPlaceholderPart("END_LINK"),
+                    new SoyMsgPlaceholderPart("FOO"),
                     SoyMsgRawTextPart.of("zrandom")))
             .build());
     // Note: This bundle has no translation for the message "dairy{$moo}".
@@ -175,7 +174,7 @@ public final class InsertMsgsVisitorTest {
           + "{namespace boo}\n"
           + "\n"
           + "/** Test template with plural/select msgs. */\n"
-          + "{template .foo}\n"
+          + "{template foo}\n"
           + "  {@param gender: ?}\n"
           + "  {@param numFriends: ?}\n"
           + "  {msg desc=\"Plural message.\"}\n"
@@ -223,7 +222,7 @@ public final class InsertMsgsVisitorTest {
           + "{namespace boo}\n"
           + "\n"
           + "/** Test template. */\n"
-          + "{template .foo}\n"
+          + "{template foo}\n"
           + "  {msg desc=\"\"}\n"
           + // no trans + no trans
           "    noTrans1\n"

@@ -37,12 +37,12 @@ import java.util.List;
 
 /**
  * Soy function that takes the min of two numbers.
- *
  */
 @SoyFunctionSignature(
     name = "min",
     value =
-        // TODO(b/70946095):these should all be number
+        // TODO(b/70946095):these should all be number. The ResolveExpressionTypesPass narrows the
+        // type.
         @Signature(
             returnType = "?",
             parameterTypes = {"?", "?"}))

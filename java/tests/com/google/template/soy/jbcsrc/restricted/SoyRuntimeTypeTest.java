@@ -18,7 +18,6 @@ package com.google.template.soy.jbcsrc.restricted;
 import static com.google.common.truth.Fact.fact;
 import static com.google.common.truth.Fact.simpleFact;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.common.truth.FailureMetadata;
 import com.google.common.truth.Subject;
 import com.google.common.truth.Truth;
@@ -30,8 +29,9 @@ import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
-import com.google.template.soy.data.restricted.SoyString;
-import com.google.template.soy.testing.Proto3Message;
+import com.google.template.soy.data.restricted.StringData;
+import com.google.template.soy.testing3.Foo3;
+import com.google.template.soy.testing3.Proto3Message;
 import com.google.template.soy.types.AnyType;
 import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.FloatType;
@@ -42,7 +42,6 @@ import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.UnionType;
 import com.google.template.soy.types.UnknownType;
@@ -64,13 +63,21 @@ public class SoyRuntimeTypeTest {
 
     assertThat(BoolType.getInstance()).isBoxedAs(BooleanData.class).isUnboxedAs(boolean.class);
 
-    assertThat(StringType.getInstance()).isBoxedAs(SoyString.class).isUnboxedAs(String.class);
+    assertThat(StringType.getInstance()).isBoxedAs(StringData.class).isUnboxedAs(String.class);
 
     assertThat(FloatType.getInstance()).isBoxedAs(FloatData.class).isUnboxedAs(double.class);
 
     assertThat(new SoyProtoEnumType(Proto3Message.AnEnum.getDescriptor()))
         .isBoxedAs(IntegerData.class)
-        .isUnboxedAs(int.class);
+        .isUnboxedAs(long.class);
+
+    assertThat(
+            UnionType.of(
+                new SoyProtoEnumType(Proto3Message.AnEnum.getDescriptor()),
+                new SoyProtoEnumType(Foo3.AnotherEnum.getDescriptor())))
+        .isBoxedAs(IntegerData.class)
+        .isUnboxedAs(long.class);
+
     for (SanitizedContentKind kind : SanitizedContentKind.values()) {
       if (kind == SanitizedContentKind.TEXT) {
         continue;
@@ -79,9 +86,7 @@ public class SoyRuntimeTypeTest {
           .isBoxedAs(SanitizedContent.class)
           .isNotUnboxable();
     }
-    assertThat(
-            new SoyProtoType(
-                new SoyTypeRegistry(), Proto3Message.getDescriptor(), ImmutableSet.of()))
+    assertThat(SoyProtoType.newForTest(Proto3Message.getDescriptor()))
         .isBoxedAs(SoyProtoValue.class)
         .isUnboxedAs(Proto3Message.class);
     assertThat(ListType.of(IntType.getInstance())).isBoxedAs(SoyList.class).isUnboxedAs(List.class);

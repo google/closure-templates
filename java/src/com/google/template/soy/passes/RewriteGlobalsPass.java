@@ -16,84 +16,34 @@
 
 package com.google.template.soy.passes;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.internal.IdGenerator;
-import com.google.template.soy.data.internalutils.InternalValueUtils;
-import com.google.template.soy.data.restricted.PrimitiveData;
-import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyErrorKind;
-import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
+import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.exprtree.GlobalNode;
-import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
-import com.google.template.soy.types.SoyProtoEnumType;
-import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.SoyTypeRegistry;
 
-/**
- * A {@link CompilerFilePass} that searches for globals and substitutes values.
- *
- * <p>TODO(lukes): consider introducing a SoyEnumNode and replacing globals that reference enums
- * with that node type here.
- */
-final class RewriteGlobalsPass extends CompilerFilePass {
-  private static final SoyErrorKind ENUM_MEMBERSHIP_ERROR =
-      SoyErrorKind.of("''{0}'' is not a member of enum ''{1}''.");
-
-  private final SoyTypeRegistry typeRegistry;
-  private final ImmutableMap<String, PrimitiveData> compileTimeGlobals;
-  private final ErrorReporter errorReporter;
-
-  RewriteGlobalsPass(
-      SoyTypeRegistry typeRegistry,
-      ImmutableMap<String, PrimitiveData> compileTimeGlobals,
-      ErrorReporter errorReporter) {
-    this.typeRegistry = typeRegistry;
-    this.compileTimeGlobals = compileTimeGlobals;
-    this.errorReporter = errorReporter;
-  }
+/** A {@link CompilerFilePass} that resolves globals against {alias} commands in the same file. */
+@RunAfter({
+  VeRewritePass.class, // rewrites some VE references that are parsed as globals in a different way
+})
+@RunBefore({CheckGlobalsPass.class})
+final class RewriteGlobalsPass implements CompilerFilePass {
 
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-    for (GlobalNode global : SoyTreeUtils.getAllNodesOfType(file, GlobalNode.class)) {
-      resolveGlobal(global);
-    }
+    SoyTreeUtils.allNodesOfType(file, GlobalNode.class)
+        .forEach(global -> resolveGlobal(file, global));
   }
 
-  private void resolveGlobal(GlobalNode global) {
+  private void resolveGlobal(SoyFileNode file, GlobalNode global) {
     // First check to see if this global matches a proto enum.  We do this because the enums from
     // the type registry have better type information and for applications with legacy globals
     // configs there is often overlap, so the order in which we check is actually important.
     // proto enums are dotted identifiers
-    String name = global.getName();
-    int lastDot = name.lastIndexOf('.');
-    if (lastDot > 0) {
-      String enumTypeName = name.substring(0, lastDot);
-      SoyType type = typeRegistry.getType(enumTypeName);
-      if (type != null && type.getKind() == SoyType.Kind.PROTO_ENUM) {
-        SoyProtoEnumType enumType = (SoyProtoEnumType) type;
-        String enumMemberName = name.substring(lastDot + 1);
-        Integer enumValue = enumType.getValue(enumMemberName);
-        if (enumValue != null) {
-          // TODO(lukes): consider introducing a new PrimitiveNode for enums
-          global.resolve(enumType, new IntegerNode(enumValue, global.getSourceLocation()));
-        } else {
-          // If we found the type definition but not the value, then that's an error
-          // regardless of whether we're allowing unbound globals or not.
-          errorReporter.report(
-              global.getSourceLocation(), ENUM_MEMBERSHIP_ERROR, enumMemberName, enumTypeName);
-        }
-        // TODO(lukes): issue a warning if a registered global also matches
-        return;
-      }
-    }
-    // if that doesn't work, see if it was registered in the globals file.
-    PrimitiveData value = compileTimeGlobals.get(global.getName());
-    if (value != null) {
-      PrimitiveNode expr =
-          InternalValueUtils.convertPrimitiveDataToExpr(value, global.getSourceLocation());
-      global.resolve(expr.getType(), expr);
+    Identifier original = global.getIdentifier();
+    Identifier alias = file.resolveAlias(global.getIdentifier());
+    if (!alias.equals(original)) {
+      global.resolve(alias.identifier());
     }
   }
 }

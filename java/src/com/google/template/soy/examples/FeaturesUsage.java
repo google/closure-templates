@@ -61,7 +61,6 @@ import org.kohsuke.args4j.Option;
 
 /**
  * Usage of the features examples.
- *
  */
 public class FeaturesUsage {
 
@@ -114,9 +113,8 @@ public class FeaturesUsage {
     SoyFileSet.Builder sfsBuilder = SoyFileSet.builder();
     SoyFileSet sfs =
         sfsBuilder
-            .add(Resources.getResource("simple.soy"))
-            .add(Resources.getResource("features.soy"))
-            .setCompileTimeGlobals(Resources.getResource("FeaturesUsage_globals.txt"))
+            .add(Resources.getResource("simple.soy"), "examples/simple.soy")
+            .add(Resources.getResource("features.soy"), "examples/features.soy")
             .build();
     SoyTofu tofu = sfs.compileToTofu().forNamespace("soy.examples.features");
 

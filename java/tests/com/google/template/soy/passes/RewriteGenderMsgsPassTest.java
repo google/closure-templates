@@ -20,13 +20,13 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertEquals;
 
 import com.google.common.collect.Iterables;
-import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyError;
 import com.google.template.soy.msgs.internal.MsgUtils;
-import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
+import com.google.template.soy.testing.SharedTestUtils;
+import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.Test;
@@ -35,7 +35,6 @@ import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for RewriteGenderMsgsVisitor.
- *
  */
 @RunWith(JUnit4.class)
 public final class RewriteGenderMsgsPassTest {
@@ -413,7 +412,7 @@ public final class RewriteGenderMsgsPassTest {
 
     String expectedInnerSelectSrc =
         ""
-            + "{select $target[1].gender phname=\"TARGET_1_GENDER\"}"
+            + "{select $target[1].gender}"
             + "{case 'female'}You starred {$target[0].name}'s photo in {$target[1].name}'s album."
             + "{case 'male'}You starred {$target[0].name}'s photo in {$target[1].name}'s album."
             + "{default}You starred {$target[0].name}'s photo in {$target[1].name}'s album."
@@ -425,7 +424,7 @@ public final class RewriteGenderMsgsPassTest {
             + "{select $userGender}"
             + // note: 'phname' not specified because generated is same
             "{case 'female'}"
-            + "{select $target[0].gender phname=\"TARGET_0_GENDER\"}"
+            + "{select $target[0].gender}"
             + "{case 'female'}"
             + expectedInnerSelectSrc
             + "{case 'male'}"
@@ -434,7 +433,7 @@ public final class RewriteGenderMsgsPassTest {
             + expectedInnerSelectSrc
             + "{/select}"
             + "{case 'male'}"
-            + "{select $target[0].gender phname=\"TARGET_0_GENDER\"}"
+            + "{select $target[0].gender}"
             + "{case 'female'}"
             + expectedInnerSelectSrc
             + "{case 'male'}"
@@ -443,7 +442,7 @@ public final class RewriteGenderMsgsPassTest {
             + expectedInnerSelectSrc
             + "{/select}"
             + "{default}"
-            + "{select $target[0].gender phname=\"TARGET_0_GENDER\"}"
+            + "{select $target[0].gender}"
             + "{case 'female'}"
             + expectedInnerSelectSrc
             + "{case 'male'}"

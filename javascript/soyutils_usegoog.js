@@ -21,77 +21,49 @@
  * <p>
  * This file contains utilities that should only be called by Soy-generated
  * JS code. Please do not use these functions directly from
- * your hand-written code. Their names all start with '$$', or exist within the
- * soydata.VERY_UNSAFE namespace.
- *
- * <p>TODO(lukes): ensure that the above pattern is actually followed
- * consistently.
+ * your hand-written code. Their names all start with '$$'
  *
  */
-goog.provide('soy');
-goog.provide('soy.asserts');
-goog.provide('soy.esc');
-goog.provide('soydata');
-goog.provide('soydata.SanitizedHtml');
-goog.provide('soydata.VERY_UNSAFE');
+goog.module('soy');
+goog.module.declareLegacyNamespace();
 
-goog.require('goog.array');
-goog.require('goog.asserts');
-goog.require('goog.debug');
-goog.require('goog.format');
-goog.require('goog.html.SafeHtml');
-goog.require('goog.html.SafeScript');
-goog.require('goog.html.SafeStyle');
-goog.require('goog.html.SafeStyleSheet');
-goog.require('goog.html.SafeUrl');
-goog.require('goog.html.TrustedResourceUrl');
-goog.require('goog.html.uncheckedconversions');
-goog.require('goog.i18n.BidiFormatter');
-goog.require('goog.i18n.bidi');
-goog.require('goog.object');
-goog.require('goog.soy.data.SanitizedContent');
-goog.require('goog.soy.data.SanitizedContentKind');
-goog.require('goog.soy.data.SanitizedCss');
-goog.require('goog.soy.data.SanitizedHtml');
-goog.require('goog.soy.data.SanitizedHtmlAttribute');
-goog.require('goog.soy.data.SanitizedJs');
-goog.require('goog.soy.data.SanitizedTrustedResourceUri');
-goog.require('goog.soy.data.SanitizedUri');
-goog.require('goog.string');
-goog.require('goog.string.Const');
-goog.require('soy.checks');
-goog.requireType('goog.soy');
-
+const BidiFormatter = goog.require('goog.i18n.BidiFormatter');
+const Const = goog.require('goog.string.Const');
+const SafeHtml = goog.require('goog.html.SafeHtml');
+const SafeScript = goog.require('goog.html.SafeScript');
+const SafeStyle = goog.require('goog.html.SafeStyle');
+const SafeStyleSheet = goog.require('goog.html.SafeStyleSheet');
+const SafeUrl = goog.require('goog.html.SafeUrl');
+const TrustedResourceUrl = goog.require('goog.html.TrustedResourceUrl');
+const asserts = goog.require('goog.asserts');
+const bidi = goog.require('goog.i18n.bidi');
+const googArray = goog.require('goog.array');
+const googDebug = goog.require('goog.debug');
+const googFormat = goog.require('goog.format');
+const googString = goog.require('goog.string');
+const soyChecks = goog.require('soy.checks');
+const uncheckedconversions = goog.require('goog.html.uncheckedconversions');
+const {SanitizedContent, SanitizedContentKind, SanitizedCss, SanitizedHtml, SanitizedHtmlAttribute, SanitizedJs, SanitizedTrustedResourceUri, SanitizedUri} = goog.require('goog.soy.data');
 
 // -----------------------------------------------------------------------------
 // soydata: Defines typed strings, e.g. an HTML string `"a<b>c"` is
 // semantically distinct from the plain text string `"a<b>c"` and smart
 // templates can take that distinction into account.
 
-/**
- * Properties added to all idom HTML / Attributes functions. The TypeScript type
- * inherits this and adds a call signature (which is not really possible here).
- * @typedef {{
- *   toString: function(),
- *   contentKind: !goog.soy.data.SanitizedContentKind
- * }}
- */
-soydata.IdomFunctionMembers;
 
-
-/** @typedef {!soydata.IdomFunctionMembers|!Function} */
-soydata.IdomFunction;
+/** @typedef {!SanitizedContent|{isInvokableFn: boolean}} */
+let IdomFunction;
 
 /**
  * Checks whether a given value is of a given content kind.
  *
  * @param {?} value The value to be examined.
- * @param {!goog.soy.data.SanitizedContentKind} contentKind The desired content
+ * @param {!SanitizedContentKind} contentKind The desired content
  *     kind.
  * @return {boolean} Whether the given value is of the given kind.
- * @private
+ * @package
  */
-soydata.isContentKind_ = function(value, contentKind) {
+const isContentKind_ = function(value, contentKind) {
   // TODO(user): This function should really include the assert on
   // value.constructor that is currently sprinkled at most of the call sites.
   // Unfortunately, that would require a (debug-mode-only) switch statement.
@@ -102,41 +74,40 @@ soydata.isContentKind_ = function(value, contentKind) {
 
 /**
  * Returns a given value's contentDir property, constrained to a
- * goog.i18n.bidi.Dir value or null. Returns null if the value is null,
+ * bidi.Dir value or null. Returns null if the value is null,
  * undefined, a primitive or does not have a contentDir property, or the
  * property's value is not 1 (for LTR), -1 (for RTL), or 0 (for neutral).
  *
  * @param {?} value The value whose contentDir property, if any, is to
  *     be returned.
- * @return {?goog.i18n.bidi.Dir} The contentDir property.
+ * @return {?bidi.Dir} The contentDir property.
  */
-soydata.getContentDir = function(value) {
+const getContentDir = function(value) {
   if (value != null) {
     switch (value.contentDir) {
-      case goog.i18n.bidi.Dir.LTR:
-        return goog.i18n.bidi.Dir.LTR;
-      case goog.i18n.bidi.Dir.RTL:
-        return goog.i18n.bidi.Dir.RTL;
-      case goog.i18n.bidi.Dir.NEUTRAL:
-        return goog.i18n.bidi.Dir.NEUTRAL;
+      case bidi.Dir.LTR:
+        return bidi.Dir.LTR;
+      case bidi.Dir.RTL:
+        return bidi.Dir.RTL;
+      case bidi.Dir.NEUTRAL:
+        return bidi.Dir.NEUTRAL;
     }
   }
   return null;
 };
 
-
 /**
- * This class is only a holder for `soydata.SanitizedHtml.from`. Do not
- * instantiate or extend it. Use `goog.soy.data.SanitizedHtml` instead.
+ * Sets the value's contentDir property if it exists to a bidi.Dir dir value.
  *
- * @constructor
- * @extends {goog.soy.data.SanitizedHtml}
- * @abstract
+ * @param {?} value The value whose contentDir property, if any, is to be set.
+ * @param {?bidi.Dir} dir The dir value to set.
+ * @package
  */
-soydata.SanitizedHtml = function() {
-  soydata.SanitizedHtml.base(this, 'constructor');  // Throws an exception.
+const cacheContentDir_ = function(value, dir) {
+  if (value != null && value.contentDir !== undefined) {
+    value.contentDir = dir;
+  }
 };
-goog.inherits(soydata.SanitizedHtml, goog.soy.data.SanitizedHtml);
 
 /**
  * Returns a SanitizedHtml object for a particular value. The content direction
@@ -146,55 +117,62 @@ goog.inherits(soydata.SanitizedHtml, goog.soy.data.SanitizedHtml);
  *
  * @param {?} value The value to convert. If it is already a SanitizedHtml
  *     object, it is left alone.
- * @return {!goog.soy.data.SanitizedHtml} A SanitizedHtml object derived from
+ * @return {!SanitizedHtml} A SanitizedHtml object derived from
  *     the stringified value. It is escaped unless the input is SanitizedHtml or
  *     SafeHtml.
  */
-soydata.SanitizedHtml.from = function(value) {
-  // The check is soydata.isContentKind_() inlined for performance.
-  if (soy.checks.isHtml(value)) {
-    return /** @type {!goog.soy.data.SanitizedHtml} */ (value);
+const createSanitizedHtml = function(value) {
+  if (soyChecks.isHtml(value)) {
+    return /** @type {!SanitizedHtml} */ (value);
   }
-  if (value instanceof goog.html.SafeHtml) {
-    return soydata.VERY_UNSAFE.ordainSanitizedHtml(
-        goog.html.SafeHtml.unwrap(value), value.getDirection());
+  if (value instanceof SafeHtml) {
+    return VERY_UNSAFE.ordainSanitizedHtml(
+        SafeHtml.unwrap(value), value.getDirection());
   }
-  return soydata.VERY_UNSAFE.ordainSanitizedHtml(
-      soy.esc.$$escapeHtmlHelper(String(value)), soydata.getContentDir(value));
+  // MOE:begin_strip
+  if (value instanceof TsSafeHtml) {
+    return VERY_UNSAFE.ordainSanitizedHtml(
+        tsSafeUnwrappers.unwrapSafeHtml(value));
+  }
+  // MOE:end_strip
+  return VERY_UNSAFE.ordainSanitizedHtml(
+      $$escapeHtmlHelper(String(value)), getContentDir(value));
 };
 
 
 /**
  * Empty string, used as a type in Soy templates.
+ * TODO(lukes): this should not be private! it interferes with typechecking in
+ * typescript.
  * @enum {string}
  * @private
  */
-soydata.$$EMPTY_STRING_ = {
-  VALUE: ''
+const $$EMPTY_STRING_ = {
+  VALUE: '',
 };
 
 
 /**
  * Creates a factory for SanitizedContent types.
  *
- * This is a hack so that the soydata.VERY_UNSAFE.ordainSanitized* can
+ * This is a hack so that the VERY_UNSAFE.ordainSanitized* can
  * instantiate Sanitized* classes, without making the Sanitized* constructors
  * publicly usable. Requiring all construction to use the VERY_UNSAFE names
  * helps callers and their reviewers easily tell that creating SanitizedContent
  * is not always safe and calls for careful review.
  *
  * @param {function(new: T)} ctor A constructor.
- * @return {function(*, ?goog.i18n.bidi.Dir=): T} A factory that takes
+ * @return {function(*, ?bidi.Dir=): T} A factory that takes
  *     content and an optional content direction and returns a new instance. If
  *     the content direction is undefined, ctor.prototype.contentDir is used.
  * @template T
  * @private
  */
-soydata.$$makeSanitizedContentFactory_ = function(ctor) {
+const $$makeSanitizedContentFactory_ = function(ctor) {
   /**
    * @param {string} content
    * @constructor
-   * @extends {goog.soy.data.SanitizedContent}
+   * @extends {SanitizedContent}
    */
   function InstantiableCtor(content) {
     /** @override */
@@ -205,16 +183,16 @@ soydata.$$makeSanitizedContentFactory_ = function(ctor) {
    * Creates a ctor-type SanitizedContent instance.
    *
    * @param {?} content The content to put in the instance.
-   * @param {?goog.i18n.bidi.Dir=} opt_contentDir The content direction. If
+   * @param {?bidi.Dir=} contentDir The content direction. If
    *     undefined, ctor.prototype.contentDir is used.
-   * @return {!goog.soy.data.SanitizedContent} The new instance. It is actually
+   * @return {!SanitizedContent} The new instance. It is actually
    *     of type T above (ctor's type, a descendant of SanitizedContent), but
    *     there is no way to express that here.
    */
-  function sanitizedContentFactory(content, opt_contentDir) {
-    var result = new InstantiableCtor(String(content));
-    if (opt_contentDir !== undefined) {
-      result.contentDir = opt_contentDir;
+  function sanitizedContentFactory(content, contentDir) {
+    const result = new InstantiableCtor(String(content));
+    if (contentDir !== undefined) {
+      result.contentDir = contentDir;
     }
     return result;
   }
@@ -226,7 +204,7 @@ soydata.$$makeSanitizedContentFactory_ = function(ctor) {
  * Creates a factory for SanitizedContent types that should always have their
  * default directionality.
  *
- * This is a hack so that the soydata.VERY_UNSAFE.ordainSanitized* can
+ * This is a hack so that the VERY_UNSAFE.ordainSanitized* can
  * instantiate Sanitized* classes, without making the Sanitized* constructors
  * publicly usable. Requiring all construction to use the VERY_UNSAFE names
  * helps callers and their reviewers easily tell that creating SanitizedContent
@@ -236,13 +214,12 @@ soydata.$$makeSanitizedContentFactory_ = function(ctor) {
  * @return {function(*): T} A factory that takes content and returns a new
  *     instance (with default directionality, i.e. ctor.prototype.contentDir).
  * @template T
- * @private
  */
-soydata.$$makeSanitizedContentFactoryWithDefaultDirOnly_ = function(ctor) {
+const $$makeSanitizedContentFactoryWithDefaultDirOnly_ = function(ctor) {
   /**
    * @param {string} content
    * @constructor
-   * @extends {goog.soy.data.SanitizedContent}
+   * @extends {SanitizedContent}
    */
   function InstantiableCtor(content) {
     /** @override */
@@ -253,12 +230,12 @@ soydata.$$makeSanitizedContentFactoryWithDefaultDirOnly_ = function(ctor) {
    * Creates a ctor-type SanitizedContent instance.
    *
    * @param {?} content The content to put in the instance.
-   * @return {!goog.soy.data.SanitizedContent} The new instance. It is actually
+   * @return {!SanitizedContent} The new instance. It is actually
    *     of type T above (ctor's type, a descendant of SanitizedContent), but
    *     there is no way to express that here.
    */
   function sanitizedContentFactory(content) {
-    var result = new InstantiableCtor(String(content));
+    const result = new InstantiableCtor(String(content));
     return result;
   }
   return sanitizedContentFactory;
@@ -270,6 +247,8 @@ soydata.$$makeSanitizedContentFactoryWithDefaultDirOnly_ = function(ctor) {
 // recommendation is to limit usage of these to just a handful of files in your
 // source tree where usages can be carefully audited.
 
+/** @struct */
+const VERY_UNSAFE = {};
 
 /**
  * Takes a leap of faith that the provided content is "safe" HTML.
@@ -279,13 +258,12 @@ soydata.$$makeSanitizedContentFactoryWithDefaultDirOnly_ = function(ctor) {
  *     HTML sanitizer produced `s` (e.g. it runs code or fetches bad URLs)
  *     and you wouldn't write a template that produces `s` on security or
  *     privacy grounds, then don't pass `s` here.
- * @param {?goog.i18n.bidi.Dir=} opt_contentDir The content direction; null if
+ * @param {?bidi.Dir=} contentDir The content direction; null if
  *     unknown and thus to be estimated when necessary. Default: null.
- * @return {!goog.soy.data.SanitizedHtml} Sanitized content wrapper that
+ * @return {!SanitizedHtml} Sanitized content wrapper that
  *     indicates to Soy not to escape when printed as HTML.
  */
-soydata.VERY_UNSAFE.ordainSanitizedHtml =
-    soydata.$$makeSanitizedContentFactory_(goog.soy.data.SanitizedHtml);
+VERY_UNSAFE.ordainSanitizedHtml = $$makeSanitizedContentFactory_(SanitizedHtml);
 
 
 /**
@@ -294,12 +272,11 @@ soydata.VERY_UNSAFE.ordainSanitizedHtml =
  *
  * @param {?} content Javascript source that when evaluated does not
  *     execute any attacker-controlled scripts.
- * @return {!goog.soy.data.SanitizedJs} Sanitized content wrapper that indicates
+ * @return {!SanitizedJs} Sanitized content wrapper that indicates
  *     to Soy not to escape when printed as Javascript source.
  */
-soydata.VERY_UNSAFE.ordainSanitizedJs =
-    soydata.$$makeSanitizedContentFactoryWithDefaultDirOnly_(
-        goog.soy.data.SanitizedJs);
+VERY_UNSAFE.ordainSanitizedJs =
+    $$makeSanitizedContentFactoryWithDefaultDirOnly_(SanitizedJs);
 
 
 /**
@@ -313,12 +290,11 @@ soydata.VERY_UNSAFE.ordainSanitizedJs =
  *
  * @param {?} content A chunk of URI that the caller knows is safe to
  *     emit in a template.
- * @return {!goog.soy.data.SanitizedUri} Sanitized content wrapper that
+ * @return {!SanitizedUri} Sanitized content wrapper that
  *     indicates to Soy not to escape or filter when printed in URI context.
  */
-soydata.VERY_UNSAFE.ordainSanitizedUri =
-    soydata.$$makeSanitizedContentFactoryWithDefaultDirOnly_(
-        goog.soy.data.SanitizedUri);
+VERY_UNSAFE.ordainSanitizedUri =
+    $$makeSanitizedContentFactoryWithDefaultDirOnly_(SanitizedUri);
 
 
 /**
@@ -330,13 +306,13 @@ soydata.VERY_UNSAFE.ordainSanitizedUri =
  *
  * @param {?} content A chunk of TrustedResourceUri such as that the caller
  *     knows is safe to emit in a template.
- * @return {!goog.soy.data.SanitizedTrustedResourceUri} Sanitized content
+ * @return {!SanitizedTrustedResourceUri} Sanitized content
  *     wrapper that indicates to Soy not to escape or filter when printed in
  *     TrustedResourceUri context.
  */
-soydata.VERY_UNSAFE.ordainSanitizedTrustedResourceUri =
-    soydata.$$makeSanitizedContentFactoryWithDefaultDirOnly_(
-        goog.soy.data.SanitizedTrustedResourceUri);
+VERY_UNSAFE.ordainSanitizedTrustedResourceUri =
+    $$makeSanitizedContentFactoryWithDefaultDirOnly_(
+        SanitizedTrustedResourceUri);
 
 
 /**
@@ -345,12 +321,11 @@ soydata.VERY_UNSAFE.ordainSanitizedTrustedResourceUri =
  *
  * @param {?} content An attribute name and value, such as
  *     `dir="ltr"`.
- * @return {!goog.soy.data.SanitizedHtmlAttribute} Sanitized content wrapper
+ * @return {!SanitizedHtmlAttribute} Sanitized content wrapper
  *     that indicates to Soy not to escape when printed as an HTML attribute.
  */
-soydata.VERY_UNSAFE.ordainSanitizedHtmlAttribute =
-    soydata.$$makeSanitizedContentFactoryWithDefaultDirOnly_(
-        goog.soy.data.SanitizedHtmlAttribute);
+VERY_UNSAFE.ordainSanitizedHtmlAttribute =
+    $$makeSanitizedContentFactoryWithDefaultDirOnly_(SanitizedHtmlAttribute);
 
 
 /**
@@ -358,12 +333,26 @@ soydata.VERY_UNSAFE.ordainSanitizedHtmlAttribute =
  * in a style block.
  *
  * @param {?} content CSS, such as `color:#c3d9ff`.
- * @return {!goog.soy.data.SanitizedCss} Sanitized CSS wrapper that indicates to
+ * @return {!SanitizedCss} Sanitized CSS wrapper that indicates to
  *     Soy there is no need to escape or filter when printed in CSS context.
  */
-soydata.VERY_UNSAFE.ordainSanitizedCss =
-    soydata.$$makeSanitizedContentFactoryWithDefaultDirOnly_(
-        goog.soy.data.SanitizedCss);
+VERY_UNSAFE.ordainSanitizedCss =
+    $$makeSanitizedContentFactoryWithDefaultDirOnly_(SanitizedCss);
+
+// Utilities related to defining and stubbing soy templates
+
+
+/**
+ * A map that allows us to dynamically replace templates.
+ *
+ * The key is the fully qualified template name and the value is a replacement
+ * to call instead.
+ *
+ * @type {?Object<string, !Function>}
+ * @const
+ */
+const $$stubsMap = goog.DEBUG ? {} : null;
+
 
 // -----------------------------------------------------------------------------
 // Soy-generated utilities in the soy namespace.  Contains implementations for
@@ -371,27 +360,32 @@ soydata.VERY_UNSAFE.ordainSanitizedCss =
 
 
 /**
+ * Provides a compact serialization format for the key structure.
+ * @param {?} item
+ * @return {string}
+ */
+const $$serializeKey = function(item) {
+  const stringified = String(item);
+  let delimiter;
+  if (item == null) {
+    delimiter = '_';
+  } else if (typeof item === 'number') {
+    delimiter = '#';
+  } else {
+    delimiter = ':';
+  }
+  return `${stringified.length}${delimiter}${stringified}`;
+};
+
+
+
+/**
  * Whether the locale is right-to-left.
  *
  * @type {boolean}
  */
-soy.$$IS_LOCALE_RTL = goog.i18n.bidi.IS_RTL;
+const $$IS_LOCALE_RTL = bidi.IS_RTL;
 
-
-/**
- * Builds an augmented map. The returned map will contain mappings from both
- * the base map and the additional map. If the same key appears in both, then
- * the value from the additional map will be visible, while the value from the
- * base map will be hidden. The base map will be used, but not modified.
- *
- * @param {!Object} baseMap The original map to augment.
- * @param {!Object} additionalMap A map containing the additional mappings.
- * @return {!Object} An augmented map containing both the original and
- *     additional mappings.
- */
-soy.$$augmentMap = function(baseMap, additionalMap) {
-  return soy.$$assignDefaults(soy.$$assignDefaults({}, additionalMap), baseMap);
-};
 
 
 /**
@@ -402,8 +396,8 @@ soy.$$augmentMap = function(baseMap, additionalMap) {
  * @param {?} defaults An object with default properties to apply.
  * @return {?} The destination object for convenience.
  */
-soy.$$assignDefaults = function(obj, defaults) {
-  for (var key in defaults) {
+const $$assignDefaults = function(obj, defaults) {
+  for (let key in defaults) {
     if (!(key in obj)) {
       obj[key] = defaults[key];
     }
@@ -418,9 +412,9 @@ soy.$$assignDefaults = function(obj, defaults) {
  * @param {!Object} map The map to get the keys of.
  * @return {!Array<string>} The array of keys in the given map.
  */
-soy.$$getMapKeys = function(map) {
-  var mapKeys = [];
-  for (var key in map) {
+const $$getMapKeys = function(map) {
+  const mapKeys = [];
+  for (let key in map) {
     mapKeys.push(key);
   }
   return mapKeys;
@@ -434,7 +428,7 @@ soy.$$getMapKeys = function(map) {
  * @return {T} val if is isn't null
  * @template T
  */
-soy.$$checkNotNull = function(val) {
+const $$checkNotNull = function(val) {
   if (val == null) {
     throw Error('unexpected null value');
   }
@@ -446,11 +440,11 @@ soy.$$checkNotNull = function(val) {
  * Parses the given string into a base 10 integer. Returns null if parse is
  * unsuccessful.
  * @param {?string} str The string to parse
- * @return {?number} The string parsed as a base 10 integer, or null if
- * unsuccessful
+ * @param {number=} radix The base of the string
+ * @return {?number} The string parsed as an integer, or null if unsuccessful
  */
-soy.$$parseInt = function(str) {
-  var parsed = parseInt(String(str), 10);
+const $$parseInt = function(str, radix=10) {
+  const parsed = parseInt(String(str), radix);
   return isNaN(parsed) ? null : parsed;
 };
 
@@ -464,12 +458,13 @@ soy.$$parseInt = function(str) {
  * @param {?} valueTwo
  * @return {boolean}
  */
-soy.$$equals = function(valueOne, valueTwo) {
+const $$equals = function(valueOne, valueTwo) {
   // Incremental DOM functions have to be coerced to a string. At runtime
   // they are tagged with a type for ATTR or HTML. They both need to be
   // the same to be considered structurally equal. Beware, as this is a
   // very expensive function.
-  if (goog.isFunction(valueOne) && goog.isFunction(valueTwo)) {
+  if ((valueOne && valueTwo) &&
+      (valueOne.isInvokableFn && valueTwo.isInvokableFn)) {
     if ((/** @type {?} */ (valueOne)).contentKind !==
         (/** @type {?} */ (valueTwo)).contentKind) {
       return false;
@@ -479,8 +474,8 @@ soy.$$equals = function(valueOne, valueTwo) {
   }
 
   // Likewise for sanitized content.
-  if (valueOne instanceof goog.soy.data.SanitizedContent &&
-      valueTwo instanceof goog.soy.data.SanitizedContent) {
+  if (valueOne instanceof SanitizedContent &&
+      valueTwo instanceof SanitizedContent) {
     if (valueOne.contentKind != valueTwo.contentKind) {
       return false;
     } else {
@@ -493,14 +488,21 @@ soy.$$equals = function(valueOne, valueTwo) {
 };
 
 
+/**
+ * @param {?} value
+ * @return {boolean}
+ */
+const $$isFunction = function(value) {
+  return typeof value === 'function';
+};
 
 /**
  * Parses the given string into a float. Returns null if parse is unsuccessful.
  * @param {?string} str The string to parse
  * @return {?number} The string parsed as a float, or null if unsuccessful.
  */
-soy.$$parseFloat = function(str) {
-  var parsed = parseFloat(str);
+const $$parseFloat = function(str) {
+  const parsed = parseFloat(str);
   return isNaN(parsed) ? null : parsed;
 };
 
@@ -508,7 +510,7 @@ soy.$$parseFloat = function(str) {
  * Returns a random integer.
  * @return {number} a random integer between 0 and num
  */
-soy.$$randomInt = function(/** number */ num) {
+const $$randomInt = function(/** number */ num) {
   return Math.floor(Math.random() * num);
 };
 
@@ -521,13 +523,13 @@ soy.$$randomInt = function(/** number */ num) {
  *
  * @return {number} the rounded value
  */
-soy.$$round = function(/** number */ num, /** number */ numDigitsAfterPt) {
+const $$round = function(/** number */ num, /** number */ numDigitsAfterPt) {
   const shift = Math.pow(10, numDigitsAfterPt);
   return Math.round(num * shift) / shift;
 };
 
 /** @return {boolean} returns whether the needle was found in the haystack */
-soy.$$strContains = function(/** string */ haystack, /** string */ needle) {
+const $$strContains = function(/** string */ haystack, /** string */ needle) {
   return haystack.indexOf(needle) != -1;
 };
 
@@ -537,12 +539,12 @@ soy.$$strContains = function(/** string */ haystack, /** string */ needle) {
  * For objects of type `SanitizedContent`, the contents are used to determine
  * the boolean value; this is because the outer `SanitizedContent` object
  * instance is always truthy (unless it's null).
- * 
+ *
  * @param {*} arg The argument to coerce.
  * @return {boolean}
  */
-soy.$$coerceToBoolean = function(arg) {
-  if (arg instanceof goog.soy.data.SanitizedContent) {
+const $$coerceToBoolean = function(arg) {
+  if (arg instanceof SanitizedContent) {
     return !!arg.getContent();
   }
   return !!arg;
@@ -567,7 +569,7 @@ soy.$$coerceToBoolean = function(arg) {
  *
  * @idGenerator {consistent}
  */
-soy.$$getDelTemplateId = function(delTemplateName) {
+const $$getDelTemplateId = function(delTemplateName) {
   return delTemplateName;
 };
 
@@ -576,16 +578,14 @@ soy.$$getDelTemplateId = function(delTemplateName) {
  * Map from registered delegate template key to the priority of the
  * implementation.
  * @const {!Object<number>}
- * @private
  */
-soy.$$DELEGATE_REGISTRY_PRIORITIES_ = {};
+const DELEGATE_REGISTRY_PRIORITIES_ = {};
 
 /**
  * Map from registered delegate template key to the implementation function.
  * @const {!Object<!Function>}
- * @private
  */
-soy.$$DELEGATE_REGISTRY_FUNCTIONS_ = {};
+const DELEGATE_REGISTRY_FUNCTIONS_ = {};
 
 
 /**
@@ -600,20 +600,19 @@ soy.$$DELEGATE_REGISTRY_FUNCTIONS_ = {};
  * @param {number} delPriority The implementation's priority value.
  * @param {!Function} delFn The implementation function.
  */
-soy.$$registerDelegateFn = function(
+const $$registerDelegateFn = function(
     delTemplateId, delTemplateVariant, delPriority, delFn) {
-
-  var mapKey = 'key_' + delTemplateId + ':' + delTemplateVariant;
-  var currPriority = soy.$$DELEGATE_REGISTRY_PRIORITIES_[mapKey];
+  const mapKey = 'key_' + delTemplateId + ':' + delTemplateVariant;
+  const currPriority = DELEGATE_REGISTRY_PRIORITIES_[mapKey];
   if (currPriority === undefined || delPriority > currPriority) {
     // Registering new or higher-priority function: replace registry entry.
-    soy.$$DELEGATE_REGISTRY_PRIORITIES_[mapKey] = delPriority;
-    soy.$$DELEGATE_REGISTRY_FUNCTIONS_[mapKey] = delFn;
+    DELEGATE_REGISTRY_PRIORITIES_[mapKey] = delPriority;
+    DELEGATE_REGISTRY_FUNCTIONS_[mapKey] = delFn;
   } else if (delPriority == currPriority) {
     // Registering same-priority function: error.
     throw Error(
         'Encountered two active delegates with the same priority ("' +
-            delTemplateId + ':' + delTemplateVariant + '").');
+        delTemplateId + ':' + delTemplateVariant + '").');
   } else {
     // Registering lower-priority function: do nothing.
   }
@@ -635,20 +634,19 @@ soy.$$registerDelegateFn = function(
  *     function if there's no active implementation.
  * @return {!Function} The retrieved implementation function.
  */
-soy.$$getDelegateFn = function(
+const $$getDelegateFn = function(
     delTemplateId, delTemplateVariant, allowsEmptyDefault) {
-
-  var delFn = soy.$$DELEGATE_REGISTRY_FUNCTIONS_[
-      'key_' + delTemplateId + ':' + delTemplateVariant];
-  if (! delFn && delTemplateVariant != '') {
+  let delFn =
+      DELEGATE_REGISTRY_FUNCTIONS_['key_' + delTemplateId + ':' + delTemplateVariant];
+  if (!delFn && delTemplateVariant !== '') {
     // Fallback to empty variant.
-    delFn = soy.$$DELEGATE_REGISTRY_FUNCTIONS_['key_' + delTemplateId + ':'];
+    delFn = DELEGATE_REGISTRY_FUNCTIONS_['key_' + delTemplateId + ':'];
   }
 
   if (delFn) {
     return delFn;
   } else if (allowsEmptyDefault) {
-    return soy.$$EMPTY_TEMPLATE_FN_;
+    return $$EMPTY_TEMPLATE_FN_;
   } else {
     throw Error(
         'Found no active impl for delegate call to "' + delTemplateId +
@@ -665,9 +663,8 @@ soy.$$getDelegateFn = function(
  * Note: This is also used for idom.
  *
  * @return {string}
- * @private
  */
-soy.$$EMPTY_TEMPLATE_FN_ = function() {
+const $$EMPTY_TEMPLATE_FN_ = function() {
   return '';
 };
 
@@ -688,18 +685,17 @@ soy.$$EMPTY_TEMPLATE_FN_ = function() {
  * string as SanitizedContent, since it's a no-op for empty strings anyways.
  *
  * @param {function(new: T)} ctor A constructor.
- * @return {function(*, ?goog.i18n.bidi.Dir=): (T|!soydata.$$EMPTY_STRING_)}
+ * @return {function(*, ?bidi.Dir=): (T|!$$EMPTY_STRING_)}
  *     A factory that takes content and an optional content direction and
  *     returns a new instance, or an empty string. If the content direction is
  *     undefined, ctor.prototype.contentDir is used.
  * @template T
- * @private
  */
-soydata.$$makeSanitizedContentFactoryForInternalBlocks_ = function(ctor) {
+const $$makeSanitizedContentFactoryForInternalBlocks_ = function(ctor) {
   /**
    * @param {string} content
    * @constructor
-   * @extends {goog.soy.data.SanitizedContent}
+   * @extends {SanitizedContent}
    */
   function InstantiableCtor(content) {
     /** @override */
@@ -710,21 +706,21 @@ soydata.$$makeSanitizedContentFactoryForInternalBlocks_ = function(ctor) {
    * Creates a ctor-type SanitizedContent instance.
    *
    * @param {?} content The content to put in the instance.
-   * @param {?goog.i18n.bidi.Dir=} opt_contentDir The content direction. If
+   * @param {?bidi.Dir=} contentDir The content direction. If
    *     undefined, ctor.prototype.contentDir is used.
-   * @return {!goog.soy.data.SanitizedContent|!soydata.$$EMPTY_STRING_} The new
+   * @return {!SanitizedContent|!$$EMPTY_STRING_} The new
    *     instance, or an empty string. A new instance is actually of type T
    *     above (ctor's type, a descendant of SanitizedContent), but there's no
    *     way to express that here.
    */
-  function sanitizedContentFactory(content, opt_contentDir) {
-    var contentString = String(content);
+  function sanitizedContentFactory(content, contentDir) {
+    const contentString = String(content);
     if (!contentString) {
-      return soydata.$$EMPTY_STRING_.VALUE;
+      return $$EMPTY_STRING_.VALUE;
     }
-    var result = new InstantiableCtor(contentString);
-    if (opt_contentDir !== undefined) {
-      result.contentDir = opt_contentDir;
+    const result = new InstantiableCtor(contentString);
+    if (contentDir !== undefined) {
+      result.contentDir = contentDir;
     }
     return result;
   }
@@ -745,19 +741,18 @@ soydata.$$makeSanitizedContentFactoryForInternalBlocks_ = function(ctor) {
  * string as SanitizedContent, since it's a no-op for empty strings anyways.
  *
  * @param {function(new: T)} ctor A constructor.
- * @return {function(*): (T|!soydata.$$EMPTY_STRING_)} A
+ * @return {function(*): (T|!$$EMPTY_STRING_)} A
  *     factory that takes content and returns a
  *     new instance (with default directionality, i.e.
  *     ctor.prototype.contentDir), or an empty string.
  * @template T
- * @private
  */
-soydata.$$makeSanitizedContentFactoryWithDefaultDirOnlyForInternalBlocks_ =
+const $$makeSanitizedContentFactoryWithDefaultDirOnlyForInternalBlocks_ =
     function(ctor) {
   /**
    * @param {string} content
    * @constructor
-   * @extends {goog.soy.data.SanitizedContent}
+   * @extends {SanitizedContent}
    */
   function InstantiableCtor(content) {
     /** @override */
@@ -768,17 +763,17 @@ soydata.$$makeSanitizedContentFactoryWithDefaultDirOnlyForInternalBlocks_ =
    * Creates a ctor-type SanitizedContent instance.
    *
    * @param {?} content The content to put in the instance.
-   * @return {!goog.soy.data.SanitizedContent|!soydata.$$EMPTY_STRING_} The new
+   * @return {!SanitizedContent|!$$EMPTY_STRING_} The new
    *     instance, or an empty string. A new instance is actually of type T
    *     above (ctor's type, a descendant of SanitizedContent), but there's no
    *     way to express that here.
    */
   function sanitizedContentFactory(content) {
-    var contentString = String(content);
+    const contentString = String(content);
     if (!contentString) {
-      return soydata.$$EMPTY_STRING_.VALUE;
+      return $$EMPTY_STRING_.VALUE;
     }
-    var result = new InstantiableCtor(contentString);
+    const result = new InstantiableCtor(contentString);
     return result;
   }
   return sanitizedContentFactory;
@@ -789,73 +784,72 @@ soydata.$$makeSanitizedContentFactoryWithDefaultDirOnlyForInternalBlocks_ =
  * Creates kind="html" block contents (internal use only).
  *
  * @param {?} content Text.
- * @param {?goog.i18n.bidi.Dir=} opt_contentDir The content direction; null if
+ * @param {?bidi.Dir=} contentDir The content direction; null if
  *     unknown and thus to be estimated when necessary. Default: null.
- * @return {!goog.soy.data.SanitizedHtml|!soydata.$$EMPTY_STRING_} Wrapped
+ * @return {!SanitizedHtml|!$$EMPTY_STRING_} Wrapped
  *     result.
  */
-soydata.VERY_UNSAFE.$$ordainSanitizedHtmlForInternalBlocks =
-    soydata.$$makeSanitizedContentFactoryForInternalBlocks_(
-        goog.soy.data.SanitizedHtml);
+VERY_UNSAFE.$$ordainSanitizedHtmlForInternalBlocks =
+    $$makeSanitizedContentFactoryForInternalBlocks_(SanitizedHtml);
 
 
 /**
  * Creates kind="js" block contents (internal use only).
  *
  * @param {?} content Text.
- * @return {!goog.soy.data.SanitizedJs|!soydata.$$EMPTY_STRING_} Wrapped result.
+ * @return {!SanitizedJs|!$$EMPTY_STRING_} Wrapped result.
  */
-soydata.VERY_UNSAFE.$$ordainSanitizedJsForInternalBlocks =
-    soydata.$$makeSanitizedContentFactoryWithDefaultDirOnlyForInternalBlocks_(
-        goog.soy.data.SanitizedJs);
+VERY_UNSAFE.$$ordainSanitizedJsForInternalBlocks =
+    $$makeSanitizedContentFactoryWithDefaultDirOnlyForInternalBlocks_(
+        SanitizedJs);
 
 
 /**
  * Creates kind="trustedResourceUri" block contents (internal use only).
  *
  * @param {?} content Text.
- * @return {!goog.soy.data.SanitizedTrustedResourceUri|!soydata.$$EMPTY_STRING_}
+ * @return {!SanitizedTrustedResourceUri|!$$EMPTY_STRING_}
  *     Wrapped result.
  */
-soydata.VERY_UNSAFE.$$ordainSanitizedTrustedResourceUriForInternalBlocks =
-    soydata.$$makeSanitizedContentFactoryWithDefaultDirOnlyForInternalBlocks_(
-        goog.soy.data.SanitizedTrustedResourceUri);
+VERY_UNSAFE.$$ordainSanitizedTrustedResourceUriForInternalBlocks =
+    $$makeSanitizedContentFactoryWithDefaultDirOnlyForInternalBlocks_(
+        SanitizedTrustedResourceUri);
 
 
 /**
  * Creates kind="uri" block contents (internal use only).
  *
  * @param {?} content Text.
- * @return {!goog.soy.data.SanitizedUri|!soydata.$$EMPTY_STRING_} Wrapped
+ * @return {!SanitizedUri|!$$EMPTY_STRING_} Wrapped
  *     result.
  */
-soydata.VERY_UNSAFE.$$ordainSanitizedUriForInternalBlocks =
-    soydata.$$makeSanitizedContentFactoryWithDefaultDirOnlyForInternalBlocks_(
-        goog.soy.data.SanitizedUri);
+VERY_UNSAFE.$$ordainSanitizedUriForInternalBlocks =
+    $$makeSanitizedContentFactoryWithDefaultDirOnlyForInternalBlocks_(
+        SanitizedUri);
 
 
 /**
  * Creates kind="attributes" block contents (internal use only).
  *
  * @param {?} content Text.
- * @return {!goog.soy.data.SanitizedHtmlAttribute|!soydata.$$EMPTY_STRING_}
+ * @return {!SanitizedHtmlAttribute|!$$EMPTY_STRING_}
  *     Wrapped result.
  */
-soydata.VERY_UNSAFE.$$ordainSanitizedAttributesForInternalBlocks =
-    soydata.$$makeSanitizedContentFactoryWithDefaultDirOnlyForInternalBlocks_(
-        goog.soy.data.SanitizedHtmlAttribute);
+VERY_UNSAFE.$$ordainSanitizedAttributesForInternalBlocks =
+    $$makeSanitizedContentFactoryWithDefaultDirOnlyForInternalBlocks_(
+        SanitizedHtmlAttribute);
 
 
 /**
  * Creates kind="css" block contents (internal use only).
  *
  * @param {?} content Text.
- * @return {!goog.soy.data.SanitizedCss|!soydata.$$EMPTY_STRING_} Wrapped
+ * @return {!SanitizedCss|!$$EMPTY_STRING_} Wrapped
  *     result.
  */
-soydata.VERY_UNSAFE.$$ordainSanitizedCssForInternalBlocks =
-    soydata.$$makeSanitizedContentFactoryWithDefaultDirOnlyForInternalBlocks_(
-        goog.soy.data.SanitizedCss);
+VERY_UNSAFE.$$ordainSanitizedCssForInternalBlocks =
+    $$makeSanitizedContentFactoryWithDefaultDirOnlyForInternalBlocks_(
+        SanitizedCss);
 
 
 // -----------------------------------------------------------------------------
@@ -872,10 +866,10 @@ soydata.VERY_UNSAFE.$$ordainSanitizedCssForInternalBlocks =
  *
  * @param {?} value The value to convert. If it is already a SanitizedHtml
  *     object, it is left alone.
- * @return {!goog.soy.data.SanitizedHtml} An escaped version of value.
+ * @return {!SanitizedHtml} An escaped version of value.
  */
-soy.$$escapeHtml = function(value) {
-  return soydata.SanitizedHtml.from(value);
+const $$escapeHtml = function(value) {
+  return createSanitizedHtml(value);
 };
 
 
@@ -885,23 +879,23 @@ soy.$$escapeHtml = function(value) {
  *
  * @param {?} value The string-like value to be escaped. May not be a string,
  *     but the value will be coerced to a string.
- * @param {?Array<string>=} opt_safeTags Additional tag names to whitelist.
- * @return {!goog.soy.data.SanitizedHtml} A sanitized and normalized version of
+ * @param {?Array<string>=} safeTags Additional tag names to whitelist.
+ * @return {!SanitizedHtml} A sanitized and normalized version of
  *     value.
  */
-soy.$$cleanHtml = function(value, opt_safeTags) {
-  if (soy.checks.isHtml(value)) {
-    return /** @type {!goog.soy.data.SanitizedHtml} */ (value);
+const $$cleanHtml = function(value, safeTags) {
+  if (soyChecks.isHtml(value)) {
+    return /** @type {!SanitizedHtml} */ (value);
   }
-  var tagWhitelist;
-  if (opt_safeTags) {
-    tagWhitelist = goog.object.createSet(opt_safeTags);
-    goog.object.extend(tagWhitelist, soy.esc.$$SAFE_TAG_WHITELIST_);
+  let tagWhitelist;
+  if (safeTags) {
+    tagWhitelist = Object.fromEntries(safeTags.map((tag) => [tag, true]));
+    Object.assign(tagWhitelist, $$SAFE_TAG_WHITELIST_);
   } else {
-    tagWhitelist = soy.esc.$$SAFE_TAG_WHITELIST_;
+    tagWhitelist = $$SAFE_TAG_WHITELIST_;
   }
-  return soydata.VERY_UNSAFE.ordainSanitizedHtml(
-      soy.$$stripHtmlTags(value, tagWhitelist), soydata.getContentDir(value));
+  return VERY_UNSAFE.ordainSanitizedHtml(
+      $$stripHtmlTags(value, tagWhitelist), getContentDir(value));
 };
 
 
@@ -911,61 +905,76 @@ soy.$$cleanHtml = function(value, opt_safeTags) {
  * converting entities.
  *
  * The last two parameters are idom functions.
- * @param {string|?goog.soy.data.SanitizedHtml|?soydata.IdomFunction|?Function|
- *     undefined} value
+ * @param {string|?SanitizedHtml|?SafeHtml|
+ *     ?IdomFunction|?Function|undefined} value
  * @return {string}
  */
-soy.$$htmlToText = function(value) {
+const $$htmlToText = function(value) {
   if (value == null) {
     return '';
   }
-  if (!soydata.isContentKind_(value, goog.soy.data.SanitizedContentKind.HTML)) {
-    return goog.asserts.assertString(value);
+  let html;
+  if (value instanceof SafeHtml) {
+    html = SafeHtml.unwrap(value);
+  } else if (isContentKind_(value, SanitizedContentKind.HTML)) {
+    html = value.toString();
+    // MOE:begin_strip
+  } else if (value instanceof TsSafeHtml) {
+    html = tsSafeUnwrappers.unwrapSafeHtml(value);
+    // MOE:end_strip
+  } else {
+    return asserts.assertString(value);
   }
-  var html = value.toString();
-  var text = '';
-  var start = 0;
+  let text = '';
+  let start = 0;
   // Tag name to stop removing contents, e.g. '/script'.
-  var removingUntil = '';
-  // Tag name to stop preserving whitespace, e.g. '/pre'.
-  var wsPreservingUntil = '';
-  var tagRe =
-      /<(?:!--.*?--|(?:!|(\/?[a-z][\w:-]*))(?:[^>'"]|"[^"]*"|'[^']*')*)>|$/gi;
-  for (var match; match = tagRe.exec(html);) {
-    var tag = match[1];
-    var offset = match.index;
+  let removingUntil = '';
+  const preserveWhitespaceStack = [];
+  const tagRe =
+      /<(?:!--.*?--|(?:!|(\/?[a-z][\w:-]*))((?:[^>'"]|"[^"]*"|'[^']*')*))>|$/gi;
+  for (let match; match = tagRe.exec(html);) {
+    const tag = match[1];
+    const attrs = match[2];
+    const offset = match.index;
+    const lowerCaseTag = tag ? tag.toLowerCase() : null;
     if (!removingUntil) {
-      var chunk = html.substring(start, offset);
-      chunk = goog.string.unescapeEntities(chunk);
-      if (!wsPreservingUntil) {
+      let chunk = html.substring(start, offset);
+      chunk = googString.unescapeEntities(chunk);
+
+      let preserveWhitespace =
+          $$shouldPreserveWhitespace_(preserveWhitespaceStack);
+      if (!preserveWhitespace) {
         // We are not inside <pre>, normalize spaces.
-        chunk = chunk.replace(/\s+/g, ' ');
-        if (!/\S$/.test(text)) {
+        chunk = chunk.replace(/[ \t\r\n]+/g, ' ');
+        if (!/[^ \t\r\n]$/.test(text)) {
           // Strip leading space unless after non-whitespace.
           chunk = chunk.replace(/^ /, '');
         }
       }
       text += chunk;
-      if (/^(script|style|textarea|title)$/i.test(tag)) {
-        removingUntil = '/' + tag.toLowerCase();
-      } else if (/^br$/i.test(tag)) {
-        // <br> adds newline even after newline.
-        text += '\n';
-      } else if (soy.BLOCK_TAGS_RE_.test(tag)) {
-        if (/[^\n]$/.test(text)) {
-          // Block tags don't add more consecutive newlines.
+
+      if (lowerCaseTag) {
+        if (/^(script|style|textarea|title)$/.test(lowerCaseTag)) {
+          removingUntil = '/' + lowerCaseTag;
+        } else if (/^br$/.test(lowerCaseTag)) {
+          // <br> adds newline even after newline.
           text += '\n';
+        } else if (BLOCK_TAGS_RE_.test(lowerCaseTag)) {
+          if (/[^\n]$/.test(text)) {
+            // Block tags don't add more consecutive newlines.
+            text += '\n';
+          }
+        } else if (/^(td|th)$/.test(lowerCaseTag)) {
+          // We add \t even after newline to support more leading <td>.
+          text += '\t';
         }
-        if (/^pre$/i.test(tag)) {
-          wsPreservingUntil = '/' + tag.toLowerCase();
-        } else if (tag.toLowerCase() == wsPreservingUntil) {
-          wsPreservingUntil = '';
+
+        if (!$$HTML5_VOID_ELEMENTS_.test("<" + lowerCaseTag + ">")) {
+          $$updatePreserveWhitespaceStack(
+              preserveWhitespaceStack, lowerCaseTag, attrs);
         }
-      } else if (/^(td|th)$/i.test(tag)) {
-        // We add \t even after newline to support more leading <td>.
-        text += '\t';
       }
-    } else if (removingUntil == tag.toLowerCase()) {
+    } else if (removingUntil === lowerCaseTag) {
       removingUntil = '';
     }
     if (!match[0]) {
@@ -973,13 +982,137 @@ soy.$$htmlToText = function(value) {
     }
     start = offset + match[0].length;
   }
-  return text;
+  // replace non-breaking spaces with spaces, then return text;
+  return text.replace(/\u00A0/g, ' ');
 };
 
+/**
+ * A struct that holds two fields: an HTML tag, and whether that tag should
+ * preserve whitespace within it.
+ * @struct
+ */
+class TagPreservesWhitespace {
+  constructor(tag, preserveWhitespace) {
+    /** @const {string} */
+    this.tag = tag;
 
-/** @private @const */
-soy.BLOCK_TAGS_RE_ =
-    /^\/?(address|blockquote|dd|div|dl|dt|h[1-6]|hr|li|ol|p|pre|table|tr|ul)$/i;
+    /** @const {boolean} */
+    this.preserveWhitespace = preserveWhitespace;
+  }
+}
+
+/**
+ * Determines if whitespace should currently be preserved by inspecting the top
+ * element of the stack.
+ *
+ * @param {!Array<!TagPreservesWhitespace>} preserveWhitespaceStack, an array of
+ * structs with properties tag and preserveWhitespace. The last element in the
+ * array is the top of the stack.
+ * @return {boolean}
+ */
+const $$shouldPreserveWhitespace_ = function(preserveWhitespaceStack) {
+  const stackSize = preserveWhitespaceStack.length;
+  if (stackSize > 0) {
+    return preserveWhitespaceStack[stackSize - 1].preserveWhitespace;
+  }
+  return false;
+};
+
+/**
+ * Determines if whitespace should currently be preserved by inspecting the top
+ * element of the stack.
+ *
+ * @param {string} style the style attribute value
+ * @return {?boolean} true if the style says to preserve whitespace, false if it
+ * says not to preserve whitespace, and null if it doesn't say either.
+ */
+const $$getStylePreservesWhitespace_ = function(style) {
+  const styleRe =
+      /[\t\n\r ]*([^:;\t\n\r ]*)[\t\n\r ]*:[\t\n\r ]*([^:;\t\n\r ]*)[\t\n\r ]*(?:;|$)/g;
+  for (let styleMatch; styleMatch = styleRe.exec(style);) {
+    const styleAttribute = styleMatch[1];
+    if (/^white-space$/i.test(styleAttribute)) {
+      const whitespaceStyle = styleMatch[2];
+      if (/^(pre|pre-wrap|break-spaces)$/i.test(whitespaceStyle)) {
+        return true;
+      } else if (/^(normal|nowrap)$/i.test(whitespaceStyle)) {
+        return false;
+      }
+    }
+  }
+  return null;
+};
+
+/**
+ * Determines whether the specified attributes indicate whitespace should be
+ * preserved. Returns null if the attributes don't indicate anything about
+ * whitespace preservation.
+ *
+ * @param {string} attrs the attributes for the current tag.
+ * @return {?boolean} true if the attrs say to preserve whitespace, false if
+ * they say not to preserve whitespace, and null if they don't say either.
+ */
+const $$getAttributesPreserveWhitespace_ = function(attrs) {
+  if (attrs !== "") {
+    for (let attrMatch; attrMatch = $$HTML_ATTRIBUTE_REGEX_.exec(attrs);) {
+      const attributeName = attrMatch[1];
+      if (/^style$/i.test(attributeName)) {
+        let style = attrMatch[2];
+        // We've matched style and won't finish iterating through the attr
+        // regex. Reset the regex matcher.
+        $$HTML_ATTRIBUTE_REGEX_.lastIndex = 0;
+
+        if (style !== "") {
+          // Strip quotes if the attribute value was quoted.
+          if (style.charAt(0) === '\'' || style.charAt(0) === '"') {
+            style = style.substr(1, style.length - 2);
+          }
+          return $$getStylePreservesWhitespace_(style);
+        }
+        return null;
+      }
+    }
+  }
+  return null;
+};
+
+/**
+ * Updates the preserveWhitespaceStack with the current tag and attributes. If
+ * it is a closing tag, this will pop elements off the stack, or if it's an
+ * open tag, it will deduce whether the tag or attrs indicate to preserve
+ * whitespace, and push a new element on the stack accordingly.
+ *
+ * @param {!Array<!TagPreservesWhitespace>} preserveWhitespaceStack, an array of
+ * structs with properties tag and preserveWhitespace. The last element in the
+ * array is the top of the stack.
+ * @param {string} lowerCaseTag the current tag, in lower case
+ * @param {string} attrs the attributes for the current tag
+ */
+const $$updatePreserveWhitespaceStack =
+    function(preserveWhitespaceStack, lowerCaseTag, attrs) {
+  if (lowerCaseTag.charAt(0) === '/') {
+    const closedTag = lowerCaseTag.substring(1);
+    // Pop tags until we pop one that matches the tag that's being closed. This
+    // means we're effectively automatically closing tags that aren't closed.
+    while (preserveWhitespaceStack.length > 0 &&
+           preserveWhitespaceStack.pop().tag !== closedTag) {
+    }
+  } else if (/^pre$/.test(lowerCaseTag)) {
+    preserveWhitespaceStack.push(
+        new TagPreservesWhitespace(lowerCaseTag, true));
+  } else {
+    let preserveWhitespace = $$getAttributesPreserveWhitespace_(attrs);
+    if (preserveWhitespace == null) {
+      preserveWhitespace = $$shouldPreserveWhitespace_(preserveWhitespaceStack);
+    }
+    preserveWhitespaceStack.push(
+        new TagPreservesWhitespace(lowerCaseTag, preserveWhitespace));
+  }
+};
+
+/** @const */
+const BLOCK_TAGS_RE_ =
+    /^\/?(address|blockquote|dd|div|dl|dt|h[1-6]|hr|li|ol|p|pre|table|tr|ul)$/;
 // LINT.ThenChange(
 //     ../../../third_party/java_src/soy/java/com/google/template/soy/basicfunctions/HtmlToText.java,
 //     ../../../third_party/java_src/soy/python/runtime/sanitize.py:htmlToText)
@@ -995,8 +1128,8 @@ soy.BLOCK_TAGS_RE_ =
  * @return {string} A value safe to insert in HTML without any quotes or angle
  *     brackets.
  */
-soy.$$normalizeHtml = function(value) {
-  return soy.esc.$$normalizeHtmlHelper(value);
+const $$normalizeHtml = function(value) {
+  return $$normalizeHtmlHelper(value);
 };
 
 
@@ -1018,11 +1151,11 @@ soy.$$normalizeHtml = function(value) {
  *     but the value will be coerced to a string.
  * @return {string} An escaped version of value.
  */
-soy.$$escapeHtmlRcdata = function(value) {
-  if (soy.checks.isHtml(value)) {
-    return soy.esc.$$normalizeHtmlHelper(value.getContent());
+const $$escapeHtmlRcdata = function(value) {
+  if (soyChecks.isHtml(value)) {
+    return $$normalizeHtmlHelper(value.getContent());
   }
-  return soy.esc.$$escapeHtmlHelper(value);
+  return $$escapeHtmlHelper(value);
 };
 
 
@@ -1030,9 +1163,8 @@ soy.$$escapeHtmlRcdata = function(value) {
  * Matches any/only HTML5 void elements' start tags.
  * See http://www.w3.org/TR/html-markup/syntax.html#syntax-elements
  * @const {!RegExp}
- * @private
  */
-soy.$$HTML5_VOID_ELEMENTS_ = new RegExp(
+const $$HTML5_VOID_ELEMENTS_ = new RegExp(
     '^<(?:area|base|br|col|command|embed|hr|img|input' +
     '|keygen|link|meta|param|source|track|wbr)\\b');
 
@@ -1044,76 +1176,74 @@ soy.$$HTML5_VOID_ELEMENTS_ = new RegExp(
  *
  * @param {?} value The HTML to be escaped. May not be a string, but the
  *     value will be coerced to a string.
- * @param {?Object<string, boolean>=} opt_tagWhitelist Has an own property whose
+ * @param {?Object<string, boolean>=} tagWhitelist Has an own property whose
  *     name is a lower-case tag name and whose value is `1` for
  *     each element that is allowed in the output.
  * @return {string} A representation of value without disallowed tags,
  *     HTML comments, or other non-text content.
  */
-soy.$$stripHtmlTags = function(value, opt_tagWhitelist) {
-  if (!opt_tagWhitelist) {
+const $$stripHtmlTags = function(value, tagWhitelist) {
+  if (!tagWhitelist) {
     // If we have no white-list, then use a fast track which elides all tags.
-    return String(value).replace(soy.esc.$$HTML_TAG_REGEX_, '')
+    return String(value)
+        .replace($$HTML_TAG_REGEX_, '')
         // This is just paranoia since callers should normalize the result
         // anyway, but if they didn't, it would be necessary to ensure that
         // after the first replace non-tag uses of < do not recombine into
         // tags as in "<<foo>script>alert(1337)</<foo>script>".
-        .replace(soy.esc.$$LT_REGEX_, '&lt;');
+        .replace($$LT_REGEX_, '&lt;');
   }
 
   // Escapes '[' so that we can use [123] below to mark places where tags
   // have been removed.
-  var html = String(value).replace(/\[/g, '&#91;');
+  let html = String(value).replace(/\[/g, '&#91;');
 
   // Consider all uses of '<' and replace whitelisted tags with markers like
   // [1] which are indices into a list of approved tag names.
   // Replace all other uses of < and > with entities.
-  var tags = [];
-  var attrs = [];
-  html = html.replace(
-    soy.esc.$$HTML_TAG_REGEX_,
-    function(tok, tagName) {
-      if (tagName) {
-        tagName = tagName.toLowerCase();
-        if (opt_tagWhitelist.hasOwnProperty(tagName) &&
-            opt_tagWhitelist[tagName]) {
-          var isClose = tok.charAt(1) == '/';
-          var index = tags.length;
-          var start = '</';
-          var attributes = '';
-          if (!isClose) {
-            start = '<';
-            var match;
-            while ((match = soy.esc.$$HTML_ATTRIBUTE_REGEX_.exec(tok))) {
-              if (match[1] && match[1].toLowerCase() == 'dir') {
-                var dir = match[2];
-                if (dir) {
-                  if (dir.charAt(0) == '\'' || dir.charAt(0) == '"') {
-                    dir = dir.substr(1, dir.length - 2);
-                  }
-                  dir = dir.toLowerCase();
-                  if (dir == 'ltr' || dir == 'rtl' || dir == 'auto') {
-                    attributes = ' dir="' + dir + '"';
-                  }
+  const tags = [];
+  const attrs = [];
+  html = html.replace($$HTML_TAG_REGEX_, function(tok, tagName) {
+    if (tagName) {
+      tagName = tagName.toLowerCase();
+      if (tagWhitelist.hasOwnProperty(tagName) && tagWhitelist[tagName]) {
+        const isClose = tok.charAt(1) == '/';
+        const index = tags.length;
+        let start = '</';
+        let attributes = '';
+        if (!isClose) {
+          start = '<';
+          let match;
+          while ((match = $$HTML_ATTRIBUTE_REGEX_.exec(tok))) {
+            if (match[1] && match[1].toLowerCase() == 'dir') {
+              let dir = match[2];
+              if (dir) {
+                if (dir.charAt(0) == '\'' || dir.charAt(0) == '"') {
+                  dir = dir.substr(1, dir.length - 2);
                 }
-                break;
+                dir = dir.toLowerCase();
+                if (dir == 'ltr' || dir == 'rtl' || dir == 'auto') {
+                  attributes = ' dir="' + dir + '"';
+                }
               }
+              break;
             }
-            soy.esc.$$HTML_ATTRIBUTE_REGEX_.lastIndex = 0;
           }
-          tags[index] = start + tagName + '>';
-          attrs[index] = attributes;
-          return '[' + index + ']';
+          $$HTML_ATTRIBUTE_REGEX_.lastIndex = 0;
         }
+        tags[index] = start + tagName + '>';
+        attrs[index] = attributes;
+        return '[' + index + ']';
       }
-      return '';
-    });
+    }
+    return '';
+  });
 
   // Escape HTML special characters. Now there are no '<' in html that could
   // start a tag.
-  html = soy.esc.$$normalizeHtmlHelper(html);
+  html = $$normalizeHtmlHelper(html);
 
-  var finalCloseTags = soy.$$balanceTags_(tags);
+  const finalCloseTags = $$balanceTags_(tags);
 
   // Now html contains no tags or less-than characters that could become
   // part of a tag via a replacement operation and tags only contains
@@ -1138,9 +1268,8 @@ soy.$$stripHtmlTags = function(value, opt_tagWhitelist) {
  * `<style>` element.
  * @param {string} css
  * @return {string}
- * @private
  */
-soy.$$embedCssIntoHtml_ = function(css) {
+const $$embedCssIntoHtml_ = function(css) {
   // Port of a method of the same name in
   // com.google.template.soy.shared.restricted.Sanitizers
   return css.replace(/<\//g, '<\\/').replace(/\]\]>/g, ']]\\>');
@@ -1157,26 +1286,26 @@ soy.$$embedCssIntoHtml_ = function(css) {
  *    tags concatenated, or the empty string.
  * @return {string} zero or more closed tags that close all elements that are
  *    opened in tags but not closed.
- * @private
+ * @package
  */
-soy.$$balanceTags_ = function(tags) {
-  var open = [];
-  for (var i = 0, n = tags.length; i < n; ++i) {
-    var tag = tags[i];
+const $$balanceTags_ = function(tags) {
+  const open = [];
+  for (let i = 0, n = tags.length; i < n; ++i) {
+    const tag = tags[i];
     if (tag.charAt(1) == '/') {
-      var openTagIndex = goog.array.lastIndexOf(open, tag);
+      const openTagIndex = open.lastIndexOf(tag);
       if (openTagIndex < 0) {
         tags[i] = '';  // Drop close tag with no corresponding open tag.
       } else {
         tags[i] = open.slice(openTagIndex).reverse().join('');
         open.length = openTagIndex;
       }
-    } else if (tag == '<li>' &&
-        goog.array.lastIndexOf(open, '</ol>') < 0 &&
-        goog.array.lastIndexOf(open, '</ul>') < 0) {
+    } else if (
+        tag == '<li>' && open.lastIndexOf('</ol>') < 0 &&
+        open.lastIndexOf('</ul>') < 0) {
       // Drop <li> if it isn't nested in a parent <ol> or <ul>.
       tags[i] = '';
-    } else if (!soy.$$HTML5_VOID_ELEMENTS_.test(tag)) {
+    } else if (!$$HTML5_VOID_ELEMENTS_.test(tag)) {
       open.push('</' + tag.substring(1));
     }
   }
@@ -1191,16 +1320,15 @@ soy.$$balanceTags_ = function(tags) {
  *     value will be coerced to a string.
  * @return {string} An escaped version of value.
  */
-soy.$$escapeHtmlAttribute = function(value) {
+const $$escapeHtmlAttribute = function(value) {
   // NOTE: We don't accept ATTRIBUTES here because ATTRIBUTES is actually not
   // the attribute value context, but instead k/v pairs.
-  if (soy.checks.isHtml(value)) {
+  if (soyChecks.isHtml(value)) {
     // NOTE: After removing tags, we also escape quotes ("normalize") so that
     // the HTML can be embedded in attribute context.
-    return soy.esc.$$normalizeHtmlHelper(
-        soy.$$stripHtmlTags(value.getContent()));
+    return $$normalizeHtmlHelper($$stripHtmlTags(value.getContent()));
   }
-  return soy.esc.$$escapeHtmlHelper(value);
+  return $$escapeHtmlHelper(value);
 };
 
 
@@ -1212,8 +1340,8 @@ soy.$$escapeHtmlAttribute = function(value) {
  *     value will be coerced to a string.
  * @return {string} An escaped version of value.
  */
-soy.$$escapeHtmlHtmlAttribute = function(value) {
-  return String(soy.$$escapeHtml(value));
+const $$escapeHtmlHtmlAttribute = function(value) {
+  return String($$escapeHtml(value));
 };
 
 
@@ -1225,14 +1353,65 @@ soy.$$escapeHtmlHtmlAttribute = function(value) {
  *     value will be coerced to a string.
  * @return {string} An escaped version of value.
  */
-soy.$$escapeHtmlAttributeNospace = function(value) {
-  if (soy.checks.isHtml(value)) {
-    return soy.esc.$$normalizeHtmlNospaceHelper(
-        soy.$$stripHtmlTags(value.getContent()));
+const $$escapeHtmlAttributeNospace = function(value) {
+  if (soyChecks.isHtml(value)) {
+    return $$normalizeHtmlNospaceHelper($$stripHtmlTags(value.getContent()));
   }
-  return soy.esc.$$escapeHtmlNospaceHelper(value);
+  return $$escapeHtmlNospaceHelper(value);
 };
 
+/**
+ * Filters out strings that cannot be valid content in a <script> tag with
+ * non-JS content.
+ *
+ * This disallows `</script`, and `<!--` as substrings as well as
+ * prefixes of those strings that occur at the end of the value.  This combined
+ * with a similar rule enforced in the parser ensures that these substrings
+ * cannot occur.
+ *
+ * @param {?} value The value to escape. May not be a string, but the value
+ *     will be coerced to a string.
+ * @return {string} The value coerced to a string or `"zSoyz"` if the input is
+ *    invalid.
+ */
+const $$filterHtmlScriptPhrasingData = function(value) {
+  const valueAsString = String(value);
+  /**
+   * Returns whether there is a case insensitive match for needle within
+   * haystack starting at offset, or if haystack ends with a non empty prefix of
+   * needle.
+   * @return {boolean}
+   */
+  const matchPrefixIgnoreCasePastEnd =
+      (/** string */ needle, /** string */ haystack, /** number */ offset) => {
+        asserts.assert(
+            offset >= 0 && offset < haystack.length,
+            'offset must point at a valid character of haystack');
+        asserts.assert(
+            needle === $$strToAsciiLowerCase(needle),
+            'needle must be lowercase');
+        const charsLeft = haystack.length - offset;
+        const charsToScan = Math.min(charsLeft, needle.length);
+        for (let i = 0; i < charsToScan; i++) {
+          if (needle[i] !== $$charToAsciiLowerCase_(haystack[offset + i])) {
+            return false;
+          }
+        }
+        return true;
+      };
+  let start = 0;
+  let indexOfLt;
+  while ((indexOfLt = valueAsString.indexOf('<', start)) != -1) {
+    if (matchPrefixIgnoreCasePastEnd('</script', valueAsString, indexOfLt) ||
+        matchPrefixIgnoreCasePastEnd('<!--', valueAsString, indexOfLt)) {
+      asserts.fail(
+          'Bad value `%s` for |filterHtmlScriptPhrasingData', [valueAsString]);
+      return 'zSoyz';
+    }
+    start = indexOfLt + 1;
+  }
+  return valueAsString;
+};
 
 /**
  * Filters out strings that cannot be a substring of a valid HTML attribute.
@@ -1244,29 +1423,38 @@ soy.$$escapeHtmlAttributeNospace = function(value) {
  * @return {string} A valid HTML attribute name part or name/value pair.
  *     `"zSoyz"` if the input is invalid.
  */
-soy.$$filterHtmlAttributes = function(value) {
+const $$filterHtmlAttributes = function(value) {
   // NOTE: Explicitly no support for SanitizedContentKind.HTML, since that is
   // meaningless in this context, which is generally *between* html attributes.
-  if (soy.checks.isAttribute(value)) {
-    // Add a space at the end to ensure this won't get merged into following
-    // attributes, unless the interpretation is unambiguous (ending with quotes
-    // or a space).
-    return value.getContent().replace(/([^"'\s])$/, '$1 ');
+  if (soyChecks.isAttribute(value)) {
+    return value.getContent();
   }
   // TODO: Dynamically inserting attributes that aren't marked as trusted is
   // probably unnecessary.  Any filtering done here will either be inadequate
   // for security or not flexible enough.  Having clients use kind="attributes"
   // in parameters seems like a wiser idea.
-  return soy.esc.$$filterHtmlAttributesHelper(value);
+  return $$filterHtmlAttributesHelper(value);
 };
 
+/**
+ * Conditionally prepends a single space if value is not empty.
+ *
+ * @param {?} value The value.
+ * @return {string} value, possibly with an extra leading space.
+ */
+const $$whitespaceHtmlAttributes = function(value) {
+  if (soyChecks.isAttribute(value)) {
+    value = value.getContent();
+  }
+  return (value && !value.startsWith(' ') ? ' ' : '') + value;
+};
 
 /**
  * Allows only decimal and floating-point numbers.
  * @param {?} value
  * @return {number} The number.
  */
-soy.$$filterNumber = function(value) {
+const $$filterNumber = function(value) {
   return /^\d*\.?\d+$/.test(value) ? value : 'zSoyz';
 };
 
@@ -1279,14 +1467,14 @@ soy.$$filterNumber = function(value) {
  * @return {string} A valid HTML element name part.
  *     `"zSoyz"` if the input is invalid.
  */
-soy.$$filterHtmlElementName = function(value) {
+const $$filterHtmlElementName = function(value) {
   // NOTE: We don't accept any SanitizedContent here. HTML indicates valid
   // PCDATA, not tag names. A sloppy developer shouldn't be able to cause an
   // exploit:
   // ... {let userInput}script src=http://evil.com/evil.js{/let} ...
   // ... {param tagName kind="html"}{$userInput}{/param} ...
   // ... <{$tagName}>Hello World</{$tagName}>
-  return soy.esc.$$filterHtmlElementNameHelper(value);
+  return $$filterHtmlElementNameHelper(value);
 };
 
 
@@ -1298,8 +1486,8 @@ soy.$$filterHtmlElementName = function(value) {
  *     will be coerced to a string.
  * @return {string} An escaped version of value.
  */
-soy.$$escapeJsString = function(value) {
-  return soy.esc.$$escapeJsStringHelper(value);
+const $$escapeJsString = function(value) {
+  return $$escapeJsStringHelper(value);
 };
 
 
@@ -1310,7 +1498,7 @@ soy.$$escapeJsString = function(value) {
  *     will be coerced to a string.
  * @return {string} A JavaScript code representation of the input.
  */
-soy.$$escapeJsValue = function(value) {
+const $$escapeJsValue = function(value) {
   // We surround values with spaces so that they can't be interpolated into
   // identifiers by accident.
   // We could use parentheses but those might be interpreted as a function call.
@@ -1321,17 +1509,23 @@ soy.$$escapeJsValue = function(value) {
     // distinct undefined value.
     return ' null ';
   }
-  if (soy.checks.isJS(value)) {
+  if (soyChecks.isJS(value)) {
     return value.getContent();
   }
-  if (value instanceof goog.html.SafeScript) {
-    return goog.html.SafeScript.unwrap(value);
+  if (value instanceof SafeScript) {
+    return SafeScript.unwrap(value);
   }
+  // MOE:begin_strip
+  if (value instanceof TsSafeScript) {
+    return tsSafeUnwrappers.unwrapSafeScript(value);
+  }
+  // MOE:end_strip
   switch (typeof value) {
-    case 'boolean': case 'number':
+    case 'boolean':
+    case 'number':
       return ' ' + value + ' ';
     default:
-      return "'" + soy.esc.$$escapeJsStringHelper(String(value)) + "'";
+      return '\'' + $$escapeJsStringHelper(String(value)) + '\'';
   }
 };
 
@@ -1344,8 +1538,8 @@ soy.$$escapeJsValue = function(value) {
  *     will be coerced to a string.
  * @return {string} An escaped version of value.
  */
-soy.$$escapeJsRegex = function(value) {
-  return soy.esc.$$escapeJsRegexHelper(value);
+const $$escapeJsRegex = function(value) {
+  return $$escapeJsRegexHelper(value);
 };
 
 
@@ -1358,16 +1552,14 @@ soy.$$escapeJsRegex = function(value) {
  * </pre>
  *
  * @const {!RegExp}
- * @private
  */
-soy.$$problematicUriMarks_ = /['()]/g;
+const $$problematicUriMarks_ = /['()]/g;
 
 /**
- * @param {string} ch A single character in {@link soy.$$problematicUriMarks_}.
+ * @param {string} ch A single character in {@link $$problematicUriMarks_}.
  * @return {string}
- * @private
  */
-soy.$$pctEncode_ = function(ch) {
+const $$pctEncode_ = function(ch) {
   return '%' + ch.charCodeAt(0).toString(16);
 };
 
@@ -1378,7 +1570,7 @@ soy.$$pctEncode_ = function(ch) {
  *     will be coerced to a string.
  * @return {string} An escaped version of value.
  */
-soy.$$escapeUri = function(value) {
+const $$escapeUri = function(value) {
   // NOTE: We don't check for SanitizedUri or SafeUri, because just because
   // something is already a valid complete URL doesn't mean we don't want to
   // encode it as a component.  For example, it would be bad if
@@ -1389,10 +1581,10 @@ soy.$$escapeUri = function(value) {
   // They are technically special in URIs, but only appear in the obsolete mark
   // production in Appendix D.2 of RFC 3986, so can be encoded without changing
   // semantics.
-  var encoded = soy.esc.$$escapeUriHelper(value);
-  soy.$$problematicUriMarks_.lastIndex = 0;
-  if (soy.$$problematicUriMarks_.test(encoded)) {
-    return encoded.replace(soy.$$problematicUriMarks_, soy.$$pctEncode_);
+  const encoded = $$escapeUriHelper(value);
+  $$problematicUriMarks_.lastIndex = 0;
+  if ($$problematicUriMarks_.test(encoded)) {
+    return encoded.replace($$problematicUriMarks_, $$pctEncode_);
   }
   return encoded;
 };
@@ -1405,8 +1597,8 @@ soy.$$escapeUri = function(value) {
  *     will be coerced to a string.
  * @return {string} An escaped version of value.
  */
-soy.$$normalizeUri = function(value) {
-  return soy.esc.$$normalizeUriHelper(value);
+const $$normalizeUri = function(value) {
+  return $$normalizeUriHelper(value);
 };
 
 
@@ -1418,20 +1610,30 @@ soy.$$normalizeUri = function(value) {
  *     will be coerced to a string.
  * @return {string} An escaped version of value.
  */
-soy.$$filterNormalizeUri = function(value) {
-  if (soy.checks.isURI(value)) {
-    return soy.$$normalizeUri(value);
+const $$filterNormalizeUri = function(value) {
+  if (soyChecks.isURI(value)) {
+    return $$normalizeUri(value);
   }
-  if (soy.checks.isTrustedResourceURI(value)) {
-    return soy.$$normalizeUri(value);
+  if (soyChecks.isTrustedResourceURI(value)) {
+    return $$normalizeUri(value);
   }
-  if (value instanceof goog.html.SafeUrl) {
-    return soy.$$normalizeUri(goog.html.SafeUrl.unwrap(value));
+  if (value instanceof SafeUrl) {
+    return $$normalizeUri(SafeUrl.unwrap(value));
   }
-  if (value instanceof goog.html.TrustedResourceUrl) {
-    return soy.$$normalizeUri(goog.html.TrustedResourceUrl.unwrap(value));
+  // MOE:begin_strip
+  if (value instanceof TsSafeUrl) {
+    return soy.$$normalizeUri(tsSafeUnwrappers.unwrapSafeUrl(value));
   }
-  return soy.esc.$$filterNormalizeUriHelper(value);
+  // MOE:end_strip
+  if (value instanceof TrustedResourceUrl) {
+    return $$normalizeUri(TrustedResourceUrl.unwrap(value));
+  }
+  // MOE:begin_strip
+  if (value instanceof TsTrustedResourceUrl) {
+    return soy.$$normalizeUri(tsSafeUnwrappers.unwrapTrustedResourceUrl(value));
+  }
+  // MOE:end_strip
+  return $$filterNormalizeUriHelper(value);
 };
 
 
@@ -1442,23 +1644,33 @@ soy.$$filterNormalizeUri = function(value) {
  *     will be coerced to a string.
  * @return {string} An escaped version of value.
  */
-soy.$$filterNormalizeMediaUri = function(value) {
+const $$filterNormalizeMediaUri = function(value) {
   // Image URIs are filtered strictly more loosely than other types of URIs.
   // TODO(shwetakarwa): Add tests for this in soyutils_test_helper while adding
   // tests for filterTrustedResourceUri.
-  if (soy.checks.isURI(value)) {
-    return soy.$$normalizeUri(value);
+  if (soyChecks.isURI(value)) {
+    return $$normalizeUri(value);
   }
-  if (soy.checks.isTrustedResourceURI(value)) {
-    return soy.$$normalizeUri(value);
+  if (soyChecks.isTrustedResourceURI(value)) {
+    return $$normalizeUri(value);
   }
-  if (value instanceof goog.html.SafeUrl) {
-    return soy.$$normalizeUri(goog.html.SafeUrl.unwrap(value));
+  if (value instanceof SafeUrl) {
+    return $$normalizeUri(SafeUrl.unwrap(value));
   }
-  if (value instanceof goog.html.TrustedResourceUrl) {
-    return soy.$$normalizeUri(goog.html.TrustedResourceUrl.unwrap(value));
+  // MOE:begin_strip
+  if (value instanceof TsSafeUrl) {
+    return soy.$$normalizeUri(tsSafeUnwrappers.unwrapSafeUrl(value));
   }
-  return soy.esc.$$filterNormalizeMediaUriHelper(value);
+  // MOE:end_strip
+  if (value instanceof TrustedResourceUrl) {
+    return $$normalizeUri(TrustedResourceUrl.unwrap(value));
+  }
+  // MOE:begin_strip
+  if (value instanceof TsTrustedResourceUrl) {
+    return soy.$$normalizeUri(tsSafeUnwrappers.unwrapTrustedResourceUrl(value));
+  }
+  // MOE:end_strip
+  return $$filterNormalizeMediaUriHelper(value);
 };
 
 
@@ -1467,27 +1679,31 @@ soy.$$filterNormalizeMediaUri = function(value) {
  * @param {?} value The value to filter.
  * @return {string} An escaped version of value.
  */
-soy.$$filterNormalizeRefreshUri = function(value) {
-  return soy.$$filterNormalizeUri(value).replace(/;/g, '%3B');
+const $$filterNormalizeRefreshUri = function(value) {
+  return $$filterNormalizeUri(value).replace(/;/g, '%3B');
 };
 
 
 /**
  * Vets a URI for usage as a resource. Makes sure the input value is a compile
- * time constant or a TrustedResouce not in attacker's control.
+ * time constant or a TrustedResource not in attacker's control.
  *
  * @param {?} value The value to filter.
  * @return {string} The value content.
  */
-soy.$$filterTrustedResourceUri = function(value) {
-  if (soy.checks.isTrustedResourceURI(value)) {
+const $$filterTrustedResourceUri = function(value) {
+  if (soyChecks.isTrustedResourceURI(value)) {
     return value.getContent();
   }
-  if (value instanceof goog.html.TrustedResourceUrl) {
-    return goog.html.TrustedResourceUrl.unwrap(value);
+  if (value instanceof TrustedResourceUrl) {
+    return TrustedResourceUrl.unwrap(value);
   }
-  goog.asserts.fail('Bad value `%s` for |filterTrustedResourceUri',
-      [String(value)]);
+  // MOE:begin_strip
+  if (value instanceof TsTrustedResourceUrl) {
+    return soy.$$normalizeUri(tsSafeUnwrappers.unwrapTrustedResourceUrl(value));
+  }
+  // MOE:end_strip
+  asserts.fail('Bad value `%s` for |filterTrustedResourceUri', [String(value)]);
   return 'about:invalid#zSoyz';
 };
 
@@ -1497,12 +1713,11 @@ soy.$$filterTrustedResourceUri = function(value) {
  *
  * @param {?} value The value to process. May not be a string, but the value
  *     will be coerced to a string.
- * @return {!goog.soy.data.SanitizedUri} An escaped version of value.
+ * @return {!SanitizedUri} An escaped version of value.
  */
-soy.$$filterImageDataUri = function(value) {
+const $$filterImageDataUri = function(value) {
   // NOTE: Even if it's a SanitizedUri, we will still filter it.
-  return soydata.VERY_UNSAFE.ordainSanitizedUri(
-      soy.esc.$$filterImageDataUriHelper(value));
+  return VERY_UNSAFE.ordainSanitizedUri($$filterImageDataUriHelper(value));
 };
 
 
@@ -1511,24 +1726,22 @@ soy.$$filterImageDataUri = function(value) {
  *
  * @param {?} value The value to process. May not be a string, but the value
  *     will be coerced to a string.
- * @return {!goog.soy.data.SanitizedUri} An escaped version of value.
+ * @return {!SanitizedUri} An escaped version of value.
  */
-soy.$$filterSipUri = function(value) {
+const $$filterSipUri = function(value) {
   // NOTE: Even if it's a SanitizedUri, we will still filter it.
-  return soydata.VERY_UNSAFE.ordainSanitizedUri(
-      soy.esc.$$filterSipUriHelper(value));
+  return VERY_UNSAFE.ordainSanitizedUri($$filterSipUriHelper(value));
 };
 
 /**
  * Function that converts sms uri string to a sanitized uri
  *
  * @param {string} value sms uri
- * @return {!goog.soy.data.SanitizedUri} An sanitized version of the sms uri.
+ * @return {!SanitizedUri} An sanitized version of the sms uri.
  */
-soy.$$strSmsUriToUri = function(value) {
+const $$strSmsUriToUri = function(value) {
   // NOTE: Even if it's a SanitizedUri, we will still filter it.
-  return soydata.VERY_UNSAFE.ordainSanitizedUri(
-      soy.esc.$$filterSmsUriHelper(value));
+  return VERY_UNSAFE.ordainSanitizedUri($$filterSmsUriHelper(value));
 };
 
 
@@ -1537,12 +1750,11 @@ soy.$$strSmsUriToUri = function(value) {
  *
  * @param {?} value The value to process. May not be a string, but the value
  *     will be coerced to a string.
- * @return {!goog.soy.data.SanitizedUri} An escaped version of value.
+ * @return {!SanitizedUri} An escaped version of value.
  */
-soy.$$filterTelUri = function(value) {
+const $$filterTelUri = function(value) {
   // NOTE: Even if it's a SanitizedUri, we will still filter it.
-  return soydata.VERY_UNSAFE.ordainSanitizedUri(
-      soy.esc.$$filterTelUriHelper(value));
+  return VERY_UNSAFE.ordainSanitizedUri($$filterTelUriHelper(value));
 };
 
 
@@ -1553,8 +1765,8 @@ soy.$$filterTelUri = function(value) {
  *     will be coerced to a string.
  * @return {string} An escaped version of value.
  */
-soy.$$escapeCssString = function(value) {
-  return soy.esc.$$escapeCssStringHelper(value);
+const $$escapeCssString = function(value) {
+  return $$escapeCssStringHelper(value);
 };
 
 
@@ -1565,26 +1777,47 @@ soy.$$escapeCssString = function(value) {
  *     will be coerced to a string.
  * @return {string} A safe CSS identifier part, keyword, or quanitity.
  */
-soy.$$filterCssValue = function(value) {
-  if (soy.checks.isCss(value)) {
-    return soy.$$embedCssIntoHtml_(value.getContent());
+const $$filterCssValue = function(value) {
+  if (soyChecks.isCss(value)) {
+    return $$embedCssIntoHtml_(value.getContent());
   }
   // Uses == to intentionally match null and undefined for Java compatibility.
   if (value == null) {
     return '';
   }
-  if (value instanceof goog.html.SafeStyle) {
-    return soy.$$embedCssIntoHtml_(goog.html.SafeStyle.unwrap(value));
+  if (value instanceof SafeStyle) {
+    return $$embedCssIntoHtml_(SafeStyle.unwrap(value));
   }
-  // Note: SoyToJsSrcCompiler uses soy.$$filterCssValue both for the contents of
+  // MOE:begin_strip
+  if (value instanceof TsSafeStyle) {
+    return $$embedCssIntoHtml_(tsSafeUnwrappers.unwrapSafeStyle(value));
+  }
+  // MOE:end_strip
+  // Note: SoyToJsSrcCompiler uses $$filterCssValue both for the contents of
   // <style> (list of rules) and for the contents of style="" (one set of
   // declarations). We support SafeStyleSheet here to be used inside <style> but
   // it also wrongly allows it inside style="". We should instead change
   // SoyToJsSrcCompiler to use a different function inside <style>.
-  if (value instanceof goog.html.SafeStyleSheet) {
-    return soy.$$embedCssIntoHtml_(goog.html.SafeStyleSheet.unwrap(value));
+  if (value instanceof SafeStyleSheet) {
+    return $$embedCssIntoHtml_(SafeStyleSheet.unwrap(value));
   }
-  return soy.esc.$$filterCssValueHelper(value);
+  // MOE:begin_strip
+  if (value instanceof TsSafeStyleSheet) {
+    return $$embedCssIntoHtml_(tsSafeUnwrappers.unwrapSafeStyleSheet(value));
+  }
+  // MOE:end_strip
+  return $$filterCssValueHelper(value);
+};
+
+/**
+ * Encodes a value as a CSP nonce value.
+ *
+ * @param {?} value The value to escape. Does not have to be a string, but the
+ *     value will be coerced to a string.
+ * @return {string} A safe CSP nonce value.
+ */
+const $$filterCspNonceValue = function(value) {
+  return $$filterCspNonceValueHelper(value);
 };
 
 
@@ -1595,15 +1828,14 @@ soy.$$filterCssValue = function(value) {
 /**
  * Converts \r\n, \r, and \n to <br>s
  * @param {?} value The string in which to convert newlines.
- * @return {string|!goog.soy.data.SanitizedHtml} A copy of `value` with
+ * @return {string|!SanitizedHtml} A copy of `value` with
  *     converted newlines. If `value` is SanitizedHtml, the return value
  *     is also SanitizedHtml, of the same known directionality.
  */
-soy.$$changeNewlineToBr = function(value) {
-  var result = goog.string.newLineToBr(String(value), false);
-  if (soydata.isContentKind_(value, goog.soy.data.SanitizedContentKind.HTML)) {
-    return soydata.VERY_UNSAFE.ordainSanitizedHtml(
-        result, soydata.getContentDir(value));
+const $$changeNewlineToBr = function(value) {
+  const result = googString.newLineToBr(String(value), false);
+  if (isContentKind_(value, SanitizedContentKind.HTML)) {
+    return VERY_UNSAFE.ordainSanitizedHtml(result, getContentDir(value));
   }
   return result;
 };
@@ -1612,27 +1844,69 @@ soy.$$changeNewlineToBr = function(value) {
 /**
  * Inserts word breaks ('wbr' tags) into a HTML string at a given interval. The
  * counter is reset if a space is encountered. Word breaks aren't inserted into
- * HTML tags or entities. Entites count towards the character count; HTML tags
+ * HTML tags or entities. Entities count towards the character count; HTML tags
  * do not.
  *
  * @param {?} value The HTML string to insert word breaks into. Can be other
  *     types, but the value will be coerced to a string.
  * @param {number} maxCharsBetweenWordBreaks Maximum number of non-space
  *     characters to allow before adding a word break.
- * @return {string|!goog.soy.data.SanitizedHtml} The string including word
+ * @return {string|!SanitizedHtml} The string including word
  *     breaks. If `value` is SanitizedHtml, the return value
  *     is also SanitizedHtml, of the same known directionality.
  * @deprecated The |insertWordBreaks directive is deprecated.
  *     Prefer wrapping with CSS white-space: break-word.
  */
-soy.$$insertWordBreaks = function(value, maxCharsBetweenWordBreaks) {
-  var result = goog.format.insertWordBreaks(
-      String(value), maxCharsBetweenWordBreaks);
-  if (soydata.isContentKind_(value, goog.soy.data.SanitizedContentKind.HTML)) {
-    return soydata.VERY_UNSAFE.ordainSanitizedHtml(
-        result, soydata.getContentDir(value));
+const $$insertWordBreaks = function(value, maxCharsBetweenWordBreaks) {
+  const result =
+      googFormat.insertWordBreaks(String(value), maxCharsBetweenWordBreaks);
+  if (isContentKind_(value, SanitizedContentKind.HTML)) {
+    return VERY_UNSAFE.ordainSanitizedHtml(result, getContentDir(value));
   }
   return result;
+};
+
+/**
+ * Conditionally concatenates two attribute values with a delimiter if they are
+ * both non-empty.
+ *
+ * @param {string} l
+ * @param {string} r
+ * @param {string} delimiter
+ * @return {string}
+ */
+const $$concatAttributeValues = function(l, r, delimiter) {
+  if (!l) {
+    return r;
+  }
+  if (!r) {
+    return l;
+  }
+  return l + delimiter + r;
+};
+
+
+/**
+ * Conditionally concatenates two attribute values with a delimiter if they are
+ * both non-empty.
+ *
+ * @param {!SanitizedCss} l
+ * @param {!SanitizedCss} r
+ * @return {!SanitizedCss|!$$EMPTY_STRING_}
+ */
+const $$concatCssValues = function(l, r) {
+  if (!l || !r) {
+    return l || r || $$EMPTY_STRING_;
+  }
+
+  if (l.getContent() !== $$EMPTY_STRING_.VALUE) {
+    asserts.assertInstanceof(l, SanitizedCss);
+  }
+  if (r.getContent() !== $$EMPTY_STRING_.VALUE) {
+    asserts.assertInstanceof(r, SanitizedCss);
+  }
+  return VERY_UNSAFE.$$ordainSanitizedCssForInternalBlocks(
+      $$concatAttributeValues(l.getContent(), r.getContent(), ';'));
 };
 
 
@@ -1648,8 +1922,7 @@ soy.$$insertWordBreaks = function(value, maxCharsBetweenWordBreaks) {
  *     truncation.
  * @return {string} The string after truncation.
  */
-soy.$$truncate = function(str, maxLen, doAddEllipsis) {
-
+const $$truncate = function(str, maxLen, doAddEllipsis) {
   str = String(str);
   if (str.length <= maxLen) {
     return str;  // no need to truncate
@@ -1666,8 +1939,8 @@ soy.$$truncate = function(str, maxLen, doAddEllipsis) {
   }
 
   // Make sure truncating at maxLen doesn't cut up a unicode surrogate pair.
-  if (soy.$$isHighSurrogate_(str.charCodeAt(maxLen - 1)) &&
-      soy.$$isLowSurrogate_(str.charCodeAt(maxLen))) {
+  if ($$isHighSurrogate_(str.charCodeAt(maxLen - 1)) &&
+      $$isLowSurrogate_(str.charCodeAt(maxLen))) {
     maxLen -= 1;
   }
 
@@ -1686,9 +1959,8 @@ soy.$$truncate = function(str, maxLen, doAddEllipsis) {
  * Private helper for $$truncate() to check whether a char is a high surrogate.
  * @param {number} cc The codepoint to check.
  * @return {boolean} Whether the given codepoint is a unicode high surrogate.
- * @private
  */
-soy.$$isHighSurrogate_ = function(cc) {
+const $$isHighSurrogate_ = function(cc) {
   return 0xD800 <= cc && cc <= 0xDBFF;
 };
 
@@ -1696,38 +1968,120 @@ soy.$$isHighSurrogate_ = function(cc) {
  * Private helper for $$truncate() to check whether a char is a low surrogate.
  * @param {number} cc The codepoint to check.
  * @return {boolean} Whether the given codepoint is a unicode low surrogate.
- * @private
  */
-soy.$$isLowSurrogate_ = function(cc) {
+const $$isLowSurrogate_ = function(cc) {
   return 0xDC00 <= cc && cc <= 0xDFFF;
 };
 
 
 /**
  * Checks if the list contains the given element.
- * @param {!IArrayLike<?>} list
+ * @param {!Array<?>} list
  * @param {*} val
  * @return {boolean}
- * @template T
  */
-soy.$$listContains = function(list, val) {
-  return soy.$$listIndexOf(list, val) >= 0;
+const $$listContains = function(list, val) {
+  return $$listIndexOf(list, val) >= 0;
 };
 
 
 /**
  * Returns the index of val in list or -1
- * @param {!IArrayLike<?>} list
+ * @param {!Array<?>} list
  * @param {*} val
+ * @param {number=} startIndex
  * @return {number}
- * @template T
  */
-soy.$$listIndexOf = function(list, val) {
-  return goog.array.findIndex(list, function(el) {
-    return soy.$$equals(val, el);
-  });
+const $$listIndexOf = function(list, val, startIndex = 0) {
+  const clampedStartIndex = clampArrayStartIndex(list, startIndex);
+  const indexInSublist = googArray.findIndex(
+      list.slice(clampedStartIndex), (el) => $$equals(val, el));
+  return indexInSublist === -1 ? -1 : indexInSublist + clampedStartIndex;
 };
 
+/**
+ * Reverses a list and returns it. The original list passed is unaffected.
+ * @param {!Array<T>} list
+ * @return {!Array<T>}
+ * @template T
+ */
+const $$listReverse = function(list) {
+  let listCopy = [...list];
+  return listCopy.reverse();
+};
+
+/**
+ * A helper for Array methods that have optional startIndex
+ *
+ * @param {Array!} arr
+ * @param {number} startIndex
+ * @return {number}
+ */
+const clampArrayStartIndex = function(arr, startIndex) {
+  return Math.floor(
+      Math.max(0, startIndex >= 0 ? startIndex : arr.length + startIndex));
+};
+
+/**
+ * Removes duplicates from a list and returns it.
+ * The original list passed is unaffected.
+ * @param {!Array<T>} list
+ * @return {!Array<T>}
+ * @template T
+ */
+const $$listUniq = function(list) {
+  // Javascript preserves insertion order for set iteration, so this method
+  // doesn't change the order of elements within the list.
+  return [...new Set(list)];
+};
+
+/**
+ * A helper function to provide tight type inference on array literals.
+ * @param {...T} args
+ * @return {!Array<T>}
+ * @template T
+ */
+const $$makeArray = function(...args) {
+  return args;
+};
+
+/**
+ * A helper for list comprehension.
+ * @param {!IArrayLike<T>} list
+ * @param {function(T,number):boolean} filter
+ * @param {function(T,number):V} map
+ * @return {!IArrayLike<V>}
+ * @template T, V
+ */
+const $$filterAndMap = function(list, filter, map) {
+  let array = [];
+  for (let i = 0; i < list.length; i++) {
+    if (filter(list[i], i)) {
+      array.push(map(list[i], i));
+    }
+  }
+  return array;
+};
+
+/**
+ * Sorts a list of numbers in numerical order.
+ * @param {!IArrayLike<T>} list
+ * @return {!Array<T>}
+ * @template T extends number
+ */
+const $$numberListSort = function(list) {
+  return googArray.toArray(list).sort((a, b) => a - b);
+};
+
+
+/**
+ * Sorts a list of strings in lexicographic order.
+ * @param {!IArrayLike<string>} list
+ * @return {!Array<string>}
+ */
+const $$stringListSort = function(list) {
+  return googArray.toArray(list).sort();
+};
 
 
 /**
@@ -1735,22 +2089,47 @@ soy.$$listIndexOf = function(list, val) {
  * @param {string} s
  * @return {string}
  */
-soy.$$strToAsciiLowerCase = function(s) {
-  return goog.array.map(s, function(c) {
-    return 'A' <= c && c <= 'Z' ? c.toLowerCase() : c;
-  }).join('');
+const $$strToAsciiLowerCase = function(s) {
+  return googArray.map(s, $$charToAsciiLowerCase_).join('');
 };
 
+/**
+ * Lowercases a single character string.
+ * @return {string}
+ */
+const $$charToAsciiLowerCase_ = (/** string */ c) => {
+  asserts.assert(c.length === 1);
+  return 'A' <= c && c <= 'Z' ? c.toLowerCase() : c;
+};
+
+/**
+ * Uppercases a single character string.
+ * @return {string}
+ */
+const $$charToAsciiUpperCase_ = (/** string */ c) => {
+  asserts.assert(c.length === 1);
+  return 'a' <= c && c <= 'z' ? c.toUpperCase() : c;
+};
 
 /**
  * Converts the ASCII characters in the given string to upper case.
  * @param {string} s
  * @return {string}
  */
-soy.$$strToAsciiUpperCase = function(s) {
-  return goog.array.map(s, function(c) {
-    return 'a' <= c && c <= 'z' ? c.toUpperCase() : c;
-  }).join('');
+const $$strToAsciiUpperCase = function(s) {
+  return googArray.map(s, $$charToAsciiUpperCase_).join('');
+};
+
+
+/**
+ * Replaces all occurrences in s of match with token.
+ * @param {string} s
+ * @param {string} match
+ * @param {string} token
+ * @return {string}
+ */
+const $$strReplaceAll = function(s, match, token) {
+  return googString.replaceAll(s, match, token);
 };
 
 
@@ -1761,23 +2140,20 @@ soy.$$strToAsciiUpperCase = function(s) {
 /**
  * Cache of bidi formatter by context directionality, so we don't keep on
  * creating new objects.
- * @type {!Object<!goog.i18n.BidiFormatter>}
- * @private
+ * @type {!Object<!BidiFormatter>}
  */
-soy.$$bidiFormatterCache_ = {};
+const bidiFormatterCache_ = {};
 
 
 /**
  * Returns cached bidi formatter for bidiGlobalDir, or creates a new one.
  * @param {number} bidiGlobalDir The global directionality context: 1 if ltr, -1
  *     if rtl, 0 if unknown.
- * @return {!goog.i18n.BidiFormatter} A formatter for bidiGlobalDir.
- * @private
+ * @return {!BidiFormatter} A formatter for bidiGlobalDir.
  */
-soy.$$getBidiFormatterInstance_ = function(bidiGlobalDir) {
-  return soy.$$bidiFormatterCache_[bidiGlobalDir] ||
-         (soy.$$bidiFormatterCache_[bidiGlobalDir] =
-             new goog.i18n.BidiFormatter(bidiGlobalDir));
+const getBidiFormatterInstance_ = function(bidiGlobalDir) {
+  return bidiFormatterCache_[bidiGlobalDir] ||
+      (bidiFormatterCache_[bidiGlobalDir] = new BidiFormatter(bidiGlobalDir));
 };
 
 
@@ -1785,22 +2161,23 @@ soy.$$getBidiFormatterInstance_ = function(bidiGlobalDir) {
  * Estimate the overall directionality of text. If opt_isHtml, makes sure to
  * ignore the LTR nature of the mark-up and escapes in text, making the logic
  * suitable for HTML and HTML-escaped text.
- * If text has a goog.i18n.bidi.Dir-valued contentDir, this is used instead of
+ * If text has a bidi.Dir-valued contentDir, this is used instead of
  * estimating the directionality.
  *
  * @param {?} text The content whose directionality is to be estimated.
- * @param {boolean=} opt_isHtml Whether text is HTML/HTML-escaped.
+ * @param {boolean=} isHtml Whether text is HTML/HTML-escaped.
  *     Default: false.
  * @return {number} 1 if text is LTR, -1 if it is RTL, and 0 if it is neutral.
  */
-soy.$$bidiTextDir = function(text, opt_isHtml) {
-  var contentDir = soydata.getContentDir(text);
+const $$bidiTextDir = function(text, isHtml) {
+  const contentDir = getContentDir(text);
   if (contentDir != null) {
     return contentDir;
   }
-  var isHtml = opt_isHtml ||
-      soydata.isContentKind_(text, goog.soy.data.SanitizedContentKind.HTML);
-  return goog.i18n.bidi.estimateDirection(text + '', isHtml);
+  isHtml = isHtml || isContentKind_(text, SanitizedContentKind.HTML);
+  const estimatedDir = bidi.estimateDirection(text + '', isHtml);
+  cacheContentDir_(text, estimatedDir);
+  return estimatedDir;
 };
 
 
@@ -1810,27 +2187,27 @@ soy.$$bidiTextDir = function(text, opt_isHtml) {
  * Otherwise, returns the empty string.
  * If opt_isHtml, makes sure to ignore the LTR nature of the mark-up and escapes
  * in text, making the logic suitable for HTML and HTML-escaped text.
- * If text has a goog.i18n.bidi.Dir-valued contentDir, this is used instead of
+ * If text has a bidi.Dir-valued contentDir, this is used instead of
  * estimating the directionality.
  *
  * @param {number} bidiGlobalDir The global directionality context: 1 if ltr, -1
  *     if rtl, 0 if unknown.
  * @param {?} text The content whose directionality is to be estimated.
- * @param {boolean=} opt_isHtml Whether text is HTML/HTML-escaped.
+ * @param {boolean=} isHtml Whether text is HTML/HTML-escaped.
  *     Default: false.
- * @return {!goog.soy.data.SanitizedHtmlAttribute} 'dir="rtl"' for RTL text in
+ * @return {!SanitizedHtmlAttribute} 'dir="rtl"' for RTL text in
  *     non-RTL context; 'dir="ltr"' for LTR text in non-LTR context;
  *     else, the empty string.
  */
-soy.$$bidiDirAttr = function(bidiGlobalDir, text, opt_isHtml) {
-  var formatter = soy.$$getBidiFormatterInstance_(bidiGlobalDir);
-  var contentDir = soydata.getContentDir(text);
+const $$bidiDirAttr = function(bidiGlobalDir, text, isHtml) {
+  const formatter = getBidiFormatterInstance_(bidiGlobalDir);
+  let contentDir = getContentDir(text);
   if (contentDir == null) {
-    var isHtml = opt_isHtml ||
-        soydata.isContentKind_(text, goog.soy.data.SanitizedContentKind.HTML);
-    contentDir = goog.i18n.bidi.estimateDirection(text + '', isHtml);
+    isHtml = isHtml || isContentKind_(text, SanitizedContentKind.HTML);
+    contentDir = bidi.estimateDirection(text + '', isHtml);
+    cacheContentDir_(text, contentDir);
   }
-  return soydata.VERY_UNSAFE.ordainSanitizedHtmlAttribute(
+  return VERY_UNSAFE.ordainSanitizedHtmlAttribute(
       formatter.knownDirAttr(contentDir));
 };
 
@@ -1840,7 +2217,7 @@ soy.$$bidiDirAttr = function(bidiGlobalDir, text, opt_isHtml) {
  *
  * @return {string}
  */
-soy.$$bidiStartEdge = function(/** number */ dir) {
+const $$bidiStartEdge = function(/** number */ dir) {
   return dir < 0 ? 'right' : 'left';
 };
 
@@ -1850,7 +2227,7 @@ soy.$$bidiStartEdge = function(/** number */ dir) {
  *
  * @return {string}
  */
-soy.$$bidiEndEdge = function(/** number */ dir) {
+const $$bidiEndEdge = function(/** number */ dir) {
   return dir < 0 ? 'left' : 'right';
 };
 
@@ -1859,7 +2236,7 @@ soy.$$bidiEndEdge = function(/** number */ dir) {
  *
  * @return {string}
  */
-soy.$$bidiMark = function(/** number */ dir) {
+const $$bidiMark = function(/** number */ dir) {
   return dir < 0 ? '\u200F' /*RLM*/ : '\u200E' /*LRM*/;
 };
 
@@ -1870,24 +2247,27 @@ soy.$$bidiMark = function(/** number */ dir) {
  * bidiGlobalDir. Otherwise returns the empty string.
  * If opt_isHtml, makes sure to ignore the LTR nature of the mark-up and escapes
  * in text, making the logic suitable for HTML and HTML-escaped text.
- * If text has a goog.i18n.bidi.Dir-valued contentDir, this is used instead of
+ * If text has a bidi.Dir-valued contentDir, this is used instead of
  * estimating the directionality.
  *
  * @param {number} bidiGlobalDir The global directionality context: 1 if ltr, -1
  *     if rtl, 0 if unknown.
  * @param {?} text The content whose directionality is to be estimated.
- * @param {boolean=} opt_isHtml Whether text is HTML/HTML-escaped.
+ * @param {boolean=} isHtml Whether text is HTML/HTML-escaped.
  *     Default: false.
  * @return {string} A Unicode bidi mark matching bidiGlobalDir, or the empty
  *     string when text's overall and exit directionalities both match
  *     bidiGlobalDir, or bidiGlobalDir is 0 (unknown).
  */
-soy.$$bidiMarkAfter = function(bidiGlobalDir, text, opt_isHtml) {
-  var formatter = soy.$$getBidiFormatterInstance_(bidiGlobalDir);
-  var isHtml = opt_isHtml ||
-      soydata.isContentKind_(text, goog.soy.data.SanitizedContentKind.HTML);
-  return formatter.markAfterKnownDir(soydata.getContentDir(text), text + '',
-      isHtml);
+const $$bidiMarkAfter = function(bidiGlobalDir, text, isHtml) {
+  const formatter = getBidiFormatterInstance_(bidiGlobalDir);
+  isHtml = isHtml || isContentKind_(text, SanitizedContentKind.HTML);
+  let dir = getContentDir(text);
+  if (dir == null) {
+    dir = bidi.estimateDirection(text + '', isHtml);
+    cacheContentDir_(text, dir);
+  }
+  return formatter.markAfterKnownDir(dir, text + '', isHtml);
 };
 
 
@@ -1897,7 +2277,7 @@ soy.$$bidiMarkAfter = function(bidiGlobalDir, text, opt_isHtml) {
  * global context. Otherwise, returns text unchanged.
  * Always treats text as HTML/HTML-escaped, i.e. ignores mark-up and escapes
  * when estimating text's directionality.
- * If text has a goog.i18n.bidi.Dir-valued contentDir, this is used instead of
+ * If text has a bidi.Dir-valued contentDir, this is used instead of
  * estimating the directionality.
  *
  * @param {number} bidiGlobalDir The global directionality context: 1 if ltr, -1
@@ -1906,8 +2286,8 @@ soy.$$bidiMarkAfter = function(bidiGlobalDir, text, opt_isHtml) {
  *     will be coerced to a string.
  * @return {string} The wrapped text.
  */
-soy.$$bidiSpanWrap = function(bidiGlobalDir, text) {
-  var formatter = soy.$$getBidiFormatterInstance_(bidiGlobalDir);
+const $$bidiSpanWrap = function(bidiGlobalDir, text) {
+  const formatter = getBidiFormatterInstance_(bidiGlobalDir);
 
   // We always treat the value as HTML, because span-wrapping is only useful
   // when its output will be treated as HTML (without escaping), and because
@@ -1916,18 +2296,21 @@ soy.$$bidiSpanWrap = function(bidiGlobalDir, text) {
   // |bidiSpanWrap because the BidiSpanWrapDirective Java class implements
   // SanitizedContentOperator, but this does not mean that the input has to be
   // HTML SanitizedContent.
-  var html = goog.html.uncheckedconversions.
-      safeHtmlFromStringKnownToSatisfyTypeContract(
-          goog.string.Const.from(
-              'Soy |bidiSpanWrap is applied on an autoescaped text.'),
+  const html =
+      uncheckedconversions.safeHtmlFromStringKnownToSatisfyTypeContract(
+          Const.from('Soy |bidiSpanWrap is applied on an autoescaped text.'),
           String(text));
-  var wrappedHtml = formatter.spanWrapSafeHtmlWithKnownDir(
-      soydata.getContentDir(text), html);
+  let dir = getContentDir(text);
+  if (dir == null) {
+    dir = bidi.estimateDirection(text + '', true);
+    cacheContentDir_(text, dir);
+  }
+  const wrappedHtml = formatter.spanWrapSafeHtmlWithKnownDir(dir, html);
 
   // Like other directives whose Java class implements SanitizedContentOperator,
   // |bidiSpanWrap is called after the escaping (if any) has already been done,
   // and thus there is no need for it to produce actual SanitizedContent.
-  return goog.html.SafeHtml.unwrap(wrappedHtml);
+  return SafeHtml.unwrap(wrappedHtml);
 };
 
 
@@ -1938,34 +2321,37 @@ soy.$$bidiSpanWrap = function(bidiGlobalDir, text) {
  * global context. Otherwise, returns text unchanged.
  * Only treats SanitizedHtml as HTML/HTML-escaped, i.e. ignores mark-up
  * and escapes when estimating text's directionality.
- * If text has a goog.i18n.bidi.Dir-valued contentDir, this is used instead of
+ * If text has a bidi.Dir-valued contentDir, this is used instead of
  * estimating the directionality.
  *
  * @param {number} bidiGlobalDir The global directionality context: 1 if ltr, -1
  *     if rtl, 0 if unknown.
  * @param {?} text The string to be wrapped. Can be other types, but the value
  *     will be coerced to a string.
- * @return {!goog.soy.data.SanitizedHtml|string} The wrapped string.
+ * @return {!SanitizedHtml|string} The wrapped string.
  */
-soy.$$bidiUnicodeWrap = function(bidiGlobalDir, text) {
-  var formatter = soy.$$getBidiFormatterInstance_(bidiGlobalDir);
+const $$bidiUnicodeWrap = function(bidiGlobalDir, text) {
+  const formatter = getBidiFormatterInstance_(bidiGlobalDir);
 
   // We treat the value as HTML if and only if it says it's HTML.
-  var isHtml =
-      soydata.isContentKind_(text, goog.soy.data.SanitizedContentKind.HTML);
-  var wrappedText = formatter.unicodeWrapWithKnownDir(
-      soydata.getContentDir(text), text + '', isHtml);
+  const isHtml = isContentKind_(text, SanitizedContentKind.HTML);
+  let dir = getContentDir(text);
+  if (dir == null) {
+    dir = bidi.estimateDirection(text + '', isHtml);
+    cacheContentDir_(text, dir);
+  }
+  const wrappedText = formatter.unicodeWrapWithKnownDir(dir, text + '', isHtml);
 
   // Bidi-wrapping a value converts it to the context directionality. Since it
   // does not cost us anything, we will indicate this known direction in the
   // output SanitizedContent, even though the intended consumer of that
   // information - a bidi wrapping directive - has already been run.
-  var wrappedTextDir = formatter.getContextDir();
+  const wrappedTextDir = formatter.getContextDir();
 
   // Unicode-wrapping safe HTML string data gives valid, safe HTML string data.
   // ATTENTION: Do these need to be ...ForInternalBlocks()?
   if (isHtml) {
-    return soydata.VERY_UNSAFE.ordainSanitizedHtml(wrappedText, wrappedTextDir);
+    return VERY_UNSAFE.ordainSanitizedHtml(wrappedText, wrappedTextDir);
   }
 
   // Unicode-wrapping does not conform to the syntax of the other types of
@@ -1983,25 +2369,48 @@ soy.$$bidiUnicodeWrap = function(bidiGlobalDir, text) {
 // Assertion methods used by runtime.
 
 /**
- * Checks if the type assertion is true if goog.asserts.ENABLE_ASSERTS is
+ * Checks if the type assertion is true if asserts.ENABLE_ASSERTS is
  * true. Report errors on runtime types if goog.DEBUG is true.
  * @param {boolean} condition The type check condition.
  * @param {string} paramName The Soy name of the parameter.
  * @param {?} param The JS object for the parameter.
+ * @param {string} paramKind Whether it is a normal parameter, an injected
+ *     parameter, or a state variable.
  * @param {string} jsDocTypeStr SoyDoc type str.
  * @return {?} the param value
- * @throws {!goog.asserts.AssertionError} When the condition evaluates to false.
+ * @throws {!asserts.AssertionError} When the condition evaluates to false.
  */
-soy.asserts.assertType = function(condition, paramName, param, jsDocTypeStr) {
-  if (goog.asserts.ENABLE_ASSERTS && !condition) {
-    var msg = 'expected param ' + paramName + ' of type ' + jsDocTypeStr +
-        (goog.DEBUG ? (', but got ' + goog.debug.runtimeType(param)) : '') +
-        '.';
-    goog.asserts.fail(msg);
+const assertParamType = function(
+    condition, paramName, param, paramKind, jsDocTypeStr) {
+  if (asserts.ENABLE_ASSERTS && !condition) {
+    const msg = 'expected ' + paramKind + ' ' + paramName + ' of type ' +
+        jsDocTypeStr +
+        (goog.DEBUG ? (', but got ' + googDebug.runtimeType(param)) : '') + '.';
+    asserts.fail(msg);
   }
   return param;
 };
 
+/**
+ * An object to mark internal callsites with, this should make accidentally
+ * calling these things less likely.
+ * @const
+ * @type {!Object}
+ */
+const $$internalCallMarkerDoNotUse = {};
+
+/**
+ * A debug time check that our internal call sites are only called by other soy
+ * templates.
+ *
+ * @param {?} marker
+ * @return {void}
+ */
+const $$areYouAnInternalCaller = (marker) =>{
+  asserts.assert(
+      marker === $$internalCallMarkerDoNotUse,
+      'found an incorrect call marker, was an internal function called from the top level?');
+};
 
 // -----------------------------------------------------------------------------
 // Used for inspecting Soy template information from rendered pages.
@@ -2010,44 +2419,155 @@ soy.asserts.assertType = function(condition, paramName, param, jsDocTypeStr) {
  * Whether we should generate additional HTML comments.
  * @type {boolean}
  */
-soy.$$debugSoyTemplateInfo = false;
+let $$debugSoyTemplateInfo = false;
 
-if (goog.DEBUG) {
-  /**
-   * Configures whether we should generate additional HTML comments for
-   * inspecting Soy template information from rendered pages.
-   * @param {boolean} debugSoyTemplateInfo
-   */
-  soy.setDebugSoyTemplateInfo = function(debugSoyTemplateInfo) {
-    soy.$$debugSoyTemplateInfo = debugSoyTemplateInfo;
-  };
+/**
+ * Configures whether we should generate additional HTML comments for
+ * inspecting Soy template information from rendered pages.
+ */
+function setDebugSoyTemplateInfo(/** boolean */ debugSoyTemplateInfo) {
+  $$debugSoyTemplateInfo = debugSoyTemplateInfo;
+}
+
+/** @return {boolean}  Whether we should generate additional debugging data */
+function $$getDebugSoyTemplateInfo() {
+  return $$debugSoyTemplateInfo;
+}
+
+/**
+ * Best effort to freeze a data structure in DEBUG mode (to poison tests that
+ * may try to mutate Soy constants in application JS code).
+ *
+ * @param {T} object
+ * @return {T}
+ * @template T
+ */
+function $$freeze(object) {
+  if (goog.DEBUG && Object.freeze) {
+    if (!object || typeof object !== 'object' ||
+        Object.isFrozen(/** @type {!Object} */ (object))) {
+      return object;
+    }
+    const prototype = Object.getPrototypeOf(object);
+    // Only freeze objects and literals. In particular JSPBs will break.
+    if (prototype !== Object.prototype && prototype !== Array.prototype) {
+      return object;
+    }
+    Object.freeze(object);
+    Object.getOwnPropertyNames(object).forEach(function(name) {
+      const property = object[name];
+      exports.$$freeze(property);
+    });
+  }
+  return object;
 }
 
 // -----------------------------------------------------------------------------
 // Generated code.
 
 
+
+exports = {
+  $$serializeKey,
+  $$IS_LOCALE_RTL,
+  $$assignDefaults,
+  $$getMapKeys,
+  $$checkNotNull,
+  $$parseInt,
+  $$equals,
+  $$freeze,
+  $$isFunction,
+  $$parseFloat,
+  $$randomInt,
+  $$round,
+  $$strContains,
+  $$coerceToBoolean,
+  $$registerDelegateFn,
+  $$getDelTemplateId,
+  $$getDelegateFn,
+  $$escapeHtml,
+  $$cleanHtml,
+  $$htmlToText,
+  $$normalizeHtml,
+  $$escapeHtmlRcdata,
+  $$stripHtmlTags,
+  $$escapeHtmlAttribute,
+  $$escapeHtmlHtmlAttribute,
+  $$escapeHtmlAttributeNospace,
+  $$filterHtmlScriptPhrasingData,
+  $$filterHtmlAttributes,
+  $$whitespaceHtmlAttributes,
+  $$filterNumber,
+  $$filterHtmlElementName,
+  $$escapeJsString,
+  $$escapeJsValue,
+  $$escapeJsRegex,
+  $$escapeUri,
+  $$normalizeUri,
+  $$filterNormalizeUri,
+  $$filterNormalizeMediaUri,
+  $$filterNormalizeRefreshUri,
+  $$filterTrustedResourceUri,
+  $$filterImageDataUri,
+  $$filterSipUri,
+  $$strSmsUriToUri,
+  $$filterTelUri,
+  $$escapeCssString,
+  $$filterCssValue,
+  $$filterCspNonceValue,
+  $$changeNewlineToBr,
+  $$insertWordBreaks,
+  $$concatAttributeValues,
+  $$concatCssValues,
+  $$truncate,
+  $$listContains,
+  $$listIndexOf,
+  $$listReverse,
+  $$listUniq,
+  $$makeArray,
+  $$filterAndMap,
+  $$numberListSort,
+  $$stringListSort,
+  $$strToAsciiLowerCase,
+  $$strToAsciiUpperCase,
+  $$strReplaceAll,
+  $$bidiDirAttr,
+  $$bidiTextDir,
+  $$bidiStartEdge,
+  $$bidiEndEdge,
+  $$bidiMark,
+  $$bidiMarkAfter,
+  $$bidiSpanWrap,
+  $$bidiUnicodeWrap,
+  assertParamType,
+  setDebugSoyTemplateInfo,
+  $$getDebugSoyTemplateInfo,
+  $$EMPTY_STRING_,
+  getContentDir,
+  VERY_UNSAFE,
+  IdomFunction,
+  createSanitizedHtml,
+  $$stubsMap,
+  $$internalCallMarkerDoNotUse,
+  $$areYouAnInternalCaller,
+  // The following are exported just for tests
+  $$balanceTags_,
+  isContentKind_,
+};
 // START GENERATED CODE FOR ESCAPERS.
 
 /**
  * @type {function (*) : string}
  */
-soy.esc.$$escapeHtmlHelper = function(v) {
-  return goog.string.htmlEscape(String(v));
-};
-
-/**
- * @type {function (*) : string}
- */
-soy.esc.$$escapeUriHelper = function(v) {
-  return goog.string.urlEncode(String(v));
+const $$escapeUriHelper = function(v) {
+  return encodeURIComponent(String(v));
 };
 
 /**
  * Maps characters to the escaped versions for the named escape directives.
- * @private {!Object<string, string>}
+ * @type {!Object<string, string>}
  */
-soy.esc.$$ESCAPE_MAP_FOR_NORMALIZE_HTML__AND__ESCAPE_HTML_NOSPACE__AND__NORMALIZE_HTML_NOSPACE_ = {
+const $$ESCAPE_MAP_FOR_ESCAPE_HTML__AND__NORMALIZE_HTML__AND__ESCAPE_HTML_NOSPACE__AND__NORMALIZE_HTML_NOSPACE_ = {
   '\x00': '\x26#0;',
   '\x09': '\x26#9;',
   '\x0a': '\x26#10;',
@@ -2067,24 +2587,23 @@ soy.esc.$$ESCAPE_MAP_FOR_NORMALIZE_HTML__AND__ESCAPE_HTML_NOSPACE__AND__NORMALIZ
   '\x85': '\x26#133;',
   '\xa0': '\x26#160;',
   '\u2028': '\x26#8232;',
-  '\u2029': '\x26#8233;'
+  '\u2029': '\x26#8233;',
 };
 
 /**
  * A function that can be used with String.replace.
  * @param {string} ch A single character matched by a compatible matcher.
  * @return {string} A token in the output language.
- * @private
  */
-soy.esc.$$REPLACER_FOR_NORMALIZE_HTML__AND__ESCAPE_HTML_NOSPACE__AND__NORMALIZE_HTML_NOSPACE_ = function(ch) {
-  return soy.esc.$$ESCAPE_MAP_FOR_NORMALIZE_HTML__AND__ESCAPE_HTML_NOSPACE__AND__NORMALIZE_HTML_NOSPACE_[ch];
+const $$REPLACER_FOR_ESCAPE_HTML__AND__NORMALIZE_HTML__AND__ESCAPE_HTML_NOSPACE__AND__NORMALIZE_HTML_NOSPACE_ = function(ch) {
+  return $$ESCAPE_MAP_FOR_ESCAPE_HTML__AND__NORMALIZE_HTML__AND__ESCAPE_HTML_NOSPACE__AND__NORMALIZE_HTML_NOSPACE_[ch];
 };
 
 /**
  * Maps characters to the escaped versions for the named escape directives.
- * @private {!Object<string, string>}
+ * @type {!Object<string, string>}
  */
-soy.esc.$$ESCAPE_MAP_FOR_ESCAPE_JS_STRING__AND__ESCAPE_JS_REGEX_ = {
+const $$ESCAPE_MAP_FOR_ESCAPE_JS_STRING__AND__ESCAPE_JS_REGEX_ = {
   '\x00': '\\x00',
   '\x08': '\\x08',
   '\x09': '\\t',
@@ -2118,24 +2637,23 @@ soy.esc.$$ESCAPE_MAP_FOR_ESCAPE_JS_STRING__AND__ESCAPE_JS_REGEX_ = {
   '\x7d': '\\x7d',
   '\x85': '\\x85',
   '\u2028': '\\u2028',
-  '\u2029': '\\u2029'
+  '\u2029': '\\u2029',
 };
 
 /**
  * A function that can be used with String.replace.
  * @param {string} ch A single character matched by a compatible matcher.
  * @return {string} A token in the output language.
- * @private
  */
-soy.esc.$$REPLACER_FOR_ESCAPE_JS_STRING__AND__ESCAPE_JS_REGEX_ = function(ch) {
-  return soy.esc.$$ESCAPE_MAP_FOR_ESCAPE_JS_STRING__AND__ESCAPE_JS_REGEX_[ch];
+const $$REPLACER_FOR_ESCAPE_JS_STRING__AND__ESCAPE_JS_REGEX_ = function(ch) {
+  return $$ESCAPE_MAP_FOR_ESCAPE_JS_STRING__AND__ESCAPE_JS_REGEX_[ch];
 };
 
 /**
  * Maps characters to the escaped versions for the named escape directives.
- * @private {!Object<string, string>}
+ * @type {!Object<string, string>}
  */
-soy.esc.$$ESCAPE_MAP_FOR_ESCAPE_CSS_STRING_ = {
+const $$ESCAPE_MAP_FOR_ESCAPE_CSS_STRING_ = {
   '\x00': '\\0 ',
   '\x08': '\\8 ',
   '\x09': '\\9 ',
@@ -2162,24 +2680,23 @@ soy.esc.$$ESCAPE_MAP_FOR_ESCAPE_CSS_STRING_ = {
   '\x85': '\\85 ',
   '\xa0': '\\a0 ',
   '\u2028': '\\2028 ',
-  '\u2029': '\\2029 '
+  '\u2029': '\\2029 ',
 };
 
 /**
  * A function that can be used with String.replace.
  * @param {string} ch A single character matched by a compatible matcher.
  * @return {string} A token in the output language.
- * @private
  */
-soy.esc.$$REPLACER_FOR_ESCAPE_CSS_STRING_ = function(ch) {
-  return soy.esc.$$ESCAPE_MAP_FOR_ESCAPE_CSS_STRING_[ch];
+const $$REPLACER_FOR_ESCAPE_CSS_STRING_ = function(ch) {
+  return $$ESCAPE_MAP_FOR_ESCAPE_CSS_STRING_[ch];
 };
 
 /**
  * Maps characters to the escaped versions for the named escape directives.
- * @private {!Object<string, string>}
+ * @type {!Object<string, string>}
  */
-soy.esc.$$ESCAPE_MAP_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI_ = {
+const $$ESCAPE_MAP_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI_ = {
   '\x00': '%00',
   '\x01': '%01',
   '\x02': '%02',
@@ -2244,125 +2761,148 @@ soy.esc.$$ESCAPE_MAP_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_N
   '\uff1f': '%EF%BC%9F',
   '\uff20': '%EF%BC%A0',
   '\uff3b': '%EF%BC%BB',
-  '\uff3d': '%EF%BC%BD'
+  '\uff3d': '%EF%BC%BD',
 };
 
 /**
  * A function that can be used with String.replace.
  * @param {string} ch A single character matched by a compatible matcher.
  * @return {string} A token in the output language.
- * @private
  */
-soy.esc.$$REPLACER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI_ = function(ch) {
-  return soy.esc.$$ESCAPE_MAP_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI_[ch];
+const $$REPLACER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI_ = function(ch) {
+  return $$ESCAPE_MAP_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI_[ch];
 };
 
 /**
  * Matches characters that need to be escaped for the named directives.
- * @private {!RegExp}
+ * @type {!RegExp}
  */
-soy.esc.$$MATCHER_FOR_NORMALIZE_HTML_ = /[\x00\x22\x27\x3c\x3e]/g;
+const $$MATCHER_FOR_ESCAPE_HTML_ = /[\x00\x22\x26\x27\x3c\x3e]/g;
 
 /**
  * Matches characters that need to be escaped for the named directives.
- * @private {!RegExp}
+ * @type {!RegExp}
  */
-soy.esc.$$MATCHER_FOR_ESCAPE_HTML_NOSPACE_ = /[\x00\x09-\x0d \x22\x26\x27\x2d\/\x3c-\x3e`\x85\xa0\u2028\u2029]/g;
+const $$MATCHER_FOR_NORMALIZE_HTML_ = /[\x00\x22\x27\x3c\x3e]/g;
 
 /**
  * Matches characters that need to be escaped for the named directives.
- * @private {!RegExp}
+ * @type {!RegExp}
  */
-soy.esc.$$MATCHER_FOR_NORMALIZE_HTML_NOSPACE_ = /[\x00\x09-\x0d \x22\x27\x2d\/\x3c-\x3e`\x85\xa0\u2028\u2029]/g;
+const $$MATCHER_FOR_ESCAPE_HTML_NOSPACE_ = /[\x00\x09-\x0d \x22\x26\x27\x2d\/\x3c-\x3e`\x85\xa0\u2028\u2029]/g;
 
 /**
  * Matches characters that need to be escaped for the named directives.
- * @private {!RegExp}
+ * @type {!RegExp}
  */
-soy.esc.$$MATCHER_FOR_ESCAPE_JS_STRING_ = /[\x00\x08-\x0d\x22\x26\x27\/\x3c-\x3e\x5b-\x5d\x7b\x7d\x85\u2028\u2029]/g;
+const $$MATCHER_FOR_NORMALIZE_HTML_NOSPACE_ = /[\x00\x09-\x0d \x22\x27\x2d\/\x3c-\x3e`\x85\xa0\u2028\u2029]/g;
 
 /**
  * Matches characters that need to be escaped for the named directives.
- * @private {!RegExp}
+ * @type {!RegExp}
  */
-soy.esc.$$MATCHER_FOR_ESCAPE_JS_REGEX_ = /[\x00\x08-\x0d\x22\x24\x26-\/\x3a\x3c-\x3f\x5b-\x5e\x7b-\x7d\x85\u2028\u2029]/g;
+const $$MATCHER_FOR_ESCAPE_JS_STRING_ = /[\x00\x08-\x0d\x22\x26\x27\/\x3c-\x3e\x5b-\x5d\x7b\x7d\x85\u2028\u2029]/g;
 
 /**
  * Matches characters that need to be escaped for the named directives.
- * @private {!RegExp}
+ * @type {!RegExp}
  */
-soy.esc.$$MATCHER_FOR_ESCAPE_CSS_STRING_ = /[\x00\x08-\x0d\x22\x26-\x2a\/\x3a-\x3e@\\\x7b\x7d\x85\xa0\u2028\u2029]/g;
+const $$MATCHER_FOR_ESCAPE_JS_REGEX_ = /[\x00\x08-\x0d\x22\x24\x26-\/\x3a\x3c-\x3f\x5b-\x5e\x7b-\x7d\x85\u2028\u2029]/g;
 
 /**
  * Matches characters that need to be escaped for the named directives.
- * @private {!RegExp}
+ * @type {!RegExp}
  */
-soy.esc.$$MATCHER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI_ = /[\x00- \x22\x27-\x29\x3c\x3e\\\x7b\x7d\x7f\x85\xa0\u2028\u2029\uff01\uff03\uff04\uff06-\uff0c\uff0f\uff1a\uff1b\uff1d\uff1f\uff20\uff3b\uff3d]/g;
+const $$MATCHER_FOR_ESCAPE_CSS_STRING_ = /[\x00\x08-\x0d\x22\x26-\x2a\/\x3a-\x3e@\\\x7b\x7d\x85\xa0\u2028\u2029]/g;
+
+/**
+ * Matches characters that need to be escaped for the named directives.
+ * @type {!RegExp}
+ */
+const $$MATCHER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI_ = /[\x00- \x22\x27-\x29\x3c\x3e\\\x7b\x7d\x7f\x85\xa0\u2028\u2029\uff01\uff03\uff04\uff06-\uff0c\uff0f\uff1a\uff1b\uff1d\uff1f\uff20\uff3b\uff3d]/g;
 
 /**
  * A pattern that vets values produced by the named directives.
- * @private {!RegExp}
+ * @type {!RegExp}
  */
-soy.esc.$$FILTER_FOR_FILTER_CSS_VALUE_ = /^(?!-*(?:expression|(?:moz-)?binding))(?:(?:[.#]?-?(?:[_a-z0-9-]+)(?:-[_a-z0-9-]+)*-?|(?:rgb|hsl)a?\([0-9.%,\u0020]+\)|-?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[a-z]{1,4}|%)?|!important)(?:\s+|$))*$/i;
+const $$FILTER_FOR_FILTER_CSS_VALUE_ = /^(?!-*(?:expression|(?:moz-)?binding))(?:(?:[.#]?-?(?:[_a-z0-9-]+)(?:-[_a-z0-9-]+)*-?|(?:rgb|rgba|hsl|hsla|calc)\([-\u0020\t,+.!#%_0-9a-zA-Z]+\)|[-+]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:e-?[0-9]+)?(?:[a-z]{1,4}|%)?|!important)(?:\s*[,\u0020]\s*|$))*$/i;
 
 /**
  * A pattern that vets values produced by the named directives.
- * @private {!RegExp}
+ * @type {!RegExp}
  */
-soy.esc.$$FILTER_FOR_FILTER_NORMALIZE_URI_ = /^(?![^#?]*\/(?:\.|%2E){2}(?:[\/?#]|$))(?:(?:https?|mailto):|[^&:\/?#]*(?:[\/?#]|$))/i;
+const $$FILTER_FOR_FILTER_NORMALIZE_URI_ = /^(?:(?:https?|mailto|ftp):|[^&:\/?#]*(?:[\/?#]|$))/i;
 
 /**
  * A pattern that vets values produced by the named directives.
- * @private {!RegExp}
+ * @type {!RegExp}
  */
-soy.esc.$$FILTER_FOR_FILTER_NORMALIZE_MEDIA_URI_ = /^[^&:\/?#]*(?:[\/?#]|$)|^https?:|^data:image\/[a-z0-9+]+;base64,[a-z0-9+\/]+=*$|^blob:/i;
+const $$FILTER_FOR_FILTER_NORMALIZE_MEDIA_URI_ = /^[^&:\/?#]*(?:[\/?#]|$)|^https?:|^ftp:|^data:image\/[a-z0-9+]+;base64,[a-z0-9+\/]+=*$|^blob:/i;
 
 /**
  * A pattern that vets values produced by the named directives.
- * @private {!RegExp}
+ * @type {!RegExp}
  */
-soy.esc.$$FILTER_FOR_FILTER_IMAGE_DATA_URI_ = /^data:image\/(?:bmp|gif|jpe?g|png|tiff|webp);base64,[a-z0-9+\/]+=*$/i;
+const $$FILTER_FOR_FILTER_IMAGE_DATA_URI_ = /^data:image\/(?:bmp|gif|jpe?g|png|tiff|webp);base64,[a-z0-9+\/]+=*$/i;
 
 /**
  * A pattern that vets values produced by the named directives.
- * @private {!RegExp}
+ * @type {!RegExp}
  */
-soy.esc.$$FILTER_FOR_FILTER_SIP_URI_ = /^sip:[0-9a-z;=\-+._!~*'\u0020\/():&$#?@,]+$/i;
+const $$FILTER_FOR_FILTER_SIP_URI_ = /^sip:[0-9a-z;=\-+._!~*'\u0020\/():&$#?@,]+$/i;
 
 /**
  * A pattern that vets values produced by the named directives.
- * @private {!RegExp}
+ * @type {!RegExp}
  */
-soy.esc.$$FILTER_FOR_FILTER_SMS_URI_ = /^sms:[0-9a-z;=\-+._!~*'\u0020\/():&$#?@,]+$/i;
+const $$FILTER_FOR_FILTER_SMS_URI_ = /^sms:[0-9a-z;=\-+._!~*'\u0020\/():&$#?@,]+$/i;
 
 /**
  * A pattern that vets values produced by the named directives.
- * @private {!RegExp}
+ * @type {!RegExp}
  */
-soy.esc.$$FILTER_FOR_FILTER_TEL_URI_ = /^tel:[0-9a-z;=\-+._!~*'\u0020\/():&$#?@,]+$/i;
+const $$FILTER_FOR_FILTER_TEL_URI_ = /^tel:(?:[0-9a-z;=\-+._!~*'\u0020\/():&$#?@,]|%23|%2C|%3B)+$/i;
 
 /**
  * A pattern that vets values produced by the named directives.
- * @private {!RegExp}
+ * @type {!RegExp}
  */
-soy.esc.$$FILTER_FOR_FILTER_HTML_ATTRIBUTES_ = /^(?!on|src|(?:action|archive|background|cite|classid|codebase|content|data|dsync|href|http-equiv|longdesc|style|usemap)\s*$)(?:[a-z0-9_$:-]*)$/i;
+const $$FILTER_FOR_FILTER_HTML_ATTRIBUTES_ = /^(?!on|src|(?:action|archive|background|cite|classid|codebase|content|data|dsync|href|http-equiv|longdesc|style|usemap)\s*$)(?:[a-z0-9_$:-]*)$/i;
 
 /**
  * A pattern that vets values produced by the named directives.
- * @private {!RegExp}
+ * @type {!RegExp}
  */
-soy.esc.$$FILTER_FOR_FILTER_HTML_ELEMENT_NAME_ = /^(?!base|iframe|link|no|script|style|textarea|title|xmp)[a-z0-9_$:-]*$/i;
+const $$FILTER_FOR_FILTER_HTML_ELEMENT_NAME_ = /^(?!base|iframe|link|noframes|noscript|object|script|style|textarea|title|xmp)[a-z0-9_$:-]*$/i;
+
+/**
+ * A pattern that vets values produced by the named directives.
+ * @type {!RegExp}
+ */
+const $$FILTER_FOR_FILTER_CSP_NONCE_VALUE_ = /^[a-zA-Z0-9+\/_-]+={0,2}$/;
+
+/**
+ * A helper for the Soy directive |escapeHtml
+ * @param {?} value Can be of any type but will be coerced to a string.
+ * @return {string} The escaped text.
+ */
+const $$escapeHtmlHelper = function(value) {
+  const str = String(value);
+  return str.replace(
+      $$MATCHER_FOR_ESCAPE_HTML_,
+      $$REPLACER_FOR_ESCAPE_HTML__AND__NORMALIZE_HTML__AND__ESCAPE_HTML_NOSPACE__AND__NORMALIZE_HTML_NOSPACE_);
+};
 
 /**
  * A helper for the Soy directive |normalizeHtml
  * @param {?} value Can be of any type but will be coerced to a string.
  * @return {string} The escaped text.
  */
-soy.esc.$$normalizeHtmlHelper = function(value) {
-  var str = String(value);
+const $$normalizeHtmlHelper = function(value) {
+  const str = String(value);
   return str.replace(
-      soy.esc.$$MATCHER_FOR_NORMALIZE_HTML_,
-      soy.esc.$$REPLACER_FOR_NORMALIZE_HTML__AND__ESCAPE_HTML_NOSPACE__AND__NORMALIZE_HTML_NOSPACE_);
+      $$MATCHER_FOR_NORMALIZE_HTML_,
+      $$REPLACER_FOR_ESCAPE_HTML__AND__NORMALIZE_HTML__AND__ESCAPE_HTML_NOSPACE__AND__NORMALIZE_HTML_NOSPACE_);
 };
 
 /**
@@ -2370,11 +2910,11 @@ soy.esc.$$normalizeHtmlHelper = function(value) {
  * @param {?} value Can be of any type but will be coerced to a string.
  * @return {string} The escaped text.
  */
-soy.esc.$$escapeHtmlNospaceHelper = function(value) {
-  var str = String(value);
+const $$escapeHtmlNospaceHelper = function(value) {
+  const str = String(value);
   return str.replace(
-      soy.esc.$$MATCHER_FOR_ESCAPE_HTML_NOSPACE_,
-      soy.esc.$$REPLACER_FOR_NORMALIZE_HTML__AND__ESCAPE_HTML_NOSPACE__AND__NORMALIZE_HTML_NOSPACE_);
+      $$MATCHER_FOR_ESCAPE_HTML_NOSPACE_,
+      $$REPLACER_FOR_ESCAPE_HTML__AND__NORMALIZE_HTML__AND__ESCAPE_HTML_NOSPACE__AND__NORMALIZE_HTML_NOSPACE_);
 };
 
 /**
@@ -2382,11 +2922,11 @@ soy.esc.$$escapeHtmlNospaceHelper = function(value) {
  * @param {?} value Can be of any type but will be coerced to a string.
  * @return {string} The escaped text.
  */
-soy.esc.$$normalizeHtmlNospaceHelper = function(value) {
-  var str = String(value);
+const $$normalizeHtmlNospaceHelper = function(value) {
+  const str = String(value);
   return str.replace(
-      soy.esc.$$MATCHER_FOR_NORMALIZE_HTML_NOSPACE_,
-      soy.esc.$$REPLACER_FOR_NORMALIZE_HTML__AND__ESCAPE_HTML_NOSPACE__AND__NORMALIZE_HTML_NOSPACE_);
+      $$MATCHER_FOR_NORMALIZE_HTML_NOSPACE_,
+      $$REPLACER_FOR_ESCAPE_HTML__AND__NORMALIZE_HTML__AND__ESCAPE_HTML_NOSPACE__AND__NORMALIZE_HTML_NOSPACE_);
 };
 
 /**
@@ -2394,11 +2934,11 @@ soy.esc.$$normalizeHtmlNospaceHelper = function(value) {
  * @param {?} value Can be of any type but will be coerced to a string.
  * @return {string} The escaped text.
  */
-soy.esc.$$escapeJsStringHelper = function(value) {
-  var str = String(value);
+const $$escapeJsStringHelper = function(value) {
+  const str = String(value);
   return str.replace(
-      soy.esc.$$MATCHER_FOR_ESCAPE_JS_STRING_,
-      soy.esc.$$REPLACER_FOR_ESCAPE_JS_STRING__AND__ESCAPE_JS_REGEX_);
+      $$MATCHER_FOR_ESCAPE_JS_STRING_,
+      $$REPLACER_FOR_ESCAPE_JS_STRING__AND__ESCAPE_JS_REGEX_);
 };
 
 /**
@@ -2406,11 +2946,11 @@ soy.esc.$$escapeJsStringHelper = function(value) {
  * @param {?} value Can be of any type but will be coerced to a string.
  * @return {string} The escaped text.
  */
-soy.esc.$$escapeJsRegexHelper = function(value) {
-  var str = String(value);
+const $$escapeJsRegexHelper = function(value) {
+  const str = String(value);
   return str.replace(
-      soy.esc.$$MATCHER_FOR_ESCAPE_JS_REGEX_,
-      soy.esc.$$REPLACER_FOR_ESCAPE_JS_STRING__AND__ESCAPE_JS_REGEX_);
+      $$MATCHER_FOR_ESCAPE_JS_REGEX_,
+      $$REPLACER_FOR_ESCAPE_JS_STRING__AND__ESCAPE_JS_REGEX_);
 };
 
 /**
@@ -2418,11 +2958,11 @@ soy.esc.$$escapeJsRegexHelper = function(value) {
  * @param {?} value Can be of any type but will be coerced to a string.
  * @return {string} The escaped text.
  */
-soy.esc.$$escapeCssStringHelper = function(value) {
-  var str = String(value);
+const $$escapeCssStringHelper = function(value) {
+  const str = String(value);
   return str.replace(
-      soy.esc.$$MATCHER_FOR_ESCAPE_CSS_STRING_,
-      soy.esc.$$REPLACER_FOR_ESCAPE_CSS_STRING_);
+      $$MATCHER_FOR_ESCAPE_CSS_STRING_,
+      $$REPLACER_FOR_ESCAPE_CSS_STRING_);
 };
 
 /**
@@ -2430,10 +2970,10 @@ soy.esc.$$escapeCssStringHelper = function(value) {
  * @param {?} value Can be of any type but will be coerced to a string.
  * @return {string} The escaped text.
  */
-soy.esc.$$filterCssValueHelper = function(value) {
-  var str = String(value);
-  if (!soy.esc.$$FILTER_FOR_FILTER_CSS_VALUE_.test(str)) {
-    goog.asserts.fail('Bad value `%s` for |filterCssValue', [str]);
+const $$filterCssValueHelper = function(value) {
+  const str = String(value);
+  if (!$$FILTER_FOR_FILTER_CSS_VALUE_.test(str)) {
+    asserts.fail('Bad value `%s` for |filterCssValue', [str]);
     return 'zSoyz';
   }
   return str;
@@ -2444,11 +2984,11 @@ soy.esc.$$filterCssValueHelper = function(value) {
  * @param {?} value Can be of any type but will be coerced to a string.
  * @return {string} The escaped text.
  */
-soy.esc.$$normalizeUriHelper = function(value) {
-  var str = String(value);
+const $$normalizeUriHelper = function(value) {
+  const str = String(value);
   return str.replace(
-      soy.esc.$$MATCHER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI_,
-      soy.esc.$$REPLACER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI_);
+      $$MATCHER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI_,
+      $$REPLACER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI_);
 };
 
 /**
@@ -2456,15 +2996,15 @@ soy.esc.$$normalizeUriHelper = function(value) {
  * @param {?} value Can be of any type but will be coerced to a string.
  * @return {string} The escaped text.
  */
-soy.esc.$$filterNormalizeUriHelper = function(value) {
-  var str = String(value);
-  if (!soy.esc.$$FILTER_FOR_FILTER_NORMALIZE_URI_.test(str)) {
-    goog.asserts.fail('Bad value `%s` for |filterNormalizeUri', [str]);
+const $$filterNormalizeUriHelper = function(value) {
+  const str = String(value);
+  if (!$$FILTER_FOR_FILTER_NORMALIZE_URI_.test(str)) {
+    asserts.fail('Bad value `%s` for |filterNormalizeUri', [str]);
     return 'about:invalid#zSoyz';
   }
   return str.replace(
-      soy.esc.$$MATCHER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI_,
-      soy.esc.$$REPLACER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI_);
+      $$MATCHER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI_,
+      $$REPLACER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI_);
 };
 
 /**
@@ -2472,15 +3012,15 @@ soy.esc.$$filterNormalizeUriHelper = function(value) {
  * @param {?} value Can be of any type but will be coerced to a string.
  * @return {string} The escaped text.
  */
-soy.esc.$$filterNormalizeMediaUriHelper = function(value) {
-  var str = String(value);
-  if (!soy.esc.$$FILTER_FOR_FILTER_NORMALIZE_MEDIA_URI_.test(str)) {
-    goog.asserts.fail('Bad value `%s` for |filterNormalizeMediaUri', [str]);
+const $$filterNormalizeMediaUriHelper = function(value) {
+  const str = String(value);
+  if (!$$FILTER_FOR_FILTER_NORMALIZE_MEDIA_URI_.test(str)) {
+    asserts.fail('Bad value `%s` for |filterNormalizeMediaUri', [str]);
     return 'about:invalid#zSoyz';
   }
   return str.replace(
-      soy.esc.$$MATCHER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI_,
-      soy.esc.$$REPLACER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI_);
+      $$MATCHER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI_,
+      $$REPLACER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI_);
 };
 
 /**
@@ -2488,10 +3028,10 @@ soy.esc.$$filterNormalizeMediaUriHelper = function(value) {
  * @param {?} value Can be of any type but will be coerced to a string.
  * @return {string} The escaped text.
  */
-soy.esc.$$filterImageDataUriHelper = function(value) {
-  var str = String(value);
-  if (!soy.esc.$$FILTER_FOR_FILTER_IMAGE_DATA_URI_.test(str)) {
-    goog.asserts.fail('Bad value `%s` for |filterImageDataUri', [str]);
+const $$filterImageDataUriHelper = function(value) {
+  const str = String(value);
+  if (!$$FILTER_FOR_FILTER_IMAGE_DATA_URI_.test(str)) {
+    asserts.fail('Bad value `%s` for |filterImageDataUri', [str]);
     return 'data:image/gif;base64,zSoyz';
   }
   return str;
@@ -2502,10 +3042,10 @@ soy.esc.$$filterImageDataUriHelper = function(value) {
  * @param {?} value Can be of any type but will be coerced to a string.
  * @return {string} The escaped text.
  */
-soy.esc.$$filterSipUriHelper = function(value) {
-  var str = String(value);
-  if (!soy.esc.$$FILTER_FOR_FILTER_SIP_URI_.test(str)) {
-    goog.asserts.fail('Bad value `%s` for |filterSipUri', [str]);
+const $$filterSipUriHelper = function(value) {
+  const str = String(value);
+  if (!$$FILTER_FOR_FILTER_SIP_URI_.test(str)) {
+    asserts.fail('Bad value `%s` for |filterSipUri', [str]);
     return 'about:invalid#zSoyz';
   }
   return str;
@@ -2516,10 +3056,10 @@ soy.esc.$$filterSipUriHelper = function(value) {
  * @param {?} value Can be of any type but will be coerced to a string.
  * @return {string} The escaped text.
  */
-soy.esc.$$filterSmsUriHelper = function(value) {
-  var str = String(value);
-  if (!soy.esc.$$FILTER_FOR_FILTER_SMS_URI_.test(str)) {
-    goog.asserts.fail('Bad value `%s` for |filterSmsUri', [str]);
+const $$filterSmsUriHelper = function(value) {
+  const str = String(value);
+  if (!$$FILTER_FOR_FILTER_SMS_URI_.test(str)) {
+    asserts.fail('Bad value `%s` for |filterSmsUri', [str]);
     return 'about:invalid#zSoyz';
   }
   return str;
@@ -2530,10 +3070,10 @@ soy.esc.$$filterSmsUriHelper = function(value) {
  * @param {?} value Can be of any type but will be coerced to a string.
  * @return {string} The escaped text.
  */
-soy.esc.$$filterTelUriHelper = function(value) {
-  var str = String(value);
-  if (!soy.esc.$$FILTER_FOR_FILTER_TEL_URI_.test(str)) {
-    goog.asserts.fail('Bad value `%s` for |filterTelUri', [str]);
+const $$filterTelUriHelper = function(value) {
+  const str = String(value);
+  if (!$$FILTER_FOR_FILTER_TEL_URI_.test(str)) {
+    asserts.fail('Bad value `%s` for |filterTelUri', [str]);
     return 'about:invalid#zSoyz';
   }
   return str;
@@ -2544,10 +3084,10 @@ soy.esc.$$filterTelUriHelper = function(value) {
  * @param {?} value Can be of any type but will be coerced to a string.
  * @return {string} The escaped text.
  */
-soy.esc.$$filterHtmlAttributesHelper = function(value) {
-  var str = String(value);
-  if (!soy.esc.$$FILTER_FOR_FILTER_HTML_ATTRIBUTES_.test(str)) {
-    goog.asserts.fail('Bad value `%s` for |filterHtmlAttributes', [str]);
+const $$filterHtmlAttributesHelper = function(value) {
+  const str = String(value);
+  if (!$$FILTER_FOR_FILTER_HTML_ATTRIBUTES_.test(str)) {
+    asserts.fail('Bad value `%s` for |filterHtmlAttributes', [str]);
     return 'zSoyz';
   }
   return str;
@@ -2558,10 +3098,24 @@ soy.esc.$$filterHtmlAttributesHelper = function(value) {
  * @param {?} value Can be of any type but will be coerced to a string.
  * @return {string} The escaped text.
  */
-soy.esc.$$filterHtmlElementNameHelper = function(value) {
-  var str = String(value);
-  if (!soy.esc.$$FILTER_FOR_FILTER_HTML_ELEMENT_NAME_.test(str)) {
-    goog.asserts.fail('Bad value `%s` for |filterHtmlElementName', [str]);
+const $$filterHtmlElementNameHelper = function(value) {
+  const str = String(value);
+  if (!$$FILTER_FOR_FILTER_HTML_ELEMENT_NAME_.test(str)) {
+    asserts.fail('Bad value `%s` for |filterHtmlElementName', [str]);
+    return 'zSoyz';
+  }
+  return str;
+};
+
+/**
+ * A helper for the Soy directive |filterCspNonceValue
+ * @param {?} value Can be of any type but will be coerced to a string.
+ * @return {string} The escaped text.
+ */
+const $$filterCspNonceValueHelper = function(value) {
+  const str = String(value);
+  if (!$$FILTER_FOR_FILTER_CSP_NONCE_VALUE_.test(str)) {
+    asserts.fail('Bad value `%s` for |filterCspNonceValue', [str]);
     return 'zSoyz';
   }
   return str;
@@ -2573,31 +3127,31 @@ soy.esc.$$filterHtmlElementNameHelper = function(value) {
  * entities we guarantee that the result can be embedded into a
  * an attribute without introducing a tag boundary.
  *
- * @private {!RegExp}
+ * @type {!RegExp}
  */
-soy.esc.$$HTML_TAG_REGEX_ = /<(?:!|\/?([a-zA-Z][a-zA-Z0-9:\-]*))(?:[^>'"]|"[^"]*"|'[^']*')*>/g;
+const $$HTML_TAG_REGEX_ = /<(?:!|\/?([a-zA-Z][a-zA-Z0-9:\-]*))(?:[^>'"]|"[^"]*"|'[^']*')*>/g;
 
 /**
  * Matches all occurrences of '<'.
  *
- * @private {!RegExp}
+ * @type {!RegExp}
  */
-soy.esc.$$LT_REGEX_ = /</g;
+const $$LT_REGEX_ = /</g;
 
 /**
  * Maps lower-case names of innocuous tags to true.
  *
- * @private {!Object<string, boolean>}
+ * @type {!Object<string, boolean>}
  */
-soy.esc.$$SAFE_TAG_WHITELIST_ = {'b': true, 'br': true, 'em': true, 'i': true, 's': true, 'strong': true, 'sub': true, 'sup': true, 'u': true};
+const $$SAFE_TAG_WHITELIST_ = {'b': true, 'br': true, 'em': true, 'i': true, 's': true, 'strong': true, 'sub': true, 'sup': true, 'u': true};
 
 /**
  * Pattern for matching attribute name and value, where value is single-quoted
  * or double-quoted.
  * See http://www.w3.org/TR/2011/WD-html5-20110525/syntax.html#attributes-0
  *
- * @private {!RegExp}
+ * @type {!RegExp}
  */
-soy.esc.$$HTML_ATTRIBUTE_REGEX_ = /([a-zA-Z][a-zA-Z0-9:\-]*)[\t\n\r\u0020]*=[\t\n\r\u0020]*("[^"]*"|'[^']*')/g;
+const $$HTML_ATTRIBUTE_REGEX_ = /([a-zA-Z][a-zA-Z0-9:\-]*)[\t\n\r\u0020]*=[\t\n\r\u0020]*("[^"]*"|'[^']*')/g;
 
 // END GENERATED CODE

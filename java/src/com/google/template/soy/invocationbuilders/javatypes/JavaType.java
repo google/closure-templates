@@ -16,7 +16,6 @@
 
 package com.google.template.soy.invocationbuilders.javatypes;
 
-import static com.google.template.soy.invocationbuilders.javatypes.CodeGenUtils.CHECK_NOT_NULL;
 
 import com.google.common.base.Strings;
 
@@ -49,32 +48,40 @@ public abstract class JavaType {
    *
    * <p>The return value would be "myListAsLong".
    */
-  public String asInlineCast(String variableName) {
-    if (!isNullable() && !isPrimitive()) {
-      return CHECK_NOT_NULL + "(" + variableName + ")";
-    }
-    return variableName;
+  public final String asInlineCast(String variableName) {
+    return asInlineCast(variableName, 0);
   }
+
+  abstract String asInlineCast(String variableName, int depth);
 
   /** Whether the type should be treated as {@code @Nullable}). */
   public boolean isNullable() {
     return isNullable;
   }
 
-  /** Whether this is a primitive type. */
-  abstract boolean isPrimitive();
-
   /** Returns this type as a nullable type. Primitive should make sure to switch to a boxed type. */
   public abstract JavaType asNullable();
 
   /**
-   * Returns the string to use if this is a type argument for a generic type (e.g. "? extends
-   * Number" instead of "Number", so we can accept Long/Double).
+   * Returns a string that evaluates to a Function for converting values of the Java type to
+   * SoyValueProviders.
    *
-   * <p>Note that this is NOT public because it should only be used by other java types (e.g.
-   * ListJavaType needs to get its element type as a generic type string to know what to put in the
-   * <>).
+   * <p>subtypes should override to supply method reference where they can
    */
+  public String getAsInlineCastFunction(int depth) {
+    // use the depth to generate a unique lambda name
+    String lambdaName = "v" + (depth == 0 ? "" : depth);
+    return lambdaName + " -> " + asInlineCast(lambdaName, depth + 1);
+  }
+
+  /*
+   Returns the string to use if this is a type argument for a generic type (e.g. "? extends
+  * Number" instead of "Number", so we can accept Long/Double).
+  *
+  * <p>Note that this is NOT public because it should only be used by other java types (e.g.
+  * ListJavaType needs to get its element type as a generic type string to know what to put in the
+  * <>).
+  */
   abstract String asGenericsTypeArgumentString();
 
   public boolean isGenericsTypeSupported() {

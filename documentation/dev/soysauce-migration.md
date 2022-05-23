@@ -1,6 +1,5 @@
 # Migrating to SoySauce from Tofu
 
-
 The SoySauce backend for server side rendered Soy has a number of benefits over
 the Tofu interpreter
 
@@ -21,7 +20,6 @@ the Tofu interpreter
 For all these reasons the Tofu backend is discouraged for new users and all
 users are encouraged to migrate.
 
-
 [TOC]
 
 ## Migration Steps
@@ -34,10 +32,6 @@ to call `SoyFileSet.compileTemplates()` instead.
 
 This may reveal a few issues:
 
-*   `compileTemplates()` implies
-    `SoyGeneralOptions.setAllowExternalCalls(false)`, so if you have any
-    unresolved `{call ...}` statements (most likely in dead templates), you will
-    need to fix those.
 *   `compileTemplates()` requires that there are Java implementations of all the
     referenced plugins function/directives at compile time. (In Tofu this is
     only required at runtime.) Such calls are most likely in dead code so the
@@ -112,7 +106,7 @@ are some behavior differences.
 
 NOTE: the `SoyTofu.Renderer` has a `setData` overload that accepts a `SoyRecord`
 object, but `SoySauce.Renderer` does not. This means that if you are
-constructing `SoyData` objects to pass to the renderer that you will need to
+constructing `SoyValue` objects to pass to the renderer that you will need to
 switch to passing plain Java objects (maps, lists, strings, protos).
 
 TIP: you may find it useful to use the `Shims` in the
@@ -151,36 +145,38 @@ SoySauce has somewhat stricter runtime type checking. For example,
     it with an expression of unknown type, Tofu has a bug such that it will not
     check that the parameter is a `uri` at runtime, but `SoySauce` will.
 
-### Stricter `null` handling
+### Stricter `null` handling {#null-handling}
 
 SoySauce is stricter about dereferencing null objects. For example, given the
-expression `isNonnull($foo.bar.baz)` if `bar` is `null` then accessing `.baz` on
-it should cause an error, and it does in SoySauce and the JS backend, however,
-in Tofu this doesn’t happen (though there is a TODO), instead it only causes an
-error if you perform certain operations with the result of the expression
-(calling `isNonnull` and simple comparisons are the only thing you can do). An
-appropriate fix would be to rewrite it as `isNonnull($foo.bar?.baz)`.
+expression `$foo.bar.baz != null` if `bar` is `null` then accessing `.baz` on it
+should cause an error, and it does in SoySauce and the JS backend, however, in
+Tofu this doesn’t happen (though there is a TODO), instead it only causes an
+error if you perform certain operations with the result of the expression. An
+appropriate fix would be to rewrite it as `$foo.bar?.baz != null`.
 
 ### Required parameter semantics
+
+NOTE: If you use the SoyTemplate API for preparing parameters, this distinction
+is irrelevant since it will consistently enforce required parameter syntax
+across both backends.
 
 SoySauce interprets 'required' template parameters slightly differently than
 Tofu. Imagine this template:
 
 ```soy
-{template .foo}
+{template foo}
   {@param p: string}
   {$p}
 {/template}
 ```
 
-In Tofu, if you call `.foo` without passing `$p` there are a few things that can
+In Tofu, if you call `foo` without passing `$p` there are a few things that can
 happen:
 
-*   If it is a top level call (Java code calling .foo), then you will get a
+*   If it is a top level call (Java code calling `foo`), then you will get a
     SoyTofuException saying that a required parameter is missing.
 *   If it is a Soy->Soy call then you will get null for `$p`
 
 In SoySauce you always get `null`. We chose this option because it is more
 internally consistent (Soy->Soy and java->Soy calls are treated equivalently)
 and it is more consistent with the behavior of the JavaScript backend.
-

@@ -16,71 +16,115 @@
 
 package com.google.template.soy.passes;
 
-import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.IdGenerator;
-import com.google.template.soy.base.internal.Identifier;
-import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.exprtree.CallableExprBuilder;
 import com.google.template.soy.exprtree.ExprNode;
-import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.exprtree.ExprNode.Kind;
 import com.google.template.soy.exprtree.FunctionNode;
-import com.google.template.soy.exprtree.ProtoInitNode;
+import com.google.template.soy.exprtree.VarDefn;
+import com.google.template.soy.exprtree.VarRefNode;
+import com.google.template.soy.passes.LocalVariablesNodeVisitor.ExprVisitor;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
-import com.google.template.soy.shared.restricted.SoyFunctionSignature;
+import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.PrintDirectiveNode;
-import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileNode;
-import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.Optional;
 
 /**
- * Populates the {@link FunctionNode} and {@link PrintDirectiveNode} with their plugin instances and
- * rewrites some ambiguous function nodes to {@link ProtoInitNode}.
+ * Populates the {@link FunctionNode} and {@link PrintDirectiveNode} with their plugin instances
+ * based on a registry of such names. Also resolves functions that are imported symbols (e.g. for
+ * proto init).
  */
-final class ResolvePluginsPass extends CompilerFilePass {
-
-  private static final SoyErrorKind NOT_FIRST_PRINT_DIRECTIVE =
-      SoyErrorKind.of(
-          "Function ''{0}'' cannot be called as a print directive when preceded by print directive"
-              + " ''{1}''.");
+@RunBefore(SoyConformancePass.class)
+final class ResolvePluginsPass implements CompilerFilePass {
 
   private final PluginResolver resolver;
-  private final SoyTypeRegistry typeRegistry;
-  private final ErrorReporter errorReporter;
 
-  ResolvePluginsPass(
-      PluginResolver resolver, SoyTypeRegistry typeRegistry, ErrorReporter errorReporter) {
+  ResolvePluginsPass(PluginResolver resolver) {
     this.resolver = resolver;
-    this.typeRegistry = typeRegistry;
-    this.errorReporter = errorReporter;
   }
 
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-    for (FunctionNode function : SoyTreeUtils.getAllNodesOfType(file, FunctionNode.class)) {
-      // Functions with 0 arguments are ambiguous with proto init nodes with no arguments, check the
-      // type registry first to see if this is such a case
-      if (function.numChildren() == 0) {
-        String name = function.getFunctionName();
-        String resolvedName = file.resolveAlias(name);
-        SoyType type = typeRegistry.getType(resolvedName);
-        if (type != null && type.getKind() == SoyType.Kind.PROTO) {
-          ProtoInitNode protoInit =
-              new ProtoInitNode(resolvedName, ImmutableList.of(), function.getSourceLocation());
-          function.getParent().replaceChild(function, protoInit);
-          continue;
-        }
-      }
+    new LocalVariablesNodeVisitor(new Visitor()).exec(file);
+  }
 
-      function.setSoyFunction(
-          resolver.lookupSoyFunction(
-              function.getFunctionName(), function.numChildren(), function.getSourceLocation()));
+  private class Visitor extends LocalVariablesNodeVisitor.NodeVisitor {
+
+    private final LocalVariablesNodeVisitor.ExprVisitor exprVisitor =
+        new LocalVariablesNodeVisitor.ExprVisitor() {
+          @Override
+          protected void visitFunctionNode(FunctionNode node) {
+            visitChildren(node);
+
+            if (node.isResolved()) {
+              return;
+            }
+
+            // If the function name is an expression then attempt to set the soy function field.
+            if (!node.hasStaticName()) {
+              setSoyFunctionForNameExpr(node);
+              return;
+            }
+
+            // If the name of the function is resolvable to a var def then replace the function
+            // identifier with a function name expression. This is the case if the function is:
+            //   1. element composition of a local or imported template
+            //   2. a local or imported extern
+            //   3. proto init (top-level message only)
+            VarDefn varDefn = getLocalVariables().lookup(node.getStaticFunctionName());
+            boolean varDefnIsTemplate = varDefn != null && varDefn.kind() == VarDefn.Kind.TEMPLATE;
+
+            // Precedence 1: Global/plug-in function, special case only when name collides with a
+            //   local template name.
+            // Due to many existing collisions between global/plug-in functions and template
+            // names, we need to resolve such functions with higher precedence than template
+            // symbols.
+            if (varDefnIsTemplate && trySetFunction(node)) {
+              return;
+            }
+
+            // Precedence 2: In-scope symbols, e.g. extern, template composition, proto init.
+            if (varDefn != null) {
+              VarRefNode functionRef =
+                  new VarRefNode(
+                      node.getStaticFunctionName(), node.getIdentifier().location(), varDefn);
+              FunctionNode newFunct =
+                  CallableExprBuilder.builder(node)
+                      .setIdentifier(null)
+                      .setFunctionExpr(functionRef)
+                      .buildFunction();
+              // Set the soy function field to "resolve" the function.
+              setSoyFunctionForNameExpr(newFunct);
+              node.getParent().replaceChild(node, newFunct);
+              return;
+            }
+
+            // Precedence 3: Global/plug-in function.
+            trySetFunction(node);
+          }
+
+          private boolean trySetFunction(FunctionNode node) {
+            Object impl =
+                resolver.lookupSoyFunction(
+                    node.getStaticFunctionName(), node.numChildren(), node.getSourceLocation());
+            if (impl != null) {
+              node.setSoyFunction(impl);
+              return true;
+            }
+            return false;
+          }
+        };
+
+    @Override
+    protected ExprVisitor getExprVisitor() {
+      return exprVisitor;
     }
 
-    for (PrintDirectiveNode directiveNode :
-        SoyTreeUtils.getAllNodesOfType(file, PrintDirectiveNode.class)) {
+    @Override
+    protected void visitPrintDirectiveNode(PrintDirectiveNode directiveNode) {
+      super.visitPrintDirectiveNode(directiveNode);
       String name = directiveNode.getName();
 
       // If a template uses a print directive that doesn't exist, check if a function with the same
@@ -89,7 +133,7 @@ final class ResolvePluginsPass extends CompilerFilePass {
       Optional<SoySourceFunction> aliasedFunction =
           resolver.getFunctionCallableAsPrintDirective(name, directiveNode.getSourceLocation());
       if (aliasedFunction.isPresent()) {
-        rewritePrintDirectiveAsFunction(directiveNode, aliasedFunction.get());
+        directiveNode.setPrintDirectiveFunction(aliasedFunction.get());
       } else {
         directiveNode.setPrintDirective(
             resolver.lookupPrintDirective(
@@ -98,38 +142,24 @@ final class ResolvePluginsPass extends CompilerFilePass {
     }
   }
 
-  private void rewritePrintDirectiveAsFunction(
-      PrintDirectiveNode directiveNode, SoySourceFunction function) {
-    PrintNode printNode = (PrintNode) directiveNode.getParent();
-    // printNode.
-    String functionName = function.getClass().getAnnotation(SoyFunctionSignature.class).name();
-
-    // Only rewrite the print directive if it is the first in the chain. This avoids having to
-    // create new let nodes.
-    int directiveIndex = printNode.getChildIndex(directiveNode);
-    if (directiveIndex != 0) {
-      errorReporter.report(
-          directiveNode.getSourceLocation(),
-          NOT_FIRST_PRINT_DIRECTIVE,
-          functionName,
-          printNode.getChild(directiveIndex - 1).getName());
-      return;
+  /**
+   * For a function without a static name, calls {@link FunctionNode#setSoyFunction} with an
+   * appropriate value based on the function's name expression. Setting the soy function makes
+   * various code constructs more convenient (switch statements, visitors, etc).
+   */
+  static void setSoyFunctionForNameExpr(FunctionNode function) {
+    Object fct = getSoyFunctionForExpr(function.getNameExpr());
+    if (fct != null) {
+      function.setSoyFunction(BuiltinFunction.PROTO_INIT);
     }
+  }
 
-    ExprRootNode originalExprRoot = printNode.getExpr();
-    ExprNode originalExpr = originalExprRoot.getRoot();
-    FunctionNode newExpr =
-        new FunctionNode(
-            Identifier.create(functionName, directiveNode.getNameLocation()),
-            function,
-            originalExpr.getSourceLocation().extend(directiveNode.getSourceLocation()));
-    // Add the original expression of the print directive as the first argument to the function.
-    newExpr.addChild(originalExpr);
-    // Add the 0-n arguments to the print directive as the 1-(n+1) arguments of the function.
-    newExpr.addChildren(directiveNode.getArgs());
-    originalExprRoot.addChild(newExpr);
-
-    // Remove the print directive.
-    printNode.removeChild(directiveIndex);
+  private static Object getSoyFunctionForExpr(ExprNode expr) {
+    if (expr.getKind() == Kind.VAR_REF_NODE
+        && ((VarRefNode) expr).hasType()
+        && expr.getType().getKind() == SoyType.Kind.PROTO_TYPE) {
+      return BuiltinFunction.PROTO_INIT;
+    }
+    return null;
   }
 }

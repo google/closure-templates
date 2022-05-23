@@ -24,16 +24,17 @@ import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
  * Node representing the 'default' block in a 'plural' block.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public final class MsgPluralDefaultNode extends CaseOrDefaultNode implements MsgBlockNode {
 
   /**
    * @param id The id for this node.
    * @param sourceLocation The node's source location.
+   * @param openTagLocation The node's open tag location
    */
-  public MsgPluralDefaultNode(int id, SourceLocation sourceLocation) {
-    super(id, sourceLocation, "default");
+  public MsgPluralDefaultNode(
+      int id, SourceLocation sourceLocation, SourceLocation openTagLocation) {
+    super(id, sourceLocation, openTagLocation, "default");
   }
 
   /**

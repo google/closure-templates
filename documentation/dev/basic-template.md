@@ -7,7 +7,7 @@ function that can be used for rendering. For example,
 
 ```soy
 {namespace my.project.namespace}
-{template .hello}
+{template hello}
   {@param name: string}
   Hello, <b>{$name}</b>
 {/template}
@@ -35,7 +35,7 @@ namespace:
 ```soy
 {namespace my.namespace}
 
-{template .hello}
+{template hello}
 {/template}
 ```
 
@@ -45,7 +45,7 @@ define an empty template, which isn't very useful. So let's add some content:
 ```soy
 {namespace my.namespace}
 
-{template .hello}
+{template hello}
   Hello, world!
 {/template}
 ```
@@ -63,7 +63,7 @@ For example:
 ```soy
 {namespace my.namespace}
 
-{template .hello}
+{template hello}
   {@param name: string} /* The name to greet */
   Hello, {$name}!
 {/template}
@@ -83,7 +83,7 @@ passing these parameters through every template, they can be registered as
 ```soy
 {namespace my.namespace}
 
-{template .hello}
+{template hello}
   {@param name: string}
   {@inject partyTime: bool}
   <span class="{$partyTime ? 'party' : ''}">
@@ -108,7 +108,7 @@ For example:
 ```soy
 {namespace my.namespace}
 
-{template .hello}
+{template hello}
   {@param name: string}
   <span class="{$ij.partyTime ? 'party' : ''}">
   Hello, {$name}!
@@ -127,13 +127,14 @@ be called from their host languages (see how to call from [Java](java.md) and
 
 ```soy
 {namespace my.other.namespace}
+import * as myNamespace from 'path/to/hello.soy';
 
-{template .helloEveryone}
+{template helloEveryone}
   {@param names: list<string>}
   <ul>
     {for $name in $names}
       <li>
-      {call my.namespace.hello}
+      {call myNamespace.hello}
         {param name : $name/}
       {/call}
       </li>
@@ -145,6 +146,25 @@ be called from their host languages (see how to call from [Java](java.md) and
 This template uses the `{call ...}` command to invoke the template we defined
 above.
 
+If you don't need to use `{param}` blocks -- such as to pass an HTML value --
+you can omit the `call` keyword and use a more function-like syntax:
+
+```soy
+{namespace my.other.namespace}
+import * as myNamespace from 'path/to/hello.soy';
+
+{template helloEveryone}
+  {@param names: list<string>}
+  <ul>
+    {for $name in $names}
+      <li>
+      {myNamespace.hello(name: $name)}
+      </li>
+    {/for}
+  </ul>
+{/template}
+```
+
 ## How to render non-HTML content
 
 The examples above demonstrate how to render simple snippets of HTML which is a
@@ -155,7 +175,7 @@ For this, each template has a `kind` parameter (the default value is
 For example,
 
 ```soy
-{template .partyAttrs kind="attributes"}
+{template partyAttrs kind="attributes"}
   class="party-time" data-party="on"
 {/template}
 ```

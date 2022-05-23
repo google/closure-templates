@@ -15,19 +15,19 @@
  */
 package com.google.template.soy.passes;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
-import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.HtmlCloseTagNode;
-import com.google.template.soy.soytree.HtmlElementMetadataP;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.MsgNode;
@@ -40,9 +40,7 @@ import com.google.template.soy.soytree.SoyNode.MsgSubstUnitNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
-import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.VeLogNode;
 import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.SoyType;
@@ -50,9 +48,7 @@ import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.VeType;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -68,7 +64,7 @@ import java.util.Objects;
  *   <li>VeLogRewritePass since that rewrites more VE syntactic sugar
  * </ul>
  */
-final class VeLogValidationPass extends CompilerFileSetPass {
+final class VeLogValidationPass implements CompilerFileSetPass {
   private static final SoyErrorKind UNEXPECTED_DATA =
       SoyErrorKind.of(
           "Unexpected data argument. The VE is type ''{0}'' which means there cannot be any data. "
@@ -108,9 +104,6 @@ final class VeLogValidationPass extends CompilerFileSetPass {
       SoyErrorKind.of(
           "It is illegal to set the data parameter if the ve type is a union (''{0}'').");
 
-  private static final SoyErrorKind VELOG_NODE_CANNOT_CALL_DELTEMPLATE =
-      SoyErrorKind.of("'{velog'} must not call a deltemplate..");
-
   private static final SoyErrorKind LOG_WITHIN_MESSAGE_REQUIRES_ELEMENT =
       SoyErrorKind.of("'{velog'} within '{msg'} must directly wrap an HTML element.");
 
@@ -123,36 +116,21 @@ final class VeLogValidationPass extends CompilerFileSetPass {
   }
 
   @Override
-  public Result run(
-      ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator, TemplateRegistry registry) {
-    Map<String, TemplateNode> templatesInLibrary = new LinkedHashMap<>();
+  public Result run(ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator) {
     for (SoyFileNode file : sourceFiles) {
-      // Create an intermediary data structure for template name -> template node so that
-      // we can use it like a TemplateRegistry, but for templates in the immediate compilation unit.
-      for (TemplateNode template : file.getChildren()) {
-        templatesInLibrary.put(template.getTemplateName(), template);
+      for (TemplateNode template : file.getTemplates()) {
+        run(template);
       }
-    }
-    for (TemplateNode template : templatesInLibrary.values()) {
-      run(template, templatesInLibrary, registry);
-    }
-    if (reporter.hasErrors()) {
-      return Result.STOP;
     }
     return Result.CONTINUE;
   }
 
-  private void run(
-      TemplateNode template,
-      Map<String, TemplateNode> templatesInLibrary,
-      TemplateRegistry registry) {
-    for (FunctionNode node :
-        SoyTreeUtils.getAllFunctionInvocations(template, BuiltinFunction.VE_DATA)) {
-      validateVeDataFunctionNode(node);
-    }
+  private void run(TemplateNode template) {
+    SoyTreeUtils.allFunctionInvocations(template, BuiltinFunction.VE_DATA)
+        .forEach(this::validateVeDataFunctionNode);
     for (VeLogNode node : SoyTreeUtils.getAllNodesOfType(template, VeLogNode.class)) {
       if (template.isStrictHtml()) {
-        validateVelogElementStructure(node, templatesInLibrary, registry);
+        validateVelogElementStructure(node);
         validateVeLogNode(node);
       } else {
         reporter.report(node.getVeDataExpression().getSourceLocation(), REQUIRE_STRICTHTML);
@@ -165,16 +143,14 @@ final class VeLogValidationPass extends CompilerFileSetPass {
     // However, because there is no way (currently) to navigate from an ExprNode to the SoyNode
     // which owns it, we need to do this multi-phase traversal to ensure the correct parenting
     // hierarchy.
-    for (ExprHolderNode holderNode :
-        SoyTreeUtils.getAllNodesOfType(template, SoyNode.ExprHolderNode.class)) {
-      for (ExprRootNode rootNode : holderNode.getExprList()) {
-        for (FunctionNode function : SoyTreeUtils.getAllNodesOfType(rootNode, FunctionNode.class)) {
-          if (function.getSoyFunction() instanceof LoggingFunction) {
+    SoyTreeUtils.visitExprNodesWithHolder(
+        template,
+        FunctionNode.class,
+        (holderNode, function) -> {
+          if (function.isResolved() && function.getSoyFunction() instanceof LoggingFunction) {
             validateLoggingFunction(holderNode, function);
           }
-        }
-      }
-    }
+        });
   }
 
   private void validateLoggingFunction(ExprHolderNode holderNode, FunctionNode function) {
@@ -182,7 +158,7 @@ final class VeLogValidationPass extends CompilerFileSetPass {
       reporter.report(
           function.getSourceLocation(),
           INVALID_LOGGING_FUNCTION_LOCATION,
-          function.getFunctionName(),
+          function.getStaticFunctionName(),
           " It is part of complex expression.");
       return;
     }
@@ -190,7 +166,7 @@ final class VeLogValidationPass extends CompilerFileSetPass {
       reporter.report(
           function.getSourceLocation(),
           INVALID_LOGGING_FUNCTION_LOCATION,
-          function.getFunctionName(),
+          function.getStaticFunctionName(),
           " It isn't in a print node.");
       return;
     }
@@ -199,13 +175,13 @@ final class VeLogValidationPass extends CompilerFileSetPass {
       reporter.report(
           printNode.getChild(0).getSourceLocation(),
           NO_PRINT_DIRECTIVES,
-          function.getFunctionName());
+          function.getStaticFunctionName());
     }
     if (holderNode.getParent().getKind() != SoyNode.Kind.HTML_ATTRIBUTE_VALUE_NODE) {
       reporter.report(
           function.getSourceLocation(),
           INVALID_LOGGING_FUNCTION_LOCATION,
-          function.getFunctionName(),
+          function.getStaticFunctionName(),
           " It isn't the direct child of an attribute value.");
       return;
     }
@@ -213,37 +189,21 @@ final class VeLogValidationPass extends CompilerFileSetPass {
       reporter.report(
           function.getSourceLocation(),
           INVALID_LOGGING_FUNCTION_LOCATION,
-          function.getFunctionName(),
+          function.getStaticFunctionName(),
           " It has sibling nodes in the attribute value.");
       return;
     }
   }
 
-  private void validateVelogElementStructure(
-      VeLogNode node, Map<String, TemplateNode> templatesInLibrary, TemplateRegistry registry) {
-
+  private void validateVelogElementStructure(VeLogNode node) {
     List<StandaloneNode> children =
         node.getChildren().stream()
             .filter(child -> !SoyElementPass.ALLOWED_CHILD_NODES.contains(child.getKind()))
-            .collect(ImmutableList.toImmutableList());
+            .collect(toImmutableList());
     // TODO(b/133428199): Support {velog} around calls in messages.
     if (node.getNearestAncestor(MsgFallbackGroupNode.class) == null
         && children.size() == 1
         && Iterables.getLast(children) instanceof CallBasicNode) {
-      CallBasicNode callee = (CallBasicNode) Iterables.getLast(children);
-      HtmlElementMetadataP calleeMetadata = null;
-      TemplateMetadata templateMetadata =
-          registry.getBasicTemplateOrElement(callee.getCalleeName());
-      if (templateMetadata != null) {
-        calleeMetadata = templateMetadata.getHtmlElement();
-      } else if (templatesInLibrary.containsKey(callee.getCalleeName())) {
-        TemplateNode calledTemplate = templatesInLibrary.get(callee.getCalleeName());
-        calleeMetadata = calledTemplate.getHtmlElementMetadata();
-      }
-      if (calleeMetadata == null) {
-        reporter.report(node.getSourceLocation(), VELOG_NODE_CANNOT_CALL_DELTEMPLATE);
-        return;
-      }
       node.setNeedsSyntheticVelogNode(true);
       return;
     }
@@ -258,6 +218,11 @@ final class VeLogValidationPass extends CompilerFileSetPass {
     HtmlOpenTagNode firstTag = node.getOpenTagNode();
     // If the first child of {velog} is not an open tag, output a synthetic VE log node.
     if (firstTag == null) {
+      node.setNeedsSyntheticVelogNode(true);
+      return;
+    }
+
+    if (!firstTag.getTagName().isStatic() && !firstTag.getTagName().isLegacyDynamicTagName()) {
       node.setNeedsSyntheticVelogNode(true);
       return;
     }
@@ -321,22 +286,15 @@ final class VeLogValidationPass extends CompilerFileSetPass {
     ExprNode veExpr = node.getChild(0);
     ExprNode dataExpr = node.getChild(1);
 
-    if (veExpr.getType().getKind() == Kind.ERROR) {
-      return;
-    }
-
     if (veExpr.getType().getKind() == Kind.VE) {
       if (dataExpr.getType().getKind() != Kind.NULL) {
         VeType veType = (VeType) veExpr.getType();
         SoyType dataType = dataExpr.getType();
         if (!veType.getDataType().isPresent()) {
-          reporter.report(
-              dataExpr.getSourceLocation(),
-              UNEXPECTED_DATA,
-              veType,
-              dataType);
+          reporter.report(dataExpr.getSourceLocation(), UNEXPECTED_DATA, veType, dataType);
         } else {
-          SoyType veDataType = typeRegistry.getType(veType.getDataType().get());
+          SoyType veDataType =
+              typeRegistry.getProtoRegistry().getProtoType(veType.getDataType().get());
           if (veDataType == null) {
             reporter.report(veExpr.getSourceLocation(), UNKNOWN_PROTO, veType.getDataType().get());
           } else if (veDataType.getKind() != Kind.PROTO) {

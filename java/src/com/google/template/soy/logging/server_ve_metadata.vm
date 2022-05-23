@@ -1,0 +1,23 @@
+package $package;
+
+import com.google.common.io.Resources;
+import com.google.template.soy.jbcsrc.api.SoyVeMetadata;
+import com.google.template.soy.jbcsrc.runtime.VeMetadataRuntime;
+import com.google.template.soy.logging.LoggableElementMetadata;
+import com.google.template.soy.logging.RuntimeVeMetadata;
+import javax.annotation.Generated;
+
+@Generated("$generator")
+@SoyVeMetadata
+public final class $className {
+
+  private static final RuntimeVeMetadata METADATA =
+      VeMetadataRuntime.loadMetadata(
+          Resources.getResource(${className}.class, "$javaResourceFilename"));
+
+  public static LoggableElementMetadata getMetadata(long veId) {
+    return METADATA.getMetadataOrThrow(veId);
+  }
+
+  private $className() {}
+}

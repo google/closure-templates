@@ -16,10 +16,12 @@
 
 package com.google.template.soy.jssrc.internal;
 
+import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_EMPTY_STRING;
 import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_FALSE;
 import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_NULL;
 import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_TRUE;
+import static com.google.template.soy.jssrc.dsl.Expression.dottedIdNoRequire;
 import static com.google.template.soy.jssrc.dsl.Expression.fromExpr;
 import static com.google.template.soy.jssrc.dsl.Expression.id;
 import static com.google.template.soy.jssrc.dsl.Expression.stringLiteral;
@@ -27,13 +29,14 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_ASSIGN_DEFAUL
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_GET_DELEGATE_FN;
 import static com.google.template.soy.jssrc.internal.JsRuntime.sanitizedContentOrdainerFunctionForInternalBlocks;
 
-import com.google.common.base.Preconditions;
+import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
-import com.google.template.soy.jssrc.dsl.CodeChunk.RequiresCollector;
 import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.GoogRequire;
@@ -48,17 +51,40 @@ import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.CallParamValueNode;
+import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
+import com.google.template.soy.types.TemplateType;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Generates JS code for {call}s and {delcall}s.
- *
  */
 public class GenCallCodeUtils {
+  /**
+   * Returns true if the given template has a positional signature where all explicit {@code @param}
+   * declarations are exploded into explicit parameters.
+   */
+  static boolean hasPositionalSignature(TemplateMetadata metadata) {
+    return hasPositionalSignature(metadata.getTemplateType());
+  }
+
+  static boolean hasPositionalSignature(TemplateType type) {
+    // This signature style is not possible to do if there are indirect calls, since those require
+    // the whole `opt_data` parameter
+    // If there are no parameters, then there is no value in exploding into multiple functions
+    // If the template is a Soy element, then we also need the `opt_data` object.
+    return type.getDataAllCallSituations().isEmpty()
+        && !type.getActualParameters().isEmpty()
+        // only basic templates are supported for now.
+        // deltemplates require the object style to support the relatively weak type checking we
+        // perform on them.  elements could be supported with some changes to the base class.
+        && type.getTemplateKind() == TemplateType.TemplateKind.BASIC;
+  }
 
   /** Instance of DelTemplateNamer to use. */
   private final DelTemplateNamer delTemplateNamer;
@@ -128,21 +154,84 @@ public class GenCallCodeUtils {
       TranslateExprNodeVisitor exprTranslator) {
 
     // Build the JS CodeChunk for the callee's name.
-    Expression callee = genCallee(callNode, templateAliases, exprTranslator);
+    Callee callee = genCallee(callNode, templateAliases, exprTranslator);
 
     // Generate the data object to pass to callee
-    Expression objToPass =
-        genObjToPass(callNode, templateAliases, translationContext, errorReporter, exprTranslator);
+    Expression call;
+    if (canPerformPositionalCall(callNode)) {
+      List<Expression> params = new ArrayList<>();
+      params.add(JsRuntime.SOY_INTERNAL_CALL_MARKER);
+      params.add(JsRuntime.IJ_DATA);
+      params.addAll(
+          getPositionalParams(
+              (CallBasicNode) callNode,
+              templateAliases,
+              translationContext,
+              errorReporter,
+              exprTranslator));
+      call = callee.positionalStyle().get().call(params);
+    } else {
+      Expression objToPass =
+          genObjToPass(
+              callNode, templateAliases, translationContext, errorReporter, exprTranslator);
 
-    Expression call = genMainCall(callee, objToPass, callNode);
+      call = callee.objectStyle().call(objToPass, JsRuntime.IJ_DATA);
+    }
     if (callNode.getEscapingDirectives().isEmpty()) {
       return call;
     }
     return applyEscapingDirectives(call, callNode);
   }
 
-  protected Expression genMainCall(Expression callee, Expression objToPass, CallNode call) {
-    return callee.call(objToPass, JsRuntime.OPT_IJ_DATA);
+  public List<Expression> getPositionalParams(
+      CallBasicNode callNode,
+      TemplateAliases templateAliases,
+      TranslationContext translationContext,
+      ErrorReporter errorReporter,
+      TranslateExprNodeVisitor exprTranslator) {
+    Map<String, Expression> explicitParams =
+        getExplicitParams(
+            callNode, templateAliases, translationContext, errorReporter, exprTranslator);
+    // to perform the call we need to pass these params in the correct order
+    List<Expression> params = new ArrayList<>();
+    int numTrailingUndefineds = 0;
+    for (TemplateType.Parameter calleeParam : callNode.getStaticType().getActualParameters()) {
+      Expression explicitParam = explicitParams.remove(calleeParam.getName());
+      if (explicitParam == null) {
+        numTrailingUndefineds++;
+        params.add(Expression.LITERAL_UNDEFINED);
+      } else {
+        numTrailingUndefineds = 0;
+        params.add(explicitParam);
+      }
+    }
+    checkState(
+        explicitParams.isEmpty(), "Expected all params to be consumed, %s remain", explicitParams);
+    // rather than foo(x,y, undefined, undefined) we should generate foo(x,y)
+    if (numTrailingUndefineds > 0) {
+      params = params.subList(0, params.size() - numTrailingUndefineds);
+    }
+    return params;
+  }
+
+  /**
+   * Returns true if the given call can use positional style parameters.
+   *
+   * <p>This kind of call is possible if:
+   *
+   * <ul>
+   *   <li>The callee supports it, see {@link #hasPositionalSignature}
+   *   <li>The caller is a {@link CallBasicNode} with node {@code data=} expression and the calle is
+   *       a static template (not a template reference)
+   * </ul>
+   */
+  public boolean canPerformPositionalCall(CallNode callNode) {
+    if (callNode.isPassingData()
+        || !(callNode instanceof CallBasicNode)
+        || !((CallBasicNode) callNode).isStaticCall()) {
+      return false;
+    }
+    return hasPositionalSignature(((CallBasicNode) callNode).getStaticType());
   }
 
   public static Expression applyEscapingDirectives(Expression call, CallNode callNode) {
@@ -152,10 +241,10 @@ public class GenCallCodeUtils {
     // migrating it to CodeChunk would be a major change. Therefore, we convert our CodeChunks
     // to JsExpr and back here.
     JsExpr callResult = call.singleExprOrName();
-    RequiresCollector.IntoImmutableSet collector = new RequiresCollector.IntoImmutableSet();
-    call.collectRequires(collector);
+    ImmutableSet.Builder<GoogRequire> requiresBuilder = ImmutableSet.builder();
+    call.collectRequires(requiresBuilder::add);
     for (SoyPrintDirective directive : callNode.getEscapingDirectives()) {
-      Preconditions.checkState(
+      checkState(
           directive instanceof SoyJsSrcPrintDirective,
           "Contextual autoescaping produced a bogus directive: %s",
           directive.getName());
@@ -164,33 +253,44 @@ public class GenCallCodeUtils {
       if (directive instanceof SoyLibraryAssistedJsSrcPrintDirective) {
         for (String name :
             ((SoyLibraryAssistedJsSrcPrintDirective) directive).getRequiredJsLibNames()) {
-          collector.add(GoogRequire.create(name));
+          requiresBuilder.add(GoogRequire.create(name));
         }
       }
     }
 
-    return fromExpr(callResult, collector.get()).withInitialStatements(call.initialStatements());
+    return fromExpr(callResult, requiresBuilder.build())
+        .withInitialStatements(call.initialStatements());
+  }
+
+  /** Represents a callable function symbol. */
+  @AutoValue
+  public abstract static class Callee {
+    Callee() {}
+
+    /** A reference to the positional signature */
+    public abstract Optional<Expression> positionalStyle();
+
+    public abstract Expression objectStyle();
   }
 
   /**
    * @param callNode The call to generate code for.
    * @param templateAliases A mapping of fully qualified calls to a variable in scope.
-   * @param translationContext
-   * @param errorReporter
    * @return The JS expression for the template to call
    */
-  public Expression genCallee(
+  public Callee genCallee(
       CallNode callNode, TemplateAliases templateAliases, TranslateExprNodeVisitor exprTranslator) {
     // Build the JS CodeChunk for the callee's name.
     Expression callee;
     if (callNode instanceof CallBasicNode) {
       // Case 1: Basic call.
-      // TODO(b/80597216): remove the call to dottedIdNoRequire here by calculating the goog.require
-      // this will require knowing the current require strategy and whether or not the template is
-      // defined in this file.
-      callee =
-          Expression.dottedIdNoRequire(
-              templateAliases.get(((CallBasicNode) callNode).getCalleeName()));
+      CallBasicNode callBasicNode = (CallBasicNode) callNode;
+      if (callBasicNode.isStaticCall()) {
+        // Skip checks for the common case of synthetic template literals.
+        callee = Expression.dottedIdNoRequire(templateAliases.get(callBasicNode.getCalleeName()));
+      } else {
+        callee = exprTranslator.exec(callBasicNode.getCalleeExpr());
+      }
     } else {
       // Case 2: Delegate call.
       CallDelegateNode callDelegateNode = (CallDelegateNode) callNode;
@@ -214,7 +314,20 @@ public class GenCallCodeUtils {
               variant,
               callDelegateNode.allowEmptyDefault() ? LITERAL_TRUE : LITERAL_FALSE);
     }
-    return callee;
+    Optional<Expression> positional = Optional.empty();
+
+    if (canPerformPositionalCall(callNode)) {
+      positional =
+          Optional.of(
+              dottedIdNoRequire(
+                  templateAliases.get(
+                          ((TemplateLiteralNode)
+                                  ((CallBasicNode) callNode).getCalleeExpr().getRoot())
+                              .getResolvedName())
+                      + "$"));
+    }
+
+    return new AutoValue_GenCallCodeUtils_Callee(positional, callee);
   }
 
   /**
@@ -267,30 +380,46 @@ public class GenCallCodeUtils {
       TranslateExprNodeVisitor exprTranslator) {
 
     // ------ Generate the expression for the original data to pass ------
-    Expression dataToPass;
+    Optional<Expression> dataToPass = Optional.empty();
     if (callNode.isPassingAllData()) {
-      dataToPass = JsRuntime.OPT_DATA;
+      dataToPass = Optional.of(JsRuntime.OPT_DATA);
     } else if (callNode.isPassingData()) {
-      dataToPass = exprTranslator.exec(callNode.getDataExpr());
-    } else if (callNode.numChildren() == 0) {
-      // If we're passing neither children nor indirect data, we can immediately return null.
-      return LITERAL_NULL;
-    } else {
-      dataToPass = LITERAL_NULL;
-    }
-
-    Map<String, Expression> paramDefaults = getDefaultParams(callNode, translationContext);
-    // ------ Case 1: No additional params ------
-    if (callNode.numChildren() == 0) {
-      if (!paramDefaults.isEmpty()) {
-        dataToPass = SOY_ASSIGN_DEFAULTS.call(dataToPass, Expression.objectLiteral(paramDefaults));
-      }
-      // Ignore inconsistencies between Closure Compiler & Soy type systems (eg, proto nullability).
-      return dataToPass.castAs("?");
+      dataToPass = Optional.of(exprTranslator.exec(callNode.getDataExpr()));
     }
 
     // ------ Build an object literal containing the additional params ------
-    Map<String, Expression> params = paramDefaults;
+    Map<String, Expression> params =
+        getExplicitParams(
+            callNode, templateAliases, translationContext, errorReporter, exprTranslator);
+    if (callNode.isPassingAllData()) {
+      Map<String, Expression> mergedParams = new LinkedHashMap<>();
+      mergedParams.putAll(getDefaultParams(callNode, translationContext));
+      mergedParams.putAll(params);
+      params = mergedParams;
+    }
+    // ------ Cases 2 and 3: Additional params with and without original data to pass ------
+    if (dataToPass.isPresent()) {
+      if (params.isEmpty()) {
+        return dataToPass.get().castAs("?");
+      }
+      // No need to cast; assignDefaults already returns {?}.
+      return SOY_ASSIGN_DEFAULTS.call(Expression.objectLiteral(params), dataToPass.get());
+    } else {
+      if (params.isEmpty()) {
+        return LITERAL_NULL;
+      }
+      // Ignore inconsistencies between Closure Compiler & Soy type systems (eg, proto nullability).
+      return Expression.objectLiteral(params).castAs("?");
+    }
+  }
+
+  private Map<String, Expression> getExplicitParams(
+      CallNode callNode,
+      TemplateAliases templateAliases,
+      TranslationContext translationContext,
+      ErrorReporter errorReporter,
+      TranslateExprNodeVisitor exprTranslator) {
+    Map<String, Expression> params = new LinkedHashMap<>();
 
     for (CallParamNode child : callNode.getChildren()) {
       Expression value;
@@ -304,7 +433,11 @@ public class GenCallCodeUtils {
         if (isComputableAsJsExprsVisitor.exec(cpcn)) {
           List<Expression> chunks =
               genJsExprsVisitorFactory
-                  .create(translationContext, templateAliases, errorReporter)
+                  .create(
+                      translationContext,
+                      templateAliases,
+                      errorReporter,
+                      exprTranslator.getDataSource())
                   .exec(cpcn);
           value = CodeChunkUtils.concatChunksForceString(chunks);
         } else {
@@ -318,32 +451,19 @@ public class GenCallCodeUtils {
       params.put(child.getKey().identifier(), value);
     }
 
-    Expression paramsExp = Expression.objectLiteral(params);
-
-    // ------ Cases 2 and 3: Additional params with and without original data to pass ------
-    if (callNode.isPassingData()) {
-      Expression allData = SOY_ASSIGN_DEFAULTS.call(paramsExp, dataToPass);
-      // No need to cast; assignDefaults already returns {?}.
-      return allData;
-    } else {
-      // Ignore inconsistencies between Closure Compiler & Soy type systems (eg, proto nullability).
-      return paramsExp.castAs("?");
-    }
+    return params;
   }
 
   private Map<String, Expression> getDefaultParams(
       CallNode node, TranslationContext translationContext) {
     Map<String, Expression> defaultParams = new LinkedHashMap<>();
-    if (!node.isPassingAllData()) {
-      return defaultParams;
-    }
     for (TemplateParam param : node.getNearestAncestor(TemplateNode.class).getParams()) {
       if (param.hasDefault()) {
         // Just put the parameter value in here, which will be the default if the parameter is
         // unset. The additional JS to figure out of a parameter is the default or not isn't worth
         // it.
         defaultParams.put(
-            param.name(), translationContext.soyToJsVariableMappings().get(param.name()));
+            param.name(), translationContext.soyToJsVariableMappings().get(param.refName()));
       }
     }
     return defaultParams;

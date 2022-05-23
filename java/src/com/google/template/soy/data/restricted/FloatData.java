@@ -22,7 +22,6 @@ import com.google.errorprone.annotations.Immutable;
  * Float data.
  *
  * <p>Important: This class may only be used in implementing plugins (e.g. functions, directives).
- *
  */
 @Immutable
 public final class FloatData extends NumberData {
@@ -95,6 +94,11 @@ public final class FloatData extends NumberData {
 
   @Override
   public double toFloat() {
+    return value;
+  }
+
+  @Override
+  public Number javaNumberValue() {
     return value;
   }
 }

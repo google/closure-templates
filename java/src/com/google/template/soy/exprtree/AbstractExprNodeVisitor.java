@@ -22,6 +22,10 @@ import com.google.template.soy.exprtree.ExprNode.OperatorNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.BitwiseAndOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.BitwiseOrOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.BitwiseXorOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.DivideByOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.EqualOpNode;
@@ -37,6 +41,8 @@ import com.google.template.soy.exprtree.OperatorNodes.NotOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.ShiftLeftOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.ShiftRightOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
 
 /**
@@ -90,6 +96,9 @@ public abstract class AbstractExprNodeVisitor<R> extends AbstractNodeVisitor<Exp
       case STRING_NODE:
         visitStringNode((StringNode) node);
         break;
+      case PROTO_ENUM_VALUE_NODE:
+        visitProtoEnumValueNode((ProtoEnumValueNode) node);
+        break;
 
       case LIST_LITERAL_NODE:
         visitListLiteralNode((ListLiteralNode) node);
@@ -99,6 +108,9 @@ public abstract class AbstractExprNodeVisitor<R> extends AbstractNodeVisitor<Exp
         break;
       case MAP_LITERAL_NODE:
         visitMapLiteralNode((MapLiteralNode) node);
+        break;
+      case MAP_LITERAL_FROM_LIST_NODE:
+        visitMapLiteralFromListNode((MapLiteralFromListNode) node);
         break;
       case RECORD_LITERAL_NODE:
         visitRecordLiteralNode((RecordLiteralNode) node);
@@ -113,11 +125,19 @@ public abstract class AbstractExprNodeVisitor<R> extends AbstractNodeVisitor<Exp
       case ITEM_ACCESS_NODE:
         visitItemAccessNode((ItemAccessNode) node);
         break;
+      case METHOD_CALL_NODE:
+        visitMethodCallNode((MethodCallNode) node);
+        break;
+      case NULL_SAFE_ACCESS_NODE:
+        visitNullSafeAccessNode((NullSafeAccessNode) node);
+        break;
 
       case GLOBAL_NODE:
         visitGlobalNode((GlobalNode) node);
         break;
-
+      case GROUP_NODE:
+        visitGroupNode((GroupNode) node);
+        break;
       case NEGATIVE_OP_NODE:
         visitNegativeOpNode((NegativeOpNode) node);
         break;
@@ -169,16 +189,36 @@ public abstract class AbstractExprNodeVisitor<R> extends AbstractNodeVisitor<Exp
       case CONDITIONAL_OP_NODE:
         visitConditionalOpNode((ConditionalOpNode) node);
         break;
+      case SHIFT_LEFT_OP_NODE:
+        visitShiftLeftOpNode((ShiftLeftOpNode) node);
+        break;
+      case SHIFT_RIGHT_OP_NODE:
+        visitShiftRightOpNode((ShiftRightOpNode) node);
+        break;
+      case BITWISE_OR_OP_NODE:
+        visitBitwiseOrOpNode((BitwiseOrOpNode) node);
+        break;
+      case BITWISE_XOR_OP_NODE:
+        visitBitwiseXorOpNode((BitwiseXorOpNode) node);
+        break;
+      case BITWISE_AND_OP_NODE:
+        visitBitwiseAndOpNode((BitwiseAndOpNode) node);
+        break;
 
       case FUNCTION_NODE:
         visitFunctionNode((FunctionNode) node);
         break;
-      case PROTO_INIT_NODE:
-        visitProtoInitNode((ProtoInitNode) node);
-        break;
 
       case VE_LITERAL_NODE:
         visitVeLiteralNode((VeLiteralNode) node);
+        break;
+
+      case TEMPLATE_LITERAL_NODE:
+        visitTemplateLiteralNode((TemplateLiteralNode) node);
+        break;
+
+      case ASSERT_NON_NULL_OP_NODE:
+        visitAssertNonNullOpNode((AssertNonNullOpNode) node);
         break;
 
       default:
@@ -216,6 +256,10 @@ public abstract class AbstractExprNodeVisitor<R> extends AbstractNodeVisitor<Exp
     visitExprNode(node);
   }
 
+  protected void visitAssertNonNullOpNode(AssertNonNullOpNode node) {
+    visitExprNode(node);
+  }
+
   // -----------------------------------------------------------------------------------------------
   // Implementations for primitive nodes.
 
@@ -239,6 +283,10 @@ public abstract class AbstractExprNodeVisitor<R> extends AbstractNodeVisitor<Exp
     visitPrimitiveNode(node);
   }
 
+  protected void visitProtoEnumValueNode(ProtoEnumValueNode node) {
+    visitPrimitiveNode(node);
+  }
+
   protected void visitPrimitiveNode(PrimitiveNode node) {
     visitExprNode(node);
   }
@@ -255,6 +303,10 @@ public abstract class AbstractExprNodeVisitor<R> extends AbstractNodeVisitor<Exp
   }
 
   protected void visitMapLiteralNode(MapLiteralNode node) {
+    visitExprNode(node);
+  }
+
+  protected void visitMapLiteralFromListNode(MapLiteralFromListNode node) {
     visitExprNode(node);
   }
 
@@ -281,7 +333,19 @@ public abstract class AbstractExprNodeVisitor<R> extends AbstractNodeVisitor<Exp
     visitDataAccessNode(node);
   }
 
+  protected void visitMethodCallNode(MethodCallNode node) {
+    visitDataAccessNode(node);
+  }
+
+  protected void visitNullSafeAccessNode(NullSafeAccessNode node) {
+    visitExprNode(node);
+  }
+
   protected void visitGlobalNode(GlobalNode node) {
+    visitExprNode(node);
+  }
+
+  protected void visitGroupNode(GroupNode node) {
     visitExprNode(node);
   }
 
@@ -356,6 +420,26 @@ public abstract class AbstractExprNodeVisitor<R> extends AbstractNodeVisitor<Exp
     visitOperatorNode(node);
   }
 
+  protected void visitShiftLeftOpNode(ShiftLeftOpNode node) {
+    visitOperatorNode(node);
+  }
+
+  protected void visitShiftRightOpNode(ShiftRightOpNode node) {
+    visitOperatorNode(node);
+  }
+
+  protected void visitBitwiseOrOpNode(BitwiseOrOpNode node) {
+    visitOperatorNode(node);
+  }
+
+  protected void visitBitwiseXorOpNode(BitwiseXorOpNode node) {
+    visitOperatorNode(node);
+  }
+
+  protected void visitBitwiseAndOpNode(BitwiseAndOpNode node) {
+    visitOperatorNode(node);
+  }
+
   protected void visitOperatorNode(OperatorNode node) {
     visitExprNode(node);
   }
@@ -367,14 +451,17 @@ public abstract class AbstractExprNodeVisitor<R> extends AbstractNodeVisitor<Exp
     visitExprNode(node);
   }
 
-  protected void visitProtoInitNode(ProtoInitNode node) {
-    visitExprNode(node);
-  }
-
   // -----------------------------------------------------------------------------------------------
   // Implementations for VE logging nodes.
 
   protected void visitVeLiteralNode(VeLiteralNode node) {
+    visitExprNode(node);
+  }
+
+  // -----------------------------------------------------------------------------------------------
+  // Implementations for template literal nodes.
+
+  protected void visitTemplateLiteralNode(TemplateLiteralNode node) {
     visitExprNode(node);
   }
 

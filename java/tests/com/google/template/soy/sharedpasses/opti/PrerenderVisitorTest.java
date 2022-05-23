@@ -22,9 +22,9 @@ import static org.junit.Assert.fail;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
-import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.sharedpasses.render.RenderException;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import com.google.template.soy.testing.TestAnnotations.ExperimentalFeatures;
 import org.junit.Rule;
 import org.junit.Test;
@@ -35,7 +35,6 @@ import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for PrerenderVisitor.
- *
  */
 @RunWith(JUnit4.class)
 public class PrerenderVisitorTest {
@@ -172,7 +171,7 @@ public class PrerenderVisitorTest {
                     : ImmutableList.copyOf(experimentalFeatures.value()))
             .parse();
 
-    TemplateNode template = result.fileSet().getChild(0).getChild(0);
+    TemplateNode template = (TemplateNode) result.fileSet().getChild(0).getChild(0);
     StringBuilder outputSb = new StringBuilder();
     PrerenderVisitor prerenderVisitor =
         new PrerenderVisitor(

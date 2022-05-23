@@ -16,33 +16,67 @@
 
 package com.google.template.soy.soytree;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.template.soy.base.SourceLocation.UNKNOWN;
+
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 import java.util.List;
 import javax.annotation.Nullable;
 
 /** A {@code {namespace ..}} declaration. */
 public final class NamespaceDeclaration {
+  public static final NamespaceDeclaration EMPTY =
+      new NamespaceDeclaration(
+          Identifier.create(SoyFileHeaderInfo.EMPTY.getNamespace(), UNKNOWN),
+          ImmutableList.of(),
+          null,
+          UNKNOWN);
+
   private final Identifier namespace;
   private final ImmutableList<String> requiredCssNamespaces;
+  private final ImmutableList<String> requiredCssPaths;
   private final String cssBaseNamespace;
+  private final String cssPrefix;
+  private final SourceLocation srcLoc;
 
   final ImmutableList<CommandTagAttribute> attrs;
 
   public NamespaceDeclaration(
-      Identifier namespace, List<CommandTagAttribute> attrs, ErrorReporter errorReporter) {
+      Identifier namespace,
+      List<CommandTagAttribute> attrs,
+      ErrorReporter errorReporter,
+      SourceLocation srcLoc) {
     ImmutableList<String> requiredCssNamespaces = ImmutableList.of();
+    ImmutableList<String> requiredCssPaths = ImmutableList.of();
     String cssBaseNamespace = null;
+    String cssPrefix = null;
     for (CommandTagAttribute attr : attrs) {
       switch (attr.getName().identifier()) {
         case "requirecss":
           requiredCssNamespaces = attr.valueAsRequireCss(errorReporter);
           break;
+        case "requirecsspath":
+          requiredCssPaths = attr.valueAsRequireCssPath();
+          break;
+        case "cssprefix":
+          cssPrefix = attr.getValue();
+          if (cssBaseNamespace != null) {
+            errorReporter.report(
+                attr.getSourceLocation(), CommandTagAttribute.CSS_PREFIX_AND_CSS_BASE);
+          }
+          break;
         case "cssbase":
           cssBaseNamespace = attr.getValue();
+          if (cssPrefix != null) {
+            errorReporter.report(
+                attr.getSourceLocation(), CommandTagAttribute.CSS_PREFIX_AND_CSS_BASE);
+          }
           break;
         case "stricthtml":
           errorReporter.report(
@@ -54,35 +88,56 @@ public final class NamespaceDeclaration {
               CommandTagAttribute.UNSUPPORTED_ATTRIBUTE_KEY,
               attr.getName().identifier(),
               "namespace",
-              ImmutableList.of("cssbase", "requirecss"));
+              ImmutableList.of("cssbase", "requirecss", "requirecsspath", "cssprefix"));
           break;
       }
     }
 
     this.namespace = namespace;
     this.requiredCssNamespaces = requiredCssNamespaces;
+    this.requiredCssPaths = requiredCssPaths;
     this.cssBaseNamespace = cssBaseNamespace;
+    this.srcLoc = srcLoc;
     this.attrs = ImmutableList.copyOf(attrs);
+    this.cssPrefix = cssPrefix;
   }
 
   public NamespaceDeclaration copy(CopyState copyState) {
     return new NamespaceDeclaration(
         namespace,
-        attrs.stream().map(attr -> attr.copy(copyState)).collect(ImmutableList.toImmutableList()),
-        ErrorReporter.exploding());
+        attrs.stream().map(attr -> attr.copy(copyState)).collect(toImmutableList()),
+        ErrorReporter.exploding(),
+        srcLoc);
   }
 
   public String getNamespace() {
     return namespace.identifier();
   }
 
+  public SourceLocation getNamespaceLocation() {
+    return namespace.location();
+  }
+
   ImmutableList<String> getRequiredCssNamespaces() {
     return requiredCssNamespaces;
+  }
+
+  ImmutableList<String> getRequiredCssPaths() {
+    return requiredCssPaths;
   }
 
   @Nullable
   String getCssBaseNamespace() {
     return cssBaseNamespace;
+  }
+
+  @Nullable
+  String getCssPrefix() {
+    return cssPrefix;
+  }
+
+  public SourceLocation getSourceLocation() {
+    return srcLoc;
   }
 
   /** Returns an approximation of what the original source for this namespace looked like. */

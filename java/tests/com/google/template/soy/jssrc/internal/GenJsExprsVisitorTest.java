@@ -18,20 +18,20 @@ package com.google.template.soy.jssrc.internal;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.jssrc.dsl.Expression.id;
-import static com.google.template.soy.jssrc.dsl.Expression.number;
+import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_DATA;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.internal.UniqueNameGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.restricted.JsExpr;
-import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
+import com.google.template.soy.testing.SharedTestUtils;
+import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.Test;
@@ -40,7 +40,6 @@ import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for GenJsExprsVisitor.
- *
  */
 @RunWith(JUnit4.class)
 public final class GenJsExprsVisitorTest {
@@ -50,10 +49,7 @@ public final class GenJsExprsVisitorTest {
   // Let 'goo' simulate a local variable from a 'foreach' loop.
   private static final ImmutableMap<String, Expression> LOCAL_VAR_TRANSLATIONS =
       ImmutableMap.<String, Expression>builder()
-          .put("goo", id("gooData8"))
-          .put("goo__isFirst", id("gooIndex8").doubleEquals(number(0)))
-          .put("goo__isLast", id("gooIndex8").doubleEquals(id("gooListLen8").minus(number(1))))
-          .put("goo__index", id("gooIndex8"))
+          .put("$goo", id("gooData8"))
           .build();
 
   @Test
@@ -68,9 +64,8 @@ public final class GenJsExprsVisitorTest {
   @Test
   public void testMsgHtmlTag() {
 
-    assertGeneratedJsExprs(JOINER.join(
-        "{@param url : ?}",
-        "{msg desc=\"\"}<a href=\"{$url}\">Click here</a>{/msg}"),
+    assertGeneratedJsExprs(
+        JOINER.join("{@param url : ?}", "{msg desc=\"\"}<a href=\"{$url}\">Click here</a>{/msg}"),
         ImmutableList.of(
             new JsExpr("'<a href=\"'", Integer.MAX_VALUE),
             new JsExpr("opt_data.url", Integer.MAX_VALUE),
@@ -104,11 +99,9 @@ public final class GenJsExprsVisitorTest {
 
     String soyNodeCode = JOINER.join("{@param boo : string}", "{map('a': 'b', $boo: 'c')[$boo]}");
     String expectedGenCode =
-        JOINER.join(
-            "var $tmp = new Map();",
-            "$tmp.set(soy.$$checkNotNull('a'), 'b');",
-            "$tmp.set(soy.$$checkNotNull(opt_data.boo), 'c');",
-            "$tmp.get(opt_data.boo);");
+        "/** @type {!soy.map.Map<string,string>} */ (new"
+            + " Map()).set(soy.$$checkNotNull('a'),"
+            + " 'b').set(soy.$$checkNotNull(opt_data.boo), 'c').get(opt_data.boo);";
     assertGeneratedChunks(soyNodeCode, expectedGenCode);
   }
 
@@ -131,19 +124,20 @@ public final class GenJsExprsVisitorTest {
   @Test
   public void testIf() {
 
-    String soyNodeCode = JOINER.join(
-        "{@param boo : ?}",
-        "{@param goo : ?}",
-        "{if $boo}",
-        "  Blah",
-        "{elseif not isNonnull($goo)}",
-        "  Bleh",
-        "{else}",
-        "  Bluh",
-        "{/if}");
+    String soyNodeCode =
+        JOINER.join(
+            "{@param boo : ?}",
+            "{@param goo : ?}",
+            "{if $boo}",
+            "  Blah",
+            "{elseif not ($goo != null)}",
+            "  Bleh",
+            "{else}",
+            "  Bluh",
+            "{/if}");
     String expectedJsExprText =
         JOINER.join(
-            "var $tmp;",
+            "let $tmp;",
             "if (opt_data.boo) {",
             "  $tmp = 'Blah';",
             "} else if (!(gooData8 != null)) {",
@@ -163,12 +157,12 @@ public final class GenJsExprsVisitorTest {
             "{@param goo : ?}",
             "{if $boo}",
             "  Blah",
-            "{elseif not isNonnull($goo)}",
+            "{elseif not ($goo != null)}",
             "  Bleh",
             "{/if}");
     String expectedJsExprText =
         JOINER.join(
-            "var $tmp;",
+            "let $tmp;",
             "if (opt_data.boo) {",
             "  $tmp = 'Blah';",
             "} else if (!(gooData8 != null)) {",
@@ -182,66 +176,17 @@ public final class GenJsExprsVisitorTest {
   @Test
   public void testIfTernary() {
 
-    String soyNodeCode = JOINER.join(
-        "{@param boo : ?}",
-        "{if $boo}",
-        "  Blah",
-        "{else}",
-        "  Bleh",
-        "{/if}");
+    String soyNodeCode =
+        JOINER.join("{@param boo : ?}", "{if $boo}", "  Blah", "{else}", "  Bleh", "{/if}");
     String expectedJsExprText = "opt_data.boo ? 'Blah' : 'Bleh';";
     assertGeneratedChunks(soyNodeCode, expectedJsExprText);
   }
 
   @Test
-  public void testCall() {
-    assertGeneratedChunks(
-        "{call some.func data=\"all\" /}", "some.func(/** @type {?} */ (opt_data), opt_ijData);");
-
-    String soyNodeCode = JOINER.join(
-        "{@param boo : ?}",
-        "{call some.func data=\"$boo.foo\" /}");
-    assertGeneratedChunks(
-        soyNodeCode, "some.func(/** @type {?} */ (opt_data.boo.foo), opt_ijData);");
-
-    soyNodeCode = JOINER.join(
-        "{@param moo : ?}",
-        "{call some.func}",
-        "  {param goo: $moo /}",
-        "{/call}");
-    assertGeneratedChunks(
-        soyNodeCode, "some.func(/** @type {?} */ ({goo: opt_data.moo}), opt_ijData);");
-
-    soyNodeCode =
-        JOINER.join(
-            "{@param boo : ?}",
-            "{call some.func data=\"$boo\"}",
-            "  {param goo kind=\"text\"}Blah{/param}",
-            "{/call}");
-    assertGeneratedChunks(
-        soyNodeCode, "some.func(soy.$$assignDefaults({goo: 'Blah'}, opt_data.boo), opt_ijData);");
-  }
-
-  @Test
   public void testBlocks() {
-
-    String soyNodeCode = JOINER.join(
-        "{@param boo : ?}",
-        "{if $boo}",
-        "  Blah {$boo} bleh.",
-        "{/if}");
+    String soyNodeCode =
+        JOINER.join("{@param boo : ?}", "{if $boo}", "  Blah {$boo} bleh.", "{/if}");
     String expectedJsExprText = "opt_data.boo ? 'Blah ' + opt_data.boo + ' bleh.' : '';";
-    assertGeneratedChunks(soyNodeCode, expectedJsExprText);
-
-    soyNodeCode =
-        JOINER.join(
-            "{@param goo : ?}",
-            "{call some.func}",
-            "  {param goo kind=\"text\"}{lb}{isNonnull($goo)}{rb} is {$goo.moo}{/param}",
-            "{/call}");
-    expectedJsExprText =
-        "some.func(/** @type {?} */ ({goo: "
-            + "'{' + (gooData8 != null) + '} is ' + gooData8.moo}), opt_ijData);";
     assertGeneratedChunks(soyNodeCode, expectedJsExprText);
   }
 
@@ -291,7 +236,8 @@ public final class GenJsExprsVisitorTest {
                     CodeChunk.Generator.create(nameGenerator),
                     nameGenerator),
                 AliasUtils.IDENTITY_ALIASES,
-                boom);
+                boom,
+                OPT_DATA);
     return visitor.exec(node);
   }
 }

@@ -21,7 +21,6 @@ import com.google.common.base.Preconditions;
 
 /**
  * Compilation options for the JS Src output target (backend).
- *
  */
 public final class SoyJsSrcOptions implements Cloneable {
 
@@ -36,6 +35,9 @@ public final class SoyJsSrcOptions implements Cloneable {
 
   /** Whether we should generate Closure Library message definitions (i.e. goog.getMsg). */
   private boolean shouldGenerateGoogMsgDefs;
+
+  /** Whether we should add a requirecss annotation for the generated CSS header file. */
+  private boolean dependOnCssHeader;
 
   /** Whether the Closure Library messages are external, i.e. "MSG_EXTERNAL_[soyGeneratedMsgId]". */
   private boolean googMsgsAreExternal;
@@ -58,6 +60,7 @@ public final class SoyJsSrcOptions implements Cloneable {
   public SoyJsSrcOptions() {
     depsStrategy = JsDepsStrategy.NAMESPACES;
 
+    dependOnCssHeader = false;
     shouldGenerateGoogMsgDefs = false;
     googMsgsAreExternal = false;
     bidiGlobalDir = 0;
@@ -66,6 +69,7 @@ public final class SoyJsSrcOptions implements Cloneable {
 
   private SoyJsSrcOptions(SoyJsSrcOptions orig) {
     this.depsStrategy = orig.depsStrategy;
+    this.dependOnCssHeader = orig.dependOnCssHeader;
     this.shouldGenerateGoogMsgDefs = orig.shouldGenerateGoogMsgDefs;
     this.googMsgsAreExternal = orig.googMsgsAreExternal;
     this.bidiGlobalDir = orig.bidiGlobalDir;
@@ -116,6 +120,20 @@ public final class SoyJsSrcOptions implements Cloneable {
   /** Returns whether we should generate Closure Library message definitions (i.e. goog.getMsg). */
   public boolean shouldGenerateGoogMsgDefs() {
     return shouldGenerateGoogMsgDefs;
+  }
+
+  /**
+   * Sets whether we should add a requirecss annotation for the generated CSS header file.
+   *
+   * @param dependOnCssHeader The value to set.
+   */
+  public void setDependOnCssHeader(boolean dependOnCssHeader) {
+    this.dependOnCssHeader = dependOnCssHeader;
+  }
+
+  /** Returns whether we should add a requirecss annotation for the generated CSS header file. */
+  public boolean dependOnCssHeader() {
+    return dependOnCssHeader;
   }
 
   /**
@@ -213,6 +231,7 @@ public final class SoyJsSrcOptions implements Cloneable {
   public final String toString() {
     return MoreObjects.toStringHelper(this)
         .add("shouldProvideRequireSoyNamespaces", shouldProvideRequireSoyNamespaces())
+        .add("dependOnCssHeader", dependOnCssHeader)
         .add("shouldGenerateGoogMsgDefs", shouldGenerateGoogMsgDefs)
         .add("shouldGenerateGoogModules", shouldGenerateGoogModules())
         .add("googMsgsAreExternal", googMsgsAreExternal)

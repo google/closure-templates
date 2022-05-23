@@ -17,13 +17,17 @@
 package com.google.template.soy.msgs.restricted;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.collect.Maps.toImmutableEnumMap;
+import static java.util.Arrays.stream;
 
 import com.google.common.base.Ascii;
+import com.google.common.collect.ImmutableMap;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.msgs.SoyMsgException;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.Objects;
+import java.util.function.Function;
 
 /**
  * Represents a plural case value.
@@ -31,7 +35,6 @@ import java.util.Objects;
  * <p>A plural case value can be either a number, or one of {@code ZERO}, {@code ONE}, {@code TWO},
  * {@code FEW}, {@code MANY} or {@code OTHER}. Here, a number is represented by the number {@code
  * explicitValue} with status set to EXPLICIT and the remaining by an enum value.
- *
  */
 @Immutable
 public final class SoyMsgPluralCaseSpec {
@@ -56,6 +59,11 @@ public final class SoyMsgPluralCaseSpec {
     }
   }
 
+  private static final ImmutableMap<Type, SoyMsgPluralCaseSpec> TYPE_TO_SPEC =
+      stream(SoyMsgPluralCaseSpec.Type.values())
+          .map(SoyMsgPluralCaseSpec::new)
+          .collect(toImmutableEnumMap(SoyMsgPluralCaseSpec::getType, Function.identity()));
+
   /** ZERO, ONE, TWO, FEW, MANY or OTHER if the type is non-numeric, or EXPLICIT if numeric. */
   private final Type type;
 
@@ -63,18 +71,23 @@ public final class SoyMsgPluralCaseSpec {
   private final long explicitValue;
 
   /**
-   * Constructs an object from a non-numeric value.
+   * Returns a SoyMsgPluralCaseSpec for a non-numeric value.
    *
    * @param typeStr String representation of the non-numeric value.
    * @throws IllegalArgumentException if typeStr (after converting to upper case) does not match
    *     with any of the enum types.
    */
-  public SoyMsgPluralCaseSpec(String typeStr) {
-    this(Type.valueOf(Ascii.toUpperCase(typeStr)));
+  public static SoyMsgPluralCaseSpec forType(String typeStr) {
+    return SoyMsgPluralCaseSpec.forType(Type.valueOf(Ascii.toUpperCase(typeStr)));
   }
 
   /** Constructs an object from a non-numeric value. */
-  public SoyMsgPluralCaseSpec(Type type) {
+  public static SoyMsgPluralCaseSpec forType(Type type) {
+    return TYPE_TO_SPEC.get(type);
+  }
+
+  /** Constructs an object from a non-numeric value. */
+  private SoyMsgPluralCaseSpec(Type type) {
     this.type = checkNotNull(type);
     this.explicitValue = -1;
   }

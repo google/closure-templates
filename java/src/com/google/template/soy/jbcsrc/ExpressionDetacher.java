@@ -36,6 +36,10 @@ interface ExpressionDetacher {
     /**
      * Returns a new {@link ExpressionDetacher}. Any given soy expression requires at most one
      * detacher.
+     *
+     * <p>The reattachPoint should be {@link CodeBuilder#mark(Label) marked} by the caller at a
+     * location where the stack depth is 0 and will be used to 'reattach' execution if the compiled
+     * expression needs to perform a detach operation.
      */
     ExpressionDetacher createExpressionDetacher(Label reattachPoint);
   }
@@ -48,6 +52,9 @@ interface ExpressionDetacher {
    * @return an expression yielding a SoyValue returned by {@link SoyValueProvider#resolve()}.
    */
   Expression resolveSoyValueProvider(Expression soyValueProvider);
+
+  /** Returns an expression for the same SoyValueProvider, after it is resolved. */
+  Expression waitForSoyValueProvider(Expression soyValueProvider);
 
   /**
    * Given a list of SoyValueProviders, await for all members to be resolved.
@@ -70,8 +77,7 @@ interface ExpressionDetacher {
   /**
    * An {@link ExpressionDetacher} for use by the {@link ExpressionCompiler#createConstantCompiler}.
    *
-   * <p>This assumes that no SoyValueProviders will be accessed and has no-op implementations of the
-   * list and map resolvers for use by the proto-init code.
+   * <p>This assumes that all SoyValueProviders will be already resolved and simply calls resolve().
    */
   static final class NullDetatcher implements ExpressionDetacher, Factory {
     static final NullDetatcher INSTANCE = new NullDetatcher();
@@ -82,22 +88,31 @@ interface ExpressionDetacher {
     }
 
     @Override
-    public Expression resolveSoyValueProvider(final Expression soyValueProvider) {
-      throw new AssertionError("shouldn't be called");
+    public Expression waitForSoyValueProvider(Expression soyValueProvider) {
+      soyValueProvider.checkAssignableTo(BytecodeUtils.SOY_VALUE_PROVIDER_TYPE);
+      return soyValueProvider;
     }
 
-    // These 2 are used by proto-init code for repeated fields.
+    @Override
+    public Expression resolveSoyValueProvider(Expression soyValueProvider) {
+      soyValueProvider.checkAssignableTo(BytecodeUtils.SOY_VALUE_PROVIDER_TYPE);
+      // can't do a checkedCast directly to SoyValue bc null literal will fail (it's represented as
+      // SoyValueProvider<null>)
+      return soyValueProvider
+          .checkedCast(BytecodeUtils.SOY_VALUE_PROVIDER_TYPE)
+          .invoke(MethodRef.SOY_VALUE_PROVIDER_RESOLVE);
+    }
 
     @Override
-    public Expression resolveSoyValueProviderList(final Expression soyValueProviderList) {
+    public Expression resolveSoyValueProviderList(Expression soyValueProviderList) {
       soyValueProviderList.checkAssignableTo(BytecodeUtils.LIST_TYPE);
-      return soyValueProviderList;
+      return MethodRef.RUNTIME_CHECK_RESOLVED_LIST.invoke(soyValueProviderList);
     }
 
     @Override
-    public Expression resolveSoyValueProviderMap(final Expression soyValueProviderMap) {
+    public Expression resolveSoyValueProviderMap(Expression soyValueProviderMap) {
       soyValueProviderMap.checkAssignableTo(BytecodeUtils.MAP_TYPE);
-      return soyValueProviderMap;
+      return MethodRef.RUNTIME_CHECK_RESOLVED_MAP.invoke(soyValueProviderMap);
     }
   }
 
@@ -125,15 +140,10 @@ interface ExpressionDetacher {
     }
 
     @Override
-    public Expression resolveSoyValueProvider(final Expression soyValueProvider) {
-      soyValueProvider.checkAssignableTo(SOY_VALUE_PROVIDER_TYPE);
-      // if this expression is already assignable to a SoyValue, we don't need to do
-      // anything.
-      if (BytecodeUtils.isDefinitelyAssignableFrom(SOY_VALUE_TYPE, soyValueProvider.resultType())) {
-        return soyValueProvider;
-      }
+    public Expression waitForSoyValueProvider(Expression soyValueProvider) {
+      soyValueProvider.checkAssignableTo(BytecodeUtils.SOY_VALUE_PROVIDER_TYPE);
       Statement saveOperation = saveOperationSupplier.get();
-      return new Expression(SOY_VALUE_TYPE) {
+      return new Expression(soyValueProvider.resultType()) {
         @Override
         protected void doGen(CodeBuilder adapter) {
           // We use a bunch of dup() operations in order to save extra field reads and method
@@ -153,9 +163,19 @@ interface ExpressionDetacher {
           adapter.returnValue();
           adapter.mark(end);
           adapter.pop(); // Stack: SVP
-          MethodRef.SOY_VALUE_PROVIDER_RESOLVE.invokeUnchecked(adapter); // Stack: SV
         }
       };
+    }
+
+    @Override
+    public Expression resolveSoyValueProvider(final Expression soyValueProvider) {
+      soyValueProvider.checkAssignableTo(SOY_VALUE_PROVIDER_TYPE);
+      // if this expression is already assignable to a SoyValue, we don't need to do
+      // anything.
+      if (BytecodeUtils.isDefinitelyAssignableFrom(SOY_VALUE_TYPE, soyValueProvider.resultType())) {
+        return soyValueProvider;
+      }
+      return waitForSoyValueProvider(soyValueProvider).invoke(MethodRef.SOY_VALUE_PROVIDER_RESOLVE);
     }
 
     @Override

@@ -29,8 +29,6 @@ import java.text.MessageFormat;
  * for readers to inspect the errors that the class could report.
  *
  * <p>Error messages should be capitalized, and concluded with a punctuation mark.
- *
- * @author brndn@google.com (Brendan Linn)
  */
 public final class SoyErrorKind {
 
@@ -42,24 +40,37 @@ public final class SoyErrorKind {
 
   private final MessageFormat messageFormat;
   private final int requiredArgs;
+  private final boolean deprecation;
 
-  private SoyErrorKind(MessageFormat messageFormat) {
+  private SoyErrorKind(MessageFormat messageFormat, boolean deprecation) {
     this.messageFormat = messageFormat;
     this.requiredArgs = messageFormat.getFormatsByArgumentIndex().length;
+    this.deprecation = deprecation;
   }
 
   public String format(Object... args) {
     Preconditions.checkState(
         args.length == requiredArgs,
-        "Error format required %s parameters, %s were supplied.",
+        "Error format (%s) required %s parameters, %s were supplied.",
+        messageFormat.toPattern(),
         requiredArgs,
         args.length);
     return messageFormat.format(args);
   }
 
+  public boolean isDeprecation() {
+    return deprecation;
+  }
+
   public static SoyErrorKind of(String format, StyleAllowance... exceptions) {
     checkFormat(format, exceptions);
-    return new SoyErrorKind(new MessageFormat(format));
+    return new SoyErrorKind(new MessageFormat(format), /* deprecation= */ false);
+  }
+
+  /** Create a message specifically related to deprecation. */
+  public static SoyErrorKind deprecation(String format, StyleAllowance... exceptions) {
+    checkFormat(format, exceptions);
+    return new SoyErrorKind(new MessageFormat(format), /* deprecation= */ true);
   }
 
   private static void checkFormat(String format, StyleAllowance... exceptions) {

@@ -18,6 +18,7 @@ package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
 import com.google.errorprone.annotations.Immutable;
+import java.util.function.Consumer;
 
 /** Represents a {@code for} statement. */
 @AutoValue
@@ -40,7 +41,7 @@ abstract class For extends Statement {
   }
 
   @Override
-  public void collectRequires(RequiresCollector collector) {
+  public void collectRequires(Consumer<GoogRequire> collector) {
     initial().collectRequires(collector);
     limit().collectRequires(collector);
     increment().collectRequires(collector);
@@ -53,7 +54,7 @@ abstract class For extends Statement {
         .appendInitialStatements(limit())
         .appendInitialStatements(increment());
 
-    ctx.append("for (var " + localVar() + " = ")
+    ctx.append("for (let " + localVar() + " = ")
         .appendOutputExpression(initial())
         .append("; " + localVar() + " < ")
         .appendOutputExpression(limit())

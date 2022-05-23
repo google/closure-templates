@@ -25,42 +25,30 @@ import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
-import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.IntType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.StringType;
-import com.ibm.icu.util.ULocale;
 import javax.annotation.Nullable;
 
 /** Wraps a {@link SoyValue} into a {@link JavaValue}. */
 final class TofuJavaValue implements JavaValue {
   static TofuJavaValue forSoyValue(SoyValue soyValue, SourceLocation sourceLocation) {
-    return new TofuJavaValue(checkNotNull(soyValue), null, null, checkNotNull(sourceLocation));
+    return new TofuJavaValue(checkNotNull(soyValue), null, checkNotNull(sourceLocation));
   }
 
-  static TofuJavaValue forULocale(ULocale locale) {
-    return new TofuJavaValue(null, checkNotNull(locale), null, null);
-  }
-
-  static JavaValue forBidiDir(BidiGlobalDir bidiGlobalDir) {
-    return new TofuJavaValue(null, null, checkNotNull(bidiGlobalDir), null);
+  static TofuJavaValue forRaw(Object value) {
+    return new TofuJavaValue(null, checkNotNull(value), null);
   }
 
   @Nullable private final SoyValue soyValue;
   @Nullable private final SourceLocation sourceLocation;
-  @Nullable private final ULocale locale;
-  @Nullable private final BidiGlobalDir bidiGlobalDir;
+  @Nullable private final Object rawValue;
 
-  private TofuJavaValue(
-      SoyValue soyValue,
-      ULocale locale,
-      BidiGlobalDir bidiGlobalDir,
-      SourceLocation sourceLocation) {
+  private TofuJavaValue(SoyValue soyValue, Object rawValue, SourceLocation sourceLocation) {
     this.soyValue = soyValue;
-    this.locale = locale;
-    this.bidiGlobalDir = bidiGlobalDir;
+    this.rawValue = rawValue;
     this.sourceLocation = sourceLocation;
   }
 
@@ -73,14 +61,9 @@ final class TofuJavaValue implements JavaValue {
     return soyValue;
   }
 
-  BidiGlobalDir bidiGlobalDir() {
-    checkState(bidiGlobalDir != null);
-    return bidiGlobalDir;
-  }
-
-  ULocale locale() {
-    checkState(locale != null);
-    return locale;
+  Object rawValue() {
+    checkState(rawValue != null);
+    return rawValue;
   }
 
   @Override
@@ -157,10 +140,8 @@ final class TofuJavaValue implements JavaValue {
   public String toString() {
     if (soyValue != null) {
       return "TofuJavaValue[soyValue=" + soyValue + "]";
-    } else if (locale != null) {
-      return "TofuJavaValue[locale=" + locale + "]";
     } else {
-      return "TofuJavaValue[bidiGlobalDir=" + bidiGlobalDir + "]";
+      return "TofuJavaValue[rawValue=" + rawValue + "]";
     }
   }
 }

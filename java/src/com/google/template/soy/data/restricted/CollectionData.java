@@ -17,11 +17,16 @@
 package com.google.template.soy.data.restricted;
 
 import com.google.common.collect.Lists;
-import com.google.template.soy.data.SoyData;
+import com.google.template.soy.data.SoyAbstractValue;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyListData;
 import com.google.template.soy.data.SoyMapData;
+import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.data.SoyValueConverter;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 /**
  * Abstract superclass for a node in a Soy data tree that represents a collection of data (i.e. an
@@ -30,9 +35,46 @@ import java.util.List;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  * <p>Important: Even though this class is not marked 'final', do not extend this class.
- *
  */
-public abstract class CollectionData extends SoyData {
+public abstract class CollectionData extends SoyAbstractValue {
+
+  /**
+   * Creates SoyValue objects from standard Java data structures.
+   *
+   * @param obj The existing object or data structure to convert.
+   * @return A SoyValue object or tree that corresponds to the given object.
+   * @throws SoyDataException If the given object cannot be converted to SoyValue.
+   * @deprecated It's best to pass whatever object you have directly to the Soy templates you're
+   *     using -- Soy understands primitives, lists, and maps natively, and if you install runtime
+   *     support you can also pass protocol buffers. If you're interacting directly with the Soy
+   *     runtime and need SoyValue objects, use SoyValueConverter instead.
+   */
+  @Deprecated
+  protected static SoyValue createFromExistingData(Object obj) {
+    if (obj instanceof SoyValue) {
+      return (SoyValue) obj;
+    } else if (obj instanceof Map<?, ?>) {
+      @SuppressWarnings("unchecked")
+      Map<String, ?> objCast = (Map<String, ?>) obj;
+      return new SoyMapData(objCast);
+    } else if (obj instanceof Iterable<?>) {
+      return new SoyListData((Iterable<?>) obj);
+    } else if (obj instanceof Future<?>) {
+      // Note: In the old SoyValue, we don't support late-resolution of Futures. We immediately
+      // resolve the Future object here. For late-resolution, use SoyValueConverter.convert().
+      try {
+        return createFromExistingData(((Future<?>) obj).get());
+      } catch (InterruptedException e) {
+        throw new SoyDataException(
+            "Encountered InterruptedException when resolving Future object.", e);
+      } catch (ExecutionException e) {
+        throw new SoyDataException(
+            "Encountered ExecutionException when resolving Future object.", e);
+      }
+    } else {
+      return SoyValueConverter.INSTANCE.convert(obj).resolve();
+    }
+  }
 
   // ------------ put() ------------
 
@@ -53,12 +95,13 @@ public abstract class CollectionData extends SoyData {
     }
     for (int i = 0; i < data.length; i += 2) {
       try {
-        put((String) data[i], SoyData.createFromExistingData(data[i + 1]));
+        put((String) data[i], createFromExistingData(data[i + 1]));
       } catch (ClassCastException cce) {
         throw new SoyDataException(
             "Attempting to add a mapping containing a non-string key (key type "
                 + data[i].getClass().getName()
-                + ").");
+                + ").",
+            cce);
       }
     }
   }
@@ -70,7 +113,7 @@ public abstract class CollectionData extends SoyData {
    *     Indicates the path to the location within this data tree.
    * @param value The data to put at the specified location.
    */
-  public void put(String keyStr, SoyData value) {
+  public void put(String keyStr, SoyValue value) {
 
     List<String> keys = split(keyStr, '.');
     int numKeys = keys.size();
@@ -78,18 +121,18 @@ public abstract class CollectionData extends SoyData {
     CollectionData collectionData = this;
     for (int i = 0; i <= numKeys - 2; ++i) {
 
-      SoyData nextSoyData = collectionData.getSingle(keys.get(i));
+      SoyValue nextSoyData = collectionData.getSingle(keys.get(i));
       if (nextSoyData != null && !(nextSoyData instanceof CollectionData)) {
         throw new SoyDataException("Failed to evaluate key string \"" + keyStr + "\" for put().");
       }
       CollectionData nextCollectionData = (CollectionData) nextSoyData;
 
       if (nextCollectionData == null) {
-        // Create the SoyData object that will be bound to keys.get(i). We need to check the first
+        // Create the SoyValue object that will be bound to keys.get(i). We need to check the first
         // part of keys[i+1] to know whether to create a SoyMapData or SoyListData (checking the
         // first char is sufficient).
         nextCollectionData =
-            (Character.isDigit(keys.get(i + 1).charAt(0))) ? new SoyListData() : new SoyMapData();
+             Character.isDigit(keys.get(i + 1).charAt(0)) ? new SoyListData() : new SoyMapData();
         collectionData.putSingle(keys.get(i), nextCollectionData);
       }
       collectionData = nextCollectionData;
@@ -168,7 +211,7 @@ public abstract class CollectionData extends SoyData {
 
     CollectionData collectionData = this;
     for (int i = 0; i <= numKeys - 2; ++i) {
-      SoyData soyData = collectionData.getSingle(keys.get(i));
+      SoyValue soyData = collectionData.getSingle(keys.get(i));
       if (!(soyData instanceof CollectionData)) {
         return;
       }
@@ -187,14 +230,14 @@ public abstract class CollectionData extends SoyData {
    *     Indicates the path to the location within this data tree.
    * @return The data at the specified key string, or null if there's no data at the location.
    */
-  public SoyData get(String keyStr) {
+  public SoyValue get(String keyStr) {
 
     List<String> keys = split(keyStr, '.');
     int numKeys = keys.size();
 
     CollectionData collectionData = this;
     for (int i = 0; i <= numKeys - 2; ++i) {
-      SoyData soyData = collectionData.getSingle(keys.get(i));
+      SoyValue soyData = collectionData.getSingle(keys.get(i));
       if (!(soyData instanceof CollectionData)) {
         return null;
       }
@@ -238,7 +281,7 @@ public abstract class CollectionData extends SoyData {
    * @throws IllegalArgumentException If no data is stored at the specified key.
    */
   public boolean getBoolean(String keyStr) {
-    SoyData valueData = get(keyStr);
+    SoyValue valueData = get(keyStr);
     if (valueData == null) {
       throw new IllegalArgumentException("Missing key: " + keyStr);
     }
@@ -255,7 +298,7 @@ public abstract class CollectionData extends SoyData {
    * @throws IllegalArgumentException If no data is stored at the specified key.
    */
   public int getInteger(String keyStr) {
-    SoyData valueData = get(keyStr);
+    SoyValue valueData = get(keyStr);
     if (valueData == null) {
       throw new IllegalArgumentException("Missing key: " + keyStr);
     }
@@ -272,7 +315,7 @@ public abstract class CollectionData extends SoyData {
    * @throws IllegalArgumentException If no data is stored at the specified key.
    */
   public long getLong(String keyStr) {
-    SoyData valueData = get(keyStr);
+    SoyValue valueData = get(keyStr);
     if (valueData == null) {
       throw new IllegalArgumentException("Missing key: " + keyStr);
     }
@@ -289,7 +332,7 @@ public abstract class CollectionData extends SoyData {
    * @throws IllegalArgumentException If no data is stored at the specified key.
    */
   public double getFloat(String keyStr) {
-    SoyData valueData = get(keyStr);
+    SoyValue valueData = get(keyStr);
     if (valueData == null) {
       throw new IllegalArgumentException("Missing key: " + keyStr);
     }
@@ -306,7 +349,7 @@ public abstract class CollectionData extends SoyData {
    * @throws IllegalArgumentException If no data is stored at the specified key.
    */
   public String getString(String keyStr) {
-    SoyData valueData = get(keyStr);
+    SoyValue valueData = get(keyStr);
     if (valueData == null) {
       throw new IllegalArgumentException("Missing key: " + keyStr);
     }
@@ -324,7 +367,7 @@ public abstract class CollectionData extends SoyData {
    * @param key An individual key.
    * @param value The data to put at the specified key.
    */
-  public abstract void putSingle(String key, SoyData value);
+  public abstract void putSingle(String key, SoyValue value);
 
   /**
    * Important: Do not use outside of Soy code (treat as superpackage-private).
@@ -343,7 +386,7 @@ public abstract class CollectionData extends SoyData {
    * @param key An individual key.
    * @return The data at the specified key, or null if the key is not defined.
    */
-  public abstract SoyData getSingle(String key);
+  public abstract SoyValue getSingle(String key);
 
   // -----------------------------------------------------------------------------------------------
   // Protected/private helpers.
@@ -355,7 +398,7 @@ public abstract class CollectionData extends SoyData {
    * @param value The value to ensure validity for.
    * @return The given value if it's not null, or NullData if it is null.
    */
-  protected static SoyData ensureValidValue(SoyData value) {
+  protected static SoyValue ensureValidValue(SoyValue value) {
     return (value != null) ? value : NullData.INSTANCE;
   }
 

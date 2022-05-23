@@ -1,0 +1,69 @@
+##
+# Copyright 2019 Google Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+##
+
+load("@rules_java//java:defs.bzl", "java_library")
+
+package(default_visibility = ["//:soy_internal"])
+
+java_library(
+    name = "missing_plugin_instance_exception",
+    srcs = ["MissingPluginInstanceException.java"],
+    visibility = ["//visibility:public"],
+)
+
+java_library(
+    name = "shared",
+    srcs = glob(
+        ["*.java"],
+        exclude = [
+            "Names.java",
+            "MissingPluginInstanceException.java",
+        ],
+    ),
+    deps = [
+        ":missing_plugin_instance_exception",
+        ":names",
+        "//java/src/com/google/template/soy/data",
+        "//java/src/com/google/template/soy/data:ve",
+        "//java/src/com/google/template/soy/internal/i18n",
+        "//java/src/com/google/template/soy/jbcsrc/api:helpers",
+        "//java/src/com/google/template/soy/logging:public",
+        "//java/src/com/google/template/soy/msgs",
+        "//java/src/com/google/template/soy/plugin/java",
+        "//java/src/com/google/template/soy/plugin/java:extern_helpers",
+        "//java/src/com/google/template/soy/plugin/java/restricted",
+        "//java/src/com/google/template/soy/shared:interfaces",
+        "//java/src/com/google/template/soy/shared/internal:deltemplate_selector",
+        "//java/src/com/google/template/soy/shared/restricted",
+        "//src/main/protobuf:ve_metadata_java_proto",
+        "@com_google_auto_value_auto_value",
+        "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:com_google_errorprone_error_prone_annotations",
+        "@maven//:com_google_guava_guava",
+        "@maven//:com_ibm_icu_icu4j",
+        "@maven//:org_ow2_asm_asm",
+    ],
+)
+
+java_library(
+    name = "names",
+    srcs = ["Names.java"],
+    deps = [
+        "//java/src/com/google/template/soy/base/internal",
+        "//java/src/com/google/template/soy/internal/exemptions",
+        "@maven//:com_google_guava_guava",
+    ],
+)

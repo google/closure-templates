@@ -22,11 +22,12 @@ import java.io.IOException;
  * An {@link Appendable} that can inform the writer that a buffer limit has been reached or
  * exceeded.
  *
- * <p>When {@link #softLimitReached} returns {@code true}, the writer should attempt to pause
- * writing operations and return control to the calling thread as soon as possible. This is a
- * <em>cooperative</em> rate limiting mechanism and is best effort.
+ * <p>When {@link #softLimitReached} returns {@code true}, the writer should pause writing
+ * operations and return control to the caller immediately. This is a <em>cooperative</em> rate
+ * limiting mechanism and is best effort as renderers can provide no guarantee about how
+ * <em>frequently</em> this method is called.
  *
- * <p>Implementers should note that if {@link #softLimitReached} returns {@code true}, they should
+ * <p>Implementers should note that if {@link #softLimitReached} returns {@code true}, they must
  * continue to accept writes via the {@code .append(...)} methods. Throwing an exception when in
  * this state is a violation of the contract.
  */
@@ -42,7 +43,7 @@ public interface AdvisingAppendable extends Appendable {
 
   /**
    * Indicates that an internal limit has been reached or exceeded and that write operations should
-   * be suspended soon.
+   * be suspended <i>soon</i>.
    */
   boolean softLimitReached();
 }

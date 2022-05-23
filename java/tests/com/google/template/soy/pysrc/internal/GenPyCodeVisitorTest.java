@@ -19,7 +19,6 @@ package com.google.template.soy.pysrc.internal;
 import static com.google.template.soy.pysrc.internal.SoyCodeForPySubject.assertThatSoyCode;
 import static com.google.template.soy.pysrc.internal.SoyCodeForPySubject.assertThatSoyFile;
 
-import com.google.common.collect.ImmutableMap;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -28,13 +27,12 @@ import org.junit.runners.JUnit4;
  * Unit tests for GenPyCodeVisitor.
  *
  * <p>TODO(dcphillips): Add non-inlined 'if' test after adding LetNode support.
- *
  */
 @RunWith(JUnit4.class)
 public final class GenPyCodeVisitorTest {
 
   private static final String SOY_NAMESPACE = "{namespace boo.foo}\n";
-  private static final String DUMMY_SOY_FILE = SOY_NAMESPACE + "{template .dummy}{/template}\n";
+  private static final String DUMMY_SOY_FILE = SOY_NAMESPACE + "{template dummy}{/template}\n";
 
   private static final String EXPECTED_PYFILE_START =
       "# coding=utf-8\n"
@@ -79,69 +77,6 @@ public final class GenPyCodeVisitorTest {
   }
 
   @Test
-  public void testNamespacedImport() {
-    String soyFile =
-        SOY_NAMESPACE
-            + "{template .helloWorld}\n"
-            + "  {call foo.bar.baz.quz /}\n"
-            + "{/template}\n";
-    String expectedImport = "namespaced_import('baz', namespace='foo.bar')";
-
-    assertThatSoyFile(soyFile).compilesToSourceContaining(expectedImport);
-  }
-
-  @Test
-  public void testAbsoluteImport() {
-    String soyFile =
-        SOY_NAMESPACE
-            + "{template .helloWorld}\n"
-            + "  {call foo.bar.baz.quz /}\n"
-            + "{/template}\n";
-    String expectedImport = "import google.foo.bar.baz as baz";
-
-    ImmutableMap.Builder<String, String> namespaceManifest = new ImmutableMap.Builder<>();
-    namespaceManifest.put("foo.bar.baz", "google.foo.bar.baz");
-
-    assertThatSoyFile(soyFile)
-        .withNamespaceManifest(namespaceManifest.build())
-        .compilesToSourceContaining(expectedImport);
-  }
-
-  @Test
-  public void testNamespaceManifest() {
-    String soyFile =
-        SOY_NAMESPACE
-            + "{template .helloWorld}\n"
-            + "  {call foo.bar.baz.quz /}\n"
-            + "{/template}\n";
-    String expectedManifest =
-        "NAMESPACE_MANIFEST = {\n" + "    'foo.bar.baz': 'google.foo.bar.baz',\n" + "}\n";
-
-    ImmutableMap.Builder<String, String> namespaceManifest = new ImmutableMap.Builder<>();
-    namespaceManifest.put("foo.bar.baz", "google.foo.bar.baz");
-
-    assertThatSoyFile(soyFile)
-        .withNamespaceManifest(namespaceManifest.build())
-        .compilesToSourceContaining(expectedManifest);
-  }
-
-  @Test
-  public void testEnvironmentConfiguration() {
-    String soyFile =
-        SOY_NAMESPACE
-            + "{template .helloWorld}\n"
-            + "  {call foo.bar.baz.quz /}\n"
-            + "{/template}\n";
-    String expectedEnviromentConfirmation =
-        "namespaced_import('baz', namespace='foo.bar', "
-            + "environment_path='runtime.custom_environment')";
-
-    assertThatSoyFile(soyFile)
-        .withEnvironmentModule("runtime.custom_environment")
-        .compilesToSourceContaining(expectedEnviromentConfirmation);
-  }
-
-  @Test
   public void testBidiConfiguration() {
     String exptectedBidiConfig = "from example import bidi as external_bidi\n";
 
@@ -163,7 +98,7 @@ public final class GenPyCodeVisitorTest {
 
   @Test
   public void testBlankTemplate() {
-    String soyFile = SOY_NAMESPACE + "{template .helloWorld}\n" + "{/template}\n";
+    String soyFile = SOY_NAMESPACE + "{template helloWorld}\n" + "{/template}\n";
 
     String expectedPyFile =
         EXPECTED_PYFILE_START
@@ -180,7 +115,7 @@ public final class GenPyCodeVisitorTest {
   @Test
   public void testSimpleTemplate() {
     String soyFile =
-        SOY_NAMESPACE + "{template .helloWorld}\n" + "  Hello World!\n" + "{/template}\n";
+        SOY_NAMESPACE + "{template helloWorld}\n" + "  Hello World!\n" + "{/template}\n";
 
     String expectedPyFile =
         EXPECTED_PYFILE_START
@@ -199,7 +134,7 @@ public final class GenPyCodeVisitorTest {
   public void testOutputScope() {
     String soyFile =
         SOY_NAMESPACE
-            + "{template .helloWorld}\n"
+            + "{template helloWorld}\n"
             + "  {@param foo : ?}\n"
             + "  {@param boo : list<string>}\n"
             + "  {if $foo}\n"
@@ -299,23 +234,6 @@ public final class GenPyCodeVisitorTest {
             + "  output.append(str(operandData###))\n";
 
     assertThatSoyCode(soyCode).compilesTo(expectedPyCode);
-
-    soyCode =
-        "{@param operands : ?}\n"
-            + "{for $operand in $operands}\n"
-            + "  {isFirst($operand) ? 1 : 0}\n"
-            + "  {isLast($operand) ? 1 : 0}\n"
-            + "  {index($operand)}\n"
-            + "{/for}\n";
-
-    expectedPyCode =
-        "operandList### = data.get('operands')\n"
-            + "for operandIndex###, operandData### in enumerate(operandList###):\n"
-            + "  output.extend([str(1 if operandIndex### == 0 else 0),"
-            + "str(1 if operandIndex### == len(operandList###) - 1 else 0),"
-            + "str(operandIndex###)])\n";
-
-    assertThatSoyCode(soyCode).compilesTo(expectedPyCode);
   }
 
   @Test
@@ -337,6 +255,54 @@ public final class GenPyCodeVisitorTest {
             + "else:\n"
             + "  output.append(str(data.get('foo')))\n";
 
+    assertThatSoyCode(soyCode).compilesTo(expectedPyCode);
+  }
+
+  @Test
+  public void testEmptySwitch() {
+    String soyCode =
+        "{@param boo: ?}\n" + "{switch $boo}\n" + "  {case 0}\n" + "  {default}\n" + "{/switch}\n";
+    String expectedPyCode =
+        "switchValue = data.get('boo')\n"
+            + "if runtime.type_safe_eq(switchValue, 0):\n"
+            + "  pass\n"
+            + "else:\n"
+            + "  pass\n";
+    assertThatSoyCode(soyCode).compilesTo(expectedPyCode);
+  }
+
+  @Test
+  public void testEmptyFor() {
+    String soyCode = "{for $i in range(5)}\n" + "{/for}\n";
+    String expectedPyCode =
+        "iList### = range(5)\n" + "for iIndex###, iData### in enumerate(iList###):\n" + "  pass\n";
+    assertThatSoyCode(soyCode).compilesTo(expectedPyCode);
+  }
+
+  @Test
+  public void testEmptyForeach() {
+    String soyCode = "{@param booList: list<string>}\n" + "{for $boo in $booList}\n" + "{/for}\n";
+    String expectedPyCode =
+        "booList### = data.get('booList')\n"
+            + "for booIndex###, booData### in enumerate(booList###):\n"
+            + "  pass\n";
+    assertThatSoyCode(soyCode).compilesTo(expectedPyCode);
+  }
+
+  @Test
+  public void testEmptyForeach_ifempty() {
+    String soyCode =
+        "{@param booList: list<string>}\n"
+            + "{for $boo in $booList}\n"
+            + "{ifempty}\n"
+            + "{/for}\n";
+    String expectedPyCode =
+        "booList### = data.get('booList')\n"
+            + "if booList###:\n"
+            + "  for booIndex###, booData### in enumerate(booList###):\n"
+            + "    pass\n"
+            + "else:\n"
+            + "  pass\n";
     assertThatSoyCode(soyCode).compilesTo(expectedPyCode);
   }
 
@@ -390,7 +356,7 @@ public final class GenPyCodeVisitorTest {
     String soyCode = "{@param boo : ?}\n" + "{log}\n" + "  {$boo}\n" + "{/log}\n";
 
     String expectedPyCode =
-        "logger_5 = []\n" + "logger_5.append(str(data.get('boo')))\n" + "print logger_5\n" + "";
+        "logger_3 = []\n" + "logger_3.append(str(data.get('boo')))\n" + "print logger_3\n" + "";
 
     assertThatSoyCode(soyCode).compilesTo(expectedPyCode);
   }
@@ -400,15 +366,6 @@ public final class GenPyCodeVisitorTest {
     String soyCode = "{debugger}";
 
     String expectedPyCode = "pdb.set_trace()\n";
-
-    assertThatSoyCode(soyCode).compilesTo(expectedPyCode);
-  }
-
-  @Test
-  public void testCallReturnsString() {
-    String soyCode = "{call .foo data=\"all\" /}";
-
-    String expectedPyCode = "output.append(str(ns.foo(data, ijData)))\n";
 
     assertThatSoyCode(soyCode).compilesTo(expectedPyCode);
   }

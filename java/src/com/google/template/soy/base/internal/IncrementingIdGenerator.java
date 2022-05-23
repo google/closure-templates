@@ -20,7 +20,6 @@ package com.google.template.soy.base.internal;
  * A generator of incrementing unique integer ids, starting from 0.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public final class IncrementingIdGenerator implements IdGenerator {
 

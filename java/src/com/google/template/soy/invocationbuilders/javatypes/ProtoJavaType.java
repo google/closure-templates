@@ -20,7 +20,10 @@ import com.google.template.soy.internal.proto.JavaQualifiedNames;
 
 /** Represents a proto for generated Soy Java invocation builders. */
 public final class ProtoJavaType extends JavaType {
-  final Descriptor protoDescriptor;
+  private static final CodeGenUtils.Member AS_PROTO = CodeGenUtils.castFunction("asProto");
+  private static final CodeGenUtils.Member AS_NULLABLE_PROTO =
+      CodeGenUtils.castFunction("asNullableProto");
+  private final Descriptor protoDescriptor;
 
   public ProtoJavaType(Descriptor protoDescriptor) {
     this(protoDescriptor, /* isNullable= */ false);
@@ -29,11 +32,6 @@ public final class ProtoJavaType extends JavaType {
   public ProtoJavaType(Descriptor protoDescriptor, boolean isNullable) {
     super(isNullable);
     this.protoDescriptor = protoDescriptor;
-  }
-
-  @Override
-  boolean isPrimitive() {
-    return false;
   }
 
   @Override
@@ -49,5 +47,19 @@ public final class ProtoJavaType extends JavaType {
   @Override
   public ProtoJavaType asNullable() {
     return new ProtoJavaType(protoDescriptor, /* isNullable= */ true);
+  }
+
+  @Override
+  public String getAsInlineCastFunction(int depth) {
+    return "AbstractBuilder::" + getCastFunction();
+  }
+
+  private CodeGenUtils.Member getCastFunction() {
+    return (isNullable() ? AS_NULLABLE_PROTO : AS_PROTO);
+  }
+
+  @Override
+  public String asInlineCast(String variable, int depth) {
+    return getCastFunction() + "(" + variable + ")";
   }
 }

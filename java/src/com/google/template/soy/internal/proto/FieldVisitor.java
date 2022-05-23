@@ -132,7 +132,7 @@ public abstract class FieldVisitor<T> {
 
   /** Visits a enum typed field that should be interpted as a soy enum type. */
   @ForOverride
-  protected abstract T visitEnum(EnumDescriptor enumType);
+  protected abstract T visitEnum(EnumDescriptor enumType, FieldDescriptor fieldType);
 
   private static <T> T getScalarType(FieldDescriptor fieldDescriptor, FieldVisitor<T> visitor) {
     // Field definition includes an option that overrides normal type.
@@ -191,7 +191,7 @@ public abstract class FieldVisitor<T> {
                 + "field.");
 
       case ENUM:
-        return visitor.visitEnum(fieldDescriptor.getEnumType());
+        return visitor.visitEnum(fieldDescriptor.getEnumType(), fieldDescriptor);
 
       case MESSAGE:
         switch (fieldDescriptor.getMessageType().getFullName()) {

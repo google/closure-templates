@@ -21,10 +21,11 @@ import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.OBJECT;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_LIST_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_TYPE;
-import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.logicalNot;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.STRING_TYPE;
 
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.data.SoyProtoValue;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
@@ -81,6 +82,10 @@ public final class SoyExpression extends Expression {
     return new SoyExpression(getUnboxedType(listType), delegate);
   }
 
+  public static SoyExpression forBoxedList(ListType listType, Expression delegate) {
+    return new SoyExpression(SoyRuntimeType.getBoxedType(listType), delegate);
+  }
+
   public static SoyExpression forLegacyObjectMap(LegacyObjectMapType mapType, Expression delegate) {
     return new SoyExpression(SoyRuntimeType.getBoxedType(mapType), delegate);
   }
@@ -94,6 +99,10 @@ public final class SoyExpression extends Expression {
     return new SoyExpression(type, delegate);
   }
 
+  public static SoyExpression forRuntimeType(SoyRuntimeType type, Expression delegate) {
+    return new SoyExpression(type, delegate);
+  }
+
   /**
    * Returns an Expression that evaluates to a list containing all the items as boxed soy values.
    */
@@ -101,6 +110,14 @@ public final class SoyExpression extends Expression {
     List<Expression> childExprs = new ArrayList<>(items.size());
     for (SoyExpression child : items) {
       childExprs.add(child.box());
+    }
+    return BytecodeUtils.asList(childExprs);
+  }
+
+  public static Expression asBoxedValueProviderList(List<SoyExpression> items) {
+    List<Expression> childExprs = new ArrayList<>(items.size());
+    for (SoyExpression child : items) {
+      childExprs.add(child.boxAsSoyValueProvider());
     }
     return BytecodeUtils.asList(childExprs);
   }
@@ -230,7 +247,7 @@ public final class SoyExpression extends Expression {
         FieldRef.NULL_PROVIDER.accessStaticUnchecked(adapter);
         adapter.goTo(end);
         adapter.mark(nonNull);
-        doBox(adapter, soyRuntimeType);
+        doBox(adapter, soyRuntimeType.asNonNullable());
         adapter.mark(end);
       }
     };
@@ -320,30 +337,20 @@ public final class SoyExpression extends Expression {
     if (soyType().equals(NullType.getInstance())) {
       return FALSE;
     }
-    if (delegate.isNonNullable()) {
-      return coerceNonNullableReferenceTypeToBoolean();
-    } else {
-      // If we are potentially nullable, then map null to false and run the normal logic recursively
-      // for the non-nullable branch.
-      final Label end = new Label();
-      return withSource(
-              new Expression(delegate.resultType(), delegate.features()) {
-                @Override
-                protected void doGen(CodeBuilder adapter) {
-                  delegate.gen(adapter);
-                  adapter.dup();
-                  Label nonNull = new Label();
-                  adapter.ifNonNull(nonNull);
-                  adapter.pop();
-                  adapter.pushBoolean(false);
-                  adapter.goTo(end);
-                  adapter.mark(nonNull);
-                }
-              })
-          .asNonNullable()
-          .coerceToBoolean()
-          .labelEnd(end);
+    if (isBoxed()) {
+      // If we are boxed, just call the SoyValue method
+      if (delegate.isNonNullable()) {
+        return forBool(delegate.invoke(MethodRef.SOY_VALUE_COERCE_TO_BOOLEAN));
+      } else {
+        return forBool(MethodRef.RUNTIME_COERCE_TO_BOOLEAN.invoke(delegate));
+      }
     }
+    // unboxed non-primitive types.  This would be strings, protos or lists
+    if (resultType().equals(STRING_TYPE)) {
+      return forBool(delegate.invoke(MethodRef.RUNTIME_COERCE_STRING_TO_BOOLEAN));
+    }
+    // All other types are always truthy unless null
+    return BytecodeUtils.isNonNull(delegate);
   }
 
   private SoyExpression coercePrimitiveToBoolean() {
@@ -359,32 +366,14 @@ public final class SoyExpression extends Expression {
     }
   }
 
-  private SoyExpression coerceNonNullableReferenceTypeToBoolean() {
-    if (isBoxed()) {
-      // If we are boxed, just call the SoyValue method
-      return forBool(delegate.invoke(MethodRef.SOY_VALUE_COERCE_TO_BOOLEAN));
-    }
-    // unboxed non-primitive types.  This would be strings, protos or lists
-    if (soyRuntimeType.isKnownString()) {
-      return forBool(logicalNot(delegate.invoke(MethodRef.STRING_IS_EMPTY)));
-    }
-    // All other types are always truthy, but we still need to eval the delegate in case it has
-    // side effects or contains a null exit branch.
-    return forBool(
-        new Expression(Type.BOOLEAN_TYPE, delegate.features()) {
-          @Override
-          protected void doGen(CodeBuilder adapter) {
-            delegate.gen(adapter);
-            adapter.pop();
-            adapter.pushBoolean(true);
-          }
-        });
-  }
-
   /** Coerce this expression to a string value. */
   public SoyExpression coerceToString() {
     if (soyRuntimeType.isKnownString() && !isBoxed()) {
-      return this;
+      if (isNonNullable()) {
+        return this;
+      } else {
+        return forString(MethodRef.STRING_VALUE_OF.invoke(delegate));
+      }
     }
     if (BytecodeUtils.isPrimitive(resultType())) {
       if (resultType().equals(Type.BOOLEAN_TYPE)) {
@@ -421,6 +410,29 @@ public final class SoyExpression extends Expression {
       return forFloat(delegate.invoke(MethodRef.SOY_VALUE_FLOAT_VALUE));
     }
     return forFloat(delegate.invoke(MethodRef.SOY_VALUE_NUMBER_VALUE));
+  }
+
+  public Expression coerceToNumber() {
+    if (!isBoxed()) {
+      if (soyRuntimeType.isKnownFloat()) {
+        return MethodRef.BOX_DOUBLE.invoke(this);
+      }
+      if (soyRuntimeType.isKnownInt()) {
+        return MethodRef.BOX_LONG.invoke(this);
+      }
+      throw new UnsupportedOperationException("Can't convert " + resultType() + " to a Number");
+    }
+    return new Expression(BytecodeUtils.NUMBER_TYPE, features()) {
+      @Override
+      protected void doGen(CodeBuilder adapter) {
+        Label end = new Label();
+        delegate.gen(adapter);
+        BytecodeUtils.nullCoalesce(adapter, end);
+        adapter.checkCast(BytecodeUtils.NUMBER_DATA_TYPE);
+        MethodRef.SOY_VALUE_JAVA_NUMBER_VALUE.invokeUnchecked(adapter);
+        adapter.mark(end);
+      }
+    };
   }
 
   /**
@@ -572,15 +584,16 @@ public final class SoyExpression extends Expression {
     if (soyRuntimeType.asNonNullable().isKnownProtoOrUnionOfProtos() && !isBoxed()) {
       return this;
     }
+    Expression protoDelegate = delegate.checkedCast(SoyProtoValue.class);
     if (delegate.isNonNullable()) {
-      return delegate.invoke(MethodRef.SOY_PROTO_VALUE_GET_PROTO);
+      return protoDelegate.invoke(MethodRef.SOY_PROTO_VALUE_GET_PROTO);
     }
 
     return new Expression(BytecodeUtils.MESSAGE_TYPE, features()) {
       @Override
       protected void doGen(CodeBuilder adapter) {
         Label end = new Label();
-        delegate.gen(adapter);
+        protoDelegate.gen(adapter);
         BytecodeUtils.nullCoalesce(adapter, end);
         MethodRef.SOY_PROTO_VALUE_GET_PROTO.invokeUnchecked(adapter);
         adapter.mark(end);

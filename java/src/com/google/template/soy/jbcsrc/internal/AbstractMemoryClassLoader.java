@@ -30,8 +30,6 @@ public abstract class AbstractMemoryClassLoader extends ClassLoader {
   private static final ProtectionDomain DEFAULT_PROTECTION_DOMAIN;
 
   static {
-    ClassLoader.registerAsParallelCapable();
-
     DEFAULT_PROTECTION_DOMAIN =
         AccessController.doPrivileged(
             new PrivilegedAction<ProtectionDomain>() {

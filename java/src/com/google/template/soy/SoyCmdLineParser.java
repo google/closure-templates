@@ -19,6 +19,7 @@ package com.google.template.soy;
 import static com.google.common.base.CharMatcher.whitespace;
 
 import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.SetMultimap;
 import com.google.errorprone.annotations.ForOverride;
@@ -28,6 +29,7 @@ import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Map;
 import org.kohsuke.args4j.ClassParser;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
@@ -38,7 +40,7 @@ import org.kohsuke.args4j.spi.Parameters;
 import org.kohsuke.args4j.spi.Setter;
 
 /** A command line parser for soy, based on args4j. */
-final class SoyCmdLineParser extends CmdLineParser {
+public final class SoyCmdLineParser extends CmdLineParser {
   static {
     CmdLineParser.registerHandler(Module.class, ModuleOptionHandler.class);
     // overwrite the built in boolean handler
@@ -405,6 +407,72 @@ final class SoyCmdLineParser extends CmdLineParser {
     @Override
     protected File parseValue(String value) {
       return new File(value);
+    }
+  }
+
+  public static final class StringStringMapHandler extends MapHandler<String, String> {
+    public StringStringMapHandler(
+        CmdLineParser parser, OptionDef option, Setter<? super Map<String, String>> setter) {
+      super(parser, option, setter);
+    }
+
+    @Override
+    protected String parseKey(String key) {
+      return key;
+    }
+
+    @Override
+    protected String parseValue(String value) {
+      return value;
+    }
+  }
+
+  /** OptionHandler for args4j that handles a map with keys and values separated by = */
+  abstract static class MapHandler<K, V> extends OptionHandler<Map<K, V>> {
+
+    MapHandler(CmdLineParser parser, OptionDef option, Setter<? super Map<K, V>> setter) {
+      super(parser, option, setter);
+    }
+
+    /**
+     * Parses one key from the multimap into the appropriate type.
+     *
+     * @param key One key from the multimap.
+     * @return The object representation of the key.
+     */
+    @ForOverride
+    protected abstract K parseKey(String key);
+
+    /**
+     * Parses one value from the multimap into the appropriate type.
+     *
+     * @param value One value from the multimap.
+     * @return The object representation of the value.
+     */
+    @ForOverride
+    protected abstract V parseValue(String value);
+
+    @Override
+    public int parseArguments(Parameters params) throws CmdLineException {
+      ImmutableMap.Builder<K, V> builder = ImmutableMap.builder();
+      String parameters = params.getParameter(0);
+      for (String parameter : Splitter.on(",").split(parameters)) {
+        int index = parameter.indexOf("=");
+        if (index == -1) {
+          throw new CommandLineError("Invalid map flag entry.  No '=' found: " + parameter);
+        } else {
+          K key = parseKey(whitespace().trimFrom(parameter.substring(0, index)));
+          V val = parseValue(whitespace().trimFrom(parameter.substring(index + 1)));
+          builder.put(key, val);
+        }
+      }
+      setter.addValue(builder.buildOrThrow());
+      return 1;
+    }
+
+    @Override
+    public String getDefaultMetaVariable() {
+      return "KEY=VALUE1,KEY2=VALUE3,VALUE4;...";
     }
   }
 

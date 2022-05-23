@@ -31,12 +31,12 @@ from __future__ import unicode_literals
 __author__ = 'dcphillips@google.com (David Phillips)'
 
 import functools
+import html as html_module
 import re
 
 from . import generated_sanitize
 
 import six
-from six.moves import html_parser as HTMLParser
 
 # To allow the rest of the file to assume Python 3 strings, we will assign str
 # to unicode for Python 2. This will error in 3 and be ignored.
@@ -91,14 +91,15 @@ _HTML_RAW_CONTENT_HAZARD_REPLACEMENTS = {'</': r'<\/', ']]>': r']]\>'}
 
 
 def change_newline_to_br(value):
-  result = _NEWLINE_RE.sub('<br>', str(value))
+  html = _get_content_of_kind(value, CONTENT_KIND.HTML)
 
-  if is_content_kind(value, CONTENT_KIND.HTML):
+  if html is not None:
+    result = _NEWLINE_RE.sub('<br>', html)
     approval = IActuallyUnderstandSoyTypeSafetyAndHaveSecurityApproval(
         'Persisting existing sanitization.')
     return SanitizedHtml(result, get_content_dir(value), approval=approval)
 
-  return result
+  return _NEWLINE_RE.sub('<br>', str(value))
 
 
 def clean_html(value, safe_tags=None):
@@ -109,8 +110,11 @@ def clean_html(value, safe_tags=None):
     safe_tags = list(
         set(safe_tags).union(generated_sanitize._SAFE_TAG_WHITELIST))
 
-  if is_content_kind(value, CONTENT_KIND.HTML):
-    return value
+  html = _get_content_of_kind(value, CONTENT_KIND.HTML)
+  if html is not None:
+    approval = IActuallyUnderstandSoyTypeSafetyAndHaveSecurityApproval(
+        'Persisting existing sanitization.')
+    return SanitizedHtml(html, get_content_dir(value), approval=approval)
 
   approval = IActuallyUnderstandSoyTypeSafetyAndHaveSecurityApproval(
       'Escaped html is by nature sanitized.')
@@ -119,8 +123,13 @@ def clean_html(value, safe_tags=None):
 
 # LINT.IfChange(htmlToText)
 _TAG_RE = re.compile(
-    r'<(?:!--.*?--|(?:!|(/?[a-z][\w:-]*))(?:[^>\'"]|"[^"]*"|\'[^\']*\')*)>|\Z',
+    r'<(?:!--.*?--|(?:!|(/?[a-z][\w:-]*))((?:[^>\'"]|"[^"]*"|\'[^\']*\')*))>|\Z',
     re.IGNORECASE)
+_ATTR_RE = re.compile(
+    r'([a-zA-Z][a-zA-Z0-9:\\-]*)[\t\n\r ]*=[\t\n\r ]*("[^"]*"|\'[^\']*\')')
+_STYLE_RE = re.compile(
+    r'[\t\n\r ]*([^:;\t\n\r ]*)[\t\n\r ]*:[\t\n\r ]*([^:;\t\n\r ]*)[\t\n\r ]*(?:;|\Z)'
+)
 _REMOVING_TAGS_RE = re.compile(r'(script|style|textarea|title)$', re.IGNORECASE)
 _WS_PRESERVING_TAGS_RE = re.compile(r'pre$', re.IGNORECASE)
 _NEWLINE_TAGS_RE = re.compile(r'br$', re.IGNORECASE)
@@ -128,10 +137,13 @@ _BLOCK_TAGS_RE = re.compile(
     r'/?(address|blockquote|dd|div|dl|dt|h[1-6]|hr|li|ol|p|pre|table|tr|ul)$',
     re.IGNORECASE)
 _TAB_TAGS_RE = re.compile(r'(td|th)$', re.IGNORECASE)
-_WHITESPACE_RE = re.compile(r'\s+')
-_TRAILING_NON_WHITESPACE_RE = re.compile(r'\S\Z')
+_HTML_WHITESPACE_RE = re.compile(r'[ \t\r\n]+')
+_TRAILING_NON_WHITESPACE_RE = re.compile(r'[^ \t\r\n]\Z')
 _TRAILING_NON_NEWLINE_RE = re.compile(r'[^\n]\Z')
 _LEADING_SPACE_RE = re.compile(r'^ ')
+_PRESERVE_WHITESPACE_STYLES_RE = re.compile(r'(pre|pre-wrap|break-spaces)$',
+                                            re.IGNORECASE)
+_COLLAPSE_WHITESPACE_STYLES_RE = re.compile(r'(normal|nowrap)$', re.IGNORECASE)
 
 
 def html_to_text(value):
@@ -151,37 +163,85 @@ def html_to_text(value):
   text = ''
   start = 0
   removing_until = ''
-  ws_preserving_until = ''
-  html_parser = HTMLParser.HTMLParser()
+  preserve_whitespace_stack = []
+
+  def should_preserve_whitespace():
+    if preserve_whitespace_stack:
+      return preserve_whitespace_stack[-1][1]
+    return False
+
+  def get_style_preserves_whitespace(style):
+    for match in _STYLE_RE.finditer(style):
+      style_attribute = match.group(1)
+      style_attribute_value = match.group(2)
+      if style_attribute and style_attribute.lower() == 'white-space':
+        if _PRESERVE_WHITESPACE_STYLES_RE.match(style_attribute_value):
+          return True
+        elif _COLLAPSE_WHITESPACE_STYLES_RE.match(style_attribute_value):
+          return False
+
+  def get_attributes_preserve_whitespace(attrs):
+    if not attrs:
+      return None
+
+    for match in _ATTR_RE.finditer(attrs):
+      attribute_name = match.group(1)
+      if attribute_name and attribute_name.lower() == 'style':
+        style = match.group(2)
+        if style:
+          # Strip quotes if the attribute value was quoted.
+          if style[0] == '\'' or style[0] == '"':
+            style = style[1:-1]
+          return get_style_preserves_whitespace(style)
+        return None
+
+  def update_preserve_whitespace_stack(tag, attrs):
+    if tag[0] == '/':
+      tag = tag[1:]
+      # Pop tags until we pop one that matches the current closing tag. We're
+      # effectively automatically closing tags that aren't explicitly closed.
+      while preserve_whitespace_stack and (
+          preserve_whitespace_stack.pop()[0] != tag):
+        pass
+    elif _WS_PRESERVING_TAGS_RE.match(tag):
+      preserve_whitespace_stack.append((tag, True))
+    else:
+      # For unspecified whitespace preservation, inherit from parent tag.
+      preserve_whitespace = get_attributes_preserve_whitespace(attrs)
+      if preserve_whitespace is None:
+        preserve_whitespace = should_preserve_whitespace()
+
+      preserve_whitespace_stack.append((tag, preserve_whitespace))
+
   for match in _TAG_RE.finditer(html):
     offset = match.start()
-    tag = match.group(1)
+    tag = match.group(1).lower() if match.group(1) else None
+    attrs = match.group(2)
     if not removing_until:
       chunk = html[start:offset]
-      chunk = html_parser.unescape(chunk)
-      if not ws_preserving_until:
-        chunk = _WHITESPACE_RE.sub(' ', chunk)
+      chunk = html_module.unescape(chunk)
+      if not should_preserve_whitespace():
+        chunk = _HTML_WHITESPACE_RE.sub(' ', chunk)
         if not _TRAILING_NON_WHITESPACE_RE.search(text):
           chunk = _LEADING_SPACE_RE.sub('', chunk)
       text += chunk
       if tag:
         if _REMOVING_TAGS_RE.match(tag):
-          removing_until = '/' + tag.lower()
+          removing_until = '/' + tag
         elif _NEWLINE_TAGS_RE.match(tag):
           text += '\n'
         elif _BLOCK_TAGS_RE.match(tag):
           if _TRAILING_NON_NEWLINE_RE.search(text):
             text += '\n'
-          if _WS_PRESERVING_TAGS_RE.match(tag):
-            ws_preserving_until = '/' + tag.lower()
-          elif tag.lower() == ws_preserving_until:
-            ws_preserving_until = ''
         elif _TAB_TAGS_RE.match(tag):
           text += '\t'
-    elif removing_until.lower() == tag:
+
+        if not _HTML5_VOID_ELEMENTS_RE.match('<' + tag + '>'):
+          update_preserve_whitespace_stack(tag, attrs)
+    elif removing_until == tag:
       removing_until = ''
     start = match.end()
-  return text
+  return text.replace('\u00A0', ' ')
   # LINT.ThenChange(
   #     ../../../../../javascript/template/soy/soyutils_usegoog.js:htmlToText,
   #     ../../java/com/google/template/soy/basicfunctions/HtmlToText.java)
@@ -192,8 +252,11 @@ def escape_css_string(value):
 
 
 def escape_html(value):
-  if is_content_kind(value, CONTENT_KIND.HTML):
-    return value
+  html = _get_content_of_kind(value, CONTENT_KIND.HTML)
+  if html is not None:
+    approval = IActuallyUnderstandSoyTypeSafetyAndHaveSecurityApproval(
+        'Persisting existing sanitization.')
+    return SanitizedHtml(html, get_content_dir(value), approval=approval)
 
   approval = IActuallyUnderstandSoyTypeSafetyAndHaveSecurityApproval(
       'Escaped html is by nature sanitized.')
@@ -202,9 +265,9 @@ def escape_html(value):
 
 
 def escape_html_attribute(value):
-  if is_content_kind(value, CONTENT_KIND.HTML):
-    return generated_sanitize.normalize_html_helper(
-        _strip_html_tags(value.content))
+  html = _get_content_of_kind(value, CONTENT_KIND.HTML)
+  if html is not None:
+    return generated_sanitize.normalize_html_helper(_strip_html_tags(html))
 
   return generated_sanitize.escape_html_helper(value)
 
@@ -223,16 +286,18 @@ def filter_number(value):
 
 
 def escape_html_attribute_nospace(value):
-  if is_content_kind(value, CONTENT_KIND.HTML):
+  html = _get_content_of_kind(value, CONTENT_KIND.HTML)
+  if html is not None:
     return generated_sanitize.normalize_html_nospace_helper(
-        _strip_html_tags(value.content))
+        _strip_html_tags(html))
 
   return generated_sanitize.escape_html_nospace_helper(value)
 
 
 def escape_html_rcdata(value):
-  if is_content_kind(value, CONTENT_KIND.HTML):
-    return generated_sanitize.normalize_html_helper(value.content)
+  html = _get_content_of_kind(value, CONTENT_KIND.HTML)
+  if html is not None:
+    return generated_sanitize.normalize_html_helper(html)
 
   return generated_sanitize.escape_html_helper(value)
 
@@ -254,8 +319,9 @@ def escape_js_value(value):
     # where there is no corresponding key.
     return ' null '
 
-  if is_content_kind(value, CONTENT_KIND.JS):
-    return value.content
+  js = _get_content_of_kind(value, CONTENT_KIND.JS)
+  if js is not None:
+    return js
 
   # We surround values with spaces so that they can't be interpolated into
   # identifiers by accident.
@@ -272,8 +338,9 @@ def escape_uri(value):
 
 
 def filter_css_value(value):
-  if is_content_kind(value, CONTENT_KIND.CSS):
-    return _embed_css_into_html(value.content)
+  css = _get_content_of_kind(value, CONTENT_KIND.CSS)
+  if css is not None:
+    return _embed_css_into_html(css)
 
   if value is None:
     return ''
@@ -285,10 +352,7 @@ def filter_html_attributes(value):
   # NOTE: Explicitly no support for SanitizedContentKind.HTML, since that is
   # meaningless in this context, which is generally *between* html attributes.
   if is_content_kind(value, CONTENT_KIND.ATTRIBUTES):
-    # Add a space at the end to ensure this won't get merged into following
-    # attributes, unless the interpretation is unambiguous (ending with quotes
-    # or a space).
-    return _AMBIGUOUS_ATTR_END_RE.sub(r'\1 ', value.content)
+    return value.content
 
   # TODO(gboyer): Replace this with a runtime exception along with other
   # backends. http://b/19795203.
@@ -334,19 +398,23 @@ def filter_tel_uri(value):
 
 
 def filter_normalize_uri(value):
-  if (is_content_kind(value, CONTENT_KIND.URI)
-      or is_content_kind(value, CONTENT_KIND.TRUSTED_RESOURCE_URI)):
-    return normalize_uri(value)
+  uri = _get_content_of_kind(value, CONTENT_KIND.URI)
+  if uri is None:
+    uri = _get_content_of_kind(value, CONTENT_KIND.TRUSTED_RESOURCE_URI)
+  if uri is None:
+    return generated_sanitize.filter_normalize_uri_helper(value)
 
-  return generated_sanitize.filter_normalize_uri_helper(value)
+  return normalize_uri(uri)
 
 
 def filter_normalize_media_uri(value):
-  if (is_content_kind(value, CONTENT_KIND.URI)
-      or is_content_kind(value, CONTENT_KIND.TRUSTED_RESOURCE_URI)):
-    return normalize_uri(value)
+  uri = _get_content_of_kind(value, CONTENT_KIND.URI)
+  if uri is None:
+    uri = _get_content_of_kind(value, CONTENT_KIND.TRUSTED_RESOURCE_URI)
+  if uri is None:
+    return generated_sanitize.filter_normalize_media_uri_helper(value)
 
-  return generated_sanitize.filter_normalize_media_uri_helper(value)
+  return normalize_uri(uri)
 
 
 def filter_normalize_refresh_uri(value):
@@ -354,13 +422,10 @@ def filter_normalize_refresh_uri(value):
 
 
 def filter_trusted_resource_uri(value):
-  if is_content_kind(value, CONTENT_KIND.TRUSTED_RESOURCE_URI):
-    return value.content
+  uri = _get_content_of_kind(value, CONTENT_KIND.TRUSTED_RESOURCE_URI)
+  if uri is not None:
+    return uri
   return 'about:invalid#' + _INNOCUOUS_OUTPUT
-
-
-def bless_string_as_trusted_resource_url_for_legacy(value):
-  return value
 
 
 def normalize_html(value):
@@ -369,6 +434,50 @@ def normalize_html(value):
 
 def normalize_uri(value):
   return generated_sanitize.normalize_uri_helper(value)
+
+
+def filter_html_script_phrasing_data(value):
+  """See docs on soy.$$filterHtmlScriptPhrasingData in soyutils_usegoog.js."""
+
+  def ascii_to_lower(c):
+    if 'A' <= c <= 'Z':
+      return c.lower()
+    return c
+
+  def match_prefix_ignore_case_past_end(needle, haystack, offset):
+    chars_left = len(haystack) - offset
+    chars_to_scan = min(len(needle), chars_left)
+    for i in range(chars_to_scan):
+      if needle[i] != ascii_to_lower(haystack[i + offset]):
+        return False
+    return True
+
+  value_str = str(value)
+  start = 0
+  while True:
+    lt = value_str.find('<', start)
+    if lt == -1:
+      break
+    if match_prefix_ignore_case_past_end(
+        '<!--', value_str, lt) or match_prefix_ignore_case_past_end(
+            '</script', value_str, lt):
+      return 'zSoyz'
+    start = lt + 1
+  return value_str
+
+
+def filter_csp_nonce_value(value):
+  return generated_sanitize.filter_csp_nonce_value_helper(value)
+
+
+def whitespace_html_attributes(value):
+  """Prepends value with a single space if it is not empty."""
+  if isinstance(value, SanitizedHtmlAttribute):
+    string_val = value.content
+  else:
+    string_val = value
+  return (' '
+          if string_val and not string_val.startswith(' ') else '') + string_val
 
 
 ############################
@@ -391,6 +500,23 @@ def is_content_kind(value, content_kind):
 #############################
 # Private Utility Functions #
 #############################
+
+
+def _get_content_of_kind(value, content_kind):
+  """Gets string content from value if it's of kind content_kind or compatible.
+
+  Args:
+    value: Value of any type.
+    content_kind: Desired content kind.
+
+  Returns:
+    String content of value or None if other kind.
+  """
+  if is_content_kind(value, content_kind):
+    return value.content
+
+  return None
+
 
 def _get_content_kind(value):
   """Get human-readable name for the kind of value.
@@ -540,6 +666,13 @@ def _balance_tags(tags):
 
 
 class IActuallyUnderstandSoyTypeSafetyAndHaveSecurityApproval:
+  """An instance of this approval must be passed to any type conversion.
+
+  The sanitized types are internal to Soy and they are allowed only in the code
+  generated from templates and in internal Soy functions. External usage is not
+  allowed and it will not be approved. Use SafeHtml types instead.
+
+  """
   justification = None
 
   def __init__(self, justification=None):

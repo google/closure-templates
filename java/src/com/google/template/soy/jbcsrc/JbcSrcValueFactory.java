@@ -26,7 +26,6 @@ import com.google.protobuf.Message;
 import com.google.protobuf.ProtocolMessageEnum;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
@@ -34,19 +33,25 @@ import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyRuntimeType;
 import com.google.template.soy.jbcsrc.restricted.TypeInfo;
+import com.google.template.soy.plugin.internal.JavaPluginExecContext;
 import com.google.template.soy.plugin.java.internal.JavaPluginValidator;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
 import com.google.template.soy.plugin.java.restricted.MethodSignature;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
+import com.google.template.soy.types.LegacyObjectMapType;
 import com.google.template.soy.types.ListType;
+import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.NullType;
+import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.UnknownType;
 import java.lang.reflect.Method;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Future;
 import org.objectweb.asm.Type;
 
 /** Adapts JavaValueFactory to working with Expressions for jbc src. */
@@ -58,19 +63,21 @@ final class JbcSrcValueFactory extends JavaValueFactory {
     Expression getPluginInstance(String pluginName);
   }
 
-  private final FunctionNode fnNode;
+  private final JavaPluginExecContext fnNode;
   private final JavaPluginContext context;
   private final PluginInstanceLookup pluginInstanceLookup;
   private final JavaPluginValidator pluginValidator;
   private final SoyTypeRegistry registry;
   private final ErrorReporter errorReporter;
+  private final ExpressionDetacher detacher;
 
   JbcSrcValueFactory(
-      FunctionNode fnNode,
+      JavaPluginExecContext fnNode,
       final JbcSrcPluginContext jbcPluginContext,
       PluginInstanceLookup pluginInstanceLookup,
       ErrorReporter errorReporter,
-      SoyTypeRegistry registry) {
+      SoyTypeRegistry registry,
+      ExpressionDetacher detacher) {
     this.fnNode = fnNode;
     this.pluginInstanceLookup = pluginInstanceLookup;
     this.registry = registry;
@@ -92,36 +99,38 @@ final class JbcSrcValueFactory extends JavaValueFactory {
           public JavaValue getAllRequiredCssNamespaces(JavaValue template) {
             JbcSrcJavaValue exprTemplate = (JbcSrcJavaValue) template;
             SoyExpression soyExpression = (SoyExpression) exprTemplate.expr();
-            return JbcSrcJavaValue.of(
-                jbcPluginContext.getAllRequiredCssNamespaces(soyExpression.unboxAsString()));
+            return JbcSrcJavaValue.of(jbcPluginContext.getAllRequiredCssNamespaces(soyExpression));
           }
 
           @Override
-          public JavaValue getRenderedCssNamespaces() {
-            return JbcSrcJavaValue.of(jbcPluginContext.getRenderedCssNamespaces());
+          public JavaValue getAllRequiredCssPaths(JavaValue template) {
+            JbcSrcJavaValue exprTemplate = (JbcSrcJavaValue) template;
+            SoyExpression soyExpression = (SoyExpression) exprTemplate.expr();
+            return JbcSrcJavaValue.of(jbcPluginContext.getAllRequiredCssPaths(soyExpression));
           }
         };
+    this.detacher = detacher;
   }
 
   SoyExpression computeForJavaSource(List<SoyExpression> args) {
     ErrorReporter.Checkpoint checkpoint = errorReporter.checkpoint();
-    checkState(fnNode.getAllowedParamTypes() != null, "allowed param types must be set");
+    checkState(fnNode.getParamTypes() != null, "allowed param types must be set");
     checkState(
-        fnNode.getAllowedParamTypes().size() == args.size(),
+        fnNode.getParamTypes().size() == args.size(),
         "wrong # of allowed param types (%s), expected %s",
-        fnNode.getAllowedParamTypes(),
+        fnNode.getParamTypes(),
         args.size());
     pluginValidator.validate(
         fnNode.getFunctionName(),
-        (SoyJavaSourceFunction) fnNode.getSoyFunction(),
-        fnNode.getAllowedParamTypes(),
-        fnNode.getType(),
+        fnNode.getSourceFunction(),
+        fnNode.getParamTypes(),
+        fnNode.getReturnType(),
         fnNode.getSourceLocation(),
         /* includeTriggeredInTemplateMsg= */ true);
     if (errorReporter.errorsSince(checkpoint)) {
       return SoyExpression.NULL_BOXED;
     }
-    SoyJavaSourceFunction javaSrcFn = (SoyJavaSourceFunction) fnNode.getSoyFunction();
+    SoyJavaSourceFunction javaSrcFn = fnNode.getSourceFunction();
     return toSoyExpression(
         (JbcSrcJavaValue)
             javaSrcFn.applyForJavaSource(
@@ -160,15 +169,13 @@ final class JbcSrcValueFactory extends JavaValueFactory {
     //   callXMethod(METHOD1, callXMethod(METHOD2, arg1), callXMethod(METHOD3, arg2));
     // ... which would call METHOD1 with the results of METHOD2 & METHOD3.
     Expression[] adapted = adaptParams(methodSignature, params);
-    TypeInfo owner = TypeInfo.create(methodSignature.fullyQualifiedClassName());
+    TypeInfo owner =
+        TypeInfo.create(methodSignature.fullyQualifiedClassName(), methodSignature.inInterface());
     org.objectweb.asm.commons.Method asmMethod =
         new org.objectweb.asm.commons.Method(
             methodSignature.methodName(),
             Type.getType(methodSignature.returnType()),
-            methodSignature.arguments().stream()
-                .map(Type::getType)
-                .collect(toImmutableList())
-                .toArray(new Type[0]));
+            methodSignature.arguments().stream().map(Type::getType).toArray(Type[]::new));
     Expression methodCall;
     if (instance) {
       // We need to cast to the method's declaring class in order for the owner type
@@ -350,7 +357,7 @@ final class JbcSrcValueFactory extends JavaValueFactory {
   }
 
   private SoyExpression toSoyExpression(JbcSrcJavaValue pluginReturnValue) {
-    SoyType expectedType = fnNode.getType();
+    SoyType expectedType = fnNode.getReturnType();
     Expression expr = pluginReturnValue.expr();
     SoyExpression soyExpr = null;
 
@@ -377,11 +384,39 @@ final class JbcSrcValueFactory extends JavaValueFactory {
         } else {
           throw new IllegalStateException("Invalid type: " + expectedType);
         }
+      } else if (Map.class.isAssignableFrom(type)) {
+        // We could implement more precise coercions depending on the static types, for now we
+        // dispatch to generic conversion functions.
+        // TODO(lukes): it would be especially nice to reuse the logic in GenInvocationBuilders, but
+        // that seems fairly hard.
+        if (expectedType instanceof MapType) {
+          soyExpr =
+              SoyExpression.forSoyValue(
+                  expectedType, MethodRef.BOX_JAVA_MAP_AS_SOY_MAP.invoke(expr));
+        } else if (expectedType instanceof LegacyObjectMapType) {
+          soyExpr =
+              SoyExpression.forSoyValue(
+                  expectedType, MethodRef.BOX_JAVA_MAP_AS_SOY_LEGACY_OBJECT_MAP.invoke(expr));
+        } else if (expectedType instanceof RecordType) {
+          soyExpr =
+              SoyExpression.forSoyValue(
+                  expectedType, MethodRef.BOX_JAVA_MAP_AS_SOY_RECORD.invoke(expr));
+        } else {
+          throw new IllegalStateException("java map cannot be converted to: " + expectedType);
+        }
       } else if (SoyValue.class.isAssignableFrom(type)) {
         soyExpr =
             SoyExpression.forSoyValue(
                 expectedType,
                 expr.checkedCast(SoyRuntimeType.getBoxedType(expectedType).runtimeType()));
+      } else if (Future.class.isAssignableFrom(type)) {
+        soyExpr =
+            SoyExpression.forSoyValue(
+                expectedType,
+                detacher
+                    .resolveSoyValueProvider(
+                        expr.invoke(MethodRef.CONVERT_FUTURE_TO_SOY_VALUE_PROVIDER))
+                    .checkedCast(SoyRuntimeType.getBoxedType(expectedType).runtimeType()));
       } else if (Message.class.isAssignableFrom(type)) {
         soyExpr =
             SoyExpression.forProto(
@@ -404,6 +439,6 @@ final class JbcSrcValueFactory extends JavaValueFactory {
 
   /** Returns the SoyType for a proto or proto enum. */
   private SoyType soyTypeForProtoOrEnum(Class<?> type) {
-    return registry.getType(nameFromDescriptor(type));
+    return registry.getProtoRegistry().getProtoType(nameFromDescriptor(type));
   }
 }

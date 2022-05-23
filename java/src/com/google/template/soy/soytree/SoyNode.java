@@ -16,14 +16,17 @@
 
 package com.google.template.soy.soytree;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.Node;
 import com.google.template.soy.basetree.ParentNode;
+import com.google.template.soy.exprtree.AbstractLocalVarDefn;
+import com.google.template.soy.exprtree.ExprEquivalence;
 import com.google.template.soy.exprtree.ExprRootNode;
-import com.google.template.soy.exprtree.VarDefn;
-import javax.annotation.Nullable;
 
 /**
  * This class defines the base interface for a node in the parse tree, as well as a number of
@@ -33,7 +36,6 @@ import javax.annotation.Nullable;
  * <p>The top level definition is the base node interface.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public interface SoyNode extends Node {
 
@@ -43,9 +45,9 @@ public interface SoyNode extends Node {
    * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
    */
   enum Kind {
-
     SOY_FILE_SET_NODE,
     SOY_FILE_NODE,
+    IMPORT_NODE,
 
     TEMPLATE_BASIC_NODE,
     TEMPLATE_DELEGATE_NODE,
@@ -67,6 +69,10 @@ public interface SoyNode extends Node {
     PRINT_NODE,
     PRINT_DIRECTIVE_NODE,
 
+    CONST_NODE,
+    EXTERN_NODE,
+    JAVA_IMPL_NODE,
+    JS_IMPL_NODE,
     LET_VALUE_NODE,
     LET_CONTENT_NODE,
 
@@ -99,12 +105,11 @@ public interface SoyNode extends Node {
     VE_LOG_NODE,
 
     LOG_NODE,
-    DEBUGGER_NODE,
-
-    LINE_COMMENT_NODE,
+    DEBUGGER_NODE
   }
 
   /** Returns this node's kind (corresponding to this node's specific type). */
+  @Override
   Kind getKind();
 
   /**
@@ -155,7 +160,6 @@ public interface SoyNode extends Node {
 
   // -----------------------------------------------------------------------------------------------
 
-
   /**
    * A node that can legally appear as the direct child of some block node (doesn't necessarily have
    * to be legal as the direct child of a template). To put it another way, a node that can legally
@@ -169,7 +173,6 @@ public interface SoyNode extends Node {
     @Override
     StandaloneNode copy(CopyState copyState);
   }
-
 
   // -----------------------------------------------------------------------------------------------
 
@@ -188,11 +191,12 @@ public interface SoyNode extends Node {
     String getCommandText();
   }
 
-
   // -----------------------------------------------------------------------------------------------
 
   /** A node that represents a Soy command that encloses a template block. */
-  interface BlockCommandNode extends CommandNode, BlockNode {}
+  interface BlockCommandNode extends CommandNode, BlockNode {
+    SourceLocation getOpenTagLocation();
+  }
 
   // -----------------------------------------------------------------------------------------------
 
@@ -204,7 +208,6 @@ public interface SoyNode extends Node {
      */
     SanitizedContentKind getContentKind();
   }
-
 
   // -----------------------------------------------------------------------------------------------
 
@@ -233,27 +236,29 @@ public interface SoyNode extends Node {
   interface LocalVarNode extends SoyNode {
 
     /** Returns the name of this node's local variable (without the preceding '$'). */
-    String getVarName();
+    default String getVarName() {
+      return getVar().name();
+    }
+
+    default String getVarRefName() {
+      return getVar().refName();
+    }
 
     /** Returns the variable definition. */
-    VarDefn getVar();
+    AbstractLocalVarDefn<?> getVar();
   }
-
 
   // -----------------------------------------------------------------------------------------------
 
   /** A node that adds a new local variable whose scope comprises the children of this code. */
   interface LocalVarBlockNode extends LocalVarNode, BlockNode {}
 
-
   // -----------------------------------------------------------------------------------------------
-
 
   /**
    * A node that adds a new local variable whose scope comprises the younger siblings of this node.
    */
   interface LocalVarInlineNode extends LocalVarNode, StandaloneNode {}
-
 
   // -----------------------------------------------------------------------------------------------
 
@@ -263,7 +268,6 @@ public interface SoyNode extends Node {
     /** Returns the list of expressions in this node. */
     ImmutableList<ExprRootNode> getExprList();
   }
-
 
   // -----------------------------------------------------------------------------------------------
 
@@ -278,27 +282,27 @@ public interface SoyNode extends Node {
     MsgBlockNode getParent();
 
     /**
-     * Returns the base var name for this substitution unit. (For a placeholder, this is the base
-     * placeholder name.)
+     * Returns the placeholder meta data for this substitution unit. {@code
+     * MessagePlaceholder::name} is the base placeholder name, it might have a suffix appended if it
+     * collides with another.
      *
      * <p>Note: This isn't quite correct semantically. It's conceivable that a new type of
      * substitution unit in the future could have multiple vars. But until that happens, this
      * simpler model is sufficient.
      */
-    String getBaseVarName();
+    MessagePlaceholder getPlaceholder();
 
     /**
      * Returns whether this substitution unit should use the same var name as another substitution
      * unit. (For placeholders, this means the other placeholder is exactly the same as this one,
      * i.e. it appears twice in the same message.)
+     *
      * @param other The other substitution unit to check against.
      */
-    boolean shouldUseSameVarNameAs(MsgSubstUnitNode other);
+    boolean shouldUseSameVarNameAs(MsgSubstUnitNode other, ExprEquivalence exprEquivalence);
   }
 
-
   // -----------------------------------------------------------------------------------------------
-
 
   /**
    * A block node that can hold message content. Every direct child of a MsgBlockNode must be either
@@ -306,35 +310,47 @@ public interface SoyNode extends Node {
    */
   interface MsgBlockNode extends BlockNode {}
 
-
   // -----------------------------------------------------------------------------------------------
 
   /** A node that can be the initial content (i.e. initial child) of a MsgPlaceholderNode. */
   interface MsgPlaceholderInitialNode extends StandaloneNode {
 
-    /**
-     * Gets the user-supplied placeholder name, or null if not supplied or not applicable. Note that
-     * this raw name can be any identifier (not necessarily in upper-underscore format).
-     *
-     * @return The user-supplied placeholder name, or null if not supplied or not applicable.
-     */
-    @Nullable
-    String getUserSuppliedPhName();
+    /** A value object that can be used to test for placehoolder */
+    interface SamenessKey {
+      SamenessKey copy(CopyState copy);
+    }
 
-    /**
-     * Gets the user-supplied placeholder example, or null if not supplied or not applicable.
-     *
-     * @return The user-supplied placeholder example, or null if not supplied or not applicable.
-     */
-    @Nullable
-    String getUserSuppliedPhExample();
+    /** A SamenessKey that uses the identity of a SoyNode. */
+    static final class IdentitySamenessKey implements SamenessKey {
+      private SoyNode node;
 
-    /**
-     * Generates the base placeholder name for this node.
-     *
-     * @return The base placeholder name for this node.
-     */
-    String genBasePhName();
+      IdentitySamenessKey(SoyNode node) {
+        this.node = checkNotNull(node);
+      }
+
+      private IdentitySamenessKey(IdentitySamenessKey orig, CopyState copyState) {
+        this.node = orig.node;
+        copyState.registerRefListener(orig.node, newNode -> this.node = newNode);
+      }
+
+      @Override
+      public IdentitySamenessKey copy(CopyState copyState) {
+        return new IdentitySamenessKey(this, copyState);
+      }
+
+      @Override
+      public boolean equals(Object other) {
+        return other instanceof IdentitySamenessKey && ((IdentitySamenessKey) other).node == node;
+      }
+
+      @Override
+      public int hashCode() {
+        return System.identityHashCode(node);
+      }
+    }
+
+    /** Base placeholder name and associated info, for this node. */
+    MessagePlaceholder getPlaceholder();
 
     /**
      * Generates the key object used in comparisons to determine whether two placeholder nodes
@@ -343,7 +359,6 @@ public interface SoyNode extends Node {
      * @return The key object for determining whether this node and another node should be
      *     represented by the same placeholder.
      */
-    Object genSamenessKey();
+    SamenessKey genSamenessKey();
   }
-
 }

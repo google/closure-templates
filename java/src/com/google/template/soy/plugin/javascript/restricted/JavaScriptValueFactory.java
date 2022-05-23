@@ -102,6 +102,9 @@ public abstract class JavaScriptValueFactory {
   /** Creates a null constant. */
   public abstract JavaScriptValue constantNull();
 
+  /** Creates an empty object literal. */
+  public abstract JavaScriptValue emptyObjLiteral();
+
   /** Creates a reference to a global symbol, e.g. {@code Math}. */
   public abstract JavaScriptValue global(String globalSymbol);
 

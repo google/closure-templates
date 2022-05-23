@@ -19,7 +19,6 @@ package com.google.template.soy.sharedpasses.render;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.data.Flags;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyLegacyObjectMap;
@@ -28,22 +27,20 @@ import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyProtoValue;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.data.TofuTemplateValue;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
-import com.google.template.soy.data.restricted.SoyString;
+import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.UnionType;
 import java.util.Optional;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /** Implements runtime type checks for tofu. */
 public final class TofuTypeChecks {
-  private static final Logger logger = Logger.getLogger(TofuTypeChecks.class.getName());
 
   private static final CheckResult PASS = new CheckResult(true, Optional.empty());
   private static final CheckResult FAIL = new CheckResult(false, Optional.empty());
@@ -130,6 +127,7 @@ public final class TofuTypeChecks {
       case FLOAT:
         return CheckResult.fromBool(value instanceof FloatData);
       case HTML:
+      case ELEMENT:
         return isSanitizedofKind(value, ContentKind.HTML);
       case INT:
         return CheckResult.fromBool(value instanceof IntegerData);
@@ -143,6 +141,8 @@ public final class TofuTypeChecks {
         return CheckResult.fromBool(value instanceof SoyLegacyObjectMap);
       case NULL:
         return CheckResult.fromBool(value == NullData.INSTANCE || value == UndefinedData.INSTANCE);
+      case MESSAGE:
+        return CheckResult.fromBool(value instanceof SoyProtoValue);
       case PROTO:
         // proto descriptors use instance equality.
         return CheckResult.fromBool(
@@ -155,30 +155,9 @@ public final class TofuTypeChecks {
       case RECORD:
         return CheckResult.fromBool(value instanceof SoyRecord);
       case STRING:
-        if (Flags.stringIsNotSanitizedContent()) {
-          return CheckResult.fromBool(value instanceof SoyString);
-        } else {
-          if (value instanceof SoyString
-              && value instanceof SanitizedContent
-              && ((SanitizedContent) value).getContentKind() != ContentKind.TEXT
-              && logger.isLoggable(Level.WARNING)) {
-            return CheckResult.passWithWarning(
-                () -> {
-                  logger.log(
-                      Level.WARNING,
-                      String.format(
-                          "Passing in sanitized content into a template that accepts only string"
-                              + " is forbidden. Please modify the template at %s to take in %s"
-                              + " instead of just %s.",
-                          location != null ? location.toString() : "unknown",
-                          ((SanitizedContent) value).getContentKind(),
-                          type.toString()),
-                      new Exception());
-                });
-          }
-          return CheckResult.fromBool(
-              value instanceof SoyString || value instanceof SanitizedContent);
-        }
+        return CheckResult.fromBool(value instanceof StringData);
+      case TEMPLATE:
+        return CheckResult.fromBool(value instanceof TofuTemplateValue);
       case TRUSTED_RESOURCE_URI:
         return isSanitizedofKind(value, ContentKind.TRUSTED_RESOURCE_URI);
       case UNION:
@@ -188,14 +167,25 @@ public final class TofuTypeChecks {
         }
         return unionResult;
       case URI:
-        return isSanitizedofKind(value, ContentKind.URI);
+        return CheckResult.fromBool(
+            value instanceof SanitizedContent
+                && (((SanitizedContent) value).getContentKind() == ContentKind.URI
+                    || ((SanitizedContent) value).getContentKind()
+                        == ContentKind.TRUSTED_RESOURCE_URI));
       case VE:
-      case VE_DATA:
         // Dynamic VE support is minimally implemented in Tofu: ve and ve_data objects are always
-        // null.
-        return CheckResult.fromBool(value == NullData.INSTANCE);
-      case ERROR:
-        // continue
+        // UndefinedVe.
+        return CheckResult.fromBool(value == EvalVisitor.UNDEFINED_VE);
+      case VE_DATA:
+        return CheckResult.fromBool(value == EvalVisitor.UNDEFINED_VE_DATA);
+      case PROTO_TYPE:
+      case PROTO_ENUM_TYPE:
+      case PROTO_EXTENSION:
+      case PROTO_MODULE:
+      case TEMPLATE_TYPE:
+      case TEMPLATE_MODULE:
+      case FUNCTION:
+        throw new UnsupportedOperationException();
     }
     throw new AssertionError("invalid type: " + type);
   }

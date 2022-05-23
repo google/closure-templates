@@ -39,4 +39,9 @@ public final class LegacyFunctionAdapter {
   public SoyValue computeForJava(List<SoyValue> args) {
     return legacyFn.computeForJava(args);
   }
+
+  @Override
+  public String toString() {
+    return "LegacyFunctionAdapter{" + legacyFn + "}";
+  }
 }

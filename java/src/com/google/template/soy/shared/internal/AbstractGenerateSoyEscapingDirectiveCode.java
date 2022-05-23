@@ -16,9 +16,10 @@
 
 package com.google.template.soy.shared.internal;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.CaseFormat;
-import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.io.Files;
@@ -34,7 +35,6 @@ import org.apache.tools.ant.Task;
 
 /**
  * Abstract class for generating code relied upon by escaping directives.
- *
  */
 @ParametersAreNonnullByDefault
 public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
@@ -184,7 +184,7 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
     for (FileRef input : inputs) {
       try {
         boolean inGeneratedCode = false;
-        for (String line : Files.readLines(input.file, Charsets.UTF_8)) {
+        for (String line : Files.readLines(input.file, UTF_8)) {
           // Skip code between generated code markers so that this transformation is idempotent.
           // We can run an old output through this class, and get the latest version out.
           if (inGeneratedCode) {
@@ -209,7 +209,7 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
 
     // Output a file now that we know generation hasn't failed.
     try {
-      Files.asCharSink(output.file, Charsets.UTF_8).write(sb);
+      Files.asCharSink(output.file, UTF_8).write(sb);
     } catch (IOException ex) {
       // Make sure an abortive write does not leave a file w
       output.file.delete();
@@ -382,16 +382,12 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
       String escapeMapName = escapeMapNames.get(i);
       generateCharacterMapSignature(outputCode, escapeMapName);
       outputCode.append(" = {");
-      boolean needsComma = false;
       for (Map.Entry<Character, String> e : escapeMap.entrySet()) {
-        if (needsComma) {
-          outputCode.append(',');
-        }
         outputCode.append("\n  ");
         writeUnsafeStringLiteral(e.getKey(), outputCode);
         outputCode.append(": ");
         writeStringLiteral(e.getValue(), outputCode);
-        needsComma = true;
+        outputCode.append(",");
       }
       outputCode.append("\n}").append(getLineEndSyntax()).append("\n");
 
@@ -552,7 +548,6 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
    * similar setup tasks.
    *
    * @param outputCode The StringBuilder where generated code should be appended.
-   * @return A string containing the prefix for the generated sanitizer.
    */
   protected void generatePrefix(StringBuilder outputCode) {
     /* NOOP by default. */
@@ -569,9 +564,8 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
    *   /**
    *    * Maps characters to the escaped versions for the named escape directives.\n")
    *    * @type {Object<string, string>}\n")
-   *    * @private\n")
    *    *\/
-   *     soy.esc.$$ESCAPE_MAP_FOR_&lt;NAME&gt;_
+   *     const $$ESCAPE_MAP_FOR_&lt;NAME&gt;_
    * </pre>
    *
    * @param outputCode The StringBuilder where generated code should be appended.

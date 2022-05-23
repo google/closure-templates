@@ -41,7 +41,6 @@ import javax.annotation.Nonnull;
 
 /**
  * A directive that replaces newlines (\n, \r, or \r\n) with HTML line breaks (&lt;br&gt;).
- *
  */
 @SoyPurePrintDirective
 final class ChangeNewlineToBrDirective

@@ -29,7 +29,6 @@ import com.google.template.soy.soytree.SoyNode.StandaloneNode;
  * CSP is to use <code>unsafe-inline</code>.
  *
  * @see <a href="http://www.w3.org/TR/CSP/#directive-script-src">The CSP spec</a>
- * @author brndn@google.com (Brendan Linn)
  */
 final class BanInlineEventHandlers extends Rule<HtmlAttributeNode> {
   BanInlineEventHandlers(SoyErrorKind error) {

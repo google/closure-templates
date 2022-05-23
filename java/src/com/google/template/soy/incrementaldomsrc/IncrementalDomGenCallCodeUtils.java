@@ -44,9 +44,9 @@ final class IncrementalDomGenCallCodeUtils extends GenCallCodeUtils {
   protected Expression maybeWrapContent(
       CodeChunk.Generator generator, CallParamContentNode node, Expression content) {
     SanitizedContentKind kind = node.getContentKind();
-    if (kind == SanitizedContentKind.HTML || kind == SanitizedContentKind.ATTRIBUTES) {
-    return content;
-  }
+    if (kind.isHtml() || kind == SanitizedContentKind.ATTRIBUTES) {
+      return content;
+    }
     return super.maybeWrapContent(generator, node, content);
   }
 }

@@ -18,6 +18,7 @@ package com.google.template.soy.parsepasses.contextautoesc;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
+import com.google.auto.value.AutoValue;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Ascii;
 import com.google.common.base.Joiner;
@@ -26,14 +27,20 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+import com.google.common.net.MediaType;
+import com.google.errorprone.annotations.CheckReturnValue;
+import com.google.errorprone.annotations.ForOverride;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.base.internal.SanitizedContentKind;
+import com.google.template.soy.base.internal.TemplateContentKind.ElementContentKind;
 import com.google.template.soy.soytree.EscapingMode;
 import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.HtmlContext;
+import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.HtmlTagNode;
 import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.SoyNode;
+import com.google.template.soy.types.TemplateType;
 import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.Iterator;
@@ -42,7 +49,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.regex.Pattern;
-import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 
 /**
@@ -55,14 +61,12 @@ import javax.annotation.Nullable;
  *
  * <p>The contextual autoescape rewriter propagates contexts so that it can infer an appropriate
  * {@link EscapingMode escaping function} for each <code>{print ...}</code> command.
- *
- * <p>To make sure it can correctly identify a unique escape convention for all paths to a
- * particular print command, it may clone a template for each context in which it is called, using
- * the {@link Context#packedBits bitpacked} form of the context to generate a unique template name.
- *
  */
 @Immutable
-public final class Context {
+@AutoValue
+abstract class Context {
+
+  // TODO(lukes): consider implementing as an @AutoValue
 
   /**
    * List of link types (values of the <link rel=...> attribute) for which the link is a regular
@@ -102,7 +106,7 @@ public final class Context {
           Pattern.CASE_INSENSITIVE);
 
   /** The state the text preceding the context point describes. */
-  public final HtmlContext state;
+  abstract HtmlContext state();
 
   /**
    * Describes the innermost element that the text preceding the context point is in. An element is
@@ -118,120 +122,87 @@ public final class Context {
    *
    * Outside an element, or in PCDATA text, this will be the nullish value {@link ElementType#NONE}.
    */
-  public final ElementType elType;
+  abstract ElementType elType();
 
   /**
    * Describes the attribute whose value the context point is in. Outside an attribute value, this
    * will be the nullish value {@link AttributeType#NONE}.
    */
-  public final AttributeType attrType;
+  abstract AttributeType attrType();
 
   /**
    * Describes the quoting convention for the attribute value that the context point is in. Outside
    * an attribute value, this will be the nullish value {@link AttributeEndDelimiter#NONE}.
    */
-  public final AttributeEndDelimiter delimType;
+  abstract AttributeEndDelimiter delimType();
 
   /**
    * Determines what we will do with a slash token {@code /}. This is irrelevant outside JavaScript
    * contexts, but inside JavaScript, it helps us distinguish the contexts of <code>{$bar}</code> in
    * <code>"foo".replace(/{$bar}/i)</code> and <code>x/{$bar}/i</code>
    */
-  public final JsFollowingSlash slashType;
+  abstract JsFollowingSlash slashType();
 
   /** Determines how we encode interpolations in URI attributes and CSS {@code uri(...)}. */
-  public final UriPart uriPart;
+  abstract UriPart uriPart();
 
   /** Determines the context in which this URI is being used. */
-  public final UriType uriType;
+  abstract UriType uriType();
 
   /** Determines position in the HTML attribute value containing HTML. */
-  public final HtmlHtmlAttributePosition htmlHtmlAttributePosition;
+  abstract HtmlHtmlAttributePosition htmlHtmlAttributePosition();
 
   /** The count of {@code <template>} elements entered and not subsequently exited. */
-  public final int templateNestDepth;
+  abstract int templateNestDepth();
 
   /** The count of {@code js template} elements entered and not subsequently exited. */
-  public final int jsTemplateLiteralNestDepth;
+  abstract int jsTemplateLiteralNestDepth();
 
-  /** Use {@link Builder} to construct instances. */
-  private Context(
-      HtmlContext state,
-      ElementType elType,
-      AttributeType attrType,
-      AttributeEndDelimiter delimType,
-      JsFollowingSlash slashType,
-      UriPart uriPart,
-      UriType uriType,
-      HtmlHtmlAttributePosition htmlHtmlAttributePosition,
-      int templateNestDepth,
-      int jsTemplateLiteralNestDepth) {
-    this.state = state;
-    this.elType = elType;
-    this.attrType = attrType;
-    this.delimType = delimType;
-    this.slashType = slashType;
-    this.uriPart = uriPart;
-    this.uriType = uriType;
-    // NOTE: The constraint is one-way; once we see the src attribute we may set the UriType before
-    // we start actually parsing the URI.
-    Preconditions.checkArgument(
-        !(uriPart != UriPart.NONE && uriType == UriType.NONE),
-        "If in a URI, the type of URI must be specified. UriType = %s but UriPart = %s",
-        uriType,
-        uriPart);
-    this.htmlHtmlAttributePosition = htmlHtmlAttributePosition;
-    this.templateNestDepth = templateNestDepth;
-    this.jsTemplateLiteralNestDepth = jsTemplateLiteralNestDepth;
-  }
-
-  /** A context in the given state outside any element, attribute, or Javascript content. */
-  private Context(HtmlContext state) {
-    this(
-        state,
-        ElementType.NONE,
-        AttributeType.NONE,
-        AttributeEndDelimiter.NONE,
-        JsFollowingSlash.NONE,
-        UriPart.NONE,
-        UriType.NONE,
-        HtmlHtmlAttributePosition.NONE,
-        0,
-        0);
+  /** A builder in the given state outside any element, attribute, or Javascript content. */
+  private static Context.Builder builder(HtmlContext state) {
+    return new AutoValue_Context.Builder()
+        .withState(state)
+        .withElType(ElementType.NONE)
+        .withAttrType(AttributeType.NONE)
+        .withDelimType(AttributeEndDelimiter.NONE)
+        .withSlashType(JsFollowingSlash.NONE)
+        .withUriPart(UriPart.NONE)
+        .withUriType(UriType.NONE)
+        .withHtmlHtmlAttributePosition(HtmlHtmlAttributePosition.NONE)
+        .withTemplateNestDepth(0)
+        .withJsTemplateLiteralNestDepth(0);
   }
 
   /**
    * The normal context for HTML where a less than opens a tag and an ampersand starts an HTML
    * entity.
    */
-  public static final Context HTML_PCDATA = new Context(HtmlContext.HTML_PCDATA);
+  public static final Context HTML_PCDATA = builder(HtmlContext.HTML_PCDATA).build();
 
   /** Returns a context that differs only in the state. */
   public Context derive(HtmlContext state) {
-    return state == this.state ? this : toBuilder().withState(state).build();
+    return state == this.state() ? this : toBuilder().withState(state).build();
   }
 
   /** Returns a context that differs only in the following slash. */
   public Context derive(JsFollowingSlash slashType) {
-    return slashType == this.slashType ? this : toBuilder().withSlashType(slashType).build();
+    return slashType == this.slashType() ? this : toBuilder().withSlashType(slashType).build();
   }
 
   /** Returns a context that differs only in the uri part. */
   public Context derive(UriPart uriPart) {
-    return uriPart == this.uriPart ? this : toBuilder().withUriPart(uriPart).build();
+    return uriPart == this.uriPart() ? this : toBuilder().withUriPart(uriPart).build();
   }
 
   /** Returns a context that differs only in the HTML attribute containing HTML position. */
   public Context derive(HtmlHtmlAttributePosition htmlHtmlAttributePosition) {
-    return htmlHtmlAttributePosition == this.htmlHtmlAttributePosition
+    return htmlHtmlAttributePosition == this.htmlHtmlAttributePosition()
         ? this
         : toBuilder().withHtmlHtmlAttributePosition(htmlHtmlAttributePosition).build();
   }
 
   /** A mutable builder that allows deriving variant contexts. */
-  Builder toBuilder() {
-    return new Builder(this);
-  }
+  abstract Builder toBuilder();
 
   /**
    * The context after printing a correctly-escaped dynamic value in this context.
@@ -247,31 +218,31 @@ public final class Context {
     // we assume that the dynamic value is also an expression, but JsFollowingSlash.UNKNOWN would
     // account for things that end in semicolons (since the next slash could be either a regex OR a
     // division op).
-    if (state == HtmlContext.JS) {
-      switch (slashType) {
+    if (state() == HtmlContext.JS) {
+      switch (slashType()) {
         case DIV_OP:
         case UNKNOWN:
           return this;
         case REGEX:
           return derive(JsFollowingSlash.DIV_OP);
         case NONE:
-          throw new IllegalStateException(slashType.name());
+          throw new IllegalStateException(slashType().name());
       }
-    } else if (state == HtmlContext.HTML_BEFORE_OPEN_TAG_NAME
-        || state == HtmlContext.HTML_BEFORE_CLOSE_TAG_NAME) {
+    } else if (state() == HtmlContext.HTML_BEFORE_OPEN_TAG_NAME
+        || state() == HtmlContext.HTML_BEFORE_CLOSE_TAG_NAME) {
       // We assume ElementType.NORMAL, because filterHtmlElementName filters dangerous tag names.
       return toBuilder()
           .withState(HtmlContext.HTML_TAG_NAME)
           .withElType(ElementType.NORMAL)
           .build();
-    } else if (state == HtmlContext.HTML_TAG) {
+    } else if (state() == HtmlContext.HTML_TAG) {
       // To handle a substitution that starts an attribute name <tag {$attrName}=...>
       return toBuilder()
           .withState(HtmlContext.HTML_ATTRIBUTE_NAME)
           .withAttrType(AttributeType.PLAIN_TEXT)
           .build();
-    } else if (uriPart == UriPart.START) {
-      if (uriType == UriType.TRUSTED_RESOURCE) {
+    } else if (uriPart() == UriPart.START) {
+      if (uriType() == UriType.TRUSTED_RESOURCE) {
         return derive(UriPart.AUTHORITY_OR_PATH);
       }
       return derive(UriPart.MAYBE_VARIABLE_SCHEME);
@@ -285,7 +256,7 @@ public final class Context {
    * @param elType The type of element whose tag the attribute appears in.
    * @param attrType The type of attribute whose value the delimiter starts.
    * @param delim The type of delimiter that will mark the end of the attribute value.
-   * @param templateNestDepth The number of (@code <template>} elements on the open element stack.
+   * @param templateNestDepth The number of {@code <template>} elements on the open element stack.
    * @return A context suitable for the start of the attribute value.
    */
   static Context computeContextAfterAttributeDelimiter(
@@ -294,54 +265,51 @@ public final class Context {
       AttributeEndDelimiter delim,
       UriType uriType,
       int templateNestDepth) {
-    HtmlContext state;
-    JsFollowingSlash slash = JsFollowingSlash.NONE;
-    UriPart uriPart = UriPart.NONE;
+    Context.Builder builder;
     switch (attrType) {
       case PLAIN_TEXT:
-        state = HtmlContext.HTML_NORMAL_ATTR_VALUE;
+        builder = builder(HtmlContext.HTML_NORMAL_ATTR_VALUE);
         break;
       case SCRIPT:
-        state = HtmlContext.JS;
-        // Start a JS block in a regex state since
-        //   /foo/.test(str) && doSideEffect();
-        // which starts with a regular expression literal is a valid and possibly useful program,
-        // but there is no valid program which starts with a division operator.
-        slash = JsFollowingSlash.REGEX;
+        builder =
+            builder(HtmlContext.JS)
+                // Start a JS block in a regex state since
+                //   /foo/.test(str) && doSideEffect();
+                // which starts with a regular expression literal is a valid and possibly useful
+                // program,
+                // but there is no valid program which starts with a division operator.
+                .withSlashType(JsFollowingSlash.REGEX);
         break;
       case STYLE:
-        state = HtmlContext.CSS;
+        builder = builder(HtmlContext.CSS);
         break;
       case HTML:
-        state = HtmlContext.HTML_HTML_ATTR_VALUE;
+        builder = builder(HtmlContext.HTML_HTML_ATTR_VALUE);
         break;
       case META_REFRESH_CONTENT:
-        state = HtmlContext.HTML_META_REFRESH_CONTENT;
+        builder = builder(HtmlContext.HTML_META_REFRESH_CONTENT);
         break;
       case URI:
-        state = HtmlContext.URI;
-        uriPart = UriPart.START;
+        builder = builder(HtmlContext.URI).withUriPart(UriPart.START);
         break;
         // NONE is not a valid AttributeType inside an attribute value.
       default:
         throw new AssertionError("Unexpected attribute type " + attrType);
     }
-    Preconditions.checkArgument(
-        (uriType != UriType.NONE) == (attrType == AttributeType.URI),
+    Context built =
+        builder
+            .withElType(elType)
+            .withAttrType(attrType)
+            .withDelimType(delim)
+            .withUriType(uriType)
+            .withTemplateNestDepth(templateNestDepth)
+            .build();
+    checkArgument(
+        (built.uriType() != UriType.NONE) == (built.attrType() == AttributeType.URI),
         "uriType=%s but attrType=%s",
-        uriType,
-        attrType);
-    return new Context(
-        state,
-        elType,
-        attrType,
-        delim,
-        slash,
-        uriPart,
-        uriType,
-        HtmlHtmlAttributePosition.NONE,
-        templateNestDepth,
-        0);
+        built.uriType(),
+        built.attrType());
+    return built;
   }
 
   /**
@@ -352,11 +320,11 @@ public final class Context {
    */
   public ImmutableList<EscapingMode> getEscapingModes(
       SoyNode node, List<PrintDirectiveNode> printDirectives) {
-    EscapingMode escapingMode = state.getEscapingMode();
+    EscapingMode escapingMode = state().getEscapingMode();
 
     // Short circuit on the error case first.
     if (escapingMode == null) {
-      throw SoyAutoescapeException.createWithNode(state.getErrorMessage(), node);
+      throw SoyAutoescapeException.createWithNode(state().getErrorMessage(), node);
     }
 
     // Any additional mode that allows the primary escaping mode's output language to be
@@ -364,7 +332,7 @@ public final class Context {
     EscapingMode extraEscapingMode = null;
 
     // Make sure we're using the right part for a URI context.
-    switch (uriPart) {
+    switch (uriPart()) {
       case QUERY:
         escapingMode = EscapingMode.ESCAPE_URI;
         break;
@@ -376,7 +344,7 @@ public final class Context {
         if (escapingMode != EscapingMode.NORMALIZE_URI) {
           extraEscapingMode = escapingMode;
         }
-        switch (uriType) {
+        switch (uriType()) {
           case MEDIA:
             escapingMode = EscapingMode.FILTER_NORMALIZE_MEDIA_URI;
             break;
@@ -395,7 +363,7 @@ public final class Context {
 
       case AUTHORITY_OR_PATH:
       case FRAGMENT:
-        if (uriType == UriType.TRUSTED_RESOURCE) {
+        if (uriType() == UriType.TRUSTED_RESOURCE) {
           escapingMode = EscapingMode.ESCAPE_URI;
         }
         break;
@@ -450,7 +418,7 @@ public final class Context {
     }
 
     // Check the quote embedding mode.
-    switch (delimType) {
+    switch (delimType()) {
       case SPACE_OR_TAG_END:
         // Also escape any spaces that could prematurely end the attribute value.
         // E.g. when the value of $s is "was checked" in
@@ -487,6 +455,9 @@ public final class Context {
         }
         break;
       case NONE:
+        if (escapingMode == EscapingMode.ESCAPE_JS_VALUE) {
+          extraEscapingMode = EscapingMode.FILTER_HTML_SCRIPT_PHRASING_DATA;
+        }
         break;
     }
     // Return and immutable list of (escapingMode, extraEscapingMode)
@@ -538,7 +509,7 @@ public final class Context {
    *     have a message in this context
    */
   Optional<MsgEscapingStrategy> getMsgEscapingStrategy(SoyNode node) {
-    switch (state) {
+    switch (state()) {
       case HTML_PCDATA:
         // In normal HTML PCDATA context, it makes sense to escape all of the print nodes, but not
         // escape the entire message.  This allows Soy to support putting anchors and other small
@@ -551,7 +522,7 @@ public final class Context {
       case JS_SQ_STRING:
       case TEXT:
       case URI:
-        if (state == HtmlContext.URI && uriPart != UriPart.QUERY) {
+        if (state() == HtmlContext.URI && uriPart() != UriPart.QUERY) {
           // NOTE: Only support the query portion of URIs.
           return Optional.empty();
         }
@@ -559,7 +530,7 @@ public final class Context {
         // placeholders as plain text, but escape the entire result of message evaluation.
         return Optional.of(
             new MsgEscapingStrategy(
-                new Context(HtmlContext.TEXT), getEscapingModes(node, ImmutableList.of())));
+                builder(HtmlContext.TEXT).build(), getEscapingModes(node, ImmutableList.of())));
 
       case HTML_RCDATA:
       case HTML_NORMAL_ATTR_VALUE:
@@ -585,7 +556,7 @@ public final class Context {
     // TODO: Come up with a compatibility matrix.
     if (mode == EscapingMode.ESCAPE_JS_VALUE) {
       // Don't introduce quotes inside a string.
-      switch (state) {
+      switch (state()) {
         case JS_SQ_STRING:
         case JS_DQ_STRING:
         case CSS_SQ_STRING:
@@ -597,8 +568,8 @@ public final class Context {
     } else if (mode == EscapingMode.TEXT) {
       // The TEXT directive may only be used in TEXT mode; in any other context, it would act as
       // autoescape-cancelling.
-      return state == HtmlContext.TEXT;
-    } else if (delimType == AttributeEndDelimiter.SPACE_OR_TAG_END) {
+      return state() == HtmlContext.TEXT;
+    } else if (delimType() == AttributeEndDelimiter.SPACE_OR_TAG_END) {
       // Need ESCAPE_HTML_ATTRIBUTE_NOSPACE instead.
       if (mode == EscapingMode.ESCAPE_HTML
           || mode == EscapingMode.ESCAPE_HTML_ATTRIBUTE
@@ -607,101 +578,6 @@ public final class Context {
       }
     }
     return true;
-  }
-
-  /**
-   * Checks if two states are completely identical.
-   *
-   * <p>Note it's better to compare either states, or use predicates like isValidEndContext.
-   */
-  @Override
-  public boolean equals(Object o) {
-    if (!(o instanceof Context)) {
-      return false;
-    }
-    Context that = (Context) o;
-    return this.state == that.state
-        && this.elType == that.elType
-        && this.attrType == that.attrType
-        && this.delimType == that.delimType
-        && this.slashType == that.slashType
-        && this.uriPart == that.uriPart
-        && this.uriType == that.uriType
-        && this.templateNestDepth == that.templateNestDepth
-        && this.jsTemplateLiteralNestDepth == that.jsTemplateLiteralNestDepth;
-  }
-
-  @Override
-  public int hashCode() {
-    return packedBits();
-  }
-
-  /**
-   * An integer form that uniquely identifies this context. This form is not guaranteed to be stable
-   * across versions, so do not use as a long-lived serialized form.
-   */
-  public int packedBits() {
-    int bits = templateNestDepth;
-    bits = (bits << N_URI_TYPE_BITS) | uriType.ordinal();
-    bits = (bits << N_URI_PART_BITS) | uriPart.ordinal();
-    bits = (bits << N_JS_SLASH_BITS) | slashType.ordinal();
-    bits = (bits << N_DELIM_BITS) | delimType.ordinal();
-    bits = (bits << N_ATTR_BITS) | attrType.ordinal();
-    bits = (bits << N_ELEMENT_BITS) | elType.ordinal();
-    bits = (bits << N_STATE_BITS) | state.ordinal();
-    return bits;
-  }
-
-  /** The number of bits needed to store a {@link HtmlContext} value. */
-  private static final int N_STATE_BITS = 5;
-
-  /** The number of bits needed to store a {@link ElementType} value. */
-  private static final int N_ELEMENT_BITS = 4;
-
-  /** The number of bits needed to store a {@link AttributeType} value. */
-  private static final int N_ATTR_BITS = 3;
-
-  /** The number of bits needed to store a {@link AttributeEndDelimiter} value. */
-  private static final int N_DELIM_BITS = 2;
-
-  /** The number of bits needed to store a {@link JsFollowingSlash} value. */
-  private static final int N_JS_SLASH_BITS = 2;
-
-  /** The number of bits needed to store a {@link UriPart} value. */
-  private static final int N_URI_PART_BITS = 4;
-
-  /** The number of bits needed to store a {@link UriType} value. */
-  private static final int N_URI_TYPE_BITS = 3;
-
-  static {
-    // extracted to another method to scope the unused suppression, which warns about the dead
-    // condition (the point is that it is dead)
-    checkEnoughBits();
-  }
-
-  @SuppressWarnings("unused")
-  private static void checkEnoughBits() {
-    // We'd better have enough bits in an int.
-    if ((N_STATE_BITS
-            + N_ELEMENT_BITS
-            + N_ATTR_BITS
-            + N_DELIM_BITS
-            + N_JS_SLASH_BITS
-            + N_URI_PART_BITS
-            + N_URI_TYPE_BITS)
-        > 32) {
-      throw new AssertionError();
-    }
-    // And each enum's ordinals must fit in the bits allocated.
-    if ((1 << N_STATE_BITS) < HtmlContext.values().length
-        || (1 << N_ELEMENT_BITS) < ElementType.values().length
-        || (1 << N_ATTR_BITS) < AttributeType.values().length
-        || (1 << N_DELIM_BITS) < AttributeEndDelimiter.values().length
-        || (1 << N_JS_SLASH_BITS) < JsFollowingSlash.values().length
-        || (1 << N_URI_PART_BITS) < UriPart.values().length
-        || (1 << N_URI_TYPE_BITS) < UriType.values().length) {
-      throw new AssertionError();
-    }
   }
 
   /** Determines the correct URI part if two branches are joined. */
@@ -766,20 +642,20 @@ public final class Context {
     // properties are added, they get checked automatically.
 
     // Try to reconcile each property one-by-one.
-    if (a.slashType != b.slashType) {
+    if (a.slashType() != b.slashType()) {
       a = a.derive(JsFollowingSlash.UNKNOWN);
       b = b.derive(JsFollowingSlash.UNKNOWN);
     }
 
-    if (a.uriPart != b.uriPart) {
-      UriPart unionedUriPart = unionUriParts(a.uriPart, b.uriPart);
+    if (a.uriPart() != b.uriPart()) {
+      UriPart unionedUriPart = unionUriParts(a.uriPart(), b.uriPart());
       a = a.derive(unionedUriPart);
       b = b.derive(unionedUriPart);
     }
 
-    if (a.state != b.state) {
+    if (a.state() != b.state()) {
       // Order by state so that we don't have to duplicate tests below.
-      if (a.state.compareTo(b.state) > 0) {
+      if (a.state().compareTo(b.state()) > 0) {
         Context swap = a;
         a = b;
         b = swap;
@@ -788,9 +664,9 @@ public final class Context {
       // consider <div foo=bar{if $p} onclick=foo(){/if} x=y>
       // if both branches need a space or tag end to complete, and their states aren't compatible
       // switch to TAG_NAME to require a space
-      if (a.delimType == AttributeEndDelimiter.SPACE_OR_TAG_END
-          && b.delimType == AttributeEndDelimiter.SPACE_OR_TAG_END
-          && a.state != b.state) {
+      if (a.delimType() == AttributeEndDelimiter.SPACE_OR_TAG_END
+          && b.delimType() == AttributeEndDelimiter.SPACE_OR_TAG_END
+          && a.state() != b.state()) {
         // we need to switch to a state that requires a space
         // TODO(lukes): given this usecase, HTML_TAG_NAME is poorly named, consider
         // AFTER_TAG_OR_UNQUOTED_ATTR?  maybe just HTML_TAG_NEEDS_SPACE
@@ -801,9 +677,9 @@ public final class Context {
       // consider <input{if $foo} disabled{/if}> or <input{$if foo} disabled=true{/if}
       // if we start in a tag name and end in an attribute name or value, assume we are still in a
       // tag name.
-      if (a.state == HtmlContext.HTML_TAG_NAME) {
-        if (b.state == HtmlContext.HTML_ATTRIBUTE_NAME
-            || b.delimType == AttributeEndDelimiter.SPACE_OR_TAG_END) {
+      if (a.state() == HtmlContext.HTML_TAG_NAME) {
+        if (b.state() == HtmlContext.HTML_ATTRIBUTE_NAME
+            || b.delimType() == AttributeEndDelimiter.SPACE_OR_TAG_END) {
           // clear attributes from a also,  this is counterintuitive because tagnames shouldn't have
           // attrccontext at all, but prior reconciliation of slashtype may have added one.  so
           // clear it.
@@ -814,7 +690,7 @@ public final class Context {
 
       // If we start in a tag name and end between attributes, then treat us as between attributes.
       // This handles <b{if $bool} attrName="value"{/if}>.
-      if (a.state == HtmlContext.HTML_TAG_NAME && b.state == HtmlContext.HTML_TAG) {
+      if (a.state() == HtmlContext.HTML_TAG_NAME && b.state() == HtmlContext.HTML_TAG) {
         // Note we only change the state; if the element type is different, we don't want it to
         // join.
         // TODO(gboyer): The withoutAttrContext() doesn't make any sense, since HTML_TAG_NAME can't
@@ -822,7 +698,7 @@ public final class Context {
         a = a.toBuilder().withState(HtmlContext.HTML_TAG).withoutAttrContext().build();
       }
 
-      if (a.state == HtmlContext.HTML_TAG) {
+      if (a.state() == HtmlContext.HTML_TAG) {
         // If one branch is waiting for an attribute name, and the other is waiting for an equal
         // sign before an attribute value OR the end of an unquoted attribute value, then commit to
         // the view that the attribute name was a valueless attribute and transition to a state
@@ -830,8 +706,8 @@ public final class Context {
         // Examples:
         // - state == HTML_ATTRIBUTE_NAME: <input {if $x}disabled{/if}
         // - delimType == SPACE_TAG_OR_END: <input {if $x}type=text{/if}
-        if (b.state == HtmlContext.HTML_ATTRIBUTE_NAME
-            || b.delimType == AttributeEndDelimiter.SPACE_OR_TAG_END) {
+        if (b.state() == HtmlContext.HTML_ATTRIBUTE_NAME
+            || b.delimType() == AttributeEndDelimiter.SPACE_OR_TAG_END) {
           // TODO(gboyer): do we need to require a space before any new attribute name after an
           // unquoted attribute?
           b = b.toBuilder().withState(HtmlContext.HTML_TAG).withoutAttrContext().build();
@@ -852,31 +728,31 @@ public final class Context {
   }
 
   @Override
-  public String toString() {
-    StringBuilder sb = new StringBuilder("(Context ").append(state.name());
-    if (elType != ElementType.NONE) {
-      sb.append(' ').append(elType.name());
+  public final String toString() {
+    StringBuilder sb = new StringBuilder("(Context ").append(state().name());
+    if (elType() != ElementType.NONE) {
+      sb.append(' ').append(elType().name());
     }
-    if (attrType != AttributeType.NONE) {
-      sb.append(' ').append(attrType.name());
+    if (attrType() != AttributeType.NONE) {
+      sb.append(' ').append(attrType().name());
     }
-    if (delimType != AttributeEndDelimiter.NONE) {
-      sb.append(' ').append(delimType.name());
+    if (delimType() != AttributeEndDelimiter.NONE) {
+      sb.append(' ').append(delimType().name());
     }
-    if (slashType != JsFollowingSlash.NONE) {
-      sb.append(' ').append(slashType.name());
+    if (slashType() != JsFollowingSlash.NONE) {
+      sb.append(' ').append(slashType().name());
     }
-    if (uriPart != UriPart.NONE) {
-      sb.append(' ').append(uriPart.name());
+    if (uriPart() != UriPart.NONE) {
+      sb.append(' ').append(uriPart().name());
     }
-    if (uriType != UriType.NONE) {
-      sb.append(' ').append(uriType.name());
+    if (uriType() != UriType.NONE) {
+      sb.append(' ').append(uriType().name());
     }
-    if (templateNestDepth != 0) {
-      sb.append(" templateNestDepth=").append(templateNestDepth);
+    if (templateNestDepth() != 0) {
+      sb.append(" templateNestDepth=").append(templateNestDepth());
     }
-    if (jsTemplateLiteralNestDepth != 0) {
-      sb.append(" jsTemplateLiteralNestDepth=").append(jsTemplateLiteralNestDepth);
+    if (jsTemplateLiteralNestDepth() != 0) {
+      sb.append(" jsTemplateLiteralNestDepth=").append(jsTemplateLiteralNestDepth());
     }
     return sb.append(')').toString();
   }
@@ -985,14 +861,14 @@ public final class Context {
    * content kind.
    */
   public boolean isValidStartContextForContentKind(SanitizedContentKind contentKind) {
-    if (templateNestDepth != 0) {
+    if (templateNestDepth() != 0) {
       return false;
     }
     switch (contentKind) {
       case ATTRIBUTES:
         // Allow HTML attribute names, regardless of the kind of attribute (e.g. plain text)
         // or immediately after an open tag.
-        return state == HtmlContext.HTML_ATTRIBUTE_NAME || state == HtmlContext.HTML_TAG;
+        return state() == HtmlContext.HTML_ATTRIBUTE_NAME || state() == HtmlContext.HTML_TAG;
       default:
         // NOTE: For URI's, we need to be picky that the context has no attribute type, since we
         // don't want to forget to escape ampersands.
@@ -1014,7 +890,7 @@ public final class Context {
         // ampersands are underescaped, as long as there are no nearby semicolons.  However, this
         // special case is limited ONLY to transitional cases, where the caller is contextual and
         // the callee is strict.
-        return state == HtmlContext.URI;
+        return state() == HtmlContext.URI;
       default:
         return isValidStartContextForContentKind(contentKind);
     }
@@ -1040,7 +916,7 @@ public final class Context {
    * to mostly null out the escaping. Returns TEXT if no useful match was detected.
    */
   public SanitizedContentKind getMostAppropriateContentKind() {
-    SanitizedContentKind kind = STATE_TO_CONTENT_KIND.get(state);
+    SanitizedContentKind kind = STATE_TO_CONTENT_KIND.get(state());
     if (kind != null && isValidStartContextForContentKindLoose(kind)) {
       return kind;
     }
@@ -1052,36 +928,39 @@ public final class Context {
    * kind.
    */
   public final boolean isValidEndContextForContentKind(SanitizedContentKind contentKind) {
-    if (templateNestDepth != 0) {
+    if (templateNestDepth() != 0) {
       return false;
     }
     switch (contentKind) {
       case CSS:
-        return state == HtmlContext.CSS && elType == ElementType.NONE;
+        return state() == HtmlContext.CSS && elType() == ElementType.NONE;
+      case HTML_ELEMENT:
       case HTML:
-        return state == HtmlContext.HTML_PCDATA && elType == ElementType.NONE;
+        return state() == HtmlContext.HTML_PCDATA && elType() == ElementType.NONE;
       case ATTRIBUTES:
         // Allow any html attribute context or html tag this. HTML_TAG is needed for constructs
         // like "checked" that don't require an attribute value. Explicitly disallow
         // HTML_NORMAL_ATTR_VALUE (e.g. foo={$x} without quotes) to help catch cases where
         // attributes aren't safely composable (e.g. foo={$x}checked would end up with one long
         // attribute value, whereas foo="{$x}"checked would be parsed as intended).
-        return state == HtmlContext.HTML_ATTRIBUTE_NAME || state == HtmlContext.HTML_TAG;
+        return state() == HtmlContext.HTML_ATTRIBUTE_NAME || state() == HtmlContext.HTML_TAG;
       case JS:
         // Just ensure the state is JS -- don't worry about whether a regex is coming or not.
-        return state == HtmlContext.JS && elType == ElementType.NONE;
+        return state() == HtmlContext.JS && elType() == ElementType.NONE;
       case URI:
         // Ensure that the URI content is non-empty and the URI type remains normal (which is
         // the assumed type of the URI content kind).
-        return state == HtmlContext.URI && uriType == UriType.NORMAL && uriPart != UriPart.START;
+        return state() == HtmlContext.URI
+            && uriType() == UriType.NORMAL
+            && uriPart() != UriPart.START;
       case TEXT:
-        return state == HtmlContext.TEXT;
+        return state() == HtmlContext.TEXT;
       case TRUSTED_RESOURCE_URI:
         // Ensure that the URI content is non-empty and the URI type remains normal (which is
         // the assumed type of the URI content kind).
-        return state == HtmlContext.URI
-            && uriType == UriType.TRUSTED_RESOURCE
-            && uriPart != UriPart.START;
+        return state() == HtmlContext.URI
+            && uriType() == UriType.TRUSTED_RESOURCE
+            && uriPart() != UriPart.START;
     }
     throw new IllegalArgumentException(
         "Specified content kind " + contentKind + " has no associated end context.");
@@ -1099,7 +978,7 @@ public final class Context {
       // Special error message for ATTRIBUTES since it has some specific logic.
       return "an unterminated attribute value, or ending with an unquoted attribute";
     }
-    switch (state) {
+    switch (state()) {
       case HTML_TAG_NAME:
       case HTML_TAG:
       case HTML_ATTRIBUTE_NAME:
@@ -1134,7 +1013,7 @@ public final class Context {
         return "an unterminated regular expression";
 
       default:
-        if (templateNestDepth != 0) {
+        if (templateNestDepth() != 0) {
           return "an unterminated <template> element";
         } else {
           return "unknown to compiler";
@@ -1146,13 +1025,35 @@ public final class Context {
   @CheckReturnValue
   Context transitionToState(HtmlContext state) {
     Context.Builder builder = toBuilder().withState(state).withUriPart(UriPart.NONE);
-    if (uriPart != UriPart.NONE) {
+    if (uriPart() != UriPart.NONE) {
       // Only reset the URI type if we're leaving a URI; intentionally, URI type needs to
       // remain prior to the URI, for example, to maintain state between "src", the "=", and
       // the opening quotes (if any).
       builder.withUriType(UriType.NONE);
     }
     return builder.build();
+  }
+
+  @CheckReturnValue
+  Context transitionToTagName(HtmlTagNode node) {
+    boolean isEndTag = state() == HtmlContext.HTML_BEFORE_CLOSE_TAG_NAME;
+    int newTemplateNestDepth = templateNestDepth();
+    if (node.getTagName().isStatic() && node.getTagName().getTagString().equals("template")) {
+      newTemplateNestDepth += isEndTag ? -1 : 1;
+      if (newTemplateNestDepth < 0) {
+        throw SoyAutoescapeException.createWithNode(
+            "Saw an html5 </template> without encountering <template>.", node);
+      }
+    }
+    if (node instanceof HtmlOpenTagNode) {
+      return getTagNameContext((HtmlOpenTagNode) node, state(), newTemplateNestDepth, toBuilder());
+    }
+    return toBuilder()
+        .withState(HtmlContext.HTML_TAG_NAME)
+        .withoutAttrContext()
+        .withElType(ElementType.NORMAL)
+        .withTemplateNestDepth(newTemplateNestDepth)
+        .build();
   }
 
   /**
@@ -1163,97 +1064,192 @@ public final class Context {
    * @param node The name of the tag
    */
   @CheckReturnValue
-  Context transitionToTagName(HtmlTagNode node) {
+  static Context getTagNameContext(
+      HtmlOpenTagNode node, HtmlContext state, int templateNestDepth, Context.Builder builder) {
     // according to spec ascii case is not meaningful for tag names.
-    String tagName = node.getTagName().getStaticTagNameAsLowerCase();
-    boolean isEndTag = state == HtmlContext.HTML_BEFORE_CLOSE_TAG_NAME;
-    Context.ElementType elType = ElementType.NORMAL;
-    int newTemplateNestDepth = templateNestDepth;
-    if (tagName.equals("template")) {
-      newTemplateNestDepth += isEndTag ? -1 : 1;
-      if (newTemplateNestDepth < 0) {
-        throw SoyAutoescapeException.createWithNode(
-            "Saw an html5 </template> without encountering <template>.", node);
+    String tagName;
+    if (node.getTagName().isStatic()) {
+      tagName = node.getTagName().getTagString();
+      if (tagName == null) {
+        tagName = "";
+      } else {
+        tagName = Ascii.toLowerCase(tagName);
       }
-    } else if (!isEndTag) {
-      // We currently only treat <img> and SVG's <image> as a media type, since for <video> and
-      // <audio> there are concerns that attackers could introduce rich video or audio that
-      // facilitates social engineering.  Upon further review, it's possible we may allow them.
-      switch (tagName) {
-        case "img":
-        case "image":
-          elType = ElementType.MEDIA;
-          break;
-        case "iframe":
-          elType = ElementType.IFRAME;
-          break;
-        case "script":
-          elType = ElementType.SCRIPT;
-          break;
-        case "style":
-          elType = ElementType.STYLE;
-          break;
-        case "base":
-          elType = ElementType.BASE;
-          break;
-        case "link":
-          if (node.getDirectAttributeNamed("rel") == null
-              && node.getDirectAttributeNamed("itemprop") != null) {
-            elType = ElementType.NORMAL;
-          } else {
-            String rel = getStaticAttributeValue(node, "rel");
-            elType =
-                rel != null && REGULAR_LINK_PATTERN.matcher(rel).matches()
-                    ? ElementType.NORMAL
-                    : ElementType.LINK_EXECUTABLE;
-          }
-          break;
-        case "meta":
-          String httpEquiv = getStaticAttributeValue(node, "http-equiv");
-          elType =
-              "refresh".equalsIgnoreCase(httpEquiv) ? ElementType.META_REFRESH : ElementType.NORMAL;
-          break;
-        case "textarea":
-          elType = ElementType.TEXTAREA;
-          break;
-        case "title":
-          elType = ElementType.TITLE;
-          break;
-        case "xmp":
-          elType = ElementType.XMP;
-          break;
-        default: // fall out
-      }
+    } else if (node.getTagName().isTemplateCall()) {
+      // This is enforced in InferenceEngine
+      TemplateType templateType =
+          (TemplateType) node.getTagName().getDynamicTagName().getExpr().getType();
+      // This is type checked.
+      ElementContentKind elementContentKind = (ElementContentKind) templateType.getContentKind();
+      tagName = Ascii.toLowerCase(elementContentKind.getTagName());
+    } else {
+      tagName = "";
     }
-    return toBuilder()
+    Context.ElementType elType = ElementType.NORMAL;
+    // We currently only treat <img> and SVG's <image> as a media type, since for <video> and
+    // <audio> there are concerns that attackers could introduce rich video or audio that
+    // facilitates social engineering.  Upon further review, it's possible we may allow them.
+    switch (tagName) {
+      case "img":
+      case "image":
+        elType = ElementType.MEDIA;
+        break;
+      case "iframe":
+        elType = ElementType.IFRAME;
+        break;
+      case "script":
+        // If the script has a type attribute and it is not known to be a javascript type then
+        // browsers will treat the contents as uninterpreted data.
+        // If the type attribute is dynamic in any way, treat the content as JS
+        HtmlAttributeNode typeNode = node.getDirectAttributeNamed("type");
+        switch (getScriptType(typeNode)) {
+          case JAVASCRIPT:
+            elType = ElementType.SCRIPT;
+            break;
+          case JSON:
+            // TODO(b/73539542): We should create a different element type for json and teach
+            // the autoescaper the difference, for now treat as Javascript which is pretty close
+            // 😬.
+            elType = ElementType.SCRIPT;
+            break;
+          case UNKNOWN:
+            elType = ElementType.SCRIPT_DATA;
+            break;
+        }
+        break;
+      case "style":
+        elType = ElementType.STYLE;
+        break;
+      case "base":
+        elType = ElementType.BASE;
+        break;
+      case "link":
+        if (node.getDirectAttributeNamed("rel") == null
+            && node.getDirectAttributeNamed("itemprop") != null) {
+          elType = ElementType.NORMAL;
+        } else {
+          String rel = getStaticAttributeValue(node, "rel");
+          elType =
+              rel != null && REGULAR_LINK_PATTERN.matcher(rel).matches()
+                  ? ElementType.NORMAL
+                  : ElementType.LINK_EXECUTABLE;
+        }
+        break;
+      case "meta":
+        String httpEquiv = getStaticAttributeValue(node, "http-equiv");
+        elType =
+            httpEquiv != null && Ascii.equalsIgnoreCase("refresh", httpEquiv)
+                ? ElementType.META_REFRESH
+                : ElementType.NORMAL;
+        break;
+      case "object":
+        elType = ElementType.OBJECT;
+        break;
+      case "textarea":
+        elType = ElementType.TEXTAREA;
+        break;
+      case "title":
+        elType = ElementType.TITLE;
+        break;
+      case "xmp":
+        elType = ElementType.XMP;
+        break;
+      default: // fall out
+    }
+
+    return builder
         .withState(HtmlContext.HTML_TAG_NAME)
         .withoutAttrContext()
         .withElType(elType)
-        .withTemplateNestDepth(newTemplateNestDepth)
+        .withTemplateNestDepth(templateNestDepth)
         .build();
   }
 
-  private String getStaticAttributeValue(HtmlTagNode node, String name) {
+  private static final ImmutableSet<String> JAVASCRIPT_MIME_TYPES =
+      ImmutableSet.of("text", "application");
+
+  private static final ImmutableSet<String> JAVASCRIPT_MIME_SUBTYPES =
+      ImmutableSet.of(
+          "javascript",
+          "ecmascript",
+          "x-javascript",
+          "x-ecmascript",
+          "jscript",
+          "livescript",
+          "javascript1.0",
+          "javascript1.1",
+          "javascript1.2",
+          "javascript1.3",
+          "javascript1.4",
+          "javascript1.5");
+
+  private enum ScriptType {
+    JAVASCRIPT,
+    JSON,
+    UNKNOWN;
+  }
+  // See
+  // https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types#JavaScript_types
+  private static ScriptType getScriptType(@Nullable HtmlAttributeNode attributeNode) {
+    if (attributeNode == null || attributeNode.getStaticContent() == null) {
+      // this means there was no type parameter, or it is a dynamic value
+      // default to JS
+      return ScriptType.JAVASCRIPT;
+    }
+    String type = attributeNode.getStaticContent();
+    // module is a special value
+    if (Ascii.equalsIgnoreCase(type, "module")) {
+      return ScriptType.JAVASCRIPT;
+    }
+    MediaType parsed;
+    try {
+      parsed = MediaType.parse(type);
+    } catch (IllegalArgumentException iae) {
+      throw SoyAutoescapeException.createCausedWithNode(
+          "Unable to parse type attribute on <script> tag", iae, attributeNode.getChild(1));
+    }
+    // technically these type attributes are not supposed to have parameters (such as charset).  But
+    // browsers are not consistent about this.  So pretend like there are no parameters.
+    if (JAVASCRIPT_MIME_TYPES.contains(parsed.type())
+        && JAVASCRIPT_MIME_SUBTYPES.contains(parsed.subtype())) {
+      return ScriptType.JAVASCRIPT;
+    }
+
+    // https://mimesniff.spec.whatwg.org/#json-mime-type
+    if ((parsed.subtype().equals("json")
+            && (parsed.type().equals("text") || parsed.type().equals("application")))
+        || parsed.subtype().endsWith("+json")) {
+      return ScriptType.JSON;
+    }
+    return ScriptType.UNKNOWN;
+  }
+
+  @Nullable
+  private static String getStaticAttributeValue(HtmlTagNode node, String name) {
     HtmlAttributeNode attribute = node.getDirectAttributeNamed(name);
     return attribute == null ? null : attribute.getStaticContent();
   }
 
   /** Returns a new context that is in {@link HtmlContext#HTML_TAG}. */
   @CheckReturnValue
-  Context transitionToTagBody() {
+  Context transitionToTagAttributes() {
     return toBuilder().withState(HtmlContext.HTML_TAG).withoutAttrContext().build();
   }
 
   /** Returns a new context in whatever state is appropriate given the current {@code elType}. */
   @CheckReturnValue
   Context transitionToAfterTag() {
-    Context.Builder builder = toBuilder();
-    builder.withoutAttrContext();
-    switch (elType) {
+    Context.Builder builder = toBuilder().withoutAttrContext();
+    switch (elType()) {
       case SCRIPT:
         builder
             .withState(HtmlContext.JS)
             .withSlashType(Context.JsFollowingSlash.REGEX)
+            .withElType(Context.ElementType.NONE);
+        break;
+      case SCRIPT_DATA:
+        builder
+            .withState(HtmlContext.HTML_SCRIPT_PHRASING_DATA)
             .withElType(Context.ElementType.NONE);
         break;
       case STYLE:
@@ -1271,6 +1267,7 @@ public final class Context {
       case META_REFRESH:
       case IFRAME:
       case MEDIA:
+      case OBJECT:
         builder.withState(HtmlContext.HTML_PCDATA).withElType(Context.ElementType.NONE);
         break;
       case NONE:
@@ -1279,47 +1276,14 @@ public final class Context {
     return builder.build();
   }
 
-  /**
-   * Lower case names of attributes whose value is a URI. This does not identify attributes like
-   * {@code <meta content>} which is conditionally a URI depending on the value of other attributes.
-   *
-   * @see <a href="http://www.w3.org/TR/html4/index/attributes.html">HTML4 attrs with type %URI</a>
-   */
-  private static final ImmutableSet<String> URI_ATTR_NAMES =
-      ImmutableSet.of(
-          "action",
-          "archive",
-          "base",
-          "background",
-          "cite",
-          "classid",
-          "codebase",
-          /**
-           * TODO: content is only a URL sometimes depending on other parameters and existing
-           * templates use content with non-URL values. Fix those templates or otherwise flag
-           * interpolations into content.
-           */
-          // "content",
-          "data",
-          "dsync",
-          "formaction",
-          "href",
-          "icon",
-          "longdesc",
-          "manifest",
-          "poster",
-          "src",
-          "usemap",
-          // Custom attributes that are reliably URLs in existing code.
-          "entity");
-
-  /** Matches lower-case attribute local names that start or end with "url" or "uri". */
-  private static final Pattern CUSTOM_URI_ATTR_NAMING_CONVENTION =
-      Pattern.compile("\\bur[il]|ur[il]s?$");
+  @CheckReturnValue
+  Context transitionToAttrName(String attrName) {
+    return getAttrNameContext(attrName, elType(), toBuilder());
+  }
 
   /** Returns a new context based on the attribute name and current element type. */
   @CheckReturnValue
-  Context transitionToAttrName(String attrName) {
+  static Context getAttrNameContext(String attrName, ElementType elType, Context.Builder builder) {
     // according to spec ascii case is not meaningful for attributes.
     attrName = Ascii.toLowerCase(attrName);
     // Get the local name so we can treat xlink:href and svg:style as per HTML.
@@ -1358,30 +1322,31 @@ public final class Context {
       attr = Context.AttributeType.SCRIPT;
     } else if ("style".equals(localName)) {
       attr = Context.AttributeType.STYLE;
-    } else if (elType == Context.ElementType.MEDIA
+    } else if (isElTypeOf(elType, Context.ElementType.MEDIA)
         && ("src".equals(attrName) || "xlink:href".equals(attrName))) {
       attr = Context.AttributeType.URI;
       uriType = UriType.MEDIA;
-    } else if ((elType == ElementType.SCRIPT && "src".equals(attrName))
-        || (elType == ElementType.IFRAME && "src".equals(attrName))
-        || (elType == ElementType.LINK_EXECUTABLE && "href".equals(attrName))
-        || (elType == ElementType.BASE && "href".equals(attrName))) {
+    } else if ((isElTypeOf(elType, ElementType.SCRIPT) && "src".equals(attrName))
+        || (isElTypeOf(elType, ElementType.IFRAME) && "src".equals(attrName))
+        || (isElTypeOf(elType, ElementType.LINK_EXECUTABLE) && "href".equals(attrName))
+        || (isElTypeOf(elType, ElementType.OBJECT) && "data".equals(attrName))
+        || (isElTypeOf(elType, ElementType.BASE) && "href".equals(attrName))) {
       attr = Context.AttributeType.URI;
       uriType = UriType.TRUSTED_RESOURCE;
-    } else if (URI_ATTR_NAMES.contains(localName)
-        || CUSTOM_URI_ATTR_NAMING_CONVENTION.matcher(localName).find()
+    } else if (Constants.URI_ATTR_NAMES.contains(localName)
+        || Constants.CUSTOM_URI_ATTR_NAMING_CONVENTION.matcher(localName).find()
         || "xmlns".equals(attrName)
         || attrName.startsWith("xmlns:")) {
       attr = Context.AttributeType.URI;
       uriType = UriType.NORMAL;
-    } else if (elType == ElementType.META_REFRESH && "content".equals(attrName)) {
+    } else if (isElTypeOf(elType, ElementType.META_REFRESH) && "content".equals(attrName)) {
       attr = AttributeType.META_REFRESH_CONTENT;
-    } else if (elType == ElementType.IFRAME && "srcdoc".equals(attrName)) {
+    } else if (isElTypeOf(elType, ElementType.IFRAME) && "srcdoc".equals(attrName)) {
       attr = Context.AttributeType.HTML;
     } else {
       attr = Context.AttributeType.PLAIN_TEXT;
     }
-    return toBuilder()
+    return builder
         .withState(HtmlContext.HTML_ATTRIBUTE_NAME)
         .withoutAttrContext()
         .withAttrType(attr)
@@ -1389,12 +1354,16 @@ public final class Context {
         .build();
   }
 
+  private static boolean isElTypeOf(ElementType src, ElementType target) {
+    return src == target;
+  }
+
   /** Returns a new context that is in attribute value using the given attribute delimiter. */
   @CheckReturnValue
   Context transitionToAttrValue(AttributeEndDelimiter delim) {
     // TODO(lukes): inline this method?
     return computeContextAfterAttributeDelimiter(
-        elType, attrType, delim, uriType, templateNestDepth);
+        elType(), attrType(), delim, uriType(), templateNestDepth());
   }
 
   /** A type of HTML element. */
@@ -1405,6 +1374,13 @@ public final class Context {
 
     /** A script element whose content is raw JavaScript. */
     SCRIPT,
+
+    /**
+     * A script element whose content is a data block.
+     *
+     * <p>This is any script tag with a non JavaScript MIME type.
+     */
+    SCRIPT_DATA,
 
     /** A style element whose content is raw CSS. */
     STYLE,
@@ -1435,6 +1411,9 @@ public final class Context {
 
     /** A {@code <meta http-equiv="refresh">} element. */
     META_REFRESH,
+
+    /** <object> */
+    OBJECT,
 
     /** An element whose content is normal mixed PCDATA and child elements. */
     NORMAL,
@@ -1489,7 +1468,7 @@ public final class Context {
      * Whereas for space delimited attributes like {@code width=32}, there is no non-empty suffix
      * that is part of the attribute but not part of the value.
      */
-    public final @Nullable String text;
+    @Nullable public final String text;
 
     AttributeEndDelimiter(String text) {
       this.text = text;
@@ -1680,93 +1659,92 @@ public final class Context {
   }
 
   /** A mutable builder for {@link Context}s. */
-  static final class Builder {
-    private HtmlContext state;
-    private ElementType elType;
-    private AttributeType attrType;
-    private AttributeEndDelimiter delimType;
-    private JsFollowingSlash slashType;
-    private UriPart uriPart;
-    private UriType uriType;
-    private HtmlHtmlAttributePosition htmlHtmlAttributePosition;
-    private int templateNestDepth;
-    private int jsTemplateLiteralNestDepth;
-
-    private Builder(Context context) {
-      this.state = context.state;
-      this.elType = context.elType;
-      this.attrType = context.attrType;
-      this.delimType = context.delimType;
-      this.slashType = context.slashType;
-      this.uriPart = context.uriPart;
-      this.uriType = context.uriType;
-      this.htmlHtmlAttributePosition = context.htmlHtmlAttributePosition;
-      this.templateNestDepth = context.templateNestDepth;
-      this.jsTemplateLiteralNestDepth = context.jsTemplateLiteralNestDepth;
-    }
+  @AutoValue.Builder
+  abstract static class Builder {
+    @ForOverride
+    abstract Builder setState(HtmlContext state);
 
     Builder withState(HtmlContext state) {
-      this.state = Preconditions.checkNotNull(state);
-      return this;
+      return setState(state);
     }
+
+    @ForOverride
+    abstract Builder setElType(ElementType elType);
 
     Builder withElType(ElementType elType) {
-      this.elType = Preconditions.checkNotNull(elType);
-      return this;
+      return setElType(elType);
     }
+
+    @ForOverride
+    abstract Builder setAttrType(AttributeType attrType);
 
     Builder withAttrType(AttributeType attrType) {
-      this.attrType = Preconditions.checkNotNull(attrType);
-      return this;
+      return setAttrType(attrType);
     }
+
+    @ForOverride
+    abstract Builder setDelimType(AttributeEndDelimiter delimType);
 
     Builder withDelimType(AttributeEndDelimiter delimType) {
-      this.delimType = Preconditions.checkNotNull(delimType);
-      return this;
+      return setDelimType(delimType);
     }
+
+    @ForOverride
+    abstract Builder setSlashType(JsFollowingSlash slashType);
 
     Builder withSlashType(JsFollowingSlash slashType) {
-      this.slashType = Preconditions.checkNotNull(slashType);
-      return this;
+      return setSlashType(slashType);
     }
+
+    @ForOverride
+    abstract Builder setUriPart(UriPart uriPart);
 
     Builder withUriPart(UriPart uriPart) {
-      this.uriPart = Preconditions.checkNotNull(uriPart);
-      return this;
+      return setUriPart(uriPart);
     }
+
+    @ForOverride
+    abstract Builder setUriType(UriType uriType);
 
     Builder withUriType(UriType uriType) {
-      this.uriType = Preconditions.checkNotNull(uriType);
-      return this;
+      return setUriType(uriType);
     }
 
+    @ForOverride
+    abstract Builder setHtmlHtmlAttributePosition(
+        HtmlHtmlAttributePosition htmlHtmlAttributePosition);
+
     Builder withHtmlHtmlAttributePosition(HtmlHtmlAttributePosition htmlHtmlAttributePosition) {
-      this.htmlHtmlAttributePosition = Preconditions.checkNotNull(htmlHtmlAttributePosition);
-      return this;
+      return setHtmlHtmlAttributePosition(htmlHtmlAttributePosition);
     }
+
+    @ForOverride
+    abstract Builder setTemplateNestDepth(int templateNestDepth);
 
     Builder withTemplateNestDepth(int templateNestDepth) {
       checkArgument(
           templateNestDepth >= 0, "expected template depth (%s) to be >= 0", templateNestDepth);
-      this.templateNestDepth = templateNestDepth;
-      return this;
+      return setTemplateNestDepth(templateNestDepth);
     }
+
+    @ForOverride
+    abstract Builder setJsTemplateLiteralNestDepth(int jsTemplateLiteralNestDepth);
 
     Builder withJsTemplateLiteralNestDepth(int jsTemplateLiteralNestDepth) {
       checkArgument(
           jsTemplateLiteralNestDepth >= 0,
           "expected js template string nest depth (%s) to be >= 0",
           jsTemplateLiteralNestDepth);
-      this.jsTemplateLiteralNestDepth = jsTemplateLiteralNestDepth;
-      return this;
+      return setJsTemplateLiteralNestDepth(jsTemplateLiteralNestDepth);
     }
 
     Builder withoutAttrContext() {
-      return this.withAttrType(Context.AttributeType.NONE)
-          .withDelimType(Context.AttributeEndDelimiter.NONE)
-          .withSlashType(Context.JsFollowingSlash.NONE)
-          .withUriPart(Context.UriPart.NONE)
-          .withUriType(Context.UriType.NONE);
+      return this.withAttrType(AttributeType.NONE)
+          .withDelimType(AttributeEndDelimiter.NONE)
+          .withSlashType(JsFollowingSlash.NONE)
+          .withUriPart(UriPart.NONE)
+          .withUriType(UriType.NONE)
+          .withHtmlHtmlAttributePosition(HtmlHtmlAttributePosition.NONE);
     }
 
     /**
@@ -1781,6 +1759,7 @@ public final class Context {
         case CSS:
           withState(HtmlContext.CSS);
           break;
+        case HTML_ELEMENT:
         case HTML:
           withState(HtmlContext.HTML_PCDATA);
           break;
@@ -1813,18 +1792,21 @@ public final class Context {
       return this;
     }
 
+    @ForOverride
+    abstract Context autoBuild();
+
     Context build() {
-      return new Context(
-          state,
-          elType,
-          attrType,
-          delimType,
-          slashType,
-          uriPart,
-          uriType,
-          htmlHtmlAttributePosition,
-          templateNestDepth,
-          jsTemplateLiteralNestDepth);
+      Context built = autoBuild();
+      // NOTE: The constraint is one-way; once we see the src attribute we may set the UriType
+      // before
+      // we start actually parsing the URI.
+      checkArgument(
+          !(built.uriPart() != UriPart.NONE && built.uriType() == UriType.NONE),
+          "If in a URI, the type of URI must be specified. state=%s  UriType = %s but UriPart = %s",
+          built.state(),
+          built.uriType(),
+          built.uriPart());
+      return built;
     }
   }
 }

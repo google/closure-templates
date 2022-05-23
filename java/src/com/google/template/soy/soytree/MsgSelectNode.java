@@ -16,25 +16,36 @@
 
 package com.google.template.soy.soytree;
 
+import static com.google.template.soy.soytree.MessagePlaceholder.PHNAME_ATTR;
+import static com.google.template.soy.soytree.MessagePlaceholder.validatePlaceholderName;
+import static com.google.template.soy.soytree.MsgSubstUnitPlaceholderNameUtils.genNaiveBaseNameForExpr;
+
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprEquivalence;
-import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.soytree.CommandTagAttribute.CommandTagAttributesHolder;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
+import com.google.template.soy.soytree.SoyNode.Kind;
+import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
 import com.google.template.soy.soytree.SoyNode.MsgSubstUnitNode;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
+import java.util.List;
+import java.util.Optional;
 import javax.annotation.Nullable;
 
 /**
  * Node representing a 'select' block.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public final class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefaultNode>
-    implements MsgSubstUnitNode, SplitLevelTopNode<CaseOrDefaultNode>, ExprHolderNode {
+    implements MsgSubstUnitNode,
+        SplitLevelTopNode<CaseOrDefaultNode>,
+        ExprHolderNode,
+        CommandTagAttributesHolder {
 
   /** Fallback base select var name. */
   public static final String FALLBACK_BASE_SELECT_VAR_NAME = "STATUS";
@@ -42,40 +53,20 @@ public final class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefault
   /** The expression for the value to select on. */
   private final ExprRootNode selectExpr;
 
-  /**
-   * The base select var name (what the translator sees). Null if it should be generated from the
-   * select expression.
-   */
-  @Nullable private final String baseSelectVarName;
+  private final SourceLocation openTagLocation;
 
-  public MsgSelectNode(int id, SourceLocation location, ExprNode selectExpr) {
-    super(id, location, "select");
-    this.selectExpr = new ExprRootNode(selectExpr);
-    this.baseSelectVarName = null;
+  private final MessagePlaceholder placeholder;
 
-    // TODO: Maybe allow user to write 'phname' attribute in 'select' tag.
-    // Note: If we do add support for 'phname' for 'select', it would also be a good time to clean
-    // up how 'phname' is parsed for 'call'. Right now, it's parsed in TemplateParser.jj because
-    // 'print' needs it to be parsed in TemplateParser.jj (due to print directives possibly
-    // appearing between the expression and the 'phname' attribute). But for 'call', it should
-    // really be parsed in CallNode.
-  }
-
-  /**
-   * @param id The id for this node.
-   * @param sourceLocation The node's source location.
-   * @param selectExpr The expression for the value to select on.
-   * @param baseSelectVarName The base select var name to use (what the translator sees), or null if
-   *     it should be generated from the select expression.
-   */
-  public MsgSelectNode(
+  private MsgSelectNode(
       int id,
       SourceLocation sourceLocation,
+      SourceLocation openTagLocation,
       ExprRootNode selectExpr,
-      @Nullable String baseSelectVarName) {
+      MessagePlaceholder placeholder) {
     super(id, sourceLocation, "select");
+    this.openTagLocation = openTagLocation;
     this.selectExpr = selectExpr;
-    this.baseSelectVarName = baseSelectVarName;
+    this.placeholder = placeholder;
   }
 
   /**
@@ -85,9 +76,78 @@ public final class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefault
    */
   private MsgSelectNode(MsgSelectNode orig, CopyState copyState) {
     super(orig, copyState);
+    this.openTagLocation = orig.openTagLocation;
     this.selectExpr = orig.selectExpr.copy(copyState);
-    this.baseSelectVarName = orig.baseSelectVarName;
+    this.placeholder = orig.placeholder;
     copyState.updateRefs(orig, this);
+  }
+
+  /**
+   * Creates a select node specified directly via `select` expression in a Soy file.
+   *
+   * @param id The id for this node.
+   * @param sourceLocation The node's source location.
+   * @param selectExpr The expression for the value to select on.
+   * @param attributes Attributes of select expression.
+   * @param errorReporter For reporting parse errors.
+   */
+  public static MsgSelectNode fromSelectExpr(
+      int id,
+      SourceLocation sourceLocation,
+      SourceLocation openTagLocation,
+      ExprRootNode selectExpr,
+      List<CommandTagAttribute> attributes,
+      ErrorReporter errorReporter) {
+    SourceLocation phNameLocation = null;
+    String phName = null;
+    for (CommandTagAttribute attribute : attributes) {
+      if (PHNAME_ATTR.equals(attribute.getName().identifier())) {
+        phNameLocation = attribute.getValueLocation();
+        phName = validatePlaceholderName(attribute.getValue(), phNameLocation, errorReporter);
+      } else {
+        errorReporter.report(
+            attribute.getName().location(),
+            CommandTagAttribute.UNSUPPORTED_ATTRIBUTE_KEY_SINGLE,
+            attribute.getName().identifier(),
+            "select",
+            PHNAME_ATTR);
+      }
+    }
+    return new MsgSelectNode(
+        id,
+        sourceLocation,
+        openTagLocation,
+        selectExpr,
+        (phName == null)
+            ? MessagePlaceholder.create(
+                genNaiveBaseNameForExpr(selectExpr.getRoot(), FALLBACK_BASE_SELECT_VAR_NAME))
+            : MessagePlaceholder.createWithUserSuppliedName(phName, phNameLocation));
+  }
+
+  /**
+   * Creates a select node for a gender expression.
+   *
+   * @param id The id for this node.
+   * @param sourceLocation The node's source location.
+   * @param genderExpr The gender expression for which we're bulding a select node.
+   * @param baseSelectVarName The base select var name to use (what the translator sees), or null if
+   *     it should be generated from the select expression.
+   */
+  public static MsgSelectNode fromGenderExpr(
+      int id,
+      SourceLocation sourceLocation,
+      SourceLocation openTagLocation,
+      ExprRootNode genderExpr,
+      @Nullable String baseSelectVarName) {
+    return new MsgSelectNode(
+        id,
+        sourceLocation,
+        openTagLocation,
+        genderExpr,
+        (baseSelectVarName == null)
+            ? MessagePlaceholder.create(
+                genNaiveBaseNameForExpr(genderExpr.getRoot(), FALLBACK_BASE_SELECT_VAR_NAME))
+            : MessagePlaceholder.create(baseSelectVarName));
   }
 
   @Override
@@ -100,30 +160,38 @@ public final class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefault
     return selectExpr;
   }
 
-  /** Returns the base select var name (what the translator sees). */
   @Override
-  public String getBaseVarName() {
-    return (baseSelectVarName != null)
-        ? baseSelectVarName
-        : MsgSubstUnitBaseVarNameUtils.genNaiveBaseNameForExpr(
-            selectExpr.getRoot(), FALLBACK_BASE_SELECT_VAR_NAME);
+  public SourceLocation getOpenTagLocation() {
+    return this.openTagLocation;
   }
 
   @Override
-  public boolean shouldUseSameVarNameAs(MsgSubstUnitNode other) {
+  public ImmutableList<CommandTagAttribute> getAttributes() {
+    return ImmutableList.of();
+  }
+
+  /** Returns the base select var name (what the translator sees). */
+  @Override
+  public MessagePlaceholder getPlaceholder() {
+    return placeholder;
+  }
+
+  @Override
+  public boolean shouldUseSameVarNameAs(MsgSubstUnitNode other, ExprEquivalence exprEquivalence) {
     if (!(other instanceof MsgSelectNode)) {
       return false;
     }
 
     MsgSelectNode that = (MsgSelectNode) other;
-    return ExprEquivalence.get().equivalent(this.selectExpr, that.selectExpr);
+    return exprEquivalence.equivalent(this.selectExpr, that.selectExpr);
   }
 
   @Override
   public String getCommandText() {
-    return (baseSelectVarName == null)
-        ? selectExpr.toSourceString()
-        : selectExpr.toSourceString() + " phname=\"" + baseSelectVarName + "\"";
+    Optional<String> phname = placeholder.userSuppliedName();
+    return phname.isPresent()
+        ? selectExpr.toSourceString() + " phname=\"" + phname.get() + "\""
+        : selectExpr.toSourceString();
   }
 
   @Override

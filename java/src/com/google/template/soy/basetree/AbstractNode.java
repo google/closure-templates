@@ -21,7 +21,6 @@ package com.google.template.soy.basetree;
  * Abstract implementation of a Node.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public abstract class AbstractNode implements Node {
 

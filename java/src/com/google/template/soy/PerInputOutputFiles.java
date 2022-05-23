@@ -15,14 +15,19 @@
  */
 package com.google.template.soy;
 
+import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Ascii;
 import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.io.MoreFiles;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.shared.internal.MainEntryPointUtils;
 import java.io.File;
 import java.io.IOException;
@@ -30,14 +35,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import javax.annotation.Nullable;
 import org.kohsuke.args4j.Option;
 
-/**
- * A set of flags and utilities interpreting them for mapping source files to output files.
- *
- * <p>TODO(lukes): use this for soy_py and soy_js
- */
+/** A set of flags and utilities interpreting them for mapping source files to output files. */
 final class PerInputOutputFiles {
   // Concatenating JS files is not safe unless we know that the last statement from one
   // couldn't combine with the isFirst statement of the next.  Inserting a semicolon will
@@ -79,12 +81,24 @@ final class PerInputOutputFiles {
               + "\n\nThis flag may not be used if --outputPathFormat is set")
   private Path outputDirectory;
 
-  private final String extension;
-  private final Joiner fileJoiner;
+  @Option(
+      name = "--subdir",
+      usage =
+          "[Optional] A subdirectory (relative to the input file) to put the corresponding output"
+              + " file in. For example, if the input is my/path/foo.soy, and the subdir is"
+              + " 'jsouts', then the output file would be located at: my/path/jsouts/foo.soy.js'.")
+  private String subdir;
 
-  PerInputOutputFiles(String extension, Joiner fileJoiner) {
+  private final String extension;
+  private final Optional<Joiner> fileJoiner;
+
+  PerInputOutputFiles(String extension, @Nullable Joiner fileJoiner) {
     this.extension = extension;
-    this.fileJoiner = fileJoiner;
+    this.fileJoiner = Optional.ofNullable(fileJoiner);
+  }
+
+  PerInputOutputFiles(String extension) {
+    this(extension, null);
   }
 
   void validateFlags() {
@@ -96,45 +110,91 @@ final class PerInputOutputFiles {
     }
   }
 
-  void writeFiles(List<File> srcs, List<String> jsOuts, @Nullable String locale) {
-    if (srcs.size() != jsOuts.size()) {
+  void writeFiles(List<File> srcs, List<String> outFileContents) {
+    writeFiles(srcs, outFileContents, /* locale= */ null, /* omitIfEmpty = */ false);
+  }
+
+  void writeFiles(List<File> srcs, List<String> outFileContents, @Nullable String locale) {
+    writeFiles(srcs, outFileContents, locale, /* omitIfEmpty = */ false);
+  }
+
+  /**
+   * Writes per-input output files. When omitIfEmpty is true, this will skip writing a file if its
+   * outFileContents are empty.
+   */
+  void writeFiles(
+      List<File> srcs, List<String> outFileContents, @Nullable String locale, boolean omitIfEmpty) {
+    if (srcs.size() != outFileContents.size()) {
       throw new AssertionError(
           String.format(
-              "Expected to generate %d code chunk(s), got %d", srcs.size(), jsOuts.size()));
+              "Expected to generate %d code chunk(s), got %d",
+              srcs.size(), outFileContents.size()));
     }
 
-    ListMultimap<Path, String> outputPathToJs =
+    ListMultimap<Path, String> outputPathToContents =
         MultimapBuilder.linkedHashKeys().arrayListValues().build();
     for (int i = 0; i < srcs.size(); i++) {
-      outputPathToJs.put(getOutputPath(srcs.get(i), locale), jsOuts.get(i));
+      outputPathToContents.put(getOutputPath(srcs.get(i), locale), outFileContents.get(i));
     }
-    for (Path outputPath : outputPathToJs.keySet()) {
+    for (Path outputPath : outputPathToContents.keySet()) {
       if (outputPath.getParent() != null) {
         outputPath.getParent().toFile().mkdirs();
       }
       try {
-        // Having multiple input files map to the same output file is only possible with the
-        // --outputPathFormat flag
-        MoreFiles.asCharSink(outputPath, UTF_8)
-            .write(fileJoiner.join(outputPathToJs.get(outputPath)));
+        if (fileJoiner.isPresent()) {
+          // Having multiple input files map to the same output file is only possible with the
+          // --outputPathFormat flag
+          String contents = fileJoiner.get().join(outputPathToContents.get(outputPath));
+          if (omitIfEmpty && contents.isEmpty()) {
+            continue;
+          }
+          MoreFiles.asCharSink(outputPath, UTF_8).write(contents);
+        } else {
+          checkState(
+              outputPathToContents.get(outputPath).size() == 1,
+              "A file joiner must be specified if multiple sources will map to a single output"
+                  + " file");
+
+          String contents = Iterables.getOnlyElement(outputPathToContents.get(outputPath));
+          if (omitIfEmpty && contents.isEmpty()) {
+            continue;
+          }
+          MoreFiles.asCharSink(outputPath, UTF_8).write(contents);
+        }
+
       } catch (IOException ioe) {
         throw new CommandLineError("Failed to write: " + outputPath + ": " + ioe.getMessage(), ioe);
       }
     }
   }
 
+  ImmutableMap<SourceFilePath, Path> getOutputFilePathsForInputs(List<SourceFilePath> srcs) {
+    return srcs.stream()
+        .collect(
+            toImmutableMap(
+                srcPath -> srcPath, srcPath -> getOutputPath(Paths.get(srcPath.path()), null)));
+  }
+
   @VisibleForTesting
   Path getOutputPath(File input, @Nullable String locale) {
-    Path path = input.toPath();
+    return getOutputPath(input.toPath(), locale);
+  }
+
+  @VisibleForTesting
+  Path getOutputPath(Path inputPath, @Nullable String locale) {
     String transformedLocale = locale == null ? null : Ascii.toLowerCase(locale).replace('-', '_');
     if (outputDirectory != null) {
       for (Path root : inputRoots) {
-        if (path.startsWith(root)) {
-          path = root.relativize(path);
+        if (inputPath.startsWith(root)) {
+          inputPath = root.relativize(inputPath);
           break;
         }
       }
-      String fileName = path.getFileName().toString();
+
+      String fileName = inputPath.getFileName().toString();
+      if (subdir != null && subdir.length() > 0) {
+        fileName = subdir + "/" + fileName;
+      }
       int extensionLocation = fileName.lastIndexOf('.');
       if (extensionLocation == -1) {
         // consider making this an error, possibly an error if it isn't .soy
@@ -145,13 +205,17 @@ final class PerInputOutputFiles {
               + (transformedLocale != null ? "_" + transformedLocale : "")
               + "."
               + extension;
-      path = path.resolveSibling(fileName);
-      path = outputDirectory.resolve(path);
-      return path;
+      inputPath = inputPath.resolveSibling(fileName);
+      inputPath = outputDirectory.resolve(inputPath);
+      return inputPath;
     } else {
       return Paths.get(
-          MainEntryPointUtils.buildFilePath(outputPathFormat, locale, path.toString()));
+          MainEntryPointUtils.buildFilePath(outputPathFormat, locale, inputPath.toString()));
     }
+  }
+
+  Optional<Path> getOutputDirectoryFlag() {
+    return Optional.ofNullable(outputDirectory);
   }
 
   /**

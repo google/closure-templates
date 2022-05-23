@@ -19,8 +19,11 @@ package com.google.template.soy.plugin.java.restricted.testing;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.template.soy.jbcsrc.restricted.FieldRef.staticFieldReference;
+import static java.util.Arrays.stream;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.SanitizedContentKind;
@@ -39,9 +42,11 @@ import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jbcsrc.JbcSrcJavaValues;
+import com.google.template.soy.jbcsrc.TestExpressionDetacher;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.ConstructorRef;
 import com.google.template.soy.jbcsrc.restricted.Expression;
@@ -53,11 +58,13 @@ import com.google.template.soy.jbcsrc.restricted.testing.ExpressionEvaluator;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
+import com.google.template.soy.shared.restricted.SoyMethodSignature;
+import com.google.template.soy.shared.restricted.SoySourceFunctionMethod;
 import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.SoyTypeRegistry;
+import com.google.template.soy.types.SoyTypeRegistryBuilder;
 import com.google.template.soy.types.UnknownType;
 import com.google.template.soy.types.ast.TypeNode;
 import com.google.template.soy.types.ast.TypeNodeConverter;
@@ -121,19 +128,9 @@ public class SoyJavaSourceFunctionTester {
   public Object callFunction(Object... args) {
     SoyFunctionSignature fnSig = fn.getClass().getAnnotation(SoyFunctionSignature.class);
     FunctionNode fnNode =
-        new FunctionNode(
+        FunctionNode.newPositional(
             Identifier.create(fnSig.name(), SourceLocation.UNKNOWN), fn, SourceLocation.UNKNOWN);
-    Signature matchingSig = null;
-    for (Signature sig : fnSig.value()) {
-      if (sig.parameterTypes().length == args.length) {
-        matchingSig = sig;
-        break;
-      }
-    }
-    if (matchingSig == null) {
-      throw new IllegalArgumentException(
-          "No signature on " + fn.getClass().getName() + " with " + args.length + " parameters");
-    }
+    Signature matchingSig = findMatchingSignature(fnSig.value(), args.length);
     // Setting the allowed param types requires the node have that # of children,
     // so we add fake children.
     for (int i = 0; i < matchingSig.parameterTypes().length; i++) {
@@ -149,7 +146,8 @@ public class SoyJavaSourceFunctionTester {
               fnNode,
               new InternalContext(),
               this::getFunctionRuntime,
-              Stream.of(args).map(this::transform).collect(toImmutableList())));
+              stream(args).map(this::transform).collect(toImmutableList()),
+              new TestExpressionDetacher()));
     } catch (ReflectiveOperationException roe) {
       throw new RuntimeException(roe);
     }
@@ -160,10 +158,60 @@ public class SoyJavaSourceFunctionTester {
     return callFunction(Iterables.toArray(args, Object.class));
   }
 
+  public Object callMethod(Object base, Object... args) {
+    SoyMethodSignature methodSig = fn.getClass().getAnnotation(SoyMethodSignature.class);
+    Signature matchingSig = findMatchingSignature(methodSig.value(), args.length);
+
+    SoyType returnType = parseType(matchingSig.returnType());
+
+    MethodCallNode methodCallNode =
+        MethodCallNode.newWithPositionalArgs(
+            new NullNode(SourceLocation.UNKNOWN),
+            ImmutableList.of(),
+            Identifier.create(methodSig.name(), SourceLocation.UNKNOWN),
+            SourceLocation.UNKNOWN,
+            /* isNullSafe= */ false);
+    methodCallNode.setSoyMethod(
+        new SoySourceFunctionMethod(
+            fn,
+            parseType(methodSig.baseType()),
+            returnType,
+            stream(matchingSig.parameterTypes()).map(this::parseType).collect(toImmutableList()),
+            methodSig.name()));
+    methodCallNode.setType(returnType);
+
+    try {
+      return ExpressionEvaluator.evaluate(
+          JbcSrcJavaValues.computeForJavaSource(
+              methodCallNode,
+              new InternalContext(),
+              this::getFunctionRuntime,
+              Stream.concat(Stream.of(base), stream(args))
+                  .map(this::transform)
+                  .collect(toImmutableList()),
+              new TestExpressionDetacher()));
+    } catch (ReflectiveOperationException roe) {
+      throw new RuntimeException(roe);
+    }
+  }
+
+  private Signature findMatchingSignature(Signature[] sigs, int numArgs) {
+    for (Signature sig : sigs) {
+      if (sig.parameterTypes().length == numArgs) {
+        return sig;
+      }
+    }
+    throw new IllegalArgumentException(
+        "No signature on " + fn.getClass().getName() + " with " + numArgs + " parameters");
+  }
+
   private SoyType parseType(String type) {
     TypeNode parsed =
-        SoyFileParser.parseType(type, fn.getClass().getName(), ErrorReporter.exploding());
-    return new TypeNodeConverter(ErrorReporter.exploding(), new SoyTypeRegistry())
+        SoyFileParser.parseType(
+            type, SourceFilePath.create(fn.getClass().getName()), ErrorReporter.exploding());
+    return TypeNodeConverter.builder(ErrorReporter.exploding())
+        .setTypeRegistry(SoyTypeRegistryBuilder.create())
+        .build()
         .getOrCreateType(parsed);
   }
 
@@ -260,12 +308,12 @@ public class SoyJavaSourceFunctionTester {
     }
 
     @Override
-    public Expression getAllRequiredCssNamespaces(Expression template) {
+    public Expression getAllRequiredCssNamespaces(SoyExpression template) {
       throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override
-    public Expression getRenderedCssNamespaces() {
+    public Expression getAllRequiredCssPaths(SoyExpression template) {
       throw new UnsupportedOperationException("Not implemented yet");
     }
 

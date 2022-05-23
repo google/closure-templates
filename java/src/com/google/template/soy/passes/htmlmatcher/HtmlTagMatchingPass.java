@@ -16,14 +16,14 @@
 
 package com.google.template.soy.passes.htmlmatcher;
 
-import com.google.common.base.Equivalence;
-import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.LinkedHashMultimap;
+import com.google.common.collect.SetMultimap;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprEquivalence;
-import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.passes.htmlmatcher.HtmlMatcherGraphNode.EdgeKind;
 import com.google.template.soy.soytree.HtmlCloseTagNode;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
@@ -32,28 +32,31 @@ import com.google.template.soy.soytree.HtmlTagNode.TagExistence;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.TagName;
+import java.util.ArrayDeque;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Queue;
 import javax.annotation.Nullable;
 
 /**
- * Pass for checking the balance of open tag nodes with possible close tags.
- * Because Soy contains control flow, it is possible for a open tag node to possible map to
- * different close tags. For example, consider the following:
+ * Pass for checking the balance of open tag nodes with possible close tags. Because Soy contains
+ * control flow, it is possible for a open tag node to possible map to different close tags. For
+ * example, consider the following:
  *
  * <pre>
- * @code {
+ * {@code} {
  *   <div>
  *   {if $foo}</div><div>{/if}
  *   </div>
  * }
  * </pre>
  *
- * Because of this, we need to consider all possible paths statically inferable from the template
- * at hand (calls are not considered). In this example, we need to check if $foo==true
- * and $foo == false generate correct DOM. This visitor verifies that all possible paths are
- * legitimate and then annotates open tags and close tags with their possible pairs.
+ * Because of this, we need to consider all possible paths statically inferable from the template at
+ * hand (calls are not considered). In this example, we need to check if $foo==true and $foo ==
+ * false generate correct DOM. This visitor verifies that all possible paths are legitimate and then
+ * annotates open tags and close tags with their possible pairs.
  */
 public final class HtmlTagMatchingPass {
   private static final SoyErrorKind INVALID_CLOSE_TAG =
@@ -65,14 +68,13 @@ public final class HtmlTagMatchingPass {
   private static final String UNEXPECTED_CLOSE_TAG_KNOWN =
       "Unexpected HTML close tag. Expected to match the ''<{0}>'' at {1}.";
 
-  private static final String NESTED_SVG = "Nested SVG tags are disallowed.";
-
   private static final String BLOCK_QUALIFIER = " Tags within a %s must be internally balanced.";
 
   private static final String UNEXPECTED_OPEN_TAG_ALWAYS =
       "This HTML open tag is never matched with a close tag.";
   private static final String UNEXPECTED_OPEN_TAG_SOMETIMES =
       "This HTML open tag does not consistently match with a close tag.";
+  private static final String EXPECTED_TAG_NAME = "Expected an html tag name.";
 
   private static final Optional<HtmlTagNode> INVALID_NODE = Optional.empty();
 
@@ -86,10 +88,10 @@ public final class HtmlTagMatchingPass {
   private final boolean inCondition;
 
   /**
-   * This pass runs itself recursively on block nodes. If inside foreign content, various rules
-   * apply.
+   * Keeps track of the current depth within HTML tags containing foreign content. This pass runs
+   * itself recursively on block nodes. If inside foreign content, various rules apply.
    */
-  private final boolean inForeignContent;
+  private final int foreignContentTagDepth;
 
   /** Used for error messages to detail what context an error is in. */
   @Nullable private final String parentBlockType;
@@ -98,15 +100,18 @@ public final class HtmlTagMatchingPass {
    * Record of nodes and their related tag nodes. This is used to "save" a record of actions to be
    * taken. At the end of the graph traversal, if there are no errors, "commit" the changes.
    */
-  HashMultimap<HtmlTagNode, Optional<HtmlTagNode>> annotationMap = HashMultimap.create();
+  private final SetMultimap<HtmlTagNode, Optional<HtmlTagNode>> annotationMap =
+      LinkedHashMultimap.create();
+
+  private final ExprEquivalence exprEquivalence = new ExprEquivalence();
 
   public HtmlTagMatchingPass(
       ErrorReporter errorReporter,
       IdGenerator idGenerator,
       boolean inCondition,
-      boolean inForeignContent,
+      int foreignContentTagDepth,
       String parentBlockType) {
-    this.inForeignContent = inForeignContent;
+    this.foreignContentTagDepth = foreignContentTagDepth;
     this.parentBlockType = parentBlockType;
     this.errorReporter = errorReporter;
     this.idGenerator = idGenerator;
@@ -126,17 +131,17 @@ public final class HtmlTagMatchingPass {
    */
   class HtmlStack {
     final HtmlOpenTagNode tagNode;
-    final boolean inForeignContent;
+    final int foreignContentTagDepth;
     final HtmlStack prev;
 
-    HtmlStack(HtmlOpenTagNode tagNode, boolean inForeignContent, HtmlStack prev) {
+    HtmlStack(HtmlOpenTagNode tagNode, int foreignContentTagDepth, HtmlStack prev) {
       this.tagNode = tagNode;
-      this.inForeignContent = inForeignContent;
+      this.foreignContentTagDepth = foreignContentTagDepth;
       this.prev = prev;
     }
 
-    HtmlStack push(HtmlOpenTagNode tagNode, boolean inForeignContent) {
-      return new HtmlStack(tagNode, inForeignContent, this);
+    HtmlStack push(HtmlOpenTagNode tagNode, int foreignContentTagDepth) {
+      return new HtmlStack(tagNode, foreignContentTagDepth, this);
     }
 
     HtmlStack pop() {
@@ -183,21 +188,24 @@ public final class HtmlTagMatchingPass {
     for (HtmlTagNode tag : annotationMap.keySet()) {
       if (tag instanceof HtmlOpenTagNode) {
         HtmlOpenTagNode openTag = (HtmlOpenTagNode) tag;
-        if (annotationMap.containsEntry(openTag, INVALID_NODE)) {
-          if (annotationMap.get(openTag).size() == 1) {
+        if (!annotationMap.containsEntry(openTag, INVALID_NODE)) {
+          continue;
+        }
+        if (annotationMap.get(openTag).size() == 1) {
+          if (!tag.getTagName().isExcludedOptionalTag()) {
             errorReporter.report(
                 openTag.getSourceLocation(), makeSoyErrorKind(UNEXPECTED_OPEN_TAG_ALWAYS));
-          } else {
-            errorReporter.report(
-                openTag.getSourceLocation(), makeSoyErrorKind(UNEXPECTED_OPEN_TAG_SOMETIMES));
           }
+        } else {
+          errorReporter.report(
+              openTag.getSourceLocation(), makeSoyErrorKind(UNEXPECTED_OPEN_TAG_SOMETIMES));
         }
       }
     }
     // Do not annotate in inCondition because if there are errors, the nodes will be annotated
     // in the parent pass. The reason this happens is when the condition node is not balanced
     // internally but balanced globally.
-    if (!errorReporter.getErrors().isEmpty() && inCondition) {
+    if (errorReporter.hasErrors() && inCondition) {
       return;
     }
     for (HtmlTagNode openTag : annotationMap.keySet()) {
@@ -244,7 +252,7 @@ public final class HtmlTagMatchingPass {
             TagExistence.SYNTHETIC);
     // If destination is null, then insert at the end of the template.
     if (destinationTag == null) {
-      int i = optionalOpenTag.getParent().getChildren().size();
+      int i = optionalOpenTag.getParent().numChildren();
       optionalOpenTag.getParent().addChild(i, syntheticClose);
     } else {
       // This inserts the synthetic close tag right before the open tag.
@@ -257,10 +265,15 @@ public final class HtmlTagMatchingPass {
     annotationMap.put(syntheticClose, Optional.of(optionalOpenTag));
   }
 
+  @FunctionalInterface
+  interface QueuedTask {
+    List<QueuedTask> run();
+  }
+
   /** Perform tag matching/error reporting for invalid HTML. */
-  private void visit(
+  private List<QueuedTask> visit(
       HtmlMatcherTagNode tagNode,
-      Map<Equivalence.Wrapper<ExprNode>, Boolean> exprValueMap,
+      Map<ExprEquivalence.Wrapper, Boolean> exprValueMap,
       HtmlStack stack) {
     HtmlTagNode tag = (HtmlTagNode) tagNode.getSoyNode().get();
     TagName openTagName = tag.getTagName();
@@ -272,7 +285,7 @@ public final class HtmlTagMatchingPass {
         // For void tags, we don't care if they are self-closing or not. But when we visit
         // a HtmlCloseTagNode we will throw an error if it is a void tag.
         // Ignore this check if we are currently in a foreign content (svg).
-        if (!stack.inForeignContent
+        if (stack.foreignContentTagDepth == 0
             && !openTagName.isDefinitelyVoid()
             && voidTag.isSelfClosing()
             && openTagName.isStatic()) {
@@ -284,9 +297,6 @@ public final class HtmlTagMatchingPass {
         break;
       case OPEN_TAG:
         HtmlOpenTagNode openTag = (HtmlOpenTagNode) tag;
-        if (openTagName.isForeignContent() && stack.inForeignContent) {
-          errorReporter.report(openTag.getSourceLocation(), makeSoyErrorKind(NESTED_SVG));
-        }
         // In a case where an open tag can close another open tag (ie <p><p> or <li><li>),
         // check if this is possible by peeking the stack and inject a tag before the open tag.
         if (!prev.isEmpty()) {
@@ -300,7 +310,9 @@ public final class HtmlTagMatchingPass {
           }
         }
         prev =
-            prev.push(openTag, stack.inForeignContent || openTag.getTagName().isForeignContent());
+            prev.push(
+                openTag,
+                stack.foreignContentTagDepth + (openTag.getTagName().isForeignContent() ? 1 : 0));
         break;
       case CLOSE_TAG:
         HtmlCloseTagNode closeTag = (HtmlCloseTagNode) tag;
@@ -313,7 +325,7 @@ public final class HtmlTagMatchingPass {
           break;
         }
         // This is for cases similar to {block}</p>{/block}
-        if (stack.isEmpty()) {
+        if (stack.isEmpty() && !closeTag.getTagName().isExcludedOptionalTag()) {
           errorReporter.report(
               closeTag.getSourceLocation(), makeSoyErrorKind(UNEXPECTED_CLOSE_TAG));
           break;
@@ -321,7 +333,12 @@ public final class HtmlTagMatchingPass {
         prev = stack;
         while (!prev.isEmpty()) {
           HtmlOpenTagNode nextOpenTag = prev.tagNode;
-          if (nextOpenTag.getTagName().equals(closeTag.getTagName())) {
+          if (nextOpenTag.getTagName().isStatic() && closeTag.getTagName().isWildCard()) {
+            errorReporter.report(
+                closeTag.getTagName().getTagLocation(), makeSoyErrorKind(EXPECTED_TAG_NAME));
+          }
+          if (nextOpenTag.getTagName().equals(closeTag.getTagName())
+              || (!nextOpenTag.getTagName().isStatic() && closeTag.getTagName().isWildCard())) {
             annotationMap.put(nextOpenTag, Optional.of(closeTag));
             annotationMap.put(closeTag, Optional.of(nextOpenTag));
             prev = prev.pop();
@@ -335,47 +352,41 @@ public final class HtmlTagMatchingPass {
             prev = prev.pop();
           } else {
             annotationMap.put(nextOpenTag, INVALID_NODE);
-            errorReporter.report(
-                closeTag.getSourceLocation(),
-                makeSoyErrorKind(UNEXPECTED_CLOSE_TAG_KNOWN),
-                nextOpenTag.getTagName(),
-                nextOpenTag.getSourceLocation());
+            if (!closeTag.getTagName().isExcludedOptionalTag()) {
+              errorReporter.report(
+                  closeTag.getSourceLocation(),
+                  makeSoyErrorKind(UNEXPECTED_CLOSE_TAG_KNOWN),
+                  nextOpenTag.getTagName(),
+                  nextOpenTag.getSourceLocation());
+            }
             prev = prev.pop();
           }
         }
         break;
     }
     Optional<HtmlMatcherGraphNode> nextNode = tagNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE);
-    if (nextNode.isPresent()) {
-      visit(nextNode.get(), exprValueMap, prev);
-    } else {
-      checkUnusedTags(prev);
-    }
+    return ImmutableList.of(visit(nextNode, exprValueMap, prev));
   }
 
   /**
    * Blocks must be internally balanced, but require knowing if they are in foreign content or not.
    * Recursively run the tag matcher and throw away the result.
    */
-  private void visit(
+  private List<QueuedTask> visit(
       HtmlMatcherBlockNode blockNode,
-      Map<Equivalence.Wrapper<ExprNode>, Boolean> exprValueMap,
+      Map<ExprEquivalence.Wrapper, Boolean> exprValueMap,
       HtmlStack stack) {
     if (blockNode.getGraph().getRootNode().isPresent()) {
       new HtmlTagMatchingPass(
               errorReporter,
               idGenerator,
               false,
-              stack.inForeignContent,
+              stack.foreignContentTagDepth,
               blockNode.getParentBlockType())
           .run(blockNode.getGraph());
     }
     Optional<HtmlMatcherGraphNode> nextNode = blockNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE);
-    if (nextNode.isPresent()) {
-      visit(nextNode.get(), exprValueMap, stack);
-    } else {
-      checkUnusedTags(stack);
-    }
+    return ImmutableList.of(visit(nextNode, exprValueMap, stack));
   }
 
   /**
@@ -383,11 +394,11 @@ public final class HtmlTagMatchingPass {
    * However, if we have already visited a branch and concluded that it is internally balanced (in
    * foreign content or not), then don't revisit the branch.
    */
-  private void visit(
+  private List<QueuedTask> visit(
       HtmlMatcherConditionNode condNode,
-      Map<Equivalence.Wrapper<ExprNode>, Boolean> exprValueMap,
+      Map<ExprEquivalence.Wrapper, Boolean> exprValueMap,
       HtmlStack stack) {
-    Equivalence.Wrapper<ExprNode> condition = ExprEquivalence.get().wrap(condNode.getExpression());
+    ExprEquivalence.Wrapper condition = exprEquivalence.wrap(condNode.getExpression());
     // In some cases we may encounter a condition we have already made a decision for. Consider
     // this case:
     // <pre>@code {
@@ -401,50 +412,63 @@ public final class HtmlTagMatchingPass {
 
     Optional<HtmlMatcherGraphNode> nextNode = condNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE);
     Optional<HtmlMatcherGraphNode> nextAltNode = condNode.getNodeForEdgeKind(EdgeKind.FALSE_EDGE);
-    if (!condNode.isInternallyBalanced(stack.inForeignContent, idGenerator)
+    ImmutableList.Builder<QueuedTask> tasks = ImmutableList.builder();
+    if (!condNode.isInternallyBalanced(stack.foreignContentTagDepth, idGenerator)
         && nextNode.isPresent()
         && !Boolean.FALSE.equals(originalState)) {
-      Map<Equivalence.Wrapper<ExprNode>, Boolean> lMap = new HashMap<>(exprValueMap);
+      Map<ExprEquivalence.Wrapper, Boolean> lMap = new HashMap<>(exprValueMap);
       lMap.put(condition, true);
-      visit(nextNode.get(), lMap, stack);
+      tasks.add(visit(nextNode, lMap, stack));
     }
 
     if (nextAltNode.isPresent() && !Boolean.TRUE.equals(originalState)) {
-      Map<Equivalence.Wrapper<ExprNode>, Boolean> rMap = new HashMap<>(exprValueMap);
+      Map<ExprEquivalence.Wrapper, Boolean> rMap = new HashMap<>(exprValueMap);
       rMap.put(condition, false);
-      visit(nextAltNode.get(), rMap, stack);
+      tasks.add(visit(nextAltNode, rMap, stack));
     }
+    return tasks.build();
   }
 
   /** Accumulator nodes mostly work like HTMLMatcherTagNodes, but don't add any elements. */
-  private void visit(
+  private List<QueuedTask> visit(
       HtmlMatcherAccumulatorNode accNode,
-      Map<Equivalence.Wrapper<ExprNode>, Boolean> exprValueMap,
+      Map<ExprEquivalence.Wrapper, Boolean> exprValueMap,
       HtmlStack stack) {
     Optional<HtmlMatcherGraphNode> nextNode = accNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE);
-    if (nextNode.isPresent()) {
-      visit(nextNode.get(), exprValueMap, stack);
-    } else {
-      checkUnusedTags(stack);
-    }
+    return ImmutableList.of(visit(nextNode, exprValueMap, stack));
   }
 
   public void visit(HtmlMatcherGraphNode node) {
-    visit(node, new HashMap<>(), new HtmlStack(null, inForeignContent, null));
+    Queue<QueuedTask> stack = new ArrayDeque<>();
+    stack.add(
+        visit(
+            Optional.of(node), new HashMap<>(), new HtmlStack(null, foreignContentTagDepth, null)));
+    while (!stack.isEmpty()) {
+      QueuedTask task = stack.remove();
+      List<QueuedTask> newTasks = task.run();
+      stack.addAll(newTasks);
+    }
   }
 
-  private void visit(
-      HtmlMatcherGraphNode node,
-      Map<Equivalence.Wrapper<ExprNode>, Boolean> exprValueMap,
+  private QueuedTask visit(
+      Optional<HtmlMatcherGraphNode> maybeNode,
+      Map<ExprEquivalence.Wrapper, Boolean> exprValueMap,
       HtmlStack stack) {
+    if (!maybeNode.isPresent()) {
+      return () -> {
+        checkUnusedTags(stack);
+        return ImmutableList.of();
+      };
+    }
+    HtmlMatcherGraphNode node = maybeNode.get();
     if (node instanceof HtmlMatcherTagNode) {
-      visit((HtmlMatcherTagNode) node, exprValueMap, stack);
+      return () -> visit((HtmlMatcherTagNode) node, exprValueMap, stack);
     } else if (node instanceof HtmlMatcherConditionNode) {
-      visit((HtmlMatcherConditionNode) node, exprValueMap, stack);
+      return () -> visit((HtmlMatcherConditionNode) node, exprValueMap, stack);
     } else if (node instanceof HtmlMatcherAccumulatorNode) {
-      visit((HtmlMatcherAccumulatorNode) node, exprValueMap, stack);
+      return () -> visit((HtmlMatcherAccumulatorNode) node, exprValueMap, stack);
     } else if (node instanceof HtmlMatcherBlockNode) {
-      visit((HtmlMatcherBlockNode) node, exprValueMap, stack);
+      return () -> visit((HtmlMatcherBlockNode) node, exprValueMap, stack);
     } else {
       throw new UnsupportedOperationException("No implementation for: " + node);
     }

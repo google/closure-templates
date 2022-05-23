@@ -16,7 +16,7 @@
 
 package com.google.template.soy.plugin.java.internal;
 
-import com.google.auto.value.AutoValue;
+import com.google.template.soy.plugin.java.ReadMethodData;
 import com.google.template.soy.plugin.java.restricted.MethodSignature;
 import javax.annotation.Nullable;
 
@@ -31,21 +31,4 @@ interface PluginSignatureReader {
   @Nullable
   ReadMethodData findMethod(MethodSignature methodSignature);
 
-  /** Information about a method that was read. */
-  @AutoValue
-  abstract class ReadMethodData {
-    /** True if the method is an instance method, false if it's static. */
-    abstract boolean instanceMethod();
-
-    /** True if the declaring class is an interface, false if it's not. */
-    abstract boolean classIsInterface();
-
-    /** The return type of the method. */
-    abstract String returnType();
-
-    static ReadMethodData create(boolean instance, boolean classIsInterface, String returnType) {
-      return new AutoValue_PluginSignatureReader_ReadMethodData(
-          instance, classIsInterface, returnType);
-    }
-  }
 }

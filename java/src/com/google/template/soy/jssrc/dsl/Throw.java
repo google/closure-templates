@@ -18,6 +18,7 @@ package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
 import com.google.errorprone.annotations.Immutable;
+import java.util.function.Consumer;
 
 /** Represents a JavaScript throw statement. */
 @AutoValue
@@ -39,7 +40,7 @@ abstract class Throw extends Statement {
   }
 
   @Override
-  public void collectRequires(RequiresCollector collector) {
+  public void collectRequires(Consumer<GoogRequire> collector) {
     value().collectRequires(collector);
   }
 }

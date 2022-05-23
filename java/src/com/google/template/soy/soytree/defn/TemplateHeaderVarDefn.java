@@ -16,6 +16,7 @@
 
 package com.google.template.soy.soytree.defn;
 
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.VarDefn;
@@ -25,21 +26,26 @@ import javax.annotation.Nullable;
 
 /**
  * Interface for the definition of a template header variable, i.e. a value that is declared in a
- * template using @param or @state.
+ * template using {@code or} @state.
  */
 public interface TemplateHeaderVarDefn extends VarDefn {
+
+  SourceLocation getSourceLocation();
 
   /** Returns whether the param is required. */
   boolean isRequired();
 
-  ExprRootNode defaultValue();
+  boolean isExplicitlyOptional();
 
-  boolean hasType();
+  ExprRootNode defaultValue();
 
   void setType(SoyType type);
 
   @Nullable
   TypeNode getTypeNode();
+
+  @Nullable
+  TypeNode getOriginalTypeNode();
 
   /**
    * The variable description, provided via Soy doc comments. {@see
@@ -47,6 +53,8 @@ public interface TemplateHeaderVarDefn extends VarDefn {
    */
   @Nullable
   String desc();
+
+  void setDesc(String desc);
 
   TemplateHeaderVarDefn copy(CopyState copyState);
 }

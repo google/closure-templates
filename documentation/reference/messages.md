@@ -1,10 +1,5 @@
 # Translation (Msg, Plurals and Gender)
 
-
-<!--#include file="commands-blurb-include.md"-->
-
-This chapter describes the Translation commands.
-
 [TOC]
 
 ## msg {#msg}
@@ -20,7 +15,7 @@ Syntax (basic form):
 With all optional attributes:
 
 ```soy
-{msg meaning="<differentiator>" desc="<help_text_for_translators>"}
+{msg desc="<help_text_for_translators>" meaning="<differentiator>"}
   ...
 {/msg}
 ```
@@ -54,12 +49,17 @@ Here are details on how Soy generates placeholders in messages:
     message might look like in the `desc` attribute and consider setting a
     `phname`.
 
--   If you find a need to specify a placeholder name for a `print` or `call`
-    instead of allowing the compiler generate the default name, you can add the
-    `phname` attribute. The value can either be camel case or upper underscore.
-    For example, `{call .emailAddr phname="emailAddress" /}` causes the
-    placeholder name to be `EMAIL_ADDRESS` instead of `XXX`. Note that changing
-    a placeholder name changes the message id, causing retranslation.
+-   If you find a need to specify a placeholder name for a `print`, `call`,
+    `plural`, `select` or HTML tag instead of allowing the compiler to generate
+    the default name, you can add the `phname` attribute. The value follows
+    standard variable naming conventions (must start with alphabet character,
+    and contain only alpha-numerics and underscore). By convention, it is
+    recommended that all names be UPPER_SNAKE_CASE. For historic reasons, the
+    generated placeholder name for `print`, `call`, and tag is converted to
+    UPPER_SNAKE_CASE, but not `plural` or `select`. For example, `{call
+    .emailAddr phname="emailAddress" /}` causes the placeholder name to be
+    `EMAIL_ADDRESS` instead of `XXX`. Note that changing a placeholder name
+    changes the message id, causing retranslation.
 
 -   You can set placeholder examples to aid translation. For example, `{$url
     phex="www.google.com"}` or `{$name phex="Alice"}`. Placeholder examples are
@@ -69,7 +69,9 @@ Here are details on how Soy generates placeholders in messages:
 
 -   If a message contains multiple placeholders that would result in the same
     placeholder name, then the compiler appends number suffixes to distinguish
-    them, e.g. `START_LINK_1`, `START_LINK_2`.
+    them, e.g. `START_LINK_1`, `START_LINK_2`. If any of these are explicitly
+    provided via `phname`, a compiler error will instruct the caller to change
+    it.
 
 -   Template commands for control flow (`if`, `switch`, `for`) are not allowed
     in `msg` blocks. However, you can put them in a `let` block and then print
@@ -86,28 +88,36 @@ Example message:
 
 Example of what the translators see:
 
-    Hello {USER_NAME}! Please click {START_LINK}here{END_LINK}.
+```
+Hello {USER_NAME}! Please click {START_LINK}here{END_LINK}.
+```
 
 Example translation that one translator might give us:
 
-    {START_LINK}Zhere{END_LINK} zclick zplease. {USER_NAME} zhello!
+```
+{START_LINK}Zhere{END_LINK} zclick zplease. {USER_NAME} zhello!
+```
 
 Example output (for `userName = 'Jess'` and `url = 'http://www.google.com/'`):
 
-    <a href="http://www.google.com/">Zhere</a> zclick zplease. Jess zhello!
+```
+<a href="http://www.google.com/">Zhere</a> zclick zplease. Jess zhello!
+```
+
+### Meaning
 
 Use the `meaning` attribute when you have two messages that are exactly the same
 string in English, but might be translated to different strings in other
-languages. The `meaning` should then be a short string that distinguishes the
-two messages, and is used for generating different message ids. Translators do
-not see the `meaning` attribute, so you must still communicate all the details
-in the `desc`. For example:
+languages. The `meaning` should then be a **short** string that distinguishes
+the two messages, and is used for generating different message ids. Translators
+do **not** see the `meaning` attribute, so you must still communicate all the
+details in the `desc`. For example:
 
 ```soy
-{msg meaning="noun" desc="The word 'Archive' used as a noun, i.e. an information store."}
+{msg desc="The word 'Archive' used as a noun, i.e. an information store." meaning="noun"}
   Archive
 {/msg}
-{msg meaning="verb" desc="The word 'Archive' used as a verb, i.e. to store information."}
+{msg desc="The word 'Archive' used as a verb, i.e. to store information." meaning="verb"}
   Archive
 {/msg}
 ```
@@ -124,7 +134,7 @@ Syntax for a gender aware message in Soy is `{msg genders=...}`.
 The syntax for a message that doesn't vary in English is:
 
 ```soy
-{msg genders="$userGender, $targetGender" desc="..."}
+{msg desc="..." genders="$userGender, $targetGender"}
   Join {$targetName}'s community.
 {/msg}
 ```
@@ -151,6 +161,19 @@ the message. For example, if there are multiple gender expressions, a translator
 might not know whether an expression `$gender` applies to the gender of the user
 or the target. Expressions like `$userGender` and `$targetGender` clearly
 represent the gender of the user and the gender of the target.
+
+Examples of these transforms can be seen below:
+
+*   `aaaBbb` -> AAA_BBB
+*   `aaa_bbb` -> AAA_BBB
+*   `aaa.bbb` -> BBB
+*   `$b.aaa` -> AAA
+*   `aaa.BBB` -> BBB
+*   `aaa.0` -> fallback
+*   `aaa[0]` -> fallback
+*   `aaa[0].bbb` -> BBB
+*   `length($aaa)` -> fallback
+*   `aaa + 1` -> fallback
 
 #### Varies in English {#gender-vary}
 
@@ -193,7 +216,7 @@ written using a select statement, while `$userGender` is declared in the
 `genders` attribute.
 
 ```soy
-{msg genders="$userGender" desc="..."}
+{msg desc="..." genders="$userGender" }
   {select $targetGender}
     {case 'female'}Reply to her.
     {case 'male'}Reply to him.
@@ -201,6 +224,11 @@ written using a select statement, while `$userGender` is declared in the
   {/select}
 {/msg}
 ```
+
+Each `select` block appears as a placeholder in the containing message. The
+placeholder name is `phname` (if present) or the UPPER_SNAKE_CASE version of the
+variable name (`TARGET_GENDER` in this example). By convention, it is
+recommended that all names be UPPER_SNAKE_CASE.
 
 ### Plural {#plural}
 
@@ -216,6 +244,17 @@ Message pluralization syntax:
 {/msg}
 ```
 
+Each `plural` block appears as a placeholder in the containing message. The
+placeholder name is `phname` (if present) or the UPPER_SNAKE_CASE version of the
+variable name (`NUM_DRAFTS` in this example). By convention, it is recommended
+that all names be UPPER_SNAKE_CASE.
+
+If a message is the same in all cases in English, you should still declare it as
+a plural, so that translator can add cases according to their languages. It is
+mandatory to specify cases at least for `1`, and `default`. Translators will add
+one or more of the available cases (`0`, `1`, `2`, `few`, `many`, `other`), if
+they apply in their target language.
+
 WARNING: You cannot nest `plural` tags.
 
 NOTE: If you need to use `plural` and `select` in the same message (i.e. the
@@ -228,32 +267,36 @@ There is a rarely used `offset` attribute that works in conjunction with a
 special `remainder` function:
 
 ```soy
-{msg genders="$attendees[0]?.gender, $attendees[1]?.gender"
-     desc="Says how many people are attending, listing up to 2 names."}
-  {plural length($attendees) offset="2"}
-    // Note: length($attendees) is never 0.
+{let $firstAttendeeGender: $attendees[0]?.gender /}
+{let $secondAttendeeGender: $attendees[1]?.gender /}
+{msg desc="Says how many people are attending, listing up to 2 names."
+     genders="$firstAttendeeGender, $secondAttendeeGender"}
+  {plural $attendees.length() offset="2"}
+    // Note: length() is never 0.
     {case 1}{$attendees[0].name} is attending
     {case 2}{$attendees[0].name} and {$attendees[1]?.name} are attending
     {case 3}{$attendees[0].name}, {$attendees[1]?.name}, and 1 other are attending
-    {default}{$attendees[0].name}, {$attendees[1]?.name}, and {remainder(length($attendees))} others are attending
+    {default}{$attendees[0].name}, {$attendees[1]?.name}, and {remainder($attendees.length())} others are attending
   {/plural}
 {/msg}
 ```
 
 The expression inside the `remainder` function must be exactly identical to the
-expression in the `plural` tag (in this case `length($attendees)`). However, the
-above example could just as well be written without the use of `offset` and
+expression in the `plural` tag (in this case `$attendees.length()`). However,
+the above example could just as well be written without the use of `offset` and
 `remainder`. It would be:
 
 ```soy
-{msg genders="$attendees[0]?.gender, $attendees[1]?.gender"
-     desc="Says how many people are attending, listing up to 2 names."}
-  {plural length($attendees)}
-    // Note: length($attendees) is never 0.
+{let $firstAttendeeGender: $attendees[0]?.gender /}
+{let $secondAttendeeGender: $attendees[1]?.gender /}
+{msg desc="Says how many people are attending, listing up to 2 names."
+     genders="$firstAttendeeGender, $secondAttendeeGender"}
+  {plural $attendees.length()}
+    // Note: length() is never 0.
     {case 1}{$attendees[0].name} is attending
     {case 2}{$attendees[0].name} and {$attendees[1]?.name} are attending
     {case 3}{$attendees[0].name}, {$attendees[1]?.name}, and 1 other are attending
-    {default}{$attendees[0].name}, {$attendees[1]?.name}, and {length($attendees) - 2} others are attending
+    {default}{$attendees[0].name}, {$attendees[1]?.name}, and {$attendees.length() - 2} others are attending
   {/plural}
 {/msg}
 ```
@@ -261,6 +304,29 @@ above example could just as well be written without the use of `offset` and
 NOTE: In the example above, the `attendees` subkeys are accessed using null-safe
 accesses (e.g. `$attendees[1]?.gender` instead of `$attendees[1].gender`) see
 the [pitfalls section](#placholder_error) for more information about this.
+
+### Alternate IDs
+
+If you migrate from another message management scheme to Soy, that will likely
+cause all your message IDs to change. In this case, use the `alternateId`
+attribute to leverage the existing translated message. Unlike the `fallbackmsg`
+feature, the `alternateId` is applicable for cases where the message has not
+changed but the ID has.
+
+The compiler chooses the proper version of the message to use. If the new
+message's translation is available, then it is used, else the compiler falls
+back to the alternate translation. If neither is accessible, the compiler then
+uses the `fallbackmsg` (if specified). The `fallbackmsg` attribute can also
+accept an alternate ID, and it follows the fallback mechanism described
+previously.
+
+```soy
+{msg desc="Description of the message" alternateId="582799623638"}
+    Message for a super secret new feature.
+  {fallbackmsg desc="Description" alternateId="4657498615649"}
+    Fallback message for a super secret new feature.
+{/msg}
+```
 
 ## fallbackmsg {#fallbackmsg}
 
@@ -289,7 +355,7 @@ When changing a message, move the old message attributes and content to the
 For example, to fix a typo in this message:
 
 ```soy
-{msg meaning="verb" desc="button label"}
+{msg desc="button label" meaning="verb" }
   Arcive
 {/msg}
 ```
@@ -297,9 +363,9 @@ For example, to fix a typo in this message:
 replace it with the new message:
 
 ```soy
-{msg meaning="verb" desc="button label"}
+{msg desc="button label" meaning="verb" }
   Archive
-{fallbackmsg meaning="verb" desc="button label"}
+{fallbackmsg desc="button label" meaning="verb"}
   Arcive
 {/msg}
 ```
@@ -326,7 +392,7 @@ evaluated when their branch won't be expected.
 
 ```soy
 {msg desc="Welcomes everybody."}
-  {plural length($people) offset="2"}
+  {plural $people.length() offset="2"}
     {case 0}Nobody showed up :(
     {case 1}Greetings {$people[0].name}
     {case 2}Greeting {$people[0].name} and {$people[1].name})}
@@ -342,7 +408,7 @@ To fix this you can use null safe access patterns:
 
 ```soy
 {msg desc="Welcomes everybody."}
-  {plural length($people) offset="2"}
+  {plural $people.length() offset="2"}
     {case 0}Nobody showed up :(
     {case 1}Greetings {$people[0]?.name}
     {case 2}Greetings {$people[0]?.name} and {$people[1]?.name})}
@@ -353,4 +419,3 @@ To fix this you can use null safe access patterns:
 
 Now, if the list has too few people in it, the later placeholders will just
 evaluate to `null` instead of throwing an error.
-

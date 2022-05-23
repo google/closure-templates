@@ -16,25 +16,36 @@
 
 package com.google.template.soy.jbcsrc;
 
+import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.fail;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableSet;
-import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.basetree.Node;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.DataAccessNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.exprtree.NullSafeAccessNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.shared.restricted.SoyFunction;
+import com.google.template.soy.soytree.MsgNode;
+import com.google.template.soy.soytree.MsgPlaceholderNode;
+import com.google.template.soy.soytree.MsgPluralNode;
+import com.google.template.soy.soytree.MsgSelectNode;
+import com.google.template.soy.soytree.PrintNode;
+import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
+import com.google.template.soy.soytree.SoyNode.MsgSubstUnitNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
+import com.google.template.soy.soytree.SoyTreeUtils.VisitDirective;
 import com.google.template.soy.soytree.TemplateNode;
-import java.util.Set;
+import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-/** Tests for {@link TemplateAnalysis}. */
+/** Tests for {@link TemplateAnalysisImpl}. */
 @RunWith(JUnit4.class)
 public final class TemplateAnalysisTest {
 
@@ -62,10 +73,55 @@ public final class TemplateAnalysisTest {
   }
 
   @Test
+  public void testNullSafeDataAccessWithDuplicateFieldName() {
+    TemplateNode template =
+        parseTemplate(
+            "{@param p : [field:string]}",
+            "{@param x : [field:string]}",
+            "{$p?.field}",
+            "{$x?.field}");
+    TemplateAnalysisImpl analysis = TemplateAnalysisImpl.analyze(template);
+    ExprNode xField = ((PrintNode) template.getChild(1)).getExpr().getChild(0);
+    DataAccessNode access = (DataAccessNode) ((NullSafeAccessNode) xField).getDataAccess();
+    assertThat(analysis.isResolved(access)).isFalse();
+  }
+
+  @Test
+  public void testNullSafeDataAccessWithDuplicateIndex() {
+    TemplateNode template =
+        parseTemplate(
+            "{@param p : list<string>}", "{@param x : list<string>}", "{$p?[0]}", "{$x?[0]}");
+    TemplateAnalysisImpl analysis = TemplateAnalysisImpl.analyze(template);
+    ExprNode xList = ((PrintNode) template.getChild(1)).getExpr().getChild(0);
+    DataAccessNode access = (DataAccessNode) ((NullSafeAccessNode) xList).getDataAccess();
+    assertThat(analysis.isResolved(access)).isFalse();
+  }
+
+  @Test
   public void testDataAccess() {
     runTest("{@param p : list<string>}", "{notrefed($p[0])}", "{refed($p[0])}");
+    runTest("{@param p : list<string>}", "{notrefed($p[0])}", "{refed($p)}");
+    runTest("{@param p : list<string>}", "{notrefed($p)}", "{notrefed($p[0])}");
+
+    // TODO(user): $p?[0] should imply $p[0] is already referenced.
+    // runTest("{@param p : list<string>}", "{notrefed($p?[0])}", "{refed($p[0])}");
+    runTest("{@param p : list<string>}", "{notrefed($p?[0])}", "{refed($p)}");
+    runTest("{@param p : list<string>}", "{notrefed($p)}", "{notrefed($p?[0])}");
 
     runTest("{@param p : [field:string]}", "{notrefed($p.field)}", "{refed($p.field)}");
+    runTest("{@param p : [field:string]}", "{notrefed($p.field)}", "{refed($p)}");
+    runTest("{@param p : [field:string]}", "{notrefed($p)}", "{notrefed($p.field)}");
+
+    // TODO(user): $p?.field should imply $p.field is already referenced.
+
+    // runTest("{@param p : [field:string]}", "{notrefed($p?.field)}", "{refed($p.field)}");
+    runTest("{@param p : [field:string]}", "{notrefed($p?.field)}", "{refed($p)}");
+    runTest("{@param p : [field:string]}", "{notrefed($p)}", "{notrefed($p?.field)}");
+  }
+
+  @Test
+  public void mapLiteral() {
+    runTest("{let $a: 1 /}", "{let $b: 1 /}", "{map($a: $b)}", "{refed($a)}", "{refed($b)}");
   }
 
   @Test
@@ -183,19 +239,6 @@ public final class TemplateAnalysisTest {
 
   @Test
   public void testForeach() {
-    // test special functions for foreach loops. though these all look like references to the loop
-    // var, they actually aren't.
-    runTest(
-        "{@param list : list<?>}",
-        "{for $item in $list}",
-        "  {if isFirst($item)}first{/if}",
-        "  {if isLast($item)}last{/if}",
-        "  {index($item)}",
-        "  {notrefed($item)}",
-        "  {refed($list)}",
-        "{/for}",
-        "{refed($list)}");
-
     // test ifempty blocks
     runTest(
         "{@param list : list<?>}",
@@ -218,25 +261,6 @@ public final class TemplateAnalysisTest {
   @Test
   public void testForeach_literalList() {
     // test literal lists
-    // empty list
-    runTest(
-        "{call .loop data=\"all\"}",
-        "  {param list: [] /}",
-        "{/call}",
-        "{/template}",
-        "",
-        "{template .loop}",
-        "{@param list: list<?>}",
-        "{@param p: ?}",
-        "{@param p2: ?}",
-        "{for $item in $list}",
-        "  {$p}",
-        "{ifempty}",
-        "  {$p2}",
-        "{/for}",
-        "{notrefed($p)}",
-        "{refed($p2)}");
-
     // nonempty list
     runTest(
         "{@param p: ?}",
@@ -278,9 +302,47 @@ public final class TemplateAnalysisTest {
   }
 
   @Test
-  public void testMsg() {
-    runTest("{@param p : ?}", "{msg desc=\"\"}", "  Hello {$p}", "{/msg}", "{refed($p)}");
+  public void testLetWithVariablesRefedBeforeAndAfter() {
+    runTest(
+        "{@param p: ?}",
+        "{let $a: notrefed($p.foo) /}",
+        "{let $b: notrefed($p.bar) /}",
+        "{notrefed($a)}",
+        "{let $c: refed($a) + notrefed($b) /}",
+        // $b is referenced after {let $c ...}, but before the variable refrence $c.
+        "{notrefed($b)}",
+        "{notrefed($c)}");
+  }
 
+  @Test
+  public void testVarRefedMultipleTimes() {
+    runTest(
+        "{@param p: ?}",
+        "{let $a: notrefed($p) + refed($p) /}",
+        "{notrefed($a)}",
+        "{refed($a)}",
+        "{refed($p)}");
+    runTest(
+        "{@param p: ?}",
+        "{let $a: notrefed($p) /}",
+        "{notrefed($p)}",
+        "{notrefed($a)}",
+        "{refed($a)}",
+        "{refed($p)}");
+  }
+
+  @Test
+  public void testMsg() {
+    // Our analysis treats message placeholders as only conditionally evaluated.
+    runTest("{@param p : ?}", "{msg desc=\"\"}", "  Hello {$p}", "{/msg}", "{notrefed($p)}");
+    // they do respect the incoming references
+    runTest("{@param p : ?}", "{$p}", "{msg desc=\"\"}", "  Hello {refed($p)}", "{/msg}");
+
+    // Order within messages ignored.  One of these 2 placeholders will be second but it isn't
+    // predictable because translators have an opportunity to reorder them.
+    runTest("{@param p : ?}", "{msg desc=\"\"}", "  Hello {notrefed($p)} {notrefed($p)}", "{/msg}");
+
+    // these cases aren't really interested because of how we model placeholders
     runTest(
         "{@param p : ?}",
         "{msg desc=\"\"}",
@@ -297,17 +359,88 @@ public final class TemplateAnalysisTest {
         "{fallbackmsg desc=\"\"}",
         "  Hello old {$p}",
         "{/msg}",
-        "{refed($p)}");
+        "{notrefed($p)}");
+  }
+
+  @Test
+  public void testFallbackCreatesABranch() {
+    // Fallbacks are an implicit control flow structure so `$gender` is only evaluated if the
+    // translation exists.  We used gendered messages here because gender expressions are always
+    // evaluated.
+    runTest(
+        "{@param gender2 : ?}",
+        "{@param gender: ?}",
+        "{msg desc='...' genders='$gender'}",
+        "   Hello",
+        "{fallbackmsg desc='...'  genders='$gender2'}",
+        "  Goodbye",
+        "{/msg}",
+        "{notrefed($gender)}",
+        "{notrefed($gender2)}");
+    runTest(
+        "{@param gender: ?}",
+        "{msg desc='...' genders='$gender'}",
+        "   Hello",
+        "{fallbackmsg desc='...'  genders='$gender'}",
+        "  Goodbye",
+        "{/msg}",
+        "{refed($gender)}");
+  }
+
+  @Test
+  public void testPluralSelectIsEvaluated() {
+    runTest(
+        "{@param gender: ?}",
+        "{msg desc='...' genders='$gender'}",
+        "   Hello {notrefed($gender)}",
+        "{/msg}",
+        "{refed($gender)}");
+
+    runTest(
+        "{@param gender: ?}",
+        "{msg desc='...' genders='$gender'}",
+        "   Hello",
+        "{/msg}",
+        "{refed($gender)}");
+
+    runTest(
+        "{@param num: ?}",
+        "{msg desc='...'}",
+        "{plural $num}",
+        "{default}",
+        "   Hello {notrefed($num)}",
+        "{/plural}",
+        "{/msg}",
+        "{refed($num)}");
+  }
+
+  @Test
+  public void testMsgPlural_syntheticPlaceholder() {
+    // There are multiple references to the same expression in this case. Test the deduplication
+    // logic such that the single $p.foo does not mark itself as resolved.
+    runTest(
+        "{@param p : ?}",
+        "{@param gender: ?}",
+        "{msg desc=\"...\" genders=\"$gender\"}",
+        "  {plural notrefed($p.foo)}",
+        "    {case 0}",
+        "      None",
+        "    {case 1}",
+        "      Single",
+        "    {default}",
+        "      Many",
+        "  {/plural}",
+        "{/msg}");
   }
 
   @Test
   public void testCall() {
     // The tricky thing about calls is how params are handled
-    runTest("{@param p : ?}", "{call .foo data=\"$p\"/}", "{refed($p)}");
-    runTest("{@param p : ?}", "{call .foo data=\"all\"/}", "{notrefed($p)}");
+    runTest("{@param p : ?}", "{call foo data=\"$p\"/}", "{refed($p)}");
+    runTest("{@param p : ?}", "{call foo data=\"all\"/}", "{notrefed($p)}");
     runTest(
         "{@param p : ?}",
-        "{call .foo}",
+        "{call foo}",
         "  {param p1 : notrefed($p) /}",
         "  {param p2 : notrefed($p) /}",
         "{/call}",
@@ -316,38 +449,90 @@ public final class TemplateAnalysisTest {
     runTest(
         "{@param p : ?}",
         "{$p}",
-        "{call .foo}",
+        "{call foo}",
         "  {param p1 : refed($p) /}",
         "  {param p2 : refed($p) /}",
         "{/call}",
         "{refed($p)}");
   }
 
+  // we can construct a deep analysis graph with a large number of sequential if-statements
+  @Test
+  public void testDeepGraph() {
+    StringBuilder longTemplate = new StringBuilder();
+    longTemplate.append("{@param p0: ?}\n");
+    for (int i = 1; i < 1000; i++) {
+      longTemplate.append(
+          String.format(
+              "{let $p%d : $p%d + 1/}\n{if $p%d}{$p%d}{/if}\n\n", i, i - 1, i - 1, i - 1));
+    }
+    runTest(longTemplate.toString());
+  }
+
   void runTest(String... lines) {
     TemplateNode template = parseTemplate(lines);
-    TemplateAnalysis analysis = TemplateAnalysis.analyze(template);
-    for (FunctionNode node : SoyTreeUtils.getAllNodesOfType(template, FunctionNode.class)) {
-      if (node.getSoyFunction() == NOT_REFED_FUNCTION) {
-        checkNotReferenced(analysis, node.getChild(0));
-      } else if (node.getSoyFunction() == REFED_FUNCTION) {
-        checkReferenced(analysis, node.getChild(0));
+    TemplateAnalysisImpl analysis = TemplateAnalysisImpl.analyze(template);
+    // Due to how MsgNodes are compiled and analyzed, we only want to look at representative nodes
+    // so we need a complex query
+    // first look at all assertions that aren't in a placeholder.
+    SoyTreeUtils.allNodes(
+            template,
+            n ->
+                n instanceof MsgPlaceholderNode
+                    ? VisitDirective.SKIP_CHILDREN
+                    : VisitDirective.CONTINUE)
+        .forEach(n -> runTestOnLeafNode(analysis, n));
+
+    // then look at all the message placeholders.  Normalize them
+    for (MsgNode msg : SoyTreeUtils.getAllNodesOfType(template, MsgNode.class)) {
+      for (MsgSubstUnitNode placeholder : msg.getVarNameToRepNodeMap().values()) {
+        if (placeholder instanceof MsgSelectNode || placeholder instanceof MsgPluralNode) {
+          // only run on the direct exprs of select/plural, we will find their children as other
+          // placeholders.
+          for (ExprNode expr : ((ExprHolderNode) placeholder).getExprList()) {
+            SoyTreeUtils.allNodes(expr).forEach(n -> runTestOnLeafNode(analysis, n));
+          }
+        } else {
+          // everything else is a normal placeholder
+          SoyTreeUtils.allNodes(placeholder).forEach(n -> runTestOnLeafNode(analysis, n));
+        }
       }
     }
   }
 
-  private void checkNotReferenced(TemplateAnalysis analysis, ExprNode child) {
+  private static void runTestOnLeafNode(TemplateAnalysisImpl analysis, Node n) {
+    if (n instanceof FunctionNode) {
+      FunctionNode functionNode = (FunctionNode) n;
+      if (functionNode.getSoyFunction() == NOT_REFED_FUNCTION) {
+        checkNotReferenced(analysis, functionNode.getChild(0));
+      } else if (functionNode.getSoyFunction() == REFED_FUNCTION) {
+        checkReferenced(analysis, functionNode.getChild(0));
+      }
+    }
+  }
+
+  private static void checkNotReferenced(TemplateAnalysisImpl analysis, ExprNode child) {
     if (hasDefinitelyAlreadyBeenAccessed(analysis, child)) {
-      fail("Expected reference to " + format(child) + " to have not been definitely referenced.");
+      fail(
+          "Expected reference to "
+              + format(child)
+              + " to have not been definitely referenced.\n\n"
+              + analysis.dumpGraph());
     }
   }
 
-  private void checkReferenced(TemplateAnalysis analysis, ExprNode child) {
+  private static void checkReferenced(TemplateAnalysisImpl analysis, ExprNode child) {
     if (!hasDefinitelyAlreadyBeenAccessed(analysis, child)) {
-      fail("Expected reference to " + format(child) + " to have been definitely referenced.");
+      fail(
+          "Expected reference to "
+              + format(child)
+              + " to have been definitely referenced.\n\n"
+              + analysis.dumpGraph());
     }
   }
 
-  private boolean hasDefinitelyAlreadyBeenAccessed(TemplateAnalysis analysis, ExprNode child) {
+  private static boolean hasDefinitelyAlreadyBeenAccessed(
+      TemplateAnalysisImpl analysis, ExprNode child) {
     if (child instanceof VarRefNode) {
       return analysis.isResolved((VarRefNode) child);
     }
@@ -357,7 +542,7 @@ public final class TemplateAnalysisTest {
     return false;
   }
 
-  private String format(ExprNode child) {
+  private static String format(ExprNode child) {
     SourceLocation sourceLocation = child.getSourceLocation();
     // subtract 2 from the line number since the boilerplate adds 2 lines above the user content
     return child.toSourceString()
@@ -368,27 +553,29 @@ public final class TemplateAnalysisTest {
   }
 
   private static TemplateNode parseTemplate(String... lines) {
-    return SoyFileSetParserBuilder.forFileContents(
-            Joiner.on("\n")
-                .join(
-                    "{namespace test}",
-                    "{template .caller}",
-                    Joiner.on("\n").join(lines),
-                    "{/template}",
-                    "",
-                    // add an additional template as a callee.
-                    "{template .foo}",
-                    "  {@param? p1 : ?}",
-                    "  {@param? p2 : ?}",
-                    "  {$p1 + $p2}",
-                    "{/template}",
-                    ""))
-        .addSoyFunction(REFED_FUNCTION)
-        .addSoyFunction(NOT_REFED_FUNCTION)
-        .parse()
-        .fileSet()
-        .getChild(0)
-        .getChild(0);
+    return (TemplateNode)
+        SoyFileSetParserBuilder.forFileContents(
+                Joiner.on("\n")
+                    .join(
+                        "{namespace test}",
+                        "{template caller}",
+                        Joiner.on("\n").join(lines),
+                        "{/template}",
+                        "",
+                        // add an additional template as a callee.
+                        "{template foo}",
+                        "  {@param? p1 : ?}",
+                        "  {@param? p2 : ?}",
+                        "  {$p1 + $p2}",
+                        "{/template}",
+                        ""))
+            .addSoyFunction(REFED_FUNCTION)
+            .addSoyFunction(NOT_REFED_FUNCTION)
+            .errorReporter(ErrorReporter.explodeOnErrorsAndIgnoreDeprecations())
+            .parse()
+            .fileSet()
+            .getChild(0)
+            .getChild(0);
   }
 
   private static final SoyFunction NOT_REFED_FUNCTION =
@@ -399,7 +586,7 @@ public final class TemplateAnalysisTest {
         }
 
         @Override
-        public Set<Integer> getValidArgsSizes() {
+        public ImmutableSet<Integer> getValidArgsSizes() {
           return ImmutableSet.of(1);
         }
       };
@@ -412,7 +599,7 @@ public final class TemplateAnalysisTest {
         }
 
         @Override
-        public Set<Integer> getValidArgsSizes() {
+        public ImmutableSet<Integer> getValidArgsSizes() {
           return ImmutableSet.of(1);
         }
       };

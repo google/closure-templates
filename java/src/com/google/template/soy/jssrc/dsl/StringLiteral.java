@@ -20,9 +20,9 @@ import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.QuoteStyle;
-import com.google.template.soy.jssrc.dsl.CodeChunk.RequiresCollector;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 /** Represents a string literal expression. */
 @AutoValue
@@ -57,7 +57,8 @@ abstract class StringLiteral extends Expression {
     // Escape non-ASCII characters since browsers are inconsistent in how they interpret utf-8 in
     // JS source files.
     String escaped =
-        BaseUtils.escapeToSoyString(literal, /* shouldEscapeToAscii= */ true, QuoteStyle.SINGLE);
+        BaseUtils.escapeToWrappedSoyString(
+            literal, /* shouldEscapeToAscii= */ true, QuoteStyle.SINGLE);
 
     // </script in a JavaScript string will end the current script tag in most browsers. Escape the
     // forward slash in the string to get around this issue.
@@ -70,5 +71,5 @@ abstract class StringLiteral extends Expression {
   }
 
   @Override
-  public void collectRequires(RequiresCollector collector) {}
+  public void collectRequires(Consumer<GoogRequire> collector) {}
 }

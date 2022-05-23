@@ -1,8 +1,7 @@
 # Print Directives
 
-
-Print directives are post-processing on the output of a [`print`
-command](print.md).
+Print directives are post-processing on the output of a
+[`print` command](print.md).
 
 Here are all print directives that are available by default. For information on
 writing custom print directives, see [Plugins](../dev/plugins.md).
@@ -49,7 +48,7 @@ The default set of allowed tags is: `b`, `br`, `em`, `i`, `s`, `strong`, `sub`,
 
 It may take a variable number of arguments which are additional tags to be
 considered safe, only `ul`, `ol`, `li`, `hr`, and `span` can be added to the
-whitelist.
+allowlist.
 
 ### `|insertWordBreaks:NNN` {#insertWordBreaks}
 
@@ -73,7 +72,7 @@ example, in common fonts, the character "x" is about half the width of a Chinese
 character, and "l" is half that. It's better to use CSS size constraints and
 `text-overflow: ellipsis` when possible.
 
-Furthermore, this print directive is no unicode sensitive so special characters
+Furthermore, this print directive is not unicode sensitive so special characters
 like emojis which are encoded using multiple UTF-16 code points, can be
 corrupted when truncated.
 
@@ -125,3 +124,19 @@ Allows arbitrary content to be included in a URI regardless of the string
 delimiters of the surrounding language. This normalizes, but does not escape, so
 it does not affect URI special characters, but instead escapes HTML, CSS, and JS
 delimiters.
+
+### `|filterCspNonceValue` {#filterCspNonceValue}
+
+Validates the values printed in `nonce=` attributes. Ensures that the value is a
+base64 encoded string as defined by the
+[CSP3 specification](https://www.w3.org/TR/CSP3/#grammardef-base64-value)
+
+This directives is used internally by the compiler as part of its support for
+ContentSecurityPolicy nonces. See our
+[security guide](../dev/security.md#content_security_policy)
+for more information.
+
+### `|whitespaceHtmlAttributes` {#whitespaceHtmlAttributes}
+
+This directive is used internally by the compiler to optimize whitespace inside
+of Html tags.

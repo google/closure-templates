@@ -1,6 +1,5 @@
 # Types
 
-
 Soy supports a basic type system. Parameters can be strictly typed to:
 
 *   enable compile time type checking of template calls
@@ -21,10 +20,12 @@ The unknown type disables type checking. It is useful if you don't care, or are
 migrating templates from not using types to using types (this way you can
 migrate one parameter at a time).
 
+Values typed as `?` are assignable to parameters of all types and visa-versa.
+
 ### `null` {#null}
 
-The `null` type is not very useful on its own, but can be as part of [composite
-types](#composite).
+The `null` type is not very useful on its own, but can be as part of
+[composite types](#composite).
 
 Backend    | type in host language
 ---------- | ----------------------------------------------------------
@@ -77,7 +78,6 @@ primitive.)
 `string` is one of the most common types in Soy. In addition to plain strings
 there are a number of safe subtypes.
 
-
 <table>
 <thead>
 <tr>
@@ -126,8 +126,7 @@ Backend    | type in host language
 JavaScript | `goog.soy.data.SanitizedHtml`
 SoySauce   | `string`, `com.google.template.soy.data.SanitizedContent`
 Tofu       | `com.google.template.soy.data.SanitizedContent`
-Python     | `sanitize.SanitizedHtml`
-
+Python     | `sanitize.SanitizedHtml`, `html_types.SafeHtml`
 
 ### `js` {#js}
 
@@ -139,13 +138,11 @@ Backend    | type in host language
 JavaScript | `goog.soy.data.SanitizedJs`, `goog.html.SafeScript`
 SoySauce   | `string`, `com.google.template.soy.data.SanitizedContent`
 Tofu       | `com.google.template.soy.data.SanitizedContent`
-Python     | `sanitize.SanitizedJs`
-
+Python     | `sanitize.SanitizedJs`, `html_types.SafeScript`
 
 ### `uri` {#uri}
 
 `uri` is for a string that contains a URI that came from a trusted source.
-
 
 <table>
 <thead>
@@ -230,10 +227,10 @@ Additionally, all backends have support for coercing
 
 Backend    | type in host language
 ---------- | ---------------------------------------------------------
-JavaScript | `goog.soy.data.SanitizedAttributes`
+JavaScript | `goog.soy.data.SanitizedHtmlAttribute`
 SoySauce   | `string`, `com.google.template.soy.data.SanitizedContent`
 Tofu       | `com.google.template.soy.data.SanitizedContent`
-Python     | `sanitize.SanitizedAttributes`
+Python     | `sanitize.SanitizedHtmlAttribute`
 
 Unlike the other safe string types there is no equivalent for attributes.
 
@@ -250,12 +247,58 @@ Backend    | type in host language
 JavaScript | `goog.soy.data.SanitizedCss`, `goog.html.SafeStyle`
 SoySauce   | `string`, `com.google.template.soy.data.SanitizedContent`
 Tofu       | `com.google.template.soy.data.SanitizedContent`
-Python     | `sanitize.SanitizedCss`
+Python     | `sanitize.SanitizedCss`, `html_types.SafeStyleSheet`
 
 Additionally, all backends have support for coercing
 `webutil.html.types.SafeStyleSheetProto` and `webutil.html.types.SafeStyleProto`
 to a `css` object.
 
+### `template` {#template}
+
+The `template` type represents a Soy template or element. Only basic templates
+or elements may be created in expressions; deltemplates are not allowed.
+Additionally, for HTML templates, strict HTML is required for templates used in
+expressions.
+
+Parameters may be bound to template-type expressions using the
+[`.bind()`](functions.md#bind) method.
+
+Templates passed as parameters may be invoked using the normal `{call}` syntax
+or element composition syntax, with any unset parameters passed as parameters.
+
+Template type declarations consist of a list of named parameters, their
+corresponding types, and the return type of the template.
+
+For example:
+
+<section class="polyglot">
+
+###### Call Command {.pg-tab}
+
+```soy
+{template foo}
+  {@param tpl: (count: int, greeting: string) => html}
+
+  {call $tpl}
+    {param count: 5 /}
+    {param greeting: 'Hello!' /}
+  {/call}
+{/template}
+```
+
+###### Element Composition {.pg-tab}
+
+```soy
+{template foo}
+  {@param tpl: (count: int, greeting: string) => html<?>}
+
+  <{$tpl.bind(record(count:5, greeting: 'Hello'))} />
+```
+
+</section>
+
+For more information, see
+[Passing Templates as Parameters](template-types.md#how-do-you-pass-in-a-template)
 
 ## Composite types {#composite}
 
@@ -272,7 +315,7 @@ A list can contain any type as an element. Lists can be accessed using the
 For example,
 
 ```soy
-{template .foo}
+{template foo}
   {@param l: list<string>}
   {$l[0]}, {$l[1]}, {$l[2]}
 {/template}
@@ -282,11 +325,11 @@ The most common thing to do with a list is to iterate over it, using the for
 loop:
 
 ```soy
-{template .foo}
+{template foo}
   {@param l: list<string>}
   <ul>
   {for $el in $l}
-    <li>{$el}
+    <li>{$el}</li>
   {/for}
   </ul>
 {/template}
@@ -307,12 +350,12 @@ the [indexed operators](expressions.md#indexing-operators).
 For example,
 
 ```soy
-{template .foo}
+{template foo}
   {@param m: map<int, string>}
   <ul>
-    {for $key in mapKeys($m)}
-      <li>{$key}: {$m[$key]}</li>
-      <li>{$key} * 2 = {$key * 2}</li> // arithmetic on numeric keys in map
+    {for $entry in $m.entries()}
+      <li>{$entry.key}: {$entry.value}</li>
+      <li>{$entry.key} * 2 = {$entry.key * 2}</li> // arithmetic on numeric keys in map
     {/for}
   </ul>
 {/template}
@@ -337,7 +380,7 @@ object maps are accessed using the
 For example,
 
 ```soy
-{template .foo}
+{template foo}
   {@param m: legacy_object_map<string, string>}
   <ul>
     {for $key in keys($m)}
@@ -371,11 +414,17 @@ be accessed using the [data access operators](expressions.md#data-access)
 For example,
 
 ```soy
-{template .foo}
-  {@param person: [age:int, name:string]}
+{template foo}
+  {@param person: [age: int, name: string]}
   Name: {$person.name}
   Age: {$person.age}
 {/template}
+```
+
+A record property is optional if its name ends with a `?`:
+
+```soy
+  {@param person: [age: int, name: string, email?: string]}
 ```
 
 In many cases, defining a protocol buffer is superior to using records since it
@@ -388,17 +437,29 @@ SoySauce   | `java.util.Map`, `com.google.template.soy.data.SoyRecord`
 Tofu       | `com.google.template.soy.data.SoyRecord`
 Python     | `dict`
 
+### `Message` {#message}
+
+The `Message` type is the generic base class of all protos. This is mostly
+useful for Soy plugins which are able to use platform specific generic proto
+features.
+
+Backend    | type in host language
+---------- | --------------------------------------------
+JavaScript | `jspb.Message`
+SoySauce   | `com.google.protobuf.Message`
+Tofu       | `com.google.template.soy.data.SoyProtoValue`
+Python     | unsupported
+
+See the [dev guide](../dev/protos.md) for more information on how protos work.
+
 ### protos: `foo.bar.BazProto` {#proto}
 
-Protocol buffers in Soy are referenced by their fully qualified proto name. They
-can be accessed as though they were `record` types with the `.` operator.
+Protocol buffers are supported in Soy. They can be accessed as though they were
+`record` types with the `.` operator.
 
 Protocol Buffers in Soy have the same semantics as `JSPB`, not `Java` protos.
 
 See the [dev guide](../dev/protos.md) for more information on how protos work.
-
-TIP: You can use the [`{alias ...}`](file-declarations.md#alias) directive to
-abbreviate proto type names.
 
 NOTE: currently, protos are _not supported_ in the Python backend.
 

@@ -32,9 +32,6 @@ import com.google.template.soy.soytree.SoyNode.StatementNode;
  * May contain a second child, which should be a ForIfemptyNode.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
- * <p>TODO(b/70577468): eliminate LoopNode
- *
  */
 public final class ForNode extends AbstractParentCommandNode<BlockNode>
     implements StandaloneNode, SplitLevelTopNode<BlockNode>, StatementNode, ExprHolderNode {
@@ -42,14 +39,18 @@ public final class ForNode extends AbstractParentCommandNode<BlockNode>
   /** The parsed expression for the list that we're iterating over. */
   private final ExprRootNode expr;
 
+  private final SourceLocation openTagLocation;
+
   /**
    * @param id The id for this node.
    * @param location The node's source location
+   * @param openTagLocation The source location of the {for ...} block.
    * @param expr The loop collection expression
    */
-  public ForNode(int id, SourceLocation location, ExprNode expr) {
+  public ForNode(int id, SourceLocation location, SourceLocation openTagLocation, ExprNode expr) {
     super(id, location, "for");
     this.expr = new ExprRootNode(expr);
+    this.openTagLocation = openTagLocation;
   }
 
   /**
@@ -60,6 +61,7 @@ public final class ForNode extends AbstractParentCommandNode<BlockNode>
   private ForNode(ForNode orig, CopyState copyState) {
     super(orig, copyState);
     this.expr = orig.expr.copy(copyState);
+    this.openTagLocation = orig.openTagLocation;
   }
 
   @Override
@@ -77,9 +79,20 @@ public final class ForNode extends AbstractParentCommandNode<BlockNode>
     return expr;
   }
 
+  public SourceLocation getOpenTagLocation() {
+    return openTagLocation;
+  }
+
   @Override
   public String getCommandText() {
-    return "$" + ((ForNonemptyNode) getChild(0)).getVarName() + " in " + expr.toSourceString();
+    return ((ForNonemptyNode) getChild(0)).getIndexVar() == null
+        ? String.format(
+            "%s in %s", ((ForNonemptyNode) getChild(0)).getVarRefName(), expr.toSourceString())
+        : String.format(
+            "%s, %s in %s",
+            ((ForNonemptyNode) getChild(0)).getVarRefName(),
+            ((ForNonemptyNode) getChild(0)).getIndexVar().refName(),
+            expr.toSourceString());
   }
 
   @Override

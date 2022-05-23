@@ -27,7 +27,6 @@ import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  * <p>TODO(lukes): consider replacing this with just passing a {@code List<SoyFileNode>} around
- *
  */
 public final class SoyFileSetNode extends AbstractParentSoyNode<SoyFileNode>
     implements SplitLevelTopNode<SoyFileNode> {
@@ -35,12 +34,9 @@ public final class SoyFileSetNode extends AbstractParentSoyNode<SoyFileNode>
   /** The node id generator for this parse tree. */
   private final IdGenerator nodeIdGen;
 
-  /**
-   * @param id The id for this node.
-   * @param nodeIdGen The node id generator for this parse tree.
-   */
-  public SoyFileSetNode(int id, IdGenerator nodeIdGen) {
-    super(id, /* sourceLocation= */ null);
+  /** @param nodeIdGen The node id generator for this parse tree. */
+  public SoyFileSetNode(IdGenerator nodeIdGen) {
+    super(nodeIdGen.genId(), /* sourceLocation= */ null);
     this.nodeIdGen = nodeIdGen;
   }
 

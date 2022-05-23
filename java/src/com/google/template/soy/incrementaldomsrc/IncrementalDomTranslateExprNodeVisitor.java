@@ -15,21 +15,28 @@
  */
 package com.google.template.soy.incrementaldomsrc;
 
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_EVAL_LOG_FN;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_IS_TRUTHY;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.STATE_PREFIX;
+import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.STATE_VAR_PREFIX;
 import static com.google.template.soy.jssrc.dsl.Expression.id;
+import static com.google.template.soy.jssrc.dsl.Expression.number;
+import static com.google.template.soy.jssrc.internal.JsRuntime.BIND_TEMPLATE_PARAMS_FOR_IDOM;
 import static com.google.template.soy.jssrc.internal.JsRuntime.XID;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import com.google.protobuf.Descriptors.Descriptor;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.FunctionNode;
-import com.google.template.soy.exprtree.GlobalNode;
+import com.google.template.soy.exprtree.ProtoEnumValueNode;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.internal.JavaScriptValueFactoryImpl;
 import com.google.template.soy.jssrc.internal.JsType;
+import com.google.template.soy.jssrc.internal.TemplateAliases;
 import com.google.template.soy.jssrc.internal.TranslateExprNodeVisitor;
 import com.google.template.soy.jssrc.internal.TranslationContext;
 import com.google.template.soy.logging.LoggingFunction;
@@ -37,19 +44,22 @@ import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypes;
+import com.google.template.soy.types.TemplateType;
 
 /** Translates expressions, overriding methods for special-case idom behavior. */
 public class IncrementalDomTranslateExprNodeVisitor extends TranslateExprNodeVisitor {
   public IncrementalDomTranslateExprNodeVisitor(
       JavaScriptValueFactoryImpl javaScriptValueFactory,
       TranslationContext translationContext,
-      ErrorReporter errorReporter) {
-    super(javaScriptValueFactory, translationContext, errorReporter);
+      TemplateAliases templateAliases,
+      ErrorReporter errorReporter,
+      Expression dataSource) {
+    super(javaScriptValueFactory, translationContext, templateAliases, errorReporter, dataSource);
   }
 
   @Override
   protected Expression genCodeForStateAccess(String paramName, TemplateStateVar stateVar) {
-    return id("this").dotAccess(STATE_PREFIX + paramName);
+    return id(STATE_VAR_PREFIX + STATE_PREFIX + paramName);
   }
 
   @Override
@@ -62,7 +72,7 @@ public class IncrementalDomTranslateExprNodeVisitor extends TranslateExprNodeVis
     if (node.getSoyFunction() instanceof LoggingFunction) {
       LoggingFunction loggingNode = (LoggingFunction) node.getSoyFunction();
       return INCREMENTAL_DOM_EVAL_LOG_FN.call(
-          XID.call(Expression.stringLiteral(node.getFunctionName())),
+          XID.call(Expression.stringLiteral(node.getStaticFunctionName())),
           Expression.arrayLiteral(visitChildren(node)),
           Expression.stringLiteral(loggingNode.getPlaceholder()));
     }
@@ -70,23 +80,32 @@ public class IncrementalDomTranslateExprNodeVisitor extends TranslateExprNodeVis
   }
 
   @Override
-  protected Expression visitGlobalNode(GlobalNode node) {
-    if (node.isResolved()) {
-      // If the types don't match this means this is a proto enum.  Add a cast to ensure the js
-      // compiler knows the type
-      // TODO(b/128869068) Ensure that a hard require is added for this type.
-      if (!node.getType().equals(node.getValue().getType())) {
-        JsType type = JsType.forJsSrcStrict(SoyTypes.removeNull(node.getType()));
-        return visit(node.getValue()).castAs(type.typeExpr(), type.getGoogRequires());
-      }
-      return visit(node.getValue());
+  protected Expression genCodeForBind(
+      Expression template, Expression paramRecord, SoyType templateType) {
+    // Unions are enforced to have the same content kind in CheckTemplateCallsPass.
+    SanitizedContentKind kind =
+        Iterables.getOnlyElement(
+                SoyTypes.expandUnions(templateType).stream()
+                    .map(type -> ((TemplateType) type).getContentKind())
+                    .collect(toImmutableSet()))
+            .getSanitizedContentKind();
+    if (kind.isHtml() || kind == SanitizedContentKind.ATTRIBUTES) {
+      return BIND_TEMPLATE_PARAMS_FOR_IDOM.call(template, paramRecord);
+    } else {
+      return super.genCodeForBind(template, paramRecord, templateType);
     }
-    return super.visit(node);
+  }
+
+  @Override
+  protected Expression visitProtoEnumValueNode(ProtoEnumValueNode node) {
+    // TODO(b/128869068) Ensure that a hard require is added for this type.
+    JsType type = JsType.forJsSrcStrict(SoyTypes.removeNull(node.getType()));
+    return number(node.getValue()).castAs(type.typeExpr(), type.getGoogRequires());
   }
 
   /** Types that might possibly be idom function callbacks, which always need custom truthiness. */
   private static final ImmutableSet<Kind> FUNCTION_TYPES =
-      Sets.immutableEnumSet(Kind.HTML, Kind.ATTRIBUTES, Kind.UNKNOWN, Kind.ANY);
+      Sets.immutableEnumSet(Kind.HTML, Kind.ELEMENT, Kind.ATTRIBUTES, Kind.UNKNOWN, Kind.ANY);
 
   @Override
   protected Expression maybeCoerceToBoolean(SoyType type, Expression chunk, boolean force) {

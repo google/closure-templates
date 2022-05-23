@@ -22,13 +22,16 @@ import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.jbcsrc.api.RenderResult;
-import com.google.template.soy.jbcsrc.api.RenderResult.Type;
 import java.io.IOException;
 
 /**
  * A special implementation of {@link SoyValueProvider} to use as a shared base class for the {@code
  * jbcsrc} implementations of the generated {@code LetValueNode} and {@code CallParamValueNode}
  * implementations.
+ *
+ * <p>This class resolves to a {@link SoyValue} and calls {@link SoyValue#render}. If you need to
+ * resolve to a {@link SoyValueProvider} to call {@link SoyValueProvider#renderAndResolve}, use
+ * {@link DetachableSoyValueProviderProvider} instead.
  */
 public abstract class DetachableSoyValueProvider implements SoyValueProvider {
   // TOMBSTONE marks this field as uninitialized which allows it to accept 'null' as a valid value.
@@ -36,9 +39,9 @@ public abstract class DetachableSoyValueProvider implements SoyValueProvider {
 
   @Override
   public final SoyValue resolve() {
+    JbcSrcRuntime.awaitProvider(this);
     SoyValue local = resolvedValue;
-    checkState(
-        local != TombstoneValue.INSTANCE, "called resolve() before status() returned ready.");
+    checkState(local != TombstoneValue.INSTANCE, "doResolve didn't replace tombstone");
     return local;
   }
 
@@ -54,7 +57,7 @@ public abstract class DetachableSoyValueProvider implements SoyValueProvider {
   public RenderResult renderAndResolve(LoggingAdvisingAppendable appendable, boolean isLast)
       throws IOException {
     RenderResult result = status();
-    if (result.type() == Type.DONE) {
+    if (result.isDone()) {
       SoyValue resolved = resolve();
       if (resolved == null) {
         appendable.append("null");

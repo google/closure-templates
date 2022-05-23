@@ -24,13 +24,13 @@ import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
  * Node representing the 'default' block in a 'select' block.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public final class MsgSelectDefaultNode extends CaseOrDefaultNode implements MsgBlockNode {
 
   /** @param id The id for this node. */
-  public MsgSelectDefaultNode(int id, SourceLocation sourceLocation) {
-    super(id, sourceLocation, "default");
+  public MsgSelectDefaultNode(
+      int id, SourceLocation sourceLocation, SourceLocation openTagLocation) {
+    super(id, sourceLocation, openTagLocation, "default");
   }
 
   /**

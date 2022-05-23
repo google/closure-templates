@@ -24,8 +24,6 @@ import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
-import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.TemplateRegistry;
 import java.util.List;
 
 /**
@@ -33,19 +31,27 @@ import java.util.List;
  * {@code RawTextNode}.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
-public final class CombineConsecutiveRawTextNodesPass extends CompilerFileSetPass {
+public final class CombineConsecutiveRawTextNodesPass
+    implements CompilerFilePass, CompilerFileSetPass {
 
+  /**
+   * Runs the pass on a file set. This pass only needs to be run on individual files, but can be run
+   * on a file set for convenience in the pass manager (e.g. if it needs to be run in between other
+   * file set passes).
+   */
   @Override
-  public Result run(
-      ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator, TemplateRegistry registry) {
+  public Result run(ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator) {
     for (SoyFileNode file : sourceFiles) {
-      for (TemplateNode template : file.getChildren()) {
-        run(template);
-      }
+      run(file, idGenerator);
     }
     return Result.CONTINUE;
+  }
+
+  /** Runs the pass on a single file. */
+  @Override
+  public void run(SoyFileNode file, IdGenerator nodeIdGen) {
+    visit(file);
   }
 
   /** Run the pass on a single node. */
@@ -101,10 +107,14 @@ public final class CombineConsecutiveRawTextNodesPass extends CompilerFileSetPas
     }
     // general case, there are N rawtextnodes to merge where n > 1
     // merge all the nodes together, then drop all the raw text nodes from the end
-    RawTextNode newNode =
-        RawTextNode.concat(
-            (List<RawTextNode>) parent.getChildren().subList(start, lastNonEmptyRawTextNode + 1));
-    ((ParentSoyNode) parent).replaceChild(start, newNode);
+    if (start < lastNonEmptyRawTextNode) {
+      RawTextNode newNode =
+          RawTextNode.concat(
+              (List<RawTextNode>) parent.getChildren().subList(start, lastNonEmptyRawTextNode + 1));
+
+      ((ParentSoyNode) parent).replaceChild(start, newNode);
+    }
+
     for (int i = end - 1; i > start; i--) {
       parent.removeChild(i);
     }

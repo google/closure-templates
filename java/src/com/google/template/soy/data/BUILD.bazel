@@ -1,0 +1,167 @@
+##
+# Copyright 2019 Google Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+##
+
+load("@rules_java//java:defs.bzl", "java_library")
+
+package(default_visibility = ["//:soy_internal"])
+
+LOCKED_DOWN = ["UnsafeSanitizedContentOrdainer.java"]
+
+ACTUAL_INTERNAL = [
+    "internal/LazyProtoToSoyValueList.java",
+    "internal/LazyProtoToSoyValueMap.java",
+]
+
+VE = [
+    "SoyVisualElement.java",
+    "SoyVisualElementData.java",
+]
+
+CODE_GENERATION = [
+    "BaseSoyTemplateImpl.java",
+]
+
+CODE_GEN_TEST_ONLY = [
+    "PartialTemplateBuilder.java",
+]
+
+TEMPLATE = [
+    "CssParam.java",
+    "SoyTemplate.java",
+    "SoyTemplateParam.java",
+]
+
+TEMPLATE_UTIL = [
+    "SoyTemplates.java",
+]
+
+TEMPLATE_RESTRICTED_UTIL = [
+    "SoyTemplatesRestrictedApi.java",
+]
+
+java_library(
+    name = "template",
+    srcs = TEMPLATE,
+    visibility = ["//visibility:public"],
+    deps = [
+        "@com_google_auto_value_auto_value",
+        "@maven//:com_google_common_html_types_types",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_library(
+    name = "template_util",
+    srcs = TEMPLATE_UTIL,
+    visibility = ["//visibility:public"],
+    deps = [
+        ":template",
+    ],
+)
+
+java_library(
+    name = "template_util_restricted",
+    srcs = TEMPLATE_RESTRICTED_UTIL,
+    deps = [
+        ":template",
+        "//java/src/com/google/template/soy/parseinfo",
+        "//java/src/com/google/template/soy/parseinfo:name",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_library(
+    name = "data",
+    srcs = glob(
+        [
+            "*.java",
+            "restricted/*.java",
+            "internal/*.java",
+        ],
+        exclude = LOCKED_DOWN + ACTUAL_INTERNAL + VE + CODE_GENERATION + TEMPLATE + TEMPLATE_UTIL + TEMPLATE_RESTRICTED_UTIL + CODE_GEN_TEST_ONLY,
+    ),
+    visibility = ["//visibility:public"],
+    exports = [
+        ":template",
+    ],
+    deps = [
+        ":template",
+        "//java/src/com/google/template/soy/base/internal",
+        "//java/src/com/google/template/soy/internal/proto",
+        "//java/src/com/google/template/soy/jbcsrc/api:helpers",
+        "//java/src/com/google/template/soy/jbcsrc/shared:names",
+        "@com_google_auto_value_auto_value",
+        "@com_google_protobuf//:protobuf_java",
+        "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:com_google_common_html_types_types",
+        "@maven//:com_google_errorprone_error_prone_annotations",
+        "@maven//:com_google_guava_guava",
+        "@maven//:javax_inject_javax_inject",
+    ],
+)
+
+java_library(
+    name = "data_internal",
+    srcs = ACTUAL_INTERNAL,
+    deps = [
+        ":data",
+        "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_library(
+    name = "ve",
+    srcs = VE,
+    deps = [
+        ":data",
+        "//src/main/protobuf:ve_metadata_java_proto",
+        "@com_google_auto_value_auto_value",
+        "@com_google_protobuf//:protobuf_java",
+        "@maven//:com_google_code_findbugs_jsr305",
+    ],
+)
+
+java_library(
+    name = "codegen",
+    srcs = CODE_GENERATION,
+    visibility = ["//visibility:public"],
+    deps = [
+        ":data",
+        "@com_google_auto_value_auto_value",
+        "@com_google_protobuf//:protobuf_java",
+        "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:com_google_common_html_types_types",
+        "@maven//:com_google_errorprone_error_prone_annotations",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_library(
+    name = "unsafesanitizedcontentordainer_testonly",
+    testonly = 1,
+    visibility = ["//visibility:public"],
+    exports = [":unsafesanitizedcontentordainer"],
+)
+
+java_library(
+    name = "unsafesanitizedcontentordainer",
+    srcs = LOCKED_DOWN,
+    deps = [
+        ":data",
+        "@maven//:com_google_code_findbugs_jsr305",
+    ],
+)

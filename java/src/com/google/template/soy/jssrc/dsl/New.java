@@ -22,6 +22,8 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.exprtree.Operator.Associativity;
+import java.util.function.Consumer;
+import javax.annotation.Nullable;
 
 /** Represents the JavaScript {@code new} operator. */
 @AutoValue
@@ -30,8 +32,15 @@ abstract class New extends Operation {
 
   abstract Expression ctor();
 
+  @Nullable
+  abstract GoogRequire googRequire();
+
   static New create(Expression ctor) {
-    return new AutoValue_New(ctor);
+    return new AutoValue_New(ctor, null);
+  }
+
+  static New create(Expression ctor, GoogRequire require) {
+    return new AutoValue_New(ctor, require);
   }
 
   @Override
@@ -56,7 +65,10 @@ abstract class New extends Operation {
   }
 
   @Override
-  public void collectRequires(RequiresCollector collector) {
+  public void collectRequires(Consumer<GoogRequire> collector) {
+    if (googRequire() != null) {
+      collector.accept(googRequire());
+    }
     ctor().collectRequires(collector);
   }
 

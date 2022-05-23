@@ -19,7 +19,9 @@ package com.google.template.soy.shared.internal;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.base.Ascii;
+import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.escape.Escaper;
 import java.io.IOException;
@@ -45,7 +47,6 @@ import javax.annotation.ParametersAreNonnullByDefault;
  *
  * <p>Escaping functions are exposed as {@link Escaper}s in Java and via a JavaScript code
  * generating ant task for JavaScript.
- *
  */
 @ParametersAreNonnullByDefault
 public final class EscapingConventions {
@@ -120,7 +121,7 @@ public final class EscapingConventions {
    */
   public abstract static class CrossLanguageStringXform extends Escaper {
     private final String directiveName;
-    private final @Nullable Pattern valueFilter;
+    @Nullable private final Pattern valueFilter;
     private final ImmutableList<Escape> escapes;
     /**
      * A dense mapping mirroring escapes. I.e. for each element of {@link #escapes} {@code e} such
@@ -131,8 +132,10 @@ public final class EscapingConventions {
     private final char[] nonAsciiCodeUnits;
     /** Values in a sparse mapping corresponding to {@link #nonAsciiCodeUnits}. */
     private final String[] nonAsciiEscapes;
-    /** @see #getNonAsciiPrefix */
-    private final @Nullable String nonAsciiPrefix;
+    /**
+     * @see #getNonAsciiPrefix
+     */
+    @Nullable private final String nonAsciiPrefix;
 
     /**
      * @param valueFilter {@code null} if the directive accepts all strings as inputs. Otherwise a
@@ -203,7 +206,8 @@ public final class EscapingConventions {
      * units not in the sparse mapping. If null, then non-ASCII code units outside the sparse map
      * can appear unescaped.
      */
-    public final @Nullable String getNonAsciiPrefix() {
+    @Nullable
+    public final String getNonAsciiPrefix() {
       return nonAsciiPrefix;
     }
 
@@ -211,7 +215,8 @@ public final class EscapingConventions {
      * Null if the escaper accepts all strings as inputs, or otherwise a regular expression that
      * accepts only strings that can be escaped by this escaper.
      */
-    public final @Nullable Pattern getValueFilter() {
+    @Nullable
+    public final Pattern getValueFilter() {
       return valueFilter;
     }
 
@@ -296,7 +301,8 @@ public final class EscapingConventions {
      * @return null if no output buffer was passed in, and s contains no characters that need
      *     escaping. Otherwise out, or a StringBuilder if one needed to be allocated.
      */
-    private @Nullable StringBuilder maybeEscapeOnto(CharSequence s, @Nullable StringBuilder out) {
+    @Nullable
+    private StringBuilder maybeEscapeOnto(CharSequence s, @Nullable StringBuilder out) {
       try {
         return (StringBuilder) maybeEscapeOnto(s, out, 0, s.length());
       } catch (IOException ex) {
@@ -312,8 +318,9 @@ public final class EscapingConventions {
      * @return null if no output buffer was passed in, and s contains no characters that need
      *     escaping. Otherwise out, or a StringBuilder if one needed to be allocated.
      */
-    private @Nullable Appendable maybeEscapeOnto(
-        CharSequence s, @Nullable Appendable out, int start, int end) throws IOException {
+    @Nullable
+    private Appendable maybeEscapeOnto(CharSequence s, @Nullable Appendable out, int start, int end)
+        throws IOException {
       int pos = start;
       for (int i = start; i < end; ++i) {
         char c = s.charAt(i);
@@ -794,27 +801,37 @@ public final class EscapingConventions {
    * CSS property names, keyword values, quantities, hex colors, or ID or class literals.
    */
   public static final class FilterCssValue extends CrossLanguageStringXform {
+
+    /** CSS functions are safe to call and allow through the escaper. */
+    private static final ImmutableSet<String> ALLOWED_CSS_FUNCTIONS =
+        ImmutableSet.of("rgb", "rgba", "hsl", "hsla", "calc");
+
     /**
      * Matches a CSS token that can appear unquoted as part of an ID, class, font-family-name, or
      * CSS keyword value.
      */
-    public static final Pattern CSS_WORD =
+    private static final Pattern CSS_WORD =
         Pattern.compile(
-            // See http://www.owasp.org/index.php/XSS_(Cross_Site_Scripting)_Prevention_Cheat_Sheet
-            // #RULE_.234_-_CSS_Escape_Before_Inserting_Untrusted_Data_into_HTML_Style_Property_Values
+            // See
+            // https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html#rule-4---css-escape-and-strictly-validate-before-inserting-untrusted-data-into-html-style-property-values
             // for an explanation of why expression and moz-binding are bad.
             "^(?!-*(?:expression|(?:moz-)?binding))"
                 + "(?:(?:"
                 + // A latin class name or ID, CSS identifier, hex color or unicode range.
                 "[.#]?-?(?:[_a-z0-9-]+)(?:-[_a-z0-9-]+)*-?|"
-                + // A non-hex color
-                "(?:rgb|hsl)a?\\([0-9.%, ]+\\)|"
+                + // A CSS function call. This allows the same characters as
+                // except for / and *, because those can make comments which we want to exclude, but
+                // don't have an easy way of doing that in this regex.
+                "(?:"
+                + Joiner.on('|').join(ALLOWED_CSS_FUNCTIONS)
+                + ")\\([- \t,+.!#%_0-9a-zA-Z]+\\)|"
                 + // A quantity, with an optional unit
-                "-?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)(?:[a-z]{1,4}|%)?|"
+                // Note that this matches "1." even though that is not valid per the spec.
+                "[-+]?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)(?:e-?[0-9]+)?(?:[a-z]{1,4}|%)?|"
                 + // The special value !important.
                 "!important)"
-                + // Spaces.
-                "(?:\\s+|\\z)"
+                + // Spaces and commas (for property value lists).
+                "(?:\\s*[, ]\\s*|\\z)"
                 + ")*\\z",
             Pattern.CASE_INSENSITIVE);
 
@@ -908,8 +925,8 @@ public final class EscapingConventions {
     private FilterNormalizeUri() {
       // Disallows any protocol that is not in a whitelist.
       // The below passes if there is
-      // (1) Either a protocol in a whitelist (http, https, mailto).  This could be expanded but
-      //     talk to your friendly local go/ise-team-yaqs first.
+      // (1) Either a protocol in an allowlist (ftp, http, https, mailto).  This could be expanded
+      //     but talk to your friendly local go/ise-team-yaqs first.
       // (2) or no protocol.  A protocol must be followed by a colon.  The below allows that by
       //     allowing colons only after one of the characters [/?#].
       //     A colon after a hash (#) must be in the fragment.
@@ -924,20 +941,9 @@ public final class EscapingConventions {
       // It also disallows HTML entities in the first path part of a relative path,
       // e.g. "foo&lt;bar/baz".  Our existing escaping functions should not produce that.
       // More importantly, it disallows masking of a colon, e.g. "javascript&#58;...".
-      //
-      // Also Rejects paths with the following properties:
-      // (3) paths containing /../
-      // (4) paths ending in /..
       super(
           Pattern.compile(
-              "^"
-                  +
-                  // Reject case (3) and (4)
-                  "(?![^#?]*/(?:\\.|%2E){2}(?:[/?#]|\\z))"
-                  +
-                  // Accept cases (1) and (2)
-                  "(?:(?:https?|mailto):|[^&:/?#]*(?:[/?#]|\\z))",
-              Pattern.CASE_INSENSITIVE),
+              "^(?:(?:https?|mailto|ftp):|[^&:/?#]*(?:[/?#]|\\z))", Pattern.CASE_INSENSITIVE),
           null);
     }
 
@@ -977,8 +983,9 @@ public final class EscapingConventions {
           Pattern.compile(
               // Allow relative URIs.
               "^[^&:/?#]*(?:[/?#]|\\z)"
-                  // Allow http and https URIs.
+                  // Allow http, https and ftp URIs.
                   + "|^https?:"
+                  + "|^ftp:"
                   // Allow image data URIs. Ignore the subtype because browsers ignore them anyways.
                   // In fact, most browsers happily accept text/html or a completely empty MIME, but
                   // it doesn't hurt to verify that it at least looks vaguely correct.
@@ -1122,7 +1129,16 @@ public final class EscapingConventions {
 
     private FilterTelUri() {
       super(
-          Pattern.compile("^tel:[0-9a-z;=\\-+._!~*' /():&$#?@,]+\\z", Pattern.CASE_INSENSITIVE),
+          Pattern.compile(
+              "^tel:(?:[0-9a-z;=\\-+._!~*' /():&$#?@,]"
+                  // Percent encoded '#'
+                  + "|%23"
+                  // Percent encoded ','
+                  + "|%2C"
+                  // Percent encoded ';'
+                  + "|%3B"
+                  + ")+\\z",
+              Pattern.CASE_INSENSITIVE),
           null);
     }
 
@@ -1231,7 +1247,7 @@ public final class EscapingConventions {
           Pattern.compile(
               "^"
                   // Disallow special element names.
-                  + "(?!base|iframe|link|no|script|style|textarea|title|xmp)"
+                  + "(?!base|iframe|link|noframes|noscript|object|script|style|textarea|title|xmp)"
                   + "[a-z0-9_$:-]*\\z",
               Pattern.CASE_INSENSITIVE),
           null);
@@ -1240,6 +1256,52 @@ public final class EscapingConventions {
     @Override
     protected ImmutableList<Escape> defineEscapes() {
       return ImmutableList.of();
+    }
+  }
+
+  /**
+   * Implements the {@code |filterCspNonceValue} directive
+   *
+   * <p>This only allows alphanumeric, plus, slash, undescore, dash and equals (in suffix position).
+   * So importantly it shouldn't be used in any programming-languagey context, such as:
+   *
+   * <ul>
+   *   <li>JavaScript outside a string
+   *   <li>CSS outside a string
+   *   <li>tag names, attribute names ("attributes" context)
+   * </ul>
+   *
+   * <p>It is allowed in:
+   *
+   * <ul>
+   *   <li>HTML pcdata, rcdata, attribute values, even nospace
+   *   <li>CSS and JS strings
+   *   <li>HTML, JS, CSS comments
+   * </ul>
+   *
+   * <p>And in practice, it is only used in:
+   *
+   * <ul>
+   *   <li>HTML attribute values
+   * </ul>
+   *
+   * <p>See also https://www.w3.org/TR/CSP3/#grammardef-base64-value
+   */
+  public static final class FilterCspNonceValue extends CrossLanguageStringXform {
+    public static final FilterCspNonceValue INSTANCE = new FilterCspNonceValue();
+
+    private FilterCspNonceValue() {
+      super(Pattern.compile("^[a-zA-Z0-9+/_-]+={0,2}$"), null);
+    }
+
+    @Override
+    protected ImmutableList<Escape> defineEscapes() {
+      return ImmutableList.<Escape>of();
+    }
+
+    @Override
+    public String getInnocuousOutput() {
+      return INNOCUOUS_OUTPUT;
     }
   }
 
@@ -1264,7 +1326,8 @@ public final class EscapingConventions {
         FilterSmsUri.INSTANCE,
         FilterTelUri.INSTANCE,
         FilterHtmlAttributes.INSTANCE,
-        FilterHtmlElementName.INSTANCE);
+        FilterHtmlElementName.INSTANCE,
+        FilterCspNonceValue.INSTANCE);
   }
 
   /**

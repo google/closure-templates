@@ -27,7 +27,6 @@ import java.util.List;
  * Abstract implementation of a ParentSoyNode.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public abstract class AbstractParentSoyNode<N extends SoyNode> extends AbstractSoyNode
     implements ParentSoyNode<N> {

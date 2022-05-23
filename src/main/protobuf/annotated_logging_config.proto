@@ -1,0 +1,39 @@
+syntax = "proto2";
+
+package soy;
+
+import "src/main/protobuf/logging_config.proto";
+
+option java_package = "com.google.template.soy.logging";
+option java_multiple_files = true;
+
+// A Soy-internal version of LoggingConfig that contains additional Soy-only
+// details.
+message AnnotatedLoggingConfig {
+  // All the logging elements that are configured for the current compilation
+  // unit.
+  repeated AnnotatedLoggableElement element = 1;
+}
+
+// A Soy-internal version of LoggableElement that contains additional Soy-only
+// details.
+message AnnotatedLoggableElement {
+  // The actual LoggableElement.
+  optional LoggableElement element = 1;
+
+  // Whether this element has VE metadata set.
+  optional bool has_metadata = 2;
+
+  // The Java package name to use for the generated VE metadata file.
+  optional string java_package = 3;
+
+  // The JS package name to use to reference the generated VE metadata file.
+  optional string js_package = 5;
+
+  // The class name to use for the generated VE metadata file.
+  optional string class_name = 4;
+
+  // The filename of the Java resource containing the VE metadata as a binary
+  // RuntimeVeMetadata proto.
+  optional string java_resource_filename = 6;
+}

@@ -17,13 +17,14 @@
 package com.google.template.soy.types;
 
 import com.google.common.base.Ascii;
+import com.google.common.base.Objects;
+import com.google.common.base.Preconditions;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.soytree.SoyTypeP;
 
 /**
  * Implementation of types for sanitized strings, that is strings that are produced by templates
  * having a "kind" attribute. All of these types may be implicitly coerced into strings.
- *
  */
 public abstract class SanitizedType extends PrimitiveType {
 
@@ -48,6 +49,9 @@ public abstract class SanitizedType extends PrimitiveType {
 
       case CSS:
         return StyleType.getInstance();
+
+      case HTML_ELEMENT:
+        return ElementType.getInstance("");
 
       case HTML:
         return HtmlType.getInstance();
@@ -90,12 +94,82 @@ public abstract class SanitizedType extends PrimitiveType {
 
     @Override
     void doToProto(SoyTypeP.Builder builder) {
-      builder.setPrimitive(SoyTypeP.PrimitiveTypeP.HTML);
+      builder.setHtml(SoyTypeP.HtmlTypeP.newBuilder().setIsElement(false));
     }
 
     /** Return the single instance of this type. */
     public static HtmlType getInstance() {
       return INSTANCE;
+    }
+  }
+
+  /** Type produced by templates whose kind is "html<?>". */
+  public static final class ElementType extends SanitizedType {
+
+    private static final ElementType WILDCARD = new ElementType("");
+
+    private final String tagName;
+
+    // Not constructible - use getInstance().
+    private ElementType(String tagName) {
+      this.tagName = Preconditions.checkNotNull(tagName);
+    }
+
+    public String getTagName() {
+      return tagName;
+    }
+
+    @Override
+    public Kind getKind() {
+      return Kind.ELEMENT;
+    }
+
+    @Override
+    public SanitizedContentKind getContentKind() {
+      return SanitizedContentKind.HTML;
+    }
+
+    @Override
+    void doToProto(SoyTypeP.Builder builder) {
+      builder.setHtml(SoyTypeP.HtmlTypeP.newBuilder().setIsElement(true).setTagName(tagName));
+    }
+
+    /** Return the single instance of this type. */
+    public static ElementType getInstance(String tagName) {
+      return tagName.isEmpty() ? WILDCARD : new ElementType(tagName);
+    }
+
+    @Override
+    public String toString() {
+      return "html<" + (tagName.isEmpty() ? "?" : tagName) + ">";
+    }
+
+    @Override
+    boolean doIsAssignableFromNonUnionType(SoyType srcType) {
+      if (!(srcType instanceof ElementType)) {
+        return false;
+      }
+      if (tagName.isEmpty()) {
+        return true;
+      }
+      return tagName.equals(((ElementType) srcType).tagName);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      ElementType that = (ElementType) o;
+      return Objects.equal(tagName, that.tagName);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hashCode(super.hashCode(), tagName);
     }
   }
 
@@ -149,6 +223,11 @@ public abstract class SanitizedType extends PrimitiveType {
     @Override
     void doToProto(SoyTypeP.Builder builder) {
       builder.setPrimitive(SoyTypeP.PrimitiveTypeP.URI);
+    }
+
+    @Override
+    boolean doIsAssignableFromNonUnionType(SoyType srcType) {
+      return srcType.getKind() == Kind.URI || srcType.getKind() == Kind.TRUSTED_RESOURCE_URI;
     }
 
     /** Return the single instance of this type. */

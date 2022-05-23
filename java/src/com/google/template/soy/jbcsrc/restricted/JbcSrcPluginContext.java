@@ -28,8 +28,8 @@ public interface JbcSrcPluginContext {
   Expression getULocale();
 
   /** Returns all required css namespaces. */
-  Expression getAllRequiredCssNamespaces(Expression template);
+  Expression getAllRequiredCssNamespaces(SoyExpression template);
 
-  /** Returns rendered css namespaces so far. */
-  Expression getRenderedCssNamespaces();
+  /** Returns all required css namespaces. */
+  Expression getAllRequiredCssPaths(SoyExpression template);
 }

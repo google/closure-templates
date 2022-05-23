@@ -24,7 +24,6 @@ import com.google.template.soy.tofu.SoyTofu;
 
 /**
  * Usage of the simple examples.
- *
  */
 public class SimpleUsage {
 

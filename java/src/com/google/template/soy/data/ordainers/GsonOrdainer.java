@@ -30,7 +30,6 @@ import java.lang.reflect.Type;
 
 /**
  * Ordainer for creating SanitizedContent objects with Gson data.
- *
  */
 public final class GsonOrdainer {
 

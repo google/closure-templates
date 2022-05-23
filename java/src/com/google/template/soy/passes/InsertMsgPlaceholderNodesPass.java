@@ -16,6 +16,9 @@
 
 package com.google.template.soy.passes;
 
+import static com.google.template.soy.soytree.MessagePlaceholder.PHEX_ATTR;
+import static com.google.template.soy.soytree.MessagePlaceholder.PHNAME_ATTR;
+
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -27,7 +30,6 @@ import com.google.template.soy.soytree.HtmlAttributeValueNode;
 import com.google.template.soy.soytree.HtmlCloseTagNode;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.HtmlTagNode;
-import com.google.template.soy.soytree.MessagePlaceholders;
 import com.google.template.soy.soytree.MsgHtmlTagNode;
 import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.MsgPlaceholderNode;
@@ -51,7 +53,7 @@ import java.util.List;
  * <p>Also validates correct use of the {@code phname} and {@code phex} attributes; these attributes
  * can only be set within a <code>{msg ...}...{/msg}</code> context.
  */
-final class InsertMsgPlaceholderNodesPass extends CompilerFilePass {
+final class InsertMsgPlaceholderNodesPass implements CompilerFilePass {
   private static final SoyErrorKind INVALID_PLACEHOLDER =
       SoyErrorKind.of(
           "''{0}'' attributes are only valid on placeholders inside of '''{'msg...'' tags.{1}",
@@ -246,7 +248,9 @@ final class InsertMsgPlaceholderNodesPass extends CompilerFilePass {
       if (isValidMsgPlaceholderPosition) {
         return;
       }
-      if (node.getUserSuppliedPhName() != null || node.getUserSuppliedPhExample() != null) {
+      boolean hasUserSuppliedName = node.getPlaceholder().userSuppliedName().isPresent();
+      boolean hasExample = node.getPlaceholder().example().isPresent();
+      if (hasUserSuppliedName || hasExample) {
         MsgNode msg = node.getNearestAncestor(MsgNode.class);
         String extra = "";
         if (msg != null) {
@@ -261,16 +265,11 @@ final class InsertMsgPlaceholderNodesPass extends CompilerFilePass {
             extra = " Did you mean to put this attribute on the surrounding html tag?";
           }
         }
-        if (node.getUserSuppliedPhName() != null) {
-          errorReporter.report(
-              node.getSourceLocation(),
-              INVALID_PLACEHOLDER,
-              MessagePlaceholders.PHNAME_ATTR,
-              extra);
+        if (hasUserSuppliedName) {
+          errorReporter.report(node.getSourceLocation(), INVALID_PLACEHOLDER, PHNAME_ATTR, extra);
         }
-        if (node.getUserSuppliedPhExample() != null) {
-          errorReporter.report(
-              node.getSourceLocation(), INVALID_PLACEHOLDER, MessagePlaceholders.PHEX_ATTR, extra);
+        if (hasExample) {
+          errorReporter.report(node.getSourceLocation(), INVALID_PLACEHOLDER, PHEX_ATTR, extra);
         }
       }
     }

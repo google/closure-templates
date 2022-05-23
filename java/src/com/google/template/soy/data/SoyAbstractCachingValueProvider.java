@@ -29,7 +29,6 @@ import javax.annotation.Nullable;
  * twice.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public abstract class SoyAbstractCachingValueProvider implements SoyValueProvider {
 

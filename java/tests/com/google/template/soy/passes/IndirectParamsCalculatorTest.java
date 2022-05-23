@@ -19,10 +19,11 @@ package com.google.template.soy.passes;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.Multimap;
-import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.passes.IndirectParamsCalculator.IndirectParamsInfo;
+import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.TemplateMetadata;
-import com.google.template.soy.soytree.TemplateRegistry;
+import com.google.template.soy.testing.SoyFileSetParserBuilder;
+import com.google.template.soy.types.TemplateType.Parameter;
 import java.util.Map;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -30,7 +31,6 @@ import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for IndirectParamsCalculator.
- *
  */
 @RunWith(JUnit4.class)
 public final class IndirectParamsCalculatorTest {
@@ -40,45 +40,43 @@ public final class IndirectParamsCalculatorTest {
 
     String alpha =
         "{namespace alpha}\n"
-            + "\n"
-            + "{template .zero}\n"
+            + "import * as beta from 'no-path-2';\n"
+            + "{template zero}\n"
             + "  {@param? a0: ?}\n"
             + "  {@param? b3: ?}\n" // 'b3' listed by alpha.zero
-            + "  {call .zero data=\"all\" /}\n"
-            + "  {call .one data=\"all\" /}\n" // recursive call should not cause 'a0' to be added
-            + "  {call .two /}\n"
-            + "  {call beta.zero /}\n"
-            + "  {call .five data=\"all\"}\n"
+            + "  {call zero data=\"all\" /}\n"
+            + "  {call one data=\"all\" /}\n" // recursive call should not cause 'a0' to be added
+            + "  {call two /}\n"
+            + "  {call five data=\"all\"}\n"
             + "    {param a5: $a0 /}\n"
             + "    {param b2: 88 /}\n"
             + "  {/call}\n"
             + "{/template}\n"
             + "\n"
-            + "{template .one}\n"
+            + "{template one}\n"
             + "  {@param? a1: ?}\n"
-            + "  {call .three data=\"all\" /}\n"
-            + "  {call .four /}\n"
+            + "  {call three data=\"all\" /}\n"
+            + "  {call four /}\n"
             + "  {$a1}\n"
             + "{/template}\n"
             + "\n"
-            + "{template .two}\n"
+            + "{template two}\n"
             + "  {@param? a2: ?}\n"
             + "  {$a2}\n"
             + "{/template}\n"
             + "\n"
-            + "{template .three}\n"
+            + "{template three}\n"
             + "  {@param? a3: ?}\n"
             + "  {call beta.one data=\"all\" /}\n"
             + "  {$a3}\n"
             + "{/template}\n"
             + "\n"
-            + "{template .four}\n"
+            + "{template four}\n"
             + "  {@param? a4: ?}\n"
-            + "  {call external.one /}\n"
             + "  {$a4}\n"
             + "{/template}\n"
             + "\n"
-            + "{template .five}\n"
+            + "{template five}\n"
             + "  {@param? a5: ?}\n"
             + "  {@param? b4: ?}\n" // 'b4' listed by alpha.five
             + "  {call beta.two data=\"all\" /}\n"
@@ -86,44 +84,46 @@ public final class IndirectParamsCalculatorTest {
             + "  {call beta.four data=\"all\" /}\n"
             + "  {$b4}\n"
             + "  {$a5}\n"
-            + "{/template}\n"
-            + "\n"
-            + "{template .six}\n"
-            + "  {@param? a6: ?}\n"
-            + "  {$a6}\n"
             + "{/template}\n";
 
     String beta =
         "{namespace beta}\n"
-            + "\n"
-            + "{template .zero}\n"
+            + "import * as gamma from 'no-path-3';\n"
+            + "{template zero}\n"
             + "  {@param? b0: ?}\n"
             + "  {$b0}\n"
             + "{/template}\n"
             + "\n"
-            + "{template .one}\n"
+            + "{template one}\n"
             + "  {@param? b1: ?}\n"
-            + "  {call alpha.six data=\"all\" /}\n"
+            + "  {call gamma.six data=\"all\" /}\n"
             + "  {$b1}\n"
             + "{/template}\n"
             + "\n"
-            + "{template .two}\n"
+            + "{template two}\n"
             + "  {@param? b2: ?}\n"
             + "  {$b2}\n"
             + "{/template}\n"
             + "\n"
-            + "{template .three}\n"
+            + "{template three}\n"
             + "  {@param? b3: ?}\n"
             + "  {$b3}\n"
             + "{/template}\n"
             + "\n"
-            + "{template .four}\n"
+            + "{template four}\n"
             + "  {@param? b4: ?}\n"
             + "  {$b4}\n"
             + "{/template}\n";
 
-    TemplateRegistry registry =
-        SoyFileSetParserBuilder.forFileContents(alpha, beta).parse().registry();
+    String gamma =
+        "{namespace gamma}\n"
+            + "{template six}\n"
+            + "  {@param? a6: ?}\n"
+            + "  {$a6}\n"
+            + "{/template}\n";
+
+    FileSetMetadata registry =
+        SoyFileSetParserBuilder.forFileContents(alpha, beta, gamma).parse().registry();
 
     TemplateMetadata a0 = registry.getBasicTemplateOrElement("alpha.zero");
     TemplateMetadata a1 = registry.getBasicTemplateOrElement("alpha.one");
@@ -131,18 +131,18 @@ public final class IndirectParamsCalculatorTest {
     TemplateMetadata a3 = registry.getBasicTemplateOrElement("alpha.three");
     // TemplateMetadata a4 = registry.getBasicTemplateOrElement("alpha.four");
     TemplateMetadata a5 = registry.getBasicTemplateOrElement("alpha.five");
-    TemplateMetadata a6 = registry.getBasicTemplateOrElement("alpha.six");
-    // TemplateMetadata b0 = registry.getBasicTemplateOrElement("beta.zero");
+    TemplateMetadata a6 = registry.getBasicTemplateOrElement("gamma.six");
     TemplateMetadata b1 = registry.getBasicTemplateOrElement("beta.one");
     // TemplateMetadata b2 = registry.getBasicTemplateOrElement("beta.two");
     TemplateMetadata b3 = registry.getBasicTemplateOrElement("beta.three");
     TemplateMetadata b4 = registry.getBasicTemplateOrElement("beta.four");
 
-    IndirectParamsInfo ipi = new IndirectParamsCalculator(registry).calculateIndirectParams(a0);
+    IndirectParamsInfo ipi =
+        new IndirectParamsCalculator(registry).calculateIndirectParams(a0.getTemplateType());
     assertThat(ipi.mayHaveIndirectParamsInExternalCalls).isFalse();
     assertThat(ipi.mayHaveIndirectParamsInExternalDelCalls).isFalse();
 
-    Map<String, TemplateMetadata.Parameter> ipMap = ipi.indirectParams;
+    Map<String, Parameter> ipMap = ipi.indirectParams;
     assertThat(ipMap).doesNotContainKey("a0");
     assertThat(ipMap).containsKey("a1");
     assertThat(ipMap).doesNotContainKey("a2");

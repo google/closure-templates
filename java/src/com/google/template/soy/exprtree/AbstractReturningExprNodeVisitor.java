@@ -22,6 +22,10 @@ import com.google.template.soy.exprtree.ExprNode.OperatorNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.BitwiseAndOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.BitwiseOrOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.BitwiseXorOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.DivideByOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.EqualOpNode;
@@ -37,6 +41,8 @@ import com.google.template.soy.exprtree.OperatorNodes.NotOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.ShiftLeftOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.ShiftRightOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
 import java.util.List;
 
@@ -86,6 +92,8 @@ public abstract class AbstractReturningExprNodeVisitor<R>
         return visitFloatNode((FloatNode) node);
       case STRING_NODE:
         return visitStringNode((StringNode) node);
+      case PROTO_ENUM_VALUE_NODE:
+        return visitProtoEnumValueNode((ProtoEnumValueNode) node);
 
       case LIST_LITERAL_NODE:
         return visitListLiteralNode((ListLiteralNode) node);
@@ -93,6 +101,8 @@ public abstract class AbstractReturningExprNodeVisitor<R>
         return visitListComprehensionNode((ListComprehensionNode) node);
       case MAP_LITERAL_NODE:
         return visitMapLiteralNode((MapLiteralNode) node);
+      case MAP_LITERAL_FROM_LIST_NODE:
+        return visitMapLiteralFromListNode((MapLiteralFromListNode) node);
       case RECORD_LITERAL_NODE:
         return visitRecordLiteralNode((RecordLiteralNode) node);
 
@@ -102,14 +112,23 @@ public abstract class AbstractReturningExprNodeVisitor<R>
         return visitFieldAccessNode((FieldAccessNode) node);
       case ITEM_ACCESS_NODE:
         return visitItemAccessNode((ItemAccessNode) node);
+      case METHOD_CALL_NODE:
+        return visitMethodCallNode((MethodCallNode) node);
+      case NULL_SAFE_ACCESS_NODE:
+        return visitNullSafeAccessNode((NullSafeAccessNode) node);
 
       case GLOBAL_NODE:
         return visitGlobalNode((GlobalNode) node);
+
+      case GROUP_NODE:
+        return visitGroupNode((GroupNode) node);
 
       case NEGATIVE_OP_NODE:
         return visitNegativeOpNode((NegativeOpNode) node);
       case NOT_OP_NODE:
         return visitNotOpNode((NotOpNode) node);
+      case ASSERT_NON_NULL_OP_NODE:
+        return visitAssertNonNullOpNode((AssertNonNullOpNode) node);
       case TIMES_OP_NODE:
         return visitTimesOpNode((TimesOpNode) node);
       case DIVIDE_BY_OP_NODE:
@@ -140,14 +159,24 @@ public abstract class AbstractReturningExprNodeVisitor<R>
         return visitNullCoalescingOpNode((NullCoalescingOpNode) node);
       case CONDITIONAL_OP_NODE:
         return visitConditionalOpNode((ConditionalOpNode) node);
+      case SHIFT_LEFT_OP_NODE:
+        return visitShiftLeftOpNode((ShiftLeftOpNode) node);
+      case SHIFT_RIGHT_OP_NODE:
+        return visitShiftRightOpNode((ShiftRightOpNode) node);
+      case BITWISE_OR_OP_NODE:
+        return visitBitwiseOrOpNode((BitwiseOrOpNode) node);
+      case BITWISE_XOR_OP_NODE:
+        return visitBitwiseXorOpNode((BitwiseXorOpNode) node);
+      case BITWISE_AND_OP_NODE:
+        return visitBitwiseAndOpNode((BitwiseAndOpNode) node);
 
       case FUNCTION_NODE:
         return visitFunctionNode((FunctionNode) node);
-      case PROTO_INIT_NODE:
-        return visitProtoInitNode((ProtoInitNode) node);
 
       case VE_LITERAL_NODE:
         return visitVeLiteralNode((VeLiteralNode) node);
+      case TEMPLATE_LITERAL_NODE:
+        return visitTemplateLiteralNode((TemplateLiteralNode) node);
 
       default:
         throw new UnsupportedOperationException();
@@ -195,6 +224,10 @@ public abstract class AbstractReturningExprNodeVisitor<R>
     return visitPrimitiveNode(node);
   }
 
+  protected R visitProtoEnumValueNode(ProtoEnumValueNode node) {
+    return visitPrimitiveNode(node);
+  }
+
   protected R visitPrimitiveNode(PrimitiveNode node) {
     return visitExprNode(node);
   }
@@ -218,6 +251,10 @@ public abstract class AbstractReturningExprNodeVisitor<R>
     return visitExprNode(node);
   }
 
+  protected R visitMapLiteralFromListNode(MapLiteralFromListNode node) {
+    return visitExprNode(node);
+  }
+
   // -----------------------------------------------------------------------------------------------
   // Implementations for reference nodes.
 
@@ -237,7 +274,19 @@ public abstract class AbstractReturningExprNodeVisitor<R>
     return visitDataAccessNode(node);
   }
 
+  protected R visitMethodCallNode(MethodCallNode node) {
+    return visitDataAccessNode(node);
+  }
+
+  protected R visitNullSafeAccessNode(NullSafeAccessNode node) {
+    return visitExprNode(node);
+  }
+
   protected R visitGlobalNode(GlobalNode node) {
+    return visitExprNode(node);
+  }
+
+  protected R visitGroupNode(GroupNode node) {
     return visitExprNode(node);
   }
 
@@ -249,6 +298,10 @@ public abstract class AbstractReturningExprNodeVisitor<R>
   }
 
   protected R visitNotOpNode(NotOpNode node) {
+    return visitOperatorNode(node);
+  }
+
+  protected R visitAssertNonNullOpNode(AssertNonNullOpNode node) {
     return visitOperatorNode(node);
   }
 
@@ -308,6 +361,26 @@ public abstract class AbstractReturningExprNodeVisitor<R>
     return visitOperatorNode(node);
   }
 
+  protected R visitShiftLeftOpNode(ShiftLeftOpNode node) {
+    return visitOperatorNode(node);
+  }
+
+  protected R visitShiftRightOpNode(ShiftRightOpNode node) {
+    return visitOperatorNode(node);
+  }
+
+  protected R visitBitwiseOrOpNode(BitwiseOrOpNode node) {
+    return visitOperatorNode(node);
+  }
+
+  protected R visitBitwiseXorOpNode(BitwiseXorOpNode node) {
+    return visitOperatorNode(node);
+  }
+
+  protected R visitBitwiseAndOpNode(BitwiseAndOpNode node) {
+    return visitOperatorNode(node);
+  }
+
   protected R visitNullCoalescingOpNode(NullCoalescingOpNode node) {
     return visitOperatorNode(node);
   }
@@ -323,14 +396,16 @@ public abstract class AbstractReturningExprNodeVisitor<R>
     return visitExprNode(node);
   }
 
-  protected R visitProtoInitNode(ProtoInitNode node) {
-    return visitExprNode(node);
-  }
-
   // -----------------------------------------------------------------------------------------------
   // Implementations for ve nodes.
 
   protected R visitVeLiteralNode(VeLiteralNode node) {
+    return visitExprNode(node);
+  }
+
+  // -----------------------------------------------------------------------------------------------
+  // Implementations for template nodes.
+  protected R visitTemplateLiteralNode(TemplateLiteralNode node) {
     return visitExprNode(node);
   }
 

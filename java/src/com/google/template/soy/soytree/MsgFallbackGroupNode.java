@@ -38,10 +38,12 @@ import javax.annotation.Nullable;
  * <p>All children are {@code MsgNode}s. And conversely, all {@code MsgNode}s must be children of
  * {@code MsgFallbackGroupNode}s through parsing and middle-end passes. (Backends may have their own
  * special structure for messages).
- *
  */
 public final class MsgFallbackGroupNode extends AbstractParentSoyNode<MsgNode>
-    implements StandaloneNode, SplitLevelTopNode<MsgNode>, StatementNode {
+    implements HtmlContext.HtmlContextHolder,
+        StandaloneNode,
+        SplitLevelTopNode<MsgNode>,
+        StatementNode {
 
   /**
    * Escaping directives names (including the vertical bar) to apply to the return value. With
@@ -76,6 +78,7 @@ public final class MsgFallbackGroupNode extends AbstractParentSoyNode<MsgNode>
    * node appears in. This affects how the node is escaped (for traditional backends) or how it's
    * passed to incremental DOM APIs.
    */
+  @Override
   public HtmlContext getHtmlContext() {
     return Preconditions.checkNotNull(
         htmlContext, "Cannot access HtmlContext before HtmlTransformVisitor");

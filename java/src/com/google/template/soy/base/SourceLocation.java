@@ -21,24 +21,22 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
 import com.google.auto.value.AutoValue;
-import com.google.common.base.CharMatcher;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ComparisonChain;
+import com.google.errorprone.annotations.CheckReturnValue;
 import com.google.errorprone.annotations.Immutable;
+import java.util.Optional;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
-/**
- * Describes a source location in a Soy input file.
- *
- * @author brndn@google.com (Brendan Linn)
- */
+/** Describes a source location in a Soy input file. */
 @ParametersAreNonnullByDefault
 @Immutable
+@CheckReturnValue
 public final class SourceLocation implements Comparable<SourceLocation> {
-
   /** A file path or URI useful for error messages. */
-  @Nonnull private final String filePath;
+  @Nonnull private final SourceFilePath filePath;
 
   private final Point begin;
   private final Point end;
@@ -50,7 +48,7 @@ public final class SourceLocation implements Comparable<SourceLocation> {
    * when you may or may not have a location. Obviously, associating real locations is always
    * preferred when possible.
    */
-  public static final SourceLocation UNKNOWN = new SourceLocation("unknown");
+  public static final SourceLocation UNKNOWN = new SourceLocation(SourceFilePath.create("unknown"));
 
   /**
    * @param filePath A file path or URI useful for error messages.
@@ -64,18 +62,33 @@ public final class SourceLocation implements Comparable<SourceLocation> {
    *     if associated with the entire file instead of a line.
    */
   public SourceLocation(
-      String filePath, int beginLine, int beginColumn, int endLine, int endColumn) {
+      SourceFilePath filePath, int beginLine, int beginColumn, int endLine, int endColumn) {
     this(filePath, Point.create(beginLine, beginColumn), Point.create(endLine, endColumn));
   }
 
-  public SourceLocation(String filePath) {
+  public SourceLocation(SourceFilePath filePath) {
     this(filePath, -1, -1, -1, -1);
   }
 
-  public SourceLocation(String filePath, Point begin, Point end) {
-    this.filePath = checkNotNull(filePath);
-    this.begin = checkNotNull(begin);
-    this.end = checkNotNull(end);
+  public SourceLocation(SourceFilePath filePath, Point begin, Point end) {
+    checkNotNull(filePath, "filePath is null");
+    checkNotNull(begin, "begin is null");
+    checkNotNull(end, "end is null");
+    checkArgument(
+        begin.isKnown() == end.isKnown(),
+        "Either both the begin and end locations should be known, or neither should be. Got [%s,"
+            + " %s]",
+        begin,
+        end);
+    checkArgument(
+        begin.compareTo(end) <= 0,
+        "begin %s should be before end %s in file %s",
+        begin,
+        end,
+        filePath);
+    this.filePath = filePath;
+    this.begin = begin;
+    this.end = end;
   }
 
   /**
@@ -83,7 +96,7 @@ public final class SourceLocation implements Comparable<SourceLocation> {
    * from the file system.
    */
   @Nonnull
-  public String getFilePath() {
+  public SourceFilePath getFilePath() {
     return filePath;
   }
 
@@ -94,12 +107,7 @@ public final class SourceLocation implements Comparable<SourceLocation> {
       // invalid SoyFileNode is created.
       return null;
     }
-    // TODO(lukes): consider using Java 7 File APIs here.
-    int lastSlashIndex = CharMatcher.anyOf("/\\").lastIndexIn(filePath);
-    if (lastSlashIndex != -1 && lastSlashIndex != filePath.length() - 1) {
-      return filePath.substring(lastSlashIndex + 1);
-    }
-    return filePath;
+    return filePath.fileName();
   }
 
   /** Returns the line number in the source file where this location begins (1-based). */
@@ -132,16 +140,21 @@ public final class SourceLocation implements Comparable<SourceLocation> {
         && this.getEndColumn() + 1 == that.getBeginColumn();
   }
 
-  /**
-   * True iff this location is known, i.e. not the special value {@link #UNKNOWN}.
-   */
+  public boolean isBefore(SourceLocation that) {
+    if (!this.filePath.equals(that.filePath)) {
+      return false;
+    }
+    return this.getEndPoint().isBefore(that.getBeginPoint());
+  }
+
+  /** True iff this location has valid begin and end locations. */
   public boolean isKnown() {
-    return !this.equals(UNKNOWN);
+    // our ctor enforces that if begin is known then end is known, so we only need to check one.
+    return begin.isKnown();
   }
 
   @Override
   public int compareTo(SourceLocation o) {
-    // TODO(user): use Comparator.comparing(...)
     return ComparisonChain.start()
         .compare(this.filePath, o.filePath)
         .compare(this.begin, o.begin)
@@ -169,7 +182,21 @@ public final class SourceLocation implements Comparable<SourceLocation> {
 
   @Override
   public String toString() {
-    return begin.line() != -1 ? (filePath + ":" + begin.line() + ":" + begin.column()) : filePath;
+    String lineColumnString = toLineColumnString();
+    return (lineColumnString == null)
+        ? filePath.path()
+        : String.format("%s:%s", filePath.path(), lineColumnString);
+  }
+
+  /**
+   * Returns string representing the line:col range of the location, or null if line numbers are not
+   * available.
+   */
+  @Nullable
+  public String toLineColumnString() {
+    return (begin.line() == -1)
+        ? null
+        : String.format("%s:%s-%s:%s", begin.line(), begin.column(), end.line(), end.column());
   }
 
   public SourceLocation offsetStartCol(int offset) {
@@ -180,11 +207,39 @@ public final class SourceLocation implements Comparable<SourceLocation> {
     return new SourceLocation(filePath, begin, end.offset(0, offset));
   }
 
+  public SourceLocation offsetCols(int beginOffset, int endOffset) {
+    return new SourceLocation(filePath, begin.offset(0, beginOffset), end.offset(0, endOffset));
+  }
+
+  public boolean isSingleLine() {
+    return begin.line() == end.line();
+  }
+
+  public int getLength() {
+    Preconditions.checkState(isSingleLine());
+    return end.column() - begin.column() + 1;
+  }
+
+  /**
+   * Returns a location representing a substring of this location. The begin and end index are
+   * relative to the start point of this location.
+   *
+   * @throws IllegalStateException if this location spans multiple lines.
+   */
+  public SourceLocation substring(int beginIndex, int endIndexExcl) {
+    Preconditions.checkState(isSingleLine());
+    return new SourceLocation(
+        filePath, begin.offset(0, beginIndex), begin.offset(0, endIndexExcl - 1));
+  }
+
   /**
    * Returns a new SourceLocation that starts where this SourceLocation starts and ends where {@code
    * other} ends.
    */
   public SourceLocation extend(SourceLocation other) {
+    if (!isKnown() || !other.isKnown()) {
+      return UNKNOWN;
+    }
     checkState(
         filePath.equals(other.filePath),
         "Mismatched files paths: %s and %s",
@@ -194,11 +249,75 @@ public final class SourceLocation implements Comparable<SourceLocation> {
   }
 
   /**
+   * Returns a new SourceLocation that starts where this SourceLocation starts and ends where {@code
+   * other} ends.
+   */
+  public SourceLocation extend(Point other) {
+    if (!isKnown() || !other.isKnown()) {
+      return UNKNOWN;
+    }
+    return new SourceLocation(filePath, begin, other);
+  }
+
+  /**
    * Returns a new SourceLocation that starts where this SourceLocation starts and ends {@code
    * lines} and {@code cols} further than where it ends.
    */
   public SourceLocation extend(int lines, int cols) {
     return new SourceLocation(filePath, begin, end.offset(lines, cols));
+  }
+
+  /**
+   * Creates a source location that fully spans the two source locations. They do not need to be
+   * adjacent locations. You probably don't want to use this unless you're doing something in the
+   * formatter with reordering.
+   */
+  public SourceLocation createSuperRangeWith(SourceLocation other) {
+    Point begin = this.begin.isBefore(other.begin) ? this.begin : other.begin;
+    Point end = this.end.isAfter(other.end) ? this.end : other.end;
+    return new SourceLocation(filePath, begin, end);
+  }
+
+  /**
+   * Returns a new SourceLocation that covers the union of the two points. If the two locations are
+   * not adjacent or overlapping, throws an error.
+   */
+  public SourceLocation unionWith(SourceLocation other) {
+    if (!isKnown() || !other.isKnown()) {
+      return UNKNOWN;
+    }
+    checkState(
+        filePath.equals(other.filePath),
+        "Mismatched files paths: %s and %s",
+        filePath,
+        other.filePath);
+
+    checkState(
+        isAdjacentOrOverlappingWith(other),
+        "Cannot compute union of nonadjacent source locations: %s and %s",
+        this.asLineColumnRange(),
+        other.asLineColumnRange());
+
+    Point newBegin = begin.isBefore(other.getBeginPoint()) ? begin : other.getBeginPoint();
+    Point newEnd = end.isAfter(other.getEndPoint()) ? end : other.getEndPoint();
+    return new SourceLocation(filePath, newBegin, newEnd);
+  }
+
+  /** Returns whether the two source locations are adjacent or overlapping. */
+  public boolean isAdjacentOrOverlappingWith(SourceLocation other) {
+    Point lowerEndPoint = end.isBefore(other.getEndPoint()) ? end : other.getEndPoint();
+    Point higherBeginPoint = begin.isAfter(other.getBeginPoint()) ? begin : other.getBeginPoint();
+
+    SourceLocation locWithLowerEndPoint = end.isBefore(other.getEndPoint()) ? this : other;
+    SourceLocation locWithHigherEndPoint = locWithLowerEndPoint.equals(this) ? other : this;
+
+    return locWithLowerEndPoint.isJustBefore(locWithHigherEndPoint) // Adjacent
+        || lowerEndPoint.equals(higherBeginPoint) // Contiguous
+        || lowerEndPoint.isAfter(higherBeginPoint); // Overlapping (or one is a subset).
+  }
+
+  private String asLineColumnRange() {
+    return getBeginLine() + ":" + getBeginColumn() + " - " + getEndLine() + ":" + getEndColumn();
   }
 
   /** Returns a new location that points to the first character of this location. */
@@ -210,6 +329,31 @@ public final class SourceLocation implements Comparable<SourceLocation> {
     return begin;
   }
 
+  /** Whether this source location fully contains the given {@code range}, inclusively. */
+  public boolean fullyContainsRange(SourceLocation range) {
+    // If either location is unknown, return false.
+    if (!this.isKnown() || !range.isKnown()) {
+      return false;
+    }
+    // This source location should start before or at the same point as the given range.
+    boolean rangeStartsAfterOrAtBeginPoint = !this.begin.isAfter(range.begin);
+
+    // This source location should end after or at the same point as the given range.
+    boolean rangeEndsAfterOrAtEndPoint = !this.end.isBefore(range.end);
+
+    return rangeStartsAfterOrAtBeginPoint && rangeEndsAfterOrAtEndPoint;
+  }
+
+  public Optional<SourceLocation> getOverlapWith(SourceLocation other) {
+    Point lowerEndPoint = end.isBefore(other.getEndPoint()) ? end : other.getEndPoint();
+    Point higherBeginPoint = begin.isAfter(other.getBeginPoint()) ? begin : other.getBeginPoint();
+
+    if (!lowerEndPoint.isBefore(higherBeginPoint)) {
+      return Optional.of(new SourceLocation(filePath, higherBeginPoint, lowerEndPoint));
+    }
+    return Optional.empty();
+  }
+
   /** Returns a new location that points to the last character of this location. */
   public SourceLocation getEndLocation() {
     return new SourceLocation(filePath, end, end);
@@ -217,6 +361,15 @@ public final class SourceLocation implements Comparable<SourceLocation> {
 
   public SourceLocation.Point getEndPoint() {
     return end;
+  }
+
+  public boolean containsPoint(Point point) {
+    return begin.compareTo(point) <= 0 && end.compareTo(point) >= 0;
+  }
+
+  /** Returns a new source location in the same file with unknown start and end points. */
+  public SourceLocation clearRange() {
+    return new SourceLocation(filePath);
   }
 
   /** A Point in a source file. */
@@ -238,23 +391,56 @@ public final class SourceLocation implements Comparable<SourceLocation> {
 
     public abstract int column();
 
-    public Point offset(int byLines, int byColumns) {
-      if (line() == -1) {
+    public final boolean isKnown() {
+      return !this.equals(UNKNOWN_POINT);
+    }
+
+    public final Point offset(int byLines, int byColumns) {
+      if (!isKnown()) {
         return this;
       }
       return Point.create(line() + byLines, column() + byColumns);
     }
 
-    public SourceLocation asLocation(String filePath) {
+    public final SourceLocation asLocation(SourceFilePath filePath) {
       return new SourceLocation(filePath, this, this);
     }
 
     @Override
-    public int compareTo(Point o) {
+    public final int compareTo(Point o) {
       return ComparisonChain.start()
           .compare(line(), o.line())
           .compare(column(), o.column())
           .result();
+    }
+
+    public final boolean isBefore(Point o) {
+      return compareTo(o) < 0;
+    }
+
+    public final boolean isBefore(SourceLocation o) {
+      return isBefore(o.getBeginPoint());
+    }
+
+    public final boolean isAfter(Point o) {
+      return compareTo(o) > 0;
+    }
+
+    public final boolean isAfter(SourceLocation o) {
+      return isAfter(o.getEndPoint());
+    }
+
+    @Override
+    public final boolean equals(Object o) {
+      if (!(o instanceof Point)) {
+        return false;
+      }
+      return compareTo(((Point) o)) == 0;
+    }
+
+    @Override
+    public final int hashCode() {
+      return (line() * 31 * 31) + (column() * 31);
     }
   }
 }

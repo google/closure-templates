@@ -32,7 +32,7 @@ import com.google.template.soy.soytree.SoyTreeUtils;
  * <p>In theory an empty {@code msg} command would be trivial to support, but it most likely points
  * to some user confusion or stray debugging code.
  */
-final class CheckNonEmptyMsgNodesPass extends CompilerFilePass {
+final class CheckNonEmptyMsgNodesPass implements CompilerFilePass {
 
   private static final SoyErrorKind EMPTY_MSG_ERROR =
       SoyErrorKind.of("Empty messages are forbidden.");

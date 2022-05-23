@@ -18,7 +18,6 @@ package com.google.template.soy.pysrc.internal;
 
 import static com.google.template.soy.pysrc.internal.SoyExprForPySubject.assertThatSoyExpr;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.pysrc.restricted.PyExpr;
@@ -31,7 +30,6 @@ import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for TranslateToPyExprVisitor.
- *
  */
 @RunWith(JUnit4.class)
 public class TranslateToPyExprVisitorTest {
@@ -63,7 +61,6 @@ public class TranslateToPyExprVisitorTest {
 
   @Test
   public void testRecordLiteral() {
-    assertThatSoyExpr("record()").translatesTo("collections.OrderedDict([])", Integer.MAX_VALUE);
     assertThatSoyExpr("record(aaa: 123, bbb: 'blah')")
         .translatesTo(
             "collections.OrderedDict([('aaa', 123), ('bbb', 'blah')])", Integer.MAX_VALUE);
@@ -71,20 +68,6 @@ public class TranslateToPyExprVisitorTest {
         .translatesTo(
             "collections.OrderedDict([('aaa', data.get('foo')), ('bbb', 'blah')])",
             Integer.MAX_VALUE);
-  }
-
-  @Test
-  public void testGlobals() {
-    ImmutableMap<String, Object> globals =
-        ImmutableMap.<String, Object>builder()
-            .put("STR", "Hello World")
-            .put("NUM", 55)
-            .put("BOOL", true)
-            .build();
-
-    assertThatSoyExpr("STR").withGlobals(globals).translatesTo("'Hello World'", Integer.MAX_VALUE);
-    assertThatSoyExpr("NUM").withGlobals(globals).translatesTo("55", Integer.MAX_VALUE);
-    assertThatSoyExpr("BOOL").withGlobals(globals).translatesTo("True", Integer.MAX_VALUE);
   }
 
   @Test

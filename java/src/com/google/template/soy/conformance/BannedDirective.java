@@ -23,8 +23,6 @@ import com.google.template.soy.soytree.PrintDirectiveNode;
 
 /**
  * Conformance rule banning particular Soy directives.
- *
- * @author brndn@google.com (Brendan Linn)
  */
 final class BannedDirective extends Rule<PrintDirectiveNode> {
 

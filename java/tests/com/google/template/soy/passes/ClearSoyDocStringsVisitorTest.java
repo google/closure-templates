@@ -18,18 +18,17 @@ package com.google.template.soy.passes;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.testing.SharedTestUtils;
+import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for ClearSoyDocStringsVisitor.
- *
  */
 @RunWith(JUnit4.class)
 public final class ClearSoyDocStringsVisitorTest {
@@ -43,7 +42,7 @@ public final class ClearSoyDocStringsVisitorTest {
             + "/**\n"
             + " * blah blah blah\n"
             + " */\n"
-            + "{template .foo}\n"
+            + "{template foo}\n"
             + "  /** blah blah */\n"
             + "  {@param goo: ?}\n"
             + "  {$goo}\n"

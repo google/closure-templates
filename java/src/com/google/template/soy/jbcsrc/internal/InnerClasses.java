@@ -109,8 +109,8 @@ public final class InnerClasses {
 
   private void doRegister(ClassVisitor visitor, TypeInfo innerClass) {
     visitor.visitInnerClass(
-        innerClass.internalName(), 
-        outer.internalName(), 
+        innerClass.internalName(),
+        outer.internalName(),
         innerClass.simpleName(),
         innerClassesAccessModifiers.get(innerClass));
   }

@@ -26,13 +26,15 @@ import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.shared.internal.BuiltinFunction;
+import com.google.template.soy.soytree.ConstNode;
 import com.google.template.soy.soytree.SoyFileNode;
+import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
 import javax.annotation.Nullable;
 
 /** Converts package-relative CSS class names to absolute names. */
-final class ResolvePackageRelativeCssNamesPass extends CompilerFilePass {
+final class ResolvePackageRelativeCssNamesPass implements CompilerFilePass {
 
   private static final String RELATIVE_SELECTOR_PREFIX = "%";
 
@@ -56,28 +58,34 @@ final class ResolvePackageRelativeCssNamesPass extends CompilerFilePass {
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
     // Compute the CSS package prefix for this template. The search order is:
     // 1) cssbase on the template
-    // 2) cssbase on the namespace
+    // 2) cssbase or cssprefix on the namespace
     // 3) first requirecss on the namespace
     String namespacePrefix = null;
-    if (file.getCssBaseNamespace() != null) {
+    if (file.getCssPrefix() != null) {
+      namespacePrefix = file.getCssPrefix();
+    } else if (file.getCssBaseNamespace() != null) {
       namespacePrefix = toCamelCase(file.getCssBaseNamespace());
     } else if (!file.getRequiredCssNamespaces().isEmpty()) {
       namespacePrefix = toCamelCase(file.getRequiredCssNamespaces().get(0));
     }
-    for (TemplateNode template : file.getChildren()) {
+    for (TemplateNode template : file.getTemplates()) {
       String packagePrefix = namespacePrefix;
       if (template.getCssBaseNamespace() != null) {
         packagePrefix = toCamelCase(template.getCssBaseNamespace());
       }
-      for (FunctionNode fn :
-          SoyTreeUtils.getAllFunctionInvocations(template, BuiltinFunction.CSS)) {
-        resolveSelector(template, fn, packagePrefix);
-      }
+      String finalPackagePrefix = packagePrefix;
+      SoyTreeUtils.allFunctionInvocations(template, BuiltinFunction.CSS)
+          .forEach(fn -> resolveSelector(template, fn, finalPackagePrefix));
+    }
+    for (ConstNode constNode : file.getConstants()) {
+      String prefix = namespacePrefix;
+      SoyTreeUtils.allFunctionInvocations(constNode, BuiltinFunction.CSS)
+          .forEach(fn -> resolveSelector(constNode, fn, prefix));
     }
   }
 
   private void resolveSelector(
-      TemplateNode template, FunctionNode node, @Nullable String packagePrefix) {
+      SoyNode templateOrConstant, FunctionNode node, @Nullable String packagePrefix) {
     ExprNode lastChild = Iterables.getLast(node.getChildren(), null);
     if (!(lastChild instanceof StringNode)) {
       // this will generate an error in CheckFunctionCallsVisitor
@@ -97,7 +105,8 @@ final class ResolvePackageRelativeCssNamesPass extends CompilerFilePass {
           selectorText);
     }
 
-    if (packagePrefix == null) {
+    if (packagePrefix == null && templateOrConstant instanceof TemplateNode) {
+      TemplateNode template = (TemplateNode) templateOrConstant;
       errorReporter.report(
           selector.getSourceLocation(),
           NO_CSS_PACKAGE,

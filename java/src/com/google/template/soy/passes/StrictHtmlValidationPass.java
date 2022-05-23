@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
@@ -62,10 +63,9 @@ import javax.annotation.Nullable;
 
 /**
  * A {@link CompilerFilePass} that checks strict html mode. See go/soy-html for usages.
- *
- * <p>Note: This pass requires that the {@link SoyConformancePass} has already been run.
  */
-public final class StrictHtmlValidationPass extends CompilerFilePass {
+@RunAfter(ResolveNamesPass.class)
+public final class StrictHtmlValidationPass implements CompilerFilePass {
 
   private final ErrorReporter errorReporter;
 
@@ -77,25 +77,26 @@ public final class StrictHtmlValidationPass extends CompilerFilePass {
 
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-    for (TemplateNode node : file.getChildren()) {
+    for (TemplateNode node : file.getTemplates()) {
       checkTemplateNode(node, nodeIdGen);
     }
   }
 
   private void checkTemplateNode(TemplateNode node, IdGenerator idGenerator) {
+    ErrorReporter reporter = ErrorReporter.create(ImmutableMap.of());
+    htmlMatcherGraph = new HtmlTagVisitor(idGenerator, reporter).exec(node);
+    new HtmlTagMatchingPass(
+            reporter,
+            idGenerator,
+            /** inCondition */
+            false,
+            /** foreignContentTagDepth */
+            0,
+            /** parentBlockType */
+            null)
+        .run(htmlMatcherGraph);
     if (node.isStrictHtml()) {
-      htmlMatcherGraph = new HtmlTagVisitor(idGenerator, errorReporter).exec(node);
-      new HtmlTagMatchingPass(
-              errorReporter,
-              idGenerator,
-              /** inCondition */
-              false,
-              /** inForeignContent */
-              false,
-              /** parentBlockType */
-              null)
-          .run(htmlMatcherGraph);
-
+      reporter.copyTo(this.errorReporter);
     }
   }
 
@@ -106,6 +107,26 @@ public final class StrictHtmlValidationPass extends CompilerFilePass {
 
   private static final class HtmlTagVisitor extends AbstractSoyNodeVisitor<HtmlMatcherGraph> {
 
+    /**
+     * The HTML tag matcher graph.
+     *
+     * <p>There are three stages concerning this graph:
+     *
+     * <ol>
+     *   <li>Build the graph by walking the AST in-order. At each node, a corresponding HTML Matcher
+     *       Graph node is created and linked to the HTML Matcher Graph. The HTML Matcher Graph is a
+     *       shadow structure of the AST.
+     *   <li>Traverse the graph, inserting implicit closing tags that match void or self-closing
+     *       HTML tags.
+     *   <li>Traverse the graph, matching HTML open and close tags through all possible code paths.
+     *       This is done using a simple stack mechanism, where each open tag pushes on the stack,
+     *       and each close tag pops the stack. Raise an "unm,atched HTML tag" error if there is a
+     *       stack underflow or if the stack is not empty at the end of any graph traversal.
+     * </ol>
+     *
+     * <p>See <a
+     * for more info.
+     */
     private final HtmlMatcherGraph htmlMatcherGraph = new HtmlMatcherGraph();
 
     /**
@@ -139,17 +160,11 @@ public final class StrictHtmlValidationPass extends CompilerFilePass {
 
     @Override
     protected void visitHtmlOpenTagNode(HtmlOpenTagNode node) {
-      if (node.getTagName().isExcludedOptionalTag()) {
-        return;
-      }
       htmlMatcherGraph.addNode(new HtmlMatcherTagNode(node));
     }
 
     @Override
     protected void visitHtmlCloseTagNode(HtmlCloseTagNode node) {
-      if (node.getTagName().isExcludedOptionalTag()) {
-        return;
-      }
       htmlMatcherGraph.addNode(new HtmlMatcherTagNode(node));
     }
 
@@ -160,6 +175,25 @@ public final class StrictHtmlValidationPass extends CompilerFilePass {
       exitConditionalContext();
     }
 
+    /**
+     * Starts a conditional branch in the {@link HtmlMatcherGraph}.
+     *
+     * <p>The basic logic flow is:
+     *
+     * <ol>
+     *   <li>Start a new conditional node, with the active edge set to {@link EdgeKind#TRUE_EDGE}
+     *   <li>Visit all the children.
+     *   <li>The graph cursor now points to the syntactically last HTML tag in the {@code true}
+     *       branch of the condition block. Add this node to the list of active nodes for later
+     *       accumulation.
+     *   <li>Set the active edge of this onditional node to {@link EdgeKind#FALSE_EDGE}
+     *   <li>Continue building the HTML matcher graph from the {@code false} branch of this node.
+     * </ol>
+     *
+     * <p>HTML Matcher graph building continues at the {@link HtmlMatcherAccumulatorNode}
+     *
+     * <p>See <a
+     */
     @Override
     protected void visitIfCondNode(IfCondNode node) {
       HtmlMatcherConditionNode conditionNode = enterConditionBranch(node.getExpr(), node);
@@ -255,8 +289,8 @@ public final class StrictHtmlValidationPass extends CompilerFilePass {
               idGenerator,
               /** inCondition */
               false,
-              /** inForeignContent */
-              false,
+              /** foreignContentTagDepth */
+              0,
               "let content")
           .run(htmlMatcherGraph);
     }
@@ -269,16 +303,42 @@ public final class StrictHtmlValidationPass extends CompilerFilePass {
               idGenerator,
               /** inCondition */
               false,
-              /** inForeignContent */
-              false,
+              /** foreignContentTagDepth */
+              0,
               "call param content")
           .run(htmlMatcherGraph);
     }
 
+    /**
+     * Establishes the start of a conditional control-flow in the {@link HtmlMatcherGraph}.
+     *
+     * <p>After this call, the graph builder starts making conditional branches, which terminate in
+     * {@link HtmlMatcherAccumulatorNode}. While in a conditional builder context, the active edges
+     * of certain nodes are recorded, and accumulated on exit of the condtional context. Condition
+     * contexts can be nested.
+     *
+     * <p>See <a
+     */
     private void enterConditionalContext() {
       activeEdgeStack.push(new ArrayList<>());
     }
 
+    /**
+     * Terminates the conditional graph-builder context in the {@link HtmlMatcherGraph} started in
+     * the nearest call to {@link #enterConditionalContext()}. The basic logic flow is:
+     *
+     * <ol>
+     *   <li>Start a new list of active edges that are candidates for an accumulator node. This is
+     *       done in {@link #enterConditionalContext()}.
+     *   <li>For each of its children, update the active node to the syntactically last node in the
+     *       child block.
+     *   <li>Capture all the active edges into an {@link HtmlMatcherAccumulatorNode}.
+     * </ol>
+     *
+     * <p>HTML Matcher graph building continues at the {@link HtmlMatcherAccumulatorNode}
+     *
+     * <p>See <a
+     */
     private void exitConditionalContext() {
       // Add the syntactically last AST node of the else branch. If there is no else branch, then
       // add the syntactically last if branch. Note that the active edge of the syntactically last
@@ -293,6 +353,18 @@ public final class StrictHtmlValidationPass extends CompilerFilePass {
       htmlMatcherGraph.addNode(accNode);
     }
 
+    /**
+     * Starts a conditional branch in the {@link HtmlMatcherGraph}.
+     *
+     * <p>Adds a newly-created {@link HtmlMatcherConditionNode} to the matcher graph, and saves the
+     * graph's cursor state and sets the active edge of the {@link HtmlMatcherConditionNode} to the
+     * {@code true} edge.
+     *
+     * <p>This condition branch is terminated by calling {@link
+     * #exitConditionBranch(HtmlMatcherConditionNode)}.
+     *
+     * <p>See <a
+     */
     private HtmlMatcherConditionNode enterConditionBranch(ExprNode expr, SoyNode node) {
       HtmlMatcherConditionNode conditionNode =
           new HtmlMatcherConditionNode(
@@ -303,6 +375,25 @@ public final class StrictHtmlValidationPass extends CompilerFilePass {
       return conditionNode;
     }
 
+    /**
+     * Terminates a conditional branch in the {@link HtmlMatcherGraph}.
+     *
+     * <p>The basic logic flow is:
+     *
+     * <ol>
+     *   <li>The HTML matcher graph cursor now points to the syntactically last HTML tag in the
+     *       {@code true} branch of the condition block. Add this node and its active edge to the
+     *       list of active edges for later accumulation.
+     *   <li>Set the active edge of this conditional node to {@link EdgeKind#FALSE_EDGE}
+     *   <li>Continue building the HTML matcher graph from the {@code false} branch of this node.
+     *   <li>The {@code false} condition branch gets terminated when the entire conditional
+     *       graph-building context ends in {@link #exitConditionalContext()}.
+     * </ol>
+     *
+     * <p>HTML Matcher graph building continues at the {@link HtmlMatcherAccumulatorNode}
+     *
+     * <p>See <a
+     */
     private void exitConditionBranch(HtmlMatcherConditionNode ifConditionNode) {
       // The graph cursor points to the syntactically last HTML tag in the if block. Note that this
       // could be the originating HtmlMatcherConditionNode.

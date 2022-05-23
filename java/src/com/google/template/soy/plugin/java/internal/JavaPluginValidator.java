@@ -29,14 +29,19 @@ import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.plugin.java.restricted.MethodSignature;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.types.IntType;
+import com.google.template.soy.types.LegacyObjectMapType;
 import com.google.template.soy.types.ListType;
+import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.NullType;
+import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.UnionType;
 import com.google.template.soy.types.UnknownType;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.Future;
 
 /** Validates plugin functions. */
 public class JavaPluginValidator {
@@ -74,7 +79,7 @@ public class JavaPluginValidator {
         reporter.nullReturn();
       }
     } catch (Throwable t) {
-      BaseUtils.trimStackTraceTo(t, getClass());
+      BaseUtils.trimStackTraceTo(t, fn.getClass());
       reporter.unexpectedError(t);
     }
     // Note: Successful return of null is reported above.
@@ -120,9 +125,22 @@ public class JavaPluginValidator {
           reporter.invalidReturnType(actualClass, expectedType, method);
           return;
         }
+      } else if (Map.class.isAssignableFrom(actualClass)) {
+        // maps are allowed as long as the value is one of our static map types.  We don't allow
+        // maps to be returned as ? (unlike lists which are less ambiguous)
+        if (expectedType instanceof MapType
+            || expectedType instanceof RecordType
+            || expectedType instanceof LegacyObjectMapType) {
+          actualSoyType = expectedType;
+        } else {
+          reporter.invalidReturnType(actualClass, expectedType, method);
+          return;
+        }
       } else if (SoyValue.class.isAssignableFrom(actualClass)) {
         // TODO(sameb): This could validate that the boxed soy type is valid for the return type
         // at compile time too.
+        actualSoyType = expectedType;
+      } else if (Future.class.isAssignableFrom(actualClass)) {
         actualSoyType = expectedType;
       } else if (Message.class.isAssignableFrom(actualClass)) {
         Optional<SoyType> returnType =
@@ -137,7 +155,7 @@ public class JavaPluginValidator {
         if (!returnType.isPresent()) {
           return; // error already reported
         }
-        if (!expectedType.isAssignableFrom(returnType.get())) {
+        if (!expectedType.isAssignableFromStrict(returnType.get())) {
           reporter.incompatibleReturnType(returnType.get(), expectedType, method);
           return;
         }
@@ -155,7 +173,7 @@ public class JavaPluginValidator {
     boolean isPossibleProtoEnum =
         actualSoyType.getKind() == SoyType.Kind.INT
             && isOrContains(expectedType, SoyType.Kind.PROTO_ENUM);
-    if (!isPossibleProtoEnum && !expectedType.isAssignableFrom(actualSoyType)) {
+    if (!isPossibleProtoEnum && !expectedType.isAssignableFromStrict(actualSoyType)) {
       reporter.incompatibleReturnType(actualSoyType, expectedType, pluginReturnValue.methodInfo());
     }
   }
@@ -178,7 +196,7 @@ public class JavaPluginValidator {
       reporter.incompatibleReturnType(actualType, expectedType, method);
       return Optional.empty();
     }
-    SoyType returnType = typeRegistry.getType(fullName.get());
+    SoyType returnType = typeRegistry.getProtoRegistry().getProtoType(fullName.get());
     if (returnType == null) {
       reporter.incompatibleReturnType(actualType, expectedType, method);
       return Optional.empty();

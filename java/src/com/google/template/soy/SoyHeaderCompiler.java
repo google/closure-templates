@@ -16,17 +16,20 @@
 
 package com.google.template.soy;
 
+import static java.util.stream.Collectors.toList;
+
 import com.google.common.collect.Iterables;
-import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.css.CssMetadata;
-import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.css.CssRegistry;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.CompilationUnit;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
+import com.google.template.soy.soytree.TemplateMetadataSerializer;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.templatecall.TemplateCallMetadata;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -45,6 +48,8 @@ import org.kohsuke.args4j.Option;
  * more cacheable.
  */
 final class SoyHeaderCompiler extends AbstractSoyCompiler {
+  private static final int OUTPUT_STREAM_BUFFER_SIZE = 64 * 1024;
+
   @Option(
       name = "--output",
       required = true,
@@ -60,6 +65,13 @@ final class SoyHeaderCompiler extends AbstractSoyCompiler {
               + " CssMetadata proto")
   private File cssMetadataOutput = null;
 
+  @Option(
+      name = "--templateCallMetadataOutput",
+      usage =
+          "Where to write metadata about the template calls.  This will be a file containing"
+              + " a gzipped TemplateCallMetadata proto")
+  private File templateCallMetadataOutput = null;
+
   SoyHeaderCompiler(PluginLoader loader, SoyInputCache cache) {
     super(loader, cache);
   }
@@ -68,43 +80,85 @@ final class SoyHeaderCompiler extends AbstractSoyCompiler {
 
   @Override
   protected void compile(SoyFileSet.Builder sfsBuilder) throws IOException {
-    ParseResult result = sfsBuilder.build().compileMinimallyForHeaders();
+    SoyFileSet.HeaderResult result = sfsBuilder.build().compileMinimallyForHeaders();
     CompilationUnit unit =
-        TemplateMetadataSerializer.compilationUnitFromFileSet(result.fileSet(), result.registry());
+        TemplateMetadataSerializer.compilationUnitFromFileSet(
+            result.fileSet(), result.templateRegistry());
     // some small tests revealed about a 5x compression ratio.  This is likely due to template names
     // sharing common prefixes and repeated parameter names and types.
     try (OutputStream os =
-        new GZIPOutputStream(new FileOutputStream(output), /* buffer size */ 64 * 1024)) {
+        new GZIPOutputStream(new FileOutputStream(output), OUTPUT_STREAM_BUFFER_SIZE)) {
       unit.writeTo(os);
     }
     if (cssMetadataOutput != null) {
       try (OutputStream os =
           new GZIPOutputStream(
-              new FileOutputStream(cssMetadataOutput), /* buffer size */ 64 * 1024)) {
-        calculateCssMetadata(result.fileSet()).writeTo(os);
+              new FileOutputStream(cssMetadataOutput), OUTPUT_STREAM_BUFFER_SIZE)) {
+        calculateCssMetadata(result.fileSet(), result.cssRegistry()).writeTo(os);
+      }
+    }
+    if (templateCallMetadataOutput != null) {
+      try (OutputStream os =
+          new GZIPOutputStream(
+              new FileOutputStream(templateCallMetadataOutput), OUTPUT_STREAM_BUFFER_SIZE)) {
+        calculateTemplateCallMetadata(result.fileSet()).writeTo(os);
       }
     }
   }
 
-  private static CssMetadata calculateCssMetadata(SoyFileSetNode fileSet) {
-    // We need to remove duplicates and preserve order
+  private static CssMetadata calculateCssMetadata(SoyFileSetNode fileSet, CssRegistry cssRegistry) {
+    // We need to remove duplicates and preserve order, so collect into maps first
     Set<String> requiredCssNames = new LinkedHashSet<>();
-    Set<String> cssClassNames = new LinkedHashSet<>();
+    Set<String> requiredCssPaths = new LinkedHashSet<>();
+    Set<String> cssNamesFromPath = new LinkedHashSet<>();
     for (SoyFileNode file : fileSet.getChildren()) {
       requiredCssNames.addAll(file.getRequiredCssNamespaces());
-      for (TemplateNode template : file.getChildren()) {
+      for (SoyFileNode.CssPath cssPath : file.getRequiredCssPaths()) {
+        // This should always be present due to the ValidateRequiredCssPass, but that pass isn't
+        // run in the open source release.
+        cssPath
+            .resolvedPath()
+            .ifPresent(
+                path -> {
+                  requiredCssPaths.add(path);
+                  if (cssPath.getNamespace() != null) {
+                    cssNamesFromPath.add(cssPath.getNamespace());
+                  }
+                });
+      }
+      for (TemplateNode template : file.getTemplates()) {
         requiredCssNames.addAll(template.getRequiredCssNamespaces());
-        for (FunctionNode fn :
-            SoyTreeUtils.getAllFunctionInvocations(fileSet, BuiltinFunction.CSS)) {
-          cssClassNames.add(((StringNode) Iterables.getLast(fn.getChildren())).getValue());
-        }
       }
     }
-
+    Set<String> cssClassNames = new LinkedHashSet<>();
+    SoyTreeUtils.allFunctionInvocations(fileSet, BuiltinFunction.CSS)
+        .forEach(
+            fn -> cssClassNames.add(((StringNode) Iterables.getLast(fn.getChildren())).getValue()));
     return CssMetadata.newBuilder()
         .addAllRequireCssNames(requiredCssNames)
+        .addAllRequireCssNames(cssNamesFromPath)
+        .addAllRequireCssPaths(requiredCssPaths)
+        .addAllRequireCssPathsFromNamespaces(
+            requiredCssNames.stream()
+                .map(namespace -> cssRegistry.symbolToFilePath().get(namespace))
+                // This shouldn't really happen due to the ValidateRequiredCssPass but that pass
+                // doesn't run in the open source build
+                .filter(f -> f != null)
+                .collect(toList()))
         .addAllCssClassNames(cssClassNames)
         .build();
+  }
+
+  private static TemplateCallMetadata calculateTemplateCallMetadata(SoyFileSetNode fileSet) {
+
+    TemplateCallMetadata.Builder templateCallMetadata = TemplateCallMetadata.newBuilder();
+
+    for (SoyFileNode file : fileSet.getChildren()) {
+      for (TemplateNode template : file.getTemplates()) {
+        templateCallMetadata.addTemplates(template.getTemplateCallMetadata());
+      }
+    }
+    return templateCallMetadata.build();
   }
 
   /**

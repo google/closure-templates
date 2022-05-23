@@ -22,7 +22,10 @@ import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.jbcsrc.restricted.TypeInfo;
+import com.google.template.soy.plugin.java.MethodChecker;
+import com.google.template.soy.plugin.java.ReadMethodData;
 import com.google.template.soy.plugin.java.restricted.MethodSignature;
 import java.io.File;
 import java.io.IOException;
@@ -35,6 +38,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
@@ -47,10 +51,10 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
 /**
- * Reads signatures for plugins from jar files, falling back to reflection (on the classpath of the
- * compiler) if the jar files can't be read.
+ * Reads signatures for plugins from jar files, optionally falling back to reflection (on the
+ * classpath of the compiler) if the jar files can't be read.
  */
-class CompiledJarsPluginSignatureReader implements PluginSignatureReader {
+public class CompiledJarsPluginSignatureReader implements PluginSignatureReader, MethodChecker {
   private static final Logger logger =
       Logger.getLogger(CompiledJarsPluginSignatureReader.class.getName());
 
@@ -59,9 +63,12 @@ class CompiledJarsPluginSignatureReader implements PluginSignatureReader {
   /** a map of class name -> method signatures in that class. */
   private final ConcurrentMap<String, ClassSignatures> readMethodsPerClass;
 
-  CompiledJarsPluginSignatureReader(List<File> pluginRuntimeJars) {
+  private final boolean allowReflection;
+
+  public CompiledJarsPluginSignatureReader(List<File> pluginRuntimeJars, boolean allowReflection) {
     this.pluginRuntimeJars = ImmutableList.copyOf(pluginRuntimeJars);
     this.readMethodsPerClass = new ConcurrentHashMap<>();
+    this.allowReflection = allowReflection;
   }
 
   @Override
@@ -69,7 +76,8 @@ class CompiledJarsPluginSignatureReader implements PluginSignatureReader {
   public ReadMethodData findMethod(MethodSignature methodSignature) {
     String className = methodSignature.fullyQualifiedClassName();
     // Get the cached methods per class if we have them, compute them if we don't.
-    ClassSignatures readMethods = readMethodsPerClass.computeIfAbsent(className, k -> index(k));
+    ClassSignatures readMethods =
+        readMethodsPerClass.computeIfAbsent(className, k -> index(k, null));
     // Get all the possible methods for the partial signature.
     MethodSignatures methodsForSig =
         readMethods.forPartial(PartialSignature.create(methodSignature));
@@ -86,15 +94,44 @@ class CompiledJarsPluginSignatureReader implements PluginSignatureReader {
     return null;
   }
 
+  @Override
+  public Response findMethod(
+      String className, String methodName, String returnType, List<String> arguments) {
+    return new AbstractMethodChecker() {
+      @Override
+      protected ClassSignatures getSignatures(String className) {
+        return readMethodsPerClass.computeIfAbsent(className, k -> index(k, s -> {}));
+      }
+    }.findMethod(className, methodName, returnType, arguments);
+  }
+
+  public static boolean hasMatchingMethod(
+      ClassSignatures signature, String methodName, String returnType, List<String> arguments) {
+    // Get all the possible methods for the partial signature.
+    MethodSignatures methodsForSig =
+        signature.forPartial(PartialSignature.create(methodName, ImmutableList.copyOf(arguments)));
+    // If we have an exact matching method for that return type, return it.
+    if (methodsForSig.hasReturnType(returnType)) {
+      return true;
+    }
+    // If a matching sig exists w/o a matching return type, return an arbitrary method so we can
+    // display a decent error message.
+    if (!methodsForSig.isEmpty()) {
+      return false;
+    }
+    // Otherwise, nothing matches at all: return null.
+    return false;
+  }
+
   /**
    * Tries to index the available public methods in the class from reading jars. If reading jars
    * fails, falls back to using reflection.
    */
-  private ClassSignatures index(String runtimeClassName) {
-    TypeInfo owner = TypeInfo.create(runtimeClassName);
+  private ClassSignatures index(String runtimeClassName, Consumer<String> errorReporter) {
+    String ownerName = TypeInfo.create(runtimeClassName, /* doesn't matter */ false).internalName();
     for (File f : pluginRuntimeJars) {
       try (ZipFile jar = new ZipFile(f)) {
-        ZipEntry entry = jar.getEntry(owner.internalName() + ".class");
+        ZipEntry entry = jar.getEntry(ownerName + ".class");
         if (entry == null) {
           // If the class didn't exist in this jar, try the next one.
           continue;
@@ -107,26 +144,31 @@ class CompiledJarsPluginSignatureReader implements PluginSignatureReader {
           return visitor.signatures.build();
         }
       } catch (IOException | UnsupportedOperationException e) {
-        logger.log(Level.WARNING, e, () -> "Unable to read class: " + runtimeClassName);
+        if (errorReporter != null) {
+          errorReporter.accept("Unable to read class: " + runtimeClassName);
+        } else {
+          logger.log(Level.WARNING, e, () -> "Unable to read class: " + runtimeClassName);
+        }
       }
     }
-    return indexReflectively(runtimeClassName);
+    if (allowReflection) {
+      return indexReflectively(runtimeClassName);
+    }
+    return ClassSignatures.EMPTY;
   }
 
   /** Uses reflection to index the available public methods in a class. */
-  private static ClassSignatures indexReflectively(String runtimeClassName) {
+  public static ClassSignatures indexReflectively(String runtimeClassName) {
     try {
       Class<?> clazz = Class.forName(runtimeClassName);
+      boolean classIsPublic = Modifier.isPublic(clazz.getModifiers());
       Method[] declaredMethods = clazz.getDeclaredMethods();
       ClassSignatures.Builder signatures = new ClassSignatures.Builder();
       for (Method m : declaredMethods) {
-        // Only index public methods.
-        if (!Modifier.isPublic(m.getModifiers())) {
-          continue;
-        }
         signatures.add(
             PartialSignature.create(m),
             ReadMethodData.create(
+                classIsPublic && Modifier.isPublic(m.getModifiers()),
                 !Modifier.isStatic(m.getModifiers()),
                 clazz.isInterface(),
                 m.getReturnType().getName()));
@@ -141,6 +183,7 @@ class CompiledJarsPluginSignatureReader implements PluginSignatureReader {
   private static class Visitor extends ClassVisitor {
     final ClassSignatures.Builder signatures = new ClassSignatures.Builder();
     boolean classIsInterface;
+    boolean classIsPublic;
 
     Visitor() {
       super(Opcodes.ASM7);
@@ -155,19 +198,17 @@ class CompiledJarsPluginSignatureReader implements PluginSignatureReader {
         String superName,
         String[] interfaces) {
       classIsInterface = Modifier.isInterface(access);
+      classIsPublic = Modifier.isPublic(access);
     }
 
     @Override
     public MethodVisitor visitMethod(
         int access, String name, String descriptor, String signature, String[] exceptions) {
-      // only index public methods.
-      if (!Modifier.isPublic(access)) {
-        return null;
-      }
       Type methodType = Type.getMethodType(descriptor);
       signatures.add(
           PartialSignature.create(name, methodType),
           ReadMethodData.create(
+              classIsPublic && Modifier.isPublic(access),
               !Modifier.isStatic(access),
               classIsInterface,
               methodType.getReturnType().getClassName()));
@@ -184,8 +225,8 @@ class CompiledJarsPluginSignatureReader implements PluginSignatureReader {
    * multiple methods with the same signature but different return types, the Java virtual machine
    * does not.")
    */
-  static class ClassSignatures {
-    static final ClassSignatures EMPTY = new ClassSignatures.Builder().build();
+  public static class ClassSignatures {
+    public static final ClassSignatures EMPTY = new ClassSignatures.Builder().build();
 
     final ImmutableMap<PartialSignature, MethodSignatures> methods;
 
@@ -196,15 +237,20 @@ class CompiledJarsPluginSignatureReader implements PluginSignatureReader {
     }
 
     /** Returns all matching signatures for the partial signature. */
-    MethodSignatures forPartial(PartialSignature partial) {
+    public MethodSignatures forPartial(PartialSignature partial) {
       return methods.getOrDefault(partial, MethodSignatures.EMPTY);
+    }
+
+    public ImmutableSet<PartialSignature> allPartials() {
+      return methods.keySet();
     }
 
     static class Builder {
       final Map<PartialSignature, MethodSignatures.Builder> methodsBuilder = new LinkedHashMap<>();
 
-      void add(PartialSignature partialSig, ReadMethodData data) {
+      Builder add(PartialSignature partialSig, ReadMethodData data) {
         methodsBuilder.computeIfAbsent(partialSig, k -> new MethodSignatures.Builder()).add(data);
+        return this;
       }
 
       ClassSignatures build() {
@@ -239,6 +285,10 @@ class CompiledJarsPluginSignatureReader implements PluginSignatureReader {
       return signaturesPerReturnType.containsKey(type);
     }
 
+    ImmutableSet<String> returnTypes() {
+      return signaturesPerReturnType.keySet();
+    }
+
     static class Builder {
       final ImmutableMap.Builder<String, ReadMethodData> signaturesBuilder = ImmutableMap.builder();
 
@@ -262,10 +312,20 @@ class CompiledJarsPluginSignatureReader implements PluginSignatureReader {
 
     abstract ImmutableList<String> arguments();
 
+    @Override
+    public final String toString() {
+      return methodName() + "(" + String.join(", ", arguments()) + ")";
+    }
+
     static PartialSignature create(Method method) {
       return new AutoValue_CompiledJarsPluginSignatureReader_PartialSignature(
           method.getName(),
           Arrays.stream(method.getParameterTypes()).map(Class::getName).collect(toImmutableList()));
+    }
+
+    static PartialSignature create(String methodName, ImmutableList<String> arguments) {
+      return new AutoValue_CompiledJarsPluginSignatureReader_PartialSignature(
+          methodName, arguments);
     }
 
     static PartialSignature create(MethodSignature methodSignature) {

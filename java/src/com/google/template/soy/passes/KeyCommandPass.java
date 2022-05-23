@@ -20,6 +20,8 @@ import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.HtmlTagNode;
@@ -38,7 +40,7 @@ import java.util.Objects;
  * Note that while these restrictions are applied due to how Soy handles incremental dom keys, this
  * pass runs in every backend for consistency.
  */
-final class KeyCommandPass extends CompilerFilePass {
+final class KeyCommandPass implements CompilerFilePass {
 
   private static final SoyErrorKind KEY_ATTR_DIRECT_CHILD_OF_OPEN_TAG =
       SoyErrorKind.of(
@@ -46,7 +48,8 @@ final class KeyCommandPass extends CompilerFilePass {
               + "(e.g. `<div '{'key 'foo''}'></div>`).");
 
   private static final SoyErrorKind DUPLICATE_KEY_ATTR =
-      SoyErrorKind.of("The key attribute is deprecated. Instead, use the '{'key'}' command.");
+      SoyErrorKind.deprecation(
+          "The key attribute is deprecated. Instead, use the '{'key'}' command.");
 
   private static final SoyErrorKind UNSUPPORTED_TYPE =
       SoyErrorKind.of("Unsupported type ''{0}'': keys must be of type string, integer, or enum.");
@@ -69,7 +72,15 @@ final class KeyCommandPass extends CompilerFilePass {
       checkNodeIsValidChildOfOpenTagNode(node);
       checkNoDuplicateKeyAttribute(node);
       if (!disableAllTypeChecking) {
-        checkNodeIsSupportedType(node);
+        checkNodeIsSupportedType(node.getExpr());
+      }
+    }
+    if (disableAllTypeChecking) {
+      return;
+    }
+    for (CallNode call : SoyTreeUtils.getAllNodesOfType(file, CallNode.class)) {
+      if (call.getKeyExpr() != null) {
+        checkNodeIsSupportedType(call.getKeyExpr());
       }
     }
   }
@@ -85,7 +96,7 @@ final class KeyCommandPass extends CompilerFilePass {
       return;
     }
     // TODO: Remove when pass is turned on.
-    if (tagNode.getTaggedPairs().size() != 0) {
+    if (!tagNode.getTaggedPairs().isEmpty()) {
       checkOneOpenTagNodeMappedToOneCloseTag(tagNode);
     }
   }
@@ -116,8 +127,8 @@ final class KeyCommandPass extends CompilerFilePass {
     }
   }
 
-  private void checkNodeIsSupportedType(KeyNode node) {
-    SoyType exprType = node.getExpr().getRoot().getType();
+  private void checkNodeIsSupportedType(ExprRootNode exprRootNode) {
+    SoyType exprType = exprRootNode.getRoot().getType();
     Collection<SoyType> unwrapped =
         exprType.getKind() == Kind.UNION
             ? ((UnionType) exprType).getMembers()
@@ -125,7 +136,6 @@ final class KeyCommandPass extends CompilerFilePass {
     boolean isSupportedType = true;
     for (SoyType type : unwrapped) {
       switch (type.getKind()) {
-        case ERROR: // allow ERROR to avoid cascading errors
         case NULL:
         case INT:
         case FLOAT:
@@ -136,6 +146,7 @@ final class KeyCommandPass extends CompilerFilePass {
           break;
         case BOOL:
         case HTML:
+        case ELEMENT:
         case ATTRIBUTES:
         case JS:
         case CSS:
@@ -145,7 +156,9 @@ final class KeyCommandPass extends CompilerFilePass {
         case RECORD:
         case LEGACY_OBJECT_MAP:
         case MAP:
+        case MESSAGE:
         case PROTO:
+        case TEMPLATE:
         case VE:
         case VE_DATA:
         case ANY:
@@ -153,11 +166,18 @@ final class KeyCommandPass extends CompilerFilePass {
           isSupportedType = false;
           break;
         case UNION:
+        case PROTO_TYPE:
+        case PROTO_ENUM_TYPE:
+        case PROTO_EXTENSION:
+        case PROTO_MODULE:
+        case TEMPLATE_TYPE:
+        case TEMPLATE_MODULE:
+        case FUNCTION:
           throw new AssertionError("impossible");
       }
     }
     if (!isSupportedType) {
-      errorReporter.report(node.getExpr().getSourceLocation(), UNSUPPORTED_TYPE, exprType);
+      errorReporter.report(exprRootNode.getSourceLocation(), UNSUPPORTED_TYPE, exprType);
     }
   }
 }

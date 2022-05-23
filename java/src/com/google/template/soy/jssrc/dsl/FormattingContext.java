@@ -104,7 +104,7 @@ final class FormattingContext implements AutoCloseable {
   FormattingContext enterBlock() {
     maybeIndent();
     buf.append('{');
-    curIndent = curIndent + "  ";
+    increaseIndent();
     endLine();
     curScope = new Scope(curScope, /* emitClosingBrace= */ true);
     return this;
@@ -116,7 +116,7 @@ final class FormattingContext implements AutoCloseable {
    */
   FormattingContext enterCaseBody() {
     maybeIndent();
-    curIndent = curIndent + "  ";
+    increaseIndent();
     endLine();
     curScope = new Scope(curScope, /* emitClosingBrace= */ false);
     return this;
@@ -140,6 +140,33 @@ final class FormattingContext implements AutoCloseable {
     }
   }
 
+  /** Increases the indent by the given number of times, where each indent is two spaces. */
+  FormattingContext increaseIndent(int numIndents) {
+    for (int i = 0; i < numIndents; i++) {
+      curIndent += "  ";
+    }
+    return this;
+  }
+
+  /** Increases the indent once (two spaces). */
+  FormattingContext increaseIndent() {
+    return increaseIndent(1);
+  }
+
+  /** Decreases the indent by the given number of times, where each indent is two spaces. */
+  FormattingContext decreaseIndent(int numIndents) {
+    for (int i = 0; i < numIndents; i++) {
+      Preconditions.checkState(!curIndent.isEmpty());
+      curIndent = curIndent.substring(2);
+    }
+    return this;
+  }
+
+  /** Decreases the indent once (two spaces). */
+  FormattingContext decreaseIndent() {
+    return decreaseIndent(1);
+  }
+
   @Override
   public String toString() {
     return isEmpty() ? "" : buf.toString();
@@ -153,8 +180,7 @@ final class FormattingContext implements AutoCloseable {
   public void close() {
     boolean emitClosingBrace = curScope.emitClosingBrace;
     curScope = Preconditions.checkNotNull(curScope.parent);
-    Preconditions.checkState(!curIndent.isEmpty());
-    curIndent = curIndent.substring(2);
+    decreaseIndent();
     endLine();
     if (emitClosingBrace) {
       append('}');

@@ -18,6 +18,7 @@ package com.google.template.soy.jssrc.dsl;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.jssrc.restricted.JsExpr;
+import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
 /**
@@ -61,7 +62,7 @@ public abstract class ClassExpression extends Expression {
   }
 
   @Override
-  public void collectRequires(RequiresCollector collector) {
+  public void collectRequires(Consumer<GoogRequire> collector) {
     if (baseClass() != null) {
       baseClass().collectRequires(collector);
     }
@@ -124,7 +125,7 @@ public abstract class ClassExpression extends Expression {
     }
 
     @Override
-    public void collectRequires(RequiresCollector collector) {
+    public void collectRequires(Consumer<GoogRequire> collector) {
       body().collectRequires(collector);
       jsDoc().collectRequires(collector);
     }
@@ -134,7 +135,7 @@ public abstract class ClassExpression extends Expression {
       ctx.append(jsDoc());
       ctx.endLine();
       ctx.append(name() + "(");
-      ctx.append(CodeChunkUtils.generateParamList(jsDoc()));
+      ctx.append(CodeChunkUtils.generateParamList(jsDoc(), /* addInlineTypeAnnotations=*/ false));
       ctx.append(") ");
       try (FormattingContext ignored = ctx.enterBlock()) {
         ctx.appendAll(body());

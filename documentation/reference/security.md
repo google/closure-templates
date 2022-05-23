@@ -1,6 +1,5 @@
 # Security Reference
 
-
 [TOC]
 
 See the [Dev Guide Security page](../dev/security.md) for how to use Soy's
@@ -175,8 +174,9 @@ This escaping logic applies to:
 *   `script.src`
 *   `iframe.src`
 *   `base.href`
-*   `link.href` unless the `link` also has a whitelisted `rel` attribute, one
-    of:
+*   `object.data`
+*   `link.href` unless the `link` also has a `rel` attribute with one
+    of the following values:
     *   alternate
     *   amphtml
     *   apple-touch-icon
@@ -263,7 +263,6 @@ Original entity: `<script src="/foo/{$x}">`
 : fromConstant(goog.string.Const.from( :                                       :
 : "bar&baz/boo") })`                   :                                       :
 
-
 <table>
 <thead>
 <tr>
@@ -288,7 +287,6 @@ Original entity: `<script src="/foo/{$x}">`
 </tbody>
 </table>
 
-
 ##### Entity-escape and filter out non-TrustedResourceUri
 
 Original entity: `<script src="/foo?q={$x}">`
@@ -304,7 +302,6 @@ Original entity: `<script src="/foo?q={$x}">`
 : goog.html.TrustedResourceUrl.        :                                 :
 : fromConstant(goog.string.Const.from( :                                 :
 : "A is #1") })`                       :                                 :
-
 
 <table>
 <thead>
@@ -338,7 +335,6 @@ fromConstant(goog.string.Const.from(
 </tbody>
 </table>
 
-
 ### Substitutions in JavaScript {#in_js}
 
 Values in JavaScript that are inside quotes are dealt with differently from
@@ -357,7 +353,6 @@ Original entity: `<script>alert('{$x}');</script>`
 | `({ "x": new                  | `<script>alert('O\'Reilly Books');</script>` |
 : goog.soy.data.SanitizedJs(    :                                              :
 : "O\\'Reilly Books") })`       :                                              :
-
 
 <table>
 <thead>
@@ -382,7 +377,6 @@ goog.soy.data.SanitizedJs(
 </tr>
 </tbody>
 </table>
-
 
 ##### Without quotes, treated as a value
 
@@ -415,7 +409,7 @@ Original entity: `<div style="color: {$x}">`
 Value                                    | Substitution
 ---------------------------------------- | ----------------------------
 `({ "x": "red" })`                       | `<div style="color: red">`
-`({ "x": "#f00" })`                      | `<div style="color: #foo">`
+`({ "x": "#f00" })`                      | `<div style="color: #f00">`
 `({ "x": "expression('alert(1337)')" })` | `<div style="color: zSoyz">`
 
 ##### Property Names
@@ -450,7 +444,6 @@ Original entity: `<div style="background: url({$x})">`
 | `({ "x": "?q=(O'Reilly) OR Books" | `<div style="background:                 |
 : })`                               : url(?q=%28O%27Reilly%29%20OR%20Books)">` :
 
-
 <table>
 <thead>
 <tr>
@@ -480,7 +473,6 @@ url(?q=%28O%27Reilly%29%20OR%20Books)"&gt;</code></td>
 </tr>
 </tbody>
 </table>
-
 
 ## Print Directives {#print_directives}
 

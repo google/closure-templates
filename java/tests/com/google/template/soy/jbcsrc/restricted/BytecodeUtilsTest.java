@@ -16,14 +16,19 @@
 
 package com.google.template.soy.jbcsrc.restricted;
 
+import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.asImmutableList;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.compare;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.logicalAnd;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.logicalNot;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.logicalOr;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.ternary;
 import static com.google.template.soy.jbcsrc.restricted.testing.ExpressionSubject.assertThatExpression;
+import static org.junit.Assert.assertThrows;
 
+import com.google.common.base.Strings;
+import com.google.common.base.Utf8;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.junit.Test;
@@ -171,21 +176,93 @@ public class BytecodeUtilsTest {
   // Use an expression that only ever throws for branches that are supposed to be skipped.
   @Test
   public void testShortCircuitingLogicalOperators_shortCircuits() {
-    assertThatExpression(throwingBoolExpression()).throwsException(IllegalStateException.class);
+    assertThatExpression(throwingExpression(Type.BOOLEAN_TYPE))
+        .throwsException(IllegalStateException.class);
 
-    assertThatExpression(logicalOr(ImmutableList.of(constant(true), throwingBoolExpression())))
+    assertThatExpression(
+            logicalOr(ImmutableList.of(constant(true), throwingExpression(Type.BOOLEAN_TYPE))))
         .evaluatesTo(true);
-    assertThatExpression(logicalAnd(ImmutableList.of(constant(false), throwingBoolExpression())))
+    assertThatExpression(
+            logicalAnd(ImmutableList.of(constant(false), throwingExpression(Type.BOOLEAN_TYPE))))
         .evaluatesTo(false);
   }
 
-  private static Expression throwingBoolExpression() {
-    return new Expression(Type.BOOLEAN_TYPE) {
+  @Test
+  public void testTernary() {
+    assertThatExpression(ternary(constant(true), constant("foo"), constant("bar")))
+        .evaluatesTo("foo");
+    assertThatExpression(ternary(constant(false), constant("foo"), constant("bar")))
+        .evaluatesTo("bar");
+  }
+
+  @Test
+  public void testTernary_doesntEvaluateUntakenBranch() {
+    assertThatExpression(
+            ternary(
+                constant(true), constant("foo"), throwingExpression(Type.getType(String.class))))
+        .evaluatesTo("foo");
+    assertThatExpression(
+            ternary(
+                constant(false), throwingExpression(Type.getType(String.class)), constant("bar")))
+        .evaluatesTo("bar");
+  }
+
+  @Test
+  public void testTernary_errors() {
+    Throwable error =
+        assertThrows(
+            IllegalArgumentException.class,
+            () ->
+                ternary(
+                    /* condition=*/ constant("foo"),
+                    /* trueBranch=*/ constant(2),
+                    /* falseBranch=*/ constant(3)));
+    assertThat(error)
+        .hasMessageThat()
+        .isEqualTo("The condition must be a boolean, got Ljava/lang/String;");
+    error =
+        assertThrows(
+            IllegalArgumentException.class,
+            () ->
+                ternary(
+                    /* condition=*/ constant(true),
+                    /* trueBranch=*/ constant("foo"),
+                    /* falseBranch=*/ constant(3)));
+    assertThat(error)
+        .hasMessageThat()
+        .isEqualTo("true (Ljava/lang/String;) and false (I) branches must be compatible");
+  }
+
+  private static Expression throwingExpression(Type type) {
+    return new Expression(type) {
       @Override
       protected void doGen(CodeBuilder adapter) {
         adapter.throwException(
             Type.getType(IllegalStateException.class), "shouldn't have called me");
       }
     };
+  }
+
+  @Test
+  public void testLargeStringConstant() {
+    String large = Strings.repeat("a", 1 << 20);
+    // 65336 is the maximum size of a string constant.
+    assertThat(Utf8.encodedLength(large)).isGreaterThan(65335);
+    assertThatExpression(constant(large)).evaluatesTo(large);
+  }
+
+  @Test
+  public void testLargeStringConstant_surrogates() {
+    assertThat("🤦‍♀️").hasLength(5);
+    String large = Strings.repeat("🤦‍♀️", 1 << 20);
+    // 65336 is the maximum size of a string constant.
+    assertThat(Utf8.encodedLength(large)).isGreaterThan(65335);
+    // prefix with single byte encoding characters so that the split points will be guaranteed to
+    // fall between all bytes of the multibyte character
+    assertThatExpression(constant(large)).evaluatesTo(large);
+    assertThatExpression(constant('a' + large)).evaluatesTo('a' + large);
+    assertThatExpression(constant("aa" + large)).evaluatesTo("aa" + large);
+    assertThatExpression(constant("aaa" + large)).evaluatesTo("aaa" + large);
+    assertThatExpression(constant("aaaa" + large)).evaluatesTo("aaaa" + large);
   }
 }

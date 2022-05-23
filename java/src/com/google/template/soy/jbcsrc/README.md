@@ -16,7 +16,6 @@ below.
 
 For information on how to develop the compiler see [the development guide](development-guide.md).
 
-
 ## Background
 
 The Soy server side renderer is currently implemented as a [recursive
@@ -44,14 +43,14 @@ directly from the parse tree. The Soy language is simple and all the basic
 language constructs map directly into Java constructs. For example, this
 template:
 
-~~~soy
-{template .foo}
+```soy
+{template foo}
   {@param p : string}
   {@param p2 : string}
   {$p}
   {$p2}
 {/template}
-~~~
+```
 
 could be implemented by a Java function like:
 
@@ -167,8 +166,8 @@ bytecode directly. This comes with a number of pros and cons.
 To demonstrate the control flow issues mentioned above, consider the following
 example:
 
-~~~soy
-{template .foo}
+```soy
+{template foo}
   {@param p1 : [f: bool, v: list<string>]}
   {if $p1.f}
     {for $s in $p1.v}
@@ -176,7 +175,7 @@ example:
     {/for}
   {/if}
 {/template}
-~~~
+```
 
 This is a simple template with a `for` loop inside an `if` statement.
 
@@ -379,7 +378,7 @@ Soy has a relatively simple expression language divided into 4 main parts:
 
 1.  Literals: `1`, `'foo'`, `[1,2,3,4]`, `['k': 'v', 'k2': 'v2']`
 2.  Operators: `+`, `-`, `==`, `?:` etc.
-3.  Function invocations: `index()`, `isFirst()`, etc.
+3.  Function invocations: `length()`, `parseInt()`, etc.
 4.  Data access expressions: `$foo`, `$foo.bar.baz`, `$foo[$key]`, `$foo[1]`
 
 Since expressions are (for the most part) where data access occurs, it is in the
@@ -658,7 +657,7 @@ calling](#call_basic_nodecall_delegate_node) for a detailed example.
 There are several styles of calls. For now I will demonstrate a normal call with
 no data param. e.g.
 
-`{call .foo}{param bar : 1 /}{/call}`
+`{call foo}{param bar : 1 /}{/call}`
 
 This will generate code that looks like:
 
@@ -694,7 +693,7 @@ Optimizations and future work:
 ### MSG\_NODE, MSG\_FALLBACK\_GROUP\_NODE
 
 Soy has direct support for translations. In `jssrc`, this is mostly delegated to
-`goog.getMessage`, but in SoySauce we don't have such a good option, instead we
+`goog.getMsg`, but in SoySauce we don't have such a good option, instead we
 handle rendering and placeholder substitution ourselves. `{msg ..}` rendering
 breaks into 2 cases
 
@@ -813,38 +812,36 @@ incompatibilities here:
         uses for generics).
 
     *   Tofu fails to type check params which are statically typed to `?`, this
-        is a known bug.
+        is a known bug .
         SoySauce does not have this bug so user templates relying on it will
         have to be fixed.
 
 *   SoySauce is stricter about dereferencing `null` objects. For example, given
-    the expression `isNonnull($foo.bar.baz)` if `bar` is `null` then accessing
+    the expression `$foo.bar.baz != null` if `bar` is `null` then accessing
     `.baz` on it should cause an error, and it does in SoySauce and the JS
     backend, however, in Tofu this doesn’t happen (though there is a TODO),
     instead it only causes an error if you perform certain operations with the
-    result of the expression (calling `isNonnull` and simple comparisons the
-    only thing you can do). An appropriate fix would be to rewrite it as
-    `isNonnull($foo.bar?.baz)`.
+    result of the expression. An appropriate fix would be to rewrite it as
+    `$foo.bar?.baz != null`.
 
 *   SoySauce interprets 'required' template parameters slightly differently than
     Tofu. Imagine this template:
 
     ```soy
-    {template .foo}
+    {template foo}
       {@param p : string}
       {$p}
     {/template}
     ```
 
-    In Tofu, if you call `.foo` without passing `$p` there are a few things that
+    In Tofu, if you call `foo` without passing `$p` there are a few things that
     can happen:
 
-    *   If it is a top level call (Java code calling `.foo`), then you will get
-        a `SoyTofuException` saying that a required parameter is missing.
+    *   If it is a top level call (Java code calling `foo`), then you will get a
+        `SoyTofuException` saying that a required parameter is missing.
     *   If it is a Soy->Soy call then you will get `null` for `$p`
 
     In SoySauce you always get `null`. We chose this option because it is more
     internally consistent (soy->soy and java->soy calls are treated
     equivalently) and it is more consistent with the behavior of the JavaScript
     Soy backend.
-

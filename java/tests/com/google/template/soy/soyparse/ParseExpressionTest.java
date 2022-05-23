@@ -31,20 +31,23 @@ import com.google.template.soy.exprtree.ExprNode.OperatorNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FloatNode;
 import com.google.template.soy.exprtree.FunctionNode;
-import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
+import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.Operator;
+import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.EqualOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.LessThanOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.MinusOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.NegativeOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
-import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
@@ -54,7 +57,6 @@ import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for Soy expression parsing.
- *
  */
 @RunWith(JUnit4.class)
 public final class ParseExpressionTest {
@@ -66,7 +68,7 @@ public final class ParseExpressionTest {
       assertThatExpression(var).isValidVar();
     }
 
-    String[] nonVars = {"$", "$1", "$ aaa", "aaa"};
+    String[] nonVars = {"$", "$1", "$ aaa"};
     for (String nonVar : nonVars) {
       assertThatExpression(nonVar).isNotValidVar();
     }
@@ -88,7 +90,13 @@ public final class ParseExpressionTest {
       "function.with.Dots($arg).field",
       "proto().field",
       "pro.to(a: $a).field",
-      "record(a : 'b').a"
+      "record(a : 'b').a",
+      "$aaa.method()",
+      "$aaa?.method()",
+      "$aaa.method(1, 2, 3)",
+      "$aaa.method(A.b.c)",
+      "$aaa.method().field",
+      "$aaa.method()[0]"
     };
     for (String dataRef : dataRefs) {
       assertThatExpression(dataRef).isValidExpression();
@@ -99,19 +107,6 @@ public final class ParseExpressionTest {
     };
     for (String nonDataRef : nonDataRefs) {
       assertThatExpression(nonDataRef).isNotValidExpression();
-    }
-  }
-
-  @Test
-  public void testRecognizeGlobal() {
-    String[] globals = {"aaa", "aaa.bbb.CCC", "a22 . b88_", "aaa.new", "news"};
-    for (String global : globals) {
-      assertThatExpression(global).isValidGlobal();
-    }
-
-    String[] nonGlobals = {"$aaa", "1a1a", "aaa.1a1a", "22", "aaa[33]", "aaa[bbb]", "aaa['bbb']"};
-    for (String nonGlobal : nonGlobals) {
-      assertThatExpression(nonGlobal).isNotValidGlobal();
     }
   }
 
@@ -201,7 +196,7 @@ public final class ParseExpressionTest {
 
   @Test
   public void testRecognizeRecordLiterals() {
-    assertThatExpression("record()").isValidExpression();
+    assertThatExpression("record()").isNotValidExpression();
     assertThatExpression("record(,)").isNotValidExpression();
     assertThatExpression("record(aa: 55)").isValidExpression();
     assertThatExpression("record(aa: 55,)").isValidExpression();
@@ -244,9 +239,6 @@ public final class ParseExpressionTest {
 
   @Test
   public void testRecognizeFunctionCall() {
-    assertThatExpression("isFirst($x)").isValidExpression();
-    assertThatExpression("isLast($y)").isValidExpression();
-    assertThatExpression("index($z)").isValidExpression();
     assertThatExpression("randomInt()").isValidExpression();
     assertThatExpression("length($x.y.z)").isValidExpression();
     assertThatExpression("round(3.14159)").isValidExpression();
@@ -265,8 +257,6 @@ public final class ParseExpressionTest {
     assertThatExpression("proto(a: 1, b: $foo, c: proto())").isValidExpression();
     assertThatExpression("pro.to(a: 1, b: $foo, c: proto())").isValidExpression();
 
-    assertThatExpression("$isFirst()").isNotValidExpression();
-    assertThatExpression("$boo.isFirst()").isNotValidExpression();
     assertThatExpression("proto.mixed($a, b: $b)").isNotValidExpression();
     assertThatExpression("proto.mixed(a: $a, $b)").isNotValidExpression();
   }
@@ -335,18 +325,18 @@ public final class ParseExpressionTest {
     SourceLocation loc = SourceLocation.UNKNOWN;
 
     ExprNode dataRef = assertThatExpression("$boo").isValidExpression();
-    assertNodeEquals(new VarRefNode("boo", loc, null), dataRef);
+    assertNodeEquals(new VarRefNode("$boo", loc, null), dataRef);
 
     dataRef = assertThatExpression("$boo.foo").isValidExpression();
     assertNodeEquals(
-        new FieldAccessNode(new VarRefNode("boo", loc, null), "foo", loc, false), dataRef);
+        new FieldAccessNode(new VarRefNode("$boo", loc, null), "foo", loc, false), dataRef);
 
     dataRef = assertThatExpression("$boo[0][$foo]").isValidExpression();
     assertNodeEquals(
         new ItemAccessNode(
             new ItemAccessNode(
-                new VarRefNode("boo", loc, null), new IntegerNode(0, loc), loc, false),
-            new VarRefNode("foo", loc, null),
+                new VarRefNode("$boo", loc, null), new IntegerNode(0, loc), loc, false),
+            new VarRefNode("$foo", loc, null),
             loc,
             false),
         dataRef);
@@ -355,22 +345,11 @@ public final class ParseExpressionTest {
     assertNodeEquals(
         new ItemAccessNode(
             new ItemAccessNode(
-                new VarRefNode("boo", loc, null), new IntegerNode(0, loc), loc, true),
-            new VarRefNode("foo", loc, null),
+                new VarRefNode("$boo", loc, null), new IntegerNode(0, loc), loc, true),
+            new VarRefNode("$foo", loc, null),
             loc,
             true),
         dataRef);
-  }
-
-  @Test
-  public void testParseGlobal() {
-    assertThatExpression("MOO_2").isValidGlobalNamed("MOO_2");
-    assertThatExpression("aaa.BBB").isValidGlobalNamed("aaa.BBB");
-
-    // Aliases are handled later, in RewriteGlobalsPass.
-    assertThatExpression("alias.MyEnum.CCC")
-        .withAlias("alias", "my.very.long.namespace")
-        .isValidGlobalNamed("alias.MyEnum.CCC");
   }
 
   @Test
@@ -423,9 +402,7 @@ public final class ParseExpressionTest {
 
   @Test
   public void testParseRecords() {
-    ExprNode expr = assertThatExpression("record()").isValidExpression();
-    assertThat(((RecordLiteralNode) expr).numChildren()).isEqualTo(0);
-    expr = assertThatExpression("record(aa: 55)").isValidExpression();
+    ExprNode expr = assertThatExpression("record(aa: 55)").isValidExpression();
     assertThat(((RecordLiteralNode) expr).numChildren()).isEqualTo(1);
     expr = assertThatExpression("record(aa: 55,)").isValidExpression();
     assertThat(((RecordLiteralNode) expr).numChildren()).isEqualTo(1);
@@ -441,19 +418,8 @@ public final class ParseExpressionTest {
   }
 
   @Test
-  public void testParseGlobalAsExpression() throws Exception {
-    assertThatExpression("aaa.BBB").generatesASTWithRootOfType(GlobalNode.class);
-  }
-
-  @Test
   public void testParseFunctionCall() throws Exception {
-    ExprNode expr = assertThatExpression("isFirst($x)").isValidExpression();
-    FunctionNode isFirstFn = (FunctionNode) expr;
-    assertThat(isFirstFn.getFunctionName()).isEqualTo("isFirst");
-    assertThat(isFirstFn.numChildren()).isEqualTo(1);
-    assertThat(isFirstFn.getChild(0).toSourceString()).isEqualTo("$x");
-
-    expr = assertThatExpression("round(3.14159, 2)").isValidExpression();
+    ExprNode expr = assertThatExpression("round(3.14159, 2)").isValidExpression();
     FunctionNode roundFn = (FunctionNode) expr;
     assertThat(roundFn.getFunctionName()).isEqualTo("round");
     assertThat(roundFn.numChildren()).isEqualTo(2);
@@ -464,23 +430,25 @@ public final class ParseExpressionTest {
   @Test
   public void testParseProtoInitCall() throws Exception {
     ExprNode expr =
-        assertThatExpression("my.Proto(a: 1, b: glo.bal, c: fn('str'))").isValidExpression();
-    ProtoInitNode protoFn = (ProtoInitNode) expr;
-    assertThat(protoFn.getProtoName()).isEqualTo("my.Proto");
+        assertThatExpression("my.Proto(a: 1, c: fn('str'), ext.name: 'str')").isValidExpression();
+    MethodCallNode protoFn = (MethodCallNode) expr;
+    assertThat(protoFn.getMethodName().identifier()).isEqualTo("Proto");
     assertThat(protoFn.getParamNames())
         .comparingElementsUsing(
             Correspondence.from(
                 (Identifier actual, String expected) -> actual.identifier().equals(expected),
                 "is equal to"))
-        .containsExactly("a", "b", "c")
+        .containsExactly("a", "c", "ext.name")
         .inOrder();
-    assertThat(protoFn.numChildren()).isEqualTo(3);
-    assertThat(((IntegerNode) protoFn.getChild(0)).getValue()).isEqualTo(1);
-    assertThat(((GlobalNode) protoFn.getChild(1)).getName()).isEqualTo("glo.bal");
+    assertThat(protoFn.numChildren()).isEqualTo(4);
+    assertThat(((VarRefNode) protoFn.getChild(0)).getName()).isEqualTo("my");
+    assertThat(((IntegerNode) protoFn.getChild(1)).getValue()).isEqualTo(1);
     assertThat(((StringNode) ((FunctionNode) protoFn.getChild(2)).getChild(0)).getValue())
         .isEqualTo("str");
+    assertThat(((StringNode) protoFn.getChild(3)).getValue()).isEqualTo("str");
 
-    assertThatExpression("my.Proto(a: 1, b: glo.bal, c: fn('str'),)").isValidExpression();
+    assertThatExpression("my.Proto(a: 1, b: glo.bal, c: fn('str'), ext.name: 'str',)")
+        .isValidExpression();
   }
 
   @Test
@@ -544,6 +512,48 @@ public final class ParseExpressionTest {
     assertThat(precedenceString("-$a.b > 0 ? $c.d : $c")).isEqualTo("((- $a.b) > 0) ? $c.d : $c");
   }
 
+  @Test
+  public void testNonNullAssertion() {
+    ExprNode expr = assertThatExpression("1!").isValidExpression();
+    AssertNonNullOpNode nonNullOp = (AssertNonNullOpNode) expr;
+    assertThat(nonNullOp.getChild(0)).isInstanceOf(IntegerNode.class);
+
+    expr = assertThatExpression("record(a: 1)!.a").isValidExpression();
+    FieldAccessNode fieldAccess = (FieldAccessNode) expr;
+    assertThat(fieldAccess.getFieldName()).isEqualTo("a");
+    nonNullOp = (AssertNonNullOpNode) fieldAccess.getChild(0);
+    assertThat(nonNullOp.getChild(0)).isInstanceOf(RecordLiteralNode.class);
+
+    expr = assertThatExpression("my.Proto(a: 1)?.foo!.bar!.baz!").isValidExpression();
+    nonNullOp = (AssertNonNullOpNode) expr;
+    fieldAccess = (FieldAccessNode) nonNullOp.getChild(0);
+    assertThat(fieldAccess.getFieldName()).isEqualTo("baz");
+    assertThat(fieldAccess.isNullSafe()).isFalse();
+
+    nonNullOp = (AssertNonNullOpNode) fieldAccess.getBaseExprChild();
+    fieldAccess = (FieldAccessNode) nonNullOp.getChild(0);
+    assertThat(fieldAccess.getFieldName()).isEqualTo("bar");
+    assertThat(fieldAccess.isNullSafe()).isFalse();
+
+    nonNullOp = (AssertNonNullOpNode) fieldAccess.getBaseExprChild();
+    fieldAccess = (FieldAccessNode) nonNullOp.getChild(0);
+    assertThat(fieldAccess.getFieldName()).isEqualTo("foo");
+    assertThat(fieldAccess.isNullSafe()).isTrue();
+    assertThat(fieldAccess.getBaseExprChild()).isInstanceOf(MethodCallNode.class);
+
+    expr = assertThatExpression("-$a! + $b * $c! < ($d or $e)!").isValidExpression();
+    LessThanOpNode lessThan = (LessThanOpNode) expr;
+
+    PlusOpNode plus = (PlusOpNode) lessThan.getChild(0);
+    NegativeOpNode negative = (NegativeOpNode) plus.getChild(0);
+    assertThat(negative.getChild(0)).isInstanceOf(AssertNonNullOpNode.class);
+
+    TimesOpNode times = (TimesOpNode) plus.getChild(1);
+    assertThat(times.getChild(1)).isInstanceOf(AssertNonNullOpNode.class);
+
+    assertThat(lessThan.getChild(1)).isInstanceOf(AssertNonNullOpNode.class);
+  }
+
   // Parses the soy expression and then prints it with copious parens to indicate the associativity
   private String precedenceString(String soyExpr) {
     ExprNode node = assertThatExpression(soyExpr).isValidExpression();
@@ -591,7 +601,7 @@ public final class ParseExpressionTest {
   // Helpers.
 
   private static void assertNodeEquals(ExprNode expected, ExprNode actual) {
-    if (!ExprEquivalence.get().equivalent(expected, actual)) {
+    if (!new ExprEquivalence().equivalent(expected, actual)) {
       fail(
           String.format(
               "Expected <%s> but was: <%s>", expected.toSourceString(), actual.toSourceString()));

@@ -19,17 +19,16 @@ package com.google.template.soy.passes;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.Iterables;
-import com.google.template.soy.SoyFileSetParserBuilder;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for {@link CheckTemplateVisibilityPass}.
- *
- * @author brndn@google.com (Brendan Linn)
  */
 @RunWith(JUnit4.class)
 public final class CheckTemplateVisibilityPassTest {
@@ -39,12 +38,12 @@ public final class CheckTemplateVisibilityPassTest {
     SoyFileSetParserBuilder.forFileContents(
             "{namespace ns}\n"
                 + "/** Private template. */\n"
-                + "{template .foo visibility=\"private\"}\n"
+                + "{template foo visibility=\"private\"}\n"
                 + "oops!\n"
                 + "{/template}\n"
                 + "/** Public template. */\n"
-                + "{template .bar}\n"
-                + "{call .foo /}\n"
+                + "{template bar}\n"
+                + "{call foo /}\n"
                 + "{/template}")
         .errorReporter(ErrorReporter.exploding())
         .parse();
@@ -56,13 +55,36 @@ public final class CheckTemplateVisibilityPassTest {
     SoyFileSetParserBuilder.forFileContents(
             "{namespace ns}\n"
                 + "/** Private template. */\n"
-                + "{template .foo visibility=\"private\"}\n"
+                + "{template foo visibility=\"private\"}\n"
                 + "oops!\n"
                 + "{/template}",
-            "{namespace ns}\n"
+            "{namespace ns2}\n"
+                + "import {foo} from 'no-path';"
                 + "/** Public template. */\n"
-                + "{template .bar}\n"
-                + "{call .foo /}\n"
+                + "{template bar}\n"
+                + "{call foo /}\n"
+                + "{/template}")
+        .errorReporter(errorReporter)
+        .parse();
+    assertThat(errorReporter.getErrors()).hasSize(1);
+    assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
+        .isEqualTo("ns.foo has private access in no-path.");
+  }
+
+  @Test
+  public void testImportPrivateTemplateFromSameNamespaceButDifferentFile() {
+    ErrorReporter errorReporter = ErrorReporter.createForTest();
+    SoyFileSetParserBuilder.forFileContents(
+            "{namespace ns}\n"
+                + "/** Private template. */\n"
+                + "{template foo visibility=\"private\"}\n"
+                + "oops!\n"
+                + "{/template}",
+            "{namespace ns2}\n"
+                + "import {foo} from 'no-path';"
+                + "/** Public template. */\n"
+                + "{template bar}\n"
+                + "{call foo /}\n"
                 + "{/template}")
         .errorReporter(errorReporter)
         .parse();
@@ -77,13 +99,37 @@ public final class CheckTemplateVisibilityPassTest {
     SoyFileSetParserBuilder.forFileContents(
             "{namespace ns}\n"
                 + "/** Private template. */\n"
-                + "{template .foo visibility=\"private\"}\n"
+                + "{template foo visibility=\"private\"}\n"
                 + "oops!\n"
                 + "{/template}",
             "{namespace ns2}\n"
+                + "import {foo} from 'no-path';"
                 + "/** Public template. */\n"
-                + "{template .bar}\n"
-                + "{call ns.foo /}\n"
+                + "{template bar}\n"
+                + "{call foo /}\n"
+                + "{/template}")
+        .errorReporter(errorReporter)
+        .parse();
+    assertThat(errorReporter.getErrors()).hasSize(1);
+    assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
+        .isEqualTo("ns.foo has private access in no-path.");
+  }
+
+  @Test
+  public void testBindPrivateTemplateDifferentFile() {
+    ErrorReporter errorReporter = ErrorReporter.createForTest();
+    SoyFileSetParserBuilder.forFileContents(
+            "{namespace ns}\n"
+                + "/** Private template. */\n"
+                + "{template foo visibility=\"private\"}\n"
+                + "oops!\n"
+                + "{/template}",
+            "{namespace ns2}\n"
+                + "import {foo} from 'no-path';"
+                + "/** Public template. */\n"
+                + "{template bar}\n"
+                + "{let $foo: foo /}\n"
+                + "{call $foo /}\n"
                 + "{/template}")
         .errorReporter(errorReporter)
         .parse();
@@ -101,17 +147,45 @@ public final class CheckTemplateVisibilityPassTest {
             SoyFileSupplier.Factory.create(
                 "{namespace ns}\n"
                     + "/** Private template. */\n"
-                    + "{template .foo visibility=\"private\"}\n"
+                    + "{template foo visibility=\"private\"}\n"
                     + "oops!\n"
                     + "{/template}",
-                "foo/bar.soy"),
+                SourceFilePath.create("foo/bar.soy")),
             SoyFileSupplier.Factory.create(
                 "{namespace ns2}\n"
+                    + "import {foo} from 'foo/bar.soy';"
                     + "/** Public template. */\n"
-                    + "{template .bar}\n"
-                    + "{call ns.foo /}\n"
+                    + "{template bar}\n"
+                    + "{call foo /}\n"
                     + "{/template}",
-                "baz/bar.soy"))
+                SourceFilePath.create("baz/bar.soy")))
+        .errorReporter(errorReporter)
+        .parse();
+    assertThat(errorReporter.getErrors()).hasSize(1);
+    assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
+        .isEqualTo("ns.foo has private access in foo/bar.soy.");
+  }
+
+  @Test
+  public void testBindPrivateTemplateSameFileNameDifferentDirectory() {
+    ErrorReporter errorReporter = ErrorReporter.createForTest();
+    SoyFileSetParserBuilder.forSuppliers(
+            SoyFileSupplier.Factory.create(
+                "{namespace ns}\n"
+                    + "/** Private template. */\n"
+                    + "{template foo visibility=\"private\"}\n"
+                    + "oops!\n"
+                    + "{/template}",
+                SourceFilePath.create("foo/bar.soy")),
+            SoyFileSupplier.Factory.create(
+                "{namespace ns2}\n"
+                    + "import {foo} from 'foo/bar.soy';"
+                    + "/** Public template. */\n"
+                    + "{template bar}\n"
+                    + "{let $foo: foo /}\n"
+                    + "{call $foo /}\n"
+                    + "{/template}",
+                SourceFilePath.create("baz/bar.soy")))
         .errorReporter(errorReporter)
         .parse();
     assertThat(errorReporter.getErrors()).hasSize(1);

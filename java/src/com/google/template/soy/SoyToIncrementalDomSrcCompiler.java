@@ -19,6 +19,7 @@ package com.google.template.soy;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.incrementaldomsrc.SoyIncrementalDomSrcOptions;
 import java.io.IOException;
+import org.kohsuke.args4j.Option;
 
 /**
  * Executable for compiling a set of Soy files into corresponding Incremental DOM source files. This
@@ -30,6 +31,13 @@ import java.io.IOException;
  * @see <a href="https://github.com/google/incremental-dom">Github page</a>
  */
 public final class SoyToIncrementalDomSrcCompiler extends AbstractSoyCompiler {
+
+  @Option(
+      name = "--dependOnCssHeader",
+      usage =
+          "When this option is used, the generated JS files will have a requirecss annotation for"
+              + " the generated GSS header file.")
+  private boolean dependOnCssHeader = false;
 
   private final PerInputOutputFiles outputFiles =
       new PerInputOutputFiles("idom.soy.js", PerInputOutputFiles.JS_JOINER);
@@ -50,7 +58,7 @@ public final class SoyToIncrementalDomSrcCompiler extends AbstractSoyCompiler {
   SoyToIncrementalDomSrcCompiler() {}
 
   @Override
-  void validateFlags() {
+  protected void validateFlags() {
     outputFiles.validateFlags();
   }
 
@@ -62,9 +70,8 @@ public final class SoyToIncrementalDomSrcCompiler extends AbstractSoyCompiler {
   @Override
   protected void compile(SoyFileSet.Builder sfsBuilder) throws IOException {
     SoyFileSet sfs = sfsBuilder.build();
-    outputFiles.writeFiles(
-        srcs,
-        sfs.compileToIncrementalDomSrcInternal(new SoyIncrementalDomSrcOptions()),
-        /*locale=*/ null);
+    SoyIncrementalDomSrcOptions options = new SoyIncrementalDomSrcOptions();
+    options.setDependOnCssHeader(dependOnCssHeader);
+    outputFiles.writeFiles(srcs, sfs.compileToIncrementalDomSrcInternal(options), /*locale=*/ null);
   }
 }

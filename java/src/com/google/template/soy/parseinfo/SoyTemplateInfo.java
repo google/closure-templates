@@ -16,25 +16,27 @@
 
 package com.google.template.soy.parseinfo;
 
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.Immutable;
 
-/**
- * Parsed info about a template.
- *
- */
+/** Parsed info about a template. */
 @Immutable
 public class SoyTemplateInfo {
 
   /** Enum for whether a param is required or optional for a specific template. */
-  public static enum ParamRequisiteness {
+  public enum ParamRequisiteness {
     REQUIRED,
-    OPTIONAL;
+    OPTIONAL
   }
 
   /** The full template name. */
   private final String name;
+
+  private final TemplateName templateName;
 
   /** Map from each param to whether it's required for this template. */
   private final ImmutableMap<String, ParamRequisiteness> paramMap;
@@ -48,24 +50,65 @@ public class SoyTemplateInfo {
    * @param name The full template name.
    * @param paramMap Map from each param to whether it's required for this template.
    */
-  protected SoyTemplateInfo(String name, ImmutableMap<String, ParamRequisiteness> paramMap) {
-    this.name = name;
+  protected SoyTemplateInfo(
+      String name, TemplateName templateName, ImmutableMap<String, ParamRequisiteness> paramMap) {
     Preconditions.checkArgument(name.lastIndexOf('.') > 0);
+    this.name = name;
+    this.templateName = templateName;
     this.paramMap = paramMap;
   }
 
-  /** Returns the full template name, e.g. {@code myNamespace.myTemplate}. */
-  public String getName() {
+  /**
+   * Returns the full template name, e.g. {@code myNamespace.myTemplate}.
+   *
+   * @deprecated Use {@link #getTemplateName()} instead. Treating template names as opaque strings
+   *     is safer and preferred.
+   */
+  @Deprecated
+  public final String getName() {
     return name;
   }
 
+  /** Returns the full template name. */
+  public final TemplateName getTemplateName() {
+    return Preconditions.checkNotNull(templateName);
+  }
+
   /** Returns the partial template name (starting from the last dot), e.g. {@code .myTemplate}. */
-  public String getPartialName() {
+  public final String getPartialName() {
+    String name = getName();
     return name.substring(name.lastIndexOf('.'));
   }
 
-  /** Returns a map from each param to whether it's required for this template. */
-  public ImmutableMap<String, ParamRequisiteness> getParams() {
-    return paramMap;
+  /** Returns the number of parameters in this template. */
+  public final int getParamCount() {
+    return paramMap.size();
+  }
+
+  /** Returns the set of parameter names in this template. */
+  public final ImmutableSet<String> getParamNames() {
+    return paramMap.keySet();
+  }
+
+  /**
+   * Returns the set of parameter names in this template for which {@link #getParamRequisiteness}
+   * returns {@link ParamRequisiteness#REQUIRED}.
+   */
+  public final ImmutableSet<String> getRequiredParamNames() {
+    return paramMap.keySet().stream()
+        .filter(n -> paramMap.get(n) == ParamRequisiteness.REQUIRED)
+        .collect(toImmutableSet());
+  }
+
+  /** Returns true if this template has a parameter names {@code paramName}. */
+  public final boolean hasParam(String paramName) {
+    return getParamNames().contains(paramName);
+  }
+
+  /** Returns whether {@code paramName} is required, optional, or indirect. */
+  public final ParamRequisiteness getParamRequisiteness(String paramName) {
+    ParamRequisiteness pr = paramMap.get(paramName);
+    Preconditions.checkArgument(pr != null);
+    return pr;
   }
 }

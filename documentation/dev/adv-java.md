@@ -94,18 +94,21 @@ There are two kinds of asynchronous events that we handle:
     `AdvisingAppendable.softLimitedReached` method on the output stream. Users
     who want to trigger this behavior will need to supply a custom
     `AdvisingAppendable` implementation and implement this method.
+    *   **NOTE:** This mechanism is _cooperative_ and as such it depends on how
+        often the renderer calls the `softLimitReached()` method. Currently, the
+        renderer will call this method at the beginning of any `{template}` that
+        isn't a simple delegate.
 
 To handle these events the renderer will detect when it is about to evaluate an
 unfinished future or when the output buffer is full and then pause rendering to
 return control to the caller.
-
 
 To see how this works, consider this example:
 
 ```soy
 {namespace ns}
 
-{template .foo}
+{template foo}
   {@param userName: string}
   <div>
     {$userName}
@@ -144,7 +147,7 @@ operation. There are 3 different options:
     particular future is available via the `RenderResult.future()` method.
 1.  `LIMITED` this means that the output stream told us to stop rendering
 
-How to handle each event depends stronly on the particular environment of the
+How to handle each event depends strongly on the particular environment of the
 rendering operation. For example,
 
 *   If the future is a `ListenableFuture` then a listener could be attached and
@@ -153,7 +156,6 @@ rendering operation. For example,
 *   If the HTTP server you are using supports asynchronous request processing
     (like the Servlet 3.0 `AsyncContext`), then you could integrate with that to
     continue your rendering after the future is complete.
-
 
 <br>
 

@@ -27,10 +27,10 @@ import java.util.Objects;
  * <p>Note: This map type is designed for working with proto maps or ES6 Maps.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public final class MapType extends AbstractMapType {
 
+  // TODO(lukes): see if this can be replaced with map<?,?>
   public static final MapType EMPTY_MAP = new MapType(null, null);
 
   public static final MapType ANY_MAP = new MapType(AnyType.getInstance(), AnyType.getInstance());
@@ -59,6 +59,7 @@ public final class MapType extends AbstractMapType {
 
   // IMPORTANT: if the allowed key types change, make sure to update BAD_MAP_KEY_TYPE above.
   /** Whether the type is permissible as a key in a Soy {@code map} ({@link MapType}). */
+  // LINT.IfChange(allowed_soy_map_key_types)
   public static boolean isAllowedKeyType(SoyType type) {
     switch (type.getKind()) {
       case BOOL:
@@ -71,6 +72,7 @@ public final class MapType extends AbstractMapType {
         return type == SoyTypes.NUMBER_TYPE;
     }
   }
+  // LINT.ThenChange(../data/SoyMap.java:allowed_soy_map_key_types)
 
   @Override
   public Kind getKind() {
@@ -88,7 +90,7 @@ public final class MapType extends AbstractMapType {
   }
 
   @Override
-  boolean doIsAssignableFromNonUnionType(SoyType srcType) {
+  boolean doIsAssignableFromNonUnionType(SoyType srcType, UnknownAssignmentPolicy policy) {
     if (srcType.getKind() == Kind.MAP) {
       MapType srcMapType = (MapType) srcType;
       if (srcMapType == EMPTY_MAP) {
@@ -97,12 +99,11 @@ public final class MapType extends AbstractMapType {
         return false;
       }
       // Maps are covariant.
-      return keyType.isAssignableFrom(srcMapType.keyType)
-          && valueType.isAssignableFrom(srcMapType.valueType);
+      return keyType.isAssignableFromInternal(srcMapType.keyType, policy)
+          && valueType.isAssignableFromInternal(srcMapType.valueType, policy);
     }
     return false;
   }
-
 
   @Override
   public String toString() {
@@ -127,5 +128,10 @@ public final class MapType extends AbstractMapType {
   @Override
   public int hashCode() {
     return Objects.hash(this.getClass(), keyType, valueType);
+  }
+
+  @Override
+  public <T> T accept(SoyTypeVisitor<T> visitor) {
+    return visitor.visit(this);
   }
 }

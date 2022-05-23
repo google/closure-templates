@@ -42,7 +42,6 @@ import java.util.Set;
  * is either LRE (U+202A) or RLE (U+202B), and end character is always PDF (U+202C). This wrapping
  * is only applied when the output text's bidi directionality is different from the bidi global
  * directionality.
- *
  */
 final class BidiUnicodeWrapDirective
     implements SoyJavaPrintDirective,

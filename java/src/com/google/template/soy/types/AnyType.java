@@ -22,7 +22,6 @@ import com.google.template.soy.soytree.SoyTypeP;
  * The "any" type is the supertype of all other types. The only operations allowed on this type are
  * explicit coercions to other types (i.e. downcasting), or operations that implicitly coerce to
  * string or boolean type (e.g. printing).
- *
  */
 public final class AnyType extends PrimitiveType {
 

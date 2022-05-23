@@ -27,7 +27,6 @@ import java.util.regex.Pattern;
  * do so.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public class SoyBidiUtils {
 

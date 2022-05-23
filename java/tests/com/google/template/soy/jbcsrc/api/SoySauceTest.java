@@ -18,7 +18,6 @@ package com.google.template.soy.jbcsrc.api;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.data.UnsafeSanitizedContentOrdainer.ordainAsSafe;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 import com.google.common.collect.ImmutableMap;
@@ -26,7 +25,6 @@ import com.google.common.util.concurrent.SettableFuture;
 import com.google.template.soy.SoyFileSet;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
-import com.google.template.soy.data.SanitizedContents;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
@@ -44,11 +42,14 @@ import org.junit.runners.JUnit4;
 public class SoySauceTest {
 
   private SoySauce sauce;
+  private TestAsyncPlugin testAsyncPlugin;
 
   @Before
   public void setUp() throws Exception {
     SoyFileSet.Builder builder = SoyFileSet.builder();
     builder.add(SoySauceTest.class.getResource("strict.soy"));
+    testAsyncPlugin = new TestAsyncPlugin();
+    builder.addSourceFunction(testAsyncPlugin);
     sauce = builder.build().compileTemplates();
   }
 
@@ -269,85 +270,6 @@ public class SoySauceTest {
   }
 
   @Test
-  public void testStrictContentKindHandling_html_deprecatedRenderMethods() {
-    assertThat(sauce.renderTemplate("strict_test.helloHtml").render().get())
-        .isEqualTo("Hello world");
-    assertThat(sauce.renderTemplate("strict_test.helloHtml").renderStrict().get())
-        .isEqualTo(ordainAsSafe("Hello world", ContentKind.HTML));
-
-    // Downcast to an impl because #setExpectedContentKind has been removed from the interface
-    // internally (but still exists for open source).
-    SoySauceImpl sauceImpl = (SoySauceImpl) sauce;
-    assertThat(
-            sauceImpl
-                .renderTemplate("strict_test.helloHtml")
-                .setExpectedContentKind(ContentKind.TEXT)
-                .renderStrict()
-                .get())
-        .isEqualTo(SanitizedContents.unsanitizedText("Hello world"));
-    try {
-      sauceImpl
-          .renderTemplate("strict_test.helloHtml")
-          .setExpectedContentKind(ContentKind.JS)
-          .renderStrict()
-          .get();
-      fail();
-    } catch (IllegalStateException e) {
-      assertThat(e)
-          .hasMessageThat()
-          .isEqualTo(
-              "Expected template 'strict_test.helloHtml' to be kind=\"js\" but was kind=\"html\"");
-    }
-  }
-
-  @Test
-  public void testStrictContentKindHandling_js_deprecatedRenderMethods() {
-    try {
-      sauce.renderTemplate("strict_test.helloJs").render();
-      fail();
-    } catch (IllegalStateException e) {
-      assertThat(e)
-          .hasMessageThat()
-          .isEqualTo(
-              "Expected template 'strict_test.helloJs' to be kind=\"html\" but was kind=\"js\"");
-    }
-    try {
-      sauce.renderTemplate("strict_test.helloJs").renderStrict();
-      fail();
-    } catch (IllegalStateException e) {
-      assertThat(e)
-          .hasMessageThat()
-          .isEqualTo(
-              "Expected template 'strict_test.helloJs' to be kind=\"html\" but was kind=\"js\"");
-    }
-
-    // Downcast to an impl because #setExpectedContentKind has been removed from the interface
-    // internally (but still exists for open source).
-    SoySauceImpl sauceImpl = (SoySauceImpl) sauce;
-    assertThat(
-            sauceImpl
-                .renderTemplate("strict_test.helloJs")
-                .setExpectedContentKind(ContentKind.JS)
-                .renderStrict()
-                .get())
-        .isEqualTo(ordainAsSafe("'Hello world'", ContentKind.JS));
-    assertEquals(
-        ordainAsSafe("'Hello world'", ContentKind.TEXT),
-        sauceImpl
-            .renderTemplate("strict_test.helloJs")
-            .setExpectedContentKind(ContentKind.TEXT) // TEXT always works
-            .renderStrict()
-            .get());
-    assertThat(
-            sauceImpl
-                .renderTemplate("strict_test.helloJs")
-                .setExpectedContentKind(ContentKind.TEXT)
-                .render()
-                .get())
-        .isEqualTo("'Hello world'");
-  }
-
-  @Test
   public void testDetaching_string() {
     SoySauce.Renderer tmpl = sauce.renderTemplate("strict_test.withParam");
 
@@ -384,7 +306,8 @@ public class SoySauceTest {
     SettableFuture<String> p = SettableFuture.create();
     WriteContinuation continuation = tmpl.setData(ImmutableMap.of("p", p)).renderText(builder);
     assertThat(continuation.result().type()).isEqualTo(RenderResult.Type.LIMITED);
-    assertThat(builder.toString()).isEqualTo("Hello, ");
+    // we check at the beginning of the template, so we immediately pause
+    assertThat(builder.toString()).isEmpty();
     builder.softLimitReached = false;
 
     continuation = continuation.continueRender();
@@ -394,6 +317,19 @@ public class SoySauceTest {
     continuation = continuation.continueRender();
     assertThat(continuation.result()).isEqualTo(RenderResult.done());
     assertThat(builder.toString()).isEqualTo("Hello, piglet");
+  }
+
+  @Test
+  public void testPluginDetaching_string() {
+    SoySauce.Renderer tmpl = sauce.renderTemplate("strict_test.withAsyncPluginCall");
+    tmpl.setPluginInstances(ImmutableMap.of("testAsyncPlugin", () -> testAsyncPlugin));
+    Continuation<SanitizedContent> continuation = tmpl.renderHtml();
+    assertThat(continuation.result().type()).isEqualTo(RenderResult.Type.DETACH);
+    assertThat(continuation.result().future()).isEqualTo(testAsyncPlugin.testAsyncPlugin());
+    testAsyncPlugin.resolveTo("Charlie");
+    continuation = continuation.continueRender();
+    assertThat(continuation.result()).isEqualTo(RenderResult.done());
+    assertThat(continuation.get().getContent()).isEqualTo("Hello, Charlie!");
   }
 
   @Test
@@ -415,12 +351,10 @@ public class SoySauceTest {
     } catch (ClassCastException cce) {
       // we get an CCE because we passed an int but it expected a string
       StackTraceElement[] stackTrace = cce.getStackTrace();
-      assertThat(stackTrace[1].toString())
-          .isEqualTo("strict_test.callsItself.render(strict.soy:52)");
+      assertThat(stackTrace[0].toString()).isEqualTo("strict_test.callsItself(strict.soy:69)");
 
-      for (int i = 2; i < 12; i++) {
-        assertThat(stackTrace[i].toString())
-            .isEqualTo("strict_test.callsItself.render(strict.soy:54)");
+      for (int i = 1; i < 11; i++) {
+        assertThat(stackTrace[i].toString()).isEqualTo("strict_test.callsItself(strict.soy:71)");
       }
     }
   }

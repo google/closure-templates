@@ -43,12 +43,8 @@ public class RecordJavaType extends JavaType {
 
   @Override
   public String toJavaTypeString() {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  boolean isPrimitive() {
-    return false;
+    // Invocation builder code special cases this type and avoids calling this method altogether.
+    return "java.util.Map<String, ?>";
   }
 
   @Override
@@ -67,12 +63,12 @@ public class RecordJavaType extends JavaType {
   }
 
   @Override
-  public String asTypeLiteralString() {
-    throw new UnsupportedOperationException();
+  public boolean isTypeLiteralSupported() {
+    return false;
   }
 
   @Override
-  public boolean isTypeLiteralSupported() {
-    return false;
+  public String asInlineCast(String variable, int depth) {
+    return CodeGenUtils.AS_RECORD + "(" + variable + ")";
   }
 }

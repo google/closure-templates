@@ -51,7 +51,6 @@ import java.util.List;
  * Visitor for generating Python expressions for parse tree nodes.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public final class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>> {
   private static final SoyErrorKind UNKNOWN_SOY_PY_SRC_PRINT_DIRECTIVE =
@@ -153,7 +152,8 @@ public final class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>
   @Override
   protected void visitRawTextNode(RawTextNode node) {
     // Escape special characters in the text before writing as a string.
-    String exprText = BaseUtils.escapeToSoyString(node.getRawText(), false, QuoteStyle.SINGLE);
+    String exprText =
+        BaseUtils.escapeToWrappedSoyString(node.getRawText(), false, QuoteStyle.SINGLE);
     pyExprs.add(new PyStringExpr(exprText));
   }
 
@@ -180,7 +180,7 @@ public final class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>
   @Override
   protected void visitPrintNode(PrintNode node) {
     TranslateToPyExprVisitor translator =
-        new TranslateToPyExprVisitor(localVarExprs, pluginValueFactory, errorReporter);
+        new TranslateToPyExprVisitor(localVarExprs, pluginValueFactory, node, errorReporter);
 
     PyExpr pyExpr = translator.exec(node.getExpr());
 
@@ -214,35 +214,97 @@ public final class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>
 
   @Override
   protected void visitMsgFallbackGroupNode(MsgFallbackGroupNode node) {
-    PyExpr msg = generateMsgFunc(node.getMsg());
+    PyExpr msg = generateMsgFunc(node.getMsg(), /* useAlternateId=*/ false);
+    String ternaryExpression =
+        "(%s) if (translator_impl.is_msg_available(%d) or not"
+            + " translator_impl.is_msg_available(%d)) else (%s)";
+    long msgId = MsgUtils.computeMsgIdForDualFormat(node.getMsg());
+    long alternateId;
+    long fbAlternateId;
+
+    String usePrimaryOrAlternateMsg =
+        node.getMsg().getAlternateId().isPresent()
+            ? String.format(
+                ternaryExpression,
+                msg.getText(),
+                msgId,
+                node.getMsg().getAlternateId().getAsLong(),
+                generateMsgFunc(node.getMsg(), /* useAlternateId=*/ true).getText())
+            : msg.getText();
+    String pyExprText = "";
 
     // MsgFallbackGroupNode could only have one child or two children. See MsgFallbackGroupNode.
+    // Priority is the msg id > alternate id > fallback id > fallback alternate id.
     if (node.hasFallbackMsg()) {
-      StringBuilder pyExprTextSb = new StringBuilder();
-      PyExpr fallbackMsg = generateMsgFunc(node.getFallbackMsg());
+      long fallbackId = MsgUtils.computeMsgIdForDualFormat(node.getFallbackMsg());
+      PyExpr fallbackMsg = generateMsgFunc(node.getFallbackMsg(), /* useAlternateId=*/ false);
+      String useFbOrFbAlternateMsg =
+          node.getFallbackMsg().getAlternateId().isPresent()
+              ? String.format(
+                  ternaryExpression,
+                  fallbackMsg.getText(),
+                  fallbackId,
+                  node.getFallbackMsg().getAlternateId().getAsLong(),
+                  generateMsgFunc(node.getFallbackMsg(), /* useAlternateId=*/ true).getText())
+              : fallbackMsg.getText();
+      if (node.getMsg().getAlternateId().isPresent()) {
+        alternateId = node.getMsg().getAlternateId().getAsLong();
+        if (node.getFallbackMsg().getAlternateId().isPresent()) {
+          // msg id > alternate id > fallback id > fallback alternate id
+          fbAlternateId = node.getFallbackMsg().getAlternateId().getAsLong();
+          pyExprText =
+              String.format(
+                  usePrimaryOrAlternateMsg
+                      + " if (translator_impl.is_msg_available(%d) or"
+                      + " translator_impl.is_msg_available(%d) or"
+                      + " (not translator_impl.is_msg_available(%d) and not"
+                      + " translator_impl.is_msg_available(%d))) else "
+                      + useFbOrFbAlternateMsg,
+                  msgId,
+                  alternateId,
+                  fallbackId,
+                  fbAlternateId);
+        } else {
+          // msg id > alternate id > fallback id
+          pyExprText =
+              String.format(
+                  usePrimaryOrAlternateMsg
+                      + " if (translator_impl.is_msg_available(%d) or"
+                      + " translator_impl.is_msg_available(%d) or not"
+                      + " translator_impl.is_msg_available(%d)) else "
+                      + useFbOrFbAlternateMsg,
+                  msgId,
+                  alternateId,
+                  fallbackId);
+        }
+      } else {
+        // msg id > fallback id > fallback alternate id
+        if (node.getFallbackMsg().getAlternateId().isPresent()) {
+          fbAlternateId = node.getFallbackMsg().getAlternateId().getAsLong();
+          pyExprText =
+              String.format(
+                  usePrimaryOrAlternateMsg
+                      + " if (translator_impl.is_msg_available(%d) or"
+                      + " (not translator_impl.is_msg_available(%d) and not"
+                      + " translator_impl.is_msg_available(%d))) else "
+                      + useFbOrFbAlternateMsg,
+                  msgId,
+                  fallbackId,
+                  fbAlternateId);
+        } else {
+          // msg id > fallback id
+          pyExprText =
+              String.format(
+                  ternaryExpression, msg.getText(), msgId, fallbackId, fallbackMsg.getText());
+        }
+      }
+      msg = new PyStringExpr(pyExprText, PyExprUtils.pyPrecedenceForOperator(Operator.CONDITIONAL));
+    }
 
-      // Build Python ternary expression: a if cond else c
-      pyExprTextSb.append("(").append(msg.getText()).append(") if (");
-
-      // The fallback message is only used if the first message is not available, but the fallback
-      // is. So availability of both messages must be tested.
-      long id1 = MsgUtils.computeMsgIdForDualFormat(node.getMsg());
-      long id2 = MsgUtils.computeMsgIdForDualFormat(node.getFallbackMsg());
-      pyExprTextSb
-          .append(PyExprUtils.TRANSLATOR_NAME)
-          .append(".is_msg_available(")
-          .append(id1)
-          .append(")")
-          .append(" or not ")
-          .append(PyExprUtils.TRANSLATOR_NAME)
-          .append(".is_msg_available(")
-          .append(id2)
-          .append(")");
-
-      pyExprTextSb.append(") else (").append(fallbackMsg.getText()).append(")");
-      msg =
-          new PyStringExpr(
-              pyExprTextSb.toString(), PyExprUtils.pyPrecedenceForOperator(Operator.CONDITIONAL));
+    if (!node.hasFallbackMsg() && node.getMsg().getAlternateId().isPresent()) {
+      // msg id > alternate id
+      pyExprText = usePrimaryOrAlternateMsg;
+      msg = new PyStringExpr(pyExprText, PyExprUtils.pyPrecedenceForOperator(Operator.CONDITIONAL));
     }
 
     // Escaping directives apply to messages, especially in attribute context.
@@ -256,9 +318,14 @@ public final class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>
     pyExprs.add(msg);
   }
 
-  private PyStringExpr generateMsgFunc(MsgNode msg) {
+  private PyStringExpr generateMsgFunc(MsgNode msg, boolean useAlternateId) {
     return new MsgFuncGenerator(
-            genPyExprsVisitorFactory, pluginValueFactory, msg, localVarExprs, errorReporter)
+            genPyExprsVisitorFactory,
+            pluginValueFactory,
+            msg,
+            localVarExprs,
+            errorReporter,
+            useAlternateId)
         .getPyExpr();
   }
 
@@ -272,7 +339,7 @@ public final class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>
     GenPyExprsVisitor genPyExprsVisitor =
         genPyExprsVisitorFactory.create(localVarExprs, errorReporter);
     TranslateToPyExprVisitor translator =
-        new TranslateToPyExprVisitor(localVarExprs, pluginValueFactory, errorReporter);
+        new TranslateToPyExprVisitor(localVarExprs, pluginValueFactory, node, errorReporter);
 
     StringBuilder pyExprTextSb = new StringBuilder();
 

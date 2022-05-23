@@ -21,8 +21,15 @@
 goog.module('soy.map');
 goog.module.declareLegacyNamespace();
 
+const {Message} = goog.require('jspb');
 const {assertString} = goog.require('goog.asserts');
 const {shuffle} = goog.require('goog.array');
+/**
+ * Required to fix declareLegacyNamespace, since soy is also
+ * declareLegacyNamespace.
+ * @suppress{extraRequire}
+ */
+goog.require('soy');
 
 /**
  * Structural interface for representing Soy `map`s in JavaScript.
@@ -62,6 +69,12 @@ class SoyMap {
    *     element in this map.
    */
   keys() {}
+
+  /**
+   * @return {!IteratorIterable<V>} An iterator that contains the keys for each
+   *     element in this map.
+   */
+  values() {}
 
   /**
    * Returns an iterator over the [key, value] pair entries of this map.
@@ -134,18 +147,111 @@ function $$populateMap(proto, jspbMap, map) {
  * Determines if the argument matches the soy.map.Map interface.
  * @param {?} map The object to check.
  * @return {boolean} True if it is a soy.map.Map, false otherwise.
+ * @suppress {missingProperties}
  */
 function $$isSoyMap(map) {
-  return goog.isObject(map) && goog.isFunction(map.get) &&
-      goog.isFunction(map.set) && goog.isFunction(map.keys) &&
-      goog.isFunction(map.entries);
+  return goog.isObject(map) && typeof map.get === 'function' &&
+      typeof map.set === 'function' && typeof map.keys === 'function' &&
+      typeof map.values === 'function' && typeof map.entries === 'function';
 }
+
+
+/**
+ * @param {!SoyMap<?, ?>} mapOne
+ * @param {!SoyMap<?, ?>} mapTwo
+ * @return {!Map<?,?>}
+ */
+function $$concatMaps(mapOne, mapTwo) {
+  const m = new Map();
+  for (const [k, v] of mapOne.entries()) {
+    m.set(k, v);
+  }
+  for (const [k, v] of mapTwo.entries()) {
+    m.set(k, v);
+  }
+  return m;
+}
+
+
+/**
+ * Gets the values in a map as an array. There are no guarantees on the order.
+ * @param {!SoyMap<K, V>} map The map to get the values of.
+ * @return {!Array<V>} The array of values in the given map.
+ * @template K, V
+ */
+function $$getMapValues(map) {
+  const values = Array.from(map.values());
+  if (goog.DEBUG) {
+    shuffle(values);
+  }
+  return values;
+}
+
+
+/**
+ * Gets the values in a map as an array. There are no guarantees on the order.
+ * @param {!SoyMap<?, ?>} map The map to get the values of.
+ * @return {!Array<?>} The array of values in the given map.
+ */
+function $$getMapEntries(map) {
+  const entries = [];
+  for (const [k, v] of map.entries()) {
+    entries.push({'key': k, 'value': v});
+  }
+  return entries;
+}
+
+
+/**
+ * Gets the size of a map.
+ * @param {!SoyMap<?, ?>} map The map to get the values of.
+ * @return {number} The number of keys in the map.
+ * @suppress {missingProperties}
+ */
+function $$getMapLength(map) {
+  if (typeof map.getLength === 'function') {
+    // jspb.Map
+    return map.getLength();
+  } else if (typeof map.size === 'number') {
+    return map.size;
+  } else {
+    throw new Error('Not a Map or jsbp.Map: ' + map);
+  }
+}
+
+
+/**
+ * Returns whether a proto is equal to the default instance of its type.
+ * @param {!Message} proto A proto.
+ * @return {boolean}
+ */
+function $$isProtoDefault(proto) {
+  return Message.equals(proto, new proto.constructor());
+}
+
+
+/**
+ * Returns whether two protos are equals.
+ * @param {!Message} p1 A proto.
+ * @param {!Message} p2 Another proto.
+ * @return {boolean}
+ */
+function $$protoEquals(p1, p2) {
+  return Message.equals(p1, p2);
+}
+
 
 exports = {
   $$mapToLegacyObjectMap,
   $$populateMap,
   $$getMapKeys,
+  $$isProtoDefault,
+  $$protoEquals,
   $$isSoyMap,
+  $$getMapValues,
+  $$getMapEntries,
+  $$getMapLength,
+  $$concatMaps,
   // This is declared as SoyMap instead of Map to avoid shadowing ES6 Map, which
   // is used by $$legacyObjectMapToMap. But the external name can still be Map.
   Map: SoyMap,

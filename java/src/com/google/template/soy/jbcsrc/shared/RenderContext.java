@@ -20,29 +20,31 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
-import com.google.common.base.Supplier;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.template.soy.data.LogStatement;
+import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
-import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jbcsrc.api.RenderResult;
+import com.google.template.soy.jbcsrc.shared.CompiledTemplates.TemplateData;
+import com.google.template.soy.logging.LoggableElementMetadata;
 import com.google.template.soy.logging.SoyLogger;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.restricted.SoyMsg;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
+import com.google.template.soy.plugin.java.PluginInstances;
+import com.google.template.soy.plugin.java.RenderCssHelper;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.ibm.icu.util.ULocale;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 /**
@@ -50,19 +52,10 @@ import javax.annotation.Nullable;
  * single instance of this object and it will be propagated throughout the render tree.
  */
 public final class RenderContext {
-  private static final CompiledTemplate EMPTY_TEMPLATE =
-      new CompiledTemplate() {
-        @Override
-        public RenderResult render(LoggingAdvisingAppendable appendable, RenderContext context) {
-          return RenderResult.done();
-        }
-
-        @Override
-        public ContentKind kind() {
-          // The kind doesn't really matter, since the empty string can always be safely escaped
-          return ContentKind.TEXT;
-        }
-      };
+  private static RenderResult emptyTemplate(
+      SoyRecord params, SoyRecord ij, LoggingAdvisingAppendable appendable, RenderContext context) {
+    return RenderResult.done();
+  }
 
   // TODO(lukes):  within this object most of these fields are constant across all renders while
   // some are expected to change frequently (the renaming maps, msgBundle and activeDelPackages).
@@ -74,36 +67,48 @@ public final class RenderContext {
   private final CompiledTemplates templates;
   private final SoyCssRenamingMap cssRenamingMap;
   private final SoyIdRenamingMap xidRenamingMap;
-  private final ImmutableMap<String, Supplier<Object>> pluginInstances;
+  private final PluginInstances pluginInstances;
   private final ImmutableMap<String, SoyJavaPrintDirective> soyJavaDirectivesMap;
   /** The bundle of translated messages */
   private final SoyMsgBundle msgBundle;
 
+  /**
+   * Stores memoized {const} values, which in SSR are actually request-scoped values, not Java
+   * static values.
+   */
+  private final Map<String, Object> constValues = new ConcurrentHashMap<>();
+
   private final boolean debugSoyTemplateInfo;
   private final SoyLogger logger;
-  private final List<String> renderedCssNamespaces = new ArrayList<>();
-  /**
-   * Whenever we visit a template call, we know that it will be rendered. The main exception is in
-   * the case of logOnly. Whenever logOnly is true, we do execute the templates with the knowledge
-   * that it *won't* be rendered. To emulate that, we keep a stack of shouldRender booleans (the
-   * opposite of logOnly). It starts off at [true] and if we encounter a logOnly, it changes to
-   * [true, false]. Subsequent evaluations may make it [true, false, true]. In order to decide if a
-   * template should collect CSS, we take the union of the stack, so [true, false, true] would
-   * evaluate to true & false & true, which is false. When we exit a log statement, we pop off the
-   * top and eventually we will end up back at [true].
-   */
-  private final ArrayDeque<Boolean> renderCounter = new ArrayDeque<>();
 
-  private RenderContext(Builder builder) {
-    this.activeDelPackageSelector = checkNotNull(builder.activeDelPackageSelector);
-    this.templates = checkNotNull(builder.templates);
-    this.cssRenamingMap = builder.cssRenamingMap;
-    this.xidRenamingMap = builder.xidRenamingMap;
-    this.soyJavaDirectivesMap = builder.soyJavaDirectivesMap;
-    this.pluginInstances = builder.pluginInstances;
-    this.msgBundle = builder.msgBundle;
-    this.debugSoyTemplateInfo = builder.debugSoyTemplateInfo;
-    this.logger = builder.logger;
+  // This stores the stack frame for restoring state after a detach operation.  It is initialised to
+  // a special state 0 that represents the first call to any detachable method.
+  // TODO(lukes): ideally this would not be stored in RenderContext, but instead would be a method
+  // parameter to every detachable method and would be encoded in RenderResult for when methods
+  // return.  This is a little difficult right now because RenderResult is a public type.  For now,
+  // storing a mutable field on RenderContext is simpler.
+  private StackFrame topFrame = StackFrame.INIT;
+
+  private RenderContext(
+      CompiledTemplates templates,
+      ImmutableMap<String, SoyJavaPrintDirective> soyJavaDirectivesMap,
+      PluginInstances pluginInstances,
+      @Nullable Predicate<String> activeDelPackageSelector,
+      @Nullable SoyCssRenamingMap cssRenamingMap,
+      @Nullable SoyIdRenamingMap xidRenamingMap,
+      @Nullable SoyMsgBundle msgBundle,
+      boolean debugSoyTemplateInfo,
+      @Nullable SoyLogger logger) {
+    this.templates = templates;
+    this.soyJavaDirectivesMap = soyJavaDirectivesMap;
+    this.pluginInstances = pluginInstances;
+    this.activeDelPackageSelector =
+        activeDelPackageSelector != null ? activeDelPackageSelector : delPackage -> false;
+    this.cssRenamingMap = cssRenamingMap == null ? SoyCssRenamingMap.EMPTY : cssRenamingMap;
+    this.xidRenamingMap = xidRenamingMap == null ? SoyCssRenamingMap.EMPTY : xidRenamingMap;
+    this.msgBundle = msgBundle == null ? SoyMsgBundle.EMPTY : msgBundle;
+    this.debugSoyTemplateInfo = debugSoyTemplateInfo;
+    this.logger = logger == null ? SoyLogger.NO_OP : logger;
   }
 
   @Nullable
@@ -111,12 +116,28 @@ public final class RenderContext {
     return msgBundle.getLocale();
   }
 
-  public ImmutableList<String> getAllRequiredCssNamespaces(String templateName) {
-    return templates.getAllRequiredCssNamespaces(templateName, activeDelPackageSelector, false);
+  public RenderCssHelper getRenderCssHelper() {
+    return (delTemplate, variant) -> {
+      TemplateData data =
+          templates.selector.selectTemplate(delTemplate, variant, activeDelPackageSelector);
+      return data != null ? data.soyTemplateName : null;
+    };
+  }
+
+  public ImmutableList<String> getAllRequiredCssNamespaces(String template) {
+    return templates.getAllRequiredCssNamespaces(template, activeDelPackageSelector, false);
+  }
+
+  public ImmutableList<String> getAllRequiredCssPaths(String template) {
+    return templates.getAllRequiredCssPaths(template, activeDelPackageSelector, false);
   }
 
   public BidiGlobalDir getBidiGlobalDir() {
     return BidiGlobalDir.forStaticIsRtl(msgBundle.isRtl());
+  }
+
+  public Dir getBidiGlobalDirDir() {
+    return getBidiGlobalDir().toDir();
   }
 
   public String renameCssSelector(String selector) {
@@ -127,31 +148,6 @@ public final class RenderContext {
   public String renameXid(String id) {
     String string = xidRenamingMap.get(id);
     return string == null ? id + "_" : string;
-  }
-
-  public LogStatement enterLogOnly(LogStatement logStatement) {
-    renderCounter.push(!logStatement.logOnly());
-    return logStatement;
-  }
-
-  public void exitLogOnly() {
-    renderCounter.pop();
-  }
-
-  public void addRenderedTemplate(String template) {
-    if (!shouldRender()) {
-      return;
-    }
-    try {
-      this.renderedCssNamespaces.addAll(templates.getRequiredCssNamespaces(template));
-    } catch (Exception e) {
-      // This is possible because you can call templates that don't exist...
-      return;
-    }
-  }
-
-  public List<String> getRenderedCssNamespaces() {
-    return renderedCssNamespaces;
   }
 
   public Object getPluginInstance(String name) {
@@ -207,13 +203,16 @@ public final class RenderContext {
     return logger;
   }
 
-  public CompiledTemplate getDelTemplate(
-      String calleeName, String variant, boolean allowEmpty, SoyRecord params, SoyRecord ij) {
-    CompiledTemplate.Factory callee =
+  public CompiledTemplate getTemplate(String calleeName) {
+    return templates.getTemplate(calleeName);
+  }
+
+  public CompiledTemplate getDelTemplate(String calleeName, String variant, boolean allowEmpty) {
+    CompiledTemplate callee =
         templates.selectDelTemplate(calleeName, variant, activeDelPackageSelector);
     if (callee == null) {
       if (allowEmpty) {
-        return EMPTY_TEMPLATE;
+        return RenderContext::emptyTemplate;
       }
       throw new IllegalArgumentException(
           "Found no active impl for delegate call to \""
@@ -221,25 +220,56 @@ public final class RenderContext {
               + (variant.isEmpty() ? "" : ":" + variant)
               + "\" (and delcall does not set allowemptydefault=\"true\").");
     }
-    return callee.create(params, ij);
+    return callee;
   }
 
   /** Returns {@code true} if the primary msg should be used instead of the fallback. */
-  public boolean usePrimaryMsg(long msgId, long fallbackId) {
+  public boolean usePrimaryMsgIfFallback(long msgId, long fallbackId) {
     // Note: we need to make sure the fallback msg is actually present if we are going to fallback.
     // use getMsgParts() since if the bundle is a RenderOnlySoyMsgBundleImpl then this will be
     // allocation free.
     return !msgBundle.getMsgParts(msgId).isEmpty() || msgBundle.getMsgParts(fallbackId).isEmpty();
   }
 
-  private boolean shouldRender() {
-    if (renderCounter.isEmpty()) {
-      return true;
-    }
-    if (renderCounter.size() == 1) {
-      return renderCounter.peek();
-    }
-    return renderCounter.stream().reduce((a, b) -> a && b).orElse(true);
+  /**
+   * Returns {@code true} if the primary or alternate msg should be used instead of the fallback.
+   */
+  public boolean usePrimaryOrAlternateIfFallback(long msgId, long alternateId, long fallbackId) {
+    // Note: we need to make sure the fallback msg is actually present if we are going to fallback.
+    // use getMsgParts() since if the bundle is a RenderOnlySoyMsgBundleImpl then this will be
+    // allocation free.
+    return !msgBundle.getMsgParts(msgId).isEmpty()
+        || !msgBundle.getMsgParts(alternateId).isEmpty()
+        || msgBundle.getMsgParts(fallbackId).isEmpty();
+  }
+
+  /**
+   * Returns {@code true} if the primary msg should be used instead of the fallback or the fallback
+   * alternate.
+   */
+  public boolean usePrimaryIfFallbackOrFallbackAlternate(
+      long msgId, long fallbackId, long fallbackAlternateId) {
+    // Note: we need to make sure the fallback msg is actually present if we are going to fallback.
+    // use getMsgParts() since if the bundle is a RenderOnlySoyMsgBundleImpl then this will be
+    // allocation free.
+    return !msgBundle.getMsgParts(msgId).isEmpty()
+        || (msgBundle.getMsgParts(fallbackId).isEmpty()
+            && msgBundle.getMsgParts(fallbackAlternateId).isEmpty());
+  }
+
+  /**
+   * Returns {@code true} if the primary or alternate msg should be used instead of the fallback or
+   * the fallback alternate.
+   */
+  public boolean usePrimaryOrAlternateIfFallbackOrFallbackAlternate(
+      long msgId, long alternateId, long fallbackId, long fallbackAlternateId) {
+    // Note: we need to make sure the fallback msg is actually present if we are going to fallback.
+    // use getMsgParts() since if the bundle is a RenderOnlySoyMsgBundleImpl then this will be
+    // allocation free.
+    return !msgBundle.getMsgParts(msgId).isEmpty()
+        || !msgBundle.getMsgParts(alternateId).isEmpty()
+        || (msgBundle.getMsgParts(fallbackId).isEmpty()
+            && msgBundle.getMsgParts(fallbackAlternateId).isEmpty());
   }
 
   /**
@@ -255,33 +285,103 @@ public final class RenderContext {
     return msgParts;
   }
 
+  /**
+   * Returns the {@link SoyMsg} associated with the {@code msgId}, the {@code alternateId} or the
+   * fallback (aka english) translation if there is no such message.
+   */
+  public ImmutableList<SoyMsgPart> getSoyMsgPartsWithAlternateId(
+      long msgId, ImmutableList<SoyMsgPart> defaultMsgParts, long alternateId) {
+    ImmutableList<SoyMsgPart> msgParts = msgBundle.getMsgParts(msgId);
+    if (msgParts.isEmpty()) {
+      ImmutableList<SoyMsgPart> msgPartsByAlternateId = msgBundle.getMsgParts(alternateId);
+      if (msgPartsByAlternateId.isEmpty()) {
+        return defaultMsgParts;
+      }
+      return msgPartsByAlternateId;
+    }
+    return msgParts;
+  }
+
+  /**
+   * Returns the VE metadata in the given class with the given method name. This uses the same
+   * ClassLoader as is used to load template references.
+   */
+  public LoggableElementMetadata getVeMetadata(String metadataClassName, long veId) {
+    try {
+      return (LoggableElementMetadata)
+          Class.forName(metadataClassName, /* initialize= */ true, templates.getClassLoader())
+              .getMethod("getMetadata", long.class)
+              .invoke(null, veId);
+    } catch (ReflectiveOperationException e) {
+      throw new AssertionError(e);
+    }
+  }
+
+  @Nullable
+  public Object getConst(String key) {
+    return constValues.get(key);
+  }
+
+  public void storeConst(String key, Object value) {
+    Preconditions.checkNotNull(value);
+    Object lastValue = constValues.put(key, value);
+    Preconditions.checkArgument(lastValue == null, "Cannot overwrite value %s", key);
+  }
+
+  /**
+   * Save the contents of the frame into the stack.
+   *
+   * <p>This method is called when detaching a render operation by our `invokedynamic`
+   * infrastructure in SaveStateMetaFactory.
+   */
+  public void pushFrame(StackFrame state) {
+    state.child = topFrame;
+    this.topFrame = state;
+  }
+
+  /**
+   * Restore the stack frame for the next template.
+   *
+   * <p>This method is called at the top of every detachable class that is generated by the
+   * compiler.
+   */
+  public StackFrame popFrame() {
+    StackFrame next = topFrame;
+    // NOTE: the special frame StackFrame.INIT is linked to itself, so we don't need to test for a
+    // basecase.
+    this.topFrame = next.child;
+    return next;
+  }
+
   @VisibleForTesting
   public Builder toBuilder() {
-    return new Builder()
+    return new Builder(templates, soyJavaDirectivesMap, pluginInstances)
         .withActiveDelPackageSelector(this.activeDelPackageSelector)
         .withPluginInstances(pluginInstances)
-        .withSoyPrintDirectives(soyJavaDirectivesMap)
         .withCssRenamingMap(cssRenamingMap)
         .withXidRenamingMap(xidRenamingMap)
-        .withMessageBundle(msgBundle)
-        .withCompiledTemplates(templates);
+        .withMessageBundle(msgBundle);
   }
 
   /** A builder for configuring the context. */
   public static final class Builder {
-    private CompiledTemplates templates;
-    private Predicate<String> activeDelPackageSelector = arg -> false;
-    private SoyCssRenamingMap cssRenamingMap = SoyCssRenamingMap.EMPTY;
-    private SoyIdRenamingMap xidRenamingMap = SoyCssRenamingMap.EMPTY;
-    private ImmutableMap<String, SoyJavaPrintDirective> soyJavaDirectivesMap = ImmutableMap.of();
-    private ImmutableMap<String, Supplier<Object>> pluginInstances = ImmutableMap.of();
-    private SoyMsgBundle msgBundle = SoyMsgBundle.EMPTY;
-    private boolean debugSoyTemplateInfo = false;
+    private final CompiledTemplates templates;
+    private final ImmutableMap<String, SoyJavaPrintDirective> soyJavaDirectivesMap;
+    private PluginInstances pluginInstances;
+    private Predicate<String> activeDelPackageSelector;
+    private SoyCssRenamingMap cssRenamingMap;
+    private SoyIdRenamingMap xidRenamingMap;
+    private SoyMsgBundle msgBundle;
+    private boolean debugSoyTemplateInfo;
     private SoyLogger logger;
 
-    public Builder withCompiledTemplates(CompiledTemplates templates) {
-      this.templates = checkNotNull(templates);
-      return this;
+    public Builder(
+        CompiledTemplates templates,
+        ImmutableMap<String, SoyJavaPrintDirective> soyJavaDirectivesMap,
+        PluginInstances pluginInstances) {
+      this.templates = templates;
+      this.soyJavaDirectivesMap = soyJavaDirectivesMap;
+      this.pluginInstances = pluginInstances;
     }
 
     public Builder withActiveDelPackageSelector(Predicate<String> activeDelPackageSelector) {
@@ -299,13 +399,8 @@ public final class RenderContext {
       return this;
     }
 
-    public Builder withPluginInstances(Map<String, Supplier<Object>> pluginInstances) {
-      this.pluginInstances = ImmutableMap.copyOf(pluginInstances);
-      return this;
-    }
-
-    public Builder withSoyPrintDirectives(Map<String, ? extends SoyJavaPrintDirective> directives) {
-      this.soyJavaDirectivesMap = ImmutableMap.copyOf(directives);
+    public Builder withPluginInstances(PluginInstances pluginInstances) {
+      this.pluginInstances = checkNotNull(pluginInstances);
       return this;
     }
 
@@ -325,7 +420,16 @@ public final class RenderContext {
     }
 
     public RenderContext build() {
-      return new RenderContext(this);
+      return new RenderContext(
+          templates,
+          soyJavaDirectivesMap,
+          pluginInstances,
+          activeDelPackageSelector,
+          cssRenamingMap,
+          xidRenamingMap,
+          msgBundle,
+          debugSoyTemplateInfo,
+          logger);
     }
   }
 }

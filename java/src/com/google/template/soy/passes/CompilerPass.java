@@ -16,26 +16,34 @@
 
 package com.google.template.soy.passes;
 
-import com.google.errorprone.annotations.concurrent.LazyInit;
+import com.google.common.collect.ImmutableList;
 
 /** A compiler pass */
-public abstract class CompilerPass {
-  @LazyInit private String name;
+public interface CompilerPass {
 
-  public String name() {
-    String localName = this.name;
-    if (localName == null) {
-      localName = getClass().getSimpleName();
-      if (localName.endsWith("Pass")) {
-        localName = localName.substring(0, localName.length() - "Pass".length());
-      }
-      this.name = localName;
+  default ImmutableList<Class<? extends CompilerPass>> runBefore() {
+    RunBefore ann = getClass().getAnnotation(RunBefore.class);
+    if (ann != null) {
+      // TODO(lukes): consider ClassValue if this is slow
+      return ImmutableList.copyOf(ann.value());
     }
-    return localName;
+    return ImmutableList.of();
   }
 
-  @Override
-  public String toString() {
-    return name();
+  default ImmutableList<Class<? extends CompilerPass>> runAfter() {
+    RunAfter ann = getClass().getAnnotation(RunAfter.class);
+    if (ann != null) {
+      // TODO(lukes): consider ClassValue if this is slow
+      return ImmutableList.copyOf(ann.value());
+    }
+    return ImmutableList.of();
+  }
+
+  default String name() {
+    String localName = getClass().getSimpleName();
+    if (localName.endsWith("Pass")) {
+      localName = localName.substring(0, localName.length() - "Pass".length());
+    }
+    return localName;
   }
 }

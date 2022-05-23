@@ -17,6 +17,7 @@
 package com.google.template.soy.data.internalutils;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -43,7 +44,6 @@ import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for InternalValueUtils.
- *
  */
 @RunWith(JUnit4.class)
 public class InternalValueUtilsTest {
@@ -55,8 +55,7 @@ public class InternalValueUtilsTest {
     assertTrue(
         InternalValueUtils.convertPrimitiveDataToExpr(NullData.INSTANCE, location)
             instanceof NullNode);
-    assertEquals(
-        false,
+    assertFalse(
         ((BooleanNode) InternalValueUtils.convertPrimitiveDataToExpr(BooleanData.FALSE, location))
             .getValue());
     assertEquals(
@@ -111,9 +110,8 @@ public class InternalValueUtilsTest {
   }
 
   @Test
-  public void testConvertCompileTimeGlobalsMap() {
-
-    Map<String, Object> compileTimeGlobalsMap =
+  public void testConvertConstantsMap() {
+    Map<String, Object> constantNameToJavaValue =
         ImmutableMap.of(
             "IS_SLEEPY",
             true,
@@ -126,7 +124,7 @@ public class InternalValueUtilsTest {
             "WHITESPACE",
             "\n\r\t");
     Map<String, PrimitiveData> actual =
-        InternalValueUtils.convertCompileTimeGlobalsMap(compileTimeGlobalsMap);
+        InternalValueUtils.convertConstantsMap(constantNameToJavaValue);
 
     Map<String, PrimitiveData> expected =
         ImmutableMap.of(

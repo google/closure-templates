@@ -18,25 +18,51 @@ package com.google.template.soy.types;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import com.google.common.html.types.SafeHtmlProto;
+import com.google.common.html.types.SafeScriptProto;
+import com.google.common.html.types.SafeStyleProto;
+import com.google.common.html.types.SafeStyleSheetProto;
+import com.google.common.html.types.SafeUrlProto;
+import com.google.common.html.types.TrustedResourceUrlProto;
+import com.google.template.soy.internal.util.BreadthFirstStream;
 import com.google.template.soy.types.SoyType.Kind;
-import com.google.template.soy.types.SoyTypeGraphUtils.BreadthFirstIterator;
-import com.google.template.soy.types.SoyTypeGraphUtils.SoyTypeSuccessorsFunction;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 /** Utility methods for operating on {@link SoyType} instances. */
 public final class SoyTypes {
 
+  private SoyTypes() {}
+
   /** Shared constant for the 'number' type. */
   public static final SoyType NUMBER_TYPE =
       UnionType.of(IntType.getInstance(), FloatType.getInstance());
+
+  public static final ImmutableMap<String, SanitizedType> SAFE_PROTO_TO_SANITIZED_TYPE =
+      ImmutableMap.<String, SanitizedType>builder()
+          .put(SafeHtmlProto.getDescriptor().getFullName(), SanitizedType.HtmlType.getInstance())
+          .put(SafeScriptProto.getDescriptor().getFullName(), SanitizedType.JsType.getInstance())
+          .put(SafeStyleProto.getDescriptor().getFullName(), SanitizedType.StyleType.getInstance())
+          .put(
+              SafeStyleSheetProto.getDescriptor().getFullName(),
+              SanitizedType.StyleType.getInstance())
+          .put(SafeUrlProto.getDescriptor().getFullName(), SanitizedType.UriType.getInstance())
+          .put(
+              TrustedResourceUrlProto.getDescriptor().getFullName(),
+              SanitizedType.TrustedResourceUriType.getInstance())
+          .build();
 
   private static final ImmutableSet<SoyType.Kind> ALWAYS_COMPARABLE_KINDS =
       Sets.immutableEnumSet(SoyType.Kind.UNKNOWN, SoyType.Kind.ANY, SoyType.Kind.NULL);
@@ -65,11 +91,7 @@ public final class SoyTypes {
    * number.
    */
   public static boolean isNumericPrimitive(SoyType type) {
-    SoyType.Kind kind = type.getKind();
-    if (NUMERIC_PRIMITIVES.contains(kind)) {
-      return true;
-    }
-    return type.isAssignableFrom(NUMBER_TYPE) || NUMBER_TYPE.isAssignableFrom(type);
+    return isKindOrUnionOfKinds(type, NUMERIC_PRIMITIVES);
   }
 
   public static SoyType removeNull(SoyType type) {
@@ -105,7 +127,7 @@ public final class SoyTypes {
   }
 
   public static boolean isNumericOrUnknown(SoyType type) {
-    return type.getKind() == SoyType.Kind.UNKNOWN || NUMBER_TYPE.isAssignableFrom(type);
+    return type.getKind() == SoyType.Kind.UNKNOWN || NUMBER_TYPE.isAssignableFromStrict(type);
   }
 
   /**
@@ -118,12 +140,9 @@ public final class SoyTypes {
    */
   public static SoyType computeLowestCommonType(
       SoyTypeRegistry typeRegistry, SoyType t0, SoyType t1) {
-    if (t0 == ErrorType.getInstance() || t1 == ErrorType.getInstance()) {
-      return ErrorType.getInstance();
-    }
-    if (t0.isAssignableFrom(t1)) {
+    if (t0.isAssignableFromStrict(t1)) {
       return t0;
-    } else if (t1.isAssignableFrom(t0)) {
+    } else if (t1.isAssignableFromStrict(t0)) {
       return t1;
     } else {
       // Create a union.  This preserves the most information.
@@ -157,10 +176,6 @@ public final class SoyTypes {
    *     meaning a subtype of 'number' or unknown.
    */
   public static Optional<SoyType> computeLowestCommonTypeArithmetic(SoyType t0, SoyType t1) {
-    // If either of the types is an error type, return the error type
-    if (t0.getKind() == Kind.ERROR || t1.getKind() == Kind.ERROR) {
-      return Optional.of(ErrorType.getInstance());
-    }
     // If either of the types isn't numeric or unknown, then this isn't valid for an arithmetic
     // operation.
     if (!isNumericOrUnknown(t0) || !isNumericOrUnknown(t1)) {
@@ -169,9 +184,9 @@ public final class SoyTypes {
 
     // Note: everything is assignable to unknown and itself.  So the first two conditions take care
     // of all cases but a mix of float and int.
-    if (t0.isAssignableFrom(t1)) {
+    if (t0.isAssignableFromStrict(t1)) {
       return Optional.of(t0);
-    } else if (t1.isAssignableFrom(t0)) {
+    } else if (t1.isAssignableFromStrict(t0)) {
       return Optional.of(t1);
     } else {
       // If we get here then we know that we have a mix of float and int.  In this case arithmetic
@@ -210,9 +225,6 @@ public final class SoyTypes {
   @Nullable
   public static SoyType getSoyTypeForBinaryOperator(
       SoyType t0, SoyType t1, SoyTypeBinaryOperator operator) {
-    if (t0.getKind() == Kind.ERROR || t1.getKind() == Kind.ERROR) {
-      return ErrorType.getInstance();
-    }
     // If both types are nullable, we will make the result nullable as well.
     // If only one of these input types is nullable, we don't. For example, {int} and {int|null}
     // probably should return {int} instead of {int|null}.
@@ -241,18 +253,138 @@ public final class SoyTypes {
    * that all match the given kind.
    */
   public static boolean isKindOrUnionOfKind(SoyType type, Kind kind) {
-    if (type.getKind() == kind) {
-      return true;
-    }
+    return isKindOrUnionOfKinds(type, ImmutableSet.of(kind));
+  }
+
+  /**
+   * Returns true if the given type matches one of the given kinds, or if the given type is a union
+   * of types that all match one of the given kinds.
+   */
+  public static boolean isKindOrUnionOfKinds(SoyType type, Set<Kind> kinds) {
+    return expandUnions(type).stream().allMatch((t) -> kinds.contains(t.getKind()));
+  }
+
+  /**
+   * For union types, returns a list of member types; for all other types, returns a list with a
+   * single element containing the type.
+   */
+  public static ImmutableList<SoyType> expandUnions(SoyType type) {
     if (type.getKind() == Kind.UNION) {
-      for (SoyType member : ((UnionType) type).getMembers()) {
-        if (member.getKind() != kind) {
-          return false;
-        }
-      }
-      return true;
+      return ImmutableList.copyOf(((UnionType) type).getMembers());
+    } else {
+      return ImmutableList.of(type);
     }
-    return false;
+  }
+
+  /**
+   * Returns true if the given type matches the given kind, or if the given type transitively
+   * contains a type of the given kind -- e.g., within a union, list, record, map, or template
+   * argument.
+   */
+  public static boolean transitivelyContainsKind(SoyType type, Kind... kind) {
+    Predicate<SoyType> kindTest;
+    if (kind.length == 1) {
+      kindTest = t -> t.getKind() == kind[0];
+    } else {
+      Set<Kind> kinds = ImmutableSet.copyOf(kind);
+      kindTest = t -> kinds.contains(t.getKind());
+    }
+    return type.accept(
+        new SoyTypeVisitor<Boolean>() {
+          @Override
+          public Boolean visit(LegacyObjectMapType type) {
+            return kindTest.test(type)
+                || (type.getKeyType() != null && type.getKeyType().accept(this))
+                || (type.getValueType() != null && type.getValueType().accept(this));
+          }
+
+          @Override
+          public Boolean visit(ListType type) {
+            return kindTest.test(type)
+                || (type.getElementType() != null && type.getElementType().accept(this));
+          }
+
+          @Override
+          public Boolean visit(MapType type) {
+            return kindTest.test(type)
+                || (type.getKeyType() != null && type.getKeyType().accept(this))
+                || (type.getValueType() != null && type.getValueType().accept(this));
+          }
+
+          @Override
+          public Boolean visit(PrimitiveType type) {
+            return kindTest.test(type);
+          }
+
+          @Override
+          public Boolean visit(RecordType type) {
+            if (kindTest.test(type)) {
+              return true;
+            }
+            for (RecordType.Member member : type.getMembers()) {
+              if (member.declaredType().accept(this)) {
+                return true;
+              }
+            }
+            return false;
+          }
+
+          @Override
+          public Boolean visit(SoyProtoEnumType type) {
+            return kindTest.test(type);
+          }
+
+          @Override
+          public Boolean visit(SoyProtoType type) {
+            return kindTest.test(type);
+          }
+
+          @Override
+          public Boolean visit(TemplateType type) {
+            if (kindTest.test(type)) {
+              return true;
+            }
+            for (TemplateType.Parameter parameter : type.getParameters()) {
+              if (parameter.getType().accept(this)) {
+                return true;
+              }
+            }
+            return false;
+          }
+
+          @Override
+          public Boolean visit(UnionType type) {
+            if (kindTest.test(type)) {
+              return true;
+            }
+            for (SoyType member : type.getMembers()) {
+              if (member.accept(this)) {
+                return true;
+              }
+            }
+            return false;
+          }
+
+          @Override
+          public Boolean visit(VeType type) {
+            return kindTest.test(type);
+          }
+
+          @Override
+          public Boolean visit(MessageType type) {
+            return kindTest.test(type);
+          }
+
+          @Override
+          public Boolean visit(ImportType type) {
+            return kindTest.test(type);
+          }
+
+          @Override
+          public Boolean visit(FunctionType type) {
+            return kindTest.test(type);
+          }
+        });
   }
 
   /**
@@ -422,7 +554,108 @@ public final class SoyTypes {
    */
   public static Iterator<? extends SoyType> getTypeTraverser(
       SoyType root, @Nullable SoyTypeRegistry registry) {
-    return new BreadthFirstIterator<>(
-        ImmutableList.of(root), new SoyTypeSuccessorsFunction(registry));
+    return BreadthFirstStream.of(root, new SoyTypeSuccessorsFunction(registry)).iterator();
+  }
+
+  /**
+   * Resolves a local symbol to a fully-qualified name. Supports dotted local symbols for module
+   * imports or nested types. e.g.: {@code localToFqn("A", ImmutableMap.of("A", "pkg.A")) ==
+   * "pkg.A"} and {@code localToFqn("A.B", ImmutableMap.of("A", "pkg.A")) == "pkg.A.B"}.
+   *
+   * @return {@code null} if no match exists in {@code localToFqn}.
+   */
+  @Nullable
+  public static String localToFqn(String localSymbol, Map<String, String> localToFqn) {
+    // If the local symbol is an imported top-level message, or an "ImportedModule.TopLevelMessage",
+    // then we can just look up the fqn directly.
+    if (localToFqn.containsKey(localSymbol)) {
+      return localToFqn.get(localSymbol);
+    }
+
+    // Support nested messages by resolving the top level proto (e.g. "FooProto" or
+    // "myProtosModule.FooProto") against the map, and then appending subsequent tokens.
+    String localRoot = getFirstSegment(localSymbol);
+    if (!localToFqn.containsKey(localRoot)) {
+      // Module import case.
+      localRoot = getFirstTwoSegments(localSymbol);
+    }
+
+    String fqnRoot = localToFqn.get(localRoot);
+    if (fqnRoot == null) {
+      return null;
+    }
+    return localSymbol.replaceFirst(localRoot, fqnRoot);
+  }
+
+  /**
+   * Gets the first segment in a dotted string (e.g. "foo" in "foo.bar.baz"), or the whole string if
+   * there are not dots.
+   */
+  private static String getFirstSegment(String symbol) {
+    int index = symbol.indexOf('.');
+    return index >= 0 ? symbol.substring(0, index) : symbol;
+  }
+
+  /**
+   * Gets the first two segments in a dotted string (e.g. "foo.bar" in "foo.bar.baz"), or the whole
+   * string if there are fewer than 2 dots.
+   */
+  private static String getFirstTwoSegments(String symbol) {
+    int firstDot = symbol.indexOf('.');
+    int secondDot = symbol.indexOf('.', firstDot + 1);
+    if (secondDot >= 0) {
+      return symbol.substring(0, secondDot);
+    }
+    return symbol;
+  }
+
+  /** Implementation of SuccessorsFunction that traverses a graph rooted at a SoyType. */
+  private static class SoyTypeSuccessorsFunction
+      implements Function<SoyType, Iterable<? extends SoyType>> {
+
+    private final SoyTypeRegistry typeRegistry;
+
+    public SoyTypeSuccessorsFunction(@Nullable SoyTypeRegistry typeRegistry) {
+      this.typeRegistry = typeRegistry;
+    }
+
+    @Override
+    public Iterable<? extends SoyType> apply(SoyType type) {
+      // For any type that contains nested types, return the list of nested types. E.g. the LIST
+      // type contains the list element type, the MAP type contains both the key and value types,
+      // etc.
+      switch (type.getKind()) {
+        case UNION:
+          return ((UnionType) type).getMembers();
+
+        case LIST:
+          return ImmutableList.of(((ListType) type).getElementType());
+
+        case MAP:
+        case LEGACY_OBJECT_MAP:
+          AbstractMapType mapType = (AbstractMapType) type;
+          return ImmutableList.of(mapType.getKeyType(), mapType.getValueType());
+
+        case RECORD:
+          return ((RecordType) type)
+              .getMembers().stream()
+                  .map(RecordType.Member::declaredType)
+                  .collect(Collectors.toList());
+
+        case VE:
+          VeType veType = (VeType) type;
+          if (typeRegistry != null && veType.getDataType().isPresent()) {
+            String protoFqn = veType.getDataType().get();
+            SoyType protoType = typeRegistry.getProtoRegistry().getProtoType(protoFqn);
+            if (protoType == null) {
+              throw new IllegalArgumentException(protoFqn);
+            }
+            return ImmutableList.of(protoType);
+          }
+          // fall through
+        default:
+          return ImmutableList.of();
+      }
+    }
   }
 }

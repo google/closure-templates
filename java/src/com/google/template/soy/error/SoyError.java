@@ -59,15 +59,22 @@ public abstract class SoyError implements Comparable<SoyError> {
   /** The full formatted error. */
   @Override
   public final String toString() {
-    return location().getFilePath()
+    return toStringInternal(true);
+  }
+
+  public String toStringWithoutSnippet() {
+    return toStringInternal(false);
+  }
+
+  private String toStringInternal(boolean snippet) {
+    return location().getFilePath().path()
         + ':'
         + location().getBeginLine()
         + ": "
         + (isWarning() ? "warning" : "error")
         + ": "
         + message()
-        + "\n"
-        + snippet().orElse("");
+        + (snippet ? "\n" + snippet().orElse("") : "");
   }
 
   @Override

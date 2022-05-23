@@ -35,7 +35,6 @@ import com.google.template.soy.pysrc.restricted.PyExprUtils;
 import com.google.template.soy.pysrc.restricted.PyStringExpr;
 import java.util.ArrayList;
 import java.util.List;
-import javax.annotation.Nullable;
 
 /** A {@link PythonValueFactory} implementation that can also manage invoking the plugins. */
 final class PythonValueFactoryImpl extends PythonValueFactory {
@@ -84,7 +83,7 @@ final class PythonValueFactoryImpl extends PythonValueFactory {
         result = ERROR_VALUE;
       }
     } catch (Throwable t) {
-      BaseUtils.trimStackTraceTo(t, getClass());
+      BaseUtils.trimStackTraceTo(t, fn.getClass());
       report(location, name, fn, UNEXPECTED_ERROR, Throwables.getStackTraceAsString(t));
       result = ERROR_VALUE;
     }
@@ -210,19 +209,6 @@ final class PythonValueFactoryImpl extends PythonValueFactory {
                   + " in "
                   + maybeProtect(unwrap(value), PyExprUtils.IN_PRECEDENCE).getText(),
               PyExprUtils.IN_PRECEDENCE));
-    }
-
-    @Override
-    public PythonValue slice(@Nullable PythonValue start, @Nullable PythonValue end) {
-      return new PythonValueImpl(
-          new PyExpr(
-              maybeProtect(expr, PyExprUtils.SUBSCRIPT_PRECEDENCE).getText()
-                  + "["
-                  + (start == null ? "" : unwrap(start).getText())
-                  + ":"
-                  + (end == null ? "" : unwrap(end).getText())
-                  + "]",
-              PyExprUtils.SUBSCRIPT_PRECEDENCE));
     }
 
     @Override

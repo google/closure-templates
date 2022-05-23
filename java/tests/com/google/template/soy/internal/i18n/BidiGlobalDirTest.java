@@ -29,7 +29,6 @@ import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for BidiGlobalDir.
- *
  */
 @RunWith(JUnit4.class)
 public class BidiGlobalDirTest {

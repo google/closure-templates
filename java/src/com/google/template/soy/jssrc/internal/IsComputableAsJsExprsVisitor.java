@@ -21,6 +21,7 @@ import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.DebuggerNode;
+import com.google.template.soy.soytree.ExternNode;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.HtmlAttributeValueNode;
@@ -29,6 +30,8 @@ import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
+import com.google.template.soy.soytree.JavaImplNode;
+import com.google.template.soy.soytree.JsImplNode;
 import com.google.template.soy.soytree.KeyNode;
 import com.google.template.soy.soytree.LetNode;
 import com.google.template.soy.soytree.LogNode;
@@ -56,7 +59,6 @@ import java.util.Map;
  * <p>Precondition: MsgNode should not exist in the tree.
  *
  * <p>TODO(user): This should no longer be necessary after CodeChunk migration. Rip it all out.
- *
  */
 public class IsComputableAsJsExprsVisitor extends AbstractReturningSoyNodeVisitor<Boolean> {
 
@@ -224,6 +226,21 @@ public class IsComputableAsJsExprsVisitor extends AbstractReturningSoyNodeVisito
     return false;
   }
 
+  @Override
+  protected Boolean visitExternNode(ExternNode node) {
+    return false;
+  }
+
+  @Override
+  protected Boolean visitJsImplNode(JsImplNode node) {
+    return false;
+  }
+
+  @Override
+  protected Boolean visitJavaImplNode(JavaImplNode node) {
+    return false;
+  }
+
   // -----------------------------------------------------------------------------------------------
   // Private helpers.
 
@@ -250,7 +267,7 @@ public class IsComputableAsJsExprsVisitor extends AbstractReturningSoyNodeVisito
 
   /** @return True if there is no point in visiting the child node, since it's always computable. */
   protected boolean canSkipChild(SoyNode child) {
-    // TODO(brndn): This check is probably not worth doing.  Remove.
+    // TODO(user): This check is probably not worth doing.  Remove.
     return child instanceof RawTextNode || child instanceof PrintNode;
   }
 }

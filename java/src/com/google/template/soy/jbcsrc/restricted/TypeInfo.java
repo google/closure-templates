@@ -19,6 +19,7 @@ package com.google.template.soy.jbcsrc.restricted;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.auto.value.AutoValue;
+import java.util.Optional;
 import org.objectweb.asm.Type;
 
 /**
@@ -32,17 +33,31 @@ public abstract class TypeInfo {
   public static TypeInfo create(Class<?> clazz) {
     Type type = Type.getType(clazz);
     return new AutoValue_TypeInfo(
-        clazz.getName(), clazz.getSimpleName(), type.getInternalName(), type);
+        clazz.getName(),
+        clazz.getSimpleName(),
+        type.getInternalName(),
+        type,
+        clazz.isInterface(),
+        Optional.of(clazz));
   }
 
-  public static TypeInfo create(String className) {
+  public static TypeInfo create(String className, boolean isInterface) {
     // Translates a java class name (foo.bar.Baz$Quux) to a java 'internal' name and then translates
     // that to a Type object
     Type type = Type.getObjectType(className.replace('.', '/'));
     // This logic is specified by Class.getSimpleName()
     String packageLessName = className.substring(className.lastIndexOf('.') + 1);
     String simpleName = packageLessName.substring(packageLessName.lastIndexOf('$') + 1);
-    return new AutoValue_TypeInfo(className, simpleName, type.getInternalName(), type);
+    return new AutoValue_TypeInfo(
+        className, simpleName, type.getInternalName(), type, isInterface, Optional.empty());
+  }
+
+  public static TypeInfo createClass(String className) {
+    return create(className, false);
+  }
+
+  public static TypeInfo createInterface(String className) {
+    return create(className, true);
   }
 
   public abstract String className();
@@ -53,13 +68,18 @@ public abstract class TypeInfo {
 
   public abstract Type type();
 
-  /** Returns a new {@link TypeInfo} for an inner class of this class. */
+  public abstract boolean isInterface();
+
+  public abstract Optional<Class<?>> classOptional();
+
+  /** Returns a new {@link TypeInfo} for an inner class of this class (not an inner interface). */
   public final TypeInfo innerClass(String simpleName) {
     checkArgument(
         simpleName.indexOf('$') == -1, "Simple names shouldn't contain '$': %s", simpleName);
     String className = className() + '$' + simpleName;
     String internalName = internalName() + '$' + simpleName;
     Type type = Type.getObjectType(internalName);
-    return new AutoValue_TypeInfo(className, simpleName, internalName, type);
+    return new AutoValue_TypeInfo(
+        className, simpleName, internalName, type, false, Optional.empty());
   }
 }

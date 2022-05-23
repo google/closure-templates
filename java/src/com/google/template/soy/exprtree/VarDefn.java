@@ -28,21 +28,30 @@ import javax.annotation.Nullable;
  * always be used as opposed to using a variable name.
  *
  * <p>TODO(lukes): All variables have declaring nodes, we should add that field to this interface.
- *
  */
 public interface VarDefn {
+
   /** Enum used to distinguish subtypes. */
   enum Kind {
     // Explicitly declared parameter.
     PARAM,
     // Local variable
     LOCAL_VAR,
+    // File-wide exportable constant.
+    CONST,
+    // File-wide exportable extern.
+    EXTERN,
+
+    // imported symbol
+    IMPORT_VAR,
 
     // List/map comprehension var.
     COMPREHENSION_VAR,
 
     // State variable
     STATE,
+    // A local template name.
+    TEMPLATE,
     // Undeclared variable reference (for legacy templates).
     UNDECLARED,
   }
@@ -57,12 +66,27 @@ public interface VarDefn {
    */
   String name();
 
+  /** The name by which this variable should be referenced in expressions. */
+  default String refName() {
+    return name();
+  }
+
   /** The source location of the variable name. */
   @Nullable
   SourceLocation nameLocation();
 
-  /** Returns the data type of this variable. */
+  /**
+   * Returns the data type of this variable. This throws an error if the var def does not have a
+   * type yet. {@link hasType} should be called first.
+   */
   SoyType type();
+
+  default SoyType typeOrDefault(@Nullable SoyType defaultValue) {
+    return hasType() ? type() : defaultValue;
+  }
+
+  /** Whether a type has been set yet for this variable (in early passes, this may not be true). */
+  boolean hasType();
 
   /** Returns true if this is an {@code @inject} param. */
   boolean isInjected();

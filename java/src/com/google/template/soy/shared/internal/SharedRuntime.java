@@ -17,13 +17,21 @@
 package com.google.template.soy.shared.internal;
 
 import com.google.template.soy.data.SanitizedContent;
+import com.google.template.soy.data.SoyMap;
+import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.data.SoyValueProvider;
+import com.google.template.soy.data.internal.SoyMapImpl;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NumberData;
-import com.google.template.soy.data.restricted.SoyString;
 import com.google.template.soy.data.restricted.StringData;
+import com.google.template.soy.exprtree.MapLiteralFromListNode;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.OptionalInt;
 
 /**
  * Runtime implementation of common expression operators to be shared between the {@code jbcsrc} and
@@ -85,10 +93,38 @@ public final class SharedRuntime {
     // Note that this *will* lose precision for longs.
     return operand0.numberValue() / operand1.numberValue();
   }
+  /** Performs the {@code %} operator on the two values. */
+  public static NumberData mod(SoyValue operand0, SoyValue operand1) {
+    if (operand0 instanceof IntegerData && operand1 instanceof IntegerData) {
+      return IntegerData.forValue(operand0.longValue() % operand1.longValue());
+    } else {
+      return FloatData.forValue(operand0.numberValue() % operand1.numberValue());
+    }
+  }
+
+  public static NumberData shiftRight(SoyValue operand0, SoyValue operand1) {
+    return IntegerData.forValue(operand0.longValue() >> (int) operand1.longValue());
+  }
+
+  public static NumberData shiftLeft(SoyValue operand0, SoyValue operand1) {
+    return IntegerData.forValue(operand0.longValue() << (int) operand1.longValue());
+  }
+
+  public static NumberData bitwiseOr(SoyValue operand0, SoyValue operand1) {
+    return IntegerData.forValue(operand0.longValue() | operand1.longValue());
+  }
+
+  public static NumberData bitwiseXor(SoyValue operand0, SoyValue operand1) {
+    return IntegerData.forValue(operand0.longValue() ^ operand1.longValue());
+  }
+
+  public static NumberData bitwiseAnd(SoyValue operand0, SoyValue operand1) {
+    return IntegerData.forValue(operand0.longValue() & operand1.longValue());
+  }
 
   /** Performs the {@code <} operator on the two values. */
   public static boolean lessThan(SoyValue left, SoyValue right) {
-    if (left instanceof SoyString && right instanceof SoyString) {
+    if (left instanceof StringData && right instanceof StringData) {
       return left.stringValue().compareTo(right.stringValue()) < 0;
     } else if (left instanceof IntegerData && right instanceof IntegerData) {
       return left.longValue() < right.longValue();
@@ -99,7 +135,7 @@ public final class SharedRuntime {
 
   /** Performs the {@code <=} operator on the two values. */
   public static boolean lessThanOrEqual(SoyValue left, SoyValue right) {
-    if (left instanceof SoyString && right instanceof SoyString) {
+    if (left instanceof StringData && right instanceof StringData) {
       return left.stringValue().compareTo(right.stringValue()) <= 0;
     } else if (left instanceof IntegerData && right instanceof IntegerData) {
       return left.longValue() <= right.longValue();
@@ -134,6 +170,63 @@ public final class SharedRuntime {
       }
     }
     return false;
+  }
+
+  /** calculates a $soyServerKey value. This should be compatible with the JS implementation in */
+  public static String soyServerKey(SoyValue key) {
+    if (key instanceof NumberData) {
+      return serialize(key.coerceToString(), "#");
+    }
+    if (key == null) {
+      return serialize("null", "_");
+    }
+    return serialize(key.coerceToString(), ":");
+  }
+
+  public static SoyMap constructMapFromList(List<? extends SoyValueProvider> list) {
+    Map<SoyValue, SoyValueProvider> map = new HashMap<>();
+    for (int i = 0; i < list.size(); i++) {
+      SoyValue recordEntry = list.get(i).resolve();
+      checkMapFromListConstructorCondition(
+          recordEntry instanceof SoyRecord, recordEntry, OptionalInt.of(i));
+
+      checkMapFromListConstructorCondition(
+          ((SoyRecord) recordEntry).hasField(MapLiteralFromListNode.KEY_STRING)
+              && ((SoyRecord) recordEntry).hasField(MapLiteralFromListNode.VALUE_STRING),
+          recordEntry,
+          OptionalInt.of(i));
+
+      SoyValue key = ((SoyRecord) recordEntry).getField(MapLiteralFromListNode.KEY_STRING);
+      SoyValueProvider valueProvider =
+          ((SoyRecord) recordEntry).getFieldProvider(MapLiteralFromListNode.VALUE_STRING);
+      checkMapFromListConstructorCondition(
+          key != null && SoyMap.isAllowedKeyType(key), recordEntry, OptionalInt.of(i));
+
+      map.put(key, valueProvider);
+    }
+
+    return SoyMapImpl.forProviderMap(map);
+  }
+
+  public static void checkMapFromListConstructorCondition(
+      boolean condition, SoyValue list, OptionalInt index) {
+    if (!condition) {
+      String exceptionString =
+          String.format(
+              "Error constructing map. Expected a list where each item is a record of 'key',"
+                  + " 'value' pairs, with the 'key' fields holding primitive values. Found: %s",
+              list);
+      if (index.isPresent()) {
+        exceptionString += String.format(" at index %d", index.getAsInt());
+      }
+
+      // TODO: throw a RenderException here
+      throw new IllegalArgumentException(exceptionString);
+    }
+  }
+
+  private static String serialize(String key, String delimiter) {
+    return key.length() + delimiter + key;
   }
 
   private SharedRuntime() {}

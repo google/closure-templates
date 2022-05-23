@@ -16,9 +16,14 @@
 
 package com.google.template.soy.types.ast;
 
+import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.template.soy.types.TemplateType.ParameterKind.ATTRIBUTE;
+import static com.google.template.soy.types.TemplateType.ParameterKind.PARAM;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.error.ErrorReporter;
@@ -72,7 +77,7 @@ public final class TypeNodeTest {
     assertThat(
             RecordTypeNode.create(
                     SOURCE_LOCATION,
-                    ImmutableList.of(Property.create(SOURCE_LOCATION, "x", TYPE_ABC)))
+                    ImmutableList.of(Property.create(SOURCE_LOCATION, "x", false, TYPE_ABC)))
                 .toString())
         .isEqualTo("[x: abc]");
 
@@ -80,8 +85,8 @@ public final class TypeNodeTest {
             RecordTypeNode.create(
                     SOURCE_LOCATION,
                     ImmutableList.of(
-                        Property.create(SOURCE_LOCATION, "x", TYPE_ABC),
-                        Property.create(SOURCE_LOCATION, "y", TYPE_DEF)))
+                        Property.create(SOURCE_LOCATION, "x", false, TYPE_ABC),
+                        Property.create(SOURCE_LOCATION, "y", false, TYPE_DEF)))
                 .toString())
         .isEqualTo("[x: abc, y: def]");
 
@@ -89,12 +94,61 @@ public final class TypeNodeTest {
             RecordTypeNode.create(
                     SOURCE_LOCATION,
                     ImmutableList.of(
-                        Property.create(SOURCE_LOCATION, "x", TYPE_ABC),
-                        Property.create(SOURCE_LOCATION, "y", TYPE_DEF),
-                        Property.create(SOURCE_LOCATION, "z", TYPE_GHI),
-                        Property.create(SOURCE_LOCATION, "w", TYPE_JKL)))
+                        Property.create(SOURCE_LOCATION, "x", false, TYPE_ABC),
+                        Property.create(SOURCE_LOCATION, "y", false, TYPE_DEF),
+                        Property.create(SOURCE_LOCATION, "z", false, TYPE_GHI),
+                        Property.create(SOURCE_LOCATION, "w", true, TYPE_JKL)))
                 .toString())
-        .isEqualTo("[\n  x: abc,\n  y: def,\n  z: ghi,\n  w: jkl\n]");
+        .isEqualTo("[\n  x: abc,\n  y: def,\n  z: ghi,\n  w?: jkl\n]");
+  }
+
+  @Test
+  public void testTemplateTypeToString() throws Exception {
+    assertThat(
+            TemplateTypeNode.create(
+                    SOURCE_LOCATION,
+                    ImmutableList.of(),
+                    NamedTypeNode.create(SOURCE_LOCATION, "html"))
+                .toString())
+        .isEqualTo("() => html");
+
+    assertThat(
+            TemplateTypeNode.create(
+                    SOURCE_LOCATION,
+                    ImmutableList.of(
+                        TemplateTypeNode.Parameter.create(
+                            SOURCE_LOCATION, "x", "x", PARAM, TYPE_ABC)),
+                    NamedTypeNode.create(SOURCE_LOCATION, "attributes"))
+                .toString())
+        .isEqualTo("(x: abc) => attributes");
+
+    assertThat(
+            TemplateTypeNode.create(
+                    SOURCE_LOCATION,
+                    ImmutableList.of(
+                        TemplateTypeNode.Parameter.create(
+                            SOURCE_LOCATION, "x", "x", PARAM, TYPE_ABC),
+                        TemplateTypeNode.Parameter.create(
+                            SOURCE_LOCATION, "y", "y", PARAM, TYPE_DEF)),
+                    NamedTypeNode.create(SOURCE_LOCATION, "css"))
+                .toString())
+        .isEqualTo("(x: abc, y: def) => css");
+
+    assertThat(
+            TemplateTypeNode.create(
+                    SOURCE_LOCATION,
+                    ImmutableList.of(
+                        TemplateTypeNode.Parameter.create(
+                            SOURCE_LOCATION, "x", "x", PARAM, TYPE_ABC),
+                        TemplateTypeNode.Parameter.create(
+                            SOURCE_LOCATION, "y", "y", PARAM, TYPE_DEF),
+                        TemplateTypeNode.Parameter.create(
+                            SOURCE_LOCATION, "z", "z", PARAM, TYPE_GHI),
+                        TemplateTypeNode.Parameter.create(
+                            SOURCE_LOCATION, "w", "@w", ATTRIBUTE, TYPE_JKL)),
+                    NamedTypeNode.create(SOURCE_LOCATION, "uri"))
+                .toString())
+        .isEqualTo("(\n  x: abc,\n  y: def,\n  z: ghi,\n  @w: jkl\n) => uri");
   }
 
   @Test
@@ -111,6 +165,9 @@ public final class TypeNodeTest {
     assertRoundTrip("list<list<list<list<int>>>>");
     assertRoundTrip("map<int, any>");
     assertRoundTrip("[foo: string, bar: int, quux: [foo: string, bar: int, quux: list<any>]]");
+    assertRoundTrip("() => html");
+    assertRoundTrip("(baz: int, tpl: (foo: string, bar: int) => attributes) => html");
+    assertRoundTrip("(count: int) => html | (count: int) => attributes");
   }
 
   private void assertRoundTrip(String typeString) {
@@ -141,7 +198,8 @@ public final class TypeNodeTest {
 
           @Override
           public Void visit(NamedTypeNode node) {
-            assertThat(((NamedTypeNode) right).name()).isEqualTo(node.name());
+            assertThat(((NamedTypeNode) right).name().identifier())
+                .isEqualTo(node.name().identifier());
             return null;
           }
 
@@ -169,12 +227,41 @@ public final class TypeNodeTest {
             }
             return null;
           }
+
+          @Override
+          public Void visit(TemplateTypeNode node) {
+            assertThat(node.parameters()).hasSize(((TemplateTypeNode) right).parameters().size());
+            ImmutableMap<String, TypeNode> leftArgumentMap =
+                node.parameters().stream()
+                    .collect(
+                        toImmutableMap(
+                            TemplateTypeNode.Parameter::name, TemplateTypeNode.Parameter::type));
+            ImmutableMap<String, TypeNode> rightArgumentMap =
+                ((TemplateTypeNode) right)
+                    .parameters().stream()
+                        .collect(
+                            toImmutableMap(
+                                TemplateTypeNode.Parameter::name,
+                                TemplateTypeNode.Parameter::type));
+            assertThat(leftArgumentMap.keySet()).isEqualTo(rightArgumentMap.keySet());
+            for (String key : leftArgumentMap.keySet()) {
+              assertEquals(leftArgumentMap.get(key), rightArgumentMap.get(key));
+            }
+            assertEquals(node.returnType(), ((TemplateTypeNode) right).returnType());
+            return null;
+          }
+
+          @Override
+          public Void visit(FunctionTypeNode node) {
+            return null;
+          }
         });
   }
 
   private TypeNode parse(String typeString) {
     TypeNode typeNode =
-        SoyFileParser.parseType(typeString, "fake-file.soy", ErrorReporter.exploding());
+        SoyFileParser.parseType(
+            typeString, SourceFilePath.create("fake-file.soy"), ErrorReporter.exploding());
     // sanity, make sure copies work
     assertThat(typeNode).isEqualTo(typeNode.copy());
     return typeNode;

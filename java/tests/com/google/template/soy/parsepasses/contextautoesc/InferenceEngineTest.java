@@ -22,7 +22,6 @@ import com.google.common.base.Ascii;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
-import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.FunctionNode;
@@ -31,6 +30,7 @@ import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -42,8 +42,8 @@ public final class InferenceEngineTest {
   public void testPcData() {
     assertTransitions(
         SanitizedContentKind.HTML,
-        "Hello <{assert('HTML_BEFORE_OPEN_TAG_NAME')} {assert('HTML_TAG NORMAL')}> "
-            + "{assert('HTML_PCDATA')}");
+        "Hello <{legacyDynamicTag(assert('HTML_BEFORE_OPEN_TAG_NAME'))} {assert('HTML_TAG"
+            + " NORMAL')}> {assert('HTML_PCDATA')}");
     // Test special tags.
     assertTransitions(
         SanitizedContentKind.HTML,
@@ -134,8 +134,8 @@ public final class InferenceEngineTest {
     assertTransitions(
         SanitizedContentKind.HTML,
         join(
-            "<{assert('HTML_BEFORE_OPEN_TAG_NAME')}>",
-            "</{assert('HTML_BEFORE_CLOSE_TAG_NAME')}>",
+            "<{legacyDynamicTag(assert('HTML_BEFORE_OPEN_TAG_NAME'))}>",
+            "</{legacyDynamicTag(assert('HTML_BEFORE_CLOSE_TAG_NAME'))}>",
             "<svg:font-fact "
                 + "id='{assert('HTML_NORMAL_ATTR_VALUE NORMAL PLAIN_TEXT SINGLE_QUOTE')}'/>",
             "<textarea>{assert('HTML_RCDATA TEXTAREA')}</textarea>",
@@ -244,7 +244,7 @@ public final class InferenceEngineTest {
         "<xmp>"
             + "{assert('HTML_RCDATA XMP')} foo {assert('HTML_RCDATA XMP')} "
             + "<div class='{assert('HTML_RCDATA XMP')}'>"
-            + "<{assert('HTML_RCDATA XMP')}>"
+            + "<x{assert('HTML_RCDATA XMP')}>"
             + "</textarea>"
             + "{assert('HTML_RCDATA XMP')}"
             + "</xmp>");
@@ -302,7 +302,7 @@ public final class InferenceEngineTest {
   private static void assertTransitions(SanitizedContentKind kind, String src) {
     ParseResult result =
         SoyFileSetParserBuilder.forFileContents(
-                "{namespace ns}\n{template .foo"
+                "{namespace ns}\n{template foo"
                     + (kind == SanitizedContentKind.HTML
                         ? ""
                         : " kind=\"" + Ascii.toLowerCase(kind.toString()) + '"')
@@ -312,10 +312,11 @@ public final class InferenceEngineTest {
             .addSoyFunction(new AssertFunction())
             // typically the default is what we want but in this case disable desugaring so the
             // html nodes are preserved and the autoescaper can see them
-            .desugarHtmlAndStateNodes(false)
+            .desugarHtmlNodes(false)
+            .errorReporter(ErrorReporter.explodeOnErrorsAndIgnoreWarnings())
             .parse();
-    Inferences inferences = new Inferences(result.registry());
-    TemplateNode template = result.fileSet().getChild(0).getChild(0);
+    Inferences inferences = new Inferences();
+    TemplateNode template = (TemplateNode) result.fileSet().getChild(0).getChild(0);
     InferenceEngine.inferTemplateEndContext(
         template,
         Context.getStartContextForContentKind(kind),

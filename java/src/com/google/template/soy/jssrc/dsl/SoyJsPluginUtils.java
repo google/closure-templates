@@ -22,7 +22,6 @@ import static com.google.template.soy.jssrc.dsl.Expression.fromExpr;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
@@ -30,7 +29,6 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.exprtree.Operator;
-import com.google.template.soy.jssrc.dsl.CodeChunk.RequiresCollector;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
@@ -47,7 +45,6 @@ import java.util.List;
  * and have no need for these utilities. By contrast, plugins understand only {@link JsExpr}s. These
  * utilities are provided so that plugins do not needs to convert between code chunks and JsExprs
  * manually.
- *
  */
 public final class SoyJsPluginUtils {
 
@@ -91,15 +88,15 @@ public final class SoyJsPluginUtils {
     } catch (Throwable t) {
       applied = report(location, directive, t, errorReporter);
     }
-    RequiresCollector.IntoImmutableSet collector = new RequiresCollector.IntoImmutableSet();
-    expr.collectRequires(collector);
+    ImmutableSet.Builder<GoogRequire> requiresBuilder = ImmutableSet.builder();
+    expr.collectRequires(requiresBuilder::add);
     for (Expression arg : args) {
-      arg.collectRequires(collector);
+      arg.collectRequires(requiresBuilder::add);
     }
     if (directive instanceof SoyLibraryAssistedJsSrcPrintDirective) {
       for (String name :
           ((SoyLibraryAssistedJsSrcPrintDirective) directive).getRequiredJsLibNames()) {
-        collector.add(GoogRequire.create(name));
+        requiresBuilder.add(GoogRequire.create(name));
       }
     }
 
@@ -108,7 +105,8 @@ public final class SoyJsPluginUtils {
     for (Expression arg : args) {
       initialStatements.addAll(arg.initialStatements());
     }
-    return fromExpr(applied, collector.get()).withInitialStatements(initialStatements.build());
+    return fromExpr(applied, requiresBuilder.build())
+        .withInitialStatements(initialStatements.build());
   }
 
   public static Expression applySoyFunction(
@@ -118,14 +116,14 @@ public final class SoyJsPluginUtils {
       ErrorReporter errorReporter) {
     List<JsExpr> functionInputs = new ArrayList<>(args.size());
     List<Statement> initialStatements = new ArrayList<>();
-    RequiresCollector.IntoImmutableSet collector = new RequiresCollector.IntoImmutableSet();
+    ImmutableSet.Builder<GoogRequire> requiresBuilder = ImmutableSet.builder();
 
     // SoyJsSrcFunction doesn't understand CodeChunks; it needs JsExprs.
     // Grab the JsExpr for each CodeChunk arg to deliver to the SoyToJsSrcFunction as input.
     for (Expression arg : args) {
-      arg.collectRequires(collector);
+      arg.collectRequires(requiresBuilder::add);
       functionInputs.add(arg.singleExprOrName());
-      Iterables.addAll(initialStatements, arg.initialStatements());
+      initialStatements.addAll(arg.initialStatements());
     }
 
     // Compute the function on the JsExpr inputs.
@@ -137,7 +135,7 @@ public final class SoyJsPluginUtils {
         report(location, soyJsSrcFunction, t, errorReporter);
       }
       for (String name : requires) {
-        collector.add(GoogRequire.create(name));
+        requiresBuilder.add(GoogRequire.create(name));
       }
     }
     JsExpr outputExpr;
@@ -146,7 +144,7 @@ public final class SoyJsPluginUtils {
     } catch (Throwable t) {
       outputExpr = report(location, soyJsSrcFunction, t, errorReporter);
     }
-    Expression functionOutput = dontTrustPrecedenceOf(outputExpr, collector.get());
+    Expression functionOutput = dontTrustPrecedenceOf(outputExpr, requiresBuilder.build());
 
     return functionOutput.withInitialStatements(initialStatements);
   }

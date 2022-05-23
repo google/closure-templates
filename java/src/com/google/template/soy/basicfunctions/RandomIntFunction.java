@@ -35,7 +35,6 @@ import java.util.List;
 
 /**
  * Soy function that generates a random integer in the range [0, n-1].
- *
  */
 @SoyFunctionSignature(
     name = "randomInt",
@@ -61,7 +60,7 @@ public final class RandomIntFunction
   // lazy singleton pattern, allows other backends to avoid the work.
   private static final class Methods {
     static final Method RANDOM_INT_FN =
-        JavaValueFactory.createMethod(BasicFunctionsRuntime.class, "randomInt", long.class);
+        JavaValueFactory.createMethod(BasicFunctionsRuntime.class, "randomInt", double.class);
   }
 
   @Override

@@ -35,8 +35,9 @@ public abstract class RecordTypeNode extends TypeNode {
   /** A single property declaration in a record type. */
   @AutoValue
   public abstract static class Property {
-    public static Property create(SourceLocation nameLocation, String name, TypeNode type) {
-      return new AutoValue_RecordTypeNode_Property(nameLocation, name, type);
+    public static Property create(
+        SourceLocation nameLocation, String name, boolean optional, TypeNode type) {
+      return new AutoValue_RecordTypeNode_Property(nameLocation, name, optional, type);
     }
 
     Property() {}
@@ -45,15 +46,17 @@ public abstract class RecordTypeNode extends TypeNode {
 
     public abstract String name();
 
+    public abstract boolean optional();
+
     public abstract TypeNode type();
 
     @Override
     public final String toString() {
-      return name() + ": " + type();
+      return name() + (optional() ? "?" : "") + ": " + type();
     }
 
     Property copy() {
-      return create(nameLocation(), name(), type().copy());
+      return create(nameLocation(), name(), optional(), type().copy());
     }
   }
 

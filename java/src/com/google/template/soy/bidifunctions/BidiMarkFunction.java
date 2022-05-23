@@ -37,7 +37,6 @@ import java.util.List;
 /**
  * Soy function that inserts a bidi mark character (LRM or RLM) for the current global bidi
  * directionality.
- *
  */
 @SoyFunctionSignature(name = "bidiMark", value = @Signature(returnType = "string"))
 final class BidiMarkFunction

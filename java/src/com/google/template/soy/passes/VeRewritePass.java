@@ -36,24 +36,22 @@ import com.google.template.soy.soytree.VeLogNode;
  *   <li>Rewrites {@code ve_data(ve(MyVe))} to {@code ve_data(ve(MyVe), null)}
  * </ul>
  */
-final class VeRewritePass extends CompilerFilePass {
+final class VeRewritePass implements CompilerFilePass {
 
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
     for (VeLogNode node : SoyTreeUtils.getAllNodesOfType(file, VeLogNode.class)) {
       maybeRewriteVeLogNode(node);
     }
-    for (FunctionNode node :
-        SoyTreeUtils.getAllFunctionInvocations(file, BuiltinFunction.VE_DATA)) {
-      maybeRewriteVeDataNode(node);
-    }
+    SoyTreeUtils.allFunctionInvocations(file, BuiltinFunction.VE_DATA)
+        .forEach(this::maybeRewriteVeDataNode);
   }
 
   private void maybeRewriteVeLogNode(VeLogNode node) {
     if (node.getVeDataExpression().getRoot().getKind() == Kind.GLOBAL_NODE) {
       GlobalNode veName = (GlobalNode) node.getVeDataExpression().getRoot();
       FunctionNode veData =
-          new FunctionNode(
+          FunctionNode.newPositional(
               Identifier.create(BuiltinFunction.VE_DATA.getName(), veName.getSourceLocation()),
               BuiltinFunction.VE_DATA,
               veName.getSourceLocation());

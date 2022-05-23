@@ -23,13 +23,15 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.defn.TemplateParam;
+import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.SoyType.Kind;
+import com.google.template.soy.types.ast.FunctionTypeNode;
 import com.google.template.soy.types.ast.GenericTypeNode;
 import com.google.template.soy.types.ast.NamedTypeNode;
 import com.google.template.soy.types.ast.RecordTypeNode;
 import com.google.template.soy.types.ast.RecordTypeNode.Property;
+import com.google.template.soy.types.ast.TemplateTypeNode;
 import com.google.template.soy.types.ast.TypeNode;
 import com.google.template.soy.types.ast.TypeNodeVisitor;
 import com.google.template.soy.types.ast.UnionTypeNode;
@@ -41,7 +43,7 @@ import com.google.template.soy.types.ast.UnionTypeNode;
  * <p>This class determines if explicit type declarations are legal, whereas {@link
  * ResolveExpressionTypesPass} calculates implicit types and determines if they're legal.
  */
-final class CheckDeclaredTypesPass extends CompilerFilePass {
+final class CheckDeclaredTypesPass implements CompilerFilePass {
 
   private static final SoyErrorKind VE_BAD_DATA_TYPE =
       SoyErrorKind.of("Illegal VE metadata type ''{0}''. The metadata must be a proto.");
@@ -54,8 +56,8 @@ final class CheckDeclaredTypesPass extends CompilerFilePass {
 
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-    for (TemplateNode templateNode : file.getChildren()) {
-      for (TemplateParam param : templateNode.getAllParams()) {
+    for (TemplateNode templateNode : file.getTemplates()) {
+      for (TemplateHeaderVarDefn param : templateNode.getHeaderParams()) {
         TypeNode type = param.getTypeNode();
         // Skip this if it's a param with a default value and an inferred type. In the case of an
         // illegal map key type, the error will be reported on the map literal by
@@ -110,6 +112,8 @@ final class CheckDeclaredTypesPass extends CompilerFilePass {
           }
           node.arguments().get(0).accept(this);
           break;
+        case ELEMENT:
+          break;
         default:
           throw new AssertionError("unexpected generic type: " + node.getResolvedType().getKind());
       }
@@ -129,6 +133,20 @@ final class CheckDeclaredTypesPass extends CompilerFilePass {
       for (Property property : node.properties()) {
         property.type().accept(this);
       }
+      return null;
+    }
+
+    @Override
+    public Void visit(TemplateTypeNode node) {
+      for (TemplateTypeNode.Parameter parameter : node.parameters()) {
+        parameter.type().accept(this);
+      }
+      node.returnType().accept(this);
+      return null;
+    }
+
+    @Override
+    public Void visit(FunctionTypeNode node) {
       return null;
     }
   }

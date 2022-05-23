@@ -19,15 +19,14 @@ package com.google.template.soy.passes;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.Iterables;
-import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for CheckDelegatesPass.
- *
  */
 @RunWith(JUnit4.class)
 public final class CheckDelegatesPassTest {
@@ -39,7 +38,7 @@ public final class CheckDelegatesPassTest {
             + "{namespace ns1}\n"
             + "\n"
             + "/***/\n"
-            + "{template .boo}\n"
+            + "{template boo}\n"
             + "  blah\n"
             + "{/template}\n",
         ""
@@ -47,7 +46,7 @@ public final class CheckDelegatesPassTest {
             + "{namespace ns2}\n"
             + "\n"
             + "/***/\n"
-            + "{template .foo}\n"
+            + "{template foo}\n"
             + "  blah\n"
             + "{/template}\n");
   }
@@ -59,7 +58,7 @@ public final class CheckDelegatesPassTest {
             + "{namespace ns1}\n"
             + "\n"
             + "/***/\n"
-            + "{template .boo}\n"
+            + "{template boo}\n"
             + "  blah\n"
             + "{/template}\n"
             + "\n"
@@ -84,7 +83,7 @@ public final class CheckDelegatesPassTest {
             + "{namespace ns1}\n"
             + "\n"
             + "/***/\n"
-            + "{template .boo}\n"
+            + "{template boo}\n"
             + "  {delcall MagicButton}{param foo : '' /}{/delcall}\n"
             + "{/template}\n"
             + "\n"
@@ -105,12 +104,12 @@ public final class CheckDelegatesPassTest {
   @Test
   public void testErrorReusedTemplateName() {
     assertInvalidSoyFiles(
-        "Found deltemplate ns1.boo with the same name as a template/element at no-path:4:1.",
+        "Found deltemplate ns1.boo with the same name as a template/element at no-path:4:1-6:11.",
         ""
             + "{namespace ns1}\n"
             + "\n"
             + "/***/\n"
-            + "{template .boo}\n"
+            + "{template boo}\n"
             + "  blah\n"
             + "{/template}\n",
         ""
@@ -129,13 +128,13 @@ public final class CheckDelegatesPassTest {
     assertInvalidSoyFiles(
         "Found delegate template with same name 'MagicButton' "
             + "but different param declarations compared to the "
-            + "definition at no-path:9:1."
+            + "definition at no-path:9:1-11:14."
             + "\n  Unexpected params: [foo: ?]",
         ""
             + "{namespace ns1}\n"
             + "\n"
             + "/***/\n"
-            + "{template .boo}\n"
+            + "{template boo}\n"
             + "  blah\n"
             + "{/template}\n"
             + "\n"
@@ -154,14 +153,14 @@ public final class CheckDelegatesPassTest {
 
     assertInvalidSoyFiles(
         "Found delegate template with same name 'MagicButton' but different param "
-            + "declarations compared to the definition at no-path:8:1."
+            + "declarations compared to the definition at no-path:8:1-11:14."
             + "\n  Missing params: [foo: ? (optional)]"
             + "\n  Unexpected params: [foo: ?]",
         ""
             + "{namespace ns1}\n"
             + "\n"
             + "/***/\n"
-            + "{template .boo}\n"
+            + "{template boo}\n"
             + "  blah\n"
             + "{/template}\n"
             + "\n"
@@ -183,7 +182,7 @@ public final class CheckDelegatesPassTest {
   public void testErrorParamsMismatchAcrossVariants() {
     assertInvalidSoyFiles(
         "Found delegate template with same name 'MagicButton' "
-            + "but different param declarations compared to the definition at no-path:4:1."
+            + "but different param declarations compared to the definition at no-path:4:1-6:14."
             + "\n  Unexpected params: [foo: ?]",
         ""
             + "{namespace ns1}\n"
@@ -222,7 +221,7 @@ public final class CheckDelegatesPassTest {
             + "{namespace ns1}\n"
             + "\n"
             + "/***/\n"
-            + "{template .boo}\n"
+            + "{template boo}\n"
             + "  blah\n"
             + "{/template}\n",
         ""
@@ -230,37 +229,10 @@ public final class CheckDelegatesPassTest {
             + "{namespace ns2}\n"
             + "\n"
             + "/***/\n"
-            + "{template .foo}\n"
+            + "{template foo}\n"
             + // not marked private
             "  blah\n"
             + "{/template}\n");
-  }
-
-  @Test
-  public void testErrorBasicCallToDelegateTemplate() {
-    assertInvalidSoyFiles(
-        "'call' to delegate template 'ns1.MagicButton' (expected 'delcall').",
-        ""
-            + "{namespace ns1}\n"
-            + "\n"
-            + "/***/\n"
-            + "{template .boo}\n"
-            + "  {call .MagicButton /}\n"
-            + // basic call (should be delegate call)
-            "{/template}\n"
-            + "\n"
-            + "{deltemplate ns1.MagicButton}\n"
-            + "  {@param foo: ?}\n"
-            + "  000\n"
-            + "{/deltemplate}\n",
-        ""
-            + "{delpackage SecretFeature}\n"
-            + "{namespace ns1}\n"
-            + "\n"
-            + "{deltemplate ns1.MagicButton}\n"
-            + "  {@param foo: ?}\n"
-            + "  111 {$foo}\n"
-            + "{/deltemplate}\n");
   }
 
   @Test
@@ -269,10 +241,10 @@ public final class CheckDelegatesPassTest {
         "Found illegal call from 'ns1.boo' to 'ns2.foo', which is in a different delegate package.",
         ""
             + "{namespace ns1}\n"
-            + "\n"
+            + "import {foo} from 'no-path-2';\n"
             + "/***/\n"
-            + "{template .boo}\n"
-            + "  {call ns2.foo /}\n"
+            + "{template boo}\n"
+            + "  {call foo /}\n"
             + // call to ns2.foo, which is public
             "{/template}\n",
         ""
@@ -280,7 +252,7 @@ public final class CheckDelegatesPassTest {
             + "{namespace ns2}\n"
             + "\n"
             + "/***/\n"
-            + "{template .foo}\n"
+            + "{template foo}\n"
             + "  blah\n"
             + "{/template}\n");
   }
@@ -292,10 +264,10 @@ public final class CheckDelegatesPassTest {
         ""
             + "{delpackage NotQuiteSoSecretFeature}\n"
             + "{namespace ns1}\n"
-            + "\n"
+            + "import {foo} from 'no-path-2';\n"
             + "/***/\n"
-            + "{template .boo}\n"
-            + "  {call ns2.foo /}\n"
+            + "{template boo}\n"
+            + "  {call foo /}\n"
             + // call to ns2.foo, which is public
             "{/template}\n",
         ""
@@ -303,7 +275,7 @@ public final class CheckDelegatesPassTest {
             + "{namespace ns2}\n"
             + "\n"
             + "/***/\n"
-            + "{template .foo}\n"
+            + "{template foo}\n"
             + "  blah\n"
             + "{/template}\n");
   }
@@ -311,20 +283,20 @@ public final class CheckDelegatesPassTest {
   @Test
   public void testErrorDelegateCallToBasicTemplate() {
     assertInvalidSoyFiles(
-        "'delcall' to basic template 'ns2.foo' (expected 'call').",
+        "'delcall' to basic template defined at '2:9-2:11' (expected 'call').",
         ""
             + "{namespace ns1}\n"
-            + "\n"
+            + "import {foo} from 'no-path-2';\n"
             + "/***/\n"
-            + "{template .boo}\n"
-            + "  {delcall ns2.foo /}\n"
+            + "{template boo}\n"
+            + "  {delcall foo /}\n"
             + // delegate call (should be basic call)
             "{/template}\n",
         ""
             + "{namespace ns2}\n"
             + "\n"
             + "/***/\n"
-            + "{template .foo}\n"
+            + "{template foo}\n"
             + "  blah\n"
             + "{/template}\n");
   }

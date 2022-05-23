@@ -30,9 +30,13 @@ import javax.annotation.Nullable;
  * Node representing a Soy element.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public final class TemplateElementNode extends TemplateNode implements ExprHolderNode {
+
+  // These two fields represent a possible alternate implementation for preserving state (as opposed
+  // to a Soy element). For more information, see go/wit-block-design
+  public final String jsnamespace;
+  public final String jsclass;
 
   /**
    * Main constructor. This is package-private because TemplateElementNode instances should be built
@@ -46,8 +50,12 @@ public final class TemplateElementNode extends TemplateNode implements ExprHolde
   TemplateElementNode(
       TemplateElementNodeBuilder nodeBuilder,
       SoyFileHeaderInfo soyFileHeaderInfo,
-      @Nullable ImmutableList<TemplateHeaderVarDefn> params) {
+      @Nullable ImmutableList<TemplateHeaderVarDefn> params,
+      @Nullable String jsnamespace,
+      @Nullable String jsclass) {
     super(nodeBuilder, "element", soyFileHeaderInfo, Visibility.PUBLIC, params);
+    this.jsnamespace = jsnamespace;
+    this.jsclass = jsclass;
   }
 
   /**
@@ -57,6 +65,8 @@ public final class TemplateElementNode extends TemplateNode implements ExprHolde
    */
   private TemplateElementNode(TemplateElementNode orig, CopyState copyState) {
     super(orig, copyState);
+    this.jsnamespace = orig.jsnamespace;
+    this.jsclass = orig.jsclass;
   }
 
   /** Returns the state variables from template header. */
@@ -80,9 +90,15 @@ public final class TemplateElementNode extends TemplateNode implements ExprHolde
     ImmutableList.Builder<ExprRootNode> builder = ImmutableList.builder();
     builder.addAll(super.getExprList());
     for (TemplateStateVar state : getStateVars()) {
-      builder.add(state.defaultValue());
+      if (state.defaultValue() != null) {
+        builder.add(state.defaultValue());
+      }
     }
     return builder.build();
+  }
+
+  public boolean hasExternalClassDefinition() {
+    return jsnamespace != null && jsclass != null;
   }
 
   @Override

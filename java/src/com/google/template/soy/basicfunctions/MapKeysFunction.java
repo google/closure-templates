@@ -30,7 +30,7 @@ import com.google.template.soy.plugin.python.restricted.PythonValue;
 import com.google.template.soy.plugin.python.restricted.PythonValueFactory;
 import com.google.template.soy.plugin.python.restricted.SoyPythonSourceFunction;
 import com.google.template.soy.shared.restricted.Signature;
-import com.google.template.soy.shared.restricted.SoyFunctionSignature;
+import com.google.template.soy.shared.restricted.SoyMethodSignature;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
 import java.lang.reflect.Method;
 import java.util.List;
@@ -41,14 +41,14 @@ import java.util.List;
  * <p>The keys are returned as a list with no guarantees on the order (may be different on each run
  * or for each backend).
  *
- * <p>This enables iteration over the keys in a map, e.g. {@code {for $key in keys($myMap)} ...
+ * <p>This enables iteration over the keys in a map, e.g. {@code {for $key in $myMap.keys()} ...
  * {/for}}
- *
  */
-@SoyFunctionSignature(
-    name = "mapKeys",
+@SoyMethodSignature(
+    name = "keys",
+    baseType = "map<any, any>",
     // Note: the return type is overridden in ResolveTypeExpressionsPass
-    value = @Signature(parameterTypes = "map<?, any>", returnType = "list<?>"))
+    value = @Signature(returnType = "list<any>"))
 @SoyPureFunction
 public final class MapKeysFunction
     implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPythonSourceFunction {

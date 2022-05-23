@@ -37,12 +37,12 @@ import java.util.List;
 
 /**
  * Soy function that takes the max of two numbers.
- *
  */
 @SoyFunctionSignature(
     name = "max",
     value =
-        // TODO(b/70946095): these should all be number, or maybe something more specific
+        // TODO(b/70946095): these should all be number. The ResolveExpressionTypesPass narrows the
+        // type.
         @Signature(
             returnType = "?",
             parameterTypes = {"?", "?"}))

@@ -25,7 +25,6 @@ import com.google.template.soy.types.IntType;
  * +-Number.MAX_SAFE_INTEGER at the least; Java and Python backends support full 64 bit longs.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public final class IntegerNode extends AbstractPrimitiveNode {
 

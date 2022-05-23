@@ -17,7 +17,6 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.template.soy.data.SoyValueConverter.EMPTY_DICT;
 import static com.google.template.soy.jbcsrc.TemplateTester.getDefaultContext;
 import static org.junit.Assert.assertThrows;
 
@@ -29,16 +28,18 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.SettableFuture;
 import com.google.template.soy.SoyFileSetParser;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
-import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.data.ForwardingLoggingAdvisingAppendable;
 import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
 import com.google.template.soy.data.LoggingFunctionInvocation;
 import com.google.template.soy.data.SoyDict;
+import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueConverterUtility;
 import com.google.template.soy.data.SoyValueProvider;
+import com.google.template.soy.data.internal.ParamStore;
+import com.google.template.soy.data.internal.SoyRecordImpl;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
@@ -47,13 +48,15 @@ import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective;
+import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective.Streamable.AppendableAndOptions;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
-import java.io.Closeable;
+import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import java.io.IOException;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -63,17 +66,17 @@ import org.junit.runners.JUnit4;
 public final class StreamingPrintDirectivesTest {
 
   @Test
-  public void testStreaming() throws IOException {
+  public void testStreaming() throws Exception {
     BufferingAppendable output = BufferingAppendable.buffering();
     CompiledTemplates templates =
         compileFile(
             "{namespace ns}",
             "",
-            "{template .foo}",
+            "{template foo}",
             "  {@param future1 : ?}",
             "  {@param future2 : ?}",
             "  foo_prefix{sp}",
-            "  {call .streamable}",
+            "  {call streamable}",
             "    {param p kind=\"html\"}",
             "      param_prefix{sp}{$future1}{sp}param_suffix",
             "    {/param}",
@@ -81,7 +84,7 @@ public final class StreamingPrintDirectivesTest {
             "",
             "  {sp}interlude{sp}",
             "",
-            "  {call .unstreamable}",
+            "  {call unstreamable}",
             "    {param p kind=\"html\"}",
             "      param_prefix{sp}{$future2}{sp}param_suffix",
             "    {/param}",
@@ -89,14 +92,14 @@ public final class StreamingPrintDirectivesTest {
             "  {sp}foo_suffix",
             "{/template}",
             "",
-            "{template .streamable}",
+            "{template streamable}",
             "  {@param p : ?}",
             "  streamable_prefix{sp}",
             "  {$p |streaming}{sp}",
             "  streamable_suffix",
             "{/template}",
             "",
-            "{template .unstreamable}",
+            "{template unstreamable}",
             "  {@param p : ?}",
             "  unstreamable_prefix{sp}",
             "  {$p |nonstreaming}{sp}",
@@ -104,16 +107,21 @@ public final class StreamingPrintDirectivesTest {
             "{/template}",
             "");
 
-    CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.foo");
+    CompiledTemplate template = templates.getTemplate("ns.foo");
     RenderContext context = getDefaultContext(templates);
     SettableFuture<String> future1 = SettableFuture.create();
     SettableFuture<String> future2 = SettableFuture.create();
-    CompiledTemplate create =
-        factory.create(
-            SoyValueConverterUtility.newDict("future1", future1, "future2", future2),
-            SoyValueConverter.EMPTY_DICT);
+    SoyRecord params =
+        new SoyRecordImpl(
+            ImmutableMap.of(
+                "future1",
+                SoyValueConverter.INSTANCE.convert(future1),
+                "future2",
+                SoyValueConverter.INSTANCE.convert(future2)));
+    Callable<RenderResult> renderer =
+        () -> template.render(params, ParamStore.EMPTY_INSTANCE, output, context);
 
-    RenderResult result = create.render(output, context);
+    RenderResult result = renderer.call();
     // rendering paused because it found our future
     assertThat(result.type()).isEqualTo(RenderResult.Type.DETACH);
     assertThat(result.future()).isSameInstanceAs(future1);
@@ -123,7 +131,7 @@ public final class StreamingPrintDirectivesTest {
         .isEqualTo("foo_prefix streamable_prefix (stream: param_prefix )");
 
     future1.set("future1");
-    result = create.render(output, context);
+    result = renderer.call();
     assertThat(result.type()).isEqualTo(RenderResult.Type.DETACH);
     assertThat(result.future()).isSameInstanceAs(future2);
     // here we made it into .unstreamable, but printed no part of the parameter due to the non
@@ -134,7 +142,7 @@ public final class StreamingPrintDirectivesTest {
                 + "unstreamable_prefix ");
 
     future2.set("future2");
-    result = create.render(output, context);
+    result = renderer.call();
     assertThat(result.isDone()).isTrue();
     // now we render the full future2 parameter all at once and the
     assertThat(output.getAndClearBuffer())
@@ -153,17 +161,17 @@ public final class StreamingPrintDirectivesTest {
    * sometimes enforce it, but for the time being this isn't happening.
    */
   @Test
-  public void testStreamingDisablesRuntimeTypeChecks() throws IOException {
+  public void testStreamingDisablesRuntimeTypeChecks() throws Exception {
     CompiledTemplates templates =
         compileFile(
             "{namespace ns}",
             "",
-            "{template .streamable}",
+            "{template streamable}",
             "  {@param i : int}",
             "  {$i |streaming}",
             "{/template}",
             "",
-            "{template .nonstreamable}",
+            "{template nonstreamable}",
             "  {@param i : int}",
             "  {$i |nonstreaming}",
             "{/template}");
@@ -171,9 +179,8 @@ public final class StreamingPrintDirectivesTest {
     SoyDict badParam = SoyValueConverterUtility.newDict("i", "notAnInt");
     BufferingAppendable output = BufferingAppendable.buffering();
     templates
-        .getTemplateFactory("ns.streamable")
-        .create(badParam, EMPTY_DICT)
-        .render(output, context);
+        .getTemplate("ns.streamable")
+        .render(badParam, ParamStore.EMPTY_INSTANCE, output, context);
     assertThat(output.getAndClearBuffer()).isEqualTo("(stream: notAnInt)");
 
     ClassCastException cce =
@@ -181,9 +188,8 @@ public final class StreamingPrintDirectivesTest {
             ClassCastException.class,
             () ->
                 templates
-                    .getTemplateFactory("ns.nonstreamable")
-                    .create(badParam, EMPTY_DICT)
-                    .render(output, context));
+                    .getTemplate("ns.nonstreamable")
+                    .render(badParam, ParamStore.EMPTY_INSTANCE, output, context));
     assertThat(cce)
         .hasMessageThat()
         .contains("com.google.template.soy.data.restricted.StringData cannot be cast to");
@@ -198,39 +204,41 @@ public final class StreamingPrintDirectivesTest {
         compileFile(
             "{namespace ns}",
             "",
-            "{template .tag}",
+            "{template tag}",
             "  {let $tag kind=\"html\"}",
-            "    <div {call .attrs /}></div>",
+            "    <div {call attrs /}></div>",
             "  {/let}",
             "  {$tag}",
             "{/template}",
             "",
-            "{template .attrs kind=\"attributes\"}",
+            "{template attrs kind=\"attributes\"}",
             "  class=\"foo\"",
             "{/template}");
     RenderContext context = getDefaultContext(templates);
     BufferingAppendable output = BufferingAppendable.buffering();
-    templates.getTemplateFactory("ns.tag").create(EMPTY_DICT, EMPTY_DICT).render(output, context);
+    templates
+        .getTemplate("ns.tag")
+        .render(ParamStore.EMPTY_INSTANCE, ParamStore.EMPTY_INSTANCE, output, context);
     assertThat(output.getAndClearBuffer()).isEqualTo("<div class=\"foo\"></div>");
   }
 
   @Test
-  public void testStreamingCall() throws IOException {
+  public void testStreamingCall() throws Exception {
     // As of right now only a few directives support streaming, but this includes |escapeHtml and
     // |escapeJsString, so we should be able to transitively stream through all of that.
     CompiledTemplates templates =
         compileFile(
             "{namespace ns}",
             "",
-            "{template .foo}",
-            "  {call .bar data=\"all\"/}",
+            "{template foo}",
+            "  {call bar data=\"all\"/}",
             "{/template}",
             "",
-            "{template .bar}",
-            "  <script>var x=\"{call .baz data=\"all\" /}\";</script>",
+            "{template bar}",
+            "  <script>var x=\"{call baz data=\"all\" /}\";</script>",
             "{/template}",
             "",
-            "{template .baz kind=\"text\"}",
+            "{template baz kind=\"text\"}",
             "  {@param future : ?}",
             "  \"{$future}\" ",
             "{/template}",
@@ -238,14 +246,18 @@ public final class StreamingPrintDirectivesTest {
     RenderContext context = getDefaultContext(templates);
     BufferingAppendable output = BufferingAppendable.buffering();
     SettableFuture<String> future = SettableFuture.create();
-    CompiledTemplate template =
-        templates
-            .getTemplateFactory("ns.foo")
-            .create(SoyValueConverterUtility.newDict("future", future), EMPTY_DICT);
-    template.render(output, context);
+    CompiledTemplate template = templates.getTemplate("ns.foo");
+    Callable<RenderResult> renderer =
+        () ->
+            template.render(
+                SoyValueConverterUtility.newDict("future", future),
+                ParamStore.EMPTY_INSTANCE,
+                output,
+                context);
+    renderer.call();
     assertThat(output.getAndClearBuffer()).isEqualTo("<script>var x=\"\\x22");
     future.set("hello");
-    template.render(output, context);
+    renderer.call();
     assertThat(output.getAndClearBuffer()).isEqualTo("hello\\x22\";</script>");
   }
 
@@ -257,18 +269,20 @@ public final class StreamingPrintDirectivesTest {
         compileFile(
             "{namespace ns}",
             "",
-            "{template .foo}",
+            "{template foo}",
             "  {@param s : ?}",
             "  {$s |streaming:'first' |streaming:'second'}",
             "{/template}",
             "");
     RenderContext context = getDefaultContext(templates);
     BufferingAppendable output = BufferingAppendable.buffering();
-    CompiledTemplate template =
-        templates
-            .getTemplateFactory("ns.foo")
-            .create(SoyValueConverterUtility.newDict("s", "hello"), EMPTY_DICT);
-    template.render(output, context);
+    templates
+        .getTemplate("ns.foo")
+        .render(
+            SoyValueConverterUtility.newDict("s", "hello"),
+            ParamStore.EMPTY_INSTANCE,
+            output,
+            context);
     assertThat(output.getAndClearBuffer()).isEqualTo("(second: (first: hello))");
   }
 
@@ -281,17 +295,17 @@ public final class StreamingPrintDirectivesTest {
         compileFile(
             "{namespace ns}",
             "",
-            "{template .basic}",
+            "{template basic}",
             "  {@param p : ?}",
             "  {$p|streamingCloseable:' closed!'}",
             "{/template}",
             "",
-            "{template .nested kind=\"text\"}",
+            "{template nested kind=\"text\"}",
             "  {@param p : ?}",
             "  {$p|streamingCloseable:'(c1)'|streamingCloseable:'(close)'}",
             "{/template}",
             "",
-            "{template .nestedDeeper kind=\"text\"}",
+            "{template nestedDeeper kind=\"text\"}",
             "  {@param p : ?}",
             "  {$p|streamingCloseable:'(c1)'",
             "     |streamingCloseable:'(c2)'",
@@ -316,9 +330,12 @@ public final class StreamingPrintDirectivesTest {
     BufferingAppendable output = BufferingAppendable.buffering();
     RenderResult result =
         templates
-            .getTemplateFactory(name)
-            .create(SoyValueConverter.INSTANCE.newDictFromMap(params), EMPTY_DICT)
-            .render(output, context);
+            .getTemplate(name)
+            .render(
+                (SoyRecord) SoyValueConverter.INSTANCE.convert(params),
+                ParamStore.EMPTY_INSTANCE,
+                output,
+                context);
     assertThat(result.isDone()).isTrue();
     return output.getAndClearBuffer();
   }
@@ -336,7 +353,6 @@ public final class StreamingPrintDirectivesTest {
     return BytecodeCompiler.compile(
             parseResult.registry(),
             parseResult.fileSet(),
-            /*developmentMode=*/ false,
             ErrorReporter.exploding(),
             parser.soyFileSuppliers(),
             parser.typeRegistry())
@@ -410,6 +426,13 @@ public final class StreamingPrintDirectivesTest {
     }
 
     @Override
+    public void flushBuffers(int depth) throws IOException {
+      if (depth > 0) {
+        delegate.flushBuffers(depth - 1);
+      }
+    }
+
+    @Override
     public LoggingAdvisingAppendable append(CharSequence csq) throws IOException {
       delegate.append(wrap(csq));
       return this;
@@ -479,8 +502,7 @@ public final class StreamingPrintDirectivesTest {
   }
 
   /** An appendable that buffers all content until a call to close. */
-  public static final class CloseableAppendable extends ForwardingLoggingAdvisingAppendable
-      implements Closeable {
+  public static final class CloseableAppendable extends ForwardingLoggingAdvisingAppendable {
     private final String suffix;
     private boolean appendCalled;
 
@@ -509,10 +531,11 @@ public final class StreamingPrintDirectivesTest {
     }
 
     @Override
-    public void close() throws IOException {
+    public void flushBuffers(int depth) throws IOException {
       if (appendCalled) {
         delegate.append(suffix);
       }
+      super.flushBuffers(depth);
     }
   }
 }

@@ -70,7 +70,7 @@ final class BanXidForCssObfuscation extends Rule<TemplateNode> {
 
     private void visit(SoyNode node) {
       if (node instanceof LetNode) {
-        localVars.put(((LetNode) node).getVarName(), (LetNode) node);
+        localVars.put(((LetNode) node).getVarRefName(), (LetNode) node);
       }
 
       if (shouldBanXid(node)) {
@@ -115,7 +115,7 @@ final class BanXidForCssObfuscation extends Rule<TemplateNode> {
     private void visitAndBanXidInPrintedValue(SoyNode node) {
       if (node instanceof LetNode) {
         // We will come back to these if they are actually printed.
-        localVars.put(((LetNode) node).getVarName(), (LetNode) node);
+        localVars.put(((LetNode) node).getVarRefName(), (LetNode) node);
       } else if (node instanceof PrintNode) {
         visitAndBanXidInExpressionValue(((PrintNode) node).getExpr());
       } else if (node instanceof ParentNode) {
@@ -130,7 +130,7 @@ final class BanXidForCssObfuscation extends Rule<TemplateNode> {
     private void visitAndBanXidInExpressionValue(ExprNode node) {
       if (node instanceof FunctionNode) {
         FunctionNode fn = (FunctionNode) node;
-        if (fn.getFunctionName().equals("xid")) {
+        if ("xid".equals(fn.getFunctionName())) {
           errorReporter.report(fn.getSourceLocation(), error);
         }
       } else if (node instanceof VarRefNode) {

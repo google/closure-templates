@@ -24,7 +24,6 @@ import com.google.common.primitives.Longs;
  * <p>Important: This class may only be used in implementing plugins (e.g. functions, directives).
  *
  * <p>Important: Even though this class is not marked 'final', do not extend this class.
- *
  */
 public abstract class NumberData extends PrimitiveData {
 
@@ -40,6 +39,8 @@ public abstract class NumberData extends PrimitiveData {
   public double numberValue() {
     return toFloat();
   }
+
+  public abstract Number javaNumberValue();
 
   @Override
   public boolean equals(Object other) {

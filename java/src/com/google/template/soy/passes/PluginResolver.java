@@ -17,29 +17,40 @@
 package com.google.template.soy.passes;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.collect.ImmutableMap.toImmutableMap;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Maps;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.error.SoyErrors;
+import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.plugin.java.internal.PluginAnalyzer;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
+import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyDeprecated;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
+import com.google.template.soy.shared.restricted.SoyMethodSignature;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
+import com.google.template.soy.shared.restricted.SoySourceFunctionMethod;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import javax.annotation.Nullable;
 
 /** Encapsulates the logic for looking up plugins. */
 public final class PluginResolver {
@@ -49,14 +60,19 @@ public final class PluginResolver {
    */
   public static PluginResolver nullResolver(Mode mode, ErrorReporter reporter) {
     return new PluginResolver(
-        mode, ImmutableMap.of(), ImmutableMap.of(), ImmutableMap.of(), reporter);
+        mode,
+        ImmutableList.of(),
+        ImmutableList.of(),
+        ImmutableList.of(),
+        ImmutableList.of(),
+        reporter);
   }
 
   private static final SoyErrorKind UNKNOWN_PLUGIN =
       SoyErrorKind.of("Unknown {0} ''{1}''.{2}", StyleAllowance.NO_PUNCTUATION);
 
   private static final SoyErrorKind DEPRECATED_PLUGIN =
-      SoyErrorKind.of(
+      SoyErrorKind.deprecation(
           "{0} is deprecated: {1}", StyleAllowance.NO_PUNCTUATION, StyleAllowance.NO_CAPS);
 
   private static final SoyErrorKind INCORRECT_NUM_ARGS =
@@ -64,8 +80,8 @@ public final class PluginResolver {
 
   private static final SoyErrorKind PLUGIN_NAME_NOT_ALLOWED =
       SoyErrorKind.of(
-          "Plugins named ''{0}'' are not allowed, "
-              + "since they conflict with Soy''s {0}() literal syntax."
+          "Plugin ''{0}'' is named ''{1}'' which is not allowed "
+              + "because it conflicts with Soy''s {1}() literal syntax."
           );
 
   private static final SoyErrorKind DIFFERENT_IMPLS_REGISTERED =
@@ -78,6 +94,17 @@ public final class PluginResolver {
           "Plugin class ''{0}'' has no @SoyFunctionSignature annotation. "
               + "Classes implementing SoySourceFunction must be annotated with "
               + "@SoyFunctionSignature.");
+
+  private static final SoyErrorKind MISSING_METHOD_SIGNATURE =
+      SoyErrorKind.of(
+          "Plugin class ''{0}'' has no @SoyMethodSignature annotation. "
+              + "Method classes implementing SoySourceFunction must be annotated with "
+              + "@SoyMethodSignature.");
+
+  private static final SoyErrorKind DIFFERENT_METHOD_IMPLS_REGISTERED =
+      SoyErrorKind.of(
+          "Plugin method named ''{0}'' with base type ''{1}'' has two different implementations"
+              + " registered: ''{2}'' and ''{3}''.");
 
   private static final SoyErrorKind MULTIPLE_PLUGIN_INSTANCES =
       SoyErrorKind.of(
@@ -120,57 +147,36 @@ public final class PluginResolver {
   private final Mode mode;
   private final ImmutableMap<String, SoyPrintDirective> printDirectives;
   private final ImmutableMap<String, Object> functions;
+  private final ImmutableMap<String, ImmutableMap<String, SoySourceFunction>> methods;
   private final ErrorReporter reporter;
 
   public PluginResolver(
       Mode mode,
-      ImmutableMap<String, SoyPrintDirective> soyPrintDirectives,
-      ImmutableMap<String, SoyFunction> soyFunctions,
-      ImmutableMap<String, SoySourceFunction> sourceFunctions,
+      List<SoyPrintDirective> soyPrintDirectives,
+      List<SoyFunction> soyFunctions,
+      List<SoySourceFunction> sourceFunctions,
+      List<SoySourceFunction> soyMethods,
       ErrorReporter reporter) {
     this.mode = checkNotNull(mode);
-    this.printDirectives = checkNotNull(soyPrintDirectives);
     this.reporter = checkNotNull(reporter);
-    for (String illegalName : BaseUtils.ILLEGAL_PLUGIN_NAMES) {
-      if (soyFunctions.containsKey(illegalName) || sourceFunctions.containsKey(illegalName)) {
-        reporter.report(SourceLocation.UNKNOWN, PLUGIN_NAME_NOT_ALLOWED, illegalName);
-      }
-    }
     // Merge the SoyFunctions & SoySourceFunctions.  While merging, confirm that we only have
     // one implementation for each plugin. They can overlap, but impl must be the same. This
     // indicates a partially migrated plugin.
     // Also confirm that each SoySourceFunction has a @SoyFunctionSignature, which is required.
-    ImmutableMap.Builder<String, Object> mergedFunctions = ImmutableMap.builder();
-    for (Map.Entry<String, SoyFunction> entry : soyFunctions.entrySet()) {
-      SoySourceFunction source = sourceFunctions.get(entry.getKey());
-      if (source != null) {
-        if (source != entry.getValue()) {
-          reporter.report(
-              SourceLocation.UNKNOWN,
-              DIFFERENT_IMPLS_REGISTERED,
-              entry.getKey(),
-              entry.getValue(),
-              source);
-        }
-      } else {
-        // We only insert non-duplicates into the merged map to avoid IllegalArugmentExceptions
-        // building the map.
-        mergedFunctions.put(entry.getKey(), entry.getValue());
-      }
-    }
-    mergedFunctions.putAll(sourceFunctions);
-    this.functions = mergedFunctions.build();
-
-    // Go back over our merged functions and validate all the SoySourceFunction implementations.
-    // We explicitly look *after* merging because SoySourceFunctions might be registered
-    // as SoyFunctions if they also implemented other backends like SoyJsFunction.
-    for (Object function : this.functions.values()) {
+    Map<String, Object> mergedFunctions =
+        Maps.newLinkedHashMapWithExpectedSize(soyFunctions.size() + sourceFunctions.size());
+    for (Object function : Iterables.concat(soyFunctions, sourceFunctions)) {
+      String name;
       if (function instanceof SoySourceFunction) {
-        if (!function.getClass().isAnnotationPresent(SoyFunctionSignature.class)) {
+        SoyFunctionSignature sig = function.getClass().getAnnotation(SoyFunctionSignature.class);
+        if (sig == null) {
           // Make sure a function sig exists.
           reporter.report(
               SourceLocation.UNKNOWN, MISSING_FUNCTION_SIGNATURE, function.getClass().getName());
-        } else if (function instanceof SoyJavaSourceFunction) {
+          continue;
+        }
+        name = sig.name();
+        if (function instanceof SoyJavaSourceFunction) {
           // Also make sure that the applyForJavaSource impl uses a single plugin instance.
           // We don't support multiple instances.
           Set<String> instances =
@@ -183,11 +189,41 @@ public final class PluginResolver {
                 instances);
           }
         }
+      } else {
+        SoyFunction legacyFunction = (SoyFunction) function;
+        name = legacyFunction.getName();
+      }
+      Object old = mergedFunctions.put(name, function);
+      if (old != null) {
+        reporter.report(SourceLocation.UNKNOWN, DIFFERENT_IMPLS_REGISTERED, name, old, function);
+      }
+      if (BaseUtils.ILLEGAL_PLUGIN_NAMES.contains(name)) {
+        reporter.report(
+            SourceLocation.UNKNOWN, PLUGIN_NAME_NOT_ALLOWED, function.getClass().getName(), name);
       }
     }
+    this.functions = ImmutableMap.copyOf(mergedFunctions);
 
-    for (String pdName : soyPrintDirectives.keySet()) {
-      String functionName = getFunctionNameEquivalentToPrintDirectiveName(pdName);
+    Map<String, SoyPrintDirective> indexedDirectives =
+        Maps.newLinkedHashMapWithExpectedSize(soyPrintDirectives.size());
+    for (SoyPrintDirective directive : soyPrintDirectives) {
+      SoyPrintDirective old = indexedDirectives.put(directive.getName(), directive);
+      if (old != null) {
+        reporter.report(
+            SourceLocation.UNKNOWN,
+            DIFFERENT_IMPLS_REGISTERED,
+            directive.getName(),
+            directive,
+            old);
+      }
+      String functionName = getFunctionNameEquivalentToPrintDirectiveName(directive.getName());
+      if (BaseUtils.ILLEGAL_PLUGIN_NAMES.contains(functionName)) {
+        reporter.report(
+            SourceLocation.UNKNOWN,
+            PLUGIN_NAME_NOT_ALLOWED,
+            directive.getClass().getName(),
+            functionName);
+      }
       if (COLLISION_WHITELIST.contains(functionName)) {
         continue;
       }
@@ -197,9 +233,45 @@ public final class PluginResolver {
             FUNCTION_PRINT_DIRECTIVE_COLLISION,
             functions.get(functionName).getClass().getName(),
             functionName,
-            soyPrintDirectives.get(pdName).getClass().getName());
+            directive.getClass().getName());
       }
     }
+    this.printDirectives = ImmutableMap.copyOf(indexedDirectives);
+
+    Map<String, Map<String, SoySourceFunction>> methods =
+        Maps.newLinkedHashMapWithExpectedSize(soyMethods.size());
+    for (SoySourceFunction method : soyMethods) {
+      SoyMethodSignature sig = method.getClass().getAnnotation(SoyMethodSignature.class);
+      if (sig == null) {
+        reporter.report(
+            SourceLocation.UNKNOWN, MISSING_METHOD_SIGNATURE, method.getClass().getName());
+        continue;
+      }
+      String methodName = sig.name();
+      String baseType = sig.baseType();
+
+      Map<String, SoySourceFunction> baseTypeToSourceFnMap =
+          methods.containsKey(methodName) ? methods.get(methodName) : new LinkedHashMap<>();
+
+      SoySourceFunction old = baseTypeToSourceFnMap.put(sig.baseType(), method);
+      if (old != null) {
+        reporter.report(
+            SourceLocation.UNKNOWN,
+            DIFFERENT_METHOD_IMPLS_REGISTERED,
+            methodName,
+            baseType,
+            old.getClass().getCanonicalName(),
+            method.getClass().getCanonicalName());
+      }
+      methods.put(methodName, baseTypeToSourceFnMap);
+    }
+    this.methods =
+        methods.entrySet().stream()
+            .collect(toImmutableMap(Map.Entry::getKey, e -> ImmutableMap.copyOf(e.getValue())));
+  }
+
+  public Mode getPluginResolutionMode() {
+    return mode;
   }
 
   /**
@@ -253,11 +325,11 @@ public final class PluginResolver {
    * <p>An error will be reported according to the current {@link Mode} and a placeholder function
    * will be returned if it cannot be found.
    */
+  @Nullable
   public Object lookupSoyFunction(String name, int numArgs, SourceLocation location) {
     Object soyFunction = functions.get(name);
     if (soyFunction == null) {
-      reportMissing(location, "function", name, functions.keySet());
-      return ERROR_PLACEHOLDER_FUNCTION;
+      return null;
     }
     Set<Integer> validArgsSize = getValidArgsSizes(soyFunction);
     checkNumArgs("function", validArgsSize, numArgs, location);
@@ -265,9 +337,43 @@ public final class PluginResolver {
     return soyFunction;
   }
 
+  public ImmutableList<SoySourceFunction> lookupSoyMethods(String methodName) {
+    ImmutableMap<String, SoySourceFunction> methodBaseTypeToFunctionMap = methods.get(methodName);
+    if (methodBaseTypeToFunctionMap == null) {
+      return ImmutableList.of();
+    }
+    return ImmutableList.copyOf(methodBaseTypeToFunctionMap.values());
+  }
+
+  public ImmutableSet<String> getAllMethodNames() {
+    return methods.keySet();
+  }
+
+  public void reportUnresolved(FunctionNode fct) {
+    Preconditions.checkArgument(!fct.isResolved());
+    if (fct.hasStaticName()) {
+      reportMissing(
+          fct.getFunctionNameLocation(),
+          "function",
+          fct.getStaticFunctionName(),
+          functions.keySet());
+    } else {
+      reportMissing(
+          fct.getNameExpr().getSourceLocation(),
+          "function",
+          fct.getNameExpr().toSourceString(),
+          "");
+    }
+    fct.setSoyFunction(ERROR_PLACEHOLDER_FUNCTION);
+  }
+
   private void reportMissing(
       SourceLocation location, String type, String name, Set<String> alternatives) {
     String didYouMean = SoyErrors.getDidYouMeanMessage(alternatives, name);
+    reportMissing(location, type, name, didYouMean);
+  }
+
+  private void reportMissing(SourceLocation location, String type, String name, String didYouMean) {
     switch (mode) {
       case REQUIRE_DEFINITIONS:
         reporter.report(location, UNKNOWN_PLUGIN, type, name, didYouMean);
@@ -292,7 +398,7 @@ public final class PluginResolver {
     }
   }
 
-  private static Set<Integer> getValidArgsSizes(Signature[] signatures) {
+  static Set<Integer> getValidArgsSizes(Signature[] signatures) {
     ImmutableSortedSet.Builder<Integer> builder = ImmutableSortedSet.naturalOrder();
     for (Signature signature : signatures) {
       builder.add(signature.parameterTypes().length);
@@ -309,10 +415,55 @@ public final class PluginResolver {
   }
 
   private void warnIfDeprecated(String name, Object plugin, SourceLocation location) {
-    SoyDeprecated deprecatedNotice = plugin.getClass().getAnnotation(SoyDeprecated.class);
-    if (deprecatedNotice != null) {
-      reporter.warn(location, DEPRECATED_PLUGIN, name, deprecatedNotice.value());
+    warnIfDeprecated(reporter, name, plugin, location);
+  }
+
+  static void warnIfDeprecated(
+      ErrorReporter reporter, String name, Object plugin, SourceLocation location) {
+
+    if (plugin instanceof SoySourceFunctionMethod) {
+      // A SoySourceFunction called as a method is deprecated if the implementation is annotated
+      // with @SoyDeprecated or SoyMethodSignature#deprecatedWarning is not empty.
+      SoySourceFunction function = ((SoySourceFunctionMethod) plugin).getImpl();
+      if (warnIfSoyDeprecated(reporter, name, function, location)) {
+        return;
+      }
+      SoyMethodSignature sig = function.getClass().getAnnotation(SoyMethodSignature.class);
+      if (sig != null && !sig.deprecatedWarning().isEmpty()) {
+        reporter.warn(location, DEPRECATED_PLUGIN, name, sig.deprecatedWarning());
+      }
+      return;
+    } else if (plugin instanceof BuiltinFunction) {
+      BuiltinFunction builtin = (BuiltinFunction) plugin;
+      if (!builtin.deprecatedWarning().isEmpty()) {
+        reporter.warn(location, DEPRECATED_PLUGIN, name, builtin.deprecatedWarning());
+      }
     }
+
+    // SoyMethod, SoyPrintDirective, and SoySourceFunction can all be annotated with @SoyDeprecated.
+    if (warnIfSoyDeprecated(reporter, name, plugin, location)) {
+      return;
+    }
+
+    if (plugin instanceof SoySourceFunction) {
+      // A SoySourceFunction called as a function is also deprecated if
+      // SoyFunctionSignature#deprecatedWarning is not empty.
+      SoyFunctionSignature sig = plugin.getClass().getAnnotation(SoyFunctionSignature.class);
+      if (sig != null && !sig.deprecatedWarning().isEmpty()) {
+        reporter.warn(location, DEPRECATED_PLUGIN, name, sig.deprecatedWarning());
+        return;
+      }
+    }
+  }
+
+  private static boolean warnIfSoyDeprecated(
+      ErrorReporter reporter, String name, Object anything, SourceLocation location) {
+    SoyDeprecated deprecatedNotice = anything.getClass().getAnnotation(SoyDeprecated.class);
+    if (deprecatedNotice == null) {
+      return false;
+    }
+    reporter.warn(location, DEPRECATED_PLUGIN, name, deprecatedNotice.value());
+    return true;
   }
 
   private static SoyPrintDirective createPlaceholderPrintDirective(final String name, int arity) {
@@ -332,7 +483,10 @@ public final class PluginResolver {
 
   /** Converts a | prepended print directive name to an equivalent function name. */
   static String getFunctionNameEquivalentToPrintDirectiveName(String printDirectiveName) {
-    Preconditions.checkArgument(printDirectiveName.startsWith("|"));
+    Preconditions.checkArgument(
+        printDirectiveName.startsWith("|"),
+        "Expected print directive name '%s' to start with '|'",
+        printDirectiveName);
     return printDirectiveName.substring(1);
   }
 }

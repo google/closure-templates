@@ -27,10 +27,11 @@ import com.google.template.soy.plugin.python.restricted.SoyPythonSourceFunction;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.pysrc.restricted.SoyPySrcPrintDirective;
+import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
+import com.google.template.soy.shared.restricted.SoyMethodSignature;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
-import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -48,7 +49,7 @@ public final class InternalPluginsTest {
 
   @Test
   public void testBuiltinPluginsSupportAllBackends() throws Exception {
-    for (SoyPrintDirective directive : InternalPlugins.internalDirectiveMap(data).values()) {
+    for (SoyPrintDirective directive : InternalPlugins.internalDirectives(data)) {
       assertThat(directive).isInstanceOf(SoyJsSrcPrintDirective.class);
       assertThat(directive).isInstanceOf(SoyJavaPrintDirective.class);
       assertThat(directive).isInstanceOf(SoyJbcSrcPrintDirective.class);
@@ -58,16 +59,29 @@ public final class InternalPluginsTest {
 
   @Test
   public void testFunctionsSupportAllBackends() {
-    for (Map.Entry<String, SoySourceFunction> entry :
-        InternalPlugins.internalFunctionMap().entrySet()) {
-      Object function = entry.getValue();
+    for (SoySourceFunction function : InternalPlugins.internalFunctions()) {
+      assertThat(function.getClass().isAnnotationPresent(SoyFunctionSignature.class)).isTrue();
       assertThat(function).isInstanceOf(SoyJavaScriptSourceFunction.class);
       assertThat(function).isInstanceOf(SoyJavaSourceFunction.class);
-      assertThat(function).isInstanceOf(SoyPythonSourceFunction.class);
+      if (!function.getClass().getName().contains("Proto")) {
+        assertThat(function).isInstanceOf(SoyPythonSourceFunction.class);
+      }
       // Internal functions should no longer implement SoyJavaFunction or SoyJsSrcFunction
       assertThat(function).isNotInstanceOf(SoyJsSrcFunction.class);
       assertThat(function).isNotInstanceOf(SoyJavaFunction.class);
       assertThat(function).isNotInstanceOf(SoyPySrcFunction.class);
+    }
+  }
+
+  @Test
+  public void testMethodsSupportAllBackends() {
+    for (SoySourceFunction function : InternalPlugins.internalMethods()) {
+      assertThat(function.getClass().isAnnotationPresent(SoyMethodSignature.class)).isTrue();
+      assertThat(function).isInstanceOf(SoyJavaScriptSourceFunction.class);
+      assertThat(function).isInstanceOf(SoyJavaSourceFunction.class);
+      if (!function.getClass().getName().contains("Proto")) {
+        assertThat(function).isInstanceOf(SoyPythonSourceFunction.class);
+      }
     }
   }
 
@@ -78,7 +92,7 @@ public final class InternalPluginsTest {
   public void testStreamingPrintDirectives() throws Exception {
     ImmutableSet.Builder<String> streamingPrintDirectives = ImmutableSet.builder();
     ImmutableSet.Builder<String> nonStreamingPrintDirectives = ImmutableSet.builder();
-    for (SoyPrintDirective directive : InternalPlugins.internalDirectiveMap(data).values()) {
+    for (SoyPrintDirective directive : InternalPlugins.internalDirectives(data)) {
       if (directive instanceof SoyJbcSrcPrintDirective.Streamable) {
         streamingPrintDirectives.add(directive.getName());
       } else {
@@ -89,6 +103,8 @@ public final class InternalPluginsTest {
     assertThat(streamingPrintDirectives.build())
         .containsExactly(
             "|escapeHtml",
+            "|escapeHtmlAttribute",
+            "|escapeHtmlAttributeNospace",
             "|escapeCssString",
             "|normalizeHtml",
             "|escapeJsString",
@@ -102,6 +118,7 @@ public final class InternalPluginsTest {
             "|insertWordBreaks",
             "|truncate",
             "|cleanHtml",
+            "|whitespaceHtmlAttributes",
             "|filterHtmlAttributes");
     assertThat(nonStreamingPrintDirectives.build())
         .containsExactly(
@@ -110,6 +127,7 @@ public final class InternalPluginsTest {
             "|escapeUri",
             "|formatNum",
             "|filterNumber",
+            "|filterCspNonceValue",
             // These can't be made streaming because it would require a complex state machine or
             // they require knowing the full content to work.  For example all the filters, which
             // generally validate via a regular expression.
@@ -125,11 +143,10 @@ public final class InternalPluginsTest {
             "|filterImageDataUri",
             "|filterSipUri",
             "|filterTelUri",
-            // This is used only with escapeHtmlAttribute* which are not streaming.
+            // This can be migrated since  escapeHtmlAttribute* is streaming.
             "|escapeHtmlHtmlAttribute",
-            // These two could be made streaming, it would require some refactoring of the
-            // Sanitizers.stripHtmlTags method but it is probably a good idea.
-            "|escapeHtmlAttribute",
-            "|escapeHtmlAttributeNospace");
+            // Could be made streaming, but it would be a bit tricky and is unlikely to be
+            // important.  See comment on definition.
+            "|filterHtmlScriptPhrasingData");
   }
 }

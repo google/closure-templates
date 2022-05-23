@@ -19,7 +19,7 @@ are.
 
 ### Variables
 
-Variables are things like parameters (`$myParam`), globals, and injected data.
+Variables are things like parameters (`$myParam`), constants, and injected data.
 
 ### Operators
 
@@ -43,10 +43,10 @@ are also used in [if commands](../reference/control-flow.md#if),
 For example:
 
 ```soy
-{template .myTemplate}
+{template myTemplate}
   {@param p: ?}
   {if $p > 2}
-    {call .bar}{param p : $p == 3 ? 'a' : 'b' /}{/call}
+    {call bar}{param p : $p == 3 ? 'a' : 'b' /}{/call}
   {/if}
 {/template}
 ```

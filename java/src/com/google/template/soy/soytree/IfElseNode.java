@@ -24,7 +24,6 @@ import com.google.template.soy.soytree.SoyNode.ConditionalBlockNode;
  * Node representing the 'else' block within an 'if' statement.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public final class IfElseNode extends AbstractBlockCommandNode implements ConditionalBlockNode {
 
@@ -32,8 +31,8 @@ public final class IfElseNode extends AbstractBlockCommandNode implements Condit
    * @param id The id for this node.
    * @param sourceLocation The node's source location.
    */
-  public IfElseNode(int id, SourceLocation sourceLocation) {
-    super(id, sourceLocation, "else");
+  public IfElseNode(int id, SourceLocation sourceLocation, SourceLocation openTagLocation) {
+    super(id, sourceLocation, openTagLocation, "else");
   }
 
   /**

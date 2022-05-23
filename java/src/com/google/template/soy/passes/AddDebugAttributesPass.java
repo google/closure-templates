@@ -64,7 +64,13 @@ import com.google.template.soy.soytree.TemplateNode;
  * attempting to calculate it itself. However, this is likely to be significantly more complex than
  * the current approach.
  */
-final class AddDebugAttributesPass extends CompilerFilePass {
+@RunBefore(
+    // So we don't need to worry about types for synthetic expressions.
+    ResolveExpressionTypesPass.class)
+final class AddDebugAttributesPass implements CompilerFilePass {
+
+  public static final String DATA_DEBUG_SOY = "data-debug-soy";
+
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
     new Visitor(nodeIdGen).exec(file);
@@ -106,7 +112,7 @@ final class AddDebugAttributesPass extends CompilerFilePass {
 
     @Override
     protected void visitHtmlOpenTagNode(HtmlOpenTagNode node) {
-      if (tagDepth == 0) {
+      if (tagDepth == 0 && node.getTagName().isStatic()) {
         node.addChild(createSoyDebug(node.getSourceLocation()));
       }
       if (!node.isSelfClosing() && !node.getTagName().isDefinitelyVoid()) {
@@ -149,16 +155,18 @@ final class AddDebugAttributesPass extends CompilerFilePass {
     private IfNode createSoyDebug(SourceLocation insertionLocation) {
       IfNode ifNode = new IfNode(nodeIdGen.genId(), insertionLocation);
       FunctionNode funcNode =
-          new FunctionNode(
+          FunctionNode.newPositional(
               Identifier.create(
                   BuiltinFunction.DEBUG_SOY_TEMPLATE_INFO.getName(), insertionLocation),
               BuiltinFunction.DEBUG_SOY_TEMPLATE_INFO,
               insertionLocation);
-      IfCondNode ifCondNode = new IfCondNode(nodeIdGen.genId(), insertionLocation, "if", funcNode);
+      IfCondNode ifCondNode =
+          new IfCondNode(
+              nodeIdGen.genId(), insertionLocation, SourceLocation.UNKNOWN, "if", funcNode);
       HtmlAttributeNode attribute =
           new HtmlAttributeNode(
               nodeIdGen.genId(), insertionLocation, insertionLocation.getBeginPoint());
-      attribute.addChild(new RawTextNode(nodeIdGen.genId(), "data-debug-soy", insertionLocation));
+      attribute.addChild(new RawTextNode(nodeIdGen.genId(), DATA_DEBUG_SOY, insertionLocation));
       HtmlAttributeValueNode attrValue =
           new HtmlAttributeValueNode(
               nodeIdGen.genId(), insertionLocation, HtmlAttributeValueNode.Quotes.DOUBLE);
@@ -170,7 +178,7 @@ final class AddDebugAttributesPass extends CompilerFilePass {
               Sanitizers.escapeHtmlAttribute(
                   currentTemplate
                       + " "
-                      + insertionLocation.getFilePath()
+                      + insertionLocation.getFilePath().path()
                       + ":"
                       + insertionLocation.getBeginLine()),
               insertionLocation));

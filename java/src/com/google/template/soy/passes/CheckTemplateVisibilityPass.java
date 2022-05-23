@@ -20,43 +20,47 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
-import com.google.template.soy.soytree.CallBasicNode;
+import com.google.template.soy.exprtree.TemplateLiteralNode;
+import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateMetadata;
-import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.Visibility;
+import java.util.function.Supplier;
 
 /**
  * Visitor for checking the visibility of a template.
- *
- * @author brndn@google.com (Brendan Linn)
  */
-final class CheckTemplateVisibilityPass extends CompilerFileSetPass {
+@RunAfter(FinalizeTemplateRegistryPass.class)
+final class CheckTemplateVisibilityPass implements CompilerFileSetPass {
 
   private static final SoyErrorKind CALLEE_NOT_VISIBLE =
       SoyErrorKind.of("{0} has {1} access in {2}.");
 
   private final ErrorReporter errorReporter;
+  private final Supplier<FileSetMetadata> templateRegistryFull;
 
-  CheckTemplateVisibilityPass(ErrorReporter errorReporter) {
+  CheckTemplateVisibilityPass(
+      ErrorReporter errorReporter, Supplier<FileSetMetadata> templateRegistryFull) {
     this.errorReporter = errorReporter;
+    this.templateRegistryFull = templateRegistryFull;
   }
 
   @Override
-  public Result run(
-      ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator, TemplateRegistry registry) {
+  public Result run(ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator) {
     for (SoyFileNode file : sourceFiles) {
-      for (CallBasicNode node : SoyTreeUtils.getAllNodesOfType(file, CallBasicNode.class)) {
-        String calleeName = node.getCalleeName();
-        TemplateMetadata definition = registry.getBasicTemplateOrElement(calleeName);
+      for (TemplateLiteralNode node :
+          SoyTreeUtils.getAllNodesOfType(file, TemplateLiteralNode.class)) {
+        String calleeName = node.getResolvedName();
+        TemplateMetadata definition =
+            templateRegistryFull.get().getBasicTemplateOrElement(calleeName);
         if (definition != null && !isVisible(file, definition)) {
           errorReporter.report(
               node.getSourceLocation(),
               CALLEE_NOT_VISIBLE,
               calleeName,
               definition.getVisibility().getAttributeValue(),
-              definition.getSourceLocation().getFilePath());
+              definition.getSourceLocation().getFilePath().path());
         }
       }
     }

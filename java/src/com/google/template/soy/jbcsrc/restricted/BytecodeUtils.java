@@ -17,14 +17,19 @@
 package com.google.template.soy.jbcsrc.restricted;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
 
-import com.google.common.base.Utf8;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
+import com.google.common.html.types.SafeHtml;
+import com.google.common.html.types.SafeHtmlProto;
+import com.google.common.html.types.SafeUrl;
+import com.google.common.html.types.SafeUrlProto;
+import com.google.common.html.types.TrustedResourceUrl;
+import com.google.common.html.types.TrustedResourceUrlProto;
 import com.google.common.primitives.Ints;
 import com.google.protobuf.Message;
 import com.google.template.soy.base.internal.SanitizedContentKind;
@@ -41,15 +46,28 @@ import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.SoyVisualElement;
 import com.google.template.soy.data.SoyVisualElementData;
+import com.google.template.soy.data.internal.Converters;
+import com.google.template.soy.data.restricted.BooleanData;
+import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
-import com.google.template.soy.data.restricted.SoyString;
+import com.google.template.soy.data.restricted.NumberData;
+import com.google.template.soy.data.restricted.StringData;
+import com.google.template.soy.internal.proto.JavaQualifiedNames;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.restricted.Expression.Feature;
 import com.google.template.soy.jbcsrc.restricted.Expression.Features;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
+import com.google.template.soy.jbcsrc.shared.LargeStringConstantFactory;
 import com.google.template.soy.jbcsrc.shared.Names;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
+import com.google.template.soy.jbcsrc.shared.StackFrame;
+import com.google.template.soy.logging.LoggableElementMetadata;
+import com.google.template.soy.types.SoyProtoEnumType;
+import com.google.template.soy.types.SoyProtoType;
+import com.google.template.soy.types.SoyType;
 import java.io.Closeable;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -59,6 +77,7 @@ import java.util.Map;
 import java.util.Optional;
 import javax.annotation.Nullable;
 import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -67,9 +86,7 @@ import org.objectweb.asm.util.Printer;
 
 /** A set of utilities for generating simple expressions in bytecode */
 public final class BytecodeUtils {
-  private static final String LARGE_STRING_CONSTANT_NAME = "$const_string";
-
-  // https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.4.7
+  // https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.11
   private static final int MAX_CONSTANT_STRING_LENGTH = 65535;
 
   public static final TypeInfo OBJECT = TypeInfo.create(Object.class);
@@ -80,13 +97,21 @@ public final class BytecodeUtils {
   public static final Type LOGGING_ADVISING_BUILDER_TYPE =
       Type.getType(LoggingAdvisingAppendable.BufferingAppendable.class);
   public static final Type COMPILED_TEMPLATE_TYPE = Type.getType(CompiledTemplate.class);
+  public static final Type COMPILED_TEMPLATE_TEMPLATE_VALUE_TYPE =
+      Type.getType(CompiledTemplate.TemplateValue.class);
   public static final Type CONTENT_KIND_TYPE = Type.getType(ContentKind.class);
   public static final Type CLOSEABLE_TYPE = Type.getType(Closeable.class);
   public static final Type DIR_TYPE = Type.getType(Dir.class);
   public static final Type HASH_MAP_TYPE = Type.getType(HashMap.class);
+  public static final Type NUMBER_DATA_TYPE = Type.getType(NumberData.class);
   public static final Type INTEGER_DATA_TYPE = Type.getType(IntegerData.class);
+  public static final Type FLOAT_DATA_TYPE = Type.getType(FloatData.class);
+  public static final Type BOOLEAN_DATA_TYPE = Type.getType(BooleanData.class);
+  public static final Type STRING_DATA_TYPE = Type.getType(StringData.class);
   public static final Type LINKED_HASH_MAP_TYPE = Type.getType(LinkedHashMap.class);
   public static final Type LIST_TYPE = Type.getType(List.class);
+  public static final Type IMMUTIBLE_LIST_TYPE = Type.getType(ImmutableList.class);
+  public static final Type IMMUTIBLE_MAP_TYPE = Type.getType(ImmutableMap.class);
   public static final Type MAP_TYPE = Type.getType(Map.class);
   public static final Type MAP_ENTRY_TYPE = Type.getType(Map.Entry.class);
   public static final Type MESSAGE_TYPE = Type.getType(Message.class);
@@ -101,12 +126,29 @@ public final class BytecodeUtils {
   public static final Type SOY_RECORD_TYPE = Type.getType(SoyRecord.class);
   public static final Type SOY_VALUE_TYPE = Type.getType(SoyValue.class);
   public static final Type SOY_VALUE_PROVIDER_TYPE = Type.getType(SoyValueProvider.class);
-  public static final Type SOY_STRING_TYPE = Type.getType(SoyString.class);
+  public static final Type SOY_STRING_TYPE = Type.getType(StringData.class);
   public static final Type STRING_TYPE = Type.getType(String.class);
   public static final Type THROWABLE_TYPE = Type.getType(Throwable.class);
   public static final Type ILLEGAL_STATE_EXCEPTION_TYPE = Type.getType(IllegalStateException.class);
   public static final Type SOY_VISUAL_ELEMENT_TYPE = Type.getType(SoyVisualElement.class);
   public static final Type SOY_VISUAL_ELEMENT_DATA_TYPE = Type.getType(SoyVisualElementData.class);
+  public static final Type CLASS_TYPE = Type.getType(Class.class);
+  public static final Type INTEGER_TYPE = Type.getType(Integer.class);
+  public static final Type BOXED_LONG_TYPE = Type.getType(Long.class);
+  public static final Type BOXED_BOOLEAN_TYPE = Type.getType(Boolean.class);
+  public static final Type BOXED_DOUBLE_TYPE = Type.getType(Double.class);
+  public static final Type BOXED_FLOAT_TYPE = Type.getType(Float.class);
+  public static final Type NUMBER_TYPE = Type.getType(Number.class);
+  public static final Type LOGGABLE_ELEMENT_METADATA_TYPE =
+      Type.getType(LoggableElementMetadata.class);
+  public static final Type STACK_FRAME_TYPE = Type.getType(StackFrame.class);
+  public static final Type SAFE_URL_TYPE = Type.getType(SafeUrl.class);
+  public static final Type SAFE_URL_PROTO_TYPE = Type.getType(SafeUrlProto.class);
+  public static final Type TRUSTED_RESOURCE_PROTO_TYPE =
+      Type.getType(TrustedResourceUrlProto.class);
+  public static final Type SAFE_HTML_PROTO_TYPE = Type.getType(SafeHtmlProto.class);
+  public static final Type SAFE_HTML_TYPE = Type.getType(SafeHtml.class);
+  public static final Type TRUSTED_RESOURCE_URL_TYPE = Type.getType(TrustedResourceUrl.class);
 
   public static final Method CLASS_INIT = Method.getMethod("void <clinit>()");
   public static final Method NULLARY_INIT = Method.getMethod("void <init>()");
@@ -154,7 +196,10 @@ public final class BytecodeUtils {
                           return Optional.empty();
                         }
                         return Optional.of(
-                            Class.forName(className, false, BytecodeUtils.class.getClassLoader()));
+                            Class.forName(
+                                className,
+                                /*initialize=*/ false,
+                                BytecodeUtils.class.getClassLoader()));
                       } catch (ClassNotFoundException e) {
                         return Optional.empty();
                       }
@@ -286,75 +331,52 @@ public final class BytecodeUtils {
   }
 
   /** Returns an {@link Expression} that can load the given String constant. */
-  public static Expression constant(final String value) {
-    checkNotNull(value);
-    checkArgument(
-        Utf8.encodedLength(value) <= MAX_CONSTANT_STRING_LENGTH,
-        "String is too long when encoded in utf8");
-    return stringConstant(value);
-  }
-
-  /**
-   * Returns an {@link Expression} that can load the given String constant.
-   *
-   * <p>Unlike {@link #constant(String)} this can handle strings larger than 65K bytes.
-   */
-  public static Expression constant(String value, ClassFieldManager manager) {
-    int encodedLength = Utf8.encodedLength(value);
-    if (encodedLength <= MAX_CONSTANT_STRING_LENGTH) {
-      return stringConstant(value);
-    }
-    // else it is too big for a single constant pool entry so split it into a small number of
-    // entries and generate a static final field to hold the cat'ed value.
-    int startIndex = 0;
-    Expression stringExpression = null;
-    int length = value.length();
-    do {
-      int endIndex = offsetOf65KUtf8Bytes(value, startIndex, length);
-      // N.B. we may end up splitting the string at a surrogate pair, but the class format uses
-      // modified utf8 which is forgiving about such things.
-      Expression substringConstant = stringConstant(value.substring(startIndex, endIndex));
-      startIndex = endIndex;
-      if (stringExpression == null) {
-        stringExpression = substringConstant;
+  public static Expression constant(String value) {
+    // string constants use a "modified UTF8" encoding
+    // https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8
+    // and are limited by the classfile format to contain no more than 65535 bytes
+    // https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.4.7
+    // In soy we often have large constants that can exceed these limits, which is annoying since
+    // it is difficult to predict whether a given string constant will exceed these limits (since it
+    // needs to be encoded first).
+    int previousStart = 0;
+    List<String> stringConstants = new ArrayList<>();
+    int byteCount = 0;
+    int index = 0;
+    while (index < value.length()) {
+      char c = value.charAt(index);
+      int charBytes;
+      // This algorithm is described here
+      // https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.4.7
+      if (c >= '\001' && c <= '\177') {
+        charBytes = 1;
+      } else if (c > '\u07FF') {
+        charBytes = 3;
       } else {
-        stringExpression = stringExpression.invoke(MethodRef.STRING_CONCAT, substringConstant);
+        charBytes = 2;
       }
-    } while (startIndex < length);
-    FieldRef fieldRef = manager.addStaticField(LARGE_STRING_CONSTANT_NAME, stringExpression);
-    return fieldRef.accessor();
-  }
-
-  /**
-   * Returns the largest index between {@code startIndex} and {@code endIdex} such that the UTF8
-   * encoded bytes of {@code str.substring(startIndex, returnValue}} is less than or equal to 65K.
-   */
-  private static int offsetOf65KUtf8Bytes(String str, int startIndex, int endIndex) {
-    // This implementation is based off of Utf8.encodedLength
-    int utf8Length = 0;
-    int i = startIndex;
-    for (; i < endIndex; i++) {
-      char c = str.charAt(i);
-      utf8Length++;
-      if (c < 0x800) {
-        utf8Length += (0x7f - c) >>> 31; // branch free!
-      } else {
-        utf8Length += Character.isSurrogate(c) ? 1 : 2;
+      // does this char push us over the limit?
+      if (byteCount + charBytes > MAX_CONSTANT_STRING_LENGTH) {
+        stringConstants.add(value.substring(previousStart, index));
+        byteCount = 0;
+        previousStart = index;
       }
-      if (utf8Length == MAX_CONSTANT_STRING_LENGTH) {
-        return i + 1;
-      } else if (utf8Length > MAX_CONSTANT_STRING_LENGTH) {
-        return i;
-      }
+      byteCount += charBytes;
+      index++;
     }
-    return endIndex;
-  }
-
-  private static Expression stringConstant(final String value) {
+    stringConstants.add(value.substring(previousStart));
     return new Expression(STRING_TYPE, Feature.CHEAP, Feature.NON_NULLABLE) {
       @Override
-      protected void doGen(CodeBuilder mv) {
-        mv.pushString(value);
+      protected void doGen(CodeBuilder cb) {
+        if (stringConstants.size() == 1) {
+          cb.pushString(stringConstants.get(0));
+        } else {
+          cb.visitInvokeDynamicInsn(
+              "constantString",
+              Type.getMethodDescriptor(STRING_TYPE),
+              LARGE_STRING_CONSTANT_HANDLE,
+              stringConstants.toArray());
+        }
       }
     };
   }
@@ -366,19 +388,38 @@ public final class BytecodeUtils {
         : FieldRef.enumReference(kind).accessor();
   }
 
-  /**
-   * Returns an {@link Expression} that evaluates to the {@link ContentKind} value that is
-   * equivalent to the given {@link SanitizedContentKind}, or null.
-   */
-  public static Expression constantSanitizedContentKindAsContentKind(SanitizedContentKind kind) {
-    return FieldRef.enumReference(ContentKind.valueOf(kind.name())).accessor();
-  }
-
   /** Returns an {@link Expression} that evaluates to the given Dir, or null. */
   public static Expression constant(@Nullable Dir dir) {
     return (dir == null)
         ? BytecodeUtils.constantNull(DIR_TYPE)
         : FieldRef.enumReference(dir).accessor();
+  }
+
+  public static Expression constant(Type type) {
+    return new Expression(CLASS_TYPE, Feature.CHEAP, Feature.NON_NULLABLE) {
+      @Override
+      protected void doGen(CodeBuilder mv) {
+        mv.pushType(type);
+      }
+    };
+  }
+
+  private static final Handle LARGE_STRING_CONSTANT_HANDLE =
+      MethodRef.create(
+              LargeStringConstantFactory.class,
+              "bootstrapLargeStringConstant",
+              MethodHandles.Lookup.class,
+              String.class,
+              MethodType.class,
+              String[].class)
+          .asHandle();
+
+  /**
+   * Returns an {@link Expression} that evaluates to the {@link ContentKind} value that is
+   * equivalent to the given {@link SanitizedContentKind}, or null.
+   */
+  public static Expression constantSanitizedContentKindAsContentKind(SanitizedContentKind kind) {
+    return FieldRef.enumReference(Converters.contentKindfromSanitizedContentKind(kind)).accessor();
   }
 
   /** Returns an {@link Expression} with the given type that always returns null. */
@@ -402,7 +443,7 @@ public final class BytecodeUtils {
    * @throws IllegalArgumentException if either the expression or the target type is not a numeric
    *     primitive
    */
-  public static Expression numericConversion(final Expression expr, final Type to) {
+  public static Expression numericConversion(Expression expr, Type to) {
     if (to.equals(expr.resultType())) {
       return expr;
     }
@@ -658,9 +699,53 @@ public final class BytecodeUtils {
    * condition ? left : right}
    */
   public static Expression ternary(
-      final Expression condition, final Expression trueBranch, final Expression falseBranch) {
-    checkArgument(condition.resultType().equals(Type.BOOLEAN_TYPE));
-    checkArgument(trueBranch.resultType().getSort() == falseBranch.resultType().getSort());
+      Expression condition, Expression trueBranch, Expression falseBranch) {
+    // Choose the type of the ternary as the least specific of the two options.
+    // In theory we shold really choose the least common superclass which would cover more cases,
+    // but this should be fine for now.  Mostly this is just turning (ImmutableList,List)->List.  If
+    // this isn't possible, an error will be thrown and we can re-evaluate this approach.
+    Type ternaryType;
+    Type trueType = trueBranch.resultType();
+    Type falseType = falseBranch.resultType();
+    if (isDefinitelyAssignableFrom(trueType, falseType)) {
+      ternaryType = trueType;
+    } else if (isDefinitelyAssignableFrom(falseType, trueType)) {
+      ternaryType = falseType;
+    } else {
+      throw new IllegalArgumentException(
+          String.format(
+              "true (%s) and false (%s) branches must be compatible", trueType, falseType));
+    }
+    return ternary(condition, trueBranch, falseBranch, ternaryType);
+  }
+
+  /**
+   * Returns an expression that evaluates equivalently to a java ternary expression: {@code
+   * condition ? left : right}.
+   *
+   * <p>This allows the caller to specify the result type of the ternary expression. By default the
+   * ternary expression is typed with the type of the true branch, but the caller can specify the
+   * result type if they know more about the types of the branches.
+   */
+  public static Expression ternary(
+      final Expression condition,
+      final Expression trueBranch,
+      final Expression falseBranch,
+      Type resultType) {
+    checkArgument(
+        condition.resultType().equals(Type.BOOLEAN_TYPE),
+        "The condition must be a boolean, got %s",
+        condition.resultType());
+    checkArgument(
+        isPossiblyAssignableFrom(resultType, trueBranch.resultType()),
+        "expected %s to be assignable to %s",
+        trueBranch.resultType(),
+        resultType);
+    checkArgument(
+        isPossiblyAssignableFrom(resultType, falseBranch.resultType()),
+        "expected %s to be assignable to %s",
+        falseBranch.resultType(),
+        resultType);
     Features features = Features.of();
     if (Expression.areAllCheap(condition, trueBranch, falseBranch)) {
       features = features.plus(Feature.CHEAP);
@@ -668,7 +753,7 @@ public final class BytecodeUtils {
     if (trueBranch.isNonNullable() && falseBranch.isNonNullable()) {
       features = features.plus(Feature.NON_NULLABLE);
     }
-    return new Expression(trueBranch.resultType(), features) {
+    return new Expression(resultType, features) {
       @Override
       protected void doGen(CodeBuilder mv) {
         condition.gen(mv);
@@ -955,7 +1040,9 @@ public final class BytecodeUtils {
    */
   public static SoyExpression isNonNull(final Expression expr) {
     if (BytecodeUtils.isPrimitive(expr.resultType())) {
-      return SoyExpression.TRUE;
+      // Reference the statement so that the SoyValueProvider detaches for resolve, and
+      // TemplateAnalysis will correctly cause subsequent accesses to resolve immediately.
+      return SoyExpression.forBool(expr.toStatement().then(BytecodeUtils.constant(true)));
     }
     return SoyExpression.forBool(
         new Expression(Type.BOOLEAN_TYPE, expr.features()) {
@@ -978,7 +1065,9 @@ public final class BytecodeUtils {
   /** Returns a {@link SoyExpression} that evaluates to true if the expression evaluated to null. */
   public static SoyExpression isNull(final Expression expr) {
     if (BytecodeUtils.isPrimitive(expr.resultType())) {
-      return SoyExpression.FALSE;
+      // Reference the statement so that the SoyValueProvider detaches for resolve, and
+      // TemplateAnalysis will correctly cause subsequent accesses to resolve immediately.
+      return SoyExpression.forBool(expr.toStatement().then(BytecodeUtils.constant(false)));
     }
     // This is what javac generates for 'someObject == null'
     return SoyExpression.forBool(
@@ -997,5 +1086,69 @@ public final class BytecodeUtils {
             adapter.mark(end);
           }
         });
+  }
+
+  public static Type getTypeForClassName(String name) {
+    return Type.getType('L' + name.replace('.', '/') + ';');
+  }
+
+  public static Type getTypeForSoyType(SoyType type) {
+    switch (type.getKind()) {
+      case INT:
+        return BOXED_LONG_TYPE;
+      case FLOAT:
+        return BOXED_DOUBLE_TYPE;
+      case BOOL:
+        return BOXED_BOOLEAN_TYPE;
+      case STRING:
+        return STRING_TYPE;
+      case PROTO:
+        return getTypeForClassName(
+            JavaQualifiedNames.getClassName(((SoyProtoType) type).getDescriptor()));
+      case PROTO_ENUM:
+        return getTypeForClassName(
+            JavaQualifiedNames.getClassName(((SoyProtoEnumType) type).getDescriptor()));
+      default:
+        throw new IllegalArgumentException("unsupported type: " + type);
+    }
+  }
+
+  /** Converts int to Integer, long to Long, etc. Java "boxing", not Soy "boxing". */
+  public static Expression boxJavaPrimitive(SoyExpression actualParam) {
+    return boxJavaPrimitive(actualParam.soyRuntimeType().runtimeType(), actualParam);
+  }
+
+  public static Expression boxJavaPrimitive(Type type, Expression expr) {
+    switch (type.getSort()) {
+      case Type.INT:
+        return MethodRef.BOX_INTEGER.invoke(expr);
+      case Type.LONG:
+        return MethodRef.BOX_LONG.invoke(expr);
+      case Type.BOOLEAN:
+        return MethodRef.BOX_BOOLEAN.invoke(expr);
+      case Type.FLOAT:
+        return MethodRef.BOX_FLOAT.invoke(expr);
+      case Type.DOUBLE:
+        return MethodRef.BOX_DOUBLE.invoke(expr);
+      default:
+        throw new IllegalArgumentException(type.getClassName());
+    }
+  }
+
+  public static Expression unboxJavaPrimitive(Type type, Expression expr) {
+    switch (type.getSort()) {
+      case Type.INT:
+        return MethodRef.NUMBER_INT_VALUE.invoke(expr.checkedCast(BytecodeUtils.NUMBER_TYPE));
+      case Type.LONG:
+        return MethodRef.NUMBER_LONG_VALUE.invoke(expr.checkedCast(BytecodeUtils.NUMBER_TYPE));
+      case Type.BOOLEAN:
+        return MethodRef.BOOLEAN_VALUE.invoke(expr.checkedCast(BytecodeUtils.BOXED_BOOLEAN_TYPE));
+      case Type.FLOAT:
+        return MethodRef.NUMBER_FLOAT_VALUE.invoke(expr.checkedCast(BytecodeUtils.NUMBER_TYPE));
+      case Type.DOUBLE:
+        return MethodRef.NUMBER_DOUBLE_VALUE.invoke(expr.checkedCast(BytecodeUtils.NUMBER_TYPE));
+      default:
+        throw new IllegalArgumentException(type.getClassName());
+    }
   }
 }

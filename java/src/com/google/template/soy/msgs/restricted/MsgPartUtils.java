@@ -20,7 +20,6 @@ import java.util.List;
 
 /**
  * Utilities for dealing with msg parts.
- *
  */
 public class MsgPartUtils {
 
@@ -33,10 +32,10 @@ public class MsgPartUtils {
    * @return Whether there are any plural or select parts.
    */
   public static boolean hasPlrselPart(List<SoyMsgPart> msgParts) {
-    for (SoyMsgPart origMsgPart : msgParts) {
-      if (origMsgPart instanceof SoyMsgPluralPart || origMsgPart instanceof SoyMsgSelectPart) {
-        return true;
-      }
+    // If there is a plrsel part then it has to be the first and only part in the list
+    if (msgParts.size() == 1) {
+      SoyMsgPart rootPart = msgParts.get(0);
+      return rootPart instanceof SoyMsgPluralPart || rootPart instanceof SoyMsgSelectPart;
     }
     return false;
   }

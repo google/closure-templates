@@ -15,8 +15,10 @@
  */
 package com.google.template.soy.logging;
 
+import com.google.common.html.types.SafeHtml;
 import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingFunctionInvocation;
+import java.util.Optional;
 
 /**
  * Experimental logging interface for soy.
@@ -24,11 +26,25 @@ import com.google.template.soy.data.LoggingFunctionInvocation;
  * <p>This implements a callback protocol with the {@code velog} syntax.
  */
 public interface SoyLogger {
-  /** Called when a {@code velog} statement is entered. */
-  void enter(LogStatement statement);
+  /**
+   * Called when a {@code velog} statement is entered.
+   *
+   * @return Optional VE logging info to be outputted to the DOM while in debug mode. Method
+   *     implementation must check and only return VE logging info if in debug mode. Most
+   *     implementations will likely return Optional.empty(). TODO(b/148167210): This is currently
+   *     under implementation.
+   */
+  Optional<SafeHtml> enter(LogStatement statement);
 
-  /** Called when a {@code velog} statement is exited. */
-  void exit();
+  /**
+   * Called when a {@code velog} statement is exited.
+   *
+   * @return Optional VE logging info to be outputted to the DOM while in debug mode. Method
+   *     implementation must check and only return VE logging info if in debug mode. Most
+   *     implementations will likely return Optional.empty(). TODO(b/148167210): This is currently
+   *     under implementation.
+   */
+  Optional<SafeHtml> exit();
 
   // called to format a logging function value.
   String evalLoggingFunction(LoggingFunctionInvocation value);
@@ -36,10 +52,14 @@ public interface SoyLogger {
   SoyLogger NO_OP =
       new SoyLogger() {
         @Override
-        public void enter(LogStatement statement) {}
+        public Optional<SafeHtml> enter(LogStatement statement) {
+          return Optional.empty();
+        }
 
         @Override
-        public void exit() {}
+        public Optional<SafeHtml> exit() {
+          return Optional.empty();
+        }
 
         @Override
         public String evalLoggingFunction(LoggingFunctionInvocation value) {

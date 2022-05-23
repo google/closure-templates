@@ -18,17 +18,16 @@ package com.google.template.soy.pysrc.internal;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import com.google.template.soy.SoyFileSetParserBuilder;
-import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
+import com.google.template.soy.testing.SharedTestUtils;
+import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for IsComputableAsPyExprVisitor.
- *
  */
 @RunWith(JUnit4.class)
 public class IsComputableAsPyExprVisitorTest {
@@ -55,28 +54,6 @@ public class IsComputableAsPyExprVisitorTest {
         "{@param boo:?}\n{@param foo:?}\n{if $boo}Blah{elseif $foo}Bleh{else}Bluh{/if}", true);
     runTestHelper(
         "{@param goo:?}\n{@param moose:?}\n{if $goo}{for $moo in $moose}{$moo}{/for}{/if}", false);
-  }
-
-  @Test
-  public void testCallNode() {
-    runTestHelper("{call .foo data=\"all\" /}", true);
-    runTestHelper(
-        "{@param boo:?}\n{@param moo:?}\n{call .foo data=\"$boo\"}{param goo : $moo /}{/call}",
-        true);
-    runTestHelper(
-        "{@param boo:?}\n{call .foo data=\"$boo\"}{param goo kind=\"text\"}Blah{/param}{/call}",
-        true);
-    runTestHelper(
-        "{@param boo:?}\n"
-            + "{@param moose:?}\n"
-            + "{call .foo data=\"$boo\"}"
-            + "  {param goo kind=\"text\"}"
-            + "    {for $moo in $moose}"
-            + "      {$moo}"
-            + "    {/for}"
-            + "  {/param}"
-            + "{/call}",
-        false);
   }
 
   private static void runTestHelper(String soyNodeCode, boolean expectedResult) {

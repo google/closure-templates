@@ -16,39 +16,49 @@
 
 package com.google.template.soy.soytree;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.template.soy.base.internal.BaseUtils.convertToUpperUnderscore;
 import static com.google.template.soy.soytree.CommandTagAttribute.UNSUPPORTED_ATTRIBUTE_KEY;
+import static com.google.template.soy.soytree.MessagePlaceholder.PHEX_ATTR;
+import static com.google.template.soy.soytree.MessagePlaceholder.PHNAME_ATTR;
+import static com.google.template.soy.soytree.MessagePlaceholder.validatePlaceholderExample;
+import static com.google.template.soy.soytree.MessagePlaceholder.validatePlaceholderName;
+import static com.google.template.soy.soytree.MsgSubstUnitPlaceholderNameUtils.genNaiveBaseNameForExpr;
 
 import com.google.common.base.Equivalence;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprEquivalence;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.soytree.CommandTagAttribute.CommandTagAttributesHolder;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.MsgPlaceholderInitialNode;
+import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import javax.annotation.Nullable;
 
 /**
  * Node representing a 'print' statement.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNode>
     implements StandaloneNode,
         SplitLevelTopNode<PrintDirectiveNode>,
+        HtmlContext.HtmlContextHolder,
         StatementNode,
         ExprHolderNode,
-        MsgPlaceholderInitialNode {
+        MsgPlaceholderInitialNode,
+        CommandTagAttributesHolder {
 
   /** Fallback base placeholder name. */
   private static final String FALLBACK_BASE_PLACEHOLDER_NAME = "XXX";
@@ -59,11 +69,10 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
   /** The parsed expression. */
   private final ExprRootNode expr;
 
-  /** The user-supplied placeholder name, or null if not supplied or not applicable. */
-  @Nullable private final String userSuppliedPlaceholderName;
+  /** Used for formatting */
+  private final List<CommandTagAttribute> attributes;
 
-  /** The user-supplied placeholder example, or null if not supplied. */
-  @Nullable private final String userSuppliedPlaceholderExample;
+  private final MessagePlaceholder placeholder;
 
   @Nullable private HtmlContext htmlContext;
 
@@ -79,19 +88,21 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
     this.isImplicit = isImplicit;
     this.expr = new ExprRootNode(expr);
 
-    String placeholderName = null;
-    String placeholderExample = null;
+    this.attributes = ImmutableList.copyOf(attributes);
+    SourceLocation phNameLocation = null;
+    String phName = null;
+    Optional<String> phExample = Optional.empty();
     for (CommandTagAttribute attribute : attributes) {
       switch (attribute.getName().identifier()) {
-        case MessagePlaceholders.PHNAME_ATTR:
-          placeholderName =
-              MessagePlaceholders.validatePlaceholderName(
-                  attribute.getValue(), attribute.getValueLocation(), errorReporter);
+        case PHNAME_ATTR:
+          phNameLocation = attribute.getValueLocation();
+          phName = validatePlaceholderName(attribute.getValue(), phNameLocation, errorReporter);
           break;
-        case MessagePlaceholders.PHEX_ATTR:
-          placeholderExample =
-              MessagePlaceholders.validatePlaceholderExample(
-                  attribute.getValue(), attribute.getValueLocation(), errorReporter);
+        case PHEX_ATTR:
+          phExample =
+              Optional.ofNullable(
+                  validatePlaceholderExample(
+                      attribute.getValue(), attribute.getValueLocation(), errorReporter));
           break;
         default:
           errorReporter.report(
@@ -99,11 +110,15 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
               UNSUPPORTED_ATTRIBUTE_KEY,
               attribute.getName().identifier(),
               "print",
-              ImmutableList.of(MessagePlaceholders.PHNAME_ATTR, MessagePlaceholders.PHEX_ATTR));
+              ImmutableList.of(PHNAME_ATTR, PHEX_ATTR));
       }
     }
-    this.userSuppliedPlaceholderName = placeholderName;
-    this.userSuppliedPlaceholderExample = placeholderExample;
+    this.placeholder =
+        (phName == null)
+            ? MessagePlaceholder.create(
+                genNaiveBaseNameForExpr(expr, FALLBACK_BASE_PLACEHOLDER_NAME), phExample)
+            : MessagePlaceholder.createWithUserSuppliedName(
+                convertToUpperUnderscore(phName), phName, phNameLocation, phExample);
   }
 
   /**
@@ -115,9 +130,17 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
     super(orig, copyState);
     this.isImplicit = orig.isImplicit;
     this.expr = orig.expr.copy(copyState);
-    this.userSuppliedPlaceholderName = orig.userSuppliedPlaceholderName;
-    this.userSuppliedPlaceholderExample = orig.userSuppliedPlaceholderExample;
+    this.placeholder = orig.placeholder;
     this.htmlContext = orig.htmlContext;
+    this.attributes =
+        orig.attributes.stream().map(c -> c.copy(copyState)).collect(toImmutableList());
+    // we may have handed out a copy to ourselves via genSamenessKey()
+    copyState.updateRefs(orig, this);
+  }
+
+  @Override
+  public SourceLocation getOpenTagLocation() {
+    return getSourceLocation();
   }
 
   /**
@@ -125,8 +148,9 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
    * HTML PCDATA, or plain text) which this node emits in. This affects how the node is escaped (for
    * traditional backends) or how it's passed to incremental DOM APIs.
    */
+  @Override
   public HtmlContext getHtmlContext() {
-    return Preconditions.checkNotNull(
+    return checkNotNull(
         htmlContext, "Cannot access HtmlContext before HtmlContextVisitor or InferenceEngine.");
   }
 
@@ -153,54 +177,57 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
     return expr;
   }
 
-  @Nullable
   @Override
-  public String getUserSuppliedPhName() {
-    return userSuppliedPlaceholderName;
-  }
-
-  @Nullable
-  @Override
-  public String getUserSuppliedPhExample() {
-    return userSuppliedPlaceholderExample;
+  public List<CommandTagAttribute> getAttributes() {
+    return attributes;
   }
 
   @Override
-  public String genBasePhName() {
+  public MessagePlaceholder getPlaceholder() {
+    return placeholder;
+  }
 
-    if (userSuppliedPlaceholderName != null) {
-      return BaseUtils.convertToUpperUnderscore(userSuppliedPlaceholderName);
+  @Override
+  public SamenessKey genSamenessKey() {
+    return new SamenessKeyImpl(this);
+  }
+
+  private static final class SamenessKeyImpl implements SamenessKey {
+    PrintNode node;
+
+    SamenessKeyImpl(PrintNode node) {
+      this.node = checkNotNull(node);
     }
 
-    return MsgSubstUnitBaseVarNameUtils.genNaiveBaseNameForExpr(
-        expr.getRoot(), FALLBACK_BASE_PLACEHOLDER_NAME);
-  }
+    SamenessKeyImpl(SamenessKeyImpl orig, CopyState copyState) {
+      this.node = orig.node;
+      copyState.registerRefListener(
+          orig.node,
+          newNode -> {
+            this.node = newNode;
+          });
+    }
 
-  @Override
-  public Object genSamenessKey() {
-    return new SamenessKey(this);
-  }
-
-  private static final class SamenessKey {
-    final PrintNode node;
-
-    SamenessKey(PrintNode node) {
-      this.node = node;
+    @Override
+    public SamenessKeyImpl copy(CopyState copyState) {
+      return new SamenessKeyImpl(this, copyState);
     }
 
     @Override
     public boolean equals(Object obj) {
-      if (!(obj instanceof SamenessKey)) {
+      if (!(obj instanceof SamenessKeyImpl)) {
         return false;
       }
-      PrintNode other = ((SamenessKey) obj).node;
-      return Objects.equals(node.getUserSuppliedPhName(), other.getUserSuppliedPhName())
+      PrintNode other = ((SamenessKeyImpl) obj).node;
+      return Objects.equals(
+              node.getPlaceholder().userSuppliedName(), other.getPlaceholder().userSuppliedName())
           && PrintEquivalence.get().equivalent(node, other);
     }
 
     @Override
     public int hashCode() {
-      return Objects.hash(node.getUserSuppliedPhName(), PrintEquivalence.get().wrap(node));
+      return Objects.hash(
+          node.getPlaceholder().userSuppliedName(), PrintEquivalence.get().wrap(node));
     }
   }
 
@@ -211,21 +238,15 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
 
   @Override
   public String getCommandText() {
-    return doGetCommandText(true);
-  }
-
-  private String doGetCommandText(boolean includePhExample) {
     StringBuilder sb = new StringBuilder();
     sb.append(expr.toSourceString());
     for (PrintDirectiveNode child : getChildren()) {
       sb.append(' ').append(child.toSourceString());
     }
-    if (userSuppliedPlaceholderName != null) {
-      sb.append(" phname=\"").append(userSuppliedPlaceholderName).append('"');
-    }
-    if (includePhExample && userSuppliedPlaceholderExample != null) {
-      sb.append(" phex=\"").append(userSuppliedPlaceholderExample).append('"');
-    }
+    placeholder
+        .userSuppliedName()
+        .ifPresent(phname -> sb.append(" phname=\"").append(phname).append('"'));
+    placeholder.example().ifPresent(phex -> sb.append(" phex=\"").append(phex).append('"'));
     return sb.toString();
   }
 
@@ -259,7 +280,7 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
 
     @Override
     protected boolean doEquivalent(PrintNode a, PrintNode b) {
-      ExprEquivalence exprEquivalence = ExprEquivalence.get();
+      ExprEquivalence exprEquivalence = new ExprEquivalence();
       if (!exprEquivalence.equivalent(a.getExpr(), b.getExpr())) {
         return false;
       }
@@ -279,7 +300,7 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
         List<ExprNode> one = (List<ExprNode>) ((List<?>) aDirective.getExprList());
         @SuppressWarnings("unchecked")
         List<ExprNode> two = (List<ExprNode>) ((List<?>) bDirective.getExprList());
-        if (!exprEquivalence.pairwise().equivalent(one, two)) {
+        if (!exprEquivalence.equivalent(one, two)) {
           return false;
         }
       }
@@ -288,14 +309,14 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
 
     @Override
     protected int doHash(PrintNode t) {
-      ExprEquivalence exprEquivalence = ExprEquivalence.get();
+      ExprEquivalence exprEquivalence = new ExprEquivalence();
       int hc = exprEquivalence.hash(t.getExpr());
       for (PrintDirectiveNode child : t.getChildren()) {
         // cast ImmutableList<ExprRootNode> to List<ExprNode>
         @SuppressWarnings("unchecked")
         List<ExprNode> list = (List<ExprNode>) ((List<?>) child.getExprList());
         hc = 31 * hc + child.getName().hashCode();
-        hc = 31 * hc + exprEquivalence.pairwise().hash(list);
+        hc = 31 * hc + exprEquivalence.hash(list);
       }
       return hc;
     }

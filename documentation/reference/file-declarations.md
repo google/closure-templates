@@ -1,10 +1,5 @@
 # File Declarations
 
-
-<!--#include file="commands-blurb-include.md"-->
-
-This section describes the file declaration commands.
-
 [TOC]
 
 ## namespace {#namespace}
@@ -18,12 +13,30 @@ Syntax (basic form):
 With all optional attributes:
 
 ```soy
-{namespace <namespace> requirecss="<NAMESPACE>.<CSS_ELEMENT>" cssbase="<NAMESPACE>.<CSS_BASE>"}
+{namespace <namespace> requirecsspath="<CSS_FILE>" cssprefix="<PREFIX>" requirecss="<NAMESPACE>.<CSS_ELEMENT>" cssbase="<NAMESPACE>.<CSS_BASE>"}
 ```
 
 These are the `namespace` tag's attributes:
 
-<!--#include file="common-attributes-include.md"-->
+*   `requirecsspath` takes a list of absolute and/or relative paths for CSS
+    files, without their file extensions. These can be either GSS or Sass files.
+    This does NOT have any autoprefix behavior. Use of `cssbase` or `cssprefix`
+    is required to autoprefix.
+
+*   `cssprefix`: takes an explicit prefix to use for autoprefixing in
+    [`css` function](functions.md#css) calls.
+
+*   `requirecss`: Deprecated. Use `requirecsspath` instead.
+
+    Takes a list of CSS namespaces (dotted identifiers). This is used to add
+    `@requirecss` annotations in the generated JavaScript. Also, if there is no
+    `cssbase` attribute, the first `requirecss` namespace can be used for
+    autoprefixing in [`css` function](functions.md#css) calls.
+
+*   `cssbase`: Deprecated. Use `cssprefix` instead.
+
+    Takes a single CSS namespace (dotted identifier). This is used for
+    autoprefixing in [`css` function](functions.md#css) calls.
 
 This command is required at the start of every template file. It declares the
 namespace for the file, which serves as the common prefix for the full name of
@@ -34,7 +47,86 @@ and Closure Compiler do not allow it, so if you're using Soy in JavaScript
 together with other Closure technologies, avoid having the same namespace in
 multiple files.
 
-## alias {#alias}
+## import
+
+This command allows you to import templates and external functions from other
+Soy files, and protos.
+
+Syntax:
+
+```soy
+import {button, render as fooRender} from 'path/to/soy/file/foo.soy';
+```
+
+You can also import all templates from other soy files using `*` and grouping
+them with a name.
+
+<section class="polyglot">
+
+###### Call Command {.pg-tab}
+
+```soy
+import * as fooMagic from 'path/to/soy/file/foo.soy';
+...
+{call fooMagic.button}
+  ...
+{/call}
+```
+
+###### Element Composition {.pg-tab}
+
+```soy
+import * as fooMagic from 'path/to/soy/file/foo.soy';
+...
+<{fooMagic.button()} />
+```
+
+</section>
+
+Import statements should be sorted by path.
+
+**Note:** Always prefer imports over referencing fully qualified names or using
+aliases (both are now deprecated and will soon be banned; we are in the process
+of migrating all existing users to use imports).
+
+### Template Imports
+
+In the above example, `'foo.soy'` needs to contain:
+
+```soy
+{template button}
+  ...
+{/template}
+
+{template render}
+  ...
+{/template}
+```
+
+The syntax for calling imported templates is:
+
+<section class="polyglot">
+
+###### Call Command {.pg-tab}
+
+```soy
+{call button /}
+{call fooRender /}
+```
+
+###### Element Composition {.pg-tab}
+
+```soy
+<{button()} />
+<{fooRender()} />
+```
+
+</section>
+
+## alias (DEPRECATED; will be deleted soon) {#alias}
+
+**Warning:** The `alias` command will be deprecated soon. Use
+[`import`](#import) instead.
 
 Syntax:
 
@@ -51,38 +143,8 @@ the identifier you specify. When you `call` a template in an aliased namespace,
 you don't need to type the whole namespace, only the alias plus the template's
 partial name.
 
-For example, if you declare
-
-```soy
-{alias long.namespace.root.projectx.mymodule.myfeature as myfeature}
-{alias long.namespace.root.projectx.foomodule.utils as fooUtils}
-```
-
-then you can replace the calls
-
-```soy
-{call long.namespace.root.projectx.mymodule.myfeature.myTemplate /}
-{call long.namespace.root.projectx.foomodule.utils.someHelper /}
-```
-
-with
-
-```soy
-{call myfeature.myTemplate /}
-{call fooUtils.someHelper /}
-```
-
-Delegate templates have their own full names (not a partial name prefixed by the
-namespace), so `alias` does not affect delegate calls (`delcall`).
-
-In addition to templates, the `alias` directive also applies to all places where
-named identifiers are used:
-
-*   [Global references](expressions#globals), including proto enum literals
-*   The identifiers in [proto init](expressions#proto-initialization)
-    expressions
-*   The named types, especially [proto type](types#proto)
-*   The ID parameter to the [`xid()` function](functions#xid)
+This deprecated feature still works for the ID parameter to the
+[`xid()` function](functions#xid).
 
 ## delpackage {#delpackage}
 

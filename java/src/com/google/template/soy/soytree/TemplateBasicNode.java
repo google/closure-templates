@@ -25,7 +25,6 @@ import javax.annotation.Nullable;
  * Node representing a basic template.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public final class TemplateBasicNode extends TemplateNode {
 
@@ -46,11 +45,6 @@ public final class TemplateBasicNode extends TemplateNode {
     super(nodeBuilder, "template", soyFileHeaderInfo, visibility, params);
   }
 
-  @Override
-  public String getTemplateNameForUserMsgs() {
-    return getTemplateName();
-  }
-
   /**
    * Copy constructor.
    *
@@ -58,6 +52,11 @@ public final class TemplateBasicNode extends TemplateNode {
    */
   private TemplateBasicNode(TemplateBasicNode orig, CopyState copyState) {
     super(orig, copyState);
+  }
+
+  @Override
+  public String getTemplateNameForUserMsgs() {
+    return getTemplateName();
   }
 
   @Override

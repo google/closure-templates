@@ -23,11 +23,11 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableTable;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.AbstractFuture;
 import com.google.common.util.concurrent.Futures;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
-import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyAbstractValue;
@@ -44,7 +44,7 @@ import com.google.template.soy.msgs.restricted.SoyMsg;
 import com.google.template.soy.msgs.restricted.SoyMsgBundleImpl;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
 import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
-import com.google.template.soy.shared.SharedTestUtils;
+import com.google.template.soy.plugin.java.PluginInstances;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.shared.SoyIdRenamingMap;
@@ -56,6 +56,8 @@ import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.testing.SharedTestUtils;
+import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import com.google.template.soy.testing.TestAnnotations.ExperimentalFeatures;
 import java.io.ByteArrayOutputStream;
 import java.io.FileDescriptor;
@@ -74,10 +76,7 @@ import org.junit.runner.Description;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-/**
- * Unit tests for RenderVisitor.
- *
- */
+/** Unit tests for RenderVisitor. */
 @RunWith(JUnit4.class)
 public class RenderVisitorTest {
 
@@ -269,7 +268,6 @@ public class RenderVisitorTest {
   private String renderWithDataAndMsgBundle(
       String templateBody, SoyRecord data, @Nullable SoyMsgBundle msgBundle) throws Exception {
 
-    ErrorReporter boom = ErrorReporter.exploding();
     ExperimentalFeatures experimentalFeatures =
         testDescription.getAnnotation(ExperimentalFeatures.class);
     SoyFileSetNode soyTree =
@@ -278,7 +276,7 @@ public class RenderVisitorTest {
                 experimentalFeatures == null
                     ? ImmutableList.of()
                     : ImmutableList.copyOf(experimentalFeatures.value()))
-            .errorReporter(boom)
+            .errorReporter(ErrorReporter.explodeOnErrorsAndIgnoreDeprecations())
             .parse()
             .fileSet();
     TemplateNode templateNode = (TemplateNode) SharedTestUtils.getNode(soyTree);
@@ -290,6 +288,8 @@ public class RenderVisitorTest {
             outputSb,
             ImmutableMap.of(),
             new DelTemplateSelector.Builder<TemplateDelegateNode>().build(),
+            ImmutableTable.of(),
+            ImmutableTable.of(),
             data,
             TEST_IJ_DATA,
             arg -> false,
@@ -297,7 +297,7 @@ public class RenderVisitorTest {
             xidRenamingMap,
             cssRenamingMap,
             false,
-            /* pluginInstances= */ ImmutableMap.of());
+            PluginInstances.empty());
     rv.exec(templateNode);
     return outputSb.toString();
   }
@@ -340,6 +340,8 @@ public class RenderVisitorTest {
             outputSb,
             basicTemplates,
             getDeltemplateSelector(parseResult.fileSet()),
+            ImmutableTable.of(),
+            ImmutableTable.of(),
             data,
             ijData,
             activeDelPackageNames,
@@ -347,7 +349,7 @@ public class RenderVisitorTest {
             xidRenamingMap,
             cssRenamingMap,
             false,
-            /* pluginInstances= */ ImmutableMap.of());
+            PluginInstances.empty());
     TemplateNode templateNode = basicTemplates.get(templateName);
     rv.exec(templateNode);
     return outputSb.toString();
@@ -415,7 +417,7 @@ public class RenderVisitorTest {
             + "    <a href=\"{$foo.bar}\">Learn more</A>\n"
             + "    <br /><br />\n"
             + "  {/msg}\n"
-            + "  {msg meaning=\"noun\" desc=\"\" hidden=\"true\"}Archive{/msg}\n"
+            + "  {msg meaning=\"noun\" desc=\"\"}Archive{/msg}\n"
             + "  {msg meaning=\"noun\" desc=\"The archive (noun).\"}Archive{/msg}\n"
             + "  {msg meaning=\"verb\" desc=\"\"}Archive{/msg}\n"
             + "  {msg desc=\"\"}Archive{/msg}\n";
@@ -444,7 +446,7 @@ public class RenderVisitorTest {
     // With msg bundle.
     SoyFileNode file =
         SoyFileSetParserBuilder.forFileContents(
-                "{namespace test}\n{template .foo}\n" + templateBody + "{/template}")
+                "{namespace test}\n{template foo}\n" + templateBody + "{/template}")
             .parse()
             .fileSet()
             .getChild(0);
@@ -667,23 +669,6 @@ public class RenderVisitorTest {
   }
 
   @Test
-  public void testRenderSelectWithRuntimeErrors() throws Exception {
-    String templateBody =
-        "{@param gender: ?}\n"
-            + "{@param person: ?}\n"
-            + "  {msg desc=\"Simple select message\"}\n"
-            + "    {select $gender}\n"
-            + "      {case 'female'}{$person} shared her photos.\n"
-            + "      {default}{$person} shared his photos.\n"
-            + "    {/select}\n"
-            + "  {/msg}\n";
-
-    SoyDict data = SoyValueConverterUtility.newDict("person", "The president", "gender", 100);
-    assertRenderExceptionWithData(
-        templateBody, data, "Select expression \"$gender\" doesn't evaluate to string.");
-  }
-
-  @Test
   public void testRenderPluralWithRuntimeErrors() throws Exception {
     String templateBody =
         "{@param n_people: ?}\n"
@@ -767,9 +752,9 @@ public class RenderVisitorTest {
             + "{@param list0 : list<?> }\n"
             + "{@param foo : ? }\n"
             + "{@param boo : ? }\n"
-            + "  {for $n in $goo}\n"
-            + "    {if not isFirst($n)}{\\n}{/if}\n"
-            + "    {$n} = Sum of 1 through {index($n) + 1}.\n"
+            + "  {for $n, $idx in $goo}\n"
+            + "    {if $idx > 0}{\\n}{/if}\n"
+            + "    {$n} = Sum of 1 through {$idx + 1}.\n"
             + "  {/for}\n"
             + "  {\\n}\n"
             + "  {for $i in $goo}\n"
@@ -805,12 +790,12 @@ public class RenderVisitorTest {
     templateBody =
         ""
             + "{@param myMap : map<string, ?> }\n"
-            + "  {for $key in mapKeys($myMap)}\n"
-            + "    {if isFirst($key)}\n"
+            + "  {for $key, $idx in $myMap.keys()}\n"
+            + "    {if $idx == 0}\n"
             + "      [\n"
             + "    {/if}\n"
             + "    {$key}: {$myMap[$key]}\n"
-            + "    {if isLast($key)}\n"
+            + "    {if $idx == length($myMap.keys()) - 1}\n"
             + "      ]\n"
             + "    {else}\n"
             + "      ,{sp}\n"
@@ -822,29 +807,6 @@ public class RenderVisitorTest {
             "myMap", SoyValueConverterUtility.newDict("aaa", "Blah", "bbb", 17));
     String output = renderWithData(templateBody, data);
     assertThat(ImmutableSet.of("[aaa: Blah, bbb: 17]", "[bbb: 17, aaa: Blah]")).contains(output);
-  }
-
-  @Test
-  public void testRenderForStmt2() throws Exception {
-    String templateBody =
-        "{@param goo : list<?> }\n"
-            + "  {for $n in $goo}\n"
-            + "    {if not isFirst($n)}{\\n}{/if}\n"
-            + "    {$n} ={sp}\n"
-            + "    {for $i in range(1, index($n)+2)}\n"
-            + "      {if $i != 1} + {/if}\n"
-            + "      {$i}\n"
-            + "    {/for}\n"
-            + "  {/for}\n";
-
-    assertRender(
-        templateBody,
-        "1 = 1\n"
-            + "3 = 1 + 2\n"
-            + "6 = 1 + 2 + 3\n"
-            + "10 = 1 + 2 + 3 + 4\n"
-            + "15 = 1 + 2 + 3 + 4 + 5\n"
-            + "21 = 1 + 2 + 3 + 4 + 5 + 6");
   }
 
   @Test
@@ -890,28 +852,28 @@ public class RenderVisitorTest {
     String soyFileContent =
         "{namespace ns}\n"
             + "\n"
-            + "{template .callerTemplate}\n"
+            + "{template callerTemplate}\n"
             + "  {@param boo: ?}\n"
             + "  {@param foo: ?}\n"
             + "  {@param goo: ?}\n"
-            + "  {call .calleeTemplate data=\"all\" /}\n"
-            + "  {call .calleeTemplate data=\"$foo\" /}\n"
-            + "  {call .calleeTemplate data=\"all\"}\n"
+            + "  {call calleeTemplate data=\"all\" /}\n"
+            + "  {call calleeTemplate data=\"$foo\" /}\n"
+            + "  {call calleeTemplate data=\"all\"}\n"
             + "    {param boo: $foo.boo /}\n"
             + "  {/call}\n"
-            + "  {call .calleeTemplate data=\"all\"}\n"
+            + "  {call calleeTemplate data=\"all\"}\n"
             + "    {param boo: 'moo' /}\n"
             + "  {/call}\n"
-            + "  {call .calleeTemplate data=\"$foo\"}\n"
+            + "  {call calleeTemplate data=\"$foo\"}\n"
             + "    {param boo kind=\"text\"}moo{/param}\n"
             + "  {/call}\n"
-            + "  {call .calleeTemplate}\n"
+            + "  {call calleeTemplate}\n"
             + "    {param boo kind=\"text\"}zoo{/param}\n"
             + "    {param goo: $foo.goo /}\n"
             + "  {/call}\n"
             + "{/template}\n"
             + "\n"
-            + "{template .calleeTemplate}\n"
+            + "{template calleeTemplate}\n"
             + "  {@param boo: ?}\n"
             + "  {@param goo: ?}\n"
             + "  {$boo}\n"
@@ -987,28 +949,28 @@ public class RenderVisitorTest {
     String soyFileContent =
         "{namespace ns}\n"
             + "\n"
-            + "{template .callerTemplate}\n"
+            + "{template callerTemplate}\n"
             + "  {@param boo: ?}\n"
             + "  {@param foo: ?}\n"
             + "  {@param goo: ?}\n"
-            + "  {call .calleeTemplate data=\"all\" /}\n"
-            + "  {call .calleeTemplate data=\"$foo\" /}\n"
-            + "  {call .calleeTemplate data=\"all\"}\n"
+            + "  {call calleeTemplate data=\"all\" /}\n"
+            + "  {call calleeTemplate data=\"$foo\" /}\n"
+            + "  {call calleeTemplate data=\"all\"}\n"
             + "    {param boo: $foo.boo /}\n"
             + "  {/call}\n"
-            + "  {call .calleeTemplate data=\"all\"}\n"
+            + "  {call calleeTemplate data=\"all\"}\n"
             + "    {param boo: 'moo' /}\n"
             + "  {/call}\n"
-            + "  {call .calleeTemplate data=\"$foo\"}\n"
+            + "  {call calleeTemplate data=\"$foo\"}\n"
             + "    {param boo kind=\"text\"}moo{/param}\n"
             + "  {/call}\n"
-            + "  {call .calleeTemplate}\n"
+            + "  {call calleeTemplate}\n"
             + "    {param boo kind=\"text\"}zoo{/param}\n"
             + "    {param goo: $foo.goo /}\n"
             + "  {/call}\n"
             + "{/template}\n"
             + "\n"
-            + "{template .calleeTemplate}\n"
+            + "{template calleeTemplate}\n"
             + "  {@param boo: ?}\n"
             + "  {@param goo: ?}\n"
             + "  {@inject future: ?}\n"
@@ -1049,6 +1011,8 @@ public class RenderVisitorTest {
             output,
             basicTemplates,
             getDeltemplateSelector(fileSet),
+            ImmutableTable.of(),
+            ImmutableTable.of(),
             data,
             testIj,
             arg -> false,
@@ -1056,7 +1020,7 @@ public class RenderVisitorTest {
             xidRenamingMap,
             cssRenamingMap,
             false,
-            /* pluginInstances= */ ImmutableMap.of());
+            PluginInstances.empty());
     rv.exec(basicTemplates.get("ns.callerTemplate"));
 
     String expectedOutput =
@@ -1077,7 +1041,7 @@ public class RenderVisitorTest {
         "{namespace ns1}\n"
             + "\n"
             + "/***/\n"
-            + "{template .callerTemplate}\n"
+            + "{template callerTemplate}\n"
             + "  {delcall myApp.myDelegate}\n"
             + "    {param boo: 'aaaaaah' /}\n"
             + "  {/delcall}\n"
@@ -1102,18 +1066,18 @@ public class RenderVisitorTest {
     String soyFileContent3 =
         "{delpackage AlternateSecretFeature}\n"
             + "{namespace ns3}\n"
-            + "\n"
+            + "import {helper} from 'no-path-4';\n"
             + "{deltemplate myApp.myDelegate}\n"
             + "  {@param boo: ?}\n"
             + // implementation in AlternateSecretFeature
-            "  222 {call .helper data=\"all\" /}\n"
+            "  222 {call helper data=\"all\" /}\n"
             + "{/deltemplate}\n";
 
     String soyFileContent4 =
         "{delpackage AlternateSecretFeature}\n"
-            + "{namespace ns3}\n"
+            + "{namespace ns4}\n"
             + "\n"
-            + "{template .helper}\n"
+            + "{template helper}\n"
             + "  {@param boo: ?}\n"
             + "  {@inject ijStr: ?}\n"
             + "  {$boo} {$ijStr}\n"
@@ -1180,7 +1144,7 @@ public class RenderVisitorTest {
         ""
             + "{namespace ns1}\n"
             + "\n"
-            + "{template .callerTemplate}\n"
+            + "{template callerTemplate}\n"
             + "  {@param greekB: ?}\n"
             + "  {delcall myApp.myDelegate variant=\"'alpha'\"}\n"
             + // variant is string
@@ -1192,10 +1156,6 @@ public class RenderVisitorTest {
             + "  {/delcall}\n"
             + "  {delcall myApp.myDelegate variant=\"'gamma'\"}\n"
             + // variant "gamma" not implemented
-            "    {param boo: 'zzz' /}\n"
-            + "  {/delcall}\n"
-            + "  {delcall myApp.myDelegate variant=\"test.GLOBAL\"}\n"
-            + // variant is a global expression
             "    {param boo: 'zzz' /}\n"
             + "  {/delcall}\n"
             + "{/template}\n"
@@ -1216,11 +1176,6 @@ public class RenderVisitorTest {
             + "  {@param boo: ?}\n"
             + // variant "beta" default
             "  000beta\n"
-            + "{/deltemplate}\n"
-            + "{deltemplate myApp.myDelegate variant=\"test.GLOBAL\"}\n"
-            + "  {@param boo: ?}\n"
-            + // variant using global
-            "  000global\n"
             + "{/deltemplate}\n";
 
     String soyFileContent2 =
@@ -1244,11 +1199,6 @@ public class RenderVisitorTest {
             + "  {@param boo: ?}\n"
             + // "beta" in SecretFeature
             "  111beta\n"
-            + "{/deltemplate}\n"
-            + "{deltemplate myApp.myDelegate variant=\"test.GLOBAL\"}\n"
-            + "  {@param boo: ?}\n"
-            + // variant using global
-            "  111global\n"
             + "{/deltemplate}\n";
 
     String soyFileContent3 =
@@ -1266,18 +1216,13 @@ public class RenderVisitorTest {
             + "  {@param boo: ?}\n"
             + // variant "alpha" in Alternate
             "  222alpha\n"
-            + "{/deltemplate}\n"
-            + "{deltemplate myApp.myDelegate variant=\"test.GLOBAL\"}\n"
-            + "  {@param boo: ?}\n"
-            + // variant using global
-            "  222global\n"
             + "{/deltemplate}\n"; // Note: No variant "beta" in AlternateSecretFeature.
 
     SoyGeneralOptions options = new SoyGeneralOptions();
-    options.setCompileTimeGlobals(ImmutableMap.<String, Object>of("test.GLOBAL", 1));
     ParseResult result =
         SoyFileSetParserBuilder.forFileContents(soyFileContent1, soyFileContent2, soyFileContent3)
             .options(options)
+            .runOptimizer(true)
             .errorReporter(FAIL)
             .parse();
 
@@ -1285,32 +1230,32 @@ public class RenderVisitorTest {
     assertThat(
             renderTemplateInFile(
                 result, "ns1.callerTemplate", TEST_DATA, TEST_IJ_DATA, activeDelPackageNames))
-        .isEqualTo("000alpha000beta000empty000global");
+        .isEqualTo("000alpha000beta000empty");
 
     activeDelPackageNames = "SecretFeature"::equals;
     assertThat(
             renderTemplateInFile(
                 result, "ns1.callerTemplate", TEST_DATA, TEST_IJ_DATA, activeDelPackageNames))
-        .isEqualTo("111alpha111beta111empty111global");
+        .isEqualTo("111alpha111beta111empty");
 
     activeDelPackageNames = "AlternateSecretFeature"::equals;
     assertThat(
             renderTemplateInFile(
                 result, "ns1.callerTemplate", TEST_DATA, TEST_IJ_DATA, activeDelPackageNames))
-        .isEqualTo("222alpha000beta222empty222global");
+        .isEqualTo("222alpha000beta222empty");
 
     activeDelPackageNames = "NonexistentFeature"::equals;
     assertThat(
             renderTemplateInFile(
                 result, "ns1.callerTemplate", TEST_DATA, TEST_IJ_DATA, activeDelPackageNames))
-        .isEqualTo("000alpha000beta000empty000global");
+        .isEqualTo("000alpha000beta000empty");
 
     activeDelPackageNames =
         ImmutableSet.of("NonexistentFeature", "AlternateSecretFeature")::contains;
     assertThat(
             renderTemplateInFile(
                 result, "ns1.callerTemplate", TEST_DATA, TEST_IJ_DATA, activeDelPackageNames))
-        .isEqualTo("222alpha000beta222empty222global");
+        .isEqualTo("222alpha000beta222empty");
     try {
       renderTemplateInFile(
           result,
@@ -1334,7 +1279,7 @@ public class RenderVisitorTest {
         "{namespace ns1}\n"
             + "\n"
             + "/***/\n"
-            + "{template .callerTemplate}\n"
+            + "{template callerTemplate}\n"
             + "  {delcall myApp.myDelegate allowemptydefault=\"true\"}\n"
             + "    {param boo: 'aaaaaah' /}\n"
             + "  {/delcall}\n"
@@ -1344,7 +1289,7 @@ public class RenderVisitorTest {
         "{namespace ns1}\n"
             + "\n"
             + "/***/\n"
-            + "{template .callerTemplate}\n"
+            + "{template callerTemplate}\n"
             + "  {delcall myApp.myDelegate}\n"
             + "    {param boo: 'aaaaaah' /}\n"
             + "  {/delcall}\n"
@@ -1499,15 +1444,15 @@ public class RenderVisitorTest {
         "{namespace ns}\n"
             + "\n"
             + "/** */\n"
-            + "{template .callerTemplate}\n"
-            + "  {call .calleeTemplate}\n"
+            + "{template callerTemplate}\n"
+            + "  {call calleeTemplate}\n"
             + "    {param foo kind=\"text\"}\n"
             + "      param{log}param{/log}\n"
             + "    {/param}\n"
             + "  {/call}\n"
             + "{/template}\n"
             + "\n"
-            + "{template .calleeTemplate}\n"
+            + "{template calleeTemplate}\n"
             + "  {@param foo: ?}\n"
             + "  callee{log}callee{/log}\n"
             + "  {sp}{$foo}{sp}{$foo}\n"
@@ -1562,7 +1507,7 @@ public class RenderVisitorTest {
     String soyFileContent =
         "{namespace ns}\n"
             + "\n"
-            + "{template .template}\n"
+            + "{template template}\n"
             + "  {@param foo: int}\n"
             + "  Before: {$foo}\n"
             + "{/template}\n";
@@ -1598,7 +1543,7 @@ public class RenderVisitorTest {
     String soyFileContent =
         "{namespace ns}\n"
             + "\n"
-            + "{template .template}\n"
+            + "{template template}\n"
             + "  {@param foo: int}\n"
             + "  Before: {$foo}\n"
             + "{/template}\n";
@@ -1630,16 +1575,16 @@ public class RenderVisitorTest {
             .join(
                 "{namespace ns}",
                 "",
-                "{template .callee}",
+                "{template callee}",
                 "  {@param body: html}",
                 "  <div>",
                 "    {$body}",
                 "  </div>",
                 "{/template}",
                 "",
-                "{template .caller}",
+                "{template caller}",
                 "  {@param future: string}",
-                "  {call .callee}",
+                "  {call callee}",
                 "    {param body kind=\"html\"}",
                 "      static-content{sp}",
                 "      {$future}",
@@ -1670,9 +1615,9 @@ public class RenderVisitorTest {
                 arg -> false,
                 outputSb))
         .isEqualTo("<div>static-content future-content</div>");
-    // we only get the <div>.  we used to get the 'static-content' as well but that was only
-    // because we aren't using the autoescaper.
-    assertThat(outputAtFutureGetTime.get()).isEqualTo("<div>");
+    // We immediately type check the future, and so when .get() is called we haven't rendered
+    // anything
+    assertThat(outputAtFutureGetTime.get()).isEmpty();
   }
 
   @Test
@@ -1680,11 +1625,6 @@ public class RenderVisitorTest {
     assertRenderException("{@param boo: string}\n{$boo}\n", "Parameter type mismatch");
     assertRenderException("{@param list1: list<string>}\n{$list1[0]}\n", "Expected value of type");
     assertRenderException("{@inject ijInt: string}\n{$ijInt}\n", "Parameter type mismatch");
-  }
-
-  @Test
-  public void testKeyNodeIsNoOp() throws Exception {
-    assertRender("<div {key 'foo'}></div>", "<div></div>");
   }
 
   private static SoyValue createToStringTestValue() {
@@ -1728,7 +1668,7 @@ public class RenderVisitorTest {
   static ImmutableMap<String, TemplateNode> getBasicTemplates(SoyFileSetNode fileSet) {
     ImmutableMap.Builder<String, TemplateNode> basicTemplates = ImmutableMap.builder();
     for (SoyFileNode fileNode : fileSet.getChildren()) {
-      for (TemplateNode template : fileNode.getChildren()) {
+      for (TemplateNode template : SoyTreeUtils.getAllNodesOfType(fileNode, TemplateNode.class)) {
         if (!(template instanceof TemplateDelegateNode)) {
           basicTemplates.put(template.getTemplateName(), template);
         }
@@ -1742,7 +1682,7 @@ public class RenderVisitorTest {
     DelTemplateSelector.Builder<TemplateDelegateNode> deltemplates =
         new DelTemplateSelector.Builder<>();
     for (SoyFileNode fileNode : fileSet.getChildren()) {
-      for (TemplateNode template : fileNode.getChildren()) {
+      for (TemplateNode template : SoyTreeUtils.getAllNodesOfType(fileNode, TemplateNode.class)) {
         if (template instanceof TemplateDelegateNode) {
           TemplateDelegateNode delegateNode = (TemplateDelegateNode) template;
           String delTemplateName = delegateNode.getDelTemplateName();

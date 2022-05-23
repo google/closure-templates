@@ -31,11 +31,9 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
-import com.google.template.soy.jssrc.dsl.ConditionalBuilder;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.JsDoc;
 import com.google.template.soy.jssrc.dsl.SoyJsPluginUtils;
-import com.google.template.soy.jssrc.dsl.Statement;
 import com.google.template.soy.jssrc.dsl.VariableDeclaration;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
 import com.google.template.soy.msgs.internal.IcuSyntaxUtils;
@@ -73,10 +71,10 @@ import javax.annotation.Nullable;
  * Assistant visitor for GenJsCodeVisitor to handle messages.
  *
  * <p>Precondition: MsgNode should not exist in the tree.
- *
  */
 public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
 
+  private static final Pattern LINE_BOUNDARY_PATTERN = Pattern.compile("\\s*?(\\n|\\r)\\s*");
   /** Regex pattern for an underscore-number suffix. */
   private static final Pattern UNDERSCORE_NUMBER_SUFFIX = Pattern.compile("_[0-9]+$");
 
@@ -136,7 +134,7 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
    *
    * <pre>
    *   {msg desc="Link to help content."}Learn more{/msg}
-   *   {msg desc="Tells user how to access a product." hidden="true"}
+   *   {msg desc="Tells user how to access a product."}
    *     Click &lt;a href="{$url}"&gt;here&lt;/a&gt; to access {$productName}.
    *   {/msg}
    * </pre>
@@ -157,15 +155,14 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
    * </pre>
    */
   public Expression generateMsgGroupVariable(MsgFallbackGroupNode node) {
-    String tmpVarName = translationContext.nameGenerator().generateName("msg_s");
     Expression msg;
     if (node.numChildren() == 1) {
       translationContext
           .soyToJsVariableMappings()
           .setIsPrimaryMsgInUse(node, Expression.LITERAL_TRUE);
-      msg = generateSingleMsgVariable(node.getChild(0), tmpVarName);
+      msg = generateSingleMsgVariable(node.getChild(0));
     } else { // has fallbackmsg children
-      msg = generateMsgGroupVariable(node, tmpVarName);
+      msg = generateMsgGroupVariableWithFallback(node);
     }
     // handle escaping
     for (SoyPrintDirective printDirective : node.getEscapingDirectives()) {
@@ -181,10 +178,81 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
   }
 
   /**
+   * Returns a code chunk representing a variable declaration for an {@link MsgFallbackGroupNode}
+   * that contains fallback(s).
+   */
+  private Expression generateMsgGroupVariableWithFallback(MsgFallbackGroupNode node) {
+    checkState(node.numChildren() == 2);
+
+    // Generate the goog.getMsg calls for all children.
+    GoogMsgCodeGenInfo primaryCodeGenInfo =
+        genGoogGetMsgCallHelper(buildGoogMsgVarNameHelper(node.getChild(0)), node.getChild(0));
+    GoogMsgCodeGenInfo fallbackCodeGenInfo =
+        genGoogGetMsgCallHelper(buildGoogMsgVarNameHelper(node.getChild(1)), node.getChild(1));
+
+    // Declare a temporary variable to hold the getMsgWithFallback() call so that we can apply any
+    // MessageFormats from any of the fallbacks.  This is also the variable name that we return to
+    // the caller.
+    // TODO(lukes): we don't really need this variable unless 'isPrimaryMsgInUse' is called,
+    // consider adding translation logic for that conditionally.
+    VariableDeclaration selectedMessageDeclaration =
+        translationContext
+            .codeGenerator()
+            .declarationBuilder("selected_msg")
+            .setRhs(
+                Expression.dottedIdNoRequire("goog.getMsgWithFallback")
+                    .call(primaryCodeGenInfo.googMsgVar, fallbackCodeGenInfo.googMsgVar))
+            .build();
+
+    Expression selectedMsg = selectedMessageDeclaration.ref();
+
+    // We use varName() and id() here instead of using the corresponding code chunks because the
+    // stupid
+    // jscodebuilder system causes us to regenerate the msg vars multiple times because it doesn't
+    // detect that they were already generated.
+    // TODO(b/33382980): clean this up
+    Expression isPrimaryMsgInUse =
+        Expression.id(selectedMessageDeclaration.varName())
+            .doubleEquals(Expression.id(primaryCodeGenInfo.googMsgVarName));
+    translationContext.soyToJsVariableMappings().setIsPrimaryMsgInUse(node, isPrimaryMsgInUse);
+    if (primaryCodeGenInfo.placeholders == null && fallbackCodeGenInfo.placeholders == null) {
+      // all placeholders have already been substituted, just return
+      return selectedMsg;
+    }
+    // Generate the goog.i18n.MessageFormat calls for child plural/select messages (if any), each
+    // wrapped in an if-block that will only execute if that child is the chosen message.
+    Expression initializer;
+    if (primaryCodeGenInfo.placeholders != null) {
+      initializer =
+          Expression.ifExpression(
+                  selectedMsg.doubleEquals(primaryCodeGenInfo.googMsgVar),
+                  getMessageFormatCall(primaryCodeGenInfo))
+              .setElse(
+                  fallbackCodeGenInfo.placeholders == null
+                      ? selectedMsg
+                      : getMessageFormatCall(fallbackCodeGenInfo))
+              .build(translationContext.codeGenerator());
+    } else {
+      initializer =
+          Expression.ifExpression(
+                  selectedMsg.doubleEquals(fallbackCodeGenInfo.googMsgVar),
+                  getMessageFormatCall(fallbackCodeGenInfo))
+              .setElse(selectedMsg)
+              .build(translationContext.codeGenerator());
+    }
+    return translationContext
+        .codeGenerator()
+        .declarationBuilder("msg_s")
+        .setRhs(initializer)
+        .build()
+        .ref();
+  }
+
+  /**
    * Returns a code chunk representing a variable declaration for an {@link MsgNode} with no
    * fallback messages.
    */
-  private Expression generateSingleMsgVariable(MsgNode msgNode, String tmpVarName) {
+  private Expression generateSingleMsgVariable(MsgNode msgNode) {
     String googMsgVarName = buildGoogMsgVarNameHelper(msgNode);
 
     // Generate the goog.getMsg call.
@@ -199,68 +267,12 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
     // string to goog.i18n.MessageFormat for postprocessing. This postprocessing is where we're
     // handling all placeholder replacements, even ones that have nothing to do with
     // plural/select.
-    return VariableDeclaration.builder(tmpVarName)
+    return translationContext
+        .codeGenerator()
+        .declarationBuilder("msg_s")
         .setRhs(getMessageFormatCall(googMsgCodeGenInfo))
         .build()
         .ref();
-  }
-
-  /**
-   * Returns a code chunk representing a variable declaration for an {@link MsgFallbackGroupNode}
-   * that contains fallback(s).
-   */
-  private Expression generateMsgGroupVariable(MsgFallbackGroupNode node, String tmpVarName) {
-    checkState(node.numChildren() == 2);
-
-    // Generate the goog.getMsg calls for all children.
-    GoogMsgCodeGenInfo primaryCodeGenInfo =
-        genGoogGetMsgCallHelper(buildGoogMsgVarNameHelper(node.getChild(0)), node.getChild(0));
-    GoogMsgCodeGenInfo fallbackCodeGenInfo =
-        genGoogGetMsgCallHelper(buildGoogMsgVarNameHelper(node.getChild(1)), node.getChild(1));
-
-    // Declare a temporary variable to hold the getMsgWithFallback() call so that we can apply any
-    // MessageFormats from any of the fallbacks.  This is also the variable name that we return to
-    // the caller.
-    Expression selectedMsg =
-        VariableDeclaration.builder(tmpVarName)
-            .setRhs(
-                Expression.dottedIdNoRequire("goog.getMsgWithFallback")
-                    .call(primaryCodeGenInfo.googMsgVar, fallbackCodeGenInfo.googMsgVar))
-            .build()
-            .ref();
-
-    // We use id() here instead of using the corresponding code chunks because the stupid
-    // jscodebuilder system causes us to regenerate the msg vars multiple times because it doesn't
-    // detect that they were already generated.
-    // TODO(b/33382980): clean this up
-    Expression isPrimaryMsgInUse =
-        Expression.id(tmpVarName).doubleEquals(Expression.id(primaryCodeGenInfo.googMsgVarName));
-    translationContext.soyToJsVariableMappings().setIsPrimaryMsgInUse(node, isPrimaryMsgInUse);
-    if (primaryCodeGenInfo.placeholders == null && fallbackCodeGenInfo.placeholders == null) {
-      // all placeholders have already been substituted, just return
-      return selectedMsg;
-    }
-    // Generate the goog.i18n.MessageFormat calls for child plural/select messages (if any), each
-    // wrapped in an if-block that will only execute if that child is the chosen message.
-    Statement condition;
-    if (primaryCodeGenInfo.placeholders != null) {
-      ConditionalBuilder builder =
-          Statement.ifStatement(
-              selectedMsg.doubleEquals(primaryCodeGenInfo.googMsgVar),
-              selectedMsg.assign(getMessageFormatCall(primaryCodeGenInfo)).asStatement());
-      if (fallbackCodeGenInfo.placeholders != null) {
-        builder.setElse(
-            selectedMsg.assign(getMessageFormatCall(fallbackCodeGenInfo)).asStatement());
-      }
-      condition = builder.build();
-    } else {
-      condition =
-          Statement.ifStatement(
-                  selectedMsg.doubleEquals(fallbackCodeGenInfo.googMsgVar),
-                  selectedMsg.assign(getMessageFormatCall(fallbackCodeGenInfo)).asStatement())
-              .build();
-    }
-    return Expression.id(tmpVarName).withInitialStatement(condition);
   }
 
   /** Builds the googMsgVarName for an MsgNode. */
@@ -304,9 +316,14 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
     if (msgNode.getMeaning() != null) {
       jsDocBuilder.addAnnotation("meaning", msgNode.getMeaning());
     }
-    jsDocBuilder.addAnnotation("desc", msgNode.getDesc());
-    if (msgNode.isHidden()) {
-      jsDocBuilder.addAnnotation("hidden");
+    // jscomp implicitly removes newlines from multiline descriptions so we can do that here without
+    // changing behavior.  It also ensures we don't actually start a line with an '@' character
+    // since afaict there is no escaping syntax in jsdoc.
+    jsDocBuilder.addAnnotation(
+        "desc", LINE_BOUNDARY_PATTERN.matcher(msgNode.getDesc()).replaceAll(" "));
+    if (msgNode.getAlternateId().isPresent()) {
+      jsDocBuilder.addAnnotation(
+          "alternateMessageId", String.valueOf(msgNode.getAlternateId().getAsLong()));
     }
 
     // Generate goog.getMsg() call.
@@ -634,7 +651,7 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
   }
 
   /**
-   * Helper class for building up the input to {@link Expression#objectLiteral}. TODO(brndn):
+   * Helper class for building up the input to {@link Expression#objectLiteral}. TODO(user):
    * consider making this part of the CodeChunk DSL, since all callers seem to do something similar.
    */
   private static final class MapLiteralBuilder {

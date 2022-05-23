@@ -18,6 +18,7 @@ package com.google.template.soy.jbcsrc;
 
 import com.google.errorprone.annotations.CheckReturnValue;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
+import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.LocalVariable;
 import com.google.template.soy.jbcsrc.restricted.Statement;
 import org.objectweb.asm.Type;
@@ -31,6 +32,11 @@ interface LocalVariableManager {
    * <p>Scopes should not be conserved. Assigning a scope to every local is reasonable.
    */
   Scope enterScope();
+  /**
+   * Looks up a user defined variable with the given name. The variable must have been created in a
+   * currently active scope.
+   */
+  Expression getVariable(String name);
 
   /** Write a local variable table entry for every registered variable. */
   void generateTableEntries(CodeBuilder ga);
@@ -43,7 +49,17 @@ interface LocalVariableManager {
      * <p>It is the responsibility of the caller to ensure that {@link LocalVariable#start} is
      * visited prior to the first use of this variable.
      */
-    LocalVariable createLocal(String proposedName, Type type);
+    LocalVariable createTemporary(String proposedName, Type type);
+
+    /**
+     * Adds a variable into the local scope with the given name.
+     *
+     * <p>It is the responsibility of the caller to ensure that {@link LocalVariable#start} is
+     * visited prior to the first use of this variable.
+     *
+     * <p>These variablles can be looked up with {@link LocalVariableManager#getNamedLocal}.
+     */
+    LocalVariable createNamedLocal(String name, Type type);
 
     /**
      * Exits the scope. After this point it is incorrect to reference the local variables. The

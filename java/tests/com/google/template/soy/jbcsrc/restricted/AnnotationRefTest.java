@@ -112,7 +112,7 @@ public class AnnotationRefTest {
   @SuppressWarnings("unchecked")
   private static <T extends Annotation> Class<?> createClassWithAnnotation(T ann) {
     TypeInfo generatedType =
-        TypeInfo.create(AnnotationRefTest.class.getPackage().getName() + ".Tmp");
+        TypeInfo.createClass(AnnotationRefTest.class.getPackage().getName() + ".Tmp");
     SoyClassWriter cw =
         SoyClassWriter.builder(generatedType)
             .setAccess(Opcodes.ACC_FINAL | Opcodes.ACC_SUPER | Opcodes.ACC_PUBLIC)

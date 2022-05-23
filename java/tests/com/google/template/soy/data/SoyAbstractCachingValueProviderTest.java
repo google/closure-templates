@@ -29,7 +29,6 @@ import org.junit.runners.JUnit4;
 
 /**
  * Unit test for SoyAbstractCachingValueProvider.
- *
  */
 @RunWith(JUnit4.class)
 public class SoyAbstractCachingValueProviderTest {

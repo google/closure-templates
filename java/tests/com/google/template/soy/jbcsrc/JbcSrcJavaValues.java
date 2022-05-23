@@ -19,10 +19,14 @@ package com.google.template.soy.jbcsrc;
 import com.google.common.base.Function;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
-import com.google.template.soy.types.SoyTypeRegistry;
+import com.google.template.soy.plugin.internal.JavaPluginExecContext;
+import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
+import com.google.template.soy.shared.restricted.SoySourceFunctionMethod;
+import com.google.template.soy.types.SoyTypeRegistryBuilder;
 import java.util.List;
 
 /**
@@ -38,13 +42,33 @@ public final class JbcSrcJavaValues {
       FunctionNode fnNode,
       JbcSrcPluginContext context,
       Function<String, Expression> pluginInstanceFn,
-      List<SoyExpression> args) {
+      List<SoyExpression> args,
+      ExpressionDetacher detacher) {
     return new JbcSrcValueFactory(
-            fnNode,
+            JavaPluginExecContext.forFunctionNode(
+                fnNode, (SoyJavaSourceFunction) fnNode.getSoyFunction()),
             context,
             pluginInstanceFn::apply,
             ErrorReporter.exploding(),
-            new SoyTypeRegistry())
+            SoyTypeRegistryBuilder.create(),
+            detacher)
+        .computeForJavaSource(args);
+  }
+
+  public static SoyExpression computeForJavaSource(
+      MethodCallNode methodNode,
+      JbcSrcPluginContext context,
+      Function<String, Expression> pluginInstanceFn,
+      List<SoyExpression> args,
+      ExpressionDetacher detacher) {
+    return new JbcSrcValueFactory(
+            JavaPluginExecContext.forMethodCallNode(
+                methodNode, (SoySourceFunctionMethod) methodNode.getSoyMethod()),
+            context,
+            pluginInstanceFn::apply,
+            ErrorReporter.exploding(),
+            SoyTypeRegistryBuilder.create(),
+            detacher)
         .computeForJavaSource(args);
   }
 }

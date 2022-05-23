@@ -19,6 +19,7 @@ package com.google.template.soy.plugin.internal;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
@@ -38,7 +39,6 @@ import com.google.template.soy.types.ast.TypeNodeConverter;
 import java.io.File;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
 /** Validates all source functions. */
 public final class PluginValidator {
@@ -56,16 +56,18 @@ public final class PluginValidator {
     this.methodSignatureValidator = new MethodSignatureValidator(pluginRuntimeJars, errorReporter);
   }
 
-  public void validate(Map<String, SoySourceFunction> fns) {
-    for (Map.Entry<String, SoySourceFunction> fn : fns.entrySet()) {
-      if (fn.getValue() instanceof SoyJavaSourceFunction) {
-        validateJavaFunction(fn.getKey(), (SoyJavaSourceFunction) fn.getValue());
+  public void validate(Iterable<SoySourceFunction> fns) {
+    for (SoySourceFunction fn : fns) {
+      if (fn instanceof SoyJavaSourceFunction) {
+        validateJavaFunction((SoyJavaSourceFunction) fn);
       }
     }
   }
 
-  private void validateJavaFunction(String fnName, SoyJavaSourceFunction fn) {
-    SourceLocation location = new SourceLocation(fn.getClass().getName());
+  private void validateJavaFunction(SoyJavaSourceFunction fn) {
+    SoyFunctionSignature fnSig = fn.getClass().getAnnotation(SoyFunctionSignature.class);
+    String fnName = fnSig.name();
+    SourceLocation location = new SourceLocation(SourceFilePath.create(fn.getClass().getName()));
     methodSignatureValidator.validate(
         fnName, fn, location, /* includeTriggeredInTemplateMsg= */ false);
     ValidatorErrorReporter validatorReporter =
@@ -75,7 +77,6 @@ public final class PluginValidator {
             fn.getClass(),
             location,
             /* includeTriggeredInTemplateMsg= */ false);
-    SoyFunctionSignature fnSig = fn.getClass().getAnnotation(SoyFunctionSignature.class);
     for (Signature sig : fnSig.value()) {
       Checkpoint checkpoint = errorReporter.checkpoint();
       List<SoyType> paramTypes =
@@ -102,11 +103,16 @@ public final class PluginValidator {
       Class<? extends SoySourceFunction> fnClass,
       ValidatorErrorReporter validatorReporter) {
     ErrorReporter localReporter = ErrorReporter.create(ImmutableMap.of());
-    TypeNode typeNode = SoyFileParser.parseType(typeStr, fnClass.getName(), localReporter);
+    TypeNode typeNode =
+        SoyFileParser.parseType(typeStr, SourceFilePath.create(fnClass.getName()), localReporter);
     SoyType type =
         typeNode == null
             ? UnknownType.getInstance()
-            : new TypeNodeConverter(localReporter, typeRegistry).getOrCreateType(typeNode);
+            : TypeNodeConverter.builder(localReporter)
+                .setTypeRegistry(typeRegistry)
+                .setSystemExternal(true)
+                .build()
+                .getOrCreateType(typeNode);
     // If any errors occurred while parsing the signature, wrap the errors in a more meaningful
     // message tailored to the plugin implementation.
     validatorReporter.wrapErrors(localReporter.getErrors());

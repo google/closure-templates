@@ -20,7 +20,6 @@ import com.google.template.soy.soytree.SoyTypeP;
 
 /**
  * Soy integer type.
- *
  */
 public final class IntType extends PrimitiveType {
 

@@ -18,8 +18,10 @@ package com.google.template.soy.jssrc.internal;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import com.google.template.soy.SoyFileSetParserBuilder;
+import com.google.common.base.Joiner;
+import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.soytree.SoyFileSetNode;
+import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -28,10 +30,12 @@ import org.junit.runners.JUnit4;
 public class AliasUtilsTest {
   @Test
   public void testLocalFunctionAliasing() {
-    String fileBody = "{namespace foo.bar.baz}\n{template .localOne}{/template}\n";
+    String fileBody = "{namespace foo.bar.baz}\n{template localOne}{/template}\n";
 
-    SoyFileSetNode n = SoyFileSetParserBuilder.forFileContents(fileBody).parse().fileSet();
-    TemplateAliases templateAliases = AliasUtils.createTemplateAliases(n.getChild(0));
+    ParseResult result = SoyFileSetParserBuilder.forFileContents(fileBody).parse();
+    SoyFileSetNode n = result.fileSet();
+    TemplateAliases templateAliases =
+        AliasUtils.createTemplateAliases(n.getChild(0), result.registry());
 
     String alias = templateAliases.get("foo.bar.baz.localOne");
     assertThat(alias).isEqualTo("$localOne");
@@ -45,11 +49,13 @@ public class AliasUtilsTest {
   public void testLocalFunctionCallAliasing() {
     String fileBody =
         "{namespace foo.bar.baz}\n"
-            + "{template .localOne}{call .localTwo /}{/template}\n"
-            + "{template .localTwo}{/template}\n";
+            + "{template localOne}{call localTwo /}{/template}\n"
+            + "{template localTwo}{/template}\n";
 
-    SoyFileSetNode n = SoyFileSetParserBuilder.forFileContents(fileBody).parse().fileSet();
-    TemplateAliases templateAliases = AliasUtils.createTemplateAliases(n.getChild(0));
+    ParseResult result = SoyFileSetParserBuilder.forFileContents(fileBody).parse();
+    SoyFileSetNode n = result.fileSet();
+    TemplateAliases templateAliases =
+        AliasUtils.createTemplateAliases(n.getChild(0), result.registry());
 
     String alias = templateAliases.get("foo.bar.baz.localTwo");
     assertThat(alias).isEqualTo("$localTwo");
@@ -59,16 +65,23 @@ public class AliasUtilsTest {
   @Test
   public void testNonLocalFunctionAliasing() {
     String fileBody =
-        "{namespace foo.bar.baz}\n"
-            + "{template .bam}\n"
-            + "  {call other.name.space.bam /}\n"
-            + "{/template}\n";
+        Joiner.on('\n')
+            .join(
+                "{namespace foo.bar.baz}",
+                "import {bam as spaceBam} from 'no-path-2';",
+                "{template bam}",
+                "  {call spaceBam /}",
+                "{/template}");
+    String otherBody =
+        Joiner.on('\n').join("{namespace other.name.space}", "{template bam}", "{/template}");
 
-    SoyFileSetNode n = SoyFileSetParserBuilder.forFileContents(fileBody).parse().fileSet();
-    TemplateAliases templateAliases = AliasUtils.createTemplateAliases(n.getChild(0));
+    ParseResult result = SoyFileSetParserBuilder.forFileContents(fileBody, otherBody).parse();
+    SoyFileSetNode n = result.fileSet();
+    TemplateAliases templateAliases =
+        AliasUtils.createTemplateAliases(n.getChild(0), result.registry());
 
     String alias = templateAliases.get("other.name.space.bam");
-    assertThat(alias).isEqualTo("$templateAlias1");
+    assertThat(alias).isEqualTo("$soy$other$name$space.bam");
     assertThat(AliasUtils.isExternalFunction(alias)).isTrue();
   }
 
@@ -78,17 +91,24 @@ public class AliasUtilsTest {
   @Test
   public void testMultipleCallAliasing() {
     String fileBody =
-        "{namespace foo.bar.baz}\n"
-            + "{template .bam}\n"
-            + "  {call other.name.space.bam /}\n"
-            + "  {call other.name.space.bam /}\n"
-            + "{/template}\n";
+        Joiner.on('\n')
+            .join(
+                "{namespace foo.bar.baz}",
+                "import {bam as spaceBam} from 'no-path-2';",
+                "{template bam}",
+                "  {call spaceBam /}",
+                "  {call spaceBam /}",
+                "{/template}");
+    String otherBody =
+        Joiner.on('\n').join("{namespace other.name.space}", "{template bam}", "{/template}");
 
-    SoyFileSetNode n = SoyFileSetParserBuilder.forFileContents(fileBody).parse().fileSet();
-    TemplateAliases templateAliases = AliasUtils.createTemplateAliases(n.getChild(0));
+    ParseResult result = SoyFileSetParserBuilder.forFileContents(fileBody, otherBody).parse();
+    SoyFileSetNode n = result.fileSet();
+    TemplateAliases templateAliases =
+        AliasUtils.createTemplateAliases(n.getChild(0), result.registry());
 
     String alias = templateAliases.get("other.name.space.bam");
-    assertThat(alias).isEqualTo("$templateAlias1");
+    assertThat(alias).isEqualTo("$soy$other$name$space.bam");
     assertThat(AliasUtils.isExternalFunction(alias)).isTrue();
   }
 }

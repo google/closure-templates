@@ -19,14 +19,15 @@ package com.google.template.soy;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jbcsrc.BytecodeCompiler;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
+import com.google.template.soy.plugin.java.PluginInstances;
 import com.google.template.soy.shared.internal.NoOpScopedData;
+import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import com.google.template.soy.tofu.SoyTofu;
 import com.google.template.soy.tofu.internal.BaseTofu;
 import org.junit.Test;
@@ -45,26 +46,26 @@ public final class TransitiveIjParamsTest {
         ""
             + "{namespace ns}\n"
             + "\n"
-            + "{template .aaa}\n"
+            + "{template aaa}\n"
             + "  {@inject boo: ?}\n"
             + "  {@inject foo: ?}\n"
-            + "  {call .bbb /} {$boo} {call .ccc /} {$foo}\n"
+            + "  {call bbb /} {$boo} {call ccc /} {$foo}\n"
             + "{/template}\n"
             + "\n"
-            + "{template .bbb}\n"
+            + "{template bbb}\n"
             + "  {@inject boo: ?}\n"
             + "  {@inject goo: ?}\n"
-            + "  {$boo} {$goo} {call .ddd /}\n"
+            + "  {$boo} {$goo} {call ddd /}\n"
             + "{/template}\n"
             + "\n"
-            + "{template .ccc}\n"
+            + "{template ccc}\n"
             + "  {@inject boo: ?}\n"
             + "  {@inject moo: ?}\n"
             + "  {@inject woo: ?}\n"
             + "  {$boo} {$moo + $woo}\n"
             + "{/template}\n"
             + "\n"
-            + "{template .ddd}\n"
+            + "{template ddd}\n"
             + "  {@inject boo: ?}\n"
             + "  {@inject moo: ?}\n"
             + "  {@inject zoo: ?}\n"
@@ -87,23 +88,23 @@ public final class TransitiveIjParamsTest {
         ""
             + "{namespace ns}\n"
             + "\n"
-            + "{template .aaa}\n"
+            + "{template aaa}\n"
             + "  {@inject boo: ?}\n"
             + "  {@inject foo: ?}\n"
-            + "  {call .bbb /} {$boo} {call .ccc /} {$foo}\n"
+            + "  {call bbb /} {$boo} {call ccc /} {$foo}\n"
             + "{/template}\n"
             + "\n"
-            + "{template .bbb}\n"
+            + "{template bbb}\n"
             + "  {@inject boo: ?}\n"
             + "  {@inject goo: ?}\n"
             + "  {$boo} {$goo}\n"
             + "{/template}\n"
             + "\n"
-            + "{template .ccc}\n"
+            + "{template ccc}\n"
             + "  {@inject boo: ?}\n"
             + "  {@inject moo: ?}\n"
             + "  {@inject woo: ?}\n"
-            + "  {$boo} {$moo + $woo} {call .bbb /}\n"
+            + "  {$boo} {$moo + $woo} {call bbb /}\n"
             + "{/template}\n";
     IjsTester tester = new IjsTester(fileContent);
 
@@ -123,22 +124,22 @@ public final class TransitiveIjParamsTest {
         ""
             + "{namespace ns}\n"
             + "\n"
-            + "{template .aaa}\n"
+            + "{template aaa}\n"
             + "  {@inject boo: ?}\n"
             + "  {@inject foo: ?}\n"
-            + "  {call .bbb /} {$boo} {$foo}\n"
+            + "  {call bbb /} {$boo} {$foo}\n"
             + "{/template}\n"
             + "\n"
-            + "{template .bbb}\n"
+            + "{template bbb}\n"
             + "  {@inject boo: ?}\n"
             + "  {@inject goo: ?}\n"
-            + "  {$boo} {$goo} {call .bbb /} {call .ccc /}\n"
+            + "  {$boo} {$goo} {call bbb /} {call ccc /}\n"
             + "{/template}\n"
             + "\n"
-            + "{template .ccc}\n"
+            + "{template ccc}\n"
             + "  {@inject boo: ?}\n"
             + "  {@inject moo: ?}\n"
-            + "  {$boo} {call .bbb /} {$moo}\n"
+            + "  {$boo} {call bbb /} {$moo}\n"
             + "{/template}\n";
     IjsTester tester = new IjsTester(fileContent);
 
@@ -161,22 +162,22 @@ public final class TransitiveIjParamsTest {
         ""
             + "{namespace ns}\n"
             + "\n"
-            + "{template .aaa}\n"
+            + "{template aaa}\n"
             + "  {@inject foo: ?}\n"
             + "  {@inject boo: ?}\n"
-            + "  {$foo} {$boo} {call .bbb /}\n"
+            + "  {$foo} {$boo} {call bbb /}\n"
             + "{/template}\n"
             + "\n"
-            + "{template .bbb}\n"
+            + "{template bbb}\n"
             + "  {@inject goo: ?}\n"
             + "  {@inject boo: ?}\n"
-            + "  {$goo} {call .ccc /} {$boo}\n"
+            + "  {$goo} {call ccc /} {$boo}\n"
             + "{/template}\n"
             + "\n"
-            + "{template .ccc}\n"
+            + "{template ccc}\n"
             + "  {@inject moo: ?}\n"
             + "  {@inject boo: ?}\n"
-            + "  {call .aaa /} {$moo} {$boo}\n"
+            + "  {call aaa /} {$moo} {$boo}\n"
             + "{/template}\n";
     IjsTester tester = new IjsTester(fileContent);
 
@@ -193,28 +194,28 @@ public final class TransitiveIjParamsTest {
         ""
             + "{namespace ns}\n"
             + "\n"
-            + "{template .aaa}\n"
+            + "{template aaa}\n"
             + "  {@inject boo: ?}\n"
             + "  {@inject foo: ?}\n"
-            + "  {$boo} {$foo} {call .bbb /} {call .ccc /}\n"
+            + "  {$boo} {$foo} {call bbb /} {call ccc /}\n"
             + "{/template}\n"
             + "\n"
-            + "{template .bbb}\n"
+            + "{template bbb}\n"
             + "  {@inject boo: ?}\n"
             + "  {@inject goo: ?}\n"
-            + "  {$boo} {$goo} {call .ddd /}\n"
+            + "  {$boo} {$goo} {call ddd /}\n"
             + "{/template}\n"
             + "\n"
-            + "{template .ccc}\n"
+            + "{template ccc}\n"
             + "  {@inject boo: ?}\n"
             + "  {@inject moo: ?}\n"
-            + "  {$boo} {$moo} {call .ddd /}\n"
+            + "  {$boo} {$moo} {call ddd /}\n"
             + "{/template}\n"
             + "\n"
-            + "{template .ddd}\n"
+            + "{template ddd}\n"
             + "  {@inject boo: ?}\n"
             + "  {@inject too: ?}\n"
-            + "  {$boo} {$too} {call .bbb /}\n"
+            + "  {$boo} {$too} {call bbb /}\n"
             + "{/template}\n";
     IjsTester tester = new IjsTester(fileContent);
 
@@ -234,22 +235,22 @@ public final class TransitiveIjParamsTest {
         ""
             + "{namespace ns}\n"
             + "\n"
-            + "{template .aaa}\n"
+            + "{template aaa}\n"
             + "  {@inject foo: ?}\n"
             + "  {@inject boo: ?}\n"
-            + "  {$foo} {$boo} {call .bbb /} {call .ccc /}\n"
+            + "  {$foo} {$boo} {call bbb /} {call ccc /}\n"
             + "{/template}\n"
             + "\n"
-            + "{template .bbb}\n"
+            + "{template bbb}\n"
             + "  {@inject goo: ?}\n"
             + "  {@inject boo: ?}\n"
-            + "  {$goo} {$boo} {call .aaa /}\n"
+            + "  {$goo} {$boo} {call aaa /}\n"
             + "{/template}\n"
             + "\n"
-            + "{template .ccc}\n"
+            + "{template ccc}\n"
             + "  {@inject moo: ?}\n"
             + "  {@inject boo: ?}\n"
-            + "  {$moo} {$boo} {call .bbb /}\n"
+            + "  {$moo} {$boo} {call bbb /}\n"
             + "{/template}\n";
 
     IjsTester tester = new IjsTester(fileContent);
@@ -270,14 +271,11 @@ public final class TransitiveIjParamsTest {
       SoyFileSetParser parser = SoyFileSetParserBuilder.forFileContents(fileContent).build();
       ParseResult result = parser.parse();
       // parserBuilder.
-      tofu =
-          new BaseTofu(
-              new NoOpScopedData(), result.fileSet(), /*pluginInstances=*/ ImmutableMap.of());
+      tofu = new BaseTofu(new NoOpScopedData(), result.fileSet(), PluginInstances.empty());
       compiledTemplates =
           BytecodeCompiler.compile(
                   result.registry(),
                   result.fileSet(),
-                  /*developmentMode=*/ false,
                   ErrorReporter.exploding(),
                   parser.soyFileSuppliers(),
                   parser.typeRegistry())

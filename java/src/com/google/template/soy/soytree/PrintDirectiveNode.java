@@ -27,28 +27,34 @@ import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import java.util.List;
+import javax.annotation.Nullable;
 
 /**
  * Node representing a 'print' directive.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public final class PrintDirectiveNode extends AbstractSoyNode implements ExprHolderNode {
 
   public static PrintDirectiveNode createSyntheticNode(
+      int id, Identifier name, SourceLocation location) {
+    return new PrintDirectiveNode(id, name, location, ImmutableList.of(), /* isSynthetic=*/ true);
+  }
+
+  public static PrintDirectiveNode createSyntheticNode(
       int id, Identifier name, SourceLocation location, SoyPrintDirective printDirective) {
-    PrintDirectiveNode node =
-        new PrintDirectiveNode(id, name, location, ImmutableList.of(), /* isSynthetic=*/ true);
+    PrintDirectiveNode node = createSyntheticNode(id, name, location);
     node.setPrintDirective(printDirective);
     return node;
   }
 
   private final Identifier name;
   private SoyPrintDirective printDirective;
+  private SoySourceFunction printDirectiveFunction;
 
   /** The parsed args. */
   private final ImmutableList<ExprRootNode> args;
@@ -90,6 +96,7 @@ public final class PrintDirectiveNode extends AbstractSoyNode implements ExprHol
     this.name = orig.name;
     this.args = ImmutableList.copyOf(tempArgs);
     this.printDirective = orig.printDirective;
+    this.printDirectiveFunction = orig.printDirectiveFunction;
     this.isSynthetic = orig.isSynthetic;
   }
 
@@ -113,8 +120,8 @@ public final class PrintDirectiveNode extends AbstractSoyNode implements ExprHol
   }
 
   /** The parsed args. */
-  public List<ExprRootNode> getArgs() {
-    return args;
+  public ImmutableList<ExprRootNode> getArgs() {
+    return getExprList();
   }
 
   @Override
@@ -138,10 +145,23 @@ public final class PrintDirectiveNode extends AbstractSoyNode implements ExprHol
     return printDirective;
   }
 
+  /** Returns the soy source function that can be used to implement this directive. */
+  @Nullable
+  public SoySourceFunction getPrintDirectiveFunction() {
+    return printDirectiveFunction;
+  }
+
   /** Sets the print directive. */
   public void setPrintDirective(SoyPrintDirective printDirective) {
     checkState(this.printDirective == null, "setPrintDirective has already been called");
     checkArgument(name.identifier().equals(printDirective.getName()));
     this.printDirective = checkNotNull(printDirective);
+  }
+
+  /** Sets the print directive. A later compiler pass will rewrite the node to use this function. */
+  public void setPrintDirectiveFunction(SoySourceFunction sourceFunction) {
+    checkState(
+        this.printDirectiveFunction == null, "setPrintDirectiveFunction has already been called");
+    this.printDirectiveFunction = checkNotNull(sourceFunction);
   }
 }

@@ -25,6 +25,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.DoNotMock;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.base.SourceLocation;
+import java.util.OptionalLong;
 import javax.annotation.Nullable;
 
 /**
@@ -34,7 +35,6 @@ import javax.annotation.Nullable;
  * messages comprised the single largest category of memory usage prior to optimization. Several
  * fields can be omitted entirely for render-only usage. ImmutableSet and ImmutableList are used
  * because their empty implementations are singletons.
- *
  */
 @DoNotMock("use the builder() instead to construct a real instance")
 @AutoValue
@@ -46,18 +46,32 @@ public abstract class SoyMsg {
     return new Builder();
   }
 
+  /** Wrapper class to encapsulate source location and template for a msg. */
+  @AutoValue
+  @Immutable
+  public abstract static class SourceLocationAndTemplate {
+    static SourceLocationAndTemplate create(SourceLocation srcLoc, String template) {
+      return new AutoValue_SoyMsg_SourceLocationAndTemplate(srcLoc, template);
+    }
+
+    public abstract SourceLocation sourceLocation();
+
+    public abstract String template();
+  }
+
   /** A builder for SoyMsg. */
   public static final class Builder {
     private long id;
-    private long altId = -1;
-    private @Nullable String localeString;
-    private @Nullable String meaning;
-    private @Nullable String desc;
-    private boolean isHidden;
-    private @Nullable String contentType;
-    private final ImmutableSet.Builder<SourceLocation> sourceLocations = ImmutableSet.builder();
+    private OptionalLong alternateId = OptionalLong.empty();
+    @Nullable private String localeString;
+    @Nullable private String meaning;
+    @Nullable private String desc;
+    @Nullable private String contentType;
+    private final ImmutableSet.Builder<SourceLocationAndTemplate> sourceLocations =
+        ImmutableSet.builder();
     private boolean isPlrselMsg;
     private ImmutableList<SoyMsgPart> parts;
+    private boolean hasFallback;
 
     private Builder() {}
 
@@ -68,10 +82,10 @@ public abstract class SoyMsg {
       return this;
     }
 
-    /** @param altId An alternate unique id for this message. */
-    public Builder setAltId(long altId) {
-      checkArgument(altId >= 0L);
-      this.altId = altId;
+    /** Optional alternate id to be used if a translation for {@code id} is missing. */
+    public Builder setAlternateId(long alternateId) {
+      checkArgument(alternateId >= 0L);
+      this.alternateId = OptionalLong.of(alternateId);
       return this;
     }
 
@@ -105,15 +119,6 @@ public abstract class SoyMsg {
     }
 
     /**
-     * @param isHidden Whether this message should be hidden. May not be applicable to all message
-     *     plugins.
-     */
-    public Builder setIsHidden(boolean isHidden) {
-      this.isHidden = isHidden;
-      return this;
-    }
-
-    /**
      * @param contentType Content type of the document that this message will appear in (e.g.
      *     "{@code text/html}"). May not be applicable to all message plugins.
      */
@@ -122,15 +127,19 @@ public abstract class SoyMsg {
       return this;
     }
 
-    /** @param sourceLocation Location of a source file that this message comes from. */
-    public Builder addSourceLocation(SourceLocation sourceLocation) {
-      sourceLocations.add(checkNotNull(sourceLocation));
+    /**
+     * @param sourceLocation Location of a source file that this message comes from.
+     * @param templateName Name of template this message comes from
+     */
+    public Builder addSourceLocation(SourceLocation sourceLocation, String templateName) {
+      sourceLocations.add(
+          SourceLocationAndTemplate.create(checkNotNull(sourceLocation), templateName));
       return this;
     }
 
     /** @param sourceLocations Locations of source files that this message comes from. */
-    public Builder addAllSourceLocations(Iterable<SourceLocation> sourceLocations) {
-      this.sourceLocations.addAll(checkNotNull(sourceLocations));
+    public Builder addAllSourceLocations(Iterable<SourceLocationAndTemplate> sourceLocations) {
+      this.sourceLocations.addAll(sourceLocations);
       return this;
     }
 
@@ -147,18 +156,30 @@ public abstract class SoyMsg {
       return this;
     }
 
+    /** Marks this message as being the primary message in a fallback group. */
+    public Builder setHasFallback(boolean hasFallback) {
+      this.hasFallback = hasFallback;
+      return this;
+    }
+
     public SoyMsg build() {
+      // An alternate ID that points to itself is a no-op, so just omit it.
+      // A tricorder warning suggests eliminating such tags if they're added manually, but we need
+      // to allow it for generated code.
+      if (alternateId.isPresent() && (alternateId.getAsLong() == id)) {
+        alternateId = OptionalLong.empty();
+      }
       return new AutoValue_SoyMsg(
           localeString,
           id,
-          altId,
+          alternateId,
           meaning,
           desc,
-          isHidden,
           contentType,
           isPlrselMsg,
           parts,
-          sourceLocations.build());
+          sourceLocations.build(),
+          hasFallback);
     }
   }
 
@@ -167,14 +188,14 @@ public abstract class SoyMsg {
   }
 
   /** Creates a new {@link Builder} based on the current instance. */
-  Builder toBuilder() {
+  public Builder toBuilder() {
     Builder builder =
         builder()
             .setId(getId())
-            .setIsHidden(isHidden())
             .setParts(getParts())
             .addAllSourceLocations(getSourceLocations())
-            .setIsPlrselMsg(isPlrselMsg());
+            .setIsPlrselMsg(isPlrselMsg())
+            .setHasFallback(hasFallback());
     if (getLocaleString() != null) {
       builder.setLocaleString(getLocaleString());
     }
@@ -184,12 +205,10 @@ public abstract class SoyMsg {
     if (getDesc() != null) {
       builder.setDesc(getDesc());
     }
-    if (getAltId() != -1) {
-      builder.setAltId(getAltId());
-    }
     if (getContentType() != null) {
       builder.setContentType(getContentType());
     }
+    getAlternateId().ifPresent(builder::setAlternateId);
     return builder;
   }
 
@@ -200,8 +219,8 @@ public abstract class SoyMsg {
   /** Returns the unique id for this message (same across all translations). */
   public abstract long getId();
 
-  /** Returns the alternate unique id for this message, or -1L if not applicable. */
-  public abstract long getAltId();
+  /** Returns the optional alternate id for this message. */
+  public abstract OptionalLong getAlternateId();
 
   /** Returns the meaning string if set, otherwise null (usually null). */
   @Nullable
@@ -210,9 +229,6 @@ public abstract class SoyMsg {
   /** Returns the description for translators. */
   @Nullable
   public abstract String getDesc();
-
-  /** Returns whether this message should be hidden. */
-  public abstract boolean isHidden();
 
   /** Returns the content type of the document that this message will appear in. */
   @Nullable
@@ -224,6 +240,13 @@ public abstract class SoyMsg {
   /** Returns the parts that make up the message content. */
   public abstract ImmutableList<SoyMsgPart> getParts();
 
-  /** Returns the location(s) of the source file(s) that this message comes from. */
-  public abstract ImmutableSet<SourceLocation> getSourceLocations();
+  /** Returns the location(s) and templates of the source file(s) that this message comes from. */
+  public abstract ImmutableSet<SourceLocationAndTemplate> getSourceLocations();
+
+  public final SourceLocation getExampleSourceLocation() {
+    return getSourceLocations().iterator().next().sourceLocation();
+  }
+
+  /** Returns {@code true} if this message has a fallback. */
+  public abstract boolean hasFallback();
 }

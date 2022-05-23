@@ -20,6 +20,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.SanitizedContentKind;
+import com.google.template.soy.base.internal.TemplateContentKind;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.parsepasses.contextautoesc.Context.AttributeEndDelimiter;
@@ -54,8 +55,8 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
-import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.types.TemplateType;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
@@ -80,7 +81,6 @@ import java.util.Optional;
  *       See fixed-point typing below for a discussion of reentrant templates and templates used in
  *       different contexts.
  * </ul>
- *
  */
 final class InferenceEngine {
 
@@ -88,21 +88,18 @@ final class InferenceEngine {
    * Infer an end context for the given template and, if requested, choose escaping directives for
    * any <code>{print}</code>.
    *
-   * @param templateNode A template that is visited in {@code startContext} and no other. If a
-   *     template can be reached from multiple contexts, then it should be cloned. This class
-   *     automatically does that for called templates.
+   * @param soyNode A node that is visited in {@code startContext} and no other. If a template can
+   *     be reached from multiple contexts, then it should be cloned. This class automatically does
+   *     that for called templates.
    * @param inferences Receives all suggested changes and inferences to tn.
    * @return The end context when the given template is reached from {@code startContext}.
    */
   public static Context inferTemplateEndContext(
-      TemplateNode templateNode,
-      Context startContext,
-      Inferences inferences,
-      ErrorReporter errorReporter) {
+      SoyNode soyNode, Context startContext, Inferences inferences, ErrorReporter errorReporter) {
     InferenceEngine inferenceEngine = new InferenceEngine(inferences, errorReporter);
     // Context started off as startContext and we have propagated context through all of
-    // template's children, so now return the template's end context.
-    return inferenceEngine.infer(templateNode, startContext);
+    // soyNode's children, so now return the template's end context.
+    return inferenceEngine.infer(soyNode, startContext);
   }
 
   /**
@@ -211,20 +208,22 @@ final class InferenceEngine {
     @Override
     protected void visitRawTextNode(RawTextNode rawTextNode) {
       context = RawTextContextUpdater.processRawText(rawTextNode, context);
-      if (context.uriPart == UriPart.TRUSTED_RESOURCE_URI_END) {
+      if (context.uriPart() == UriPart.TRUSTED_RESOURCE_URI_END) {
         uriStart = rawTextNode;
       }
+      rawTextNode.setHtmlContext(context.state());
     }
 
     @Override
     protected void visitMsgNode(MsgNode node) {
-      node.setEscapingMode(context.state.getEscapingMode());
+      node.setEscapingMode(context.state().getEscapingMode());
       super.visitMsgNode(node);
     }
 
     @Override
     protected void visitMsgFallbackGroupNode(MsgFallbackGroupNode node) {
       checkUriEnd();
+      node.setHtmlContext(context.state());
 
       // (1) Determine the escaping we should do on the node itself, and the context we should
       // parse the children in.
@@ -236,7 +235,7 @@ final class InferenceEngine {
                 + "message into a {let} block: "
                 + context,
             node);
-      } else if (context.delimType == AttributeEndDelimiter.SPACE_OR_TAG_END) {
+      } else if (context.delimType() == AttributeEndDelimiter.SPACE_OR_TAG_END) {
         throw SoyAutoescapeException.createWithNode(
             "Messages are not supported in this context because a space in the translation would "
                 + "end the attribute value. Wrap the attribute value into quotes.",
@@ -269,7 +268,7 @@ final class InferenceEngine {
       checkUriEnd();
       checkHtmlHtmlAttributePosition(callNode);
 
-      callNode.setHtmlContext(context.state);
+      callNode.setHtmlContext(context.state());
 
       context = inferCallSite(callNode, context, inferences);
 
@@ -292,6 +291,7 @@ final class InferenceEngine {
 
     @Override
     protected void visitIfNode(IfNode ifNode) {
+      ifNode.setHtmlContext(context.state());
       propagateAcrossDisjunction(ifNode);
     }
 
@@ -357,7 +357,7 @@ final class InferenceEngine {
      */
     @Override
     protected void visitPrintNode(PrintNode printNode) {
-      printNode.setHtmlContext(context.state);
+      printNode.setHtmlContext(context.state());
       checkUriEnd();
       checkHtmlHtmlAttributePosition(printNode);
 
@@ -382,7 +382,7 @@ final class InferenceEngine {
     }
 
     private void checkUriEnd() {
-      if (context.uriPart == UriPart.TRUSTED_RESOURCE_URI_END) {
+      if (context.uriPart() == UriPart.TRUSTED_RESOURCE_URI_END) {
         throw SoyAutoescapeException.createWithNode(
             "TrustedResourceUris containing dynamic content must have a fixed scheme (https) and "
                 + "host using one of the following formats:\n"
@@ -398,7 +398,7 @@ final class InferenceEngine {
     }
 
     private void checkHtmlHtmlAttributePosition(SoyNode node) {
-      if (context.htmlHtmlAttributePosition == HtmlHtmlAttributePosition.NOT_START) {
+      if (context.htmlHtmlAttributePosition() == HtmlHtmlAttributePosition.NOT_START) {
         throw SoyAutoescapeException.createWithNode(
             "HTML attribute values containing HTML can use dynamic expressions only at the start "
                 + "of the value.",
@@ -413,7 +413,9 @@ final class InferenceEngine {
 
     @Override
     protected void visitHtmlCloseTagNode(HtmlCloseTagNode node) {
-      visitHtmlTagNode(node);
+      if (!node.getTagName().isWildCard()) {
+        visitHtmlTagNode(node);
+      }
     }
 
     @Override
@@ -424,26 +426,38 @@ final class InferenceEngine {
     }
 
     private void visitHtmlTagNode(HtmlTagNode tag) {
+      Context oldContext = context;
+      boolean isSelfClosing =
+          tag instanceof HtmlOpenTagNode && ((HtmlOpenTagNode) tag).isSelfClosing();
       context =
           context.transitionToState(
-              tag.getKind() == Kind.HTML_OPEN_TAG_NODE
+              (tag.getKind() == Kind.HTML_OPEN_TAG_NODE && !isSelfClosing)
                   ? HtmlContext.HTML_BEFORE_OPEN_TAG_NAME
                   : HtmlContext.HTML_BEFORE_CLOSE_TAG_NAME);
       // if the tag name is a constant, transition to an appropriate tag state
-      if (tag.getTagName().isStatic()) {
+      if (tag.getTagName().isStatic() || tag.getTagName().isTemplateCall()) {
         context = context.transitionToTagName(tag);
+        if (tag.getTagName().isStatic()) {
+          ((RawTextNode) tag.getChild(0)).setHtmlContext(HtmlContext.HTML_TAG_NAME);
+        } else {
+          tag.getTagName().getDynamicTagName().setHtmlContext(HtmlContext.HTML_TAG_NAME);
+        }
       } else {
         // dynamic tag name
         visit(tag.getChild(0));
       }
       // Make sure the element type was pre-determined when setting the tag name.
-      Preconditions.checkArgument(context.elType != Context.ElementType.NONE);
-      context = context.transitionToTagBody();
+      Preconditions.checkArgument(context.elType() != Context.ElementType.NONE);
+      context = context.transitionToTagAttributes();
       // 0 is the tag name
       for (int i = 1; i < tag.numChildren(); i++) {
         visit(tag.getChild(i));
       }
-      context = context.transitionToAfterTag();
+      if (isSelfClosing) {
+        context = oldContext;
+      } else {
+        context = context.transitionToAfterTag();
+      }
     }
 
     @Override
@@ -451,13 +465,14 @@ final class InferenceEngine {
       SoyNode first = node.getChild(0);
       if (first.getKind() == SoyNode.Kind.RAW_TEXT_NODE) {
         context = context.transitionToAttrName(((RawTextNode) first).getRawText());
+        ((RawTextNode) first).setHtmlContext(HtmlContext.HTML_ATTRIBUTE_NAME);
       } else {
         visit(first);
       }
       if (node.hasValue()) {
         visit(node.getChild(1));
       }
-      context = context.transitionToTagBody();
+      context = context.transitionToTagAttributes();
     }
 
     @Override
@@ -478,7 +493,7 @@ final class InferenceEngine {
       }
       context = context.transitionToAttrValue(delim);
       visitChildren(node);
-      context = context.transitionToTagBody();
+      context = context.transitionToTagAttributes();
     }
 
     /** Handle conjunction nodes. */
@@ -498,15 +513,15 @@ final class InferenceEngine {
      * <p>This relies on CheckDelegatesPass to print friendly messages if the deltemplates differ in
      * content kind.
      */
-    private SanitizedContentKind getCommonContentKindIfStrict(List<TemplateMetadata> templates) {
+    private SanitizedContentKind getCommonContentKindIfStrict(List<TemplateType> templates) {
       if (templates.isEmpty()) {
         return null;
       }
-      SanitizedContentKind contentKind = templates.get(0).getContentKind();
-      for (TemplateMetadata template : templates) {
-        Preconditions.checkArgument(template.getContentKind() == contentKind);
+      TemplateContentKind contentKind = templates.get(0).getContentKind();
+      for (TemplateType template : templates) {
+        Preconditions.checkArgument(template.getContentKind().equals(contentKind));
       }
-      return contentKind;
+      return contentKind.getSanitizedContentKind();
     }
 
     /**
@@ -520,7 +535,7 @@ final class InferenceEngine {
      *     side-effect of this call.
      */
     private Context inferCallSite(CallNode callNode, Context startContext, Inferences inferences) {
-      List<TemplateMetadata> targets = inferences.lookupTemplates(callNode);
+      List<TemplateType> targets = inferences.lookupTemplates(callNode);
       SanitizedContentKind calleeStrictContentKind = getCommonContentKindIfStrict(targets);
       // Check what kind of template is being called.
       if (calleeStrictContentKind != null

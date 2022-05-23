@@ -32,7 +32,6 @@ import java.util.stream.Collectors;
  * could be used function call code recursively.
  *
  * <p>Sample Output: {@code some_func_call(1, "str", foo='bar', foo=nested_call(42))}
- *
  */
 public final class PyFunctionExprBuilder {
 
@@ -50,11 +49,6 @@ public final class PyFunctionExprBuilder {
 
   public PyFunctionExprBuilder addArg(PyExpr arg) {
     this.argList.add(arg);
-    return this;
-  }
-
-  public PyFunctionExprBuilder addArgs(List<PyExpr> argList) {
-    this.argList.addAll(argList);
     return this;
   }
 
@@ -80,6 +74,11 @@ public final class PyFunctionExprBuilder {
 
   public PyFunctionExprBuilder addArg(long i) {
     this.argList.add(new PyExpr(String.valueOf(i), Integer.MAX_VALUE));
+    return this;
+  }
+
+  public PyFunctionExprBuilder addArgs(List<PyExpr> argList) {
+    this.argList.addAll(argList);
     return this;
   }
 

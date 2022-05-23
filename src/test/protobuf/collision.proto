@@ -1,0 +1,12 @@
+syntax = "proto2";
+
+package example;
+
+option java_package = "com.google.template.soy.testing.collision";
+option java_multiple_files = true;
+
+message KvPair {
+  optional string key = 1;
+  optional string value = 2;
+  optional int32 another_value = 3;
+}

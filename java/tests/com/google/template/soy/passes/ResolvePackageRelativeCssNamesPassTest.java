@@ -18,16 +18,19 @@ package com.google.template.soy.passes;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import com.google.template.soy.SoyFileSetParserBuilder;
+import com.google.template.soy.css.CssRegistry;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.StringNode;
-import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.testing.SharedTestUtils;
+import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -42,7 +45,7 @@ public final class ResolvePackageRelativeCssNamesPassTest {
         compileTemplate(
             "{namespace boo cssbase=\"some.test.package\"}\n\n"
                 + "/** Test template.*/\n"
-                + "{template .foo}\n"
+                + "{template foo}\n"
                 + "  <p class=\"{css('%AAA')}\">\n"
                 + "{/template}\n");
     PrintNode printNode =
@@ -57,7 +60,7 @@ public final class ResolvePackageRelativeCssNamesPassTest {
         compileTemplate(
             "{namespace boo}\n\n"
                 + "/** Test template.  */\n"
-                + "{template .foo cssbase=\"some.test.package\"}\n"
+                + "{template foo cssbase=\"some.test.package\"}\n"
                 + "  <p class=\"{css('%AAA')}\">\n"
                 + "{/template}\n");
     PrintNode printNode =
@@ -72,7 +75,7 @@ public final class ResolvePackageRelativeCssNamesPassTest {
         compileTemplate(
             "{namespace boo requirecss=\"some.test.package,some.other.package\"}\n\n"
                 + "/** Test template. */\n"
-                + "{template .foo}\n"
+                + "{template foo}\n"
                 + "  <p class=\"{css('%AAA')}\">\n"
                 + "{/template}\n");
     PrintNode printNode =
@@ -87,7 +90,7 @@ public final class ResolvePackageRelativeCssNamesPassTest {
         compileTemplate(
             "{namespace boo cssbase=\"some.test.package\"}\n\n"
                 + "/** Test template. */\n"
-                + "{template .foo}\n"
+                + "{template foo}\n"
                 + "  <p class=\"{css('AAA')}\">\n"
                 + "{/template}\n");
     PrintNode printNode =
@@ -102,7 +105,7 @@ public final class ResolvePackageRelativeCssNamesPassTest {
     compileTemplate(
         "{namespace boo}\n\n"
             + "/** Test template. */\n"
-            + "{template .foo cssbase=\"ns.bar\"}\n"
+            + "{template foo cssbase=\"ns.bar\"}\n"
             + "  {@param goo: string}\n"
             + "  <p class=\"{css($goo, '%AAA')}\">\n"
             + "{/template}\n",
@@ -118,7 +121,7 @@ public final class ResolvePackageRelativeCssNamesPassTest {
         compileTemplate(
             "{namespace boo requirecss='some.test.package' cssbase='some.other.package'}\n\n"
                 + "/** Test template. */\n"
-                + "{template .foo}\n"
+                + "{template foo}\n"
                 + "  <p class=\"{css('%AAA')}\">\n"
                 + "{/template}\n");
     PrintNode printNode =
@@ -133,7 +136,7 @@ public final class ResolvePackageRelativeCssNamesPassTest {
         compileTemplate(
             "{namespace boo requirecss='some.test.package' cssbase='some.other.package'}\n\n"
                 + "/** Test template. */\n"
-                + "{template .foo cssbase='the.actual.package'}\n"
+                + "{template foo cssbase='the.actual.package'}\n"
                 + "  <p class=\"{css('%AAA')}\">\n"
                 + "{/template}\n");
     PrintNode printNode =
@@ -148,7 +151,7 @@ public final class ResolvePackageRelativeCssNamesPassTest {
         compileTemplate(
             "{namespace boo requirecss='some.test.package'}\n\n"
                 + "/** Test template. */\n"
-                + "{template .foo requirecss='some.other.package'}\n"
+                + "{template foo requirecss='some.other.package'}\n"
                 + "  <p class=\"{css('%AAA')}\">\n"
                 + "{/template}\n");
     PrintNode printNode =
@@ -165,6 +168,9 @@ public final class ResolvePackageRelativeCssNamesPassTest {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(templateText)
             .errorReporter(errorReporter)
+            .cssRegistry(
+                CssRegistry.create(
+                    ImmutableSet.of("some.test.package", "some.other.package"), ImmutableMap.of()))
             .parse()
             .fileSet();
     return (TemplateNode) SharedTestUtils.getNode(soyTree);

@@ -18,8 +18,6 @@ package com.google.template.soy.jbcsrc;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.data.LogStatement;
-import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
@@ -37,13 +35,7 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
 
   private static final MethodRef GET_DELTEMPLATE =
       MethodRef.create(
-          RenderContext.class,
-          "getDelTemplate",
-          String.class,
-          String.class,
-          boolean.class,
-          SoyRecord.class,
-          SoyRecord.class);
+          RenderContext.class, "getDelTemplate", String.class, String.class, boolean.class);
 
   private static final MethodRef GET_PLUGIN_INSTANCE =
       MethodRef.create(RenderContext.class, "getPluginInstance", String.class);
@@ -53,19 +45,16 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
   private static final MethodRef GET_PRINT_DIRECTIVE =
       MethodRef.create(RenderContext.class, "getPrintDirective", String.class);
 
-  public static final MethodRef ENTER_LOGONLY =
-      MethodRef.create(RenderContext.class, "enterLogOnly", LogStatement.class);
-
-  public static final MethodRef EXIT_LOGONLY = MethodRef.create(RenderContext.class, "exitLogOnly");
-
-  private static final MethodRef ADD_RENDERED_TEMPLATE =
-      MethodRef.create(RenderContext.class, "addRenderedTemplate", String.class);
-
-  private static final MethodRef GET_RENDERED_CSS_NAMESPACES =
-      MethodRef.create(RenderContext.class, "getRenderedCssNamespaces").asNonNullable();
-
   private static final MethodRef GET_SOY_MSG_PARTS =
       MethodRef.create(RenderContext.class, "getSoyMsgParts", long.class, ImmutableList.class);
+
+  private static final MethodRef GET_SOY_MSG_PARTS_WITH_ALTERNATE_ID =
+      MethodRef.create(
+          RenderContext.class,
+          "getSoyMsgPartsWithAlternateId",
+          long.class,
+          ImmutableList.class,
+          long.class);
 
   private static final MethodRef RENAME_CSS_SELECTOR =
       MethodRef.create(RenderContext.class, "renameCssSelector", String.class).asNonNullable();
@@ -73,8 +62,33 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
   private static final MethodRef RENAME_XID =
       MethodRef.create(RenderContext.class, "renameXid", String.class).asNonNullable();
 
-  private static final MethodRef USE_PRIMARY_MSG =
-      MethodRef.create(RenderContext.class, "usePrimaryMsg", long.class, long.class);
+  private static final MethodRef USE_PRIMARY_MSG_IF_FALLBACK =
+      MethodRef.create(RenderContext.class, "usePrimaryMsgIfFallback", long.class, long.class);
+
+  private static final MethodRef USE_PRIMARY_OR_ALTERNATE_IF_FALLBACK =
+      MethodRef.create(
+          RenderContext.class,
+          "usePrimaryOrAlternateIfFallback",
+          long.class,
+          long.class,
+          long.class);
+
+  private static final MethodRef USE_PRIMARY_IF_FALLBACK_OR_FALLBACK_ALTERNATE =
+      MethodRef.create(
+          RenderContext.class,
+          "usePrimaryIfFallbackOrFallbackAlternate",
+          long.class,
+          long.class,
+          long.class);
+
+  private static final MethodRef USE_PRIMARY_OR_ALTERNATE_IF_FALLBACK_OR_FALLBACK_ALTERNATE =
+      MethodRef.create(
+          RenderContext.class,
+          "usePrimaryOrAlternateIfFallbackOrFallbackAlternate",
+          long.class,
+          long.class,
+          long.class,
+          long.class);
 
   private static final MethodRef GET_DEBUG_SOY_TEMPLATE_INFO =
       MethodRef.create(RenderContext.class, "getDebugSoyTemplateInfo");
@@ -82,8 +96,14 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
   private static final MethodRef GET_BIDI_GLOBAL_DIR =
       MethodRef.create(RenderContext.class, "getBidiGlobalDir");
 
+  private static final MethodRef GET_BIDI_GLOBAL_DIR_DIR =
+      MethodRef.create(RenderContext.class, "getBidiGlobalDirDir");
+
   private static final MethodRef GET_ALL_REQUIRED_CSS_NAMESPACES =
       MethodRef.create(RenderContext.class, "getAllRequiredCssNamespaces", String.class);
+
+  private static final MethodRef GET_ALL_REQUIRED_CSS_PATHS =
+      MethodRef.create(RenderContext.class, "getAllRequiredCssPaths", String.class);
 
   private static final MethodRef GET_ESCAPING_DIRECTIVE_AS_FUNCTION =
       MethodRef.create(RenderContext.class, "getEscapingDirectiveAsFunction", String.class);
@@ -92,6 +112,15 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
       MethodRef.create(RenderContext.class, "hasLogger").asCheap();
 
   private static final MethodRef GET_LOGGER = MethodRef.create(RenderContext.class, "getLogger");
+  private static final MethodRef POP_FRAME = MethodRef.create(RenderContext.class, "popFrame");
+  private static final MethodRef GET_RENDER_CSS_HELPER =
+      MethodRef.create(RenderContext.class, "getRenderCssHelper");
+
+  private static final MethodRef GET_CONST =
+      MethodRef.create(RenderContext.class, "getConst", String.class);
+
+  private static final MethodRef STORE_CONST =
+      MethodRef.create(RenderContext.class, "storeConst", String.class, Object.class);
 
   private final Expression delegate;
 
@@ -110,18 +139,22 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
     return delegate.invoke(GET_BIDI_GLOBAL_DIR);
   }
 
-  @Override
-  public Expression getAllRequiredCssNamespaces(Expression template) {
-    return delegate.invoke(GET_ALL_REQUIRED_CSS_NAMESPACES, template);
+  public Expression getBidiGlobalDirDir() {
+    return delegate.invoke(GET_BIDI_GLOBAL_DIR_DIR);
   }
 
   @Override
-  public Expression getRenderedCssNamespaces() {
-    return delegate.invoke(GET_RENDERED_CSS_NAMESPACES);
+  public Expression getAllRequiredCssNamespaces(SoyExpression template) {
+    return delegate.invoke(GET_ALL_REQUIRED_CSS_NAMESPACES, template.unboxAsString());
   }
 
-  public Statement addRenderedTemplate(String template) {
-    return delegate.invokeVoid(ADD_RENDERED_TEMPLATE, constant(template));
+  @Override
+  public Expression getAllRequiredCssPaths(SoyExpression template) {
+    return delegate.invoke(GET_ALL_REQUIRED_CSS_PATHS, template.unboxAsString());
+  }
+
+  Expression getRenderCssHelper() {
+    return delegate.invoke(GET_RENDER_CSS_HELPER);
   }
 
   Expression getDebugSoyTemplateInfo() {
@@ -141,18 +174,9 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
   }
 
   Expression getDeltemplate(
-      String delCalleeName,
-      Expression variantExpr,
-      boolean allowEmptyDefault,
-      Expression params,
-      Expression ijRecord) {
+      String delCalleeName, Expression variantExpr, boolean allowEmptyDefault) {
     return delegate.invoke(
-        GET_DELTEMPLATE,
-        constant(delCalleeName),
-        variantExpr,
-        constant(allowEmptyDefault),
-        params,
-        ijRecord);
+        GET_DELTEMPLATE, constant(delCalleeName), variantExpr, constant(allowEmptyDefault));
   }
 
   @Override
@@ -164,12 +188,25 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
     return delegate.invoke(GET_SOY_MSG_PARTS, constant(id), defaultParts);
   }
 
+  Expression getSoyMsgPartsWithAlternateId(long id, Expression defaultParts, long alternateId) {
+    return delegate.invoke(
+        GET_SOY_MSG_PARTS_WITH_ALTERNATE_ID, constant(id), defaultParts, constant(alternateId));
+  }
+
   Expression getPrintDirective(String name) {
     return delegate.invoke(GET_PRINT_DIRECTIVE, constant(name));
   }
 
   Expression getEscapingDirectiveAsFunction(String name) {
     return delegate.invoke(GET_ESCAPING_DIRECTIVE_AS_FUNCTION, constant(name));
+  }
+
+  Expression getConst(String name) {
+    return delegate.invoke(GET_CONST, constant(name));
+  }
+
+  Statement storeConst(String name, Expression value) {
+    return delegate.invokeVoid(STORE_CONST, constant(name), value);
   }
 
   SoyExpression applyPrintDirective(SoyPrintDirective directive, SoyExpression value) {
@@ -192,8 +229,35 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
     return value;
   }
 
-  Expression usePrimaryMsg(long msgId, long fallbackId) {
-    return delegate.invoke(USE_PRIMARY_MSG, constant(msgId), constant(fallbackId));
+  Expression usePrimaryMsgIfFallback(long msgId, long fallbackId) {
+    return delegate.invoke(USE_PRIMARY_MSG_IF_FALLBACK, constant(msgId), constant(fallbackId));
+  }
+
+  Expression usePrimaryOrAlternateIfFallback(long msgId, long alternateId, long fallbackId) {
+    return delegate.invoke(
+        USE_PRIMARY_OR_ALTERNATE_IF_FALLBACK,
+        constant(msgId),
+        constant(alternateId),
+        constant(fallbackId));
+  }
+
+  Expression usePrimaryIfFallbackOrFallbackAlternate(
+      long msgId, long fallbackId, long fallbackAlternateId) {
+    return delegate.invoke(
+        USE_PRIMARY_IF_FALLBACK_OR_FALLBACK_ALTERNATE,
+        constant(msgId),
+        constant(fallbackId),
+        constant(fallbackAlternateId));
+  }
+
+  Expression usePrimaryOrAlternateIfFallbackOrFallbackAlternate(
+      long msgId, long alternateId, long fallbackId, long fallbackAlternateId) {
+    return delegate.invoke(
+        USE_PRIMARY_OR_ALTERNATE_IF_FALLBACK_OR_FALLBACK_ALTERNATE,
+        constant(msgId),
+        constant(alternateId),
+        constant(fallbackId),
+        constant(fallbackAlternateId));
   }
 
   public Expression hasLogger() {
@@ -202,5 +266,9 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
 
   public Expression getLogger() {
     return delegate.invoke(GET_LOGGER);
+  }
+
+  public Expression popFrame() {
+    return delegate.invoke(POP_FRAME);
   }
 }

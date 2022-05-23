@@ -20,18 +20,15 @@ import static com.google.common.base.Ascii.toLowerCase;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
-import static com.google.common.collect.Multimaps.asMap;
 
 import com.google.common.base.Ascii;
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Function;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.ListMultimap;
-import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.Sets;
 import com.google.errorprone.annotations.FormatMethod;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.SanitizedContentKind;
@@ -41,11 +38,14 @@ import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
+import com.google.template.soy.soytree.AstEdits;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.CaseOrDefaultNode;
+import com.google.template.soy.soytree.ConstNode;
 import com.google.template.soy.soytree.DebuggerNode;
+import com.google.template.soy.soytree.ExternNode;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.HtmlAttributeNode;
@@ -58,10 +58,10 @@ import com.google.template.soy.soytree.HtmlTagNode;
 import com.google.template.soy.soytree.HtmlTagNode.TagExistence;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfNode;
+import com.google.template.soy.soytree.ImportNode;
 import com.google.template.soy.soytree.KeyNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetValueNode;
-import com.google.template.soy.soytree.LineCommentNode;
 import com.google.template.soy.soytree.LogNode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.MsgNode;
@@ -69,13 +69,13 @@ import com.google.template.soy.soytree.MsgPluralNode;
 import com.google.template.soy.soytree.MsgSelectNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
+import com.google.template.soy.soytree.RawTextNode.Provenance;
 import com.google.template.soy.soytree.SkipNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SoyNode.Kind;
 import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
-import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SwitchCaseNode;
 import com.google.template.soy.soytree.SwitchNode;
@@ -85,10 +85,7 @@ import com.google.template.soy.soytree.VeLogNode;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
@@ -112,8 +109,7 @@ import javax.annotation.Nullable;
  *   <li>Soy has a <code> {literal}...{/literal}</code> command. such commands often contain html
  *       tags so within the grammar we would need to start writing grammar production which match
  *       the contents of literal blocks. This is possible but would require duplicating all the
- *       lexical states for literals. (Also we would need to deal with tags split across literal
- *       blocks e.g. <code><div{literal} a="foo">{/literal}</code>).
+ *       lexical states for literals.
  *   <li>Transitioning between lexical states after seeing a {@code <script>} tag or after parsing a
  *       {@code kind="html"} attributes is complex (And 'semantic lexical transitions' are not
  *       recommended).
@@ -138,6 +134,11 @@ final class HtmlRewriter {
   private static final SoyErrorKind BLOCK_CHANGES_CONTEXT =
       SoyErrorKind.of(
           "{0} changes context from ''{1}'' to ''{2}''.{3}", StyleAllowance.NO_PUNCTUATION);
+
+  private static final SoyErrorKind SPECIAL_TOKEN_NOT_ALLOWED_WITHIN_HTML_TAG =
+      SoyErrorKind.of(
+          "Special tokens are not allowed inside html tags, except for within quoted attribute"
+              + " values.");
 
   private static final SoyErrorKind BLOCK_ENDS_IN_INVALID_STATE =
       SoyErrorKind.of("''{0}'' block ends in an invalid state ''{1}''.");
@@ -189,6 +190,11 @@ final class HtmlRewriter {
           "Found the end of a tag that was started in another block. Html tags should be opened "
               + "and closed in the same block.");
 
+  private static final SoyErrorKind FOUND_END_COMMENT_STARTED_IN_ANOTHER_BLOCK =
+      SoyErrorKind.of(
+          "Found the end of an html comment that was started in another block. Html comments"
+              + " should be opened and closed in the same block.");
+
   private static final SoyErrorKind FOUND_EQ_WITH_ATTRIBUTE_IN_ANOTHER_BLOCK =
       SoyErrorKind.of("Found an ''='' character in a different block than the attribute name.");
 
@@ -230,12 +236,44 @@ final class HtmlRewriter {
       SoyErrorKind.of(
           "'{'velog ...'}' commands can only be used in pcdata context.", StyleAllowance.NO_CAPS);
 
+  private static final SoyErrorKind SUSPICIOUS_PARTIAL_END_TAG_IN_RCDATA =
+      SoyErrorKind.of("Found suspicious partial end tag inside of a {0} tag.");
+
+  private static final SoyErrorKind UNEXPECTED_LITERAL_BEGIN =
+      SoyErrorKind.of("Invalid location for literal start command.");
+
+  private static final SoyErrorKind UNEXPECTED_LITERAL_END =
+      SoyErrorKind.of("Invalid location for literal end command.");
+
+  private static final SoyErrorKind UNEXPECTED_LITERAL_SPAN =
+      SoyErrorKind.of("Literal blocks may not span multiple attribute values.");
+
+  private static final String DISALLOWED_SCRIPT_SEQUENCE_TEXT =
+      "Within script tags, the character sequences ''<script'' and ''<!--'' are disallowed by the"
+          + " HTML spec. Consider adding whitespace or backslashes to break up the sequence. See"
+          + " https://html.spec.whatwg.org/multipage/scripting.html#restrictions-for-contents-of-script-elements"
+          + " for more details.";
+
+  private static final SoyErrorKind DISALLOWED_SCRIPT_SEQUENCE =
+      SoyErrorKind.of(DISALLOWED_SCRIPT_SEQUENCE_TEXT);
+
+  private static final SoyErrorKind DISALLOWED_SCRIPT_SEQUENCE_PREFIX =
+      SoyErrorKind.of(
+          DISALLOWED_SCRIPT_SEQUENCE_TEXT
+              + " Prefixes of"
+              + " these sequences are also disallowed if they appear at the end of a block of"
+              + " text.");
+
   /** Represents features of the parser states. */
   private enum StateFeature {
     /** Means the state is part of an html 'tag' of a node (but not, inside an attribute value). */
     TAG,
     RCDATA,
-    INVALID_END_STATE_FOR_BLOCK;
+    INVALID_END_STATE_FOR_BLOCK,
+    /** Means a literal block may start or stop here. */
+    LITERAL_ALLOWED,
+    /** Means a literal block may start here, in which case it must end before the state changes. */
+    LITERAL_STRICT;
   }
 
   /**
@@ -245,22 +283,22 @@ final class HtmlRewriter {
    * also inspecting {@link #reconcile(State)}.
    */
   private enum State {
-    NONE,
-    PCDATA,
-    RCDATA_SCRIPT(StateFeature.RCDATA),
-    RCDATA_TEXTAREA(StateFeature.RCDATA),
-    RCDATA_TITLE(StateFeature.RCDATA),
-    RCDATA_STYLE(StateFeature.RCDATA),
-    RCDATA_XMP(StateFeature.RCDATA),
-    HTML_COMMENT,
-    CDATA,
+    NONE(StateFeature.LITERAL_ALLOWED),
+    PCDATA(StateFeature.LITERAL_ALLOWED),
+    RCDATA_SCRIPT(StateFeature.RCDATA, StateFeature.LITERAL_ALLOWED),
+    RCDATA_TEXTAREA(StateFeature.RCDATA, StateFeature.LITERAL_ALLOWED),
+    RCDATA_TITLE(StateFeature.RCDATA, StateFeature.LITERAL_ALLOWED),
+    RCDATA_STYLE(StateFeature.RCDATA, StateFeature.LITERAL_ALLOWED),
+    RCDATA_XMP(StateFeature.RCDATA, StateFeature.LITERAL_ALLOWED),
+    HTML_COMMENT(StateFeature.LITERAL_ALLOWED),
+    CDATA(StateFeature.LITERAL_ALLOWED),
     /**
      * <!doctype, <!element, or <?xml> these work like normal tags but don't require attribute
      * values to be matched with attribute names
      */
     XML_DECLARATION,
-    SINGLE_QUOTED_XML_ATTRIBUTE_VALUE,
-    DOUBLE_QUOTED_XML_ATTRIBUTE_VALUE,
+    SINGLE_QUOTED_XML_ATTRIBUTE_VALUE(StateFeature.LITERAL_STRICT),
+    DOUBLE_QUOTED_XML_ATTRIBUTE_VALUE(StateFeature.LITERAL_STRICT),
     HTML_TAG_NAME,
     /**
      * This state is weird - it is for <code>
@@ -275,8 +313,8 @@ final class HtmlRewriter {
      */
     AFTER_ATTRIBUTE_NAME(StateFeature.TAG),
     BEFORE_ATTRIBUTE_VALUE(StateFeature.INVALID_END_STATE_FOR_BLOCK),
-    SINGLE_QUOTED_ATTRIBUTE_VALUE,
-    DOUBLE_QUOTED_ATTRIBUTE_VALUE,
+    SINGLE_QUOTED_ATTRIBUTE_VALUE(StateFeature.LITERAL_STRICT),
+    DOUBLE_QUOTED_ATTRIBUTE_VALUE(StateFeature.LITERAL_STRICT),
     UNQUOTED_ATTRIBUTE_VALUE,
     AFTER_TAG_NAME_OR_ATTRIBUTE(StateFeature.TAG),
     BEFORE_ATTRIBUTE_NAME(StateFeature.TAG),
@@ -291,6 +329,7 @@ final class HtmlRewriter {
         case ATTRIBUTES:
           return BEFORE_ATTRIBUTE_NAME;
         case HTML:
+        case HTML_ELEMENT:
           return PCDATA;
           // You might be thinking that some of these should be RCDATA_STYLE or RCDATA_SCRIPT, but
           // that wouldn't be accurate since rcdata is specific to the context of js on an html page
@@ -383,6 +422,19 @@ final class HtmlRewriter {
       return stateTypes.contains(StateFeature.RCDATA);
     }
 
+    boolean isLegalLiteralBegin() {
+      return stateTypes.contains(StateFeature.LITERAL_ALLOWED)
+          || stateTypes.contains(StateFeature.LITERAL_STRICT);
+    }
+
+    boolean isLegalLiteralEnd() {
+      return isLegalLiteralBegin();
+    }
+
+    boolean requiresFullyNestedLiterals() {
+      return stateTypes.contains(StateFeature.LITERAL_STRICT);
+    }
+
     @Override
     public String toString() {
       return Ascii.toLowerCase(name().replace('_', ' '));
@@ -402,7 +454,7 @@ final class HtmlRewriter {
      * which appears to allow arbitrary Unicode chars after the first char, we only parse ASCII
      * identifier tag names.
      */
-    static final Pattern TAG_NAME = Pattern.compile("[a-z][a-z0-9:-]*", Pattern.CASE_INSENSITIVE);
+    static final Pattern TAG_NAME = Pattern.compile("[a-z][a-z0-9:_-]*", Pattern.CASE_INSENSITIVE);
     /**
      * Regex for allowed attribute names. Intentionally more restrictive than spec:
      * https://html.spec.whatwg.org/multipage/syntax.html#attribute-name-state Allows {@code
@@ -414,7 +466,7 @@ final class HtmlRewriter {
      * numeric, underscore color and dash, ending in alpha, numeric, question or dollar characters.
      */
     static final Pattern ATTRIBUTE_NAME =
-        Pattern.compile("[a-z_$](?:[a-z0-9_:?$\\\\-]*[a-z0-9?$_])?", Pattern.CASE_INSENSITIVE);
+        Pattern.compile("[a-z_$_@](?:[a-z0-9_:?$\\\\-]*[a-z0-9?$_])?", Pattern.CASE_INSENSITIVE);
 
     /**
      * Matches raw text in a tag that isn't a special character or whitespace.
@@ -457,7 +509,7 @@ final class HtmlRewriter {
         CharMatcher.noneOf(">\"'").precomputed();
 
     final IdGenerator nodeIdGen;
-    final String filePath;
+    final SourceFilePath filePath;
     final AstEdits edits = new AstEdits();
     final ErrorReporter errorReporter;
 
@@ -481,7 +533,7 @@ final class HtmlRewriter {
      * @param filePath The current file path
      * @param errorReporter The error reporter
      */
-    Visitor(IdGenerator nodeIdGen, String filePath, ErrorReporter errorReporter) {
+    Visitor(IdGenerator nodeIdGen, SourceFilePath filePath, ErrorReporter errorReporter) {
       this.nodeIdGen = nodeIdGen;
       this.filePath = filePath;
       this.errorReporter = errorReporter;
@@ -510,11 +562,26 @@ final class HtmlRewriter {
      */
     @Override
     protected void visitRawTextNode(RawTextNode node) {
+      maybeThrowNoSpecialTokensAllowedError(node);
       currentRawTextNode = node;
       currentRawText = node.getRawText();
       currentRawTextOffset = 0;
       currentRawTextIndex = 0;
       int prevStartIndex = -1;
+
+      boolean isLiteral = node.getProvenance() == Provenance.LITERAL;
+      boolean watchForLiteralStateChange = false;
+      State originalState = context.getState();
+
+      if (isLiteral) {
+        if (!originalState.isLegalLiteralBegin()) {
+          errorReporter.report(node.getSourceLocation(), UNEXPECTED_LITERAL_BEGIN);
+        } else if (originalState.requiresFullyNestedLiterals()) {
+          // We can start a literal here but we must complete the literal without changing state.
+          watchForLiteralStateChange = true;
+        }
+      }
+
       while (currentRawTextIndex < currentRawText.length()) {
         int startIndex = currentRawTextIndex;
         // if whitespace was trimmed prior to the current character (e.g. leading whitespace)
@@ -526,6 +593,12 @@ final class HtmlRewriter {
         }
         prevStartIndex = startIndex;
         State startState = context.getState();
+
+        if (watchForLiteralStateChange && originalState != startState) {
+          errorReporter.report(node.getSourceLocation(), UNEXPECTED_LITERAL_SPAN);
+          watchForLiteralStateChange = false; // Set to false so that only one error is printed.
+        }
+
         switch (startState) {
           case NONE:
             // no replacements, no parsing, just jump to the end
@@ -610,6 +683,9 @@ final class HtmlRewriter {
       if (currentRawTextIndex != currentRawText.length()) {
         throw new AssertionError("failed to visit all of the raw text");
       }
+      if (isLiteral && !context.getState().isLegalLiteralEnd()) {
+        errorReporter.report(node.getSourceLocation(), UNEXPECTED_LITERAL_END);
+      }
       if (currentRawTextOffset < currentRawTextIndex && currentRawTextOffset != 0) {
         // This handles all the states that just advance to the end without consuming
         // TODO(lukes): maybe this should be an error and all such states will need to consume?
@@ -623,9 +699,83 @@ final class HtmlRewriter {
       // empty raw text nodes won't get visited in the loop above, just delete them here.
       // the parser produces empty raw text nodes to track where whitespace is trimmed.  We take
       // advantage of this in the handleJoinedWhitespace method to tell where unquoted attributes
-      // end.
-      if (currentRawTextNode.isEmpty()) {
+      // end. Keep nodes that represent the "{nil}" command char because the formatter needs to know
+      // about them.
+      if (currentRawTextNode.isEmpty() && !currentRawTextNode.isNilCommandChar()) {
         edits.remove(currentRawTextNode);
+      } else {
+        maybeReparentNilNode(node);
+      }
+    }
+
+    /** Reparents {nil} nodes in states where we've inserted new ast nodes (like HTML_OPEN_TAG). */
+    void maybeReparentNilNode(RawTextNode node) {
+      if (!node.isNilCommandChar()) {
+        return;
+      }
+
+      switch (context.getState()) {
+        case DOUBLE_QUOTED_ATTRIBUTE_VALUE:
+        case SINGLE_QUOTED_ATTRIBUTE_VALUE:
+          context.addAttributeValuePart(node);
+          break;
+        case HTML_COMMENT:
+          context.addCommentChild(node);
+          break;
+        case NONE:
+        case PCDATA:
+        case BEFORE_ATTRIBUTE_VALUE:
+        case AFTER_TAG_NAME_OR_ATTRIBUTE:
+        case BEFORE_ATTRIBUTE_NAME:
+        case UNQUOTED_ATTRIBUTE_VALUE:
+        case AFTER_ATTRIBUTE_NAME:
+        case HTML_TAG_NAME:
+        case RCDATA_STYLE:
+        case RCDATA_TITLE:
+        case RCDATA_XMP:
+        case RCDATA_SCRIPT:
+        case RCDATA_TEXTAREA:
+        case CDATA:
+        case XML_DECLARATION:
+        case DOUBLE_QUOTED_XML_ATTRIBUTE_VALUE:
+        case SINGLE_QUOTED_XML_ATTRIBUTE_VALUE:
+          break;
+      }
+    }
+
+    /**
+     * Throws a "no special tokens allowed within html tags" error, if we're inside an html tag and
+     * NOT within an attribute value.
+     */
+    private void maybeThrowNoSpecialTokensAllowedError(RawTextNode node) {
+      if (!node.isCommandCharacter()) {
+        return;
+      }
+
+      switch (context.getState()) {
+        case AFTER_TAG_NAME_OR_ATTRIBUTE:
+        case AFTER_ATTRIBUTE_NAME:
+        case BEFORE_ATTRIBUTE_NAME:
+        case HTML_TAG_NAME:
+        case BEFORE_ATTRIBUTE_VALUE:
+        case XML_DECLARATION:
+        case UNQUOTED_ATTRIBUTE_VALUE:
+          errorReporter.report(node.getSourceLocation(), SPECIAL_TOKEN_NOT_ALLOWED_WITHIN_HTML_TAG);
+          break;
+        case NONE:
+        case DOUBLE_QUOTED_XML_ATTRIBUTE_VALUE:
+        case SINGLE_QUOTED_XML_ATTRIBUTE_VALUE:
+        case DOUBLE_QUOTED_ATTRIBUTE_VALUE:
+        case SINGLE_QUOTED_ATTRIBUTE_VALUE:
+        case HTML_COMMENT:
+        case PCDATA:
+        case CDATA:
+        case RCDATA_SCRIPT:
+        case RCDATA_STYLE:
+        case RCDATA_TEXTAREA:
+        case RCDATA_TITLE:
+        case RCDATA_XMP:
+          return;
       }
     }
 
@@ -686,11 +836,35 @@ final class HtmlRewriter {
     void handleRcData(TagName.RcDataTagName tagName) {
       boolean foundLt = advanceWhileMatches(NOT_LT);
       if (foundLt) {
-        if (matchPrefixIgnoreCase("</" + tagName, /* advance= */ false)) {
+        String expectedEndTag = "</" + tagName;
+        if (matchPrefixIgnoreCase(expectedEndTag, /* advance= */ false)) {
           // pseudo re-enter pcdata so that we trigger the normal logic for starting a tag
           handlePcData();
         } else {
-          advance();
+          // <script>var x = "</scrip{$foo}"</script>  should be disallowed.
+          if (matchPrefixIgnoreCasePastEnd(expectedEndTag)) {
+            errorReporter.report(
+                currentLocation().extend(currentRawTextNode.getSourceLocation().getEndLocation()),
+                SUSPICIOUS_PARTIAL_END_TAG_IN_RCDATA,
+                tagName.toString());
+          }
+          if (tagName == TagName.RcDataTagName.SCRIPT) {
+            // in scripts we also need to watch out for <!-- since the spec allows it to contain
+            // another <script> but that is typically non-sensical so we just disallow it.
+            // we also need to be concerned about raw text ending in a prefix of this token so that
+            // we don't need to worry about partial sequences being completed in dynamic content.
+            // see
+            // https://html.spec.whatwg.org/multipage/scripting.html#restrictions-for-contents-of-script-elements
+            // TODO(b/144050436): upgrade to error
+            if (matchPrefixIgnoreCase("<!--", /* advance= */ false)) {
+              errorReporter.report(currentLocation(), DISALLOWED_SCRIPT_SEQUENCE);
+            } else if (matchPrefixIgnoreCasePastEnd("<!--")) {
+              errorReporter.report(
+                  currentLocation().extend(currentRawTextNode.getSourceLocation().getEndLocation()),
+                  DISALLOWED_SCRIPT_SEQUENCE_PREFIX);
+            }
+          }
+          advance(); // skip past the '<' character and keep parsing
         }
       }
     }
@@ -703,7 +877,7 @@ final class HtmlRewriter {
     void handleCData() {
       boolean foundBrace = advanceWhileMatches(NOT_RSQUARE_BRACE);
       if (foundBrace) {
-        if (matchPrefix("]]>", true)) {
+        if (matchPrefix("]]>", /* advance=*/ true)) {
           context.setState(State.PCDATA, currentPointOrEnd());
         } else {
           advance();
@@ -718,21 +892,39 @@ final class HtmlRewriter {
      */
     void handleHtmlComment() {
       boolean foundHyphen = advanceWhileMatches(NOT_HYPHEN);
-      // consume all raw text preceding the hyphen (or end)
-      RawTextNode remainingTextNode = consumeAsRawText();
-      if (remainingTextNode != null) {
-        context.addCommentChild(remainingTextNode);
-      }
       if (foundHyphen) {
-        if (matchPrefix("-->", true)) {
-          // Consume the suffix here.
+        if (matchPrefix("-->", /* advance= */ false)) {
+          // consume all raw text preceding the hyphen (or end)
+          RawTextNode remainingTextNode = consumeAsRawText();
+          if (remainingTextNode != null) {
+            context.addCommentChild(remainingTextNode);
+          }
+
+          // Consume the suffix here ("-->"), but keep track of the ">" location.
+          SourceLocation.Point beginEndBracketLocation = currentPoint();
+          advance(2);
           consume();
+          SourceLocation.Point endBracketLocation = currentPoint();
+          advance(1);
+          consume();
+
           // At this point we haven't remove the current raw text node (which contains -->) yet.
           edits.remove(currentRawTextNode);
-          SourceLocation.Point point = currentPointOrEnd();
-          context.setState(context.createHtmlComment(point), point);
+          if (context.hasCommentBegin()) {
+            context.setState(context.createHtmlComment(endBracketLocation), currentPointOrEnd());
+          } else {
+            errorReporter.report(
+                new SourceLocation(filePath, beginEndBracketLocation, endBracketLocation),
+                FOUND_END_COMMENT_STARTED_IN_ANOTHER_BLOCK);
+            throw new AbortParsingBlockError();
+          }
         } else {
           advance();
+        }
+      } else {
+        RawTextNode remainingTextNode = consumeAsRawText();
+        if (remainingTextNode != null) {
+          context.addCommentChild(remainingTextNode);
         }
       }
     }
@@ -767,7 +959,7 @@ final class HtmlRewriter {
       boolean foundQuote = advanceWhileMatches(doubleQuoted ? NOT_DOUBLE_QUOTE : NOT_SINGLE_QUOTE);
       if (foundQuote) {
         advance();
-        context.setState(State.XML_DECLARATION, currentPoint());
+        context.setState(State.XML_DECLARATION, currentPointOrEnd());
       }
     }
 
@@ -829,11 +1021,14 @@ final class HtmlRewriter {
         context.setState(State.PCDATA, currentPointOrEnd());
         return;
       }
-      RawTextNode node = consumeHtmlIdentifier(EXPECTED_TAG_NAME);
+      RawTextNode node =
+          context.isCloseTag
+              ? maybeConsumeHtmlIdentifier()
+              : consumeHtmlIdentifier(EXPECTED_TAG_NAME);
       if (node == null) {
         // consumeHtmlIdentifier will have already reported an error, try to keep going
         context.setTagNameNode(
-            new RawTextNode(nodeIdGen.genId(), "$parse-error$", currentLocation()));
+            new RawTextNode(nodeIdGen.genId(), TagName.WILDCARD, currentLocation()));
       } else {
         validateIdentifier(node, TAG_NAME, BAD_TAG_NAME);
         context.setTagNameNode(node);
@@ -1093,13 +1288,19 @@ final class HtmlRewriter {
      */
     @Nullable
     RawTextNode consumeHtmlIdentifier(SoyErrorKind errorForMissingIdentifier) {
+      RawTextNode node = maybeConsumeHtmlIdentifier();
+      if (node == null) {
+        errorReporter.report(currentLocation(), errorForMissingIdentifier);
+      }
+      return node;
+    }
+
+    @Nullable
+    RawTextNode maybeConsumeHtmlIdentifier() {
       // rather than use a regex to match the prefix, we just consume all non-whitespace/non-meta
       // characters and then validate the text afterwards.
       advanceWhileMatches(TAG_DELIMITER_MATCHER);
       RawTextNode node = consumeAsRawText();
-      if (node == null) {
-        errorReporter.report(currentLocation(), errorForMissingIdentifier);
-      }
       return node;
     }
 
@@ -1208,6 +1409,18 @@ final class HtmlRewriter {
       return false;
     }
 
+    /**
+     * Returns true if the beginning of the input matches the given string ignoring ASCII case. If
+     * the input ends prematurely, we assume that it would continue to match until the end.
+     */
+    boolean matchPrefixIgnoreCasePastEnd(String s) {
+      int charsLeft = currentRawText.length() - currentRawTextIndex;
+      if (s.length() > charsLeft) {
+        s = s.substring(0, charsLeft);
+      }
+      return matchPrefixIgnoreCase(s, /* advance= */ false);
+    }
+
     // scoped blocks, each one of these can enter/exit a new state
     @Override
     protected void visitTemplateNode(TemplateNode node) {
@@ -1222,6 +1435,11 @@ final class HtmlRewriter {
       if (!errorReporter.errorsSince(checkPoint)) {
         edits.apply();
       }
+    }
+
+    @Override
+    protected void visitConstNode(ConstNode node) {
+      // do nothing
     }
 
     @Override
@@ -1251,12 +1469,6 @@ final class HtmlRewriter {
     }
 
     @Override
-    protected void visitLineCommentNode(LineCommentNode node) {
-      processNonPrintableNode(
-          node); // otherwise InferenceEngine is unable to correctly infer escaping mode.
-    }
-
-    @Override
     protected void visitCallParamContentNode(CallParamContentNode node) {
       visitScopedBlock(node.getContentKind(), node, "param");
     }
@@ -1278,7 +1490,7 @@ final class HtmlRewriter {
     protected void visitCallNode(CallNode node) {
       // save/restore the inMsgNode flag to handle call params inside of msg noes.
       // consider
-      // {msg desc="foo"}YYY{call .foo}{param p}ZZZ{/param}{/call}{/msg}
+      // {msg desc="foo"}YYY{call foo}{param p}ZZZ{/param}{/call}{/msg}
       // YYY is inside a msg node but ZZZ is not.
       boolean oldInMsgNode = this.inMsgNode;
       this.inMsgNode = false;
@@ -1404,20 +1616,16 @@ final class HtmlRewriter {
           context.addTagChild(node);
           break;
         case BEFORE_ATTRIBUTE_VALUE:
-          if (node.getKind() != Kind.LINE_COMMENT_NODE) {
-            errorReporter.report(
-                node.getSourceLocation(),
-                INVALID_LOCATION_FOR_NONPRINTABLE,
-                "move it before the start of the tag or after the tag name");
-          }
+          errorReporter.report(
+              node.getSourceLocation(),
+              INVALID_LOCATION_FOR_NONPRINTABLE,
+              "move it before the start of the tag or after the tag name");
           break;
         case HTML_TAG_NAME:
-          if (node.getKind() != Kind.LINE_COMMENT_NODE) {
-            errorReporter.report(
-                node.getSourceLocation(),
-                INVALID_LOCATION_FOR_NONPRINTABLE,
-                "it creates ambiguity with an unquoted attribute value");
-          }
+          errorReporter.report(
+              node.getSourceLocation(),
+              INVALID_LOCATION_FOR_NONPRINTABLE,
+              "it creates ambiguity with an unquoted attribute value");
           break;
         case UNQUOTED_ATTRIBUTE_VALUE:
         case DOUBLE_QUOTED_ATTRIBUTE_VALUE:
@@ -1505,6 +1713,12 @@ final class HtmlRewriter {
     protected void visitSoyFileNode(SoyFileNode node) {
       visitChildren(node);
     }
+
+    @Override
+    protected void visitImportNode(ImportNode node) {}
+
+    @Override
+    protected void visitExternNode(ExternNode node) {}
 
     @Override
     protected void visitSoyNode(SoyNode node) {
@@ -1824,90 +2038,6 @@ final class HtmlRewriter {
   }
 
   /**
-   * A class to record all the edits to the AST we need to make.
-   *
-   * <p>Instead of editing the AST as we go, we record the edits and wait until the end, this makes
-   * a few things easier.
-   *
-   * <ul>
-   *   <li>we don't have to worry about editing nodes while visiting them
-   *   <li>we can easily avoid making any edits if errors were recorded.
-   *       <p>This is encapsulated in its own class so we can easily pass it around and to provide
-   *       some encapsulation.
-   * </ul>
-   */
-  private static final class AstEdits {
-    final Set<StandaloneNode> toRemove = new LinkedHashSet<>();
-    final ListMultimap<StandaloneNode, StandaloneNode> replacements =
-        MultimapBuilder.linkedHashKeys().arrayListValues().build();
-    final ListMultimap<ParentSoyNode<StandaloneNode>, StandaloneNode> newChildren =
-        MultimapBuilder.linkedHashKeys().arrayListValues().build();
-
-    /** Apply all edits. */
-    void apply() {
-      for (StandaloneNode nodeToRemove : toRemove) {
-        ParentSoyNode<StandaloneNode> parent = nodeToRemove.getParent();
-        int index = parent.getChildIndex(nodeToRemove);
-        // NOTE:  we need to remove the child before adding the new children  to handle the case
-        // where we are doing a no-op replacement or the replacement nodes contains nodeToRemove.
-        // no-op replacements can occur when there are pcdata sections that contain no tags
-        parent.removeChild(index);
-        List<StandaloneNode> children = replacements.get(nodeToRemove);
-        if (!children.isEmpty()) {
-          parent.addChildren(index, children);
-        }
-      }
-      for (Map.Entry<ParentSoyNode<StandaloneNode>, List<StandaloneNode>> entry :
-          asMap(newChildren).entrySet()) {
-        entry.getKey().addChildren(entry.getValue());
-      }
-      clear();
-    }
-
-    /** Mark a node for removal. */
-    void remove(StandaloneNode node) {
-      checkNotNull(node);
-      // only record this if the node is actually in the tree already.  Sometimes we call remove
-      // on new nodes that don't have parents yet.
-      if (node.getParent() != null) {
-        toRemove.add(node);
-      }
-    }
-
-    /** Add children to the given parent. */
-    void addChildren(ParentSoyNode<StandaloneNode> parent, Iterable<StandaloneNode> children) {
-      checkNotNull(parent);
-      newChildren.putAll(parent, children);
-    }
-
-    /** Adds the child to the given parent. */
-    void addChild(ParentSoyNode<StandaloneNode> parent, StandaloneNode child) {
-      checkNotNull(parent);
-      checkNotNull(child);
-      newChildren.put(parent, child);
-    }
-
-    /** Replace a given node with the new nodes. */
-    void replace(StandaloneNode oldNode, Iterable<StandaloneNode> newNodes) {
-      checkState(oldNode.getParent() != null, "oldNode must be in the tree in order to replace it");
-      remove(oldNode);
-      replacements.putAll(oldNode, newNodes);
-    }
-
-    /** Replace a given node with the new node. */
-    void replace(StandaloneNode oldNode, StandaloneNode newNode) {
-      replace(oldNode, ImmutableList.of(newNode));
-    }
-
-    /** Clear all the edits. */
-    void clear() {
-      toRemove.clear();
-      replacements.clear();
-      newChildren.clear();
-    }
-  }
-
-  /**
    * Parsing context records the current {@link State} as well as all the extra information needed
    * to produce our new nodes.
    *
@@ -1945,7 +2075,7 @@ final class HtmlRewriter {
   private static final class ParsingContext {
     final String blockName;
     final State startingState;
-    final String filePath;
+    final SourceFilePath filePath;
     final IdGenerator nodeIdGen;
     final ErrorReporter errorReporter;
     final AstEdits edits;
@@ -1992,7 +2122,7 @@ final class HtmlRewriter {
         String blockName,
         State startingState,
         SourceLocation.Point startPoint,
-        String filePath,
+        SourceFilePath filePath,
         AstEdits edits,
         ErrorReporter errorReporter,
         IdGenerator nodeIdGen) {
@@ -2048,6 +2178,10 @@ final class HtmlRewriter {
 
     boolean hasTagStart() {
       return tagStartNode != null && tagStartPoint != null;
+    }
+
+    boolean hasCommentBegin() {
+      return commentStartPoint != null && commentStartNode != null;
     }
 
     /** Sets the given node as a direct child of the tag currently being built. */
@@ -2396,9 +2530,8 @@ final class HtmlRewriter {
           return State.RCDATA_TITLE;
         case XMP:
           return State.RCDATA_XMP;
-        default:
-          throw new AssertionError(tagName.getRcDataTagName());
       }
+      throw new AssertionError(tagName.getRcDataTagName());
     }
 
     void maybeFinishPendingAttribute(SourceLocation.Point currentPoint) {

@@ -23,22 +23,19 @@ import static com.google.template.soy.jbcsrc.restricted.SoyExpression.forList;
 import static com.google.template.soy.jbcsrc.restricted.SoyExpression.forString;
 import static com.google.template.soy.jbcsrc.restricted.testing.ExpressionSubject.assertThatExpression;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.internal.ListImpl;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
-import com.google.template.soy.data.restricted.SoyString;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jbcsrc.restricted.Expression.Feature;
 import com.google.template.soy.jbcsrc.runtime.JbcSrcRuntime;
-import com.google.template.soy.testing.Proto3Message;
+import com.google.template.soy.testing3.Proto3Message;
 import com.google.template.soy.types.AnyType;
 import com.google.template.soy.types.FloatType;
 import com.google.template.soy.types.IntType;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.SoyProtoType;
-import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.UnknownType;
 import java.util.List;
@@ -157,7 +154,7 @@ public class SoyExpressionTest {
   // invoke a StringData method next we will get a verification error.
   @Test
   public void testBoxNullable() {
-    MethodRef stringDataGetValue = MethodRef.create(SoyString.class, "stringValue");
+    MethodRef stringDataGetValue = MethodRef.create(StringData.class, "stringValue");
     SoyExpression nullableString = SoyExpression.forString(constant("hello").asNullable());
     assertThatExpression(nullableString).evaluatesTo("hello");
     assertThatExpression(nullableString.box().invoke(stringDataGetValue)).evaluatesTo("hello");
@@ -219,8 +216,7 @@ public class SoyExpressionTest {
 
     SoyExpression secretNullProto =
         SoyExpression.forSoyValue(
-            new SoyProtoType(
-                new SoyTypeRegistry(), Proto3Message.getDescriptor(), ImmutableSet.of()),
+            SoyProtoType.newForTest(Proto3Message.getDescriptor()),
             new Expression(BytecodeUtils.SOY_PROTO_VALUE_TYPE, Feature.NON_NULLABLE) {
               @Override
               protected void doGen(CodeBuilder cb) {
@@ -229,5 +225,56 @@ public class SoyExpressionTest {
             });
     assertThatExpression(secretNullProto.unboxAsMessage())
         .throwsException(NullPointerException.class);
+  }
+
+  @Test
+  public void testCoerceToBoolean_strings() {
+    assertThatExpression(SoyExpression.forString(constant("foo")).coerceToBoolean())
+        .evaluatesTo(true);
+    assertThatExpression(SoyExpression.forString(constant("")).coerceToBoolean())
+        .evaluatesTo(false);
+  }
+
+  @Test
+  public void testCoerceToBoolean_nullableStrings() {
+    assertThatExpression(SoyExpression.forString(constant("foo")).asNullable().coerceToBoolean())
+        .evaluatesTo(true);
+    assertThatExpression(SoyExpression.forString(constant("")).asNullable().coerceToBoolean())
+        .evaluatesTo(false);
+    assertThatExpression(SoyExpression.forString(constantNull(STRING_TYPE)).coerceToBoolean())
+        .evaluatesTo(false);
+  }
+
+  @Test
+  public void testCoerceToBoolean_boxed() {
+    assertThatExpression(SoyExpression.forString(constant("foo")).box().coerceToBoolean())
+        .evaluatesTo(true);
+    assertThatExpression(SoyExpression.forString(constant("")).box().coerceToBoolean())
+        .evaluatesTo(false);
+  }
+
+  @Test
+  public void testCoerceToBoolean_nullableBoxed() {
+    assertThatExpression(
+            SoyExpression.forString(constant("foo")).box().asNullable().coerceToBoolean())
+        .evaluatesTo(true);
+    assertThatExpression(SoyExpression.forString(constant("")).box().asNullable().coerceToBoolean())
+        .evaluatesTo(false);
+    assertThatExpression(SoyExpression.forString(constantNull(STRING_TYPE)).box().coerceToBoolean())
+        .evaluatesTo(false);
+  }
+
+  @Test
+  public void testCoerceToBoolean_primitives_int() {
+    assertThatExpression(SoyExpression.forInt(constant(1L)).coerceToBoolean()).evaluatesTo(true);
+    assertThatExpression(SoyExpression.forInt(constant(0L)).coerceToBoolean()).evaluatesTo(false);
+  }
+
+  @Test
+  public void testCoerceToBoolean_primitives_float() {
+    assertThatExpression(SoyExpression.forFloat(constant(1D)).coerceToBoolean()).evaluatesTo(true);
+    assertThatExpression(SoyExpression.forFloat(constant(0D)).coerceToBoolean()).evaluatesTo(false);
+    assertThatExpression(SoyExpression.forFloat(constant(Double.NaN)).coerceToBoolean())
+        .evaluatesTo(false);
   }
 }

@@ -17,8 +17,11 @@
 package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
+import com.google.auto.value.extension.memoized.Memoized;
 import com.google.common.collect.ImmutableSet;
+import com.google.errorprone.annotations.ForOverride;
 import com.google.errorprone.annotations.Immutable;
+import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
 /** Represents a variable declaration. */
@@ -29,10 +32,12 @@ public abstract class VariableDeclaration extends Statement {
   public static Builder builder(String name) {
     return new AutoValue_VariableDeclaration.Builder()
         .setVarName(name)
-        .setGoogRequires(ImmutableSet.of());
+        .setGoogRequires(ImmutableSet.of())
+        // All variables should be const by default
+        .setIsMutable(false);
   }
 
-  abstract String varName();
+  public abstract String varName();
 
   @Nullable
   abstract Expression rhs();
@@ -41,6 +46,8 @@ public abstract class VariableDeclaration extends Statement {
   abstract JsDoc jsDoc();
 
   abstract ImmutableSet<GoogRequire> googRequires();
+
+  abstract boolean isMutable();
 
   /** Returns an {@link Expression} representing a reference to this declared variable. */
   public Expression ref() {
@@ -70,7 +77,8 @@ public abstract class VariableDeclaration extends Statement {
     if (jsDoc() != null) {
       ctx.append(jsDoc()).endLine();
     }
-    ctx.append("var ").append(varName());
+    // variables without initializing expressions cannot be const
+    ctx.append((isMutable() || rhs() == null) ? "let " : "const ").append(varName());
     if (rhs() != null) {
       ctx.append(" = ").appendOutputExpression(rhs());
     }
@@ -78,16 +86,28 @@ public abstract class VariableDeclaration extends Statement {
   }
 
   @Override
-  public void collectRequires(RequiresCollector collector) {
-    for (GoogRequire require : googRequires()) {
-      collector.add(require);
+  public void collectRequires(Consumer<GoogRequire> collector) {
+    for (GoogRequire require : allRequires()) {
+      collector.accept(require);
     }
+  }
+
+  // A cache of all the transitive requires.  Necessary because every time we traverse a variable
+  // reference we collect requires from the declaration.  This means collectRequires will be called
+  // once per reference instead of once per declaration which can lead to exponential behavior.
+  // Use an array so our caller doesn't have to deal with allocating epic amounts of iterators.
+  @ForOverride
+  @Memoized
+  GoogRequire[] allRequires() {
+    ImmutableSet.Builder<GoogRequire> requiresBuilder =
+        ImmutableSet.<GoogRequire>builder().addAll(googRequires());
     if (rhs() != null) {
-      rhs().collectRequires(collector);
+      rhs().collectRequires(requiresBuilder::add);
     }
     if (jsDoc() != null) {
-      jsDoc().collectRequires(collector);
+      jsDoc().collectRequires(requiresBuilder::add);
     }
+    return requiresBuilder.build().toArray(new GoogRequire[0]);
   }
 
   /** A builder for a {@link VariableDeclaration}. */
@@ -105,6 +125,12 @@ public abstract class VariableDeclaration extends Statement {
     }
 
     abstract Builder setGoogRequires(ImmutableSet<GoogRequire> requires);
+
+    public final Builder setMutable() {
+      return setIsMutable(true);
+    }
+
+    abstract Builder setIsMutable(boolean isConst);
 
     public abstract VariableDeclaration build();
   }

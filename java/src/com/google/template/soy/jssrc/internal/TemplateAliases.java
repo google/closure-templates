@@ -26,4 +26,7 @@ public interface TemplateAliases {
    * @return The variable that should be used when referring to the template.
    */
   String get(String fullyQualifiedName);
+
+  /** Returns the symbol that should be used as an alias for the soy template namespace. */
+  String getNamespaceAlias(String namespace);
 }

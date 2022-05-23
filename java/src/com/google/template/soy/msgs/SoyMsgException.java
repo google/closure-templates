@@ -18,7 +18,6 @@ package com.google.template.soy.msgs;
 
 /**
  * Exception for errors related to messages/translation.
- *
  */
 public class SoyMsgException extends RuntimeException {
 

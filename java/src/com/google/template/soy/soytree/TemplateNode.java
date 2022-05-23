@@ -17,26 +17,37 @@
 package com.google.template.soy.soytree;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.SanitizedContentKind;
+import com.google.template.soy.base.internal.TemplateContentKind;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.exprtree.AbstractVarDefn;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.exprtree.VarDefn;
+import com.google.template.soy.soytree.CommandTagAttribute.CommandTagAttributesHolder;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
+import com.google.template.soy.soytree.defn.AttrParam;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
+import com.google.template.soy.templatecall.TemplateCallMetadata;
+import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.TemplateImportType;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.annotation.Nullable;
@@ -45,10 +56,9 @@ import javax.annotation.Nullable;
  * Node representing a template.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public abstract class TemplateNode extends AbstractBlockCommandNode
-    implements RenderUnitNode, ExprHolderNode {
+    implements RenderUnitNode, ExprHolderNode, CommandTagAttributesHolder {
 
   /** Priority for delegate templates. */
   public enum Priority {
@@ -103,7 +113,13 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     /** Map from aliases to namespaces for this file. */
     private final ImmutableList<AliasDeclaration> aliasDeclarations;
 
-    @Nullable private final String delPackageName;
+    /**
+     * The names of all import symbols that can be referenced, (e.g. "foo" and "myBar" in: "import
+     * {foo, bar as myBar} from ...").
+     */
+    private final ImmutableList<String> importSymbols;
+
+    @Nullable private final DelPackageDeclaration delPackage;
     private final Priority priority;
     @Nullable private final String namespace;
 
@@ -111,45 +127,52 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
 
     public SoyFileHeaderInfo(
         ErrorReporter errorReporter,
-        @Nullable Identifier delpackageName,
+        @Nullable DelPackageDeclaration delPackage,
         NamespaceDeclaration namespaceDeclaration,
-        Collection<AliasDeclaration> aliases) {
+        Collection<AliasDeclaration> aliases,
+        Collection<String> importSymbols) {
       this(
-          delpackageName == null ? null : delpackageName.identifier(),
+          delPackage,
           namespaceDeclaration.getNamespace(),
           createAliasMap(errorReporter, namespaceDeclaration, aliases),
-          ImmutableList.copyOf(aliases));
+          ImmutableList.copyOf(aliases),
+          ImmutableList.copyOf(importSymbols));
     }
 
     @VisibleForTesting
     public SoyFileHeaderInfo(String namespace) {
-      this(null, namespace, ImmutableMap.of(), ImmutableList.of());
+      this(null, namespace, ImmutableMap.of(), ImmutableList.of(), ImmutableList.of());
     }
 
     private SoyFileHeaderInfo(
-        @Nullable String delPackageName,
+        @Nullable DelPackageDeclaration delPackage,
         String namespace,
         ImmutableMap<String, String> aliasToNamespaceMap,
-        ImmutableList<AliasDeclaration> aliasDeclarations) {
-      this.delPackageName = delPackageName;
-      this.priority = (delPackageName == null) ? Priority.STANDARD : Priority.HIGH_PRIORITY;
+        ImmutableList<AliasDeclaration> aliasDeclarations,
+        ImmutableList<String> importSymbols) {
+      this.delPackage = delPackage;
+      this.priority = (delPackage == null) ? Priority.STANDARD : Priority.HIGH_PRIORITY;
       this.namespace = namespace;
       this.aliasToNamespaceMap = aliasToNamespaceMap;
       this.aliasDeclarations = aliasDeclarations;
+      this.importSymbols = importSymbols;
       this.usedAliases = new HashSet<>();
     }
 
     private SoyFileHeaderInfo(SoyFileHeaderInfo orig) {
-      this.delPackageName = orig.delPackageName;
+      this.delPackage = orig.delPackage;
       this.priority = orig.priority;
       this.namespace = orig.namespace;
       this.aliasToNamespaceMap = orig.aliasToNamespaceMap;
       this.aliasDeclarations = orig.aliasDeclarations;
+      this.importSymbols = orig.importSymbols;
       this.usedAliases = new HashSet<>(orig.usedAliases);
     }
 
     /** Resolves an potentially-aliased name against the aliases in this file. */
-    public String resolveAlias(String fullName) {
+    public Identifier resolveAlias(Identifier identifier) {
+      String fullName = identifier.identifier();
+      SourceLocation sourceLocation = identifier.location();
       String firstIdent;
       String remainder;
       int i = fullName.indexOf('.');
@@ -161,11 +184,17 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
         remainder = "";
       }
 
+      // If this references an import, don't try to resolve as an alias.
+      if (importSymbols.contains(firstIdent)) {
+        return identifier;
+      }
+
       String alias = aliasToNamespaceMap.get(firstIdent);
       if (alias != null) {
         usedAliases.add(firstIdent);
+        return Identifier.create(alias + remainder, fullName, sourceLocation);
       }
-      return alias == null ? fullName : alias + remainder;
+      return identifier;
     }
 
     public boolean hasAlias(String alias) {
@@ -181,7 +210,11 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     }
 
     public String getDelPackageName() {
-      return delPackageName;
+      return delPackage == null ? null : delPackage.name().identifier();
+    }
+
+    public DelPackageDeclaration getDelPackage() {
+      return delPackage;
     }
 
     public ImmutableList<AliasDeclaration> getAliases() {
@@ -233,7 +266,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
   private final String templateName;
 
   /** This template's partial name. */
-  private final String partialTemplateName;
+  private final Identifier partialTemplateName;
 
   /** Visibility of this template. */
   private final Visibility visibility;
@@ -242,7 +275,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
   private final WhitespaceMode whitespaceMode;
 
   /** Strict mode context. Nonnull. */
-  private final SanitizedContentKind contentKind;
+  private final TemplateContentKind contentKind;
 
   /** Required CSS namespaces. */
   private final ImmutableList<String> requiredCssNamespaces;
@@ -262,12 +295,28 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
   /** Additional metadata for serialization and verification across templates. */
   private HtmlElementMetadataP templateMetadata = null;
 
+  /** Serialized container for template calls, used for template traversal. */
+  private TemplateCallMetadata.Template templateCallMetadata = null;
+
   // TODO(b/19406885): Remove.
   private final String commandText;
 
   private final SourceLocation openTagLocation;
 
   private ImmutableList<TemplateHeaderVarDefn> headerParams;
+
+  /** Used for formatting */
+  private final List<CommandTagAttribute> attributes;
+
+  // The presence of this means that we have annotated the template with {@attribute *}.
+  private final SourceLocation allowExtraAttributesLoc;
+
+  private ImmutableSet<String> reservedAttributes;
+
+  private final boolean component;
+
+  // Lazy init.
+  private TemplateVarDefn varDefn;
 
   /**
    * Main constructor. This is package-private because Template*Node instances should be built using
@@ -285,7 +334,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
       SoyFileHeaderInfo soyFileHeaderInfo,
       Visibility visibility,
       ImmutableList<TemplateHeaderVarDefn> params) {
-    super(nodeBuilder.getId(), nodeBuilder.sourceLocation, cmdName);
+    super(nodeBuilder.getId(), nodeBuilder.sourceLocation, nodeBuilder.openTagLocation, cmdName);
     checkNotNull(params);
     this.headerParams = params == null ? ImmutableList.of() : params;
     this.soyFileHeaderInfo = soyFileHeaderInfo;
@@ -301,6 +350,10 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     this.strictHtml = computeStrictHtmlMode(nodeBuilder.getStrictHtmlDisabled());
     this.commandText = nodeBuilder.getCmdText().trim();
     this.openTagLocation = nodeBuilder.openTagLocation;
+    this.attributes = nodeBuilder.getAttributes();
+    this.allowExtraAttributesLoc = nodeBuilder.allowExtraAttributesLoc;
+    this.reservedAttributes = ImmutableSet.of();
+    this.component = nodeBuilder.getComponent();
   }
 
   /**
@@ -324,6 +377,17 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     this.strictHtml = orig.strictHtml;
     this.commandText = orig.commandText;
     this.openTagLocation = orig.openTagLocation;
+    this.templateMetadata = orig.templateMetadata;
+    this.templateCallMetadata = orig.templateCallMetadata;
+    this.attributes =
+        orig.attributes.stream().map(c -> c.copy(copyState)).collect(toImmutableList());
+    this.allowExtraAttributesLoc = orig.allowExtraAttributesLoc;
+    this.reservedAttributes = orig.reservedAttributes;
+    this.component = orig.component;
+    if (orig.varDefn != null) {
+      this.asVarDefn();
+      copyState.updateRefs(orig.varDefn, this.varDefn);
+    }
   }
 
   private static ImmutableList<TemplateHeaderVarDefn> copyParams(
@@ -344,7 +408,28 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
 
   /** Returns the name of the containing delegate package, or null if none. */
   public String getDelPackageName() {
-    return soyFileHeaderInfo.delPackageName;
+    return soyFileHeaderInfo.getDelPackageName();
+  }
+
+  @Override
+  public List<CommandTagAttribute> getAttributes() {
+    return attributes;
+  }
+
+  public boolean getAllowExtraAttributes() {
+    return allowExtraAttributesLoc != null;
+  }
+
+  public SourceLocation getAllowExtraAttributesLoc() {
+    return allowExtraAttributesLoc;
+  }
+
+  public ImmutableSet<String> getReservedAttributes() {
+    return reservedAttributes;
+  }
+
+  public void setReservedAttributes(ImmutableSet<String> reservedAttributes) {
+    this.reservedAttributes = reservedAttributes;
   }
 
   /** Returns a template name suitable for display in user msgs. */
@@ -355,6 +440,15 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     return templateName;
   }
 
+  public boolean getComponent() {
+    return component;
+  }
+
+  /** Returns the source location of the template's name (e.g. "foo" in "{template foo}". */
+  public SourceLocation getTemplateNameLocation() {
+    return partialTemplateName.location();
+  }
+
   /**
    * This exists as part of the work in DesugarStateNodesPass to downlevel @state to @let. As part
    * of that, all state nodes should be cleared.
@@ -363,12 +457,18 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     this.headerParams =
         this.headerParams.stream()
             .filter(p -> !(p instanceof TemplateStateVar))
-            .collect(ImmutableList.toImmutableList());
+            .collect(toImmutableList());
   }
 
   /** Returns this template's partial name. */
   public String getPartialTemplateName() {
-    return partialTemplateName;
+    return partialTemplateName.identifier();
+  }
+
+  /** Returns this template's partial name, with any leading dot removed. */
+  public String getLocalTemplateSymbol() {
+    String s = partialTemplateName.identifier();
+    return s != null && s.startsWith(".") ? s.substring(1) : s;
   }
 
   /** Returns the visibility of this template. */
@@ -377,6 +477,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
   }
 
   /** The location of the {(del)template ...} */
+  @Override
   public SourceLocation getOpenTagLocation() {
     return this.openTagLocation;
   }
@@ -389,6 +490,8 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
   private String getDeclName(TemplateHeaderVarDefn headerVar) {
     if (headerVar instanceof TemplateStateVar) {
       return "@state";
+    } else if (headerVar instanceof AttrParam) {
+      return "@attribute";
     } else if (headerVar.isInjected()) {
       return "@inject";
     } else {
@@ -400,7 +503,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     if (strictHtmlDisabled) {
       // Use the value that is explicitly set in template.
       return false;
-    } else if (contentKind != SanitizedContentKind.HTML) {
+    } else if (!contentKind.getSanitizedContentKind().isHtml()) {
       // Non-HTML templates couldn't be strictHtml.
       return false;
     } else {
@@ -417,6 +520,11 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
   /** Returns the content kind for strict autoescaping. */
   @Override
   public SanitizedContentKind getContentKind() {
+    return contentKind.getSanitizedContentKind();
+  }
+
+  /** Returns the template's content kind (e.g. "attributes", "element", "html", etc). */
+  public TemplateContentKind getTemplateContentKind() {
     return contentKind;
   }
 
@@ -478,8 +586,16 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     this.templateMetadata = metadata;
   }
 
+  public void addTemplateCallMetadata(TemplateCallMetadata.Template callMetadata) {
+    this.templateCallMetadata = callMetadata;
+  }
+
   public HtmlElementMetadataP getHtmlElementMetadata() {
     return templateMetadata;
+  }
+
+  public TemplateCallMetadata.Template getTemplateCallMetadata() {
+    return templateCallMetadata;
   }
 
   /** Returns the injected params from template header. */
@@ -494,7 +610,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
   }
 
   /** Returns all params from template header, both regular and injected. */
-  public Iterable<TemplateParam> getAllParams() {
+  public ImmutableList<TemplateParam> getAllParams() {
     ImmutableList.Builder<TemplateParam> builder = ImmutableList.builder();
     for (TemplateHeaderVarDefn header : this.getHeaderParams()) {
       if (header instanceof TemplateParam) {
@@ -523,12 +639,17 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
         exprs.add(defaultValue);
       }
     }
+    for (CommandTagAttribute attribute : attributes) {
+      if (attribute.hasExprValue()) {
+        exprs.addAll(attribute.valueAsExprList());
+      }
+    }
     return exprs.build();
   }
 
-  public void addCspNonceParam(TemplateParam cspNonce) {
+  public void addParam(TemplateParam param) {
     headerParams =
-        ImmutableList.<TemplateHeaderVarDefn>builder().addAll(headerParams).add(cspNonce).build();
+        ImmutableList.<TemplateHeaderVarDefn>builder().addAll(headerParams).add(param).build();
   }
 
   public ImmutableList<TemplateHeaderVarDefn> getHeaderParams() {
@@ -601,8 +722,35 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
         /* declaringClass= */ soyFileHeaderInfo.namespace,
         // The partial template name begins with a '.' that causes the stack trace element to
         // print "namespace..templateName" otherwise.
-        /* methodName= */ partialTemplateName.substring(1),
+        /* methodName= */ getLocalTemplateSymbol(),
         srcLocation.getFileName(),
         srcLocation.getBeginLine());
+  }
+
+  public VarDefn asVarDefn() {
+    TemplateVarDefn tmp = varDefn;
+    if (tmp == null) {
+      TemplateImportType importType = TemplateImportType.create(getTemplateName());
+      tmp = new TemplateVarDefn(getLocalTemplateSymbol(), getTemplateNameLocation(), importType);
+      varDefn = tmp;
+    }
+    return tmp;
+  }
+
+  private static class TemplateVarDefn extends AbstractVarDefn {
+    public TemplateVarDefn(
+        String name, @Nullable SourceLocation nameLocation, @Nullable SoyType type) {
+      super(name, nameLocation, type);
+    }
+
+    @Override
+    public Kind kind() {
+      return Kind.TEMPLATE;
+    }
+
+    @Override
+    public boolean isInjected() {
+      return false;
+    }
   }
 }

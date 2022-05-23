@@ -34,7 +34,6 @@ import org.kohsuke.args4j.Option;
  *
  * <p>The command-line arguments should contain command-line flags and the list of paths to the Soy
  * files.
- *
  */
 public final class SoyParseInfoGenerator extends AbstractSoyCompiler {
 
@@ -45,17 +44,6 @@ public final class SoyParseInfoGenerator extends AbstractSoyCompiler {
               + " (FooTemplates.java). If false, generates the old FooSoyInfo.java files"
               + " instead.")
   private boolean generateInvocationBuilders = false;
-
-  @Option(
-      name = "--allowExternalCalls",
-      usage =
-          "Whether to allow external calls. New projects should set this to false, and existing"
-              + " projects should remove existing external calls and then set this to false. It"
-              + " will save you a lot of headaches.  For the new java invocation builders (i.e. if"
-              + "  --generateInvocationBuilders is true), this flag will be ignored and external"
-              + " calls will NOT be allowed. For *SoyInfo files, this currently defaults to true"
-              + " for backward compatibility. ")
-  private boolean allowExternalCalls = true;
 
   @Option(
       name = "--outputDirectory",
@@ -113,7 +101,7 @@ public final class SoyParseInfoGenerator extends AbstractSoyCompiler {
   }
 
   @Override
-  void validateFlags() {
+  protected void validateFlags() {
     // Java package is always required.
     if (javaPackage.length() == 0) {
       exitWithError("Must provide Java package.");
@@ -130,8 +118,6 @@ public final class SoyParseInfoGenerator extends AbstractSoyCompiler {
 
   @Override
   protected void compile(SoyFileSet.Builder sfsBuilder) throws IOException {
-    sfsBuilder.setAllowExternalCalls(allowExternalCalls);
-
     SoyFileSet sfs = sfsBuilder.build();
 
     ImmutableList<GeneratedFile> genFiles =

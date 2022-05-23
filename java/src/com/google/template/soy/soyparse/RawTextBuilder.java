@@ -19,7 +19,10 @@ package com.google.template.soy.soyparse;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.google.template.soy.base.SourceFilePath;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.soytree.CommandChar;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.RawTextNode.SourceOffsets;
 import com.google.template.soy.soytree.RawTextNode.SourceOffsets.Reason;
@@ -57,7 +60,7 @@ final class RawTextBuilder {
 
   private final RawTextNode.SourceOffsets.Builder offsets = new RawTextNode.SourceOffsets.Builder();
   private final StringBuilder buffer = new StringBuilder();
-  private final String fileName;
+  private final SourceFilePath fileName;
   private final IdGenerator nodeIdGen;
   private final WhitespaceMode whitespaceMode;
 
@@ -82,7 +85,7 @@ final class RawTextBuilder {
    * @param nodeIdGen An object that generates Ids for new tokens.
    * @param whitespaceMode Indicates how to handle whitespace in the output.
    */
-  RawTextBuilder(String fileName, IdGenerator nodeIdGen, WhitespaceMode whitespaceMode) {
+  RawTextBuilder(SourceFilePath fileName, IdGenerator nodeIdGen, WhitespaceMode whitespaceMode) {
     this.fileName = checkNotNull(fileName);
     this.nodeIdGen = checkNotNull(nodeIdGen);
     this.whitespaceMode = checkNotNull(whitespaceMode);
@@ -117,45 +120,41 @@ final class RawTextBuilder {
   }
 
   /** Add the content for a '{literal}...{/literal}' section. */
-  void addLiteral(Token literalContent) {
+  RawTextNode buildLiteral(Token literalContent, SourceLocation location) {
     checkArgument(literalContent.kind == SoyFileParserConstants.LITERAL_RAW_TEXT_CONTENT);
-
-    maybeFinishBasic();
-    // Note: the LITERAL_RAW_TEXT_CONTENT already has the correct image content (it matches the
-    // closing {/literal} but excludes the actual closing tag).
-    if (!literalContent.image.isEmpty()) {
-      append(literalContent, literalContent.image);
-    }
-    discontinuityReason = Reason.LITERAL;
+    return RawTextNode.newLiteral(nodeIdGen.genId(), literalContent.image, location);
   }
 
-  /** Add the content for a 'textual' command token, like '{sp}'. */
-  void addTextualCommand(Token token) {
-    maybeFinishBasic();
-    // appending the empty string violates some invariants about the buffer only ever being extended
-    if (token.kind != SoyFileParserConstants.CMD_FULL_NIL) {
-      append(token, rawTextCmdToString(token));
-    }
-    discontinuityReason = Reason.COMMAND;
+  /**
+   * Builds a RawTextNode of type COMMAND_CHAR representing one of the Soy special characters (like
+   * "{sp}" or "{nil}").
+   */
+  static RawTextNode buildCommandCharNode(
+      Token token, SourceFilePath fileName, IdGenerator nodeIdGen) {
+    CommandChar commandChar = rawTextCmdToCommandCharType(token);
+    return RawTextNode.newCommandCharNode(
+        nodeIdGen.genId(), commandChar, Tokens.createSrcLoc(fileName, token));
   }
 
-  private static String rawTextCmdToString(Token token) {
+  private static CommandChar rawTextCmdToCommandCharType(Token token) {
     switch (token.kind) {
       case SoyFileParserConstants.CMD_FULL_SP:
-        return " ";
+        return CommandChar.SPACE;
       case SoyFileParserConstants.CMD_FULL_CR:
-        return "\r";
+        return CommandChar.CARRIAGE_RETURN;
       case SoyFileParserConstants.CMD_FULL_LF:
-        return "\n";
+        return CommandChar.NEWLINE;
       case SoyFileParserConstants.CMD_FULL_TAB:
-        return "\t";
+        return CommandChar.TAB;
       case SoyFileParserConstants.CMD_FULL_LB:
-        return "{";
+        return CommandChar.LEFT_BRACE;
       case SoyFileParserConstants.CMD_FULL_RB:
-        return "}";
+        return CommandChar.RIGHT_BRACE;
       case SoyFileParserConstants.CMD_FULL_NBSP:
         // https://en.wikipedia.org/wiki/Non-breaking_space
-        return "\u00A0";
+        return CommandChar.NBSP;
+      case SoyFileParserConstants.CMD_FULL_NIL:
+        return CommandChar.NIL;
       default:
         throw new IllegalArgumentException(
             "unexpected token: " + SoyFileParserConstants.tokenImage[token.kind]);

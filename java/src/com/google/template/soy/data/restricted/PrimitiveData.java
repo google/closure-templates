@@ -17,7 +17,7 @@
 package com.google.template.soy.data.restricted;
 
 import com.google.template.soy.data.LoggingAdvisingAppendable;
-import com.google.template.soy.data.SoyData;
+import com.google.template.soy.data.SoyAbstractValue;
 import java.io.IOException;
 
 /**
@@ -27,9 +27,8 @@ import java.io.IOException;
  * <p>Important: This class may only be used in implementing plugins (e.g. functions, directives).
  *
  * <p>Important: Even though this class is not marked 'final', do not extend this class.
- *
  */
-public abstract class PrimitiveData extends SoyData {
+public abstract class PrimitiveData extends SoyAbstractValue {
   @Override
   public void render(LoggingAdvisingAppendable appendable) throws IOException {
     // PrimitiveData instances can't really benefit from any incremental approach anyway.

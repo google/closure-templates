@@ -13,15 +13,16 @@
 // limitations under the License.
 
 // Features examples.
-// Author: Kai Huang
 
 {namespace soy.examples.features}
+
+import * as simple from 'examples/simple.soy';
 
 
 /**
  * Demo comments.
  */
-{template .demoComments}
+{template demoComments}
   blah blah<br>  // comment comment
   /* comment
      comment */
@@ -33,7 +34,7 @@
 /**
  * Demo line joining.
  */
-{template .demoLineJoining}
+{template demoLineJoining}
 
   // Without any HTML or Soy tags at the end of the first line or start of the second line, the two
   // lines will be joined by adding a space.
@@ -66,7 +67,7 @@
 /**
  * Demo raw text commands.
  */
-{template .demoRawTextCommands kind="text"}
+{template demoRawTextCommands kind="text"}
   <pre>
   // Special characters.
   Space       : AA{sp}BB<br>
@@ -90,7 +91,7 @@
 /**
  * Demo 'print'.
  */
-{template .demoPrint}
+{template demoPrint}
   {@param boo: string}  /** Something scary. */
   {@param two: number}  /** Preferably the number 2. */
   {print 'Boo!'}<br>  // print a string
@@ -98,14 +99,13 @@
   {1 + 2}<br>  // print the result of an expression
   {$boo}<br>  // print a data value
   {1 + $two}<br>  // print the result of an expression that uses a data value
-  {GLOBAL_INT}, {GLOBAL_STR}<br>  // print globals
 {/template}
 
 
 /**
  * Demo autoescape true.
  */
-{template .demoAutoescapeTrue}
+{template demoAutoescapeTrue}
   {@param italicHtml: string}  /** A string surrounded by HTML italics tags. */
   // Note: autoescape="strict" is the default.
 
@@ -116,7 +116,7 @@
 /**
  * Demo 'msg'.
  */
-{template .demoMsg}
+{template demoMsg}
   {@param name: string}  /** The name of the person to say hello to. */
 
   {msg desc="Says hello to a person."}
@@ -141,7 +141,7 @@
 /**
  * Demo 'if'.
  */
-{template .demoIf}
+{template demoIf}
   {@param pi: float}  /** An approximate value for pi. */
   {if round($pi, 2) == 3.14}
     {msg desc="Example: 3.1416 is a good approximation of pi."}
@@ -163,7 +163,7 @@
 /**
  * Demo 'switch'.
  */
-{template .demoSwitch}
+{template demoSwitch}
   {@param name: string}  /** The name of a kid. */
   Dear {$name}, &nbsp;
 
@@ -183,17 +183,17 @@
 /**
  * Demo 'for'.
  */
-{template .demoFor}
+{template demoFor}
   {@param persons: list<[name: string, numWaffles: int]>}  /**
                                                             * List of persons. Each person must have
                                                             * 'name' and 'numWaffles'.
                                                             */
 
-  {for $person in $persons}
+  {for $person, $personIndex in $persons}
 
-    {if isFirst($person)}
+    {if $personIndex == 0}
       First,
-    {elseif isLast($person)}
+    {elseif $personIndex == $persons.length() - 1}
       Finally,
     {else}
       Then
@@ -218,7 +218,7 @@
 /**
  * Demo 'for' using range.
  */
-{template .demoFor_Range}
+{template demoFor_Range}
   {@param numLines: int}  /** The number of lines to display. */
 
   {for $i in range($numLines)}
@@ -236,20 +236,20 @@
 /**
  * Demo 'call' without 'param's.
  */
-{template .demoCallWithoutParam}
+{template demoCallWithoutParam}
   {@param name: string}  /** The name of the person who took a trip. */
   {@param tripInfo: [name: string, destination: string]}  /** The full record of the trip. */
 
   // Call template defined in this file.
-  {call .tripReport_ /}<br>
+  {call tripReport_ /}<br>
 
   // Pass all of the current template data to the callee.
   // Note: Only the top-level key 'name' will be used because it matches the name of a parameter
   // expected by the callee.
-  {call .tripReport_ data="all" /}<br>
+  {call tripReport_ data="all" /}<br>
 
   // Pass a subset of the current template data to the callee.
-  {call .tripReport_ data="$tripInfo" /}<br>
+  {call tripReport_ data="$tripInfo" /}<br>
 
 {/template}
 
@@ -257,10 +257,11 @@
 /**
  * Demo a 'call' out to a template defined in another file.
  */
-{template .demoCallOtherFile}
+{template demoCallOtherFile}
 
   // Call template defined in a different file.
-  {call soy.examples.simple.helloWorld /}<br>
+  {call simple.helloWorld /}
+  <br>
 
 {/template}
 
@@ -268,28 +269,29 @@
 /**
  * Demo 'call' with 'param's.
  */
-{template .demoCallWithParam}
+{template demoCallWithParam}
   {@param name: string}  /** The name of the person who took the trips. */
   {@param companionName: string}  /** The name of the person who went along for the odd-numbered
                                  trips only. */
   {@param destinations: list<string>}  /** List of destinations visited by this person. */
 
-  {for $destination in $destinations}
+  {for $destination, $destinationIndex in $destinations}
 
     // Pass the current template data and also pass a parameter.
     // Note: Only passing data="all" is not sufficient for providing the 'destination' parameter of
     // the callee because $destination is a local variable here, not part of the template data
     // passed by data="all".
-    {call .tripReport_ data="all"}
+    {call tripReport_ data="all"}
       {param destination: $destination /}
     {/call}<br>
 
-    {if index($destination) % 2 == 0}  // even index means odd-numbered trip since index is 0-based
+    {if $destinationIndex % 2 == 0} // even index means odd-numbered trip since index is 0-based
       // Pass two parameters.
-      {call .tripReport_}
+      {call tripReport_}
         {param name: $companionName /}
         {param destination: $destination /}
-      {/call}<br>
+      {/call}
+      <br>
     {/if}
 
   {/for}
@@ -300,10 +302,10 @@
 /**
  * Demo 'call' with a 'param' block.
  */
-{template .demoCallWithParamBlock}
+{template demoCallWithParamBlock}
   {@param name: string}  /** The name of the person who took the trip. */
   // Pass 2 parameters, one of which is built using Soy code.
-  {call .tripReport_}
+  {call tripReport_}
     {param name: $name /}
     {param destination kind="text"}
       {switch randomInt(3)}
@@ -321,7 +323,7 @@
  * Private helper for demoCallWithoutParams, demoCallWithParams, and demoCallWithParamBlock.
  * Reports on a trip.
  */
-{template .tripReport_ visibility="private" kind="text"}
+{template tripReport_ visibility="private" kind="text"}
   {@param? name: string}  /** The name of the person who took a trip (optional). */
   {@param? destination: string}  /** The destination of the trip (optional). */
   // Note: The template name demonstrates the good practice of adding a trailing underscore to
@@ -349,11 +351,11 @@
 /**
  * Demo {param} blocks with 'kind' attribute.
  */
-{template .demoParamWithKindAttribute}
+{template demoParamWithKindAttribute}
   {@param message: string}  /** A message text. */
   {@param list: list<string>}  /** A list of things. */
   <div>
-    {call .demoParamWithKindAttributeCallee_}
+    {call demoParamWithKindAttributeCallee_}
       // Note that the {param} blocks for the message and listItems parameter are declared to have
       // content of kind HTML. This instructs the contextual autoescaper to process the content of
       // these blocks as HTML, and to wrap the value of the parameter as a
@@ -374,7 +376,7 @@
 /**
  * Demo {param} blocks with 'kind' attribute.
  */
-{template .demoParamWithKindAttributeCallee_ visibility="private" }
+{template demoParamWithKindAttributeCallee_ visibility="private" }
   {@param message: html}  /** A message with HTML markup. */
   {@param listItems: html}  /** A HTML-formatted list. */
   // Note that both $message and $listItems contain HTML markup produced by a {param} block in the
@@ -391,7 +393,7 @@
 /**
  * Demo expressions.
  */
-{template .demoExpressions}
+{template demoExpressions}
   {@param students: list<[name: string, major: string, year: number]>}  /** List of students. */
   {@param currentYear: number}  /** The current year. */
 
@@ -399,19 +401,20 @@
   Last student's year: {$students[length($students) - 1].year}<br>
   Random student's major: {$students[randomInt(length($students))].major}<br>
 
-  {for $student in $students}
+  {for $student, $studentIndex in $students}
     {$student.name}:
 
-    {if isFirst($student)}
+    {if $studentIndex == 0}
       {sp}First.
-    {elseif isLast($student)}
+    {elseif $studentIndex == $students.length() - 1}
       {sp}Last.
     // Note: must use floor() in next check since division is floating-point.
-    {elseif index($student) == ceiling(length($students) / 2) - 1}
+    {elseif $studentIndex == ceiling(length($students) / 2) - 1}
       {sp}Middle.
     {/if}
 
-    {if index($student) % 2 == 1} Even.{/if}
+    {if $studentIndex % 2 == 1} Even.
+    {/if}
     {sp}{$student.major}.
     {if $student.major == 'Physics' or $student.major == 'Biology'} Scientist.{/if}
     {if $currentYear - $student.year < 10} Young.{/if}
@@ -431,7 +434,7 @@
 /**
  * Demo double braces.
  */
-{template .demoDoubleBraces kind="text"}
+{template demoDoubleBraces kind="text"}
   {@param setName: string}  /** The name of the infinite set. */
   {@param setMembers: list<?>}  /** List of the first few members of the set. */
   {msg desc="Example: The set of prime numbers is {2, 3, 5, 7, 11, 13, ...}."}
@@ -443,7 +446,7 @@
     // (b) since the whole 'call' turns into a single placeholder, be sure to provide a clear
     // description and example to the translator.
     The set of {$setName} is {lb}
-    {call .buildCommaSeparatedList_}
+    {call buildCommaSeparatedList_}
       {param items: $setMembers /}
     {/call}
     , ...{rb}.
@@ -454,10 +457,10 @@
 /**
  * Private helper to build a comma separated list.
  */
-{template .buildCommaSeparatedList_ visibility="private" kind="text"}
+{template buildCommaSeparatedList_ visibility="private" kind="text"}
   {@param items: list<?>}  /** The list of items. */
-  {for $item in $items}
-    {if not isFirst($item)}
+  {for $item, $itemIndex in $items}
+    {if $itemIndex != 0}
       ,{sp}
     {/if}
     {$item}
@@ -468,7 +471,7 @@
 /**
  * Demo BiDi support.
  */
-{template .demoBidiSupport}
+{template demoBidiSupport}
   {@param title: string}  /** Book title. */
   {@param author: string}  /** Author's name. */
   {@param year: number}  /** Year published. */
@@ -542,7 +545,7 @@
  * Template that outputs -1 in a right-to-left page and 1 in a left-to-right page, i.e. basically
  * exposes the results of Soy's bidiGlobalDir() to scripts.
  */
-{template .bidiGlobalDir kind="text"}
+{template bidiGlobalDir kind="text"}
   {bidiGlobalDir()}
 {/template}
 
@@ -550,7 +553,7 @@
 /**
  * Template for printing the header to add before each example.
  */
-{template .exampleHeader}
+{template exampleHeader}
   {@param exampleNum: number}  /** The number of the example. */
   {@param exampleName: string}  /** The name of the example. */
   <hr>

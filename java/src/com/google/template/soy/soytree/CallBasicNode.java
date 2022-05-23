@@ -16,77 +16,64 @@
 
 package com.google.template.soy.soytree;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.soytree.CommandTagAttribute.UNSUPPORTED_ATTRIBUTE_KEY;
+import static com.google.template.soy.soytree.MessagePlaceholder.PHEX_ATTR;
+import static com.google.template.soy.soytree.MessagePlaceholder.PHNAME_ATTR;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.internal.BaseUtils;
-import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.exprtree.TemplateLiteralNode;
+import com.google.template.soy.types.TemplateType;
 import java.util.List;
-import java.util.function.Predicate;
-import javax.annotation.Nullable;
 
 /**
  * Node representing a call to a basic template.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public final class CallBasicNode extends CallNode {
 
-  /** The full name of the template being called, after namespace / alias resolution. */
-  private final String fullCalleeName;
-
-  /** The callee name string as it appears in the source code. */
-  private final Identifier sourceCalleeName;
-
   /**
-   * The list of params that need to be type checked when this node is run. All the params that
-   * could be statically verified will be checked up front (by the {@code
-   * CheckCallingParamTypesVisitor}), this list contains the params that could not be statically
-   * checked.
-   *
-   * <p>NOTE:This list will be a subset of the params of the callee, not a subset of the params
-   * passed from this caller.
+   * The callee expression. Usually this will contain a single node corresponding to the template to
+   * be called.
    */
-  @Nullable private Predicate<String> paramsToRuntimeTypeCheck = null;
+  private ExprRootNode calleeExpr;
 
   public CallBasicNode(
       int id,
       SourceLocation location,
-      Identifier sourceCalleeName,
-      String fullCalleeName,
+      SourceLocation openTagLocation,
+      ExprNode calleeExpr,
       List<CommandTagAttribute> attributes,
+      boolean selfClosing,
       ErrorReporter errorReporter) {
-    super(id, location, "call", attributes, errorReporter);
-    checkArgument(BaseUtils.isDottedIdentifier(fullCalleeName));
+    super(id, location, openTagLocation, "call", attributes, selfClosing, errorReporter);
 
-    this.sourceCalleeName = sourceCalleeName;
-    this.fullCalleeName = fullCalleeName;
+    this.calleeExpr = new ExprRootNode(calleeExpr);
 
     for (CommandTagAttribute attr : attributes) {
-      String name = attr.getName().identifier();
+      String ident = attr.getName().identifier();
 
-      switch (name) {
+      switch (ident) {
         case "data":
         case "key":
-        case MessagePlaceholders.PHNAME_ATTR:
-        case MessagePlaceholders.PHEX_ATTR:
+        case PHNAME_ATTR:
+        case PHEX_ATTR:
           // Parsed in CallNode.
           break;
         default:
           errorReporter.report(
               attr.getName().location(),
               UNSUPPORTED_ATTRIBUTE_KEY,
-              name,
+              ident,
               "call",
-              ImmutableList.of(
-                  "data", MessagePlaceholders.PHNAME_ATTR, MessagePlaceholders.PHEX_ATTR));
+              ImmutableList.of("data", "key", PHNAME_ATTR, PHEX_ATTR));
       }
     }
   }
@@ -98,9 +85,7 @@ public final class CallBasicNode extends CallNode {
    */
   private CallBasicNode(CallBasicNode orig, CopyState copyState) {
     super(orig, copyState);
-    this.sourceCalleeName = orig.sourceCalleeName;
-    this.fullCalleeName = orig.fullCalleeName;
-    this.paramsToRuntimeTypeCheck = orig.paramsToRuntimeTypeCheck;
+    this.calleeExpr = orig.calleeExpr.copy(copyState);
   }
 
   @Override
@@ -110,32 +95,43 @@ public final class CallBasicNode extends CallNode {
 
   /** Returns the callee name string as it appears in the source code. */
   public String getSourceCalleeName() {
-    return sourceCalleeName.identifier();
+    return calleeExpr.getRoot().toSourceString();
   }
 
   @Override
   public SourceLocation getSourceCalleeLocation() {
-    return sourceCalleeName.location();
+    return calleeExpr.getSourceLocation();
   }
 
   /** Returns the full name of the template being called, or null if not yet set. */
   public String getCalleeName() {
-    return fullCalleeName;
+    checkState(isStaticCall(), "Expected static call, but found: %s", calleeExpr.getRoot());
+    return ((TemplateLiteralNode) calleeExpr.getRoot()).getResolvedName();
   }
 
-  /**
-   * Sets the names of the params that require runtime type checking against callee's types.
-   *
-   * <p>This mechanism is used by the TOFU runtime only to save some work when calling templates.
-   */
-  public void setParamsToRuntimeCheck(Predicate<String> paramNames) {
-    checkState(this.paramsToRuntimeTypeCheck == null);
-    this.paramsToRuntimeTypeCheck = checkNotNull(paramNames);
+  public boolean isStaticCall() {
+    return calleeExpr.getRoot().getKind() == ExprNode.Kind.TEMPLATE_LITERAL_NODE;
+  }
+
+  public ExprRootNode getCalleeExpr() {
+    return calleeExpr;
+  }
+
+  public TemplateType getStaticType() {
+    Preconditions.checkArgument(isStaticCall());
+    return (TemplateType) getCalleeExpr().getType();
+  }
+
+  public void setCalleeExpr(ExprRootNode calleeExpr) {
+    this.calleeExpr = calleeExpr;
   }
 
   @Override
-  public Predicate<String> getParamsToRuntimeCheck(String calleeTemplateName) {
-    return paramsToRuntimeTypeCheck == null ? arg -> true : paramsToRuntimeTypeCheck;
+  public ImmutableList<ExprRootNode> getExprList() {
+    ImmutableList.Builder<ExprRootNode> allExprs = ImmutableList.builder();
+    allExprs.add(calleeExpr);
+    allExprs.addAll(super.getExprList());
+    return allExprs.build();
   }
 
   @Override
@@ -147,13 +143,12 @@ public final class CallBasicNode extends CallNode {
     } else if (getDataExpr() != null) {
       commandText.append(" data=\"").append(getDataExpr().toSourceString()).append('"');
     }
-    if (getUserSuppliedPhName() != null) {
-      commandText.append(" phname=\"").append(getUserSuppliedPhName()).append('"');
-    }
-    if (getUserSuppliedPhExample() != null) {
-      commandText.append(" phex=\"").append(getUserSuppliedPhExample()).append('"');
-    }
-
+    getPlaceholder()
+        .userSuppliedName()
+        .ifPresent(phname -> commandText.append(" phname=\"").append(phname).append('"'));
+    getPlaceholder()
+        .example()
+        .ifPresent(phex -> commandText.append(" phex=\"").append(phex).append('"'));
     return commandText.toString();
   }
 

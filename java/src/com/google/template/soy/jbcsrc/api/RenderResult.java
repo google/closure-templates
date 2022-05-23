@@ -89,6 +89,13 @@ public final class RenderResult {
     return type == Type.DONE;
   }
 
+  /** Throws an IllegalStateException if this result is not {@link #isDone done}. */
+  public void assertDone() {
+    if (!isDone()) {
+      throw new IllegalStateException("Expected " + this + " to be done");
+    }
+  }
+
   /**
    * Returns the future that soy is waiting for.
    *
@@ -105,7 +112,7 @@ public final class RenderResult {
 
   @Override
   public String toString() {
-    return "RenderResult{ " + type + "}";
+    return "RenderResult{" + type + "}";
   }
 
   @Override

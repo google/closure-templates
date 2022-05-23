@@ -43,7 +43,8 @@ public final class JbcSrcNameGenerators {
    * <p>For example, all the inner classes of a class, or all the classes in a package.
    */
   public static UniqueNameGenerator forClassNames() {
-    // roman numeral 10
-    return new UniqueNameGenerator(DANGEROUS_CHARACTERS_WITH_DOLLARSIGN, "\u2169");
+    return new UniqueNameGenerator(DANGEROUS_CHARACTERS_WITH_DOLLARSIGN, "#");
   }
+
+  private JbcSrcNameGenerators() {}
 }

@@ -29,6 +29,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import javax.annotation.Nonnull;
 
 /**
@@ -45,7 +46,7 @@ import javax.annotation.Nonnull;
 public class SoyMapData extends CollectionData implements SoyDict, SoyMap {
 
   /** Underlying map. */
-  private final Map<String, SoyData> map;
+  private final Map<String, SoyValue> map;
 
   public SoyMapData() {
     map = Maps.newLinkedHashMap();
@@ -63,13 +64,14 @@ public class SoyMapData extends CollectionData implements SoyDict, SoyMap {
         throw new SoyDataException(
             "Attempting to convert a map with non-string key to Soy data (key type "
                 + ((Map.Entry<?, ?>) entry).getKey().getClass().getName()
-                + ").");
+                + ").",
+            cce);
       }
 
       Object value = entry.getValue();
 
       try {
-        map.put(key, SoyData.createFromExistingData(value));
+        map.put(key, createFromExistingData(value));
       } catch (SoyDataException sde) {
         sde.prependKeyToDataPath(key);
         throw sde;
@@ -93,7 +95,7 @@ public class SoyMapData extends CollectionData implements SoyDict, SoyMap {
    *
    * <p>Returns a view of this SoyMapData object as a Map.
    */
-  public Map<String, SoyData> asMap() {
+  public Map<String, SoyValue> asMap() {
     return Collections.unmodifiableMap(map);
   }
 
@@ -125,9 +127,9 @@ public class SoyMapData extends CollectionData implements SoyDict, SoyMap {
   @Override
   public void render(LoggingAdvisingAppendable appendable) throws IOException {
     appendable.append('{');
-    Iterator<Map.Entry<String, SoyData>> iterator = map.entrySet().iterator();
+    Iterator<Map.Entry<String, SoyValue>> iterator = map.entrySet().iterator();
     if (iterator.hasNext()) {
-      Map.Entry<String, SoyData> entry = iterator.next();
+      Map.Entry<String, SoyValue> entry = iterator.next();
       appendable.append(entry.getKey()).append(": ");
       entry.getValue().render(appendable);
       while (iterator.hasNext()) {
@@ -177,7 +179,7 @@ public class SoyMapData extends CollectionData implements SoyDict, SoyMap {
    * @param value The data to put at the specified key.
    */
   @Override
-  public void putSingle(String key, SoyData value) {
+  public void putSingle(String key, SoyValue value) {
     map.put(key, value);
   }
 
@@ -202,7 +204,7 @@ public class SoyMapData extends CollectionData implements SoyDict, SoyMap {
    * @return The data at the specified key, or null if the key is not defined.
    */
   @Override
-  public SoyData getSingle(String key) {
+  public SoyValue getSingle(String key) {
     return map.get(key);
   }
 
@@ -237,6 +239,21 @@ public class SoyMapData extends CollectionData implements SoyDict, SoyMap {
   @Override
   public SoyValueProvider getFieldProvider(String name) {
     return getSingle(name);
+  }
+
+  @Override
+  public ImmutableMap<String, SoyValueProvider> recordAsMap() {
+    return ImmutableMap.copyOf(map);
+  }
+
+  @Override
+  public void forEach(BiConsumer<String, ? super SoyValueProvider> action) {
+    map.forEach(action);
+  }
+
+  @Override
+  public int recordSize() {
+    return map.size();
   }
 
   // -----------------------------------------------------------------------------------------------
@@ -306,7 +323,7 @@ public class SoyMapData extends CollectionData implements SoyDict, SoyMap {
   @Override
   public Map<? extends SoyValue, ? extends SoyValueProvider> asJavaMap() {
     ImmutableMap.Builder<SoyValue, SoyValueProvider> builder = ImmutableMap.builder();
-    for (Map.Entry<String, SoyData> entry : map.entrySet()) {
+    for (Map.Entry<String, SoyValue> entry : map.entrySet()) {
       builder.put(StringData.forValue(entry.getKey()), entry.getValue());
     }
     return builder.build();
@@ -324,7 +341,8 @@ public class SoyMapData extends CollectionData implements SoyDict, SoyMap {
       return key.stringValue();
     } catch (ClassCastException e) {
       throw new SoyDataException(
-          "SoyDict accessed with non-string key (got key type " + key.getClass().getName() + ").");
+          "SoyDict accessed with non-string key (got key type " + key.getClass().getName() + ").",
+          e);
     }
   }
 }

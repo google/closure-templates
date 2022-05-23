@@ -1,10 +1,5 @@
 # Delegate templates
 
-
-<!--#include file="commands-blurb-include.md"-->
-
-This chapter describes the delegate template commands.
-
 Delegate templates allow you to write multiple implementations of a template and
 choose one of them at render time. Delegate templates are defined and called
 using `deltemplate` and `delcall`, which have syntax similar to `template` and
@@ -32,7 +27,7 @@ you don't intend to send code for unused delegate implementations to the client
 {namespace ...}
 
 /** Caller (basic template, not delegate template). */
-{template ...}
+{template aTemplate}
   {delcall aaa.bbb.myButton allowemptydefault="true" data="..." /}
 {/template}
 
@@ -61,7 +56,9 @@ is the identifier used to select the implementation at usage time.
 The delegate template names are not within the file's namespace; namespaces only
 apply to basic templates. Instead, delegate template names are just strings that
 are always written in full. They can be any identifier or multiple identifiers
-connected with dots.
+connected with dots. The namespace of any delegate template file, however, must
+be different from the default file and any other included delegate template
+file.
 
 Template files can have an optional `delpackage` declaration at the top, just
 above the `namespace` declaration. And multiple files can have the same
@@ -106,6 +103,17 @@ This will use the non-default implementation of `aaa.bbb.myButton` from the
 In either backend, it is an error to have more than one active implementation at
 the same priority (for example, multiple active non-default implementations).
 
+### Special case: a modded Soy template B under another modded Soy template A
+
+Please note that it is an error for two deltemplates to be installed at runtime
+with the same priority. Therefore, do not define the default implementation of
+deltemplate B within a delpackage. This would give B's default implementation
+the same priority as B's non-default (delpackage) implementations; essentially,
+B would not have a default implementation.
+
+So instead, put deltemplate B into a file without a delpackage. This will allow
+the variant (with a delpackage) to override it.
+
 ## Delegate Templates (with variant)
 
 Delegates with the `variant` attribute are appropriate for finer control of
@@ -115,7 +123,7 @@ Syntax:
 
 ```soy
 /** Caller (basic template, not delegate template). */
-{template ...}
+{template aTemplate}
   {delcall aaa.bbb.myButton variant="$variantToUse" /}
 {/template}
 
@@ -129,11 +137,6 @@ Syntax:
   ...
 {/deltemplate}
 ```
-
-The delegate template names are not within the file's namespace; namespaces only
-apply to basic templates. Instead, delegate template names are just strings that
-are always written in full. They can be any identifier or multiple identifiers
-connected with dots.
 
 The variant in a `deltemplate` command must be a string literal containing an
 identifier. If no variant is specified, then it defaults to the empty string.

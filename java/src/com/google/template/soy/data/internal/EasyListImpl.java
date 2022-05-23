@@ -30,7 +30,6 @@ import javax.annotation.ParametersAreNonnullByDefault;
  * SoyValueConverter.newEasyList*().
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 @ParametersAreNonnullByDefault
 @Deprecated

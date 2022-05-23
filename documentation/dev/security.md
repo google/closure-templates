@@ -115,7 +115,7 @@ the same way.
 So if we pass that same malicious input to an autoescaped template:
 
 ```soy
-{template .foo}
+{template foo}
   <a href="{$x}"
    onclick="{$x}"
    >{$x}</a>
@@ -214,7 +214,7 @@ template. For example, a strict template that produces a URI might look like
 this:
 
 ```soy
-{template .googleUri kind="uri"}
+{template googleUri kind="uri"}
   http://www.google.com/
 {/template}
 ```
@@ -234,7 +234,7 @@ The `kind` attribute can be added to the following Soy commands:
 The following example illustrates the usage of the `kind` attribute:
 
 ```soy
-{template .foo kind="text"}
+{template foo kind="text"}
   // Block-form 'let' command, 'kind' is required.
   {let $message kind="text"}
     {msg}Hi, {$name}!{/msg}
@@ -243,7 +243,7 @@ The following example illustrates the usage of the `kind` attribute:
   // Short form 'let', no 'kind' attribute.
   {let $category: $categoryList[0] /}
 
-  {call .bar}
+  {call bar}
     // Block-form 'param' command, kind is required.
     {param attributes kind="attributes"}
       title="{$message}"{sp}
@@ -268,10 +268,8 @@ have.
 For ordinary content that doesn't contain markup, you can just pass in the
 string values as template parameters as before, and they will get escaped.
 
-
 Soy treats `SafeHtml` and the other safe contract types (`SafeStyle`, `SafeUrl`,
 etc.) as exempt from re-escaping and filtering.
-
 
 ## Content Security Policy (CSP) {#content_security_policy}
 
@@ -290,6 +288,7 @@ With CSP nonces in Soy, templates get `nonce="..."` added to the following tags:
 *   `<link rel="import">`
 *   `<link rel="preload" as="script">`
 *   `<link rel="preload" as="style">`
+*   `<link rel="stylesheet">`
 
 For example:
 
@@ -301,6 +300,18 @@ becomes
 
 ```soy
 <script{if $csp_nonce} nonce="{$csp_nonce}"{/if}>...</script>
+```
+
+Stylesheets use their own nonce if it is set:
+
+```html
+<style>...</style>
+```
+
+becomes
+
+```soy
+<style{if $csp_style_nonce} nonce="{$csp_style_nonce}"{/if}>...</style>
 ```
 
 ### Configuring CSP nonces
@@ -319,4 +330,4 @@ and not reusing nonces
 
 For step 2, render with an [injected data](../concepts/ij-data) bundle that
 includes an `$csp_nonce` value that is a
-[valid nonce](https://w3c.github.io/webappsec/specs/content-security-policy/#source-list-valid-nonces).
+[valid nonce](https://www.w3.org/TR/CSP3/#grammardef-base64-value).

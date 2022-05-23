@@ -22,7 +22,6 @@ import java.util.Locale;
 
 /**
  * Helper functions for Internationalization in Soy.
- *
  */
 class I18nUtils {
 

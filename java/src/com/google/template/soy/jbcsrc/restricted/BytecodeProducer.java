@@ -68,6 +68,10 @@ public abstract class BytecodeProducer {
     this.location = checkNotNull(location);
   }
 
+  public final SourceLocation location() {
+    return location;
+  }
+
   /** Writes the bytecode to the adapter. */
   public final void gen(CodeBuilder adapter) {
     boolean shouldClearIsGeneratingBit = false;

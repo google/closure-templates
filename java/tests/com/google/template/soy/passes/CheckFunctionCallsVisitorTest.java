@@ -20,8 +20,8 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.Iterables;
-import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -30,70 +30,10 @@ import org.junit.runners.JUnit4;
 public final class CheckFunctionCallsVisitorTest {
 
   @Test
-  public void testNotALoopVariable1() {
-    assertFunctionCallsInvalid(
-        "Function 'index' must have a loop variable as its argument",
-        "{namespace ns}\n",
-        "{template .foo}",
-        "  {@param x: ?}",
-        "  {print index($x)}",
-        "{/template}");
-  }
-
-  @Test
-  public void testNotALoopVariable2() {
-    assertFunctionCallsInvalid(
-        "Function 'index' must have a loop variable as its argument",
-        "{namespace ns}\n",
-        "{template .foo}",
-        "  {@param x: ?}",
-        "  {print index($x.y)}",
-        "{/template}");
-  }
-
-  @Test
-  public void testNotALoopVariable3() {
-    assertFunctionCallsInvalid(
-        "Function 'index' must have a loop variable as its argument",
-        "{namespace ns}\n",
-        "{template .foo}",
-        "  {@param x: ?}",
-        "  {print index($x + 1)}",
-        "{/template}");
-  }
-
-  @Test
-  public void testLoopVariableOk() {
-    assertSuccess(
-        "{namespace ns}\n",
-        "{template .foo}",
-        "  {@param elements: ?}",
-        "  {for $z in $elements}",
-        "    {if isLast($z)}Lorem Ipsum{/if}",
-        "  {/for}",
-        "{/template}");
-  }
-
-  @Test
-  public void testLoopVariableNotInScopeWhenEmpty() {
-    assertFunctionCallsInvalid(
-        "Function 'index' must have a loop variable as its argument",
-        "{namespace ns}\n",
-        "{template .foo}",
-        "  {@param elements: ?}",
-        "  {for $z in $elements}",
-        "    Lorem Ipsum...",
-        "  {ifempty}",
-        "    {print index($elements)}", // Loop variable not in scope when empty.
-        "  {/for}",
-        "{/template}");
-  }
-
-  @Test
   public void testCssFunction() {
     assertSuccess(
         "{namespace ns}\n",
-        "{template .foo}",
+        "{template foo}",
         "  {@param x : ?}",
         "  {css('foo')}",
         "  {css($x, 'foo')}",
@@ -103,7 +43,7 @@ public final class CheckFunctionCallsVisitorTest {
     assertFunctionCallsInvalid(
         "Argument to function 'css' must be a string literal.",
         "{namespace ns}\n",
-        "{template .foo}",
+        "{template foo}",
         "  {@param x : ?}",
         "  {css($x)}",
         "{/template}");
@@ -111,7 +51,7 @@ public final class CheckFunctionCallsVisitorTest {
     assertFunctionCallsInvalid(
         "Argument to function 'css' must be a string literal.",
         "{namespace ns}\n",
-        "{template .foo}",
+        "{template foo}",
         "  {@param x : ?}",
         "  {css($x, $x)}",
         "{/template}");
@@ -119,51 +59,22 @@ public final class CheckFunctionCallsVisitorTest {
     assertFunctionCallsInvalid(
         "Argument to function 'css' must be a string literal.",
         "{namespace ns}\n",
-        "{template .foo}",
+        "{template foo}",
         "  {@param x : ?}",
         "  {css($x, 10)}",
         "{/template}");
   }
 
-  @Test
-  public void testV1ExpressionFunction() {
-    assertPasses(
-        /* allowV1Expression= */ true,
-        "{namespace ns}\n",
-        "{template .foo}",
-        "  {let $m: v1Expression('blah.length') /}",
-        "{/template}");
-
-    assertFunctionCallsInvalid(
-        /* allowV1Expression= */ true,
-        "Argument to function 'v1Expression' must be a string literal.",
-        "{namespace ns}\n",
-        "{template .foo}",
-        "  {let $blah: 'foo' /}",
-        "  {let $m: v1Expression($blah) /}",
-        "{/template}");
-  }
-
   private void assertSuccess(String... lines) {
-    assertPasses(/* allowV1Expression= */ false, lines);
-  }
-
-  private void assertPasses(boolean allowV1Expression, String... lines) {
     SoyFileSetParserBuilder.forFileContents(Joiner.on('\n').join(lines))
-        .allowV1Expression(allowV1Expression)
+        .errorReporter(ErrorReporter.explodeOnErrorsAndIgnoreDeprecations())
         .parse()
         .fileSet();
   }
 
   private void assertFunctionCallsInvalid(String errorMessage, String... lines) {
-    assertFunctionCallsInvalid(/* allowV1Expression= */ false, errorMessage, lines);
-  }
-
-  private void assertFunctionCallsInvalid(
-      boolean allowV1Expression, String errorMessage, String... lines) {
     ErrorReporter errorReporter = ErrorReporter.createForTest();
     SoyFileSetParserBuilder.forFileContents(Joiner.on('\n').join(lines))
-        .allowV1Expression(allowV1Expression)
         .errorReporter(errorReporter)
         .parse();
     assertThat(errorReporter.getErrors()).hasSize(1);

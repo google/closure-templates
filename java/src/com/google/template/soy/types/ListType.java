@@ -24,10 +24,10 @@ import java.util.Objects;
  * Represents the type of a list, a sequential random-access container keyed by integer.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public final class ListType extends SoyType {
 
+  // TODO(lukes): see if this can be replaced with list<?>
   public static final ListType EMPTY_LIST = new ListType(null);
   public static final ListType ANY_LIST = new ListType(AnyType.getInstance());
 
@@ -52,7 +52,7 @@ public final class ListType extends SoyType {
   }
 
   @Override
-  boolean doIsAssignableFromNonUnionType(SoyType srcType) {
+  boolean doIsAssignableFromNonUnionType(SoyType srcType, UnknownAssignmentPolicy policy) {
     if (srcType.getKind() == Kind.LIST) {
       ListType srcListType = (ListType) srcType;
       if (srcListType == EMPTY_LIST) {
@@ -61,7 +61,7 @@ public final class ListType extends SoyType {
         return false;
       }
       // Lists are covariant (because values are immutable.)
-      return elementType.isAssignableFrom(srcListType.elementType);
+      return elementType.isAssignableFromInternal(srcListType.elementType, policy);
     }
     return false;
   }
@@ -86,5 +86,10 @@ public final class ListType extends SoyType {
   @Override
   public int hashCode() {
     return Objects.hash(this.getClass(), elementType);
+  }
+
+  @Override
+  public <T> T accept(SoyTypeVisitor<T> visitor) {
+    return visitor.visit(this);
   }
 }

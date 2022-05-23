@@ -17,11 +17,14 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import com.google.common.collect.ImmutableList;
+import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.LocalVariable;
 import com.google.template.soy.jbcsrc.restricted.Statement;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
+import org.objectweb.asm.Label;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
 
@@ -32,33 +35,60 @@ public final class SimpleLocalVariableManagerTest {
   public void testReserveSlots() throws Exception {
     SimpleLocalVariableManager vars =
         new SimpleLocalVariableManager(
+            BytecodeUtils.OBJECT.type(),
             new Method("foo", /*returnType=*/ Type.INT_TYPE, /*arguments=*/ new Type[] {}),
             /* isStatic=*/ true);
 
     LocalVariableManager.Scope outer = vars.enterScope();
     LocalVariableManager.Scope inner = vars.enterScope();
-    LocalVariable foo = inner.createLocal("foo", Type.INT_TYPE);
+    LocalVariable foo = inner.createTemporary("foo", Type.INT_TYPE);
     assertThat(foo.index()).isEqualTo(0);
     assertThat(foo.resultType().getSize()).isEqualTo(1);
 
-    LocalVariable bar = outer.createLocal("bar", Type.INT_TYPE);
+    LocalVariable bar = outer.createTemporary("bar", Type.INT_TYPE);
     assertThat(bar.index()).isEqualTo(1);
     assertThat(bar.resultType().getSize()).isEqualTo(1);
 
     Statement unused = inner.exitScope(); // will cause the slot for foo to be released
     // this is too big to fit in the whole left by foo
-    LocalVariable baz = outer.createLocal("bar", Type.LONG_TYPE);
+    LocalVariable baz = outer.createTemporary("bar", Type.LONG_TYPE);
     assertThat(baz.index()).isEqualTo(2);
     assertThat(baz.resultType().getSize()).isEqualTo(2);
 
     // ditto
-    LocalVariable qux = outer.createLocal("qux", Type.LONG_TYPE);
+    LocalVariable qux = outer.createTemporary("qux", Type.LONG_TYPE);
     assertThat(qux.index()).isEqualTo(4);
     assertThat(qux.resultType().getSize()).isEqualTo(2);
 
     // but this can fit
-    LocalVariable quux = outer.createLocal("qux", Type.INT_TYPE);
+    LocalVariable quux = outer.createTemporary("qux", Type.INT_TYPE);
     assertThat(quux.index()).isEqualTo(0);
     assertThat(quux.resultType().getSize()).isEqualTo(1);
+  }
+
+  @Test
+  public void testParameters() {
+    SimpleLocalVariableManager vars =
+        new SimpleLocalVariableManager(
+            BytecodeUtils.OBJECT.type(),
+            new Method(
+                "foo",
+                /*returnType=*/ Type.INT_TYPE,
+                /*arguments=*/ new Type[] {Type.getType(String.class), Type.getType(int.class)}),
+            ImmutableList.of("baz", "quux"),
+            new Label(),
+            new Label(),
+            /* isStatic=*/ false);
+    LocalVariable thisVar = (LocalVariable) vars.getVariable("this");
+    assertThat(thisVar.index()).isEqualTo(0);
+    assertThat(thisVar.variableName()).isEqualTo("this");
+
+    LocalVariable baz = (LocalVariable) vars.getVariable("baz");
+    assertThat(baz.index()).isEqualTo(1);
+    assertThat(baz.variableName()).isEqualTo("baz");
+
+    LocalVariable quux = (LocalVariable) vars.getVariable("quux");
+    assertThat(quux.index()).isEqualTo(2);
+    assertThat(quux.variableName()).isEqualTo("quux");
   }
 }

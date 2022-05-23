@@ -16,8 +16,12 @@
 
 package com.google.template.soy.plugin.java.restricted;
 
+import static com.google.common.collect.ImmutableMap.toImmutableMap;
+
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.primitives.Primitives;
 
 /**
  * The signature of a method. This allows identifying a method without requiring a compile-time
@@ -25,6 +29,9 @@ import com.google.common.collect.ImmutableList;
  */
 @AutoValue
 public abstract class MethodSignature {
+
+  private static final ImmutableMap<String, Class<?>> PRIMITIVE_TYPE_INDEX =
+      Primitives.allPrimitiveTypes().stream().collect(toImmutableMap(Class::getName, c -> c));
 
   /**
    * The fully qualified class name of the method, as returned by Class.getName.
@@ -71,10 +78,26 @@ public abstract class MethodSignature {
         classFqn, method, returnType, ImmutableList.copyOf(args), /* inInterface= */ false);
   }
 
+  public static MethodSignature create(
+      String classFqn, String method, String returnTypeName, String... argTypeNames)
+      throws ClassNotFoundException {
+    Class<?> returnType = forName(returnTypeName);
+    Class<?>[] args = new Class<?>[argTypeNames.length];
+    for (int i = 0; i < argTypeNames.length; i++) {
+      args[i] = forName(argTypeNames[i]);
+    }
+    return create(classFqn, method, returnType, args);
+  }
+
   /** Constructs a new MethodSignature for a method on an interface. */
   public static MethodSignature createInterfaceMethod(
       String classFqn, String method, Class<?> returnType, Class<?>... args) {
     return new AutoValue_MethodSignature(
         classFqn, method, returnType, ImmutableList.copyOf(args), /* inInterface= */ true);
+  }
+
+  public static Class<?> forName(String className) throws ClassNotFoundException {
+    Class<?> primitive = PRIMITIVE_TYPE_INDEX.get(className);
+    return primitive != null ? primitive : Class.forName(className);
   }
 }

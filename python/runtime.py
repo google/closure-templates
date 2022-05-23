@@ -29,6 +29,7 @@ import re
 import sys
 
 from . import environment
+from . import sanitize
 
 import six
 
@@ -50,6 +51,7 @@ _DELEGATE_REGISTRY = {}
 
 # All number types for use during custom type functions.
 _NUMBER_TYPES = six.integer_types + (float,)
+_STRUCT_TYPES = (list, dict)
 
 # The mapping of css class names for get_css_name.
 _css_name_mapping = None
@@ -142,9 +144,9 @@ def get_delegate_fn(template_id, variant, allow_empty_default):
   Args:
     template_id: The delegate template id.
     variant: The delegate template variant (can be an empty string, or a number
-        when a global is used).
+      when a global is used).
     allow_empty_default: Whether to default to the empty template function if
-        there's no active implementation.
+      there's no active implementation.
 
   Returns:
     The retrieved implementation function.
@@ -154,7 +156,10 @@ def get_delegate_fn(template_id, variant, allow_empty_default):
   """
   entry = _DELEGATE_REGISTRY.get(_gen_delegate_id(template_id, variant))
   fn = entry[1] if entry else None
-  if not fn and variant:
+  # variant may be another zero value besides the empty string and we want to
+  # detect that
+  # pylint: disable=g-explicit-bool-comparison
+  if not fn and variant != '':
     # Fallback to empty variant.
     entry = _DELEGATE_REGISTRY.get(_gen_delegate_id(template_id))
     fn = entry[1] if entry else None
@@ -167,6 +172,40 @@ def get_delegate_fn(template_id, variant, allow_empty_default):
     msg = ('Found no active impl for delegate call to "%s%s" '
            '(and delcall does not set allowemptydefault="true").')
     raise RuntimeError(msg % (template_id, ':' + variant if variant else ''))
+
+
+def concat_attribute_values(l, r, delimiter):
+  """Merge two attribute values with a delimiter or use one or the other.
+
+  Args:
+    l: The string which is prefixed in the return value
+    r: The string which is suffixed in the return value
+    delimiter: The delimiter between the two sides
+
+  Returns:
+    The combined string separated by the delimiter.
+  """
+  if not l:
+    return r
+  if not r:
+    return l
+  return l + delimiter + r
+
+
+def concat_css_values(l, r):
+  """Merge two css values.
+
+  Args:
+    l: The css which is prefixed in the return value
+    r: The css which is suffixed in the return value
+
+  Returns:
+    The combined css separated by the delimiter.
+  """
+  return sanitize.SanitizedCss(
+      concat_attribute_values(str(l), str(r), ';'),
+      sanitize.IActuallyUnderstandSoyTypeSafetyAndHaveSecurityApproval(
+          """Internal framework code."""))
 
 
 def merge_into_dict(original, secondary):
@@ -207,7 +246,7 @@ def namespaced_import(name, namespace=None, environment_path=None):
     name: The name of the module to import.
     namespace: The namespace of the module to import.
     environment_path: A custom environment module path for interacting with the
-        runtime environment.
+      runtime environment.
 
   Returns:
     The Module object.
@@ -256,8 +295,7 @@ def namespaced_import(name, namespace=None, environment_path=None):
 
 
 def manifest_import(namespace, manifest):
-  """Imports a module using a namespace manifest to find the module.
-  """
+  """Imports a module using a namespace manifest to find the module."""
   if not manifest:
     raise ImportError('No manifest provided')
   elif namespace not in manifest:
@@ -376,18 +414,62 @@ def list_contains(l, item):
   return list_indexof(l, item) >= 0
 
 
-def list_indexof(l, item):
+def list_indexof(l, item, start_index=0):
   """Equivalent getting the index of `item in l` but using soy's equality algorithm."""
-  for i in range(len(l)):
+  clamped_start_index = clamp_list_start_index(l, start_index)
+  for i in range(clamped_start_index, len(l)):
     if type_safe_eq(l[i], item):
       return i
   return -1
 
 
+def concat_maps(d1, d2):
+  """Merges two maps together."""
+  d3 = dict(d1)
+  d3.update(d2)
+  return d3
+
+
+def map_entries(m):
+  """Return map entries."""
+  return [{'key': k, 'value': m[k]} for k in m]
+
+
+def list_slice(l, start, stop):
+  """Equivalent of JavaScript Array.prototype.slice."""
+  return l[slice(
+      int(start) if start is not None else 0,
+      int(stop) if stop is not None else len(l))]
+
+
+def list_reverse(l):
+  """Reverses a list. The original list passed is not modified."""
+  return l[::-1]
+
+
+def list_uniq(l):
+  """Removes duplicates from list. The original list passed is not modified."""
+  # dict preserves insertion order when fromKeys is called, so this function
+  #   doesn't change the order of elements in our list.
+  return [x for i, x in enumerate(l) if not any([y is x for y in l[:i]])]
+
+
+def number_list_sort(l):
+  """Sorts in numerical order."""
+  # Lists of numbers are sorted numerically by default.
+  return sorted(l)
+
+
+def string_list_sort(l):
+  """Sorts in lexicographic order."""
+  # Lists of strings are sorted lexicographically by default.
+  return sorted(l)
+
+
 def type_safe_eq(first, second):
   """An equality function that does type coercion for various scenarios.
 
-  This function emulates JavaScript's equalty behavior. In JS, Objects will be
+  This function emulates JavaScript's equality behavior. In JS, Objects will be
   converted to strings when compared to a string primitive.
 
   Args:
@@ -397,6 +479,9 @@ def type_safe_eq(first, second):
   Returns:
     True/False depending on the result of the comparison.
   """
+  if isinstance(first, _STRUCT_TYPES) or isinstance(second, _STRUCT_TYPES):
+    return first is second
+
   # If the values are empty or of the same type, no coersion necessary.
   # TODO(dcphillips): Do a more basic type equality check if it's not slower
   # (b/16661176).
@@ -439,19 +524,33 @@ def check_not_null(val):
   return val
 
 
-def parse_int(s):
+def is_set(field, container):
+  """A helper to implement the Soy Function isSet.
+
+  Args:
+    field (str): The field to test.
+    container (Dict[str, Any]): The container to test.
+
+  Returns:
+    True if the field is set in the container.
+  """
+  return field in container
+
+
+def parse_int(s, radix):
   """A function that attempts to convert the input string into an int.
 
   Returns None if the input is not a valid int.
 
   Args:
     s: String to convert.
+    radix: The base of the provided string
 
   Returns:
     int if s is a valid int string, otherwise None.
   """
   try:
-    return int(s)
+    return int(s, radix)
   except ValueError:
     return None
 
@@ -508,6 +607,54 @@ def str_to_ascii_upper_case(s):
   return ''.join([c.upper() if 'a' <= c <= 'z' else c for c in s])
 
 
+def str_starts_with(s, val, start=0):
+  """Returns whether s starts with val."""
+  return s.startswith(val, clamp_str_index(s, start))
+
+
+def str_ends_with(s, val, length=None):
+  """Returns whether s ends with val."""
+  if length is None:
+    return s.endswith(val)
+  return s.endswith(val, 0, int(length))
+
+
+def str_replace_all(s, match, token):
+  """Replaces all occurrences in s of match with token."""
+  return s.replace(match, token)
+
+
+def str_trim(s):
+  """Trims leading and trailing whitespace from s."""
+  return s.strip()
+
+
+def str_split(s, sep, limit=None):
+  """Splits s into an array on sep."""
+  if limit == 0:
+    return []
+  split_str = s.split(sep) if sep else list(s)
+  if limit is None or limit == -1:
+    return split_str
+  return split_str[:int(limit)]
+
+
+def str_substring(s, start, end):
+  """Implements the substring method according to the JavaScript spec."""
+  clamped_start = clamp_str_index(s, start)
+  if end is not None:
+    if start > end:
+      # pylint: disable=arguments-out-of-order
+      return str_substring(s, end, start)
+    return s[clamped_start:clamp_str_index(s, end)]
+  return s[clamp_str_index(s, start):]
+
+
+def str_indexof(s, search_str, start=0):
+  """Implements the indexOf method according to the Javascript spec."""
+  return s.find(search_str, int(start) if start > 0 else 0)
+
+
 def soy_round(num, precision=0):
   """Implements the soy rounding logic for the round() function.
 
@@ -523,8 +670,8 @@ def soy_round(num, precision=0):
     a rounded number
   """
   float_breakdown = math.frexp(num)
-  tweaked_number = (
-      (float_breakdown[0] + sys.float_info.epsilon) * 2**float_breakdown[1])
+  tweaked_number = ((float_breakdown[0] + sys.float_info.epsilon) *
+                    2**float_breakdown[1])
   rounded_number = round(tweaked_number, precision)
   if not precision or precision < 0:
     return int(rounded_number)
@@ -564,6 +711,7 @@ def _convert_to_js_string(value):
 
   Args:
     value: The value to stringify.
+
   Returns:
     A string representation of value. For primitives, ensure that the result
     matches the string value of their JS counterparts.
@@ -586,6 +734,7 @@ def _find_modules(name):
 
   Args:
     name: The name to match against the beginning of the module name.
+
   Yields:
     A tuple containing the path, the base system path, and the file name.
   """
@@ -607,3 +756,47 @@ def _find_modules(name):
 
 def _gen_delegate_id(template_id, variant=''):
   return 'key_%s:%s' % (template_id, variant)
+
+
+def create_template_type(template, name):
+  """Returns a wrapper object for a given template function.
+
+  The wrapper object forwards calls to the underlying template, but overrides
+  the __str__ method.
+
+  Args:
+    template: The underlying template function.
+    name: The fully-qualified template name.
+
+  Returns:
+    A wrapper object that can be called like the underlying template.
+  """
+  return _TemplateWrapper(template, name)
+
+
+def bind_template_params(template, params):
+  """Binds the given parameters to the given template."""
+  return lambda data, ij: template(dict(data, **params), ij)
+
+
+def clamp_list_start_index(l, start_index):
+  return int(max(0, start_index if start_index >= 0 else len(l) + start_index))
+
+
+def clamp_str_index(s, index):
+  lower_bound = max(0, index)
+  return int(min(len(s), lower_bound))
+
+
+class _TemplateWrapper:
+  """A wrapper object that forwards to the underlying template."""
+
+  def __init__(self, template, name):
+    self.template = template
+    self.name = name
+
+  def __call__(self, *args):
+    return self.template(*args)
+
+  def __str__(self):
+    return '** FOR DEBUGGING ONLY: %s **' % self.name

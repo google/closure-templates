@@ -32,14 +32,17 @@ final class TofuPluginContext implements JavaPluginContext {
   }
 
   @Override
-  public JavaValue getBidiDir() {
-    return TofuJavaValue.forBidiDir(
-        BidiGlobalDir.forStaticIsRtl(msgBundle == null ? false : msgBundle.isRtl()));
+  public TofuJavaValue getBidiDir() {
+    return TofuJavaValue.forRaw(getBidiGlobalDir());
+  }
+
+  public BidiGlobalDir getBidiGlobalDir() {
+    return BidiGlobalDir.forStaticIsRtl(msgBundle != null && msgBundle.isRtl());
   }
 
   @Override
   public TofuJavaValue getULocale() {
-    return TofuJavaValue.forULocale(msgBundle == null ? ULocale.ENGLISH : msgBundle.getLocale());
+    return TofuJavaValue.forRaw(msgBundle == null ? ULocale.ENGLISH : msgBundle.getLocale());
   }
 
   @Override
@@ -49,8 +52,7 @@ final class TofuPluginContext implements JavaPluginContext {
   }
 
   @Override
-  public TofuJavaValue getRenderedCssNamespaces() {
-    throw new UnsupportedOperationException(
-        "Tofu does not support getting required css namespaces.");
+  public TofuJavaValue getAllRequiredCssPaths(JavaValue template) {
+    throw new UnsupportedOperationException("Tofu does not support getting required css paths.");
   }
 }

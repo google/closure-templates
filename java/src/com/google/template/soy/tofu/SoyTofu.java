@@ -22,8 +22,10 @@ import com.google.common.collect.ImmutableSortedSet;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyTemplate;
+import com.google.template.soy.data.SoyTemplateData;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.parseinfo.SoyTemplateInfo;
+import com.google.template.soy.parseinfo.TemplateName;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import java.util.Map;
@@ -36,23 +38,12 @@ import javax.annotation.Nullable;
  * <p>Important: If you're a user of Soy, you should use the methods here (on a SoyTofu object
  * created by Soy), but should not create your own implementations of this interface.
  *
- * @deprecated Use SoySauce instead. Apps/framework users should follow this migration guide
- *     go/af-soy-migration. All other users should be able to switch from SoyFileSet.compileToTofu()
- *     to SoyFileSet.compileTemplates(). To use the support for precompilation (outside of
- *     apps/framework) see PrecompiledSoyModule.
+ * @deprecated Use SoySauce instead. All users should be able to switch from
+ *     SoyFileSet.compileToTofu() to SoyFileSet.compileTemplates(). To use the support for
+ *     precompilation (outside of apps/framework) see SoySauceBuilder.
  */
 @Deprecated
 public interface SoyTofu {
-
-  /**
-   * Gets the namespace of this SoyTofu object. The namespace is simply a convenience allowing
-   * {@code newRenderer()} to be called with a partial template name (e.g. ".fooTemplate"). Note:
-   * The namespace may be null, in which case {@code newRenderer()} must be called with the full
-   * template name.
-   *
-   * @return The namespace of this SoyTofu object, or null if no namespace.
-   */
-  String getNamespace();
 
   /**
    * Queries the current SoyTofu instance to see if it holds a given template. If the requested
@@ -98,6 +89,10 @@ public interface SoyTofu {
    * @return A new renderer for the given template.
    */
   Renderer newRenderer(String templateName);
+
+  default Renderer newRenderer(TemplateName templateName) {
+    return newRenderer(templateName.name());
+  }
 
   /**
    * Returns a new {@link Renderer} for configuring and rendering the given template. The returned
@@ -150,6 +145,10 @@ public interface SoyTofu {
     /** Sets the injected data to call the template with. Can be null if not used. */
     Renderer setIjData(Map<String, ?> ijData);
 
+    default Renderer setIjData(SoyTemplateData ijData) {
+      return setIjData(ijData.getParamsAsMap());
+    }
+
     /**
      * Sets the injected data to call the template with. Can be null if not used.
      *
@@ -184,18 +183,6 @@ public interface SoyTofu {
 
     /** Configures if we should render additional HTML comments for runtime inspection. */
     Renderer setDebugSoyTemplateInfo(boolean debugSoyTemplateInfo);
-
-    /**
-     * Sets the expected content kind.
-     *
-     * <p>An attempt to render a template with a different kind will fail if this has
-     * been called.
-     *
-     * @deprecated Use type-specific render methods instead of setting content kind
-     *     before rendering (e.g. {@link #renderHtml()}, {@link #renderCss()}, etc.).
-     * TODO(b/138750285): Delete this method in July 2020.
-     */
-     @Deprecated Renderer setContentKind(SanitizedContent.ContentKind contentKind);
 
     /**
      * Renders the configured html template to the given appendable.
@@ -347,6 +334,21 @@ public interface SoyTofu {
     String render();
 
     /**
+     * Renders the template using the data, injected data, and message bundle previously set into
+     * the given Appendable.
+     *
+     * <p>Checks the content kind of the template. kind="html" templates are allowed, unless
+     * setContentKind was called. The goal is to prevent accidental rendering of unescaped
+     * kind="text" in contexts where that could XSS.
+     *
+     * @deprecated Use {@link #renderHtml(Appendable)}, {@link #renderCss(Appendable)}, etc.
+     *     instead.
+     * @throws SoyTofuException if an error occurs during rendering.
+     */
+    @Deprecated
+    SanitizedContent.ContentKind render(Appendable out);
+
+    /**
      * Renders the template as a SanitizedContent object, which can be used as an input to another
      * Soy template, or used to verify that the output type is correct.
      *
@@ -361,69 +363,5 @@ public interface SoyTofu {
      */
     @Deprecated
     SanitizedContent renderStrict();
-
-    /**
-     * Renders the template using the data, injected data, and message bundle previously set into
-     * the given Appendable.
-     *
-     * <p>Checks the content kind of the template. kind="html" templates are allowed, unless
-     * setContentKind was called. The goal is to prevent accidental rendering of unescaped
-     * kind="text" in contexts where that could XSS.
-     *
-     * @deprecated Use {@link #renderHtml(Appendable)}, {@link #renderCss(Appendable)}, etc.
-     *     instead.
-     * @throws SoyTofuException if an error occurs during rendering.
-     */
-    @Deprecated
-    SanitizedContent.ContentKind render(Appendable out);
   }
-
-  /**
-   * Renders a template.
-   *
-   * @param templateInfo Info for the template to render.
-   * @param data The data to call the template with. Can be null if the template has no parameters.
-   * @param msgBundle The bundle of translated messages, or null to use the messages from the Soy
-   *     source.
-   * @return The rendered text.
-   * @deprecated Use {@link #newRenderer(SoyTemplateInfo)}.
-   */
-  @Deprecated
-  String render(
-      SoyTemplateInfo templateInfo, @Nullable SoyRecord data, @Nullable SoyMsgBundle msgBundle);
-
-  /**
-   * Renders a template.
-   *
-   * <p>Note: If you call this method instead of {@link #render(String, SoyRecord, SoyMsgBundle)},
-   * your template data will be converted to a {@code SoyRecord} object on each call. This may not
-   * be a big deal if you only need to use the data object once. But if you need to reuse the same
-   * data object for multiple calls, it's more efficient to build your own {@code SoyRecord} object
-   * and reuse it with {@link #render(String, SoyRecord, SoyMsgBundle)}.
-   *
-   * @param templateName The name of the template to render. If this SoyTofu instance is namespaced,
-   *     then this parameter should be a partial name beginning with a dot (e.g. ".fooTemplate").
-   * @param data The data to call the template with. Can be null if the template has no parameters.
-   * @param msgBundle The bundle of translated messages, or null to use the messages from the Soy
-   *     source.
-   * @return The rendered text.
-   * @deprecated Use {@link #newRenderer(String)}.
-   */
-  @Deprecated
-  String render(
-      String templateName, @Nullable Map<String, ?> data, @Nullable SoyMsgBundle msgBundle);
-
-  /**
-   * Renders a template.
-   *
-   * @param templateName The name of the template to render. If this SoyTofu instance is namespaced,
-   *     then this parameter should be a partial name beginning with a dot (e.g. ".fooTemplate").
-   * @param data The data to call the template with. Can be null if the template has no parameters.
-   * @param msgBundle The bundle of translated messages, or null to use the messages from the Soy
-   *     source.
-   * @return The rendered text.
-   * @deprecated Use {@link #newRenderer(String)}.
-   */
-  @Deprecated
-  String render(String templateName, @Nullable SoyRecord data, @Nullable SoyMsgBundle msgBundle);
 }

@@ -30,16 +30,16 @@ public final class TypeInfoTest {
   @Test
   public void testSimpleName() {
     assertThat(TypeInfo.create(TypeInfoTest.class).simpleName()).isEqualTo("TypeInfoTest");
-    assertThat(TypeInfo.create(TypeInfoTest.class.getName()).simpleName())
+    assertThat(TypeInfo.createClass(TypeInfoTest.class.getName()).simpleName())
         .isEqualTo("TypeInfoTest");
 
     assertThat(TypeInfo.create(Inner.class).simpleName()).isEqualTo("Inner");
-    assertThat(TypeInfo.create(Inner.class.getName()).simpleName()).isEqualTo("Inner");
+    assertThat(TypeInfo.createClass(Inner.class.getName()).simpleName()).isEqualTo("Inner");
   }
 
   @Test
   public void testInnerClass() {
-    assertThat(TypeInfo.create(TypeInfoTest.class).innerClass("Inner"))
-        .isEqualTo(TypeInfo.create(Inner.class));
+    assertThat(TypeInfo.create(TypeInfoTest.class).innerClass("Inner").className())
+        .isEqualTo(TypeInfo.create(Inner.class).className());
   }
 }

@@ -17,7 +17,10 @@
 package com.google.template.soy;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
 
+import com.google.auto.value.AutoValue;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Supplier;
@@ -25,17 +28,17 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Maps;
 import com.google.common.io.ByteSink;
+import com.google.common.io.ByteSource;
+import com.google.common.io.CharSink;
 import com.google.common.io.CharSource;
 import com.google.protobuf.Descriptors.GenericDescriptor;
-import com.google.template.soy.SoyFileSetParser.CompilationUnitAndKind;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
-import com.google.template.soy.base.internal.TriState;
-import com.google.template.soy.base.internal.VolatileSoyFileSupplier;
 import com.google.template.soy.conformance.ValidatedConformanceConfig;
+import com.google.template.soy.css.CssRegistry;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyCompilationException;
 import com.google.template.soy.error.SoyError;
@@ -47,12 +50,13 @@ import com.google.template.soy.invocationbuilders.passes.GenInvocationBuildersVi
 import com.google.template.soy.jbcsrc.BytecodeCompiler;
 import com.google.template.soy.jbcsrc.api.SoySauce;
 import com.google.template.soy.jbcsrc.api.SoySauceImpl;
-import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.internal.JsSrcMain;
-import com.google.template.soy.logging.LoggingConfig;
+import com.google.template.soy.logging.AnnotatedLoggingConfig;
+import com.google.template.soy.logging.AnnotatedLoggingConfigGenerator;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
+import com.google.template.soy.logging.VeMetadataGenerator;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.SoyMsgBundleHandler;
 import com.google.template.soy.msgs.SoyMsgBundleHandler.OutputFileOptions;
@@ -61,10 +65,15 @@ import com.google.template.soy.parseinfo.passes.GenerateParseInfoVisitor;
 import com.google.template.soy.passes.CheckTemplateHeaderVarsPass;
 import com.google.template.soy.passes.ClearSoyDocStringsVisitor;
 import com.google.template.soy.passes.PassManager;
+import com.google.template.soy.passes.PassManager.AstRewrites;
 import com.google.template.soy.passes.PassManager.PassContinuationRule;
 import com.google.template.soy.passes.PluginResolver;
 import com.google.template.soy.passes.SoyConformancePass;
 import com.google.template.soy.plugin.internal.PluginValidator;
+import com.google.template.soy.plugin.java.MethodChecker;
+import com.google.template.soy.plugin.java.MethodChecker.Code;
+import com.google.template.soy.plugin.java.MethodChecker.Response;
+import com.google.template.soy.plugin.java.PluginInstances;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.pysrc.SoyPySrcOptions;
 import com.google.template.soy.pysrc.internal.PySrcMain;
@@ -75,13 +84,18 @@ import com.google.template.soy.shared.internal.SoyScopedData;
 import com.google.template.soy.shared.internal.SoySimpleScope;
 import com.google.template.soy.shared.internal.gencode.GeneratedFile;
 import com.google.template.soy.shared.restricted.SoyFunction;
+import com.google.template.soy.shared.restricted.SoyFunctionSignature;
+import com.google.template.soy.shared.restricted.SoyMethodSignature;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.CompilationUnit;
+import com.google.template.soy.soytree.FileSetMetadata;
+import com.google.template.soy.soytree.Metadata;
+import com.google.template.soy.soytree.Metadata.CompilationUnitAndKind;
 import com.google.template.soy.soytree.SoyFileSetNode;
-import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.tofu.SoyTofu;
 import com.google.template.soy.tofu.internal.BaseTofu;
 import com.google.template.soy.types.SoyTypeRegistry;
+import com.google.template.soy.types.SoyTypeRegistryBuilder;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -90,16 +104,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.annotation.Nullable;
-import javax.inject.Inject;
 
 /**
  * Represents a complete set of Soy files for compilation as one bundle. The files may depend on
  * each other but should not have dependencies outside of the set.
  *
- * <p>Note: Soy file (or resource) contents must be encoded in UTF-8.
+ * <p><strong>Note that this implementation is not synchronized.</strong> If multiple threads use a
+ * SoyFileSet concurrently, it <i>must</i> be synchronized externally.
  *
+ * <p>Note: Soy file (or resource) contents must be encoded in UTF-8.
  */
 public final class SoyFileSet {
   private static final Logger logger = Logger.getLogger(SoyFileSet.class.getName());
@@ -109,28 +125,13 @@ public final class SoyFileSet {
    *
    * <p>If you need additional directives, functions, or types, create the Builder instance and then
    * call {@link Builder#addSourceFunction(SoySourceFunction)}.
+   *
+   * @deprecated Use the command line compilers to generate code instead of this interface. SoySauce
+   *     users can get an SoySauce instance via SoySauceBuilder.
    */
+  @Deprecated
   public static Builder builder() {
-    return new Builder(
-        new CoreDependencies(new SoySimpleScope(), ImmutableMap.of(), ImmutableMap.of()));
-  }
-
-  // Implementation detail of SoyFileSet.Builder.
-  // having it as its own 'parameter' class removes a small amount of boilerplate.
-  static final class CoreDependencies {
-    private final SoyScopedData scopedData;
-    private final ImmutableMap<String, SoyFunction> pluginFunctions;
-    private final ImmutableMap<String, SoyPrintDirective> pluginDirectives;
-
-    @Inject
-    CoreDependencies(
-        SoyScopedData scopedData,
-        ImmutableMap<String, ? extends SoyFunction> pluginFunctions,
-        ImmutableMap<String, ? extends SoyPrintDirective> pluginDirectives) {
-      this.scopedData = scopedData;
-      this.pluginFunctions = ImmutableMap.copyOf(pluginFunctions);
-      this.pluginDirectives = ImmutableMap.copyOf(pluginDirectives);
-    }
+    return new Builder(/* ignored= */ true);
   }
 
   /**
@@ -141,22 +142,20 @@ public final class SoyFileSet {
    */
   public static final class Builder {
     /** The SoyFileSuppliers collected so far in added order, as a set to prevent dupes. */
-    private final ImmutableMap.Builder<String, SoyFileSupplier> filesBuilder =
+    private final ImmutableMap.Builder<SourceFilePath, SoyFileSupplier> filesBuilder =
         ImmutableMap.builder();
 
     private final ImmutableList.Builder<CompilationUnitAndKind> compilationUnitsBuilder =
         ImmutableList.builder();
 
     /** Optional AST cache. */
-    private SoyAstCache cache;
+    private SoyAstCache cache = null;
 
     /** The general compiler options. */
-    private SoyGeneralOptions lazyGeneralOptions;
-
-    private final CoreDependencies coreDependencies;
+    private SoyGeneralOptions lazyGeneralOptions = null;
 
     /** The SoyProtoTypeProvider builder that will be built for local type registry. */
-    private final SoyTypeRegistry.Builder typeRegistryBuilder = new SoyTypeRegistry.Builder();
+    private final SoyTypeRegistryBuilder typeRegistryBuilder = new SoyTypeRegistryBuilder();
 
     @Nullable private Appendable warningSink;
 
@@ -166,18 +165,26 @@ public final class SoyFileSet {
 
     private ImmutableList<File> pluginRuntimeJars = ImmutableList.of();
 
+    private Optional<CssRegistry> cssRegistry = Optional.empty();
+
     private boolean skipPluginValidation = false;
 
-    private final ImmutableSet.Builder<SoyFunction> extraSoyFunctions = ImmutableSet.builder();
-    private final ImmutableSet.Builder<SoyPrintDirective> extraSoyPrintDirectives =
-        ImmutableSet.builder();
-    private final ImmutableSet.Builder<SoySourceFunction> extraSourceFunctions =
-        ImmutableSet.builder();
+    private boolean optimize = true;
 
-    Builder(CoreDependencies coreDependencies) {
-      this.coreDependencies = coreDependencies;
-      this.cache = null;
-      this.lazyGeneralOptions = null;
+    private MethodChecker javaPluginValidator =
+        (className, methodName, returnType, arguments) -> Response.error(Code.NO_SUCH_CLASS);
+
+    private Set<SourceFilePath> generatedPathsToCheck = ImmutableSet.of();
+
+    private final ImmutableSet.Builder<SoyFunction> soyFunctions = ImmutableSet.builder();
+    private final ImmutableSet.Builder<SoyPrintDirective> soyPrintDirectives =
+        ImmutableSet.builder();
+    private final ImmutableSet.Builder<SoySourceFunction> sourceFunctions = ImmutableSet.builder();
+    private final ImmutableSet.Builder<SoySourceFunction> sourceMethods = ImmutableSet.builder();
+
+    Builder(boolean ignored) {
+      // we use an ignored parameter to prevent guice from creating implicit bindings for this
+      // object.
     }
 
     /**
@@ -214,24 +221,27 @@ public final class SoyFileSet {
      * @return The new {@code SoyFileSet}.
      */
     public SoyFileSet build() {
+      SoyScopedData data = new SoySimpleScope();
       return new SoyFileSet(
-          coreDependencies.scopedData,
+          data,
           typeRegistryBuilder.build(),
-          ImmutableMap.<String, SoyFunction>builder()
-              .putAll(InternalPlugins.internalLegacyFunctionMap())
-              .putAll(coreDependencies.pluginFunctions)
-              .putAll(InternalPlugins.fromLegacyFunctions(extraSoyFunctions.build()))
+          ImmutableList.<SoyFunction>builder()
+              .addAll(InternalPlugins.internalLegacyFunctions())
+              .addAll(soyFunctions.build())
               .build(),
-          ImmutableMap.<String, SoyPrintDirective>builder()
-              .putAll(InternalPlugins.internalDirectiveMap(coreDependencies.scopedData))
-              .putAll(coreDependencies.pluginDirectives)
-              .putAll(InternalPlugins.fromDirectives(extraSoyPrintDirectives.build()))
+          ImmutableList.<SoyPrintDirective>builder()
+              .addAll(InternalPlugins.internalDirectives(data))
+              .addAll(soyPrintDirectives.build())
               .build(),
-          ImmutableMap.<String, SoySourceFunction>builder()
-              .putAll(InternalPlugins.internalFunctionMap())
-              .putAll(InternalPlugins.fromFunctions(extraSourceFunctions.build()))
+          ImmutableList.<SoySourceFunction>builder()
+              .addAll(InternalPlugins.internalFunctions())
+              .addAll(sourceFunctions.build())
               .build(),
-          filesBuilder.build(),
+          ImmutableList.<SoySourceFunction>builder()
+              .addAll(InternalPlugins.internalMethods())
+              .addAll(sourceMethods.build())
+              .build(),
+          filesBuilder.buildOrThrow(),
           compilationUnitsBuilder.build(),
           getGeneralOptions(),
           cache,
@@ -239,43 +249,76 @@ public final class SoyFileSet {
           loggingConfig,
           warningSink,
           pluginRuntimeJars,
-          skipPluginValidation);
+          skipPluginValidation,
+          optimize,
+          generatedPathsToCheck,
+          cssRegistry,
+          javaPluginValidator);
+    }
+
+    public Builder setJavaPluginValidator(MethodChecker javaPluginValidator) {
+      this.javaPluginValidator = javaPluginValidator;
+      return this;
     }
 
     /** Adds one {@link SoySourceFunction} to the functions used by this SoyFileSet. */
     public Builder addSourceFunction(SoySourceFunction function) {
-      extraSourceFunctions.add(function);
+      boolean method = false;
+      if (function.getClass().isAnnotationPresent(SoyMethodSignature.class)) {
+        sourceMethods.add(function);
+        method = true;
+      }
+      if (!method || function.getClass().isAnnotationPresent(SoyFunctionSignature.class)) {
+        sourceFunctions.add(function);
+      }
       return this;
     }
 
     /** Adds many {@link SoySourceFunction}s to the functions used by this SoyFileSet. */
     public Builder addSourceFunctions(Iterable<? extends SoySourceFunction> function) {
-      extraSourceFunctions.addAll(function);
+      for (SoySourceFunction f : function) {
+        addSourceFunction(f);
+      }
+      return this;
+    }
+
+    public Builder addSourceMethod(SoySourceFunction function) {
+      Preconditions.checkArgument(
+          function.getClass().isAnnotationPresent(SoyMethodSignature.class));
+      sourceMethods.add(function);
       return this;
     }
 
     /** Adds one {@link SoyFunction} to the functions used by this SoyFileSet. */
     public Builder addSoyFunction(SoyFunction function) {
-      extraSoyFunctions.add(function);
+      soyFunctions.add(function);
       return this;
     }
 
     /** Adds many {@link SoyFunction}s to the functions used by this SoyFileSet. */
     public Builder addSoyFunctions(Iterable<? extends SoyFunction> function) {
-      extraSoyFunctions.addAll(function);
+      soyFunctions.addAll(function);
       return this;
     }
 
     /** Adds one {@link SoyPrintDirective} to the print directives used by this SoyFileSet. */
     public Builder addSoyPrintDirective(SoyPrintDirective function) {
-      extraSoyPrintDirectives.add(function);
+      soyPrintDirectives.add(function);
       return this;
     }
 
     /** Adds many {@link SoyPrintDirective}s to the print directives used by this SoyFileSet. */
     public Builder addSoyPrintDirectives(Iterable<? extends SoyPrintDirective> function) {
-      extraSoyPrintDirectives.addAll(function);
+      soyPrintDirectives.addAll(function);
       return this;
+    }
+
+    /**
+     * Adds an input Soy file, given a {@code CharSource} for the file content, as well as the
+     * desired file path for messages.
+     */
+    public Builder add(SoyFileSupplier soyFileSupplier) {
+      return addFile(soyFileSupplier);
     }
 
     /**
@@ -287,7 +330,8 @@ public final class SoyFileSet {
      * @return This builder.
      */
     public Builder add(CharSource contentSource, String filePath) {
-      return addFile(SoyFileSupplier.Factory.create(contentSource, filePath));
+      return addFile(
+          SoyFileSupplier.Factory.create(contentSource, SourceFilePath.create(filePath)));
     }
 
     /**
@@ -299,7 +343,7 @@ public final class SoyFileSet {
      * @return This builder.
      */
     public Builder add(URL inputFileUrl, String filePath) {
-      return addFile(SoyFileSupplier.Factory.create(inputFileUrl, filePath));
+      return addFile(SoyFileSupplier.Factory.create(inputFileUrl, SourceFilePath.create(filePath)));
     }
 
     /**
@@ -312,9 +356,13 @@ public final class SoyFileSet {
      * @see #add(URL, String)
      * @param inputFileUrl The Soy file.
      * @return This builder.
+     * @deprecated This method is incompatible with imports since the filename is unlikely to be
+     *     correct. Please call {@link #add(URL, String)} instead, or better yet, migrate off of
+     *     SoyFileSet.
      */
+    @Deprecated
     public Builder add(URL inputFileUrl) {
-      return addFile(SoyFileSupplier.Factory.create(inputFileUrl));
+      return add(inputFileUrl, inputFileUrl.toString());
     }
 
     /**
@@ -326,7 +374,7 @@ public final class SoyFileSet {
      * @return This builder.
      */
     public Builder add(CharSequence content, String filePath) {
-      return addFile(SoyFileSupplier.Factory.create(content, filePath));
+      return addFile(SoyFileSupplier.Factory.create(content, SourceFilePath.create(filePath)));
     }
 
     /**
@@ -337,20 +385,6 @@ public final class SoyFileSet {
      */
     public Builder add(File inputFile) {
       return addFile(SoyFileSupplier.Factory.create(inputFile));
-    }
-
-    /**
-     * Adds an input Soy file that supports checking for modifications, given a {@code File}.
-     *
-     * <p>Note: This does nothing by itself. It should be used in conjunction with a feature that
-     * actually checks for volatile files. Currently, that feature is {@link
-     * #setSoyAstCache(SoyAstCache)}.
-     *
-     * @param inputFile The Soy file.
-     * @return This builder.
-     */
-    public Builder addVolatile(File inputFile) {
-      return addFile(new VolatileSoyFileSupplier(inputFile));
     }
 
     /**
@@ -365,17 +399,6 @@ public final class SoyFileSet {
      */
     public Builder setSoyAstCache(SoyAstCache cache) {
       this.cache = cache;
-      return this;
-    }
-
-    /**
-     * Sets whether to allow external calls (calls to undefined templates).
-     *
-     * @param allowExternalCalls Whether to allow external calls (calls to undefined templates).
-     * @return This builder.
-     */
-    public Builder setAllowExternalCalls(boolean allowExternalCalls) {
-      getGeneralOptions().setAllowExternalCalls(allowExternalCalls);
       return this;
     }
 
@@ -401,86 +424,12 @@ public final class SoyFileSet {
      * @return This builder.
      */
     public Builder disableOptimizer() {
-      getGeneralOptions().disableOptimizer();
+      optimize = false;
       return this;
     }
 
-    /**
-     * Sets the map from compile-time global name to value.
-     *
-     * <p>The values can be any of the Soy primitive types: null, boolean, integer, float (Java
-     * double), or string.
-     *
-     * @param compileTimeGlobalsMap Map from compile-time global name to value. The values can be
-     *     any of the Soy primitive types: null, boolean, integer, float (Java double), or string.
-     * @return This builder.
-     * @throws IllegalArgumentException If one of the values is not a valid Soy primitive type.
-     */
-    public Builder setCompileTimeGlobals(Map<String, ?> compileTimeGlobalsMap) {
-      getGeneralOptions().setCompileTimeGlobals(compileTimeGlobalsMap);
-      return this;
-    }
-
-    /**
-     * Sets the file containing compile-time globals.
-     *
-     * <p>Each line of the file should have the format
-     *
-     * <pre>
-     *     &lt;global_name&gt; = &lt;primitive_data&gt;
-     * </pre>
-     *
-     * where primitive_data is a valid Soy expression literal for a primitive type (null, boolean,
-     * integer, float, or string). Empty lines and lines beginning with "//" are ignored. The file
-     * should be encoded in UTF-8.
-     *
-     * <p>If you need to generate a file in this format from Java, consider using the utility {@code
-     * SoyUtils.generateCompileTimeGlobalsFile()}.
-     *
-     * @param compileTimeGlobalsFile The file containing compile-time globals.
-     * @return This builder.
-     * @throws IOException If there is an error reading the compile-time globals file.
-     */
-    public Builder setCompileTimeGlobals(File compileTimeGlobalsFile) throws IOException {
-      getGeneralOptions().setCompileTimeGlobals(compileTimeGlobalsFile);
-      return this;
-    }
-
-    /**
-     * Sets the resource file containing compile-time globals.
-     *
-     * <p>Each line of the file should have the format
-     *
-     * <pre>
-     *     &lt;global_name&gt; = &lt;primitive_data&gt;
-     * </pre>
-     *
-     * where primitive_data is a valid Soy expression literal for a primitive type (null, boolean,
-     * integer, float, or string). Empty lines and lines beginning with "//" are ignored. The file
-     * should be encoded in UTF-8.
-     *
-     * <p>If you need to generate a file in this format from Java, consider using the utility {@code
-     * SoyUtils.generateCompileTimeGlobalsFile()}.
-     *
-     * @param compileTimeGlobalsResource The resource containing compile-time globals.
-     * @return This builder.
-     * @throws IOException If there is an error reading the compile-time globals file.
-     */
-    public Builder setCompileTimeGlobals(URL compileTimeGlobalsResource) throws IOException {
-      getGeneralOptions().setCompileTimeGlobals(compileTimeGlobalsResource);
-      return this;
-    }
-
-    /**
-     * Add all proto descriptors found in the file to the type registry.
-     *
-     * @param descriptorFile A file containing FileDescriptorSet binary protos. These typically end
-     *     in {@code .proto.bin}. Note that this isn't the same as a {@code .proto} source file.
-     * @deprecated Call {@link #addProtoDescriptors} instead
-     */
-    @Deprecated
-    public Builder addProtoDescriptorsFromFile(File descriptorFile) throws IOException {
-      typeRegistryBuilder.addFileDescriptorSetFromFile(descriptorFile);
+    public Builder setGeneratedPathsToCheck(Set<SourceFilePath> generatedPaths) {
+      this.generatedPathsToCheck = generatedPaths;
       return this;
     }
 
@@ -508,14 +457,13 @@ public final class SoyFileSet {
       return this;
     }
 
-    Builder addCompilationUnit(
-        SoyFileKind fileKind, String filePath, CompilationUnit compilationUnit) {
+    Builder addCompilationUnit(SoyFileKind fileKind, CompilationUnit compilationUnit) {
       compilationUnitsBuilder.add(
-          CompilationUnitAndKind.create(fileKind, filePath, compilationUnit));
+          Metadata.CompilationUnitAndKind.create(fileKind, compilationUnit));
       return this;
     }
 
-    Builder addFile(SoyFileSupplier supplier) {
+    private Builder addFile(SoyFileSupplier supplier) {
       filesBuilder.put(supplier.getFilePath(), supplier);
       return this;
     }
@@ -538,7 +486,7 @@ public final class SoyFileSet {
      *     multiple elements with the same {@code name} or {@code id}, or if the name not a valid
      *     identifier.
      */
-    public Builder setLoggingConfig(LoggingConfig config) {
+    public Builder setLoggingConfig(AnnotatedLoggingConfig config) {
       return setValidatedLoggingConfig(ValidatedLoggingConfig.create(config));
     }
 
@@ -557,6 +505,11 @@ public final class SoyFileSet {
       return this;
     }
 
+    public Builder setCssRegistry(CssRegistry cssRegistry) {
+      this.cssRegistry = Optional.of(cssRegistry);
+      return this;
+    }
+
     /**
      * Sets whether or not to skip plugin validation. Defaults to false. This should usually not be
      * set unless you're doing something real funky.
@@ -570,7 +523,7 @@ public final class SoyFileSet {
   private final SoyScopedData scopedData;
 
   private final SoyTypeRegistry typeRegistry;
-  private final ImmutableMap<String, SoyFileSupplier> soyFileSuppliers;
+  private final ImmutableMap<SourceFilePath, SoyFileSupplier> soyFileSuppliers;
   private final ImmutableList<CompilationUnitAndKind> compilationUnits;
 
   /** Optional soy tree cache for faster recompile times. */
@@ -581,12 +534,18 @@ public final class SoyFileSet {
   private final ValidatedConformanceConfig conformanceConfig;
   private final ValidatedLoggingConfig loggingConfig;
   private final ImmutableList<File> pluginRuntimeJars;
+  private final Optional<CssRegistry> cssRegistry;
 
-  private final ImmutableMap<String, SoyFunction> soyFunctionMap;
-  private final ImmutableMap<String, SoyPrintDirective> printDirectives;
-  private final ImmutableMap<String, SoySourceFunction> soySourceFunctionMap;
+  private final ImmutableList<SoyFunction> soyFunctions;
+  private final ImmutableList<SoyPrintDirective> printDirectives;
+  private final ImmutableList<SoySourceFunction> soySourceFunctions;
+  private final ImmutableList<SoySourceFunction> soyMethods;
 
   private final boolean skipPluginValidation;
+
+  private final boolean optimize;
+  private final ImmutableSet<SourceFilePath> generatedPathsToCheck;
+  private final MethodChecker javaMethodChecker;
 
   /** For reporting errors during parsing. */
   private ErrorReporter errorReporter;
@@ -596,10 +555,11 @@ public final class SoyFileSet {
   SoyFileSet(
       SoyScopedData apiCallScopeProvider,
       SoyTypeRegistry typeRegistry,
-      ImmutableMap<String, SoyFunction> soyFunctionMap,
-      ImmutableMap<String, SoyPrintDirective> printDirectives,
-      ImmutableMap<String, SoySourceFunction> soySourceFunctionMap,
-      ImmutableMap<String, SoyFileSupplier> soyFileSuppliers,
+      ImmutableList<SoyFunction> soyFunctions,
+      ImmutableList<SoyPrintDirective> printDirectives,
+      ImmutableList<SoySourceFunction> soySourceFunctions,
+      ImmutableList<SoySourceFunction> soyMethods,
+      ImmutableMap<SourceFilePath, SoyFileSupplier> soyFileSuppliers,
       ImmutableList<CompilationUnitAndKind> compilationUnits,
       SoyGeneralOptions generalOptions,
       @Nullable SoyAstCache cache,
@@ -607,27 +567,40 @@ public final class SoyFileSet {
       ValidatedLoggingConfig loggingConfig,
       @Nullable Appendable warningSink,
       ImmutableList<File> pluginRuntimeJars,
-      boolean skipPluginValidation) {
+      boolean skipPluginValidation,
+      boolean optimize,
+      Set<SourceFilePath> generatedPathsToCheck,
+      Optional<CssRegistry> cssRegistry,
+      MethodChecker javaMethodChecker) {
     this.scopedData = apiCallScopeProvider;
     this.typeRegistry = typeRegistry;
     this.soyFileSuppliers = soyFileSuppliers;
     this.compilationUnits = compilationUnits;
     this.cache = cache;
     this.generalOptions = generalOptions.clone();
-    this.soyFunctionMap = soyFunctionMap;
-    this.printDirectives = printDirectives;
-    this.soySourceFunctionMap = soySourceFunctionMap;
+    this.soyFunctions = InternalPlugins.filterDuplicateFunctions(soyFunctions);
+    this.printDirectives = InternalPlugins.filterDuplicateDirectives(printDirectives);
+    this.soySourceFunctions = soySourceFunctions;
+    this.soyMethods = soyMethods;
     this.conformanceConfig = checkNotNull(conformanceConfig);
     this.loggingConfig = checkNotNull(loggingConfig);
     this.warningSink = warningSink;
     this.pluginRuntimeJars = pluginRuntimeJars;
     this.skipPluginValidation = skipPluginValidation;
+    this.optimize = optimize;
+    this.generatedPathsToCheck = ImmutableSet.copyOf(generatedPathsToCheck);
+    this.cssRegistry = cssRegistry;
+    this.javaMethodChecker = javaMethodChecker;
   }
 
   /** Returns the list of suppliers for the input Soy files. For testing use only! */
   @VisibleForTesting
-  ImmutableMap<String, SoyFileSupplier> getSoyFileSuppliersForTesting() {
+  ImmutableMap<SourceFilePath, SoyFileSupplier> getSoyFileSuppliersForTesting() {
     return soyFileSuppliers;
+  }
+
+  ImmutableList<SourceFilePath> getSourceFilePaths() {
+    return soyFileSuppliers.keySet().asList();
   }
 
   @VisibleForTesting
@@ -635,25 +608,40 @@ public final class SoyFileSet {
     return typeRegistry;
   }
 
+  private boolean isCompiling;
+
   /** Template pattern for any public or package visible entry point method that returns a value. */
   private <T> T entryPoint(Supplier<T> variant) {
+    synchronized (this) {
+      if (isCompiling) {
+        // TODO(lukes): upgrade to an exception
+        logger.log(
+            Level.SEVERE,
+            "concurrent use of a SoyFileSet object is undefined behavior.",
+            new Exception());
+      }
+      isCompiling = true;
+    }
     resetErrorReporter();
-    T rv;
     try {
-      rv = variant.get();
+      T rv = variant.get();
+      throwIfErrorsPresent();
+      reportWarnings();
+      return rv;
     } catch (SoyCompilationException | SoyInternalCompilerException e) {
       throw e;
     } catch (RuntimeException e) {
-      if (errorReporter.hasErrors()) {
+      if (errorReporter.hasErrorsOrWarnings()) {
         throw new SoyInternalCompilerException(
             Iterables.concat(errorReporter.getErrors(), errorReporter.getWarnings()), e);
       } else {
         throw e;
       }
+    } finally {
+      synchronized (this) {
+        isCompiling = false;
+      }
     }
-    throwIfErrorsPresent();
-    reportWarnings();
-    return rv;
   }
 
   /** Template pattern for any public or package visible entry point method that is void. */
@@ -676,13 +664,13 @@ public final class SoyFileSet {
   ImmutableList<GeneratedFile> generateInvocationBuilders(String javaPackage) {
     return entryPoint(
         () -> {
-          ParseResult result = parseForGenJava();
-          TemplateRegistry registry = result.registry();
-          SoyFileSetNode soyTree = result.fileSet();
+          ParseResult result = parseWithoutOptimizingOrDesugaringHtml();
           throwIfErrorsPresent();
+          SoyFileSetNode soyTree = result.fileSet();
 
           // Generate template invocation builders for the soy tree.
-          return new GenInvocationBuildersVisitor(javaPackage, registry).exec(soyTree);
+          return new GenInvocationBuildersVisitor(errorReporter, javaPackage, result.registry())
+              .exec(soyTree);
         });
   }
 
@@ -699,15 +687,14 @@ public final class SoyFileSet {
   ImmutableList<GeneratedFile> generateParseInfo(String javaPackage, String javaClassNameSource) {
     return entryPoint(
         () -> {
-          ParseResult result = parseForGenJava();
+          ParseResult result = parseWithoutOptimizingOrDesugaringHtml();
           throwIfErrorsPresent();
 
           SoyFileSetNode soyTree = result.fileSet();
-          TemplateRegistry registry = result.registry();
+          FileSetMetadata registry = result.registry();
 
           // Do renaming of package-relative class names.
-          return new GenerateParseInfoVisitor(
-                  javaPackage, javaClassNameSource, registry, typeRegistry)
+          return new GenerateParseInfoVisitor(javaPackage, javaClassNameSource, registry)
               .exec(soyTree);
         });
   }
@@ -719,16 +706,25 @@ public final class SoyFileSet {
           // First resolve all the plugins to ensure they're well-formed (no bad names, etc.).
           new PluginResolver(
               PluginResolver.Mode.REQUIRE_DEFINITIONS,
-              getSoyPrintDirectives(),
-              getSoyFunctions(),
-              getSoySourceFunctions(),
+              printDirectives,
+              soyFunctions,
+              soySourceFunctions,
+              soyMethods,
               errorReporter);
-          // Then validate the user-specified source functions.
-          Set<String> internalFunctionNames = InternalPlugins.internalFunctionMap().keySet();
+          // if constructing the resolver found an error, bail out now.
+          throwIfErrorsPresent();
+          // Then validate the user-specified source functions by filtering out the builtin ones
+          // TODO(lukes): maybe we should store internal functions and plugins in separate lists to
+          // avoid this filtering...
+          ImmutableSet<Class<?>> internalFunctionNames =
+              InternalPlugins.internalFunctions().stream()
+                  .map(Object::getClass)
+                  .collect(toImmutableSet());
           new PluginValidator(errorReporter, typeRegistry, pluginRuntimeJars)
               .validate(
-                  Maps.filterKeys(
-                      getSoySourceFunctions(), name -> !internalFunctionNames.contains(name)));
+                  soySourceFunctions.stream()
+                      .filter(fn -> !internalFunctionNames.contains(fn.getClass()))
+                      .collect(toImmutableList()));
           throwIfErrorsPresent();
         });
   }
@@ -736,22 +732,55 @@ public final class SoyFileSet {
   /** A simple tool to enforce conformance and only conformance. */
   void checkConformance() {
     entryPointVoid(
+        () ->
+            // to check conformance we only need to run as much as it takes to execute the
+            // SoyConformance pass.
+            parse(
+                passManagerBuilder()
+                    .allowUnknownJsGlobals()
+                    .astRewrites(AstRewrites.KYTHE)
+                    .desugarHtmlNodes(false)
+                    .optimize(false)
+                    .addHtmlAttributesForDebugging(false)
+                    // TODO(lukes): kill the pass continuation mechanism
+                    .addPassContinuationRule(
+                        SoyConformancePass.class, PassContinuationRule.STOP_AFTER_PASS)));
+  }
+
+  AnnotatedLoggingConfig generateAnnotatedLoggingConfig(
+      CharSource rawLoggingConfig,
+      String javaPackage,
+      String jsPackage,
+      String className,
+      String javaResourceFilename) {
+    return entryPoint(
         () -> {
-          // to check conformance we only need to run as much as it takes to execute the
-          // SoyConformance pass.
-          parse(
-              passManagerBuilder()
-                  // We have to set disableAllTypeChecking to make sure default parameter types
-                  // don't break calculating TemplateMetadata objects.  This is because
-                  // SoyConformancePass runs before ResolveExpressionTypesPass which normally
-                  // populates the parameter types for default params.  With disableAllTypeChecking
-                  // set an earlier pass will just set those types to unknown
-                  // TODO(lukes):  change the pass continuation mechanism to avoid generating a
-                  // template registry if we halt prior to cross template passes.
-                  .disableAllTypeChecking()
-                  .addPassContinuationRule(
-                      SoyConformancePass.class, PassContinuationRule.STOP_AFTER_PASS));
+          try {
+            return new AnnotatedLoggingConfigGenerator(
+                    rawLoggingConfig,
+                    javaPackage,
+                    jsPackage,
+                    className,
+                    javaResourceFilename,
+                    typeRegistry,
+                    errorReporter)
+                .generate();
+          } catch (IOException e) {
+            throw new IllegalStateException(e);
+          }
         });
+  }
+
+  void generateAndWriteVeMetadata(
+      VeMetadataGenerator.Mode mode,
+      ByteSource loggingConfigBytes,
+      String generator,
+      CharSink output,
+      Optional<ByteSink> resourceOutput)
+      throws IOException {
+    new VeMetadataGenerator(
+            mode, loggingConfigBytes, generator, typeRegistry, output, resourceOutput)
+        .generateAndWrite();
   }
 
   /**
@@ -760,7 +789,9 @@ public final class SoyFileSet {
    *
    * @return A SoyMsgBundle containing all the extracted messages (locale "en").
    * @throws SoyCompilationException If compilation fails.
+   * @deprecated Use the command line APIs to extract messages instead
    */
+  @Deprecated
   public SoyMsgBundle extractMsgs() {
     return entryPoint(this::doExtractMsgs);
   }
@@ -773,7 +804,7 @@ public final class SoyFileSet {
    * @param output Where to write the extracted messages.
    * @throws IOException If there are errors writing to the output.
    */
-  public void extractAndWriteMsgs(
+  void extractAndWriteMsgs(
       SoyMsgBundleHandler msgBundleHandler, OutputFileOptions options, ByteSink output)
       throws IOException {
     entryPointVoid(
@@ -789,32 +820,17 @@ public final class SoyFileSet {
 
   /** Performs the parsing and extraction logic. */
   private SoyMsgBundle doExtractMsgs() {
-    // extractMsgs disables a bunch of passes since it is typically not configured with things
-    // like global definitions, type definitions, plugins, etc.
     SoyFileSetNode soyTree =
         parse(
                 passManagerBuilder()
                     .allowUnknownGlobals()
-                    .allowV1Expression()
                     .allowUnknownJsGlobals()
-                    .desugarHtmlAndStateNodes(false)
-                    .setTypeRegistry(SoyTypeRegistry.DEFAULT_UNKNOWN)
-                    // TODO(lukes): consider changing this to pass a null resolver instead of the
-                    // ALLOW_UNDEFINED mode
-                    .setPluginResolver(
-                        new PluginResolver(
-                            PluginResolver.Mode.ALLOW_UNDEFINED,
-                            printDirectives,
-                            soyFunctionMap,
-                            soySourceFunctionMap,
-                            errorReporter))
-                    .disableAllTypeChecking(),
-                // override the type registry so that the parser doesn't report errors when it
-                // can't resolve strict types
-                SoyTypeRegistry.DEFAULT_UNKNOWN)
+                    // Skip optimization, we could run it but it seems to be a waste of time
+                    .optimize(false)
+                    .desugarHtmlNodes(false))
             .fileSet();
     throwIfErrorsPresent();
-    SoyMsgBundle bundle = new ExtractMsgsVisitor().exec(soyTree);
+    SoyMsgBundle bundle = new ExtractMsgsVisitor(errorReporter).exec(soyTree);
     throwIfErrorsPresent();
     return bundle;
   }
@@ -825,7 +841,11 @@ public final class SoyFileSet {
    *
    * @return The resulting {@code SoyTofu} object.
    * @throws SoyCompilationException If compilation fails.
+   * @deprecated Use SoySauce instead. All users should be able to switch from
+   *     SoyFileSet.compileToTofu() to SoyFileSet.compileTemplates(). To use the support for
+   *     precompilation see SoySauceBuilder.
    */
+  @Deprecated
   public SoyTofu compileToTofu() {
     return compileToTofu(ImmutableMap.of());
   }
@@ -835,7 +855,11 @@ public final class SoyFileSet {
    *
    * @return The resulting {@code SoyTofu} object.
    * @throws SoyCompilationException If compilation fails.
+   * @deprecated Use SoySauce instead. All users should be able to switch from
+   *     SoyFileSet.compileToTofu() to SoyFileSet.compileTemplates(). To use the support for
+   *     precompilation see SoySauceBuilder.
    */
+  @Deprecated
   public SoyTofu compileToTofu(Map<String, Supplier<Object>> pluginInstances) {
     return entryPoint(
         () -> {
@@ -848,7 +872,8 @@ public final class SoyFileSet {
   /** Helper method to compile SoyTofu from {@link ServerCompilationPrimitives} */
   private SoyTofu doCompileToTofu(
       ServerCompilationPrimitives primitives, Map<String, Supplier<Object>> pluginInstances) {
-    return new BaseTofu(scopedData.enterable(), primitives.soyTree, pluginInstances);
+    return new BaseTofu(
+        scopedData.enterable(), primitives.soyTree, PluginInstances.of(pluginInstances));
   }
 
   /**
@@ -857,9 +882,9 @@ public final class SoyFileSet {
    *
    * <p>This is useful for implementing 'edit refresh' workflows. Most production usecases should
    * use the command line interface to 'ahead of time' compile templates to jar files and then use
-   * {@code PrecompiledSoyModule} or {@code SoySauceBuilder} to get access to a {@link SoySauce}
-   * object without invoking the compiler. This will allow applications to avoid invoking the soy
-   * compiler at runtime which can be relatively slow.
+   * {@code SoySauceBuilder} to get access to a {@link SoySauce} object without invoking the
+   * compiler. This will allow applications to avoid invoking the soy compiler at runtime which can
+   * be relatively slow.
    *
    * @return A set of compiled templates
    * @throws SoyCompilationException If compilation fails.
@@ -867,15 +892,16 @@ public final class SoyFileSet {
   public SoySauce compileTemplates() {
     return compileTemplates(ImmutableMap.of());
   }
+
   /**
    * Compiles this Soy file set into a set of java classes implementing the {@link SoySauce}
    * interface.
    *
    * <p>This is useful for implementing 'edit refresh' workflows. Most production usecases should
    * use the command line interface to 'ahead of time' compile templates to jar files and then use
-   * {@code PrecompiledSoyModule} or {@code SoySauceBuilder} to get access to a {@link SoySauce}
-   * object without invoking the compiler. This will allow applications to avoid invoking the soy
-   * compiler at runtime which can be relatively slow.
+   * {@code SoySauceBuilder} to get access to a {@link SoySauce} object without invoking the
+   * compiler. This will allow applications to avoid invoking the soy compiler at runtime which can
+   * be relatively slow.
    *
    * @return A set of compiled templates
    * @throws SoyCompilationException If compilation fails.
@@ -885,24 +911,28 @@ public final class SoyFileSet {
         () -> {
           ServerCompilationPrimitives primitives = compileForServerRendering();
           throwIfErrorsPresent();
-          return doCompileSoySauce(primitives, pluginInstances);
+          return doCompileSoySauce(primitives, PluginInstances.of(pluginInstances));
         });
   }
 
+  public CssRegistry getCssRegistry() {
+    return cssRegistry.get();
+  }
+
   /**
-   * Compiles this Soy file set into a set of java classes implementing the {@link CompiledTemplate}
-   * interface and writes them out to the given ByteSink as a JAR file.
+   * Compiles this Soy file set into a set of java classes implementing the {@link
+   * com.google.template.soy.jbcsrc.shared.CompiledTemplate} interface and writes them out to the
+   * given ByteSink as a JAR file.
    *
    * @throws SoyCompilationException If compilation fails.
    */
   void compileToJar(ByteSink jarTarget, Optional<ByteSink> srcJarTarget) {
     entryPointVoid(
         () -> {
-          disallowExternalCalls();
           ServerCompilationPrimitives primitives = compileForServerRendering();
           try {
             BytecodeCompiler.compileToJar(
-                primitives.registry, primitives.soyTree, errorReporter, typeRegistry, jarTarget);
+                primitives.soyTree, errorReporter, typeRegistry, jarTarget, primitives.registry);
             if (srcJarTarget.isPresent()) {
               BytecodeCompiler.writeSrcJar(
                   primitives.soyTree, soyFileSuppliers, srcJarTarget.get());
@@ -915,25 +945,15 @@ public final class SoyFileSet {
 
   /** Helper method to compile SoySauce from {@link ServerCompilationPrimitives} */
   private SoySauce doCompileSoySauce(
-      ServerCompilationPrimitives primitives, Map<String, Supplier<Object>> pluginInstances) {
+      ServerCompilationPrimitives primitives, PluginInstances pluginInstances) {
     Optional<CompiledTemplates> templates =
         BytecodeCompiler.compile(
-            primitives.registry,
-            primitives.soyTree,
-            // if there is an AST cache, assume we are in 'dev mode' and trigger lazy compilation.
-            cache != null,
-            errorReporter,
-            soyFileSuppliers,
-            typeRegistry);
+            primitives.registry, primitives.soyTree, errorReporter, soyFileSuppliers, typeRegistry);
 
     throwIfErrorsPresent();
 
     return new SoySauceImpl(
-        templates.get(),
-        scopedData.enterable(),
-        soyFunctionMap,
-        printDirectives,
-        ImmutableMap.copyOf(pluginInstances));
+        templates.get(), scopedData.enterable(), soyFunctions, printDirectives, pluginInstances);
   }
 
   /**
@@ -942,9 +962,9 @@ public final class SoyFileSet {
    */
   private static final class ServerCompilationPrimitives {
     final SoyFileSetNode soyTree;
-    final TemplateRegistry registry;
+    final FileSetMetadata registry;
 
-    ServerCompilationPrimitives(TemplateRegistry registry, SoyFileSetNode soyTree) {
+    ServerCompilationPrimitives(FileSetMetadata registry, SoyFileSetNode soyTree) {
       this.registry = registry;
       this.soyTree = soyTree;
     }
@@ -956,7 +976,7 @@ public final class SoyFileSet {
     throwIfErrorsPresent();
 
     SoyFileSetNode soyTree = result.fileSet();
-    TemplateRegistry registry = result.registry();
+    FileSetMetadata registry = result.registry();
     // Clear the SoyDoc strings because they use unnecessary memory, unless we have a cache, in
     // which case it is pointless.
     if (cache == null) {
@@ -965,17 +985,6 @@ public final class SoyFileSet {
 
     throwIfErrorsPresent();
     return new ServerCompilationPrimitives(registry, soyTree);
-  }
-
-  private void disallowExternalCalls() {
-    TriState allowExternalCalls = generalOptions.allowExternalCalls();
-    if (allowExternalCalls == TriState.UNSET) {
-      generalOptions.setAllowExternalCalls(false);
-    } else if (allowExternalCalls == TriState.ENABLED) {
-      throw new IllegalStateException(
-          "SoyGeneralOptions.setAllowExternalCalls(true) is not supported with this method");
-    }
-    // otherwise, it was already explicitly set to false which is what we want.
   }
 
   /**
@@ -1001,19 +1010,11 @@ public final class SoyFileSet {
       SoyJsSrcOptions jsSrcOptions, @Nullable SoyMsgBundle msgBundle) {
     return entryPoint(
         () -> {
-          // JS has traditionally allowed unknown globals, as a way for soy to reference normal js
-          // enums and constants. For consistency/reusability of templates it would be nice to not
-          // allow that but the cat is out of the bag.
           PassManager.Builder builder =
-              passManagerBuilder()
-                  // TODO(lukes): remove this in favor of allowUnknownJsGlobals
-                  .allowUnknownGlobals()
-                  .allowV1Expression()
-                  .allowUnknownJsGlobals()
-                  .desugarHtmlAndStateNodes(false);
+              passManagerBuilder().allowUnknownJsGlobals().desugarHtmlNodes(false);
           ParseResult result = parse(builder);
           throwIfErrorsPresent();
-          TemplateRegistry registry = result.registry();
+          FileSetMetadata registry = result.registry();
           SoyFileSetNode fileSet = result.fileSet();
           return new JsSrcMain(scopedData.enterable(), typeRegistry)
               .genJsSrc(fileSet, registry, jsSrcOptions, msgBundle, errorReporter);
@@ -1028,19 +1029,14 @@ public final class SoyFileSet {
    * @return A list of strings where each string represents the JS source code that belongs in one
    *     JS file. The generated JS files correspond one-to-one to the original Soy source files.
    * @throws SoyCompilationException If compilation fails.
-   * @deprecated Do not call. Use the command line API.
    */
-  @Deprecated
-  public List<String> compileToIncrementalDomSrc(SoyIncrementalDomSrcOptions jsSrcOptions) {
-    return compileToIncrementalDomSrcInternal(jsSrcOptions);
-  }
-
   List<String> compileToIncrementalDomSrcInternal(SoyIncrementalDomSrcOptions jsSrcOptions) {
     return entryPoint(
         () -> {
           // For incremental dom backend, we don't desugar HTML nodes since it requires HTML
           // context.
-          ParseResult result = parse(passManagerBuilder().desugarHtmlAndStateNodes(false));
+          ParseResult result =
+              parse(passManagerBuilder().desugarHtmlNodes(false).desugarIdomFeatures(false));
           throwIfErrorsPresent();
           return new IncrementalDomSrcMain(scopedData.enterable(), typeRegistry)
               .genJsSrc(result.fileSet(), result.registry(), jsSrcOptions, errorReporter);
@@ -1050,81 +1046,136 @@ public final class SoyFileSet {
   /**
    * Compiles this Soy file set into Python source code files and writes these Python files to disk.
    *
-   * @param outputPathFormat The format string defining how to build the output file path
-   *     corresponding to an input file path.
    * @param pySrcOptions The compilation options for the Python Src output target.
    * @throws SoyCompilationException If compilation fails.
    * @throws RuntimeException If there is an error in opening/reading a message file or
    *     opening/writing an output JS file.
    */
-  void compileToPySrcFiles(String outputPathFormat, SoyPySrcOptions pySrcOptions) {
-    entryPointVoid(
+  List<String> compileToPySrcFiles(SoyPySrcOptions pySrcOptions) {
+    return entryPoint(
         () -> {
           try {
             ParseResult result = parse();
             throwIfErrorsPresent();
-            new PySrcMain(scopedData.enterable())
-                .genPyFiles(result.fileSet(), pySrcOptions, outputPathFormat, errorReporter);
+            return new PySrcMain(scopedData.enterable())
+                .genPyFiles(result.fileSet(), result.registry(), pySrcOptions, errorReporter);
           } catch (IOException e) {
             throw new RuntimeException(e);
           }
         });
   }
 
+  @AutoValue
+  abstract static class HeaderResult {
+    abstract SoyFileSetNode fileSet();
+
+    abstract FileSetMetadata templateRegistry();
+
+    abstract CssRegistry cssRegistry();
+  }
+
   /**
    * Performs the minimal amount of work needed to calculate TemplateMetadata objects for header
    * compilation.
    */
-  ParseResult compileMinimallyForHeaders() {
+  HeaderResult compileMinimallyForHeaders() {
     return entryPoint(
-        () ->
-            parse(
-                passManagerBuilder()
-                    // Because we allow this for JS generated templates, we allow this for
-                    // headers.
-                    // TODO(lukes): remove this in favor of allowUnknownJsGlobals
-                    .allowUnknownGlobals()
-                    .allowUnknownJsGlobals()
-                    // Only run passes that not cross template checking.
-                    .addPassContinuationRule(
-                        CheckTemplateHeaderVarsPass.class, PassContinuationRule.STOP_BEFORE_PASS)
-                    .allowV1Expression(),
-                typeRegistry));
+        () -> {
+          ParseResult parseResult =
+              parse(
+                  passManagerBuilder()
+                      // Because we allow this for JS generated templates, we allow this for
+                      // headers.
+                      .allowUnknownJsGlobals()
+                      // Only run passes that not cross template checking.
+                      .addPassContinuationRule(
+                          CheckTemplateHeaderVarsPass.class, PassContinuationRule.STOP_BEFORE_PASS),
+                  typeRegistry);
+          // throw before accessing registry() to make sure it is definitely available.
+          throwIfErrorsPresent();
+          return new AutoValue_SoyFileSet_HeaderResult(
+              parseResult.fileSet(), parseResult.registry(), cssRegistry.get());
+        });
   }
 
-  ImmutableMap<String, SoyFunction> getSoyFunctions() {
-    return soyFunctionMap;
+  /** Returns the result of {@link #compileForAnalysis}. */
+  @AutoValue
+  public abstract static class AnalysisResult {
+    AnalysisResult() {}
+
+    /**
+     * The template registry, will be empty if errors occurred early and it couldn't be constructed.
+     */
+    public abstract Optional<FileSetMetadata> registry();
+
+    /** The full parsed AST. */
+    public abstract SoyFileSetNode fileSet();
+
+    public abstract CssRegistry cssRegistry();
+
+    /** Compiler warnings. This will include errors if {@code treatErrorsAsWarnings} was set. */
+    public abstract ImmutableList<SoyError> warnings();
   }
 
-  ImmutableMap<String, SoyPrintDirective> getSoyPrintDirectives() {
-    return printDirectives;
-  }
-
-  ImmutableMap<String, SoySourceFunction> getSoySourceFunctions() {
-    return soySourceFunctionMap;
+  /** Performs enough work to retrieve all possible warnings in a compile. */
+  public AnalysisResult compileForAnalysis(boolean treatErrorsAsWarnings, AstRewrites astRewrites) {
+    return entryPoint(
+        () -> {
+          ParseResult result =
+              parse(
+                  passManagerBuilder()
+                      // the optimizer mutates the AST heavily which inhibits certain source
+                      // analysis
+                      // rules.
+                      .optimize(false)
+                      .astRewrites(astRewrites)
+                      // skip adding extra attributes
+                      .addHtmlAttributesForDebugging(false)
+                      // skip the autoescaper
+                      .insertEscapingDirectives(false)
+                      .desugarHtmlNodes(false)
+                      // TODO(lukes): This is needed for kythe apparently
+                      .allowUnknownGlobals()
+                      .allowUnknownJsGlobals(),
+                  typeRegistry);
+          ImmutableList<SoyError> warnings;
+          if (treatErrorsAsWarnings) {
+            // we are essentially ignoring errors
+            resetErrorReporter();
+            warnings =
+                ImmutableList.<SoyError>builder()
+                    .addAll(errorReporter.getErrors())
+                    .addAll(errorReporter.getWarnings())
+                    .build();
+          } else {
+            warnings = errorReporter.getWarnings();
+          }
+          return new AutoValue_SoyFileSet_AnalysisResult(
+              result.hasRegistry() ? Optional.of(result.registry()) : Optional.empty(),
+              result.fileSet(),
+              result.cssRegistry(),
+              warnings);
+        });
   }
 
   /**
    * Parses the file set with the options we need for writing generated java *SoyInfo and invocation
    * builders.
    */
-  private ParseResult parseForGenJava() {
-    // TODO(lukes): see if we can enforce that globals are provided at compile time here.
-    // given that types have to be, this should be possible.  Currently it is disabled for
-    // backwards compatibility
+  private ParseResult parseWithoutOptimizingOrDesugaringHtml() {
     // N.B. we do not run the optimizer here for 2 reasons:
     // 1. it would just waste time, since we are not running code generation the optimization
     //    work doesn't help anything
     // 2. it potentially removes metadata from the tree by precalculating expressions. For
     //     example, trivial print nodes are evaluated, which can remove globals from the tree,
-    //     but the
+    //     but the gencode needs to find these so that their proto types can be used to bootstrap
+    //     development mode compilation.
     return parse(
         passManagerBuilder()
-            .allowUnknownGlobals()
             .optimize(false)
             // Don't desugar, this is a bit of a waste of time and it destroys type
             // information about @state parameters
-            .desugarHtmlAndStateNodes(false));
+            .desugarHtmlNodes(false));
   }
 
   // Parse the current file set.
@@ -1142,6 +1193,7 @@ public final class SoyFileSet {
         .setCache(cache)
         .setSoyFileSuppliers(soyFileSuppliers)
         .setCompilationUnits(compilationUnits)
+        .setCssRegistry(cssRegistry)
         .setTypeRegistry(typeRegistry)
         .setPassManager(builder.setTypeRegistry(typeRegistry).build())
         .setErrorReporter(errorReporter)
@@ -1152,8 +1204,12 @@ public final class SoyFileSet {
   private PassManager.Builder passManagerBuilder() {
     return new PassManager.Builder()
         .setGeneralOptions(generalOptions)
-        .setSoyPrintDirectiveMap(printDirectives)
+        .optimize(optimize)
+        .setGeneratedPathsToCheck(generatedPathsToCheck)
+        .setSoyPrintDirectives(printDirectives)
+        .setCssRegistry(cssRegistry)
         .setErrorReporter(errorReporter)
+        .setJavaPluginValidator(javaMethodChecker)
         .setConformanceConfig(conformanceConfig)
         .setLoggingConfig(loggingConfig)
         .setPluginResolver(
@@ -1162,8 +1218,9 @@ public final class SoyFileSet {
                     ? PluginResolver.Mode.ALLOW_UNDEFINED
                     : PluginResolver.Mode.REQUIRE_DEFINITIONS,
                 printDirectives,
-                soyFunctionMap,
-                soySourceFunctionMap,
+                soyFunctions,
+                soySourceFunctions,
+                soyMethods,
                 errorReporter));
   }
 
@@ -1173,7 +1230,7 @@ public final class SoyFileSet {
    * <p>This method should be called at the beginning of every entry point into SoyFileSet.
    */
   @VisibleForTesting
-  void resetErrorReporter() {
+  synchronized void resetErrorReporter() {
     errorReporter = ErrorReporter.create(soyFileSuppliers);
   }
 

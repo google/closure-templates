@@ -33,7 +33,6 @@ import com.google.template.soy.sharedpasses.render.RenderException;
  *       failure cause attached to that.
  *   <li>TODO(lukes): fill in more examples
  * </ul>
- *
  */
 public class SoyTofuException extends RuntimeException {
 

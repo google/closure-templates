@@ -18,21 +18,22 @@ package com.google.template.soy.sharedpasses.opti;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.SoyFileSetParser.ParseResult;
-import com.google.template.soy.SoyFileSetParserBuilder;
-import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.soytree.ForNode;
-import com.google.template.soy.soytree.ForNonemptyNode;
+import com.google.common.truth.StringSubject;
+import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.logging.LoggingFunction;
+import com.google.template.soy.shared.restricted.Signature;
+import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.MsgPlaceholderNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
-import com.google.template.soy.soytree.SoyNode.StandaloneNode;
+import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.TemplateNode;
-import java.util.List;
+import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -41,66 +42,34 @@ import org.junit.runners.JUnit4;
 public class SimplifyVisitorTest {
 
   @Test
-  public void testCombineConsecutiveRawTextNodes() throws Exception {
-
-    String soyCode =
-        "{@param boo : ?}\n"
-            + "blah{$boo}blah"
-            + "{for $i in range(5)}"
-            + "  blah{$boo}blah"
-            + "{/for}";
-    ParseResult parseResult = SoyFileSetParserBuilder.forTemplateContents(soyCode).parse();
-    SoyFileSetNode soyTree = parseResult.fileSet();
-
-    TemplateNode template = soyTree.getChild(0).getChild(0);
-    ForNonemptyNode forNode = (ForNonemptyNode) ((ForNode) template.getChild(3)).getChild(0);
-    forNode.addChild(new RawTextNode(0, "bleh", SourceLocation.UNKNOWN));
-    forNode.addChild(new RawTextNode(0, "bluh", SourceLocation.UNKNOWN));
-    template.addChild(0, new RawTextNode(0, "bleh", SourceLocation.UNKNOWN));
-    template.addChild(0, new RawTextNode(0, "bluh", SourceLocation.UNKNOWN));
-
-    assertThat(template.numChildren()).isEqualTo(6);
-    assertThat(forNode.numChildren()).isEqualTo(5);
-
-    SimplifyVisitor simplifyVisitor =
-        SimplifyVisitor.create(
-            soyTree.getNodeIdGenerator(), ImmutableList.copyOf(soyTree.getChildren()));
-    simplifyVisitor.simplify(soyTree.getChild(0));
-
-    assertThat(template.numChildren()).isEqualTo(4);
-    assertThat(forNode.numChildren()).isEqualTo(3);
-    assertThat(((RawTextNode) template.getChild(0)).getRawText()).isEqualTo("bluhblehblah");
-    assertThat(((RawTextNode) forNode.getChild(2)).getRawText()).isEqualTo("blahblehbluh");
-  }
-
-  @Test
   public void testMsgBlockNodeChildrenAreNotReplaced() throws Exception {
 
     String soyFileContent =
         "{namespace boo}\n"
             + "\n"
-            + "{template .foo}\n"
+            + "{template foo}\n"
             + "\n"
             + "  {msg desc=\"\"}\n"
             + "    blah\n"
             + "    {'blah'}\n"
             + "    blah\n"
-            + "    {call .aaa /}\n"
+            + "    {call aaa /}\n"
             + "    blah\n"
-            + "    <div class=\"{call .aaa /}\">\n"
+            + "    <div class=\"{call aaa /}\">\n"
             + "    </div>\n"
             + "    blah\n"
             + "  {/msg}\n"
             + "{/template}\n"
             + "\n"
             + "/***/\n"
-            + "{template .aaa}\n"
+            + "{template aaa}\n"
             + "  blah\n"
             + "{/template}";
 
     MsgNode msgNode =
         ((MsgFallbackGroupNode)
-                simplifySoyFiles(soyFileContent).getChild(0).getChild(0).getChild(0))
+                ((TemplateNode) simplifySoyFiles(soyFileContent).getChild(0).getChild(0))
+                    .getChild(0))
             .getChild(0);
     assertThat(msgNode.numChildren()).isEqualTo(8);
     // The MsgPlaceholderNode children are not replaced.
@@ -115,144 +84,248 @@ public class SimplifyVisitorTest {
 
   @Test
   public void testSimplifyPrintNode() throws Exception {
+    assertSimplification("{'foo'}").isEqualTo("foo");
 
-    String soyCode;
-
-    soyCode = "{'foo'}";
-    assertThat(simplifySoyCode(soyCode).get(0).toSourceString()).isEqualTo("foo");
-
-    soyCode = "{'abcdefgh' |insertWordBreaks:5}";
-    assertThat(simplifySoyCode(soyCode).get(0).toSourceString()).isEqualTo("abcde<wbr>fgh");
+    assertSimplification("{'abcdefgh' |insertWordBreaks:5}").isEqualTo("abcde<wbr>fgh");
 
     // Doesn't simplify PrintNode with non-constant expression (but expression is simplified).
-    soyCode = "{@param boo : ?}\n" + "{1 + 3 + $boo}";
-    assertThat(simplifySoyCode(soyCode).get(0).toSourceString()).isEqualTo("{4 + $boo}");
+    assertSimplification("{@param boo : ?}\n" + "{1 + 3 + $boo}")
+        .isEqualTo("{@param boo: ?}\n{4 + $boo}");
 
     // formatNum is not annotated as a SoyPureFunction, so it should not be simplified.
-    soyCode = "{formatNum(5)}";
-    assertThat(simplifySoyCode(soyCode).get(0).toSourceString()).isEqualTo("{formatNum(5)}");
+    assertSimplification("{formatNum(5)}").isEqualTo("{formatNum(5)}");
 
     // Doesn't simplify PrintNode with non-constant directive arg.
-    soyCode = "{@param boo : ?}\n" + "{'0123456789' |insertWordBreaks:$boo}";
-    assertThat(simplifySoyCode(soyCode).get(0).toSourceString())
-        .isEqualTo("{'0123456789' |insertWordBreaks:$boo}");
+    assertSimplification("{@param boo : ?}\n" + "{'0123456789' |insertWordBreaks:$boo}")
+        .isEqualTo("{@param boo: ?}\n{'0123456789' |insertWordBreaks:$boo}");
   }
 
   @Test
   public void testSimplifyIfNode() throws Exception {
 
-    String soyCode;
+    assertSimplification(
+            "{if not false}", "  111", "{/if}", "{if true and false}", "  222", "{/if}")
+        .isEqualTo("111");
 
-    soyCode =
-        "{if not false}\n"
-            + "  111\n"
-            + "{/if}\n"
-            + "{if true and false}\n"
-            + "  222\n"
-            + "{/if}\n";
-    assertThat(simplifySoyCode(soyCode).get(0).toSourceString()).isEqualTo("111");
+    assertSimplification("{if ''}", "  111", "{elseif not 1}", "  222", "{else}", "  333", "{/if}")
+        .isEqualTo("333");
 
-    soyCode =
-        "{if ''}\n"
-            + "  111\n"
-            + "{elseif not 1}\n"
-            + "  222\n"
-            + "{else}\n"
-            + "  333\n"
-            + "{/if}\n";
-    assertThat(simplifySoyCode(soyCode).get(0).toSourceString()).isEqualTo("333");
+    assertSimplification(
+            "{if false}", "  111", "{elseif true}", "  222", "{else}", "  333", "{/if}")
+        .isEqualTo("222");
 
-    soyCode =
-        "{if false}\n"
-            + "  111\n"
-            + "{elseif true}\n"
-            + "  222\n"
-            + "{else}\n"
-            + "  333\n"
-            + "{/if}\n";
-    assertThat(simplifySoyCode(soyCode).get(0).toSourceString()).isEqualTo("222");
+    assertSimplification(
+            "{@param boo : ?}",
+            "{if false}",
+            "  111",
+            "{elseif $boo}",
+            "  222",
+            "{elseif true}",
+            "  333",
+            "{else}",
+            "  444",
+            "{/if}")
+        .isEqualTo("{@param boo: ?}\n{if $boo}222{else}333{/if}");
 
-    soyCode =
-        "{@param boo : ?}\n"
-            + "{if false}\n"
-            + "  111\n"
-            + "{elseif $boo}\n"
-            + "  222\n"
-            + "{elseif true}\n"
-            + "  333\n"
-            + "{else}\n"
-            + "  444\n"
-            + "{/if}\n";
-    assertThat(simplifySoyCode(soyCode).get(0).toSourceString())
-        .isEqualTo("{if $boo}222{else}333{/if}");
-
-    soyCode =
-        "{@param boo : ?}\n"
-            + "{if 0}\n"
-            + "  111\n"
-            + "{elseif 1}\n"
-            + "  {if true}\n"
-            + "    {if $boo}\n"
-            + "      222\n"
-            + "    {elseif ''}\n"
-            + "      333\n"
-            + "    {elseif 'blah'}\n"
-            + "      444\n"
-            + "    {else}\n"
-            + "      555\n"
-            + "    {/if}\n"
-            + "  {else}\n"
-            + "    666\n"
-            + "  {/if}\n"
-            + "{else}\n"
-            + "  777\n"
-            + "{/if}\n";
-    assertThat(simplifySoyCode(soyCode).get(0).toSourceString())
-        .isEqualTo("{if $boo}222{else}444{/if}");
+    assertSimplification(
+            "{@param boo : ?}",
+            "{if 0}",
+            "  111",
+            "{elseif 1}",
+            "  {if true}",
+            "    {if $boo}",
+            "      222",
+            "    {elseif ''}",
+            "      333",
+            "    {elseif 'blah'}",
+            "      444",
+            "    {else}",
+            "      555",
+            "    {/if}",
+            "  {else}",
+            "    666",
+            "  {/if}",
+            "{else}",
+            "  777",
+            "{/if}")
+        .isEqualTo("{@param boo: ?}\n{if $boo}222{else}444{/if}");
   }
 
   @Test
   public void testSimplifySwitchNode() throws Exception {
 
-    String soyCode;
+    assertSimplification(
+            "{@param boo : ?}",
+            "{switch 1 + 2}",
+            "  {case 1}111",
+            "  {case 2, 3}222333",
+            "  {case $boo}444",
+            "  {default}goo",
+            "{/switch}")
+        .isEqualTo("{@param boo: ?}\n222333");
 
-    soyCode =
-        "{@param boo : ?}\n"
-            + "{switch 1 + 2}\n"
-            + "  {case 1}111\n"
-            + "  {case 2, 3}222333\n"
-            + "  {case $boo}444\n"
-            + "  {default}goo\n"
-            + "{/switch}\n";
-    assertThat(simplifySoyCode(soyCode).get(0).toSourceString()).isEqualTo("222333");
+    assertSimplification(
+            "{switch 1 + 2}", "  {case 1}111", "  {case 2}222", "  {default}333", "{/switch}")
+        .isEqualTo("333");
 
-    soyCode =
-        "{switch 1 + 2}\n"
-            + "  {case 1}111\n"
-            + "  {case 2}222\n"
-            + "  {default}333\n"
-            + "{/switch}\n";
-    assertThat(simplifySoyCode(soyCode).get(0).toSourceString()).isEqualTo("333");
-
-    soyCode =
-        "{@param boo : ?}\n"
-            + "{switch 1 + 2}\n"
-            + "  {case $boo}111\n"
-            + "  {case 2}222\n"
-            + "  {case 3}333\n"
-            + "  {default}444\n"
-            + "{/switch}\n";
-    assertThat(simplifySoyCode(soyCode).get(0).toSourceString())
-        .isEqualTo("{switch 3}{case $boo}111{default}333{/switch}");
+    assertSimplification(
+            "{@param boo : ?}",
+            "{switch 1 + 2}",
+            "  {case $boo}111",
+            "  {case 2}222",
+            "  {case 3}333",
+            "  {default}444",
+            "{/switch}")
+        .isEqualTo("{@param boo: ?}\n{switch 3}{case $boo}111{default}333{/switch}");
   }
 
-  private List<StandaloneNode> simplifySoyCode(String soyCode) throws Exception {
-    SoyFileSetNode fileSet = SoyFileSetParserBuilder.forTemplateContents(soyCode).parse().fileSet();
-    SimplifyVisitor simplifyVisitor =
-        SimplifyVisitor.create(
-            fileSet.getNodeIdGenerator(), ImmutableList.copyOf(fileSet.getChildren()));
-    simplifyVisitor.simplify(fileSet.getChild(0));
-    return fileSet.getChild(0).getChild(0).getChildren();
+  @Test
+  public void testRewriteContentNodes_let() {
+    assertSimplification("{let $foo kind='text'}hello{/let}{$foo}{$foo}")
+        .isEqualTo("{let $foo : 'hello' /}{$foo}{$foo}");
+
+    assertSimplification("{let $foo kind='text'}{xid('foo')}:{xid('bar')}{/let}{$foo}{$foo}")
+        .isEqualTo("{let $foo : '' + xid('foo') + ':' + xid('bar') /}{$foo}{$foo}");
+  }
+
+  @Test
+  public void testRewriteContentNodes_callParam() {
+    assertSimplification(
+            "{@param p: ?}",
+            "{call t}",
+            "  {param p kind='text'}",
+            "    hello world {$p}",
+            "  {/param}",
+            "{/call}")
+        .isEqualTo("{@param p: ?}\n{call t}{param p: 'hello world ' + $p /}{/call}");
+  }
+
+  @Test
+  public void testCallParamWithLoggingFunctionNotRewritten() {
+    assertSimplification(
+            "<{t2()} data-ved=\"{currentVed()}\"></>",
+            "{/template}",
+            "{template t2 kind=\"html<?>\"}",
+            "  {@attribute? data-ved: string}",
+            "  <div @data-ved></div>")
+        .isEqualTo(
+            "{call t2}{param ssk: null /}{param dataVed kind=\"text\"}{currentVed()"
+                + " |escapeHtmlAttribute}{/param}{/call}");
+  }
+
+  @Test
+  public void testCallBind() {
+    assertSimplification(
+            "{@param tpl: (a: string, b: string) => html<?>}",
+            "{call $tpl.bind(record(a:'anA'))}",
+            "  {param b: 'aB' /}",
+            "{/call}")
+        .isEqualTo(
+            "{@param tpl: (a: string, b: string) => html<?>}\n"
+                + "{call $tpl}{param a: 'anA' /}{param b: 'aB' /}{/call}");
+
+    assertSimplification(
+            "{@param tpl: (a: string, b: string) => html<?>}",
+            "{call $tpl.bind(record(a:'anA', b:'aB')) /}")
+        .isEqualTo(
+            "{@param tpl: (a: string, b: string) => html<?>}\n"
+                + "{call $tpl}{param a: 'anA' /}{param b: 'aB' /}{/call}");
+  }
+
+  @Test
+  public void testInlineLets() {
+    assertSimplification("{@param p: ?}", "{let $a : $p /}", "{let $b : $a /}", "{$b}")
+        .isEqualTo(normalized("{@param p: ?}", "{$p}"));
+
+    assertNoOp("{@param p: ?}", "{let $b : $p /}{$b + $b}");
+
+    assertSimplification(
+            "{@param p: ?}",
+            "{let $b : $p + 1 /}",
+            "{for $i in range(10)}",
+            "{let $c : $i + 1 /}",
+            "{$b + $c}",
+            "{/for}")
+        .isEqualTo(
+            normalized(
+                "{@param p: ?}",
+                "{let $b : $p + 1 /}", // b doesn't move inside the loop
+                "{for $i in range(10)}",
+                "{$b + ($i + 1)}", // c does because it is designed inside the loop
+                "{/for}"));
+  }
+
+  @Test
+  public void testInlineLets_trivialValuesMoveInsideLoops() {
+    assertSimplification(
+            "{let $b : 1 /}", "{for $i in range(10)}", "{let $c : $i + 1 /}", "{$b + $c}", "{/for}")
+        .isEqualTo(normalized("{for $i in range(10)}", "{1 + ($i + 1)}", "{/for}"));
+  }
+
+  @Test
+  public void testInliningUnlocksFurtherOptimization() {
+    // First the two lets should get turned into letvaluenodes
+    // Then foo will be inlined
+    // Then the if we be calulated, deleting the else branch
+    // then bar will be inlined
+    // Then the print node will be eliminated.
+    assertSimplification(
+            "{let $foo kind='text'}foo{/let}",
+            "{let $bar kind='text'}bar{/let}",
+            "{if $foo}Hello {$bar}{else}Goodbye {$bar}{/if}")
+        .isEqualTo(normalized("Hello bar"));
+  }
+
+  @Test
+  public void testInlineIntoMsg() {
+    assertSimplification("{msg desc='...'}Hello {'foo' phname=\"FOO\"}{/msg}")
+        .isEqualTo(normalized("{msg desc=\"...\"}Hello foo{/msg}"));
+    assertSimplification("{let $foo kind='text'}foo{/let}", "{msg desc='...'}Hello {$foo}{/msg}")
+        .isEqualTo(normalized("{msg desc=\"...\"}Hello foo{/msg}"));
+  }
+
+  private static StringSubject assertSimplification(String... input) {
+    SoyFileSetNode node = parse(join(input));
+    SimplifyVisitor.create(
+            node.getNodeIdGenerator(),
+            ImmutableList.copyOf(node.getChildren()),
+            ErrorReporter.exploding())
+        .simplify(node.getChild(0));
+    return assertThat(toString(node.getChild(0).getChild(0)));
+  }
+
+  private static void assertNoOp(String... input) {
+    SoyFileSetNode node = parse(join(input));
+    String original = toString(node.getChild(0).getChild(0));
+    SimplifyVisitor.create(
+            node.getNodeIdGenerator(),
+            ImmutableList.copyOf(node.getChildren()),
+            ErrorReporter.exploding())
+        .simplify(node.getChild(0));
+    String rewritten = toString(node.getChild(0).getChild(0));
+    assertThat(rewritten).isEqualTo(original);
+  }
+
+  private static SoyFileSetNode parse(String input) {
+    return SoyFileSetParserBuilder.forFileContents(
+            join("{namespace ns}", "{template t}", input, "{/template}"))
+        .runOptimizer(false)
+        .addSoySourceFunction(new CurrentVedFunction())
+        .parse()
+        .fileSet();
+  }
+
+  private static String toString(SoyNode node) {
+    String string = node.toSourceString();
+    return string.replace("{template t}\n", "").replace("\n{/template}", "").trim();
+  }
+
+  private static String normalized(String... args) {
+    return toString(parse(join(args)).getChild(0).getChild(0));
+  }
+
+  private static String join(String... args) {
+    return Joiner.on('\n').join(args);
   }
 
   private SoyFileSetNode simplifySoyFiles(String... soyFileContents) throws Exception {
@@ -260,10 +333,21 @@ public class SimplifyVisitorTest {
         SoyFileSetParserBuilder.forFileContents(soyFileContents).parse().fileSet();
     SimplifyVisitor simplifyVisitor =
         SimplifyVisitor.create(
-            fileSet.getNodeIdGenerator(), ImmutableList.copyOf(fileSet.getChildren()));
+            fileSet.getNodeIdGenerator(),
+            ImmutableList.copyOf(fileSet.getChildren()),
+            ErrorReporter.exploding());
     for (SoyFileNode file : fileSet.getChildren()) {
       simplifyVisitor.simplify(file);
     }
     return fileSet;
+  }
+
+  @SoyFunctionSignature(name = "currentVed", value = @Signature(returnType = "string"))
+  private static final class CurrentVedFunction implements LoggingFunction {
+
+    @Override
+    public String getPlaceholder() {
+      return "";
+    }
   }
 }

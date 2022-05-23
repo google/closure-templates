@@ -1,5 +1,6 @@
 // This file was automatically generated from simple.soy.
 // Please don't edit this file by hand.
+/** @fileoverview @suppress {lintChecks} */
 
 if (typeof soy == 'undefined') { var soy = {}; }
 if (typeof soy.examples == 'undefined') { soy.examples = {}; }

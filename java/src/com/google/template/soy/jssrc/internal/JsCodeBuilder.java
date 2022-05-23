@@ -16,9 +16,9 @@
 
 package com.google.template.soy.jssrc.internal;
 
+import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.jssrc.dsl.Expression.id;
 
-import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
@@ -68,7 +68,6 @@ import javax.annotation.Nullable;
  *   return output.toString();
  * }  // the end
  * </pre>
- *
  */
 public class JsCodeBuilder {
 
@@ -93,14 +92,6 @@ public class JsCodeBuilder {
   /** The current indent (some even number of spaces). */
   private String indent;
 
-  private final CodeChunk.RequiresCollector requireCollector =
-      new CodeChunk.RequiresCollector() {
-        @Override
-        public void add(GoogRequire require) {
-          addGoogRequire(require);
-        }
-      };
-
   // the set of symbols to require, indexed by symbol name to detect conflicting imports
   private final Map<String, GoogRequire> googRequires = new TreeMap<>();
 
@@ -115,7 +106,7 @@ public class JsCodeBuilder {
   /** Whether the current output variable is initialized. */
   private boolean currOutputVarIsInited;
 
-  protected JsCodeBuilder() {
+  public JsCodeBuilder() {
     code = new StringBuilder();
     indent = "";
     outputVars = new ArrayDeque<>();
@@ -142,9 +133,9 @@ public class JsCodeBuilder {
       return;
     }
 
-    // var output = '';
+    // let output = '';
     appendLine(
-        "var ",
+        "let ",
         // Don't tell the chunk about the current indent level.
         // We're in the middle of a line!
         currOutputVar.assertExpr().getText(),
@@ -164,13 +155,14 @@ public class JsCodeBuilder {
   public JsCodeBuilder addChunksToOutputVar(List<? extends Expression> codeChunks) {
     if (currOutputVarIsInited) {
       Expression rhs = CodeChunkUtils.concatChunks(codeChunks);
-      rhs.collectRequires(requireCollector);
+      rhs.collectRequires(this::addGoogRequire);
       appendLine(currOutputVar.plusEquals(rhs).getCode());
     } else {
       Expression rhs = CodeChunkUtils.concatChunksForceString(codeChunks);
-      rhs.collectRequires(requireCollector);
+      rhs.collectRequires(this::addGoogRequire);
       append(
           VariableDeclaration.builder(currOutputVar.singleExprOrName().getText())
+              .setMutable()
               .setRhs(rhs)
               .build());
       setOutputVarInited();
@@ -204,7 +196,7 @@ public class JsCodeBuilder {
    */
   private JsCodeBuilder changeIndentHelper(int chg) {
     int newIndentDepth = indent.length() + chg * INDENT_SIZE;
-    Preconditions.checkState(newIndentDepth >= 0);
+    checkState(newIndentDepth >= 0);
     indent = Strings.repeat(" ", newIndentDepth);
     return this;
   }
@@ -257,7 +249,7 @@ public class JsCodeBuilder {
    * current indentation level.
    */
   public JsCodeBuilder append(CodeChunk codeChunk) {
-    codeChunk.collectRequires(requireCollector);
+    codeChunk.collectRequires(this::addGoogRequire);
     return append(codeChunk.getStatementsForInsertingIntoForeignCodeAtIndent(indent.length()));
   }
 
@@ -266,18 +258,26 @@ public class JsCodeBuilder {
    * indentation level.
    */
   public JsCodeBuilder append(JsDoc jsDoc) {
-    jsDoc.collectRequires(requireCollector);
+    jsDoc.collectRequires(this::addGoogRequire);
     return appendLine(jsDoc.toString());
   }
 
   /**
    * Appends one or more strings to the generated code.
+   *
    * @param codeFragments The code string(s) to append.
    * @return This CodeBuilder (for stringing together operations).
    */
   public JsCodeBuilder append(String... codeFragments) {
     for (String codeFragment : codeFragments) {
       code.append(codeFragment);
+    }
+    return this;
+  }
+
+  public JsCodeBuilder appendNullable(@Nullable CodeChunk codeChunk) {
+    if (codeChunk != null) {
+      return append(codeChunk);
     }
     return this;
   }

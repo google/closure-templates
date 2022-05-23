@@ -180,7 +180,7 @@ public final class PluginAnalyzer {
     }
 
     @Override
-    public JavaValue getRenderedCssNamespaces() {
+    public JavaValue getAllRequiredCssPaths(JavaValue template) {
       accessed = true;
       return FinderValue.INSTANCE;
     }

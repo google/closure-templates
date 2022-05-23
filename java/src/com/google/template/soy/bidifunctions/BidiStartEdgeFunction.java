@@ -37,7 +37,6 @@ import java.util.List;
 /**
  * Soy function that gets the name of the start edge ('left' or 'right') for the current global bidi
  * directionality.
- *
  */
 @SoyFunctionSignature(name = "bidiStartEdge", value = @Signature(returnType = "string"))
 final class BidiStartEdgeFunction

@@ -19,7 +19,6 @@ package com.google.template.soy.shared.internal;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.shared.restricted.SoyFunction;
-import com.google.template.soy.shared.restricted.SoyPureFunction;
 import java.util.Set;
 import javax.annotation.Nullable;
 
@@ -27,13 +26,12 @@ import javax.annotation.Nullable;
  * Enum of built-in functions supported in Soy expressions.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public enum BuiltinFunction implements SoyFunction {
-  IS_FIRST("isFirst"),
-  IS_LAST("isLast"),
-  INDEX("index"),
   CHECK_NOT_NULL("checkNotNull"),
+  // TODO(b/144312362): try changing it to private $$isParamSet when hooking up with default value
+  // desugaring so that it can be tested implicitly.
+  IS_PARAM_SET("isParamSet"),
   /**
    * Function for substituting CSS class names according to a lookup map.
    *
@@ -42,14 +40,16 @@ public enum BuiltinFunction implements SoyFunction {
    */
   CSS("css"),
   XID("xid"),
-  V1_EXPRESSION("v1Expression"),
+  SOY_SERVER_KEY("$soyServerKey"),
   UNKNOWN_JS_GLOBAL("unknownJsGlobal"),
   REMAINDER("remainder"),
   MSG_WITH_ID("msgWithId"),
   VE_DATA("ve_data"),
+  LEGACY_DYNAMIC_TAG("legacyDynamicTag"),
   IS_PRIMARY_MSG_IN_USE("$$isPrimaryMsgInUse"),
   TO_FLOAT("$$toFloat"),
   DEBUG_SOY_TEMPLATE_INFO("$$debugSoyTemplateInfo"),
+  PROTO_INIT("$$protoInit"),
   ;
 
   public static ImmutableSet<String> names() {
@@ -99,17 +99,18 @@ public enum BuiltinFunction implements SoyFunction {
         return ImmutableSet.of(3);
       case DEBUG_SOY_TEMPLATE_INFO:
         return ImmutableSet.of(0);
-      case IS_FIRST:
-      case IS_LAST:
-      case INDEX:
+      case IS_PARAM_SET:
+      case SOY_SERVER_KEY:
       case CHECK_NOT_NULL:
       case XID:
       case UNKNOWN_JS_GLOBAL:
-      case V1_EXPRESSION:
+      case LEGACY_DYNAMIC_TAG:
       case REMAINDER:
       case MSG_WITH_ID:
       case TO_FLOAT:
         return ImmutableSet.of(1);
+      case PROTO_INIT:
+        throw new UnsupportedOperationException();
     }
     throw new AssertionError(this);
   }
@@ -117,28 +118,35 @@ public enum BuiltinFunction implements SoyFunction {
   /**
    * Whether or not this function is pure.
    *
-   * <p>This is equivalent to annotating a function with {@link SoyPureFunction}. See {@link
-   * SoyPureFunction} for the definition of a pure function.
+   * <p>This is equivalent to annotating a function with {@link
+   * com.google.template.soy.shared.restricted.SoyPureFunction}. See {@link
+   * com.google.template.soy.shared.restricted.SoyPureFunction} for the definition of a pure
+   * function.
    */
+  @Override
   public boolean isPure() {
     switch (this) {
       case CHECK_NOT_NULL:
       case MSG_WITH_ID:
       case VE_DATA:
       case TO_FLOAT:
+      case PROTO_INIT:
+      case IS_PARAM_SET:
         return true;
-      case IS_FIRST: // implicitly depends on loop index
-      case IS_LAST: // implicitly depends on loop index
-      case INDEX: // implicitly depends on loop index
       case CSS: // implicitly depends on a renaming map or js compiler flag
       case XID: // implicitly depends on a renaming map or js compiler flag
+      case SOY_SERVER_KEY: // Relies on call stack dependent on rendering
       case UNKNOWN_JS_GLOBAL: // this is a black box from the compiler perspective
-      case V1_EXPRESSION: // this is a black box from the compiler perspective
+      case LEGACY_DYNAMIC_TAG: // this is a black box from the compiler perspective
       case REMAINDER: // implicitly depends on a plural value
       case IS_PRIMARY_MSG_IN_USE: // implicitly depends on a message bundle
       case DEBUG_SOY_TEMPLATE_INFO: // implicitly depends on a renderer param or js compiler flag
         return false;
     }
     throw new AssertionError(this);
+  }
+
+  public String deprecatedWarning() {
+    return "";
   }
 }

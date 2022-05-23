@@ -16,59 +16,106 @@
 
 package com.google.template.soy.jbcsrc.api;
 
-import com.google.common.annotations.Beta;
+
+
+import static com.google.common.base.Preconditions.checkState;
+import static com.google.template.soy.jbcsrc.api.AppendableAsAdvisingAppendable.asAdvisingAppendable;
+
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.errorprone.annotations.CheckReturnValue;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyTemplate;
+import com.google.template.soy.data.SoyTemplateData;
 import com.google.template.soy.logging.SoyLogger;
 import com.google.template.soy.msgs.SoyMsgBundle;
+import com.google.template.soy.parseinfo.TemplateName;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import java.io.IOException;
 import java.util.Map;
 import java.util.function.Predicate;
-import javax.annotation.CheckReturnValue;
 
 /**
  * Main entry point for rendering Soy templates on the server.
  */
 public interface SoySauce {
-  /** Returns a new {@link Renderer} for configuring and rendering the given template. */
+  /**
+   * Returns a new {@link Renderer} for configuring and rendering the given template.
+   *
+   * @deprecated Use {@link #newRenderer(SoyTemplate)} instead.
+   */
+  @Deprecated
   Renderer renderTemplate(String template);
+
+  default Renderer renderTemplate(TemplateName template) {
+    return renderTemplate(template.name());
+  }
 
   /**
    * Returns a new {@link Renderer} for configuring and rendering the given template. The returned
    * renderer will have its data set and may not allow additional calls to {@link Renderer#setData}.
    */
-  @Beta
   default Renderer newRenderer(SoyTemplate params) {
     return renderTemplate(params.getTemplateName()).setData(params.getParamsAsMap());
   }
 
   /**
-   * Returns the transitive set of {@code $ij} params needed to render this template.
+   * Returns the transitive set of {@code $ij} params that might be needed to render this template.
    *
-   * <p>NOTE: this will return a super-set of the parameters that will actually be used at runtime,
+   * <p>NOTE: this will return a superset of the parameters that will actually be used at runtime;
    * this is because it doesn't take delpackages or conditional logic inside templates into account.
+   * Additionally, this treats all references to template literals as though they may be called.
    */
   ImmutableSet<String> getTransitiveIjParamsForTemplate(String templateInfo);
 
   /**
-   * Returns all css module namespaces needed to render this template. This follows css through
-   * deltemplate mods and optionally follows delvariants.
+   * Returns all css module namespaces that might be needed to render this template. This follows
+   * css through deltemplate mods and optionally follows delvariants.
+   *
+   * <p>NOTE: this will return a superset of the namespaces that will actually be used at runtime;
+   * this is because it doesn't take conditional logic into account. Additionally, this treats all
+   * references to template literals as though they may be called.
    */
   ImmutableList<String> getAllRequiredCssNamespaces(
       String templateName, Predicate<String> enabledDelpackages, boolean collectCssFromDelvariants);
 
+  /** As above, but given a SoyTemplate instead of a template name. */
+  default ImmutableList<String> getAllRequiredCssNamespaces(
+      SoyTemplate template,
+      Predicate<String> enabledDelpackages,
+      boolean collectCssFromDelvariants) {
+    return getAllRequiredCssNamespaces(
+        template.getTemplateName(), enabledDelpackages, collectCssFromDelvariants);
+  }
+
+  /**
+   * Returns all css paths that might be needed to render this template. This follows css through
+   * deltemplate mods and optionally follows delvariants.
+   *
+   * <p>NOTE: this will return a superset of the css files that will actually be used at runtime;
+   * this is because it doesn't take conditional logic into account. Additionally, this treats all
+   * references to template literals as though they may be called.
+   */
+  ImmutableList<String> getAllRequiredCssPaths(
+      String templateName, Predicate<String> enabledDelpackages, boolean collectCssFromDelvariants);
+
+  /** As above, but given a SoyTemplate instead of a template name. */
+  default ImmutableList<String> getAllRequiredCssPaths(
+      SoyTemplate template,
+      Predicate<String> enabledDelpackages,
+      boolean collectCssFromDelvariants) {
+    return getAllRequiredCssPaths(
+        template.getTemplateName(), enabledDelpackages, collectCssFromDelvariants);
+  }
   /**
    * Indicates whether the current {@link SoySauce} instance holds a given template.
    *
    * @return `true` if the template is valid and `false` if it is unrecognized.
    */
-  Boolean hasTemplate(String template);
+  boolean hasTemplate(String template);
 
   /** A Renderer can configure rendering parameters and render the template. */
   interface Renderer {
@@ -77,6 +124,10 @@ public interface SoySauce {
 
     /** Configures the {@code $ij} to pass to the template. */
     Renderer setIj(Map<String, ?> record);
+
+    default Renderer setIj(SoyTemplateData data) {
+      return setIj(data.getParamsAsMap());
+    }
 
     /**
      * Sets the plugin instances that will be used to for plugins that are implemented with {@code
@@ -106,19 +157,6 @@ public interface SoySauce {
      * inspection.
      */
     Renderer setDebugSoyTemplateInfo(boolean debugSoyTemplateInfo);
-
-    /**
-     * Sets the expected content kind.
-     *
-     * <p>An attempt to render a template with a different kind will fail if this has
-     * been called.
-     *
-     * @deprecated Use type-specific render methods instead of setting an expected
-     *     content kind before rendering (e.g. {@link #renderHtml()},
-     *     {@link #renderCss()}, etc. will verify the content kind at render time).
-     * TODO(b/138750285): Delete this method in July 2020.
-     */
-    @Deprecated Renderer setExpectedContentKind(ContentKind kind);
 
     /** Configures the {@link SoyLogger} to use. */
     Renderer setSoyLogger(SoyLogger logger);
@@ -158,6 +196,19 @@ public interface SoySauce {
     WriteContinuation renderHtml(AdvisingAppendable out) throws IOException;
 
     /**
+     * Renders the configured html template to the given appendable, returning a continuation.
+     *
+     * <p>Verifies that the content type is {@link ContentKind.HTML} (corresponding to kind="html"
+     * in the template).
+     *
+     * <p>See {@link #renderHtml(AdvisingAppendable out)} for more details).
+     */
+    @CheckReturnValue
+    default WriteContinuation renderHtml(Appendable out) throws IOException {
+      return renderHtml(asAdvisingAppendable(out));
+    }
+
+    /**
      * Renders the configured html template to a {@link SanitizedContent}. Verifies that the content
      * type is {@link ContentKind.HTML} (corresponding to kind="html" in the template).
      *
@@ -189,6 +240,19 @@ public interface SoySauce {
     WriteContinuation renderJs(AdvisingAppendable out) throws IOException;
 
     /**
+     * Renders the configured js template to the given appendable, returning a continuation.
+     *
+     * <p>Verifies that the content type is {@link ContentKind.JS} (corresponding to kind="js" in
+     * the template).
+     *
+     * <p>See {@link #renderHtml(AdvisingAppendable out)} for more details).
+     */
+    @CheckReturnValue
+    default WriteContinuation renderJs(Appendable out) throws IOException {
+      return renderJs(asAdvisingAppendable(out));
+    }
+
+    /**
      * Renders the configured js template to a {@link SanitizedContent}.
      *
      * <p>Verifies that the content type is {@link ContentKind.JS} (corresponding to kind="js" in
@@ -209,6 +273,19 @@ public interface SoySauce {
      */
     @CheckReturnValue
     WriteContinuation renderUri(AdvisingAppendable out) throws IOException;
+
+    /**
+     * Renders the configured js template to the given appendable, returning a continuation.
+     *
+     * <p>Verifies that the content type is {@link ContentKind.URI} (corresponding to kind="js" in
+     * the template).
+     *
+     * <p>See {@link #renderHtml(AdvisingAppendable out)} for more details).
+     */
+    @CheckReturnValue
+    default WriteContinuation renderUri(Appendable out) throws IOException {
+      return renderUri(asAdvisingAppendable(out));
+    }
 
     /**
      * Renders the configured uri template to a {@link SanitizedContent}.
@@ -234,6 +311,20 @@ public interface SoySauce {
     WriteContinuation renderTrustedResourceUri(AdvisingAppendable out) throws IOException;
 
     /**
+     * Renders the configured trusted resource uri template to the given appendable, returning a
+     * continuation.
+     *
+     * <p>Verifies that the content type is {@link ContentKind.TRUSTED_RESOURCE_URI} (corresponding
+     * to kind="trusted_resource_uri" in the template).
+     *
+     * <p>See {@link #renderHtml(AdvisingAppendable out)} for more details.
+     */
+    @CheckReturnValue
+    default WriteContinuation renderTrustedResourceUri(Appendable out) throws IOException {
+      return renderTrustedResourceUri(asAdvisingAppendable(out));
+    }
+
+    /**
      * Renders the configured template to a {@link SanitizedContent}.
      *
      * <p>Verifies that the content type is {@link ContentKind.TRUSTED_RESOURCE_URI} (corresponding
@@ -254,6 +345,19 @@ public interface SoySauce {
      */
     @CheckReturnValue
     WriteContinuation renderAttributes(AdvisingAppendable out) throws IOException;
+
+    /**
+     * Renders the configured template to the given appendable, returning a continuation.
+     *
+     * <p>Verifies that the content type is {@link ContentKind.ATTRIBUTES} (corresponding to
+     * kind="attributes" in the template).
+     *
+     * <p>See {@link #renderHtml(AdvisingAppendable out)} for more details.
+     */
+    @CheckReturnValue
+    default WriteContinuation renderAttributes(Appendable out) throws IOException {
+      return renderAttributes(asAdvisingAppendable(out));
+    }
 
     /**
      * Renders the configured template to a {@link SanitizedContent}.
@@ -278,6 +382,19 @@ public interface SoySauce {
     WriteContinuation renderCss(AdvisingAppendable out) throws IOException;
 
     /**
+     * Renders the configured template to the given appendable, returning a continuation.
+     *
+     * <p>Verifies that the content type is {@link ContentKind.CSS} (corresponding to kind="css" in
+     * the template).
+     *
+     * <p>See {@link #renderHtml(AdvisingAppendable out)} for more details.
+     */
+    @CheckReturnValue
+    default WriteContinuation renderCss(Appendable out) throws IOException {
+      return renderCss(asAdvisingAppendable(out));
+    }
+
+    /**
      * Renders the configured template to a {@link SanitizedContent} of kind {@link
      * ContentKind.CSS}.
      *
@@ -300,6 +417,19 @@ public interface SoySauce {
     WriteContinuation renderText(AdvisingAppendable out) throws IOException;
 
     /**
+     * Renders the configured template to the given appendable, returning a continuation.
+     *
+     * <p>This method does not verify the template {@link ContentKind}, since any template can be
+     * rendered as text. Prefer {@link #renderCss()}, {@link #renderUri()}, etc. for type checking.
+     *
+     * <p>See {@link #renderHtml(AdvisingAppendable out)} for more details.
+     */
+    @CheckReturnValue
+    default WriteContinuation renderText(Appendable out) throws IOException {
+      return renderText(asAdvisingAppendable(out));
+    }
+
+    /**
      * Renders the configured template to a {@link String}.
      *
      * <p>This method does not verify the template {@link ContentKind}, since any template can be
@@ -310,106 +440,13 @@ public interface SoySauce {
      */
     @CheckReturnValue
     Continuation<String> renderText();
-
-    /**
-     * Renders the template to a string.
-     *
-     * <p>The rendering semantics are the same as for {@link #render(AdvisingAppendable out)} with
-     * the following 2 caveats.
-     *
-     * <ul>
-     *   <li>The returned continuation will never have a result of {@code RenderResult.Type#LIMITED}
-     *   <li>This api doesn't throw {@link IOException}
-     * </ul>
-     *
-     * <p>Checks the content kind of the template. {@code kind="html"} templates are allowed, unless
-     * {@link #setExpectedContentKind} was called. The goal is to prevent accidental rendering of
-     * unescaped {@code kind="text"} in contexts where that could lead to XSS.
-     *
-     * <p>It is safe to call this method multiple times, but each call will initiate a new render of
-     * the configured template. To continue rendering a template you must use the returned
-     * continuation.
-     *
-     * @deprecated For text content, use {@link #renderText()} directly. Otherwise, use {@link
-     *     #renderHtml()}, {@link #renderCss()}, etc. to verify the content type, and then call
-     *     toString() to get a string.
-     */
-    @CheckReturnValue
-    @Deprecated
-    Continuation<String> render();
-
-    /**
-     * Renders the configured template to the appendable returning a continuation.
-     *
-     * <p>All rendering operations performed via this API will return a continuation indicating how
-     * and when to {@link WriteContinuation#continueRender() continue rendering}. There are 4
-     * possibilities for every rendering operation.
-     *
-     * <p>Checks the content kind of the template. {@code kind="html"} templates are allowed, unless
-     * {@link #setExpectedContentKind} was called. The goal is to prevent accidental rendering of
-     * unescaped {@code kind="text"} in contexts where that could lead to XSS.
-     *
-     * <ul>
-     *   <li>The render operation may complete successfully. This is indicated by the fact that
-     *       {@code continuation.result().isDone()} will return {@code true}.
-     *   <li>The render operation may pause because the {@link AdvisingAppendable output buffer}
-     *       asked render to stop by returning {@code true} from {@link
-     *       AdvisingAppendable#softLimitReached()}. In this case {@code contuation.result().type()}
-     *       will be {@code RenderResult.Type#LIMITED}. The caller can {@link
-     *       WriteContinuation#continueRender() continue rendering} when the appendable is ready for
-     *       additional data.
-     *   <li>The render operation may pause because the we encountered an incomplete {@code Future}
-     *       parameter. In this case {@code contuation.result().type()} will be {@code
-     *       RenderResult.Type#DETACH} and the future in question will be accessible via the {@link
-     *       RenderResult#future()} method. The caller can {@link WriteContinuation#continueRender()
-     *       continue rendering} when the future is done.
-     *   <li>The render operation may throw an {@link IOException} if the output buffer does. In
-     *       this case rendering may not be continued and behavior is undefined if it is.
-     * </ul>
-     *
-     * <p>It is safe to call this method multiple times, but each call will initiate a new render of
-     * the configured template. To continue rendering a template you must use the returned
-     * continuation.
-     *
-     * @deprecated Use {@link #renderHtml(AdvisingAppendable)}, {@link
-     *     #renderJs(AdvisingAppendable)}, etc. directly.
-     */
-    @CheckReturnValue
-    @Deprecated
-    WriteContinuation render(AdvisingAppendable out) throws IOException;
-
-    /**
-     * Renders the template to a {@link SanitizedContent}.
-     *
-     * <p>The rendering semantics are the same as for {@link #render(AdvisingAppendable)} with the
-     * following 2 caveats.
-     *
-     * <ul>
-     *   <li>The returned continuation will never have a result of {@code RenderResult.Type#LIMITED}
-     *   <li>This api doesn't throw {@link IOException}
-     * </ul>
-     *
-     * <p>Checks the content kind of the template. {@code kind="html"} templates are allowed, unless
-     * {@link #setExpectedContentKind} was called. The goal is to prevent accidental rendering of
-     * unescaped {@code kind="text"} in contexts where that could lead to XSS.
-     *
-     * <p>It is safe to call this method multiple times, but each call will initiate a new render of
-     * the configured template. To continue rendering a template you must use the returned
-     * continuation.
-     *
-     * @deprecated Use {@link #renderHtml()}, {@link #renderJs()}, {@link #renderCss()}, etc.
-     *     directly.
-     */
-    @CheckReturnValue
-    @Deprecated
-    Continuation<SanitizedContent> renderStrict();
   }
 
   /**
    * A write continuation is the result of rendering to an output stream.
    *
-   * <p>See {@link SoySauce.Renderer#render()}, {@link SoySauce.Renderer#renderStrict()}, and {@link
-   * Continuation} for similar APIs designed for rendering to strings.
+   * <p>See {@link SoySauce.Renderer#renderText()} and {@link Continuation} for similar APIs
+   * designed for rendering to strings.
    */
   interface WriteContinuation {
     /** The result of the prior rendering operation. */
@@ -426,6 +463,11 @@ public interface SoySauce {
      */
     @CheckReturnValue
     WriteContinuation continueRender() throws IOException;
+
+    /** Asserts that rendering is complete. */
+    default void assertDone() {
+      checkState(result().isDone(), "Expected to be done, got: %s", result());
+    }
   }
 
   /**
@@ -458,5 +500,13 @@ public interface SoySauce {
      */
     @CheckReturnValue
     Continuation<T> continueRender();
+
+    /**
+     * @deprecated Generally {@link #get} should be called and the value inspected instead of
+     *     coercing the Continuation to a string..
+     */
+    @Override
+    @Deprecated
+    String toString();
   }
 }

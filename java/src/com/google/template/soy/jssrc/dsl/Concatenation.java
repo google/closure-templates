@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.Operator.Associativity;
+import java.util.function.Consumer;
 
 /**
  * Represents the concatenation of many chunks via the {@code +} operator.
@@ -39,14 +40,6 @@ abstract class Concatenation extends Operation {
       initialStatements.addAll(part.initialStatements());
       if (part instanceof Concatenation) {
         partsBuilder.addAll(((Concatenation) part).parts());
-      } else if (part instanceof BinaryOperation) {
-        BinaryOperation binaryOp = (BinaryOperation) part;
-        if (binaryOp.operator().equals(Operator.PLUS.getTokenString())) {
-          partsBuilder.add(binaryOp.arg1());
-          partsBuilder.add(binaryOp.arg2());
-        } else {
-          partsBuilder.add(part);
-        }
       } else {
         partsBuilder.add(part);
       }
@@ -67,7 +60,7 @@ abstract class Concatenation extends Operation {
   }
 
   @Override
-  public void collectRequires(RequiresCollector collector) {
+  public void collectRequires(Consumer<GoogRequire> collector) {
     for (Expression part : parts()) {
       part.collectRequires(collector);
     }

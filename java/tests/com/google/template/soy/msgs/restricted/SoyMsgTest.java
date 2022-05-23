@@ -19,6 +19,7 @@ package com.google.template.soy.msgs.restricted;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -29,18 +30,19 @@ import org.junit.runners.JUnit4;
 public final class SoyMsgTest {
 
   private static final SourceLocation SOURCE =
-      new SourceLocation("/path/to/source1", 10, 1, 10, 10);
+      new SourceLocation(SourceFilePath.create("/path/to/source1"), 10, 1, 10, 10);
+  private static final String TEMPLATE = "ns.foo.templates.tmpl";
+
   private static final SoyMsg MSG =
       SoyMsg.builder()
           .setId(2222)
-          .setAltId(5555)
+          .setAlternateId(123456)
           .setLocaleString("de-DE")
           .setDesc("Fake description")
           .setMeaning("Fake meaning")
-          .setIsHidden(true)
           .setContentType("html")
           .setIsPlrselMsg(true)
-          .addSourceLocation(SOURCE)
+          .addSourceLocation(SOURCE, TEMPLATE)
           .setParts(ImmutableList.<SoyMsgPart>of(SoyMsgRawTextPart.of("Boo!")))
           .build();
 
@@ -63,17 +65,22 @@ public final class SoyMsgTest {
   @Test
   public void toBuilder_modify() {
     assertThat(
-            MSG_MINIMAL
-                .toBuilder()
-                .setAltId(5555)
+            MSG_MINIMAL.toBuilder()
+                .setAlternateId(123456)
                 .setLocaleString("de-DE")
                 .setDesc("Fake description")
                 .setMeaning("Fake meaning")
-                .setIsHidden(true)
                 .setContentType("html")
                 .setIsPlrselMsg(true)
-                .addSourceLocation(SOURCE)
+                .addSourceLocation(SOURCE, TEMPLATE)
                 .build())
         .isEqualTo(MSG);
+  }
+
+  @Test
+  public void selfReferentialAlternateId() {
+    SoyMsg withSelfReferentialAlternateId =
+        MSG_MINIMAL.toBuilder().setAlternateId(MSG_MINIMAL.getId()).build();
+    assertThat(withSelfReferentialAlternateId).isEqualTo(MSG_MINIMAL);
   }
 }

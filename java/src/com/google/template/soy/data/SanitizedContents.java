@@ -55,7 +55,6 @@ import javax.annotation.ParametersAreNonnullByDefault;
  *
  * <p>All utilities here should be extremely difficult to abuse in a way that could create
  * attacker-controlled SanitizedContent objects. Java's type system is a great tool to achieve this.
- *
  */
 @ParametersAreNonnullByDefault
 public final class SanitizedContents {
@@ -68,35 +67,7 @@ public final class SanitizedContents {
 
   /** Creates an empty string constant. */
   public static SanitizedContent emptyString(ContentKind kind) {
-    if (kind == ContentKind.TEXT) {
-      // TODO(b/129547159): throw an IllegalArgumentException
-      return UnsanitizedString.create("");
-    }
     return SanitizedContent.create("", kind, Dir.NEUTRAL); // Empty string is neutral.
-  }
-
-  /**
-   * Creates a SanitizedContent object of kind TEXT of a given direction (null if unknown).
-   *
-   * <p>This is useful when stubbing out a function that needs to create a SanitizedContent object.
-   *
-   * @deprecated Use String objects instead
-   */
-  @Deprecated
-  public static UnsanitizedString unsanitizedText(String text, @Nullable Dir dir) {
-    return UnsanitizedString.create(text);
-  }
-
-  /**
-   * Creates a SanitizedContent object of kind TEXT and unknown direction.
-   *
-   * <p>This is useful when stubbing out a function that needs to create a SanitizedContent object.
-   *
-   * @deprecated Use String objects instead
-   */
-  @Deprecated
-  public static UnsanitizedString unsanitizedText(String text) {
-    return UnsanitizedString.create(text);
   }
 
   /**
@@ -273,6 +244,17 @@ public final class SanitizedContents {
         constant.intern() == constant,
         "The provided argument does not look like a compile-time constant.");
     return SanitizedContent.create(constant, kind, dir);
+  }
+
+  /** Converts a {@link CssParam} into a Soy {@link SanitizedContent} of kind HTML. */
+  public static SanitizedContent fromCss(CssParam css) {
+    switch (css.type()) {
+      case SAFE_STYLE:
+        return fromSafeStyle(css.safeStyle());
+      case SAFE_STYLE_SHEET:
+        return fromSafeStyleSheet(css.safeStyleSheet());
+    }
+    throw new AssertionError();
   }
 
   /** Converts a {@link SafeHtml} into a Soy {@link SanitizedContent} of kind HTML. */

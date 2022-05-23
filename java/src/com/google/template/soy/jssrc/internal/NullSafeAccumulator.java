@@ -21,25 +21,29 @@ import static com.google.common.base.CaseFormat.UPPER_CAMEL;
 import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_NULL;
 import static com.google.template.soy.jssrc.dsl.Expression.ifExpression;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_ARRAY_MAP;
+import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_CHECK_NOT_NULL;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_NEWMAPS_TRANSFORM_VALUES;
 import static com.google.template.soy.jssrc.internal.JsRuntime.extensionField;
+import static com.google.template.soy.jssrc.internal.JsRuntime.protoByteStringToBase64ConverterFunction;
 import static com.google.template.soy.jssrc.internal.JsRuntime.protoToSanitizedContentConverterFunction;
 
 import com.google.auto.value.AutoValue;
-import com.google.common.base.Preconditions;
 import com.google.errorprone.annotations.ForOverride;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.template.soy.internal.proto.ProtoUtils;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.Expression;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.Function;
 import javax.annotation.Nullable;
 
 /**
  * Represents a chain of (possibly null-safe) dot or bracket accesses. Used by {@link
- * TranslateExprNodeVisitor#visitNullSafeNode}.
+ * TranslateExprNodeVisitor#visitNullSafeAccessNode}.
  */
 final class NullSafeAccumulator {
 
@@ -47,28 +51,10 @@ final class NullSafeAccumulator {
   private final Expression base;
 
   /**
-   * Represents each "link" in the chain. For example, for the chain {@code a?.b?.c.d},
-   * there are three links, {@code ?.b}, {@code ?.c}, and {@code .d}.
+   * Represents each "link" in the chain. For example, for the chain {@code a?.b?.c.d}, there are
+   * three links, {@code ?.b}, {@code ?.c}, and {@code .d}.
    */
   private final List<ChainAccess> chain;
-
-  /**
-   * A chain of dot accesses can end in a {@link com.google.common.html.types.SafeHtmlProto}
-   * (SafeStyleProto, etc.). Such a chain needs to be {@link
-   * com.google.template.soy.data.internalutils.NodeContentKinds#toJsUnpackFunction unpacked} to a
-   * SanitizedContent object before it can be used in the JS runtime.
-   */
-  @Nullable private Expression unpackFunction;
-
-  /**
-   * A chain of dot accesses can end in a reference to a repeated or map {@link
-   * com.google.common.html.types.SafeHtmlProto} field (SafeStyleProto field, etc.). The array/map
-   * representing the field needs to be unpacked by running it through the appropriate {@link
-   * com.google.template.soy.data.internalutils.NodeContentKinds#toJsUnpackFunction unpack} function
-   * to produce SanitizedContent objects before it can be used in the JS runtime. This tracks the
-   * type of the field so we know if/how to unpack it.
-   */
-  @Nullable private AccessType accessType;
 
   /** Creates a NullSafeAccumulator with the given base chunk. */
   NullSafeAccumulator(Expression base) {
@@ -82,25 +68,13 @@ final class NullSafeAccumulator {
    * @param nullSafe If true, code will be generated to ensure the chain is non-null before
    *     dereferencing {@code access}.
    */
-  NullSafeAccumulator dotAccess(FieldAccess access, boolean nullSafe) {
-    if (access instanceof ProtoCall) {
-      ProtoCall protoCall = (ProtoCall) access;
-      Expression maybeUnpack = protoCall.unpackFunction();
-      if (maybeUnpack != null) {
-        Preconditions.checkState(
-            unpackFunction == null, "this chain will already unpack with %s", unpackFunction);
-        unpackFunction = maybeUnpack;
-        accessType = protoCall.accessType();
-      }
-    }
-    chain.add(access.toChainAccess(nullSafe));
+  NullSafeAccumulator dotAccess(FieldAccess access, boolean nullSafe, boolean assertNonNull) {
+    chain.add(access.toChainAccess(nullSafe, assertNonNull));
     return this;
   }
 
-  NullSafeAccumulator mapGetAccess(Expression mapKeyCode, boolean nullSafe) {
-    chain.add(FieldAccess.call("get", mapKeyCode).toChainAccess(nullSafe));
-    // With a .get call we no longer need to unpack the entire map, just a singular object.
-    accessType = AccessType.SINGULAR;
+  NullSafeAccumulator mapGetAccess(Expression mapKeyCode, boolean nullSafe, boolean assertNonNull) {
+    chain.add(FieldAccess.call("get", mapKeyCode).toChainAccess(nullSafe, assertNonNull));
     return this;
   }
 
@@ -110,10 +84,20 @@ final class NullSafeAccumulator {
    * @param nullSafe If true, code will be generated to ensure the chain is non-null before
    *     dereferencing {@code arg}.
    */
-  NullSafeAccumulator bracketAccess(Expression arg, boolean nullSafe) {
-    chain.add(new Bracket(arg, nullSafe));
-    // With a bracket access we no longer need to unpack the entire list, just a singular object.
-    accessType = AccessType.SINGULAR;
+  NullSafeAccumulator bracketAccess(Expression arg, boolean nullSafe, boolean assertNonNull) {
+    chain.add(new Bracket(arg, nullSafe, assertNonNull));
+    return this;
+  }
+
+  /**
+   * Extends the access chain with an arbitrary transformation of the previous tip.
+   *
+   * <p>If the previous tip is null, execution with throw an error before {@code extender} is
+   * invoked.
+   */
+  NullSafeAccumulator functionCall(
+      boolean nullSafe, boolean assertNonNull, Function<Expression, Expression> extender) {
+    chain.add(new FunctionCall(nullSafe, assertNonNull, extender));
     return this;
   }
 
@@ -122,13 +106,7 @@ final class NullSafeAccumulator {
    * generate code to make sure the chain is non-null before performing the access.
    */
   Expression result(CodeChunk.Generator codeGenerator) {
-    Expression accessChain = buildAccessChain(base, codeGenerator, chain.iterator());
-
-    if (unpackFunction == null) {
-      return accessChain;
-    } else {
-      return accessType.unpackResult(accessChain, unpackFunction);
-    }
+    return buildAccessChain(base, codeGenerator, chain.iterator(), new ArrayDeque<>());
   }
 
   /**
@@ -150,34 +128,124 @@ final class NullSafeAccumulator {
    * </ol>
    */
   private static Expression buildAccessChain(
-      Expression base, CodeChunk.Generator generator, Iterator<ChainAccess> chain) {
+      Expression base,
+      CodeChunk.Generator generator,
+      Iterator<ChainAccess> chain,
+      Deque<ChainAccess> unpackBuffer) {
+
     if (!chain.hasNext()) {
-      return base; // base case
+      return flushUnpackBuffer(base, unpackBuffer); // base case
     }
     ChainAccess link = chain.next();
-    if (link.nullSafe) {
-      if (!base.isCheap()) {
-        base = generator.declarationBuilder().setRhs(base).build().ref();
-      }
-      return ifExpression(base.doubleEqualsNull(), LITERAL_NULL)
-          .setElse(buildAccessChain(link.extend(base), generator, chain))
-          .build(generator);
+    Expression result;
+    if (link.nullSafe && !base.isCheap()) {
+      base = generator.declarationBuilder().setRhs(base).build().ref();
     }
-    return buildAccessChain(link.extend(base), generator, chain);
+
+    Expression newBase = base;
+    if (link.getUnpacking() == Unpacking.STOP) {
+      newBase = flushUnpackBuffer(newBase, unpackBuffer);
+    }
+    newBase = link.extend(newBase);
+
+    unpackBuffer.addFirst(link);
+    if (link.nullSafe) {
+      result =
+          ifExpression(base.doubleEqualsNull(), LITERAL_NULL)
+              .setElse(buildAccessChain(newBase, generator, chain, unpackBuffer))
+              .build(generator);
+    } else {
+      result = buildAccessChain(newBase, generator, chain, unpackBuffer);
+    }
+    if (link.assertNonNull) {
+      result = SOY_CHECK_NOT_NULL.call(result);
+    }
+    return result;
+  }
+
+  private static Expression flushUnpackBuffer(Expression base, Deque<ChainAccess> unpackBuffer) {
+    boolean tail = true;
+    for (ChainAccess link : unpackBuffer) {
+      Unpacking unpacking = link.getUnpacking();
+      if (unpacking == Unpacking.UNPACK) {
+        base = link.unpack(base, tail);
+        break;
+      }
+      tail = false;
+    }
+    unpackBuffer.clear();
+    return base;
+  }
+
+  private enum Unpacking {
+    /** This link will unpack. */
+    UNPACK,
+    /** This link will pass to the previous link. */
+    PASS,
+    /** This link should force all previous links to be unpacked before being passed to this one. */
+    STOP
   }
 
   /**
-   * Abstract base class for extending the access chain with {@link Dot dot accesses},
-   * {@link Bracket bracket accesses}, and {@link DotCall dot accesses followed by a function call}.
+   * Abstract base class for extending the access chain with {@link Dot dot accesses}, {@link
+   * Bracket bracket accesses}, and {@link DotCall dot accesses followed by a function call}.
    */
   private abstract static class ChainAccess {
-    /** How to extend the tip of the chain. */
+
+    /**
+     * How to extend the tip of the chain.
+     *
+     * <p>No implementation of this class should allow this method to succeed if {@code prevTip} is
+     * null. This can be guaranteed by calling a method like {@link Expression#dotAccess} on {@code
+     * prevTip} or by adding an explicit check with {@link JsRuntime#SOY_CHECK_NOT_NULL}.
+     */
     abstract Expression extend(Expression prevTip);
 
     final boolean nullSafe;
+    final boolean assertNonNull;
 
-    ChainAccess(boolean nullSafe) {
+    ChainAccess(boolean nullSafe, boolean assertNonNull) {
       this.nullSafe = nullSafe;
+      this.assertNonNull = assertNonNull;
+    }
+
+    /**
+     * Unpacks an expression so that it can be used in JS. Typically this is for unpacking protos,
+     * like SafeHtmlProto, that are not used in their raw forms in JS. This must be implemented if
+     * {@link #getUnpacking} returns {@link Unpacking#UNPACK}.
+     *
+     * @param base the expression to unpack
+     * @param tail whether this link is the last link in the chain before the unpacking buffer is
+     *     flushed.
+     */
+    Expression unpack(Expression base, boolean tail) {
+      throw new UnsupportedOperationException();
+    }
+
+    Unpacking getUnpacking() {
+      return Unpacking.PASS;
+    }
+  }
+
+  private static final class FunctionCall extends ChainAccess {
+    private final Function<Expression, Expression> funct;
+
+    public FunctionCall(
+        boolean nullSafe, boolean assertNonNull, Function<Expression, Expression> funct) {
+      super(nullSafe, assertNonNull);
+      this.funct = funct;
+    }
+
+    @Override
+    Expression extend(Expression prevTip) {
+      // Never allow a null method receiver.
+      prevTip = SOY_CHECK_NOT_NULL.call(prevTip);
+      return funct.apply(prevTip);
+    }
+
+    @Override
+    Unpacking getUnpacking() {
+      return Unpacking.STOP;
     }
   }
 
@@ -185,8 +253,8 @@ final class NullSafeAccumulator {
   private static final class Bracket extends ChainAccess {
     final Expression value;
 
-    Bracket(Expression value, boolean nullSafe) {
-      super(nullSafe);
+    Bracket(Expression value, boolean nullSafe, boolean assertNonNull) {
+      super(nullSafe, assertNonNull);
       this.value = value;
     }
 
@@ -199,8 +267,9 @@ final class NullSafeAccumulator {
   /** Extends the chain with a (null-safe or not) dot access. */
   private static final class Dot extends ChainAccess {
     final String id;
-    Dot(String id, boolean nullSafe) {
-      super(nullSafe);
+
+    Dot(String id, boolean nullSafe, boolean assertNonNull) {
+      super(nullSafe, assertNonNull);
       this.id = id;
     }
 
@@ -211,24 +280,54 @@ final class NullSafeAccumulator {
   }
 
   /**
-   * Extends the chain with a (null-safe or not) dot access followed by a function call.
-   * See {@link FieldAccess} for rationale.
+   * Extends the chain with a (null-safe or not) dot access followed by a function call. See {@link
+   * FieldAccess} for rationale.
    */
-  private static final class DotCall extends ChainAccess {
+  private static class DotCall extends ChainAccess {
     final String getter;
     @Nullable final Expression arg;
 
-    DotCall(String getter, @Nullable Expression arg, boolean nullSafe) {
-      super(nullSafe);
+    DotCall(String getter, @Nullable Expression arg, boolean nullSafe, boolean assertNonNull) {
+      super(nullSafe, assertNonNull);
       this.getter = getter;
       this.arg = arg;
     }
 
     @Override
+    final Expression extend(Expression prevTip) {
+      return arg == null ? prevTip.dotAccess(getter).call() : prevTip.dotAccess(getter).call(arg);
+    }
+  }
+
+  private static final class ProtoDotCall extends ChainAccess {
+
+    private final ProtoCall protoCall;
+
+    ProtoDotCall(boolean nullSafe, boolean assertNonNull, ProtoCall protoCall) {
+      super(nullSafe, assertNonNull);
+      this.protoCall = protoCall;
+    }
+
+    @Override
     Expression extend(Expression prevTip) {
-      return arg == null
-          ? prevTip.dotAccess(getter).call()
-          : prevTip.dotAccess(getter).call(arg);
+      Expression arg = protoCall.getterArg();
+      String getter = protoCall.getter();
+      return arg == null ? prevTip.dotAccess(getter).call() : prevTip.dotAccess(getter).call(arg);
+    }
+
+    @Override
+    Expression unpack(Expression base, boolean tail) {
+      // If tail=true then this link is the last link on the chain that's part of the unpack
+      // buffer. In that case we can use whatever access type the link was created with. But if
+      // tail=false then this is not the last link and some subsequent link, like dot or map access,
+      // means that we can do the less expensive SINGULAR access type.
+      AccessType accessType = tail ? protoCall.accessType() : AccessType.SINGULAR;
+      return accessType.unpackResult(base, protoCall.unpackFunction());
+    }
+
+    @Override
+    Unpacking getUnpacking() {
+      return protoCall.unpackFunction() != null ? Unpacking.UNPACK : Unpacking.PASS;
     }
   }
 
@@ -244,7 +343,7 @@ final class NullSafeAccumulator {
   abstract static class FieldAccess {
 
     @ForOverride
-    abstract ChainAccess toChainAccess(boolean nullSafe);
+    abstract ChainAccess toChainAccess(boolean nullSafe, boolean assertNonNull);
 
     static FieldAccess id(String fieldName) {
       return new AutoValue_NullSafeAccumulator_Id(fieldName);
@@ -255,7 +354,7 @@ final class NullSafeAccumulator {
     }
 
     static FieldAccess protoCall(String fieldName, FieldDescriptor desc) {
-      return ProtoCall.create(fieldName, desc);
+      return ProtoCall.getField(fieldName, desc);
     }
   }
 
@@ -264,8 +363,8 @@ final class NullSafeAccumulator {
     abstract String fieldName();
 
     @Override
-    ChainAccess toChainAccess(boolean nullSafe) {
-      return new Dot(fieldName(), nullSafe);
+    ChainAccess toChainAccess(boolean nullSafe, boolean assertNonNull) {
+      return new Dot(fieldName(), nullSafe, assertNonNull);
     }
   }
 
@@ -277,45 +376,94 @@ final class NullSafeAccumulator {
     abstract Expression arg();
 
     @Override
-    ChainAccess toChainAccess(boolean nullSafe) {
-      return new DotCall(getter(), arg(), nullSafe);
+    ChainAccess toChainAccess(boolean nullSafe, boolean assertNonNull) {
+      return new DotCall(getter(), arg(), nullSafe, assertNonNull);
     }
   }
 
   @AutoValue
   abstract static class ProtoCall extends FieldAccess {
 
+    private enum Type {
+      GET("get"),
+      HAS("has");
+
+      private final String prefix;
+
+      Type(String prefix) {
+        this.prefix = prefix;
+      }
+
+      public String getPrefix() {
+        return prefix;
+      }
+    }
+
     abstract String getter();
 
     @Nullable
     abstract Expression getterArg();
 
+    /**
+     * A chain of dot accesses can end in a reference to a repeated or map {@link
+     * com.google.common.html.types.SafeHtmlProto} field (SafeStyleProto field, etc.). The array/map
+     * representing the field needs to be unpacked by running it through the appropriate {@link
+     * com.google.template.soy.data.internalutils.NodeContentKinds#toJsUnpackFunction unpack}
+     * function to produce SanitizedContent objects before it can be used in the JS runtime. This
+     * tracks the type of the field so we know if/how to unpack it.
+     */
     @Nullable
     abstract AccessType accessType();
 
+    /**
+     * A chain of dot accesses can end in a {@link com.google.common.html.types.SafeHtmlProto}
+     * (SafeStyleProto, etc.). Such a chain needs to be {@link
+     * com.google.template.soy.data.internalutils.NodeContentKinds#toJsUnpackFunction unpacked} to a
+     * SanitizedContent object before it can be used in the JS runtime.
+     */
     @Nullable
     abstract Expression unpackFunction();
 
-    static ProtoCall create(String fieldName, FieldDescriptor desc) {
+    static ProtoCall getField(String fieldName, FieldDescriptor desc) {
+      return accessor(fieldName, desc, Type.GET);
+    }
+
+    static ProtoCall hasField(String fieldName, FieldDescriptor desc) {
+      return accessor(fieldName, desc, Type.HAS);
+    }
+
+    private static ProtoCall accessor(String fieldName, FieldDescriptor desc, Type prefix) {
       String getter;
       Expression arg;
-      if (desc.isExtension()) {
-        getter = "getExtension";
-        arg = extensionField(desc);
-      } else {
-        getter = "get" + LOWER_CAMEL.to(UPPER_CAMEL, fieldName);
-        arg = null;
+      Expression unpackFunction = null;
+
+      if (desc.isExtension() && Type.HAS == prefix) {
+        // JSPB doesn't have hasExtension().
+        throw new IllegalArgumentException("hasExtension() not implemented");
+      } else if (Type.HAS == prefix
+          && desc.getType() == FieldDescriptor.Type.MESSAGE
+          && ProtoUtils.getContainingOneof(desc) == null) {
+        // JSPB doesn't have hassers for submessages.
+        throw new IllegalArgumentException("Submessage hasser not implemented");
+      } else if (Type.GET == prefix) {
+        unpackFunction = getUnpackFunction(desc);
       }
 
-      Expression unpackFunction = getUnpackFunction(desc);
+      if (desc.isExtension()) {
+        getter = prefix.getPrefix() + "Extension";
+        arg = extensionField(desc);
+      } else {
+        getter = prefix.getPrefix() + LOWER_CAMEL.to(UPPER_CAMEL, fieldName);
+        arg = null;
+      }
 
       return new AutoValue_NullSafeAccumulator_ProtoCall(
           getter, arg, unpackFunction == null ? null : AccessType.get(desc), unpackFunction);
     }
 
     @Override
-    ChainAccess toChainAccess(boolean nullSafe) {
-      return new DotCall(getter(), getterArg(), nullSafe);
+    ChainAccess toChainAccess(boolean nullSafe, boolean assertNonNull) {
+      return new ProtoDotCall(nullSafe, assertNonNull, this);
     }
 
     @Nullable
@@ -324,6 +472,11 @@ final class NullSafeAccumulator {
         return protoToSanitizedContentConverterFunction(desc.getMessageType());
       } else if (ProtoUtils.isSanitizedContentMap(desc)) {
         return protoToSanitizedContentConverterFunction(ProtoUtils.getMapValueMessageType(desc));
+      } else if ((desc.getType() == FieldDescriptor.Type.BYTES)
+          || (desc.isMapField()
+              && ProtoUtils.getMapValueFieldDescriptor(desc).getType()
+                  == FieldDescriptor.Type.BYTES)) {
+        return protoByteStringToBase64ConverterFunction();
       } else {
         return null;
       }

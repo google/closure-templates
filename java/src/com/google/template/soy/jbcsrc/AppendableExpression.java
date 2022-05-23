@@ -23,7 +23,6 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.SanitizedContentKind;
-import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingFunctionInvocation;
@@ -31,7 +30,6 @@ import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.Expression;
-import com.google.template.soy.jbcsrc.restricted.LocalVariable;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.Statement;
@@ -74,19 +72,16 @@ final class AppendableExpression extends Expression {
               LoggingFunctionInvocation.class, "create", String.class, String.class, List.class)
           .asNonNullable();
 
-  private static final MethodRef SET_SANITIZED_CONTENT_KIND =
+  private static final MethodRef SET_SANITIZED_CONTENT_KIND_AND_DIRECTIONALITY =
       MethodRef.create(
-              LoggingAdvisingAppendable.class, "setSanitizedContentKind", ContentKind.class)
+              LoggingAdvisingAppendable.class, "setKindAndDirectionality", ContentKind.class)
           .asNonNullable()
           .asCheap();
 
-  private static final MethodRef SET_SANITIZED_CONTENT_DIRECTIONALITY =
-      MethodRef.create(
-              LoggingAdvisingAppendable.class, "setSanitizedContentDirectionality", Dir.class)
-          .asNonNullable()
-          .asCheap();
+  private static final MethodRef FLUSH_BUFFERS =
+      MethodRef.create(LoggingAdvisingAppendable.class, "flushBuffers", int.class);
 
-  static AppendableExpression forLocal(LocalVariable delegate) {
+  static AppendableExpression forExpression(Expression delegate) {
     return new AppendableExpression(
         delegate, /* hasSideEffects= */ false, /* supportsSoftLimiting= */ true);
   }
@@ -123,7 +118,9 @@ final class AppendableExpression extends Expression {
     super(resultType, delegate.features());
     delegate.checkAssignableTo(LOGGING_ADVISING_APPENDABLE_TYPE);
     checkArgument(
-        delegate.isNonNullable(), "advising appendable expressions should always be non null");
+        delegate.isNonNullable(),
+        "advising appendable expressions should always be non nullable: %s",
+        delegate);
     this.delegate = delegate;
     this.hasSideEffects = hasSideEffects;
     this.supportsSoftLimiting = supportsSoftLimiting;
@@ -186,21 +183,16 @@ final class AppendableExpression extends Expression {
   }
 
   /** Invokes {@link LoggingAdvisingAppendable#setSanitizedContentKind} on the appendable. */
-  AppendableExpression setSanitizedContentKind(SanitizedContentKind kind) {
+  AppendableExpression setSanitizedContentKindAndDirectionality(SanitizedContentKind kind) {
     return withNewDelegate(
         delegate.invoke(
-            SET_SANITIZED_CONTENT_KIND,
+            SET_SANITIZED_CONTENT_KIND_AND_DIRECTIONALITY,
             BytecodeUtils.constantSanitizedContentKindAsContentKind(kind)),
         true);
   }
 
-  /**
-   * Invokes {@link LoggingAdvisingAppendable#setSanitizedContentDirectionality} on the appendable.
-   */
-  AppendableExpression setSanitizedContentDirectionality(Dir contentDir) {
-    return withNewDelegate(
-        delegate.invoke(SET_SANITIZED_CONTENT_DIRECTIONALITY, BytecodeUtils.constant(contentDir)),
-        true);
+  Statement flushBuffers(int depth) {
+    return delegate.invokeVoid(FLUSH_BUFFERS, constant(depth));
   }
 
   @Override

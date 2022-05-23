@@ -19,18 +19,17 @@ package com.google.template.soy.jssrc.internal;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.base.Joiner;
-import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
+import com.google.template.soy.testing.SharedTestUtils;
+import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for CanInitOutputVarVisitor.
- *
  */
 @RunWith(JUnit4.class)
 public class CanInitOutputVarVisitorTest {
@@ -83,16 +82,16 @@ public class CanInitOutputVarVisitorTest {
             + "{if $goo}{for $moo in $moose}{$moo}{/for}{/if}",
         true);
 
-    runTestHelper("{call .foo data=\"all\" /}", true);
+    runTestHelper("{call foo data=\"all\" /}", true);
 
     runTestHelper(
         "{@param boo: ?}\n"
             + "{@param moo: ?}\n"
-            + "{call .foo data=\"$boo\"}{param goo : $moo /}{/call}",
+            + "{call foo data=\"$boo\"}{param goo : $moo /}{/call}",
         true);
 
     runTestHelper(
-        "{@param boo: ?}\n{call .foo data=\"$boo\"}{param goo kind=\"text\"}Blah{/param}{/call}",
+        "{@param boo: ?}\n{call foo data=\"$boo\"}{param goo kind=\"text\"}Blah{/param}{/call}",
         true);
   }
 
@@ -103,7 +102,7 @@ public class CanInitOutputVarVisitorTest {
             .join(
                 "{@param boo : ?}",
                 "{@param moose : ?}",
-                "{call .foo data=\"$boo\"}",
+                "{call foo data=\"$boo\"}",
                 "  {param goo kind=\"text\"}{for $moo in $moose}{$moo}{/for}{/param}",
                 "{/call}"),
         false);
@@ -118,9 +117,13 @@ public class CanInitOutputVarVisitorTest {
   /** @param indicesToNode Series of indices for walking down to the node we want to test. */
   private static void runTestHelper(
       String soyCode, boolean isSameValueAsIsComputableAsJsExprsVisitor, int... indicesToNode) {
+    String fileContents = SharedTestUtils.buildTestSoyFileContent(soyCode);
+    if (soyCode.contains("{call foo")) {
+      fileContents += "{template foo}{@param? goo: ?}{/template}";
+    }
     ErrorReporter boom = ErrorReporter.exploding();
     SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forTemplateContents(soyCode).errorReporter(boom).parse().fileSet();
+        SoyFileSetParserBuilder.forFileContents(fileContents).errorReporter(boom).parse().fileSet();
     SoyNode node = SharedTestUtils.getNode(soyTree, indicesToNode);
 
     IsComputableAsJsExprsVisitor icajev = new IsComputableAsJsExprsVisitor();

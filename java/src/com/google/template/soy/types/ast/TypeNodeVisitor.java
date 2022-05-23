@@ -16,6 +16,7 @@
 
 package com.google.template.soy.types.ast;
 
+
 /** A visitor / rewriter interface for type AST nodes. */
 public interface TypeNodeVisitor<T> {
   T visit(NamedTypeNode node);
@@ -25,4 +26,8 @@ public interface TypeNodeVisitor<T> {
   T visit(UnionTypeNode node);
 
   T visit(RecordTypeNode node);
+
+  T visit(TemplateTypeNode node);
+
+  T visit(FunctionTypeNode node);
 }

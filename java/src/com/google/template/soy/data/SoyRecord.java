@@ -16,6 +16,8 @@
 
 package com.google.template.soy.data;
 
+import com.google.common.collect.ImmutableMap;
+import java.util.function.BiConsumer;
 import javax.annotation.ParametersAreNonnullByDefault;
 
 /**
@@ -24,7 +26,6 @@ import javax.annotation.ParametersAreNonnullByDefault;
  *
  * <p>Important: Until this API is more stable and this note is removed, users must not define
  * classes that implement this interface.
- *
  */
 @ParametersAreNonnullByDefault
 public interface SoyRecord extends SoyValue {
@@ -35,7 +36,7 @@ public interface SoyRecord extends SoyValue {
    * @param name The field name to check.
    * @return Whether this SoyRecord has a field of the given name.
    */
-  public boolean hasField(String name);
+  boolean hasField(String name);
 
   /**
    * Gets a field value of this SoyRecord.
@@ -43,7 +44,7 @@ public interface SoyRecord extends SoyValue {
    * @param name The field name to get.
    * @return The field value for the given field name, or null if no such field name.
    */
-  public SoyValue getField(String name);
+  SoyValue getField(String name);
 
   /**
    * Gets a provider of a field value of this SoyRecord.
@@ -51,5 +52,12 @@ public interface SoyRecord extends SoyValue {
    * @param name The field name to get.
    * @return A provider of the field value for the given field name, or null if no such field name.
    */
-  public SoyValueProvider getFieldProvider(String name);
+  SoyValueProvider getFieldProvider(String name);
+
+  /** Returns a view of this object as a java map. */
+  ImmutableMap<String, SoyValueProvider> recordAsMap();
+
+  void forEach(BiConsumer<String, ? super SoyValueProvider> action);
+
+  int recordSize();
 }

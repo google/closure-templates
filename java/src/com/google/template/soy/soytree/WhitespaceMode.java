@@ -23,13 +23,13 @@ import com.google.common.collect.ImmutableMap;
 public enum WhitespaceMode {
   /**
    * Indicates that whitespace should be preserved in template output. An example of the definition:
-   * "{template .foo whitespace="preserve"}".
+   * "{template foo whitespace="preserve"}".
    */
   PRESERVE,
 
   /**
    * Indicates that the whitespace should be optimized out (joined) in the template output. This is
-   * a default behavior, for example: "{template .foo}".
+   * a default behavior, for example: "{template foo}".
    */
   JOIN;
 
@@ -54,7 +54,7 @@ public enum WhitespaceMode {
       builder.put(value.getAttributeValue(), value);
     }
 
-    MODES_BY_ATTRIBUTE_VALUE = builder.build();
+    MODES_BY_ATTRIBUTE_VALUE = builder.buildOrThrow();
   }
 
   /**

@@ -27,8 +27,8 @@ import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.internal.InsertMsgsVisitor;
 import com.google.template.soy.passes.CombineConsecutiveRawTextNodesPass;
 import com.google.template.soy.shared.internal.SoyScopedData;
+import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.SoyFileSetNode;
-import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.List;
 import javax.annotation.Nullable;
@@ -37,7 +37,6 @@ import javax.annotation.Nullable;
  * Main entry point for the JS Src backend (output target).
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public class JsSrcMain {
   /** The scope object that manages the API call scope. */
@@ -56,7 +55,7 @@ public class JsSrcMain {
    * translated messages.
    *
    * @param soyTree The Soy parse tree to generate JS source code for.
-   * @param templateRegistry The template registry that contains all the template information.
+   * @param fileSetMetadata The template registry that contains all the template information.
    * @param jsSrcOptions The compilation options relevant to this backend.
    * @param msgBundle The bundle of translated messages, or null to use the messages from the Soy
    *     source.
@@ -66,14 +65,14 @@ public class JsSrcMain {
    */
   public List<String> genJsSrc(
       SoyFileSetNode soyTree,
-      TemplateRegistry templateRegistry,
+      FileSetMetadata fileSetMetadata,
       SoyJsSrcOptions jsSrcOptions,
       @Nullable SoyMsgBundle msgBundle,
       ErrorReporter errorReporter) {
 
     // VeLogInstrumentationVisitor add html attributes for {velog} commands and also run desugaring
     // pass since code generator does not understand html nodes (yet).
-    new VeLogInstrumentationVisitor(templateRegistry).exec(soyTree);
+    new VeLogInstrumentationVisitor().exec(soyTree);
     BidiGlobalDir bidiGlobalDir =
         SoyBidiUtils.decodeBidiGlobalDirFromJsOptions(
             jsSrcOptions.getBidiGlobalDir(), jsSrcOptions.getUseGoogIsRtlForBidiGlobalDir());
@@ -92,7 +91,7 @@ public class JsSrcMain {
       // Combine raw text nodes before codegen.
       new CombineConsecutiveRawTextNodesPass().run(soyTree);
       return createVisitor(jsSrcOptions, typeRegistry, inScope.getBidiGlobalDir(), errorReporter)
-          .gen(soyTree, templateRegistry, errorReporter);
+          .gen(soyTree, fileSetMetadata, errorReporter);
     }
   }
 
@@ -105,7 +104,7 @@ public class JsSrcMain {
     final IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor =
         new IsComputableAsJsExprsVisitor();
     final JavaScriptValueFactoryImpl javaScriptValueFactory =
-        new JavaScriptValueFactoryImpl(options, dir, errorReporter);
+        new JavaScriptValueFactoryImpl(dir, errorReporter);
     CanInitOutputVarVisitor canInitOutputVarVisitor =
         new CanInitOutputVarVisitor(isComputableAsJsExprsVisitor);
     // This supplier is used to break a circular dependency between GenCallCodeUtils and

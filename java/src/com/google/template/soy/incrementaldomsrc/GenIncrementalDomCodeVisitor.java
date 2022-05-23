@@ -17,15 +17,17 @@
 package com.google.template.soy.incrementaldomsrc;
 
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_APPLY_ATTRS;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_APPLY_STATICS;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_ATTR;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_CLOSE;
+import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_ELEMENT_CLOSE;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_ENTER;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_EXIT;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_LIB;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_MAYBE_SKIP;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_OPEN;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_OPEN_SSR;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_PARAM_NAME;
@@ -51,19 +53,21 @@ import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SO
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_TYPE_HTML;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_VISIT_HTML_COMMENT;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.STATE_PREFIX;
+import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.STATE_VAR_PREFIX;
 import static com.google.template.soy.jssrc.dsl.Expression.EMPTY_OBJECT_LITERAL;
 import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_EMPTY_STRING;
 import static com.google.template.soy.jssrc.dsl.Expression.id;
 import static com.google.template.soy.jssrc.dsl.Expression.stringLiteral;
 import static com.google.template.soy.jssrc.dsl.Statement.returnValue;
+import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_SOY_ALIAS;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_STRING_UNESCAPE_ENTITIES;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_ESCAPE_HTML;
+import static com.google.template.soy.soytree.SoyTreeUtils.isConstantExpr;
 
 import com.google.common.base.Ascii;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContentOperator;
@@ -75,6 +79,7 @@ import com.google.template.soy.jssrc.dsl.ClassExpression;
 import com.google.template.soy.jssrc.dsl.ClassExpression.MethodDeclaration;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
+import com.google.template.soy.jssrc.dsl.ConditionalBuilder;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.GoogRequire;
 import com.google.template.soy.jssrc.dsl.JsDoc;
@@ -90,11 +95,13 @@ import com.google.template.soy.jssrc.internal.JavaScriptValueFactoryImpl;
 import com.google.template.soy.jssrc.internal.JsCodeBuilder;
 import com.google.template.soy.jssrc.internal.JsRuntime;
 import com.google.template.soy.jssrc.internal.JsType;
+import com.google.template.soy.jssrc.internal.StandardNames;
 import com.google.template.soy.jssrc.internal.TemplateAliases;
 import com.google.template.soy.jssrc.internal.TranslateExprNodeVisitor;
 import com.google.template.soy.jssrc.internal.TranslationContext;
 import com.google.template.soy.passes.ShouldEnsureDataIsDefinedVisitor;
 import com.google.template.soy.shared.internal.BuiltinFunction;
+import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamNode;
@@ -107,6 +114,7 @@ import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.KeyNode;
 import com.google.template.soy.soytree.LetContentNode;
+import com.google.template.soy.soytree.Metadata;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.MsgHtmlTagNode;
 import com.google.template.soy.soytree.MsgPlaceholderNode;
@@ -116,22 +124,23 @@ import com.google.template.soy.soytree.SkipNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
-import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TagName;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateElementNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.VeLogNode;
-import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
-import java.util.ArrayDeque;
+import com.google.template.soy.types.TemplateType;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Supplier;
+import javax.annotation.Nullable;
 
 /**
  * Generates a series of JavaScript control statements and function calls for rendering one or more
@@ -141,20 +150,6 @@ import java.util.Optional;
 public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
 
   private static final String NAMESPACE_EXTENSION = ".incrementaldom";
-  private static final ImmutableList<HtmlContext> STRINGLIKE_KINDS =
-      ImmutableList.of(
-          HtmlContext.URI,
-          HtmlContext.TEXT,
-          HtmlContext.HTML_ATTRIBUTE_NAME,
-          HtmlContext.HTML_NORMAL_ATTR_VALUE);
-
-  private static class Holder<T> {
-    T value;
-
-    public Holder(T value) {
-      this.value = value;
-    }
-  }
 
   /**
    * Class that contains the state generated from visiting the beginning of a velogging statement.
@@ -182,16 +177,10 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     }
   }
 
-  // Tracks the counter to use for a tag's generated key:
-  // - When encountering an open tag without a manual key, the counter at the top of the stack is
-  //   incremented.
-  // - When encountering an open tag with a manual key, a new counter is pushed onto the stack.
-  // - When encountering a close tag that corresponds to an open tag with a manual key, the
-  //   topmost counter is then popped from the stack.
-  private ArrayDeque<Holder<Integer>> keyCounterStack;
   // Counter for static variables that are declared at the global scope.
   private int staticsCounter = 0;
   private String alias = "";
+  private boolean hasNonConstantState;
 
   GenIncrementalDomCodeVisitor(
       SoyJsSrcOptions jsSrcOptions,
@@ -269,22 +258,24 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
 
   @Override
   protected void visitTemplateNode(TemplateNode node) {
-    keyCounterStack = new ArrayDeque<>();
-    keyCounterStack.push(new Holder<>(0));
     staticsCounter = 0;
     SanitizedContentKind kind = node.getContentKind();
     getJsCodeBuilder().setContentKind(kind);
     if (node instanceof TemplateDelegateNode) {
-      alias = node.getPartialTemplateName().substring(1);
+      alias = node.getLocalTemplateSymbol();
     } else {
       alias = templateAliases.get(node.getTemplateName());
     }
 
+    if (node instanceof TemplateElementNode) {
+      hasNonConstantState = calcHasNonConstantState((TemplateElementNode) node);
+    }
+
     super.visitTemplateNode(node);
 
-    if (kind == SanitizedContentKind.HTML || kind == SanitizedContentKind.ATTRIBUTES) {
+    if (kind.isHtml() || kind == SanitizedContentKind.ATTRIBUTES) {
       Expression type;
-      if (kind == SanitizedContentKind.HTML) {
+      if (kind.isHtml()) {
         type = SOY_IDOM_TYPE_HTML;
       } else {
         type = SOY_IDOM_TYPE_ATTRIBUTE;
@@ -299,90 +290,340 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       getJsCodeBuilder().appendLine();
       getJsCodeBuilder().append(generateAccessorInterface(elementAccessor, element));
       getJsCodeBuilder().append(generateExportsForSoyElement(elementAccessor));
-      getJsCodeBuilder().append(generateClassForSoyElement(elementName, elementAccessor, element));
-      getJsCodeBuilder().append(generateExportsForSoyElement(elementName));
+      getJsCodeBuilder().append(generateRenderInternal(element));
+      getJsCodeBuilder().appendNullable(generateSyncInternal(element));
+      getJsCodeBuilder().appendNullable(generateInitInternalMethod(element));
+      if (element.hasExternalClassDefinition()) {
+        getJsCodeBuilder().append(generateSetFieldsForSoyElement(element));
+      } else {
+        getJsCodeBuilder()
+            .append(generateClassForSoyElement(elementName, elementAccessor, element));
+        getJsCodeBuilder().append(generateExportsForSoyElement(elementName));
+      }
     }
   }
 
-  @Override
-  protected JsDoc generateFunctionJsDoc(TemplateNode node, String alias) {
-    JsDoc.Builder jsDocBuilder = JsDoc.builder();
-    SanitizedContentKind kind = node.getContentKind();
-    if (kind == SanitizedContentKind.HTML || kind == SanitizedContentKind.ATTRIBUTES) {
-      jsDocBuilder.addGoogRequire(INCREMENTAL_DOM_LIB);
-      jsDocBuilder.addParam(
-          INCREMENTAL_DOM_PARAM_NAME, "!incrementaldomlib.IncrementalDomRenderer");
-    }
-    // This is true if there are any calls with data="all" (which implicitly add optional parameters
-    // from those template) or if all parameters are optional (but there are some parameters).
-    boolean noRequiredParams = new ShouldEnsureDataIsDefinedVisitor().exec(node);
-    if (node.getParams().isEmpty()) {
-      // If there are indirect parameters, allow an arbitrary object.
-      // Either way, allow null, since the caller may not pass parameters.
-      jsDocBuilder.addParam("opt_data", noRequiredParams ? "?Object<string, *>=" : "null=");
-    } else if (noRequiredParams) {
-      // All parameters are optional or only owned by an indirect callee; caller doesn't need to
-      // pass an object.
-      jsDocBuilder.addParam("opt_data", "?" + alias + ".Params=");
-    } else {
-      jsDocBuilder.addParam("opt_data", "!" + alias + ".Params");
-    }
-    jsDocBuilder.addGoogRequire(GoogRequire.createTypeRequire("goog.soy"));
-    jsDocBuilder.addParam("opt_ijData", "?goog.soy.IjData=");
+  private Statement generateRenderInternal(TemplateElementNode node) {
+    String paramsType = hasOnlyImplicitParams(node) ? "null" : "!" + alias + ".Params";
+    String soyElementClassName = this.getSoyElementClassName();
+    // TODO(b/194302456): Assert that jsnamespace and jsclass are always set together.
+    boolean isCustomElement = node.hasExternalClassDefinition();
+    JsDoc jsDoc =
+        JsDoc.builder()
+            .addParam(INCREMENTAL_DOM_PARAM_NAME, "!incrementaldomlib.IncrementalDomRenderer")
+            .addParam(StandardNames.OPT_DATA, paramsType)
+            .addAnnotation("public")
+            .addAnnotation("override")
+            .addParameterizedAnnotation(
+                "this",
+                isCustomElement
+                    ? (soyElementClassName + "Import." + node.jsclass)
+                    : soyElementClassName)
+            .addParameterizedAnnotation("suppress", "checkTypes")
+            .build();
+    // Build `renderInternal` method.
+    Expression fn =
+        Expression.function(
+            jsDoc,
+            // Various parts of the js codegen expects these values to be in the local
+            // scope.
+            Statement.of(
+                VariableDeclaration.builder(StandardNames.DOLLAR_IJDATA)
+                    .setRhs(Expression.THIS.dotAccess("ijData"))
+                    .build(),
+                Statement.of(
+                    node.getStateVars().stream()
+                        .map(
+                            stateVar ->
+                                VariableDeclaration.builder(
+                                        STATE_VAR_PREFIX + STATE_PREFIX + stateVar.name())
+                                    .setRhs(
+                                        Expression.THIS.dotAccess(
+                                            (isCustomElement ? "" : STATE_PREFIX)
+                                                + stateVar.name()))
+                                    .build())
+                        .collect(toImmutableList())),
+                generateIncrementalDomRenderCalls(node, alias, /*isPositionalStyle=*/ false)));
+    return VariableDeclaration.builder(soyElementClassName + "Render")
+        .setJsDoc(jsDoc)
+        .setRhs(fn)
+        .build();
+  }
 
-    String returnType = getTemplateReturnType(node);
-    jsDocBuilder.addParameterizedAnnotation("return", returnType);
+  private Statement generateInitInternal(TemplateElementNode node) {
+    ImmutableList.Builder<Statement> stateVarInitializations = ImmutableList.builder();
+    IncrementalDomCodeBuilder jsCodeBuilder = getJsCodeBuilder();
+    for (TemplateStateVar stateVar : node.getStateVars()) {
+      JsType jsType = JsType.forIncrementalDomState(stateVar.type());
+      for (GoogRequire require : jsType.getGoogRequires()) {
+        jsCodeBuilder.addGoogRequire(require);
+      }
+      JsDoc stateVarJsdoc =
+          JsDoc.builder().addParameterizedAnnotation("private", jsType.typeExpr()).build();
+      Expression rhsValue;
+      if (isConstantExpr(stateVar.defaultValue())) {
+        rhsValue = translateExpr(stateVar.defaultValue());
+      } else {
+        rhsValue = Expression.LITERAL_UNDEFINED.castAs("?");
+      }
+      stateVarInitializations.add(
+          Statement.assign(
+              Expression.THIS.dotAccess(
+                  (node.hasExternalClassDefinition() ? "" : STATE_PREFIX) + stateVar.name()),
+              rhsValue,
+              stateVarJsdoc));
+    }
+    return Statement.of(stateVarInitializations.build());
+  }
+
+  private Statement generateInitInternalMethod(TemplateElementNode node) {
+    if (!node.hasExternalClassDefinition()) {
+      return null;
+    }
+    String soyElementClassName = this.getSoyElementClassName();
+    JsDoc jsDoc =
+        JsDoc.builder()
+            .addParameterizedAnnotation("this", soyElementClassName + "Import." + node.jsclass)
+            .addParameterizedAnnotation("suppress", "checkTypes")
+            .build();
+
+    return VariableDeclaration.builder(soyElementClassName + "Init")
+        .setJsDoc(jsDoc)
+        .setRhs(
+            Expression.function(
+                jsDoc,
+                Statement.of(
+                    // Various parts of the js codegen expects these parameters to be in the local
+                    // scope.
+                    VariableDeclaration.builder(StandardNames.DOLLAR_IJDATA)
+                        .setRhs(Expression.THIS.dotAccess("ijData"))
+                        .build(),
+                    generateInitInternal(node))))
+        .build();
+  }
+
+  @Nullable
+  private Statement generateSyncInternal(TemplateElementNode node) {
+    if (!hasNonConstantState && !node.hasExternalClassDefinition()) {
+      return null;
+    }
+    String soyElementClassName = this.getSoyElementClassName();
+    String paramsType = hasOnlyImplicitParams(node) ? "null" : "!" + alias + ".Params";
+    boolean isCustomElement = node.hasExternalClassDefinition();
+    JsDoc jsDoc =
+        JsDoc.builder()
+            .addParam(StandardNames.OPT_DATA, paramsType)
+            .addAnnotation("public")
+            .addAnnotation("override")
+            .addParameterizedAnnotation(
+                "this",
+                isCustomElement
+                    ? (soyElementClassName + "Import." + node.jsclass)
+                    : soyElementClassName)
+            .addParameterizedAnnotation("suppress", "checkTypes")
+            .addParam("syncOnlyData", "boolean=")
+            .build();
+    return VariableDeclaration.builder(soyElementClassName + "SyncInternal")
+        .setJsDoc(jsDoc)
+        .setRhs(
+            Expression.function(
+                jsDoc,
+                Statement.of(
+                    // Various parts of the js codegen expects these parameters to be in the local
+                    // scope.
+                    VariableDeclaration.builder(StandardNames.DOLLAR_IJDATA)
+                        .setRhs(Expression.THIS.dotAccess("ijData"))
+                        .build(),
+                    genSyncStateCalls(node, alias))))
+        .build();
+  }
+
+  @Override
+  protected JsDoc generatePositionalFunctionJsDoc(TemplateNode node) {
+    JsDoc.Builder jsDocBuilder = JsDoc.builder();
+    addInternalCallerParam(jsDocBuilder);
+    addIjDataParam(jsDocBuilder, /*forPositionalSignature=*/ true);
+    maybeAddRenderer(jsDocBuilder, node);
+    for (TemplateParam param : paramsInOrder(node)) {
+      JsType jsType = getJsTypeForParamForDeclaration(param.type());
+      jsDocBuilder.addParam(
+          genParamAlias(param.name()), jsType.typeExpr() + (param.isRequired() ? "" : "="));
+    }
+
+    addReturnTypeAndAnnotations(node, jsDocBuilder);
     // TODO(b/11787791): make the checkTypes suppression more fine grained.
     jsDocBuilder.addParameterizedAnnotation("suppress", "checkTypes");
     return jsDocBuilder.build();
   }
 
   @Override
-  protected Statement generateFunctionBody(TemplateNode node, String alias) {
+  protected JsDoc generateFunctionJsDoc(TemplateNode node, String alias, boolean isDelegate) {
+    JsDoc.Builder jsDocBuilder = JsDoc.builder();
+    maybeAddRenderer(jsDocBuilder, node);
+    // This is true if there are any calls with data="all" (which implicitly add optional parameters
+    // from those template) or if all parameters are optional (but there are some parameters).
+    boolean noRequiredParams = new ShouldEnsureDataIsDefinedVisitor().exec(node);
+    if (hasOnlyImplicitParams(node)) {
+      // If there are indirect parameters, allow an arbitrary object.
+      // Either way, allow null, since the caller may not pass parameters.
+      jsDocBuilder.addParam(
+          StandardNames.OPT_DATA, noRequiredParams ? "?Object<string, *>=" : "null=");
+    } else if (noRequiredParams) {
+      // All parameters are optional or only owned by an indirect callee; caller doesn't need to
+      // pass an object.
+      jsDocBuilder.addParam(StandardNames.OPT_DATA, "?" + alias + ".Params=");
+    } else {
+      jsDocBuilder.addParam(StandardNames.OPT_DATA, "!" + alias + ".Params");
+    }
+    addIjDataParam(jsDocBuilder, /*forPositionalSignature=*/ false);
+
+    addReturnTypeAndAnnotations(node, jsDocBuilder);
+    if (!isDelegate) {
+      // TODO(b/11787791): make the checkTypes suppression more fine grained.
+      jsDocBuilder.addParameterizedAnnotation("suppress", "checkTypes");
+    } else {
+      if (fileSetMetadata.getTemplate(node).getTemplateType().getActualParameters().stream()
+          .anyMatch(TemplateType.Parameter::isImplicit)) {
+        jsDocBuilder.addParameterizedAnnotation("suppress", "missingProperties");
+      }
+    }
+    return jsDocBuilder.build();
+  }
+
+  private static void maybeAddRenderer(JsDoc.Builder jsDocBuilder, TemplateNode node) {
+    SanitizedContentKind kind = node.getContentKind();
+    if (kind.isHtml() || kind == SanitizedContentKind.ATTRIBUTES) {
+      jsDocBuilder.addGoogRequire(INCREMENTAL_DOM_LIB);
+      jsDocBuilder.addParam(
+          INCREMENTAL_DOM_PARAM_NAME, "!incrementaldomlib.IncrementalDomRenderer");
+    }
+  }
+
+  @Override
+  protected void addIjDataParam(JsDoc.Builder jsDocBuilder, boolean forPositionalSignature) {
+    jsDocBuilder.addGoogRequire(GOOG_SOY_ALIAS);
+    if (forPositionalSignature) {
+      jsDocBuilder.addParam(StandardNames.DOLLAR_IJDATA, "!" + GOOG_SOY_ALIAS.alias() + ".IjData");
+    } else {
+      jsDocBuilder.addParam(StandardNames.OPT_IJDATA, "?" + GOOG_SOY_ALIAS.alias() + ".IjData=");
+    }
+  }
+
+  @Override
+  protected ImmutableList<Expression> getFixedParamsToPositionalCall(TemplateNode node) {
+    SanitizedContentKind kind = node.getContentKind();
+    ImmutableList.Builder<Expression> params = ImmutableList.builder();
+    params.addAll(super.getFixedParamsToPositionalCall(node));
+    if (kind.isHtml() || kind == SanitizedContentKind.ATTRIBUTES) {
+      params.add(id(INCREMENTAL_DOM_PARAM_NAME));
+    }
+
+    return params.build();
+  }
+
+  @Override
+  protected ImmutableList<Expression> templateArguments(
+      TemplateNode node, boolean isPositionalStyle) {
+    ImmutableList<Expression> arguments = super.templateArguments(node, isPositionalStyle);
+    SanitizedContentKind kind = node.getContentKind();
+    if (kind.isHtml() || kind == SanitizedContentKind.ATTRIBUTES) {
+      return ImmutableList.<Expression>builder().add(INCREMENTAL_DOM).addAll(arguments).build();
+    }
+    return arguments;
+  }
+
+  @Override
+  protected Statement generateFunctionBody(
+      TemplateNode node, String alias, boolean isPositionalStyle) {
     ImmutableList.Builder<Statement> bodyStatements = ImmutableList.builder();
+    if (!isPositionalStyle) {
+      bodyStatements.add(redeclareIjData());
+    } else {
+      bodyStatements.add(
+          JsRuntime.SOY_ARE_YOU_AN_INTERNAL_CALLER
+              .call(id(StandardNames.ARE_YOU_AN_INTERNAL_CALLER))
+              .asStatement());
+    }
+    bodyStatements.add(generateStubbingTest(node, alias, isPositionalStyle));
     // Generate statement to ensure data is defined, if necessary.
-    if (new ShouldEnsureDataIsDefinedVisitor().exec(node)) {
+    if (!isPositionalStyle && new ShouldEnsureDataIsDefinedVisitor().exec(node)) {
       bodyStatements.add(
           Statement.assign(
               JsRuntime.OPT_DATA,
               JsRuntime.OPT_DATA.or(
                   EMPTY_OBJECT_LITERAL, templateTranslationContext.codeGenerator())));
     }
-
+    if (isPositionalStyle && node instanceof TemplateElementNode) {
+      throw new IllegalStateException("elements cannot be compiled into positional style.");
+    }
     bodyStatements.add(
         node instanceof TemplateElementNode
-            ? this.generateFunctionBodyForSoyElement(node)
-            : this.generateIncrementalDomRenderCalls(node, alias));
+            ? this.generateFunctionBodyForSoyElement((TemplateElementNode) node)
+            : this.generateIncrementalDomRenderCalls(node, alias, isPositionalStyle));
     return Statement.of(bodyStatements.build());
   }
 
+  private boolean calcHasNonConstantState(TemplateElementNode node) {
+    return node.getStateVars().stream().anyMatch(v -> !isConstantExpr(v.defaultValue()));
+  }
+
+  private Statement genSyncStateCalls(TemplateElementNode node, String alias) {
+    Expression originalDataSource = dataSource;
+    dataSource = JsRuntime.OPT_DATA;
+    Statement typeChecks = genParamTypeChecks(node, alias, false);
+    Statement dataAssignments =
+        Statement.of(
+            node.hasExternalClassDefinition()
+                ? node.getParams().stream()
+                    .map(
+                        param ->
+                            Statement.assign(
+                                Expression.THIS.dotAccess(param.name()), id(param.name())))
+                    .collect(toImmutableList())
+                : ImmutableList.of());
+    ImmutableList<TemplateStateVar> headerVars = node.getStateVars();
+    ImmutableMap<TemplateStateVar, Boolean> isNonConst =
+        headerVars.stream().collect(toImmutableMap(v -> v, v -> !isConstantExpr(v.defaultValue())));
+
+    ImmutableList.Builder<Statement> stateReassignmentBuilder = ImmutableList.builder();
+    TemplateStateVar lastNonConstVar =
+        headerVars.reverse().stream().filter(isNonConst::get).findFirst().orElse(null);
+    boolean haveVisitedLastNonConstVar = lastNonConstVar == null;
+
+    String prefix = node.hasExternalClassDefinition() ? "" : STATE_PREFIX;
+    for (TemplateStateVar headerVar : headerVars) {
+      if (isNonConst.get(headerVar)) {
+        stateReassignmentBuilder.add(
+            Statement.assign(
+                Expression.THIS.dotAccess(prefix + headerVar.name()),
+                translateExpr(headerVar.defaultValue())));
+      }
+      haveVisitedLastNonConstVar = haveVisitedLastNonConstVar || headerVar.equals(lastNonConstVar);
+      // Only need to alias if there's another non-constant var to come that may reference this.
+      if (!haveVisitedLastNonConstVar) {
+        stateReassignmentBuilder.add(
+            VariableDeclaration.builder(STATE_VAR_PREFIX + STATE_PREFIX + headerVar.name())
+                .setRhs(Expression.THIS.dotAccess(prefix + headerVar.name()))
+                .build());
+      }
+    }
+    List<Statement> assignments = stateReassignmentBuilder.build();
+    Statement stateReassignments = Statement.of(assignments);
+    if (node.hasExternalClassDefinition() && !assignments.isEmpty()) {
+      stateReassignments =
+          Statement.ifStatement(Expression.not(id("syncOnlyData")), stateReassignments).build();
+    }
+    dataSource = originalDataSource;
+    return Statement.of(typeChecks, dataAssignments, stateReassignments);
+  }
+
   /** Generates idom#elementOpen, idom#elementClose, etc. function calls for the given node. */
-  private Statement generateIncrementalDomRenderCalls(TemplateNode node, String alias) {
+  private Statement generateIncrementalDomRenderCalls(
+      TemplateNode node, String alias, boolean isPositionalStyle) {
     IncrementalDomCodeBuilder jsCodeBuilder = getJsCodeBuilder();
     boolean isTextTemplate = isTextContent(node.getContentKind());
 
-    Statement typeChecks = genParamTypeChecks(node, alias);
-    ImmutableList.Builder<Statement> stateReassignmentBuilder = ImmutableList.builder();
-    if (node instanceof TemplateElementNode) {
-      TemplateElementNode soyElement = (TemplateElementNode) node;
-      for (TemplateHeaderVarDefn headerVar : Lists.newArrayList(soyElement.getStateVars())) {
-        if (SoyTreeUtils.isConstantExpr(headerVar.defaultValue())) {
-          continue;
-        }
-        stateReassignmentBuilder.add(
-            Statement.assign(
-                Expression.THIS.dotAccess(STATE_PREFIX + headerVar.name()),
-                translateExpr(headerVar.defaultValue())));
-      }
-    }
-    List<Statement> reassignments = stateReassignmentBuilder.build();
-    Statement stateReassignments = Statement.of(reassignments);
-    if (!reassignments.isEmpty()) {
-      stateReassignments =
-          Statement.ifStatement(
-                  Expression.THIS.dotAccess("shouldSyncState").call(), stateReassignments)
-              .build();
-    }
+    Statement typeChecks = genParamTypeChecks(node, alias, isPositionalStyle);
     // Note: we do not try to combine this into a single return statement if the content is
     // computable as a JsExpr. A JavaScript compiler, such as Closure Compiler, is able to perform
     // the transformation.
@@ -394,34 +635,55 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
 
     if (isTextTemplate) {
       VariableDeclaration declare =
-          VariableDeclaration.builder("output").setRhs(LITERAL_EMPTY_STRING).build();
+          VariableDeclaration.builder("output").setMutable().setRhs(LITERAL_EMPTY_STRING).build();
       jsCodeBuilder.popOutputVar();
       body =
           Statement.of(declare, body, returnValue(sanitize(declare.ref(), node.getContentKind())));
     }
-    return Statement.of(typeChecks, stateReassignments, body);
+    return Statement.of(typeChecks, body);
   }
 
   /**
    * Generates main template function body for Soy elements. Specifically, generates code to create
    * a new instance of the element class and invoke its #render method.
    */
-  private Statement generateFunctionBodyForSoyElement(TemplateNode node) {
+  private Statement generateFunctionBodyForSoyElement(TemplateElementNode node) {
     String soyElementClassName = this.getSoyElementClassName();
+    String tplName =
+        node.getHtmlElementMetadata().getFinalCallee().isEmpty()
+            ? node.getTemplateName()
+            : node.getHtmlElementMetadata().getFinalCallee();
     Expression firstElementKey =
         // Since Soy element roots cannot have manual keys (see go/soy-element-keyed-roots),
         // this will always be the first element key.
-        JsRuntime.XID.call(Expression.stringLiteral(node.getTemplateName() + "-0"));
-
-    return SOY_IDOM
-        .dotAccess("$$handleSoyElement")
-        .call(
+        JsRuntime.XID.call(Expression.stringLiteral(tplName + "-root"));
+    boolean isCustomElement = node.hasExternalClassDefinition();
+    List<Expression> params =
+        Arrays.asList(
             INCREMENTAL_DOM,
-            id(soyElementClassName),
+            isCustomElement
+                ? GoogRequire.createWithAlias(node.jsnamespace, soyElementClassName + "Import")
+                    .dotAccess(node.jsclass)
+                : id(soyElementClassName),
             firstElementKey,
+            isCustomElement
+                ? id(soyElementClassName + "Import").dotAccess(node.jsclass)
+                : Expression.stringLiteral(node.getHtmlElementMetadata().getTag()),
             JsRuntime.OPT_DATA,
-            JsRuntime.OPT_IJ_DATA)
-        .asStatement();
+            JsRuntime.IJ_DATA,
+            id(soyElementClassName + "Render"));
+    return Statement.of(
+        VariableDeclaration.builder("soyEl")
+            .setRhs(SOY_IDOM.dotAccess("$$handleSoyElement").call(params))
+            .build(),
+        Statement.ifStatement(
+                id("soyEl"),
+                Statement.of(
+                    id("soyEl")
+                        .dotAccess("renderInternal")
+                        .call(INCREMENTAL_DOM, isCustomElement ? id("soyEl") : JsRuntime.OPT_DATA)
+                        .asStatement()))
+            .build());
   }
 
   /**
@@ -435,11 +697,26 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     }
   }
 
+  private Statement generateSetFieldsForSoyElement(TemplateElementNode node) {
+    String soyElementClassName = this.getSoyElementClassName();
+    List<Expression> params =
+        Arrays.asList(
+            GoogRequire.createWithAlias(node.jsnamespace, soyElementClassName + "Import")
+                .dotAccess(node.jsclass),
+            id(soyElementClassName + "Render"),
+            id(soyElementClassName + "SyncInternal"),
+            id(soyElementClassName + "Init"));
+    return SOY_IDOM.dotAccess("$$upgrade").call(params).asStatement();
+  }
+
   /** Generates class expression for the given template node, provided it is a Soy element. */
   private VariableDeclaration generateClassForSoyElement(
       String soyElementClassName, String soyElementAccessorName, TemplateElementNode node) {
 
-    String paramsType = node.getParams().isEmpty() ? "null" : "!" + alias + ".Params";
+    if (node.hasExternalClassDefinition()) {
+      return null;
+    }
+    String paramsType = hasOnlyImplicitParams(node) ? "null" : "!" + alias + ".Params";
 
     ImmutableList.Builder<MethodDeclaration> stateMethods = ImmutableList.builder();
     for (TemplateStateVar stateVar : node.getStateVars()) {
@@ -448,80 +725,55 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     }
     ImmutableList.Builder<MethodDeclaration> parameterMethods = ImmutableList.builder();
     for (TemplateParam param : node.getParams()) {
-      parameterMethods.add(this.generateGetParamMethodForSoyElementClass(param, false));
+      if (param.isImplicit()) {
+        continue;
+      }
+      parameterMethods.add(
+          this.generateGetParamMethodForSoyElementClass(
+              param, /* isAbstract= */ false, /* isInjected= */ false));
+    }
+    ImmutableList.Builder<MethodDeclaration> injectedParameterMethods = ImmutableList.builder();
+    for (TemplateParam injectedParam : node.getInjectedParams()) {
+      injectedParameterMethods.add(
+          this.generateGetParamMethodForSoyElementClass(
+              injectedParam, /* isAbstract= */ false, /* isInjected= */ true));
     }
 
     ImmutableList.Builder<Statement> stateVarInitializations = ImmutableList.builder();
-    for (TemplateStateVar stateVar : node.getStateVars()) {
-      JsType jsType = JsType.forIncrementalDomState(stateVar.type());
-      JsDoc stateVarJsdoc =
-          JsDoc.builder().addParameterizedAnnotation("private", jsType.typeExpr()).build();
-      Expression rhsValue;
-      if (SoyTreeUtils.isConstantExpr(stateVar.defaultValue())) {
-        rhsValue = translateExpr(stateVar.defaultValue());
-      } else {
-        rhsValue = Expression.LITERAL_UNDEFINED.castAs("?");
-      }
+    stateVarInitializations.add(generateInitInternal(node));
+    if (hasNonConstantState) {
       stateVarInitializations.add(
           Statement.assign(
-              Expression.THIS.dotAccess(STATE_PREFIX + stateVar.name()), rhsValue, stateVarJsdoc));
+              Expression.THIS.dotAccess("syncStateFromData"),
+              id(soyElementClassName + "SyncInternal")));
     }
     // Build constructor method.
     Statement ctorBody =
         Statement.of(
-            id("super").call(JsRuntime.OPT_DATA, JsRuntime.OPT_IJ_DATA).asStatement(),
-            Statement.of(stateVarInitializations.build()));
+            id("super").call().asStatement(), Statement.of(stateVarInitializations.build()));
     MethodDeclaration constructorMethod =
-        MethodDeclaration.create(
-            "constructor",
-            JsDoc.builder()
-                .addParam("opt_data", paramsType)
-                .addGoogRequire(GoogRequire.createTypeRequire("goog.soy"))
-                .addParam("opt_ijData", "!goog.soy.IjData=")
-                .build(),
-            ctorBody);
-
-    // Build `renderInternal` method.
-    MethodDeclaration renderInternalMethod =
-        MethodDeclaration.create(
-            "renderInternal",
-            JsDoc.builder()
-                .addParam(INCREMENTAL_DOM_PARAM_NAME, "!incrementaldomlib.IncrementalDomRenderer")
-                .addParam("opt_data", paramsType)
-                .addAnnotation("protected")
-                .addAnnotation("override")
-                .addParameterizedAnnotation("suppress", "checkTypes")
-                .build(),
-            Statement.of(
-                // Various parts of the js codegen expects these parameters to be in the local
-                // scope.
-                VariableDeclaration.builder("opt_ijData")
-                    .setRhs(Expression.THIS.dotAccess("ijData"))
-                    .build(),
-                generateIncrementalDomRenderCalls(node, alias),
-                Statement.returnValue(Expression.LITERAL_FALSE)));
+        MethodDeclaration.create("constructor", JsDoc.builder().build(), ctorBody);
+    ImmutableList.Builder<MethodDeclaration> builder = ImmutableList.builder();
+    builder.add(constructorMethod);
 
     ClassExpression soyElementClass =
         ClassExpression.create(
             SOY_IDOM.dotAccess("$SoyElement"),
-            ImmutableList.<MethodDeclaration>builder()
-                .add(constructorMethod, renderInternalMethod)
+            builder
                 .addAll(stateMethods.build())
                 .addAll(parameterMethods.build())
+                .addAll(injectedParameterMethods.build())
                 .build());
     String elementAccessor = soyElementClassName + "Interface";
-    VariableDeclaration classExpression =
-        VariableDeclaration.builder(soyElementClassName)
-            .setJsDoc(
-                JsDoc.builder()
-                    .addAnnotation(
-                        "extends",
-                        "{soyIdom.$SoyElement<" + paramsType + ",!" + elementAccessor + ">}")
-                    .addParameterizedAnnotation("implements", soyElementAccessorName)
-                    .build())
-            .setRhs(soyElementClass)
-            .build();
-    return classExpression;
+    return VariableDeclaration.builder(soyElementClassName)
+        .setJsDoc(
+            JsDoc.builder()
+                .addAnnotation(
+                    "extends", "{soyIdom.$SoyElement<" + paramsType + ",!" + elementAccessor + ">}")
+                .addParameterizedAnnotation("implements", soyElementAccessorName)
+                .build())
+        .setRhs(soyElementClass)
+        .build();
   }
 
   /** Generates class expression for the given template node, provided it is a Soy element. */
@@ -529,20 +781,33 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       String className, TemplateElementNode node) {
     ImmutableList.Builder<MethodDeclaration> parameterMethods = ImmutableList.builder();
     for (TemplateParam param : node.getParams()) {
-      parameterMethods.add(this.generateGetParamMethodForSoyElementClass(param, true));
+      if (param.isImplicit()) {
+        continue;
+      }
+      parameterMethods.add(
+          this.generateGetParamMethodForSoyElementClass(
+              param, /* isAbstract= */ true, /* isInjected= */ false));
+    }
+    ImmutableList.Builder<MethodDeclaration> injectedParameterMethods = ImmutableList.builder();
+    for (TemplateParam injectedParam : node.getInjectedParams()) {
+      injectedParameterMethods.add(
+          this.generateGetParamMethodForSoyElementClass(
+              injectedParam, /* isAbstract= */ true, /* isInjected= */ true));
     }
 
     ClassExpression soyElementClass =
-        ClassExpression.create(ImmutableList.copyOf(parameterMethods.build()));
-    VariableDeclaration classExpression =
-        VariableDeclaration.builder(className)
-            .setJsDoc(JsDoc.builder().addAnnotation("interface").build())
-            .setRhs(soyElementClass)
-            .build();
-    return classExpression;
+        ClassExpression.create(
+            ImmutableList.<MethodDeclaration>builder()
+                .addAll(parameterMethods.build())
+                .addAll(injectedParameterMethods.build())
+                .build());
+    return VariableDeclaration.builder(className)
+        .setJsDoc(JsDoc.builder().addAnnotation("interface").build())
+        .setRhs(soyElementClass)
+        .build();
   }
 
-  private Statement generateExportsForSoyElement(String soyElementClassName) {
+  private static Statement generateExportsForSoyElement(String soyElementClassName) {
     return Statement.assign(
         // Idom only supports goog.module generation.
         JsRuntime.EXPORTS.dotAccess(
@@ -569,8 +834,11 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     jsType = JsType.forIncrementalDomState(stateVar.type());
     ImmutableList.Builder<Statement> setStateMethodStatements = ImmutableList.builder();
     Optional<Expression> typeAssertion =
-        jsType.getSoyTypeAssertion(
-            id(stateVar.name()), stateVar.name(), templateTranslationContext.codeGenerator());
+        jsType.getSoyParamTypeAssertion(
+            id(stateVar.name()),
+            stateVar.name(),
+            /* paramKind= */ "@state",
+            templateTranslationContext.codeGenerator());
     if (typeAssertion.isPresent()) {
       setStateMethodStatements.add(typeAssertion.get().asStatement());
     }
@@ -589,7 +857,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
 
   /** Generates `get[X]` for a given parameter value. */
   private MethodDeclaration generateGetParamMethodForSoyElementClass(
-      TemplateParam param, boolean isAbstract) {
+      TemplateParam param, boolean isAbstract, boolean isInjected) {
     JsType jsType = JsType.forIncrementalDomState(param.type());
     String accessorSuffix =
         Ascii.toUpperCase(param.name().substring(0, 1)) + param.name().substring(1);
@@ -598,34 +866,39 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
           "get" + accessorSuffix,
           JsDoc.builder()
               .addAnnotation("abstract")
+              // Injected params are marked as optional, see:
               .addParameterizedAnnotation("return", jsType.typeExpr())
               .build(),
           Statement.of(ImmutableList.of()));
     }
-    Expression value = id("this").dotAccess("data").dotAccess(param.name());
+    Expression value = id("this").dotAccess(isInjected ? "ijData" : "data").dotAccess(param.name());
     if (param.hasDefault()) {
       value =
           templateTranslationContext
               .codeGenerator()
               .declarationBuilder()
+              .setMutable()
               .setRhs(value)
               .build()
               .ref();
       value =
           value.withInitialStatement(
-              genParamDefault(
-                  param,
-                  value,
-                  alias,
-                  getJsTypeForParamTypeCheck(param.type()),
-                  /* declareStatic= */ false));
+              genParamDefault(param, value, jsType, templateTranslationContext.codeGenerator()));
     }
-    MethodDeclaration getParamMethod =
-        MethodDeclaration.create(
-            "get" + accessorSuffix,
-            JsDoc.builder().addAnnotation("override").addAnnotation("public").build(),
-            Statement.returnValue(value));
-    return getParamMethod;
+    // Injected params are marked as optional to account for unused templates, see:
+    // We can assert the presence of the injected param if it being called.
+    Optional<Expression> typeAssertion =
+        isInjected
+            ? jsType.getSoyParamTypeAssertion(
+                value,
+                param.name(),
+                /* paramKind= */ "@inject",
+                templateTranslationContext.codeGenerator())
+            : Optional.empty();
+    return MethodDeclaration.create(
+        "get" + accessorSuffix,
+        JsDoc.builder().addAnnotation("override").addAnnotation("public").build(),
+        Statement.returnValue(typeAssertion.orElse(value)));
   }
 
   /** Constructs template class name, e.g. converts template `ns.foo` => `$FooElement`. */
@@ -660,9 +933,9 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     CodeChunk definition;
     VariableDeclaration.Builder builder = VariableDeclaration.builder(generatedVarName);
     SanitizedContentKind kind = node.getContentKind();
-    if (kind == SanitizedContentKind.HTML || kind == SanitizedContentKind.ATTRIBUTES) {
+    if (kind.isHtml() || kind == SanitizedContentKind.ATTRIBUTES) {
       Expression constructor;
-      if (kind == SanitizedContentKind.HTML) {
+      if (kind.isHtml()) {
         constructor = SOY_IDOM_MAKE_HTML;
       } else {
         constructor = SOY_IDOM_MAKE_ATTRIBUTES;
@@ -685,7 +958,10 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       // TODO(b/246994962): Skip this definition for SanitizedContentKind.TEXT.
       definition =
           Statement.of(
-              VariableDeclaration.builder(outputVarName).setRhs(LITERAL_EMPTY_STRING).build(),
+              VariableDeclaration.builder(outputVarName)
+                  .setMutable()
+                  .setRhs(LITERAL_EMPTY_STRING)
+                  .build(),
               visitChildrenReturningCodeChunk(node),
               builder
                   .setRhs(
@@ -712,9 +988,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   protected void visitLetContentNode(LetContentNode node) {
     String generatedVarName = node.getUniqueVarName();
     visitLetParamContentNode(node, generatedVarName);
-    templateTranslationContext
-        .soyToJsVariableMappings()
-        .put(node.getVarName(), id(generatedVarName));
+    templateTranslationContext.soyToJsVariableMappings().put(node.getVar(), id(generatedVarName));
   }
 
   @Override
@@ -734,88 +1008,150 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     }
 
     Expression call;
-    Optional<SanitizedContentKind> kind = templateRegistry.getCallContentKind(node);
-    Expression callee = genCallCodeUtils.genCallee(node, templateAliases, getExprTranslator());
-    Expression objToPass =
-        genCallCodeUtils.genObjToPass(
-            node, templateAliases, templateTranslationContext, errorReporter, getExprTranslator());
+    Optional<SanitizedContentKind> kind = Metadata.getCallContentKind(fileSetMetadata, node);
+    GenCallCodeUtils.Callee callee =
+        genCallCodeUtils.genCallee(node, templateAliases, getExprTranslator());
+    Supplier<Expression> objToPass =
+        () ->
+            genCallCodeUtils.genObjToPass(
+                node,
+                templateAliases,
+                templateTranslationContext,
+                errorReporter,
+                getExprTranslator());
+    Optional<Supplier<List<Expression>>> positionalParameters = Optional.empty();
+    if (genCallCodeUtils.canPerformPositionalCall(node)) {
+      positionalParameters =
+          Optional.of(
+              () ->
+                  genCallCodeUtils.getPositionalParams(
+                      (CallBasicNode) node,
+                      templateAliases,
+                      templateTranslationContext,
+                      errorReporter,
+                      getExprTranslator()));
+    }
     boolean shouldPushKey = false;
 
-    if (STRINGLIKE_KINDS.contains(node.getHtmlContext())
-        && (!kind.isPresent()
+    // TODO(lukes): instead of these helper functions callDynamicXXX for managing context mismatches
+    // maybe we should create IncrementalDomRenderer subtypes that can perform the coercions, this
+    // would be similar to how jbcsrc manages streaming escapers.
+
+    switch (node.getHtmlContext()) {
+      case HTML_TAG:
+        if (!kind.isPresent() || kind.get() != SanitizedContentKind.ATTRIBUTES) {
+          call =
+              SOY_IDOM_CALL_DYNAMIC_ATTRIBUTES.call(
+                  INCREMENTAL_DOM, callee.objectStyle(), objToPass.get(), JsRuntime.IJ_DATA);
+        } else {
+          call = directCall(callee, positionalParameters, objToPass, /*isIdomCall=*/ true);
+        }
+        break;
+      case CSS:
+        call =
+            SOY_IDOM_CALL_DYNAMIC_CSS.call(
+                INCREMENTAL_DOM, callee.objectStyle(), objToPass.get(), JsRuntime.IJ_DATA);
+        break;
+      case JS:
+        call =
+            SOY_IDOM_CALL_DYNAMIC_JS.call(
+                INCREMENTAL_DOM, callee.objectStyle(), objToPass.get(), JsRuntime.IJ_DATA);
+        break;
+        // stringlike kinds
+      case URI:
+      case TEXT:
+      case HTML_ATTRIBUTE_NAME:
+      case HTML_NORMAL_ATTR_VALUE:
+        Expression textCall;
+        if (!kind.isPresent()
             || kind.get() == SanitizedContentKind.ATTRIBUTES
-            || kind.get() == SanitizedContentKind.HTML)) {
-      call = SOY_IDOM_CALL_DYNAMIC_TEXT.call(callee, objToPass, JsRuntime.OPT_IJ_DATA);
-    } else if (kind.isPresent()
-        && (kind.get() == SanitizedContentKind.HTML
-            || kind.get() == SanitizedContentKind.ATTRIBUTES)) {
-      // This is executed in the case of HTML/ATTR -> HTML/ATTR. All other ambiguous cases are
-      // passed through to runtime functions.
-      call = callee.call(INCREMENTAL_DOM, objToPass, JsRuntime.OPT_IJ_DATA);
-      shouldPushKey = true;
-    } else {
-      // This is executed in the case of TEXT Context -> Text Template
-      call = callee.call(objToPass, JsRuntime.OPT_IJ_DATA);
+            || kind.get().isHtml()) {
+          textCall =
+              SOY_IDOM_CALL_DYNAMIC_TEXT.call(
+                  callee.objectStyle(), objToPass.get(), JsRuntime.IJ_DATA);
+        } else {
+          // This is executed in the case of TEXT Context -> Text Template
+          textCall = directCall(callee, positionalParameters, objToPass, /*isIdomCall=*/ false);
+        }
+        getJsCodeBuilder()
+            .addChunkToOutputVar(GenCallCodeUtils.applyEscapingDirectives(textCall, node));
+        return;
+      default:
+        if (!kind.isPresent() || !kind.get().isHtml()) {
+          call =
+              SOY_IDOM_CALL_DYNAMIC_HTML.call(
+                  INCREMENTAL_DOM, callee.objectStyle(), objToPass.get(), JsRuntime.IJ_DATA);
+          shouldPushKey = true;
+        } else {
+          // This is executed in the case of HTML/ATTR -> HTML/ATTR. All other ambiguous cases are
+          // passed through to runtime functions.
+          call = directCall(callee, positionalParameters, objToPass, /*isIdomCall=*/ true);
+          shouldPushKey = true;
+        }
+        break;
     }
 
-    if (STRINGLIKE_KINDS.contains(node.getHtmlContext())) {
-      call = GenCallCodeUtils.applyEscapingDirectives(call, node);
-      getJsCodeBuilder().addChunkToOutputVar(call);
-    } else {
-      switch (node.getHtmlContext()) {
-        case HTML_TAG:
-          if (!kind.isPresent() || kind.get() != SanitizedContentKind.ATTRIBUTES) {
-            call =
-                SOY_IDOM_CALL_DYNAMIC_ATTRIBUTES.call(
-                    INCREMENTAL_DOM, callee, objToPass, JsRuntime.OPT_IJ_DATA);
-          }
-          break;
-        case CSS:
-          call =
-              SOY_IDOM_CALL_DYNAMIC_CSS.call(
-                  INCREMENTAL_DOM, callee, objToPass, JsRuntime.OPT_IJ_DATA);
-          break;
-        case JS:
-          call =
-              SOY_IDOM_CALL_DYNAMIC_JS.call(
-                  INCREMENTAL_DOM, callee, objToPass, JsRuntime.OPT_IJ_DATA);
-          break;
-        default:
-          if (!kind.isPresent() || kind.get() != SanitizedContentKind.HTML) {
-            call =
-                SOY_IDOM_CALL_DYNAMIC_HTML.call(
-                    INCREMENTAL_DOM, callee, objToPass, JsRuntime.OPT_IJ_DATA);
-            shouldPushKey = true;
-          }
-          break;
-      }
-
-      TemplateNode template = node.getNearestAncestor(TemplateNode.class);
-      String keyVariable = "_keyVariable" + staticsCounter++;
-      if (shouldPushKey) {
-        if (node.getKeyExpr() != null) {
-          getJsCodeBuilder()
-              .append(INCREMENTAL_DOM_PUSH_MANUAL_KEY.call(translateExpr(node.getKeyExpr())));
-        } else {
+    String keyVariable = "_keyVariable" + staticsCounter++;
+    RenderUnitNode renderUnitNode = node.getNearestAncestor(RenderUnitNode.class);
+    boolean delegatesToTemplate = false;
+    if (renderUnitNode instanceof TemplateNode) {
+      TemplateNode template = (TemplateNode) renderUnitNode;
+      delegatesToTemplate =
+          template.getHtmlElementMetadata().getIsHtmlElement()
+              && !template.getHtmlElementMetadata().getFinalCallee().isEmpty();
+    }
+    if (shouldPushKey) {
+      if (node.getKeyExpr() != null) {
+        getJsCodeBuilder()
+            .append(INCREMENTAL_DOM_PUSH_MANUAL_KEY.call(translateExpr(node.getKeyExpr())));
+      } else if (!delegatesToTemplate) {
+        if (!delegatesToTemplate) {
           getJsCodeBuilder()
               .append(
                   VariableDeclaration.builder(keyVariable)
-                      .setRhs(INCREMENTAL_DOM_PUSH_KEY.call(incrementKeyForTemplate(template)))
+                      .setRhs(
+                          INCREMENTAL_DOM_PUSH_KEY.call(
+                              JsRuntime.XID.call(
+                                  Expression.stringLiteral(node.getTemplateCallKey()))))
                       .build());
         }
       }
-      // TODO: In reality, the CALL_X functions are really just IDOM versions of the related
-      // escaping directives. Consider doing a replace instead of not using escaping directives
-      // at all.
+    }
+    // TODO: In reality, the CALL_X functions are really just IDOM versions of the related
+    // escaping directives. Consider doing a replace instead of not using escaping directives
+    // at all.
+    if (node.getHtmlContext() == HtmlContext.JS) {
+      getJsCodeBuilder().addChunkToOutputVar(call);
+    } else {
       getJsCodeBuilder().append(call);
-      if (shouldPushKey) {
-        if (node.getKeyExpr() != null) {
-          getJsCodeBuilder().append(INCREMENTAL_DOM_POP_MANUAL_KEY.call());
-        } else {
-          getJsCodeBuilder().append(INCREMENTAL_DOM_POP_KEY.call(Expression.id(keyVariable)));
-        }
+    }
+    if (shouldPushKey) {
+      if (node.getKeyExpr() != null) {
+        getJsCodeBuilder().append(INCREMENTAL_DOM_POP_MANUAL_KEY.call());
+      } else if (!delegatesToTemplate) {
+        getJsCodeBuilder().append(INCREMENTAL_DOM_POP_KEY.call(Expression.id(keyVariable)));
       }
     }
+  }
+
+  private static Expression directCall(
+      GenCallCodeUtils.Callee callee,
+      Optional<Supplier<List<Expression>>> positionalParameters,
+      Supplier<Expression> paramObject,
+      boolean isIdomCall) {
+    List<Expression> params = new ArrayList<>();
+    if (isIdomCall) {
+      params.add(INCREMENTAL_DOM);
+    }
+    if (positionalParameters.isPresent()) {
+      params.add(0, JsRuntime.IJ_DATA);
+      params.add(0, JsRuntime.SOY_INTERNAL_CALL_MARKER);
+      params.addAll(positionalParameters.get().get());
+      return callee.positionalStyle().get().call(params);
+    }
+    params.add(paramObject.get());
+    params.add(JsRuntime.IJ_DATA);
+    return callee.objectStyle().call(params);
   }
 
   /**
@@ -840,22 +1176,29 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
    * @param contentKind The kind of content to check.
    * @return True if the content represents text, false otherwise.
    */
-  private boolean isTextContent(SanitizedContentKind contentKind) {
-    return contentKind != SanitizedContentKind.HTML
-        && contentKind != SanitizedContentKind.ATTRIBUTES;
+  private static boolean isTextContent(SanitizedContentKind contentKind) {
+    return !contentKind.isHtml() && contentKind != SanitizedContentKind.ATTRIBUTES;
   }
 
   @Override
   protected TranslateExprNodeVisitor getExprTranslator() {
     return new IncrementalDomTranslateExprNodeVisitor(
-        javaScriptValueFactory, templateTranslationContext, errorReporter);
+        javaScriptValueFactory,
+        templateTranslationContext,
+        templateAliases,
+        errorReporter,
+        dataSource);
   }
 
   @Override
   protected void visitHtmlCommentNode(HtmlCommentNode node) {
     String id = "html_comment_" + node.getId();
     getJsCodeBuilder()
-        .append(VariableDeclaration.builder(id).setRhs(Expression.LITERAL_EMPTY_STRING).build());
+        .append(
+            VariableDeclaration.builder(id)
+                .setMutable()
+                .setRhs(Expression.LITERAL_EMPTY_STRING)
+                .build());
     getJsCodeBuilder().pushOutputVar(id).setOutputVarInited();
     SanitizedContentKind prev = getJsCodeBuilder().getContentKind();
     getJsCodeBuilder().setContentKind(SanitizedContentKind.TEXT);
@@ -927,12 +1270,13 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     boolean needsToBeCoerced = false;
     // There may be HTML nodes in the children that can get coerced to a string. In this case,
     // the appending path needs to be executed.
-    for (Object n : value.getChildren()) {
+    for (SoyNode n : value.getChildren()) {
       if (n instanceof CallNode) {
-        Optional<SanitizedContentKind> kind = templateRegistry.getCallContentKind((CallNode) n);
+        Optional<SanitizedContentKind> kind =
+            Metadata.getCallContentKind(fileSetMetadata, (CallNode) n);
         needsToBeCoerced =
             !kind.isPresent()
-                || kind.get() == SanitizedContentKind.HTML
+                || kind.get().isHtml()
                 || kind.get() == SanitizedContentKind.ATTRIBUTES;
       }
     }
@@ -942,23 +1286,16 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       getJsCodeBuilder().setContentKind(SanitizedContentKind.TEXT);
       IncrementalDomCodeBuilder jsCodeBuilder = getJsCodeBuilder();
       jsCodeBuilder.append(
-          VariableDeclaration.builder(outputVar).setRhs(Expression.LITERAL_EMPTY_STRING).build());
+          VariableDeclaration.builder(outputVar)
+              .setMutable()
+              .setRhs(Expression.LITERAL_EMPTY_STRING)
+              .build());
       visit(value);
       getJsCodeBuilder().popOutputVar();
       getJsCodeBuilder().setContentKind(prev);
       return ImmutableList.of(id(outputVar));
     }
     return genJsExprsVisitor.exec(value);
-  }
-
-  /**
-   * Returns a unique key for the template. This has the side-effect of incrementing the current
-   * keyCounter at the top of the stack.
-   */
-  private Expression incrementKeyForTemplate(TemplateNode template) {
-    Holder<Integer> keyCounter = keyCounterStack.peek();
-    return JsRuntime.XID.call(
-        Expression.stringLiteral(template.getTemplateName() + "-" + keyCounter.value++));
   }
 
   /**
@@ -1028,34 +1365,44 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     return CodeChunkUtils.concatChunksForceString(getAttributeValues(node));
   }
 
-  private Expression getOpenSSRCall(HtmlOpenTagNode node, SkipNode skip) {
+  private Expression getOpenSSRCall(HtmlOpenTagNode node) {
     List<Expression> args = new ArrayList<>();
     args.add(getTagNameCodeChunk(node.getTagName()));
 
     KeyNode keyNode = node.getKeyNode();
     if (keyNode == null) {
-      args.add(JsRuntime.XID.call(Expression.stringLiteral(skip.getSkipId())));
+      args.add(JsRuntime.XID.call(Expression.stringLiteral(node.getKeyId())));
     } else {
       // Key difference between getOpen and getOpenSSR
       args.add(translateExpr(node.getKeyNode().getExpr()));
     }
     if (node.isElementRoot()) {
-      args.add(JsRuntime.OPT_DATA);
+      Expression paramsObject;
+      if (generatePositionalParamsSignature) {
+        paramsObject =
+            Expression.arrayLiteral(
+                node.getNearestAncestor(TemplateNode.class).getParams().stream()
+                    .map(p -> id(genParamAlias(p.name())))
+                    .collect(toImmutableList()));
+      } else {
+        paramsObject = JsRuntime.OPT_DATA;
+      }
+      args.add(
+          Expression.ifExpression(JsRuntime.GOOG_DEBUG, paramsObject)
+              .setElse(Expression.LITERAL_UNDEFINED)
+              .build(templateTranslationContext.codeGenerator()));
     }
     return INCREMENTAL_DOM_OPEN_SSR.call(args);
   }
 
   private Expression getOpenCall(HtmlOpenTagNode node) {
-    TemplateNode template = node.getNearestAncestor(TemplateNode.class);
     List<Expression> args = new ArrayList<>();
     args.add(getTagNameCodeChunk(node.getTagName()));
 
     KeyNode keyNode = node.getKeyNode();
     Expression key = Expression.LITERAL_UNDEFINED;
     if (keyNode == null) {
-      key = incrementKeyForTemplate(template);
-    } else {
-      keyCounterStack.push(new Holder<>(0));
+      key = JsRuntime.XID.call(Expression.stringLiteral(node.getKeyId()));
     }
     args.add(key);
 
@@ -1116,6 +1463,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   @Override
   protected void visitHtmlOpenTagNode(HtmlOpenTagNode node) {
     IncrementalDomCodeBuilder jsCodeBuilder = getJsCodeBuilder();
+    getJsCodeBuilder().appendLine("// " + node.getSourceLocation());
     if (!node.isSkipRoot()) {
       if (node.getKeyNode() != null) {
         // Push key BEFORE emitting `elementOpen`. Later, for `elementOpen` calls of keyed elements,
@@ -1124,23 +1472,24 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
         getJsCodeBuilder().append(INCREMENTAL_DOM_PUSH_MANUAL_KEY.call(key));
       }
       Expression openTagExpr = getOpenCall(node);
-      if (node.isElementRoot()) {
-        // Append code to stash the template object in this node.
-        jsCodeBuilder.append(
-            Statement.ifStatement(
-                    INCREMENTAL_DOM_MAYBE_SKIP.call(INCREMENTAL_DOM, openTagExpr),
-                    Statement.returnValue(Expression.LITERAL_TRUE))
-                .build());
-      } else {
-        jsCodeBuilder.append(openTagExpr.asStatement());
-      }
+      jsCodeBuilder.append(openTagExpr.asStatement());
     }
     jsCodeBuilder.append(getAttributeAndCloseCalls(node));
+    String tagName = node.getTagName().getTagString();
+    if (tagName != null && Ascii.equalsIgnoreCase(tagName, "script")) {
+      scriptOutputVar = "script_" + staticsCounter++;
+      jsCodeBuilder.pushOutputVar(scriptOutputVar).setOutputVarInited();
+      jsCodeBuilder.appendLine("let ", scriptOutputVar, " = '';");
+      jsCodeBuilder.setContentKind(SanitizedContentKind.JS);
+    }
   }
+
+  private String scriptOutputVar;
 
   private Statement getAttributeAndCloseCalls(HtmlOpenTagNode node) {
     List<Statement> statements = new ArrayList<>();
     Optional<Expression> maybeApplyStatics = getApplyStaticAttributes(node);
+    Expression close = node.isElementRoot() ? INCREMENTAL_DOM_ELEMENT_CLOSE : INCREMENTAL_DOM_CLOSE;
     if (maybeApplyStatics.isPresent()) {
       statements.add(maybeApplyStatics.get().asStatement());
     }
@@ -1150,7 +1499,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     // HtmlContextVisitor.  So we just need to output the close instructions if the node is self
     // closing or definitely void.
     if (node.isSelfClosing() || node.getTagName().isDefinitelyVoid()) {
-      statements.add(INCREMENTAL_DOM_CLOSE.call().asStatement());
+      statements.add(close.call().asStatement());
     }
     return Statement.of(statements);
   }
@@ -1170,19 +1519,38 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
    */
   @Override
   protected void visitHtmlCloseTagNode(HtmlCloseTagNode node) {
-    // This case occurs in the case where we encounter the end of a keyed element. If the open tag
-    // mapped to this close tag contains a key node, pop the keyCounterStack to return
-    // to the state before entering the keyed node.
+    // This case occurs in the case where we encounter the end of a keyed element.
+    getJsCodeBuilder().appendLine("// " + node.getSourceLocation());
+    String tagName = node.getTagName().getTagString();
+    if (tagName != null && Ascii.equalsIgnoreCase(tagName, "script")) {
+      getJsCodeBuilder().popOutputVar();
+      Expression ordainer = id("soy").dotAccess("VERY_UNSAFE").dotAccess("ordainSanitizedJs");
+      Expression safeScript = ordainer.call(id(scriptOutputVar)).dotAccess("toSafeScript").call();
+      GoogRequire require = GoogRequire.createWithAlias("goog.html.SafeScript", "SafeScript");
+      Expression unwrapped = require.dotAccess("unwrapTrustedScript").call(safeScript);
+      Expression currentElement = INCREMENTAL_DOM.dotAccess("currentElement").call();
+      Expression textContentAssignment = currentElement.dotAccess("textContent").assign(unwrapped);
+      ConditionalBuilder ifCurrentElementExists =
+          Statement.ifStatement(currentElement, textContentAssignment.asStatement());
+      getJsCodeBuilder().append(ifCurrentElementExists.build());
+      getJsCodeBuilder().append(INCREMENTAL_DOM.dotAccess("skipNode").call());
+      getJsCodeBuilder().setContentKind(SanitizedContentKind.HTML);
+    }
     if (node.getTaggedPairs().size() == 1) {
       HtmlOpenTagNode openTag = (HtmlOpenTagNode) node.getTaggedPairs().get(0);
       if (openTag.getKeyNode() != null && !(openTag.getParent() instanceof SkipNode)) {
-        keyCounterStack.pop();
         getJsCodeBuilder().append(INCREMENTAL_DOM_POP_MANUAL_KEY.call());
       }
     }
 
+    Expression close = INCREMENTAL_DOM_CLOSE;
+    if (node.getTaggedPairs().size() == 1
+        && ((HtmlOpenTagNode) node.getTaggedPairs().get(0)).isElementRoot()) {
+      close = INCREMENTAL_DOM_ELEMENT_CLOSE;
+    }
+
     if (!node.getTagName().isDefinitelyVoid()) {
-      getJsCodeBuilder().append(INCREMENTAL_DOM_CLOSE.call().asStatement());
+      getJsCodeBuilder().append(close.call().asStatement());
     }
   }
 
@@ -1206,7 +1574,6 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     Expression textArg = stringLiteral(node.getRawText());
     JsCodeBuilder jsCodeBuilder = getJsCodeBuilder();
     switch (node.getHtmlContext()) {
-      case JS:
       case CSS:
       case HTML_RCDATA:
       case HTML_PCDATA:
@@ -1243,7 +1610,8 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
                     INCREMENTAL_DOM, CodeChunkUtils.concatChunks(chunks)));
         break;
       case JS:
-        // fall through
+        getJsCodeBuilder().addChunkToOutputVar(CodeChunkUtils.concatChunks(chunks));
+        break;
       case CSS:
         // fall through
       case HTML_PCDATA:
@@ -1280,7 +1648,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   protected void visitSkipNode(SkipNode node) {
     IncrementalDomCodeBuilder jsCodeBuilder = getJsCodeBuilder();
     HtmlOpenTagNode openTag = (HtmlOpenTagNode) node.getChild(0);
-    Expression openTagExpr = getOpenSSRCall(openTag, node);
+    Expression openTagExpr = getOpenSSRCall(openTag);
     Statement childStatements = visitChildrenReturningCodeChunk(node);
     jsCodeBuilder.append(Statement.ifStatement(openTagExpr, Statement.of(childStatements)).build());
   }
@@ -1297,26 +1665,25 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     Expression isLogOnly = Expression.LITERAL_FALSE;
     VariableDeclaration isLogOnlyVar = null;
     Expression isLogOnlyReference = null;
+    List<Statement> stmts = new ArrayList<>();
     if (node.getLogonlyExpression() != null) {
       String idName = "velog_" + staticsCounter++;
       isLogOnlyReference = id(idName);
       isLogOnly = getExprTranslator().exec(node.getLogonlyExpression());
       isLogOnlyVar = VariableDeclaration.builder(idName).setRhs(isLogOnly).build();
-      getJsCodeBuilder()
-          .append(
-              Statement.of(
-                  isLogOnlyVar,
-                  Statement.ifStatement(
-                          INCREMENTAL_DOM_VERIFY_LOGONLY.call(isLogOnlyVar.ref()),
-                          Statement.assign(INCREMENTAL_DOM, INCREMENTAL_DOM_TONULL.call()))
-                      .build()));
+      stmts.add(isLogOnlyVar);
+      stmts.add(
+          Statement.ifStatement(
+                  INCREMENTAL_DOM_VERIFY_LOGONLY.call(isLogOnlyVar.ref()),
+                  Statement.assign(INCREMENTAL_DOM, INCREMENTAL_DOM_TONULL.call()))
+              .build());
     }
     Expression veData = getExprTranslator().exec(node.getVeDataExpression());
-    return new VeLogStateHolder(
-        isLogOnlyReference, INCREMENTAL_DOM_ENTER.call(veData, isLogOnly).asStatement());
+    stmts.add(INCREMENTAL_DOM_ENTER.call(veData, isLogOnly).asStatement());
+    return new VeLogStateHolder(isLogOnlyReference, Statement.of(stmts));
   }
 
-  Statement exitVeLogNode(VeLogNode node, Expression isLogOnly) {
+  Statement exitVeLogNode(VeLogNode node, @Nullable Expression isLogOnly) {
     Statement exit = INCREMENTAL_DOM_EXIT.call().asStatement();
     if (isLogOnly != null) {
       return Statement.of(
@@ -1426,5 +1793,10 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       Expression toEscape = super.genGoogMsgPlaceholder(msgPhNode);
       return SOY_ESCAPE_HTML.call(toEscape);
     }
+  }
+
+  @Override
+  protected boolean isIncrementalDom() {
+    return true;
   }
 }

@@ -34,7 +34,7 @@ public final class RecordLiteralNodeTest {
 
   @Test
   public void testToSourceString() {
-    VarRefNode fooDataRef = new VarRefNode("foo", X, null);
+    VarRefNode fooDataRef = new VarRefNode("$foo", X, null);
 
     RecordLiteralNode recordLit =
         new RecordLiteralNode(
@@ -48,9 +48,5 @@ public final class RecordLiteralNodeTest {
         ImmutableList.of(
             new StringNode("blah", QuoteStyle.SINGLE, X), new IntegerNode(123, X), fooDataRef));
     assertThat(recordLit.toSourceString()).isEqualTo("record(aaa: 'blah', bbb: 123, boo: $foo)");
-
-    RecordLiteralNode emptyRecordLit =
-        new RecordLiteralNode(Identifier.create("record", X), ImmutableList.of(), X);
-    assertThat(emptyRecordLit.toSourceString()).isEqualTo("record()");
   }
 }

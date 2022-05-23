@@ -23,14 +23,13 @@ import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.pysrc.restricted.PyExpr;
-import com.google.template.soy.shared.AbstractSoyPrintDirectiveTestCase;
+import com.google.template.soy.testing.AbstractSoyPrintDirectiveTestCase;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for EscapeHtmlDirective.
- *
  */
 @RunWith(JUnit4.class)
 public class EscapeHtmlDirectiveTest extends AbstractSoyPrintDirectiveTestCase {

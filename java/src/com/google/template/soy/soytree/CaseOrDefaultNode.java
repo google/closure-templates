@@ -25,17 +25,18 @@ import com.google.template.soy.basetree.CopyState;
  * statements.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public abstract class CaseOrDefaultNode extends AbstractBlockCommandNode {
 
   /**
    * @param id The id for this node.
    * @param sourceLocation The node's source location.
+   * @param openTagLocation The node's open tag location.
    * @param commandName The name of the Soy command.
    */
-  public CaseOrDefaultNode(int id, SourceLocation sourceLocation, String commandName) {
-    super(id, sourceLocation, commandName);
+  public CaseOrDefaultNode(
+      int id, SourceLocation sourceLocation, SourceLocation openTagLocation, String commandName) {
+    super(id, sourceLocation, openTagLocation, commandName);
     Preconditions.checkArgument("case".equals(commandName) || "default".equals(commandName));
   }
 

@@ -16,45 +16,30 @@
 
 package com.google.template.soy.base.internal;
 
-import com.google.common.base.Preconditions;
-import com.google.common.io.CharSource;
-import java.io.IOException;
-import java.io.Reader;
+import static com.google.common.base.Preconditions.checkNotNull;
+
+import com.google.template.soy.base.SourceFilePath;
 import java.util.Objects;
 
 /**
  * Abstract base implementation of SoyFileSupplier.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
-public abstract class AbstractSoyFileSupplier extends CharSource implements SoyFileSupplier {
+public abstract class AbstractSoyFileSupplier implements SoyFileSupplier {
 
   /** Returns the file path (used for messages only). */
-  protected final String filePath;
+  protected final SourceFilePath filePath;
 
   /**
-   * @param soyFileKind The kind of this input Soy file.
    * @param filePath The path to the Soy file, used for as a unique map/set key and for messages.
    */
-  public AbstractSoyFileSupplier(String filePath) {
-    Preconditions.checkState(
-        filePath != null && !filePath.isEmpty(), "Soy file path must be non-null and non-empty.");
-    this.filePath = filePath;
+  public AbstractSoyFileSupplier(SourceFilePath filePath) {
+    this.filePath = checkNotNull(filePath);
   }
 
   @Override
-  public final CharSource asCharSource() {
-    return this;
-  }
-
-  @Override
-  public final Reader openStream() throws IOException {
-    return open();
-  }
-
-  @Override
-  public String getFilePath() {
+  public SourceFilePath getFilePath() {
     return filePath;
   }
 

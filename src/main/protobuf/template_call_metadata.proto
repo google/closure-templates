@@ -1,0 +1,95 @@
+// Contains metadata describing Soy template calls.
+// - Produced by the SoyHeader compiler
+// - Intended for use by the Wiz Component compiler for validation
+syntax = "proto3";
+
+package soy.compiler;
+
+option java_package = "com.google.template.soy.templatecall";
+option java_outer_classname = "TemplateCallMetadataProto";
+option java_multiple_files = true;
+
+// A set of source files containing template definitions
+message TemplateCallMetadata {
+  message Template {
+    // Globally unique name of the template
+    string name = 1;
+
+    // delpackage if it is specified
+    string delpackage = 2;
+
+    // Includes all calls invoked within the template definition, including:
+    // - Direct calls made within the template definition
+    // - Calls scoped within blocks like let, if, for, etc.
+    // - Calls scoped within other templates
+    repeated TemplateCall calls = 3;
+  }
+
+  message TemplateCall {
+    // Explicit params provided at call site
+    repeated ParamArg param_args = 1;
+
+    // Template being called
+    string dest_template_name = 2;
+
+    oneof data_arg_oneof {
+      // true if data="all"
+      bool is_passing_all_data = 3;
+
+      // Populated if data="something" and something is a variable reference
+      VarRefInfo data_arg = 4;
+    }
+
+    // True if this is a delcall (the name lookup behaves differently)
+    bool is_delcall = 5;
+
+    // Populated if the template call was derived from a local variable
+    // that is equal to a template parameter with some parameters bound
+    string source_param = 6;
+
+    // Populated if the template call is derived to a local variable that is
+    // equal to a template literal with some parameters bound
+    string source_template = 7;
+  }
+
+  message ParamArg {
+    // Name or key of param used by dest template
+    string key = 1;
+
+    oneof value {
+      // populated if the value is a variable reference
+      VarRefInfo var_ref = 2;
+      // populated if the value passed to the param is a bound template
+      TemplateCall bound_template = 3;
+    }
+  }
+
+  message VarRefInfo {
+    // If val is derived from a header param in src template, alias of param
+    //
+    // For example, given template that contains the following statements
+    // {@param foo: any}
+    // {let $bar: $foo /}
+    // {call template}{param baz: $bar}{/call}
+    // The header_param field for param w/ key $baz will be set to "foo"
+    string header_param = 2;
+
+    // If the header param is a record type and the val is derived from a data
+    // access to the header param
+    //
+    // For example, given template that contains the following statements
+    // {@param foo: [bar: int, test: int]}
+    // {let $bar: $foo /}
+    // {call template}{param baz: $foo.bar}{/call}
+    // The data_access_alias for param w/ key $baz will be set to "bar"
+    string data_access_alias = 3;
+
+    // If val is derived from a list
+    bool uses_list_index = 4;
+
+    // deprecated field #
+    reserved 1;
+  }
+
+  repeated Template templates = 1;
+}

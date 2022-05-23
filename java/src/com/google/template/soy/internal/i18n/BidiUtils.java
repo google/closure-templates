@@ -23,6 +23,10 @@ import com.ibm.icu.lang.UProperty;
 import com.ibm.icu.lang.UScript;
 import com.ibm.icu.util.ULocale;
 
+/**
+ * Utility functions for performing common Bidi tests on strings.
+ *
+ */
 public class BidiUtils {
 
   /** Not instantiable. */

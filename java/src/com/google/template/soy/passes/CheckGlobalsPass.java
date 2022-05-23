@@ -19,19 +19,20 @@ package com.google.template.soy.passes;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
+import com.google.template.soy.error.SoyErrors;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.soytree.SoyFileNode;
-import com.google.template.soy.soytree.SoyTreeUtils;
 
 /**
  * An optional pass for ensuring that all globals have had their values resolved.
  *
  * <p>This is optional because the {@code jssrc} backend allows for unbound globals and many
  * projects rely on it. All other backends require globals to be substituted.
- *
  */
-final class CheckGlobalsPass extends CompilerFilePass {
-  private static final SoyErrorKind UNBOUND_GLOBAL = SoyErrorKind.of("Unbound global ''{0}''.");
+final class CheckGlobalsPass implements CompilerFilePass {
+  private static final SoyErrorKind UNBOUND_GLOBAL =
+      SoyErrorKind.of("Undefined symbol ''{0}''.{1}", StyleAllowance.NO_PUNCTUATION);
 
   private final ErrorReporter errorReporter;
 
@@ -41,10 +42,22 @@ final class CheckGlobalsPass extends CompilerFilePass {
 
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-    for (GlobalNode global : SoyTreeUtils.getAllNodesOfType(file, GlobalNode.class)) {
-      if (!global.isResolved() && !global.shouldSuppressUnknownGlobalErrors()) {
-        errorReporter.report(global.getSourceLocation(), UNBOUND_GLOBAL, global.getName());
+    new LocalVariablesNodeVisitor(new GlobalExprVisitor()).exec(file);
+  }
+
+  private final class GlobalExprVisitor extends LocalVariablesNodeVisitor.ExprVisitor {
+
+    @Override
+    protected void visitGlobalNode(GlobalNode global) {
+      if (global.alreadyReportedError()) {
+        return;
       }
+
+      String sourceName = global.getIdentifier().originalName();
+      String extraErrorMessage =
+          SoyErrors.getDidYouMeanMessage(getLocalVariables().allVariablesInScope(), sourceName);
+      errorReporter.report(
+          global.getSourceLocation(), UNBOUND_GLOBAL, sourceName, extraErrorMessage);
     }
   }
 }

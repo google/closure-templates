@@ -21,7 +21,6 @@ import java.util.Objects;
 
 /**
  * Represents the placeholder part in the plural statement (The '#' sign in ICU syntax).
- *
  */
 public final class SoyMsgPluralRemainderPart extends SoyMsgPart {
 

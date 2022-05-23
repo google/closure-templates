@@ -22,8 +22,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.data.SoyRecord;
-import com.google.template.soy.data.internal.AugmentedParamStore;
-import com.google.template.soy.data.internal.BasicParamStore;
+import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.jbcsrc.restricted.Expression.Feature;
 import com.google.template.soy.jbcsrc.runtime.JbcSrcRuntime;
 import com.ibm.icu.util.ULocale;
@@ -32,6 +31,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import org.objectweb.asm.Handle;
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
 
@@ -73,13 +74,14 @@ public abstract class ConstructorRef {
         type, Method.getMethod(c), ImmutableList.copyOf(constructorType.getArgumentTypes()));
   }
 
+  public static final ConstructorRef ARRAY_LIST = create(ArrayList.class);
   public static final ConstructorRef ARRAY_LIST_SIZE = create(ArrayList.class, int.class);
   public static final ConstructorRef HASH_MAP_CAPACITY = create(HashMap.class, int.class);
   public static final ConstructorRef LINKED_HASH_MAP_CAPACITY =
       create(LinkedHashMap.class, int.class);
-  public static final ConstructorRef AUGMENTED_PARAM_STORE =
-      create(AugmentedParamStore.class, SoyRecord.class, int.class);
-  public static final ConstructorRef BASIC_PARAM_STORE = create(BasicParamStore.class, int.class);
+  public static final ConstructorRef PARAM_STORE_AUGMENT =
+      create(ParamStore.class, SoyRecord.class, int.class);
+  public static final ConstructorRef PARAM_STORE_SIZE = create(ParamStore.class, int.class);
 
   public static final ConstructorRef MSG_RENDERER =
       create(
@@ -131,5 +133,14 @@ public abstract class ConstructorRef {
         mv.invokeConstructor(instanceClass().type(), method());
       }
     };
+  }
+
+  public Handle toHandle() {
+    return new Handle(
+        Opcodes.H_NEWINVOKESPECIAL,
+        instanceClass().type().getInternalName(),
+        "<init>",
+        method().getDescriptor(),
+        /* isInterface=*/ false);
   }
 }

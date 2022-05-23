@@ -18,6 +18,7 @@ package com.google.template.soy.jssrc.internal;
 
 import static com.google.common.truth.Truth.assertAbout;
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_DATA;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
@@ -27,9 +28,10 @@ import com.google.common.truth.FailureMetadata;
 import com.google.common.truth.StringSubject;
 import com.google.common.truth.Subject;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
+import com.google.errorprone.annotations.CheckReturnValue;
 import com.google.errorprone.annotations.ForOverride;
+import com.google.protobuf.Descriptors.GenericDescriptor;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
-import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.internal.UniqueNameGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyError;
@@ -38,21 +40,19 @@ import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
-import com.google.template.soy.jssrc.dsl.CodeChunk.RequiresCollector;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
-import com.google.template.soy.shared.SharedTestUtils;
-import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.types.SoyTypeRegistry;
+import com.google.template.soy.testing.SharedTestUtils;
+import com.google.template.soy.testing.SoyFileSetParserBuilder;
+import com.google.template.soy.types.SoyTypeRegistryBuilder;
 import java.util.ArrayList;
 import java.util.List;
-import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 
 /** Custom Truth subject to aid testing Soy->JS codegen. */
@@ -62,9 +62,8 @@ abstract class JsSrcSubject<T extends Subject> extends Subject {
   private static final Joiner JOINER = Joiner.on('\n');
 
   private final String actual;
-  private final SoyGeneralOptions generalOptions = new SoyGeneralOptions().disableOptimizer();
   SoyJsSrcOptions jsSrcOptions = new SoyJsSrcOptions();
-  private SoyTypeRegistry typeRegistry = new SoyTypeRegistry();
+  private GenericDescriptor[] protoDescriptors = new GenericDescriptor[0];
   private ValidatedLoggingConfig loggingConfig = ValidatedLoggingConfig.EMPTY;
   private ImmutableList<String> experimentalFeatures = ImmutableList.of();
   ErrorReporter errorReporter = ErrorReporter.exploding();
@@ -81,8 +80,7 @@ abstract class JsSrcSubject<T extends Subject> extends Subject {
 
   static ForFile assertThatTemplateBody(String... lines) {
     String templateBody = JOINER.join(lines);
-    return assertAbout(ForFile::new)
-        .that("{namespace ns}\n" + "{template .aaa}\n" + templateBody + "{/template}\n");
+    return assertAbout(ForFile::new).that("{template aaa}\n" + templateBody + "{/template}\n");
   }
 
   /**
@@ -127,7 +125,7 @@ abstract class JsSrcSubject<T extends Subject> extends Subject {
       } else {
         templateBody = paramDecls.toString() + "{" + exprText + "}";
       }
-      return "{namespace ns}\n" + "{template .aaa}\n" + templateBody + "\n{/template}";
+      return "{template aaa}\n" + templateBody + "\n{/template}";
     }
   }
 
@@ -136,8 +134,8 @@ abstract class JsSrcSubject<T extends Subject> extends Subject {
     return typedThis();
   }
 
-  T withTypeRegistry(SoyTypeRegistry typeRegistry) {
-    this.typeRegistry = typeRegistry;
+  T withProtoImports(GenericDescriptor[] descriptors) {
+    this.protoDescriptors = descriptors;
     return typedThis();
   }
 
@@ -159,12 +157,11 @@ abstract class JsSrcSubject<T extends Subject> extends Subject {
 
   private ParseResult parse() {
     SoyFileSetParserBuilder builder =
-        SoyFileSetParserBuilder.forFileContents(actual)
+        SoyFileSetParserBuilder.forTemplateAndImports(actual, protoDescriptors)
             .allowUnboundGlobals(true)
-            .allowV1Expression(true)
-            .typeRegistry(typeRegistry)
-            .options(generalOptions)
             .setLoggingConfig(loggingConfig)
+            .allowUnknownJsGlobals(true)
+            .errorReporter(ErrorReporter.explodeOnErrorsAndIgnoreDeprecations())
             .enableExperimentalFeatures(experimentalFeatures);
     for (SoyFunction soyFunction : soyFunctions) {
       builder.addSoyFunction(soyFunction);
@@ -193,7 +190,10 @@ abstract class JsSrcSubject<T extends Subject> extends Subject {
     private SoyFileNode fileNode;
     private final GenJsCodeVisitor visitor =
         JsSrcMain.createVisitor(
-            jsSrcOptions, new SoyTypeRegistry(), BidiGlobalDir.LTR, ErrorReporter.exploding());
+            jsSrcOptions,
+            SoyTypeRegistryBuilder.create(),
+            BidiGlobalDir.LTR,
+            ErrorReporter.exploding());
 
     private ForFile(FailureMetadata failureMetadata, String expr) {
       super(failureMetadata, expr);
@@ -209,7 +209,7 @@ abstract class JsSrcSubject<T extends Subject> extends Subject {
     StringSubject generatesTemplateThat() {
       generateCode();
       check("parse().getChildren()").that(fileNode.getChildren()).hasSize(1);
-      TemplateNode template = fileNode.getChild(0);
+      TemplateNode template = (TemplateNode) fileNode.getChild(0);
       // we know that 'file' contains exactly one template.  so find it.
       int functionIndex = file.indexOf("function(");
       int startOfFunction = file.substring(0, functionIndex).lastIndexOf('\n') + 1;
@@ -222,8 +222,8 @@ abstract class JsSrcSubject<T extends Subject> extends Subject {
       }
       // if we are generating jsdoc we want to capture that too
       String templateBody;
-        int startOfJsDoc = file.substring(0, startOfFunction).lastIndexOf("/**");
-        templateBody = file.substring(startOfJsDoc, endOfFunction);
+      int startOfJsDoc = file.substring(0, startOfFunction).lastIndexOf("/**");
+      templateBody = file.substring(startOfJsDoc, endOfFunction);
       return check("generatedTemplate()").that(templateBody);
     }
 
@@ -253,13 +253,15 @@ abstract class JsSrcSubject<T extends Subject> extends Subject {
       UniqueNameGenerator nameGenerator = JsSrcNameGenerators.forLocalVariables();
       this.chunk =
           new TranslateExprNodeVisitor(
-                  new JavaScriptValueFactoryImpl(
-                      new SoyJsSrcOptions(), BidiGlobalDir.LTR, ErrorReporter.exploding()),
+                  new JavaScriptValueFactoryImpl(BidiGlobalDir.LTR, ErrorReporter.exploding()),
                   TranslationContext.of(
                       SoyToJsVariableMappings.startingWith(initialLocalVarTranslations),
                       CodeChunk.Generator.create(nameGenerator),
                       nameGenerator),
-                  errorReporter)
+                  AliasUtils.createTemplateAliases(
+                      parseResult.fileSet().getChild(0), parseResult.registry()),
+                  errorReporter,
+                  OPT_DATA)
               .exec(exprNode);
     }
 
@@ -273,7 +275,7 @@ abstract class JsSrcSubject<T extends Subject> extends Subject {
     JsSrcSubject.ForExprs withPrecedence(Operator operator) {
       Preconditions.checkNotNull(this.chunk, "Call generatesCode() first.");
 
-      assertThat(this.chunk.assertExprAndCollectRequires(RequiresCollector.NULL).getPrecedence())
+      assertThat(this.chunk.assertExprAndCollectRequires(r -> {}).getPrecedence())
           .isEqualTo(operator.getPrecedence());
 
       return this;

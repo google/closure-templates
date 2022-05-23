@@ -26,8 +26,6 @@ import com.google.template.soy.soytree.SoyFileSetNode;
 
 /**
  * Abstract base class for a conformance rule applying to one particular node type.
- *
- * @author brndn@google.com (Brendan Linn)
  */
 abstract class Rule<T extends Node> {
 
@@ -41,7 +39,7 @@ abstract class Rule<T extends Node> {
    * errorReporter.report(someSourceLocation, error)} to report conformance errors.
    */
   Rule(SoyErrorKind error) {
-    // SoyFileSetNode leaves no way to whitelist exceptions.
+    // SoyFileSetNode leaves no way to exempt exceptions.
     if (nodeClass == SoyFileSetNode.class) {
       throw new IllegalStateException(
           "Rule<SoyFileSetNode> does not work with whitelists. Use Rule<SoyFileNode> instead.");

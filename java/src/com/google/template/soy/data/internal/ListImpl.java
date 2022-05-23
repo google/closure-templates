@@ -27,7 +27,6 @@ import javax.annotation.ParametersAreNonnullByDefault;
  * instead, use {@link SoyValueConverter#convert}.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 @ParametersAreNonnullByDefault
 public final class ListImpl extends ListBackedList {

@@ -17,6 +17,7 @@
 package com.google.template.soy.basicfunctions;
 
 import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
@@ -30,7 +31,7 @@ import com.google.template.soy.plugin.python.restricted.PythonValue;
 import com.google.template.soy.plugin.python.restricted.PythonValueFactory;
 import com.google.template.soy.plugin.python.restricted.SoyPythonSourceFunction;
 import com.google.template.soy.shared.restricted.Signature;
-import com.google.template.soy.shared.restricted.SoyFunctionSignature;
+import com.google.template.soy.shared.restricted.SoyMethodSignature;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
 import java.lang.reflect.Method;
 import java.util.List;
@@ -46,17 +47,15 @@ import java.util.List;
  * substring begins at the index specified by <code>expr2</code>. If <code>expr3</code> is not
  * specified, the substring will extend to the end of <code>expr1</code>. Otherwise it will extend
  * to the character at index <code>expr3 - 1</code>.
- *
  */
-@SoyFunctionSignature(
-    name = "strSub",
+@SoyMethodSignature(
+    name = "substring",
+    baseType = "string",
     value = {
+      @Signature(parameterTypes = "number", returnType = "string"),
       @Signature(
-          returnType = "string",
-          parameterTypes = {"string", "int"}),
-      @Signature(
-          returnType = "string",
-          parameterTypes = {"string", "int", "int"}),
+          parameterTypes = {"number", "number"},
+          returnType = "string"),
     })
 @SoyPureFunction
 final class StrSubFunction
@@ -65,9 +64,7 @@ final class StrSubFunction
   @Override
   public JavaScriptValue applyForJavaScriptSource(
       JavaScriptValueFactory factory, List<JavaScriptValue> args, JavaScriptPluginContext context) {
-    return args.get(0)
-        .coerceToString()
-        .invokeMethod("substring", args.subList(1, args.size()).toArray(new JavaScriptValue[0]));
+    return args.get(0).coerceToString().invokeMethod("substring", args.subList(1, args.size()));
   }
 
   @Override
@@ -75,26 +72,32 @@ final class StrSubFunction
       PythonValueFactory factory, List<PythonValue> args, PythonPluginContext context) {
     // Coerce SanitizedContent args to strings.
     PythonValue str = args.get(0).coerceToString();
-    return str.slice(args.get(1), args.size() == 3 ? args.get(2) : null);
+    return factory
+        .global("runtime.str_substring")
+        .call(str, args.get(1), args.size() == 3 ? args.get(2) : factory.constantNull());
   }
 
   // lazy singleton pattern, allows other backends to avoid the work.
   private static final class Methods {
     static final Method STR_SUB_START =
         JavaValueFactory.createMethod(
-            BasicFunctionsRuntime.class, "strSub", SoyValue.class, int.class);
+            BasicFunctionsRuntime.class, "strSub", SoyValue.class, NumberData.class);
     static final Method STR_SUB_START_END =
         JavaValueFactory.createMethod(
-            BasicFunctionsRuntime.class, "strSub", SoyValue.class, int.class, int.class);
+            BasicFunctionsRuntime.class,
+            "strSub",
+            SoyValue.class,
+            NumberData.class,
+            NumberData.class);
   }
 
   @Override
   public JavaValue applyForJavaSource(
       JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
     if (args.size() == 2) {
-      return factory.callStaticMethod(Methods.STR_SUB_START, args.get(0), args.get(1).asSoyInt());
+      return factory.callStaticMethod(Methods.STR_SUB_START, args.get(0), args.get(1));
     }
     return factory.callStaticMethod(
-        Methods.STR_SUB_START_END, args.get(0), args.get(1).asSoyInt(), args.get(2).asSoyInt());
+        Methods.STR_SUB_START_END, args.get(0), args.get(1), args.get(2));
   }
 }

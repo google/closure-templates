@@ -1,11 +1,10 @@
 // LINT: LEGACY_NAMES
 syntax = "proto2";
 
+package soy.test;
 
 option java_package = "com.google.template.soy.testing";
 option java_multiple_files = true;
-
-package soy.test;
 
 message Foo {
   message InnerMessage {
@@ -40,6 +39,7 @@ message Foo {
   map<string, string> map_field = 21;
   map<int32, InnerMessage> map_message_field = 22;
   map<string, InnerMessage> map_string_message_field = 23;
+  map<string, bytes> map_string_bytes_field = 24;
 
   repeated string string_a = 25;
   optional string string_b_map = 26;
@@ -123,8 +123,7 @@ message Repeated {
   repeated string string_field = 18;
   repeated int32 int_field = 19;
   repeated int64 long_field = 20;
-  message Item {
-  }
+  message Item {}
   repeated Item msg_field = 21;
 }
 
@@ -154,8 +153,23 @@ message MessageField {
   optional Foo foo = 1;
 }
 
+message HasOneOf {
+  oneof grouping {
+    MessageField message = 1;
+    AnotherMessage another = 2;
+    int32 number = 3;
+    string s = 4;
+  }
+}
+
+message AnotherMessage {
+  optional Foo foo = 1;
+}
 
 message Extendable {
+  optional int32 unscoped_collision = 1;
+  optional int32 scoped_collision = 2;
+
   extensions 1000 to max;
 }
 
@@ -175,15 +189,36 @@ extend Extendable {
       ;
   repeated int64 repeated_long_with_string_js_type = 1202
       ;
+
+  optional int32 unscoped_collision = 1301;
 }
 
 message Extension {
   extend Extendable {
     optional Extension extension = 2001;
+    optional int32 scoped_collision = 2002;
+    optional int32 both_scoped_collision = 2003;
   }
 
   optional string string_field = 1;
   optional int32 int_field = 2;
   optional int64 long_field = 3;
   optional Foo.InnerEnum enum_field = 4;
+}
+
+message AnotherExtension {
+  extend Extendable {
+    optional int32 both_scoped_collision = 4001;
+  }
+}
+
+enum TopLevelEnum {
+  DEFAULT = 0;
+  ONE = 1;
+  TWO = 2;
+  THREE = 3;
+}
+
+message SameName {
+  optional string name = 1;
 }

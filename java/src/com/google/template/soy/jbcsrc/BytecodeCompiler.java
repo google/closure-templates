@@ -16,144 +16,74 @@
 
 package com.google.template.soy.jbcsrc;
 
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.base.Joiner;
-import com.google.common.base.Stopwatch;
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
 import com.google.common.io.ByteSink;
 import com.google.common.io.ByteSource;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.base.internal.SoyJarFileWriter;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyErrorKind;
-import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
+import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.jbcsrc.api.PluginRuntimeInstanceInfo;
 import com.google.template.soy.jbcsrc.internal.ClassData;
-import com.google.template.soy.jbcsrc.internal.MemoryClassLoader;
 import com.google.template.soy.jbcsrc.restricted.Flags;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.jbcsrc.shared.Names;
+import com.google.template.soy.plugin.java.internal.PluginAnalyzer;
+import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
+import com.google.template.soy.soytree.FileSetMetadata;
+import com.google.template.soy.soytree.PartialFileSetMetadata;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
+import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateDelegateNode;
+import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.types.SoyTypeRegistry;
+import com.google.template.soy.types.TemplateType;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /** The entry point to the {@code jbcsrc} compiler. */
 public final class BytecodeCompiler {
-
-  private static final Logger logger = Logger.getLogger(BytecodeCompiler.class.getName());
-
-  private static final SoyErrorKind UNEXPECTED_COMPILER_FAILURE =
-      SoyErrorKind.of(
-          "Unexpected error while compiling template: ''{0}''\n"
-              + "Soy Stack:\n{1}\n"
-              + "Compiler Stack:\n{2}",
-          StyleAllowance.NO_PUNCTUATION);
-
-  private static final SoyErrorKind UNEXPECTED_ERROR =
-      SoyErrorKind.of(
-          "Unexpected error while compiling template: ''{0}''\n{1}", StyleAllowance.NO_PUNCTUATION);
 
   /**
    * Compiles all the templates in the given registry.
    *
    * @param registry All the templates to compile
-   * @param developmentMode Whether or not we are in development mode. In development mode we
-   *     compile classes lazily
    * @param reporter The error reporter
    * @return CompiledTemplates or {@code absent()} if compilation fails, in which case errors will
    *     have been reported to the error reporter.
    */
   public static Optional<CompiledTemplates> compile(
-      final TemplateRegistry registry,
+      final FileSetMetadata registry,
       final SoyFileSetNode fileSet,
-      boolean developmentMode,
       ErrorReporter reporter,
-      ImmutableMap<String, SoyFileSupplier> filePathsToSuppliers,
+      ImmutableMap<SourceFilePath, SoyFileSupplier> filePathsToSuppliers,
       SoyTypeRegistry typeRegistry) {
-    final Stopwatch stopwatch = Stopwatch.createStarted();
     ErrorReporter.Checkpoint checkpoint = reporter.checkpoint();
-    if (reporter.errorsSince(checkpoint)) {
-      return Optional.empty();
-    }
-    CompiledTemplateRegistry compilerRegistry = new CompiledTemplateRegistry(registry);
-    if (developmentMode) {
-      CompiledTemplates templates =
-          new CompiledTemplates(
-              compilerRegistry.getDelegateTemplateNames(),
-              new CompilingClassLoader(
-                  compilerRegistry, fileSet, filePathsToSuppliers, typeRegistry));
-      if (reporter.errorsSince(checkpoint)) {
-        return Optional.empty();
-      }
-      // TODO(lukes): consider spawning a thread to load all the generated classes in the background
-      return Optional.of(templates);
-    }
-    // TODO(lukes): once most internal users have moved to precompilation eliminate this and just
-    // use the 'developmentMode' path above.  This hybrid only makes sense for production services
-    // that are doing runtime compilation.  Hopefully, this will become an anomaly.
-    List<ClassData> classes =
-        compileTemplates(
-            compilerRegistry,
-            fileSet,
-            reporter,
-            typeRegistry,
-            new CompilerListener<List<ClassData>>() {
-              final List<ClassData> compiledClasses = new ArrayList<>();
-              int numBytes = 0;
-              int numFields = 0;
-              int numDetachStates = 0;
-
-              @Override
-              public void onCompile(ClassData clazz) {
-                numBytes += clazz.data().length;
-                numFields += clazz.numberOfFields();
-                numDetachStates += clazz.numberOfDetachStates();
-                compiledClasses.add(clazz);
-              }
-
-              @Override
-              public List<ClassData> getResult() {
-                logger.log(
-                    Level.FINE,
-                    "\n"
-                        + "Compilation took: {0}\n"
-                        + "       templates: {1}\n"
-                        + "         classes: {2}\n"
-                        + "           bytes: {3}\n"
-                        + "          fields: {4}\n"
-                        + "    detachStates: {5}",
-                    new Object[] {
-                      stopwatch.toString(),
-                      registry.getAllTemplates().size(),
-                      compiledClasses.size(),
-                      numBytes,
-                      numFields,
-                      numDetachStates
-                    });
-                return compiledClasses;
-              }
-            });
-    if (reporter.errorsSince(checkpoint)) {
-      return Optional.empty();
-    }
     CompiledTemplates templates =
         new CompiledTemplates(
-            compilerRegistry.getDelegateTemplateNames(), new MemoryClassLoader(classes));
-    stopwatch.reset().start();
-    templates.loadAll(compilerRegistry.getTemplateNames());
-    logger.log(Level.FINE, "Loaded all classes in {0}", stopwatch);
+            /* delTemplateNames=*/ registry.getAllTemplates().stream()
+                .filter(
+                    template ->
+                        template.getTemplateType().getTemplateKind()
+                            == TemplateType.TemplateKind.DELTEMPLATE)
+                .map(TemplateMetadata::getTemplateName)
+                .collect(toImmutableSet()),
+            new CompilingClassLoader(fileSet, filePathsToSuppliers, typeRegistry, registry));
+    if (reporter.errorsSince(checkpoint)) {
+      return Optional.empty();
+    }
     return Optional.of(templates);
   }
 
@@ -164,33 +94,28 @@ public final class BytecodeCompiler {
    * <p>If errors are encountered, the error reporter will be updated and we will return. The
    * contents of any data written to the sink at that point are undefined.
    *
-   * @param registry All the templates to compile
    * @param reporter The error reporter
    * @param sink The output sink to write the JAR to.
    */
   public static void compileToJar(
-      TemplateRegistry registry,
       SoyFileSetNode fileSet,
       ErrorReporter reporter,
       SoyTypeRegistry typeRegistry,
-      ByteSink sink)
+      ByteSink sink,
+      PartialFileSetMetadata fileSetMetadata)
       throws IOException {
-    ErrorReporter.Checkpoint checkpoint = reporter.checkpoint();
-    if (reporter.errorsSince(checkpoint)) {
-      return;
-    }
-    CompiledTemplateRegistry compilerRegistry = new CompiledTemplateRegistry(registry);
-    if (reporter.errorsSince(checkpoint)) {
-      return;
-    }
     try (final SoyJarFileWriter writer = new SoyJarFileWriter(sink.openStream())) {
       final Set<String> delTemplates = new TreeSet<>();
+
+      // A map of plugin names -> info about the required instance class (only for plugins that
+      // require a runtime class).
+      SortedMap<String, PluginRuntimeInstanceInfo> mergedInstanceIndex = new TreeMap<>();
+
       compileTemplates(
-          compilerRegistry,
           fileSet,
           reporter,
           typeRegistry,
-          new CompilerListener<Void>() {
+          new CompilerListener<Void, IOException>() {
             @Override
             void onCompile(ClassData clazz) throws IOException {
               writer.writeEntry(
@@ -201,11 +126,61 @@ public final class BytecodeCompiler {
             void onCompileDelTemplate(String name) {
               delTemplates.add(name);
             }
-          });
+
+            @Override
+            void onFunctionCallFound(FunctionNode fnNode) {
+              // For each function call, check if the plugin needs an instance class. If so, add an
+              // entry to pluginInstances.
+              if (fnNode.getSoyFunction() instanceof SoyJavaSourceFunction) {
+                Set<String> instances =
+                    PluginAnalyzer.analyze(
+                            (SoyJavaSourceFunction) fnNode.getSoyFunction(), fnNode.numChildren())
+                        .pluginInstanceNames();
+                if (!instances.isEmpty()) {
+                  // We guarantee there's either 0 or 1 instances required for the plugin because
+                  // we already passed through PluginResolver, which checked this.
+                  mergedInstanceIndex.merge(
+                      fnNode.getStaticFunctionName(),
+                      PluginRuntimeInstanceInfo.builder()
+                          .setPluginName(fnNode.getStaticFunctionName())
+                          .setInstanceClassName(Iterables.getOnlyElement(instances))
+                          .addSourceLocation(fnNode.getSourceLocation().toString())
+                          .build(),
+                      PluginRuntimeInstanceInfo::merge);
+                }
+              }
+            }
+          },
+          fileSetMetadata);
       if (!delTemplates.isEmpty()) {
         String delData = Joiner.on('\n').join(delTemplates);
         writer.writeEntry(
             Names.META_INF_DELTEMPLATE_PATH, ByteSource.wrap(delData.getBytes(UTF_8)));
+      }
+
+      // Collect all instances from all declared externs.
+      fileSet.getChildren().stream()
+          .flatMap(f -> f.getExterns().stream())
+          .filter(e -> e.getJavaImpl().isPresent())
+          .map(e -> e.getJavaImpl().get())
+          .filter(j -> !j.isStatic())
+          .map(
+              j ->
+                  PluginRuntimeInstanceInfo.builder()
+                      .setPluginName(j.className())
+                      .setInstanceClassName(j.className())
+                      .addSourceLocation(j.getSourceLocation().toString())
+                      .build())
+          .forEach(
+              i -> mergedInstanceIndex.merge(i.pluginName(), i, PluginRuntimeInstanceInfo::merge));
+
+      // If there were required plugin runtime instances, write a meta-inf file containing each
+      // plugin's name, it's runtime class name, and the locations in soy where the function is
+      // used.
+      if (!mergedInstanceIndex.isEmpty()) {
+        writer.writeEntry(
+            Names.META_INF_PLUGIN_PATH,
+            PluginRuntimeInstanceInfo.serialize(mergedInstanceIndex.values()));
       }
     }
   }
@@ -220,12 +195,12 @@ public final class BytecodeCompiler {
    * namespaces. We should consider using the soy namespace directly as a java package in the
    * future.
    *
-   * @param registry All the templates in the current compilation unit
+   * @param soyFileSet All the templates in the current compilation unit
    * @param files The source files by file path
    * @param sink The source to write the jar file
    */
   public static void writeSrcJar(
-      SoyFileSetNode soyFileSet, ImmutableMap<String, SoyFileSupplier> files, ByteSink sink)
+      SoyFileSetNode soyFileSet, ImmutableMap<SourceFilePath, SoyFileSupplier> files, ByteSink sink)
       throws IOException {
     try (SoyJarFileWriter writer = new SoyJarFileWriter(sink.openStream())) {
       for (SoyFileNode file : soyFileSet.getChildren()) {
@@ -238,9 +213,9 @@ public final class BytecodeCompiler {
     }
   }
 
-  private abstract static class CompilerListener<T> {
+  private abstract static class CompilerListener<T, E extends Throwable> {
     /** Callback for for class data that was generated. */
-    abstract void onCompile(ClassData newClass) throws Exception;
+    abstract void onCompile(ClassData newClass) throws E;
 
     /**
      * Callback to notify a deltemplate was compiled.
@@ -256,49 +231,45 @@ public final class BytecodeCompiler {
      */
     void onCompileTemplate(String name) {}
 
+    /**
+     * Callback to notify that a function call was found.
+     *
+     * @param function The function call node.
+     */
+    void onFunctionCallFound(FunctionNode function) {}
+
     T getResult() {
       return null;
     }
   }
 
-  private static <T> T compileTemplates(
-      CompiledTemplateRegistry registry,
+  private static <T, E extends Throwable> T compileTemplates(
       SoyFileSetNode fileSet,
       ErrorReporter errorReporter,
       SoyTypeRegistry typeRegistry,
-      CompilerListener<T> listener) {
+      CompilerListener<T, E> listener,
+      PartialFileSetMetadata fileSetMetadata)
+      throws E {
+    JavaSourceFunctionCompiler javaSourceFunctionCompiler =
+        new JavaSourceFunctionCompiler(typeRegistry, errorReporter);
     for (SoyFileNode file : fileSet.getChildren()) {
-      for (TemplateNode template : file.getChildren()) {
-        CompiledTemplateMetadata classInfo =
-            registry.getTemplateInfoByTemplateName(template.getTemplateName());
-        try {
-          TemplateCompiler templateCompiler =
-              new TemplateCompiler(registry, classInfo, template, errorReporter, typeRegistry);
-          for (ClassData clazz : templateCompiler.compile()) {
-            if (Flags.DEBUG) {
-              clazz.checkClass();
-            }
-            listener.onCompile(clazz);
-          }
-          if (template instanceof TemplateDelegateNode) {
-            listener.onCompileDelTemplate(template.getTemplateName());
-          } else {
-            listener.onCompileTemplate(template.getTemplateName());
-          }
-          // Report unexpected errors and keep going to try to collect more.
-        } catch (UnexpectedCompilerFailureException e) {
-          errorReporter.report(
-              e.getOriginalLocation(),
-              UNEXPECTED_COMPILER_FAILURE,
-              template.getTemplateNameForUserMsgs(),
-              e.printSoyStack(),
-              Throwables.getStackTraceAsString(e));
-        } catch (Throwable t) {
-          errorReporter.report(
-              template.getSourceLocation(),
-              UNEXPECTED_ERROR,
-              template.getTemplateNameForUserMsgs(),
-              Throwables.getStackTraceAsString(t));
+      for (ClassData clazz :
+          new SoyFileCompiler(file, javaSourceFunctionCompiler, fileSetMetadata).compile()) {
+        if (Flags.DEBUG) {
+          clazz.checkClass();
+        }
+        listener.onCompile(clazz);
+      }
+      for (TemplateNode template : file.getTemplates()) {
+        if (template instanceof TemplateDelegateNode) {
+          listener.onCompileDelTemplate(template.getTemplateName());
+        } else {
+          listener.onCompileTemplate(template.getTemplateName());
+        }
+
+        /** For each function call in the template, trigger the function call listener. */
+        for (FunctionNode fnNode : SoyTreeUtils.getAllNodesOfType(template, FunctionNode.class)) {
+          listener.onFunctionCallFound(fnNode);
         }
       }
     }

@@ -16,6 +16,7 @@
 
 package com.google.template.soy.parseinfo.passes;
 
+import static com.google.common.collect.ImmutableSortedSet.toImmutableSortedSet;
 import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.appendImmutableList;
 import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.appendImmutableListInline;
 import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.appendImmutableMap;
@@ -24,13 +25,12 @@ import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtil
 import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.makeUpperCamelCase;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Ascii;
 import com.google.common.base.CaseFormat;
 import com.google.common.base.Joiner;
-import com.google.common.base.Predicates;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Lists;
@@ -39,43 +39,30 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
-import com.google.common.collect.Streams;
-import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.IndentedLinesBuilder;
-import com.google.template.soy.exprtree.FieldAccessNode;
-import com.google.template.soy.exprtree.FunctionNode;
-import com.google.template.soy.exprtree.GlobalNode;
-import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.exprtree.StringNode;
-import com.google.template.soy.internal.proto.ProtoUtils;
 import com.google.template.soy.invocationbuilders.passes.SoyFileNodeTransformer;
 import com.google.template.soy.passes.IndirectParamsCalculator;
 import com.google.template.soy.passes.IndirectParamsCalculator.IndirectParamsInfo;
-import com.google.template.soy.plugin.java.internal.PluginAnalyzer;
-import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.internal.gencode.GeneratedFile;
+import com.google.template.soy.shared.internal.gencode.JavaGenerationUtils;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
+import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateMetadata;
-import com.google.template.soy.soytree.TemplateMetadata.Parameter;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.Visibility;
-import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.soytree.defn.TemplateParam;
-import com.google.template.soy.types.SoyProtoEnumType;
-import com.google.template.soy.types.SoyProtoType;
-import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.SoyTypeRegistry;
-import com.google.template.soy.types.SoyTypes;
+import com.google.template.soy.types.TemplateType;
+import com.google.template.soy.types.TemplateType.Parameter;
 import java.util.Collection;
-import java.util.Iterator;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -83,9 +70,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.SortedSet;
-import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.stream.Collectors;
 
 /**
  * Visitor for generating Java classes containing the parse info.
@@ -100,7 +85,6 @@ import java.util.stream.Collectors;
  *     [tests_dir]/com/google/template/soy/test_data/AaaBbbCcc.soy
  *     [tests_dir]/com/google/template/soy/test_data/AaaBbbCccSoyInfo.java
  * </pre>
- *
  */
 public final class GenerateParseInfoVisitor
     extends AbstractSoyNodeVisitor<ImmutableList<GeneratedFile>> {
@@ -133,10 +117,14 @@ public final class GenerateParseInfoVisitor
                 "Trying to generate Java class name based on Soy file name, but Soy file name was"
                     + " not provided.");
           }
-          if (fileName.toLowerCase().endsWith(".soy")) {
+          if (Ascii.toLowerCase(fileName).endsWith(".soy")) {
             fileName = fileName.substring(0, fileName.length() - 4);
           }
-          return makeUpperCamelCase(fileName);
+          String prefix = makeUpperCamelCase(fileName);
+          if (Character.isDigit(prefix.charAt(0))) {
+            prefix = "_" + prefix;
+          }
+          return prefix;
 
         case SOY_NAMESPACE_LAST_PART:
           String namespace = soyFile.getNamespace();
@@ -160,11 +148,9 @@ public final class GenerateParseInfoVisitor
   private Map<SoyFileNode, String> soyFileToJavaClassNameMap;
 
   /** Registry of all templates in the Soy tree. */
-  private final TemplateRegistry templateRegistry;
+  private final FileSetMetadata fileSetMetadata;
 
   private final SoyFileNodeTransformer soyFileNodeTransformer;
-
-  private final SoyTypeRegistry typeRegistry;
 
   /** Cache for results of calls to {@code Utils.convertToUpperUnderscore()}. */
   private final Map<String, String> convertedIdents = Maps.newLinkedHashMap();
@@ -177,19 +163,17 @@ public final class GenerateParseInfoVisitor
 
   private SoyFileNodeTransformer.FileInfo builderReport;
 
+  private Set<String> paramFields = new HashSet<>();
+
   /**
    * @param javaPackage The Java package for the generated classes.
    * @param javaClassNameSource Source of the generated class names. Must be one of "filename",
    *     "namespace", or "generic".
    */
   public GenerateParseInfoVisitor(
-      String javaPackage,
-      String javaClassNameSource,
-      TemplateRegistry registry,
-      SoyTypeRegistry typeRegistry) {
+      String javaPackage, String javaClassNameSource, FileSetMetadata registry) {
     this.javaPackage = javaPackage;
-    this.templateRegistry = registry;
-    this.typeRegistry = typeRegistry;
+    this.fileSetMetadata = registry;
     switch (javaClassNameSource) {
       case "filename":
         this.javaClassNameSource = JavaClassNameSource.SOY_FILE_NAME;
@@ -207,7 +191,7 @@ public final class GenerateParseInfoVisitor
                 + "\""
                 + " (valid values are \"filename\", \"namespace\", and \"generic\").");
     }
-    soyFileNodeTransformer = new SoyFileNodeTransformer(javaPackage, templateRegistry);
+    soyFileNodeTransformer = new SoyFileNodeTransformer(javaPackage, registry);
   }
 
   @Override
@@ -263,72 +247,24 @@ public final class GenerateParseInfoVisitor
     // + all the param keys from all templates (including private),
     // + for each param key, the list of templates that list it directly.
     // + for any params whose type is a proto, get the proto name and Java class name.
-    // + all plugin instances used by any SoyJavaSourceFunctions
     LinkedHashMap<String, TemplateNode> publicBasicTemplateMap = Maps.newLinkedHashMap();
     Set<String> allParamKeys = Sets.newLinkedHashSet();
     SetMultimap<String, TemplateNode> paramKeyToTemplatesMultimap = LinkedHashMultimap.create();
-    SortedSet<String> protoTypes = Sets.newTreeSet();
-    Map<String, String> pluginInstances = new TreeMap<>();
-    for (TemplateNode template : node.getChildren()) {
+    for (TemplateNode template : node.getTemplates()) {
       if (template.getVisibility() == Visibility.PUBLIC
           && template.getKind() != SoyNode.Kind.TEMPLATE_DELEGATE_NODE) {
         publicBasicTemplateMap.put(
-            convertToUpperUnderscore(template.getPartialTemplateName().substring(1)), template);
+            convertToUpperUnderscore(template.getLocalTemplateSymbol()), template);
       }
       for (TemplateParam param : template.getParams()) {
-        allParamKeys.add(param.name());
-        paramKeyToTemplatesMultimap.put(param.name(), template);
-      }
-      for (TemplateHeaderVarDefn varDefn : template.getHeaderParams()) {
-        protoTypes.addAll(findProtoTypes(varDefn.type()));
-      }
-      // TODO(b/77597955): Scan all expressions, to pick up types from function return values and
-      // anything else that may have a type now or in the future.
-      // Field access nodes need special handling to ensure that extension references are handled.
-      for (FieldAccessNode fieldAccess :
-          SoyTreeUtils.getAllNodesOfType(template, FieldAccessNode.class)) {
-        SoyType baseType = fieldAccess.getBaseExprChild().getType();
-        if (baseType.getKind() == SoyType.Kind.PROTO) {
-          FieldDescriptor desc =
-              ((SoyProtoType) baseType).getFieldDescriptor(fieldAccess.getFieldName());
-          if (desc.isExtension()) {
-            protoTypes.add(ProtoUtils.getQualifiedOuterClassname(desc));
-          }
-        }
-      }
-      // Note: we need to add descriptors from other parts of the expression api that contain direct
-      // proto references.  We do not just scan for all referenced proto types since that would
-      // cause us to add direct references to the parseinfos for protos that are only indirectly
-      // referenced.  If we were to do this it would trigger strict deps issues.
-      // Add enums
-      for (GlobalNode global : SoyTreeUtils.getAllNodesOfType(template, GlobalNode.class)) {
-        if (global.isResolved() && global.getType().getKind() == SoyType.Kind.PROTO_ENUM) {
-          protoTypes.add(((SoyProtoEnumType) global.getType()).getDescriptorExpression());
-        }
-      }
-      // Add proto init
-      for (ProtoInitNode protoInit :
-          SoyTreeUtils.getAllNodesOfType(template, ProtoInitNode.class)) {
-        if (protoInit.getType().getKind() == SoyType.Kind.PROTO) {
-          protoTypes.add(((SoyProtoType) protoInit.getType()).getDescriptorExpression());
-        }
-      }
-      // Add plugin instances
-      for (FunctionNode fnNode : SoyTreeUtils.getAllNodesOfType(template, FunctionNode.class)) {
-        if (fnNode.getSoyFunction() instanceof SoyJavaSourceFunction
-            && !pluginInstances.containsKey(fnNode.getFunctionName())) {
-          Set<String> instances =
-              PluginAnalyzer.analyze(
-                      (SoyJavaSourceFunction) fnNode.getSoyFunction(), fnNode.numChildren())
-                  .pluginInstanceNames();
-          if (!instances.isEmpty()) {
-            // We guarantee there's either 0 or 1 instances in the plugin because we already
-            // passed through PluginResolver, which checked this.
-            pluginInstances.put(fnNode.getFunctionName(), Iterables.getOnlyElement(instances));
-          }
+        if (!param.isImplicit()) {
+          allParamKeys.add(param.name());
+          paramKeyToTemplatesMultimap.put(param.name(), template);
         }
       }
     }
+    SortedSet<String> protoTypes =
+        Sets.newTreeSet(JavaGenerationUtils.getProtoTypes(node, node.getSoyTypeRegistry()));
     // allParamKeysMap is a map from upper-underscore key to original key.
     SortedMap<String, String> allParamKeysMap = Maps.newTreeMap();
     for (String key : allParamKeys) {
@@ -354,7 +290,7 @@ public final class GenerateParseInfoVisitor
     ilb.appendLine("// This file was automatically generated by the Soy compiler.");
     ilb.appendLine("// Please don't edit this file by hand.");
     // This "source" comment makes Code Search link the gencode to the Soy source:
-    ilb.appendLine("// source: ", node.getFilePath());
+    ilb.appendLine("// source: ", node.getFilePath().path());
 
     ilb.appendLine();
     ilb.appendLine("package ", javaPackage, ";");
@@ -432,6 +368,12 @@ public final class GenerateParseInfoVisitor
           " = \"",
           templateEntry.getValue().getTemplateName(),
           "\";");
+      ilb.appendLine(
+          "public static final com.google.template.soy.parseinfo.TemplateName ",
+          templateEntry.getKey(),
+          "__NAME = com.google.template.soy.parseinfo.TemplateName.of(",
+          templateEntry.getKey(),
+          ");");
     }
 
     ilb.decreaseIndent();
@@ -449,6 +391,7 @@ public final class GenerateParseInfoVisitor
     ilb.appendLine("private Param() {}");
     ilb.appendLine();
 
+    paramFields.clear();
     for (Map.Entry<String, String> paramEntry : allParamKeysMap.entrySet()) {
       String upperUnderscoreKey = paramEntry.getKey();
       String key = paramEntry.getValue();
@@ -462,11 +405,12 @@ public final class GenerateParseInfoVisitor
         } else {
           javadocSb.append(", ");
         }
-        javadocSb.append(buildTemplateNameForJavadoc(node, templateRegistry.getMetadata(template)));
+        javadocSb.append(buildTemplateNameForJavadoc(node, fileSetMetadata.getTemplate(template)));
       }
       javadocSb.append('.');
       appendJavadoc(ilb, javadocSb.toString(), false, true);
 
+      paramFields.add(upperUnderscoreKey);
       ilb.appendLine("public static final String ", upperUnderscoreKey, " = \"", key, "\";");
     }
 
@@ -487,7 +431,7 @@ public final class GenerateParseInfoVisitor
     ilb.appendLine("super(");
     ilb.increaseIndent(2);
     ilb.appendLine("\"", node.getFileName(), "\",");
-    ilb.appendLine("\"", node.getNamespace(), "\",");
+    ilb.appendLine("__NAMESPACE__,");
 
     // Templates.
     List<String> itemSnippets = Lists.newArrayList();
@@ -499,16 +443,8 @@ public final class GenerateParseInfoVisitor
     SortedSet<String> cssNames =
         collectCssNames(node).stream()
             .map(s -> String.format("\"%s\"", s))
-            .collect(ImmutableSortedSet.toImmutableSortedSet(Ordering.natural()));
+            .collect(toImmutableSortedSet(Ordering.natural()));
     appendImmutableSet(ilb, "<String>", cssNames);
-    ilb.appendLineEnd(",");
-
-    // Plugin Instances
-    ImmutableMap.Builder<String, String> pluginInstanceSnippets = ImmutableMap.builder();
-    for (Map.Entry<String, String> entry : pluginInstances.entrySet()) {
-      pluginInstanceSnippets.put("\"" + entry.getKey() + "\"", "\"" + entry.getValue() + "\"");
-    }
-    appendImmutableMap(ilb, "<String, String>", pluginInstanceSnippets.build());
     ilb.appendLineEnd(");");
 
     ilb.decreaseIndent(2);
@@ -550,17 +486,18 @@ public final class GenerateParseInfoVisitor
     Set<String> directParamNames = Sets.newHashSet();
     // Direct params.
     for (TemplateParam param : node.getParams()) {
-      directParamNames.add(param.name());
+      if (!param.isImplicit()) {
+        directParamNames.add(param.name());
+      }
     }
 
-    TemplateMetadata nodeMetadata = templateRegistry.getMetadata(node);
+    TemplateMetadata nodeMetadata = fileSetMetadata.getTemplate(node);
     // Indirect params.
     IndirectParamsInfo indirectParamsInfo =
-        new IndirectParamsCalculator(templateRegistry).calculateIndirectParams(nodeMetadata);
+        new IndirectParamsCalculator(fileSetMetadata).calculateIndirectParams(node);
 
     @SuppressWarnings("ConstantConditions") // for IntelliJ
-    String upperUnderscoreName =
-        convertToUpperUnderscore(node.getPartialTemplateName().substring(1));
+    String upperUnderscoreName = convertToUpperUnderscore(node.getLocalTemplateSymbol());
     String templateInfoClassName =
         CaseFormat.UPPER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, upperUnderscoreName)
             + "SoyTemplateInfo";
@@ -585,18 +522,26 @@ public final class GenerateParseInfoVisitor
     ilb.increaseIndent();
 
     // ------ Constants for template name. ------
+    String templateFieldName = convertToUpperUnderscore(node.getLocalTemplateSymbol());
+
     ilb.appendLine();
     ilb.appendLine("/** This template's full name. */");
-    ilb.appendLine("public static final String __NAME__ = \"", node.getTemplateName(), "\";");
-    ilb.appendLine("/** This template's partial name. */");
+    ilb.appendLine("public static final String __NAME__ = TemplateName.", templateFieldName, ";");
     ilb.appendLine(
-        "public static final String __PARTIAL_NAME__ = \"", node.getPartialTemplateName(), "\";");
+        "private static final com.google.template.soy.parseinfo.TemplateName __TEMPLATE_NAME__ =",
+        " TemplateName.",
+        templateFieldName,
+        "__NAME",
+        ";");
 
     // ------ Param constants. ------
     boolean hasSeenFirstDirectParam = false;
     boolean hasSwitchedToIndirectParams = false;
     // Direct params.
     for (TemplateParam param : node.getParams()) {
+      if (param.isImplicit()) {
+        continue;
+      }
       if (!hasSeenFirstDirectParam) {
         ilb.appendLine();
         hasSeenFirstDirectParam = true;
@@ -605,12 +550,13 @@ public final class GenerateParseInfoVisitor
         appendJavadoc(ilb, param.desc(), false, false);
       }
       // The actual param field.
+      String fieldName = convertToUpperUnderscore(param.name());
       ilb.appendLine(
           "public static final String ",
           convertToUpperUnderscore(param.name()),
-          " = \"",
-          param.name(),
-          "\";");
+          " = ",
+          (paramFields.contains(fieldName) ? "Param." + fieldName : "\"" + param.name() + "\""),
+          ";");
     }
     for (Parameter param : indirectParamsInfo.indirectParams.values()) {
       if (directParamNames.contains(param.getName())) {
@@ -638,13 +584,14 @@ public final class GenerateParseInfoVisitor
       String javadoc = "Listed by " + Joiner.on(", ").join(sortedJavadocCalleeNames) + ".";
       appendJavadoc(ilb, javadoc, /* forceMultiline= */ false, /* wrapAt100Chars= */ true);
 
+      String fieldName = convertToUpperUnderscore(param.getName());
       // The actual param field.
       ilb.appendLine(
           "public static final String ",
-          convertToUpperUnderscore(param.getName()),
-          " = \"",
-          param.getName(),
-          "\";");
+          fieldName,
+          " = ",
+          (paramFields.contains(fieldName) ? "Param." + fieldName : "\"" + param.getName() + "\""),
+          ";");
     }
 
     // ------ Constructor. ------
@@ -654,17 +601,23 @@ public final class GenerateParseInfoVisitor
 
     ilb.appendLine("super(");
     ilb.increaseIndent(2);
-    ilb.appendLine("\"", node.getTemplateName(), "\",");
+    ilb.appendLine("__NAME__,");
+    ilb.appendLine("__TEMPLATE_NAME__,");
 
-    if (!nodeMetadata.getParameters().isEmpty() || !indirectParamsInfo.indirectParams.isEmpty()) {
+    if (!nodeMetadata.getTemplateType().getParameters().isEmpty()
+        || !indirectParamsInfo.indirectParams.isEmpty()) {
       ImmutableMap.Builder<String, String> entrySnippetPairs = ImmutableMap.builder();
       Set<String> seenParams = Sets.newHashSet();
       for (Parameter param :
           Iterables.concat(
-              nodeMetadata.getParameters(), indirectParamsInfo.indirectParams.values())) {
+              nodeMetadata.getTemplateType().getParameters(),
+              indirectParamsInfo.indirectParams.values())) {
+        if (param.isImplicit()) {
+          continue;
+        }
         if (seenParams.add(param.getName())) {
           entrySnippetPairs.put(
-              "\"" + param.getName() + "\"",
+              convertToUpperUnderscore(param.getName()),
               param.isRequired() ? "ParamRequisiteness.REQUIRED" : "ParamRequisiteness.OPTIONAL");
         }
       }
@@ -715,12 +668,11 @@ public final class GenerateParseInfoVisitor
   private static String deprecatedJavaDoc(String content, boolean deprecated, String useInstead) {
     if (deprecated) {
       String instead = "";
-      String link = "";
       if (!Strings.isNullOrEmpty(useInstead)) {
         instead = " Use {@link " + useInstead + "} instead.";
       }
 
-      String dep = "@deprecated" + instead + link;
+      String dep = "@deprecated" + instead;
       return content.isEmpty() ? dep : content + "\n\n" + dep;
     }
     return content;
@@ -742,32 +694,6 @@ public final class GenerateParseInfoVisitor
     return result;
   }
 
-  /**
-   * Recursively search for protocol buffer types within the given type.
-   *
-   * @param root The type to search.
-   */
-  private Set<String> findProtoTypes(SoyType root) {
-    return Streams.stream(typeIterator(root))
-        .map(
-            type -> {
-              switch (type.getKind()) {
-                case PROTO:
-                  return ((SoyProtoType) type).getDescriptorExpression();
-                case PROTO_ENUM:
-                  return ((SoyProtoEnumType) type).getDescriptorExpression();
-                default:
-                  return null;
-              }
-            })
-        .filter(Predicates.notNull())
-        .collect(Collectors.toSet());
-  }
-
-  private Iterator<? extends SoyType> typeIterator(SoyType root) {
-    return SoyTypes.getTypeTraverser(root, typeRegistry);
-  }
-
   // -----------------------------------------------------------------------------------------------
   // General helpers.
 
@@ -787,11 +713,11 @@ public final class GenerateParseInfoVisitor
     StringBuilder resultSb = new StringBuilder();
 
     if (template.getSourceLocation().getFilePath().equals(currSoyFile.getFilePath())
-        && template.getTemplateKind() != TemplateMetadata.Kind.DELTEMPLATE) {
+        && template.getTemplateType().getTemplateKind() != TemplateType.TemplateKind.DELTEMPLATE) {
       resultSb.append(
           template.getTemplateName().substring(template.getTemplateName().lastIndexOf('.')));
     } else {
-      switch (template.getTemplateKind()) {
+      switch (template.getTemplateType().getTemplateKind()) {
         case BASIC:
         case ELEMENT:
           resultSb.append(template.getTemplateName());
@@ -809,7 +735,7 @@ public final class GenerateParseInfoVisitor
     if (template.getVisibility() != Visibility.PUBLIC) {
       resultSb.append(" (private)");
     }
-    if (template.getTemplateKind() == TemplateMetadata.Kind.DELTEMPLATE) {
+    if (template.getTemplateType().getTemplateKind() == TemplateType.TemplateKind.DELTEMPLATE) {
       resultSb.append(" (delegate)");
     }
 
@@ -818,10 +744,12 @@ public final class GenerateParseInfoVisitor
 
   private static SortedSet<String> collectCssNames(SoyNode node) {
     SortedSet<String> cssNames = new TreeSet<>();
-    for (FunctionNode fn : SoyTreeUtils.getAllFunctionInvocations(node, BuiltinFunction.CSS)) {
-      String selector = ((StringNode) Iterables.getLast(fn.getChildren())).getValue();
-      cssNames.add(selector);
-    }
+    SoyTreeUtils.allFunctionInvocations(node, BuiltinFunction.CSS)
+        .forEach(
+            fn -> {
+              String selector = ((StringNode) Iterables.getLast(fn.getChildren())).getValue();
+              cssNames.add(selector);
+            });
 
     return cssNames;
   }

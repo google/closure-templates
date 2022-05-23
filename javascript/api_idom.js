@@ -1,11 +1,28 @@
+/*
+ * Copyright 2019 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 /**
  * @fileoverview
  *
  * Functions necessary to interact with the Soy-Idom runtime.
+ * @suppress {lintChecks}
  */
 goog.module('google3.javascript.template.soy.api_idom');
 var module = module || { id: 'javascript/template/soy/api_idom.js' };
-var tslib_1 = goog.require('google3.third_party.javascript.tslib.tslib_closure');
+var tslib_1 = goog.require('google3.third_party.javascript.tslib.tslib');
 var tsickle_module_1_ = goog.require('soy.velog'); // from //javascript/template/soy:soyutils_velog
 var goog_soy_velog_1 = tsickle_module_1_; // from //javascript/template/soy:soyutils_velog
 var incrementaldom = goog.require('google3.third_party.javascript.incremental_dom.index'); // from //third_party/javascript/incremental_dom:incrementaldom
@@ -67,7 +84,7 @@ var IncrementalDomRenderer = /** @class */ (function () {
       var el = incrementaldom.open(nameOrCtor, key);
       this.visit(el);
       if (goog.DEBUG) {
-        this.attr('soy-server-key', key);
+        this.attr('ssk', key);
       }
       // Keep going since either elements are being created or continuing will
       // be a no-op.
@@ -182,6 +199,10 @@ var IncrementalDomRenderer = /** @class */ (function () {
             this.logger.exit();
         }
     };
+    /**
+     * Switches runtime to produce incremental dom calls that do not traverse
+     * the DOM. This happens when logOnly in a velogging node is set to true.
+     */
     IncrementalDomRenderer.prototype.toNullRenderer = function () {
         var nullRenderer = new NullRenderer(this);
         return nullRenderer;
@@ -218,6 +239,9 @@ var IncrementalDomRenderer = /** @class */ (function () {
     return IncrementalDomRenderer;
 }());
 exports.IncrementalDomRenderer = IncrementalDomRenderer;
+/**
+ * Renderer that mutes all IDOM commands and returns void.
+ */
 var NullRenderer = /** @class */ (function (_super) {
     tslib_1.__extends(NullRenderer, _super);
     function NullRenderer(renderer) {

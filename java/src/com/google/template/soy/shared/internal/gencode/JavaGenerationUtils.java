@@ -15,15 +15,39 @@
  */
 package com.google.template.soy.shared.internal.gencode;
 
+import static com.google.common.collect.Streams.stream;
+import static java.util.stream.Collectors.toSet;
+
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Streams;
+import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.template.soy.base.internal.IndentedLinesBuilder;
+import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.exprtree.MethodCallNode;
+import com.google.template.soy.internal.proto.ProtoUtils;
+import com.google.template.soy.shared.internal.BuiltinFunction;
+import com.google.template.soy.shared.internal.BuiltinMethod;
+import com.google.template.soy.soytree.ImportNode.ImportType;
+import com.google.template.soy.soytree.SoyFileNode;
+import com.google.template.soy.soytree.SoyTreeUtils;
+import com.google.template.soy.types.SoyProtoEnumType;
+import com.google.template.soy.types.SoyProtoType;
+import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.SoyType.Kind;
+import com.google.template.soy.types.SoyTypeRegistry;
+import com.google.template.soy.types.SoyTypes;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 /** Utils for writing generated Java classes. */
 public final class JavaGenerationUtils {
@@ -39,6 +63,63 @@ public final class JavaGenerationUtils {
 
   /** Pattern for a character that's not a letter nor a digit. */
   private static final Pattern NON_LETTER_DIGIT = Pattern.compile("[^A-Za-z0-9]");
+
+  // See https://docs.oracle.com/javase/tutorial/java/nutsandbolts/_keywords.html
+  private static final ImmutableSet<String> RESERVED_JAVA_KEYWORDS =
+      ImmutableSet.of(
+          "abstract",
+          "assert",
+          "boolean",
+          "break",
+          "byte",
+          "case",
+          "catch",
+          "char",
+          "class",
+          "const",
+          "continue",
+          "default",
+          "do",
+          "double",
+          "else",
+          "enum",
+          "extends",
+          "false",
+          "final",
+          "finally",
+          "float",
+          "for",
+          "goto",
+          "if",
+          "implements",
+          "import",
+          "instanceof",
+          "int",
+          "interface",
+          "long",
+          "native",
+          "new",
+          "null",
+          "package",
+          "private",
+          "protected",
+          "public",
+          "return",
+          "short",
+          "static",
+          "strictfp",
+          "super",
+          "switch",
+          "synchronized",
+          "this",
+          "throw",
+          "throws",
+          "transient",
+          "true",
+          "try",
+          "void",
+          "volatile",
+          "while");
 
   private JavaGenerationUtils() {}
 
@@ -162,7 +243,7 @@ public final class JavaGenerationUtils {
   public static void appendImmutableListInline(
       IndentedLinesBuilder ilb, String typeParamSnippet, Collection<String> itemSnippets) {
     appendFunctionCallWithParamsOnNewLines(
-        ilb, "ImmutableList." + typeParamSnippet + "of", itemSnippets);
+        ilb, "com.google.common.collect.ImmutableList." + typeParamSnippet + "of", itemSnippets);
   }
 
   /**
@@ -202,10 +283,10 @@ public final class JavaGenerationUtils {
   public static void appendImmutableMap(
       IndentedLinesBuilder ilb, String typeParamSnippet, Map<String, String> entrySnippetPairs) {
     if (entrySnippetPairs.isEmpty()) {
-      ilb.appendLineStart("ImmutableMap.", typeParamSnippet, "of()");
+      ilb.appendLineStart("com.google.common.collect.ImmutableMap.", typeParamSnippet, "of()");
 
     } else {
-      ilb.appendLine("ImmutableMap.", typeParamSnippet, "builder()");
+      ilb.appendLine("com.google.common.collect.ImmutableMap.", typeParamSnippet, "builder()");
       ilb.increaseIndent(2);
       for (Map.Entry<String, String> entrySnippetPair : entrySnippetPairs.entrySet()) {
         ilb.appendLine(".put(", entrySnippetPair.getKey(), ", ", entrySnippetPair.getValue(), ")");
@@ -222,7 +303,7 @@ public final class JavaGenerationUtils {
    * @param functionCallSnippet Code snippet for the function call (without parenthesis or params).
    * @param params Params to put in parenthesis for the function call.
    */
-  private static void appendFunctionCallWithParamsOnNewLines(
+  public static void appendFunctionCallWithParamsOnNewLines(
       IndentedLinesBuilder ilb, String functionCallSnippet, Collection<String> params) {
 
     if (params.isEmpty()) {
@@ -243,5 +324,91 @@ public final class JavaGenerationUtils {
     }
     ilb.append(")");
     ilb.decreaseIndent(2);
+  }
+
+  public static Set<String> getProtoTypes(SoyFileNode node, SoyTypeRegistry typeRegistry) {
+    // Get any enums or messages from imports. Extensions are handled by the global pass.
+    Stream<String> fromImports =
+        node.getImports().stream()
+            .filter(i -> i.getImportType() == ImportType.PROTO)
+            .flatMap(i -> i.getIdentifiers().stream())
+            .map(varName -> typeRegistry.getType(varName.name()))
+            .filter(Objects::nonNull)
+            .map(
+                type -> {
+                  if (type.getKind() == Kind.PROTO) {
+                    return ((SoyProtoType) type).getDescriptorExpression();
+                  } else if (type.getKind() == Kind.PROTO_ENUM) {
+                    return ((SoyProtoEnumType) type).getDescriptorExpression();
+                  } else if (type.getKind() == Kind.PROTO_EXTENSION) {
+                    return ((SoyProtoEnumType) type).getDescriptorExpression();
+                  }
+                  return null;
+                })
+            .filter(Objects::nonNull);
+
+    // Collect the following:
+    // + for any params whose type is a proto, get the proto name and Java class name.
+    Stream<String> fromHeader =
+        node.getTemplates().stream()
+            .flatMap(t -> t.getHeaderParams().stream())
+            .flatMap(varDefn -> findProtoTypes(varDefn.type(), typeRegistry));
+
+    // anything else that may have a type now or in the future.
+
+    // Add references for return types of getExtension method.
+    Stream<String> fromCall =
+        SoyTreeUtils.allNodesOfType(node, MethodCallNode.class)
+            .filter(MethodCallNode::isMethodResolved)
+            .filter(n -> n.getSoyMethod() instanceof BuiltinMethod)
+            .flatMap(
+                methodNode ->
+                    ((BuiltinMethod) methodNode.getSoyMethod())
+                        .getProtoDependencyTypes(methodNode).stream());
+
+    // Add proto init
+    Stream<String> fromProtoInit =
+        SoyTreeUtils.allNodesOfType(node, FunctionNode.class)
+            .filter(fctNode -> fctNode.getSoyFunction() == BuiltinFunction.PROTO_INIT)
+            .filter(fctNode -> fctNode.getType().getKind() == Kind.PROTO)
+            .flatMap(
+                fctNode -> {
+                  SoyProtoType proto = (SoyProtoType) fctNode.getType();
+                  return Streams.concat(
+                      Stream.of(proto.getDescriptorExpression()),
+                      fctNode.getParamNames().stream()
+                          .map(paramName -> proto.getFieldDescriptor(paramName.identifier()))
+                          .filter(FieldDescriptor::isExtension)
+                          .map(ProtoUtils::getQualifiedOuterClassname));
+                });
+
+    return Streams.concat(fromImports, fromHeader, fromCall, fromProtoInit).collect(toSet());
+  }
+
+  /** Recursively search for protocol buffer types within the given type. */
+  private static Stream<String> findProtoTypes(SoyType root, SoyTypeRegistry typeRegistry) {
+    return stream(typeIterator(root, typeRegistry))
+        .map(
+            type -> {
+              switch (type.getKind()) {
+                case PROTO:
+                  return ((SoyProtoType) type).getDescriptorExpression();
+                case PROTO_ENUM:
+                  return ((SoyProtoEnumType) type).getDescriptorExpression();
+                default:
+                  return null;
+              }
+            })
+        .filter(Objects::nonNull);
+  }
+
+  private static Iterator<? extends SoyType> typeIterator(
+      SoyType root, SoyTypeRegistry typeRegistry) {
+    return SoyTypes.getTypeTraverser(root, typeRegistry);
+  }
+
+  /** Returns whether the given symbol is a keyword reserved by the Java language. */
+  public static boolean isReservedKeyword(String symbol) {
+    return RESERVED_JAVA_KEYWORDS.contains(symbol);
   }
 }

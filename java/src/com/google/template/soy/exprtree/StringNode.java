@@ -27,7 +27,6 @@ import com.google.template.soy.types.StringType;
  * Node representing a string value.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public final class StringNode extends AbstractPrimitiveNode {
 
@@ -43,6 +42,9 @@ public final class StringNode extends AbstractPrimitiveNode {
   public StringNode(String value, QuoteStyle quoteStyle, SourceLocation sourceLocation) {
     super(sourceLocation);
     this.value = Preconditions.checkNotNull(value);
+    Preconditions.checkArgument(
+        quoteStyle == QuoteStyle.SINGLE || quoteStyle == QuoteStyle.DOUBLE,
+        "StringNode quote style must be SINGLE or DOUBLE");
     this.quoteStyle = quoteStyle;
   }
 
@@ -95,7 +97,7 @@ public final class StringNode extends AbstractPrimitiveNode {
    * @return A Soy string literal for this string value (including the surrounding single quotes).
    */
   public String toSourceString(boolean escapeToAscii) {
-    return BaseUtils.escapeToSoyString(value, escapeToAscii, quoteStyle);
+    return BaseUtils.escapeToWrappedSoyString(value, escapeToAscii, quoteStyle);
   }
 
   @Override

@@ -25,7 +25,6 @@ import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for {@link I18nUtils}.
- *
  */
 @RunWith(JUnit4.class)
 public class I18nUtilsTest {

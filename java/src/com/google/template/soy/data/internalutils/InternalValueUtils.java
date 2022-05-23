@@ -28,6 +28,7 @@ import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.PrimitiveData;
 import com.google.template.soy.data.restricted.StringData;
+import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.FloatNode;
@@ -41,7 +42,6 @@ import javax.annotation.Nullable;
  * Internal utilities related to Soy values.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public class InternalValueUtils {
 
@@ -73,7 +73,11 @@ public class InternalValueUtils {
     } else if (primitiveData instanceof NullData) {
       return new NullNode(location);
     } else {
-      throw new IllegalArgumentException();
+      // Annoyingly UndefinedData.toString() throws, so workaround.
+      throw new IllegalArgumentException(
+          "can't convert: "
+              + (primitiveData instanceof UndefinedData ? "undefined" : primitiveData)
+              + " to an ExprNode");
     }
   }
 
@@ -105,17 +109,17 @@ public class InternalValueUtils {
    *
    * <p>The returned map will have the same iteration order as the provided map.
    *
-   * @param compileTimeGlobalsMap Map from compile-time global name to value. The values can be any
-   *     of the Soy primitive types: null, boolean, integer, float (Java double), or string.
+   * @param constantNameToJavaValue Map from compile-time global name to value. The values can be
+   *     any of the Soy primitive types: null, boolean, integer, float (Java double), or string.
    * @return An equivalent map in the internal format.
    * @throws IllegalArgumentException If the map contains an invalid value.
    */
-  public static ImmutableMap<String, PrimitiveData> convertCompileTimeGlobalsMap(
-      Map<String, ?> compileTimeGlobalsMap) {
+  public static ImmutableMap<String, PrimitiveData> convertConstantsMap(
+      Map<String, ?> constantNameToJavaValue) {
 
     ImmutableMap.Builder<String, PrimitiveData> resultMapBuilder = ImmutableMap.builder();
 
-    for (Map.Entry<String, ?> entry : compileTimeGlobalsMap.entrySet()) {
+    for (Map.Entry<String, ?> entry : constantNameToJavaValue.entrySet()) {
 
       Object valueObj = entry.getValue();
       PrimitiveData value;
@@ -132,10 +136,7 @@ public class InternalValueUtils {
       }
       if (!isValidValue) {
         throw new IllegalArgumentException(
-            "Compile-time globals map contains invalid value: "
-                + valueObj
-                + " for key: "
-                + entry.getKey());
+            "Constants map contains invalid value: " + valueObj + " for key: " + entry.getKey());
       }
 
       resultMapBuilder.put(entry.getKey(), value);

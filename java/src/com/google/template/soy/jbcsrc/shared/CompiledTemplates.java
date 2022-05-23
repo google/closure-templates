@@ -18,6 +18,7 @@ package com.google.template.soy.jbcsrc.shared;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
@@ -27,6 +28,7 @@ import com.google.errorprone.annotations.concurrent.LazyInit;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.jbcsrc.shared.TemplateMetadata.DelTemplateMetadata;
 import com.google.template.soy.shared.internal.DelTemplateSelector;
+import java.lang.reflect.Method;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Optional;
@@ -36,11 +38,16 @@ import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 /** The result of template compilation. */
-public final class CompiledTemplates {
+public class CompiledTemplates {
   private final ClassLoader loader;
   private final ConcurrentHashMap<String, TemplateData> templateNameToFactory =
       new ConcurrentHashMap<>();
-  private final DelTemplateSelector<TemplateData> selector;
+  final DelTemplateSelector<TemplateData> selector;
+
+  /** Interface for constructor. */
+  public interface Factory {
+    CompiledTemplates create(ImmutableSet<String> delTemplateNames, ClassLoader loader);
+  }
 
   /**
    * @param delTemplateNames The names of all the compiled deltemplates (the mangled names). This is
@@ -80,25 +87,13 @@ public final class CompiledTemplates {
     this.selector = builder.build();
   }
 
-  /** Returns the strict content type of the template. */
-  public ContentKind getTemplateContentKind(String name) {
-    return getTemplateData(name).kind;
+  ClassLoader getClassLoader() {
+    return loader;
   }
 
   /** Returns a factory for the given fully qualified template name. */
-  public CompiledTemplate.Factory getTemplateFactory(String name) {
-    CompiledTemplate.Factory factory = getTemplateData(name).factory;
-    if (factory == null) {
-      throw new IllegalArgumentException("cannot get a factory for the private template: " + name);
-    }
-    return factory;
-  }
-
-  /** Eagerly load all the given templates. */
-  public void loadAll(Iterable<String> templateNames) {
-    for (String templateName : templateNames) {
-      getTemplateData(templateName);
-    }
+  public CompiledTemplate getTemplate(String name) {
+    return getTemplateData(name).template();
   }
 
   /**
@@ -130,6 +125,11 @@ public final class CompiledTemplates {
     return getTemplateData(templateName).requiredCssNamespaces.asList();
   }
 
+  /** Returns the immediate css namespaces that might be used by this template. */
+  public ImmutableList<String> getRequiredCssPaths(String templateName) {
+    return getTemplateData(templateName).requiredCssPaths.asList();
+  }
+
   /**
    * Returns the transitive closure of all the css namespaces that might be used by this template.
    */
@@ -146,31 +146,45 @@ public final class CompiledTemplates {
     for (TemplateData callee : orderedTemplateCalls) {
       requiredNamespaces.addAll(callee.requiredCssNamespaces);
     }
-    ImmutableList<String> allRequiredCssNamespaces = ImmutableList.copyOf(requiredNamespaces);
-    return allRequiredCssNamespaces;
+    return ImmutableList.copyOf(requiredNamespaces);
+  }
+
+  /**
+   * Returns the transitive closure of all the css namespaces that might be used by this template.
+   */
+  public ImmutableList<String> getAllRequiredCssPaths(
+      String templateName,
+      Predicate<String> enabledDelpackages,
+      boolean collectCssFromDelvariants) {
+    TemplateData templateData = getTemplateData(templateName);
+    Set<TemplateData> orderedTemplateCalls = Sets.newLinkedHashSet();
+    Set<TemplateData> visited = Sets.newLinkedHashSet();
+    collectTransitiveCallees(
+        templateData, orderedTemplateCalls, visited, enabledDelpackages, collectCssFromDelvariants);
+    LinkedHashSet<String> requiredPaths = Sets.newLinkedHashSet();
+    for (TemplateData callee : orderedTemplateCalls) {
+      requiredPaths.addAll(callee.requiredCssPaths);
+    }
+    return ImmutableList.copyOf(requiredPaths);
   }
 
   /** Returns an active delegate for the given name, variant and active package selector. */
   @Nullable
-  CompiledTemplate.Factory selectDelTemplate(
+  CompiledTemplate selectDelTemplate(
       String delTemplateName, String variant, Predicate<String> activeDelPackageSelector) {
     TemplateData selectedTemplate =
         selector.selectTemplate(delTemplateName, variant, activeDelPackageSelector);
     if (selectedTemplate == null) {
       return null;
     }
-    if (selectedTemplate.factory == null) {
-      throw new IllegalArgumentException(
-          "cannot get a factory for the private template: " + selectedTemplate.soyTemplateName());
-    }
-    return selectedTemplate.factory;
+    return selectedTemplate.template();
   }
 
-  private TemplateData getTemplateData(String name) {
+  public TemplateData getTemplateData(String name) {
     checkNotNull(name);
     TemplateData template = templateNameToFactory.get(name);
     if (template == null) {
-      template = loadFactory(name, loader);
+      template = loadTemplate(name, loader);
       TemplateData old = templateNameToFactory.putIfAbsent(name, template);
       if (old != null) {
         return old;
@@ -179,24 +193,28 @@ public final class CompiledTemplates {
     return template;
   }
 
-  private static TemplateData loadFactory(String name, ClassLoader loader) {
-    Class<? extends CompiledTemplate> templateClass;
+  private static TemplateData loadTemplate(String name, ClassLoader loader) {
+    Class<?> templateClass;
     try {
       String templateName = Names.javaClassNameFromSoyTemplateName(name);
-      templateClass =
-          Class.forName(templateName, /* initialize= */ true, loader)
-              .asSubclass(CompiledTemplate.class);
+      templateClass = Class.forName(templateName, /* initialize= */ true, loader);
     } catch (ClassNotFoundException e) {
-      throw new IllegalArgumentException("No class was compiled for template: " + name, e);
+      String format = "No class was compiled for template: %s.";
+      throw new IllegalArgumentException(String.format(format, name), e);
     }
-    return new TemplateData(templateClass);
+    return new TemplateData(templateClass, name);
   }
 
-  /** Adds all transitively called templates to {@code visited} */
-  private void collectTransitiveCallees(TemplateData templateData, Set<TemplateData> visited) {
-    if (!visited.add(templateData)) {
+  /**
+   * Adds all transitively called templates to {@code visited}. {@code templateData} may be null in
+   * the case of a stubbed template.
+   */
+  private void collectTransitiveCallees(
+      @Nullable TemplateData templateData, Set<TemplateData> visited) {
+    if (templateData == null || visited.contains(templateData)) {
       return; // avoids chasing recursive cycles
     }
+    visited.add(templateData);
     for (String callee : templateData.callees) {
       collectTransitiveCallees(getTemplateData(callee), visited);
     }
@@ -208,9 +226,12 @@ public final class CompiledTemplates {
     }
   }
 
-  /** Adds all transitively called templates to {@code visited} */
+  /**
+   * Adds all transitively called templates to {@code visited}. {@code templateData} may be null in
+   * the case of a deltemplate with no implementation or a stubbed template.
+   */
   private void collectTransitiveCallees(
-      TemplateData templateData,
+      @Nullable TemplateData templateData,
       Set<TemplateData> orderedTemplateCalls,
       Set<TemplateData> visited,
       Predicate<String> enabledDelpackages,
@@ -249,15 +270,21 @@ public final class CompiledTemplates {
 
   /** This is mostly a copy of the {@link TemplateMetadata} annotation. */
   @Immutable
-  private static final class TemplateData {
-    final Class<? extends CompiledTemplate> templateClass;
-    // will be null for private templates since we don't compile factories for them.
-    @Nullable final CompiledTemplate.Factory factory;
+  public static final class TemplateData {
+    @SuppressWarnings("Immutable")
+    final Method templateMethod;
+
+    final String soyTemplateName;
+    // lazily initialized since it is not always needed
+    @LazyInit CompiledTemplate template;
+
+    // many of these fields should probably be only lazily calculated
     final ContentKind kind;
     final ImmutableSet<String> callees;
     final ImmutableSet<String> delCallees;
     final ImmutableSet<String> injectedParams;
     final ImmutableSet<String> requiredCssNamespaces;
+    final ImmutableSet<String> requiredCssPaths;
 
     // If this is a deltemplate then delTemplateName will be present
     final Optional<String> delTemplateName;
@@ -268,40 +295,24 @@ public final class CompiledTemplates {
     // general this is only needed for relatively few templates.
     @LazyInit ImmutableSortedSet<String> transitiveIjParams;
 
-    TemplateData(Class<? extends CompiledTemplate> template) {
-      this.templateClass = template;
-      CompiledTemplate.Factory localFactory = null;
-      for (Class<?> innerClass : template.getClasses()) {
-        if (innerClass.getSimpleName().equals("Factory")) {
-          // We construct the factories via reflection to bridge the gap between generated and
-          // non-generated code.  However, each factory only needs to be constructed once so the
-          // reflective cost isn't paid on a per render basis.
-          try {
-            localFactory =
-                innerClass
-                    .asSubclass(CompiledTemplate.Factory.class)
-                    .getDeclaredConstructor()
-                    .newInstance();
-          } catch (ReflectiveOperationException e) {
-            // this should be impossible since our factories are public with a default constructor.
-            // TODO(lukes): failures of bytecode verification will propagate as Errors, we should
-            // consider catching them here to add information about our generated types. (e.g. add
-            // the
-            // class trace and a pointer on how to file a soy bug)
-            throw new AssertionError(e);
-          }
-        }
-      }
-      this.factory = localFactory;
+    public TemplateData(Class<?> fileClass, String soyTemplateName) {
+      this(getTemplateMethod(fileClass, soyTemplateName), soyTemplateName);
+    }
+
+    @VisibleForTesting
+    public TemplateData(Method templateMethod, String soyTemplateName) {
+      this.templateMethod = templateMethod;
+      this.soyTemplateName = soyTemplateName;
+
       // We pull the content kind off the templatemetadata eagerly since the parsing+reflection each
       // time is expensive.
-      TemplateMetadata annotation = template.getAnnotation(TemplateMetadata.class);
-      String contentKind = annotation.contentKind();
-      this.kind = ContentKind.valueOf(contentKind);
+      TemplateMetadata annotation = templateMethod.getAnnotation(TemplateMetadata.class);
+      this.kind = annotation.contentKind();
       this.callees = ImmutableSet.copyOf(annotation.callees());
       this.delCallees = ImmutableSet.copyOf(annotation.delCallees());
       this.injectedParams = ImmutableSet.copyOf(annotation.injectedParams());
       this.requiredCssNamespaces = ImmutableSet.copyOf(annotation.requiredCssNames());
+      this.requiredCssPaths = ImmutableSet.copyOf(annotation.requiredCssPaths());
       DelTemplateMetadata deltemplateMetadata = annotation.deltemplateMetadata();
       variant = deltemplateMetadata.variant();
       if (!deltemplateMetadata.name().isEmpty()) {
@@ -316,8 +327,73 @@ public final class CompiledTemplates {
       }
     }
 
+    private static Method getTemplateMethod(Class<?> fileClass, String soyTemplateName) {
+      String templateMethodName = Names.renderMethodNameFromSoyTemplateName(soyTemplateName);
+      try {
+        return fileClass.getDeclaredMethod(templateMethodName);
+      } catch (NoSuchMethodException nsme) {
+        // This may be caused by:
+        //   1. Trying to call a private template. The factory() method is package private and so
+        //      getMethod will fail.
+        //   2. Two Soy files with the same namespace, without the necessary exemption. You should
+        //      also see a build breakage related to go/java-one-version.
+        throw new IllegalArgumentException(
+            "cannot find the " + templateMethodName + "() method for " + soyTemplateName, nsme);
+      }
+    }
+
+    @VisibleForTesting
+    public Class<?> templateClass() {
+      return templateMethod.getDeclaringClass();
+    }
+
+    @VisibleForTesting
+    public Method templateMethod() {
+      return templateMethod;
+    }
+
+    public ContentKind kind() {
+      return kind;
+    }
+
+    @VisibleForTesting
+    public boolean isPublicTemplate() {
+      try {
+        template();
+        return false;
+      } catch (IllegalArgumentException expected) {
+        return false;
+      }
+    }
+
+    @VisibleForTesting
+    public void setTemplate(CompiledTemplate template) {
+      this.template = template;
+    }
+
+    public CompiledTemplate template() {
+      CompiledTemplate local = template;
+      if (local == null) {
+        try {
+          local = (CompiledTemplate) templateMethod.invoke(null);
+        } catch (IllegalAccessException iae) {
+          throw new IllegalArgumentException(
+              "cannot get a factory for the private template: " + soyTemplateName(), iae);
+        } catch (ReflectiveOperationException e) {
+          // this should be impossible since our factories are public with a default constructor.
+          // TODO(lukes): failures of bytecode verification will propagate as Errors, we should
+          // consider catching them here to add information about our generated types. (e.g. add
+          // the
+          // class trace and a pointer on how to file a soy bug)
+          throw new AssertionError(e);
+        }
+        template = local;
+      }
+      return local;
+    }
+
     String soyTemplateName() {
-      return Names.soyTemplateNameFromJavaClassName(templateClass.getName());
+      return soyTemplateName;
     }
   }
 }

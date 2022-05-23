@@ -16,14 +16,28 @@
 
 package com.google.template.soy.invocationbuilders.javatypes;
 
-import static com.google.template.soy.invocationbuilders.javatypes.CodeGenUtils.TO_IMMUTABLE_MAP;
 
 /** Represents a map type for generated Soy Java invocation builders. */
 public final class MapJavaType extends JavaType {
 
+  public static final CodeGenUtils.Member AS_MAP = CodeGenUtils.castFunction("asMap");
+  public static final CodeGenUtils.Member AS_NULLABLE_MAP =
+      CodeGenUtils.castFunction("asNullableMap");
+  public static final CodeGenUtils.Member AS_NULLABLE_LEGACY_OBJECT_MAP =
+      CodeGenUtils.castFunction("asNullableLegacyObjectMap");
+  public static final CodeGenUtils.Member AS_LEGACY_OBJECT_MAP =
+      CodeGenUtils.castFunction("asLegacyObjectMap");
+
   private final JavaType keyType; // The type of the map's keys.
   private final JavaType valueType; // The type of the map's values.
 
+  /**
+   * Whether this Java map value should be marked as an actual Soy map (e.g. as opposed to a Soy
+   * legacy object map). Soy maps can have non-string keys, but legacy object maps cannot, so we
+   * need to call {@link com.google.template.soy.data.SoyValueConverter#markAsSoyMap} in {@link
+   * JavaType#asInlineCast}.
+   *
+   */
   private final boolean shouldMarkAsSoyMap;
 
   public MapJavaType(JavaType keyType, JavaType valueType, boolean shouldMarkAsSoyMap) {
@@ -36,11 +50,6 @@ public final class MapJavaType extends JavaType {
     this.keyType = keyType;
     this.valueType = valueType;
     this.shouldMarkAsSoyMap = shouldMarkAsSoyMap;
-  }
-
-  @Override
-  boolean isPrimitive() {
-    return false;
   }
 
   @Override
@@ -58,33 +67,26 @@ public final class MapJavaType extends JavaType {
   }
 
   @Override
-  public String asInlineCast(String variableName) {
-    String mapRef = variableName;
-
-    // If the map's key and/or value type is long or double, convert "? extends Number" -> Long or
-    // Double.
-    if (keyType instanceof JavaNumberSubtype || valueType instanceof JavaNumberSubtype) {
-      CodeGenUtils.Member arg1 =
-          keyType instanceof JavaNumberSubtype
-              ? ((JavaNumberSubtype) keyType).getMapperFunction()
-              : null;
-      CodeGenUtils.Member arg2 =
-          valueType instanceof JavaNumberSubtype
-              ? ((JavaNumberSubtype) valueType).getMapperFunction()
-              : null;
-      mapRef = CodeGenUtils.AS_MAP_OF_NUMBERS + "(" + mapRef + ", " + arg1 + ", " + arg2 + ")";
-    } else {
-      // Otherwise just make an immutable copy of the map.
-      mapRef = TO_IMMUTABLE_MAP + "(" + mapRef + ")";
-    }
-
+  public String asInlineCast(String variableName, int depth) {
+    // Mark as a "soy map" (as opposed to soy records / legacy maps). This allows keys to be
+    // non-strings.
     if (shouldMarkAsSoyMap) {
-      // Mark as a "soy map" (as opposed to soy records / legacy maps). This allows keys to be
-      // non-strings.
-      mapRef = CodeGenUtils.MARK_AS_SOY_MAP + "(" + mapRef + ")";
+      return (isNullable() ? AS_NULLABLE_MAP : AS_MAP)
+          + "("
+          + variableName
+          + ", "
+          + keyType.getAsInlineCastFunction(depth)
+          + ", "
+          + valueType.getAsInlineCastFunction(depth)
+          + ")";
+    } else {
+      return (isNullable() ? AS_NULLABLE_LEGACY_OBJECT_MAP : AS_LEGACY_OBJECT_MAP)
+          + "("
+          + variableName
+          + ", "
+          + valueType.getAsInlineCastFunction(depth)
+          + ")";
     }
-
-    return mapRef;
   }
 
   /** Returns the map's key type. */

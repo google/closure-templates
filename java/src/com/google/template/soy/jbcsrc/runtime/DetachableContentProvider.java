@@ -28,8 +28,6 @@ import com.google.template.soy.data.LoggingFunctionInvocation;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
-import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
-import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import java.io.IOException;
@@ -41,7 +39,6 @@ import javax.annotation.Nullable;
  * implementations.
  */
 public abstract class DetachableContentProvider implements SoyValueProvider {
-  private final ContentKind contentKind;
 
   // Will be either a SanitizedContent or a StringData.
   private SoyValue resolvedValue;
@@ -51,13 +48,9 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
   // depending on whether we are being resolved via 'status()' or via 'renderAndResolve()'
   private LoggingAdvisingAppendable builder;
 
-  protected DetachableContentProvider(ContentKind contentKind) {
-    this.contentKind = contentKind;
-  }
-
   @Override
   public final SoyValue resolve() {
-    checkState(isDone(), "called resolve() before status() returned ready.");
+    JbcSrcRuntime.awaitProvider(this);
     SoyValue local = getResolvedValue();
     checkState(
         local != TombstoneValue.INSTANCE,
@@ -127,14 +120,9 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
     SoyValue local = resolvedValue;
     if (local == null) {
       if (buffer != null) {
-        String string = buffer.toString();
         // This drops logs, but that is sometimes necessary.  We should make sure this only happens
         // when it has to by making sure that renderAndResolve is used for all printing usecases
-        if (contentKind == ContentKind.TEXT) {
-          local = StringData.forValue(string);
-        } else {
-          local = UnsafeSanitizedContentOrdainer.ordainAsSafe(string, contentKind);
-        }
+        local = buffer.getAsSoyValue();
         resolvedValue = local;
       } else {
         throw new AssertionError("getResolvedValue() should only be called if the value isDone.");
@@ -162,15 +150,10 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
     }
 
     @Override
-    protected void notifyContentKind(ContentKind kind) throws IOException {
-      delegate.setSanitizedContentKind(kind);
-      buffer.setSanitizedContentKind(kind);
-    }
-
-    @Override
-    protected void notifyContentDirectionality(@Nullable Dir contentDir) throws IOException {
-      delegate.setSanitizedContentDirectionality(contentDir);
-      buffer.setSanitizedContentDirectionality(contentDir);
+    protected void notifyKindAndDirectionality(ContentKind kind, @Nullable Dir contentDir)
+        throws IOException {
+      delegate.setKindAndDirectionality(kind, contentDir);
+      buffer.setKindAndDirectionality(kind, contentDir);
     }
 
     @Override
@@ -197,6 +180,13 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
     @Override
     public boolean softLimitReached() {
       return delegate.softLimitReached();
+    }
+
+    @Override
+    public void flushBuffers(int depth) {
+      // This is a 'root' appendable so while we have a delegate there should never be a case where
+      // we need to be flushed through.
+      throw new AssertionError("should not be called");
     }
 
     @Override

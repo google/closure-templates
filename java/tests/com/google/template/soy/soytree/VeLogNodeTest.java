@@ -17,15 +17,14 @@ package com.google.template.soy.soytree;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.logging.LoggableElement;
-import com.google.template.soy.logging.LoggingConfig;
-import com.google.template.soy.logging.ValidatedLoggingConfig;
-import com.google.template.soy.types.SoyTypeRegistry;
+import com.google.template.soy.logging.testing.LoggingConfigs;
+import com.google.template.soy.testing.Foo;
+import com.google.template.soy.testing.SharedTestUtils;
+import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -56,10 +55,10 @@ public final class VeLogNodeTest {
 
   @Test
   public void testParsing_configExpression() {
-    VeLogNode logNode = parseVeLog("{velog ve_data(Bar, soy.test.Foo())}<div></div>{/velog}");
+    VeLogNode logNode = parseVeLog("{velog ve_data(Bar, Foo())}<div></div>{/velog}");
 
     assertThat(logNode.toSourceString())
-        .isEqualTo("{velog ve_data(ve(Bar), soy.test.Foo())}<div></div>{/velog}");
+        .isEqualTo("{velog ve_data(ve(Bar), Foo())}<div></div>{/velog}");
     assertThat(logNode.getLogonlyExpression()).isNull();
   }
 
@@ -75,10 +74,10 @@ public final class VeLogNodeTest {
   @Test
   public void testParsing_configAndLogonly() {
     VeLogNode logNode =
-        parseVeLog("{velog ve_data(Bar, soy.test.Foo()) logonly=\"false\"}<div></div>{/velog}");
+        parseVeLog("{velog ve_data(Bar, Foo()) logonly=\"false\"}<div></div>{/velog}");
 
     assertThat(logNode.toSourceString())
-        .isEqualTo("{velog ve_data(ve(Bar), soy.test.Foo()) logonly=\"false\"}<div></div>{/velog}");
+        .isEqualTo("{velog ve_data(ve(Bar), Foo()) logonly=\"false\"}<div></div>{/velog}");
     assertThat(logNode.getLogonlyExpression().toSourceString()).isEqualTo("false");
   }
 
@@ -89,21 +88,16 @@ public final class VeLogNodeTest {
   private VeLogNode parseVeLog(String veLog, ErrorReporter reporter) {
     return Iterables.getOnlyElement(
         SoyTreeUtils.getAllNodesOfType(
-            SoyFileSetParserBuilder.forTemplateContents(true, veLog)
-                .typeRegistry(
-                    new SoyTypeRegistry.Builder()
-                        .addDescriptors(
-                            ImmutableList.of(com.google.template.soy.testing.Foo.getDescriptor()))
-                        .build())
+            SoyFileSetParserBuilder.forFileAndImports(
+                    SharedTestUtils.NS,
+                    SharedTestUtils.buildTestTemplateContent(true, veLog),
+                    Foo.getDescriptor())
                 .setLoggingConfig(
-                    ValidatedLoggingConfig.create(
-                        LoggingConfig.newBuilder()
-                            .addElement(
-                                LoggableElement.newBuilder()
-                                    .setName("Bar")
-                                    .setId(1L)
-                                    .setProtoType("soy.test.Foo")
-                                    .build())
+                    LoggingConfigs.createLoggingConfig(
+                        LoggableElement.newBuilder()
+                            .setName("Bar")
+                            .setId(1L)
+                            .setProtoType("soy.test.Foo")
                             .build()))
                 .errorReporter(reporter)
                 .parse()

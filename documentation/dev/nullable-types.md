@@ -17,12 +17,14 @@ prove the parameter cannot be null it will change the expression type to be
 non-optional. For example:
 
 ```soy
-{template .main}
-  /** Optional parameter of type (foo.bar.Person|null). */
-  {@param? person: foo.bar.Person}
+import {Person} from 'foo/bar.proto';
+
+{template main}
+  /** Optional parameter of type (Person|null). */
+  {@param? person: Person}
   {if $person}
-    // Within this if-block, person can never be null, so the type
-    // is now ‘map’, not ‘(map|null)’
+    // Within this if-block, $person can never be null, so its type
+    // is now ‘Person’, not ‘(Person|null)’
     {$person.name}
   {else}
     // Compile-time error: $person can only be null at this point.
@@ -40,17 +42,14 @@ This type narrowing feature is triggered by the various control flow mechanisms:
 *   [ternary operator](../reference/expressions#ternary)
 
 When the predicate of the conditional is a comparison with `null` the compiler
-is able to narrow the type on each side of the branch. This includes implicit
-comparisons as well as explicit ones using the
-[`isNull`](../reference/functions#isNull) and
-[`isNonnull`](../reference/functions#isNonnull) functions.
+is able to narrow the type on each side of the branch.
 
-For example consider these expressions, `$foo ? A : B`, `$foo != null ? A : B`,
-`isNonnull($foo) ? A : B`. In each example, the variable `$foo` is compared with
-`null` either implicitly or explicitly, so within the `A` branch we know that
-all references to `$foo` are guaranteed to be non-null and so the type is
-modified to reflect that. Furthermore within the `B` branch we know that `$foo`
-is `null` or at least is `falsy`.
+For example consider these expressions, `$foo ? A : B`, `$foo != null ? A : B`.
+In each example, the variable `$foo` is compared with `null` either implicitly
+or explicitly, so within the `A` branch we know that all references to `$foo`
+are guaranteed to be non-null and so the type is modified to reflect that.
+Furthermore within the `B` branch we know that `$foo` is `null` or at least is
+`falsy`.
 
 ## `checkNotNull` function
 

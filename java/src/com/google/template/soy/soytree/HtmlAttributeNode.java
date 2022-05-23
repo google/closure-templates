@@ -19,8 +19,10 @@ package com.google.template.soy.soytree;
 import static com.google.common.base.Preconditions.checkState;
 
 import com.google.common.base.Ascii;
+import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import javax.annotation.Nullable;
 
@@ -33,6 +35,10 @@ import javax.annotation.Nullable;
 public final class HtmlAttributeNode extends AbstractParentSoyNode<StandaloneNode>
     implements StandaloneNode {
 
+  private static final ImmutableMap<String, String> CONCATENATED_ATTRIBUTES =
+      ImmutableMap.of(
+          "@class", " ", "@style", ";", "@jsdata", ";", "@jsaction", ";", "@jsmodel", ";");
+
   /** Will be null if this attribute node doesn't have a value. */
   @Nullable private final SourceLocation.Point equalsSignLocation;
 
@@ -42,13 +48,34 @@ public final class HtmlAttributeNode extends AbstractParentSoyNode<StandaloneNod
     this.equalsSignLocation = equalsSignLocation;
   }
 
+  public HtmlAttributeNode(
+      int id,
+      SourceLocation location,
+      @Nullable SourceLocation.Point equalsSignLocation,
+      boolean isSoyAttr) {
+    super(id, location);
+    this.equalsSignLocation = equalsSignLocation;
+  }
+
   private HtmlAttributeNode(HtmlAttributeNode orig, CopyState copyState) {
     super(orig, copyState);
     this.equalsSignLocation = orig.equalsSignLocation;
   }
 
+  @Nullable
+  public String getConcatenationDelimiter() {
+    if (getStaticKey() != null && CONCATENATED_ATTRIBUTES.containsKey(getStaticKey())) {
+      return CONCATENATED_ATTRIBUTES.get(this.getStaticKey());
+    }
+    return null;
+  }
+
   public boolean hasValue() {
     return equalsSignLocation != null;
+  }
+
+  public boolean isSoyAttr() {
+    return getStaticKey() != null && getStaticKey().startsWith("@");
   }
 
   /** Returns the static value, if one exists, or null otherwise. */
@@ -57,7 +84,11 @@ public final class HtmlAttributeNode extends AbstractParentSoyNode<StandaloneNod
     if (!hasValue()) {
       return null;
     }
-    HtmlAttributeValueNode attrValue = (HtmlAttributeValueNode) getChild(1);
+    SoyNode value = getChild(1);
+    if (!(value instanceof HtmlAttributeValueNode)) {
+      return null;
+    }
+    HtmlAttributeValueNode attrValue = (HtmlAttributeValueNode) value;
     if (attrValue.numChildren() == 0) {
       return "";
     }

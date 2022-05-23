@@ -16,22 +16,24 @@
 
 package com.google.template.soy.jbcsrc;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.internal.proto.JavaQualifiedNames.getFieldName;
 import static com.google.template.soy.internal.proto.JavaQualifiedNames.underscoresToCamelCase;
+import static com.google.template.soy.internal.proto.ProtoUtils.getContainingOneof;
 import static com.google.template.soy.internal.proto.ProtoUtils.getJsType;
 import static com.google.template.soy.internal.proto.ProtoUtils.hasJsType;
 import static com.google.template.soy.internal.proto.ProtoUtils.isUnsigned;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.MAP_ENTRY_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_PROVIDER_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.STRING_TYPE;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.compare;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.isPrimitive;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.numericConversion;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.unboxUnchecked;
 
 import com.google.common.base.Function;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.html.types.SafeHtmlProto;
@@ -57,13 +59,16 @@ import com.google.protobuf.GeneratedMessage.ExtendableMessage;
 import com.google.protobuf.GeneratedMessage.GeneratedExtension;
 import com.google.protobuf.Message;
 import com.google.protobuf.ProtocolMessageEnum;
+import com.google.template.soy.data.ProtoFieldInterpreter;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContents;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
+import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
-import com.google.template.soy.exprtree.ProtoInitNode;
+import com.google.template.soy.exprtree.MethodCallNode;
+import com.google.template.soy.internal.proto.FieldVisitor;
 import com.google.template.soy.internal.proto.JavaQualifiedNames;
 import com.google.template.soy.jbcsrc.restricted.BytecodeProducer;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
@@ -81,8 +86,13 @@ import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.UnionType;
 import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import javax.annotation.Nullable;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
@@ -100,7 +110,6 @@ final class ProtoUtils {
   private static final Type BYTE_STRING_TYPE = Type.getType(ByteString.class);
   private static final Type EXTENSION_TYPE = Type.getType(GeneratedExtension.class);
 
-  private static final Type[] NO_METHOD_ARGS = {};
   private static final Type[] ONE_INT_ARG = {Type.INT_TYPE};
 
   private static final MethodRef BASE_ENCODING_BASE_64 =
@@ -188,6 +197,9 @@ final class ProtoUtils {
               MethodRef.create(SanitizedContent.class, "toTrustedResourceUrlProto"))
           .build();
 
+  private static final RepeatedFieldInterpreter REPEATED_FIELD_INTERPRETER =
+      new RepeatedFieldInterpreter();
+
   /**
    * Returns a {@link SoyExpression} for accessing a field of a proto.
    *
@@ -196,51 +208,90 @@ final class ProtoUtils {
    * @param node The field access operation
    */
   static SoyExpression accessField(
-      SoyProtoType protoType, SoyExpression baseExpr, FieldAccessNode node) {
-    return new AccessorGenerator(protoType, baseExpr, node).generate();
+      SoyProtoType protoType, SoyExpression baseExpr, String fieldName, SoyType fieldType) {
+    return new AccessorGenerator(
+            protoType, baseExpr, fieldName, fieldType, /* useBrokenSemantics= */ true)
+        .generate();
+  }
+
+  static SoyExpression hasserField(SoyExpression baseExpr, String fieldName) {
+    SoyProtoType protoType = (SoyProtoType) baseExpr.soyType();
+    return new HasserGenerator(protoType, baseExpr, fieldName).generate();
+  }
+
+  /**
+   * Returns a {@link SoyExpression} for accessing an extension field of a proto using the {@code
+   * getExtension} method.
+   *
+   * @param baseExpr The proto being accessed.
+   * @param node The method operation.
+   */
+  static SoyExpression accessExtensionField(
+      SoyExpression baseExpr, MethodCallNode node, String fieldName, boolean useBrokenSemantics) {
+    SoyProtoType protoType = (SoyProtoType) baseExpr.soyType();
+    return new AccessorGenerator(protoType, baseExpr, fieldName, node.getType(), useBrokenSemantics)
+        .generate();
+  }
+
+  static SoyExpression accessProtoUnionField(
+      SoyExpression baseExpr, FieldAccessNode node, LocalVariableManager varManager) {
+    return new ProtoUnionAccessorGenerator(baseExpr, node, varManager).generate();
+  }
+
+  private abstract static class BaseGenerator {
+
+    final SoyRuntimeType unboxedRuntimeType;
+    final SoyExpression baseExpr;
+
+    public BaseGenerator(SoyRuntimeType unboxedRuntimeType, SoyExpression baseExpr) {
+      this.unboxedRuntimeType = unboxedRuntimeType;
+      this.baseExpr = baseExpr;
+    }
+
+    SoyExpression getTypedBaseExpression() {
+      if (baseExpr.isBoxed()) {
+        return SoyExpression.forProto(
+            unboxedRuntimeType,
+            baseExpr
+                .invoke(MethodRef.SOY_PROTO_VALUE_GET_PROTO)
+                // this cast is required because getProto() is generic, so it basically returns
+                // 'Message'
+                .checkedCast(unboxedRuntimeType.runtimeType()));
+      } else if (baseExpr.soyRuntimeType().equals(unboxedRuntimeType)) {
+        return baseExpr;
+      } else {
+        throw new AssertionError("should be impossible");
+      }
+    }
   }
 
   /**
    * A simple class to encapsulate all the parameters shared between our different accessor
    * generation strategies
    */
-  private static final class AccessorGenerator {
-    final SoyRuntimeType unboxedRuntimeType;
-    final SoyExpression baseExpr;
-    final FieldAccessNode node;
+  private static final class AccessorGenerator extends BaseGenerator {
+    final SoyType fieldType;
+    final String fieldName;
     final FieldDescriptor descriptor;
     final boolean shouldCheckForFieldPresence;
 
-    AccessorGenerator(SoyProtoType protoType, SoyExpression baseExpr, FieldAccessNode node) {
-      this.unboxedRuntimeType = SoyRuntimeType.getUnboxedType(protoType).get();
-      this.baseExpr = baseExpr;
-      this.node = node;
-      this.descriptor = protoType.getFieldDescriptor(node.getFieldName());
+    AccessorGenerator(
+        SoyProtoType protoType,
+        SoyExpression baseExpr,
+        String fieldName,
+        SoyType fieldType,
+        boolean useBrokenSemantics) {
+      super(SoyRuntimeType.getUnboxedType(protoType).get(), baseExpr);
+      this.fieldName = fieldName;
+      this.fieldType = fieldType;
+      this.descriptor = protoType.getFieldDescriptor(fieldName);
       this.shouldCheckForFieldPresence =
-          protoType.shouldCheckFieldPresenceToEmulateJspbNullability(node.getFieldName());
+          useBrokenSemantics
+              && protoType.shouldCheckFieldPresenceToEmulateJspbNullability(fieldName);
     }
 
     SoyExpression generate() {
-      if (descriptor.isRepeated()) {
-        return handleRepeated();
-      }
-
-      SoyExpression typedBaseExpr;
-      if (baseExpr.isBoxed()) {
-        typedBaseExpr =
-            SoyExpression.forProto(
-                unboxedRuntimeType,
-                baseExpr
-                    .invoke(MethodRef.SOY_PROTO_VALUE_GET_PROTO)
-                    // this cast is required because getProto() is generic, so it basically returns
-                    // 'Message'
-                    .checkedCast(unboxedRuntimeType.runtimeType()));
-      } else if (baseExpr.soyRuntimeType().equals(unboxedRuntimeType)) {
-        typedBaseExpr = baseExpr;
-      } else {
-        throw new AssertionError("should be impossible");
-      }
-
+      SoyExpression typedBaseExpr = getTypedBaseExpression();
       if (descriptor.isExtension()) {
         return handleExtension(typedBaseExpr);
       } else {
@@ -250,12 +301,22 @@ final class ProtoUtils {
 
     private SoyExpression handleNormalField(final SoyExpression typedBaseExpr) {
       // TODO(lukes): consider adding a cache for the method lookups.
+      final MethodRef getMethodRef = getGetterMethod(descriptor);
+
+      if (descriptor.isMapField()) {
+        return handleMapField(typedBaseExpr, getMethodRef);
+      } else if (descriptor.isRepeated()) {
+        return SoyExpression.forBoxedList(
+            (ListType) fieldType,
+            MethodRef.LAZY_PROTO_TO_SOY_VALUE_LIST_FOR_LIST.invoke(
+                typedBaseExpr.invoke(getMethodRef),
+                FieldVisitor.visitField(descriptor, REPEATED_FIELD_INTERPRETER)));
+      }
+
       // To implement jspb semantics for proto nullability we need to call has<Field>() methods for
       // a subset of fields as specified in SoyProtoType. Though, we should probably actually be
       // testing against jspb semantics.  The best way forward is probably to first invest in
       // support for protos in our integration tests.
-      final MethodRef getMethodRef = getGetterMethod(descriptor);
-
       if (!shouldCheckForFieldPresence) {
         // Simple case, just call .get and interpret the result
         return interpretField(typedBaseExpr.invoke(getMethodRef));
@@ -264,7 +325,7 @@ final class ProtoUtils {
         final BytecodeProducer hasCheck;
 
         // if oneof, check the value of getFooCase() enum
-        OneofDescriptor containingOneof = descriptor.getContainingOneof();
+        OneofDescriptor containingOneof = getContainingOneof(descriptor);
         if (containingOneof != null) {
           final MethodRef getCaseRef = getOneOfCaseMethod(containingOneof);
           final Expression fieldNumber = constant(descriptor.getNumber());
@@ -335,6 +396,34 @@ final class ProtoUtils {
       }
     }
 
+    private SoyExpression handleMapField(SoyExpression typedBaseExpr, MethodRef getMethodRef) {
+      List<FieldDescriptor> mapFields = descriptor.getMessageType().getFields();
+      FieldDescriptor keyDescriptor = mapFields.get(0);
+      FieldDescriptor valueDescriptor = mapFields.get(1);
+      return SoyExpression.forMap(
+          (MapType) fieldType,
+          MethodRef.LAZY_PROTO_TO_SOY_VALUE_MAP_FOR_MAP.invoke(
+              typedBaseExpr.invoke(getMethodRef),
+              FieldVisitor.visitField(keyDescriptor, REPEATED_FIELD_INTERPRETER),
+              FieldVisitor.visitField(valueDescriptor, REPEATED_FIELD_INTERPRETER),
+              BytecodeUtils.constant(getKeyType(keyDescriptor))));
+    }
+
+    private static final Type getKeyType(FieldDescriptor keyDescriptor) {
+      switch (keyDescriptor.getJavaType()) {
+        case INT:
+          return BytecodeUtils.INTEGER_TYPE;
+        case LONG:
+          return BytecodeUtils.BOXED_LONG_TYPE;
+        case BOOLEAN:
+          return BytecodeUtils.BOXED_BOOLEAN_TYPE;
+        case STRING:
+          return STRING_TYPE;
+        default:
+          throw new AssertionError("Invalid proto map key type: " + keyDescriptor);
+      }
+    }
+
     private SoyExpression interpretField(Expression field) {
       // Depending on types we may need to do a trivial conversion
       // (e.g. int->long, float->double, enum->int)
@@ -391,7 +480,17 @@ final class ProtoUtils {
       // stupid java generics work.
       FieldRef extensionField = getExtensionField(descriptor);
       final Expression extensionFieldAccessor = extensionField.accessor();
-      if (!descriptor.hasDefaultValue()) {
+
+      if (descriptor.isRepeated()) {
+        return SoyExpression.forBoxedList(
+            (ListType) fieldType,
+            MethodRef.GET_EXTENSION_LIST.invoke(
+                typedBaseExpr,
+                extensionFieldAccessor,
+                FieldVisitor.visitField(descriptor, REPEATED_FIELD_INTERPRETER)));
+      }
+
+      if (!descriptor.hasDefaultValue() && shouldCheckForFieldPresence) {
         final Label endLabel = new Label();
         SoyExpression interpretedField =
             interpretExtensionField(
@@ -430,7 +529,8 @@ final class ProtoUtils {
         // scope of the expression
         return interpretedField.labelEnd(endLabel).asNullable();
       } else {
-        // An extension with a default value is pretty rare, but we still need to support it.
+        // This branch handles extension with a default value, which are pretty rare, and non-
+        // broken semantics, where we can delegate to the Java API without checking presence.
         return interpretExtensionField(
             typedBaseExpr.invoke(EXTENDABLE_MESSAGE_GET_EXTENSION, extensionFieldAccessor));
       }
@@ -507,37 +607,191 @@ final class ProtoUtils {
     }
 
     private SoyExpression messageToSoyExpression(Expression field) {
-      if (node.getType().getKind() == SoyType.Kind.PROTO) {
-        SoyProtoType fieldProtoType = (SoyProtoType) node.getType();
+      if (fieldType.getKind() == SoyType.Kind.PROTO) {
+        SoyProtoType fieldProtoType = (SoyProtoType) fieldType;
         SoyRuntimeType protoRuntimeType = SoyRuntimeType.getUnboxedType(fieldProtoType).get();
         return SoyExpression.forProto(protoRuntimeType, field);
       } else {
         // All other are special sanitized types
         Descriptor messageType = descriptor.getMessageType();
         MethodRef fromProtoMethod = SAFE_PROTO_TO_SANITIZED_CONTENT.get(messageType.getFullName());
-        return SoyExpression.forSoyValue(node.getType(), fromProtoMethod.invoke(field));
+        return SoyExpression.forSoyValue(fieldType, fromProtoMethod.invoke(field));
+      }
+    }
+  }
+
+  private static final class ProtoUnionAccessorGenerator {
+
+    private final SoyExpression baseExpr;
+    private final FieldAccessNode node;
+    private final LocalVariableManager varManager;
+
+    ProtoUnionAccessorGenerator(
+        SoyExpression baseExpr, FieldAccessNode node, LocalVariableManager varManager) {
+      checkArgument(baseExpr.soyType().getKind() == SoyType.Kind.UNION, baseExpr.soyType());
+      this.baseExpr = baseExpr;
+      this.node = node;
+      this.varManager = varManager;
+    }
+
+    private Expression getUnboxedBaseExpression() {
+      // This is a proto union type so must be boxed.
+      checkState(baseExpr.isBoxed());
+      return baseExpr.invoke(MethodRef.SOY_PROTO_VALUE_GET_PROTO);
+    }
+
+    SoyExpression generate() {
+      // Keep the result unboxed if possible, but the result must be boxed if the Java types of the
+      // possible results are different.
+      SoyRuntimeType resultType =
+          SoyRuntimeType.getUnboxedType(node.getType())
+              .orElseGet(() -> SoyRuntimeType.getBoxedType(node.getType()));
+
+      // Store the base value in a local variable so it's easy to repeatedly check the type and call
+      // the correct getter method on it.
+      LocalVariableManager.Scope scope = varManager.enterScope();
+      Expression unboxedBaseExpr = getUnboxedBaseExpression();
+      LocalVariable base =
+          scope.createTemporary(node.getFieldName() + "__base", unboxedBaseExpr.resultType());
+      Statement baseInit = base.store(unboxedBaseExpr, base.start());
+      Statement scopeExit = scope.exitScope();
+
+      boolean foundBoxed = false;
+      Set<SoyType> members = ((UnionType) baseExpr.soyType()).getMembers();
+      // Each key is a possible type of the (union) base expression. The value is the code to access
+      // the field for the key's type.
+      Map<SoyRuntimeType, SoyExpression> getters = new LinkedHashMap<>();
+      for (SoyType member : members) {
+        // The caller should check that all member types are protos, so this cast is safe.
+        SoyProtoType protoType = (SoyProtoType) member;
+        SoyRuntimeType unboxed = SoyRuntimeType.getUnboxedType(protoType).get();
+        SoyExpression fieldAccess =
+            accessField(
+                protoType,
+                SoyExpression.forProto(unboxed, base.checkedCast(unboxed.runtimeType())),
+                node.getFieldName(),
+                protoType.getFieldType(node.getFieldName()));
+        if (fieldAccess.isBoxed()) {
+          foundBoxed = true;
+        }
+        getters.put(unboxed, fieldAccess);
+      }
+
+      // Each accesses decides whether or not to box, but if the result type is boxed or at least
+      // one of the accesses is boxed, then we need to box all of them to have a consistent result
+      // type.
+      if (resultType.isBoxed() || foundBoxed) {
+        resultType = resultType.box();
+        getters.replaceAll((key, value) -> value.box());
+      }
+
+      // Generates code to check the type of the base expression and call the correct getter method:
+      // if (base instanceof Foo) {
+      //   ((Foo) base).getMyField();
+      // } else if (base instanceof Bar) {
+      //   ((Bar) base).getMyField();
+      // } else {
+      //   ((Baz) base).getMyField();
+      // }
+      return SoyExpression.forRuntimeType(
+          resultType,
+          new Expression(resultType.runtimeType()) {
+
+            @Override
+            protected void doGen(CodeBuilder cb) {
+              Label end = new Label();
+              baseInit.gen(cb);
+
+              for (Iterator<Map.Entry<SoyRuntimeType, SoyExpression>> i =
+                      getters.entrySet().iterator();
+                  i.hasNext(); ) {
+                Map.Entry<SoyRuntimeType, SoyExpression> entry = i.next();
+                SoyRuntimeType type = entry.getKey();
+                SoyExpression getter = entry.getValue();
+                boolean last = !i.hasNext();
+
+                Label next = null;
+
+                // Check the type of the base expression and jump to the next check if it doesn't
+                // match. For the last iteration, skip the type check since it can only be the one
+                // remaining type. A cast in the getter expression will verify this.
+                if (!last) {
+                  next = new Label();
+                  base.gen(cb);
+                  cb.instanceOf(type.runtimeType());
+                  cb.ifZCmp(Opcodes.IFEQ, next);
+                }
+
+                getter.gen(cb);
+
+                // If we made it here, then the type matched, so skip the remaining checks and go to
+                // the end. This also marks the beginning of the next check (which is produced by
+                // the next iteration) so it can be skipped to if the type check doesn't match. For
+                // the last iteration, we're already at the end so can just fall out.
+                if (!last) {
+                  cb.goTo(end);
+                  cb.mark(next);
+                }
+              }
+              cb.mark(end);
+              scopeExit.gen(cb);
+            }
+          });
+    }
+  }
+
+  private static final class HasserGenerator extends BaseGenerator {
+
+    final String fieldName;
+    final FieldDescriptor descriptor;
+
+    HasserGenerator(SoyProtoType protoType, SoyExpression baseExpr, String fieldName) {
+      super(SoyRuntimeType.getUnboxedType(protoType).get(), baseExpr);
+      this.fieldName = fieldName;
+      this.descriptor = protoType.getFieldDescriptor(fieldName);
+    }
+
+    SoyExpression generate() {
+      SoyExpression typedBaseExpr = getTypedBaseExpression();
+
+      if (descriptor.isExtension()) {
+        throw new AssertionError("extensions don't have hassers: " + descriptor);
+      } else if (descriptor.isRepeated()) {
+        throw new AssertionError("repeated fields don't have hassers: " + descriptor);
+      } else {
+        return handleNormalField(typedBaseExpr);
       }
     }
 
-    private SoyExpression handleRepeated() {
-      // For repeated fields we delegate to the tofu implementation.  This is because the proto
-      // will return a List<Integer> which we will need to turn into a List<IntegerData> and so on.
-      // we could handle this by
-      // 1. generating Runtime.java helpers to do this kind of collection boxing conversion
-      // 2. enhancing SoyExpression to be able to understand a 'partially unboxed collection'
-      // 3. fallback to tofu (which already supports this)
-      // 4. Add new SoyList implementations that can do this kind of lazy resolving transparently
-      //    (I think SoyEasyList is supposed to support this)
-      // For now we will do #3.  #2 would be ideal (least overhead) but would be very complex. #1 or
-      // #4 would both be reasonable compromises.
-      SoyRuntimeType boxedType = SoyRuntimeType.getBoxedType(node.getType());
-      return SoyExpression.forSoyValue(
-          node.getType(),
-          // NOTE: in theory this method can return NullData for missing fields, but since this
-          // field is repeated, we know that that will not happen.
-          MethodRef.SOY_PROTO_VALUE_GET_PROTO_FIELD
-              .invoke(baseExpr.box(), constant(node.getFieldName()))
-              .checkedCast(boxedType.runtimeType()));
+    private SoyExpression handleNormalField(SoyExpression typedBaseExpr) {
+      if (descriptor.getFile().getSyntax() == Syntax.PROTO3
+          && descriptor.getJavaType() != JavaType.MESSAGE
+          && getContainingOneof(descriptor) != null) {
+        // In proto3 Java there aren't hassers for primitive fields inside oneofs.
+
+        MethodRef getCaseRef = getOneOfCaseMethod(descriptor.getContainingOneof());
+        Expression fieldNumber = constant(descriptor.getNumber());
+        // this basically just calls getFooCase().getNumber() == field_number
+        return SoyExpression.forBool(
+            compare(
+                Opcodes.IFEQ,
+                new Expression(Type.INT_TYPE) {
+                  @Override
+                  protected void doGen(CodeBuilder adapter) {
+                    typedBaseExpr.gen(adapter);
+                    getCaseRef.invokeUnchecked(adapter);
+                    adapter.visitMethodInsn(
+                        Opcodes.INVOKEVIRTUAL,
+                        getCaseRef.returnType().getInternalName(),
+                        "getNumber",
+                        "()I",
+                        false /* not an interface */);
+                  }
+                },
+                fieldNumber));
+      }
+      MethodRef hasMethodRef = getHasserMethod(descriptor);
+      return SoyExpression.forBool(typedBaseExpr.invoke(hasMethodRef));
     }
   }
 
@@ -545,11 +799,10 @@ final class ProtoUtils {
    * Returns a {@link SoyExpression} for initializing a new proto.
    *
    * @param node The proto initialization node
-   * @param args Args for the proto initialization call
    * @param varManager Local variables manager
    */
   static SoyExpression createProto(
-      ProtoInitNode node,
+      FunctionNode node,
       Function<ExprNode, SoyExpression> compilerFunction,
       ExpressionDetacher detacher,
       LocalVariableManager varManager) {
@@ -557,7 +810,7 @@ final class ProtoUtils {
   }
 
   private static final class ProtoInitGenerator {
-    private final ProtoInitNode node;
+    private final FunctionNode node;
     private final Function<ExprNode, SoyExpression> compilerFunction;
     private final ExpressionDetacher detacher;
     private final LocalVariableManager varManager;
@@ -566,7 +819,7 @@ final class ProtoUtils {
     private final Descriptor descriptor;
 
     ProtoInitGenerator(
-        ProtoInitNode node,
+        FunctionNode node,
         Function<ExprNode, SoyExpression> compilerFunction,
         ExpressionDetacher detacher,
         LocalVariableManager varManager) {
@@ -584,13 +837,6 @@ final class ProtoUtils {
     }
 
     SoyExpression generate() {
-      // For cases with no field assignments, return proto.defaultInstance().
-      if (node.numChildren() == 0) {
-        final Expression defaultInstance = getDefaultInstanceMethod(descriptor).invoke();
-        return SoyExpression.forProto(
-            SoyRuntimeType.getUnboxedType(protoType).get(), defaultInstance);
-      }
-
       final Expression newBuilderCall = getBuilderMethod(descriptor).invoke();
       final ImmutableList<Statement> setters = getFieldSetters();
       final MethodRef buildCall = getBuildMethod(descriptor);
@@ -695,13 +941,12 @@ final class ProtoUtils {
     }
 
     private Statement handleMapSetterNotNull(final SoyExpression mapArg, FieldDescriptor field) {
-      Preconditions.checkArgument(mapArg.isNonNullable());
+      checkArgument(mapArg.isNonNullable());
       // Wait until all map values can be resolved. Since we don't box/unbox maps, directly call
       // mapArg.asJavaMap() that converts SoyMapImpl to a Map<String, SoyValueProvider>.
       // TODO(lukes): handle map literals specially
       Expression resolved =
-          detacher
-              .resolveSoyValueProviderMap(mapArg.invoke(MethodRef.SOY_MAP_IMPL_AS_JAVA_MAP));
+          detacher.resolveSoyValueProviderMap(mapArg.invoke(MethodRef.SOY_MAP_IMPL_AS_JAVA_MAP));
 
       // Enter new scope
       LocalVariableManager.Scope scope = varManager.enterScope();
@@ -710,12 +955,12 @@ final class ProtoUtils {
       Expression getMapIterator =
           resolved.invoke(MethodRef.MAP_ENTRY_SET).invoke(MethodRef.GET_ITERATOR);
       final LocalVariable iter =
-          scope.createLocal(field.getName() + "__iter", getMapIterator.resultType());
+          scope.createTemporary(field.getName() + "__iter", getMapIterator.resultType());
       Statement loopInitialization = iter.store(getMapIterator, iter.start());
       // (Map.Entry) iter.next()
       Expression iterNext = iter.invoke(MethodRef.ITERATOR_NEXT).checkedCast(MAP_ENTRY_TYPE);
       final LocalVariable mapEntry =
-          scope.createLocal(field.getName() + "__mapEntry", iterNext.resultType());
+          scope.createTemporary(field.getName() + "__mapEntry", iterNext.resultType());
       Statement initMapEntry = mapEntry.store(iterNext, mapEntry.start());
       // exitScope must be called after creating all the variables
       final Statement scopeExit = scope.exitScope();
@@ -866,7 +1111,7 @@ final class ProtoUtils {
     }
 
     private Statement handleRepeatedNotNull(final SoyExpression listArg, FieldDescriptor field) {
-      Preconditions.checkArgument(listArg.isNonNullable());
+      checkArgument(listArg.isNonNullable());
 
       // Unbox listArg as List<SoyValueProvider> and wait until all items are done
       SoyExpression unboxed = listArg.unboxAsList();
@@ -877,10 +1122,11 @@ final class ProtoUtils {
 
       // Create local variables: list, loop index, list size
       final LocalVariable list =
-          scope.createLocal(field.getName() + "__list", resolved.resultType());
+          scope.createTemporary(field.getName() + "__list", resolved.resultType());
 
-      final LocalVariable listSize = scope.createLocal(field.getName() + "__size", Type.INT_TYPE);
-      final LocalVariable index = scope.createLocal(field.getName() + "__index", Type.INT_TYPE);
+      final LocalVariable listSize =
+          scope.createTemporary(field.getName() + "__size", Type.INT_TYPE);
+      final LocalVariable index = scope.createTemporary(field.getName() + "__index", Type.INT_TYPE);
       Statement indexInitialization = index.store(constant(0), index.start());
       Statement loopInitialization =
           Statement.concat(
@@ -1044,7 +1290,7 @@ final class ProtoUtils {
           }
           return Message.class;
       }
-          throw new AssertionError("unsupported field type: " + field);
+      throw new AssertionError("unsupported field type: " + field);
     }
 
     /**
@@ -1144,19 +1390,19 @@ final class ProtoUtils {
   }
 
   // TODO(lukes): Consider caching? in SoyRuntimeType?
-  private static TypeInfo messageRuntimeType(Descriptor descriptor) {
+  static TypeInfo messageRuntimeType(Descriptor descriptor) {
     String className = JavaQualifiedNames.getClassName(descriptor);
-    return TypeInfo.create(className);
+    return TypeInfo.createClass(className);
   }
 
   private static TypeInfo enumRuntimeType(EnumDescriptor descriptor) {
     String className = JavaQualifiedNames.getClassName(descriptor);
-    return TypeInfo.create(className);
+    return TypeInfo.createClass(className);
   }
 
   private static TypeInfo builderRuntimeType(Descriptor descriptor) {
     String className = JavaQualifiedNames.getClassName(descriptor);
-    return TypeInfo.create(className + "$Builder");
+    return TypeInfo.createClass(className + "$Builder");
   }
 
   private static Type getRuntimeType(FieldDescriptor field) {
@@ -1170,7 +1416,7 @@ final class ProtoUtils {
       case ENUM:
         return isProto3EnumField(field)
             ? Type.INT_TYPE
-            : TypeInfo.create(JavaQualifiedNames.getClassName(field.getEnumType())).type();
+            : TypeInfo.createClass(JavaQualifiedNames.getClassName(field.getEnumType())).type();
       case FLOAT:
         return Type.FLOAT_TYPE;
       case INT:
@@ -1178,31 +1424,51 @@ final class ProtoUtils {
       case LONG:
         return Type.LONG_TYPE;
       case MESSAGE:
-        return TypeInfo.create(JavaQualifiedNames.getClassName(field.getMessageType())).type();
+        return TypeInfo.createClass(JavaQualifiedNames.getClassName(field.getMessageType())).type();
       case STRING:
         return STRING_TYPE;
     }
-        throw new AssertionError("unexpected type");
+    throw new AssertionError("unexpected type");
   }
 
   /** Returns the {@link MethodRef} for the generated getter method. */
   private static MethodRef getGetterMethod(FieldDescriptor descriptor) {
-    Preconditions.checkArgument(
+    checkArgument(
         !descriptor.isExtension(), "extensions do not have getter methods. %s", descriptor);
     TypeInfo message = messageRuntimeType(descriptor.getContainingType());
+    String repeatedType = "";
+    Type runtimeType;
     boolean isProto3Enum = isProto3EnumField(descriptor);
+    if (descriptor.isMapField()) {
+      repeatedType = "Map";
+      runtimeType = BytecodeUtils.MAP_TYPE;
+      isProto3Enum = mapValueIsProto3Enum(descriptor);
+    } else if (descriptor.isRepeated()) {
+      repeatedType = "List";
+      runtimeType = BytecodeUtils.LIST_TYPE;
+    } else if (isProto3Enum) {
+      runtimeType = Type.INT_TYPE;
+    } else {
+      runtimeType = getRuntimeType(descriptor);
+    }
     return MethodRef.createInstanceMethod(
             message,
             new Method(
                 "get"
                     + getFieldName(descriptor, true)
                     // For proto3 enums we access the Value field
-                    + (isProto3Enum ? "Value" : ""),
-                isProto3Enum ? Type.INT_TYPE : getRuntimeType(descriptor),
-                NO_METHOD_ARGS))
+                    + (isProto3Enum ? "Value" : "")
+                    + repeatedType,
+                runtimeType,
+                MethodRef.NO_METHOD_ARGS))
         // All protos are guaranteed to never return null
         .asNonNullable()
         .asCheap();
+  }
+
+  private static boolean mapValueIsProto3Enum(FieldDescriptor descriptor) {
+    FieldDescriptor valueDescriptor = descriptor.getMessageType().getFields().get(1);
+    return isProto3EnumField(valueDescriptor);
   }
 
   /**
@@ -1224,7 +1490,10 @@ final class ProtoUtils {
     TypeInfo message = messageRuntimeType(descriptor.getContainingType());
     return MethodRef.createInstanceMethod(
             message,
-            new Method("has" + getFieldName(descriptor, true), Type.BOOLEAN_TYPE, NO_METHOD_ARGS))
+            new Method(
+                "has" + getFieldName(descriptor, true),
+                Type.BOOLEAN_TYPE,
+                MethodRef.NO_METHOD_ARGS))
         .asCheap();
   }
 
@@ -1235,8 +1504,8 @@ final class ProtoUtils {
             message,
             new Method(
                 "get" + underscoresToCamelCase(descriptor.getName(), true) + "Case",
-                TypeInfo.create(JavaQualifiedNames.getCaseEnumClassName(descriptor)).type(),
-                NO_METHOD_ARGS))
+                TypeInfo.createClass(JavaQualifiedNames.getCaseEnumClassName(descriptor)).type(),
+                MethodRef.NO_METHOD_ARGS))
         .asCheap();
   }
 
@@ -1245,21 +1514,13 @@ final class ProtoUtils {
     TypeInfo message = messageRuntimeType(descriptor);
     TypeInfo builder = builderRuntimeType(descriptor);
     return MethodRef.createStaticMethod(
-            message, new Method("newBuilder", builder.type(), NO_METHOD_ARGS))
-        .asNonNullable();
-  }
-
-  /** Returns the {@link MethodRef} for the generated defaultInstance method. */
-  private static MethodRef getDefaultInstanceMethod(Descriptor descriptor) {
-    TypeInfo message = messageRuntimeType(descriptor);
-    return MethodRef.createStaticMethod(
-            message, new Method("getDefaultInstance", message.type(), NO_METHOD_ARGS))
+            message, new Method("newBuilder", builder.type(), MethodRef.NO_METHOD_ARGS))
         .asNonNullable();
   }
 
   /** Returns the {@link MethodRef} for the generated put method for proto map. */
   private static MethodRef getPutMethod(FieldDescriptor descriptor) {
-    Preconditions.checkState(descriptor.isMapField());
+    checkState(descriptor.isMapField());
     List<FieldDescriptor> mapFields = descriptor.getMessageType().getFields();
     TypeInfo builder = builderRuntimeType(descriptor.getContainingType());
     return MethodRef.createInstanceMethod(
@@ -1290,7 +1551,7 @@ final class ProtoUtils {
     TypeInfo message = messageRuntimeType(descriptor);
     TypeInfo builder = builderRuntimeType(descriptor);
     return MethodRef.createInstanceMethod(
-            builder, new Method("build", message.type(), NO_METHOD_ARGS))
+            builder, new Method("build", message.type(), MethodRef.NO_METHOD_ARGS))
         .asNonNullable();
   }
 
@@ -1307,7 +1568,7 @@ final class ProtoUtils {
 
   /** Returns the {@link FieldRef} for the generated {@link Extension} field. */
   private static FieldRef getExtensionField(FieldDescriptor descriptor) {
-    Preconditions.checkArgument(descriptor.isExtension(), "%s is not an extension", descriptor);
+    checkArgument(descriptor.isExtension(), "%s is not an extension", descriptor);
     String extensionFieldName = getFieldName(descriptor, false);
     if (descriptor.getExtensionScope() != null) {
       TypeInfo owner = messageRuntimeType(descriptor.getExtensionScope());
@@ -1319,6 +1580,175 @@ final class ProtoUtils {
             + "."
             + JavaQualifiedNames.getOuterClassname(descriptor.getFile());
     return FieldRef.createPublicStaticField(
-        TypeInfo.create(containingClass), extensionFieldName, EXTENSION_TYPE);
+        TypeInfo.createClass(containingClass), extensionFieldName, EXTENSION_TYPE);
+  }
+
+  /**
+   * Determines which ProtoFieldInterpreter to use to box values of repeated fields.
+   *
+   * <p>Generates a field access expression to the appropriate ProtoFieldInterpreter.
+   */
+  private static class RepeatedFieldInterpreter extends FieldVisitor<Expression> {
+    private static final FieldRef LONG_AS_INT =
+        FieldRef.staticFieldReference(ProtoFieldInterpreter.class, "LONG_AS_INT");
+
+    private static final FieldRef UNSIGNED_INT =
+        FieldRef.staticFieldReference(ProtoFieldInterpreter.class, "UNSIGNED_INT");
+
+    private static final FieldRef UNSIGNEDLONG_AS_STRING =
+        FieldRef.staticFieldReference(ProtoFieldInterpreter.class, "UNSIGNEDLONG_AS_STRING");
+
+    private static final FieldRef LONG_AS_STRING =
+        FieldRef.staticFieldReference(ProtoFieldInterpreter.class, "LONG_AS_STRING");
+
+    private static final FieldRef BOOL =
+        FieldRef.staticFieldReference(ProtoFieldInterpreter.class, "BOOL");
+
+    private static final FieldRef BYTES =
+        FieldRef.staticFieldReference(ProtoFieldInterpreter.class, "BYTES");
+
+    private static final FieldRef STRING =
+        FieldRef.staticFieldReference(ProtoFieldInterpreter.class, "STRING");
+
+    private static final FieldRef DOUBLE_AS_FLOAT =
+        FieldRef.staticFieldReference(ProtoFieldInterpreter.class, "DOUBLE_AS_FLOAT");
+
+    private static final FieldRef FLOAT =
+        FieldRef.staticFieldReference(ProtoFieldInterpreter.class, "FLOAT");
+
+    private static final FieldRef INT =
+        FieldRef.staticFieldReference(ProtoFieldInterpreter.class, "INT");
+
+    private static final FieldRef SAFE_HTML_PROTO =
+        FieldRef.staticFieldReference(ProtoFieldInterpreter.class, "SAFE_HTML_PROTO");
+
+    private static final FieldRef SAFE_SCRIPT_PROTO =
+        FieldRef.staticFieldReference(ProtoFieldInterpreter.class, "SAFE_SCRIPT_PROTO");
+
+    private static final FieldRef SAFE_STYLE_PROTO =
+        FieldRef.staticFieldReference(ProtoFieldInterpreter.class, "SAFE_STYLE_PROTO");
+
+    private static final FieldRef SAFE_STYLE_SHEET_PROTO =
+        FieldRef.staticFieldReference(ProtoFieldInterpreter.class, "SAFE_STYLE_SHEET_PROTO");
+
+    private static final FieldRef SAFE_URL_PROTO =
+        FieldRef.staticFieldReference(ProtoFieldInterpreter.class, "SAFE_URL_PROTO");
+
+    private static final FieldRef TRUSTED_RESOURCE_URI_PROTO =
+        FieldRef.staticFieldReference(ProtoFieldInterpreter.class, "TRUSTED_RESOURCE_URI_PROTO");
+
+    private static final FieldRef PROTO_MESSAGE =
+        FieldRef.staticFieldReference(ProtoFieldInterpreter.class, "PROTO_MESSAGE");
+
+    private static final FieldRef ENUM_FROM_PROTO =
+        FieldRef.staticFieldReference(ProtoFieldInterpreter.class, "ENUM_FROM_PROTO");
+
+    @Override
+    protected Expression visitMap(
+        FieldDescriptor mapField, Expression keyInterpreter, Expression valueInterpreter) {
+      throw new AssertionError("visit map key/value individually");
+    }
+
+    @Override
+    protected Expression visitRepeated(Expression valueInterpreter) {
+      return valueInterpreter;
+    }
+
+    @Override
+    protected Expression visitLongAsInt() {
+      return LONG_AS_INT.accessor();
+    }
+
+    @Override
+    protected Expression visitUnsignedInt() {
+      return UNSIGNED_INT.accessor();
+    }
+
+    @Override
+    protected Expression visitUnsignedLongAsString() {
+      return UNSIGNEDLONG_AS_STRING.accessor();
+    }
+
+    @Override
+    protected Expression visitLongAsString() {
+      return LONG_AS_STRING.accessor();
+    }
+
+    @Override
+    protected Expression visitBool() {
+      return BOOL.accessor();
+    }
+
+    @Override
+    protected Expression visitInt() {
+      return INT.accessor();
+    }
+
+    @Override
+    protected Expression visitBytes() {
+      return BYTES.accessor();
+    }
+
+    @Override
+    protected Expression visitString() {
+      return STRING.accessor();
+    }
+
+    @Override
+    protected Expression visitDoubleAsFloat() {
+      return DOUBLE_AS_FLOAT.accessor();
+    }
+
+    @Override
+    protected Expression visitFloat() {
+      return FLOAT.accessor();
+    }
+
+    @Override
+    protected Expression visitSafeHtml() {
+      return SAFE_HTML_PROTO.accessor();
+    }
+
+    @Override
+    protected Expression visitSafeScript() {
+      return SAFE_SCRIPT_PROTO.accessor();
+    }
+
+    @Override
+    protected Expression visitSafeStyle() {
+      return SAFE_STYLE_PROTO.accessor();
+    }
+
+    @Override
+    protected Expression visitSafeStyleSheet() {
+      return SAFE_STYLE_SHEET_PROTO.accessor();
+    }
+
+    @Override
+    protected Expression visitSafeUrl() {
+      return SAFE_URL_PROTO.accessor();
+    }
+
+    @Override
+    protected Expression visitTrustedResourceUrl() {
+      return TRUSTED_RESOURCE_URI_PROTO.accessor();
+    }
+
+    @Override
+    protected Expression visitMessage(Descriptor message) {
+      return PROTO_MESSAGE.accessor();
+    }
+
+    @Override
+    protected Expression visitEnum(EnumDescriptor enumType, FieldDescriptor fieldType) {
+      // ENUM_FROM_PROTO converts a proto enum to an int, since Soy represents proto enums as ints
+      // internally. However, for a repeated enum field in a proto3 message we call
+      // getEnumNameValueList (which doesn't exist in proto2 messages and it is what allows proto3
+      // to retain unknown enum values), so the values are already ints.
+      if (fieldType.getFile().getSyntax() == Syntax.PROTO3) {
+        return INT.accessor();
+      }
+      return ENUM_FROM_PROTO.accessor();
+    }
   }
 }

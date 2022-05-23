@@ -23,7 +23,6 @@ import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 
 /**
  * Abstract implementation of a BlockNode.
- *
  */
 abstract class AbstractBlockNode extends AbstractParentSoyNode<StandaloneNode>
     implements BlockNode {

@@ -1,6 +1,23 @@
+/*
+ * Copyright 2019 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 /**
  * @fileoverview
  * Contains types and objects necessary for Soy-Idom runtime.
+ * @suppress {lintChecks}
  */
 goog.module('google3.javascript.template.soy.element_lib_idom');
 var module = module || { id: 'javascript/template/soy/element_lib_idom.js' };
@@ -82,6 +99,10 @@ var SoyElement = /** @class */ (function () {
      * open element of a template.
      */
     SoyElement.prototype.handleSoyElementRuntime = function (node, data) {
+        /**
+         * This is null because it is possible that no DOM has been generated
+         * for this Soy element
+         */
         if (!node) {
             return false;
         }

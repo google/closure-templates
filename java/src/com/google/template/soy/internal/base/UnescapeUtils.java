@@ -20,7 +20,6 @@ import com.google.common.collect.ImmutableMap;
 
 /**
  * Utilities for unescaping strings from context-specific formats.
- *
  */
 public class UnescapeUtils {
 

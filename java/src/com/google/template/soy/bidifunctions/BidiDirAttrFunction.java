@@ -42,7 +42,6 @@ import java.util.List;
  * HTML tag pair. If the text string is detected to require different directionality than the
  * current global directionality, then the appropriate HTML attribute is inserted. Otherwise,
  * nothing is inserted.
- *
  */
 @SoyFunctionSignature(
     name = "bidiDirAttr",

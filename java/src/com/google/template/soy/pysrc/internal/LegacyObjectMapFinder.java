@@ -19,10 +19,12 @@ package com.google.template.soy.pysrc.internal;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
+import com.google.template.soy.types.ast.FunctionTypeNode;
 import com.google.template.soy.types.ast.GenericTypeNode;
 import com.google.template.soy.types.ast.NamedTypeNode;
 import com.google.template.soy.types.ast.RecordTypeNode;
 import com.google.template.soy.types.ast.RecordTypeNode.Property;
+import com.google.template.soy.types.ast.TemplateTypeNode;
 import com.google.template.soy.types.ast.TypeNode;
 import com.google.template.soy.types.ast.TypeNodeVisitor;
 import com.google.template.soy.types.ast.UnionTypeNode;
@@ -58,6 +60,8 @@ final class LegacyObjectMapFinder implements TypeNodeVisitor<Void> {
           child.accept(this);
         }
         break;
+      case ELEMENT:
+        break;
       default:
         throw new AssertionError("unexpected generic type: " + node.getResolvedType().getKind());
     }
@@ -77,6 +81,20 @@ final class LegacyObjectMapFinder implements TypeNodeVisitor<Void> {
     for (Property property : node.properties()) {
       property.type().accept(this);
     }
+    return null;
+  }
+
+  @Override
+  public Void visit(TemplateTypeNode node) {
+    for (TemplateTypeNode.Parameter parameter : node.parameters()) {
+      parameter.type().accept(this);
+    }
+    node.returnType().accept(this);
+    return null;
+  }
+
+  @Override
+  public Void visit(FunctionTypeNode node) {
     return null;
   }
 

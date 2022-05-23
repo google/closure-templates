@@ -18,13 +18,14 @@ package com.google.template.soy.sharedpasses.opti;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableTable;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.exprtree.FunctionNode;
-import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.exprtree.VarRefNode;
-import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
+import com.google.template.soy.plugin.internal.JavaPluginExecContext;
+import com.google.template.soy.plugin.java.PluginInstances;
+import com.google.template.soy.shared.restricted.SoyFunctions;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.sharedpasses.render.Environment;
 import com.google.template.soy.sharedpasses.render.EvalVisitor;
@@ -40,7 +41,6 @@ import java.util.List;
  * <p>{@link #exec} may be called on any expression. The result of evaluating the expression (in the
  * context of the {@code data} and {@code env} passed into the constructor) is returned as a {@code
  * SoyValue} object.
- *
  */
 final class PreevalVisitor extends EvalVisitor {
 
@@ -51,7 +51,11 @@ final class PreevalVisitor extends EvalVisitor {
         /* xidRenamingMap= */ null,
         /* msgBundle= */ null,
         /* debugSoyTemplateInfo= */ false,
-        /* pluginInstances= */ ImmutableMap.of());
+        PluginInstances.empty(),
+        UndefinedDataHandlingMode.NORMAL,
+        ImmutableTable.of(),
+        null,
+        null);
   }
 
   // -----------------------------------------------------------------------------------------------
@@ -78,32 +82,20 @@ final class PreevalVisitor extends EvalVisitor {
   @Override
   protected SoyValue computeFunctionHelper(
       SoyJavaFunction fn, List<SoyValue> args, FunctionNode fnNode) {
-    checkPure(fn, fnNode);
+    checkArgument(fnNode.getSoyFunction() == fn);
+    checkPure(fn);
     return super.computeFunctionHelper(fn, args, fnNode);
   }
 
   @Override
-  protected SoyValue computeFunctionHelper(
-      SoyJavaSourceFunction fn, List<SoyValue> args, FunctionNode fnNode) {
-    checkPure(fn, fnNode);
-    return super.computeFunctionHelper(fn, args, fnNode);
+  protected SoyValue computeFunctionHelper(List<SoyValue> args, JavaPluginExecContext fnNode) {
+    checkPure(fnNode.getSourceFunction());
+    return super.computeFunctionHelper(args, fnNode);
   }
 
-  private void checkPure(Object fn, FunctionNode fnNode) {
-    checkArgument(fnNode.getSoyFunction() == fn);
-    if (!fnNode.isPure()) {
+  private static void checkPure(Object fn) {
+    if (!SoyFunctions.isPure(fn)) {
       throw RenderException.create("Cannot preevaluate impure function.");
     }
-  }
-
-  @Override
-  protected SoyValue visitProtoInitNode(ProtoInitNode node) {
-    // we don't have the classes for the protos so we can't run the normal implementation
-    // We could do this in theory by returning a record with all the fields set, but it
-    // would be a lot of work to set up defaults and types for each field and even then if we did
-    // that, there are SoyFunctions that unpack args to raw protos which would then fail.
-    // TODO(lukes): The easiest thing would just be to conditionally execute the code iff we have
-    // the proto on our classpath.
-    throw RenderException.create("Cannot preevaluate proto initializers.");
   }
 }

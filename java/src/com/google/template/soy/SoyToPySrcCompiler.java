@@ -16,6 +16,7 @@
 
 package com.google.template.soy;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Files;
 import com.google.template.soy.pysrc.SoyPySrcOptions;
@@ -34,30 +35,15 @@ import org.kohsuke.args4j.Option;
  * <p>Note: The Python output and runtime libraries are targeted at Python v2.7. Support for Python
  * v3.1+ is also intended through the use of __future__ and version agnostic syntax, HOWEVER at the
  * moment testing support is only guaranteed for v2.7.
- *
  */
 public final class SoyToPySrcCompiler extends AbstractSoyCompiler {
 
   @Option(
-    name = "--outputPathFormat",
-    required = true,
-    usage =
-        "[Required] A format string that specifies how to build the path to each"
-            + " output file. There will be one output Python file (UTF-8) for each input Soy"
-            + " file. The format string can include literal characters as well as the"
-            + " placeholders {INPUT_DIRECTORY}, {INPUT_FILE_NAME}, and"
-            + " {INPUT_FILE_NAME_NO_EXT}. Additionally periods are not allowed in the"
-            + " outputted filename outside of the final py extension."
-  )
-  private String outputPathFormat = "";
-
-  @Option(
-    name = "--runtimePath",
-    required = true,
-    usage =
-        "[Required] The module path used to find the python runtime libraries. This"
-            + " should be in dot notation format."
-  )
+      name = "--runtimePath",
+      required = true,
+      usage =
+          "[Required] The module path used to find the python runtime libraries. This"
+              + " should be in dot notation format.")
   private String runtimePath = "";
 
   @Option(
@@ -90,13 +76,12 @@ public final class SoyToPySrcCompiler extends AbstractSoyCompiler {
   private String bidiIsRtlFn = "";
 
   @Option(
-    name = "--namespaceManifestPath",
-    usage =
-        "A list of paths to a manifest file which provides a map of soy namespaces to"
-            + " their Python paths. If this is provided, direct imports will be used,"
-            + " drastically improving runtime performance.",
-    handler = SoyCmdLineParser.StringListOptionHandler.class
-  )
+      name = "--namespaceManifestPaths",
+      usage =
+          "A list of paths to a manifest file which provides a map of soy namespaces to"
+              + " their Python paths. If this is provided, direct imports will be used,"
+              + " drastically improving runtime performance.",
+      handler = SoyCmdLineParser.StringListOptionHandler.class)
   private List<String> namespaceManifestPaths = new ArrayList<>();
 
   @Option(
@@ -106,6 +91,14 @@ public final class SoyToPySrcCompiler extends AbstractSoyCompiler {
             + " to write. Default is to not write this file."
   )
   private String outputNamespaceManifest = null;
+
+  private final PerInputOutputFiles outputFiles = new PerInputOutputFiles("py");
+
+  SoyToPySrcCompiler(PluginLoader loader, SoyInputCache cache) {
+    super(loader, cache);
+  }
+
+  SoyToPySrcCompiler() {}
 
   /**
    * Compiles a set of Soy files into corresponding Python source files.
@@ -118,19 +111,21 @@ public final class SoyToPySrcCompiler extends AbstractSoyCompiler {
   }
 
   @Override
-  void validateFlags() {
+  protected void validateFlags() {
     if (runtimePath.length() == 0) {
       exitWithError("Must provide the Python runtime library path.");
     }
-    if (outputPathFormat.isEmpty()) {
-      exitWithError("Must provide the output path format.");
-    }
+
+    outputFiles.validateFlags();
+  }
+
+  @Override
+  Iterable<?> extraFlagsObjects() {
+    return ImmutableList.of(outputFiles);
   }
 
   @Override
   protected void compile(SoyFileSet.Builder sfsBuilder) throws IOException {
-    // Disallow external call entirely in Python.
-    sfsBuilder.setAllowExternalCalls(false);
     SoyFileSet sfs = sfsBuilder.build();
     // Load the manifest if available.
     ImmutableMap<String, String> manifest = loadNamespaceManifest(namespaceManifestPaths);
@@ -146,10 +141,11 @@ public final class SoyToPySrcCompiler extends AbstractSoyCompiler {
             bidiIsRtlFn,
             translationClass,
             manifest,
+            outputFiles.getOutputFilePathsForInputs(sfs.getSourceFilePaths()),
+            outputFiles.getOutputDirectoryFlag(),
             outputNamespaceManifest);
 
-    // Compile.
-    sfs.compileToPySrcFiles(outputPathFormat, pySrcOptions);
+    outputFiles.writeFiles(srcs, sfs.compileToPySrcFiles(pySrcOptions));
   }
 
   /**
@@ -174,6 +170,6 @@ public final class SoyToPySrcCompiler extends AbstractSoyCompiler {
       }
     }
 
-    return manifest.build();
+    return manifest.buildOrThrow();
   }
 }

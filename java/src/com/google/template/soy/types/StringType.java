@@ -20,7 +20,6 @@ import com.google.template.soy.soytree.SoyTypeP;
 
 /**
  * Soy string type.
- *
  */
 public final class StringType extends PrimitiveType {
 

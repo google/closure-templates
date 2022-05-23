@@ -27,7 +27,6 @@ import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for {@code ListLiteralNode}.
- *
  */
 @RunWith(JUnit4.class)
 public final class ListLiteralNodeTest {
@@ -37,7 +36,7 @@ public final class ListLiteralNodeTest {
   @Test
   public void testToSourceString() {
 
-    VarRefNode dataRef = new VarRefNode("foo", X, null);
+    VarRefNode dataRef = new VarRefNode("$foo", X, null);
 
     ListLiteralNode listLit =
         new ListLiteralNode(

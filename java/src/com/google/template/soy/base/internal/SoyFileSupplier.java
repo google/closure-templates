@@ -21,11 +21,10 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import com.google.common.io.CharSource;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
+import com.google.template.soy.base.SourceFilePath;
 import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
 
 /**
@@ -34,7 +33,6 @@ import java.net.URL;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  * <p>TODO(lukes): This should either be a subtype of CharSource or hold a CharSource
- *
  */
 public interface SoyFileSupplier {
 
@@ -60,7 +58,14 @@ public interface SoyFileSupplier {
   }
 
   /** View this supplier as a {@link CharSource}. */
-  CharSource asCharSource();
+  default CharSource asCharSource() {
+    return new CharSource() {
+      @Override
+      public Reader openStream() throws IOException {
+        return open();
+      }
+    };
+  }
 
   /**
    * Returns a {@link Reader} for the Soy file content.
@@ -69,11 +74,8 @@ public interface SoyFileSupplier {
    */
   Reader open() throws IOException;
 
-  /** True if the underlying resource has changed since the given version. */
-  boolean hasChangedSince(Version version);
-
   /** Returns the path to the Soy file, used for as a unique map/set key and for messages. */
-  String getFilePath();
+  SourceFilePath getFilePath();
 
   /** Returns the version of the Soy file read. */
   Version getVersion();
@@ -93,7 +95,7 @@ public interface SoyFileSupplier {
      * @param soyFileKind The kind of this input Soy file.
      * @param filePath The path to the Soy file, used for as a unique map/set key and for messages.
      */
-    public static SoyFileSupplier create(CharSource contentSource, String filePath) {
+    public static SoyFileSupplier create(CharSource contentSource, SourceFilePath filePath) {
       return new StableSoyFileSupplier(contentSource, filePath);
     }
 
@@ -104,7 +106,8 @@ public interface SoyFileSupplier {
      * @param soyFileKind The kind of this input Soy file.
      */
     public static SoyFileSupplier create(File inputFile) {
-      return create(Files.asCharSource(inputFile, UTF_8), inputFile.getPath());
+      return create(
+          Files.asCharSource(inputFile, UTF_8), SourceFilePath.create(inputFile.getPath()));
     }
 
     /**
@@ -115,35 +118,8 @@ public interface SoyFileSupplier {
      * @param soyFileKind The kind of this input Soy file.
      * @param filePath The path to the Soy file, used for as a unique map/set key and for messages.
      */
-    public static SoyFileSupplier create(URL inputFileUrl, String filePath) {
-      if (inputFileUrl.getProtocol().equals("file")) {
-        // If the URL corresponds to a local file (such as a resource during local development),
-        // open it up as a volatile file, so we can account for changes to the file.
-        URI inputFileUri;
-        try {
-          inputFileUri = inputFileUrl.toURI();
-        } catch (URISyntaxException ex) {
-          throw new RuntimeException(ex);
-        }
-        return new VolatileSoyFileSupplier(new File(inputFileUri));
-      } else {
-        return create(Resources.asCharSource(inputFileUrl, UTF_8), filePath);
-      }
-    }
-
-    /**
-     * Creates a new {@code SoyFileSupplier} given a resource {@code URL}.
-     *
-     * <p>Important: This function assumes that the desired file path is returned by {@code
-     * inputFileUrl.toString()}. If this is not the case, please use {@link #create(java.net.URL,
-     * SoyFileKind, String)} instead.
-     *
-     * @see #create(java.net.URL, SoyFileKind, String)
-     * @param inputFileUrl The URL of the Soy file.
-     * @param soyFileKind The kind of this input Soy file.
-     */
-    public static SoyFileSupplier create(URL inputFileUrl) {
-      return create(inputFileUrl, inputFileUrl.toString());
+    public static SoyFileSupplier create(URL inputFileUrl, SourceFilePath filePath) {
+      return create(Resources.asCharSource(inputFileUrl, UTF_8), filePath);
     }
 
     /**
@@ -154,7 +130,7 @@ public interface SoyFileSupplier {
      * @param soyFileKind The kind of this input Soy file.
      * @param filePath The path to the Soy file, used for as a unique map/set key and for messages.
      */
-    public static SoyFileSupplier create(CharSequence content, String filePath) {
+    public static SoyFileSupplier create(CharSequence content, SourceFilePath filePath) {
       return create(CharSource.wrap(content), filePath);
     }
 

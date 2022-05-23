@@ -28,7 +28,6 @@ import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for KeysFunction.
- *
  */
 @RunWith(JUnit4.class)
 public class KeysFunctionTest {
@@ -41,9 +40,8 @@ public class KeysFunctionTest {
     SoyValue map =
         SoyValueConverterUtility.newDict(
             "boo", "bar", "foo", 2, "goo", SoyValueConverterUtility.newDict("moo", 4));
-    @SuppressWarnings("unchecked")
-    List<SoyValue> result = (List<SoyValue>) tester.callFunction(map);
-    assertThat(result).containsExactly("boo", "foo", "goo");
+    Object result = tester.callFunction(map);
+    assertThat(result).isInstanceOf(List.class);
+    assertThat((List<?>) result).containsExactly("boo", "foo", "goo");
   }
-
 }

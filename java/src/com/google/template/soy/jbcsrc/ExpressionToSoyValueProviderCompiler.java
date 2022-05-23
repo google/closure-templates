@@ -30,12 +30,12 @@ import com.google.template.soy.jbcsrc.ExpressionCompiler.BasicExpressionCompiler
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.FieldRef;
+import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import java.util.Optional;
 import javax.annotation.Nullable;
-import org.objectweb.asm.Label;
 import org.objectweb.asm.Type;
 
 /**
@@ -45,11 +45,12 @@ import org.objectweb.asm.Type;
  * <p>There are two ways to use this depending on the specific requirements of the caller
  *
  * <ul>
- *   <li>{@link #compileAvoidingBoxing(ExprNode, Label)} attempts to compile the expression to a
- *       {@link SoyValueProvider} but without introducing any unnecessary boxing operations.
- *       Generating detach logic is OK. This case is for print operations, where callers may want to
- *       call {@link SoyValueProvider#renderAndResolve} to incrementally print the value. However,
- *       this is only desirable if the expression is naturally a {@link SoyValueProvider}.
+ *   <li>{@link #compileToSoyValueProviderIfUsefulToPreserveStreaming(ExprNode, ExpressionDetacher)}
+ *       attempts to compile the expression to a {@link SoyValueProvider} but without introducing
+ *       any unnecessary boxing operations. Generating detach logic is OK. This case is for print
+ *       operations, where callers may want to call {@link SoyValueProvider#renderAndResolve} to
+ *       incrementally print the value. However, this is only desirable if the expression is
+ *       naturally a {@link SoyValueProvider}.
  *   <li>{@link #compileAvoidingDetaches(ExprNode)} attempts to compile the expression to a {@link
  *       SoyValueProvider} with no detach logic. This is for passing data to templates or defining
  *       variables with {@code let} statements. In these cases boxing operations are fine (because
@@ -62,28 +63,36 @@ import org.objectweb.asm.Type;
  * {@link SoyValueProvider#renderAndResolve} so that we can render it incrementally.
  */
 final class ExpressionToSoyValueProviderCompiler {
-  /**
-   * Create an expression compiler that can implement complex detaching logic with the given {@link
-   * ExpressionDetacher.Factory}
-   */
+  /** Create an expression compiler that can implement complex detaching logic. */
   static ExpressionToSoyValueProviderCompiler create(
-      TemplateVariableManager varManager,
+      TemplateAnalysis analysis,
       ExpressionCompiler exprCompiler,
       TemplateParameterLookup variables) {
-    return new ExpressionToSoyValueProviderCompiler(varManager, exprCompiler, variables);
+    return new ExpressionToSoyValueProviderCompiler(analysis, exprCompiler, variables);
   }
 
+  private final TemplateAnalysis analysis;
   private final TemplateParameterLookup variables;
   private final ExpressionCompiler exprCompiler;
-  private final TemplateVariableManager varManager;
 
   private ExpressionToSoyValueProviderCompiler(
-      TemplateVariableManager varManager,
+      TemplateAnalysis analysis,
       ExpressionCompiler exprCompiler,
       TemplateParameterLookup variables) {
+    this.analysis = analysis;
     this.exprCompiler = exprCompiler;
     this.variables = variables;
-    this.varManager = varManager;
+  }
+
+  /**
+   * Compile the given expression to a {@link SoyValueProvider} even if it requires boxing or
+   * detaches.
+   */
+  Expression compile(ExprNode node, ExpressionDetacher detacher) {
+    checkNotNull(node);
+    checkNotNull(detacher);
+    // This mode always works so we can unconditionally dereference this
+    return createVisitor(exprCompiler, detacher).exec(node).get();
   }
 
   /**
@@ -93,14 +102,12 @@ final class ExpressionToSoyValueProviderCompiler {
    * be done without introducing unnecessary boxing operations. This is intended for situations
    * (like print operations) where calling {@link SoyValueProvider#renderAndResolve} would be better
    * than calling {@link #toString()} and passing directly to the output.
-   *
-   * <p>TODO(lukes): this method is confusingly named
    */
-  Optional<Expression> compileAvoidingBoxing(ExprNode node, Label reattachPoint) {
+  Optional<Expression> compileToSoyValueProviderIfUsefulToPreserveStreaming(
+      ExprNode node, ExpressionDetacher detacher) {
     checkNotNull(node);
-    return new CompilerVisitor(
-            variables, varManager, null, exprCompiler.asBasicCompiler(reattachPoint))
-        .exec(node);
+    checkNotNull(detacher);
+    return createVisitor(/*exprCompiler=*/ null, detacher).exec(node);
   }
 
   /**
@@ -113,29 +120,42 @@ final class ExpressionToSoyValueProviderCompiler {
    */
   Optional<Expression> compileAvoidingDetaches(ExprNode node) {
     checkNotNull(node);
-    return new CompilerVisitor(variables, varManager, exprCompiler, /*detachingExprCompiler=*/ null)
-        .exec(node);
+    return createVisitor(exprCompiler, /*detacher=*/ null).exec(node);
+  }
+
+  private CompilerVisitor createVisitor(
+      @Nullable ExpressionCompiler exprCompiler, @Nullable ExpressionDetacher detacher) {
+    return new CompilerVisitor(
+        analysis,
+        variables,
+        exprCompiler,
+        detacher == null ? null : this.exprCompiler.asBasicCompiler(detacher),
+        detacher);
   }
 
   private static final class CompilerVisitor
       extends EnhancedAbstractExprNodeVisitor<Optional<Expression>> {
+    final TemplateAnalysis analysis;
     final TemplateParameterLookup variables;
-    final TemplateVariableManager varManager;
 
-    // depending on the mode one or the other of these will be null
+    // depending on the mode at most one of exprCompiler and detachingExprCompiler will be null
     @Nullable final ExpressionCompiler exprCompiler;
     @Nullable final BasicExpressionCompiler detachingExprCompiler;
+    @Nullable final ExpressionDetacher detacher;
 
     CompilerVisitor(
+        TemplateAnalysis analysis,
         TemplateParameterLookup variables,
-        TemplateVariableManager varManager,
         @Nullable ExpressionCompiler exprCompiler,
-        @Nullable BasicExpressionCompiler detachingExprCompiler) {
+        @Nullable BasicExpressionCompiler detachingExprCompiler,
+        @Nullable ExpressionDetacher detacher) {
+      this.analysis = analysis;
       this.variables = variables;
-      checkArgument((exprCompiler == null) != (detachingExprCompiler == null));
+      // at least one must be non-null
+      checkArgument((exprCompiler != null) || (detachingExprCompiler != null));
       this.exprCompiler = exprCompiler;
       this.detachingExprCompiler = detachingExprCompiler;
-      this.varManager = varManager;
+      this.detacher = detacher;
     }
 
     private boolean allowsBoxing() {
@@ -164,22 +184,41 @@ final class ExpressionToSoyValueProviderCompiler {
     protected Optional<Expression> visitNullCoalescingOpNode(NullCoalescingOpNode node) {
       // All non-trivial ?: will require detaches for the left hand side.
       if (allowsDetaches()) {
-        // for '$foo ?: $bar' we always have to eagerly evaluate $foo but $bar could be lazy.
-        // of course if $foo is not null, then we will need to box it, however the current support
-        // for ?: in ExpressionCompiler also always boxes everything so we aren't really losing
-        // anything here.
-        Optional<Expression> right = visit(node.getRightChild());
-        if (!right.isPresent()) {
-          return Optional.empty();
+        Optional<Expression> maybeLeft = visit(node.getLeftChild());
+        Optional<Expression> maybeRight = visit(node.getRightChild());
+        // Logging statements get dropped when a value is converted to a SoyValue. If at least one
+        // side can be compiled to a SoyValueProvider, there could be logging statements in it, so
+        // we need to compile the whole expression to a SoyValueProvider.
+        if (maybeLeft.isPresent() || maybeRight.isPresent()) {
+          // Get the SoyValueProviders, or box so both left and right are SoyValueProviders.
+          Expression right =
+              maybeRight.orElseGet(
+                  () -> compileToSoyValueProviderWithDetaching(node.getRightChild()));
+          Expression left;
+          if (maybeLeft.isPresent()) {
+            // If left can be compiled to a SoyValueProvider, resolve it to check if it's null.
+            Expression leftSVP = maybeLeft.get();
+            left =
+                ExpressionCompiler.requiresDetach(analysis, node.getLeftChild())
+                    ? detacher.waitForSoyValueProvider(leftSVP)
+                    : leftSVP;
+          } else {
+            // If left cannot be compiled to a SoyValueProvider, compile it to a SoyValue and box it
+            // into a SoyValueProvider.
+            left = compileToSoyValueProviderWithDetaching(node.getLeftChild());
+          }
+          // Convert left to null if it's a SoyValueProvider wrapping null, for the null check
+          // below.
+          left = MethodRef.SOY_VALUE_PROVIDER_OR_NULL.invoke(left);
+
+          return Optional.of(BytecodeUtils.firstNonNull(left, right));
         }
-        Expression left =
-            detachingExprCompiler
-                .compile(node.getLeftChild())
-                .box()
-                .checkedCast(SoyValueProvider.class);
-        return Optional.of(BytecodeUtils.firstNonNull(left, right.get()));
       }
       return visitExprNode(node);
+    }
+
+    private Expression compileToSoyValueProviderWithDetaching(ExprNode expr) {
+      return detachingExprCompiler.compile(expr).boxAsSoyValueProvider();
     }
 
     @Override
@@ -187,14 +226,26 @@ final class ExpressionToSoyValueProviderCompiler {
       if (allowsDetaches()) {
         Optional<Expression> trueBranch = visit(node.getChild(1));
         Optional<Expression> falseBranch = visit(node.getChild(2));
-        // We only compile as an SVP if both branches are able to be compiled as such.  Technically,
-        // we could also support cases where only one branch is compilable to an SVP, but i doubt
-        // that would be that important.
-        if (!trueBranch.isPresent() || !falseBranch.isPresent()) {
+        // Compile to a SoyValueProvider if either side can be compiled to a SoyValueProvider. The
+        // SoyValueProvider side(s) may have logging statements in them, so need to stay
+        // SoyValueProviders, otherwise the logging statements will get dropped.
+        if (trueBranch.isPresent() || falseBranch.isPresent()) {
+          Expression condition = detachingExprCompiler.compile(node.getChild(0)).coerceToBoolean();
+          return Optional.of(
+              BytecodeUtils.ternary(
+                  condition,
+                  trueBranch.orElseGet(
+                      () -> compileToSoyValueProviderWithDetaching(node.getChild(1))),
+                  falseBranch.orElseGet(
+                      () -> compileToSoyValueProviderWithDetaching(node.getChild(2))),
+                  // The ternary gets its result type from the true branch, which could be a
+                  // SoyValue. Since at least one of the branches is a SoyValueProvider, force the
+                  // result type to SoyValueProvider so downstream code knows to resolve it before
+                  // using it.
+                  BytecodeUtils.SOY_VALUE_PROVIDER_TYPE));
+        } else {
           return Optional.empty();
         }
-        Expression condition = detachingExprCompiler.compile(node.getChild(0)).coerceToBoolean();
-        return Optional.of(BytecodeUtils.ternary(condition, trueBranch.get(), falseBranch.get()));
       }
       return visitExprNode(node);
     }
@@ -236,6 +287,9 @@ final class ExpressionToSoyValueProviderCompiler {
         Optional<SoyExpression> compileWithNoDetaches = exprCompiler.compileWithNoDetaches(node);
         if (compileWithNoDetaches.isPresent()) {
           return Optional.of(compileWithNoDetaches.get().boxAsSoyValueProvider());
+        }
+        if (allowsDetaches()) {
+          return Optional.of(compileToSoyValueProviderWithDetaching(node));
         }
       }
       return Optional.empty();

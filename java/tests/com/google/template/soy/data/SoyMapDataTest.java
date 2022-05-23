@@ -32,7 +32,6 @@ import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for SoyMapData.
- *
  */
 @RunWith(JUnit4.class)
 public final class SoyMapDataTest {
@@ -45,7 +44,7 @@ public final class SoyMapDataTest {
     smd.put("boo", StringData.forValue("boohoo"));
     assertThat(((StringData) smd.get("boo")).getValue()).isEqualTo("boohoo");
 
-    smd.put("boo", (SoyData) null);
+    smd.put("boo", (SoyValue) null);
     assertThat(smd.get("boo")).isInstanceOf(NullData.class);
 
     smd.remove("boo");

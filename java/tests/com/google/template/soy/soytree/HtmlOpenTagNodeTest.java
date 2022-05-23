@@ -19,7 +19,7 @@ package com.google.template.soy.soytree;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.base.Joiner;
-import com.google.template.soy.SoyFileSetParserBuilder;
+import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -59,13 +59,13 @@ public final class HtmlOpenTagNodeTest {
   private static HtmlOpenTagNode parseTag(String input) {
     String soyFile =
         Joiner.on('\n')
-            .join("{namespace ns}", "{template .t stricthtml=\"false\"}", input, "{/template}");
+            .join("{namespace ns}", "{template t stricthtml=\"false\"}", input, "{/template}");
     SoyFileNode node =
         SoyFileSetParserBuilder.forFileContents(soyFile)
-            .desugarHtmlAndStateNodes(false)
+            .desugarHtmlNodes(false)
             .parse()
             .fileSet()
             .getChild(0);
-    return (HtmlOpenTagNode) node.getChild(0).getChild(0);
+    return (HtmlOpenTagNode) ((TemplateNode) node.getChild(0)).getChild(0);
   }
 }

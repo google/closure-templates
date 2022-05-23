@@ -19,10 +19,13 @@ package com.google.template.soy.jbcsrc;
 import com.google.template.soy.exprtree.AbstractReturningExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.exprtree.ListComprehensionNode.ComprehensionVarDefn;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.SoyNode.LocalVarNode;
+import com.google.template.soy.soytree.defn.ConstVar;
+import com.google.template.soy.soytree.defn.ImportedVar;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 
@@ -65,9 +68,15 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
       case STATE:
         throw new AssertionError("state should have been desugared");
       case COMPREHENSION_VAR:
-        throw new IllegalStateException("Comprehension vars are not supported by jbcsrc");
+        return visitListComprehensionVar(node, (ComprehensionVarDefn) defn);
+      case CONST:
+        return visitConstVar(node, (ConstVar) defn);
+      case IMPORT_VAR:
+        return visitImportedVar(node, (ImportedVar) defn);
+      case TEMPLATE:
+      case EXTERN:
       case UNDECLARED:
-        throw new RuntimeException("undeclared params are not supported by jbcsrc");
+        throw new RuntimeException(defn.kind() + " are not supported by jbcsrc");
     }
     throw new AssertionError(defn.kind());
   }
@@ -79,12 +88,8 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
     if (function instanceof BuiltinFunction) {
       BuiltinFunction builtinFn = (BuiltinFunction) function;
       switch (builtinFn) {
-        case IS_FIRST:
-          return visitIsFirstFunction(node);
-        case IS_LAST:
-          return visitIsLastFunction(node);
-        case INDEX:
-          return visitIndexFunction(node);
+        case IS_PARAM_SET:
+          return visitIsSetFunction(node);
         case CHECK_NOT_NULL:
           return visitCheckNotNullFunction(node);
         case CSS:
@@ -99,12 +104,16 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
           return visitDebugSoyTemplateInfoFunction(node);
         case VE_DATA:
           return visitVeDataFunction(node);
+        case SOY_SERVER_KEY:
+          return visitSoyServerKeyFunction(node);
+        case PROTO_INIT:
+          return visitProtoInitFunction(node);
         case MSG_WITH_ID:
         case REMAINDER:
           // should have been removed earlier in the compiler
         case UNKNOWN_JS_GLOBAL:
-        case V1_EXPRESSION:
-          // V1 expressions and unknownJsGlobals should not exist in jbcsrc
+        case LEGACY_DYNAMIC_TAG:
+          // unknownJsGlobals should not exist in jbcsrc
           throw new AssertionError();
       }
     }
@@ -116,6 +125,14 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
     return visitExprNode(varRef);
   }
 
+  T visitConstVar(VarRefNode node, ConstVar c) {
+    return visitExprNode(node);
+  }
+
+  T visitImportedVar(VarRefNode node, ImportedVar c) {
+    return visitExprNode(node);
+  }
+
   T visitLetNodeVar(VarRefNode node, LocalVar local) {
     return visitExprNode(node);
   }
@@ -124,15 +141,11 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
     return visitExprNode(varRef);
   }
 
-  T visitIsFirstFunction(FunctionNode node) {
-    return visitExprNode(node);
+  T visitListComprehensionVar(VarRefNode varRef, ComprehensionVarDefn var) {
+    return visitExprNode(varRef);
   }
 
-  T visitIsLastFunction(FunctionNode node) {
-    return visitExprNode(node);
-  }
-
-  T visitIndexFunction(FunctionNode node) {
+  T visitIsSetFunction(FunctionNode node) {
     return visitExprNode(node);
   }
 
@@ -145,6 +158,10 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
   }
 
   T visitXidFunction(FunctionNode node) {
+    return visitExprNode(node);
+  }
+
+  T visitSoyServerKeyFunction(FunctionNode node) {
     return visitExprNode(node);
   }
 
@@ -164,8 +181,11 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
     return visitExprNode(node);
   }
 
-  T visitPluginFunction(FunctionNode node) {
+  T visitProtoInitFunction(FunctionNode node) {
     return visitExprNode(node);
   }
 
+  T visitPluginFunction(FunctionNode node) {
+    return visitExprNode(node);
+  }
 }

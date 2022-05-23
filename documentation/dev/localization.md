@@ -1,40 +1,37 @@
 # Message Localization
 
-
 [TOC]
 
-## Message translation
-
-### Marking a Message for Translation {#marking}
+## Writing messages in Soy
 
 In Soy, messages for translation are inlined rather than stored in separate
-files. To mark a message for translation, surround the message text with the
-`msg` tag as described in the [Commands chapter](../reference/messages.md#msg).
-Soy can extract your message into the XLIFF. Furthermore, use translated message
-files in the same format and insert the translated text back into your template.
+files. To mark a message for translation, you can surround the text with the
+`msg` tag as described in the
+[Translation commands chapter](../reference/messages).
 
-### Adding new messages {#newmessages}
-
-When a new message is added to a `.soy` file, there is no translation available
-for that message yet. If the message is immediately used in the product, it may
-appear in English to users of other languages. Therefore, the message should be
-introduced to be translated before it is actually used.
-
-There are two ways to do this, depending on whether you are adding a new message
-or modifying an existing message.
-
-For new messages, add the new message in an unused template:
+To introduce a new message, add the message to an unused template first:
 
 ```soy
-{template .unusedTemplateForTranslations}
+{template myFooMsg}
   {msg desc="..."}...{/msg}
-{/template}
+{/template}`
 ```
+
+Then you should wait until the message is translated before rendering it in
+production.
+
+### Modifying existing messages
 
 When modifying existing messages, use the `fallbackmsg` command described in the
 [commands documentation](../reference/messages.md#fallbackmsg).
 
-### Extracting Messages {#extractingmessages}
+## Message translation {#os-message-translation}
+
+Soy can extract your message into the XLIFF format. Then, Soy can use translated
+message files in the same format and insert the translated text back into your
+template.
+
+### Extracting Messages {#os-extracting-messages}
 
 To parse and extract messages from a bundle of `.soy` files, download
 [`closure-templates-msg-extractor-latest.zip`](https://dl.google.com/closure-templates/closure-templates-msg-extractor-latest.zip)
@@ -78,7 +75,7 @@ $ java -jar SoyMsgExtractor.jar
 
 without any options.
 
-### Inserting Messages {#insertingmessages}
+### Using Translated Messages {#os-usingmessages}
 
 Because the template compiler can use the translated messages file directly with
 the help of an appropriate message plugin, you don't need to run an additional
@@ -139,13 +136,26 @@ because of correctness issues.
 To let Closure Compiler handle the extraction and insertion of messages, run the
 `SoyToJsSrcCompiler` with these options:
 
--   `--should_generate_goog_msg_defs`: causes the compiler to turn all `msg`
-    blocks into `goog.getMsg` definitions (and their corresponding usages).
-    These `goog.getMsg` definitions can be translated by the JS Compiler.
+-   `--shouldGenerateGoogMsgDefs`: causes the compiler to turn all `msg` blocks
+    into `goog.getMsg` definitions (and their corresponding usages). These
+    `goog.getMsg` definitions can be translated by the JS Compiler.
+
+-   `--googMsgsAreExternal`: only applicable if `--shouldGenerateGoogMsgDefs` is
+    true. Determines how msg ids are generated:
+
+    -   **True**: Set this option to true if your project is having **Closure
+        Templates** do message extraction (e.g. with SoyMsgExtractor) and then
+        having the **Closure Compiler** do translated message insertion.
+    -   **False**: Set this option to false if your project is having the
+        **Closure Compiler** do all of its localization, i.e. if you want the
+        Closure Compiler to do both message extraction and translated message
+        insertion. A significant drawback to this setup is that, if your
+        templates are used from both JS and Java, you will end up with two
+        separate and possibly different sets of translations for your messages.
 
 -   `--bidi_global_dir=<1/-1>`: provides the bidi global directionality
-    (ltr=`1`, rtl=`-1`) to the compiler so it can correctly handle [bidi
-    functions and directives](#bidi_functions).
+    (ltr=`1`, rtl=`-1`) to the compiler so it can correctly handle
+    [bidi functions and directives](#bidi_functions).
 
 For example, consider this `msg` block:
 
@@ -155,7 +165,7 @@ For example, consider this `msg` block:
 {/msg}
 ```
 
-If you compiled this template with the option `--should_generate_goog_msg_defs`,
+If you compiled this template with the option `--shouldGenerateGoogMsgDefs`,
 then the resulting `goog.getMsg` definition might be:
 
 ```js
@@ -166,7 +176,6 @@ var MSG_UNNAMED_42 = goog.getMsg(
      'startLink': '<a href="' + soy.$$escapeHtml(opt_data.url) + '">',
      'endLink': '</a>'});
 ```
-
 
 ## Using Multiple Natural Languages (Bidi)
 
@@ -187,7 +196,6 @@ For an example of a template that uses Bidi functions, see
 [`examples/features.soy`](https://github.com/google/closure-templates/blob/master/examples/features.soy).
 
 ### Bidi Functions in Soy {#bidi_functions}
-
 
 <table>
 <thead>
@@ -293,9 +301,6 @@ HTML "escapes" (default <code>false</code>).</td>
 </tbody>
 </table>
 
-
-
-
 <table>
 <thead>
 <tr>
@@ -347,8 +352,6 @@ example inside an HTML <code>&lt;option&gt;</code> element.</td>
 </tr>
 </tbody>
 </table>
-
-
 
 ## Message Plugins {#message_plugins}
 

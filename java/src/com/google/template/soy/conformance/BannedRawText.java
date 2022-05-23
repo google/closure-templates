@@ -26,8 +26,6 @@ import com.google.template.soy.soytree.RawTextNode;
 
 /**
  * Conformance rule banning particular raw text in Soy.
- *
- * @author brndn@google.com (Brendan Linn)
  */
 final class BannedRawText extends Rule<RawTextNode> {
 

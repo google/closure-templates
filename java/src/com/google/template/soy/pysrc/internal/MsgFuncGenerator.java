@@ -53,7 +53,6 @@ import java.util.Map;
 
 /**
  * Class to generate python code for one {@link MsgNode}.
- *
  */
 public final class MsgFuncGenerator {
   /** The msg node to generate the function calls from. */
@@ -79,11 +78,12 @@ public final class MsgFuncGenerator {
       PythonValueFactoryImpl pluginFactoryImpl,
       MsgNode msgNode,
       LocalVariableStack localVarExprs,
-      ErrorReporter errorReporter) {
+      ErrorReporter errorReporter,
+      boolean useAlternateId) {
     this.msgNode = msgNode;
     this.genPyExprsVisitor = genPyExprsVisitorFactory.create(localVarExprs, errorReporter);
     this.translateToPyExprVisitor =
-        new TranslateToPyExprVisitor(localVarExprs, pluginFactoryImpl, errorReporter);
+        new TranslateToPyExprVisitor(localVarExprs, pluginFactoryImpl, msgNode, errorReporter);
     String translator = PyExprUtils.TRANSLATOR_NAME;
 
     if (this.msgNode.isPlrselMsg()) {
@@ -105,7 +105,7 @@ public final class MsgFuncGenerator {
     MsgPartsAndIds msgPartsAndIds = MsgUtils.buildMsgPartsAndComputeMsgIdForDualFormat(msgNode);
     Preconditions.checkNotNull(msgPartsAndIds);
 
-    this.msgId = msgPartsAndIds.id;
+    this.msgId = useAlternateId ? this.msgNode.getAlternateId().getAsLong() : msgPartsAndIds.id;
     this.msgParts = msgPartsAndIds.parts;
 
     Preconditions.checkState(!msgParts.isEmpty());

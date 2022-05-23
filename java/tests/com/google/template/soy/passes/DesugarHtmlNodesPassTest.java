@@ -20,9 +20,16 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.base.Joiner;
 import com.google.common.truth.StringSubject;
-import com.google.template.soy.SoyFileSetParserBuilder;
+import com.google.template.soy.basetree.Node;
+import com.google.template.soy.soytree.HtmlAttributeNode;
+import com.google.template.soy.soytree.HtmlAttributeValueNode;
+import com.google.template.soy.soytree.HtmlCloseTagNode;
+import com.google.template.soy.soytree.HtmlCommentNode;
+import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
+import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -72,8 +79,8 @@ public final class DesugarHtmlNodesPassTest {
     assertRewrite(
             "\n"
                 + "{let $t : 1 /}\n"
-                + "<{$t ? 'div' : 'span'} {if $t}onclick=\"foo()\"{/if}>\n"
-                + "</{$t ? 'div' : 'span'}>")
+                + "<{legacyDynamicTag($t ? 'div' : 'span')} {if $t}onclick=\"foo()\"{/if}>\n"
+                + "</{legacyDynamicTag($t ? 'div' : 'span')}>")
         .isEqualTo(
             ""
                 + "{let $t : 1 /}"
@@ -101,16 +108,27 @@ public final class DesugarHtmlNodesPassTest {
    * and returns the resulting source string of the template body
    */
   private static String runPass(String input) {
-    String soyFile = Joiner.on('\n').join("{namespace ns}", "{template .t}", input, "{/template}");
+    String soyFile = Joiner.on('\n').join("{namespace ns}", "{template t}", input, "{/template}");
     SoyFileNode node =
         SoyFileSetParserBuilder.forFileContents(soyFile)
-            .desugarHtmlAndStateNodes(true)
+            .desugarHtmlNodes(true)
             .parse()
             .fileSet()
             .getChild(0);
-    assertThat(SoyTreeUtils.hasHtmlNodes(node)).isFalse();
+    assertThat(hasHtmlNodes(node)).isFalse();
     StringBuilder sb = new StringBuilder();
-    node.getChild(0).appendSourceStringForChildren(sb);
+    ((TemplateNode) node.getChild(0)).appendSourceStringForChildren(sb);
     return sb.toString();
+  }
+
+  /** Returns true if the given {@code node} contains any children that are HTML nodes. */
+  static boolean hasHtmlNodes(Node node) {
+    return SoyTreeUtils.hasNodesOfType(
+        node,
+        HtmlOpenTagNode.class,
+        HtmlCloseTagNode.class,
+        HtmlCommentNode.class,
+        HtmlAttributeNode.class,
+        HtmlAttributeValueNode.class);
   }
 }

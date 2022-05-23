@@ -16,10 +16,15 @@
 
 package com.google.template.soy.exprtree;
 
+import com.google.common.collect.ImmutableList;
+import com.google.template.soy.base.SourceLocation.Point;
+import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.Node;
 import com.google.template.soy.basetree.ParentNode;
 import com.google.template.soy.types.SoyType;
+import java.util.List;
+import java.util.Optional;
 
 /**
  * This class defines the base interface for a node in the Soy expression parse tree, as well as a
@@ -29,7 +34,6 @@ import com.google.template.soy.types.SoyType;
  * <p>The top level definition is the base ExprNode interface.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public interface ExprNode extends Node {
 
@@ -38,7 +42,7 @@ public interface ExprNode extends Node {
    *
    * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
    */
-  public static enum Kind {
+  enum Kind {
     EXPR_ROOT_NODE,
 
     NULL_NODE,
@@ -46,17 +50,23 @@ public interface ExprNode extends Node {
     INTEGER_NODE,
     FLOAT_NODE,
     STRING_NODE,
+    PROTO_ENUM_VALUE_NODE,
 
     LIST_LITERAL_NODE,
     LIST_COMPREHENSION_NODE,
     MAP_LITERAL_NODE,
+    MAP_LITERAL_FROM_LIST_NODE,
     RECORD_LITERAL_NODE,
 
     VAR_REF_NODE,
     FIELD_ACCESS_NODE,
     ITEM_ACCESS_NODE,
+    METHOD_CALL_NODE,
+    PROTO_EXTENSION_ID_NODE,
+    NULL_SAFE_ACCESS_NODE,
 
     GLOBAL_NODE,
+    GROUP_NODE,
 
     NEGATIVE_OP_NODE,
     NOT_OP_NODE,
@@ -75,11 +85,18 @@ public interface ExprNode extends Node {
     OR_OP_NODE,
     NULL_COALESCING_OP_NODE,
     CONDITIONAL_OP_NODE,
+    ASSERT_NON_NULL_OP_NODE,
+    SHIFT_LEFT_OP_NODE,
+    SHIFT_RIGHT_OP_NODE,
+    BITWISE_OR_OP_NODE,
+    BITWISE_XOR_OP_NODE,
+    BITWISE_AND_OP_NODE,
 
     FUNCTION_NODE,
-    PROTO_INIT_NODE,
 
     VE_LITERAL_NODE,
+
+    TEMPLATE_LITERAL_NODE,
   }
 
   /**
@@ -87,6 +104,7 @@ public interface ExprNode extends Node {
    *
    * @return This node's kind (corresponding to this node's specific type).
    */
+  @Override
   public Kind getKind();
 
   /** Gets the data type of this node. */
@@ -102,21 +120,60 @@ public interface ExprNode extends Node {
   // -----------------------------------------------------------------------------------------------
 
   /** A node in an expression parse tree that may be a parent. */
-  public static interface ParentExprNode extends ExprNode, ParentNode<ExprNode> {}
+  interface ParentExprNode extends ExprNode, ParentNode<ExprNode> {}
 
   // -----------------------------------------------------------------------------------------------
 
   /** A node representing an operator (with operands as children). */
-  public static interface OperatorNode extends ParentExprNode {
+  interface OperatorNode extends ParentExprNode {
 
     public Operator getOperator();
+
+    @Override
+    public OperatorNode copy(CopyState copyState);
   }
 
   // -----------------------------------------------------------------------------------------------
 
   /** A node representing a primitive literal. */
-  public static interface PrimitiveNode extends ExprNode {
+  interface PrimitiveNode extends ExprNode {
     @Override
     PrimitiveNode copy(CopyState copyState);
+  }
+
+  /** A marker interface for nodes that can be part of access chains, like {@code $r.a[b]!}. */
+  interface AccessChainComponentNode extends ParentExprNode {}
+
+  /** Common interface for nodes that represent a function or method call. */
+  interface CallableExpr extends ExprNode {
+
+    /** The source positions of commas. Sometimes available to aid the formatter. */
+    Optional<ImmutableList<Point>> getCommaLocations();
+
+    /** The ordered list of parameter values. */
+    List<ExprNode> getParams();
+
+    /** The number of parameter values. */
+    int numParams();
+
+    /** The call style used. */
+    ParamsStyle getParamsStyle();
+
+    /** The name of the function/method called. */
+    Identifier getIdentifier();
+
+    /** The ordered list of parameter names, if call style is NAMED. */
+    ImmutableList<Identifier> getParamNames();
+
+    default Identifier getParamName(int i) {
+      return getParamNames().get(i);
+    }
+
+    /** How parameters are passed to the call. */
+    enum ParamsStyle {
+      NONE,
+      POSITIONAL,
+      NAMED
+    }
   }
 }

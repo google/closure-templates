@@ -1,0 +1,60 @@
+##
+# Copyright 2019 Google Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+##
+
+load("@rules_java//java:defs.bzl", "java_library")
+load("//builddefs:internal.bzl", "java_individual_tests")
+
+package(
+    default_testonly = 1,
+    default_visibility = ["//:soy_internal"],
+)
+
+java_library(
+    name = "tests",
+    srcs = glob(["*.java"]),
+    deps = [
+        "//java/src/com/google/template/soy:impl",
+        "//java/src/com/google/template/soy:per_input_output_files",
+        "//java/src/com/google/template/soy:soy_cmdline",
+        "//java/src/com/google/template/soy:soy_msg_extractor",
+        "//java/src/com/google/template/soy/error:error_reporter",
+        "//java/src/com/google/template/soy/exprtree",
+        "//java/src/com/google/template/soy/jbcsrc",
+        "//java/src/com/google/template/soy/jbcsrc/api",
+        "//java/src/com/google/template/soy/jbcsrc/shared",
+        "//java/src/com/google/template/soy/logging:internal",
+        "//java/src/com/google/template/soy/parseinfo",
+        "//java/src/com/google/template/soy/plugin/java",
+        "//java/src/com/google/template/soy/shared/internal",
+        "//java/src/com/google/template/soy/shared/restricted",
+        "//java/src/com/google/template/soy/testing:soy_file_set_parser_builder",
+        "//java/src/com/google/template/soy/tofu",
+        "//java/src/com/google/template/soy/tofu/internal",
+        "//src/main/protobuf:annotated_logging_config_java_proto",
+        "//src/main/protobuf:css_metadata_java_proto",
+        "//src/main/protobuf:template_metadata_java_proto",
+        "//src/test/protobuf:test_protos_java_proto",
+        "@com_google_auto_value_auto_value",
+        "@maven//:com_google_common_html_types_types",
+        "@maven//:com_google_guava_guava",
+        "@maven//:com_google_truth_truth",
+        "@maven//:junit_junit",
+    ],
+)
+
+java_individual_tests(
+    deps = [":tests"],
+)

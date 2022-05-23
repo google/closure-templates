@@ -18,7 +18,6 @@ package com.google.template.soy.jssrc.internal;
 
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
-import javax.inject.Inject;
 
 /**
  * Transforms the name of a delegate template (as it appears in source code) into a name suitable
@@ -26,7 +25,6 @@ import javax.inject.Inject;
  * subclasses can override it.
  */
 public class DelTemplateNamer {
-  @Inject
   public DelTemplateNamer() {}
 
   /**

@@ -25,16 +25,16 @@ import com.google.template.soy.exprtree.StringNode;
 
 /**
  * Conformance rule banning particular CSS selectors.
- *
- * @author brndn@google.com (Brendan Linn)
  */
 final class BannedCssSelector extends Rule<FunctionNode> {
 
   private final ImmutableSet<String> bannedSelectors;
+  private final boolean whenPrefix;
 
-  BannedCssSelector(ImmutableSet<String> bannedSelectors, SoyErrorKind error) {
+  BannedCssSelector(ImmutableSet<String> bannedSelectors, boolean whenPrefix, SoyErrorKind error) {
     super(error);
     this.bannedSelectors = bannedSelectors;
+    this.whenPrefix = whenPrefix;
   }
 
   @Override
@@ -48,11 +48,20 @@ final class BannedCssSelector extends Rule<FunctionNode> {
     // more targeted bans which we can better control. Not only because this would yeild better
     // error messages, but also because the BanTextEverywhereExceptComments is super slow and adds
     // latency to compile times
-    if (node.getFunctionName().equals("css")) {
+    if ("css".equals(node.getFunctionName()) && node.numChildren() > 0) {
       ExprNode selectorTextNode = node.numChildren() == 2 ? node.getChild(1) : node.getChild(0);
       if (selectorTextNode instanceof StringNode) {
-        if (bannedSelectors.contains(((StringNode) selectorTextNode).getValue())) {
-          errorReporter.report(selectorTextNode.getSourceLocation(), error);
+        String selector = ((StringNode) selectorTextNode).getValue();
+        if (this.whenPrefix) {
+          for (String bannedSelector : bannedSelectors) {
+            if (selector.startsWith(bannedSelector)) {
+              errorReporter.report(selectorTextNode.getSourceLocation(), error);
+            }
+          }
+        } else {
+          if (bannedSelectors.contains(selector)) {
+            errorReporter.report(selectorTextNode.getSourceLocation(), error);
+          }
         }
       }
     }

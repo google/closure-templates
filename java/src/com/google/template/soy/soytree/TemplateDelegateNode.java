@@ -21,13 +21,16 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import com.google.auto.value.AutoValue;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.IntegerNode;
+import com.google.template.soy.exprtree.ProtoEnumValueNode;
 import com.google.template.soy.exprtree.StringNode;
-import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import javax.annotation.Nullable;
 
@@ -35,9 +38,19 @@ import javax.annotation.Nullable;
  * Node representing a delegate template.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
-public final class TemplateDelegateNode extends TemplateNode implements ExprHolderNode {
+public final class TemplateDelegateNode extends TemplateNode {
+
+  private static final SoyErrorKind INVALID_VARIANT_STRING =
+      SoyErrorKind.of("Invalid variant ''{0}'' string literal must be an identifier.");
+  private static final SoyErrorKind INVALID_VARIANT_INTEGER =
+      SoyErrorKind.of("Invalid variant ''{0}'' integer literal must non-negative.");
+  private static final SoyErrorKind INVALID_VARIANT_EXPR =
+      SoyErrorKind.of(
+          "Invalid variant expression with kind {0}; must be a string, int, or proto enum"
+              + " literal.");
+
+  public static final String VARIANT_ATTR = "variant";
 
   /** Value class for a delegate template key (name and variant). */
   @AutoValue
@@ -61,9 +74,6 @@ public final class TemplateDelegateNode extends TemplateNode implements ExprHold
   /** The delegate template name. */
   private final String delTemplateName;
 
-  /** An expression that defines a delegate template variant. */
-  @Nullable private final ExprRootNode delTemplateVariantExpr;
-
   /** The delegate template key (name and variant). */
   private DelTemplateKey delTemplateKey;
 
@@ -77,14 +87,12 @@ public final class TemplateDelegateNode extends TemplateNode implements ExprHold
    * @param nodeBuilder Builder containing template initialization params.
    * @param soyFileHeaderInfo Info from the containing Soy file's header declarations.
    * @param delTemplateName The delegate template name.
-   * @param delTemplateVariantExpr An expression that references a delegate template variant.
    * @param delPriority The delegate priority.
    */
   TemplateDelegateNode(
       TemplateDelegateNodeBuilder nodeBuilder,
       SoyFileHeaderInfo soyFileHeaderInfo,
       String delTemplateName,
-      @Nullable ExprRootNode delTemplateVariantExpr,
       Priority delPriority,
       ImmutableList<TemplateHeaderVarDefn> params) {
 
@@ -95,7 +103,6 @@ public final class TemplateDelegateNode extends TemplateNode implements ExprHold
         Visibility.PUBLIC /* deltemplate always has public visibility */,
         params);
     this.delTemplateName = checkNotNull(delTemplateName);
-    this.delTemplateVariantExpr = delTemplateVariantExpr;
     this.delPriority = checkNotNull(delPriority);
   }
 
@@ -107,12 +114,9 @@ public final class TemplateDelegateNode extends TemplateNode implements ExprHold
   private TemplateDelegateNode(TemplateDelegateNode orig, CopyState copyState) {
     super(orig, copyState);
     this.delTemplateName = orig.delTemplateName;
-    this.delTemplateVariantExpr =
-        orig.delTemplateVariantExpr == null ? null : orig.delTemplateVariantExpr.copy(copyState);
     this.delTemplateKey = orig.delTemplateKey;
     this.delPriority = orig.delPriority;
   }
-
 
   @Override
   public Kind getKind() {
@@ -153,16 +157,6 @@ public final class TemplateDelegateNode extends TemplateNode implements ExprHold
     return new TemplateDelegateNode(this, copyState);
   }
 
-  @Override
-  public ImmutableList<ExprRootNode> getExprList() {
-    ImmutableList.Builder<ExprRootNode> exprs = ImmutableList.builder();
-    exprs.addAll(super.getExprList());
-    if (delTemplateVariantExpr != null) {
-      exprs.add(delTemplateVariantExpr);
-    }
-    return exprs.build();
-  }
-
   /**
    * Calculate a DeltemplateKey for the variant.
    *
@@ -173,6 +167,7 @@ public final class TemplateDelegateNode extends TemplateNode implements ExprHold
    * TemplateDelegateNodeBuilder during construction
    */
   private DelTemplateKey resolveVariantExpression() {
+    ExprRootNode delTemplateVariantExpr = delTemplateVariantExpr();
     if (delTemplateVariantExpr == null) {
       delTemplateKey = DelTemplateKey.create(delTemplateName, "");
       return delTemplateKey;
@@ -180,22 +175,22 @@ public final class TemplateDelegateNode extends TemplateNode implements ExprHold
     ExprNode exprNode = delTemplateVariantExpr.getRoot();
     if (exprNode instanceof GlobalNode) {
       GlobalNode globalNode = (GlobalNode) exprNode;
-      if (globalNode.isResolved()) {
-        exprNode = globalNode.getValue();
-      } else {
-        // This global was not substituted.  This happens when TemplateRegistries are built for
-        // message extraction and parseinfo generation.  To make this 'work' we just use the Global
-        // name for the variant value.  This is fine and will help catch some errors.
-        // Because these nodes won't be used for code generation this should be safe.
-        // For this reason we also don't store the key, instead we just return it.
-        return DelTemplateKey.create(delTemplateName, globalNode.getName());
-      }
+      // This global was not substituted.  This happens when TemplateRegistries are built for
+      // message extraction and parseinfo generation.  To make this 'work' we just use the Global
+      // name for the variant value.  This is fine and will help catch some errors.
+      // Because these nodes won't be used for code generation this should be safe.
+      // For this reason we also don't store the key, instead we just return it.
+      return DelTemplateKey.create(delTemplateName, globalNode.getName());
     }
     if (exprNode instanceof IntegerNode) {
       // Globals were already substituted: We may now create the definitive variant and key fields
       // on this node.
       long variantValue = ((IntegerNode) exprNode).getValue();
       delTemplateKey = DelTemplateKey.create(delTemplateName, String.valueOf(variantValue));
+    } else if (exprNode instanceof ProtoEnumValueNode) {
+      delTemplateKey =
+          DelTemplateKey.create(
+              delTemplateName, String.valueOf(((ProtoEnumValueNode) exprNode).getValue()));
     } else if (exprNode instanceof StringNode) {
       // Globals were already substituted: We may now create the definitive variant and key fields
       // on this node.
@@ -205,5 +200,44 @@ public final class TemplateDelegateNode extends TemplateNode implements ExprHold
       delTemplateKey = DelTemplateKey.create(delTemplateName, exprNode.toSourceString());
     }
     return delTemplateKey;
+  }
+
+  @Nullable
+  private ExprRootNode delTemplateVariantExpr() {
+    return getAttributes().stream()
+        .filter(a -> VARIANT_ATTR.equals(a.getName().identifier()) && a.hasExprValue())
+        .findFirst()
+        .map(a -> a.valueAsExprList().get(0))
+        .orElse(null);
+  }
+
+  public void validateVariantExpression(ErrorReporter errorReporter) {
+    getAttributes().stream()
+        .filter(a -> VARIANT_ATTR.equals(a.getName().identifier()))
+        .forEach(
+            a -> validateVariantExpression(a.valueAsExpr(errorReporter).getRoot(), errorReporter));
+  }
+
+  private static void validateVariantExpression(
+      ExprNode primitiveNode, final ErrorReporter reporter) {
+    switch (primitiveNode.getKind()) {
+      case STRING_NODE:
+        StringNode sn = (StringNode) primitiveNode;
+        if (!sn.getValue().isEmpty() && !BaseUtils.isIdentifier(sn.getValue())) {
+          reporter.report(sn.getSourceLocation(), INVALID_VARIANT_STRING, sn.getValue());
+        }
+        break;
+      case INTEGER_NODE:
+        IntegerNode in = (IntegerNode) primitiveNode;
+        if (in.getValue() < 0) {
+          reporter.report(in.getSourceLocation(), INVALID_VARIANT_INTEGER, in.getValue());
+        }
+        break;
+      case PROTO_ENUM_VALUE_NODE:
+        break;
+      default:
+        reporter.report(
+            primitiveNode.getSourceLocation(), INVALID_VARIANT_EXPR, primitiveNode.getKind());
+    }
   }
 }

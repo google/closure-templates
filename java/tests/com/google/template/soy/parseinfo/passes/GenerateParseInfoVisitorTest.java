@@ -25,19 +25,20 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.protobuf.Descriptors.GenericDescriptor;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
-import com.google.template.soy.SoyFileSetParserBuilder;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.shared.internal.gencode.GeneratedFile;
+import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.NamespaceDeclaration;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.testing.Extendable;
 import com.google.template.soy.testing.Extension;
 import com.google.template.soy.testing.Foo;
+import com.google.template.soy.testing.SharedTestUtils;
+import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import com.google.template.soy.types.SoyTypeRegistry;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -47,44 +48,47 @@ import org.junit.runners.JUnit4;
  * Unit tests for GenerateParseInfoVisitor.
  *
  * <p>Note: Testing of the actual code generation happens in {@code SoyFileSetTest}.
- *
  */
 @RunWith(JUnit4.class)
 public final class GenerateParseInfoVisitorTest {
 
   @Test
   public void testJavaClassNameSource() {
-    SoyFileNode soyFileNode = forFilePathAndNamespace("BooFoo.soy", "aaa.bbb.cccDdd");
+    SoyFileNode soyFileNode =
+        forFilePathAndNamespace(SourceFilePath.create("BooFoo.soy"), "aaa.bbb.cccDdd");
     assertThat(SOY_FILE_NAME.generateBaseClassName(soyFileNode)).isEqualTo("BooFoo");
 
-    soyFileNode = forFilePathAndNamespace("blah/bleh/boo_foo.soy", "aaa.bbb.cccDdd");
+    soyFileNode =
+        forFilePathAndNamespace(SourceFilePath.create("blah/bleh/boo_foo.soy"), "aaa.bbb.cccDdd");
     assertThat(SOY_FILE_NAME.generateBaseClassName(soyFileNode)).isEqualTo("BooFoo");
 
-    soyFileNode = forFilePathAndNamespace("boo-FOO.soy", "aaa.bbb.cccDdd");
+    soyFileNode = forFilePathAndNamespace(SourceFilePath.create("boo-FOO.soy"), "aaa.bbb.cccDdd");
     assertThat(SOY_FILE_NAME.generateBaseClassName(soyFileNode)).isEqualTo("BooFoo");
 
-    soyFileNode = forFilePathAndNamespace("\\BLAH\\BOO_FOO.SOY", "aaa.bbb.cccDdd");
+    soyFileNode =
+        forFilePathAndNamespace(SourceFilePath.create("\\BLAH\\BOO_FOO.SOY"), "aaa.bbb.cccDdd");
     assertThat(SOY_FILE_NAME.generateBaseClassName(soyFileNode)).isEqualTo("BooFoo");
 
-    soyFileNode = forFilePathAndNamespace("", "cccDdd");
+    soyFileNode = forFilePathAndNamespace(SourceFilePath.create("test.soy"), "cccDdd");
     assertThat(SOY_NAMESPACE_LAST_PART.generateBaseClassName(soyFileNode)).isEqualTo("CccDdd");
 
-    soyFileNode = forFilePathAndNamespace("", "aaa.bbb.cccDdd");
+    soyFileNode = forFilePathAndNamespace(SourceFilePath.create("test.soy"), "aaa.bbb.cccDdd");
     assertThat(SOY_NAMESPACE_LAST_PART.generateBaseClassName(soyFileNode)).isEqualTo("CccDdd");
 
-    soyFileNode = forFilePathAndNamespace("", "aaa_bbb.ccc_ddd");
+    soyFileNode = forFilePathAndNamespace(SourceFilePath.create("test.soy"), "aaa_bbb.ccc_ddd");
     assertThat(SOY_NAMESPACE_LAST_PART.generateBaseClassName(soyFileNode)).isEqualTo("CccDdd");
 
-    soyFileNode = forFilePathAndNamespace("", "CccDdd");
+    soyFileNode = forFilePathAndNamespace(SourceFilePath.create("test.soy"), "CccDdd");
     assertThat(SOY_NAMESPACE_LAST_PART.generateBaseClassName(soyFileNode)).isEqualTo("CccDdd");
 
-    soyFileNode = forFilePathAndNamespace("", "aaa.bbb.ccc_DDD");
+    soyFileNode = forFilePathAndNamespace(SourceFilePath.create("test.soy"), "aaa.bbb.ccc_DDD");
     assertThat(SOY_NAMESPACE_LAST_PART.generateBaseClassName(soyFileNode)).isEqualTo("CccDdd");
 
-    soyFileNode = forFilePathAndNamespace("BooFoo.soy", "aaa.bbb.cccDdd");
+    soyFileNode = forFilePathAndNamespace(SourceFilePath.create("BooFoo.soy"), "aaa.bbb.cccDdd");
     assertThat(GENERIC.generateBaseClassName(soyFileNode)).isEqualTo("File");
 
-    soyFileNode = forFilePathAndNamespace("blah/bleh/boo-foo.soy", "ccc_ddd");
+    soyFileNode =
+        forFilePathAndNamespace(SourceFilePath.create("blah/bleh/boo-foo.soy"), "ccc_ddd");
     assertThat(GENERIC.generateBaseClassName(soyFileNode)).isEqualTo("File");
   }
 
@@ -92,9 +96,7 @@ public final class GenerateParseInfoVisitorTest {
   public void testFindsProtoFromMap() {
     String parseInfoContent =
         createParseInfo(
-            ImmutableList.of(Foo.getDescriptor()),
-            "{@param map: map<string, soy.test.Foo>}",
-            "{$map}");
+            ImmutableList.of(Foo.getDescriptor()), "{@param map: map<string, Foo>}", "{$map}");
 
     assertThat(parseInfoContent).contains("com.google.template.soy.testing.Test.getDescriptor()");
   }
@@ -104,7 +106,7 @@ public final class GenerateParseInfoVisitorTest {
     String parseInfoContent =
         createParseInfo(
             ImmutableList.of(Foo.getDescriptor()),
-            "{@param map: legacy_object_map<string, soy.test.Foo>}",
+            "{@param map: legacy_object_map<string, Foo>}",
             "{$map}");
 
     assertThat(parseInfoContent).contains("com.google.template.soy.testing.Test.getDescriptor()");
@@ -114,9 +116,7 @@ public final class GenerateParseInfoVisitorTest {
   public void testFindsProtoEnum() {
     String parseInfoContent =
         createParseInfo(
-            ImmutableList.of(Foo.getDescriptor()),
-            "{@param enum: soy.test.Foo.InnerEnum}",
-            "{$enum}");
+            ImmutableList.of(Foo.getDescriptor()), "{@param enum: Foo.InnerEnum}", "{$enum}");
 
     assertThat(parseInfoContent).contains("com.google.template.soy.testing.Test.getDescriptor()");
   }
@@ -125,9 +125,9 @@ public final class GenerateParseInfoVisitorTest {
   public void testFindsProtoInit() {
     String parseInfoContent =
         createParseInfo(
-            ImmutableList.of(Foo.InnerMessage.getDescriptor()),
+            ImmutableList.of(Foo.getDescriptor()),
             "{@param proto: bool}",
-            "{$proto ? soy.test.Foo.InnerMessage(field: 27) : null}");
+            "{$proto ? Foo.InnerMessage(field: 27) : null}");
 
     assertThat(parseInfoContent).contains("com.google.template.soy.testing.Test.getDescriptor()");
   }
@@ -137,8 +137,19 @@ public final class GenerateParseInfoVisitorTest {
     String parseInfoContent =
         createParseInfo(
             ImmutableList.of(Extendable.getDescriptor(), Extension.getDescriptor()),
-            "{@param extendable: soy.test.Extendable}",
-            "{$extendable.extension.enumField}");
+            "{@param extendable: Extendable}",
+            "{$extendable.getExtension(Extension.extension).enumField}");
+
+    assertThat(parseInfoContent).contains("com.google.template.soy.testing.Test.getDescriptor()");
+  }
+
+  @Test
+  public void testFindsProtoFromGetExtension() {
+    String parseInfoContent =
+        createParseInfo(
+            ImmutableList.of(Extendable.getDescriptor(), Extension.getDescriptor()),
+            "{@param extendable: Extendable}",
+            "{$extendable.getExtension(Extension.extension).enumField}");
 
     assertThat(parseInfoContent).contains("com.google.template.soy.testing.Test.getDescriptor()");
   }
@@ -146,8 +157,7 @@ public final class GenerateParseInfoVisitorTest {
   @Test
   public void testFindsProtoEnumUse() {
     String parseInfoContent =
-        createParseInfo(
-            ImmutableList.of(Foo.InnerEnum.getDescriptor()), "{soy.test.Foo.InnerEnum.THREE}");
+        createParseInfo(ImmutableList.of(Foo.getDescriptor()), "{Foo.InnerEnum.THREE}");
 
     assertThat(parseInfoContent).contains("com.google.template.soy.testing.Test.getDescriptor()");
   }
@@ -155,8 +165,7 @@ public final class GenerateParseInfoVisitorTest {
   @Test
   public void testFindsVe() {
     String parseInfoContent =
-        createParseInfo(
-            ImmutableList.of(Foo.getDescriptor()), "{@param ve: ve<soy.test.Foo>}", "{$ve}");
+        createParseInfo(ImmutableList.of(Foo.getDescriptor()), "{@param ve: ve<Foo>}", "{$ve}");
 
     assertThat(parseInfoContent).contains("com.google.template.soy.testing.Test.getDescriptor()");
   }
@@ -189,30 +198,33 @@ public final class GenerateParseInfoVisitorTest {
     assertThat(parseInfoContent).doesNotContain("@deprecated");
   }
 
-  private static SoyFileNode forFilePathAndNamespace(String filePath, String namespace) {
+  private static SoyFileNode forFilePathAndNamespace(SourceFilePath filePath, String namespace) {
     return new SoyFileNode(
         0,
-        filePath,
+        new SourceLocation(filePath),
         new NamespaceDeclaration(
             Identifier.create(namespace, SourceLocation.UNKNOWN),
             ImmutableList.of(),
-            ErrorReporter.exploding()),
-        new TemplateNode.SoyFileHeaderInfo(namespace));
+            ErrorReporter.exploding(),
+            SourceLocation.UNKNOWN),
+        new TemplateNode.SoyFileHeaderInfo(namespace),
+        ImmutableList.of());
   }
 
   private static String createParseInfo(
       ImmutableList<GenericDescriptor> protos, String... templateLines) {
-    SoyTypeRegistry typeRegistry = new SoyTypeRegistry.Builder().addDescriptors(protos).build();
+    SoyTypeRegistry typeRegistry = SharedTestUtils.importing(protos);
     ParseResult parseResult =
-        SoyFileSetParserBuilder.forFileContents(
-                SharedTestUtils.buildTestSoyFileContent(
-                    /* strictHtml= */ true, Joiner.on('\n').join(templateLines)))
+        SoyFileSetParserBuilder.forTemplateAndImports(
+                SharedTestUtils.buildTestTemplateContent(
+                    /* strictHtml= */ true, Joiner.on('\n').join(templateLines)),
+                protos.toArray(new GenericDescriptor[0]))
             .typeRegistry(typeRegistry)
             .parse();
-    TemplateRegistry registry = parseResult.registry();
+    FileSetMetadata registry = parseResult.registry();
 
     ImmutableList<GeneratedFile> parseInfos =
-        new GenerateParseInfoVisitor("com.google.gpivtest", "filename", registry, typeRegistry)
+        new GenerateParseInfoVisitor("com.google.gpivtest", "filename", registry)
             .exec(parseResult.fileSet());
 
     // Verify that exactly one generated file has the name "NoPathSoyInfo.java", and return it.

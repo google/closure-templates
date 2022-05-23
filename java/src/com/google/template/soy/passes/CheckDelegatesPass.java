@@ -25,37 +25,40 @@ import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
+import com.google.template.soy.exprtree.TemplateLiteralNode;
+import com.google.template.soy.exprtree.VarDefn;
+import com.google.template.soy.exprtree.VarDefn.Kind;
+import com.google.template.soy.passes.LocalVariablesNodeVisitor.LocalVariables;
 import com.google.template.soy.shared.internal.DelTemplateSelector;
-import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallParamContentNode;
+import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateMetadata;
-import com.google.template.soy.soytree.TemplateMetadata.Parameter;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.TemplateRegistry;
+import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.TemplateType.Parameter;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 /**
  * Checks various rules regarding the use of delegates (including delegate packages, delegate
  * templates, and delegate calls).
- *
  */
-final class CheckDelegatesPass extends CompilerFileSetPass {
+@RunAfter(FinalizeTemplateRegistryPass.class)
+final class CheckDelegatesPass implements CompilerFileSetPass {
 
-  private static final SoyErrorKind CALL_TO_DELTEMPLATE =
-      SoyErrorKind.of("''call'' to delegate template ''{0}'' (expected ''delcall'').");
   private static final SoyErrorKind CROSS_PACKAGE_DELCALL =
       SoyErrorKind.of(
           "Found illegal call from ''{0}'' to ''{1}'', which is in a different delegate package.");
   private static final SoyErrorKind DELCALL_TO_BASIC_TEMPLATE =
-      SoyErrorKind.of("''delcall'' to basic template ''{0}'' (expected ''call'').");
+      SoyErrorKind.of("''delcall'' to basic template defined at ''{0}'' (expected ''call'').");
   private static final SoyErrorKind DELTEMPLATES_WITH_DIFFERENT_PARAM_DECLARATIONS =
       SoyErrorKind.of(
           "Found delegate template with same name ''{0}'' but different param declarations"
@@ -72,28 +75,34 @@ final class CheckDelegatesPass extends CompilerFileSetPass {
               + "compared to the definition at {1}.");
 
   private final ErrorReporter errorReporter;
+  private final Supplier<FileSetMetadata> templateRegistryFull;
 
-  CheckDelegatesPass(ErrorReporter errorReporter) {
+  CheckDelegatesPass(ErrorReporter errorReporter, Supplier<FileSetMetadata> templateRegistryFull) {
     this.errorReporter = errorReporter;
+    this.templateRegistryFull = templateRegistryFull;
   }
 
   @Override
-  public Result run(
-      ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator, TemplateRegistry registry) {
-    // Perform checks that only involve templates (uses templateRegistry only, no traversal).
-    checkTemplates(registry);
+  public Result run(ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator) {
+    // Perform checks that only involve templates (uses fileset templateRegistry only, no traversal
+    // and no imports context needed).
+    checkTemplates(templateRegistryFull.get().getDelTemplateSelector());
 
     for (SoyFileNode fileNode : sourceFiles) {
-      for (TemplateNode template : fileNode.getChildren()) {
+      LocalVariables localVariables = LocalVariablesNodeVisitor.getFileScopeVariables(fileNode);
+      for (TemplateNode template : fileNode.getTemplates()) {
         String currTemplateNameForUserMsgs = template.getTemplateNameForUserMsgs();
         String currDelPackageName = template.getDelPackageName();
-        for (CallBasicNode callNode :
-            SoyTreeUtils.getAllNodesOfType(template, CallBasicNode.class)) {
-          checkCallBasicNode(callNode, registry, currDelPackageName, currTemplateNameForUserMsgs);
+        for (TemplateLiteralNode templateLiteralNode :
+            SoyTreeUtils.getAllNodesOfType(template, TemplateLiteralNode.class)) {
+          checkTemplateLiteralNode(
+              templateLiteralNode,
+              currDelPackageName,
+              currTemplateNameForUserMsgs);
         }
         for (CallDelegateNode callNode :
             SoyTreeUtils.getAllNodesOfType(template, CallDelegateNode.class)) {
-          checkCallDelegateNode(callNode, registry);
+          checkCallDelegateNode(callNode, localVariables);
         }
       }
     }
@@ -101,14 +110,12 @@ final class CheckDelegatesPass extends CompilerFileSetPass {
   }
 
   /** Performs checks that only involve templates (uses templateRegistry only). */
-  private void checkTemplates(TemplateRegistry templateRegistry) {
-
-    DelTemplateSelector<TemplateMetadata> selector = templateRegistry.getDelTemplateSelector();
+  private void checkTemplates(DelTemplateSelector<TemplateMetadata> fileSetDelTemplateSelector) {
 
     // Check that all delegate templates with the same name have the same declared params,
     // content kind, and strict html mode.
     for (Collection<TemplateMetadata> delTemplateGroup :
-        selector.delTemplateNameToValues().asMap().values()) {
+        fileSetDelTemplateSelector.delTemplateNameToValues().asMap().values()) {
       TemplateMetadata firstDelTemplate = null;
       // loop over all members of the deltemplate group looking for a source template.
       for (TemplateMetadata delTemplate : delTemplateGroup) {
@@ -125,23 +132,24 @@ final class CheckDelegatesPass extends CompilerFileSetPass {
         // group must be empty
         continue;
       }
-      Set<TemplateMetadata.Parameter> firstRequiredParamSet = getRequiredParamSet(firstDelTemplate);
-      SanitizedContentKind firstContentKind = firstDelTemplate.getContentKind();
+      Set<Parameter> firstRequiredParamSet = getRequiredParamSet(firstDelTemplate);
+      SanitizedContentKind firstContentKind =
+          firstDelTemplate.getTemplateType().getContentKind().getSanitizedContentKind();
       boolean firstStrictHtml =
-          firstDelTemplate.isStrictHtml() && firstContentKind == SanitizedContentKind.HTML;
+          firstDelTemplate.getTemplateType().isStrictHtml() && firstContentKind.isHtml();
       // loop over all members of the deltemplate group.
       for (TemplateMetadata delTemplate : delTemplateGroup) {
         if (firstDelTemplate == delTemplate) {
           continue; // skip
         }
         // Not first template encountered.
-        Set<TemplateMetadata.Parameter> currRequiredParamSet = getRequiredParamSet(delTemplate);
+        Set<Parameter> currRequiredParamSet = getRequiredParamSet(delTemplate);
         if (!paramSetsEqual(currRequiredParamSet, firstRequiredParamSet)) {
-          List<Parameter> firstParamList = firstDelTemplate.getParameters();
-          List<Parameter> currParamList = delTemplate.getParameters();
-          Set<TemplateMetadata.Parameter> missingParamSet =
+          List<Parameter> firstParamList = firstDelTemplate.getTemplateType().getParameters();
+          List<Parameter> currParamList = delTemplate.getTemplateType().getParameters();
+          Set<Parameter> missingParamSet =
               getRequiredParamsDifference(firstParamList, currParamList);
-          Set<TemplateMetadata.Parameter> unexpectedParamSet =
+          Set<Parameter> unexpectedParamSet =
               getRequiredParamsDifference(currParamList, firstParamList);
           errorReporter.report(
               delTemplate.getSourceLocation(),
@@ -150,7 +158,8 @@ final class CheckDelegatesPass extends CompilerFileSetPass {
               firstDelTemplate.getSourceLocation().toString(),
               getInconsistentParamMessage(missingParamSet, unexpectedParamSet));
         }
-        if (delTemplate.getContentKind() != firstContentKind) {
+        if (delTemplate.getTemplateType().getContentKind().getSanitizedContentKind()
+            != firstContentKind) {
           // TODO: This is only *truly* a requirement if the strict mode deltemplates are
           // being called by contextual templates. For a strict-to-strict call, everything
           // is escaped at runtime at the call sites. You could imagine delegating between
@@ -162,14 +171,15 @@ final class CheckDelegatesPass extends CompilerFileSetPass {
           errorReporter.report(
               firstDelTemplate.getSourceLocation(),
               STRICT_DELTEMPLATES_WITH_DIFFERENT_CONTENT_KIND,
-              String.valueOf(delTemplate.getContentKind()),
+              String.valueOf(
+                  delTemplate.getTemplateType().getContentKind().getSanitizedContentKind()),
               String.valueOf(firstContentKind),
               delTemplate.getSourceLocation().toString());
         }
         // Check if all del templates have the same settings of strict HTML mode.
         // We do not need to check {@code ContentKind} again since we already did that earlier
         // in this pass.
-        if (delTemplate.isStrictHtml() != firstStrictHtml) {
+        if (delTemplate.getTemplateType().isStrictHtml() != firstStrictHtml) {
           errorReporter.report(
               firstDelTemplate.getSourceLocation(),
               DELTEMPLATES_WITH_DIFFERENT_STRICT_HTML_MODE,
@@ -180,34 +190,26 @@ final class CheckDelegatesPass extends CompilerFileSetPass {
     }
   }
 
-  private static boolean paramSetsEqual(
-      Set<TemplateMetadata.Parameter> s1, Set<TemplateMetadata.Parameter> s2) {
+  private static boolean paramSetsEqual(Set<Parameter> s1, Set<Parameter> s2) {
     // We can use Set equality because we normalize parameters with toComparable().
     return s1.equals(s2);
   }
 
-  private static Set<TemplateMetadata.Parameter> getRequiredParamSet(TemplateMetadata delTemplate) {
-    return delTemplate.getParameters().stream()
-        .filter(TemplateMetadata.Parameter::isRequired)
-        .map(TemplateMetadata.Parameter::toComparable)
+  private static Set<Parameter> getRequiredParamSet(TemplateMetadata delTemplate) {
+    return delTemplate.getTemplateType().getParameters().stream()
+        .filter(Parameter::isRequired)
+        .map(Parameter::toComparable)
         .collect(Collectors.toSet());
   }
 
-  private void checkCallBasicNode(
-      CallBasicNode node,
-      TemplateRegistry templateRegistry,
+  private void checkTemplateLiteralNode(
+      TemplateLiteralNode node,
       @Nullable String currDelPackageName,
       String currTemplateNameForUserMsgs) {
-
-    String calleeName = node.getCalleeName();
-
-    // Check that the callee name is not a delegate template name.
-    if (templateRegistry.getDelTemplateSelector().hasDelTemplateNamed(calleeName)) {
-      errorReporter.report(node.getSourceLocation(), CALL_TO_DELTEMPLATE, calleeName);
-    }
+    String calleeName = node.getResolvedName();
 
     // Check that the callee is either not in a delegate package or in the same delegate package.
-    TemplateMetadata callee = templateRegistry.getBasicTemplateOrElement(calleeName);
+    TemplateMetadata callee = templateRegistryFull.get().getBasicTemplateOrElement(calleeName);
     if (callee != null) {
       String calleeDelPackageName = callee.getDelPackageName();
       if (calleeDelPackageName != null && !calleeDelPackageName.equals(currDelPackageName)) {
@@ -222,6 +224,7 @@ final class CheckDelegatesPass extends CompilerFileSetPass {
           // bug where it failed to inspect CallParamContentNode and thus missed a number of call
           // sites...and people depend on it.
           // luckily this particular error doesn't seem very important. it doesn't violate Soy's
+          // invariants, it is just likely to not work with the pinto module system.
           errorReporter.warn(
               node.getSourceLocation(),
               CROSS_PACKAGE_DELCALL,
@@ -232,19 +235,25 @@ final class CheckDelegatesPass extends CompilerFileSetPass {
     }
   }
 
-  private void checkCallDelegateNode(CallDelegateNode node, TemplateRegistry templateRegistry) {
-
+  private void checkCallDelegateNode(CallDelegateNode node, LocalVariables localVariables) {
     String delCalleeName = node.getDelCalleeName();
-
-    // Check that the callee name is not a basic template name.
-    if (templateRegistry.getBasicTemplateOrElement(delCalleeName) != null) {
-      errorReporter.report(node.getSourceLocation(), DELCALL_TO_BASIC_TEMPLATE, delCalleeName);
+    VarDefn collision = localVariables.lookup(delCalleeName);
+    if (collision == null) {
+      return;
+    }
+    if (collision.kind() == Kind.TEMPLATE
+        || (collision.kind() == Kind.IMPORT_VAR
+            && collision.hasType()
+            && collision.type().getKind() == SoyType.Kind.TEMPLATE_TYPE)) {
+      errorReporter.report(
+          node.getSourceLocation(),
+          DELCALL_TO_BASIC_TEMPLATE,
+          collision.nameLocation().toLineColumnString());
     }
   }
 
   private static String getInconsistentParamMessage(
-      Set<TemplateMetadata.Parameter> missingParamSet,
-      Set<TemplateMetadata.Parameter> unexpectedParamSet) {
+      Set<Parameter> missingParamSet, Set<Parameter> unexpectedParamSet) {
     StringBuilder message = new StringBuilder();
     if (!missingParamSet.isEmpty()) {
       message.append(String.format("\n  Missing params: %s", formatParamSet(missingParamSet)));
@@ -256,7 +265,7 @@ final class CheckDelegatesPass extends CompilerFileSetPass {
     return message.toString();
   }
 
-  private static Set<String> formatParamSet(Set<TemplateMetadata.Parameter> paramSet) {
+  private static Set<String> formatParamSet(Set<Parameter> paramSet) {
     return paramSet.stream()
         .map(
             (param) -> {
@@ -267,7 +276,7 @@ final class CheckDelegatesPass extends CompilerFileSetPass {
         .collect(Collectors.toSet());
   }
 
-  private static Set<TemplateMetadata.Parameter> getRequiredParamsDifference(
+  private static Set<Parameter> getRequiredParamsDifference(
       List<Parameter> paramList1, List<Parameter> paramList2) {
     Map<String, Parameter> nameToParamMap =
         paramList2.stream()

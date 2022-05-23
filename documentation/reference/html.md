@@ -1,6 +1,5 @@
 # HTML Validation
 
-
 The [HTML spec](https://html.spec.whatwg.org/multipage/) defines what is valid
 HTML. There are many existing tools (both first-party and third-party) that can
 validate plain HTML. In Soy, we also provide some HTML validation support by
@@ -26,14 +25,14 @@ by Soy.
 
 ```soy {.good}
 // This is a valid HTML snippet.
-{template .t}
+{template t}
   <div>
   {for $foo in $fooList}
     // Tags in this block should be closed within the same block. In this block,
     // <div> tag is closed and <input> tag is self-closing.
     <div>foo<p>bar</p></div><input>
   {/for}
-  {call .foo}
+  {call foo}
     {param content kind="html"}
       // A param with kind="html" is also a block. Since the template sets
       // stricthtml to true, this part of the template should also close all
@@ -46,16 +45,20 @@ by Soy.
 ```
 
 This is an example of valid HTML snippet. In this example, in each `for` block,
-every tag that is opened, must be closed (`input` is a [void
-tag](https://www.w3.org/TR/HTML51/syntax.HTML#void-elements) and is
+every tag that is opened, must be closed (`input` is a
+[void tag](https://www.w3.org/TR/HTML51/syntax.HTML#void-elements) and is
 self-closing). The `param` block that explicitly sets `kind="html"` should also
 contain self-closed tags. Note that a template is also a block and the `div` tag
 at the very beginning has been closed at the end.
 
+WARNING: Note that in this case "balanced" means correct according to the HTML
+spec. Many tags, such as `<p>`, do not require a closing tag; they are
+"balanced" without a matching closing tag.
+
 ### Void elements
 
-According to the [HTML
-spec](https://www.w3.org/TR/2016/REC-html51-20161101/syntax.html#void-elements),
+According to the
+[HTML spec](https://www.w3.org/TR/2016/REC-html51-20161101/syntax.html#void-elements),
 void elements only have a start tag; end tags must not be specified for void
 elements. The compiler will enforce the following rules:
 
@@ -80,7 +83,7 @@ closed by a HTML close tag with the same tag name in the same block.
 
 ```soy
 // This is a valid HTML snippet.
-{template .t}
+{template t}
   {@param tagName1: string}
   {@param tagName2: Foo}
   <{$tagName1}>
@@ -98,7 +101,7 @@ evaluated values during run time.
 ```soy {.bad}
 // This is invalid since the close tag has an additional directive, while the
 // open tag does not have any directives.
-{template .t}
+{template t}
   {@param tagName: string}
   <{$tagName}>
   </{$tagName|fooToTag}>
@@ -114,7 +117,7 @@ is valid.
 // This is valid HTML since we cannot statically decide if $tagName is a valid
 // name for void elements. We simply trust the users that they are doing the
 // right things.
-{template .t}
+{template t}
   {@param tagName: string}
   // We trust users and assume that tagName is self-closing.
   <{$tagName}/>
@@ -124,7 +127,7 @@ is valid.
 **Bad code:**
 
 ```soy {.bad}
-{template .t}
+{template t}
   {@param tagName: string}
   // When we open $tagName (that is not self-closing), we assume that it is
   // not a void element, i.e., it must be closed.
@@ -139,7 +142,7 @@ name is compile-time constant.
 
 ```soy {.bad}
 // This is invalid since we do not support matching static and dynamic tags.
-{template .t}
+{template t}
   {let tagName: "div" /}
   <{$tagName}></div>
 {/template}
@@ -154,12 +157,12 @@ is a simple but common use case.
 
 ```soy {.good}
 // An example of if conditions.
-{template .t}
+{template t}
   {@param b: bool}
   {@param i: bool}
   {@param em: bool}
   {if $b}<b>{/if}
-  {if $i}<i></if}
+  {if $i}<i>{/if}
   {if $em}<em>{/if}
     content
   {if $em}</em>{/if}
@@ -172,7 +175,7 @@ is a simple but common use case.
 
 ```soy {.good}
 // An example of switch conditions.
-{template .t}
+{template t}
   {@param foo: string}
   {@param a: string}
   {@param b: string}
@@ -205,7 +208,7 @@ unsupported.
 **Bad code:**
 
 ```soy {.bad}
-{template .t}
+{template t}
   {@param case: int}
   {switch $case}
     {case 1}
@@ -226,7 +229,7 @@ treated as an error.
 ```soy {.bad}
 // Although each pair of open tag and close tag has the same conditions, we do
 // not evaluate the expressions and cannot decide if they match or not.
-{template .t}
+{template t}
   {@param foo: bool}
   {@param bar: bool}
   {@param tag: string}
@@ -250,7 +253,7 @@ treated as an error.
 **Bad code:**
 
 ```soy {.bad}
-{template .t}
+{template t}
   {@param foo: bool}
   {let $bar: $foo}
   {if $foo}<b>{/if}
@@ -266,7 +269,7 @@ all the expressions match by text.
 **Good code:**
 
 ```soy {.good}
-{template .t}
+{template t}
   {@param foo: bool}
   {@param bar: bool}
   {if $foo}
@@ -289,7 +292,7 @@ Also, the compiler is able to match common tags across all possible conditions.
 **Good code:**
 
 ```soy {.good}
-{template .t}
+{template t}
   {@param foo: string}
   {@param bar: bool}
   {@param a: string}
@@ -325,7 +328,7 @@ previous blocks, are not supported.
 **Bad code:**
 
 ```soy {.bad}
-{template .t}
+{template t}
   {@param foo: bool}
   {if $foo}
     <div><div>
@@ -342,7 +345,7 @@ previous blocks, are not supported.
 **Bad code:**
 
 ```soy {.bad}
-{template .t}
+{template t}
   {@param foo: bool}
   {@param bar: bool}
   {if $foo}
@@ -381,7 +384,7 @@ not closed within the current block.
 **Bad code:**
 
 ```soy {.bad}
-{template .t}
+{template t}
   {for i in range(3)}
     <div>
   {/for}
@@ -394,12 +397,12 @@ You can use a recursive template to create nesting:
 **Good code:**
 
 ```soy {.good}
-{template .t}
+{template t}
   {@param level: int}
   {@param content: html}
   {if $level > 0}
     <div>
-      {call .t}
+      {call t}
         {param level: $level - 1 /}
         {param content: $content /}
       {/call}
@@ -416,22 +419,20 @@ supported by the compiler.
 **Bad code:**
 
 ```soy {.bad}
-{template .t}
+{template t}
   {@param a: list<string>}
-  {for $x in $a}
-    {if isFirst($x)}<ul>{/if}
+  {for $x, $i in $a}
+    {if $i == 0}<ul>{/if}
     <li>{$x}
-    {if isLast($x)}</ul>{/if}
+    {if $i == $a.length() - 1}</ul>{/if}
   {/for}
 {/template}
 ```
 
-`isFirst` and `isLast` are [built-in commands](control-flow#for) that check the
-position of the current iterator. Although this template produces valid HTML (it
-opens and closes `<ul>` exactly once if the list is non-empty), supporting this
-pattern adds an additional layer of complexity to the compiler. It requires
-checking function names, validating this particular AST structure, and do
-special handling for these functions.
+Although this template produces valid HTML (it opens and closes `<ul>` exactly
+once if the list is non-empty), supporting this pattern adds an additional layer
+of complexity to the compiler. It requires checking function names, validating
+this particular AST structure, and do special handling for these functions.
 
 For this example, we recommend you to use the following template. It renders
 exactly the same HTML, and is supported by the compiler.
@@ -439,9 +440,9 @@ exactly the same HTML, and is supported by the compiler.
 **Good code:**
 
 ```soy {.good}
-{template .t}
+{template t}
   {@param a: list<string>}
-  {if length($a) > 0}
+  {if $a.length() > 0}
     <ul>
     {for $x in $a}
       <li>{$x}
@@ -453,10 +454,10 @@ exactly the same HTML, and is supported by the compiler.
 
 ### Optional tags
 
-According to the HTML spec, some tags [can be
-omitted](https://www.w3.org/TR/html5/syntax.html#optional-tags). In particular,
-if certain criteria are met, the HTML parser can imply the start tags and/or end
-tags.
+According to the HTML spec, some tags
+[can be omitted](https://www.w3.org/TR/html5/syntax.html#optional-tags). In
+particular, if certain criteria are met, the HTML parser can imply the start
+tags and/or end tags.
 
 Soy supports part of these rules. The major differences between what we support
 and the HTML spec:
@@ -476,7 +477,7 @@ Some examples are:
 **Good code:**
 
 ```soy {.good}
-{template .t}
+{template t}
   {@param foo: bool}
   {@param bar: bool}
   <html>
@@ -503,7 +504,7 @@ example...
 **Good code:**
 
 ```soy {.good}
-{template .t}
+{template t}
   {@param foo: bool}
   {@param bar: bool}
   <ul>
@@ -534,7 +535,7 @@ allowed to be self-closing.
 **Good code:**
 
 ```soy {.good}
-{template .foreign_elements_simple}
+{template foreign_elements_simple}
   <svg>
     <path/>
     <path></path>
@@ -547,7 +548,7 @@ allowed to be self-closing.
 **Good code:**
 
 ```soy {.good}
-{template .foreign_elements_control_flow}
+{template foreign_elements_control_flow}
   {@param foo: bool}
   <svg>
     <path/>
@@ -567,7 +568,7 @@ block.
 **Bad code:**
 
 ```soy {.bad}
-{template .fail_foreign_elements_across_block}
+{template fail_foreign_elements_across_block}
   {@param foo: bool}
   {if $foo}
     <svg>
@@ -624,12 +625,12 @@ templates `bar` and `baz` will not.
 
 // This template does not override the default value, so it will have stricthtml
 // mode enabled.
-{template .foo}
+{template foo}
 ...
 {/template}
 
 // This is a non-HTML template, and stricthtml mode does not apply for it.
-{template .bar kind="text"}
+{template bar kind="text"}
 ...
 {/template}
 
@@ -639,6 +640,6 @@ templates `bar` and `baz` will not.
 {/template}
 ```
 
-To enforce `stricthtml` in all templates, add a custom [Soy
-conformance](../dev/conformance) rule
+To enforce `stricthtml` in all templates, add a custom
+[Soy conformance](../dev/conformance) rule
 `com.google.template.soy.conformance.RequireStrictHtml`.

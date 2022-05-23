@@ -21,13 +21,13 @@ import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
 import static org.junit.Assert.fail;
 
 import com.google.common.base.Joiner;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.Futures;
-import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.data.SoyDict;
 import com.google.template.soy.data.SoyFutureException;
 import com.google.template.soy.data.SoyValueConverterUtility;
+import com.google.template.soy.plugin.java.PluginInstances;
 import com.google.template.soy.shared.internal.NoOpScopedData;
+import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import com.google.template.soy.tofu.SoyTofu;
 import com.google.template.soy.tofu.SoyTofuException;
 import org.junit.Before;
@@ -44,24 +44,24 @@ public final class TofuExceptionsTest {
               "{namespace ns}",
               "",
               "/** */",
-              "{template .callerTemplate}",
-              "  {call .calleeTemplate data=\"all\" /}",
+              "{template callerTemplate}",
+              "  {call calleeTemplate data=\"all\" /}",
               "{/template}",
               "", // line 7
-              "{template .calleeTemplate}",
+              "{template calleeTemplate}",
               "  {@param foo: [boo: int, bad: string]}",
               "  {$foo.boo}",
               "  {$foo.bad}",
               "{/template}",
               "", // line 13
-              "{template .transclusionCaller}",
+              "{template transclusionCaller}",
               "  {@param foo: int}",
-              "  {call .transclusionCallee}",
+              "  {call transclusionCallee}",
               "    {param content kind=\"text\"}{$foo}{/param}",
               "  {/call}",
               "{/template}",
               "", // line 20
-              "{template .transclusionCallee}",
+              "{template transclusionCallee}",
               "  {@param content: string}",
               "  {$content}",
               "{/template}");
@@ -74,7 +74,7 @@ public final class TofuExceptionsTest {
         new BaseTofu(
             new NoOpScopedData(),
             SoyFileSetParserBuilder.forFileContents(SOY_FILE).parse().fileSet(),
-            ImmutableMap.of());
+            PluginInstances.empty());
   }
 
   @Test
@@ -142,7 +142,6 @@ public final class TofuExceptionsTest {
       tofu.newRenderer("ns.callerTemplate").setData(data).render();
       fail();
     } catch (SoyTofuException ste) {
-      assertThat(ste).hasCauseThat().isNull();
       assertThat(ste)
           .hasMessageThat()
           .isEqualTo(
@@ -162,17 +161,14 @@ public final class TofuExceptionsTest {
       tofu.newRenderer("ns.transclusionCaller").setData(data).render();
       fail();
     } catch (SoyTofuException ste) {
-      assertThat(ste).hasCauseThat().isNull();
       assertThat(ste)
+          .hasCauseThat()
           .hasMessageThat()
           .isEqualTo(
-              "When evaluating \"$content\": When evaluating \"$foo\": Parameter type mismatch: "
+              "When evaluating \"$foo\": Parameter type mismatch: "
                   + "attempt to bind value 'not an int' (a StringData) to parameter 'foo' which "
                   + "has a declared type of 'int'.");
-      assertThat(ste.getStackTrace()[0].toString()).isEqualTo("ns.transclusionCaller(no-path:14)");
-      assertThat(ste.getStackTrace()[1].toString()).isEqualTo("ns.transclusionCaller(no-path:17)");
-      assertThat(ste.getStackTrace()[2].toString()).isEqualTo("ns.transclusionCallee(no-path:23)");
-      assertThat(ste.getStackTrace()[3].toString()).isEqualTo("ns.transclusionCaller(no-path:16)");
+      assertThat(ste.getStackTrace()[0].toString()).isEqualTo("ns.transclusionCallee(no-path:21)");
     }
   }
 
@@ -185,16 +181,9 @@ public final class TofuExceptionsTest {
       tofu.newRenderer("ns.transclusionCaller").setData(data).render();
       fail();
     } catch (SoyTofuException ste) {
-      SoyFutureException sfe = (SoyFutureException) ste.getCause();
-      assertThat(sfe).hasMessageThat().isEqualTo("Error dereferencing future");
-      assertThat(sfe).hasCauseThat().isEqualTo(futureFailureCause);
-      assertThat(ste)
-          .hasMessageThat()
-          .isEqualTo(
-              "When evaluating \"$content\": When evaluating \"$foo\": Error dereferencing future");
-      assertThat(ste.getStackTrace()[0].toString()).isEqualTo("ns.transclusionCaller(no-path:17)");
-      assertThat(ste.getStackTrace()[1].toString()).isEqualTo("ns.transclusionCallee(no-path:23)");
-      assertThat(ste.getStackTrace()[2].toString()).isEqualTo("ns.transclusionCaller(no-path:16)");
+      assertThat(ste).hasMessageThat().isEqualTo("failed to evaluate param: content");
+      assertThat(ste).hasCauseThat().hasCauseThat().hasCauseThat().isEqualTo(futureFailureCause);
+      assertThat(ste.getStackTrace()[0].toString()).isEqualTo("ns.transclusionCallee(no-path:21)");
     }
   }
 }

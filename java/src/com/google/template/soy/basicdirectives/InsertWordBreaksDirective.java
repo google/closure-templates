@@ -47,7 +47,6 @@ import org.objectweb.asm.Type;
  *
  * <p>It takes a single argument : an integer specifying the max number of characters between
  * breaks.
- *
  */
 @SoyPurePrintDirective
 final class InsertWordBreaksDirective
@@ -82,7 +81,7 @@ final class InsertWordBreaksDirective
       maxCharsBetweenWordBreaks = args.get(0).integerValue();
     } catch (SoyDataException sde) {
       throw new IllegalArgumentException(
-          "Could not parse 'insertWordBreaks' parameter as integer.");
+          "Could not parse 'insertWordBreaks' parameter as integer.", sde);
     }
     return BasicDirectivesRuntime.insertWordBreaks(value, maxCharsBetweenWordBreaks);
   }

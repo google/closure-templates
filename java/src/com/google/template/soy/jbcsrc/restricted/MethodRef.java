@@ -20,16 +20,27 @@ import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.jbcsrc.restricted.Expression.areAllCheap;
 
 import com.google.auto.value.AutoValue;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
+import com.google.common.html.types.SafeHtml;
+import com.google.common.html.types.SafeHtmlProto;
+import com.google.common.html.types.SafeUrl;
+import com.google.common.html.types.SafeUrlProto;
+import com.google.common.html.types.TrustedResourceUrl;
+import com.google.common.html.types.TrustedResourceUrlProto;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.UnsignedInts;
 import com.google.common.primitives.UnsignedLongs;
+import com.google.protobuf.ExtensionLite;
+import com.google.protobuf.GeneratedMessage.ExtendableMessage;
 import com.google.protobuf.Message;
 import com.google.protobuf.ProtocolMessageEnum;
 import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
+import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
+import com.google.template.soy.data.ProtoFieldInterpreter;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.data.SanitizedContents;
 import com.google.template.soy.data.SoyLegacyObjectMap;
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyMap;
@@ -37,27 +48,33 @@ import com.google.template.soy.data.SoyProtoValue;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
+import com.google.template.soy.data.SoyValueUnconverter;
 import com.google.template.soy.data.SoyVisualElement;
 import com.google.template.soy.data.SoyVisualElementData;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.internal.DictImpl;
+import com.google.template.soy.data.internal.LazyProtoToSoyValueList;
+import com.google.template.soy.data.internal.LazyProtoToSoyValueMap;
 import com.google.template.soy.data.internal.ListImpl;
 import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
 import com.google.template.soy.data.internal.SoyMapImpl;
+import com.google.template.soy.data.internal.SoyRecordImpl;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
+import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.restricted.Expression.Feature;
 import com.google.template.soy.jbcsrc.restricted.Expression.Features;
+import com.google.template.soy.jbcsrc.runtime.BufferedSoyValueProvider;
 import com.google.template.soy.jbcsrc.runtime.JbcSrcRuntime;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.LegacyFunctionAdapter;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
+import com.google.template.soy.jbcsrc.shared.StackFrame;
 import com.google.template.soy.logging.SoyLogger;
-import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
 import com.google.template.soy.shared.internal.SharedRuntime;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import java.io.Closeable;
@@ -65,10 +82,13 @@ import java.io.PrintStream;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.Future;
+import org.objectweb.asm.Handle;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
@@ -76,6 +96,8 @@ import org.objectweb.asm.commons.Method;
 /** A reference to a method that can be called at runtime. */
 @AutoValue
 public abstract class MethodRef {
+
+  public static final Type[] NO_METHOD_ARGS = {};
 
   public static final MethodRef ADVISING_STRING_BUILDER_GET_AND_CLEAR =
       create(LoggingAdvisingAppendable.BufferingAppendable.class, "getAndClearBuffer")
@@ -92,7 +114,13 @@ public abstract class MethodRef {
       create(Boolean.class, "toString", boolean.class).asCheap().asNonNullable();
 
   public static final MethodRef COMPILED_TEMPLATE_RENDER =
-      create(CompiledTemplate.class, "render", LoggingAdvisingAppendable.class, RenderContext.class)
+      create(
+              CompiledTemplate.class,
+              "render",
+              SoyRecord.class,
+              SoyRecord.class,
+              LoggingAdvisingAppendable.class,
+              RenderContext.class)
           .asNonNullable();
 
   public static final MethodRef DICT_IMPL_FOR_PROVIDER_MAP =
@@ -102,8 +130,11 @@ public abstract class MethodRef {
   public static final MethodRef MAP_IMPL_FOR_PROVIDER_MAP =
       create(SoyMapImpl.class, "forProviderMap", Map.class).asNonNullable();
 
+  public static final MethodRef RECORD_IMPL_FOR_PROVIDER_MAP =
+      create(SoyRecordImpl.class, "forProviderMap", Map.class).asNonNullable();
+
   public static final MethodRef DOUBLE_TO_STRING =
-      create(Double.class, "toString", double.class).asNonNullable();
+      create(FloatData.class, "toString", double.class).asNonNullable();
 
   public static final MethodRef EQUALS = create(Object.class, "equals", Object.class);
 
@@ -111,6 +142,12 @@ public abstract class MethodRef {
 
   public static final MethodRef FLOAT_DATA_FOR_VALUE =
       create(FloatData.class, "forValue", double.class).asNonNullable();
+
+  public static final MethodRef RENDER_RESULT_ASSERT_DONE =
+      create(RenderResult.class, "assertDone");
+
+  public static final MethodRef IMMUTABLE_LIST_COPY_OF_COLLECTION =
+      create(ImmutableList.class, "copyOf", Collection.class);
 
   /** a list of all the ImmutableList.of overloads, indexed by arity. */
   public static final ImmutableList<MethodRef> IMMUTABLE_LIST_OF;
@@ -139,31 +176,6 @@ public abstract class MethodRef {
     }
     IMMUTABLE_LIST_OF_ARRAY = immutableListOfArray;
     IMMUTABLE_LIST_OF = ImmutableList.copyOf(immutableListOfMethods);
-  }
-
-  /**
-   * A list of all the {@link ImmutableMap#of} overloads, indexed by number of key-value pairs.
-   * (Note that this is a different indexing scheme than {@link #IMMUTABLE_LIST_OF}.)
-   */
-  public static final ImmutableList<MethodRef> IMMUTABLE_MAP_OF;
-
-  static {
-    MethodRef[] immutableMapOfMethods = new MethodRef[6];
-    for (java.lang.reflect.Method m : ImmutableMap.class.getMethods()) {
-      if (m.getName().equals("of")) {
-        Class<?>[] params = m.getParameterTypes();
-        MethodRef ref = MethodRef.create(m).asNonNullable();
-        int arity = params.length;
-        checkState(arity % 2 == 0);
-        int numEntries = arity >> 1;
-        if (numEntries == 0) {
-          // the zero arg one is 'cheap'
-          ref = ref.asCheap();
-        }
-        immutableMapOfMethods[numEntries] = ref;
-      }
-    }
-    IMMUTABLE_MAP_OF = ImmutableList.copyOf(immutableMapOfMethods);
   }
 
   public static final MethodRef INTEGER_DATA_FOR_VALUE =
@@ -209,9 +221,9 @@ public abstract class MethodRef {
   public static final MethodRef LONG_TO_STRING = create(Long.class, "toString", long.class);
 
   public static final MethodRef NUMBER_DOUBLE_VALUE = create(Number.class, "doubleValue").asCheap();
-
   public static final MethodRef NUMBER_LONG_VALUE = create(Number.class, "longValue").asCheap();
   public static final MethodRef NUMBER_INT_VALUE = create(Number.class, "intValue").asCheap();
+  public static final MethodRef NUMBER_FLOAT_VALUE = create(Number.class, "floatValue").asCheap();
 
   public static final MethodRef OBJECT_TO_STRING = create(Object.class, "toString");
 
@@ -229,8 +241,42 @@ public abstract class MethodRef {
           ContentKind.class,
           Dir.class);
 
+  public static final MethodRef LIST_UNBOX_INTS =
+      create(JbcSrcRuntime.class, "listUnboxInts", List.class);
+  public static final MethodRef LIST_UNBOX_FLOATS =
+      create(JbcSrcRuntime.class, "listUnboxFloats", List.class);
+  public static final MethodRef LIST_UNBOX_NUMBERS =
+      create(JbcSrcRuntime.class, "listUnboxNumbers", List.class);
+  public static final MethodRef LIST_UNBOX_BOOLS =
+      create(JbcSrcRuntime.class, "listUnboxBools", List.class);
+  public static final MethodRef LIST_UNBOX_STRINGS =
+      create(JbcSrcRuntime.class, "listUnboxStrings", List.class);
+  public static final MethodRef LIST_UNBOX_PROTOS =
+      create(JbcSrcRuntime.class, "listUnboxProtos", List.class);
+  public static final MethodRef LIST_UNBOX_ENUMS =
+      create(JbcSrcRuntime.class, "listUnboxEnums", List.class, Class.class);
+  public static final MethodRef LIST_BOX_VALUES =
+      create(JbcSrcRuntime.class, "listBoxValues", List.class);
+  public static final MethodRef UNBOX_MAP =
+      create(JbcSrcRuntime.class, "unboxMap", SoyMap.class, Class.class, Class.class);
+  public static final MethodRef UNBOX_RECORD =
+      create(JbcSrcRuntime.class, "unboxRecord", SoyRecord.class);
+  public static final MethodRef SOY_VALUE_TO_BOXED_INTEGER =
+      create(JbcSrcRuntime.class, "toBoxedInteger", SoyValue.class);
+  public static final MethodRef SOY_VALUE_TO_BOXED_DOUBLE =
+      create(JbcSrcRuntime.class, "toBoxedDouble", SoyValue.class);
+  public static final MethodRef SOY_VALUE_TO_BOXED_FLOAT =
+      create(JbcSrcRuntime.class, "toBoxedFloat", SoyValue.class);
+  public static final MethodRef SOY_VALUE_TO_ENUM =
+      create(JbcSrcRuntime.class, "toEnum", SoyValue.class, Class.class);
+  public static final MethodRef SOY_VALUE_TO_BOXED_BOOLEAN =
+      create(JbcSrcRuntime.class, "toBoxedBoolean", SoyValue.class);
+  public static final MethodRef SOY_VALUE_TO_BOXED_LONG =
+      create(JbcSrcRuntime.class, "toBoxedLong", SoyValue.class);
+
   public static final MethodRef PARAM_STORE_SET_FIELD =
-      create(ParamStore.class, "setField", String.class, SoyValueProvider.class);
+      create(
+          JbcSrcRuntime.class, "setField", ParamStore.class, String.class, SoyValueProvider.class);
 
   public static final MethodRef PRINT_STREAM_PRINTLN = create(PrintStream.class, "println");
 
@@ -249,6 +295,15 @@ public abstract class MethodRef {
   public static final MethodRef RUNTIME_APPLY_ESCAPERS =
       create(JbcSrcRuntime.class, "applyEscapers", CompiledTemplate.class, ImmutableList.class);
 
+  public static final MethodRef RUNTIME_CHECK_RESOLVED_LIST =
+      create(JbcSrcRuntime.class, "checkResolved", List.class);
+
+  public static final MethodRef RUNTIME_CHECK_RESOLVED_MAP =
+      create(JbcSrcRuntime.class, "checkResolved", Map.class);
+
+  public static final MethodRef SOY_SERVER_KEY =
+      MethodRef.create(SharedRuntime.class, "soyServerKey", SoyValue.class).asCheap();
+
   public static final MethodRef RUNTIME_RANGE_LOOP_LENGTH =
       create(JbcSrcRuntime.class, "rangeLoopLength", int.class, int.class, int.class).asCheap();
 
@@ -260,6 +315,13 @@ public abstract class MethodRef {
           SoyValue.class,
           List.class);
 
+  public static final MethodRef RUNTIME_BIND_TEMPLATE_PARAMS =
+      create(
+          JbcSrcRuntime.class,
+          "bindTemplateParams",
+          CompiledTemplate.TemplateValue.class,
+          SoyRecord.class);
+
   public static final MethodRef RUNTIME_CALL_LEGACY_FUNCTION =
       create(JbcSrcRuntime.class, "callLegacySoyFunction", LegacyFunctionAdapter.class, List.class);
 
@@ -268,6 +330,12 @@ public abstract class MethodRef {
 
   public static final MethodRef RUNTIME_COERCE_TO_STRING =
       create(JbcSrcRuntime.class, "coerceToString", SoyValue.class).asNonNullable();
+
+  public static final MethodRef RUNTIME_COERCE_TO_BOOLEAN =
+      create(JbcSrcRuntime.class, "coerceToBoolean", SoyValue.class);
+
+  public static final MethodRef RUNTIME_COERCE_STRING_TO_BOOLEAN =
+      create(JbcSrcRuntime.class, "coerceToBoolean", String.class);
 
   public static final MethodRef RUNTIME_EQUAL =
       create(SharedRuntime.class, "equal", SoyValue.class, SoyValue.class);
@@ -278,16 +346,34 @@ public abstract class MethodRef {
   public static final MethodRef RUNTIME_COMPARE_NULLABLE_STRING =
       create(JbcSrcRuntime.class, "compareNullableString", String.class, SoyValue.class);
 
+  public static final MethodRef RUNTIME_HAS_FIELD =
+      create(JbcSrcRuntime.class, "hasField", SoyRecord.class, String.class);
+
+  public static final MethodRef RUNTIME_GET_FIELD =
+      create(JbcSrcRuntime.class, "getField", SoyRecord.class, String.class);
+
   public static final MethodRef RUNTIME_GET_FIELD_PROVIDER =
       create(JbcSrcRuntime.class, "getFieldProvider", SoyRecord.class, String.class)
           .asNonNullable();
 
+  public static final MethodRef RUNTIME_PARAM_OR_DEFAULT =
+      create(JbcSrcRuntime.class, "paramOrDefault", SoyValueProvider.class, SoyValue.class)
+          .asNonNullable()
+          .asCheap();
+  public static final MethodRef RUNTIME_PARAM =
+      create(JbcSrcRuntime.class, "param", SoyValueProvider.class).asNonNullable().asCheap();
   public static final MethodRef RUNTIME_GET_FIELD_PROVIDER_DEFAULT =
       create(JbcSrcRuntime.class, "getFieldProvider", SoyRecord.class, String.class, SoyValue.class)
           .asNonNullable();
 
+  public static final MethodRef IS_PARAM_SET =
+      create(JbcSrcRuntime.class, "isParamSet", SoyValueProvider.class).asCheap();
+
   public static final MethodRef RUNTIME_GET_LIST_ITEM =
       create(JbcSrcRuntime.class, "getSoyListItem", List.class, long.class);
+
+  public static final MethodRef RUNTIME_GET_LIST_ITEM_PROVIDER =
+      create(JbcSrcRuntime.class, "getSoyListItemProvider", List.class, long.class);
 
   public static final MethodRef RUNTIME_GET_LIST_STATUS =
       create(JbcSrcRuntime.class, "getListStatus", List.class);
@@ -302,8 +388,18 @@ public abstract class MethodRef {
           SoyLegacyObjectMap.class,
           SoyValue.class);
 
+  public static final MethodRef RUNTIME_GET_LEGACY_OBJECT_MAP_ITEM_PROVIDER =
+      create(
+          JbcSrcRuntime.class,
+          "getSoyLegacyObjectMapItemProvider",
+          SoyLegacyObjectMap.class,
+          SoyValue.class);
+
   public static final MethodRef RUNTIME_GET_MAP_ITEM =
       create(JbcSrcRuntime.class, "getSoyMapItem", SoyMap.class, SoyValue.class);
+
+  public static final MethodRef RUNTIME_GET_MAP_ITEM_PROVIDER =
+      create(JbcSrcRuntime.class, "getSoyMapItemProvider", SoyMap.class, SoyValue.class);
 
   public static final MethodRef RUNTIME_LESS_THAN =
       create(SharedRuntime.class, "lessThan", SoyValue.class, SoyValue.class).asNonNullable();
@@ -327,18 +423,43 @@ public abstract class MethodRef {
   public static final MethodRef RUNTIME_PLUS =
       create(SharedRuntime.class, "plus", SoyValue.class, SoyValue.class).asNonNullable();
 
-  public static final MethodRef MSG_RENDERER_SET_PLACEHOLDER =
-      create(JbcSrcRuntime.MsgRenderer.class, "setPlaceholder", String.class, Object.class);
+  public static final MethodRef RUNTIME_MOD =
+      create(SharedRuntime.class, "mod", SoyValue.class, SoyValue.class).asNonNullable();
 
-  public static final MethodRef MSG_RENDERER_ESCAPE_HTML =
-      create(JbcSrcRuntime.MsgRenderer.class, "escapeHtml", String.class);
+  public static final MethodRef RUNTIME_SHIFT_RIGHT =
+      create(SharedRuntime.class, "shiftRight", SoyValue.class, SoyValue.class).asNonNullable();
+
+  public static final MethodRef RUNTIME_SHIFT_LEFT =
+      create(SharedRuntime.class, "shiftLeft", SoyValue.class, SoyValue.class).asNonNullable();
+
+  public static final MethodRef RUNTIME_BITWISE_OR =
+      create(SharedRuntime.class, "bitwiseOr", SoyValue.class, SoyValue.class).asNonNullable();
+
+  public static final MethodRef RUNTIME_BITWISE_XOR =
+      create(SharedRuntime.class, "bitwiseXor", SoyValue.class, SoyValue.class).asNonNullable();
+
+  public static final MethodRef RUNTIME_BITWISE_AND =
+      create(SharedRuntime.class, "bitwiseAnd", SoyValue.class, SoyValue.class).asNonNullable();
+
+  public static final MethodRef CONSTRUCT_MAP_FROM_LIST =
+      create(SharedRuntime.class, "constructMapFromList", List.class).asNonNullable();
+
+  public static final MethodRef MSG_RENDERER_SET_PLACEHOLDER =
+      create(
+          JbcSrcRuntime.MsgRenderer.class, "setPlaceholder", String.class, SoyValueProvider.class);
+
+  public static final MethodRef HANDLE_BASIC_TRANSLATION =
+      create(JbcSrcRuntime.class, "handleBasicTranslation", List.class).asNonNullable();
+  public static final MethodRef HANDLE_BASIC_TRANSLATION_AND_ESCAPE_HTML =
+      create(JbcSrcRuntime.class, "handleBasicTranslationAndEscapeHtml", List.class)
+          .asNonNullable();
 
   public static final MethodRef MSG_RENDERER_SET_PLACEHOLDER_AND_ORDERING =
       create(
           JbcSrcRuntime.MsgRenderer.class,
           "setPlaceholderAndOrdering",
           String.class,
-          Object.class,
+          SoyValueProvider.class,
           String.class);
 
   public static final MethodRef RUNTIME_STRING_EQUALS_AS_NUMBER =
@@ -349,7 +470,10 @@ public abstract class MethodRef {
       create(SharedRuntime.class, "times", SoyValue.class, SoyValue.class).asNonNullable();
 
   public static final MethodRef RUNTIME_UNEXPECTED_STATE_ERROR =
-      create(JbcSrcRuntime.class, "unexpectedStateError", int.class).asNonNullable();
+      create(JbcSrcRuntime.class, "unexpectedStateError", StackFrame.class).asNonNullable();
+
+  public static final MethodRef NO_EXTERN_JAVA_IMPL =
+      create(JbcSrcRuntime.class, "noExternJavaImpl").asNonNullable();
 
   public static final MethodRef SOY_LIST_AS_JAVA_LIST =
       create(SoyList.class, "asJavaList").asNonNullable();
@@ -359,15 +483,6 @@ public abstract class MethodRef {
 
   public static final MethodRef SOY_MAP_IMPL_AS_JAVA_MAP =
       create(SoyMap.class, "asJavaMap").asNonNullable();
-
-  public static final MethodRef SOY_MSG_RAW_TEXT_PART_GET_RAW_TEXT =
-      create(SoyMsgRawTextPart.class, "getRawText").asCheap().asNonNullable();
-
-  public static final MethodRef SOY_PROTO_VALUE_GET_PROTO_FIELD =
-      create(SoyProtoValue.class, "getProtoField", String.class).asCheap().asNonNullable();
-
-  public static final MethodRef RUNTIME_GET_PROTO_FIELD =
-      create(JbcSrcRuntime.class, "getProtoField", SoyProtoValue.class, String.class).asCheap();
 
   public static final MethodRef SOY_PROTO_VALUE_GET_PROTO =
       create(SoyProtoValue.class, "getProto").asCheap().asNonNullable();
@@ -390,11 +505,14 @@ public abstract class MethodRef {
   public static final MethodRef SOY_VALUE_NUMBER_VALUE =
       create(SoyValue.class, "numberValue").asNonNullable();
 
+  public static final MethodRef SOY_VALUE_JAVA_NUMBER_VALUE =
+      create(NumberData.class, "javaNumberValue").asNonNullable();
+
   public static final MethodRef SOY_VALUE_STRING_VALUE =
       create(SoyValue.class, "stringValue").asCheap().asNonNullable();
 
-  public static final MethodRef RUNTIME_CHECK_SOY_STRING =
-      create(JbcSrcRuntime.class, "checkSoyString", Object.class).asCheap().asNonNullable();
+  public static final MethodRef COMPILED_TEMPLATE_GET_TEMPLATE =
+      create(CompiledTemplate.TemplateValue.class, "getTemplate").asNonNullable();
 
   public static final MethodRef SOY_VALUE_PROVIDER_RENDER_AND_RESOLVE =
       create(
@@ -404,8 +522,30 @@ public abstract class MethodRef {
               boolean.class)
           .asNonNullable();
 
+  public static final MethodRef CONVERT_FUTURE_TO_SOY_VALUE_PROVIDER =
+      create(JbcSrcRuntime.class, "convertFutureToSoyValueProvider", Future.class);
+  public static final MethodRef CONVERT_OBJECT_TO_SOY_VALUE_PROVIDER =
+      create(JbcSrcRuntime.class, "convertObjectToSoyValueProvider", Object.class);
+  public static final MethodRef CONVERT_SAFE_URL_TO_SOY_VALUE_PROVIDER =
+      create(SanitizedContents.class, "fromSafeUrl", SafeUrl.class);
+  public static final MethodRef CONVERT_SAFE_URL_PROTO_TO_SOY_VALUE_PROVIDER =
+      create(SanitizedContents.class, "fromSafeUrlProto", SafeUrlProto.class);
+  public static final MethodRef CONVERT_TRUSTED_RESOURCE_URL_PROTO_TO_SOY_VALUE_PROVIDER =
+      create(SanitizedContents.class, "fromTrustedResourceUrlProto", TrustedResourceUrlProto.class);
+  public static final MethodRef CONVERT_SAFE_HTML_PROTO_TO_SOY_VALUE_PROVIDER =
+      create(SanitizedContents.class, "fromSafeHtmlProto", SafeHtmlProto.class);
+  public static final MethodRef CONVERT_SAFE_HTML_TO_SOY_VALUE_PROVIDER =
+      create(SanitizedContents.class, "fromSafeHtml", SafeHtml.class);
+  public static final MethodRef CONVERT_TRUSTED_RESOURCE_URL_TO_SOY_VALUE_PROVIDER =
+      create(SanitizedContents.class, "fromTrustedResourceUrl", TrustedResourceUrl.class);
+
   public static final MethodRef SOY_VALUE_PROVIDER_RESOLVE =
       create(JbcSrcRuntime.class, "resolveSoyValueProvider", SoyValueProvider.class);
+
+  public static final MethodRef SOY_VALUE_PROVIDER_OR_NULL =
+      create(JbcSrcRuntime.class, "soyValueProviderOrNull", SoyValueProvider.class);
+
+  public static final MethodRef LONG_TO_INT = create(JbcSrcRuntime.class, "longToInt", long.class);
 
   public static final MethodRef SOY_VALUE_PROVIDER_STATUS =
       create(SoyValueProvider.class, "status").asNonNullable();
@@ -418,15 +558,49 @@ public abstract class MethodRef {
   public static final MethodRef STRING_VALUE_OF =
       create(String.class, "valueOf", Object.class).asNonNullable();
 
+  public static final MethodRef BOX_INTEGER =
+      create(Integer.class, "valueOf", int.class).asNonNullable();
+  public static final MethodRef BOX_LONG =
+      create(Long.class, "valueOf", long.class).asNonNullable();
+  public static final MethodRef BOX_DOUBLE =
+      create(Double.class, "valueOf", double.class).asNonNullable();
+  public static final MethodRef BOX_FLOAT =
+      create(Float.class, "valueOf", float.class).asNonNullable();
+  public static final MethodRef BOX_BOOLEAN =
+      create(Boolean.class, "valueOf", boolean.class).asNonNullable();
+  public static final MethodRef UNBOX_INTEGER = create(Integer.class, "longValue").asNonNullable();
+  public static final MethodRef UNBOX_LONG = create(Long.class, "longValue").asNonNullable();
+  public static final MethodRef UNBOX_DOUBLE = create(Double.class, "doubleValue").asNonNullable();
+  public static final MethodRef UNBOX_FLOAT = create(Float.class, "doubleValue").asNonNullable();
+  public static final MethodRef UNBOX_BOOLEAN =
+      create(Boolean.class, "booleanValue").asNonNullable();
+  public static final MethodRef UNBOX_OBJECT =
+      create(SoyValueUnconverter.class, "unconvert", SoyValueProvider.class);
+  public static final MethodRef UNBOX_SAFE_URL =
+      create(JbcSrcRuntime.class, "unboxSafeUrl", SoyValueProvider.class);
+  public static final MethodRef UNBOX_SAFE_HTML_PROTO =
+      create(JbcSrcRuntime.class, "unboxSafeHtmlProto", SoyValueProvider.class);
+  public static final MethodRef UNBOX_SAFE_URL_PROTO =
+      create(JbcSrcRuntime.class, "unboxSafeUrlProto", SoyValueProvider.class);
+  public static final MethodRef UNBOX_TRUSTED_RESOURCE_URL_PROTO =
+      create(JbcSrcRuntime.class, "unboxTrustedResourceUrlProto", SoyValueProvider.class);
+  public static final MethodRef UNBOX_SAFE_HTML =
+      create(JbcSrcRuntime.class, "unboxSafeHtml", SoyValueProvider.class);
+  public static final MethodRef UNBOX_TRUSTED_RESOURCE_URL =
+      create(JbcSrcRuntime.class, "unboxTrustedResourceUrl", SoyValueProvider.class);
+
   public static final MethodRef STRING_DATA_FOR_VALUE =
       create(StringData.class, "forValue", String.class).asCheap().asNonNullable();
 
   public static final MethodRef LOGGING_ADVISING_APPENDABLE_BUFFERING =
       create(LoggingAdvisingAppendable.class, "buffering").asNonNullable();
 
+  public static final MethodRef BUFFERED_SOY_VALUE_PROVIDER_CREATE =
+      create(BufferedSoyValueProvider.class, "create", BufferingAppendable.class).asNonNullable();
+
   public static final MethodRef CREATE_LOG_STATEMENT =
       MethodRef.create(
-          JbcSrcRuntime.class, "createLogStatement", SoyVisualElementData.class, boolean.class);
+          JbcSrcRuntime.class, "createLogStatement", boolean.class, SoyVisualElementData.class);
 
   public static final MethodRef CLOSEABLE_CLOSE = MethodRef.create(Closeable.class, "close");
 
@@ -445,6 +619,42 @@ public abstract class MethodRef {
   public static final MethodRef FLUSH_LOGS_AND_RENDER =
       MethodRef.create(
           JbcSrcRuntime.class, "flushLogsAndRender", SoyValueProvider.class, SoyLogger.class);
+
+  public static final MethodRef BOX_JAVA_MAP_AS_SOY_MAP =
+      MethodRef.create(JbcSrcRuntime.class, "boxJavaMapAsSoyMap", Map.class);
+
+  public static final MethodRef BOX_JAVA_MAP_AS_SOY_RECORD =
+      MethodRef.create(JbcSrcRuntime.class, "boxJavaMapAsSoyRecord", Map.class);
+
+  public static final MethodRef BOX_JAVA_MAP_AS_SOY_LEGACY_OBJECT_MAP =
+      MethodRef.create(JbcSrcRuntime.class, "boxJavaMapAsSoyLegacyObjectMap", Map.class);
+
+  public static final MethodRef LAZY_PROTO_TO_SOY_VALUE_LIST_FOR_LIST =
+      MethodRef.create(
+              LazyProtoToSoyValueList.class, "forList", List.class, ProtoFieldInterpreter.class)
+          .asNonNullable();
+
+  public static final MethodRef LAZY_PROTO_TO_SOY_VALUE_MAP_FOR_MAP =
+      MethodRef.create(
+              LazyProtoToSoyValueMap.class,
+              "forMap",
+              Map.class,
+              ProtoFieldInterpreter.class,
+              ProtoFieldInterpreter.class,
+              Class.class)
+          .asNonNullable();
+
+  public static final MethodRef GET_EXTENSION_LIST =
+      MethodRef.create(
+              JbcSrcRuntime.class,
+              "getExtensionList",
+              ExtendableMessage.class,
+              ExtensionLite.class,
+              ProtoFieldInterpreter.class)
+          .asNonNullable();
+
+  public static final MethodRef SOY_RECORD_GET_FIELD_PROVIDER =
+      MethodRef.create(SoyRecord.class, "getFieldProvider", String.class);
 
   public static MethodRef create(Class<?> clazz, String methodName, Class<?>... params) {
     java.lang.reflect.Method m;
@@ -485,6 +695,7 @@ public abstract class MethodRef {
   }
 
   public static MethodRef createInterfaceMethod(TypeInfo owner, Method method) {
+    Preconditions.checkArgument(owner.isInterface());
     return new AutoValue_MethodRef(
         Opcodes.INVOKEINTERFACE,
         owner,
@@ -495,6 +706,7 @@ public abstract class MethodRef {
   }
 
   public static MethodRef createInstanceMethod(TypeInfo owner, Method method) {
+    Preconditions.checkArgument(!owner.isInterface());
     return new AutoValue_MethodRef(
         Opcodes.INVOKEVIRTUAL,
         owner,
@@ -531,6 +743,29 @@ public abstract class MethodRef {
 
   public abstract Features features();
 
+  public Handle asHandle() {
+    int tag;
+    switch (opcode()) {
+      case Opcodes.INVOKESTATIC:
+        tag = Opcodes.H_INVOKESTATIC;
+        break;
+      case Opcodes.INVOKEINTERFACE:
+        tag = Opcodes.H_INVOKEINTERFACE;
+        break;
+      case Opcodes.INVOKEVIRTUAL:
+        tag = Opcodes.H_INVOKEVIRTUAL;
+        break;
+      default:
+        throw new AssertionError("unsupported opcode: " + opcode());
+    }
+    return new Handle(
+        tag,
+        owner().internalName(),
+        method().getName(),
+        method().getDescriptor(),
+        owner().isInterface());
+  }
+
   // TODO(lukes): consider different names.  'invocation'? invoke() makes it sounds like we are
   // actually calling the method rather than generating an expression that will output code that
   // will invoke the method.
@@ -553,7 +788,7 @@ public abstract class MethodRef {
     return invoke(Arrays.asList(args));
   }
 
-  Expression invoke(final Iterable<? extends Expression> args) {
+  public Expression invoke(final Iterable<? extends Expression> args) {
     // void methods violate the expression contract of pushing a result onto the runtime stack.
     checkState(
         !Type.VOID_TYPE.equals(returnType()), "Cannot produce an expression from a void method.");
@@ -600,7 +835,7 @@ public abstract class MethodRef {
         // This is for whether the methods owner is an interface.  This is mostly to handle java8
         // default methods on interfaces.  We don't care about those currently, but ASM requires
         // this.
-        opcode() == Opcodes.INVOKEINTERFACE);
+        owner().isInterface());
   }
 
   private void doInvoke(CodeBuilder mv, Iterable<? extends Expression> args) {

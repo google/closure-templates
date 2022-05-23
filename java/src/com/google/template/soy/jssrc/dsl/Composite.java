@@ -21,6 +21,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.jssrc.restricted.JsExpr;
+import java.util.function.Consumer;
 
 /** Represents an expression preceded by one or more initial statements. */
 @AutoValue
@@ -68,7 +69,7 @@ abstract class Composite extends Expression {
   }
 
   @Override
-  public void collectRequires(RequiresCollector collector) {
+  public void collectRequires(Consumer<GoogRequire> collector) {
     for (Statement stmt : initialStatements()) {
       stmt.collectRequires(collector);
     }

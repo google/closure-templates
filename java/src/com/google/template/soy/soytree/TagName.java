@@ -24,7 +24,14 @@ import com.google.common.base.Ascii;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.TemplateContentKind;
+import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
+import com.google.template.soy.types.StringType;
+import com.google.template.soy.types.TemplateType;
+import java.util.Objects;
 import javax.annotation.Nullable;
 
 /**
@@ -38,6 +45,7 @@ import javax.annotation.Nullable;
  * associated with the {@code PrintNode}.
  */
 public final class TagName {
+
   /**
    * An enum to represent tags that have {@code rcdata} content.
    *
@@ -173,6 +181,12 @@ public final class TagName {
   private static final ImmutableSet<String> HTML_OPEN_TAG_EXCLUDE_SET =
       ImmutableSet.of("head", "body", "html");
 
+  /** Set of tags that are focusable. */
+  private static final ImmutableSet<String> FOCUSABLE_TAG_NAMES =
+      ImmutableSet.of("a", "input", "textarea", "select", "button");
+
+  public static final String WILDCARD = "";
+
   /**
    * A map that is used to check whether a particular optional tag can be implicitly closed by a
    * following open tag. See {@link #checkCloseTagClosesOptional} method for more information.
@@ -198,7 +212,7 @@ public final class TagName {
           .putAll("tbody", "tbody", "tfoot")
           .put("tfoot", "table")
           .put("tr", "tr")
-          .putAll("td", "tr", "th")
+          .putAll("td", "tr", "th", "td")
           .putAll("th", "td", "th")
           .build();
 
@@ -241,6 +255,32 @@ public final class TagName {
     return node instanceof RawTextNode;
   }
 
+  public boolean isLegacyDynamicTagName() {
+    if (isStatic()) {
+      return false;
+    }
+    ExprNode root = getDynamicTagName().getExpr().getRoot();
+    return root instanceof FunctionNode
+        && ((FunctionNode) root).isResolved()
+        && ((FunctionNode) root).getSoyFunction() == BuiltinFunction.LEGACY_DYNAMIC_TAG;
+  }
+
+  /**
+   * A tag is a template call if it contains either no parameters or only parameters of type html.
+   * It must also return a html<?> type.
+   */
+  public boolean isTemplateCall() {
+    return !isStatic()
+        && !isLegacyDynamicTagName()
+        && (getDynamicTagName().getExpr().getType() != null
+            && !getDynamicTagName().getExpr().getType().equals(StringType.getInstance()));
+  }
+
+  public boolean isWildCard() {
+    return node instanceof RawTextNode
+        && Objects.equals(((RawTextNode) node).getRawText(), WILDCARD);
+  }
+
   public boolean isDefinitelyVoid() {
     return VOID_TAG_NAMES.contains(nameAsLowerCase);
   }
@@ -257,6 +297,10 @@ public final class TagName {
     return OPTIONAL_TAG_CLOSE_TAG_RULES.containsKey(nameAsLowerCase)
         || OPTIONAL_TAG_OPEN_CLOSE_RULES.containsKey(nameAsLowerCase)
         || "html".equals(nameAsLowerCase);
+  }
+
+  public boolean isFocusable() {
+    return FOCUSABLE_TAG_NAMES.contains(nameAsLowerCase);
   }
 
   /**
@@ -331,6 +375,16 @@ public final class TagName {
   @Nullable
   public RcDataTagName getRcDataTagName() {
     return rcDataTagName;
+  }
+
+  public String getTagString() {
+    if (isStatic()) {
+      return getStaticTagName();
+    } else if (isTemplateCall()) {
+      TemplateType templateType = (TemplateType) getDynamicTagName().getExpr().getType();
+      return ((TemplateContentKind.ElementContentKind) templateType.getContentKind()).getTagName();
+    }
+    return null;
   }
 
   /** Returns the static name. */

@@ -122,7 +122,7 @@ public abstract class Statement extends BytecodeProducer {
    * @param visitor The class visitor to write it to
    */
   public final void writeMethod(int access, Method method, ClassVisitor visitor) {
-    writeMethodTo(new CodeBuilder(access, method, null, visitor));
+    writeMethodTo(new CodeBuilder(access, method, /* exceptions=*/ null, visitor));
   }
 
   /**
@@ -137,7 +137,7 @@ public abstract class Statement extends BytecodeProducer {
   }
 
   /** Writes this statement as the complete method body to {@code ga}. */
-  private final void writeMethodTo(CodeBuilder builder) {
+  public final void writeMethodTo(CodeBuilder builder) {
     try {
       builder.visitCode();
       gen(builder);
@@ -145,7 +145,14 @@ public abstract class Statement extends BytecodeProducer {
     } catch (Throwable t) {
       // ASM fails in bizarre ways, attach a trace of the thing we tried to generate to the
       // exception.
-      throw new RuntimeException("Failed to generate method:\n" + this, t);
+      String serialized = null;
+      try {
+        serialized = String.valueOf(this);
+        throw new RuntimeException("Failed to generate method:\n" + serialized, t);
+      } catch (Exception e) {
+        throw new RuntimeException(
+            "Failed to generate method (and error during serialization = " + e + ")", t);
+      }
     }
   }
   /**
@@ -158,6 +165,20 @@ public abstract class Statement extends BytecodeProducer {
       protected void doGen(CodeBuilder adapter) {
         adapter.mark(label);
         Statement.this.gen(adapter);
+      }
+    };
+  }
+
+  /**
+   * Returns a new statement identical to this one but with the given label applied at the start of
+   * the statement.
+   */
+  public final Statement labelEnd(final Label label) {
+    return new Statement() {
+      @Override
+      protected void doGen(CodeBuilder adapter) {
+        Statement.this.gen(adapter);
+        adapter.mark(label);
       }
     };
   }
@@ -177,7 +198,7 @@ public abstract class Statement extends BytecodeProducer {
   }
 
   /** Returns an Expression that evaluates this statement followed by the given expression. */
-  final Expression then(final Expression expression) {
+  public final Expression then(final Expression expression) {
     return new Expression(expression.resultType(), expression.features()) {
       @Override
       protected void doGen(CodeBuilder adapter) {

@@ -23,6 +23,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -30,7 +32,6 @@ import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for RenderOnlySoyMsgBundleImpl.
- *
  */
 @RunWith(JUnit4.class)
 public class RenderOnlySoyMsgBundleImplTest {
@@ -59,8 +60,7 @@ public class RenderOnlySoyMsgBundleImplTest {
         .setIsPlrselMsg(false)
         .setParts(
             ImmutableList.of(
-                SoyMsgRawTextPart.of("Message"),
-                new SoyMsgPlaceholderPart("ph_" + id, /* placeholderExample= */ null)))
+                SoyMsgRawTextPart.of("Message"), new SoyMsgPlaceholderPart("ph_" + id)))
         .build();
   }
 
@@ -148,5 +148,32 @@ public class RenderOnlySoyMsgBundleImplTest {
     assertThat(copy.getLocaleString()).isEqualTo(LOCALE);
     assertThat(bundle).hasSize(testMessages.size());
     assertThat(copy).containsExactlyElementsIn(bundle).inOrder();
+  }
+
+  @Test
+  @SuppressWarnings("ReturnValueIgnored")
+  public void testEmptyBundlesDontOverAllocate() {
+    // Prior issue introduced the possibility of mistaken large allocations for empty bundles.
+    // This tries to OOM the test in the presence of such issues.
+    IntStream.range(1, 10000)
+        .mapToObj(i -> new RenderOnlySoyMsgBundleImpl("fr", ImmutableList.of()))
+        .collect(Collectors.toList());
+  }
+
+  @Test
+  public void testEmptyBundlesGetMsgReturnsNull() {
+    assertThat(new RenderOnlySoyMsgBundleImpl("fr", ImmutableList.of()).getMsg(123L))
+        .isNull();
+  }
+
+  @Test
+  public void testLargerBundle() {
+    // Tests the hash table behavior.
+    List<SoyMsg> msgs =
+        IntStream.range(1, 10000).mapToObj(this::createSimpleMsg).collect(Collectors.toList());
+    SoyMsgBundle largeBundle = new RenderOnlySoyMsgBundleImpl(LOCALE, msgs);
+    for (SoyMsg msg : msgs) {
+      assertThat(largeBundle.getMsg(msg.getId())).isEqualTo(msg);
+    }
   }
 }

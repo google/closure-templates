@@ -17,8 +17,10 @@
 package com.google.template.soy.sharedpasses.opti;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableTable;
 import com.google.template.soy.data.SoyRecord;
-import com.google.template.soy.data.SoyValueConverter;
+import com.google.template.soy.data.internal.ParamStore;
+import com.google.template.soy.plugin.java.PluginInstances;
 import com.google.template.soy.shared.internal.DelTemplateSelector;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
@@ -44,14 +46,13 @@ import com.google.template.soy.soytree.TemplateNode;
  * <p>Package-private helper for {@link SimplifyVisitor}.
  *
  * <p>The rendered output will be appended to the Appendable provided to the constructor.
- *
  */
 final class PrerenderVisitor extends RenderVisitor {
 
   /**
    * @param preevalVisitorFactory Factory for creating an instance of PreevalVisitor.
    * @param outputBuf The Appendable to append the output to.
-   * @param templateRegistry A registry of all templates.
+   * @param basicTemplates A registry of all templates.
    */
   PrerenderVisitor(
       PreevalVisitorFactory preevalVisitorFactory,
@@ -62,14 +63,16 @@ final class PrerenderVisitor extends RenderVisitor {
         outputBuf,
         basicTemplates,
         /* deltemplates=*/ new DelTemplateSelector.Builder<TemplateDelegateNode>().build(),
-        SoyValueConverter.EMPTY_DICT,
+        ImmutableTable.of(),
+        ImmutableTable.of(),
+        ParamStore.EMPTY_INSTANCE,
         /* ijData= */ null,
         /* activeDelPackageSelector= */ null,
         /* msgBundle= */ null,
         /* xidRenamingMap= */ null,
         /* cssRenamingMap= */ null,
         /* debugSoyTemplateInfo= */ false,
-        /* pluginInstances= */ ImmutableMap.of());
+        PluginInstances.empty());
   }
 
   @Override

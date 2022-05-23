@@ -23,7 +23,6 @@ import javax.annotation.Nullable;
 
 /**
  * Represents a select statement within a message.
- *
  */
 public final class SoyMsgSelectPart extends SoyMsgPart {
 

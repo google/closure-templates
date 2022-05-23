@@ -25,7 +25,6 @@ import com.google.template.soy.basetree.CopyState;
  * Abstract implementation of an ExprNode.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 public abstract class AbstractExprNode extends AbstractNode implements ExprNode {
 

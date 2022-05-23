@@ -1,0 +1,56 @@
+##
+# Copyright 2019 Google Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+##
+
+load("@rules_java//java:defs.bzl", "java_library")
+load("//builddefs:internal.bzl", "java_individual_tests")
+
+package(
+    default_testonly = 1,
+    default_visibility = ["//:soy_internal"],
+)
+
+java_library(
+    name = "tests",
+    srcs = glob([
+        "*.java",
+    ]),
+    deps = [
+        "//java/src/com/google/template/soy:impl",
+        "//java/src/com/google/template/soy/data",
+        "//java/src/com/google/template/soy/error:error_reporter",
+        "//java/src/com/google/template/soy/exprtree",
+        "//java/src/com/google/template/soy/exprtree/testing:expression_parser",
+        "//java/src/com/google/template/soy/logging:public",
+        "//java/src/com/google/template/soy/plugin/java/restricted",
+        "//java/src/com/google/template/soy/plugin/restricted",
+        "//java/src/com/google/template/soy/shared/restricted",
+        "//java/src/com/google/template/soy/sharedpasses/opti",
+        "//java/src/com/google/template/soy/sharedpasses/render",
+        "//java/src/com/google/template/soy/sharedpasses/render:testing",
+        "//java/src/com/google/template/soy/soytree",
+        "//java/src/com/google/template/soy/soytree:soynode",
+        "//java/src/com/google/template/soy/testing:annotations",
+        "//java/src/com/google/template/soy/testing:soy_file_set_parser_builder",
+        "//java/tests/com/google/template/soy/data:soy_value_converter_utility",
+        "@maven//:com_google_guava_guava",
+        "@maven//:com_google_truth_truth",
+        "@maven//:junit_junit",
+    ],
+)
+
+java_individual_tests(
+    deps = [":tests"],
+)

@@ -39,7 +39,7 @@ public abstract class GoogRequire implements Comparable<GoogRequire> {
    */
   public static GoogRequire create(String symbol) {
     return new AutoValue_GoogRequire(
-        symbol, GOOG_REQUIRE.call(stringLiteral(symbol)), /*isTypeRequire=*/ false);
+        symbol, symbol, GOOG_REQUIRE.call(stringLiteral(symbol)), /*isTypeRequire=*/ false);
   }
 
   /**
@@ -48,7 +48,7 @@ public abstract class GoogRequire implements Comparable<GoogRequire> {
    */
   public static GoogRequire createTypeRequire(String symbol) {
     return new AutoValue_GoogRequire(
-        symbol, GOOG_REQUIRE_TYPE.call(stringLiteral(symbol)), /*isTypeRequire=*/ true);
+        symbol, symbol, GOOG_REQUIRE_TYPE.call(stringLiteral(symbol)), /*isTypeRequire=*/ true);
   }
 
   /**
@@ -59,6 +59,7 @@ public abstract class GoogRequire implements Comparable<GoogRequire> {
     CodeChunkUtils.checkId(alias);
     return new AutoValue_GoogRequire(
         symbol,
+        alias,
         VariableDeclaration.builder(alias).setRhs(GOOG_REQUIRE.call(stringLiteral(symbol))).build(),
         /*isTypeRequire=*/ false);
   }
@@ -71,6 +72,7 @@ public abstract class GoogRequire implements Comparable<GoogRequire> {
     CodeChunkUtils.checkId(alias);
     return new AutoValue_GoogRequire(
         symbol,
+        alias,
         VariableDeclaration.builder(alias)
             .setRhs(GOOG_REQUIRE_TYPE.call(stringLiteral(symbol)))
             .build(),
@@ -79,6 +81,8 @@ public abstract class GoogRequire implements Comparable<GoogRequire> {
 
   /** The symbol to require. */
   public abstract String symbol();
+
+  public abstract String alias();
 
   /** A code chunk that will generate the {@code goog.require()}. */
   abstract CodeChunk chunk();

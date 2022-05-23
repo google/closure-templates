@@ -16,31 +16,52 @@
 package com.google.template.soy.passes;
 
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.base.internal.TemplateContentKind;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.soytree.ExternNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.TemplateElementNode;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.defn.AttrParam;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
-import com.google.template.soy.types.SoyTypeRegistry;
+import com.google.template.soy.types.FunctionType;
 import com.google.template.soy.types.UnknownType;
 import com.google.template.soy.types.ast.TypeNodeConverter;
 
 /** Resolve the TypeNode objects in TemplateParams to SoyTypes */
-final class ResolveTemplateParamTypesPass extends CompilerFilePass {
-  private final TypeNodeConverter converter;
+final class ResolveTemplateParamTypesPass implements CompilerFilePass {
+  private final ErrorReporter errorReporter;
   private final boolean disableAllTypeChecking;
 
-  ResolveTemplateParamTypesPass(
-      SoyTypeRegistry typeRegistry, ErrorReporter errorReporter, boolean disableAllTypeChecking) {
-    this.converter = new TypeNodeConverter(errorReporter, typeRegistry);
+  private static final SoyErrorKind ATTRIBUTE_PARAM_ONLY_IN_ELEMENT_TEMPLATE =
+      SoyErrorKind.of("Only templates of kind=\"html<?>\" can have @attribute.");
+
+  ResolveTemplateParamTypesPass(ErrorReporter errorReporter, boolean disableAllTypeChecking) {
+    this.errorReporter = errorReporter;
     this.disableAllTypeChecking = disableAllTypeChecking;
   }
 
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-    for (TemplateNode template : file.getChildren()) {
+    TypeNodeConverter converter =
+        TypeNodeConverter.builder(errorReporter)
+            .setTypeRegistry(file.getSoyTypeRegistry())
+            .setDisableAllTypeChecking(disableAllTypeChecking)
+            .build();
+
+    for (ExternNode extern : file.getExterns()) {
+      extern.setType((FunctionType) converter.getOrCreateType(extern.typeNode()));
+    }
+
+    for (TemplateNode template : file.getTemplates()) {
       for (TemplateParam param : template.getAllParams()) {
+        if (param instanceof AttrParam
+            && !(template.getTemplateContentKind()
+                instanceof TemplateContentKind.ElementContentKind)) {
+          errorReporter.report(param.getSourceLocation(), ATTRIBUTE_PARAM_ONLY_IN_ELEMENT_TEMPLATE);
+        }
         if (param.getTypeNode() != null) {
           param.setType(converter.getOrCreateType(param.getTypeNode()));
         } else if (disableAllTypeChecking) {

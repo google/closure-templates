@@ -19,11 +19,12 @@ package com.google.template.soy.passes;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
+import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -41,7 +42,7 @@ public final class RewriteGlobalsPassTest {
             + "{alias foo.bar.baz as global}\n"
             + "{alias global.with.sugar}\n"
             + "\n"
-            + "{template .t}\n"
+            + "{template t}\n"
             + "  {global}\n"
             + "  {global.with.field}\n"
             + "  {sugar}\n"
@@ -55,7 +56,7 @@ public final class RewriteGlobalsPassTest {
             .fileSet();
 
     ImmutableList.Builder<String> actual = ImmutableList.builder();
-    for (SoyNode child : soytree.getChild(0).getChild(0).getChildren()) {
+    for (SoyNode child : ((TemplateNode) soytree.getChild(0).getChild(0)).getChildren()) {
       PrintNode printNode = (PrintNode) child;
       GlobalNode global = (GlobalNode) printNode.getExpr().getRoot();
       actual.add(global.getName());

@@ -64,4 +64,7 @@ public @interface SoyFunctionSignature {
    * </ul>
    */
   boolean callableAsDeprecatedPrintDirective() default false;
+
+  /** Alternate to annotating the function implementation with @SoyDeprecated. */
+  String deprecatedWarning() default "";
 }

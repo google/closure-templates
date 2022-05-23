@@ -31,13 +31,13 @@ import com.google.template.soy.soytree.SoyNode.MsgSubstUnitNode;
  * <p>To create a visitor:
  *
  * <ol>
- *   <li> Subclass this class.
- *   <li> Implement {@code visit*Node()} methods for some specific node types.
- *   <li> Implement fallback methods for node types not specifically handled. The most general
+ *   <li>Subclass this class.
+ *   <li>Implement {@code visit*Node()} methods for some specific node types.
+ *   <li>Implement fallback methods for node types not specifically handled. The most general
  *       fallback method is {@link #visitSoyNode visitSoyNode()}, which is usually needed. Other
  *       fallback methods include {@code visitLoopNode()} and {@code visitCallParamNode()}.
- *   <li> Maybe implement a constructor, taking appropriate parameters for your visitor call.
- *   <li> Maybe implement {@link #exec exec()} if this visitor needs to return a non-null final
+ *   <li>Maybe implement a constructor, taking appropriate parameters for your visitor call.
+ *   <li>Maybe implement {@link #exec exec()} if this visitor needs to return a non-null final
  *       result and/or if this visitor has state that needs to be setup/reset before each unrelated
  *       use of {@code visit()}.
  * </ol>
@@ -56,6 +56,8 @@ public abstract class AbstractReturningSoyNodeVisitor<R>
         return visitSoyFileSetNode((SoyFileSetNode) node);
       case SOY_FILE_NODE:
         return visitSoyFileNode((SoyFileNode) node);
+      case IMPORT_NODE:
+        return visitImportNode((ImportNode) node);
       case TEMPLATE_ELEMENT_NODE:
         return visitTemplateElementNode((TemplateElementNode) node);
       case TEMPLATE_BASIC_NODE:
@@ -92,6 +94,8 @@ public abstract class AbstractReturningSoyNodeVisitor<R>
       case PRINT_DIRECTIVE_NODE:
         return visitPrintDirectiveNode((PrintDirectiveNode) node);
 
+      case CONST_NODE:
+        return visitConstNode((ConstNode) node);
       case LET_VALUE_NODE:
         return visitLetValueNode((LetValueNode) node);
       case LET_CONTENT_NODE:
@@ -127,6 +131,8 @@ public abstract class AbstractReturningSoyNodeVisitor<R>
       case CALL_PARAM_CONTENT_NODE:
         return visitCallParamContentNode((CallParamContentNode) node);
 
+      case HTML_COMMENT_NODE:
+        return visitHtmlCommentNode((HtmlCommentNode) node);
       case HTML_CLOSE_TAG_NODE:
         return visitHtmlCloseTagNode((HtmlCloseTagNode) node);
       case HTML_OPEN_TAG_NODE:
@@ -148,13 +154,14 @@ public abstract class AbstractReturningSoyNodeVisitor<R>
         return visitLogNode((LogNode) node);
       case DEBUGGER_NODE:
         return visitDebuggerNode((DebuggerNode) node);
-
-      case LINE_COMMENT_NODE:
-        return visitLineCommentNode((LineCommentNode) node);
-
-      default:
-        return visitSoyNode(node);
+      case EXTERN_NODE:
+        return visitExternNode((ExternNode) node);
+      case JAVA_IMPL_NODE:
+        return visitJavaImplNode((JavaImplNode) node);
+      case JS_IMPL_NODE:
+        return visitJsImplNode((JsImplNode) node);
     }
+    return visitSoyNode(node);
   }
 
   // -----------------------------------------------------------------------------------------------
@@ -168,7 +175,11 @@ public abstract class AbstractReturningSoyNodeVisitor<R>
     return visitSoyNode(node);
   }
 
-  protected R visitTemplateBasicNode(TemplateNode node) {
+  protected R visitImportNode(ImportNode node) {
+    return visitSoyNode(node);
+  }
+
+  protected R visitTemplateBasicNode(TemplateBasicNode node) {
     return visitTemplateNode(node);
   }
 
@@ -176,11 +187,23 @@ public abstract class AbstractReturningSoyNodeVisitor<R>
     return visitTemplateNode(node);
   }
 
-  protected R visitTemplateDelegateNode(TemplateNode node) {
+  protected R visitTemplateDelegateNode(TemplateDelegateNode node) {
     return visitTemplateNode(node);
   }
 
   protected R visitTemplateNode(TemplateNode node) {
+    return visitSoyNode(node);
+  }
+
+  protected R visitExternNode(ExternNode node) {
+    return visitSoyNode(node);
+  }
+
+  protected R visitJavaImplNode(JavaImplNode node) {
+    return visitSoyNode(node);
+  }
+
+  protected R visitJsImplNode(JsImplNode node) {
     return visitSoyNode(node);
   }
 
@@ -237,6 +260,10 @@ public abstract class AbstractReturningSoyNodeVisitor<R>
   }
 
   protected R visitPrintDirectiveNode(PrintDirectiveNode node) {
+    return visitSoyNode(node);
+  }
+
+  protected R visitConstNode(ConstNode node) {
     return visitSoyNode(node);
   }
 
@@ -348,7 +375,7 @@ public abstract class AbstractReturningSoyNodeVisitor<R>
     return visitSoyNode(node);
   }
 
-  protected R visitLineCommentNode(LineCommentNode node) {
+  protected R visitHtmlCommentNode(HtmlCommentNode node) {
     return visitSoyNode(node);
   }
 
@@ -357,6 +384,19 @@ public abstract class AbstractReturningSoyNodeVisitor<R>
 
   /** @param node the visited node. */
   protected R visitSoyNode(SoyNode node) {
-    throw new UnsupportedOperationException("no implementation for: " + node);
+    throw new UnsupportedOperationException(
+        "no implementation for: "
+            + node
+            + "'"
+            + node.toSourceString()
+            + "'\nwith parent: "
+            + node.getParent()
+            + "'"
+            + node.getParent().toSourceString()
+            + "'\nwith grandparent: "
+            + node.getParent().getParent()
+            + "'"
+            + node.getParent().getParent().toSourceString()
+            + "'");
   }
 }

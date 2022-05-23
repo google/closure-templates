@@ -16,29 +16,22 @@
 
 package com.google.template.soy;
 
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.SetMultimap;
-import com.google.common.io.CharSource;
 import com.google.protobuf.DescriptorProtos.FileDescriptorProto;
 import com.google.protobuf.DescriptorProtos.FileDescriptorSet;
 import com.google.protobuf.Descriptors.DescriptorValidationException;
 import com.google.protobuf.Descriptors.FileDescriptor;
-import com.google.template.soy.base.internal.FixedIdGenerator;
-import com.google.template.soy.base.internal.IdGenerator;
-import com.google.template.soy.base.internal.SoyFileSupplier;
-import com.google.template.soy.base.internal.StableSoyFileSupplier;
-import com.google.template.soy.data.restricted.PrimitiveData;
-import com.google.template.soy.error.ErrorReporter;
+import com.google.protobuf.ExtensionRegistry;
 import com.google.template.soy.internal.proto.ProtoUtils;
-import com.google.template.soy.logging.LoggingConfig;
-import com.google.template.soy.soyparse.SoyFileParser;
+import com.google.template.soy.logging.AnnotatedLoggingConfig;
+import com.google.template.soy.logging.VeMetadata;
+import com.google.template.soy.plugin.java.internal.CompiledJarsPluginSignatureReader;
 import com.google.template.soy.soytree.CompilationUnit;
-import com.google.template.soy.soytree.SoyFileNode;
-import com.google.template.soy.soytree.SoyTreeUtils;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -47,29 +40,30 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.zip.GZIPInputStream;
-import javax.annotation.Nullable;
 
 /** Implementations of {@link SoyInputCache.CacheLoader} for common compiler inputs. */
 final class CacheLoaders {
-  static final SoyInputCache.CacheLoader<LoggingConfig> LOGGING_CONFIG_LOADER =
-      new SoyInputCache.CacheLoader<LoggingConfig>() {
+  static final SoyInputCache.CacheLoader<AnnotatedLoggingConfig> LOGGING_CONFIG_LOADER =
+      new SoyInputCache.CacheLoader<AnnotatedLoggingConfig>() {
         @Override
-        public LoggingConfig read(File file, SoyCompilerFileReader reader, SoyInputCache cache)
-            throws IOException {
+        public AnnotatedLoggingConfig read(
+            File file, SoyCompilerFileReader reader, SoyInputCache cache) throws IOException {
           try (InputStream stream = reader.read(file).openStream()) {
-            return LoggingConfig.parseFrom(stream);
+            // This could include VE metadata with extensions, but those are processed separately
+            // (via SoyAnnotatedLoggingConfigGenerator) and aren't needed here, so just pass an
+            // empty extension registry.
+            return AnnotatedLoggingConfig.parseFrom(stream, ExtensionRegistry.getEmptyRegistry());
           }
         }
       };
 
-  static final SoyInputCache.CacheLoader<ImmutableMap<String, PrimitiveData>> GLOBALS_LOADER =
-      new SoyInputCache.CacheLoader<ImmutableMap<String, PrimitiveData>>() {
-        @Override
-        public ImmutableMap<String, PrimitiveData> read(
-            File file, SoyCompilerFileReader reader, SoyInputCache cache) throws IOException {
-          return SoyUtils.parseCompileTimeGlobals(reader.read(file).asCharSource(UTF_8));
-        }
-      };
+  // A map of proto file name to the FileDescriptor from that proto's Java class. When matching
+  // descriptors (like to see if an extension exists on a message) proto uses reference equality, so
+  // this allows us to register the FileDescriptors for the compiled protos, rather than ones read
+  // at runtime from descriptor files passed to the Soy compiler, and means that all references
+  // (even from runtime protos) point to the same (compile time) descriptors.
+  private static final ImmutableMap<String, FileDescriptor> WELL_KNOWN_PROTOS =
+      ImmutableMap.of(VeMetadata.getDescriptor().getName(), VeMetadata.getDescriptor());
 
   /**
    * A cached descriptor set.
@@ -90,7 +84,7 @@ final class CacheLoaders {
   static final class CachedDescriptorSet {
     private final File file;
     private final Map<String, FileDescriptorProto> protosByFileName;
-    private final Map<String, FileDescriptor> fileNameToDescriptors = new LinkedHashMap<>();;
+    private final Map<String, FileDescriptor> fileNameToDescriptors = new LinkedHashMap<>();
 
     CachedDescriptorSet(File file, FileDescriptorSet proto) {
       this.file = checkNotNull(file);
@@ -98,8 +92,12 @@ final class CacheLoaders {
           ImmutableMap.builder();
       for (FileDescriptorProto fileProto : proto.getFileList()) {
         protosByFileNameBuilder.put(fileProto.getName(), fileProto);
+        if (WELL_KNOWN_PROTOS.containsKey(fileProto.getName())) {
+          fileNameToDescriptors.put(
+              fileProto.getName(), WELL_KNOWN_PROTOS.get(fileProto.getName()));
+        }
       }
-      this.protosByFileName = protosByFileNameBuilder.build();
+      this.protosByFileName = protosByFileNameBuilder.buildOrThrow();
     }
 
     File getFile() {
@@ -192,6 +190,24 @@ final class CacheLoaders {
         }
       };
 
+  static final SoyInputCache.CacheLoader<CompiledJarsPluginSignatureReader> JAVA_DEPS =
+      new SoyInputCache.CacheLoader<CompiledJarsPluginSignatureReader>() {
+        @Override
+        public CompiledJarsPluginSignatureReader read(
+            File file, SoyCompilerFileReader reader, SoyInputCache cache) {
+          return new CompiledJarsPluginSignatureReader(ImmutableList.of(file), false);
+        }
+      };
+
+  static final SoyInputCache.CacheLoader<ImmutableList<String>> CSS_CHECK_EXEMPTIONS =
+      new SoyInputCache.CacheLoader<ImmutableList<String>>() {
+        @Override
+        public ImmutableList<String> read(
+            File file, SoyCompilerFileReader reader, SoyInputCache cache) throws IOException {
+          return reader.read(file).asCharSource(UTF_8).readLines();
+        }
+      };
+
   // TODO(lukes): ideally this would be reading directly to a List<TemplateMetadata> objects by
   // invoking the TemplateMetadataSerializer.  Doing so will require changing how types are parsed.
   static final SoyInputCache.CacheLoader<CompilationUnit> COMPILATION_UNIT_LOADER =
@@ -201,88 +217,10 @@ final class CacheLoaders {
             throws IOException {
           try (InputStream is =
               new GZIPInputStream(reader.read(file).openStream(), /* bufferSize */ 32 * 1024)) {
-            return CompilationUnit.parseFrom(is);
+            return CompilationUnit.parseFrom(is, ExtensionRegistry.getEmptyRegistry());
           }
         }
       };
 
-  /**
-   * A special SoyFileSupplier that implements {@link HasAstOrErrors} to support caching.
-   *
-   * <p>This stores an ErrorReporter and a nullable SoyFileNode so that the results of a parse can
-   * always be replayed in the context of any compile that gets a cache hit.
-   */
-  private static final class CachedSoyFileSupplier
-      implements SoyFileSupplier, SoyFileSetParser.HasAstOrErrors {
-    private final SoyFileSupplier delegate;
-    private final ErrorReporter errors;
-    @Nullable private final SoyFileNode file;
-
-    CachedSoyFileSupplier(SoyFileSupplier delegate, ErrorReporter errors, SoyFileNode file) {
-      this.delegate = checkNotNull(delegate);
-      this.errors = checkNotNull(errors);
-      this.file = file;
-      if (file == null) {
-        checkArgument(errors.hasErrors()); // sanity check
-      }
-    }
-
-    @Override
-    public SoyFileNode getAst(IdGenerator nodeIdGen, ErrorReporter other) {
-      errors.copyTo(other);
-      if (file != null) {
-        // we need to make a copy, since the AST is mutable
-        // we need to assign new ids using the id generator for the current compile to ensure that
-        // all ids are unique across a compile.
-        return SoyTreeUtils.cloneWithNewIds(file, nodeIdGen);
-      }
-      return null;
-    }
-
-    // boring delegate methods
-
-    @Override
-    public boolean hasChangedSince(Version version) {
-      return delegate.hasChangedSince(version);
-    }
-
-    @Override
-    public String getFilePath() {
-      return delegate.getFilePath();
-    }
-
-    @Override
-    public CharSource asCharSource() {
-      return delegate.asCharSource();
-    }
-
-    @Override
-    public java.io.Reader open() throws IOException {
-      return delegate.open();
-    }
-
-    @Override
-    public Version getVersion() {
-      return delegate.getVersion();
-    }
-  }
-
-  static final SoyInputCache.CacheLoader<CachedSoyFileSupplier> SOY_FILE_LOADER =
-      new SoyInputCache.CacheLoader<CachedSoyFileSupplier>() {
-        private final FixedIdGenerator idGenerator = new FixedIdGenerator(-1);
-
-        @Override
-        public CachedSoyFileSupplier read(
-            File file, SoyCompilerFileReader reader, SoyInputCache cache) throws IOException {
-          CharSource source = reader.read(file).asCharSource(UTF_8);
-          SoyFileSupplier delegate = new StableSoyFileSupplier(source, file.getPath());
-          ErrorReporter errors = ErrorReporter.create(/*fileSuppliers*/ ImmutableMap.of());
-          SoyFileNode fileNode;
-          try (java.io.Reader charReader = source.openStream()) {
-            fileNode =
-                new SoyFileParser(idGenerator, charReader, file.getPath(), errors).parseSoyFile();
-          }
-          return new CachedSoyFileSupplier(delegate, errors, fileNode);
-        }
-      };
+  private CacheLoaders() {}
 }

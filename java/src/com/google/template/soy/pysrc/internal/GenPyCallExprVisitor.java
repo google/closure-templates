@@ -20,6 +20,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.pysrc.internal.GenPyExprsVisitor.GenPyExprsVisitorFactory;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyExprUtils;
@@ -35,19 +36,15 @@ import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.CallParamValueNode;
-import com.google.template.soy.soytree.SoyFileNode;
-import com.google.template.soy.soytree.TemplateBasicNode;
-import com.google.template.soy.soytree.TemplateElementNode;
+import com.google.template.soy.soytree.ConstNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import javax.annotation.Nullable;
 
 /**
  * Functions for generating Python code for template calls and their parameters.
- *
  */
 final class GenPyCallExprVisitor extends AbstractReturningSoyNodeVisitor<PyExpr> {
 
@@ -129,22 +126,18 @@ final class GenPyCallExprVisitor extends AbstractReturningSoyNodeVisitor<PyExpr>
    */
   @Override
   protected PyExpr visitCallBasicNode(CallBasicNode node) {
-    String calleeName = node.getCalleeName();
-
-    // Build the Python expr text for the callee.
-    String calleeExprText;
-    TemplateNode template = getTemplateIfInSameFile(node);
-    if (template != null) {
-      // If in the same module no namespace is required.
-      calleeExprText = getLocalTemplateName(template);
-    } else {
-      // If in another module, the module name is required along with the function name.
-      int secondToLastDotIndex = calleeName.lastIndexOf('.', calleeName.lastIndexOf('.') - 1);
-      calleeExprText = calleeName.substring(secondToLastDotIndex + 1);
+    TranslateToPyExprVisitor translator =
+        new TranslateToPyExprVisitor(localVarStack, pluginValueFactory, node, errorReporter);
+    PyExpr calleeExpr =
+        node.isStaticCall()
+            ? translator.getCalleeExpr((TemplateLiteralNode) node.getCalleeExpr().getRoot())
+            : translator.exec(node.getCalleeExpr());
+    String calleeExprText = calleeExpr.getText();
+    if (calleeExpr.getPrecedence() < Integer.MAX_VALUE) {
+      calleeExprText = "(" + calleeExprText + ")";
     }
-
-    String callExprText = calleeExprText + "(" + genObjToPass(node) + ", ijData)";
-    return escapeCall(callExprText, node.getEscapingDirectives());
+    calleeExprText = calleeExprText + "(" + genObjToPass(node) + ", ijData)";
+    return escapeCall(calleeExprText, node.getEscapingDirectives());
   }
 
   /**
@@ -164,7 +157,7 @@ final class GenPyCallExprVisitor extends AbstractReturningSoyNodeVisitor<PyExpr>
     } else {
       // Case 2: Delegate call with variant expression.
       TranslateToPyExprVisitor translator =
-          new TranslateToPyExprVisitor(localVarStack, pluginValueFactory, errorReporter);
+          new TranslateToPyExprVisitor(localVarStack, pluginValueFactory, node, errorReporter);
       variantPyExpr = translator.exec(variantSoyExpr);
     }
     String calleeExprText =
@@ -188,7 +181,7 @@ final class GenPyCallExprVisitor extends AbstractReturningSoyNodeVisitor<PyExpr>
    */
   public String genObjToPass(CallNode callNode) {
     TranslateToPyExprVisitor translator =
-        new TranslateToPyExprVisitor(localVarStack, pluginValueFactory, errorReporter);
+        new TranslateToPyExprVisitor(localVarStack, pluginValueFactory, callNode, errorReporter);
 
     // Generate the expression for the original data to pass.
     String dataToPass;
@@ -297,22 +290,18 @@ final class GenPyCallExprVisitor extends AbstractReturningSoyNodeVisitor<PyExpr>
 
   /** Returns the python name for the template. Suitable for calling within the same module. */
   static String getLocalTemplateName(TemplateNode node) {
-    String templateName = node.getPartialTemplateName().substring(1);
+    String templateName = node.getLocalTemplateSymbol();
     if (node.getVisibility() == Visibility.PRIVATE) {
       return "__" + templateName;
     }
     return templateName;
   }
 
-  @Nullable
-  private TemplateNode getTemplateIfInSameFile(CallBasicNode callBasicNode) {
-    SoyFileNode file = callBasicNode.getNearestAncestor(SoyFileNode.class);
-    for (TemplateNode template : file.getChildren()) {
-      if ((template instanceof TemplateBasicNode || template instanceof TemplateElementNode)
-          && template.getTemplateName().equals(callBasicNode.getCalleeName())) {
-        return template;
-      }
+  static String getLocalConstName(ConstNode node) {
+    String functionName = node.getVar().name();
+    if (!node.isExported()) {
+      return "__" + functionName;
     }
-    return null;
+    return functionName;
   }
 }

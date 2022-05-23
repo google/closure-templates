@@ -17,15 +17,15 @@
 package com.google.template.soy.types;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
 
+import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.EnumDescriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
-import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoyBackendKind;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.internal.proto.Field;
 import com.google.template.soy.internal.proto.FieldVisitor;
 import com.google.template.soy.internal.proto.JavaQualifiedNames;
@@ -35,38 +35,37 @@ import java.util.Set;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
 
-/**
- * A {@link SoyType} subclass which describes a protocol buffer type.
- *
- */
+/** A {@link SoyType} subclass which describes a protocol buffer type. */
 public final class SoyProtoType extends SoyType {
   private static final class TypeVisitor extends FieldVisitor<SoyType> {
-    private final SoyTypeRegistry registry;
+    private final TypeInterner interner;
+    private final ProtoTypeRegistry registry;
 
-    TypeVisitor(SoyTypeRegistry registry) {
+    TypeVisitor(TypeInterner interner, ProtoTypeRegistry registry) {
+      this.interner = interner;
       this.registry = registry;
     }
 
     @Override
     protected SoyType visitMap(FieldDescriptor mapField, SoyType keyType, SoyType valueType) {
-      return registry.getOrCreateMapType(keyType, valueType);
+      return interner.getOrCreateMapType(keyType, valueType);
     }
 
     @Override
     protected SoyType visitRepeated(SoyType value) {
-      return registry.getOrCreateListType(value);
+      return interner.getOrCreateListType(value);
     }
 
     // For these we could directly invoke the constructor, but by recursing back through the
     // registry we can ensure that we return the cached instance
     @Override
     protected SoyType visitMessage(Descriptor messageType) {
-      return registry.getType(messageType.getFullName());
+      return registry.getProtoType(messageType.getFullName());
     }
 
     @Override
-    protected SoyType visitEnum(EnumDescriptor enumType) {
-      return registry.getType(enumType.getFullName());
+    protected SoyType visitEnum(EnumDescriptor enumType, FieldDescriptor fieldType) {
+      return registry.getProtoType(enumType.getFullName());
     }
 
     @Override
@@ -150,15 +149,7 @@ public final class SoyProtoType extends SoyType {
     }
   }
 
-  private abstract static class FieldWithType extends Field {
-    FieldWithType(FieldDescriptor fieldDesc) {
-      super(fieldDesc);
-    }
-
-    abstract SoyType getType(ErrorReporter reporter, SourceLocation location);
-  }
-
-  private static final class NormalFieldWithType extends FieldWithType {
+  private static final class FieldWithType extends Field {
     // NOTE: we lazily resolve types so we can handle recursive messages
     @GuardedBy("this")
     SoyType type;
@@ -166,13 +157,12 @@ public final class SoyProtoType extends SoyType {
     @GuardedBy("this")
     TypeVisitor visitor;
 
-    NormalFieldWithType(FieldDescriptor fieldDesc, TypeVisitor visitor) {
+    FieldWithType(FieldDescriptor fieldDesc, TypeVisitor visitor) {
       super(fieldDesc);
       this.visitor = visitor;
     }
 
-    @Override
-    synchronized SoyType getType(ErrorReporter reporter, SourceLocation location) {
+    synchronized SoyType getType() {
       if (type == null) {
         type = FieldVisitor.visitField(getDescriptor(), visitor);
         checkNotNull(type, "Couldn't find a type for: %s", getDescriptor());
@@ -182,44 +172,35 @@ public final class SoyProtoType extends SoyType {
     }
   }
 
-  private static final class AmbiguousFieldWithType extends FieldWithType {
-    final Set<FieldWithType> fields;
-
-    AmbiguousFieldWithType(Set<FieldWithType> fields) {
-      super(fields.iterator().next().getDescriptor());
-      this.fields = fields;
-    }
-
-    @Override
-    SoyType getType(ErrorReporter reporter, SourceLocation location) {
-      Field.reportAmbiguousFieldsError(reporter, location, getName(), fields);
-      return ErrorType.getInstance();
-    }
+  public static SoyProtoType newForTest(Descriptor d) {
+    return new SoyProtoType(TypeRegistries.newTypeInterner(), (fqn) -> null, d, ImmutableSet.of());
   }
 
+  private final Object scope; // the type registry that owns this instance
   private final Descriptor typeDescriptor;
   private final ImmutableMap<String, FieldWithType> fields;
+  private final ImmutableSet<String> extensionFieldNames;
 
-  public SoyProtoType(
-      final SoyTypeRegistry typeRegistry, Descriptor descriptor, Set<FieldDescriptor> extensions) {
+  SoyProtoType(
+      TypeInterner interner,
+      ProtoTypeRegistry registry,
+      Descriptor descriptor,
+      Set<FieldDescriptor> extensions) {
+    this(interner, new TypeVisitor(interner, registry), descriptor, extensions);
+  }
+
+  private SoyProtoType(
+      Object scope, TypeVisitor visitor, Descriptor descriptor, Set<FieldDescriptor> extensions) {
+    this.scope = scope;
     this.typeDescriptor = descriptor;
     this.fields =
         Field.getFieldsForType(
-            descriptor,
-            extensions,
-            new Field.Factory<FieldWithType>() {
-              TypeVisitor visitor = new TypeVisitor(typeRegistry);
-
-              @Override
-              public FieldWithType create(FieldDescriptor fieldDescriptor) {
-                return new NormalFieldWithType(fieldDescriptor, visitor);
-              }
-
-              @Override
-              public FieldWithType createAmbiguousFieldSet(Set<FieldWithType> fields) {
-                return new AmbiguousFieldWithType(fields);
-              }
-            });
+            descriptor, extensions, fieldDescriptor -> new FieldWithType(fieldDescriptor, visitor));
+    this.extensionFieldNames =
+        extensions.stream()
+            .map(Field::computeSoyFullyQualifiedName)
+            .sorted()
+            .collect(toImmutableSet());
   }
 
   @Override
@@ -248,19 +229,31 @@ public final class SoyProtoType extends SoyType {
 
   /** Returns the {@link FieldDescriptor} of the given field. */
   public FieldDescriptor getFieldDescriptor(String fieldName) {
-    return fields.get(fieldName).getDescriptor();
+    FieldWithType field = fields.get(fieldName);
+    if (field == null) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Cannot find field %s in %s. Known fields are %s.",
+              fieldName, this, getFieldNames()));
+    }
+    return field.getDescriptor();
   }
 
   /** Returns the {@link SoyType} of the given field, or null if the field does not exist. */
   @Nullable
-  public SoyType getFieldType(String fieldName, ErrorReporter reporter, SourceLocation location) {
+  public SoyType getFieldType(String fieldName) {
     FieldWithType field = fields.get(fieldName);
-    return field != null ? field.getType(reporter, location) : null;
+    return field != null ? field.getType() : null;
   }
 
   /** Returns all the field names of this proto. */
   public ImmutableSet<String> getFieldNames() {
     return fields.keySet();
+  }
+
+  /** Returns all the fully qualified extension field names of this proto. */
+  public ImmutableSet<String> getExtensionFieldNames() {
+    return extensionFieldNames;
   }
 
   /** Returns this proto's type name for the given backend. */
@@ -299,5 +292,34 @@ public final class SoyProtoType extends SoyType {
    */
   public boolean shouldCheckFieldPresenceToEmulateJspbNullability(String fieldName) {
     return fields.get(fieldName).shouldCheckFieldPresenceToEmulateJspbNullability();
+  }
+
+  @Override
+  public <T> T accept(SoyTypeVisitor<T> visitor) {
+    return visitor.visit(this);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    SoyProtoType that = (SoyProtoType) o;
+    if (scope != that.scope) {
+      // Defence-in-depth against types leaking across compilation runs.
+      throw new IllegalArgumentException(
+          String.format(
+              "Illegal comparison of two SoyProtoType's from different type registries %s and %s.",
+              scope, that.scope));
+    }
+    return Objects.equal(typeDescriptor.getFullName(), that.typeDescriptor.getFullName());
+  }
+
+  @Override
+  public int hashCode() {
+    return java.util.Objects.hashCode(typeDescriptor.getFullName());
   }
 }

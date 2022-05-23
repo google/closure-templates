@@ -53,8 +53,8 @@ like this
 ### foo_dialog.soy
 
 ```soy
-{namespace my.project.dialog_foo}
 {delpackage foo}
+{namespace my.project.dialog_foo}
 
 {deltemplate my.project.dialog}
   ...
@@ -64,8 +64,8 @@ like this
 ### bar_dialog.soy
 
 ```soy
-{namespace my.project.dialog_bar}
 {delpackage bar}
+{namespace my.project.dialog_bar}
 
 {deltemplate my.project.dialog}
   ...
@@ -77,7 +77,7 @@ like this
 ```soy
 {namespace main}
 
-{template .render}
+{template render}
   ...
   {delcall my.project.dialog}...{/delcall}
   ...
@@ -114,7 +114,6 @@ renderer.
 In JS, it is expected that you will arrange to conditionally load at most one of
 the `{delpackage ...}` gencode. It is an error to load more than one
 `{delpackage ...}` that defines the same `{deltemplate...}`
-
 
 ## In rare cases, use `variant`
 
@@ -162,7 +161,7 @@ An example of Deltemplates registered with a `variant` identifier:
 ```soy
 {namespace main}
 
-{template .render}
+{template render}
   {@param data: my.proto.Content}
   ...
   {delcall my.project.renderContent variant="$data.contentType"}
@@ -207,4 +206,3 @@ deltemplate implementation to all is:
 1.  Otherwise, if the delcall has the attribute `allowemptydefault="true"`, then
     the call renders to the empty string.
 1.  Otherwise, an error occurs.
-

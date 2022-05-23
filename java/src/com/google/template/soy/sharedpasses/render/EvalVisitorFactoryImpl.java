@@ -16,27 +16,26 @@
 
 package com.google.template.soy.sharedpasses.render;
 
-import com.google.common.base.Supplier;
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableTable;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.msgs.SoyMsgBundle;
+import com.google.template.soy.plugin.java.PluginInstances;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
+import com.google.template.soy.shared.internal.DelTemplateSelector;
 import com.google.template.soy.sharedpasses.render.EvalVisitor.EvalVisitorFactory;
+import com.google.template.soy.soytree.ExternNode;
+import com.google.template.soy.soytree.TemplateDelegateNode;
+import java.util.function.Predicate;
 import javax.annotation.Nullable;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 
 /**
  * Default implementation of EvalVisitorFactory.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
-@Singleton
 public final class EvalVisitorFactoryImpl implements EvalVisitorFactory {
-
-  @Inject
-  public EvalVisitorFactoryImpl() {}
 
   @Override
   public EvalVisitor create(
@@ -45,13 +44,25 @@ public final class EvalVisitorFactoryImpl implements EvalVisitorFactory {
       @Nullable SoyIdRenamingMap xidRenamingMap,
       @Nullable SoyMsgBundle msgBundle,
       boolean debugSoyTemplateInfo,
-      ImmutableMap<String, Supplier<Object>> pluginInstances) {
+      PluginInstances pluginInstances,
+      ImmutableTable<SourceFilePath, String, ImmutableList<ExternNode>> externs,
+      DelTemplateSelector<TemplateDelegateNode> deltemplates,
+      Predicate<String> activeDelPackageSelector) {
     return new EvalVisitor(
         env,
         cssRenamingMap,
         xidRenamingMap,
         msgBundle,
         debugSoyTemplateInfo,
-        pluginInstances);
+        pluginInstances,
+        /*
+         * Use BUGGED mode for backwards compatibility.  The default tofu renderer always had a
+         * buggy implementation of data access nodes and this makes that behavior a little more
+         * explicit.
+         */
+        EvalVisitor.UndefinedDataHandlingMode.BUGGED,
+        externs,
+        deltemplates,
+        activeDelPackageSelector);
   }
 }

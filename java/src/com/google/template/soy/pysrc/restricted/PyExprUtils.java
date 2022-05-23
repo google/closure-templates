@@ -37,7 +37,6 @@ import java.util.Map;
  * Common utilities for dealing with Python expressions.
  *
  * <p>Important: This class may only be used in implementing plugins (e.g. functions, directives).
- *
  */
 public final class PyExprUtils {
 
@@ -62,12 +61,17 @@ public final class PyExprUtils {
    */
   private static final ImmutableMap<Operator, Integer> PYTHON_PRECEDENCES =
       new ImmutableMap.Builder<Operator, Integer>()
-          .put(Operator.NEGATIVE, 8)
-          .put(Operator.TIMES, 7)
-          .put(Operator.DIVIDE_BY, 7)
-          .put(Operator.MOD, 7)
-          .put(Operator.PLUS, 6)
-          .put(Operator.MINUS, 6)
+          .put(Operator.NEGATIVE, 12)
+          .put(Operator.TIMES, 11)
+          .put(Operator.DIVIDE_BY, 11)
+          .put(Operator.MOD, 11)
+          .put(Operator.PLUS, 10)
+          .put(Operator.MINUS, 10)
+          .put(Operator.SHIFT_RIGHT, 9)
+          .put(Operator.SHIFT_LEFT, 9)
+          .put(Operator.BITWISE_AND, 8)
+          .put(Operator.BITWISE_XOR, 7)
+          .put(Operator.BITWISE_OR, 6)
           .put(Operator.LESS_THAN, 5)
           .put(Operator.GREATER_THAN, 5)
           .put(Operator.LESS_THAN_OR_EQUAL, 5)
@@ -248,6 +252,76 @@ public final class PyExprUtils {
 
     Joiner joiner = Joiner.on(", ");
     return new PyExpr("{" + joiner.join(values) + "}", Integer.MAX_VALUE);
+  }
+
+  public static PyExpr genPyMapLiteralFromListExpr(
+      PyExpr listExpr, String varName, String keyString, String valueString) {
+
+    // Generate code for "{ varName['key'] : varName['value'] for varName in listExpr}".
+    String genCodeString =
+        "{"
+            + varName
+            + "['"
+            + keyString
+            + "']:"
+            + varName
+            + "['"
+            + valueString
+            + "'] for "
+            + varName
+            + " in "
+            // In the python grammar, comprehension in
+            // https://docs.python.org/3/reference/expressions.html#grammar-token-comprehension
+            // takes an 'or_test' expression which is basically any expression except
+            // conditional expression
+            + maybeProtect(listExpr, pyPrecedenceForOperator(Operator.OR)).getText()
+            + "}";
+    return new PyExpr(genCodeString, Integer.MAX_VALUE);
+  }
+
+  public static PyExpr genPyListComprehensionExpr(
+      PyExpr listExpr, PyExpr transformExpr, PyExpr filterExpr, String varName, String indexName) {
+
+    // Generate code for "[transformExpr for $foo, $index in listExpr".
+    String genCodeString =
+        indexName == null
+            ? "["
+                // The transformer takes any expression
+                // https://docs.python.org/3/reference/expressions.html#displays-for-lists-sets-and-dictionaries
+                // so no protection is necessry
+                + transformExpr.getText()
+                + " for "
+                + varName
+                + " in "
+                // In the python grammar, comprehension in
+                // https://docs.python.org/3/reference/expressions.html#grammar-token-comprehension
+                // takes an 'or_test' expression which is basically any expression except
+                // conditional expression
+                + maybeProtect(listExpr, pyPrecedenceForOperator(Operator.OR)).getText()
+            : "["
+                + transformExpr.getText()
+                + " for "
+                + indexName
+                + ", "
+                + varName
+                + " in enumerate("
+                + listExpr.getText()
+                + ")";
+
+    // Add the "if filterExpr", if present.
+    if (filterExpr != null) {
+      // In the python grammar, comprehension if
+      // https://docs.python.org/3/reference/expressions.html#grammar-token-comp-if
+      // takes an 'expression_nocond' expression which is basically any expression except a
+      // conditional expression
+      genCodeString +=
+          " if " + maybeProtect(filterExpr, pyPrecedenceForOperator(Operator.OR)).getText();
+    }
+
+    // Close the list comprehension.
+    genCodeString += "]";
+
+    return new PyExpr(genCodeString, Integer.MAX_VALUE);
   }
 
   private static PyExpr convertIterableToPyExpr(Iterable<?> iterable, boolean asArray) {

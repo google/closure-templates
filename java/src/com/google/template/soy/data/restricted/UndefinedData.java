@@ -23,7 +23,6 @@ import com.google.template.soy.data.SoyDataException;
  * Undefined data. Used only by Tofu, not jbcsrc.
  *
  * <p>Important: This class may only be used in implementing plugins (e.g. functions, directives).
- *
  */
 @Immutable
 public final class UndefinedData extends PrimitiveData {

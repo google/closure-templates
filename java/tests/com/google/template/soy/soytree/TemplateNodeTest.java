@@ -18,27 +18,21 @@ package com.google.template.soy.soytree;
 
 import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import com.google.template.soy.SoyFileSetParserBuilder;
-import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.exprtree.ExprRootNode;
-import com.google.template.soy.exprtree.GlobalNode;
-import com.google.template.soy.exprtree.IntegerNode;
-import com.google.template.soy.exprtree.StringNode;
-import java.util.List;
+import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for TemplateNode.
- *
  */
 @RunWith(JUnit4.class)
 public class TemplateNodeTest {
@@ -52,7 +46,7 @@ public class TemplateNodeTest {
                 + "/**\n"
                 + " * Test template.\n"
                 + " */"
-                + "{template .boo}{/template}");
+                + "{template boo}{/template}");
 
     assertEquals(soyDoc, tn.getSoyDoc());
     assertEquals("Test template.", tn.getSoyDocDesc());
@@ -61,7 +55,7 @@ public class TemplateNodeTest {
   @Test
   public void testEscapeSoyDoc() {
     TemplateNode tn =
-        parse("{namespace ns}\n" + "/**@deprecated */\n" + "{template .boo}{/template}");
+        parse("{namespace ns}\n" + "/**@deprecated */\n" + "{template boo}{/template}");
 
     assertEquals("&#64;deprecated", tn.getSoyDocDesc());
   }
@@ -70,7 +64,7 @@ public class TemplateNodeTest {
   public void testInvalidParamNames() {
     ErrorReporter errorReporter = ErrorReporter.createForTest();
     parse(
-        "{namespace ns}\n" + "{template .boo}\n" + "{@param ij : int}\n" + "{/template}",
+        "{namespace ns}\n" + "{template boo}\n" + "{@param ij : int}\n" + "{/template}",
         errorReporter);
     assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
         .isEqualTo("Invalid param name 'ij' ('ij' is for injected data).");
@@ -81,7 +75,7 @@ public class TemplateNodeTest {
     ErrorReporter errorReporter = ErrorReporter.createForTest();
     parse(
         "{namespace ns}\n"
-            + "{template .boo}\n"
+            + "{template boo}\n"
             + "{@param goo : null}{@param foo:string}{@param foo : int}\n"
             + "{/template}",
         errorReporter);
@@ -93,34 +87,30 @@ public class TemplateNodeTest {
   public void testCommandTextErrors() {
     ErrorReporter errorReporter = ErrorReporter.createForTest();
     parse("{namespace ns}\n{template requirecss=\"strict\"}{/template}", errorReporter);
-    assertThat(errorReporter.getErrors()).hasSize(2);
-    assertThat(errorReporter.getErrors().get(0).message())
-        .isEqualTo(
-            "Template name 'requirecss' must be relative to the file namespace, i.e. a dot "
-                + "followed by an identifier.");
+    assertThat(errorReporter.getErrors()).hasSize(1);
 
-    assertThat(errorReporter.getErrors().get(1).message())
+    assertThat(errorReporter.getErrors().get(0).message())
         .isEqualTo("parse error at '=': expected }, identifier, or .");
 
     errorReporter = ErrorReporter.createForTest();
-    parse("{namespace ns}\n{template .foo autoescape=\"}{/template}", errorReporter);
+    parse("{namespace ns}\n{template foo autoescape=\"}{/template}", errorReporter);
     assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
         .isEqualTo(
             "Unexpected end of file.  Did you forget to close an attribute value or a comment?");
     errorReporter = ErrorReporter.createForTest();
     parse(
-        "{namespace ns}\n{template .foo autoescape=\"deprecated-contextual\"}{/template}",
+        "{namespace ns}\n{template foo autoescape=\"deprecated-contextual\"}{/template}",
         errorReporter);
     assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
         .isEqualTo(
             "Unsupported attribute 'autoescape' for 'template' tag, expected one of [visibility, "
-                + "kind, requirecss, cssbase, stricthtml, whitespace].");
+                + "kind, requirecss, cssbase, stricthtml, whitespace, component].");
   }
 
   @Test
   public void testValidStrictTemplates() {
     // "kind" is optional, defaults to HTML
-    TemplateNode node = parse("{namespace ns}\n" + "{template .boo}{/template}");
+    TemplateNode node = parse("{namespace ns}\n" + "{template boo}{/template}");
     assertEquals(SanitizedContentKind.HTML, node.getContentKind());
   }
 
@@ -128,13 +118,13 @@ public class TemplateNodeTest {
   public void testValidRequiredCss() {
     TemplateNode node;
 
-    node = parse("{namespace ns}\n{template .boo requirecss=\"foo.boo\"}{/template}");
+    node = parse("{namespace ns}\n{template boo requirecss=\"foo.boo\"}{/template}");
     assertEquals(ImmutableList.of("foo.boo"), node.getRequiredCssNamespaces());
 
-    node = parse("{namespace ns}\n{template .boo requirecss=\"foo, bar\"}{/template}");
+    node = parse("{namespace ns}\n{template boo requirecss=\"foo, bar\"}{/template}");
     assertEquals(ImmutableList.of("foo", "bar"), node.getRequiredCssNamespaces());
 
-    node = parse("{namespace ns}\n{template .boo requirecss=\"foo.boo, foo.moo\"}{/template}");
+    node = parse("{namespace ns}\n{template boo requirecss=\"foo.boo, foo.moo\"}{/template}");
     assertEquals(ImmutableList.of("foo.boo", "foo.moo"), node.getRequiredCssNamespaces());
 
     // Now for deltemplates.
@@ -143,6 +133,29 @@ public class TemplateNodeTest {
             "{namespace ns}\n"
                 + "{deltemplate namespace.boo requirecss=\"foo.boo, moo.hoo\"}{/deltemplate}");
     assertEquals(ImmutableList.of("foo.boo", "moo.hoo"), node.getRequiredCssNamespaces());
+  }
+
+  @Test
+  public void testValidIsComponent() {
+    TemplateNode node;
+    node = parse("{namespace ns}\n{template boo component=\"true\"}{/template}");
+    assertTrue(node.getComponent());
+
+    node = parse("{namespace ns}\n{template boo}{/template}");
+    assertFalse(node.getComponent());
+  }
+
+  @Test
+  public void testIsComponentErrors() {
+    ErrorReporter errorReporter = ErrorReporter.createForTest();
+    parse("{namespace ns}\n{template boo component=\"false\"}{/template}", errorReporter);
+    assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
+        .isEqualTo("'component=\"false\"' is the default, no need to set it.");
+
+    errorReporter = ErrorReporter.createForTest();
+    parse("{namespace ns}\n{template boo component=\"test\"}{/template}", errorReporter);
+    assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
+        .isEqualTo("Invalid value for attribute 'component', expected true.");
   }
 
   @Test
@@ -159,60 +172,22 @@ public class TemplateNodeTest {
     assertEquals("namespace.boo", node.getDelTemplateName());
     assertEquals("abc", node.getDelTemplateVariant());
     assertEquals("abc", node.getDelTemplateKey().variant());
-
-    // Variant is a global, that was not yet resolved.
-    node =
-        (TemplateDelegateNode)
-            parse(
-                join(
-                    "{namespace ns}",
-                    "{deltemplate namespace.boo variant=\"test.GLOBAL_CONSTANT\"}",
-                    "{/deltemplate}"));
-    assertEquals("namespace.boo", node.getDelTemplateName());
-    assertEquals("test.GLOBAL_CONSTANT", node.getDelTemplateVariant());
-    assertEquals("test.GLOBAL_CONSTANT", node.getDelTemplateKey().variant());
-    // Verify the global expression.
-    List<ExprRootNode> exprs = node.getExprList();
-    assertEquals(1, exprs.size());
-    ExprRootNode expr = exprs.get(0);
-    assertEquals("test.GLOBAL_CONSTANT", expr.toSourceString());
-    assertEquals(1, expr.numChildren());
-    assertTrue(expr.getRoot() instanceof GlobalNode);
-    // Substitute the global expression.
-    expr.replaceChild(0, new IntegerNode(123, expr.getRoot().getSourceLocation()));
-    // Check the new values.
-    assertEquals("123", node.getDelTemplateVariant());
-    assertEquals("123", node.getDelTemplateKey().variant());
-
-    // Resolve a global to a string.
-    node =
-        (TemplateDelegateNode)
-            parse(
-                join(
-                    "{namespace ns}",
-                    "{deltemplate namespace.boo variant=\"test.GLOBAL_CONSTANT\"}",
-                    "{/deltemplate}"));
-    node.getExprList()
-        .get(0)
-        .replaceChild(0, new StringNode("variant", QuoteStyle.SINGLE, node.getSourceLocation()));
-    assertEquals("variant", node.getDelTemplateVariant());
-    assertEquals("variant", node.getDelTemplateKey().variant());
   }
 
   @Test
   public void testInvalidRequiredCss() {
     ErrorReporter errorReporter = ErrorReporter.createForTest();
-    parse("{namespace ns}\n{template .boo requirecss=\"\"}{/template}", errorReporter);
+    parse("{namespace ns}\n{template boo requirecss=\"\"}{/template}", errorReporter);
     assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
         .isEqualTo("Invalid required CSS namespace name '', expected an identifier.");
 
     errorReporter = ErrorReporter.createForTest();
-    parse("{namespace ns}\n{template .boo requirecss=\"foo boo\"}{/template}", errorReporter);
+    parse("{namespace ns}\n{template boo requirecss=\"foo boo\"}{/template}", errorReporter);
     assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
         .isEqualTo("Invalid required CSS namespace name 'foo boo', expected an identifier.");
 
     errorReporter = ErrorReporter.createForTest();
-    parse("{namespace ns}\n{template .boo requirecss=\"9vol\"}{/template}", errorReporter);
+    parse("{namespace ns}\n{template boo requirecss=\"9vol\"}{/template}", errorReporter);
     assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
         .isEqualTo("Invalid required CSS namespace name '9vol', expected an identifier.");
 
@@ -231,7 +206,7 @@ public class TemplateNodeTest {
                 "/**",
                 " * Test template.",
                 " */",
-                "{template .boo}",
+                "{template boo}",
                 "  /** Foo to print. */",
                 "  {@param foo : ?}",
                 "  /** Goo to print. */",
@@ -246,7 +221,7 @@ public class TemplateNodeTest {
             "/**",
             " * Test template.",
             " */",
-            "{template .boo}",
+            "{template boo}",
             "  {@param foo: ?}  /** Foo to print. */",
             "  {@param goo: ?}  /** Goo to print. */",
             "  {@param moo: bool}  /** Something milky. */",
@@ -275,7 +250,7 @@ public class TemplateNodeTest {
     if (node.numChildren() > 0) {
       SoyFileNode filenode = node.getChild(0);
       if (filenode.numChildren() > 0) {
-        return filenode.getChild(0);
+        return (TemplateNode) filenode.getChild(0);
       }
     }
     return null;

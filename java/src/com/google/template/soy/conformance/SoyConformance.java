@@ -17,20 +17,16 @@
 package com.google.template.soy.conformance;
 
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.basetree.Node;
-import com.google.template.soy.basetree.NodeVisitor;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
-import com.google.template.soy.soytree.SoyTreeUtils.VisitDirective;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Class for collecting Soy conformance violations. Performs a single pass over the AST, aggregating
  * results from different conformance rules.
- *
- * @author brndn@google.com (Brendan Linn)
  */
 public final class SoyConformance {
 
@@ -43,9 +39,9 @@ public final class SoyConformance {
     return new SoyConformance(conformanceConfig.getRules());
   }
 
-  private final ImmutableList<RuleWithWhitelists> rules;
+  private final ImmutableList<RuleWithExemptions> rules;
 
-  SoyConformance(ImmutableList<RuleWithWhitelists> rules) {
+  SoyConformance(ImmutableList<RuleWithExemptions> rules) {
     this.rules = rules;
   }
 
@@ -53,26 +49,21 @@ public final class SoyConformance {
   public void check(SoyFileNode file, final ErrorReporter errorReporter) {
     // first filter to only the rules that need to be checked for this file.
     final List<Rule<?>> rulesForFile = new ArrayList<>(rules.size());
-    String filePath = file.getFilePath();
-    for (RuleWithWhitelists rule : rules) {
-      if (rule.shouldCheckConformanceFor(filePath)) {
+    SourceFilePath filePath = file.getFilePath();
+    for (RuleWithExemptions rule : rules) {
+      if (rule.shouldCheckConformanceFor(filePath.path())) {
         rulesForFile.add(rule.getRule());
       }
     }
     if (rulesForFile.isEmpty()) {
       return;
     }
-    SoyTreeUtils.visitAllNodes(
-        file,
-        new NodeVisitor<Node, VisitDirective>() {
-          @Override
-          public VisitDirective exec(Node node) {
-            for (Rule<?> rule : rulesForFile) {
-              rule.checkConformance(node, errorReporter);
-            }
-            // always visit all children
-            return VisitDirective.CONTINUE;
-          }
-        });
+    SoyTreeUtils.allNodes(file)
+        .forEach(
+            node -> {
+              for (Rule<?> rule : rulesForFile) {
+                rule.checkConformance(node, errorReporter);
+              }
+            });
   }
 }

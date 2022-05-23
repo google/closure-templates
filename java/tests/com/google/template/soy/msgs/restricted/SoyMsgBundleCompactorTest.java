@@ -28,7 +28,6 @@ import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for SoyMsgBundleCompactor.
- *
  */
 @RunWith(JUnit4.class)
 public class SoyMsgBundleCompactorTest {
@@ -57,8 +56,7 @@ public class SoyMsgBundleCompactorTest {
         .setIsPlrselMsg(false)
         .setParts(
             ImmutableList.of(
-                SoyMsgRawTextPart.of("Message "),
-                new SoyMsgPlaceholderPart("ph_" + id, /* placeholderExample= */ null)))
+                SoyMsgRawTextPart.of("Message "), new SoyMsgPlaceholderPart("ph_" + id)))
         .build();
   }
 

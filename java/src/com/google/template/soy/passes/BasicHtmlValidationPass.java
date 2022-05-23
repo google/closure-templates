@@ -16,6 +16,9 @@
 
 package com.google.template.soy.passes;
 
+import static com.google.template.soy.soytree.MessagePlaceholder.PHEX_ATTR;
+import static com.google.template.soy.soytree.MessagePlaceholder.PHNAME_ATTR;
+
 import com.google.common.base.Ascii;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -31,7 +34,6 @@ import com.google.template.soy.soytree.HtmlCloseTagNode;
 import com.google.template.soy.soytree.HtmlTagNode;
 import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.LetContentNode;
-import com.google.template.soy.soytree.MessagePlaceholders;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.BlockNode;
@@ -44,17 +46,23 @@ import com.google.template.soy.soytree.SwitchNode;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 /**
  * A compiler pass that performs HTML validation that is always enabled, as opposed to
  * StrictHtmlValidationPass which is opt-out.
  */
-final class BasicHtmlValidationPass extends CompilerFilePass {
+final class BasicHtmlValidationPass implements CompilerFilePass {
   private static final SoyErrorKind MULTIPLE_ATTRIBUTES =
       SoyErrorKind.of("Found multiple ''{0}'' attributes with the same name.");
 
   private static final SoyErrorKind UNEXPECTED_CLOSE_TAG_CONTENT =
       SoyErrorKind.of("Unexpected close tag content, only whitespace is allowed in close tags.");
+  private static final SoyErrorKind BAD_ID_VALUE =
+      SoyErrorKind.of(
+          "Html id attributes should not be valid JavaScript identifiers, consider hyphenating the"
+              + " id."
+          );
 
   private final ErrorReporter errorReporter;
 
@@ -64,17 +72,19 @@ final class BasicHtmlValidationPass extends CompilerFilePass {
 
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-    for (HtmlTagNode node : SoyTreeUtils.getAllNodesOfType(file, HtmlTagNode.class)) {
-      checkForDuplicateAttributes(node);
-      if (node instanceof HtmlCloseTagNode) {
-        checkCloseTagChildren((HtmlCloseTagNode) node);
-      }
-    }
-    for (RenderUnitNode unit : SoyTreeUtils.getAllNodesOfType(file, RenderUnitNode.class)) {
-      if (unit.getContentKind() == SanitizedContentKind.ATTRIBUTES) {
-        checkForDuplicateAttributes(unit);
-      }
-    }
+    SoyTreeUtils.allNodesOfType(file, HtmlTagNode.class)
+        .forEach(
+            node -> {
+              checkForDuplicateAttributes(node);
+              if (node instanceof HtmlCloseTagNode) {
+                checkCloseTagChildren((HtmlCloseTagNode) node);
+              }
+            });
+    SoyTreeUtils.allNodesOfType(file, RenderUnitNode.class)
+        .filter(unit -> unit.getContentKind() == SanitizedContentKind.ATTRIBUTES)
+        .forEach(this::checkForDuplicateAttributes);
+    SoyTreeUtils.allNodesOfType(file, HtmlAttributeNode.class)
+        .forEach(this::warnOnIdAttributesMatchingJsIdentifiers);
   }
 
   /**
@@ -90,6 +100,19 @@ final class BasicHtmlValidationPass extends CompilerFilePass {
     }
     for (SoyNode child : children) {
       visitor.exec(child);
+    }
+  }
+
+  // https://developer.mozilla.org/en-US/docs/Glossary/Identifier
+  private static final Pattern JS_IDENTIFIER_PATTERN =
+      Pattern.compile("^[$_\\p{IsLetter}][$_\\p{IsLetter}\\p{IsDigit}]*$");
+
+  private void warnOnIdAttributesMatchingJsIdentifiers(HtmlAttributeNode attributeNode) {
+    if (attributeNode.definitelyMatchesAttributeName("id")) {
+      String staticId = attributeNode.getStaticContent();
+      if (staticId != null && JS_IDENTIFIER_PATTERN.matcher(staticId).matches()) {
+        errorReporter.warn(attributeNode.getChild(1).getSourceLocation(), BAD_ID_VALUE);
+      }
     }
   }
 
@@ -140,7 +163,8 @@ final class BasicHtmlValidationPass extends CompilerFilePass {
       visitControlFlowNode(node, /* exhaustive=*/ node.hasIfEmptyBlock());
     }
 
-    private void visitControlFlowNode(SplitLevelTopNode<BlockNode> parent, boolean exhaustive) {
+    private void visitControlFlowNode(
+        SplitLevelTopNode<? extends BlockNode> parent, boolean exhaustive) {
       if (exhaustive) {
         Set<String> definiteBlockAttrs = null;
         for (BlockNode block : parent.getChildren()) {
@@ -183,10 +207,8 @@ final class BasicHtmlValidationPass extends CompilerFilePass {
    * <p>Later passes validate that phnames for close tags only appear in messages.
    */
   private void checkCloseTagChildren(HtmlCloseTagNode closeTag) {
-    HtmlAttributeNode phNameAttribute =
-        closeTag.getDirectAttributeNamed(MessagePlaceholders.PHNAME_ATTR);
-    HtmlAttributeNode phExAttribute =
-        closeTag.getDirectAttributeNamed(MessagePlaceholders.PHEX_ATTR);
+    HtmlAttributeNode phNameAttribute = closeTag.getDirectAttributeNamed(PHNAME_ATTR);
+    HtmlAttributeNode phExAttribute = closeTag.getDirectAttributeNamed(PHEX_ATTR);
     // the child at index 0 is the tag name
     for (int i = 1; i < closeTag.numChildren(); i++) {
       StandaloneNode child = closeTag.getChild(i);

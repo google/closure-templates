@@ -16,29 +16,52 @@
 
 package com.google.template.soy.exprtree;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.types.SoyType;
+import javax.annotation.Nullable;
 
 /**
- * A node representing a list comprehension expr (e.g. "$a+1 for $a in $myList if $a >= 0").
+ * A node representing a list comprehension expr (e.g. "$a+$i for $a, $i in $myList if $a >= 0").
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  */
 public final class ListComprehensionNode extends AbstractParentExprNode {
   private final ComprehensionVarDefn listIterVar;
+  @Nullable private final ComprehensionVarDefn indexVar;
+  private final boolean hasFilter;
+  private int nodeId;
 
   public ListComprehensionNode(
       ExprNode listExpr,
       String listIterVarName,
       SourceLocation listIterVarNameLocation,
-      ExprNode itemExpr,
-      SourceLocation sourceLocation) {
+      String indexVarName,
+      SourceLocation indexVarNameLocation,
+      ExprNode itemMapExpr,
+      ExprNode filterExpr,
+      SourceLocation sourceLocation,
+      int nodeId) {
     super(sourceLocation);
     this.listIterVar = new ComprehensionVarDefn(listIterVarName, listIterVarNameLocation, this);
+    this.indexVar =
+        indexVarName == null
+            ? null
+            : new ComprehensionVarDefn(indexVarName, indexVarNameLocation, this);
+    this.nodeId = nodeId;
 
     addChild(listExpr);
-    addChild(itemExpr);
+    addChild(itemMapExpr);
+
+    if (filterExpr != null) {
+      hasFilter = true;
+      addChild(filterExpr);
+    } else {
+      hasFilter = false;
+    }
   }
 
   /**
@@ -49,6 +72,19 @@ public final class ListComprehensionNode extends AbstractParentExprNode {
   private ListComprehensionNode(ListComprehensionNode orig, CopyState copyState) {
     super(orig, copyState);
     this.listIterVar = new ComprehensionVarDefn(orig.listIterVar, this);
+    this.indexVar = orig.indexVar == null ? null : new ComprehensionVarDefn(orig.indexVar, this);
+    this.hasFilter = orig.hasFilter;
+    this.nodeId = orig.nodeId;
+    copyState.updateRefs(orig.listIterVar, this.listIterVar);
+    if (orig.indexVar != null) {
+      copyState.updateRefs(orig.indexVar, this.indexVar);
+    }
+  }
+
+  public ImmutableList<? extends AbstractLocalVarDefn<?>> getVars() {
+    return indexVar == null
+        ? ImmutableList.of(listIterVar)
+        : ImmutableList.of(listIterVar, indexVar);
   }
 
   @Override
@@ -60,11 +96,70 @@ public final class ListComprehensionNode extends AbstractParentExprNode {
     return listIterVar;
   }
 
+  @Nullable
+  public ComprehensionVarDefn getIndexVar() {
+    return indexVar;
+  }
+
+  /** Gets the listExpr in "[itemMapExpr for $var in listExpr]". */
+  public ExprNode getListExpr() {
+    return checkNotNull(getChild(0));
+  }
+
+  /** Gets the itemMapExpr in "[itemMapExpr for $var in listExpr]". */
+  public ExprNode getListItemTransformExpr() {
+    return checkNotNull(getChild(1));
+  }
+
+  /** Gets the filterExpr in "[itemMapExpr for $var in listExpr if filterExpr]". */
+  @Nullable
+  public ExprNode getFilterExpr() {
+    if (hasFilter) {
+      return checkNotNull(getChild(2));
+    }
+    return null;
+  }
+
+  public void setNodeId(int nodeId) {
+    this.nodeId = nodeId;
+  }
+
+  public int getNodeId() {
+    return nodeId;
+  }
+
   @Override
   public String toSourceString() {
+    if (indexVar != null) {
+      if (hasFilter) {
+        return String.format(
+            "[%s for %s, %s in %s if %s]",
+            getListItemTransformExpr().toSourceString(),
+            listIterVar.refName(),
+            indexVar.refName(),
+            getListExpr().toSourceString(),
+            getFilterExpr().toSourceString());
+      }
+      return String.format(
+          "[%s for %s, %s in %s]",
+          getListItemTransformExpr().toSourceString(),
+          listIterVar.refName(),
+          indexVar.refName(),
+          getListExpr().toSourceString());
+    }
+    if (hasFilter) {
+      return String.format(
+          "[%s for %s in %s if %s]",
+          getListItemTransformExpr().toSourceString(),
+          listIterVar.refName(),
+          getListExpr().toSourceString(),
+          getFilterExpr().toSourceString());
+    }
     return String.format(
         "[%s for %s in %s]",
-        getChild(0).toSourceString(), listIterVar.name(), getChild(1).toSourceString());
+        getListItemTransformExpr().toSourceString(),
+        listIterVar.refName(),
+        getListExpr().toSourceString());
   }
 
   @Override

@@ -1,10 +1,5 @@
 # Debugger
 
-
-<!--#include file="commands-blurb-include.md"-->
-
-This chapter describes the debugger commands.
-
 [TOC]
 
 The `{debugger}` command can be used to help debug your templates. The command
@@ -24,7 +19,7 @@ and inspecting render state.
 For example:
 
 ```soy
-{template .helloTemplate}
+{template helloTemplate}
   {log}hello world{/log}
   ...
   {debugger} // how is execution getting here?? maybe the debugger will help?

@@ -18,9 +18,10 @@ package com.google.template.soy.jbcsrc;
 
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueProvider;
+import com.google.template.soy.exprtree.AbstractLocalVarDefn;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
-import com.google.template.soy.soytree.defn.LocalVar;
+import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.soytree.defn.TemplateParam;
 
 /** A mechanism to lookup expressions for accessing template parameters. */
@@ -37,7 +38,7 @@ interface TemplateParameterLookup {
    *
    * <p>The type of the expression will be based on the kind of variable being accessed.
    */
-  Expression getLocal(LocalVar local);
+  Expression getLocal(AbstractLocalVarDefn<?> local);
 
   /**
    * Returns an expression for a given {@code @param} or {@code @inject} parameter.
@@ -56,12 +57,39 @@ interface TemplateParameterLookup {
    * Returns the plugin context object. This is required for the plugin apis and should be used in
    * preference to {@link #getRenderContext()} whenever possible.
    */
-  JbcSrcPluginContext getPluginContext();
+  default JbcSrcPluginContext getPluginContext() {
+    // return a lazy delegate.  Most plugins never even need the context, but accessing
+    // getRenderContext() will copy the field into the inner class as a side effect.  using a lazy
+    // delegate we can avoid that in the common case.
+    return new JbcSrcPluginContext() {
+      @Override
+      public Expression getBidiGlobalDir() {
+        return getRenderContext().getBidiGlobalDir();
+      }
+
+      @Override
+      public Expression getULocale() {
+        return getRenderContext().getULocale();
+      }
+
+      @Override
+      public Expression getAllRequiredCssNamespaces(SoyExpression template) {
+        return getRenderContext().getAllRequiredCssNamespaces(template);
+      }
+
+      @Override
+      public Expression getAllRequiredCssPaths(SoyExpression template) {
+        return getRenderContext().getAllRequiredCssPaths(template);
+      }
+    };
+  }
+
   /**
    * Returns the current template's parameter dictionary. The returned expression will have a {@link
    * Expression#resultType()} of {@link SoyRecord}.
    */
   Expression getParamsRecord();
+
   /**
    * Returns the current template's ij dictionary. The returned expression will have a {@link
    * Expression#resultType()} of {@link SoyRecord}.

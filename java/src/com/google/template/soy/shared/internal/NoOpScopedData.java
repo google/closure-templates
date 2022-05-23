@@ -27,7 +27,7 @@ public final class NoOpScopedData
   public void close() {}
 
   @Override
-  public InScope enter(BidiGlobalDir bidiGlobalDir, String locale) {
+  public InScope enter(BidiGlobalDir bidiGlobalDir) {
     return this;
   }
 
@@ -48,11 +48,6 @@ public final class NoOpScopedData
 
   @Override
   public BidiGlobalDir getBidiGlobalDir() {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public String getLocale() {
     throw new UnsupportedOperationException();
   }
 }

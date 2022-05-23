@@ -20,8 +20,8 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
-import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -35,7 +35,7 @@ public class TypeParserTest {
 
   @Before
   public void setUp() throws Exception {
-    typeRegistry = new SoyTypeRegistry();
+    typeRegistry = SoyTypeRegistryBuilder.create();
   }
 
   @Test
@@ -45,6 +45,7 @@ public class TypeParserTest {
     assertTypeEquals(IntType.getInstance(), "int");
     assertTypeEquals(BoolType.getInstance(), "bool");
     assertTypeEquals(UnknownType.getInstance(), "?");
+    assertTypeEquals(MessageType.getInstance(), "Message");
   }
 
   @Test
@@ -89,12 +90,14 @@ public class TypeParserTest {
 
   private SoyType parseType(String input) {
     TemplateNode template =
-        SoyFileSetParserBuilder.forTemplateContents("{@param p : " + input + "}\n{$p ? 't' : 'f'}")
-            .typeRegistry(typeRegistry)
-            .parse()
-            .fileSet()
-            .getChild(0)
-            .getChild(0);
+        (TemplateNode)
+            SoyFileSetParserBuilder.forTemplateContents(
+                    "{@param p : " + input + "}\n{$p ? 't' : 'f'}")
+                .typeRegistry(typeRegistry)
+                .parse()
+                .fileSet()
+                .getChild(0)
+                .getChild(0);
     return Iterables.getOnlyElement(template.getAllParams()).type();
   }
 }

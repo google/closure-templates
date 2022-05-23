@@ -16,23 +16,73 @@
 
 package com.google.template.soy.soytree;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.collect.ImmutableList.toImmutableList;
+
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
+import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
+import com.google.template.soy.types.SoyTypeRegistry;
+import java.util.Optional;
 import javax.annotation.Nullable;
 
 /**
  * Node representing a Soy file.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
-public final class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
-    implements SplitLevelTopNode<TemplateNode> {
+public final class SoyFileNode extends AbstractParentSoyNode<SoyNode>
+    implements SplitLevelTopNode<SoyNode> {
 
-  /** The name of the containing delegate package, or null if none. */
-  @Nullable private final String delPackageName;
+  /** A css path required by a Soy file. Constains both the source text and the resolved file. */
+  public static final class CssPath {
+    private final String sourcePath;
+    private String resolvedPath;
+    private String namespace = null;
+
+    CssPath(String sourcePath) {
+      this.sourcePath = checkNotNull(sourcePath);
+    }
+
+    private CssPath(CssPath origin) {
+      this.sourcePath = origin.sourcePath;
+      this.resolvedPath = origin.resolvedPath;
+    }
+
+    public String sourcePath() {
+      return sourcePath;
+    }
+
+    public Optional<String> resolvedPath() {
+      return Optional.ofNullable(resolvedPath);
+    }
+
+    public void setNamespace(String namespace) {
+      this.namespace = namespace;
+    }
+
+    public String getNamespace() {
+      return namespace;
+    }
+
+    public void setResolvedPath(String resolvedPath) {
+      checkState(this.resolvedPath == null);
+      this.resolvedPath = checkNotNull(resolvedPath);
+    }
+
+    CssPath copy() {
+      return new CssPath(this);
+    }
+  }
+
+  /** The name and location of the containing delegate package, or null if none. */
+  @Nullable private final DelPackageDeclaration delPackage;
 
   /** This Soy file's namespace, or null if syntax version V1. */
   private final NamespaceDeclaration namespaceDeclaration;
@@ -41,23 +91,36 @@ public final class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
 
   private final TemplateNode.SoyFileHeaderInfo headerInfo;
 
+  private final ImmutableList<Comment> comments;
+
+  private final ImportsContext importsContext;
+
+  private final ImmutableList<CssPath> requiredCssPaths;
+
   /**
    * @param id The id for this node.
-   * @param filePath The path to the Soy source file.
+   * @param sourceLocation The source location of the file.
    * @param namespaceDeclaration This Soy file's namespace and attributes. Nullable for backwards
    *     compatibility only.
    * @param headerInfo Other file metadata, (e.g. delpackages, aliases)
    */
   public SoyFileNode(
       int id,
-      String filePath,
+      SourceLocation sourceLocation,
       NamespaceDeclaration namespaceDeclaration,
-      TemplateNode.SoyFileHeaderInfo headerInfo) {
-    super(id, new SourceLocation(filePath));
+      SoyFileHeaderInfo headerInfo,
+      ImmutableList<Comment> comments) {
+    super(id, sourceLocation);
     this.headerInfo = headerInfo;
-    this.delPackageName = headerInfo.getDelPackageName();
+    this.delPackage = headerInfo.getDelPackage();
     this.namespaceDeclaration = namespaceDeclaration; // Immutable
     this.aliasDeclarations = headerInfo.getAliases(); // immutable
+    this.comments = comments;
+    this.importsContext = new ImportsContext();
+    this.requiredCssPaths =
+        namespaceDeclaration.getRequiredCssPaths().stream()
+            .map(CssPath::new)
+            .collect(toImmutableList());
   }
 
   /**
@@ -67,12 +130,17 @@ public final class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
    */
   private SoyFileNode(SoyFileNode orig, CopyState copyState) {
     super(orig, copyState);
-    this.delPackageName = orig.delPackageName;
+    this.delPackage = orig.delPackage;
     this.namespaceDeclaration = orig.namespaceDeclaration.copy(copyState);
     this.aliasDeclarations = orig.aliasDeclarations; // immutable
     this.headerInfo = orig.headerInfo.copy();
+    this.comments = orig.comments;
+    // Imports context must be reset during edit-refresh (can't be set/cached in single file
+    // passes).
+    this.importsContext = new ImportsContext();
+    this.requiredCssPaths =
+        orig.requiredCssPaths.stream().map(CssPath::copy).collect(toImmutableList());
   }
-
 
   @Override
   public Kind getKind() {
@@ -87,7 +155,13 @@ public final class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
   /** Returns the name of the containing delegate package, or null if none. */
   @Nullable
   public String getDelPackageName() {
-    return delPackageName;
+    return delPackage == null ? null : delPackage.name().identifier();
+  }
+
+  /** Returns info about the containing delegate package, or null if none. */
+  @Nullable
+  public DelPackageDeclaration getDelPackage() {
+    return delPackage;
   }
 
   /** Returns this Soy file's namespace. */
@@ -100,9 +174,25 @@ public final class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
     return namespaceDeclaration;
   }
 
-  /** Returns the CSS namespaces required by this file (usable in any template in this file). */
+  /**
+   * Returns the CSS namespaces required by this file (usable in any template in this file).
+   * TODO(b/151775233): This does not include CSS imports that also have css namespaces. To make CSS
+   * collection work, this needs to be augmented.
+   */
   public ImmutableList<String> getRequiredCssNamespaces() {
     return namespaceDeclaration.getRequiredCssNamespaces();
+  }
+
+  /** Returns the CSS namespaces required by this file (usable in any template in this file). */
+  public ImmutableList<CssPath> getRequiredCssPaths() {
+    return requiredCssPaths;
+  }
+
+  public ImmutableList<String> getRequireCss() {
+    return ImmutableList.<String>builder()
+        .addAll(getRequiredCssNamespaces())
+        .addAll(getRequiredCssPaths().stream().map(CssPath::sourcePath).collect(toImmutableList()))
+        .build();
   }
 
   /** Returns the CSS base namespace for this file (usable in any template in this file). */
@@ -111,14 +201,41 @@ public final class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
     return namespaceDeclaration.getCssBaseNamespace();
   }
 
+  @Nullable
+  public String getCssPrefix() {
+    return namespaceDeclaration.getCssPrefix();
+  }
+
   /** Returns the syntactic alias directives in the file. */
   public ImmutableList<AliasDeclaration> getAliasDeclarations() {
     return aliasDeclarations;
   }
 
   /** Returns the path to the source Soy file ("unknown" if not supplied). */
-  public String getFilePath() {
+  public SourceFilePath getFilePath() {
     return getSourceLocation().getFilePath();
+  }
+
+  public boolean isEmpty() {
+    return this.getChildren().stream()
+        .noneMatch(
+            c -> c instanceof TemplateNode || c instanceof ConstNode || c instanceof ExternNode);
+  }
+
+  public ImmutableList<ConstNode> getConstants() {
+    return getChildrenOfType(this, ConstNode.class);
+  }
+
+  public ImmutableList<TemplateNode> getTemplates() {
+    return getChildrenOfType(this, TemplateNode.class);
+  }
+
+  public ImmutableList<ImportNode> getImports() {
+    return getChildrenOfType(this, ImportNode.class);
+  }
+
+  public ImmutableList<ExternNode> getExterns() {
+    return getChildrenOfType(this, ExternNode.class);
   }
 
   /** Returns this Soy file's name. */
@@ -127,20 +244,32 @@ public final class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
     return getSourceLocation().getFileName();
   }
 
+  /** Returns all comments in the entire Soy file (not just doc-level comments). */
+  public ImmutableList<Comment> getComments() {
+    return comments;
+  }
+
   /** Resolves a qualified name against the aliases for this file. */
-  public String resolveAlias(String fullName) {
-    return headerInfo.resolveAlias(fullName);
+  public Identifier resolveAlias(Identifier identifier) {
+    return headerInfo.resolveAlias(identifier);
   }
 
   public boolean aliasUsed(String alias) {
     return headerInfo.aliasUsed(alias);
   }
 
-  /** @deprecated SoyFileNodes don't have source locations. */
-  @Deprecated
-  @Override
-  public SourceLocation getSourceLocation() {
-    return super.getSourceLocation();
+  public SoyFileHeaderInfo getHeaderInfo() {
+    return headerInfo;
+  }
+
+  public SoyTypeRegistry getSoyTypeRegistry() {
+    Preconditions.checkState(
+        importsContext != null, "Called getSoyTypeRegistry() before ImportsPass was run.");
+    return importsContext.getTypeRegistry();
+  }
+
+  public ImportsContext getImportsContext() {
+    return importsContext;
   }
 
   @Override
@@ -148,8 +277,8 @@ public final class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
 
     StringBuilder sb = new StringBuilder();
 
-    if (delPackageName != null) {
-      sb.append("{delpackage ").append(delPackageName).append("}\n");
+    if (delPackage != null) {
+      sb.append("{delpackage ").append(delPackage.name()).append("}\n");
     }
     sb.append(namespaceDeclaration.toSourceString());
 

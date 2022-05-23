@@ -1,6 +1,5 @@
 # Comments
 
-
 This page describes how to comment your Soy file.
 
 **NOTE**: No type of comment is ever rendered to Soy's output.
@@ -12,7 +11,7 @@ This page describes how to comment your Soy file.
 `//` single line comments example:
 
 ```soy
-{template .example}
+{template example}
   {@param exampleParam: example_source}
 
   // This is a single line Soy comment.
@@ -27,7 +26,7 @@ This page describes how to comment your Soy file.
 `/* ... */` multiline comments example:
 
 ```soy
-{template .example}
+{template example}
   {@param exampleParam: example_source}  /** Long doc-comment for param
       declarations split over multiple lines. */
 

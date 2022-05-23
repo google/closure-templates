@@ -14,19 +14,19 @@
  * limitations under the License.
  */
 
-import SanitizedContentKind from 'goog:goog.soy.data.SanitizedContentKind'; // from //javascript/closure/soy:data
-import * as soy from 'goog:soy';  // from //javascript/template/soy:soy_usegoog_js
-import {isAttribute} from 'goog:soy.checks';  // from //javascript/template/soy:checks
+import SanitizedContentKind from 'goog:goog.soy.data.SanitizedContentKind'; // from //third_party/javascript/closure/soy:data
 import {ordainSanitizedHtml} from 'goog:soydata.VERY_UNSAFE';  // from //javascript/template/soy:soy_usegoog_js
+import {isAttribute} from 'google3/javascript/template/soy/checks';
+import * as soy from 'google3/javascript/template/soy/soyutils_usegoog';
 
 import {IncrementalDomRenderer} from './api_idom';
 import {IdomFunction} from './element_lib_idom';
 
 
 function isIdomFunctionType(
-// tslint:disable-next-line:no-any
-    value: any, type: SanitizedContentKind): value is IdomFunction {
-  return goog.isFunction(value) && (value as IdomFunction).contentKind === type;
+    value: unknown, type: SanitizedContentKind): value is IdomFunction {
+  return typeof value === 'function' && (value as IdomFunction).isInvokableFn &&
+      (value as IdomFunction).contentKind === type;
 }
 
 /**
@@ -34,8 +34,7 @@ function isIdomFunctionType(
  * attribute functions gracefully. In any other situation, this delegates to
  * the regular escaping directive.
  */
-// tslint:disable-next-line:no-any
-function filterHtmlAttributes(value: any) {
+function filterHtmlAttributes(value: unknown) {
   if (isIdomFunctionType(value, SanitizedContentKind.ATTRIBUTES) ||
       isAttribute(value)) {
     return value;
@@ -48,8 +47,7 @@ function filterHtmlAttributes(value: any) {
  * html functions gracefully. In any other situation, this delegates to
  * the regular escaping directive.
  */
-// tslint:disable-next-line:no-any
-function escapeHtml(value: any, renderer: IncrementalDomRenderer) {
+function escapeHtml(value: unknown, renderer: IncrementalDomRenderer) {
   if (isIdomFunctionType(value, SanitizedContentKind.HTML)) {
     return ordainSanitizedHtml(value.toString(renderer));
   }
@@ -62,8 +60,7 @@ function escapeHtml(value: any, renderer: IncrementalDomRenderer) {
  * the regular escaping directive.
  */
 function bidiUnicodeWrap(
-    // tslint:disable-next-line:no-any
-    bidiGlobalDir: number, value: any, renderer: IncrementalDomRenderer) {
+    bidiGlobalDir: number, value: unknown, renderer: IncrementalDomRenderer) {
   if (isIdomFunctionType(value, SanitizedContentKind.HTML)) {
     return soy.$$bidiUnicodeWrap(
         bidiGlobalDir, ordainSanitizedHtml(value.toString(renderer)));
