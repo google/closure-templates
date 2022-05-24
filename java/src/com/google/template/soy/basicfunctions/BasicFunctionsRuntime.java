@@ -145,13 +145,13 @@ public final class BasicFunctionsRuntime {
     List<? extends SoyValueProvider> javaList = list.asJavaList();
     int intFrom = clampListIndex(javaList, from);
     if (optionalTo == null) {
-      return javaList.subList(intFrom, length);
+      return ImmutableList.copyOf(javaList.subList(intFrom, length));
     }
     int to = clampListIndex(javaList, optionalTo);
     if (to < intFrom) {
       return ImmutableList.of();
     }
-    return javaList.subList(intFrom, to);
+    return ImmutableList.copyOf(javaList.subList(intFrom, to));
   }
 
   /** Reverses an array. The original list passed is not modified. */
