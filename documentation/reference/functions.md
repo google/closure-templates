@@ -691,8 +691,8 @@ It takes 1 required and 4 optional arguments.
     "native" so that we show native characters in languages like arabic (this
     argument is ignored for templates running in JavaScript).
 
-    NOTE: see http://userguide.icu-project.org/locale for more "numbers"
-    keywords
+    NOTE: see https://unicode-org.github.io/icu/userguide/locale/ for more
+    "numbers" keywords
 
 1.  The minimum number of fractional digits to display after the decimal point.
     If argument 5 (maximum fractional digits) is not specificied, then maximum
@@ -713,8 +713,11 @@ For example:
     *   Prints exactly two digits after the decimal point.
 *   `{formatNum($value, 'decimal', 'native', 0, 3)}`
     *   Prints up to 3 digits after the decimal point, removing any trailing
-        zeros. "4.1234" would be formatted as "4.123", but "4.100" would be
+        zeros. `4.1234` would be formatted as "4.123", but `4.100` would be
         formatted as "4.1".
+*   `{formatNum($value, 'percent', 'native', 2)}`
+    *   Prints the number as a percent. For example, `0.531` is formatted as
+        "53.10%".
 
 ### `bidiDirAttr(text, opt_isHtml)` {#bidiDirAttr}
 
