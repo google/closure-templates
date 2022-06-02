@@ -32,12 +32,6 @@ import javax.annotation.Nullable;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  */
 public final class TemplateElementNode extends TemplateNode implements ExprHolderNode {
-
-  // These two fields represent a possible alternate implementation for preserving state (as opposed
-  // to a Soy element). For more information, see go/wit-block-design
-  public final String jsnamespace;
-  public final String jsclass;
-
   /**
    * Main constructor. This is package-private because TemplateElementNode instances should be built
    * using TemplateElementNodeBuilder.
@@ -45,17 +39,12 @@ public final class TemplateElementNode extends TemplateNode implements ExprHolde
    * @param nodeBuilder builder containing template initialization params
    * @param soyFileHeaderInfo info from the containing Soy file's header declarations
    * @param params the params from template header or SoyDoc. Null if no decls and no SoyDoc.
-   * @param stateVars the state variables from the template header
    */
   TemplateElementNode(
       TemplateElementNodeBuilder nodeBuilder,
       SoyFileHeaderInfo soyFileHeaderInfo,
-      @Nullable ImmutableList<TemplateHeaderVarDefn> params,
-      @Nullable String jsnamespace,
-      @Nullable String jsclass) {
+      @Nullable ImmutableList<TemplateHeaderVarDefn> params) {
     super(nodeBuilder, "element", soyFileHeaderInfo, Visibility.PUBLIC, params);
-    this.jsnamespace = jsnamespace;
-    this.jsclass = jsclass;
   }
 
   /**
@@ -65,8 +54,6 @@ public final class TemplateElementNode extends TemplateNode implements ExprHolde
    */
   private TemplateElementNode(TemplateElementNode orig, CopyState copyState) {
     super(orig, copyState);
-    this.jsnamespace = orig.jsnamespace;
-    this.jsclass = orig.jsclass;
   }
 
   /** Returns the state variables from template header. */
@@ -95,10 +82,6 @@ public final class TemplateElementNode extends TemplateNode implements ExprHolde
       }
     }
     return builder.build();
-  }
-
-  public boolean hasExternalClassDefinition() {
-    return jsnamespace != null && jsclass != null;
   }
 
   @Override

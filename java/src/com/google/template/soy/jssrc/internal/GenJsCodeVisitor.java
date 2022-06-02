@@ -800,13 +800,6 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     String templateName = node.getTemplateName();
     String partialName = node.getLocalTemplateSymbol();
     String alias;
-    if (node instanceof TemplateElementNode
-        && ((TemplateElementNode) node).hasExternalClassDefinition()
-        && isIncrementalDom()) {
-      dataSource = Expression.THIS;
-    } else {
-      dataSource = OPT_DATA;
-    }
 
     if (jsSrcOptions.shouldGenerateGoogModules() && node instanceof TemplateDelegateNode) {
       alias = partialName;

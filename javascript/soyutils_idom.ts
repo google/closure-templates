@@ -28,9 +28,8 @@ import {SafeHtml} from 'google3/third_party/javascript/closure/html/safehtml';
 import * as googSoy from 'google3/third_party/javascript/closure/soy/soy';
 import * as incrementaldom from 'incrementaldom';  // from //third_party/javascript/incremental_dom:incrementaldom
 
-import {attributes, ElementConstructor, FalsinessRenderer, IncrementalDomRenderer, NullRenderer, patch, patchOuter} from './api_idom';
+import {attributes, FalsinessRenderer, IncrementalDomRenderer, NullRenderer, patch, patchOuter} from './api_idom';
 import {splitAttributes} from './attributes';
-import {upgradeElement} from './custom_elements_shim';
 import {IdomFunction, PatchFunction, SoyElement} from './element_lib_idom';
 import {getSoyUntyped} from './global';
 import {IdomSyncState, IdomTemplate, IjData, SoyTemplate, Template} from './templates';
@@ -66,16 +65,6 @@ interface TemplateAcceptor<TDATA extends {}> {
   setLogger(logger: Logger|null): void;
 }
 
-interface HandleCustomElementOptions<T> {
-  incrementaldom: IncrementalDomRenderer;
-  elementClassCtor: new() => T;
-  firstElementKey: string;
-  tagNameOrCtor: string|(new() => T);
-  data: {};
-  ijData: IjData;
-  template: IdomTemplate<unknown>;
-  element?: HTMLElement;
-}
 
 /**
  * Takes a custom element and attaches relevant fields to it necessary for
@@ -135,8 +124,8 @@ incrementaldom.setKeyAttributeName('ssk');
  */
 function handleSoyElement<T extends TemplateAcceptor<{}>>(
     incrementaldom: IncrementalDomRenderer, elementClassCtor: new () => T,
-    firstElementKey: string, tagNameOrCtor: string|(new () => T), data: {},
-    ijData: IjData, template: IdomTemplate<unknown>): T|null {
+    firstElementKey: string, tagName: string, data: {}, ijData: IjData,
+    template: IdomTemplate<unknown>): T|null {
   // If we're just testing truthiness, record an element but don't do anythng.
   if (incrementaldom instanceof FalsinessRenderer) {
     incrementaldom.open('div');
@@ -144,28 +133,14 @@ function handleSoyElement<T extends TemplateAcceptor<{}>>(
     return null;
   }
   const soyElementKey = firstElementKey + incrementaldom.getCurrentKeyStack();
-  const isCustomElement = tagNameOrCtor === elementClassCtor;
 
   /**
    * Open the element early in order to execute lifeycle hooks. Suppress the
    * next element open since we've already opened it.
    */
-  const element = incrementaldom.open(
-      tagNameOrCtor as string | ElementConstructor, firstElementKey);
+  const element = incrementaldom.open(tagName, firstElementKey);
   const oldOpen = incrementaldom.open;
-  if (isCustomElement) {
-    return handleCustomElement({
-      element: element as HTMLElement,
-      incrementaldom,
-      elementClassCtor,
-      firstElementKey,
-      ijData,
-      tagNameOrCtor,
-      data,
-      template,
-    });
-  }
-  incrementaldom.open = (tagNameOrCtor, soyElementKey) => {
+  incrementaldom.open = (tagName, soyElementKey) => {
     if (element) {
       if (soyElementKey !== firstElementKey) {
         throw new Error('Expected tag name and key to match.');
@@ -203,59 +178,6 @@ function handleSoyElement<T extends TemplateAcceptor<{}>>(
     return null;
   }
   return soyElement as unknown as T;
-}
-
-function handleCustomElement<T extends TemplateAcceptor<{}>>({
-  incrementaldom,
-  elementClassCtor,
-  firstElementKey,
-  ijData,
-  tagNameOrCtor,
-  data,
-  template,
-  element,
-}: HandleCustomElementOptions<T>): T|null {
-  /**
-   * Suppress the next element open since we've already opened it.
-   */
-  const oldOpen = incrementaldom.open;
-
-  incrementaldom.open = (tagNameOrCtor, soyElementKey) => {
-    if (element) {
-      if (element.tagName.toLowerCase() !== tagNameOrCtor ||
-          soyElementKey !== firstElementKey) {
-        throw new Error('Expected tag name and key to match.');
-      }
-    }
-    incrementaldom.open = oldOpen;
-    return element;
-  };
-  if (!element) {
-    template.call(new elementClassCtor(), incrementaldom, data, ijData);
-    return null;
-  }
-  // When a custom element is newly created by idom, idom invokes the
-  // constructor which will handle the upgrade. But if the element is SSR'ed and
-  // subsequently hydrated by idom, we need to upgrade the element when idom
-  // first encounters it. There's not a good spot to catch idom's first
-  // encounter with an element, so `upgradeElement` has an early return if the
-  // CE is already hydrated.
-  upgradeElement(element);
-  const customEl = element as unknown as T;
-  customEl.syncStateFromProps(data, false);
-  const skip = () => {
-    incrementaldom.skip();
-    incrementaldom.close();
-    incrementaldom.open = oldOpen;
-    return null;
-  };
-  // Must be set each time handleCustomElement is called since skip is different
-  // each time.
-  customEl.setIdomSkipTemplate(skip);
-  if (!customEl.hasLogger()) {
-    customEl.setLogger(incrementaldom.getLogger());
-  }
-  return customEl;
 }
 
 function makeHtml(idomFn: PatchFunction): IdomFunction {
