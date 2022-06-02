@@ -9,7 +9,13 @@ using Soy language features and for which there is not an existing
 
 There are two ways to define custom functions: via the `{extern}` command (this
 page) and via [plugins](plugins). All new custom functions should use the
-`{extern}` command.
+`{extern}` command, except for rare cases where the function's types are not
+supported yet by externs.
+
+WARNING: There are a few types that are not supported yet by externs: union
+types, unknown types, maps with proto enum keys (b/232557074), and nullable
+object parameters (b/217186858). In these cases users will need to switch to
+using a [plugins](plugins) instead.
 
 ## When to define a custom function
 
