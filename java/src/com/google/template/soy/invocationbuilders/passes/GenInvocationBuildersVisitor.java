@@ -465,7 +465,6 @@ public final class GenInvocationBuildersVisitor
                 javaType ->
                     javaType instanceof RecordJavaType && ((RecordJavaType) javaType).isList());
     // Start of Foo.Builder class.
-    ilb.appendLine("@com.google.errorprone.annotations.CanIgnoreReturnValue");
     ilb.appendLine(
         "public static final class Builder extends"
             + " com.google.template.soy.data.BaseSoyTemplateImpl."
@@ -682,6 +681,7 @@ public final class GenInvocationBuildersVisitor
       String javaTypeString = javaType.toJavaTypeString();
       boolean nullable = javaType.isNullable();
 
+      ilb.appendLine("@com.google.errorprone.annotations.CanIgnoreReturnValue");
       ilb.appendLine(
           "public Builder "
               + param.setterName()
@@ -705,6 +705,7 @@ public final class GenInvocationBuildersVisitor
 
   private static void writeRecordSetter(
       IndentedLinesBuilder ilb, ParamInfo param, RecordJavaType type) {
+    ilb.appendLine("@com.google.errorprone.annotations.CanIgnoreReturnValue");
     ilb.appendLineStart(
         "public Builder ", type.isList() ? param.adderName() : param.setterName(), "(");
 
@@ -762,6 +763,7 @@ public final class GenInvocationBuildersVisitor
             + ")}.",
         /* forceMultiline= */ false,
         /* wrapAt100Chars= */ true);
+    ilb.appendLine("@com.google.errorprone.annotations.CanIgnoreReturnValue");
     ilb.appendLine(
         "public Builder "
             + param.futureSetterName()
