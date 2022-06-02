@@ -428,7 +428,9 @@ A record property is optional if its name ends with a `?`:
 ```
 
 In many cases, defining a protocol buffer is superior to using records since it
-is less verbose
+is less verbose.
+
+See go/soy/reference/expressions#record for how to instantiate a record literal.
 
 Backend    | type in host language
 ---------- | ---------------------------------------------------------
