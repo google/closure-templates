@@ -223,7 +223,7 @@ exports.unpackProtoToSanitizedHtml = function(x) {
 
 /**
  * Converts a Safe String Proto to CSS Sanitized Content.
- * @param {?SafeStyleProto | ?SafeStyleSheetProto} x
+ * @param {?SafeStyleProto | ?SafeStyleSheetProto | undefined} x
  *   null or a safe string proto.
  * @return {?SanitizedCss}
  */
@@ -242,7 +242,7 @@ exports.unpackProtoToSanitizedCss = function(x) {
 
 /**
  * Converts a Safe String Proto to JS Sanitized Content.
- * @param {?SafeScriptProto} x null or a safe string proto.
+ * @param {?SafeScriptProto | undefined} x null or a safe string proto.
  * @return {?SanitizedJs}
  */
 exports.unpackProtoToSanitizedJs = function(x) {
@@ -256,7 +256,7 @@ exports.unpackProtoToSanitizedJs = function(x) {
 
 /**
  * Converts a Safe String Proto to URI Sanitized Content.
- * @param {?SafeUrlProto | ?TrustedResourceUrlProto} x
+ * @param {?SafeUrlProto | ?TrustedResourceUrlProto | undefined} x
  *   null or a safe string proto.
  * @return {?SanitizedUri}
  */
@@ -271,7 +271,7 @@ exports.unpackProtoToSanitizedUri = function(x) {
 
 /**
  * Converts a Safe String Proto to a Trusted Resource URI Sanitized Content.
- * @param {?TrustedResourceUrlProto} x
+ * @param {?TrustedResourceUrlProto | undefined} x
  *   null or a safe string proto.
  * @return {?SanitizedTrustedResourceUri}
  */
