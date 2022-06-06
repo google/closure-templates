@@ -38,6 +38,7 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_SOY;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_SOY_ALIAS;
 import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_DATA;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_GET_DELTEMPLATE_ID;
+import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_MAKE_EMPTY_TEMPLATE_FN;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_REGISTER_DELEGATE_FN;
 import static com.google.template.soy.jssrc.internal.JsRuntime.WINDOW_CONSOLE_LOG;
 import static com.google.template.soy.jssrc.internal.JsRuntime.sanitizedContentOrdainerFunction;
@@ -763,6 +764,18 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     topLevelSymbols.put(partialName, aliasExp.call(JsRuntime.SOY_INTERNAL_CALL_MARKER));
   }
 
+  private Statement makeRegisterDelegateFn(
+      TemplateDelegateNode nodeAsDelTemplate, Expression aliasExp) {
+    return SOY_REGISTER_DELEGATE_FN
+        .call(
+            SOY_GET_DELTEMPLATE_ID.call(
+                stringLiteral(delTemplateNamer.getDelegateName(nodeAsDelTemplate))),
+            stringLiteral(nodeAsDelTemplate.getDelTemplateVariant()),
+            number(nodeAsDelTemplate.getDelPriority().getValue()),
+            aliasExp)
+        .asStatement();
+  }
+
   /**
    * Outputs a {@link TemplateNode}, generating the function open and close, along with a a debug
    * template name.
@@ -821,6 +834,25 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     assistantForMsgs = null;
 
     ImmutableList.Builder<Statement> declarations = ImmutableList.builder();
+
+    if (node instanceof TemplateDelegateNode
+        && ((TemplateDelegateNode) node).getChildren().isEmpty()) {
+      // TODO(b/233902878): Once allowemptydefault is deprecated, we can just stop here, emitting
+      // nothing, and at runtime assume a missing entry in the map is an empty template.
+      // See
+      // https://docs.google.com/document/d/1keigHh3t8a5jaPUSQTXvzr7aNqjh2X4z0rNIt4PO4J0/edit#heading=h.8dqjxhj7gq2b
+      TemplateDelegateNode nodeAsDelTemplate = (TemplateDelegateNode) node;
+      Expression emptyFnCall = SOY_MAKE_EMPTY_TEMPLATE_FN.call(stringLiteral(templateName));
+      if (jsSrcOptions.shouldGenerateGoogModules()) {
+        declarations.add(VariableDeclaration.builder(alias).setRhs(emptyFnCall).build());
+      } else {
+        declarations.add(Statement.assign(aliasExp, emptyFnCall));
+      }
+      declarations.add(makeRegisterDelegateFn(nodeAsDelTemplate, aliasExp));
+      jsCodeBuilder.append(Statement.of(declarations.build()));
+      return;
+    }
+
     if (generatePositionalParamsSignature) {
       JsDoc jsDoc = generateFunctionJsDoc(node, alias, /*isDelegate=*/ true);
       Expression publicFunction = Expression.function(jsDoc, generateDelegateFunction(node, alias));
@@ -899,15 +931,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     // ------ If delegate template, generate a statement to register it. ------
     if (node instanceof TemplateDelegateNode) {
       TemplateDelegateNode nodeAsDelTemplate = (TemplateDelegateNode) node;
-      declarations.add(
-          SOY_REGISTER_DELEGATE_FN
-              .call(
-                  SOY_GET_DELTEMPLATE_ID.call(
-                      stringLiteral(delTemplateNamer.getDelegateName(nodeAsDelTemplate))),
-                  stringLiteral(nodeAsDelTemplate.getDelTemplateVariant()),
-                  number(nodeAsDelTemplate.getDelPriority().getValue()),
-                  aliasExp)
-              .asStatement());
+      declarations.add(makeRegisterDelegateFn(nodeAsDelTemplate, aliasExp));
     }
 
     jsCodeBuilder.append(Statement.of(declarations.build()));

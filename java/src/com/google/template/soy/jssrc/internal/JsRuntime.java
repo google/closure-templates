@@ -124,6 +124,9 @@ public final class JsRuntime {
 
   public static final Expression SOY_GET_DELEGATE_FN = SOY.dotAccess("$$getDelegateFn");
 
+  public static final Expression SOY_MAKE_EMPTY_TEMPLATE_FN =
+      SOY.dotAccess("$$makeEmptyTemplateFn");
+
   public static final Expression SOY_REGISTER_DELEGATE_FN = SOY.dotAccess("$$registerDelegateFn");
 
   public static final Expression SOY_GET_DELTEMPLATE_ID = SOY.dotAccess("$$getDelTemplateId");

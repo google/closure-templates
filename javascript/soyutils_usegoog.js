@@ -40,6 +40,7 @@ const bidi = goog.require('goog.i18n.bidi');
 const googArray = goog.require('goog.array');
 const googDebug = goog.require('goog.debug');
 const googFormat = goog.require('goog.format');
+const googSoy = goog.requireType('goog.soy');
 const googString = goog.require('goog.string');
 const soyChecks = goog.require('soy.checks');
 const uncheckedconversions = goog.require('goog.html.uncheckedconversions');
@@ -587,6 +588,30 @@ const DELEGATE_REGISTRY_PRIORITIES_ = {};
  */
 const DELEGATE_REGISTRY_FUNCTIONS_ = {};
 
+
+/**
+ * Returns a function for an empty deltemplate.
+ *
+ * @param {string} delTemplateId The name of the template.
+ * @return {!Function} The generated empty template function.
+ */
+const $$makeEmptyTemplateFn = function(delTemplateId) {
+  const generateFn = function(opt_data, opt_ijData) {
+    if (goog.DEBUG && soy.$$stubsMap[delTemplateId]) {
+      const $ijData = /** @type {!googSoy.IjData} */ (opt_ijData);
+      return soy.$$stubsMap[delTemplateId](opt_data, $ijData);
+    }
+    return '';
+  };
+  if (goog.DEBUG) {
+    /**
+     * @nocollapse
+     * @type {string}
+     */
+    generateFn.soyTemplateName = delTemplateId;
+  }
+  return generateFn;
+};
 
 /**
  * Registers a delegate implementation. If the same delegate template key (id
@@ -2482,6 +2507,7 @@ exports = {
   $$round,
   $$strContains,
   $$coerceToBoolean,
+  $$makeEmptyTemplateFn,
   $$registerDelegateFn,
   $$getDelTemplateId,
   $$getDelegateFn,
