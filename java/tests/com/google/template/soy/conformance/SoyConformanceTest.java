@@ -503,33 +503,6 @@ public class SoyConformanceTest {
             + "{/template}");
   }
 
-  @Test
-  public void testBanInlineEventHandlers() {
-    assertViolation(
-        "requirement: {\n"
-            + "  custom: {\n"
-            + "    java_class: 'com.google.template.soy.conformance.BanInlineEventHandlers'\n"
-            + "  }\n"
-            + "  error_message: 'foo'"
-            + "}",
-        "{namespace ns}\n" + "{template foo}\n" + "<div onclick='bar'></div>\n" + "{/template}");
-    assertViolation(
-        "requirement: {\n"
-            + "  custom: {\n"
-            + "    java_class: 'com.google.template.soy.conformance.BanInlineEventHandlers'\n"
-            + "  }\n"
-            + "  error_message: 'foo'"
-            + "}",
-        "{namespace ns}\n" + "{template foo}\n" + "<div ONCLICK='bar'></div>\n" + "{/template}");
-    assertNoViolation(
-        "requirement: {\n"
-            + "  custom: {\n"
-            + "    java_class: 'com.google.template.soy.conformance.BanInlineEventHandlers'\n"
-            + "  }\n"
-            + "  error_message: 'foo'"
-            + "}",
-        "{namespace ns}\n" + "{template foo}\n" + "<div on='bar'></div>\n" + "{/template}");
-  }
 
   @Test
   public void testRequireStrictHtml() {
@@ -545,97 +518,6 @@ public class SoyConformanceTest {
         config, "{namespace ns}\n" + "{template foo stricthtml=\"false\"}\n" + "{/template}");
     assertNoViolation(
         config, "{namespace ns}\n" + "{template foo kind=\"text\"}\n" + "{/template}");
-  }
-
-  // regression test, this used to not be detected since we only issued errors if the attribute was
-  // defined inside a kind="attributes" block
-  @Test
-  public void testBanInlineEventHandlers_attributes() {
-    assertViolation(
-        "requirement: {\n"
-            + "  custom: {\n"
-            + "    java_class: 'com.google.template.soy.conformance.BanInlineEventHandlers'\n"
-            + "  }\n"
-            + "  error_message: 'foo'"
-            + "}",
-        "{namespace ns}\n"
-            + "{template foo kind=\"attributes\"}\n"
-            + "ONCLICK='bar'\n"
-            + "{/template}");
-  }
-
-  // regression test for a situation involving script tags, the old version wouldn't catch this but
-  // i don't know why...i suspect a subtle bug in the way SlicedRawTextNodes are created
-  @Test
-  public void testBanInlineEventHandlers_script() {
-    assertViolation(
-        "requirement: {\n"
-            + "  custom: {\n"
-            + "    java_class: 'com.google.template.soy.conformance.BanInlineEventHandlers'\n"
-            + "  }\n"
-            + "  error_message: 'foo'"
-            + "}",
-        "{namespace ns}\n"
-            + "{template foo}\n"
-            + " {@param jsUrl : ?}{@param callback : ?}\n"
-            + "<script id=\"base-js\" src=\"{$jsUrl}\" async onload=\"{$callback}\"></script>\n"
-            + "{/template}");
-  }
-
-  @Test
-  public void testBanInlineEventHandlersExemptions() {
-    assertNoViolation(
-        "requirement: {\n"
-            + "  custom: {\n"
-            + "    java_class: 'com.google.template.soy.conformance.BanInlineEventHandlers'\n"
-            + "  }\n"
-            + "  error_message: 'foo'"
-            + "  exempt: 'foo/bar/baz.soy'"
-            + "}",
-        new StableSoyFileSupplier(
-            CharSource.wrap(
-                "{namespace ns}\n"
-                    + "{template foo}\n"
-                    + "<script onload='foo();'></script>\n"
-                    + "{/template}"),
-            SourceFilePath.create("foo/bar/baz.soy")));
-  }
-
-  // Regression test for a bug where we used to essentially ignore exemptions if there were
-  // multiple files in a compilation unit
-  @Test
-  public void testBanInlineEventHandlersIsTooAggressiveWithExemptions() {
-    assertNoViolation(
-        "requirement: {\n"
-            + "  custom: {\n"
-            + "    java_class: 'com.google.template.soy.conformance.BanInlineEventHandlers'\n"
-            + "  }\n"
-            + "  error_message: 'foo'"
-            + "  exempt: 'foo/bar/baz.soy'"
-            + "}",
-        new StableSoyFileSupplier(
-            CharSource.wrap(
-                "{namespace ns}\n"
-                    + "{template foo}\n"
-                    + "<script onload='foo();'></script>\n"
-                    + "{/template}"),
-            SourceFilePath.create("foo/bar/baz.soy")),
-        new StableSoyFileSupplier(
-            CharSource.wrap("{namespace ns2}\n" + "{template noViolation}{/template}"),
-            SourceFilePath.create("foo/bar/quux.soy")));
-  }
-
-  @Test
-  public void testBanInlineEventHandlers_NotJs() {
-    assertNoViolation(
-        "requirement: {\n"
-            + "  custom: {\n"
-            + "    java_class: 'com.google.template.soy.conformance.BanInlineEventHandlers'\n"
-            + "  }\n"
-            + "  error_message: 'foo'"
-            + " "
-            + "}",
-        "{namespace ns}\n" + "{template foo}\n" + "<div foo='bar'></div>\n" + "{/template}");
   }
 
   @Test
