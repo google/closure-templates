@@ -154,7 +154,7 @@ public abstract class AbstractSoyCompiler {
 
   @Option(
       name = "--skip_css_reference_check",
-      usage = "Whether to skip the go/css-conformance#check-css-references check.")
+      usage = "Whether to skip the go/css-conformance#css-reference-checks.")
   private boolean skipCssReferenceCheck = false;
 
   @Option(
