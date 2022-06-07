@@ -194,6 +194,19 @@ For example,
 
 *   `$foo.bar` accesses the `bar` field of the variable `$foo`
 *   `$foo?.bar` accesses the `bar` field of `$foo` only if `$foo` is non-`null`
+*   `$foo?.bar?.baz()` accesses the `bar` field of `$foo` only if `$foo` is
+    non-`null`, and invokes the `baz()` method of `$foo.bar` only if both `$foo`
+    *and* `$foo.bar` are non-`null`
+
+Note: The "short-circuiting" behavior of `?.` only applies to the sequence of
+field accesses and method calls that immediately follow it. If the result of
+this sequence is used as part of a larger expression, the larger expression
+still will be invoked even if the sequence returns a null value.
+
+Warning: This can result in dangerously different client- and server-side
+rendering behavior. For example, if `$foo == null`, then the expression
+`$foo?.bar > 0` is evaluated as `null > 0`. This evaluates to `false` in JS but
+throws a NullPointerException in Java.
 
 ### Indexed access operators `[]` `?[]` {#indexing-operators}
 
@@ -211,6 +224,9 @@ For example,
 
 NOTE: if the index being accessed doesn't exist, `null` will be returned. There
 is no 'index out of bounds' error for lists.
+
+Warning: The "short-circuiting" caveat described above (for `?.`) applies here
+as well. For example, the expression `$foo?[$bar] > 0` is *not* safe.
 
 ### Minus operator `-`
 
