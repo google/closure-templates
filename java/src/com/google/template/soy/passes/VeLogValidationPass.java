@@ -295,6 +295,7 @@ final class VeLogValidationPass implements CompilerFileSetPass {
         } else {
           SoyType veDataType =
               typeRegistry.getProtoRegistry().getProtoType(veType.getDataType().get());
+          /*
           if (veDataType == null) {
             reporter.report(veExpr.getSourceLocation(), UNKNOWN_PROTO, veType.getDataType().get());
           } else if (veDataType.getKind() != Kind.PROTO) {
@@ -303,6 +304,7 @@ final class VeLogValidationPass implements CompilerFileSetPass {
             reporter.report(
                 dataExpr.getSourceLocation(), WRONG_TYPE, veType.getDataType().get(), dataType);
           }
+          */
         }
       }
     } else if (SoyTypes.isKindOrUnionOfKind(veExpr.getType(), Kind.VE)) {
