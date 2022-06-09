@@ -215,7 +215,7 @@ exports.unpackProtoToSanitizedHtml = function(x) {
   if (x instanceof SafeHtmlProto) {
     const safeHtml = jspbconversions.safeHtmlFromProto(x);
     return soy.VERY_UNSAFE.ordainSanitizedHtml(
-        SafeHtml.unwrap(safeHtml), safeHtml.getDirection());
+        SafeHtml.unwrap(safeHtml));
   }
   return null;
 };

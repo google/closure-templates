@@ -128,7 +128,7 @@ const createSanitizedHtml = function(value) {
   }
   if (value instanceof SafeHtml) {
     return VERY_UNSAFE.ordainSanitizedHtml(
-        SafeHtml.unwrap(value), value.getDirection());
+        SafeHtml.unwrap(value));
   }
   // MOE:begin_strip
   if (value instanceof TsSafeHtml) {
