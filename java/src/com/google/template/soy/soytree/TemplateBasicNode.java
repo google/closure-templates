@@ -18,6 +18,8 @@ package com.google.template.soy.soytree;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import javax.annotation.Nullable;
 
@@ -27,6 +29,21 @@ import javax.annotation.Nullable;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  */
 public final class TemplateBasicNode extends TemplateNode {
+
+  /** The "modifiable" attribute. */
+  private final boolean modifiable;
+
+  /** Expression that will evaluate to "modifies" attribute. */
+  private final ExprRootNode modifiesExpr;
+
+  /** The "legacydeltemplatenamespace" attribute. */
+  private final String legacyDeltemplateNamespace;
+
+  /** Expression that will evaluate to the value of the "variant" attribute. */
+  private final ExprRootNode variantExpr;
+
+  /** The "usevarianttype" attribute. */
+  private final String useVariantType;
 
   /**
    * Main constructor. This is package-private because TemplateBasicNode instances should be built
@@ -41,8 +58,18 @@ public final class TemplateBasicNode extends TemplateNode {
       TemplateBasicNodeBuilder nodeBuilder,
       SoyFileHeaderInfo soyFileHeaderInfo,
       Visibility visibility,
+      boolean modifiable,
+      ExprRootNode modifiesExpr,
+      String legacyDeltemplateNamespace,
+      ExprRootNode variantExpr,
+      String useVariantType,
       @Nullable ImmutableList<TemplateHeaderVarDefn> params) {
     super(nodeBuilder, "template", soyFileHeaderInfo, visibility, params);
+    this.modifiable = modifiable;
+    this.modifiesExpr = modifiesExpr;
+    this.legacyDeltemplateNamespace = legacyDeltemplateNamespace;
+    this.variantExpr = variantExpr;
+    this.useVariantType = useVariantType;
   }
 
   /**
@@ -52,6 +79,11 @@ public final class TemplateBasicNode extends TemplateNode {
    */
   private TemplateBasicNode(TemplateBasicNode orig, CopyState copyState) {
     super(orig, copyState);
+    this.modifiable = orig.modifiable;
+    this.modifiesExpr = orig.modifiesExpr != null ? orig.modifiesExpr.copy(copyState) : null;
+    this.legacyDeltemplateNamespace = orig.legacyDeltemplateNamespace;
+    this.variantExpr = orig.variantExpr != null ? orig.variantExpr.copy(copyState) : null;
+    this.useVariantType = orig.useVariantType;
   }
 
   @Override
@@ -67,5 +99,25 @@ public final class TemplateBasicNode extends TemplateNode {
   @Override
   public TemplateBasicNode copy(CopyState copyState) {
     return new TemplateBasicNode(this, copyState);
+  }
+
+  public boolean getModifiable() {
+    return modifiable;
+  }
+
+  public ExprRootNode getModifiesExpr() {
+    return modifiesExpr;
+  }
+
+  public String getLegacyDeltemplateNamespace() {
+    return legacyDeltemplateNamespace;
+  }
+
+  public ExprRootNode getVariantExpr() {
+    return variantExpr;
+  }
+
+  public String getUseVariantType() {
+    return useVariantType;
   }
 }

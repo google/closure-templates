@@ -104,6 +104,7 @@ public class TemplateNodeTest {
     assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
         .isEqualTo(
             "Unsupported attribute 'autoescape' for 'template' tag, expected one of [visibility, "
+                + "modifiable, modifies, legacydeltemplatenamespace, variant, usevarianttype, "
                 + "kind, requirecss, cssbase, stricthtml, whitespace, component].");
   }
 

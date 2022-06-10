@@ -502,7 +502,7 @@ public class SoyFileParser {
 
   /** Names of attributes whose values should be parsed as expressions. */
   private static final ImmutableSet<String> EXPR_ATTR_NAMES =
-      ImmutableSet.of("data", "genders", "key", "logonly", "variant");
+      ImmutableSet.of("data", "genders", "key", "logonly", "variant", "modifies");
 
   private static List<CommandTagAttribute> validateAttributes(
       SourceLocation currentLocation, List<CommandTagAttribute> attributes, ErrorReporter errorReporter) {
