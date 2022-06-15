@@ -232,10 +232,7 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
           "boq.educms.renderer.templates.component",
           "boq.educms.renderer.templates.componentlist",
           "boq.educmseditor.fields.templates.editor",
-          "boq.educmseditor.fields.templates.preview",
-          // MAILED
-          "boq.ads.townsquare.marketplaceui.components.componentregistry.templates.ghost", // cl/455004511
-          "boq.ads.townsquare.marketplaceui.components.componentregistry.templates.type");
+          "boq.educmseditor.fields.templates.preview");
 
   private static final ImmutableSet<String> ALLOWEMPTYDEFAULT_PASSLIST =
       ImmutableSet.of(
