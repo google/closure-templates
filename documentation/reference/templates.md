@@ -53,14 +53,14 @@ These are the `template` tag's attributes:
     autoprefixing in [`css` function](functions.md#css) calls.
 
 *   `stricthtml`: Optional. Default `true`. Configures
-    [strict html support](html)
+    [strict html support](html.md)
 
 *   `whitespace`: Optional. Default `join`. Configures the whitespace joining
-    algorithm to use. See the [Line Joining](textual-commands##line-joining)
+    algorithm to use. See the [Line Joining](textual-commands.md#line-joining)
     documentation for details on the default `join` algorithm. Set this to
     `preserve` if you want to preserve all whitespace characters that are found
     inside the current template. This behavior is similar to what can be
-    observed when using the [{literal}](textual-commands#literal) command.
+    observed when using the [{literal}](textual-commands.md#literal) command.
 
     For example, consider the following input file:
 
@@ -109,7 +109,7 @@ Syntax:
 `{@param}` declares a template parameter. Parameter declarations must come first
 in the template, preceding all other template content.
 
-See the [types reference](types) for instructions on how to declare types.
+See the [types reference](template-types.md) for instructions on how to declare types.
 
 ### Required params
 
@@ -166,7 +166,7 @@ Syntax:
 The syntax is identical to the [required param](#param) syntax with the
 exception of the keyword. The injected parameter may be optional (`{@inject?}`).
 
-See the [types reference](types) for instructions on how to declare types.
+See the [types reference](template-types.md) for instructions on how to declare types.
 
 ## Doc comments for params {#doc-comments}
 
@@ -187,5 +187,5 @@ Example:
 
 ## Parameter type expressions {#param-type}
 
-See the [type expression reference](types) for the types that can appear in a
+See the [type expression reference](template-types.md) for the types that can appear in a
 parameter declaration.
