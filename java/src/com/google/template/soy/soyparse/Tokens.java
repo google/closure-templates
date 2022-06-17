@@ -98,6 +98,8 @@ final class Tokens {
         return "{alias";
       case SoyFileParserConstants.DELPACKAGE_OPEN:
         return "{delpackage";
+      case SoyFileParserConstants.MODNAME_OPEN:
+        return "{modName";
       case SoyFileParserConstants.DELTEMPLATE_OPEN:
         return "{deltemplate";
       case SoyFileParserConstants.NAMESPACE_OPEN:
