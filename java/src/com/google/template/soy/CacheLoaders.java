@@ -17,7 +17,6 @@
 package com.google.template.soy;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -196,15 +195,6 @@ final class CacheLoaders {
         public CompiledJarsPluginSignatureReader read(
             File file, SoyCompilerFileReader reader, SoyInputCache cache) {
           return new CompiledJarsPluginSignatureReader(ImmutableList.of(file), false);
-        }
-      };
-
-  static final SoyInputCache.CacheLoader<ImmutableList<String>> CSS_CHECK_EXEMPTIONS =
-      new SoyInputCache.CacheLoader<ImmutableList<String>>() {
-        @Override
-        public ImmutableList<String> read(
-            File file, SoyCompilerFileReader reader, SoyInputCache cache) throws IOException {
-          return reader.read(file).asCharSource(UTF_8).readLines();
         }
       };
 

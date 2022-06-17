@@ -146,13 +146,6 @@ public abstract class AbstractSoyCompiler {
   private List<File> cssMetadata = new ArrayList<>();
 
   @Option(
-      name = "--check_css_list",
-      usage =
-          "Filename for list of files to exempt from checking css() calls for classes in CSS"
-              + " files.")
-  private File checkCssList = null;
-
-  @Option(
       name = "--skip_css_reference_check",
       usage = "Whether to skip the go/css-conformance#css-reference-checks.")
   private boolean skipCssReferenceCheck = false;

@@ -42,8 +42,6 @@ public abstract class CssRegistry {
 
   abstract ImmutableMap<String, String> classToNamespaceMap();
 
-  public abstract ImmutableList<String> checkCssList();
-
   public abstract boolean skipCssReferenceCheck();
 
   @Memoized
@@ -84,7 +82,6 @@ public abstract class CssRegistry {
         Optional.empty(),
         ImmutableMap.of(),
         ImmutableMap.of(),
-        ImmutableList.of(),
         true /* skipCssReferenceCheck */);
   }
 
@@ -96,7 +93,6 @@ public abstract class CssRegistry {
         Optional.empty(),
         ImmutableMap.of(),
         ImmutableMap.of(),
-        ImmutableList.of(),
         false /* skipCssReferenceCheck */);
   }
 }
