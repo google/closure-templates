@@ -1285,16 +1285,6 @@ public class RenderVisitorTest {
             + "  {/delcall}\n"
             + "{/template}\n";
 
-    String soyFileContent1b =
-        "{namespace ns1}\n"
-            + "\n"
-            + "/***/\n"
-            + "{template callerTemplate}\n"
-            + "  {delcall myApp.myDelegate}\n"
-            + "    {param boo: 'aaaaaah' /}\n"
-            + "  {/delcall}\n"
-            + "{/template}\n";
-
     String soyFileContent2 =
         "{delpackage SecretFeature}\n"
             + "{namespace ns2}\n"
@@ -1351,44 +1341,6 @@ public class RenderVisitorTest {
     assertThat(
             renderTemplateInFile(
                 parseResult, "ns1.callerTemplate", data, null, activeDelPackageNames))
-        .isEqualTo("111 aaaaaah");
-
-    // ------ Test with only file 1b in bundle. ------
-    activeDelPackageNames = arg -> false;
-    try {
-      renderTemplateInFile(
-          SoyFileSetParserBuilder.forFileContents(soyFileContent1b).parse(),
-          "ns1.callerTemplate",
-          data,
-          null,
-          activeDelPackageNames);
-      fail("expected RenderException");
-    } catch (RenderException e) {
-      assertThat(e).hasMessageThat().contains("Found no active impl for delegate call");
-    }
-
-    // ------ Test with both files 1b and 2 in bundle. ------
-
-    try {
-      renderTemplateInFile(
-          SoyFileSetParserBuilder.forFileContents(soyFileContent1b, soyFileContent2).parse(),
-          "ns1.callerTemplate",
-          data,
-          null,
-          activeDelPackageNames);
-      fail("expected RenderException");
-    } catch (RenderException e) {
-      assertThat(e).hasMessageThat().contains("Found no active impl for delegate call");
-    }
-
-    activeDelPackageNames = "SecretFeature"::equals;
-    assertThat(
-            renderTemplateInFile(
-                SoyFileSetParserBuilder.forFileContents(soyFileContent1b, soyFileContent2).parse(),
-                "ns1.callerTemplate",
-                data,
-                null,
-                activeDelPackageNames))
         .isEqualTo("111 aaaaaah");
   }
 

@@ -219,7 +219,9 @@ public final class GenCallCodeUtilsTest {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forTemplateAndImports(
                 SharedTestUtils.buildTestTemplateContent(false, callSource)
-                    + "\n{template someFunc}{@param? goo: ?}{/template}",
+                    + "\n{template someFunc}{@param? goo: ?}{/template}"
+                    + "{deltemplate myDelegate}{/deltemplate}"
+                    + "{deltemplate my.other.delegate}{@param goo: any}{/deltemplate}",
                 desc)
             .parse()
             .fileSet();

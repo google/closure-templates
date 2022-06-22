@@ -37,7 +37,8 @@ public final class GenPyCallExprVisitorTest {
           + "{/template}\n"
           + "{template moo}\n"
           + "  %s\n"
-          + "{/template}\n";
+          + "{/template}\n"
+          + "{deltemplate moo.goo}{/deltemplate}\n";
 
   @Test
   public void testBasicCall() {

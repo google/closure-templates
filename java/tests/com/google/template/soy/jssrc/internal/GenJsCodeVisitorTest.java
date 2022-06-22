@@ -121,7 +121,7 @@ public final class GenJsCodeVisitorTest {
             + "\n"
             + "/** Test delegate template. */\n"
             + "{deltemplate myDelegates.goo}\n"
-            + "  {delcall myDelegates.soo /}\n"
+            + "  {delcall myDelegates.soo allowemptydefault=\"true\" /}\n"
             + "{/deltemplate}\n";
 
     ParseResult parse = SoyFileSetParserBuilder.forFileContents(testFileContent).parse();
@@ -163,7 +163,7 @@ public final class GenJsCodeVisitorTest {
             + "  }\n"
             + "  return"
             + " soy.VERY_UNSAFE.ordainSanitizedHtml(soy.$$getDelegateFn(soy.$$getDelTemplateId('myDelegates.soo'),"
-            + " '', false)(null, $ijData));\n"
+            + " '', true)(null, $ijData));\n"
             + "};\n"
             + "if (goog.DEBUG) {\n"
             + "  /**\n"
@@ -189,7 +189,7 @@ public final class GenJsCodeVisitorTest {
             + "\n"
             + "/** Test delegate template. */\n"
             + "{deltemplate myDelegates.goo variant=\"'googoo'\"}\n"
-            + "  {delcall myDelegates.moo variant=\"'moomoo'\" /}\n"
+            + "  {delcall myDelegates.moo variant=\"'moomoo'\" allowemptydefault=\"true\" /}\n"
             + "{/deltemplate}\n";
 
     ParseResult parse = SoyFileSetParserBuilder.forFileContents(testFileContent).parse();
@@ -227,7 +227,7 @@ public final class GenJsCodeVisitorTest {
             + "  }\n"
             + "  return"
             + " soy.VERY_UNSAFE.ordainSanitizedHtml(soy.$$getDelegateFn(soy.$$getDelTemplateId('myDelegates.moo'),"
-            + " 'moomoo', false)(null, $ijData));\n"
+            + " 'moomoo', true)(null, $ijData));\n"
             + "};\n"
             + "if (goog.DEBUG) {\n"
             + "  /**\n"
@@ -553,22 +553,18 @@ public final class GenJsCodeVisitorTest {
   public void testDelegateCall() {
 
     assertGeneratedJsCode(
-        "{@param boo : ?}\n" + "{delcall my.delegate data=\"$boo.foo\" /}\n",
-        "output += soy.$$getDelegateFn(soy.$$getDelTemplateId('my.delegate'), '', false)"
+        "{@param boo : ?}\n"
+            + "{delcall my.delegate data=\"$boo.foo\" allowemptydefault=\"true\" /}\n",
+        "output += soy.$$getDelegateFn(soy.$$getDelTemplateId('my.delegate'), '', true)"
             + "(/** @type {?} */ (opt_data.boo.foo), $ijData);\n");
 
     assertGeneratedJsCode(
         "{@param boo : ?}\n"
             + "{@param voo : ?}\n"
-            + "{delcall my.delegate variant=\"$voo\" data=\"$boo.foo\" /}\n",
+            + "{delcall my.delegate variant=\"$voo\" data=\"$boo.foo\" allowemptydefault=\"true\""
+            + " /}\n",
         "output += soy.$$getDelegateFn("
-            + "soy.$$getDelTemplateId('my.delegate'), opt_data.voo, false)"
-            + "(/** @type {?} */ (opt_data.boo.foo), $ijData);\n");
-
-    assertGeneratedJsCode(
-        "{@param boo : ?}\n"
-            + "{delcall my.delegate data=\"$boo.foo\" allowemptydefault=\"true\" /}\n",
-        "output += soy.$$getDelegateFn(soy.$$getDelTemplateId('my.delegate'), '', true)"
+            + "soy.$$getDelTemplateId('my.delegate'), opt_data.voo, true)"
             + "(/** @type {?} */ (opt_data.boo.foo), $ijData);\n");
   }
 

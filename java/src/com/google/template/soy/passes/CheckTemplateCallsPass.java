@@ -35,6 +35,7 @@ import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.CallableExpr.ParamsStyle;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.GlobalNode;
+import com.google.template.soy.passes.CompilerFileSetPass.Result;
 import com.google.template.soy.passes.IndirectParamsCalculator.IndirectParamsInfo;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
@@ -95,6 +96,8 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
           StyleAllowance.NO_PUNCTUATION);
   private static final SoyErrorKind EXPECTED_NAMED_PARAMETERS =
       SoyErrorKind.of("Expected named parameters.");
+  private static final SoyErrorKind NO_DEFAULT_DELTEMPLATE =
+      SoyErrorKind.of("No default deltemplate found for {0}, and allowemptydefault is not set.");
   private static final SoyErrorKind MISSING_PARAM = SoyErrorKind.of("Call missing required {0}.");
   private static final SoyErrorKind STRICT_HTML =
       SoyErrorKind.of(
@@ -130,7 +133,7 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
         }
         for (CallDelegateNode callNode :
             SoyTreeUtils.getAllNodesOfType(template, CallDelegateNode.class)) {
-          helper.checkCall(template, callNode);
+          helper.checkCall(template, callNode, file.getFilePath().path());
         }
         for (PrintNode printNode : SoyTreeUtils.getAllNodesOfType(template, PrintNode.class)) {
           if (printNode.getExpr().getRoot() instanceof FunctionNode
@@ -144,6 +147,54 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
 
     return Result.CONTINUE;
   }
+
+  private static final ImmutableSet<String> DEFAULT_DELTEMPLATE_PASSLIST =
+      ImmutableSet.of(
+          "boq.dynamitewebui.member.templates.isOneOnOneDm",
+          "boq.dynamitewebui.member.templates.readSingleUserFromDmHumanMembersList",
+          "boq.protoshop.viewer.templates.topLevelMessage",
+          "boq.shopping.property.ui.components.componentregistry.classes.templates.type",
+          "boq.shopping.property.ui.components.componentregistry.ghost.templates.type",
+          "boq.shopping.property.ui.components.componentregistry.templates.type",
+          "boq.travelfrontendhotelssearchweb.component.bookingmodule.hotels.templates.disclaimer",
+          "boq.visualfrontendui.explorepanel.templates.closeButton",
+          "boq.visualfrontendviewer.imagecard.templates.ampViewerTray",
+          "boq.visualfrontendviewer.imagecard.templates.navigationButtons",
+          "Corp.Projectmgmt.Primavera.App.Workflow.Template.Core", // gencode
+          "drive.search.filetypeicons.delSvg.templates", // gencode??
+          "gitiles.footerFormatBadge",
+          "gitiles.logEntry",
+          "materialdesign.wiz.icon.svgs.delSvg.templates", // gencode??
+          "renderComponentWithUiReference",
+          "wiztest.pkg.deltemplates.passthroughTemplate",
+          // In contact with team, b/233902965
+          "boq.educms.fields.dispatcher.templates.enumfield",
+          "boq.educms.fields.dispatcher.templates.groupfield",
+          "boq.educms.fields.dispatcher.templates.nodefield",
+          "boq.educms.fields.dispatcher.templates.repeatedenumfield",
+          "boq.educms.fields.dispatcher.templates.repeatedgroupfield",
+          "boq.educms.fields.dispatcher.templates.repeatednodefield",
+          "boq.educms.fields.dispatcher.templates.repeatedstringfield",
+          "boq.educms.fields.dispatcher.templates.stringfield",
+          "boq.educms.renderer.templates.component",
+          "boq.educms.renderer.templates.componentlist",
+          "boq.educmseditor.fields.templates.editor",
+          "boq.educmseditor.fields.templates.preview",
+          // MAILED
+          "boq.ads.townsquare.marketplaceui.components.componentregistry.templates.ghost", // cl/455004511
+          "boq.ads.townsquare.marketplaceui.components.componentregistry.templates.type",
+          "boq.dashercommerceconsolebuyflowweb.increasecommitmentstep.templates.enableSeatCapEnforcementErrors", // cl/455306454
+          "boq.googleadminclientspaisa.timelinereboot.templates.orderEvent", // cl/454951448
+          "boq.saveui.listitem.templates.cardHeader", // cl/455220729
+          "boq.testaccountpoolmanagementserviceui.accountpooltable.templates.mixologistlink", // cl/455226258
+          "boq.testaccountpoolmanagementserviceui.accountpooltable.templates.rheaLink");
+
+  private static final ImmutableSet<String> DEFAULT_DELTEMPLATE_FILE_PREFIX_PASSLIST =
+      ImmutableSet.of(
+          "assistant/display/cast/", // gencoding registerDelegateFn() (added in cl/230955778)
+          // MAILED
+          "java/com/google/caribou/ui/pinto/modules/" // cl/455686736
+          );
 
   private final class CheckCallsHelper {
 
@@ -198,7 +249,7 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
       checkCallParamTypes(callerTemplate, node, calleeType);
     }
 
-    void checkCall(TemplateNode callerTemplate, CallDelegateNode node) {
+    void checkCall(TemplateNode callerTemplate, CallDelegateNode node, String callerFilename) {
       ImmutableList<TemplateMetadata> potentialCallees =
           fileSetMetadata
               .getDelTemplateSelector()
@@ -210,12 +261,38 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
         checkCallParamNames(node, delTemplateType);
         // We don't call checkPassesUnusedParams here because we might not know all delegates.
       }
+      if (shouldEnforceDefaultDeltemplate(node.getDelCalleeName(), callerFilename)
+          && !node.allowEmptyDefault()
+          && potentialCallees.stream()
+                  .filter(
+                      delTemplate ->
+                          delTemplate.getDelPackageName() == null
+                              && (delTemplate.getDelTemplateVariant() == null
+                                  || delTemplate.getDelTemplateVariant().isEmpty()))
+                  .count()
+              == 0) {
+        errorReporter.report(
+            node.getSourceLocation(), NO_DEFAULT_DELTEMPLATE, node.getDelCalleeName());
+      }
+
       // NOTE: we only need to check one of them.  If there is more than one of them and they have
       // different content kinds of stricthtml settings then the CheckDelegatesPass will flag that
       // as an error independently.
       if (!potentialCallees.isEmpty()) {
         checkStrictHtml(callerTemplate, node, potentialCallees.get(0).getTemplateType());
       }
+    }
+
+    boolean shouldEnforceDefaultDeltemplate(String delCalleeName, String callerFilename) {
+      if (DEFAULT_DELTEMPLATE_PASSLIST.contains(delCalleeName)) {
+        return false;
+      }
+      for (String prefix : DEFAULT_DELTEMPLATE_FILE_PREFIX_PASSLIST) {
+        if (callerFilename.startsWith(prefix)) {
+          return false;
+        }
+      }
+      return true;
     }
 
     void checkFnCall(TemplateNode callerTemplate, PrintNode printNode, FunctionNode fnNode) {

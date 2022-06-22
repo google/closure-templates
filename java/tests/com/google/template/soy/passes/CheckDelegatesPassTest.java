@@ -282,23 +282,25 @@ public final class CheckDelegatesPassTest {
 
   @Test
   public void testErrorDelegateCallToBasicTemplate() {
-    assertInvalidSoyFiles(
-        "'delcall' to basic template defined at '2:9-2:11' (expected 'call').",
-        ""
-            + "{namespace ns1}\n"
+    ErrorReporter errorReporter = ErrorReporter.createForTest();
+    String soyFile1 =
+        "{namespace ns1}\n"
             + "import {foo} from 'no-path-2';\n"
             + "/***/\n"
             + "{template boo}\n"
             + "  {delcall foo /}\n"
             + // delegate call (should be basic call)
-            "{/template}\n",
-        ""
-            + "{namespace ns2}\n"
-            + "\n"
-            + "/***/\n"
-            + "{template foo}\n"
-            + "  blah\n"
-            + "{/template}\n");
+            "{/template}\n";
+    String soyFile2 =
+        "{namespace ns2}\n" + "\n" + "/***/\n" + "{template foo}\n" + "  blah\n" + "{/template}\n";
+    SoyFileSetParserBuilder.forFileContents(soyFile1, soyFile2)
+        .errorReporter(errorReporter)
+        .parse();
+    assertThat(errorReporter.getErrors()).hasSize(2);
+    assertThat(errorReporter.getErrors().get(0).message())
+        .isEqualTo("No default deltemplate found for foo, and allowemptydefault is not set.");
+    assertThat(errorReporter.getErrors().get(1).message())
+        .isEqualTo("'delcall' to basic template defined at '2:9-2:11' (expected 'call').");
   }
 
   private void assertValidSoyFiles(String... soyFileContents) {

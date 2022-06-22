@@ -1065,7 +1065,7 @@ public class BytecodeCompilerTest {
                 "{namespace ns}",
                 "",
                 "{template callerTemplate}",
-                "  {delcall myApp.myDelegate/}",
+                "  {delcall myApp.myDelegate allowemptydefault=\"true\" /}",
                 "{/template}",
                 "");
     SoyFileSetParser parser = SoyFileSetParserBuilder.forFileContents(soyFileContent1).build();
@@ -1085,16 +1085,7 @@ public class BytecodeCompilerTest {
                 parser.typeRegistry())
             .get();
     CompiledTemplate caller = templates.getTemplate("ns.callerTemplate");
-    try {
-      renderWithContext(caller, getDefaultContext(templates));
-      fail();
-    } catch (IllegalArgumentException iae) {
-      assertThat(iae)
-          .hasMessageThat()
-          .isEqualTo(
-              "Found no active impl for delegate call to \"myApp.myDelegate\" (and delcall does "
-                  + "not set allowemptydefault=\"true\").");
-    }
+    renderWithContext(caller, getDefaultContext(templates));
     String soyFileContent2 =
         Joiner.on("\n")
             .join(

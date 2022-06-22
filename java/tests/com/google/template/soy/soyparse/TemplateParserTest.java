@@ -427,13 +427,6 @@ public final class TemplateParserTest {
     assertThatTemplateContent("{'unfinished}").causesError("Unexpected newline in Soy string.");
     assertThatTemplateContent("{\"unfinished}").causesError("Unexpected newline in Soy string.");
 
-    assertValidTemplate("{delcall aaa.bbb.ccc data=\"all\" /}");
-    assertValidTemplate(
-        "{@param boo : ?}"
-            + "{delcall ddd.eee}\n"
-            + "  {param boo: $boo /}\n"
-            + "  {param foo kind=\"text\"}blah blah{/param}\n"
-            + "{/delcall}");
     assertValidTemplate("{log}Blah blah.{/log}");
     assertValidTemplate("{debugger}");
     assertValidTemplate("{let $foo : 1 + 2/}\n");
@@ -1369,15 +1362,22 @@ public final class TemplateParserTest {
   public void testParseDelegateCallStmt() throws Exception {
 
     String templateBody =
-        "{@param animals : ?}{@param too : ?}\n"
-            + "  {delcall booTemplate /}\n"
-            + "  {delcall foo.goo.mooTemplate data=\"all\" /}\n"
-            + "  {delcall MySecretFeature.zooTemplate data=\"$animals\"}\n"
-            + "    {param yoo: round($too) /}\n"
-            + "    {param woo kind=\"html\"}poo{/param}\n"
-            + "  {/delcall}\n";
+        SharedTestUtils.NS
+            + SharedTestUtils.buildTestTemplateContent(
+                false,
+                "{@param animals : ?}{@param too : ?}\n"
+                    + "  {delcall booTemplate /}\n"
+                    + "  {delcall foo.goo.mooTemplate data=\"all\" /}\n"
+                    + "  {delcall MySecretFeature.zooTemplate data=\"$animals\"}\n"
+                    + "    {param yoo: round($too) /}\n"
+                    + "    {param woo kind=\"html\"}poo{/param}\n"
+                    + "  {/delcall}\n")
+            + "{deltemplate booTemplate}{/deltemplate}"
+            + "{deltemplate foo.goo.mooTemplate}{/deltemplate}"
+            + "{deltemplate MySecretFeature.zooTemplate}{@param yoo: any}{@param woo: any}"
+            + "{/deltemplate}";
 
-    List<StandaloneNode> nodes = parseTemplateContent(templateBody, FAIL).getChildren();
+    List<StandaloneNode> nodes = parseFileContent(templateBody, FAIL).getChildren();
     assertEquals(3, nodes.size());
 
     CallDelegateNode cn0 = (CallDelegateNode) nodes.get(0);
@@ -1431,7 +1431,8 @@ public final class TemplateParserTest {
                     + "    {param zoo: 0 /}\n"
                     + "  {/delcall}\n"
                     + "{/msg}")
-            + "\n\n{template booTemplate_}{/template}\n";
+            + "\n\n{template booTemplate_}{/template}"
+            + "{deltemplate MySecretFeature.zooTemplate}{/deltemplate}\n";
 
     List<StandaloneNode> nodes =
         ((MsgFallbackGroupNode) parseFileContent(templateBody, FAIL).getChild(0))
