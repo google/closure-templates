@@ -22,7 +22,7 @@ you'd want them to work, they just do.)
 For example:
 
 ```soy
-{param myText: htmlToText($html)) /}
+{param myText: htmlToText($html) /}
 ```
 
 The above code calls `htmlToText()` to convert the html value `$html` to text,
