@@ -75,10 +75,14 @@ with the highest priority. Basically, this means:
 2.  Otherwise, use the default implementation, if there is one.
 3.  Otherwise, if the `delcall` has the attribute `allowemptydefault="true"`,
     then the call renders to the empty string.
-4.  Otherwise, an error occurs.
 
 Due to the third case, it is legal to render a delegate template that has no
 default implementation, as long as the `delcall` has `allowemptydefault="true"`.
+Without `allowemptydefault="true"`, a default implementation must exist and be
+in the dependencies of the file containing the `delcall`.
+
+Important: `allowemptydefault="true"` is deprecated and support will be removed
+soon. You should always provide a default implementation, even if it's empty.
 
 What counts as an "active" implementation depends on the backend in use. In
 JavaScript, an active implementation is simply an implementation that is defined
