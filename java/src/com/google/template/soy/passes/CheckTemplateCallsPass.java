@@ -184,16 +184,13 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
           "boq.ads.townsquare.marketplaceui.components.componentregistry.templates.ghost", // cl/455004511
           "boq.ads.townsquare.marketplaceui.components.componentregistry.templates.type",
           "boq.dashercommerceconsolebuyflowweb.increasecommitmentstep.templates.enableSeatCapEnforcementErrors", // cl/455306454
-          "boq.googleadminclientspaisa.timelinereboot.templates.orderEvent", // cl/454951448
           "boq.saveui.listitem.templates.cardHeader", // cl/455220729
           "boq.testaccountpoolmanagementserviceui.accountpooltable.templates.mixologistlink", // cl/455226258
           "boq.testaccountpoolmanagementserviceui.accountpooltable.templates.rheaLink");
 
   private static final ImmutableSet<String> DEFAULT_DELTEMPLATE_FILE_PREFIX_PASSLIST =
       ImmutableSet.of(
-          "assistant/display/cast/", // gencoding registerDelegateFn() (added in cl/230955778)
-          // MAILED
-          "java/com/google/caribou/ui/pinto/modules/" // cl/455686736
+          "assistant/display/cast/" // gencoding registerDelegateFn() (added in cl/230955778)
           );
 
   private final class CheckCallsHelper {
