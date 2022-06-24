@@ -17,6 +17,7 @@
 package com.google.template.soy.conformance;
 
 import com.google.common.base.Ascii;
+import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.HtmlAttributeNode;
@@ -35,6 +36,11 @@ final class BanInlineEventHandlers extends Rule<HtmlAttributeNode> {
     super(error);
   }
 
+  private static final ImmutableSet<String> ATTR_ALLOWLIST =
+      ImmutableSet.of(
+          "onicon", // b/182182432
+          "on");
+
   @Override
   protected void doCheckConformance(HtmlAttributeNode attributeNode, ErrorReporter errorReporter) {
     if (!attributeNode.hasValue()) {
@@ -47,7 +53,7 @@ final class BanInlineEventHandlers extends Rule<HtmlAttributeNode> {
     StandaloneNode attrName = attributeNode.getChild(0);
     if (attrName instanceof RawTextNode) {
       String text = Ascii.toLowerCase(((RawTextNode) attrName).getRawText());
-      if (text.startsWith("on") && !text.equals("on")) {
+      if (text.startsWith("on") && !ATTR_ALLOWLIST.contains(text)) {
         errorReporter.report(attributeNode.getChild(0).getSourceLocation(), error);
       }
     }
