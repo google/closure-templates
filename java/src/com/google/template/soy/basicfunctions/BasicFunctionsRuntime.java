@@ -182,9 +182,10 @@ public final class BasicFunctionsRuntime {
    *
    * <p>This should only be called for a list of strings.
    */
-  public static ImmutableList<SoyValueProvider> stringListSort(SoyList list) {
+  public static ImmutableList<SoyValueProvider> stringListSort(
+      List<? extends SoyValueProvider> list) {
     return ImmutableList.sortedCopyOf(
-        comparing((SoyValueProvider arg) -> arg.resolve().stringValue()), list.asJavaList());
+        comparing((SoyValueProvider arg) -> arg.resolve().stringValue()), list);
   }
 
   /**

@@ -16,7 +16,6 @@
 
 package com.google.template.soy.basicfunctions;
 
-import com.google.template.soy.data.SoyList;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
@@ -67,7 +66,7 @@ public final class StringListSortMethod
   // lazy singleton pattern, allows other backends to avoid the work.
   private static final class Methods {
     static final Method LIST_SORT_FN =
-        JavaValueFactory.createMethod(BasicFunctionsRuntime.class, "stringListSort", SoyList.class);
+        JavaValueFactory.createMethod(BasicFunctionsRuntime.class, "stringListSort", List.class);
   }
 
   @Override
