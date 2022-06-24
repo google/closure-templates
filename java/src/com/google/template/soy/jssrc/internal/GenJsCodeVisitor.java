@@ -18,6 +18,7 @@ package com.google.template.soy.jssrc.internal;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static com.google.template.soy.jssrc.dsl.Expression.EMPTY_OBJECT_LITERAL;
@@ -137,6 +138,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.stream.Stream;
 
 /**
  * Visitor for generating full JS code (i.e. statements) for parse tree nodes.
@@ -598,19 +600,25 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    * @param soyFile The node we're visiting.
    */
   private void addCodeToRequireGoogModules(SoyFileNode soyFile) {
-    soyFile.getImports().stream()
-        .filter(i -> i.getImportType() == ImportType.TEMPLATE)
-        .map(i -> namespaceForPath(i.getSourceFilePath()))
+    Stream.concat(
+            delcallNamespaces(soyFile),
+            soyFile.getImports().stream()
+                .filter(i -> i.getImportType() == ImportType.TEMPLATE)
+                .map(i -> namespaceForPath(i.getSourceFilePath())))
         .distinct()
         .sorted()
         .forEach(
             calleeNamespace -> {
               String namespaceAlias = templateAliases.getNamespaceAlias(calleeNamespace);
               String importNamespace = getGoogModuleNamespace(calleeNamespace);
-              jsCodeBuilder.append(
-                  VariableDeclaration.builder(namespaceAlias)
-                      .setRhs(GOOG_REQUIRE.call(stringLiteral(importNamespace)))
-                      .build());
+              if (namespaceAlias != null) {
+                jsCodeBuilder.append(
+                    VariableDeclaration.builder(namespaceAlias)
+                        .setRhs(GOOG_REQUIRE.call(stringLiteral(importNamespace)))
+                        .build());
+              } else {
+                jsCodeBuilder.addGoogRequire(GoogRequire.create(importNamespace));
+              }
             });
   }
 
@@ -645,13 +653,41 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    * @param soyFile The node we're visiting.
    */
   private void addCodeToRequireSoyNamespaces(SoyFileNode soyFile) {
-    soyFile.getImports().stream()
-        .filter(i -> i.getImportType() == ImportType.TEMPLATE)
-        .map(i -> namespaceForPath(i.getSourceFilePath()))
+    Stream.concat(
+            delcallNamespaces(soyFile),
+            soyFile.getImports().stream()
+                .filter(i -> i.getImportType() == ImportType.TEMPLATE)
+                .map(i -> namespaceForPath(i.getSourceFilePath())))
         .distinct()
         .sorted()
         .forEach(
             calleeNamespace -> jsCodeBuilder.addGoogRequire(GoogRequire.create(calleeNamespace)));
+  }
+
+  private Stream<String> delcallNamespaces(SoyFileNode soyFile) {
+    return SoyTreeUtils.getAllNodesOfType(soyFile, CallDelegateNode.class).stream()
+        .map(this::namespaceForDefaultDeltemplate)
+        .filter(Optional::isPresent)
+        .map(Optional::get);
+  }
+
+  private Optional<String> namespaceForDefaultDeltemplate(CallDelegateNode callDelegateNode) {
+    ImmutableList<TemplateMetadata> defaultDeltemplate =
+        fileSetMetadata
+            .getDelTemplateSelector()
+            .delTemplateNameToValues()
+            .get(callDelegateNode.getDelCalleeName())
+            .stream()
+            .filter(
+                delTemplate ->
+                    delTemplate.getDelPackageName() == null
+                        && isNullOrEmpty(delTemplate.getDelTemplateVariant()))
+            .collect(toImmutableList());
+    if (defaultDeltemplate.size() != 1) {
+      return Optional.empty();
+    }
+    return Optional.of(
+        namespaceForPath(defaultDeltemplate.get(0).getSourceLocation().getFilePath()));
   }
 
   /**
