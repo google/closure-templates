@@ -171,9 +171,10 @@ public final class BasicFunctionsRuntime {
    *
    * <p>This should only be called for a list of numbers.
    */
-  public static ImmutableList<SoyValueProvider> numberListSort(SoyList list) {
+  public static ImmutableList<SoyValueProvider> numberListSort(
+      List<? extends SoyValueProvider> list) {
     return ImmutableList.sortedCopyOf(
-        comparingDouble((SoyValueProvider arg) -> arg.resolve().numberValue()), list.asJavaList());
+        comparingDouble((SoyValueProvider arg) -> arg.resolve().numberValue()), list);
   }
 
   /**
