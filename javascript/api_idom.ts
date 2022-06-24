@@ -499,7 +499,11 @@ export class FalsinessRenderer implements IdomRendererApi {
   }
 
   text(value: string) {
-    this.rendered = true;
+    // This helps ensure that hydrations on the server are consistent with
+    // client-side renders.
+    if (value) {
+      this.rendered = true;
+    }
   }
 
   attr(name: string, value: string) {
