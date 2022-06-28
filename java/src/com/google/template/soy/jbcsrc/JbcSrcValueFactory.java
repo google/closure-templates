@@ -27,6 +27,7 @@ import com.google.protobuf.ProtocolMessageEnum;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
+import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
@@ -304,8 +305,51 @@ final class JbcSrcValueFactory extends JavaValueFactory {
     // already validated that the enum type matches the signature.
     if (expectedParamType.isEnum()
         && ProtocolMessageEnum.class.isAssignableFrom(expectedParamType)) {
-      return MethodRef.create(expectedParamType, "forNumber", int.class)
-          .invoke(BytecodeUtils.numericConversion(actualParam.unboxAsLong(), Type.INT_TYPE));
+
+      // Don't check for null for a primitive, since it can't be null.
+      if (BytecodeUtils.isPrimitive(actualParam.resultType())) {
+        return convertToEnum(expectedParamType, actualParam);
+      }
+
+      // Otherwise, always handle null, even if the Soy type isn't nullable. Soy should handle this
+      // gracefully, plugin code can crash if it gets an unexpected null.
+      Type expectedType = Type.getType(expectedParamType);
+      Expression actualParamPlaceholder =
+          new Expression(actualParam.resultType(), actualParam.features()) {
+            @Override
+            protected void doGen(CodeBuilder mv) {}
+          };
+
+      // Add an empty expression here to read the value already on the stack.
+      Expression isNull = BytecodeUtils.isNull(actualParamPlaceholder);
+      Expression constantNull = BytecodeUtils.constantNull(expectedType);
+      Expression nullExpr =
+          new Expression(expectedType) {
+            @Override
+            protected void doGen(CodeBuilder mv) {
+              // Pop the extra param value, it's here for use in the false branch.
+              mv.pop();
+              constantNull.gen(mv);
+            }
+          };
+      Expression ternary =
+          BytecodeUtils.ternary(
+              isNull,
+              nullExpr,
+              // Use an empty expression here because the value is already on top of the stack.
+              convertToEnum(expectedParamType, actualParam.withSource(actualParamPlaceholder)));
+
+      return new Expression(expectedType) {
+        @Override
+        protected void doGen(CodeBuilder mv) {
+          // Manually generate the expression so we can use it from the stack in the tenary
+          // condition and false branch without having to generate it twice.
+          actualParam.gen(mv);
+          // Dup the param value so we can use it in the ternary's false condition.
+          mv.dup();
+          ternary.gen(mv);
+        }
+      };
     }
 
     if (expectedParamType.equals(boolean.class)) {
@@ -319,6 +363,11 @@ final class JbcSrcValueFactory extends JavaValueFactory {
     }
 
     throw new AssertionError("Unable to convert parameter to " + expectedParamType);
+  }
+
+  private static Expression convertToEnum(Class<?> enumType, SoyExpression e) {
+    return MethodRef.create(enumType, "forNumber", int.class)
+        .invoke(BytecodeUtils.numericConversion(e.unboxAsLong(), Type.INT_TYPE));
   }
 
   private static String nameFromDescriptor(Class<?> protoType) {
