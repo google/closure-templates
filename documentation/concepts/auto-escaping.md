@@ -11,8 +11,8 @@ known as
 and Soy has several features to mitigate XSS, including auto escaping.
 
 NOTE: There are many web applications suffering from XSS vulnerabilities: XSS
-was number three in [OWASP's top ten application security
-risks](http://www.owasp.org/index.php/Category:OWASP_Top_Ten_Project).
+was number three in
+[OWASP's top ten application security risks](http://go/owasp-10).
 
 XSS vulnerabilities typically occur when dynamic text from an untrusted source
 is embedded into an HTML document. To prevent these vulnerabilities, _escaping_
