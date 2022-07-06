@@ -35,7 +35,7 @@ public abstract class JsDoc {
 
   abstract ImmutableList<GoogRequire> requires();
 
-  abstract ImmutableList<Param> params();
+  public abstract ImmutableList<Param> params();
 
   public void collectRequires(Consumer<GoogRequire> collector) {
     for (GoogRequire require : requires()) {
@@ -84,16 +84,17 @@ public abstract class JsDoc {
     }
   }
 
+  /** Builder for JsDoc Param */
   @AutoValue
   @Immutable
-  abstract static class Param {
+  public abstract static class Param {
     abstract String annotationType();
 
     @Nullable
     abstract String field();
 
     @Nullable
-    abstract String type();
+    public abstract String type();
 
     @Nullable
     abstract String paramTypeName();

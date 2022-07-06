@@ -483,8 +483,9 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
 
   @Override
   protected Statement generateFunctionBody(
-      TemplateNode node, String alias, boolean isPositionalStyle) {
+      TemplateNode node, String alias, @Nullable String objectParamName) {
     ImmutableList.Builder<Statement> bodyStatements = ImmutableList.builder();
+    boolean isPositionalStyle = objectParamName == null;
     if (!isPositionalStyle) {
       bodyStatements.add(redeclareIjData());
     } else {
@@ -500,7 +501,8 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
           Statement.assign(
               JsRuntime.OPT_DATA,
               JsRuntime.OPT_DATA.or(
-                  EMPTY_OBJECT_LITERAL, templateTranslationContext.codeGenerator())));
+                  EMPTY_OBJECT_LITERAL.castAs(objectParamName),
+                  templateTranslationContext.codeGenerator())));
     }
     if (isPositionalStyle && node instanceof TemplateElementNode) {
       throw new IllegalStateException("elements cannot be compiled into positional style.");

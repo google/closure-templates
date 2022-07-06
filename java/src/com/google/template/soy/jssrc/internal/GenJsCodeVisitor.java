@@ -137,6 +137,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import javax.annotation.Nullable;
 
 /**
  * Visitor for generating full JS code (i.e. statements) for parse tree nodes.
@@ -859,8 +860,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       JsDoc positionalFunctionDoc = generatePositionalFunctionJsDoc(node);
       Expression positionalFunction =
           Expression.function(
-              positionalFunctionDoc,
-              generateFunctionBody(node, alias, /*isPositionalStyle=*/ true));
+              positionalFunctionDoc, generateFunctionBody(node, alias, /*objectParamName=*/ null));
 
       if (jsSrcOptions.shouldGenerateGoogModules()) {
         VariableDeclaration publicDeclaration =
@@ -887,10 +887,13 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       }
     } else {
       JsDoc jsDoc = generateFunctionJsDoc(node, alias, /*isDelegate=*/ false);
-
+      String type = jsDoc.params().get(1).type();
       Expression function =
           Expression.function(
-              jsDoc, generateFunctionBody(node, alias, /*isPositionalStyle=*/ false));
+              jsDoc,
+              generateFunctionBody(
+                  // Remove optional type cast
+                  node, alias, /*objectParamName=*/ type.substring(0, type.length() - 1)));
 
       if (jsSrcOptions.shouldGenerateGoogModules()) {
         declarations.add(
@@ -1094,7 +1097,8 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   /** Generates the function body. */
   @CheckReturnValue
   protected Statement generateFunctionBody(
-      TemplateNode node, String alias, boolean isPositionalStyle) {
+      TemplateNode node, String alias, @Nullable String objectParamName) {
+    boolean isPositionalStyle = objectParamName == null;
     ImmutableList.Builder<Statement> bodyStatements = ImmutableList.builder();
     if (!isPositionalStyle) {
       bodyStatements.add(redeclareIjData());
