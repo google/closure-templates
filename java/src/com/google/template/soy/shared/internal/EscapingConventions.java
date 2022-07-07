@@ -804,7 +804,7 @@ public final class EscapingConventions {
 
     /** CSS functions are safe to call and allow through the escaper. */
     private static final ImmutableSet<String> ALLOWED_CSS_FUNCTIONS =
-        ImmutableSet.of("rgb", "rgba", "hsl", "hsla", "calc", "max", "cubic-bezier");
+        ImmutableSet.of("rgb", "rgba", "hsl", "hsla", "calc", "max", "min", "cubic-bezier");
 
     /**
      * Matches a CSS token that can appear unquoted as part of an ID, class, font-family-name, or
