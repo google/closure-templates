@@ -490,7 +490,8 @@ public final class PassManager {
             .add(new SimplifyAssertNonNullPass())
             // Must run after ResolveExpressionTypesPass to use allowedToInvokeAsFunction
             .add(new TemplateCallMetadataPass(errorReporter))
-            .add(new VeLogRewritePass());
+            .add(new VeLogRewritePass())
+            .add(new CheckModifiableTemplatesPass(errorReporter));
       }
       passes.add(new CheckAllFunctionsResolvedPass(pluginResolver));
 
