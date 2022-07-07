@@ -31,14 +31,15 @@ import com.google.template.soy.types.UnknownType;
 import com.google.template.soy.types.ast.TypeNodeConverter;
 
 /** Resolve the TypeNode objects in TemplateParams to SoyTypes */
-final class ResolveTemplateParamTypesPass implements CompilerFilePass {
+public final class ResolveTemplateParamTypesPass implements CompilerFilePass {
   private final ErrorReporter errorReporter;
   private final boolean disableAllTypeChecking;
 
   private static final SoyErrorKind ATTRIBUTE_PARAM_ONLY_IN_ELEMENT_TEMPLATE =
       SoyErrorKind.of("Only templates of kind=\"html<?>\" can have @attribute.");
 
-  ResolveTemplateParamTypesPass(ErrorReporter errorReporter, boolean disableAllTypeChecking) {
+  public ResolveTemplateParamTypesPass(
+      ErrorReporter errorReporter, boolean disableAllTypeChecking) {
     this.errorReporter = errorReporter;
     this.disableAllTypeChecking = disableAllTypeChecking;
   }
