@@ -610,7 +610,9 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
         // currently this is just variant expressions, but might be other things in the future.
         exprVisitor.exec(expr);
       }
-
+      // Fills in the actual type returned by TemplateNode.asVarDefn().
+      ((TemplateImportType) node.asVarDefn().type())
+          .setBasicTemplateType(TemplateMetadata.buildTemplateType(node));
       visitChildren(node);
     }
 

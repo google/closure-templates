@@ -22,6 +22,8 @@ import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.types.TemplateImportType;
+import com.google.template.soy.types.TemplateType;
 
 /** Checks modifiable templates. */
 @RunAfter(ResolveExpressionTypesPass.class)
@@ -32,6 +34,11 @@ final class CheckModifiableTemplatesPass implements CompilerFilePass {
           "\"modifies\" can only be used in a file with a '{'modName'}' command, unless it is used "
               + "on a variant template. If this is a non-variant template, did you forget to add a "
               + "'{'modName'}'? Or did you forget to mark this template as a variant?");
+
+  private static final SoyErrorKind INCOMPATIBLE_SIGNATURE =
+      SoyErrorKind.of(
+          "Template with signature {0} cannot be modified by template with "
+              + "incompatible signature {1}.");
 
   private final ErrorReporter errorReporter;
 
@@ -47,6 +54,18 @@ final class CheckModifiableTemplatesPass implements CompilerFilePass {
         if (templateBasicNode.getModifiesExpr() != null) {
           if (templateBasicNode.getVariantExpr() == null && file.getDelPackageName() == null) {
             errorReporter.report(templateNode.getSourceLocation(), MODIFIES_WITHOUT_MODNAME);
+          }
+          TemplateType modifiableType =
+              ((TemplateImportType) templateBasicNode.getModifiesExpr().getRoot().getType())
+                  .getBasicTemplateType();
+          TemplateType modifyingType =
+              ((TemplateImportType) templateNode.asVarDefn().type()).getBasicTemplateType();
+          if (!modifyingType.isAssignableFromStrict(modifiableType)) {
+            errorReporter.report(
+                templateNode.getSourceLocation(),
+                INCOMPATIBLE_SIGNATURE,
+                modifiableType.toString(),
+                modifyingType.toString());
           }
         }
       }

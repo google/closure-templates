@@ -31,6 +31,7 @@ import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
+import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.types.SoyType;
 import javax.annotation.Nullable;
 
@@ -71,6 +72,10 @@ public final class ResolveTemplateNamesPass implements CompilerFileSetPass {
     SoyTreeUtils.allNodesOfType(file, CallBasicNode.class)
         .forEach(ResolveTemplateNamesPass::importedVarRefToTemplateLiteral);
 
+    // Change the "modifies" expressions to TemplateLiteralNode.
+    SoyTreeUtils.allNodesOfType(file, TemplateBasicNode.class)
+        .forEach(ResolveTemplateNamesPass::importedVarRefToTemplateLiteral);
+
     // Change all varrefs of type TEMPLATE_TYPE to TemplateLiteralNode.
     SoyTreeUtils.allNodesOfType(file, VarRefNode.class)
         .filter(n -> n.getParent().getKind() != Kind.TEMPLATE_LITERAL_NODE)
@@ -102,6 +107,17 @@ public final class ResolveTemplateNamesPass implements CompilerFileSetPass {
     TemplateLiteralNode converted = varRefToLiteral(templateExpr, templateExpr.getSourceLocation());
     if (converted != null) {
       callNode.setCalleeExpr(new ExprRootNode(converted));
+    }
+  }
+
+  private static void importedVarRefToTemplateLiteral(TemplateBasicNode templateNode) {
+    if (templateNode.getModifiesExpr() == null) {
+      return;
+    }
+    ExprNode templateExpr = templateNode.getModifiesExpr().getRoot();
+    TemplateLiteralNode converted = varRefToLiteral(templateExpr, templateExpr.getSourceLocation());
+    if (converted != null) {
+      templateNode.getModifiesExpr().replaceChild(0, converted);
     }
   }
 

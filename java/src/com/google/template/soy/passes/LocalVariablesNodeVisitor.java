@@ -46,6 +46,7 @@ import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.ExternVar;
 import com.google.template.soy.soytree.defn.ImportedVar;
@@ -228,6 +229,14 @@ final class LocalVariablesNodeVisitor {
         return;
       }
       localVariables.define(var, node);
+    }
+
+    @Override
+    protected void visitTemplateBasicNode(TemplateBasicNode node) {
+      if (node.getModifiesExpr() != null) {
+        getExprVisitor().exec(node.getModifiesExpr(), localVariables);
+      }
+      visitTemplateNode(node);
     }
 
     @Override
