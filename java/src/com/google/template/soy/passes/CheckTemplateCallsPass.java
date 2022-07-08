@@ -97,7 +97,10 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
   private static final SoyErrorKind EXPECTED_NAMED_PARAMETERS =
       SoyErrorKind.of("Expected named parameters.");
   private static final SoyErrorKind NO_DEFAULT_DELTEMPLATE =
-      SoyErrorKind.of("No default deltemplate found for {0}, and allowemptydefault is not set.");
+      SoyErrorKind.of(
+          "No default deltemplate found for {0}. Please add a default deltemplate, even if it is "
+              + "empty. NOTE: This check can be bypassed with 'allowemptydefault=\"true\"', but "
+              + "that feature is deprecated and will be removed soon.");
   private static final SoyErrorKind MISSING_PARAM = SoyErrorKind.of("Call missing required {0}.");
   private static final SoyErrorKind STRICT_HTML =
       SoyErrorKind.of(
