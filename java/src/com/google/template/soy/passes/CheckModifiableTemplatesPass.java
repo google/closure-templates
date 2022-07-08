@@ -35,6 +35,10 @@ final class CheckModifiableTemplatesPass implements CompilerFilePass {
               + "on a variant template. If this is a non-variant template, did you forget to add a "
               + "'{'modName'}'? Or did you forget to mark this template as a variant?");
 
+  private static final SoyErrorKind MODIFIABLE_WITH_MODNAME =
+      SoyErrorKind.of(
+          "\"modifiable\" templates cannot be placed in files with a '{'modName'}' command.");
+
   private static final SoyErrorKind INCOMPATIBLE_SIGNATURE =
       SoyErrorKind.of(
           "Template with signature {0} cannot be modified by template with "
@@ -51,6 +55,9 @@ final class CheckModifiableTemplatesPass implements CompilerFilePass {
     for (TemplateNode templateNode : file.getTemplates()) {
       if (templateNode instanceof TemplateBasicNode) {
         TemplateBasicNode templateBasicNode = (TemplateBasicNode) templateNode;
+        if (templateBasicNode.getModifiable() && file.getDelPackageName() != null) {
+          errorReporter.report(templateNode.getSourceLocation(), MODIFIABLE_WITH_MODNAME);
+        }
         if (templateBasicNode.getModifiesExpr() != null) {
           if (templateBasicNode.getVariantExpr() == null && file.getDelPackageName() == null) {
             errorReporter.report(templateNode.getSourceLocation(), MODIFIES_WITHOUT_MODNAME);
