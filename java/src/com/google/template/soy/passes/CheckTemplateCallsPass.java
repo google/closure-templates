@@ -16,12 +16,17 @@
 
 package com.google.template.soy.passes;
 
+import static com.google.common.base.Strings.isNullOrEmpty;
+import static com.google.common.collect.ImmutableList.toImmutableList;
+
+import com.google.common.base.CaseFormat;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
@@ -44,6 +49,7 @@ import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.FileSetMetadata;
+import com.google.template.soy.soytree.ImportNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
@@ -101,6 +107,12 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
           "No default deltemplate found for {0}. Please add a default deltemplate, even if it is "
               + "empty. NOTE: This check can be bypassed with 'allowemptydefault=\"true\"', but "
               + "that feature is deprecated and will be removed soon.");
+  private static final SoyErrorKind NO_IMPORT_DEFAULT_DELTEMPLATE =
+      SoyErrorKind.of(
+          "Delcall without without import to file containing default deltemplate ''{0}''. Add:"
+              + " import * as unused{1} from ''{2}'';\n"
+              + "NOTE: This check can be bypassed with 'allowemptydefault=\"true\"', but that "
+              + "feature is deprecated and will be removed soon.");
   private static final SoyErrorKind MISSING_PARAM = SoyErrorKind.of("Call missing required {0}.");
   private static final SoyErrorKind STRICT_HTML =
       SoyErrorKind.of(
@@ -136,7 +148,7 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
         }
         for (CallDelegateNode callNode :
             SoyTreeUtils.getAllNodesOfType(template, CallDelegateNode.class)) {
-          helper.checkCall(template, callNode, file.getFilePath().path());
+          helper.checkCall(file, template, callNode, file.getFilePath().path());
         }
         for (PrintNode printNode : SoyTreeUtils.getAllNodesOfType(template, PrintNode.class)) {
           if (printNode.getExpr().getRoot() instanceof FunctionNode
@@ -153,23 +165,71 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
 
   private static final ImmutableSet<String> DEFAULT_DELTEMPLATE_PASSLIST =
       ImmutableSet.of(
-          "boq.dynamitewebui.member.templates.isOneOnOneDm",
-          "boq.dynamitewebui.member.templates.readSingleUserFromDmHumanMembersList",
-          "boq.protoshop.viewer.templates.topLevelMessage",
+          "boq.ads.townsquare.marketplaceui.components.carousel.templates.item", // circular import
+          "boq.ads.townsquare.marketplaceui.components.grid.templates.item", // circular import
+          "boq.ads.townsquare.marketplaceui.components.grid.templates.itemKey", // circular import
+          "boq.dashersecurityadminconsoleui.reauth.common.templates.learnMoreLink_", // circular imp
+          "boq.dynamitewebui.member.templates.isOneOnOneDm", // circular dep
+          "boq.dynamitewebui.member.templates.readSingleUserFromDmHumanMembersList", // circular dep
+          "boq.googlefinanceui.views.bundles.portfolio.templates.portfolioLayoutRedesign", // circular import
+          "boq.privacy.one.privacypage.product.components.privacypagepresentation.tabs.dependentlibraries.ps_dependencies_insights_info.templates.columns", // circular import
+          "boq.protoshop.viewer.templates.topLevelMessage", // circular dep
+          "boq.saveui.listitem.templates.cardHeader", // circualr deps, cl/455220729
+          "boq.shopping.property.ui.components.carousel.templates.item", // circular import
           "boq.shopping.property.ui.components.componentregistry.classes.templates.type",
           "boq.shopping.property.ui.components.componentregistry.ghost.templates.type",
           "boq.shopping.property.ui.components.componentregistry.templates.type",
-          "boq.travelfrontendhotelssearchweb.component.bookingmodule.hotels.templates.disclaimer",
+          "boq.shopping.property.ui.components.grid.templates.item", // circular import
+          "boq.shopping.property.ui.components.grid.templates.itemKey", // circular import
+          "boq.shopping.property.ui.components.grid.templates.renderPopoutTooltipArrow", // c import
+          "boq.taskswebshared.ssl.ui.app_view.templates.bundleView", // circular import
+          "boq.townsquare.frontend.ui.components.carousel.templates.item", // circular imporrt
+          "boq.townsquare.frontend.ui.components.grid.templates.item", // circular imporrt
+          "boq.townsquare.frontend.ui.components.grid.templates.itemKey", // circular imporrt
+          "boq.townsquare.frontend.ui.components.grid.templates.renderPopoutTooltipArrow", // circular import
+          "boq.travel.frontend.core.map.web.layers.hotels.summarycards.content_enable_links_to_embedded_placesheet.templates.relativePath", // circular import
+          "boq.travelfrontendhotelssearchweb.component.bookingmodule.hotels.show_organic_prices.templates.bookingModuleHeader", // circular import
+          "boq.travelfrontendhotelssearchweb.component.bookingmodule.hotels.templates.disclaimer", // circular dep
+          "boq.travelfrontendhotelssearchweb.component.bookingmodule.partnerrates.hotels.show_logonly_organic_prices.templates.isOrganicLogOnly",
+          "boq.travelfrontendhotelssearchweb.home.header.enable_expand_when_reach_bottom.templates.enableExpandWhenScrollToBottom", // circular import
+          "boq.travelfrontendhotelssearchweb.home.header.enable_expand_when_scroll_up.templates.enableExpandWhenScrollUp", // circular import
           "boq.visualfrontendui.explorepanel.templates.closeButton",
           "boq.visualfrontendviewer.imagecard.templates.ampViewerTray",
-          "boq.visualfrontendviewer.imagecard.templates.navigationButtons",
+          "boq.visualfrontendviewer.imagecard.templates.navigationButtons", // circular dep
+          "boq.visualfrontendui.explorepanel.templates.header",
           "Corp.Projectmgmt.Primavera.App.Workflow.Template.Core", // gencode
-          "drive.search.filetypeicons.delSvg.templates", // gencode??
+          "drive.search.filetypeicons.delSvg.templates", // gencode
+          "gcal.mat.detaildialog.event.soy.detaildialog.rsvpButton", // circular import
+          "gcal.mat.detaildialog.event.soy.detaildialog.rsvpButtonClasses", // circular import
           "gitiles.footerFormatBadge",
           "gitiles.logEntry",
-          "materialdesign.wiz.icon.svgs.delSvg.templates", // gencode??
+          "materialdesign.wiz.icon.svgs.delSvg.templates", // gencode
           "renderComponentWithUiReference",
           "wiztest.pkg.deltemplates.passthroughTemplate",
+          // In flight
+          "boq.accountlinkingconsentweb.userconsent.contentShared.templates.prepareConsentContent",
+          "boq.cloudcastpartnerportalui.dialogs.play.common.configuregamelet.templates.amdvlkUseLlpcMod",
+          "boq.cloudcastportalfecommon.widgets.editgamertag.templates.publicStadiaName",
+          "boq.cloudcastportalfecommon.widgets.skumetadata.preorder.strings.templates.skuTypePreorder",
+          "boq.cloudcastportalfewebui.landingpage.cloudcastPortalfeWebuiEnableLandingPageJson.templates.ctaButton",
+          "boq.cloudcastportalfewebui.landingpage.proSubscriptionPrice.templates.proSubscriptionPrice",
+          "boq.meetingscommon.pip.call.display.templates.appSharingInfo",
+          "boq.meetingscommon.pip.call.display.templates.googleAssistantSharingInfo",
+          "boq.meetingscommon.pip.call.local.localdisplay.templates.localname",
+          "boq.meetingscommon.pip.menu.landing.templates.joinMessage",
+          "boq.groupsfrontendui.compose.editor.envelope.templates.modGroupIcon",
+          "boq.travelfrontendhotelssearchweb.home.list.tooltip.enablemarkhotelasviewedoninteraction.templates.manageSearchHistoryLink",
+          "boq.visualfrontendviewer.cluster.elements.footer.templates.seeMoreFooterWrap",
+          "boq.visualfrontendui.explorepanel.templates.clusters",
+          "drive.ui.soy.icons.delicon",
+          "drive.wiz.app.web.column.icon.templates.delItemThumbnail",
+          "drive.wiz.app.ui.quotawarningbanner.templates.g1SubscribersInAppPurchase",
+          "formSelector",
+          "gafe.signin.message.headline.msg",
+          "gafe.signin.message.logincontext.msg",
+          "gaia.frontend.closure.signup.termsofservice.consentbump.templates.privacyAndTermsIntroTosAndroid",
+          "gaia.signup.views.common.consentbump.templates.privacyAndTermsIntroTosAndroid",
+          "gcal.mat.ui.eventeditor.soy.disabled_rooms_tab_panel",
           // In contact with team, b/233902965
           "boq.educms.fields.dispatcher.templates.enumfield",
           "boq.educms.fields.dispatcher.templates.groupfield",
@@ -187,7 +247,6 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
           "boq.ads.townsquare.marketplaceui.components.componentregistry.templates.ghost", // cl/455004511
           "boq.ads.townsquare.marketplaceui.components.componentregistry.templates.type",
           "boq.dashercommerceconsolebuyflowweb.increasecommitmentstep.templates.enableSeatCapEnforcementErrors", // cl/455306454
-          "boq.saveui.listitem.templates.cardHeader", // cl/455220729
           "boq.testaccountpoolmanagementserviceui.accountpooltable.templates.mixologistlink", // cl/455226258
           "boq.testaccountpoolmanagementserviceui.accountpooltable.templates.rheaLink");
 
@@ -249,7 +308,11 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
       checkCallParamTypes(callerTemplate, node, calleeType);
     }
 
-    void checkCall(TemplateNode callerTemplate, CallDelegateNode node, String callerFilename) {
+    void checkCall(
+        SoyFileNode file,
+        TemplateNode callerTemplate,
+        CallDelegateNode node,
+        String callerFilename) {
       ImmutableList<TemplateMetadata> potentialCallees =
           fileSetMetadata
               .getDelTemplateSelector()
@@ -262,17 +325,31 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
         // We don't call checkPassesUnusedParams here because we might not know all delegates.
       }
       if (shouldEnforceDefaultDeltemplate(node.getDelCalleeName(), callerFilename)
-          && !node.allowEmptyDefault()
-          && potentialCallees.stream()
-                  .filter(
-                      delTemplate ->
-                          delTemplate.getDelPackageName() == null
-                              && (delTemplate.getDelTemplateVariant() == null
-                                  || delTemplate.getDelTemplateVariant().isEmpty()))
-                  .count()
-              == 0) {
-        errorReporter.report(
-            node.getSourceLocation(), NO_DEFAULT_DELTEMPLATE, node.getDelCalleeName());
+          && !node.allowEmptyDefault()) {
+        ImmutableList<TemplateMetadata> defaultImpl =
+            potentialCallees.stream()
+                .filter(
+                    delTemplate ->
+                        delTemplate.getDelPackageName() == null
+                            && isNullOrEmpty(delTemplate.getDelTemplateVariant()))
+                .collect(toImmutableList());
+        if (defaultImpl.isEmpty()) {
+          errorReporter.report(
+              node.getSourceLocation(), NO_DEFAULT_DELTEMPLATE, node.getDelCalleeName());
+        } else {
+          SourceFilePath defaultLocation = defaultImpl.get(0).getSourceLocation().getFilePath();
+          if (!defaultLocation.equals(file.getSourceLocation().getFilePath())
+              && SoyTreeUtils.getAllNodesOfType(file, ImportNode.class).stream()
+                  .noneMatch(imp -> imp.getSourceFilePath().equals(defaultLocation))) {
+            errorReporter.report(
+                node.getSourceLocation(),
+                NO_IMPORT_DEFAULT_DELTEMPLATE,
+                node.getDelCalleeName(),
+                CaseFormat.LOWER_UNDERSCORE.to(
+                    CaseFormat.UPPER_CAMEL, defaultLocation.fileName().replaceAll(".soy$", "")),
+                defaultLocation.path());
+          }
+        }
       }
 
       // NOTE: we only need to check one of them.  If there is more than one of them and they have
