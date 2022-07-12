@@ -21,9 +21,9 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.TemplateBasicNode;
+import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.types.TemplateImportType;
-import com.google.template.soy.types.TemplateType;
+import com.google.template.soy.types.SoyType;
 
 /** Checks modifiable templates. */
 @RunAfter(ResolveExpressionTypesPass.class)
@@ -62,11 +62,8 @@ final class CheckModifiableTemplatesPass implements CompilerFilePass {
           if (templateBasicNode.getVariantExpr() == null && file.getDelPackageName() == null) {
             errorReporter.report(templateNode.getSourceLocation(), MODIFIES_WITHOUT_MODNAME);
           }
-          TemplateType modifiableType =
-              ((TemplateImportType) templateBasicNode.getModifiesExpr().getRoot().getType())
-                  .getBasicTemplateType();
-          TemplateType modifyingType =
-              ((TemplateImportType) templateNode.asVarDefn().type()).getBasicTemplateType();
+          SoyType modifiableType = templateBasicNode.getModifiesExpr().getRoot().getType();
+          SoyType modifyingType = TemplateMetadata.buildTemplateType(templateBasicNode);
           if (!modifyingType.isAssignableFromStrict(modifiableType)) {
             errorReporter.report(
                 templateNode.getSourceLocation(),

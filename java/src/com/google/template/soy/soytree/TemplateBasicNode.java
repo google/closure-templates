@@ -21,6 +21,7 @@ import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
+import java.util.Optional;
 import javax.annotation.Nullable;
 
 /**
@@ -33,14 +34,8 @@ public final class TemplateBasicNode extends TemplateNode {
   /** The "modifiable" attribute. */
   private final boolean modifiable;
 
-  /** Expression that will evaluate to "modifies" attribute. */
-  private final ExprRootNode modifiesExpr;
-
   /** The "legacydeltemplatenamespace" attribute. */
   private final String legacyDeltemplateNamespace;
-
-  /** Expression that will evaluate to the value of the "variant" attribute. */
-  private final ExprRootNode variantExpr;
 
   /** The "usevarianttype" attribute. */
   private final String useVariantType;
@@ -59,16 +54,12 @@ public final class TemplateBasicNode extends TemplateNode {
       SoyFileHeaderInfo soyFileHeaderInfo,
       Visibility visibility,
       boolean modifiable,
-      ExprRootNode modifiesExpr,
       String legacyDeltemplateNamespace,
-      ExprRootNode variantExpr,
       String useVariantType,
       @Nullable ImmutableList<TemplateHeaderVarDefn> params) {
     super(nodeBuilder, "template", soyFileHeaderInfo, visibility, params);
     this.modifiable = modifiable;
-    this.modifiesExpr = modifiesExpr;
     this.legacyDeltemplateNamespace = legacyDeltemplateNamespace;
-    this.variantExpr = variantExpr;
     this.useVariantType = useVariantType;
   }
 
@@ -80,9 +71,7 @@ public final class TemplateBasicNode extends TemplateNode {
   private TemplateBasicNode(TemplateBasicNode orig, CopyState copyState) {
     super(orig, copyState);
     this.modifiable = orig.modifiable;
-    this.modifiesExpr = orig.modifiesExpr != null ? orig.modifiesExpr.copy(copyState) : null;
     this.legacyDeltemplateNamespace = orig.legacyDeltemplateNamespace;
-    this.variantExpr = orig.variantExpr != null ? orig.variantExpr.copy(copyState) : null;
     this.useVariantType = orig.useVariantType;
   }
 
@@ -105,16 +94,24 @@ public final class TemplateBasicNode extends TemplateNode {
     return modifiable;
   }
 
+  private Optional<CommandTagAttribute> getCommandTagAttribute(String name) {
+    return getAttributes().stream()
+        .filter(a -> name.equals(a.getName().identifier()) && a.hasExprValue())
+        .findFirst();
+  }
+
+  @Nullable
   public ExprRootNode getModifiesExpr() {
-    return modifiesExpr;
+    return getCommandTagAttribute("modifies").map(a -> a.valueAsExprList().get(0)).orElse(null);
   }
 
   public String getLegacyDeltemplateNamespace() {
     return legacyDeltemplateNamespace;
   }
 
+  @Nullable
   public ExprRootNode getVariantExpr() {
-    return variantExpr;
+    return getCommandTagAttribute("variant").map(a -> a.valueAsExprList().get(0)).orElse(null);
   }
 
   public String getUseVariantType() {

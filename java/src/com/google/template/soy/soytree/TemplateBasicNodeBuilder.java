@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
-import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 import java.util.List;
 
@@ -55,13 +54,13 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder<TemplateBasicN
   private boolean modifiable = false;
 
   /** Expression that will evaluate to "modifies" attribute. */
-  private ExprRootNode modifiesExpr = null;
+  private boolean hasModifies = false;
 
   /** The "legacydeltemplatenamespace" attribute. */
   private String legacyDeltemplateNamespace = "";
 
   /** Expression that will evaluate to the value of the "variant" attribute. */
-  private ExprRootNode variantExpr = null;
+  private boolean hasVariant = false;
 
   /** The "usevarianttype" attribute. */
   private String useVariantType = "";
@@ -92,13 +91,13 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder<TemplateBasicN
           modifiable = attribute.valueAsEnabled(errorReporter);
           break;
         case "modifies":
-          modifiesExpr = attribute.valueAsExpr(errorReporter);
+          hasModifies = attribute.valueAsExpr(errorReporter) != null;
           break;
         case "legacydeltemplatenamespace":
           legacyDeltemplateNamespace = attribute.getValue();
           break;
         case "variant":
-          variantExpr = attribute.valueAsExpr(errorReporter);
+          hasVariant = attribute.valueAsExpr(errorReporter) != null;
           break;
         case "usevarianttype":
           useVariantType = attribute.getValue();
@@ -128,7 +127,7 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder<TemplateBasicN
   @Override
   public TemplateBasicNode build() {
     Preconditions.checkState(id != null && cmdText != null);
-    if (modifiable && modifiesExpr != null) {
+    if (modifiable && hasModifies) {
       errorReporter.report(openTagLocation, MODIFIABLE_AND_MODIFIES_BOTH_SET);
     }
     if (!modifiable && !legacyDeltemplateNamespace.isEmpty()) {
@@ -140,10 +139,10 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder<TemplateBasicN
     if (modifiable && visibility != Visibility.PUBLIC) {
       errorReporter.report(openTagLocation, MODIFIABLE_REQUIRES_PUBLIC_VISIBILITY);
     }
-    if (modifiesExpr != null && visibility != Visibility.PRIVATE) {
+    if (hasModifies && visibility != Visibility.PRIVATE) {
       errorReporter.report(openTagLocation, MODIFIES_REQUIRES_PRIVATE_VISIBILITY);
     }
-    if (modifiesExpr == null && variantExpr != null) {
+    if (!hasModifies && hasVariant) {
       errorReporter.report(openTagLocation, VARIANT_REQUIRES_MODIFIES);
     }
     return new TemplateBasicNode(
@@ -151,9 +150,7 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder<TemplateBasicN
         soyFileHeaderInfo,
         visibility,
         modifiable,
-        modifiesExpr,
         legacyDeltemplateNamespace,
-        variantExpr,
         useVariantType,
         params);
   }
