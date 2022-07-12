@@ -87,6 +87,7 @@ message SoyTypeP {
   message TemplateTypeP {
     repeated ParameterP parameter = 3;
     SoyTypeP return_type = 4;
+    SoyTypeP use_variant_type = 5;
 
     reserved 1, 2;
   }

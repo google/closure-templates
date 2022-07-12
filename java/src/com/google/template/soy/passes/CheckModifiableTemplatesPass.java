@@ -16,14 +16,20 @@
 
 package com.google.template.soy.passes;
 
+import static com.google.common.labs.base.Substring.last;
+
+import com.google.common.base.Joiner;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.TemplateType;
+import java.util.TreeSet;
 
 /** Checks modifiable templates. */
 @RunAfter(ResolveExpressionTypesPass.class)
@@ -44,6 +50,14 @@ final class CheckModifiableTemplatesPass implements CompilerFilePass {
           "Template with signature {0} cannot be modified by template with "
               + "incompatible signature {1}.");
 
+  private static final SoyErrorKind BAD_VARIANT_TYPE =
+      SoyErrorKind.of("Expected variant of type {0}, found type {1}.");
+
+  private static final SoyErrorKind MODDING_MULTIPLE_FILES =
+      SoyErrorKind.of(
+          "A single Soy file can only modify templates from a single external namespace. "
+              + "Namespaces: {0}.");
+
   private final ErrorReporter errorReporter;
 
   CheckModifiableTemplatesPass(ErrorReporter errorReporter) {
@@ -52,6 +66,7 @@ final class CheckModifiableTemplatesPass implements CompilerFilePass {
 
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
+    TreeSet<String> modifiedNamespaces = new TreeSet<>();
     for (TemplateNode templateNode : file.getTemplates()) {
       if (templateNode instanceof TemplateBasicNode) {
         TemplateBasicNode templateBasicNode = (TemplateBasicNode) templateNode;
@@ -70,6 +85,30 @@ final class CheckModifiableTemplatesPass implements CompilerFilePass {
                 INCOMPATIBLE_SIGNATURE,
                 modifiableType.toString(),
                 modifyingType.toString());
+          }
+          if (templateBasicNode.getVariantExpr() != null) {
+            TemplateType modifiableTemplateType = (TemplateType) modifiableType;
+            if (!modifiableTemplateType
+                .getUseVariantType()
+                .isAssignableFromStrict(templateBasicNode.getVariantExpr().getType())) {
+              errorReporter.report(
+                  templateBasicNode.getVariantExpr().getSourceLocation(),
+                  BAD_VARIANT_TYPE,
+                  modifiableTemplateType.getUseVariantType(),
+                  templateBasicNode.getVariantExpr().getType());
+            }
+          }
+          TemplateLiteralNode literal =
+              (TemplateLiteralNode) templateBasicNode.getModifiesExpr().getRoot();
+          String namespace = last(".").toEnd().removeFrom(literal.getResolvedName());
+          if (!namespace.equals(file.getNamespace())) {
+            modifiedNamespaces.add(namespace);
+            if (modifiedNamespaces.size() > 1) {
+              errorReporter.report(
+                  templateBasicNode.getModifiesExpr().getSourceLocation(),
+                  MODDING_MULTIPLE_FILES,
+                  Joiner.on(", ").join(modifiedNamespaces));
+            }
           }
         }
       }

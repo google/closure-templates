@@ -33,6 +33,7 @@ import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.error.SoyErrors;
 import com.google.template.soy.types.FunctionType;
+import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.ProtoTypeRegistry;
 import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.SanitizedType;
@@ -424,8 +425,11 @@ public final class TypeNodeConverter
     if (!ALLOWED_TEMPLATE_RETURN_TYPES.contains(returnType.getKind())) {
       errorReporter.report(node.returnType().sourceLocation(), INVALID_TEMPLATE_RETURN_TYPE);
     }
+    // There is no syntax for specifying the usevarianttype in a template type literal. This means
+    // "variant" won't work on calls of template-typed template parameters.
     SoyType type =
-        interner.internTemplateType(TemplateType.declaredTypeOf(map.values(), returnType));
+        interner.internTemplateType(
+            TemplateType.declaredTypeOf(map.values(), returnType, NullType.getInstance()));
     node.setResolvedType(type);
     return type;
   }

@@ -48,6 +48,7 @@ import java.util.TreeSet;
   ResolveExpressionTypesPass.class, // To resolve extensions.
   RewriteGlobalsPass.class, // To resolve extensions.
   ResolveTemplateNamesPass.class,
+  ResolveUseVariantTypePass.class,
 })
 public final class ImportsPass implements CompilerFileSetPass {
 

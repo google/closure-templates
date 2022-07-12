@@ -16,11 +16,18 @@
 
 package com.google.template.soy.soytree;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.soytree.SoyNode.Kind;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
+import com.google.template.soy.types.NullType;
+import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.Optional;
 import javax.annotation.Nullable;
 
@@ -31,14 +38,23 @@ import javax.annotation.Nullable;
  */
 public final class TemplateBasicNode extends TemplateNode {
 
+  public static final SoyErrorKind INVALID_USEVARIANTTYPE =
+      SoyErrorKind.of("Invalid type name \"{0}\" for attribute \"usevarianttype\".");
+
   /** The "modifiable" attribute. */
   private final boolean modifiable;
 
   /** The "legacydeltemplatenamespace" attribute. */
   private final String legacyDeltemplateNamespace;
 
-  /** The "usevarianttype" attribute. */
-  private final String useVariantType;
+  /** The "usevarianttype" attribute, as a string. */
+  private final String useVariantTypeString;
+
+  /**
+   * The parsed "usevarianttype" type. null is used to express that the type has not been resolved
+   * yet, while NullType is used to express that there is no usevarianttype attribute at all.
+   */
+  private SoyType useVariantType = null;
 
   /**
    * Main constructor. This is package-private because TemplateBasicNode instances should be built
@@ -55,12 +71,15 @@ public final class TemplateBasicNode extends TemplateNode {
       Visibility visibility,
       boolean modifiable,
       String legacyDeltemplateNamespace,
-      String useVariantType,
+      String useVariantTypeString,
       @Nullable ImmutableList<TemplateHeaderVarDefn> params) {
     super(nodeBuilder, "template", soyFileHeaderInfo, visibility, params);
     this.modifiable = modifiable;
     this.legacyDeltemplateNamespace = legacyDeltemplateNamespace;
-    this.useVariantType = useVariantType;
+    this.useVariantTypeString = useVariantTypeString;
+    if (useVariantTypeString.isEmpty()) {
+      useVariantType = NullType.getInstance();
+    }
   }
 
   /**
@@ -72,6 +91,7 @@ public final class TemplateBasicNode extends TemplateNode {
     super(orig, copyState);
     this.modifiable = orig.modifiable;
     this.legacyDeltemplateNamespace = orig.legacyDeltemplateNamespace;
+    this.useVariantTypeString = orig.useVariantTypeString;
     this.useVariantType = orig.useVariantType;
   }
 
@@ -114,7 +134,26 @@ public final class TemplateBasicNode extends TemplateNode {
     return getCommandTagAttribute("variant").map(a -> a.valueAsExprList().get(0)).orElse(null);
   }
 
-  public String getUseVariantType() {
+  public void resolveUseVariantType(SoyTypeRegistry registry, ErrorReporter errorReporter) {
+    if (useVariantTypeString.isEmpty()) {
+      useVariantType = NullType.getInstance();
+      return;
+    }
+    SoyType resolvedType = registry.getType(useVariantTypeString);
+    if (resolvedType == null) {
+      errorReporter.report(getSourceLocation(), INVALID_USEVARIANTTYPE, useVariantTypeString);
+      useVariantType = NullType.getInstance();
+    } else {
+      useVariantType = resolvedType;
+    }
+  }
+
+  @Override
+  public SoyType getUseVariantType() {
+    Preconditions.checkNotNull(
+        useVariantType,
+        "if usevarianttype is set, resolveUseVariantType() needs to be called to resolve the type"
+            + " before getUseVariantType() is used");
     return useVariantType;
   }
 }

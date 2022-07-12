@@ -423,7 +423,9 @@ public final class PassManager {
       passes.add(new ResolvePluginsPass(pluginResolver));
       // When type checking is disabled, extern implementations will likely not be loaded.
       if (!disableAllTypeChecking) {
-        passes.add(new ValidateExternsPass(errorReporter, javaPluginValidator));
+        passes
+            .add(new ValidateExternsPass(errorReporter, javaPluginValidator))
+            .add(new ResolveUseVariantTypePass(errorReporter));
       }
 
       // Must come after ResolvePluginsPass.

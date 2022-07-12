@@ -43,6 +43,7 @@ import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.templatecall.TemplateCallMetadata;
+import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.TemplateImportType;
 import java.util.Collection;
@@ -752,5 +753,13 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     public boolean isInjected() {
       return false;
     }
+  }
+
+  /**
+   * Returns the type specified in the "usevarrianttype" attribute, or NullType if the attribute is
+   * not set.
+   */
+  public SoyType getUseVariantType() {
+    return NullType.getInstance();
   }
 }
