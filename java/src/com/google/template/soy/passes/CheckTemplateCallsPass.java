@@ -174,11 +174,11 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
           "boq.googlefinanceui.views.bundles.portfolio.templates.portfolioLayoutRedesign", // circular import
           "boq.privacy.one.privacypage.product.components.privacypagepresentation.tabs.dependentlibraries.ps_dependencies_insights_info.templates.columns", // circular import
           "boq.protoshop.viewer.templates.topLevelMessage", // circular dep
-          "boq.saveui.listitem.templates.cardHeader", // circualr deps, cl/455220729
+          "boq.saveui.listitem.templates.cardHeader", // circualr deps, cl/455220729 breaks tests
           "boq.shopping.property.ui.components.carousel.templates.item", // circular import
-          "boq.shopping.property.ui.components.componentregistry.classes.templates.type",
-          "boq.shopping.property.ui.components.componentregistry.ghost.templates.type",
-          "boq.shopping.property.ui.components.componentregistry.templates.type",
+          "boq.shopping.property.ui.components.componentregistry.classes.templates.type", // cir dep
+          "boq.shopping.property.ui.components.componentregistry.ghost.templates.type", // cir dep
+          "boq.shopping.property.ui.components.componentregistry.templates.type", // circular dep
           "boq.shopping.property.ui.components.grid.templates.item", // circular import
           "boq.shopping.property.ui.components.grid.templates.itemKey", // circular import
           "boq.shopping.property.ui.components.grid.templates.renderPopoutTooltipArrow", // c import
@@ -205,30 +205,8 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
           "materialdesign.wiz.icon.svgs.delSvg.templates", // gencode
           "renderComponentWithUiReference",
           "wiztest.pkg.deltemplates.passthroughTemplate",
-          // In flight
-          "boq.accountlinkingconsentweb.userconsent.contentShared.templates.prepareConsentContent",
-          "boq.cloudcastpartnerportalui.dialogs.play.common.configuregamelet.templates.amdvlkUseLlpcMod",
-          "boq.cloudcastportalfecommon.widgets.editgamertag.templates.publicStadiaName",
-          "boq.cloudcastportalfecommon.widgets.skumetadata.preorder.strings.templates.skuTypePreorder",
-          "boq.cloudcastportalfewebui.landingpage.cloudcastPortalfeWebuiEnableLandingPageJson.templates.ctaButton",
-          "boq.cloudcastportalfewebui.landingpage.proSubscriptionPrice.templates.proSubscriptionPrice",
-          "boq.meetingscommon.pip.call.display.templates.appSharingInfo",
-          "boq.meetingscommon.pip.call.display.templates.googleAssistantSharingInfo",
-          "boq.meetingscommon.pip.call.local.localdisplay.templates.localname",
-          "boq.meetingscommon.pip.menu.landing.templates.joinMessage",
-          "boq.groupsfrontendui.compose.editor.envelope.templates.modGroupIcon",
-          "boq.visualfrontendviewer.cluster.elements.footer.templates.seeMoreFooterWrap",
-          "boq.visualfrontendui.explorepanel.templates.clusters",
-          "drive.ui.soy.icons.delicon",
-          "drive.wiz.app.web.column.icon.templates.delItemThumbnail",
-          "drive.wiz.app.ui.quotawarningbanner.templates.g1SubscribersInAppPurchase",
-          "formSelector",
-          "gafe.signin.message.headline.msg",
-          "gafe.signin.message.logincontext.msg",
-          "gaia.frontend.closure.signup.termsofservice.consentbump.templates.privacyAndTermsIntroTosAndroid",
-          "gaia.signup.views.common.consentbump.templates.privacyAndTermsIntroTosAndroid",
-          "gcal.mat.ui.eventeditor.soy.disabled_rooms_tab_panel",
           // In contact with team, b/233902965
+          // https://groups.google.com/a/google.com/g/soy-dev/c/YV0d64vm0I4/m/4tI4J7PYAwAJ
           "boq.educms.fields.dispatcher.templates.enumfield",
           "boq.educms.fields.dispatcher.templates.groupfield",
           "boq.educms.fields.dispatcher.templates.nodefield",
@@ -243,15 +221,13 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
           "boq.educmseditor.fields.templates.preview",
           // MAILED
           "boq.ads.townsquare.marketplaceui.components.componentregistry.templates.ghost", // cl/455004511
-          "boq.ads.townsquare.marketplaceui.components.componentregistry.templates.type",
-          "boq.dashercommerceconsolebuyflowweb.increasecommitmentstep.templates.enableSeatCapEnforcementErrors", // cl/455306454
-          "boq.testaccountpoolmanagementserviceui.accountpooltable.templates.mixologistlink", // cl/455226258
-          "boq.testaccountpoolmanagementserviceui.accountpooltable.templates.rheaLink");
+          "boq.ads.townsquare.marketplaceui.components.componentregistry.templates.type");
 
   private static final ImmutableSet<String> DEFAULT_DELTEMPLATE_FILE_PREFIX_PASSLIST =
       ImmutableSet.of(
-          "assistant/display/cast/" // gencoding registerDelegateFn() (added in cl/230955778)
-          );
+          // Most liikely unused
+          // https://groups.google.com/a/google.com/g/soy-dev/c/RZ2p82d8t_4/m/_sNkjqPYAwAJ
+          "assistant/display/cast/");
 
   private final class CheckCallsHelper {
 
