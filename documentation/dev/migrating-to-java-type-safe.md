@@ -40,7 +40,7 @@ parameter at the top level.
 
 This will ensure a setter is generated and can be safely set from Java.
 
-### Missing setters due to complex parameters parameters?
+### Missing setters due to complex parameters?
 
 Certain complex record types are not well supported. A good approach would be to
 replace these records with `proto` definitions but this might be a lot of work.
