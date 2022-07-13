@@ -190,7 +190,6 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
           "boq.travel.frontend.core.map.web.layers.hotels.summarycards.content_enable_links_to_embedded_placesheet.templates.relativePath", // circular import
           "boq.travelfrontendhotelssearchweb.component.bookingmodule.hotels.show_organic_prices.templates.bookingModuleHeader", // circular import
           "boq.travelfrontendhotelssearchweb.component.bookingmodule.hotels.templates.disclaimer", // circular dep
-          "boq.travelfrontendhotelssearchweb.component.bookingmodule.partnerrates.hotels.show_logonly_organic_prices.templates.isOrganicLogOnly",
           "boq.travelfrontendhotelssearchweb.home.header.enable_expand_when_reach_bottom.templates.enableExpandWhenScrollToBottom", // circular import
           "boq.travelfrontendhotelssearchweb.home.header.enable_expand_when_scroll_up.templates.enableExpandWhenScrollUp", // circular import
           "boq.visualfrontendui.explorepanel.templates.closeButton",
@@ -218,7 +217,6 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
           "boq.meetingscommon.pip.call.local.localdisplay.templates.localname",
           "boq.meetingscommon.pip.menu.landing.templates.joinMessage",
           "boq.groupsfrontendui.compose.editor.envelope.templates.modGroupIcon",
-          "boq.travelfrontendhotelssearchweb.home.list.tooltip.enablemarkhotelasviewedoninteraction.templates.manageSearchHistoryLink",
           "boq.visualfrontendviewer.cluster.elements.footer.templates.seeMoreFooterWrap",
           "boq.visualfrontendui.explorepanel.templates.clusters",
           "drive.ui.soy.icons.delicon",
