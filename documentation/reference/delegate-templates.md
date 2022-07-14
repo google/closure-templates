@@ -72,17 +72,10 @@ At render time, when a delegate call needs to be resolved, Soy looks at all the
 with the highest priority. Basically, this means:
 
 1.  Use a non-default implementation, if there is one.
-2.  Otherwise, use the default implementation, if there is one.
-3.  Otherwise, if the `delcall` has the attribute `allowemptydefault="true"`,
-    then the call renders to the empty string.
+2.  Otherwise, use the default implementation.
 
-Due to the third case, it is legal to render a delegate template that has no
-default implementation, as long as the `delcall` has `allowemptydefault="true"`.
-Without `allowemptydefault="true"`, a default implementation must exist and be
-in the dependencies of the file containing the `delcall`.
-
-Important: `allowemptydefault="true"` is deprecated and support will be removed
-soon. You should always provide a default implementation, even if it's empty.
+A default implementation must exist, even if it's empty. Any file with a delcall
+must also import the file containing the default.
 
 What counts as an "active" implementation depends on the backend in use. In
 JavaScript, an active implementation is simply an implementation that is defined

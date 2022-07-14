@@ -92,10 +92,7 @@ implementation (the definition with no `delpackage`) will be rendered.
 The algorithm for selecting the implementation to invoke is:
 
 1.  Use an active non-default implementation, if there is one.
-1.  Otherwise, use the default implementation, if there is one.
-1.  Otherwise, if the delcall has the attribute `allowemptydefault="true"`, then
-    the call renders to the empty string.
-1.  Otherwise, an error occurs.
+1.  Otherwise, use the default implementation.
 
 ### Activating a delpackage in Java
 
@@ -183,10 +180,7 @@ the template implementations when you need to.
 The algorithm for selecting the implementation to invoke is:
 
 1.  Use the delegate implementation with matching variant, if there is one.
-1.  Otherwise, use the delegate implementation with no variant, if there is one.
-1.  Otherwise, if the delcall has the attribute `allowemptydefault="true"`, then
-    the call renders to the empty string.
-1.  Otherwise, an error occurs.
+1.  Otherwise, use the delegate implementation with no variant.
 
 ## Using deltemplates with `variant` and `delpackage`
 
@@ -202,7 +196,4 @@ deltemplate implementation to all is:
     one
 1.  Use the delegate implementation with no variant and an active delpackage if
     there is one
-1.  Use the default delegate implementation with no variant if there is one
-1.  Otherwise, if the delcall has the attribute `allowemptydefault="true"`, then
-    the call renders to the empty string.
-1.  Otherwise, an error occurs.
+1.  Use the default delegate implementation with no variant.
