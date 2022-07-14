@@ -6,8 +6,8 @@ using `deltemplate` and `delcall`, which have syntax similar to `template` and
 `call`.
 
 There are two independent ways to use delegates, differing in how you control
-which delegate implementation is called. Delegates with delegate packages
-(`delpackage`) are appropriate for cases where you don't intend to send code for
+which delegate implementation is called. Delegates associated with mods
+(`modname`) are appropriate for cases where you don't intend to send code for
 unused delegate implementations to the client (for example, an experiment whose
 code is only sent to a small subset of users.) Delegates with the `variant`
 attribute are appropriate for finer control of delegate selection at the call
@@ -15,11 +15,11 @@ site.
 
 [TOC]
 
-## Delegate templates (with delpackage)
+## Delegate templates (with modname)
 
-Delegates with delegate packages (`delpackage`) are appropriate for cases where
-you don't intend to send code for unused delegate implementations to the client
-(for example, an experiment whose code is only sent to a small subset of users.)
+Delegates associated with mods (`modname`) are appropriate for cases where you
+don't intend to send code for unused delegate implementations to the client (for
+example, an experiment whose code is only sent to a small subset of users.)
 
 `main.soy` syntax:
 
@@ -40,7 +40,7 @@ you don't intend to send code for unused delegate implementations to the client
 `experiment.soy` syntax:
 
 ```soy
-{delpackage MyExperiment}
+{modname MyExperiment}
 {namespace ...}
 
 /** My experiment's implementation. */
@@ -50,8 +50,8 @@ you don't intend to send code for unused delegate implementations to the client
 ```
 
 The implementations must appear in different files, and each file other than the
-default implementation must declare a delegate package name (`delpackage`). This
-is the identifier used to select the implementation at usage time.
+default implementation must declare a `modname`. This is the identifier used to
+select the implementation at usage time.
 
 The delegate template names are not within the file's namespace; namespaces only
 apply to basic templates. Instead, delegate template names are just strings that
@@ -60,12 +60,12 @@ connected with dots. The namespace of any delegate template file, however, must
 be different from the default file and any other included delegate template
 file.
 
-Template files can have an optional `delpackage` declaration at the top, just
-above the `namespace` declaration. And multiple files can have the same
-`delpackage` name, putting them all within the same delegate package. If a
-delegate template is defined in a file without `delpackage`, then it is a
-default implementation. If a delegate template is defined in a file with
-`delpackage`, then it is a non-default implementation.
+Template files can have an optional `modname` declaration at the top, just above
+the `namespace` declaration. And multiple files can have the same `modname`
+name, putting them all within the same delegate package. If a delegate template
+is defined in a file without `modname`, then it is a default implementation. If
+a delegate template is defined in a file with `modname`, then it is a
+non-default implementation.
 
 At render time, when a delegate call needs to be resolved, Soy looks at all the
 "active" implementations of the delegate template and uses the implementation
@@ -87,7 +87,7 @@ soon. You should always provide a default implementation, even if it's empty.
 What counts as an "active" implementation depends on the backend in use. In
 JavaScript, an active implementation is simply an implementation that is defined
 in the JavaScript files that are loaded. Ship only the generated JavaScript
-files for the active `delpackage`s.
+files for the active `modname`s.
 
 In Java, use `SoySauce.Renderer#setActiveDelegatePackageSelector` to set the
 active implementations. For example, with the example template code above, call
@@ -111,12 +111,12 @@ the same priority (for example, multiple active non-default implementations).
 
 Please note that it is an error for two deltemplates to be installed at runtime
 with the same priority. Therefore, do not define the default implementation of
-deltemplate B within a delpackage. This would give B's default implementation
-the same priority as B's non-default (delpackage) implementations; essentially,
-B would not have a default implementation.
+deltemplate B within a modname. This would give B's default implementation the
+same priority as B's non-default (modname) implementations; essentially, B would
+not have a default implementation.
 
-So instead, put deltemplate B into a file without a delpackage. This will allow
-the variant (with a delpackage) to override it.
+So instead, put deltemplate B into a file without a modname. This will allow the
+variant (with a modname) to override it.
 
 ## Delegate Templates (with variant)
 

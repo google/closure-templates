@@ -146,14 +146,17 @@ partial name.
 This deprecated feature still works for the ID parameter to the
 [`xid()` function](functions#xid).
 
-## delpackage {#delpackage}
+## modname {#modname}
+
+IMPORTANT: The command {delpackage} is in the process of being renamed to
+{modname}, currently they are treated identically.
 
 Syntax:
 
 ```soy
-{delpackage <delegate_package_name>}
+{modname <delegate_package_name>}
 ```
 
 This command belongs at the start of a template file, before the `namespace`
 tag. It is one of the two ways to use delegate templates. For details, see the
-section on [using delegate templates with delpackage](delegate-templates.md).
+section on [using delegate templates with modname](delegate-templates.md).
