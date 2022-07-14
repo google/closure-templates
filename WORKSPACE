@@ -197,6 +197,12 @@ rules_proto_dependencies()
 
 rules_proto_toolchains()
 
+# http_archive(
+#     name = "rbe_default",
+#     sha256 = "6ac1093b2c8c1199c038697ca726f48390a17bbe0d3108b8b508611ce1e6c1b5",
+#     urls = ["https://storage.googleapis.com/rbe-toolchain/bazel-configs/bazel_5.2.0/rbe-ubuntu1604/latest/rbe_default.tar"],
+# )
+
 http_archive(
     name = "rbe_default",
     sha256 = "c5f784299a319f39bbe51e38a49e2e779cc2eb3b1b06ce4e71d5e537ac95e134",
