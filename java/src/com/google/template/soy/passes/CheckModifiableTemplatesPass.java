@@ -24,6 +24,7 @@ import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.TemplateType;
 
 /** Checks modifiable templates. */
 @RunAfter(ResolveExpressionTypesPass.class)
@@ -44,6 +45,9 @@ final class CheckModifiableTemplatesPass implements CompilerFilePass {
           "Template with signature {0} cannot be modified by template with "
               + "incompatible signature {1}.");
 
+  private static final SoyErrorKind BAD_VARIANT_TYPE =
+      SoyErrorKind.of("Expected variant of type {0}, found type {1}.");
+
   private final ErrorReporter errorReporter;
 
   CheckModifiableTemplatesPass(ErrorReporter errorReporter) {
@@ -58,21 +62,45 @@ final class CheckModifiableTemplatesPass implements CompilerFilePass {
         if (templateBasicNode.getModifiable() && file.getDelPackageName() != null) {
           errorReporter.report(templateNode.getSourceLocation(), MODIFIABLE_WITH_MODNAME);
         }
-        if (templateBasicNode.getModifiesExpr() != null) {
-          if (templateBasicNode.getVariantExpr() == null && file.getDelPackageName() == null) {
-            errorReporter.report(templateNode.getSourceLocation(), MODIFIES_WITHOUT_MODNAME);
-          }
-          SoyType modifiableType = templateBasicNode.getModifiesExpr().getRoot().getType();
-          SoyType modifyingType = TemplateMetadata.buildTemplateType(templateBasicNode);
-          if (!modifyingType.isAssignableFromStrict(modifiableType)) {
-            errorReporter.report(
-                templateNode.getSourceLocation(),
-                INCOMPATIBLE_SIGNATURE,
-                modifiableType.toString(),
-                modifyingType.toString());
-          }
+        if (templateBasicNode.getModifiesExpr() != null
+            && templateBasicNode.getVariantExpr() == null
+            && file.getDelPackageName() == null) {
+          errorReporter.report(templateNode.getSourceLocation(), MODIFIES_WITHOUT_MODNAME);
         }
+        validateModifiesAttribute(templateBasicNode);
+        validateVariantExpr(templateBasicNode);
       }
+    }
+  }
+
+  private void validateModifiesAttribute(TemplateBasicNode templateBasicNode) {
+    if (templateBasicNode.getModifiesExpr() == null) {
+      return;
+    }
+    SoyType modifiedTemplateType = templateBasicNode.getModifiesExpr().getRoot().getType();
+    SoyType modifyingType = TemplateMetadata.buildTemplateType(templateBasicNode);
+    if (!modifyingType.isAssignableFromStrict(modifiedTemplateType)) {
+      errorReporter.report(
+          templateBasicNode.getSourceLocation(),
+          INCOMPATIBLE_SIGNATURE,
+          modifiedTemplateType.toString(),
+          modifyingType.toString());
+    }
+  }
+
+  private void validateVariantExpr(TemplateBasicNode templateBasicNode) {
+    if (templateBasicNode.getVariantExpr() == null) {
+      return;
+    }
+    TemplateType modifiedTemplateType =
+        (TemplateType) templateBasicNode.getModifiesExpr().getRoot().getType();
+    SoyType variantType = templateBasicNode.getVariantExpr().getRoot().getType();
+    if (!modifiedTemplateType.getUseVariantType().isAssignableFromStrict(variantType)) {
+      errorReporter.report(
+          templateBasicNode.getVariantExpr().getSourceLocation(),
+          BAD_VARIANT_TYPE,
+          modifiedTemplateType.getUseVariantType(),
+          variantType);
     }
   }
 }

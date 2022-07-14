@@ -29,6 +29,7 @@ import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.soytree.SoyNode.Kind;
 import com.google.template.soy.soytree.defn.AttrParam;
 import com.google.template.soy.soytree.defn.TemplateParam;
+import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.TemplateType.DataAllCallSituation;
 import com.google.template.soy.types.TemplateType.Parameter;
@@ -80,16 +81,22 @@ public abstract class TemplateMetadata {
   }
 
   public static TemplateType buildTemplateType(TemplateNode template) {
-    return TemplateType.builder()
-        .setTemplateKind(convertKind(template.getKind()))
-        .setAllowExtraAttributes(template.getAllowExtraAttributes())
-        .setReservedAttributes(template.getReservedAttributes())
-        .setContentKind(template.getTemplateContentKind())
-        .setStrictHtml(template.isStrictHtml())
-        .setParameters(directParametersFromTemplate(template))
-        .setDataAllCallSituations(dataAllCallSituationFromTemplate(template))
-        .setIdentifierForDebugging(template.getTemplateName())
-        .build();
+    TemplateType.Builder builder =
+        TemplateType.builder()
+            .setTemplateKind(convertKind(template.getKind()))
+            .setAllowExtraAttributes(template.getAllowExtraAttributes())
+            .setReservedAttributes(template.getReservedAttributes())
+            .setContentKind(template.getTemplateContentKind())
+            .setStrictHtml(template.isStrictHtml())
+            .setParameters(directParametersFromTemplate(template))
+            .setDataAllCallSituations(dataAllCallSituationFromTemplate(template))
+            .setIdentifierForDebugging(template.getTemplateName());
+    if (template instanceof TemplateBasicNode) {
+      builder.setUseVariantType(((TemplateBasicNode) template).getUseVariantType());
+    } else {
+      builder.setUseVariantType(NullType.getInstance());
+    }
+    return builder.build();
   }
 
   public static TemplateMetadata.Builder builder() {

@@ -31,6 +31,7 @@ import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.types.TemplateType;
 import java.util.List;
+import javax.annotation.Nullable;
 
 /**
  * Node representing a call to a basic template.
@@ -67,13 +68,17 @@ public final class CallBasicNode extends CallNode {
         case PHEX_ATTR:
           // Parsed in CallNode.
           break;
+        case "variant":
+          // Returned directly by getVariantExpr(). Just call valueAsExpr() to validate it here.
+          attr.valueAsExpr(errorReporter);
+          break;
         default:
           errorReporter.report(
               attr.getName().location(),
               UNSUPPORTED_ATTRIBUTE_KEY,
               ident,
               "call",
-              ImmutableList.of("data", "key", PHNAME_ATTR, PHEX_ATTR));
+              ImmutableList.of("data", "key", PHNAME_ATTR, PHEX_ATTR, "variant"));
       }
     }
   }
@@ -150,6 +155,15 @@ public final class CallBasicNode extends CallNode {
         .example()
         .ifPresent(phex -> commandText.append(" phex=\"").append(phex).append('"'));
     return commandText.toString();
+  }
+
+  @Nullable
+  public ExprRootNode getVariantExpr() {
+    return getAttributes().stream()
+        .filter(a -> "variant".equals(a.getName().identifier()) && a.hasExprValue())
+        .findFirst()
+        .map(a -> a.valueAsExprList().get(0))
+        .orElse(null);
   }
 
   @Override

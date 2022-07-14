@@ -57,6 +57,7 @@ import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
+import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SanitizedType.ElementType;
 import com.google.template.soy.types.SoyType;
@@ -123,6 +124,10 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
           "Allowemptydefault=\"true\" is deprecated. Please remove it and add a default "
               + "deltemplate and ensure the file that provides it is imported. NOTE: This file "
               + "is temporarily passlisted while the LSC to remove all usages are in progress.");
+  private static final SoyErrorKind NO_USEVARIANTTYPE =
+      SoyErrorKind.of("Cannot specify \"variant\" unless the callee specifies \"usevarianttype\".");
+  private static final SoyErrorKind BAD_VARIANT_TYPE =
+      SoyErrorKind.of("Expected variant of type {0}, found type {1}.");
   private static final SoyErrorKind MISSING_PARAM = SoyErrorKind.of("Call missing required {0}.");
   private static final SoyErrorKind STRICT_HTML =
       SoyErrorKind.of(
@@ -799,6 +804,7 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
       checkPassesUnusedParams(node, calleeType);
       checkStrictHtml(callerTemplate, node, calleeType);
       checkCallParamTypes(callerTemplate, node, calleeType);
+      checkVariant(node, calleeType);
     }
 
     void checkCall(
@@ -1247,6 +1253,24 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
               callee.getIdentifierForDebugging(),
               SoyErrors.getDidYouMeanMessage(allParams, paramName));
         }
+      }
+    }
+
+    /** Validates the "variant" attribute. */
+    private void checkVariant(CallBasicNode node, TemplateType calleeType) {
+      if (node.getVariantExpr() == null) {
+        return;
+      }
+      if (calleeType.getUseVariantType().equals(NullType.getInstance())) {
+        errorReporter.report(node.getSourceLocation(), NO_USEVARIANTTYPE);
+      } else if (!calleeType
+          .getUseVariantType()
+          .isAssignableFromStrict(node.getVariantExpr().getType())) {
+        errorReporter.report(
+            node.getVariantExpr().getSourceLocation(),
+            BAD_VARIANT_TYPE,
+            calleeType.getUseVariantType(),
+            node.getVariantExpr().getType());
       }
     }
   }

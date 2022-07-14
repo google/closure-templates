@@ -409,6 +409,7 @@ public final class PassManager {
                   disableAllTypeChecking,
                   new ProtoImportProcessor(registry, errorReporter, disableAllTypeChecking),
                   new TemplateImportProcessor(errorReporter, accumulatedState::registryFromDeps)))
+          .add(new ResolveUseVariantTypePass(errorReporter))
           .add(
               new FileDependencyOrderPass(
                   errorReporter, v -> accumulatedState.topologicallyOrderedFiles = v))

@@ -119,6 +119,8 @@ public abstract class TemplateType extends SoyType {
 
   public abstract String getIdentifierForDebugging();
 
+  public abstract SoyType getUseVariantType();
+
   public abstract Builder toBuilder();
 
   public static Builder builder() {
@@ -145,6 +147,8 @@ public abstract class TemplateType extends SoyType {
         ImmutableList<DataAllCallSituation> dataAllCallSituations);
 
     public abstract Builder setIdentifierForDebugging(String identifierForDebugging);
+
+    public abstract Builder setUseVariantType(SoyType useVariantType);
 
     abstract TemplateType autoBuild();
 
@@ -333,7 +337,8 @@ public abstract class TemplateType extends SoyType {
     }
   }
 
-  public static TemplateType declaredTypeOf(Iterable<Parameter> parameters, SoyType returnType) {
+  public static TemplateType declaredTypeOf(
+      Iterable<Parameter> parameters, SoyType returnType, SoyType useVariantType) {
     TemplateContentKind templateContentKind = fromType(returnType);
     SanitizedContentKind contentKind = templateContentKind.getSanitizedContentKind();
     return builder()
@@ -350,6 +355,7 @@ public abstract class TemplateType extends SoyType {
             stringRepresentation(parameters, templateContentKind, ImmutableSet.of()))
         .setAllowExtraAttributes(false)
         .setReservedAttributes(ImmutableSet.of())
+        .setUseVariantType(useVariantType)
         .build();
   }
 
@@ -481,6 +487,7 @@ public abstract class TemplateType extends SoyType {
                       .addAllReservedAttributes(getReservedAttributes()))
               .build();
     }
+    templateBuilder.setUseVariantType(getUseVariantType().toProto());
     templateBuilder.setReturnType(returnType);
   }
 

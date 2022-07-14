@@ -63,7 +63,7 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder<TemplateBasicN
   private boolean hasVariant = false;
 
   /** The "usevarianttype" attribute. */
-  private String useVariantType = "";
+  private String useVariantTypeString = "";
 
   /** @param soyFileHeaderInfo Info from the containing Soy file's header declarations. */
   public TemplateBasicNodeBuilder(
@@ -100,7 +100,7 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder<TemplateBasicN
           hasVariant = attribute.valueAsExpr(errorReporter) != null;
           break;
         case "usevarianttype":
-          useVariantType = attribute.getValue();
+          useVariantTypeString = attribute.getValue();
           break;
         default:
           errorReporter.report(
@@ -133,7 +133,7 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder<TemplateBasicN
     if (!modifiable && !legacyDeltemplateNamespace.isEmpty()) {
       errorReporter.report(openTagLocation, LEGACYDELTEMPLATENAMESPACE_REQUIRES_MODIFIABLE);
     }
-    if (!modifiable && !useVariantType.isEmpty()) {
+    if (!modifiable && !useVariantTypeString.isEmpty()) {
       errorReporter.report(openTagLocation, USEVARIANTTYPE_REQUIRES_MODIFIABLE);
     }
     if (modifiable && visibility != Visibility.PUBLIC) {
@@ -151,7 +151,7 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder<TemplateBasicN
         visibility,
         modifiable,
         legacyDeltemplateNamespace,
-        useVariantType,
+        useVariantTypeString,
         params);
   }
 

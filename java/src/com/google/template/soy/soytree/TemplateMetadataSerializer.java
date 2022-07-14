@@ -234,6 +234,12 @@ public final class TemplateMetadataSerializer {
                         filePath,
                         errorReporter))
                 .setIdentifierForDebugging(templateName)
+                .setUseVariantType(
+                    fromProto(
+                        templateProto.getTemplateType().getUseVariantType(),
+                        typeRegistry,
+                        filePath,
+                        errorReporter))
                 .build())
         .setSourceLocation(new SourceLocation(SourceFilePath.create(fileProto.getFilePath())))
         .setVisibility(VISIBILITY_CONVERTER.convert(templateProto.getVisibility()))
@@ -424,7 +430,12 @@ public final class TemplateMetadataSerializer {
               TemplateType.declaredTypeOf(
                   parameters,
                   fromProto(
-                      proto.getTemplate().getReturnType(), typeRegistry, filePath, errorReporter)));
+                      proto.getTemplate().getReturnType(), typeRegistry, filePath, errorReporter),
+                  fromProto(
+                      proto.getTemplate().getUseVariantType(),
+                      typeRegistry,
+                      filePath,
+                      errorReporter)));
         }
       case FUNCTION:
         {
