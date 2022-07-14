@@ -158,7 +158,8 @@ public final class ExprEquivalence {
 
         @Override
         protected Integer visitVeLiteralNode(VeLiteralNode node) {
-          return Objects.hash(node.getId(), node.getName(), node.getType().toString());
+          String type = node.getType() == null ? "" : node.getType().toString();
+          return Objects.hash(node.getId(), node.getName(), type);
         }
 
         @Override
