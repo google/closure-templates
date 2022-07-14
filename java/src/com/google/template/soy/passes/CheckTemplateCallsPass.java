@@ -189,7 +189,6 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
           "boq.townsquare.frontend.ui.components.grid.templates.renderPopoutTooltipArrow", // circular import
           "boq.travel.frontend.core.map.web.layers.hotels.summarycards.content_enable_links_to_embedded_placesheet.templates.relativePath", // circular import
           "boq.travelfrontendhotelssearchweb.component.bookingmodule.hotels.show_organic_prices.templates.bookingModuleHeader", // circular import
-          "boq.travelfrontendhotelssearchweb.component.bookingmodule.hotels.templates.disclaimer", // circular dep
           "boq.travelfrontendhotelssearchweb.home.header.enable_expand_when_reach_bottom.templates.enableExpandWhenScrollToBottom", // circular import
           "boq.travelfrontendhotelssearchweb.home.header.enable_expand_when_scroll_up.templates.enableExpandWhenScrollUp", // circular import
           "boq.visualfrontendui.explorepanel.templates.closeButton",
