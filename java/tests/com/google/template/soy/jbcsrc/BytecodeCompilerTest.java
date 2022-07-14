@@ -292,16 +292,16 @@ public class BytecodeCompilerTest {
                 "/***/",
                 "{template callerTemplate}",
                 "  {@param variant : string}",
-                "  {delcall ns1.del variant=\"$variant\" allowemptydefault=\"true\"/}",
+                "  {delcall delegateForUnitTest variant=\"$variant\" allowemptydefault=\"true\"/}",
                 "{/template}",
                 "",
                 "/** */",
-                "{deltemplate ns1.del variant=\"'v1'\" requirecss=\"ns.foo\"}",
+                "{deltemplate delegateForUnitTest variant=\"'v1'\" requirecss=\"ns.foo\"}",
                 "  v1",
                 "{/deltemplate}",
                 "",
                 "/** */",
-                "{deltemplate ns1.del variant=\"'v2'\" requirecss=\"ns.bar\"}",
+                "{deltemplate delegateForUnitTest variant=\"'v2'\" requirecss=\"ns.bar\"}",
                 "  v2",
                 "{/deltemplate}",
                 "");
@@ -341,7 +341,7 @@ public class BytecodeCompilerTest {
 
     TemplateMetadata templateMetadata = getTemplateMetadata(templates, "ns1.callerTemplate");
     assertThat(templateMetadata.callees()).isEmpty();
-    assertThat(templateMetadata.delCallees()).asList().containsExactly("ns1.del");
+    assertThat(templateMetadata.delCallees()).asList().containsExactly("delegateForUnitTest");
   }
 
   @Test
@@ -1065,10 +1065,13 @@ public class BytecodeCompilerTest {
                 "{namespace ns}",
                 "",
                 "{template callerTemplate}",
-                "  {delcall myApp.myDelegate allowemptydefault=\"true\" /}",
+                "  {delcall delegateForUnitTest allowemptydefault=\"true\" /}",
                 "{/template}",
                 "");
-    SoyFileSetParser parser = SoyFileSetParserBuilder.forFileContents(soyFileContent1).build();
+    SoyFileSetParser parser =
+        SoyFileSetParserBuilder.forFileContents(soyFileContent1)
+            .errorReporter(ErrorReporter.explodeOnErrorsAndIgnoreDeprecations())
+            .build();
     ParseResult parseResult = parser.parse();
     SoyFileSetNode soyTree = parseResult.fileSet();
     FileSetMetadata fileSetMetadata = parseResult.registry();
@@ -1091,7 +1094,7 @@ public class BytecodeCompilerTest {
             .join(
                 "{namespace ns2}",
                 "",
-                "{deltemplate myApp.myDelegate}",
+                "{deltemplate delegateForUnitTest}",
                 "  <span>Hello</span>",
                 "{/deltemplate}",
                 "");
@@ -1268,12 +1271,15 @@ public class BytecodeCompilerTest {
   }
 
   private CompiledTemplates compileFiles(String... soyFileContents) {
-    SoyFileSetParser parser = SoyFileSetParserBuilder.forFileContents(soyFileContents).build();
+    SoyFileSetParser parser =
+        SoyFileSetParserBuilder.forFileContents(soyFileContents)
+            .errorReporter(ErrorReporter.explodeOnErrorsAndIgnoreDeprecations())
+            .build();
     ParseResult parseResult = parser.parse();
     return BytecodeCompiler.compile(
             parseResult.registry(),
             parseResult.fileSet(),
-            ErrorReporter.exploding(),
+            ErrorReporter.explodeOnErrorsAndIgnoreDeprecations(),
             parser.soyFileSuppliers(),
             parser.typeRegistry())
         .get();

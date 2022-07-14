@@ -38,7 +38,7 @@ public final class GenPyCallExprVisitorTest {
           + "{template moo}\n"
           + "  %s\n"
           + "{/template}\n"
-          + "{deltemplate moo.goo}{/deltemplate}\n";
+          + "{deltemplate delegateForUnitTest}{/deltemplate}\n";
 
   @Test
   public void testBasicCall() {
@@ -104,21 +104,25 @@ public final class GenPyCallExprVisitorTest {
 
   @Test
   public void testDelegateCall() {
-    String soyCode = "{@param bar : ?}\n" + "{delcall moo.goo data=\"$bar\" /}";
+    String soyCode = "{@param bar : ?}\n" + "{delcall delegateForUnitTest data=\"$bar\" /}";
     String expectedPyCode =
-        "runtime.get_delegate_fn('moo.goo', '', False)(data.get('bar'), ijData)";
+        "runtime.get_delegate_fn('delegateForUnitTest', '', False)(data.get('bar'), ijData)";
 
     assertThatSoyFile(String.format(SOY_BASE, soyCode)).compilesToSourceContaining(expectedPyCode);
 
-    soyCode = "{@param bar : ?}\n" + "{delcall moo.goo data=\"$bar\" variant=\"'beta'\" /}";
-    expectedPyCode = "runtime.get_delegate_fn('moo.goo', 'beta', False)(data.get('bar'), ijData)";
+    soyCode =
+        "{@param bar : ?}\n" + "{delcall delegateForUnitTest data=\"$bar\" variant=\"'beta'\" /}";
+    expectedPyCode =
+        "runtime.get_delegate_fn('delegateForUnitTest', 'beta', False)(data.get('bar'), ijData)";
 
     assertThatSoyFile(String.format(SOY_BASE, soyCode)).compilesToSourceContaining(expectedPyCode);
 
     soyCode =
         "{@param bar : ?}\n"
-            + "{delcall moo.goo data=\"$bar\" variant=\"'beta'\" allowemptydefault=\"true\" /}";
-    expectedPyCode = "runtime.get_delegate_fn('moo.goo', 'beta', True)(data.get('bar'), ijData)";
+            + "{delcall delegateForUnitTest data=\"$bar\" variant=\"'beta'\""
+            + " allowemptydefault=\"true\" /}";
+    expectedPyCode =
+        "runtime.get_delegate_fn('delegateForUnitTest', 'beta', True)(data.get('bar'), ijData)";
 
     assertThatSoyFile(String.format(SOY_BASE, soyCode)).compilesToSourceContaining(expectedPyCode);
   }

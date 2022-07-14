@@ -174,7 +174,10 @@ public final class SoyCodeForPySubject extends Subject {
   }
 
   private String compileFile() {
-    ParseResult parseResult = SoyFileSetParserBuilder.forFileContents(actual).parse();
+    ParseResult parseResult =
+        SoyFileSetParserBuilder.forFileContents(actual)
+            .errorReporter(ErrorReporter.explodeOnErrorsAndIgnoreDeprecations())
+            .parse();
     SoyFileSetNode node = parseResult.fileSet();
     List<String> fileContents =
         PySrcMain.createVisitor(

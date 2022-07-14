@@ -1280,7 +1280,7 @@ public class RenderVisitorTest {
             + "\n"
             + "/***/\n"
             + "{template callerTemplate}\n"
-            + "  {delcall myApp.myDelegate allowemptydefault=\"true\"}\n"
+            + "  {delcall delegateForUnitTest allowemptydefault=\"true\"}\n"
             + "    {param boo: 'aaaaaah' /}\n"
             + "  {/delcall}\n"
             + "{/template}\n";
@@ -1289,7 +1289,7 @@ public class RenderVisitorTest {
         "{delpackage SecretFeature}\n"
             + "{namespace ns2}\n"
             + "\n"
-            + "{deltemplate myApp.myDelegate}\n"
+            + "{deltemplate delegateForUnitTest}\n"
             + "  {@param boo: ?}\n"
             + // implementation in SecretFeature
             "  111 {$boo}\n"
@@ -1300,7 +1300,10 @@ public class RenderVisitorTest {
 
     // ------ Test with only file 1a in bundle. ------
 
-    parseResult = SoyFileSetParserBuilder.forFileContents(soyFileContent1a).parse();
+    parseResult =
+        SoyFileSetParserBuilder.forFileContents(soyFileContent1a)
+            .errorReporter(ErrorReporter.explodeOnErrorsAndIgnoreDeprecations())
+            .parse();
 
     Predicate<String> activeDelPackageNames = arg -> false;
     assertThat(
@@ -1317,7 +1320,9 @@ public class RenderVisitorTest {
     // ------ Test with both files 1a and 2 in bundle. ------
 
     parseResult =
-        SoyFileSetParserBuilder.forFileContents(soyFileContent1a, soyFileContent2).parse();
+        SoyFileSetParserBuilder.forFileContents(soyFileContent1a, soyFileContent2)
+            .errorReporter(ErrorReporter.explodeOnErrorsAndIgnoreDeprecations())
+            .parse();
 
     activeDelPackageNames = arg -> false;
     assertThat(
