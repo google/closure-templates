@@ -1058,7 +1058,7 @@ TOKEN_MGR_DECLS: {
   < ALIAS_OPEN: "{alias" <WS> > : EXPR
 | < NAMESPACE_OPEN: "{namespace" <WS> > : IN_CMD_TAG
 | < DELPACKAGE_OPEN: "{delpackage" <WS> > : IN_CMD_TAG
-| < MODNAME_OPEN: "{modName" <WS> > : IN_CMD_TAG
+| < MODNAME_OPEN: "{modname" <WS> > : IN_CMD_TAG
 | < IMPORT_OPEN: "import" >
 | < CONST_OPEN: "{" ("export ")? "const" <WS> > : EXPR
 | < SEMICOLON: ";"      >
