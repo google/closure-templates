@@ -144,4 +144,6 @@ At render time, when a delegate call needs to be resolved,
 
 1.  Use the delegate implementation with matching variant, if there is one.
 2.  Otherwise, use the delegate implementation with no variant, if there is one.
-3.  Otherwise, an error occurs.
+3.  Otherwise, if the `delcall` has the attribute `allowemptydefault="true"`,
+    then the call renders to the empty string.
+4.  Otherwise, an error occurs.
