@@ -107,7 +107,7 @@ public final class TemplateBasicNode extends TemplateNode {
     return new TemplateBasicNode(this, copyState);
   }
 
-  public boolean getModifiable() {
+  public boolean isModifiable() {
     return modifiable;
   }
 

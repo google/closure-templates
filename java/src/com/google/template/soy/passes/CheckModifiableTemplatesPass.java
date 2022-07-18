@@ -69,7 +69,7 @@ final class CheckModifiableTemplatesPass implements CompilerFilePass {
     for (TemplateNode templateNode : file.getTemplates()) {
       if (templateNode instanceof TemplateBasicNode) {
         TemplateBasicNode templateBasicNode = (TemplateBasicNode) templateNode;
-        if (templateBasicNode.getModifiable() && file.getDelPackageName() != null) {
+        if (templateBasicNode.isModifiable() && file.getDelPackageName() != null) {
           errorReporter.report(templateNode.getSourceLocation(), MODIFIABLE_WITH_MODNAME);
         }
         if (templateBasicNode.getModifiesExpr() != null
