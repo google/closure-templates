@@ -32,13 +32,13 @@ final class CheckModifiableTemplatesPass implements CompilerFilePass {
 
   private static final SoyErrorKind MODIFIES_WITHOUT_MODNAME =
       SoyErrorKind.of(
-          "\"modifies\" can only be used in a file with a '{'modName'}' command, unless it is used "
+          "\"modifies\" can only be used in a file with a '{'modname'}' command, unless it is used "
               + "on a variant template. If this is a non-variant template, did you forget to add a "
-              + "'{'modName'}'? Or did you forget to mark this template as a variant?");
+              + "'{'modname'}'? Or did you forget to mark this template as a variant?");
 
   private static final SoyErrorKind MODIFIABLE_WITH_MODNAME =
       SoyErrorKind.of(
-          "\"modifiable\" templates cannot be placed in files with a '{'modName'}' command.");
+          "\"modifiable\" templates cannot be placed in files with a '{'modname'}' command.");
 
   private static final SoyErrorKind INCOMPATIBLE_SIGNATURE =
       SoyErrorKind.of(
