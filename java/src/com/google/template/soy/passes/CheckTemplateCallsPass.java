@@ -237,12 +237,6 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
           "boq.ads.townsquare.marketplaceui.components.componentregistry.templates.ghost", // cl/455004511
           "boq.ads.townsquare.marketplaceui.components.componentregistry.templates.type");
 
-  private static final ImmutableSet<String> DEFAULT_DELTEMPLATE_FILE_PREFIX_PASSLIST =
-      ImmutableSet.of(
-          // Most liikely unused
-          // https://groups.google.com/a/google.com/g/soy-dev/c/RZ2p82d8t_4/m/_sNkjqPYAwAJ
-          "assistant/display/cast/");
-
   private static final ImmutableSet<String> ALLOWEMPTYDEFAULT_PASSLIST =
       ImmutableSet.of(
           "delegateForUnitTest", // For unit test
@@ -823,8 +817,7 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
         checkCallParamNames(node, delTemplateType);
         // We don't call checkPassesUnusedParams here because we might not know all delegates.
       }
-      if (shouldEnforceDefaultDeltemplate(node.getDelCalleeName(), callerFilename)
-          && !node.allowEmptyDefault()) {
+      if (shouldEnforceDefaultDeltemplate(node.getDelCalleeName()) && !node.allowEmptyDefault()) {
         ImmutableList<TemplateMetadata> defaultImpl =
             potentialCallees.stream()
                 .filter(
@@ -872,16 +865,8 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
           || callerFilename.contains("/java_src/soy/integrationtest");
     }
 
-    boolean shouldEnforceDefaultDeltemplate(String delCalleeName, String callerFilename) {
-      if (DEFAULT_DELTEMPLATE_PASSLIST.contains(delCalleeName)) {
-        return false;
-      }
-      for (String prefix : DEFAULT_DELTEMPLATE_FILE_PREFIX_PASSLIST) {
-        if (callerFilename.startsWith(prefix)) {
-          return false;
-        }
-      }
-      return true;
+    boolean shouldEnforceDefaultDeltemplate(String delCalleeName) {
+      return !DEFAULT_DELTEMPLATE_PASSLIST.contains(delCalleeName);
     }
 
     void checkFnCall(TemplateNode callerTemplate, PrintNode printNode, FunctionNode fnNode) {
