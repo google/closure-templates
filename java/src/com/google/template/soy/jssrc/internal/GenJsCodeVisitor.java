@@ -855,7 +855,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     }
 
     if (generatePositionalParamsSignature) {
-      JsDoc jsDoc = generateFunctionJsDoc(node, alias, /*isDelegate=*/ true);
+      JsDoc jsDoc = generateFunctionJsDoc(node, alias, /*suppressCheckTypes=*/ false);
       Expression publicFunction = Expression.function(jsDoc, generateDelegateFunction(node, alias));
       JsDoc positionalFunctionDoc = generatePositionalFunctionJsDoc(node);
       Expression positionalFunction =
@@ -886,7 +886,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
                 dottedIdNoRequire(alias + "$"), positionalFunction, positionalFunctionDoc));
       }
     } else {
-      JsDoc jsDoc = generateFunctionJsDoc(node, alias, /*isDelegate=*/ false);
+      JsDoc jsDoc = generateFunctionJsDoc(node, alias, /*suppressCheckTypes=*/ true);
       String type = jsDoc.params().get(1).type();
       Expression function =
           Expression.function(
@@ -980,7 +980,8 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     return jsDocBuilder.build();
   }
 
-  protected JsDoc generateFunctionJsDoc(TemplateNode node, String alias, boolean isDelegate) {
+  protected JsDoc generateFunctionJsDoc(
+      TemplateNode node, String alias, boolean suppressCheckTypes) {
     JsDoc.Builder jsDocBuilder = JsDoc.builder();
     // TODO(b/177856412): rename to something that doesn't begin with {@code opt_}
     if (hasOnlyImplicitParams(node)) {
@@ -994,7 +995,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     }
     addIjDataParam(jsDocBuilder, /*forPositionalSignature=*/ false);
     addReturnTypeAndAnnotations(node, jsDocBuilder);
-    if (!isDelegate) {
+    if (suppressCheckTypes) {
       // TODO(b/11787791): make the checkTypes suppression more fine grained.
       jsDocBuilder.addParameterizedAnnotation("suppress", "checkTypes");
     } else {

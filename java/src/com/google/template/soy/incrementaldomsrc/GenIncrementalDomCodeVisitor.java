@@ -406,7 +406,8 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   }
 
   @Override
-  protected JsDoc generateFunctionJsDoc(TemplateNode node, String alias, boolean isDelegate) {
+  protected JsDoc generateFunctionJsDoc(
+      TemplateNode node, String alias, boolean suppressCheckTypes) {
     JsDoc.Builder jsDocBuilder = JsDoc.builder();
     maybeAddRenderer(jsDocBuilder, node);
     // This is true if there are any calls with data="all" (which implicitly add optional parameters
@@ -427,7 +428,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     addIjDataParam(jsDocBuilder, /*forPositionalSignature=*/ false);
 
     addReturnTypeAndAnnotations(node, jsDocBuilder);
-    if (!isDelegate) {
+    if (suppressCheckTypes) {
       // TODO(b/11787791): make the checkTypes suppression more fine grained.
       jsDocBuilder.addParameterizedAnnotation("suppress", "checkTypes");
     } else {
