@@ -23,6 +23,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.internal.i18n.SoyBidiUtils;
 import com.google.template.soy.pysrc.SoyPySrcOptions;
@@ -31,6 +32,7 @@ import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyExprUtils;
 import com.google.template.soy.pysrc.restricted.PyFunctionExprBuilder;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
+import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamNode;
@@ -59,6 +61,7 @@ import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.SwitchCaseNode;
 import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
+import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.VeLogNode;
@@ -101,6 +104,11 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
   /** @see LocalVariableStack */
   @VisibleForTesting protected LocalVariableStack localVarExprs;
+
+  private static final SoyErrorKind DELEGATE_TEMPLATES_UNSUPPORTED =
+      SoyErrorKind.of("Deltemplates are not supported in python.");
+  private static final SoyErrorKind MODIFIABLE_TEMPLATES_UNSUPPORTED =
+      SoyErrorKind.of("Modifiable templates are not supported in python.");
 
   GenPyCodeVisitor(
       SoyPySrcOptions pySrcOptions,
@@ -369,24 +377,27 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
      */
     @Override
     protected void visitTemplateDelegateNode(TemplateDelegateNode node) {
-      // Generate the template first, before registering the delegate function.
-      visitTemplateNode(node);
+      errorReporter.report(node.getSourceLocation(), DELEGATE_TEMPLATES_UNSUPPORTED);
+    }
 
-      // Register the function as a delegate function.
-      String delTemplateIdExprText = "'" + node.getDelTemplateName() + "'";
-      String delTemplateVariantExprText = "'" + node.getDelTemplateVariant() + "'";
-      pyCodeBuilder.appendLine(
-          "runtime.register_delegate_fn(",
-          delTemplateIdExprText,
-          ", ",
-          delTemplateVariantExprText,
-          ", ",
-          node.getDelPriority().toString(),
-          ", ",
-          node.getLocalTemplateSymbol(),
-          ", '",
-          node.getLocalTemplateSymbol(),
-          "')");
+    /**
+     * Visit a TemplateDelegateNode and generate the corresponding function along with the delegate
+     * registration.
+     *
+     * <p>Example:
+     *
+     * <pre>
+     * def myfunc(data=None, ijData=None):
+     *   ...
+     * runtime.register_delegate_fn('delname', 'delvariant', 0, myfunc, 'myfunc')
+     * </pre>
+     */
+    @Override
+    protected void visitTemplateBasicNode(TemplateBasicNode node) {
+      if (node.isModifiable() || node.getModifiesExpr() != null) {
+        errorReporter.report(node.getSourceLocation(), MODIFIABLE_TEMPLATES_UNSUPPORTED);
+      }
+      visitTemplateNode(node);
     }
 
     @Override
@@ -729,6 +740,11 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
       // Add a mapping for generating future references to this local var.
       localVarExprs.addVariable(node.getVarName(), new PyExpr(generatedVarName, Integer.MAX_VALUE));
+    }
+
+    @Override
+    protected void visitCallDelegateNode(CallDelegateNode node) {
+      errorReporter.report(node.getSourceLocation(), DELEGATE_TEMPLATES_UNSUPPORTED);
     }
 
     /**
