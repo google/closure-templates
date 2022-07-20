@@ -2,6 +2,8 @@
 
 # Creating an External Function
 
+go/soy-externs
+
 Soy allows users to write custom functions that templates can call. This is
 useful for when there is some logic that is difficult or impossible to express
 using Soy language features and for which there is not an existing
