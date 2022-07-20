@@ -19,16 +19,23 @@ workspace(name = "com_google_closure_templates")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("@bazel_tools//tools/build_defs/repo:jvm.bzl", "jvm_maven_import_external")
 
-RULES_JVM_EXTERNAL_TAG = "3.3"
-
-RULES_JVM_EXTERNAL_SHA = "d85951a92c0908c80bd8551002d66cb23c3434409c814179c0ff026b53544dab"
+RULES_JVM_EXTERNAL_TAG = "4.2"
+RULES_JVM_EXTERNAL_SHA = "cd1a77b7b02e8e008439ca76fd34f5b07aecb8c752961f9640dea15e9e5ba1ca"
 
 http_archive(
     name = "rules_jvm_external",
-    sha256 = RULES_JVM_EXTERNAL_SHA,
     strip_prefix = "rules_jvm_external-%s" % RULES_JVM_EXTERNAL_TAG,
+    sha256 = RULES_JVM_EXTERNAL_SHA,
     url = "https://github.com/bazelbuild/rules_jvm_external/archive/%s.zip" % RULES_JVM_EXTERNAL_TAG,
 )
+
+load("@rules_jvm_external//:repositories.bzl", "rules_jvm_external_deps")
+
+rules_jvm_external_deps()
+
+load("@rules_jvm_external//:setup.bzl", "rules_jvm_external_setup")
+
+rules_jvm_external_setup()
 
 load("@rules_jvm_external//:defs.bzl", "maven_install")
 load("@rules_jvm_external//:specs.bzl", "maven")
@@ -42,49 +49,48 @@ maven_install(
     artifacts = [
         "args4j:args4j:2.0.23",
         "com.google.code.findbugs:jsr305:3.0.2",
-        "com.google.code.gson:gson:2.7",
-        "com.google.common.html.types:types:1.0.7",
-        "com.google.errorprone:error_prone_annotations:2.10.0",
+        "com.google.code.gson:gson:2.9.0",
+        "com.google.common.html.types:types:1.0.8",
+        "com.google.errorprone:error_prone_annotations:2.14.0",
         "com.google.escapevelocity:escapevelocity:0.9.1",
-        "com.google.flogger:flogger:0.5.1",
-        "com.google.flogger:flogger-system-backend:0.5.1",
-        "com.google.flogger:google-extensions:0.5.1",
-        "com.google.guava:guava:31.0.1-jre",
+        "com.google.flogger:flogger:0.7.4",
+        "com.google.flogger:flogger-system-backend:0.7.4",
+        "com.google.flogger:google-extensions:0.7.4",
+        "com.google.guava:guava:31.1-jre",
         maven.artifact(
             "com.google.guava",
             "guava-testlib",
-            "31.0.1-jre",
+            "31.1-jre",
             testonly = True
         ),
-        "com.google.inject.extensions:guice-multibindings:4.1.0",
-        "com.google.inject:guice:4.1.0",
+        "com.google.inject:guice:5.1.0",
         maven.artifact(
             "com.google.truth",
             "truth",
-            "1.0.1",
+            "1.1.3",
             testonly = True,
         ),
         maven.artifact(
             "com.google.truth.extensions",
             "truth-java8-extension",
-            "1.0.1",
+            "1.1.3",
             testonly = True
         ),
-        "com.ibm.icu:icu4j:57.1",
+        "com.ibm.icu:icu4j:71.1",
         "javax.inject:javax.inject:1",
         maven.artifact(
             "junit",
             "junit",
-            "4.13.1",
+            "4.13.2",
             testonly = True,
         ),
         "net.java.dev.javacc:javacc:6.1.2",
-        "org.apache.ant:ant:1.10.9",
-        "org.json:json:20160212",
-        "org.ow2.asm:asm:7.0",
-        "org.ow2.asm:asm-commons:7.0",
-        "org.ow2.asm:asm-tree:7.0",
-        "org.ow2.asm:asm-util:7.0",
+        "org.apache.ant:ant:1.10.12",
+        "org.json:json:20211205",
+        "org.ow2.asm:asm:9.3",
+        "org.ow2.asm:asm-commons:9.3",
+        "org.ow2.asm:asm-tree:9.3",
+        "org.ow2.asm:asm-util:9.3",
     ],
     maven_install_json = "//:maven_install.json",
     override_targets = {
@@ -102,8 +108,8 @@ pinned_maven_install()
 
 jvm_maven_import_external(
     name = "com_google_auto_value_auto_value",
-    artifact = "com.google.auto.value:auto-value:1.7.4",
-    artifact_sha256 = "8320edb037b62d45bc05ae4e1e21941255ef489e950519ef14d636d66870da64",
+    artifact = "com.google.auto.value:auto-value:1.9",
+    artifact_sha256 = "fd39087fa111da2b12b14675fee740043f0e78e4bfc7055cf3443bfffa3f572b",
     extra_build_file_content = """
 java_plugin(
     name = "AutoAnnotationProcessor",
@@ -155,8 +161,8 @@ java_library(
 # This isn't part of the maven_install above so we can set a custom visibility.
 jvm_maven_import_external(
     name = "com_google_auto_value_auto_value_annotations",
-    artifact = "com.google.auto.value:auto-value-annotations:1.7.4",
-    artifact_sha256 = "fedd59b0b4986c342f6ab2d182f2a4ee9fceb2c7e2d5bdc4dc764c92394a23d3",
+    artifact = "com.google.auto.value:auto-value-annotations:1.9",
+    artifact_sha256 = "fa5469f4c44ee598a2d8f033ab0a9dcbc6498a0c5e0c998dfa0c2adf51358044",
     default_visibility = [
         "@com_google_auto_value_auto_value//:__pkg__",
         "@maven//:__pkg__",
@@ -168,26 +174,20 @@ jvm_maven_import_external(
 # Apache 2.0
 http_archive(
     name = "rules_java",
-    sha256 = "52423cb07384572ab60ef1132b0c7ded3a25c421036176c0273873ec82f5d2b2",
-    urls = [
-        "https://github.com/bazelbuild/rules_java/releases/download/0.1.0/rules_java-0.1.0.tar.gz",
-    ],
+    url = "https://github.com/bazelbuild/rules_java/releases/download/4.0.0/rules_java-4.0.0.tar.gz",
+    sha256 = "34b41ec683e67253043ab1a3d1e8b7c61e4e8edefbcad485381328c934d072fe",
 )
-
 load("@rules_java//java:repositories.bzl", "rules_java_dependencies", "rules_java_toolchains")
-
 rules_java_dependencies()
-
 rules_java_toolchains()
 
 # Apache 2.0
 http_archive(
     name = "rules_proto",
-    sha256 = "66bfdf8782796239d3875d37e7de19b1d94301e8972b3cbd2446b332429b4df1",
-    strip_prefix = "rules_proto-4.0.0",
+    sha256 = "e017528fd1c91c5a33f15493e3a398181a9e821a804eb7ff5acdd1d2d6c2b18d",
+    strip_prefix = "rules_proto-4.0.0-3.20.0",
     urls = [
-        "https://mirror.bazel.build/github.com/bazelbuild/rules_proto/archive/refs/tags/4.0.0.tar.gz",
-        "https://github.com/bazelbuild/rules_proto/archive/refs/tags/4.0.0.tar.gz",
+        "https://github.com/bazelbuild/rules_proto/archive/refs/tags/4.0.0-3.20.0.tar.gz",
     ],
 )
 
