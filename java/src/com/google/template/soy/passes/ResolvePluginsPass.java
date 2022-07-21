@@ -16,6 +16,7 @@
 
 package com.google.template.soy.passes;
 
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.exprtree.CallableExprBuilder;
 import com.google.template.soy.exprtree.ExprNode;
@@ -105,6 +106,7 @@ final class ResolvePluginsPass implements CompilerFilePass {
             trySetFunction(node);
           }
 
+          @CanIgnoreReturnValue
           private boolean trySetFunction(FunctionNode node) {
             Object impl =
                 resolver.lookupSoyFunction(
