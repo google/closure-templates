@@ -17,6 +17,7 @@
 package com.google.template.soy.passes;
 
 import com.google.common.base.Joiner;
+import com.google.common.base.Preconditions;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -57,6 +58,11 @@ final class CheckModifiableTemplatesPass implements CompilerFilePass {
           "A single Soy file can only modify templates from a single external namespace. "
               + "Namespaces: {0}.");
 
+  private static final SoyErrorKind UNRESOLVED_MODIFIES_EXPR =
+      SoyErrorKind.of(
+          "The \"modifies\" expression could not be statically resolved to a valid template "
+              + "literal.");
+
   private final ErrorReporter errorReporter;
 
   CheckModifiableTemplatesPass(ErrorReporter errorReporter) {
@@ -77,15 +83,20 @@ final class CheckModifiableTemplatesPass implements CompilerFilePass {
             && file.getDelPackageName() == null) {
           errorReporter.report(templateNode.getSourceLocation(), MODIFIES_WITHOUT_MODNAME);
         }
-        validateModifiesAttribute(templateBasicNode);
+        validateModifiesAttribute(templateBasicNode, file, modifiedNamespaces);
         validateVariantExpr(templateBasicNode);
-        validateSingleFileIsModded(templateBasicNode, file, modifiedNamespaces);
       }
     }
   }
 
-  private void validateModifiesAttribute(TemplateBasicNode templateBasicNode) {
+  private void validateModifiesAttribute(
+      TemplateBasicNode templateBasicNode, SoyFileNode file, Set<String> modifiedNamespaces) {
     if (templateBasicNode.getModifiesExpr() == null) {
+      return;
+    }
+    if (!(templateBasicNode.getModifiesExpr().getRoot() instanceof TemplateLiteralNode)) {
+      errorReporter.report(
+          templateBasicNode.getModifiesExpr().getSourceLocation(), UNRESOLVED_MODIFIES_EXPR);
       return;
     }
     SoyType modifiedTemplateType = templateBasicNode.getModifiesExpr().getRoot().getType();
@@ -97,6 +108,7 @@ final class CheckModifiableTemplatesPass implements CompilerFilePass {
           modifiedTemplateType.toString(),
           modifyingType.toString());
     }
+    validateSingleFileIsModded(templateBasicNode, file, modifiedNamespaces);
   }
 
   private void validateVariantExpr(TemplateBasicNode templateBasicNode) {
@@ -117,9 +129,10 @@ final class CheckModifiableTemplatesPass implements CompilerFilePass {
 
   private void validateSingleFileIsModded(
       TemplateBasicNode templateBasicNode, SoyFileNode file, Set<String> modifiedNamespaces) {
-    if (templateBasicNode.getModifiesExpr() == null) {
-      return;
-    }
+    // Invariants checked in validateModifiesAttribute().
+    Preconditions.checkNotNull(templateBasicNode.getModifiesExpr());
+    Preconditions.checkState(
+        templateBasicNode.getModifiesExpr().getRoot() instanceof TemplateLiteralNode);
     TemplateLiteralNode literal =
         (TemplateLiteralNode) templateBasicNode.getModifiesExpr().getRoot();
     String namespace =
