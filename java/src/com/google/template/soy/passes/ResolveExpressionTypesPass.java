@@ -256,6 +256,8 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
       SoyErrorKind.of("Accessing item in empty list.");
   private static final SoyErrorKind EMPTY_LIST_FOREACH =
       SoyErrorKind.of("Cannot iterate over empty list.");
+  private static final SoyErrorKind EMPTY_LIST_COMPREHENSION =
+      SoyErrorKind.of("Cannot use list comprehension over empty list.");
   private static final SoyErrorKind EMPTY_MAP_ACCESS =
       SoyErrorKind.of("Accessing item in empty map.");
   private static final SoyErrorKind INVALID_TYPE_SUBSTITUTION =
@@ -1029,9 +1031,16 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
       } else if (node.getListExpr().getType().getKind() == SoyType.Kind.UNKNOWN) {
         node.getListIterVar().setType(UnknownType.getInstance());
       } else {
-        // Otherwise, use the list element type to set the type of the iterator ($var in this
-        // example).
-        node.getListIterVar().setType(((ListType) node.getListExpr().getType()).getElementType());
+        SoyType listElementType = ((ListType) node.getListExpr().getType()).getElementType();
+        if (listElementType == null) {
+          // Report an error if listExpr was the empty list
+          errorReporter.report(node.getListExpr().getSourceLocation(), EMPTY_LIST_COMPREHENSION);
+          node.getListIterVar().setType(UnknownType.getInstance());
+        } else {
+          // Otherwise, use the list element type to set the type of the iterator ($var in this
+          // example).
+          node.getListIterVar().setType(listElementType);
+        }
       }
 
       if (node.getIndexVar() != null) {
