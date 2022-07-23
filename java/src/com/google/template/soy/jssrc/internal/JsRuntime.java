@@ -129,6 +129,8 @@ public final class JsRuntime {
 
   public static final Expression SOY_REGISTER_DELEGATE_FN = SOY.dotAccess("$$registerDelegateFn");
 
+  public static final Expression SOY_ALIAS_DELEGATE_ID = SOY.dotAccess("$$aliasDelegateId");
+
   public static final Expression SOY_GET_DELTEMPLATE_ID = SOY.dotAccess("$$getDelTemplateId");
 
   public static final Expression SOY_IS_LOCALE_RTL = SOY.dotAccess("$$IS_LOCALE_RTL");
@@ -165,6 +167,8 @@ public final class JsRuntime {
    * <p>TODO(b/177856412): rename to something that doesn't begin with {@code opt_}
    */
   public static final Expression OPT_DATA = id(StandardNames.OPT_DATA);
+
+  public static final Expression OPT_VARIANT = id(StandardNames.OPT_VARIANT);
 
   /** A constant for the template parameter {@code $ijData}. */
   public static final Expression IJ_DATA = id(StandardNames.DOLLAR_IJDATA);

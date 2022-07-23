@@ -179,15 +179,19 @@ public final class TemplateMetadataSerializer {
         TEMPLATE_KIND_CONVERTER.convert(templateProto.getTemplateKind());
     @Nullable String delPackageName = emptyToNull(fileProto.getDelpackage());
     String templateName;
+    String variant = templateProto.getDelTemplateVariant();
     switch (templateKind) {
       case ELEMENT:
       case BASIC:
         templateName =
             TemplateNodeBuilder.combineNsAndName(
                 fileProto.getNamespace(), templateProto.getTemplateName());
+        if (templateProto.getTemplateType().getIsModifiable()
+            || templateProto.getTemplateType().getIsModifying()) {
+          builder.setDelTemplateVariant(variant).setDelTemplateName(templateName);
+        }
         break;
       case DELTEMPLATE:
-        String variant = templateProto.getDelTemplateVariant();
         String delTemplateName = templateProto.getTemplateName();
         templateName =
             TemplateNodeBuilder.combineNsAndName(
@@ -240,6 +244,10 @@ public final class TemplateMetadataSerializer {
                         typeRegistry,
                         filePath,
                         errorReporter))
+                .setModifiable(templateProto.getTemplateType().getIsModifiable())
+                .setModifying(templateProto.getTemplateType().getIsModifying())
+                .setLegacyDeltemplateNamespace(
+                    templateProto.getTemplateType().getLegacyDeltemplateNamespace())
                 .build())
         .setSourceLocation(new SourceLocation(SourceFilePath.create(fileProto.getFilePath())))
         .setVisibility(VISIBILITY_CONVERTER.convert(templateProto.getVisibility()))
@@ -435,7 +443,10 @@ public final class TemplateMetadataSerializer {
                       proto.getTemplate().getUseVariantType(),
                       typeRegistry,
                       filePath,
-                      errorReporter)));
+                      errorReporter),
+                  proto.getTemplate().getIsModifiable(),
+                  proto.getTemplate().getIsModifying(),
+                  proto.getTemplate().getLegacyDeltemplateNamespace()));
         }
       case FUNCTION:
         {

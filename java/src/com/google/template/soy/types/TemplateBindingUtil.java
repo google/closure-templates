@@ -105,7 +105,8 @@ public final class TemplateBindingUtil {
             .filter((parameter) -> unboundParameters.contains(parameter.getName()))
             .collect(toImmutableList());
     builder.setIdentifierForDebugging(
-        TemplateType.stringRepresentation(newParameters, base.getContentKind(), ImmutableSet.of()));
+        TemplateType.stringRepresentation(
+            newParameters, base.getContentKind(), ImmutableSet.of(), /*isModifiable=*/ false));
     builder.setParameters(newParameters);
     return typeRegistry.internTemplateType(builder.build());
   }

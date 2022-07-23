@@ -21,7 +21,9 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.soytree.SoyNode.Kind;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
@@ -49,6 +51,8 @@ public final class TemplateBasicNode extends TemplateNode {
 
   /** The "usevarianttype" attribute, as a string. */
   private final String useVariantTypeString;
+
+  private String variantString = null;
 
   /**
    * The parsed "usevarianttype" type. null is used to express that the type has not been resolved
@@ -156,5 +160,40 @@ public final class TemplateBasicNode extends TemplateNode {
         "if usevarianttype is set, resolveUseVariantType() needs to be called to resolve the type"
             + " before getUseVariantType() is used");
     return useVariantType;
+  }
+
+  /** Returns the delegate template variant, as a string */
+  public String getDelTemplateVariant() {
+    if (variantString != null) {
+      return variantString;
+    }
+    return resolveVariantExpression();
+  }
+
+  /**
+   * Calculate the string version of the variant expression.
+   *
+   * <p>This is done lazily so that global references can be resolved. This is not ideal since
+   * nothing guarantees that resolution happens before access.
+   *
+   * <p>TODO(b/233903316): Check the set of valid types.
+   */
+  private String resolveVariantExpression() {
+    if (getVariantExpr() == null) {
+      variantString = "";
+      return variantString;
+    }
+    ExprNode exprNode = getVariantExpr().getRoot();
+    if (exprNode instanceof GlobalNode) {
+      GlobalNode globalNode = (GlobalNode) exprNode;
+      // This global was not substituted.  This happens when TemplateRegistries are built for
+      // message extraction and parseinfo generation.  To make this 'work' we just use the
+      // Global name for the variant value.  This is fine and will help catch some errors.
+      // Because these nodes won't be used for code generation this should be safe. For this
+      // reason we also don't store the key, instead we just return it.
+      return globalNode.getName();
+    }
+    variantString = TemplateNode.variantExprToString(getVariantExpr().getRoot());
+    return variantString;
   }
 }

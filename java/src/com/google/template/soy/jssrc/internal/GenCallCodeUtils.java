@@ -83,7 +83,12 @@ public class GenCallCodeUtils {
         // only basic templates are supported for now.
         // deltemplates require the object style to support the relatively weak type checking we
         // perform on them.  elements could be supported with some changes to the base class.
-        && type.getTemplateKind() == TemplateType.TemplateKind.BASIC;
+        && type.getTemplateKind() == TemplateType.TemplateKind.BASIC
+        // templates with legacy deltemplate namespaces can't use positional args, because delcalls
+        // look up the map at the call site and call it directly... and we need to support
+        // data="all". The alternative is more involved, we need to mutate the CallDelegateNodes
+        // to CallBasicNodes so that the correct wrapper template is called.
+        && type.getLegacyDeltemplateNamespace().isEmpty();
   }
 
   /** Instance of DelTemplateNamer to use. */
@@ -169,18 +174,33 @@ public class GenCallCodeUtils {
               translationContext,
               errorReporter,
               exprTranslator));
+      maybeAddVariantParam(callNode, exprTranslator, params);
       call = callee.positionalStyle().get().call(params);
     } else {
-      Expression objToPass =
+      List<Expression> params = new ArrayList<>();
+      params.add(
           genObjToPass(
-              callNode, templateAliases, translationContext, errorReporter, exprTranslator);
-
-      call = callee.objectStyle().call(objToPass, JsRuntime.IJ_DATA);
+              callNode, templateAliases, translationContext, errorReporter, exprTranslator));
+      params.add(JsRuntime.IJ_DATA);
+      maybeAddVariantParam(callNode, exprTranslator, params);
+      call = callee.objectStyle().call(params);
     }
     if (callNode.getEscapingDirectives().isEmpty()) {
       return call;
     }
     return applyEscapingDirectives(call, callNode);
+  }
+
+  /**
+   * Adds a parameter expression intended for opt_variant to the end of params, if the call has a
+   * variant expression. The compiler enforces that the target of any call with "variant" has a
+   * "usevarianttype" attribute, so the callee template will have the opt_variant param generated.
+   */
+  public static void maybeAddVariantParam(
+      CallNode callNode, TranslateExprNodeVisitor exprTranslator, List<Expression> params) {
+    if (callNode instanceof CallBasicNode && ((CallBasicNode) callNode).getVariantExpr() != null) {
+      params.add(exprTranslator.exec(((CallBasicNode) callNode).getVariantExpr()));
+    }
   }
 
   public List<Expression> getPositionalParams(

@@ -590,6 +590,13 @@ const DELEGATE_REGISTRY_FUNCTIONS_ = {};
 
 
 /**
+ * Map from alias id to the actual key stored in the deltemplate map.
+ * @const {!Object<string>}
+ */
+const DELEGATE_ALIASES_ = {};
+
+
+/**
  * Returns a function for an empty deltemplate.
  *
  * @param {string} delTemplateId The name of the template.
@@ -645,6 +652,21 @@ const $$registerDelegateFn = function(
 
 
 /**
+ * Registers a mod template name alias.
+ * @param {string} aliasId An alias
+ * @param {string} delTemplateId The id stored in the map
+ */
+const $$aliasDelegateId = function(aliasId, delTemplateId) {
+  if (DELEGATE_ALIASES_['key_' + aliasId]) {
+    throw Error(
+        'legacydeltemplatenamespace "' + aliasId + '" has already been ' +
+        'registered as an alias of "' + DELEGATE_ALIASES_[aliasId] + '".');
+  }
+  DELEGATE_ALIASES_['key_' + aliasId] = delTemplateId;
+};
+
+
+/**
  * Retrieves the (highest-priority) implementation that has been registered for
  * a given delegate template key (id and variant). If no implementation has
  * been registered for the key, then the fallback is the same id with empty
@@ -661,11 +683,12 @@ const $$registerDelegateFn = function(
  */
 const $$getDelegateFn = function(
     delTemplateId, delTemplateVariant, allowsEmptyDefault) {
+  const id = DELEGATE_ALIASES_['key_' + delTemplateId] || delTemplateId;
   let delFn =
-      DELEGATE_REGISTRY_FUNCTIONS_['key_' + delTemplateId + ':' + delTemplateVariant];
+      DELEGATE_REGISTRY_FUNCTIONS_['key_' + id + ':' + delTemplateVariant];
   if (!delFn && delTemplateVariant !== '') {
     // Fallback to empty variant.
-    delFn = DELEGATE_REGISTRY_FUNCTIONS_['key_' + delTemplateId + ':'];
+    delFn = DELEGATE_REGISTRY_FUNCTIONS_['key_' + id + ':'];
   }
 
   if (delFn) {
@@ -674,7 +697,7 @@ const $$getDelegateFn = function(
     return $$EMPTY_TEMPLATE_FN_;
   } else {
     throw Error(
-        'Found no active impl for delegate call to "' + delTemplateId +
+        'Found no active impl for delegate call to "' + id +
         (delTemplateVariant ? ':' + delTemplateVariant : '') +
         '" (and delcall does not set allowemptydefault="true").');
   }
@@ -2509,6 +2532,7 @@ exports = {
   $$coerceToBoolean,
   $$makeEmptyTemplateFn,
   $$registerDelegateFn,
+  $$aliasDelegateId,
   $$getDelTemplateId,
   $$getDelegateFn,
   $$escapeHtml,

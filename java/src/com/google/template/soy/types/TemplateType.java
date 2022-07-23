@@ -121,6 +121,15 @@ public abstract class TemplateType extends SoyType {
 
   public abstract SoyType getUseVariantType();
 
+  // TODO(b/239930786): These are only needed for supporting legacydeltemplatenamespace.
+  public abstract boolean isModifiable();
+
+  // TODO(b/239930786): These are only needed for supporting legacydeltemplatenamespace.
+  public abstract boolean isModifying();
+
+  // TODO(b/239930786): These are only needed for supporting legacydeltemplatenamespace.
+  public abstract String getLegacyDeltemplateNamespace();
+
   public abstract Builder toBuilder();
 
   public static Builder builder() {
@@ -149,6 +158,12 @@ public abstract class TemplateType extends SoyType {
     public abstract Builder setIdentifierForDebugging(String identifierForDebugging);
 
     public abstract Builder setUseVariantType(SoyType useVariantType);
+
+    public abstract Builder setModifiable(boolean isModifiable);
+
+    public abstract Builder setModifying(boolean setModifying);
+
+    public abstract Builder setLegacyDeltemplateNamespace(String legacyDeltemplateNamespace);
 
     abstract TemplateType autoBuild();
 
@@ -338,7 +353,12 @@ public abstract class TemplateType extends SoyType {
   }
 
   public static TemplateType declaredTypeOf(
-      Iterable<Parameter> parameters, SoyType returnType, SoyType useVariantType) {
+      Iterable<Parameter> parameters,
+      SoyType returnType,
+      SoyType useVariantType,
+      boolean isModifiable,
+      boolean isModifying,
+      String legacyDeltemplateNamespace) {
     TemplateContentKind templateContentKind = fromType(returnType);
     SanitizedContentKind contentKind = templateContentKind.getSanitizedContentKind();
     return builder()
@@ -352,10 +372,13 @@ public abstract class TemplateType extends SoyType {
         // data=all is banned on declared templates.
         .setDataAllCallSituations(ImmutableList.of())
         .setIdentifierForDebugging(
-            stringRepresentation(parameters, templateContentKind, ImmutableSet.of()))
+            stringRepresentation(parameters, templateContentKind, ImmutableSet.of(), isModifiable))
         .setAllowExtraAttributes(false)
         .setReservedAttributes(ImmutableSet.of())
         .setUseVariantType(useVariantType)
+        .setModifiable(isModifiable)
+        .setModifying(isModifying)
+        .setLegacyDeltemplateNamespace(legacyDeltemplateNamespace)
         .build();
   }
 
@@ -380,8 +403,14 @@ public abstract class TemplateType extends SoyType {
     if (srcType.getKind() != SoyType.Kind.TEMPLATE) {
       return false;
     }
-
     TemplateType srcTemplate = (TemplateType) srcType;
+    // Do not allow modifiable templates to be assigned to non-modifiable types. This is to disallow
+    // passing them as template parameters, as there is no syntax for specifying modifiable in
+    // template type literals.
+    // TODO(b/233903480): This can probably be removed when we change @hassoydelcall to @modName.
+    if (srcTemplate.isModifiable() && !isModifying() && !isModifiable()) {
+      return false;
+    }
 
     Map<String, Parameter> thisParams =
         getParameters().stream().collect(toImmutableMap(Parameter::getName, identity()));
@@ -424,13 +453,15 @@ public abstract class TemplateType extends SoyType {
 
   @Override
   public final String toString() {
-    return stringRepresentation(getParameters(), getContentKind(), getReservedAttributes());
+    return stringRepresentation(
+        getParameters(), getContentKind(), getReservedAttributes(), isModifiable());
   }
 
   static String stringRepresentation(
       Iterable<Parameter> parameters,
       TemplateContentKind contentKind,
-      ImmutableSet<String> reservedAttributes) {
+      ImmutableSet<String> reservedAttributes,
+      boolean isModifiable) {
     StringBuilder sb = new StringBuilder();
     sb.append("(");
     boolean first = true;
@@ -461,6 +492,9 @@ public abstract class TemplateType extends SoyType {
     }
     sb.append(") => ");
     sb.append(contentKind.asAttributeValue());
+    if (isModifiable) {
+      sb.append(" (modifiable)");
+    }
     return sb.toString();
   }
 
@@ -488,6 +522,9 @@ public abstract class TemplateType extends SoyType {
               .build();
     }
     templateBuilder.setUseVariantType(getUseVariantType().toProto());
+    templateBuilder.setIsModifiable(isModifiable());
+    templateBuilder.setIsModifying(isModifying());
+    templateBuilder.setLegacyDeltemplateNamespace(getLegacyDeltemplateNamespace());
     templateBuilder.setReturnType(returnType);
   }
 

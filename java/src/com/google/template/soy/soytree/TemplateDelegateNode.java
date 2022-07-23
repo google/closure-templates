@@ -29,7 +29,6 @@ import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.IntegerNode;
-import com.google.template.soy.exprtree.ProtoEnumValueNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import javax.annotation.Nullable;
@@ -182,23 +181,8 @@ public final class TemplateDelegateNode extends TemplateNode {
       // For this reason we also don't store the key, instead we just return it.
       return DelTemplateKey.create(delTemplateName, globalNode.getName());
     }
-    if (exprNode instanceof IntegerNode) {
-      // Globals were already substituted: We may now create the definitive variant and key fields
-      // on this node.
-      long variantValue = ((IntegerNode) exprNode).getValue();
-      delTemplateKey = DelTemplateKey.create(delTemplateName, String.valueOf(variantValue));
-    } else if (exprNode instanceof ProtoEnumValueNode) {
-      delTemplateKey =
-          DelTemplateKey.create(
-              delTemplateName, String.valueOf(((ProtoEnumValueNode) exprNode).getValue()));
-    } else if (exprNode instanceof StringNode) {
-      // Globals were already substituted: We may now create the definitive variant and key fields
-      // on this node.
-      delTemplateKey = DelTemplateKey.create(delTemplateName, ((StringNode) exprNode).getValue());
-    } else {
-      // We must have already reported an error, just create an arbitrary variant expr.
-      delTemplateKey = DelTemplateKey.create(delTemplateName, exprNode.toSourceString());
-    }
+    delTemplateKey =
+        DelTemplateKey.create(delTemplateName, TemplateNode.variantExprToString(exprNode));
     return delTemplateKey;
   }
 
