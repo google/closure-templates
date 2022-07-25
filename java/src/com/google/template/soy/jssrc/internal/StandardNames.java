@@ -37,5 +37,7 @@ public final class StandardNames {
   public static final String DOLLAR_IJDATA = "$ijData";
   public static final String ARE_YOU_AN_INTERNAL_CALLER = "$$areYouAnInternalCaller";
 
+  public static final String OPT_VARIANT = "opt_variant";
+
   private StandardNames() {}
 }

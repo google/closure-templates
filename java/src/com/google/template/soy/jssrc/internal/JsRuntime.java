@@ -166,6 +166,8 @@ public final class JsRuntime {
    */
   public static final Expression OPT_DATA = id(StandardNames.OPT_DATA);
 
+  public static final Expression OPT_VARIANT = id(StandardNames.OPT_VARIANT);
+
   /** A constant for the template parameter {@code $ijData}. */
   public static final Expression IJ_DATA = id(StandardNames.DOLLAR_IJDATA);
 

@@ -18,6 +18,7 @@ package com.google.template.soy.jssrc.internal;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static com.google.template.soy.jssrc.dsl.Expression.EMPTY_OBJECT_LITERAL;
@@ -37,6 +38,8 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_REQUIRE;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_SOY;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_SOY_ALIAS;
 import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_DATA;
+import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_VARIANT;
+import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_GET_DELEGATE_FN;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_GET_DELTEMPLATE_ID;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_MAKE_EMPTY_TEMPLATE_FN;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_REGISTER_DELEGATE_FN;
@@ -60,6 +63,7 @@ import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.Operator;
+import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
@@ -108,6 +112,7 @@ import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.SwitchCaseNode;
 import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
+import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateElementNode;
 import com.google.template.soy.soytree.TemplateMetadata;
@@ -777,6 +782,55 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         .asStatement();
   }
 
+  protected static boolean isModifiable(TemplateNode node) {
+    return node instanceof TemplateBasicNode && ((TemplateBasicNode) node).isModifiable();
+  }
+
+  protected static boolean isModifiableWithUseVariantType(TemplateNode node) {
+    return isModifiable(node)
+        && !((TemplateBasicNode) node).getUseVariantType().equals(NullType.getInstance());
+  }
+
+  protected static boolean isModTemplate(TemplateNode node) {
+    return node instanceof TemplateBasicNode
+        && ((TemplateBasicNode) node).getModifiesExpr() != null;
+  }
+
+  /**
+   * Generates the registerDelegateFn() call for the default modifiable template referenced by
+   * aliasExp.
+   */
+  private Statement makeRegisterDefaultFnCall(
+      TemplateBasicNode nodeAsBasicTemplate, Expression aliasExp) {
+    checkState(nodeAsBasicTemplate.isModifiable());
+    return SOY_REGISTER_DELEGATE_FN
+        .call(
+            SOY_GET_DELTEMPLATE_ID.call(
+                stringLiteral(
+                    delTemplateNamer.getDelegateName(nodeAsBasicTemplate.getTemplateName()))),
+            stringLiteral(""),
+            number(nodeAsBasicTemplate.getSoyFileHeaderInfo().getPriority().getValue()),
+            aliasExp)
+        .asStatement();
+  }
+
+  /** Generates the registerDelegateFn() call for the mod template referenced by aliasExp. */
+  private Statement makeRegisterModFn(TemplateBasicNode nodeAsBasicTemplate, Expression aliasExp) {
+    checkState(nodeAsBasicTemplate.getModifiesExpr() != null);
+    TemplateLiteralNode literal =
+        (TemplateLiteralNode) nodeAsBasicTemplate.getModifiesExpr().getRoot();
+    return SOY_REGISTER_DELEGATE_FN
+        .call(
+            SOY_GET_DELTEMPLATE_ID.call(
+                stringLiteral(delTemplateNamer.getDelegateName(literal.getResolvedName()))),
+            nodeAsBasicTemplate.getVariantExpr() == null
+                ? stringLiteral("")
+                : translateExpr(nodeAsBasicTemplate.getVariantExpr()),
+            number(nodeAsBasicTemplate.getSoyFileHeaderInfo().getPriority().getValue()),
+            aliasExp)
+        .asStatement();
+  }
+
   /**
    * Outputs a {@link TemplateNode}, generating the function open and close, along with a a debug
    * template name.
@@ -857,12 +911,23 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     }
 
     if (generatePositionalParamsSignature) {
-      JsDoc jsDoc = generateFunctionJsDoc(node, alias, /*suppressCheckTypes=*/ false);
+      JsDoc jsDoc =
+          generateFunctionJsDoc(
+              node,
+              alias,
+              /*suppressCheckTypes=*/ false,
+              /*addVariantParam=*/ isModifiableWithUseVariantType(node));
       Expression publicFunction = Expression.function(jsDoc, generateDelegateFunction(node, alias));
-      JsDoc positionalFunctionDoc = generatePositionalFunctionJsDoc(node);
+      JsDoc positionalFunctionDoc =
+          generatePositionalFunctionJsDoc(
+              node, /*addVariantParam=*/ isModifiableWithUseVariantType(node));
       Expression positionalFunction =
           Expression.function(
-              positionalFunctionDoc, generateFunctionBody(node, alias, /*objectParamName=*/ null));
+              positionalFunctionDoc,
+              isModifiable(node)
+                  ? generateModTemplateSelection(node, alias, codeGenerator)
+                  : generateFunctionBody(
+                      node, alias, /*objectParamName=*/ null, /*addStubMapLogic=*/ true));
 
       if (jsSrcOptions.shouldGenerateGoogModules()) {
         VariableDeclaration publicDeclaration =
@@ -888,14 +953,26 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
                 dottedIdNoRequire(alias + "$"), positionalFunction, positionalFunctionDoc));
       }
     } else {
-      JsDoc jsDoc = generateFunctionJsDoc(node, alias, /*suppressCheckTypes=*/ true);
-      String type = jsDoc.params().get(1).type();
+      JsDoc jsDoc =
+          generateFunctionJsDoc(
+              node,
+              alias,
+              /*suppressCheckTypes=*/ true,
+              /*addVariantParam=*/ isModifiableWithUseVariantType(node));
+      String objectParamType = jsDoc.params().get(1).type();
       Expression function =
           Expression.function(
               jsDoc,
-              generateFunctionBody(
-                  // Remove optional type cast
-                  node, alias, /*objectParamName=*/ type.substring(0, type.length() - 1)));
+              isModifiable(node)
+                  ? generateModTemplateSelection(node, alias, codeGenerator)
+                  : generateFunctionBody(
+                      // Remove optional type cast
+                      node,
+                      alias,
+                      // Strip the optional suffix character "="
+                      /*objectParamName=*/ objectParamType.substring(
+                          0, objectParamType.length() - 1),
+                      /*addStubMapLogic=*/ true));
 
       if (jsSrcOptions.shouldGenerateGoogModules()) {
         declarations.add(
@@ -939,6 +1016,44 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       declarations.add(makeRegisterDelegateFn(nodeAsDelTemplate, aliasExp));
     }
 
+    // ------ For modifiable templates, generate and register the default implementation. -----
+    if (isModifiable(node)) {
+      String defaultImplName = alias + "__default_impl";
+      JsDoc jsDoc =
+          generatePositionalParamsSignature
+              ? generatePositionalFunctionJsDoc(node, /*addVariantParam=*/ false)
+              : generateFunctionJsDoc(
+                  node, alias, /*suppressCheckTypes=*/ true, /*addVariantParam=*/ false);
+      String objectParamType = jsDoc.params().get(1).type();
+      Expression impl =
+          Expression.function(
+              jsDoc,
+              generateFunctionBody(
+                  node,
+                  alias,
+                  /*objectParamName=*/ generatePositionalParamsSignature
+                      ? null
+                      // Strip the optional suffix character "="
+                      : objectParamType.substring(0, objectParamType.length() - 1),
+                  /*addStubMapLogic=*/ false));
+      if (jsSrcOptions.shouldGenerateGoogModules()) {
+        declarations.add(
+            VariableDeclaration.builder(defaultImplName).setJsDoc(jsDoc).setRhs(impl).build());
+      } else {
+        declarations.add(Statement.assign(dottedIdNoRequire(defaultImplName), impl, jsDoc));
+      }
+      declarations.add(
+          makeRegisterDefaultFnCall((TemplateBasicNode) node, dottedIdNoRequire(defaultImplName)));
+    }
+
+    // ------ For mod templates, generate a statement to register it. ------
+    if (isModTemplate(node)) {
+      declarations.add(
+          makeRegisterModFn(
+              (TemplateBasicNode) node,
+              dottedIdNoRequire(alias + (generatePositionalParamsSignature ? "$" : ""))));
+    }
+
     jsCodeBuilder.append(Statement.of(declarations.build()));
     this.generatePositionalParamsSignature = false;
   }
@@ -966,7 +1081,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     return jsDocBuilder.addParam(StandardNames.ARE_YOU_AN_INTERNAL_CALLER, "!Object");
   }
 
-  protected JsDoc generatePositionalFunctionJsDoc(TemplateNode node) {
+  protected JsDoc generatePositionalFunctionJsDoc(TemplateNode node, boolean addVariantParam) {
     JsDoc.Builder jsDocBuilder = JsDoc.builder();
     addInternalCallerParam(jsDocBuilder);
     addIjDataParam(jsDocBuilder, /*forPositionalSignature=*/ true);
@@ -975,7 +1090,9 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       jsDocBuilder.addParam(
           genParamAlias(param.name()), jsType.typeExpr() + (param.isRequired() ? "" : "="));
     }
-
+    if (addVariantParam) {
+      jsDocBuilder.addParam(StandardNames.OPT_VARIANT, "string=");
+    }
     addReturnTypeAndAnnotations(node, jsDocBuilder);
     // TODO(b/11787791): make the checkTypes suppression more fine grained.
     jsDocBuilder.addParameterizedAnnotation("suppress", "checkTypes");
@@ -992,7 +1109,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   }
 
   protected JsDoc generateFunctionJsDoc(
-      TemplateNode node, String alias, boolean suppressCheckTypes) {
+      TemplateNode node, String alias, boolean suppressCheckTypes, boolean addVariantParam) {
     JsDoc.Builder jsDocBuilder = JsDoc.builder();
     // TODO(b/177856412): rename to something that doesn't begin with {@code opt_}
     if (hasOnlyImplicitParams(node)) {
@@ -1005,6 +1122,9 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       jsDocBuilder.addParam(StandardNames.OPT_DATA, "!" + alias + ".Params");
     }
     addIjDataParam(jsDocBuilder, /*forPositionalSignature=*/ false);
+    if (addVariantParam) {
+      jsDocBuilder.addParam(StandardNames.OPT_VARIANT, "string=");
+    }
     addReturnTypeAndAnnotations(node, jsDocBuilder);
     if (suppressCheckTypes) {
       // TODO(b/11787791): make the checkTypes suppression more fine grained.
@@ -1086,14 +1206,23 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     for (TemplateParam param : paramsInOrder(templateNode)) {
       callParams.add(genCodeForParamAccess(param.name(), param));
     }
+    if (isModifiableWithUseVariantType(templateNode)) {
+      callParams.add(OPT_VARIANT);
+    }
     String returnType = getTemplateReturnType(templateNode);
     Expression callExpr = dottedIdNoRequire(alias + "$").call(callParams);
     bodyStatements.add(returnType.equals("void") ? callExpr.asStatement() : returnValue(callExpr));
     return Statement.of(bodyStatements.build());
   }
 
+  /** Return the parameters always present in positional calls. */
   protected ImmutableList<Expression> getFixedParamsToPositionalCall(TemplateNode node) {
     return ImmutableList.of(JsRuntime.SOY_INTERNAL_CALL_MARKER, JsRuntime.IJ_DATA);
+  }
+
+  /** Return the parameters always present in non-positional calls. */
+  protected ImmutableList<Expression> getFixedParamsForNonPositionalCall(TemplateNode node) {
+    return ImmutableList.of(OPT_DATA, id(StandardNames.DOLLAR_IJDATA));
   }
 
   /**
@@ -1106,10 +1235,43 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         .build();
   }
 
+  /** Generates the shim function containing mod template selection logic. */
+  protected Statement generateModTemplateSelection(
+      TemplateNode node, String alias, CodeChunk.Generator codeGenerator) {
+    ImmutableList.Builder<Statement> bodyStatements = ImmutableList.builder();
+    if (!generatePositionalParamsSignature) {
+      bodyStatements.add(redeclareIjData());
+    } else {
+      bodyStatements.add(
+          JsRuntime.SOY_ARE_YOU_AN_INTERNAL_CALLER
+              .call(id(StandardNames.ARE_YOU_AN_INTERNAL_CALLER))
+              .asStatement());
+    }
+    bodyStatements.add(generateStubbingTest(node, alias, generatePositionalParamsSignature));
+    Expression delegateFn =
+        SOY_GET_DELEGATE_FN.call(
+            SOY_GET_DELTEMPLATE_ID.call(
+                stringLiteral(delTemplateNamer.getDelegateName(node.getTemplateName()))),
+            isModifiableWithUseVariantType(node)
+                ? OPT_VARIANT.or(stringLiteral(""), codeGenerator)
+                : stringLiteral(""));
+    if (!generatePositionalParamsSignature) {
+      bodyStatements.add(returnValue(delegateFn.call(getFixedParamsForNonPositionalCall(node))));
+    } else {
+      List<Expression> callParams = new ArrayList<>();
+      callParams.addAll(getFixedParamsToPositionalCall(node));
+      for (TemplateParam param : paramsInOrder(node)) {
+        callParams.add(id(param.name()));
+      }
+      bodyStatements.add(returnValue(delegateFn.call(callParams)));
+    }
+    return Statement.of(bodyStatements.build());
+  }
+
   /** Generates the function body. */
   @CheckReturnValue
   protected Statement generateFunctionBody(
-      TemplateNode node, String alias, @Nullable String objectParamName) {
+      TemplateNode node, String alias, @Nullable String objectParamName, boolean addStubMapLogic) {
     boolean isPositionalStyle = objectParamName == null;
     ImmutableList.Builder<Statement> bodyStatements = ImmutableList.builder();
     if (!isPositionalStyle) {
@@ -1120,7 +1282,9 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
               .call(id(StandardNames.ARE_YOU_AN_INTERNAL_CALLER))
               .asStatement());
     }
-    bodyStatements.add(generateStubbingTest(node, alias, isPositionalStyle));
+    if (addStubMapLogic) {
+      bodyStatements.add(generateStubbingTest(node, alias, isPositionalStyle));
+    }
     // Generate statement to ensure data is defined, if necessary and this is not a positional style
     // method, if this is a positional style then we don't have an opt_data field
     if (!isPositionalStyle && new ShouldEnsureDataIsDefinedVisitor().exec(node)) {

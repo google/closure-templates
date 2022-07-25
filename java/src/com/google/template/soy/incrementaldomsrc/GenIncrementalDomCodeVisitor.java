@@ -388,7 +388,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   }
 
   @Override
-  protected JsDoc generatePositionalFunctionJsDoc(TemplateNode node) {
+  protected JsDoc generatePositionalFunctionJsDoc(TemplateNode node, boolean addVariantParam) {
     JsDoc.Builder jsDocBuilder = JsDoc.builder();
     addInternalCallerParam(jsDocBuilder);
     addIjDataParam(jsDocBuilder, /*forPositionalSignature=*/ true);
@@ -398,7 +398,9 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       jsDocBuilder.addParam(
           genParamAlias(param.name()), jsType.typeExpr() + (param.isRequired() ? "" : "="));
     }
-
+    if (addVariantParam) {
+      jsDocBuilder.addParam(StandardNames.OPT_VARIANT, "string=");
+    }
     addReturnTypeAndAnnotations(node, jsDocBuilder);
     // TODO(b/11787791): make the checkTypes suppression more fine grained.
     jsDocBuilder.addParameterizedAnnotation("suppress", "checkTypes");
@@ -407,7 +409,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
 
   @Override
   protected JsDoc generateFunctionJsDoc(
-      TemplateNode node, String alias, boolean suppressCheckTypes) {
+      TemplateNode node, String alias, boolean suppressCheckTypes, boolean addVariantParam) {
     JsDoc.Builder jsDocBuilder = JsDoc.builder();
     maybeAddRenderer(jsDocBuilder, node);
     // This is true if there are any calls with data="all" (which implicitly add optional parameters
@@ -426,7 +428,9 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       jsDocBuilder.addParam(StandardNames.OPT_DATA, "!" + alias + ".Params");
     }
     addIjDataParam(jsDocBuilder, /*forPositionalSignature=*/ false);
-
+    if (addVariantParam) {
+      jsDocBuilder.addParam(StandardNames.OPT_VARIANT, "string=");
+    }
     addReturnTypeAndAnnotations(node, jsDocBuilder);
     if (suppressCheckTypes) {
       // TODO(b/11787791): make the checkTypes suppression more fine grained.
@@ -459,6 +463,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     }
   }
 
+  /** Return the parameters always present in positional calls. */
   @Override
   protected ImmutableList<Expression> getFixedParamsToPositionalCall(TemplateNode node) {
     SanitizedContentKind kind = node.getContentKind();
@@ -467,6 +472,19 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     if (kind.isHtml() || kind == SanitizedContentKind.ATTRIBUTES) {
       params.add(id(INCREMENTAL_DOM_PARAM_NAME));
     }
+
+    return params.build();
+  }
+
+  /** Return the parameters always present in non-positional calls. */
+  @Override
+  protected ImmutableList<Expression> getFixedParamsForNonPositionalCall(TemplateNode node) {
+    SanitizedContentKind kind = node.getContentKind();
+    ImmutableList.Builder<Expression> params = ImmutableList.builder();
+    if (kind.isHtml() || kind == SanitizedContentKind.ATTRIBUTES) {
+      params.add(id(INCREMENTAL_DOM_PARAM_NAME));
+    }
+    params.addAll(super.getFixedParamsForNonPositionalCall(node));
 
     return params.build();
   }
@@ -484,7 +502,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
 
   @Override
   protected Statement generateFunctionBody(
-      TemplateNode node, String alias, @Nullable String objectParamName) {
+      TemplateNode node, String alias, @Nullable String objectParamName, boolean addStubMapLogic) {
     ImmutableList.Builder<Statement> bodyStatements = ImmutableList.builder();
     boolean isPositionalStyle = objectParamName == null;
     if (!isPositionalStyle) {
@@ -495,7 +513,9 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
               .call(id(StandardNames.ARE_YOU_AN_INTERNAL_CALLER))
               .asStatement());
     }
-    bodyStatements.add(generateStubbingTest(node, alias, isPositionalStyle));
+    if (addStubMapLogic) {
+      bodyStatements.add(generateStubbingTest(node, alias, isPositionalStyle));
+    }
     // Generate statement to ensure data is defined, if necessary.
     if (!isPositionalStyle && new ShouldEnsureDataIsDefinedVisitor().exec(node)) {
       bodyStatements.add(
@@ -961,7 +981,14 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
               SOY_IDOM_CALL_DYNAMIC_ATTRIBUTES.call(
                   INCREMENTAL_DOM, callee.objectStyle(), objToPass.get(), JsRuntime.IJ_DATA);
         } else {
-          call = directCall(callee, positionalParameters, objToPass, /*isIdomCall=*/ true);
+          call =
+              directCall(
+                  callee,
+                  node,
+                  getExprTranslator(),
+                  positionalParameters,
+                  objToPass,
+                  /*isIdomCall=*/ true);
         }
         break;
       case CSS:
@@ -988,7 +1015,14 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
                   callee.objectStyle(), objToPass.get(), JsRuntime.IJ_DATA);
         } else {
           // This is executed in the case of TEXT Context -> Text Template
-          textCall = directCall(callee, positionalParameters, objToPass, /*isIdomCall=*/ false);
+          textCall =
+              directCall(
+                  callee,
+                  node,
+                  getExprTranslator(),
+                  positionalParameters,
+                  objToPass,
+                  /*isIdomCall=*/ false);
         }
         getJsCodeBuilder()
             .addChunkToOutputVar(GenCallCodeUtils.applyEscapingDirectives(textCall, node));
@@ -1002,7 +1036,14 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
         } else {
           // This is executed in the case of HTML/ATTR -> HTML/ATTR. All other ambiguous cases are
           // passed through to runtime functions.
-          call = directCall(callee, positionalParameters, objToPass, /*isIdomCall=*/ true);
+          call =
+              directCall(
+                  callee,
+                  node,
+                  getExprTranslator(),
+                  positionalParameters,
+                  objToPass,
+                  /*isIdomCall=*/ true);
           shouldPushKey = true;
         }
         break;
@@ -1053,6 +1094,8 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
 
   private static Expression directCall(
       GenCallCodeUtils.Callee callee,
+      CallNode callNode,
+      TranslateExprNodeVisitor exprTranslator,
       Optional<Supplier<List<Expression>>> positionalParameters,
       Supplier<Expression> paramObject,
       boolean isIdomCall) {
@@ -1064,10 +1107,12 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       params.add(0, JsRuntime.IJ_DATA);
       params.add(0, JsRuntime.SOY_INTERNAL_CALL_MARKER);
       params.addAll(positionalParameters.get().get());
+      GenCallCodeUtils.maybeAddVariantParam(callNode, exprTranslator, params);
       return callee.positionalStyle().get().call(params);
     }
     params.add(paramObject.get());
     params.add(JsRuntime.IJ_DATA);
+    GenCallCodeUtils.maybeAddVariantParam(callNode, exprTranslator, params);
     return callee.objectStyle().call(params);
   }
 
