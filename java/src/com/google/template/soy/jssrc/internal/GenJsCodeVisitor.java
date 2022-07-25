@@ -844,10 +844,12 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       // https://docs.google.com/document/d/1keigHh3t8a5jaPUSQTXvzr7aNqjh2X4z0rNIt4PO4J0/edit#heading=h.8dqjxhj7gq2b
       TemplateDelegateNode nodeAsDelTemplate = (TemplateDelegateNode) node;
       Expression emptyFnCall = SOY_MAKE_EMPTY_TEMPLATE_FN.call(stringLiteral(templateName));
+      JsDoc jsDoc = generateEmptyFunctionJsDoc(node);
       if (jsSrcOptions.shouldGenerateGoogModules()) {
-        declarations.add(VariableDeclaration.builder(alias).setRhs(emptyFnCall).build());
+        declarations.add(
+            VariableDeclaration.builder(alias).setJsDoc(jsDoc).setRhs(emptyFnCall).build());
       } else {
-        declarations.add(Statement.assign(aliasExp, emptyFnCall));
+        declarations.add(Statement.assign(aliasExp, emptyFnCall, jsDoc));
       }
       declarations.add(makeRegisterDelegateFn(nodeAsDelTemplate, aliasExp));
       jsCodeBuilder.append(Statement.of(declarations.build()));
@@ -976,6 +978,15 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
     addReturnTypeAndAnnotations(node, jsDocBuilder);
     // TODO(b/11787791): make the checkTypes suppression more fine grained.
+    jsDocBuilder.addParameterizedAnnotation("suppress", "checkTypes");
+    return jsDocBuilder.build();
+  }
+
+  protected JsDoc generateEmptyFunctionJsDoc(TemplateNode node) {
+    JsDoc.Builder jsDocBuilder = JsDoc.builder();
+    jsDocBuilder.addParam(StandardNames.OPT_DATA, "?Object<string, *>=");
+    addIjDataParam(jsDocBuilder, /*forPositionalSignature=*/ false);
+    addReturnTypeAndAnnotations(node, jsDocBuilder);
     jsDocBuilder.addParameterizedAnnotation("suppress", "checkTypes");
     return jsDocBuilder.build();
   }
