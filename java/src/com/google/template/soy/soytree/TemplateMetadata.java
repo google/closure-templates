@@ -71,11 +71,16 @@ public abstract class TemplateMetadata {
     if (template.getHtmlElementMetadata() != null) {
       builder.setHtmlElement(template.getHtmlElementMetadata());
     }
-
     if (template.getKind() == Kind.TEMPLATE_DELEGATE_NODE) {
       TemplateDelegateNode deltemplate = (TemplateDelegateNode) template;
       builder.setDelTemplateName(deltemplate.getDelTemplateName());
       builder.setDelTemplateVariant(deltemplate.getDelTemplateVariant());
+    } else if (template instanceof TemplateBasicNode) {
+      TemplateBasicNode basicTemplate = (TemplateBasicNode) template;
+      if (basicTemplate.isModifiable() || basicTemplate.getModifiesExpr() != null) {
+        builder.setDelTemplateName(basicTemplate.getTemplateName());
+        builder.setDelTemplateVariant(basicTemplate.getDelTemplateVariant());
+      }
     }
     return builder.build();
   }
@@ -92,9 +97,16 @@ public abstract class TemplateMetadata {
             .setDataAllCallSituations(dataAllCallSituationFromTemplate(template))
             .setIdentifierForDebugging(template.getTemplateName());
     if (template instanceof TemplateBasicNode) {
-      builder.setUseVariantType(((TemplateBasicNode) template).getUseVariantType());
+      TemplateBasicNode templateBasicNode = (TemplateBasicNode) template;
+      builder.setUseVariantType(templateBasicNode.getUseVariantType());
+      builder.setModifiable(templateBasicNode.isModifiable());
+      builder.setModifying(templateBasicNode.getModifiesExpr() != null);
+      builder.setLegacyDeltemplateNamespace(templateBasicNode.getLegacyDeltemplateNamespace());
     } else {
       builder.setUseVariantType(NullType.getInstance());
+      builder.setModifiable(false);
+      builder.setModifying(false);
+      builder.setLegacyDeltemplateNamespace("");
     }
     return builder.build();
   }
@@ -181,10 +193,14 @@ public abstract class TemplateMetadata {
 
   public abstract String getTemplateName();
 
-  /** Guaranteed to be non-null for deltemplates, null otherwise. */
+  /** Guaranteed to be non-null for deltemplates or mod templates, null otherwise. */
   @Nullable
   public abstract String getDelTemplateName();
 
+  /**
+   * Guaranteed to be non-null for deltemplates or mod templates (possibly empty string), null
+   * otherwise.
+   */
   @Nullable
   public abstract String getDelTemplateVariant();
 
@@ -226,7 +242,9 @@ public abstract class TemplateMetadata {
 
     public final TemplateMetadata build() {
       TemplateMetadata built = autobuild();
-      if (built.getTemplateType().getTemplateKind() == TemplateType.TemplateKind.DELTEMPLATE) {
+      if (built.getTemplateType().getTemplateKind() == TemplateType.TemplateKind.DELTEMPLATE
+          || built.getTemplateType().isModifiable()
+          || built.getTemplateType().isModifying()) {
         checkState(built.getDelTemplateName() != null, "Deltemplates must have a deltemplateName");
         checkState(
             built.getDelTemplateVariant() != null, "Deltemplates must have a deltemplateName");

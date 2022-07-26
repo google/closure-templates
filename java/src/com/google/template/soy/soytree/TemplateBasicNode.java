@@ -50,6 +50,8 @@ public final class TemplateBasicNode extends TemplateNode {
   /** The "usevarianttype" attribute, as a string. */
   private final String useVariantTypeString;
 
+  private String variantString = null;
+
   /**
    * The parsed "usevarianttype" type. null is used to express that the type has not been resolved
    * yet, while NullType is used to express that there is no usevarianttype attribute at all.
@@ -156,5 +158,30 @@ public final class TemplateBasicNode extends TemplateNode {
         "if usevarianttype is set, resolveUseVariantType() needs to be called to resolve the type"
             + " before getUseVariantType() is used");
     return useVariantType;
+  }
+
+  /** Returns the delegate template variant, as a string */
+  public String getDelTemplateVariant() {
+    if (getVariantExpr() == null) {
+      variantString = "";
+      return variantString;
+    }
+    if (variantString != null) {
+      return variantString;
+    }
+    return resolveVariantExpression();
+  }
+
+  /**
+   * Calculate the string version of the variant expression.
+   *
+   * <p>This is done lazily so that global references can be resolved. This is not ideal since
+   * nothing guarantees that resolution happens before access.
+   *
+   * <p>TODO(b/233903316): Check the set of valid types.
+   */
+  private String resolveVariantExpression() {
+    variantString = TemplateNode.variantExprToString(getVariantExpr().getRoot());
+    return variantString;
   }
 }

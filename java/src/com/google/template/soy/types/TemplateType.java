@@ -121,6 +121,15 @@ public abstract class TemplateType extends SoyType {
 
   public abstract SoyType getUseVariantType();
 
+  // TODO(b/239930786): These are only needed for supporting legacydeltemplatenamespace.
+  public abstract boolean isModifiable();
+
+  // TODO(b/239930786): These are only needed for supporting legacydeltemplatenamespace.
+  public abstract boolean isModifying();
+
+  // TODO(b/239930786): These are only needed for supporting legacydeltemplatenamespace.
+  public abstract String getLegacyDeltemplateNamespace();
+
   public abstract Builder toBuilder();
 
   public static Builder builder() {
@@ -149,6 +158,12 @@ public abstract class TemplateType extends SoyType {
     public abstract Builder setIdentifierForDebugging(String identifierForDebugging);
 
     public abstract Builder setUseVariantType(SoyType useVariantType);
+
+    public abstract Builder setModifiable(boolean isModifiable);
+
+    public abstract Builder setModifying(boolean setModifying);
+
+    public abstract Builder setLegacyDeltemplateNamespace(String legacyDeltemplateNamespace);
 
     abstract TemplateType autoBuild();
 
@@ -338,7 +353,12 @@ public abstract class TemplateType extends SoyType {
   }
 
   public static TemplateType declaredTypeOf(
-      Iterable<Parameter> parameters, SoyType returnType, SoyType useVariantType) {
+      Iterable<Parameter> parameters,
+      SoyType returnType,
+      SoyType useVariantType,
+      boolean isModifiable,
+      boolean isModifying,
+      String legacyDeltemplateNamespace) {
     TemplateContentKind templateContentKind = fromType(returnType);
     SanitizedContentKind contentKind = templateContentKind.getSanitizedContentKind();
     return builder()
@@ -356,6 +376,9 @@ public abstract class TemplateType extends SoyType {
         .setAllowExtraAttributes(false)
         .setReservedAttributes(ImmutableSet.of())
         .setUseVariantType(useVariantType)
+        .setModifiable(isModifiable)
+        .setModifying(isModifying)
+        .setLegacyDeltemplateNamespace(legacyDeltemplateNamespace)
         .build();
   }
 
@@ -488,6 +511,9 @@ public abstract class TemplateType extends SoyType {
               .build();
     }
     templateBuilder.setUseVariantType(getUseVariantType().toProto());
+    templateBuilder.setIsModifiable(isModifiable());
+    templateBuilder.setIsModifying(isModifying());
+    templateBuilder.setLegacyDeltemplateNamespace(getLegacyDeltemplateNamespace());
     templateBuilder.setReturnType(returnType);
   }
 

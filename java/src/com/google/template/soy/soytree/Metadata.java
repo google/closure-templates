@@ -742,47 +742,63 @@ public final class Metadata {
       FileSetMetadata fileSetMetadata) {
     DelTemplateSelector.Builder<TemplateMetadata> builder = new DelTemplateSelector.Builder<>();
 
-    allTemplates.stream()
-        .filter(t -> t.getTemplateType().getTemplateKind() == TemplateKind.DELTEMPLATE)
-        .forEach(
-            template -> {
-              String delTemplateName = template.getDelTemplateName();
-              String delPackageName = template.getDelPackageName();
-              String variant = template.getDelTemplateVariant();
-              TemplateMetadata previous;
-              if (delPackageName == null) {
-                // default delegate
-                previous = builder.addDefault(delTemplateName, variant, template);
-                if (previous != null) {
-                  errorReporter.report(
-                      template.getSourceLocation(),
-                      DUPLICATE_DEFAULT_DELEGATE_TEMPLATES,
-                      delTemplateName,
-                      previous.getSourceLocation());
-                }
-              } else {
-                previous = builder.add(delTemplateName, delPackageName, variant, template);
-                if (previous != null) {
-                  errorReporter.report(
-                      template.getSourceLocation(),
-                      DUPLICATE_DELEGATE_TEMPLATES_IN_DELPACKAGE,
-                      delTemplateName,
-                      delPackageName,
-                      previous.getSourceLocation());
-                }
-              }
-
-              TemplateMetadata nameCollision =
-                  fileSetMetadata.getBasicTemplateOrElement(delTemplateName);
-              if (nameCollision != null) {
-                errorReporter.report(
-                    template.getSourceLocation(),
-                    TEMPLATE_OR_ELEMENT_AND_DELTEMPLATE_WITH_SAME_NAME,
-                    delTemplateName,
-                    nameCollision.getSourceLocation());
-              }
-            });
+    allTemplates.forEach(
+        template -> {
+          if (template.getDelTemplateName() != null) {
+            addDeltemplate(
+                template.getDelTemplateName(), template, errorReporter, fileSetMetadata, builder);
+            if (!template.getTemplateType().getLegacyDeltemplateNamespace().isEmpty()) {
+              addDeltemplate(
+                  template.getTemplateType().getLegacyDeltemplateNamespace(),
+                  template,
+                  errorReporter,
+                  fileSetMetadata,
+                  builder);
+            }
+          }
+        });
     return builder.build();
+  }
+
+  private static void addDeltemplate(
+      String delTemplateName,
+      TemplateMetadata template,
+      ErrorReporter errorReporter,
+      FileSetMetadata fileSetMetadata,
+      DelTemplateSelector.Builder<TemplateMetadata> builder) {
+    String delPackageName = template.getDelPackageName();
+    String variant = template.getDelTemplateVariant();
+    TemplateMetadata previous;
+    if (delPackageName == null) {
+      // default delegate
+      previous = builder.addDefault(delTemplateName, variant, template);
+      if (previous != null) {
+        errorReporter.report(
+            template.getSourceLocation(),
+            DUPLICATE_DEFAULT_DELEGATE_TEMPLATES,
+            delTemplateName,
+            previous.getSourceLocation());
+      }
+    } else {
+      previous = builder.add(delTemplateName, delPackageName, variant, template);
+      if (previous != null) {
+        errorReporter.report(
+            template.getSourceLocation(),
+            DUPLICATE_DELEGATE_TEMPLATES_IN_DELPACKAGE,
+            delTemplateName,
+            delPackageName,
+            previous.getSourceLocation());
+      }
+    }
+
+    TemplateMetadata nameCollision = fileSetMetadata.getBasicTemplateOrElement(delTemplateName);
+    if (nameCollision != null && nameCollision.getDelTemplateName() == null) {
+      errorReporter.report(
+          template.getSourceLocation(),
+          TEMPLATE_OR_ELEMENT_AND_DELTEMPLATE_WITH_SAME_NAME,
+          delTemplateName,
+          nameCollision.getSourceLocation());
+    }
   }
 
   private static void warnNameCollision(
