@@ -39,6 +39,7 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_SOY;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_SOY_ALIAS;
 import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_DATA;
 import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_VARIANT;
+import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_ALIAS_DELEGATE_ID;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_GET_DELEGATE_FN;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_GET_DELTEMPLATE_ID;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_MAKE_EMPTY_TEMPLATE_FN;
@@ -831,6 +832,18 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         .asStatement();
   }
 
+  private boolean isModifyingLegacyDeltemplateNamespace(TemplateNode node) {
+    if (!(node instanceof TemplateBasicNode)) {
+      return false;
+    }
+    TemplateBasicNode templateBasicNode = (TemplateBasicNode) node;
+    return templateBasicNode.getModifiesExpr() != null
+        && templateBasicNode.getModifiesExpr().getType() instanceof TemplateType
+        && !((TemplateType) templateBasicNode.getModifiesExpr().getType())
+            .getLegacyDeltemplateNamespace()
+            .isEmpty();
+  }
+
   /**
    * Outputs a {@link TemplateNode}, generating the function open and close, along with a a debug
    * template name.
@@ -864,7 +877,11 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   @Override
   protected void visitTemplateNode(TemplateNode node) {
     generatePositionalParamsSignature =
-        GenCallCodeUtils.hasPositionalSignature(TemplateMetadata.buildTemplateType(node));
+        GenCallCodeUtils.hasPositionalSignature(TemplateMetadata.buildTemplateType(node))
+            // We cannot use positional signatures if this template is moding a
+            // legacydeltemplatenamespace. Those will only have non-positional template functions
+            // stored in the map.
+            && !isModifyingLegacyDeltemplateNamespace(node);
     String templateName = node.getTemplateName();
     String partialName = node.getLocalTemplateSymbol();
     String alias;
@@ -1042,8 +1059,23 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       } else {
         declarations.add(Statement.assign(dottedIdNoRequire(defaultImplName), impl, jsDoc));
       }
+      TemplateBasicNode templateBasicNode = (TemplateBasicNode) node;
       declarations.add(
-          makeRegisterDefaultFnCall((TemplateBasicNode) node, dottedIdNoRequire(defaultImplName)));
+          makeRegisterDefaultFnCall(templateBasicNode, dottedIdNoRequire(defaultImplName)));
+      if (!templateBasicNode.getLegacyDeltemplateNamespace().isEmpty()) {
+        // Also alias the legacydeltemplatenamespace to the mod template name.
+        declarations.add(
+            SOY_ALIAS_DELEGATE_ID
+                .call(
+                    SOY_GET_DELTEMPLATE_ID.call(
+                        stringLiteral(
+                            delTemplateNamer.getDelegateName(
+                                templateBasicNode.getLegacyDeltemplateNamespace()))),
+                    SOY_GET_DELTEMPLATE_ID.call(
+                        stringLiteral(
+                            delTemplateNamer.getDelegateName(templateBasicNode.getTemplateName()))))
+                .asStatement());
+      }
     }
 
     // ------ For mod templates, generate a statement to register it. ------

@@ -88,6 +88,9 @@ message SoyTypeP {
     repeated ParameterP parameter = 3;
     SoyTypeP return_type = 4;
     SoyTypeP use_variant_type = 5;
+    bool is_modifiable = 6;
+    bool is_modifying = 7;
+    string legacy_deltemplate_namespace = 8;
 
     reserved 1, 2;
   }

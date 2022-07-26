@@ -129,6 +129,8 @@ public final class JsRuntime {
 
   public static final Expression SOY_REGISTER_DELEGATE_FN = SOY.dotAccess("$$registerDelegateFn");
 
+  public static final Expression SOY_ALIAS_DELEGATE_ID = SOY.dotAccess("$$aliasDelegateId");
+
   public static final Expression SOY_GET_DELTEMPLATE_ID = SOY.dotAccess("$$getDelTemplateId");
 
   public static final Expression SOY_IS_LOCALE_RTL = SOY.dotAccess("$$IS_LOCALE_RTL");
