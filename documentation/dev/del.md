@@ -20,23 +20,22 @@ For these situations Soy has a feature called `deltemplates` (short for
 ## Using delegate templates
 
 For the above usecases, Soy has a set of commands `{deltemplate ...}`, `{delcall
-...}` and `{delpackage ...}` to allow applications to declare certain calls to
-be dynamic.
+...}` and `{modname ...}` to allow applications to declare certain calls to be
+dynamic.
 
 Delegate templates, or 'Deltemplates', allow you to define multiple
 implementations of a template and choose one of them to call at render time.
-There are two ways to configure this dynamic selection: using the delpackage
-declaration, or activating a delpackage in Java.
 
-## For most usecases, use `{delpackage }`
+## For most usecases, use `{modname }`
 
-Deltemplates are typically be registered using a `{delpackage }` declaration.
-This is great for conditional features like experiments, or if you want to
-actually hide certain features from certain users.
+Deltemplates are typically registered using a `{modname }` declaration. This is
+great for conditional features like experiments, or if you want to actually hide
+certain features from certain users.
 
-The `{delpackage XXX}` declaration allows you to associate a template with an
-identifier called a delpackage. For example, you could define several templates
-like this
+The `{modname XXX}` declaration allows you to associate a soy file with a
+specific
+[mod](http://g3doc/java/com/google/apps/framework/modulesets/g3doc/dev/pinto-module-system.md#mods).
+For example, you could define several templates like this
 
 ### default_dialog.soy
 
@@ -53,7 +52,7 @@ like this
 ### foo_dialog.soy
 
 ```soy
-{delpackage foo}
+{modname foo}
 {namespace my.project.dialog_foo}
 
 {deltemplate my.project.dialog}
@@ -64,7 +63,7 @@ like this
 ### bar_dialog.soy
 
 ```soy
-{delpackage bar}
+{modname bar}
 {namespace my.project.dialog_bar}
 
 {deltemplate my.project.dialog}
@@ -86,31 +85,31 @@ like this
 
 In this example there are 3 files that all define the same `deltemplate` and one
 file that invokes it. The actual template that is rendered at runtime depends on
-which `delpackage` is activated. If none are active then the default
-implementation (the definition with no `delpackage`) will be rendered.
+which `modname` is activated. If none are active then the default implementation
+(the definition with no `modname`) will be rendered.
 
 The algorithm for selecting the implementation to invoke is:
 
 1.  Use an active non-default implementation, if there is one.
 1.  Otherwise, use the default implementation.
 
-### Activating a delpackage in Java
+### Activating a mod in Java
 
-When rendering from Java, the set of active delpackages is determined by setting
+When rendering from Java, the set of active mods is determined by setting
 
 ```java
 SoySauce.Renderer.setActiveDelegatePackageSelector(Predicate<String> predicate)
 ```
 
 When deciding which `{deltemplate }` to invoke the predicate will be queried to
-see which delpackages are active. Users can configure this on each call to the
+see which mods are active. Users can configure this on each call to the
 renderer.
 
-### Activating a delpackage in JS
+### Activating a mod in JS
 
 In JS, it is expected that you will arrange to conditionally load at most one of
-the `{delpackage ...}` gencode. It is an error to load more than one
-`{delpackage ...}` that defines the same `{deltemplate...}`
+the `{modname ...}` gencode. It is an error to load more than one `{modname
+...}` that defines the same `{deltemplate...}`
 
 ## In rare cases, use `variant`
 
@@ -182,7 +181,7 @@ The algorithm for selecting the implementation to invoke is:
 1.  Use the delegate implementation with matching variant, if there is one.
 1.  Otherwise, use the delegate implementation with no variant.
 
-## Using deltemplates with `variant` and `delpackage`
+## Using deltemplates with `variant` and `modname`
 
 You can use the two features above together, and it is occasionally useful,
 though it can get confusing quick! So do so sparingly.
@@ -190,10 +189,10 @@ though it can get confusing quick! So do so sparingly.
 When these two features are combined, the algorithm for selecting the
 deltemplate implementation to all is:
 
-1.  Use the delegate implementation with a matching variant and active
-    delpackage if there is one
+1.  Use the delegate implementation with a matching variant and active mod if
+    there is one
 1.  Use the default delegate implementation with a matching variant if there is
     one
-1.  Use the delegate implementation with no variant and an active delpackage if
-    there is one
+1.  Use the delegate implementation with no variant and an active mod if there
+    is one
 1.  Use the default delegate implementation with no variant.
