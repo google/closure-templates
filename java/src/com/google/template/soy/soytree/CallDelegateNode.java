@@ -45,6 +45,13 @@ public final class CallDelegateNode extends CallNode {
   private final String delCalleeName;
 
   /**
+   * The name to use for the @hassoydelcall annotation. It won't be the same as the delcallee name
+   * if the target is a legacydeltemplatenamespace, in CheckTemplateCalls it will be rewritten with
+   * the name of the modifiable template.
+   */
+  private String annotationName;
+
+  /**
    * User-specified attribute to determine whether this delegate call defaults to empty string if
    * there is no active implementation. Default is false.
    */
@@ -70,6 +77,7 @@ public final class CallDelegateNode extends CallNode {
     super(id, location, openTagLocation, "delcall", attributes, selfClosing, errorReporter);
     this.delCalleeName = delCalleeName.identifier();
     this.sourceDelCalleeName = delCalleeName;
+    this.annotationName = this.delCalleeName;
     boolean allowEmptyDefault = false;
 
     for (CommandTagAttribute attr : attributes) {
@@ -111,6 +119,7 @@ public final class CallDelegateNode extends CallNode {
     this.delCalleeName = orig.delCalleeName;
     this.sourceDelCalleeName = orig.sourceDelCalleeName;
     this.allowEmptyDefault = orig.allowEmptyDefault;
+    this.annotationName = orig.annotationName;
   }
 
   @Override
@@ -168,5 +177,13 @@ public final class CallDelegateNode extends CallNode {
   @Override
   public CallDelegateNode copy(CopyState copyState) {
     return new CallDelegateNode(this, copyState);
+  }
+
+  public String getAnnotationName() {
+    return annotationName;
+  }
+
+  public void setAnnotationName(String annotationName) {
+    this.annotationName = annotationName;
   }
 }

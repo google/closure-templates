@@ -23,6 +23,7 @@ import com.google.common.base.CaseFormat;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
@@ -388,7 +389,8 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
           errorReporter.report(
               node.getSourceLocation(), NO_DEFAULT_DELTEMPLATE, node.getDelCalleeName());
         } else {
-          SourceFilePath defaultLocation = defaultImpl.get(0).getSourceLocation().getFilePath();
+          TemplateMetadata defaultTemplate = Iterables.getOnlyElement(defaultImpl);
+          SourceFilePath defaultLocation = defaultTemplate.getSourceLocation().getFilePath();
           if (!defaultLocation.equals(file.getSourceLocation().getFilePath())
               && SoyTreeUtils.getAllNodesOfType(file, ImportNode.class).stream()
                   .noneMatch(imp -> imp.getSourceFilePath().equals(defaultLocation))) {
@@ -399,6 +401,9 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
                 CaseFormat.LOWER_UNDERSCORE.to(
                     CaseFormat.UPPER_CAMEL, defaultLocation.fileName().replaceAll(".soy$", "")),
                 defaultLocation.path());
+          }
+          if (!defaultTemplate.getTemplateType().getLegacyDeltemplateNamespace().isEmpty()) {
+            node.setAnnotationName(defaultTemplate.getTemplateName());
           }
         }
       }

@@ -83,7 +83,12 @@ public class GenCallCodeUtils {
         // only basic templates are supported for now.
         // deltemplates require the object style to support the relatively weak type checking we
         // perform on them.  elements could be supported with some changes to the base class.
-        && type.getTemplateKind() == TemplateType.TemplateKind.BASIC;
+        && type.getTemplateKind() == TemplateType.TemplateKind.BASIC
+        // templates with legacy deltemplate namespaces can't use positional args, because delcalls
+        // look up the map at the call site and call it directly... and we need to support
+        // data="all". The alternative is more involved, we need to mutate the CallDelegateNodes
+        // to CallBasicNodes so that the correct wrapper template is called.
+        && type.getLegacyDeltemplateNamespace().isEmpty();
   }
 
   /** Instance of DelTemplateNamer to use. */

@@ -427,9 +427,14 @@ public final class TypeNodeConverter
     }
     // There is no syntax for specifying the usevarianttype in a template type literal. This means
     // "variant" won't work on calls of template-typed template parameters.
+    // There is also no syntax for specifying legacydeltemplatenamespace. This is ok since that is
+    // used to calculate whether positional-style calls are possible, and they aren't possible on
+    // template-typed template parameters to start with. legacydeltemplatenamespace is also a
+    // temporary feature for the go/symbolize-deltemplates migration.
     SoyType type =
         interner.internTemplateType(
-            TemplateType.declaredTypeOf(map.values(), returnType, NullType.getInstance()));
+            TemplateType.declaredTypeOf(
+                map.values(), returnType, NullType.getInstance(), false, false, ""));
     node.setResolvedType(type);
     return type;
   }

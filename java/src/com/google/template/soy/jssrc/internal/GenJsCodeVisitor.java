@@ -39,6 +39,7 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_SOY;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_SOY_ALIAS;
 import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_DATA;
 import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_VARIANT;
+import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_ALIAS_DELEGATE_ID;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_GET_DELEGATE_FN;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_GET_DELTEMPLATE_ID;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_MAKE_EMPTY_TEMPLATE_FN;
@@ -428,8 +429,8 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     if (node.getDelPackageName() != null) {
       jsDocBuilder.addParameterizedAnnotation("modName", node.getDelPackageName());
     }
-    addJsDocToProvideDelTemplates(jsDocBuilder, node);
-    addJsDocToRequireDelTemplates(jsDocBuilder, node);
+    addHasSoyDelTemplateAnnotations(jsDocBuilder, node);
+    addHasSoyDelCallAnnotations(jsDocBuilder, node);
     addCodeToRequireCss(jsDocBuilder, node);
     jsDocBuilder.addAnnotation("public");
     file.append(jsDocBuilder.build());
@@ -620,12 +621,25 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
             });
   }
 
-  private void addJsDocToProvideDelTemplates(JsDoc.Builder header, SoyFileNode soyFile) {
+  private void addHasSoyDelTemplateAnnotations(JsDoc.Builder header, SoyFileNode soyFile) {
 
     SortedSet<String> delTemplateNames = new TreeSet<>();
     for (TemplateNode template : soyFile.getTemplates()) {
       if (template instanceof TemplateDelegateNode) {
         delTemplateNames.add(delTemplateNamer.getDelegateName((TemplateDelegateNode) template));
+      } else if (template instanceof TemplateBasicNode) {
+        TemplateBasicNode templateBasicNode = (TemplateBasicNode) template;
+        if (templateBasicNode.isModifiable()) {
+          delTemplateNames.add(
+              delTemplateNamer.getDelegateName(templateBasicNode.getTemplateName()));
+        }
+        if (templateBasicNode.getModifiesExpr() != null
+            && templateBasicNode.getModifiesExpr().getRoot() instanceof TemplateLiteralNode) {
+          delTemplateNames.add(
+              delTemplateNamer.getDelegateName(
+                  ((TemplateLiteralNode) templateBasicNode.getModifiesExpr().getRoot())
+                      .getResolvedName()));
+        }
       }
     }
     for (String delTemplateName : delTemplateNames) {
@@ -633,12 +647,24 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     }
   }
 
-  private void addJsDocToRequireDelTemplates(JsDoc.Builder header, SoyFileNode soyFile) {
+  private void addHasSoyDelCallAnnotations(JsDoc.Builder header, SoyFileNode soyFile) {
 
     SortedSet<String> delTemplateNames = new TreeSet<>();
     for (CallDelegateNode delCall :
         SoyTreeUtils.getAllNodesOfType(soyFile, CallDelegateNode.class)) {
-      delTemplateNames.add(delTemplateNamer.getDelegateName(delCall));
+      delTemplateNames.add(delTemplateNamer.getDelegateName(delCall.getAnnotationName()));
+    }
+    // For modifiable templates, just find all literals, and assume they will be called at some
+    // point. This will emit an extra annotation in case a modifiable templates is assigned to a
+    // variable and never called. It shouldn't hurt though. Note that passing modifiable templates
+    // as template params is banned.
+    for (TemplateLiteralNode templateLiteral :
+        SoyTreeUtils.getAllNodesOfType(soyFile, TemplateLiteralNode.class)) {
+      if (templateLiteral.getType() instanceof TemplateType
+          && ((TemplateType) templateLiteral.getType()).isModifiable()) {
+
+        delTemplateNames.add(delTemplateNamer.getDelegateName(templateLiteral.getResolvedName()));
+      }
     }
     for (String delTemplateName : delTemplateNames) {
       header.addParameterizedAnnotation("hassoydelcall", delTemplateName);
@@ -831,6 +857,18 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         .asStatement();
   }
 
+  private boolean isModifyingLegacyDeltemplateNamespace(TemplateNode node) {
+    if (!(node instanceof TemplateBasicNode)) {
+      return false;
+    }
+    TemplateBasicNode templateBasicNode = (TemplateBasicNode) node;
+    return templateBasicNode.getModifiesExpr() != null
+        && templateBasicNode.getModifiesExpr().getType() instanceof TemplateType
+        && !((TemplateType) templateBasicNode.getModifiesExpr().getType())
+            .getLegacyDeltemplateNamespace()
+            .isEmpty();
+  }
+
   /**
    * Outputs a {@link TemplateNode}, generating the function open and close, along with a a debug
    * template name.
@@ -864,7 +902,11 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   @Override
   protected void visitTemplateNode(TemplateNode node) {
     generatePositionalParamsSignature =
-        GenCallCodeUtils.hasPositionalSignature(TemplateMetadata.buildTemplateType(node));
+        GenCallCodeUtils.hasPositionalSignature(TemplateMetadata.buildTemplateType(node))
+            // We cannot use positional signatures if this template is moding a
+            // legacydeltemplatenamespace. Those will only have non-positional template functions
+            // stored in the map.
+            && !isModifyingLegacyDeltemplateNamespace(node);
     String templateName = node.getTemplateName();
     String partialName = node.getLocalTemplateSymbol();
     String alias;
@@ -1042,8 +1084,23 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       } else {
         declarations.add(Statement.assign(dottedIdNoRequire(defaultImplName), impl, jsDoc));
       }
+      TemplateBasicNode templateBasicNode = (TemplateBasicNode) node;
       declarations.add(
-          makeRegisterDefaultFnCall((TemplateBasicNode) node, dottedIdNoRequire(defaultImplName)));
+          makeRegisterDefaultFnCall(templateBasicNode, dottedIdNoRequire(defaultImplName)));
+      if (!templateBasicNode.getLegacyDeltemplateNamespace().isEmpty()) {
+        // Also alias the legacydeltemplatenamespace to the mod template name.
+        declarations.add(
+            SOY_ALIAS_DELEGATE_ID
+                .call(
+                    SOY_GET_DELTEMPLATE_ID.call(
+                        stringLiteral(
+                            delTemplateNamer.getDelegateName(
+                                templateBasicNode.getLegacyDeltemplateNamespace()))),
+                    SOY_GET_DELTEMPLATE_ID.call(
+                        stringLiteral(
+                            delTemplateNamer.getDelegateName(templateBasicNode.getTemplateName()))))
+                .asStatement());
+      }
     }
 
     // ------ For mod templates, generate a statement to register it. ------

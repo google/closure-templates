@@ -33,7 +33,11 @@ import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.AbstractVarDefn;
+import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.exprtree.IntegerNode;
+import com.google.template.soy.exprtree.ProtoEnumValueNode;
+import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.soytree.CommandTagAttribute.CommandTagAttributesHolder;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
@@ -752,5 +756,28 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     public boolean isInjected() {
       return false;
     }
+  }
+
+  /**
+   * Do a compile-type coercion to a string of the variant expression.
+   *
+   * <p>Note we don't do validation of the variant values since that is handled by the
+   * TemplateDelegateNodeBuilder during construction
+   */
+  protected static String variantExprToString(ExprNode exprNode) {
+    if (exprNode instanceof IntegerNode) {
+      long variantValue = ((IntegerNode) exprNode).getValue();
+      return String.valueOf(variantValue);
+    }
+    if (exprNode instanceof ProtoEnumValueNode) {
+      return String.valueOf(((ProtoEnumValueNode) exprNode).getValue());
+    }
+    if (exprNode instanceof StringNode) {
+      return ((StringNode) exprNode).getValue();
+    }
+    // TODO(b/233903316): This is all types allowed by delegate templates. Lock down the possible
+    // types on modifiable templates and handle them all here.
+    // We must have already reported an error, just create an arbitrary variant expr.
+    return exprNode.toSourceString();
   }
 }
