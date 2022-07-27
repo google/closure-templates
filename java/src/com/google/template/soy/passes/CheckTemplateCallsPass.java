@@ -254,7 +254,6 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
           "boq.geo.ugc.maps.roads.about.start.templates.findOutMore",
           "boq.geo.ugc.maps.roads.about.start.templates.mapping",
           "boq.gmfe.posts.posts.templates.postCreationCardFooter",
-          "boq.gmfe.verify.common.steps.common.templates.SetupContentItemClass",
           "boq.googlefinanceui.views.bundles.portfolio.templates.plaidErrorBanner",
           "boq.hiringcportalfrontendui.applymain.templates.skillsSections",
           "boq.meetingscommon.pip.call.controls.mutebutton.templates.a11yAttributes",
