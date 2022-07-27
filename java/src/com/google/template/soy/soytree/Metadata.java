@@ -66,9 +66,9 @@ public final class Metadata {
       SoyErrorKind.of("Template/element ''{0}'' already defined at {1}.");
   private static final SoyErrorKind DUPLICATE_DEFAULT_DELEGATE_TEMPLATES =
       SoyErrorKind.of("Delegate template ''{0}'' already has a default defined at {1}.");
-  private static final SoyErrorKind DUPLICATE_DELEGATE_TEMPLATES_IN_DELPACKAGE =
+  private static final SoyErrorKind DUPLICATE_DELEGATE_TEMPLATES_IN_MOD =
       SoyErrorKind.of(
-          "Delegate template ''{0}'' already defined in delpackage {1}: {2}",
+          "Delegate template ''{0}'' already defined in mod {1}: {2}",
           StyleAllowance.NO_PUNCTUATION);
   private static final SoyErrorKind TEMPLATE_OR_ELEMENT_AND_DELTEMPLATE_WITH_SAME_NAME =
       SoyErrorKind.of("Found deltemplate {0} with the same name as a template/element at {1}.");
@@ -784,7 +784,7 @@ public final class Metadata {
       if (previous != null) {
         errorReporter.report(
             template.getSourceLocation(),
-            DUPLICATE_DELEGATE_TEMPLATES_IN_DELPACKAGE,
+            DUPLICATE_DELEGATE_TEMPLATES_IN_MOD,
             delTemplateName,
             delPackageName,
             previous.getSourceLocation());

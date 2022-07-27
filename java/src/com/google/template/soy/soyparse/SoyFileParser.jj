@@ -183,12 +183,12 @@ import javax.annotation.Nullable;
  * <pre>
  * This parser parses the following Soy file structure:
  *
- * 1. Delegate package (delpackage/mod):
+ * 1. mod name (modname):
  *    + Optional.
- *    + The file must contain 0 or 1 delpackage declaration.
+ *    + The file must contain 0 or 1 modname declaration.
  *    + It must appear before the namespace declaration.
  *    + It must appear on its own line and start at the start of a line.
- *    Example:  {delpackage MySecretFeature} or {mod MySecretFeature}
+ *    Example: {modname MySecretFeature}
  *
  * 2. Namespace:
  *    + The file must contain exactly one namespace declaration.
@@ -334,7 +334,7 @@ import javax.annotation.Nullable;
  *
  * 5. Misc:
  *    + The following commands are not allowed to appear in a template:
- *      {alias ...}   {namespace ...}   {delpackage ...}   {mod ...}  {template ...}   {deltemplate ...}
+ *      {alias ...}   {namespace ...}   {modname ...}  {template ...}   {deltemplate ...}
  *
  * Expressions:
  *
@@ -1057,7 +1057,6 @@ TOKEN_MGR_DECLS: {
 <DEFAULT> TOKEN: {
   < ALIAS_OPEN: "{alias" <WS> > : EXPR
 | < NAMESPACE_OPEN: "{namespace" <WS> > : IN_CMD_TAG
-| < DELPACKAGE_OPEN: "{delpackage" <WS> > : IN_CMD_TAG
 | < MODNAME_OPEN: "{modname" <WS> > : IN_CMD_TAG
 | < IMPORT_OPEN: "import" >
 | < CONST_OPEN: "{" ("export ")? "const" <WS> > : EXPR
@@ -1981,7 +1980,7 @@ private CommandTagAttribute Attribute() :
 
 
 /**
- * Matches a {delpackage ...} declaration.
+ * Matches a {modname ...} declaration.
  *
  * DelPackage -> DelpackageOpen DottedIdent CmdEnd
  */
@@ -1991,7 +1990,7 @@ private DelPackageDeclaration DelPackage() :
   Token open, close;
 }
 {
-  ( open = <DELPACKAGE_OPEN> | open = <MODNAME_OPEN> )
+  open = <MODNAME_OPEN>
   name = DottedIdent()
   close = <CMD_END>
   { return DelPackageDeclaration.create(createSrcLoc(open,close), name); }

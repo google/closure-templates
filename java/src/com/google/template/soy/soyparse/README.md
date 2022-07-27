@@ -42,7 +42,7 @@ contexts. In the soy compiler we have a large number of states to handle this:
 
 #### DEFAULT
 
-Used for parsing `{namespace`, `{alias`, and `{delpackage` commands.
+Used for parsing `{namespace`, `{alias`, and `{modname` commands.
 
 #### IN_MULTILINE_COMMENT
 

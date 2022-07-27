@@ -174,7 +174,7 @@ public final class FileSetMetadataTest {
                         + "{/deltemplate}",
                     SourceFilePath.create("foo.soy")),
                 SoyFileSupplier.Factory.create(
-                    "{delpackage foo}\n"
+                    "{modname foo}\n"
                         + "{namespace ns2}\n"
                         + "/** Deltemplate. */\n"
                         + "{deltemplate foo.bar}\n"
@@ -302,7 +302,7 @@ public final class FileSetMetadataTest {
             + "{/template}\n";
 
     String file2Contents =
-        "{delpackage foo}"
+        "{modname foo}"
             + "{namespace ns3}\n"
             + "/** Foo. */\n"
             + "{deltemplate ns.foo}\n"
@@ -348,7 +348,7 @@ public final class FileSetMetadataTest {
             + "{/template}\n";
 
     String file3Contents =
-        "{delpackage foo}"
+        "{modname foo}"
             + "{namespace ns3}\n"
             + "/** Foo. */\n"
             + "{deltemplate ns.foo}\n"
@@ -386,7 +386,7 @@ public final class FileSetMetadataTest {
   @Test
   public void testDuplicateDeltemplatesInSameDelpackage() {
     String file =
-        "{delpackage foo}\n"
+        "{modname foo}\n"
             + "{namespace ns}\n"
             + "/** Foo. */\n"
             + "{deltemplate foo.bar}\n"
@@ -398,21 +398,20 @@ public final class FileSetMetadataTest {
     SoyFileSetParserBuilder.forFileContents(file).errorReporter(errorReporter).parse();
     assertThat(errorReporter.getErrors()).hasSize(1);
     assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
-        .isEqualTo(
-            "Delegate template 'foo.bar' already defined in delpackage foo: no-path:4:1-5:14");
+        .isEqualTo("Delegate template 'foo.bar' already defined in mod foo: no-path:4:1-5:14");
   }
 
   @Test
   public void testDuplicateDeltemplatesInSameDelpackage_differentFiles() {
     String file =
-        "{delpackage foo}\n"
+        "{modname foo}\n"
             + "{namespace ns}\n"
             + "/** Foo. */\n"
             + "{deltemplate foo.bar}\n"
             + "{/deltemplate}\n";
 
     String file2 =
-        "{delpackage foo}\n"
+        "{modname foo}\n"
             + "{namespace ns2}\n"
             + "/** Foo. */\n"
             + "{deltemplate foo.bar}\n"
@@ -421,8 +420,7 @@ public final class FileSetMetadataTest {
     SoyFileSetParserBuilder.forFileContents(file, file2).errorReporter(errorReporter).parse();
     assertThat(errorReporter.getErrors()).hasSize(1);
     assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
-        .isEqualTo(
-            "Delegate template 'foo.bar' already defined in delpackage foo: no-path:4:1-5:14");
+        .isEqualTo("Delegate template 'foo.bar' already defined in mod foo: no-path:4:1-5:14");
   }
 
   @Test

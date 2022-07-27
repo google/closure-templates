@@ -1384,14 +1384,14 @@ public final class ContextualAutoescaperTest {
   public void testDelegateTemplatesAreEscaped() throws Exception {
     assertContextualRewriting(
         join(
-            "{delpackage dp}\n",
+            "{modname dp}\n",
             "{namespace ns}\n\n",
             "{deltemplate ns.foo}\n",
             "  {@param x: ?}\n",
             "{$x |escapeHtml}\n",
             "{/deltemplate}"),
         join(
-            "{delpackage dp}\n",
+            "{modname dp}\n",
             "{namespace ns}\n\n",
             "{deltemplate ns.foo}\n",
             "  {@param x: ?}\n",

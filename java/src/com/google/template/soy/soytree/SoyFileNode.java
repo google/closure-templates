@@ -278,7 +278,7 @@ public final class SoyFileNode extends AbstractParentSoyNode<SoyNode>
     StringBuilder sb = new StringBuilder();
 
     if (delPackage != null) {
-      sb.append("{delpackage ").append(delPackage.name()).append("}\n");
+      sb.append("{modname ").append(delPackage.name()).append("}\n");
     }
     sb.append(namespaceDeclaration.toSourceString());
 

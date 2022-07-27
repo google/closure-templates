@@ -127,7 +127,7 @@ public class BytecodeCompilerTest {
         SoyFileSupplier.Factory.create(
             Joiner.on("\n")
                 .join(
-                    "{delpackage SecretFeature}",
+                    "{modname SecretFeature}",
                     "{namespace ns2 requirecss=\"ns.foo\"}",
                     "",
                     "/** */",
@@ -142,7 +142,7 @@ public class BytecodeCompilerTest {
         SoyFileSupplier.Factory.create(
             Joiner.on("\n")
                 .join(
-                    "{delpackage AlternateSecretFeature}",
+                    "{modname AlternateSecretFeature}",
                     "{namespace ns3 requirecss=\"ns.bar\"}",
                     "import {helper} from 'ns4.soy';",
                     "",

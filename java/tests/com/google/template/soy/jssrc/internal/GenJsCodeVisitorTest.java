@@ -116,7 +116,7 @@ public final class GenJsCodeVisitorTest {
   @Test
   public void testSoyFileInDelegatePackage() {
     String testFileContent =
-        "{delpackage MySecretFeature}\n"
+        "{modname MySecretFeature}\n"
             + "{namespace boo.foo}\n"
             + "\n"
             + "/** Test delegate template. */\n"

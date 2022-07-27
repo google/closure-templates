@@ -1054,7 +1054,7 @@ public class RenderVisitorTest {
             + "{/deltemplate}\n";
 
     String soyFileContent2 =
-        "{delpackage SecretFeature}\n"
+        "{modname SecretFeature}\n"
             + "{namespace ns2}\n"
             + "\n"
             + "{deltemplate myApp.myDelegate}\n"
@@ -1064,7 +1064,7 @@ public class RenderVisitorTest {
             + "{/deltemplate}\n";
 
     String soyFileContent3 =
-        "{delpackage AlternateSecretFeature}\n"
+        "{modname AlternateSecretFeature}\n"
             + "{namespace ns3}\n"
             + "import {helper} from 'no-path-4';\n"
             + "{deltemplate myApp.myDelegate}\n"
@@ -1074,7 +1074,7 @@ public class RenderVisitorTest {
             + "{/deltemplate}\n";
 
     String soyFileContent4 =
-        "{delpackage AlternateSecretFeature}\n"
+        "{modname AlternateSecretFeature}\n"
             + "{namespace ns4}\n"
             + "\n"
             + "{template helper}\n"
@@ -1180,7 +1180,7 @@ public class RenderVisitorTest {
 
     String soyFileContent2 =
         ""
-            + "{delpackage SecretFeature}\n"
+            + "{modname SecretFeature}\n"
             + "{namespace ns2}\n"
             + "\n"
             + "{deltemplate myApp.myDelegate}\n"
@@ -1203,7 +1203,7 @@ public class RenderVisitorTest {
 
     String soyFileContent3 =
         ""
-            + "{delpackage AlternateSecretFeature}\n"
+            + "{modname AlternateSecretFeature}\n"
             + "{namespace ns3}\n"
             + "\n"
             + "{deltemplate myApp.myDelegate}\n"
@@ -1286,7 +1286,7 @@ public class RenderVisitorTest {
             + "{/template}\n";
 
     String soyFileContent2 =
-        "{delpackage SecretFeature}\n"
+        "{modname SecretFeature}\n"
             + "{namespace ns2}\n"
             + "\n"
             + "{deltemplate delegateForUnitTest}\n"

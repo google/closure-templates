@@ -96,8 +96,6 @@ final class Tokens {
         // File-level tokens:
       case SoyFileParserConstants.ALIAS_OPEN:
         return "{alias";
-      case SoyFileParserConstants.DELPACKAGE_OPEN:
-        return "{delpackage";
       case SoyFileParserConstants.MODNAME_OPEN:
         return "{modname";
       case SoyFileParserConstants.DELTEMPLATE_OPEN:

@@ -42,7 +42,7 @@ public final class CheckDelegatesPassTest {
             + "  blah\n"
             + "{/template}\n",
         ""
-            + "{delpackage SecretFeature}\n"
+            + "{modname SecretFeature}\n"
             + "{namespace ns2}\n"
             + "\n"
             + "/***/\n"
@@ -67,7 +67,7 @@ public final class CheckDelegatesPassTest {
             + "  000\n"
             + "{/deltemplate}\n",
         ""
-            + "{delpackage SecretFeature}\n"
+            + "{modname SecretFeature}\n"
             + "{namespace ns2}\n"
             + "\n"
             + "{deltemplate MagicButton}\n"
@@ -92,7 +92,7 @@ public final class CheckDelegatesPassTest {
             + "  000\n"
             + "{/deltemplate}\n",
         ""
-            + "{delpackage SecretFeature}\n"
+            + "{modname SecretFeature}\n"
             + "{namespace ns2}\n"
             + "\n"
             + "{deltemplate MagicButton}\n"
@@ -113,7 +113,7 @@ public final class CheckDelegatesPassTest {
             + "  blah\n"
             + "{/template}\n",
         ""
-            + "{delpackage SecretFeature}\n"
+            + "{modname SecretFeature}\n"
             + "{namespace ns2}\n"
             + "\n"
             + "/***/\n"
@@ -143,7 +143,7 @@ public final class CheckDelegatesPassTest {
             + "  000\n"
             + "{/deltemplate}\n",
         ""
-            + "{delpackage SecretFeature}\n"
+            + "{modname SecretFeature}\n"
             + "{namespace ns2}\n"
             + "\n"
             + "{deltemplate MagicButton}\n"
@@ -169,7 +169,7 @@ public final class CheckDelegatesPassTest {
             + "  000\n"
             + "{/deltemplate}\n",
         ""
-            + "{delpackage SecretFeature}\n"
+            + "{modname SecretFeature}\n"
             + "{namespace ns2}\n"
             + "\n"
             + "{deltemplate MagicButton}\n"
@@ -225,7 +225,7 @@ public final class CheckDelegatesPassTest {
             + "  blah\n"
             + "{/template}\n",
         ""
-            + "{delpackage SecretFeature}\n"
+            + "{modname SecretFeature}\n"
             + "{namespace ns2}\n"
             + "\n"
             + "/***/\n"
@@ -248,7 +248,7 @@ public final class CheckDelegatesPassTest {
             + // call to ns2.foo, which is public
             "{/template}\n",
         ""
-            + "{delpackage SecretFeature}\n"
+            + "{modname SecretFeature}\n"
             + "{namespace ns2}\n"
             + "\n"
             + "/***/\n"
@@ -262,7 +262,7 @@ public final class CheckDelegatesPassTest {
     assertInvalidSoyFiles(
         "Found illegal call from 'ns1.boo' to 'ns2.foo', which is in a different delegate package.",
         ""
-            + "{delpackage NotQuiteSoSecretFeature}\n"
+            + "{modname NotQuiteSoSecretFeature}\n"
             + "{namespace ns1}\n"
             + "import {foo} from 'no-path-2';\n"
             + "/***/\n"
@@ -271,7 +271,7 @@ public final class CheckDelegatesPassTest {
             + // call to ns2.foo, which is public
             "{/template}\n",
         ""
-            + "{delpackage SecretFeature}\n"
+            + "{modname SecretFeature}\n"
             + "{namespace ns2}\n"
             + "\n"
             + "/***/\n"
