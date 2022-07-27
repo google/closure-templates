@@ -229,6 +229,10 @@ public final class TranslateExprNodeVisitorTest {
   @Test
   public void tesUnknownJsGlobal() {
     assertThatSoyExpr("unknownJsGlobal('foo.Bar')")
-        .generatesCode("/** @suppress {missingRequire} */", "const $tmp = foo.Bar;", "$tmp;");
+        .generatesCode(
+            "/** @suppress {missingRequire,undefinedNames,undefinedVars,strictMissingProperties}"
+                + " */",
+            "const $tmp = foo.Bar;",
+            "$tmp;");
   }
 }

@@ -1004,7 +1004,14 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     return codeGenerator
         .declarationBuilder()
         .setRhs(Expression.dottedIdNoRequire(expr.getValue()))
-        .setJsDoc(JsDoc.builder().addParameterizedAnnotation("suppress", "missingRequire").build())
+        .setJsDoc(
+            JsDoc.builder()
+                // Unknown globals are not type safe by definition and the feature is deprecated.
+                // suppress everything.
+                .addParameterizedAnnotation(
+                    "suppress",
+                    "missingRequire,undefinedNames,undefinedVars,strictMissingProperties")
+                .build())
         .build()
         .ref();
   }

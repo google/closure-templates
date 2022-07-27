@@ -2004,7 +2004,12 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
               ? JsRuntime.EXPORTS
               : dottedIdNoRequire(file.getNamespace());
       Expression export = exportAlias.dotAccess(externName);
-      jsCodeBuilder.append(Statement.assign(export, externReference));
+      jsCodeBuilder.append(
+          Statement.assign(
+              export,
+              externReference,
+              // TODO: use a better type
+              JsDoc.builder().addParameterizedAnnotation("const", "!Function").build()));
     }
   }
 
