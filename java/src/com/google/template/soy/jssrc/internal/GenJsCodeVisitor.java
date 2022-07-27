@@ -824,9 +824,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         .call(
             SOY_GET_DELTEMPLATE_ID.call(
                 stringLiteral(delTemplateNamer.getDelegateName(literal.getResolvedName()))),
-            nodeAsBasicTemplate.getVariantExpr() == null
-                ? stringLiteral("")
-                : translateExpr(nodeAsBasicTemplate.getVariantExpr()),
+            stringLiteral(nodeAsBasicTemplate.getDelTemplateVariant()),
             number(nodeAsBasicTemplate.getSoyFileHeaderInfo().getPriority().getValue()),
             aliasExp)
         .asStatement();

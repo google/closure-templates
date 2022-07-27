@@ -18,6 +18,7 @@ package com.google.template.soy.soytree;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -39,7 +40,9 @@ import javax.annotation.Nullable;
 public final class TemplateBasicNode extends TemplateNode {
 
   public static final SoyErrorKind INVALID_USEVARIANTTYPE =
-      SoyErrorKind.of("Invalid type name \"{0}\" for attribute \"usevarianttype\".");
+      SoyErrorKind.of(
+          "Invalid type name \"{0}\" for attribute \"usevarianttype\". Must be \"int\", "
+              + "\"string\", or a proto enum.");
 
   /** The "modifiable" attribute. */
   private final boolean modifiable;
@@ -133,6 +136,9 @@ public final class TemplateBasicNode extends TemplateNode {
     return getCommandTagAttribute("variant").map(a -> a.valueAsExprList().get(0)).orElse(null);
   }
 
+  private static final ImmutableSet<SoyType.Kind> VALID_VARIANT_TYPES =
+      ImmutableSet.of(SoyType.Kind.INT, SoyType.Kind.STRING, SoyType.Kind.PROTO_ENUM);
+
   public void resolveUseVariantType(SoyTypeRegistry registry, ErrorReporter errorReporter) {
     Preconditions.checkState(useVariantType == null);
     if (useVariantTypeString.isEmpty()) {
@@ -140,7 +146,7 @@ public final class TemplateBasicNode extends TemplateNode {
       return;
     }
     SoyType resolvedType = registry.getType(useVariantTypeString);
-    if (resolvedType == null) {
+    if (resolvedType == null || !VALID_VARIANT_TYPES.contains(resolvedType.getKind())) {
       errorReporter.report(getSourceLocation(), INVALID_USEVARIANTTYPE, useVariantTypeString);
       useVariantType = NullType.getInstance();
     } else {

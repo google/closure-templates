@@ -775,8 +775,6 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     if (exprNode instanceof StringNode) {
       return ((StringNode) exprNode).getValue();
     }
-    // TODO(b/233903316): This is all types allowed by delegate templates. Lock down the possible
-    // types on modifiable templates and handle them all here.
     // We must have already reported an error, just create an arbitrary variant expr.
     return exprNode.toSourceString();
   }
