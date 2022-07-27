@@ -297,7 +297,6 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
           "nova.images.templates.bordeaux.flip35gWireframe",
           "nova.images.templates.ellen.landingLazyPricingIllo",
           "nova.images.templates.partner_retail_setup.bestBuyLogo",
-          "roads.suspended.templates.alert",
           "soyfmt.deltemp");
 
   private final class CheckCallsHelper {
