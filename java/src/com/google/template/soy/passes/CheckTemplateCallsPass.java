@@ -246,7 +246,6 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
           "boq.androidgantryui.common.local.templates.localBanner",
           "boq.dasheradminconsolefrontendshell.landing.leftnav.globalparamsmod.templates.globalParamsForCollapsed",
           "boq.dasheradminconsoleui.appshealth.grid.templates.uptimeGrid",
-          "boq.dotssplash.storypanel.templates.isGm3AlphaEnabled",
           "boq.geomerchantprestoadslandingsharedv2.common.url.templates.buildUrlImpl",
           "boq.hiringcportalfrontendui.applymain.templates.skillsSections",
           "boq.meetingscommon.ui.settings.templates.displayButton",
