@@ -263,7 +263,6 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
           "gcal.mat.ui.attendeelist.soy.attendeelist.workingLocation",
           "gcal.mat.ui.attendeelist.soy.attendeelist.workingLocationEverywhereActions",
           "gcal.mat.ui.attendeelist.soy.attendeelist.workingLocationEverywhereActionsAction",
-          "gcal.mat.views.generalsettings.workinghourscard.soy.workinghourscard.multipleWorkingHoursDetails",
           "ic.soy.url.isIdentityColorSchemeDark",
           "lso.extraMeta",
           "lso.pageBody",
