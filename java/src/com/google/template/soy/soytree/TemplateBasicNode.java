@@ -23,12 +23,14 @@ import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.soytree.SoyNode.Kind;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
+import com.google.template.soy.types.TemplateType;
 import java.util.Optional;
 import javax.annotation.Nullable;
 
@@ -189,5 +191,29 @@ public final class TemplateBasicNode extends TemplateNode {
   private String resolveVariantExpression() {
     variantString = TemplateNode.variantExprToString(getVariantExpr().getRoot());
     return variantString;
+  }
+
+  /**
+   * The name to use for the @hassoydeltemplate annotation. For modifiable templates, return its own
+   * name or legacy namespace. For modifying templates, return the name or legacy namespace of the
+   * template being modified. Otherwise, return null (ie, don't emit @hassoydeltemplate).
+   */
+  @Nullable
+  // TODO(b/233903480): Remove these once we migrate to @mods
+  public String deltemplateAnnotationName() {
+    if (isModifiable()) {
+      return !getLegacyDeltemplateNamespace().isEmpty()
+          ? getLegacyDeltemplateNamespace()
+          : getTemplateName();
+    }
+    if (getModifiesExpr() != null && getModifiesExpr().getRoot() instanceof TemplateLiteralNode) {
+      TemplateLiteralNode templateLiteralNode = (TemplateLiteralNode) getModifiesExpr().getRoot();
+      SoyType nodeType = templateLiteralNode.getType();
+      if (nodeType instanceof TemplateType) {
+        String legacyNamespace = ((TemplateType) nodeType).getLegacyDeltemplateNamespace();
+        return !legacyNamespace.isEmpty() ? legacyNamespace : templateLiteralNode.getResolvedName();
+      }
+    }
+    return null;
   }
 }

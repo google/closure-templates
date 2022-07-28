@@ -21,6 +21,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.template.soy.jssrc.dsl.Expression.EMPTY_OBJECT_LITERAL;
 import static com.google.template.soy.jssrc.dsl.Expression.dottedIdNoRequire;
 import static com.google.template.soy.jssrc.dsl.Expression.id;
@@ -86,6 +87,7 @@ import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.ConstNode;
 import com.google.template.soy.soytree.DebuggerNode;
+import com.google.template.soy.soytree.DelcallAnnotationVisitor;
 import com.google.template.soy.soytree.ExternNode;
 import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.ForNode;
@@ -428,8 +430,8 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     if (node.getDelPackageName() != null) {
       jsDocBuilder.addParameterizedAnnotation("modName", node.getDelPackageName());
     }
-    addJsDocToProvideDelTemplates(jsDocBuilder, node);
-    addJsDocToRequireDelTemplates(jsDocBuilder, node);
+    addHasSoyDelTemplateAnnotations(jsDocBuilder, node);
+    addHasSoyDelCallAnnotations(jsDocBuilder, node);
     addCodeToRequireCss(jsDocBuilder, node);
     jsDocBuilder.addAnnotation("public");
     file.append(jsDocBuilder.build());
@@ -620,12 +622,18 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
             });
   }
 
-  private void addJsDocToProvideDelTemplates(JsDoc.Builder header, SoyFileNode soyFile) {
+  // TODO(b/233903480): Remove these once we migrate to @mods
+  private void addHasSoyDelTemplateAnnotations(JsDoc.Builder header, SoyFileNode soyFile) {
 
     SortedSet<String> delTemplateNames = new TreeSet<>();
     for (TemplateNode template : soyFile.getTemplates()) {
       if (template instanceof TemplateDelegateNode) {
         delTemplateNames.add(delTemplateNamer.getDelegateName((TemplateDelegateNode) template));
+      } else if (template instanceof TemplateBasicNode) {
+        String annotationName = ((TemplateBasicNode) template).deltemplateAnnotationName();
+        if (annotationName != null) {
+          delTemplateNames.add(delTemplateNamer.getDelegateName(annotationName));
+        }
       }
     }
     for (String delTemplateName : delTemplateNames) {
@@ -633,18 +641,23 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     }
   }
 
-  private void addJsDocToRequireDelTemplates(JsDoc.Builder header, SoyFileNode soyFile) {
+  // TODO(b/233903480): Remove these once we migrate to @mods
+  private void addHasSoyDelCallAnnotations(JsDoc.Builder header, SoyFileNode soyFile) {
 
     SortedSet<String> delTemplateNames = new TreeSet<>();
     for (CallDelegateNode delCall :
         SoyTreeUtils.getAllNodesOfType(soyFile, CallDelegateNode.class)) {
       delTemplateNames.add(delTemplateNamer.getDelegateName(delCall));
     }
+    delTemplateNames.addAll(
+        new DelcallAnnotationVisitor()
+            .exec(soyFile).stream()
+                .map(delTemplateNamer::getDelegateName)
+                .collect(toImmutableSet()));
     for (String delTemplateName : delTemplateNames) {
       header.addParameterizedAnnotation("hassoydelcall", delTemplateName);
     }
   }
-
   /**
    * Helper for visitSoyFileNode(SoyFileNode) to add code to require Soy namespaces.
    *
