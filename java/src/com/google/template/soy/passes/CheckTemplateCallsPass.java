@@ -241,7 +241,6 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
           // $ experimental/users/nicholasyu/del/regendata.sh
           // $ grep allowemptydefault /tmp/delcalls.txt | awk '{printf "\"%s\",\n", $3}' | sort |
           // uniq | grep -v '^"boq.dpanelchromeui.'
-          "boq.accountsettingsnotifications.securityevent.templates.eventDetails",
           "boq.ads.townsquare.marketplaceui.components.componentregistry.classes.templates.type",
           "boq.androidgantryui.common.local.templates.localBanner",
           "boq.dasheradminconsolefrontendshell.landing.leftnav.globalparamsmod.templates.globalParamsForCollapsed",
