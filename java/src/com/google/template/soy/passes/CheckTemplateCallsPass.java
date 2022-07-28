@@ -259,8 +259,6 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
           "gcal.mat.bubble.edit.reminder.soy.bubble.infobanner",
           "gcal.mat.ui.attendeelist.soy.attendeelist.attendeeLocationIcon",
           "gcal.mat.ui.attendeelist.soy.attendeelist.workingLocation",
-          "gcal.mat.ui.attendeelist.soy.attendeelist.workingLocationEverywhereActions",
-          "gcal.mat.ui.attendeelist.soy.attendeelist.workingLocationEverywhereActionsAction",
           "ic.soy.url.isIdentityColorSchemeDark",
           "nova.images.templates.bordeaux.flip35gWireframe",
           "nova.images.templates.ellen.landingLazyPricingIllo",
