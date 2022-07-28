@@ -16,8 +16,13 @@
 
 package com.google.template.soy.jssrc.internal;
 
+import com.google.common.base.Preconditions;
+import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.soytree.CallDelegateNode;
+import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
+import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.TemplateType;
 
 /**
  * Transforms the name of a delegate template (as it appears in source code) into a name suitable
@@ -36,6 +41,42 @@ public class DelTemplateNamer {
    */
   final String getDelegateName(TemplateDelegateNode node) {
     return getDelegateName(node.getDelTemplateName());
+  }
+
+  /**
+   * Gets the name for a modifiable template, which is used to refer to it along with the variant in
+   * the runtime map. Uses the legacy namespace if it exists.
+   *
+   * @param node A node representing a mod template
+   * @return A string that is used to refer to the delegate template.
+   */
+  final String getDelegateName(TemplateBasicNode node) {
+    Preconditions.checkState(node.isModifiable());
+    String delegateMapKey =
+        !node.getLegacyDeltemplateNamespace().isEmpty()
+            ? node.getLegacyDeltemplateNamespace()
+            : node.getTemplateName();
+    return getDelegateName(delegateMapKey);
+  }
+
+  /**
+   * Gets the name for a modifying template, given the literal of the template which is being
+   * modified. Uses legacy namespace if it exists.
+   *
+   * @param node A node representing a mod template
+   * @return A string that is used to refer to the delegate template.
+   */
+  final String getDelegateName(TemplateLiteralNode node) {
+    SoyType nodeType = node.getType();
+    if (!(nodeType instanceof TemplateType)) {
+      return node.getResolvedName();
+    }
+    TemplateType templateType = (TemplateType) nodeType;
+    Preconditions.checkState(templateType.isModifiable());
+    return getDelegateName(
+        !templateType.getLegacyDeltemplateNamespace().isEmpty()
+            ? templateType.getLegacyDeltemplateNamespace()
+            : node.getResolvedName());
   }
 
   /**

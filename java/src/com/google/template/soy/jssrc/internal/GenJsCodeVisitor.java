@@ -39,7 +39,6 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_SOY;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_SOY_ALIAS;
 import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_DATA;
 import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_VARIANT;
-import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_ALIAS_DELEGATE_ID;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_GET_DELEGATE_FN;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_GET_DELTEMPLATE_ID;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_MAKE_EMPTY_TEMPLATE_FN;
@@ -807,8 +806,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     return SOY_REGISTER_DELEGATE_FN
         .call(
             SOY_GET_DELTEMPLATE_ID.call(
-                stringLiteral(
-                    delTemplateNamer.getDelegateName(nodeAsBasicTemplate.getTemplateName()))),
+                stringLiteral(delTemplateNamer.getDelegateName(nodeAsBasicTemplate))),
             stringLiteral(""),
             number(nodeAsBasicTemplate.getSoyFileHeaderInfo().getPriority().getValue()),
             aliasExp)
@@ -822,8 +820,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         (TemplateLiteralNode) nodeAsBasicTemplate.getModifiesExpr().getRoot();
     return SOY_REGISTER_DELEGATE_FN
         .call(
-            SOY_GET_DELTEMPLATE_ID.call(
-                stringLiteral(delTemplateNamer.getDelegateName(literal.getResolvedName()))),
+            SOY_GET_DELTEMPLATE_ID.call(stringLiteral(delTemplateNamer.getDelegateName(literal))),
             stringLiteral(nodeAsBasicTemplate.getDelTemplateVariant()),
             number(nodeAsBasicTemplate.getSoyFileHeaderInfo().getPriority().getValue()),
             aliasExp)
@@ -1060,20 +1057,6 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       TemplateBasicNode templateBasicNode = (TemplateBasicNode) node;
       declarations.add(
           makeRegisterDefaultFnCall(templateBasicNode, dottedIdNoRequire(defaultImplName)));
-      if (!templateBasicNode.getLegacyDeltemplateNamespace().isEmpty()) {
-        // Also alias the legacydeltemplatenamespace to the mod template name.
-        declarations.add(
-            SOY_ALIAS_DELEGATE_ID
-                .call(
-                    SOY_GET_DELTEMPLATE_ID.call(
-                        stringLiteral(
-                            delTemplateNamer.getDelegateName(
-                                templateBasicNode.getLegacyDeltemplateNamespace()))),
-                    SOY_GET_DELTEMPLATE_ID.call(
-                        stringLiteral(
-                            delTemplateNamer.getDelegateName(templateBasicNode.getTemplateName()))))
-                .asStatement());
-      }
     }
 
     // ------ For mod templates, generate a statement to register it. ------
@@ -1281,7 +1264,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     Expression delegateFn =
         SOY_GET_DELEGATE_FN.call(
             SOY_GET_DELTEMPLATE_ID.call(
-                stringLiteral(delTemplateNamer.getDelegateName(node.getTemplateName()))),
+                stringLiteral(delTemplateNamer.getDelegateName((TemplateBasicNode) node))),
             isModifiableWithUseVariantType(node)
                 ? OPT_VARIANT.or(stringLiteral(""), codeGenerator)
                 : stringLiteral(""));
