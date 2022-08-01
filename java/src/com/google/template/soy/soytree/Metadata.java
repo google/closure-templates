@@ -745,16 +745,11 @@ public final class Metadata {
     allTemplates.forEach(
         template -> {
           if (template.getDelTemplateName() != null) {
-            addDeltemplate(
-                template.getDelTemplateName(), template, errorReporter, fileSetMetadata, builder);
-            if (!template.getTemplateType().getLegacyDeltemplateNamespace().isEmpty()) {
-              addDeltemplate(
-                  template.getTemplateType().getLegacyDeltemplateNamespace(),
-                  template,
-                  errorReporter,
-                  fileSetMetadata,
-                  builder);
-            }
+            String delTemplateName =
+                !template.getTemplateType().getLegacyDeltemplateNamespace().isEmpty()
+                    ? template.getTemplateType().getLegacyDeltemplateNamespace()
+                    : template.getDelTemplateName();
+            addDeltemplate(delTemplateName, template, errorReporter, fileSetMetadata, builder);
           }
         });
     return builder.build();
