@@ -434,14 +434,20 @@ public final class JbcSrcRuntime {
   public static Double toBoxedDouble(SoyValue value) {
     if (value == null) {
       return null;
+    } else if (value instanceof NumberData) {
+      return ((NumberData) value).numberValue();
     }
+    // This is probably an error, in which case this call with throw an appropriate exception.
     return value.floatValue();
   }
 
   public static Float toBoxedFloat(SoyValue value) {
     if (value == null) {
       return null;
+    } else if (value instanceof NumberData) {
+      return (float) ((NumberData) value).numberValue();
     }
+    // This is probably an error, in which case this call with throw an appropriate exception.
     return (float) value.floatValue();
   }
 
