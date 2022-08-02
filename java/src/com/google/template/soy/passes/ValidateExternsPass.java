@@ -22,6 +22,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.html.types.SafeHtml;
 import com.google.common.html.types.SafeHtmlProto;
@@ -35,6 +36,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.data.SoyVisualElement;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
@@ -105,6 +107,11 @@ class ValidateExternsPass implements CompilerFilePass {
       SoyErrorKind.of("Return type of method ''{0}'' must be one of [{1}].");
   private static final SoyErrorKind IMPLICIT_PARAM_ORDER =
       SoyErrorKind.of("Implicit Java parameter {0} must come at the end of the parameter list.");
+
+  // Additions to this should be minimal as this circumvents Soy's compile time VE checks. Please
+  private static final ImmutableSetMultimap<String, String> ALLOWED_VE_EXTERNS =
+      ImmutableSetMultimap.of(
+          );
 
   private final ErrorReporter errorReporter;
   private final MethodChecker checker;
@@ -402,6 +409,8 @@ class ValidateExternsPass implements CompilerFilePass {
         SoyProtoEnumType protoEnumType = (SoyProtoEnumType) soyType;
         return JavaQualifiedNames.getClassName(protoEnumType.getDescriptor())
             .equals(javaType.getName());
+      case VE:
+        return isAllowedVeExtern(extern) && javaType == SoyVisualElement.class;
       default:
         return false;
     }
@@ -410,6 +419,11 @@ class ValidateExternsPass implements CompilerFilePass {
   private static boolean isAllowedParameterizedType(SoyType type, ExternNode extern) {
     return ALLOWED_PARAMETERIZED_TYPES.contains(type.getKind())
         || SoyTypes.NUMBER_TYPE.equals(type);
+  }
+
+  private static boolean isAllowedVeExtern(ExternNode extern) {
+    return ALLOWED_VE_EXTERNS.containsEntry(
+        extern.getSourceLocation().getFilePath().path(), extern.getIdentifier().identifier());
   }
 
   private static boolean protoTypesAreCompatible(String javaType, SoyType soyType) {
