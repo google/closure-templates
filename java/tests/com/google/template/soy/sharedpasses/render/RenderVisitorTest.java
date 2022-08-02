@@ -287,7 +287,7 @@ public class RenderVisitorTest {
             new EvalVisitorFactoryImpl(),
             outputSb,
             ImmutableMap.of(),
-            new DelTemplateSelector.Builder<TemplateDelegateNode>().build(),
+            new DelTemplateSelector.Builder<TemplateNode>().build(),
             ImmutableTable.of(),
             ImmutableTable.of(),
             data,
@@ -1634,10 +1634,9 @@ public class RenderVisitorTest {
     return basicTemplates.build();
   }
 
-  static DelTemplateSelector<TemplateDelegateNode> getDeltemplateSelector(SoyFileSetNode fileSet) {
+  static DelTemplateSelector<TemplateNode> getDeltemplateSelector(SoyFileSetNode fileSet) {
 
-    DelTemplateSelector.Builder<TemplateDelegateNode> deltemplates =
-        new DelTemplateSelector.Builder<>();
+    DelTemplateSelector.Builder<TemplateNode> deltemplates = new DelTemplateSelector.Builder<>();
     for (SoyFileNode fileNode : fileSet.getChildren()) {
       for (TemplateNode template : SoyTreeUtils.getAllNodesOfType(fileNode, TemplateNode.class)) {
         if (template instanceof TemplateDelegateNode) {

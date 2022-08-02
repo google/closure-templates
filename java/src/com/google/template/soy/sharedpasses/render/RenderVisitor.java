@@ -89,7 +89,7 @@ import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 import com.google.template.soy.soytree.SwitchCaseNode;
 import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
-import com.google.template.soy.soytree.TemplateDelegateNode;
+import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.VeLogNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
@@ -116,7 +116,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
   protected final EvalVisitorFactory evalVisitorFactory;
 
   protected final ImmutableMap<String, TemplateNode> basicTemplates;
-  protected final DelTemplateSelector<TemplateDelegateNode> deltemplates;
+  protected final DelTemplateSelector<TemplateNode> deltemplates;
   protected final ImmutableTable<SourceFilePath, String, ConstNode> constants;
   /** The current template data. */
   protected final SoyRecord data;
@@ -168,6 +168,8 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
   /** The runtime instances for functions. */
   private final PluginInstances pluginInstances;
 
+  private static final String VARIANT_PARAM_NAME = "$$__variant__";
+
   /**
    * @param evalVisitorFactory Factory for creating an instance of EvalVisitor.
    * @param outputBuf The Appendable to append the output to.
@@ -185,7 +187,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       EvalVisitorFactory evalVisitorFactory,
       Appendable outputBuf,
       ImmutableMap<String, TemplateNode> basicTemplates,
-      DelTemplateSelector<TemplateDelegateNode> deltemplates,
+      DelTemplateSelector<TemplateNode> deltemplates,
       ImmutableTable<SourceFilePath, String, ConstNode> constants,
       ImmutableTable<SourceFilePath, String, ImmutableList<ExternNode>> externs,
       SoyRecord data,
@@ -277,17 +279,33 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
   /** A private helper to render templates with optimized type checking. */
   private void renderTemplate(TemplateNode template) {
-    env = Environment.create(template, data, ijData);
+    TemplateNode templateToRender = getTemplateToRender(template);
+    env = Environment.create(templateToRender, data, ijData);
 
     // Visit top-level constant and imports explicitly every time we render a new template, in order
     // to populate the variable environment.
-    SoyFileNode file = template.getParent();
+    SoyFileNode file = templateToRender.getParent();
     file.getImports().forEach(this::visitImportNode);
     file.getConstants().forEach(this::visitConstNode);
 
-    checkStrictParamTypes(template);
-    visitChildren(template);
+    checkStrictParamTypes(templateToRender);
+    visitChildren(templateToRender);
     env = null; // unpin for gc
+  }
+
+  /** If the template is a modifiable template, look it up in the map and return the active one. */
+  private TemplateNode getTemplateToRender(TemplateNode template) {
+    if (template instanceof TemplateBasicNode && ((TemplateBasicNode) template).isModifiable()) {
+      TemplateBasicNode templateBasicNode = (TemplateBasicNode) template;
+      String mapKey =
+          !templateBasicNode.getLegacyDeltemplateNamespace().isEmpty()
+              ? templateBasicNode.getLegacyDeltemplateNamespace()
+              : templateBasicNode.getTemplateName();
+      return deltemplates.selectTemplate(
+          mapKey, data.getField(VARIANT_PARAM_NAME).stringValue(), activeDelPackageSelector);
+    }
+
+    return template;
   }
 
   // -----------------------------------------------------------------------------------------------
@@ -533,6 +551,30 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     visitCallNodeHelper(node, callee, calleeExpr.getBoundParameters());
   }
 
+  /** Returns the variant expression coerce to a string for map lookup. */
+  protected String variantString(ExprNode variantExpr, CallNode node) {
+    try {
+      SoyValue variantData = eval(variantExpr, node);
+      if (variantData instanceof IntegerData) {
+        // An integer constant is being used as variant. Use the value string representation as
+        // variant.
+        return String.valueOf(variantData.longValue());
+      } else {
+        // Variant is either a StringData or a SanitizedContent. Use the value as a string. If
+        // the value is not a string, and exception will be thrown.
+        return variantData.coerceToString();
+      }
+    } catch (SoyDataException e) {
+      throw RenderException.createWithSource(
+          String.format(
+              "Variant expression \"%s\" doesn't evaluate to a valid type "
+                  + "(Only string, integer, and proto enums are supported).",
+              variantExpr.toSourceString()),
+          e,
+          node);
+    }
+  }
+
   @Override
   protected void visitCallDelegateNode(CallDelegateNode node) {
 
@@ -541,28 +583,9 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     if (variantExpr == null) {
       variant = "";
     } else {
-      try {
-        SoyValue variantData = eval(variantExpr, node);
-        if (variantData instanceof IntegerData) {
-          // An integer constant is being used as variant. Use the value string representation as
-          // variant.
-          variant = String.valueOf(variantData.longValue());
-        } else {
-          // Variant is either a StringData or a SanitizedContent. Use the value as a string. If
-          // the value is not a string, and exception will be thrown.
-          variant = variantData.coerceToString();
-        }
-      } catch (SoyDataException e) {
-        throw RenderException.createWithSource(
-            String.format(
-                "Variant expression \"%s\" doesn't evaluate to a valid type "
-                    + "(Only string and integer are supported).",
-                variantExpr.toSourceString()),
-            e,
-            node);
-      }
+      variant = variantString(variantExpr, node);
     }
-    TemplateDelegateNode callee;
+    TemplateNode callee;
     try {
       callee =
           deltemplates.selectTemplate(node.getDelCalleeName(), variant, activeDelPackageSelector);
@@ -590,7 +613,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       CallNode node, TemplateNode callee, Optional<SoyRecord> boundParams) {
 
     // ------ Build the call data. ------
-    SoyRecord callData = createCallParams(node);
+    SoyRecord callData = createCallParamsWithVariant(node);
     if (boundParams.isPresent()) {
       callData = SoyRecords.merge(boundParams.get(), callData);
     }
@@ -632,6 +655,23 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       }
       append(currOutputBuf, resultData, node);
     }
+  }
+
+  private String getVariant(CallNode node) {
+    if (!(node instanceof CallBasicNode)) {
+      return "";
+    }
+    CallBasicNode callBasicNode = (CallBasicNode) node;
+    if (callBasicNode.getVariantExpr() == null) {
+      return "";
+    }
+    return variantString(callBasicNode.getVariantExpr(), callBasicNode);
+  }
+
+  private SoyRecord createCallParamsWithVariant(CallNode node) {
+    SoyRecord params = createCallParams(node);
+    return new ParamStore(params, params.recordSize() + 1)
+        .setField(VARIANT_PARAM_NAME, StringData.forValue(getVariant(node)));
   }
 
   private SoyRecord createCallParams(CallNode node) {
@@ -703,7 +743,6 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
         throw new AssertionError();
       }
     }
-
     return params;
   }
 

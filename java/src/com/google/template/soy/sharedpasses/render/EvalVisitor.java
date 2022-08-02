@@ -137,7 +137,7 @@ import com.google.template.soy.shared.restricted.SoyMethod;
 import com.google.template.soy.shared.restricted.SoySourceFunctionMethod;
 import com.google.template.soy.soytree.ExternNode;
 import com.google.template.soy.soytree.JavaImplNode;
-import com.google.template.soy.soytree.TemplateDelegateNode;
+import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.SoyProtoType;
@@ -204,7 +204,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
         boolean debugSoyTemplateInfo,
         PluginInstances pluginInstances,
         ImmutableTable<SourceFilePath, String, ImmutableList<ExternNode>> externs,
-        DelTemplateSelector<TemplateDelegateNode> deltemplates,
+        DelTemplateSelector<TemplateNode> deltemplates,
         Predicate<String> activeDelPackageSelector);
   }
 
@@ -235,7 +235,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
   private final UndefinedDataHandlingMode undefinedDataHandlingMode;
 
   private final ImmutableTable<SourceFilePath, String, ImmutableList<ExternNode>> externs;
-  private final DelTemplateSelector<TemplateDelegateNode> deltemplates;
+  private final DelTemplateSelector<TemplateNode> deltemplates;
   private final Predicate<String> activeDelPackageSelector;
 
   /**
@@ -251,7 +251,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       PluginInstances pluginInstances,
       UndefinedDataHandlingMode undefinedDataHandlingMode,
       ImmutableTable<SourceFilePath, String, ImmutableList<ExternNode>> externs,
-      DelTemplateSelector<TemplateDelegateNode> deltemplates,
+      DelTemplateSelector<TemplateNode> deltemplates,
       Predicate<String> activeDelPackageSelector) {
     this.env = checkNotNull(env);
     this.msgBundle = msgBundle;
@@ -959,7 +959,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
 
   private RenderCssHelper getRenderCssHelper() {
     return (delTemplate, variant) -> {
-      TemplateDelegateNode data =
+      TemplateNode data =
           deltemplates.selectTemplate(delTemplate, variant, activeDelPackageSelector);
       return data != null ? data.getTemplateName() : null;
     };

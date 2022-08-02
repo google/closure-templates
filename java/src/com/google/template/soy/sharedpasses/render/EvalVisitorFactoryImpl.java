@@ -26,7 +26,7 @@ import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.internal.DelTemplateSelector;
 import com.google.template.soy.sharedpasses.render.EvalVisitor.EvalVisitorFactory;
 import com.google.template.soy.soytree.ExternNode;
-import com.google.template.soy.soytree.TemplateDelegateNode;
+import com.google.template.soy.soytree.TemplateNode;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
@@ -46,7 +46,7 @@ public final class EvalVisitorFactoryImpl implements EvalVisitorFactory {
       boolean debugSoyTemplateInfo,
       PluginInstances pluginInstances,
       ImmutableTable<SourceFilePath, String, ImmutableList<ExternNode>> externs,
-      DelTemplateSelector<TemplateDelegateNode> deltemplates,
+      DelTemplateSelector<TemplateNode> deltemplates,
       Predicate<String> activeDelPackageSelector) {
     return new EvalVisitor(
         env,

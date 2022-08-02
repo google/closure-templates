@@ -55,12 +55,14 @@ import com.google.template.soy.soytree.ExternNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
+import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.tofu.SoyTofu;
 import com.google.template.soy.tofu.SoyTofuException;
+import com.google.template.soy.types.TemplateType;
 import java.util.ArrayDeque;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -80,7 +82,7 @@ public final class BaseTofu implements SoyTofu {
   private final SoyScopedData.Enterable apiCallScope;
 
   private final ImmutableMap<String, TemplateNode> basicTemplates;
-  private final DelTemplateSelector<TemplateDelegateNode> delTemplates;
+  private final DelTemplateSelector<TemplateNode> delTemplates;
   private final ImmutableTable<SourceFilePath, String, ConstNode> constants;
   private final ImmutableTable<SourceFilePath, String, ImmutableList<ExternNode>> externs;
 
@@ -95,8 +97,7 @@ public final class BaseTofu implements SoyTofu {
       PluginInstances pluginInstances) {
     this.apiCallScope = apiCallScope;
     ImmutableMap.Builder<String, TemplateNode> basicTemplates = ImmutableMap.builder();
-    DelTemplateSelector.Builder<TemplateDelegateNode> delTemplates =
-        new DelTemplateSelector.Builder<>();
+    DelTemplateSelector.Builder<TemplateNode> delTemplates = new DelTemplateSelector.Builder<>();
     ImmutableTable.Builder<SourceFilePath, String, ConstNode> constants = ImmutableTable.builder();
     ImmutableTable.Builder<SourceFilePath, String, ImmutableList<ExternNode>> externs =
         ImmutableTable.builder();
@@ -125,6 +126,7 @@ public final class BaseTofu implements SoyTofu {
           }
         } else {
           basicTemplates.put(template.getTemplateName(), template);
+          maybeAddTemplateToModifiableMap(template, delTemplates);
         }
       }
     }
@@ -137,9 +139,41 @@ public final class BaseTofu implements SoyTofu {
     this.pluginInstances = pluginInstances;
   }
 
+  private static void maybeAddTemplateToModifiableMap(
+      TemplateNode template, DelTemplateSelector.Builder<TemplateNode> delTemplates) {
+    if (!(template instanceof TemplateBasicNode)) {
+      return;
+    }
+    TemplateBasicNode templateBasicNode = (TemplateBasicNode) template;
+    if (templateBasicNode.isModifiable()) {
+      delTemplates.addDefault(
+          !templateBasicNode.getLegacyDeltemplateNamespace().isEmpty()
+              ? templateBasicNode.getLegacyDeltemplateNamespace()
+              : templateBasicNode.getTemplateName(),
+          templateBasicNode.getDelTemplateVariant(),
+          templateBasicNode);
+    } else if (templateBasicNode.getModifiesExpr() != null) {
+      TemplateLiteralNode modifiedTemplate =
+          (TemplateLiteralNode) templateBasicNode.getModifiesExpr().getRoot();
+      TemplateType modifiedType = (TemplateType) modifiedTemplate.getType();
+      String delPackageName = templateBasicNode.getDelPackageName();
+      String mapKey =
+          !modifiedType.getLegacyDeltemplateNamespace().isEmpty()
+              ? modifiedType.getLegacyDeltemplateNamespace()
+              : modifiedTemplate.getResolvedName();
+      if (delPackageName == null) {
+        delTemplates.addDefault(
+            mapKey, templateBasicNode.getDelTemplateVariant(), templateBasicNode);
+      } else {
+        delTemplates.add(
+            mapKey, delPackageName, templateBasicNode.getDelTemplateVariant(), templateBasicNode);
+      }
+    }
+  }
+
   private static ImmutableMap<String, ImmutableSortedSet<String>> buildTemplateToIjParamsInfoMap(
       ImmutableMap<String, TemplateNode> basicTemplates,
-      DelTemplateSelector<TemplateDelegateNode> delTemplates) {
+      DelTemplateSelector<TemplateNode> delTemplates) {
     Map<String, ImmutableSortedSet<String>> templateNameToIjs = new LinkedHashMap<>();
     Set<TemplateNode> soFar = Sets.newIdentityHashSet();
     ArrayDeque<TemplateNode> toVisit = new ArrayDeque<>();

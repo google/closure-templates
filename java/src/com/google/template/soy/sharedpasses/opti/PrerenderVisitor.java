@@ -36,7 +36,6 @@ import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
 
 /**
@@ -62,7 +61,7 @@ final class PrerenderVisitor extends RenderVisitor {
         preevalVisitorFactory,
         outputBuf,
         basicTemplates,
-        /* deltemplates=*/ new DelTemplateSelector.Builder<TemplateDelegateNode>().build(),
+        /* deltemplates=*/ new DelTemplateSelector.Builder<TemplateNode>().build(),
         ImmutableTable.of(),
         ImmutableTable.of(),
         ParamStore.EMPTY_INSTANCE,
