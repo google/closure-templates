@@ -20,7 +20,7 @@ The unknown type disables type checking. It is useful if you don't care, or are
 migrating templates from not using types to using types (this way you can
 migrate one parameter at a time).
 
-Values typed as `?` are assignable to parameters of all types and visa-versa.
+Values typed as `?` are assignable to parameters of all types and vice-versa.
 
 ### `null` {#null}
 
