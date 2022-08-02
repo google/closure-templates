@@ -13,6 +13,41 @@ code is only sent to a small subset of users.) Delegates with the `variant`
 attribute are appropriate for finer control of delegate selection at the call
 site.
 
+## Basic structure
+
+Delegate templates must have one and only one *default implementation*. The
+default is any deltemplate which is not in a file with the `{modname}` file
+declaration, and which does not have the `variant` attribute set to anything
+other than empty string. The default can be empty.
+
+The default must either be in the same file as the `delcall`, or in a file that
+is imported. The import can possibly be unused, in which case you can prefix
+"unused" to the imported name to suppress Soy unused import warnings.
+
+`my/project/default.soy`
+
+```soy
+{namespace my.project.default}
+
+{deltemplate my.project.experiment}
+ // This is the default.
+{/deltemplate}
+```
+
+`my/project/foo.soy`
+
+```soy
+{namespace my.project.code}
+
+import * as unusedDeltemplateDefaults from 'my/project/default.soy`
+
+{template project}
+  {delcall my.project.experiment /}
+{/template}
+```
+
+The default can be overriden at runtime using modname or variants.
+
 [TOC]
 
 ## Delegate templates (with modname)

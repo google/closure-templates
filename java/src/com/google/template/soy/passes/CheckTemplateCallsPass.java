@@ -106,12 +106,14 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
   private static final SoyErrorKind NO_DEFAULT_DELTEMPLATE =
       SoyErrorKind.of(
           "No default deltemplate found for {0}. Please add a default deltemplate, even if it is "
-              + "empty. NOTE: This check can be bypassed with 'allowemptydefault=\"true\"', but "
+              + "empty.\nSee go/soy/reference/delegate-templates#basic-structure.\n"
+              + "NOTE: This check can be bypassed with 'allowemptydefault=\"true\"', but "
               + "that feature is deprecated and will be removed soon.");
   private static final SoyErrorKind NO_IMPORT_DEFAULT_DELTEMPLATE =
       SoyErrorKind.of(
           "Delcall without without import to file containing default deltemplate ''{0}''. Add:"
               + " import * as unused{1} from ''{2}'';\n"
+              + "See go/soy/reference/delegate-templates#basic-structure.\n"
               + "NOTE: This check can be bypassed with 'allowemptydefault=\"true\"', but that "
               + "feature is deprecated and will be removed soon.");
   private static final SoyErrorKind ALLOW_EMPTY_DEFAULT_ERROR =
