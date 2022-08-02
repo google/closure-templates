@@ -249,7 +249,6 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
           "boq.shopping.property.ui.components.componentregistry.classes.templates.type",
           "del2.implByInactiveDelPkg",
           "delegateBoo",
-          "gcal.mat.bubble.edit.reminder.soy.bubble.infobanner",
           "gcal.mat.ui.attendeelist.soy.attendeelist.attendeeLocationIcon",
           "gcal.mat.ui.attendeelist.soy.attendeelist.workingLocation",
           "gcal.mat.ui.attendeelist.soy.attendeelist.workingLocationEverywhereActions",
