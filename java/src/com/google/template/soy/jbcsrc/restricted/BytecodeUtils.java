@@ -89,6 +89,14 @@ public final class BytecodeUtils {
   // https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.11
   private static final int MAX_CONSTANT_STRING_LENGTH = 65535;
 
+  private static final class NullPseudoTypeClass {}
+
+  /**
+   * Not a real type, but used to mark the type of a null value, so it can be appropriately special
+   * cased to be assignable to any (reference) type.
+   */
+  public static final Type NULL_PSEUDO_TYPE = Type.getType(NullPseudoTypeClass.class);
+
   public static final TypeInfo OBJECT = TypeInfo.create(Object.class);
   private static final Type OBJECT_ARRAY_TYPE = Type.getType(Object[].class);
 
@@ -239,6 +247,10 @@ public final class BytecodeUtils {
     }
     if (left.getSort() != right.getSort()) {
       return false;
+    }
+    if (right.equals(NULL_PSEUDO_TYPE)) {
+      // null is assignable to any (reference) type
+      return left.getSort() == Type.OBJECT || left.getSort() == Type.ARRAY;
     }
     if (left.getSort() != Type.OBJECT) {
       return false; // all other sorts require exact equality (even arrays)

@@ -57,7 +57,9 @@ import org.objectweb.asm.Type;
 public class SoyRuntimeTypeTest {
   @Test
   public void testPrimitiveTypes() {
-    assertThat(NullType.getInstance()).isBoxedAs(SoyValue.class).isUnboxedAs(Object.class);
+    assertThat(NullType.getInstance())
+        .isBoxedAs(SoyValue.class)
+        .isUnboxedAs(BytecodeUtils.classFromAsmType(BytecodeUtils.NULL_PSEUDO_TYPE));
 
     assertThat(IntType.getInstance()).isBoxedAs(IntegerData.class).isUnboxedAs(long.class);
 

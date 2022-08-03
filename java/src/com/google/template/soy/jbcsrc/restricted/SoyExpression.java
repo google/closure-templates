@@ -18,7 +18,6 @@ package com.google.template.soy.jbcsrc.restricted;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
-import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.OBJECT;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_LIST_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.STRING_TYPE;
@@ -125,7 +124,7 @@ public final class SoyExpression extends Expression {
   public static final SoyExpression NULL =
       new SoyExpression(
           getUnboxedType(NullType.getInstance()),
-          new Expression(OBJECT.type(), Feature.CHEAP) {
+          new Expression(BytecodeUtils.NULL_PSEUDO_TYPE, Feature.CHEAP) {
             @Override
             protected void doGen(CodeBuilder cb) {
               cb.pushNull();

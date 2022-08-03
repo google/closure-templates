@@ -130,7 +130,7 @@ public abstract class SoyRuntimeType {
     switch (soyType.getKind()) {
       case NULL:
         return new PrimitiveSoyType(
-            NullType.getInstance(), BytecodeUtils.OBJECT.type(), SOY_VALUE_TYPE);
+            NullType.getInstance(), BytecodeUtils.NULL_PSEUDO_TYPE, SOY_VALUE_TYPE);
       case BOOL:
         return new PrimitiveSoyType(
             BoolType.getInstance(), Type.BOOLEAN_TYPE, Type.getType(BooleanData.class));

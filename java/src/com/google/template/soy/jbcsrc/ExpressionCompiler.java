@@ -1585,7 +1585,7 @@ final class ExpressionCompiler {
       } else if (javaType.equals(Type.LONG_TYPE)) {
         return soyExpression.unboxAsLong();
       } else if (javaType.equals(BytecodeUtils.STRING_TYPE)) {
-        return soyExpression.coerceToString().unboxAsString();
+        return soyExpression.unboxAsString();
       } else if (javaType.equals(Type.DOUBLE_TYPE)) {
         return soyExpression.coerceToDouble().unboxAsDouble();
       } else if (javaType.getSort() == Type.OBJECT) {
