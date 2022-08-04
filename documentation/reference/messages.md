@@ -310,8 +310,9 @@ the [pitfalls section](#placholder_error) for more information about this.
 If you migrate from another message management scheme to Soy, that will likely
 cause all your message IDs to change. In this case, use the `alternateId`
 attribute to leverage the existing translated message. Unlike the `fallbackmsg`
-feature, the `alternateId` is applicable for cases where the message has not
-changed but the ID has.
+feature, the `alternateId` is **only** applicable for cases where the message
+has not changed but the ID has. If you add an `alternateId` for a different
+message, your translation request will fail.
 
 The compiler chooses the proper version of the message to use. If the new
 message's translation is available, then it is used, else the compiler falls
