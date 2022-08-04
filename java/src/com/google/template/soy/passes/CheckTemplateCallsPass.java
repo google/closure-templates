@@ -251,7 +251,6 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
           "boq.shopping.property.ui.components.componentregistry.classes.templates.type",
           "del2.implByInactiveDelPkg",
           "delegateBoo",
-          "ic.soy.url.isIdentityColorSchemeDark",
           "soyfmt.deltemp");
 
   private final class CheckCallsHelper {
