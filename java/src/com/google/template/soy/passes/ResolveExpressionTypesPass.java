@@ -416,19 +416,55 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
   public Result run(ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator) {
     CollectTemplateTypesVisitor templateTypesVisitor = new CollectTemplateTypesVisitor();
     Map<String, TemplateType> allTemplateTypesBuilder = new HashMap<>();
+    this.externsTypeLookup = new ExternsTypeIndex(templateRegistryFromDeps);
     for (SoyFileNode sourceFile : sourceFiles) {
       prepFile(sourceFile);
+      // This needs to happen before templateTypesVisitor so it can infer the type of an extern
+      // that's the default value of a @state variable.
+      setExternTypes(sourceFile);
       allTemplateTypesBuilder.putAll(templateTypesVisitor.exec(sourceFile));
     }
     this.allTemplateTypes = ImmutableMap.copyOf(allTemplateTypesBuilder);
     this.constantsTypeLookup = new ConstantsTypeIndex(templateRegistryFromDeps);
-    this.externsTypeLookup = new ExternsTypeIndex(templateRegistryFromDeps);
 
     for (SoyFileNode sourceFile : sourceFiles) {
       prepFile(sourceFile);
       new TypeAssignmentSoyVisitor().exec(sourceFile);
     }
     return Result.CONTINUE;
+  }
+
+  private void setExternTypes(SoyFileNode sourceFile) {
+    // Process externs defined in this file.
+    sourceFile
+        .getExterns()
+        .forEach(
+            extern -> {
+              extern.getVar().setType(extern.getType());
+              externsTypeLookup.put(extern);
+            });
+    // Process imported externs.
+    sourceFile
+        .getImports()
+        .forEach(
+            importNode ->
+                importNode.visitVars(
+                    (var, parentType) -> {
+                      if (!var.hasType()
+                          && parentType != null
+                          && parentType.getKind() == Kind.TEMPLATE_MODULE) {
+                        TemplateModuleImportType moduleType = (TemplateModuleImportType) parentType;
+                        String symbol = var.getSymbol();
+                        if (moduleType.getExternNames().contains(symbol)) {
+                          List<FunctionType> types =
+                              externsTypeLookup.get(moduleType.getPath(), symbol);
+                          // The return type is what's important here, and extern overloads are
+                          // required to have the same return type, so it's okay to just grab the
+                          // first one.
+                          var.setType(types.get(0));
+                        }
+                      }
+                    }));
   }
 
   private void prepFile(SoyFileNode file) {
@@ -502,12 +538,6 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
                   SoyType constantType = constantsTypeLookup.get(moduleType.getPath(), symbol);
                   if (constantType != null) {
                     newType = constantType;
-                  }
-                } else if (moduleType.getExternNames().contains(symbol)) {
-                  List<FunctionType> types = externsTypeLookup.get(moduleType.getPath(), symbol);
-                  if (!types.isEmpty()) {
-                    // Note that type will include just one param signature.
-                    newType = types.get(0);
                   }
                 }
               }
@@ -639,12 +669,6 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
       // Store the type of this constant in the index so that imports of this constant in other
       // files (topologically processed) can have their type set in #visitImportNode.
       constantsTypeLookup.put(node);
-    }
-
-    @Override
-    protected void visitExternNode(ExternNode node) {
-      node.getVar().setType(node.getType());
-      externsTypeLookup.put(node);
     }
 
     @Override
@@ -1826,23 +1850,14 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
     protected void visitFunctionNode(FunctionNode node) {
       visitChildren(node);
       if (!node.hasStaticName()) {
-        if (!node.allowedToInvokeAsFunction()) {
-          ExprNode nameExpr = node.getNameExpr();
-          if (nameExpr.getKind() == ExprNode.Kind.VAR_REF_NODE
-              && !((VarRefNode) nameExpr).hasType()) {
-            // This is an extern call that hasn't been resolved yet. It should be possible to infer
-            // this type, but would probably be some pretty large refactorings, which is hard to
-            // justify given that workaround is just to write the type.
-            node.setType(UnknownType.getInstance());
-            node.setAllowedToInvokeAsFunction(true);
-          } else if (nameExpr.getType() instanceof TemplateImportType
-              || nameExpr.getType() instanceof TemplateType) {
-            node.setType(UnknownType.getInstance());
-            errorReporter.report(node.getSourceLocation(), MUST_USE_TEMPLATES_IMMEDIATELY);
-            // Suppress a followup error that this is unknown.
-            node.setAllowedToInvokeAsFunction(true);
-            return;
-          }
+        if (!node.allowedToInvokeAsFunction()
+            && (node.getNameExpr().getType() instanceof TemplateImportType
+                || node.getNameExpr().getType() instanceof TemplateType)) {
+          node.setType(UnknownType.getInstance());
+          errorReporter.report(node.getSourceLocation(), MUST_USE_TEMPLATES_IMMEDIATELY);
+          // Suppress a followup error that this is unknown.
+          node.setAllowedToInvokeAsFunction(true);
+          return;
         }
         visit(node.getNameExpr());
         if (node.getNameExpr().getType().getKind() == Kind.TEMPLATE_TYPE) {
