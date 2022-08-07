@@ -245,7 +245,6 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
           // uniq | grep -v '^"boq.dpanelchromeui.'
           "boq.ads.townsquare.marketplaceui.components.componentregistry.classes.templates.type",
           "boq.search.boq.chrome.searchboxweb.desktop.clientadapter.templates.outsideFormOverlays",
-          "boq.searchconsole.verification.templates.dnsCname",
           "boq.shopping.property.ui.components.componentregistry.classes.templates.type",
           "del2.implByInactiveDelPkg",
           "delegateBoo",
