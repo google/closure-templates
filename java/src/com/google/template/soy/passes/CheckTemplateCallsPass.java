@@ -193,7 +193,6 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
           "boq.protoshop.viewer.templates.topLevelMessage", // circular dep
           "boq.saveui.listitem.templates.cardHeader", // circualr deps, cl/455220729 breaks tests
           "boq.shopping.property.ui.components.carousel.templates.item", // circular import
-          "boq.shopping.property.ui.components.componentregistry.classes.templates.type", // cir dep
           "boq.shopping.property.ui.components.componentregistry.ghost.templates.type", // cir dep
           "boq.shopping.property.ui.components.componentregistry.templates.type", // circular dep
           "boq.shopping.property.ui.components.grid.templates.item", // circular import
@@ -245,7 +244,6 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
           // uniq | grep -v '^"boq.dpanelchromeui.'
           "boq.ads.townsquare.marketplaceui.components.componentregistry.classes.templates.type",
           "boq.search.boq.chrome.searchboxweb.desktop.clientadapter.templates.outsideFormOverlays",
-          "boq.shopping.property.ui.components.componentregistry.classes.templates.type",
           "del2.implByInactiveDelPkg",
           "delegateBoo",
           "soyfmt.deltemp");
