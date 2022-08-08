@@ -1072,15 +1072,25 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
         node.getIndexVar().setType(IntType.getInstance());
       }
 
+      TypeSubstitution savedSubstitutions = substitutions;
+
       if (node.getFilterExpr() != null) {
         // Visit the optional filter expr, and make sure it evaluates to a boolean.
         visit(node.getFilterExpr());
+
+        // Narrow the type of the list item based on the filter expression.
+        TypeNarrowingConditionVisitor typeNarrowing = new TypeNarrowingConditionVisitor();
+        typeNarrowing.exec(node.getFilterExpr());
+        addTypeSubstitutions(typeNarrowing.positiveTypeConstraints);
       }
 
       // Resolve the type of the itemMapExpr, and use it to determine the comprehension's resulting
       // list type.
       visit(node.getListItemTransformExpr());
       node.setType(typeRegistry.getOrCreateListType(node.getListItemTransformExpr().getType()));
+
+      // Return the type substitions to their state before narrowing the list item type.
+      substitutions = savedSubstitutions;
 
       tryApplySubstitution(node);
     }
