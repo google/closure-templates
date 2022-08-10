@@ -41,7 +41,6 @@ import com.google.template.soy.soytree.PartialFileSetMetadata;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
-import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.types.SoyTypeRegistry;
@@ -74,17 +73,29 @@ public final class BytecodeCompiler {
     CompiledTemplates templates =
         new CompiledTemplates(
             /* delTemplateNames=*/ registry.getAllTemplates().stream()
-                .filter(
-                    template ->
-                        template.getTemplateType().getTemplateKind()
-                            == TemplateType.TemplateKind.DELTEMPLATE)
-                .map(TemplateMetadata::getTemplateName)
+                .filter(BytecodeCompiler::isModTemplate)
+                .map(BytecodeCompiler::modImplName)
                 .collect(toImmutableSet()),
             new CompilingClassLoader(fileSet, filePathsToSuppliers, typeRegistry, registry));
     if (reporter.errorsSince(checkpoint)) {
       return Optional.empty();
     }
     return Optional.of(templates);
+  }
+
+  static boolean isModTemplate(TemplateMetadata template) {
+    if (template.getTemplateType().getTemplateKind() == TemplateType.TemplateKind.DELTEMPLATE) {
+      return true;
+    }
+    return template.getTemplateType().isModifiable() || template.getTemplateType().isModifying();
+  }
+
+  /** The name of the modifiable template implementation. */
+  private static String modImplName(TemplateMetadata template) {
+    return template.getTemplateName()
+        + (template.getTemplateType().isModifiable()
+            ? CompiledTemplateMetadata.DEFAULT_IMPL_JBC_CLASS_SUFFIX
+            : "");
   }
 
   /**
@@ -105,7 +116,7 @@ public final class BytecodeCompiler {
       PartialFileSetMetadata fileSetMetadata)
       throws IOException {
     try (final SoyJarFileWriter writer = new SoyJarFileWriter(sink.openStream())) {
-      final Set<String> delTemplates = new TreeSet<>();
+      final Set<String> modTemplates = new TreeSet<>();
 
       // A map of plugin names -> info about the required instance class (only for plugins that
       // require a runtime class).
@@ -123,8 +134,8 @@ public final class BytecodeCompiler {
             }
 
             @Override
-            void onCompileDelTemplate(String name) {
-              delTemplates.add(name);
+            void onCompileModifiableTemplate(String name) {
+              modTemplates.add(name);
             }
 
             @Override
@@ -152,8 +163,8 @@ public final class BytecodeCompiler {
             }
           },
           fileSetMetadata);
-      if (!delTemplates.isEmpty()) {
-        String delData = Joiner.on('\n').join(delTemplates);
+      if (!modTemplates.isEmpty()) {
+        String delData = Joiner.on('\n').join(modTemplates);
         writer.writeEntry(
             Names.META_INF_DELTEMPLATE_PATH, ByteSource.wrap(delData.getBytes(UTF_8)));
       }
@@ -218,14 +229,14 @@ public final class BytecodeCompiler {
     abstract void onCompile(ClassData newClass) throws E;
 
     /**
-     * Callback to notify a deltemplate was compiled.
+     * Callback to notify a modifiable was compiled.
      *
      * @param name The full name as would be returned by SoyTemplateInfo.getName()
      */
-    void onCompileDelTemplate(String name) {}
+    void onCompileModifiableTemplate(String name) {}
 
     /**
-     * Callback to notify a template (not a deltemplate) was compiled.
+     * Callback to notify a template (not a modifiable template) was compiled.
      *
      * @param name The full name as would be returned by SoyTemplateInfo.getName()
      */
@@ -261,8 +272,9 @@ public final class BytecodeCompiler {
         listener.onCompile(clazz);
       }
       for (TemplateNode template : file.getTemplates()) {
-        if (template instanceof TemplateDelegateNode) {
-          listener.onCompileDelTemplate(template.getTemplateName());
+        TemplateMetadata metadata = TemplateMetadata.fromTemplate(template);
+        if (isModTemplate(metadata)) {
+          listener.onCompileModifiableTemplate(modImplName(metadata));
         } else {
           listener.onCompileTemplate(template.getTemplateName());
         }
