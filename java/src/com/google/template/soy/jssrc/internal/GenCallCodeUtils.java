@@ -18,7 +18,9 @@ package com.google.template.soy.jssrc.internal;
 
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_EMPTY_STRING;
+import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_FALSE;
 import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_NULL;
+import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_TRUE;
 import static com.google.template.soy.jssrc.dsl.Expression.dottedIdNoRequire;
 import static com.google.template.soy.jssrc.dsl.Expression.fromExpr;
 import static com.google.template.soy.jssrc.dsl.Expression.id;
@@ -326,7 +328,11 @@ public class GenCallCodeUtils {
         variant = exprTranslator.exec(variantSoyExpr);
       }
 
-      callee = SOY_GET_DELEGATE_FN.call(calleeId, variant);
+      callee =
+          SOY_GET_DELEGATE_FN.call(
+              calleeId,
+              variant,
+              callDelegateNode.allowEmptyDefault() ? LITERAL_TRUE : LITERAL_FALSE);
     }
     Optional<Expression> positional = Optional.empty();
 
