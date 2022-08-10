@@ -42,7 +42,6 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_DATA;
 import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_VARIANT;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_GET_DELEGATE_FN;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_GET_DELTEMPLATE_ID;
-import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_MAKE_EMPTY_TEMPLATE_FN;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_REGISTER_DELEGATE_FN;
 import static com.google.template.soy.jssrc.internal.JsRuntime.WINDOW_CONSOLE_LOG;
 import static com.google.template.soy.jssrc.internal.JsRuntime.sanitizedContentOrdainerFunction;
@@ -921,21 +920,8 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
     if (node instanceof TemplateDelegateNode
         && ((TemplateDelegateNode) node).getChildren().isEmpty()) {
-      // TODO(b/233902878): Once allowemptydefault is deprecated, we can just stop here, emitting
-      // nothing, and at runtime assume a missing entry in the map is an empty template.
-      // See
-      // https://docs.google.com/document/d/1keigHh3t8a5jaPUSQTXvzr7aNqjh2X4z0rNIt4PO4J0/edit#heading=h.8dqjxhj7gq2b
-      TemplateDelegateNode nodeAsDelTemplate = (TemplateDelegateNode) node;
-      Expression emptyFnCall = SOY_MAKE_EMPTY_TEMPLATE_FN.call(stringLiteral(templateName));
-      JsDoc jsDoc = generateEmptyFunctionJsDoc(node);
-      if (jsSrcOptions.shouldGenerateGoogModules()) {
-        declarations.add(
-            VariableDeclaration.builder(alias).setJsDoc(jsDoc).setRhs(emptyFnCall).build());
-      } else {
-        declarations.add(Statement.assign(aliasExp, emptyFnCall, jsDoc));
-      }
-      declarations.add(makeRegisterDelegateFn(nodeAsDelTemplate, aliasExp));
-      jsCodeBuilder.append(Statement.of(declarations.build()));
+      // Don't emit anything for an empty deltemplate, at runtime a missing entry in the runtime
+      // map will be assumed to be an explicit empty template
       return;
     }
 
@@ -1046,7 +1032,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     }
 
     // ------ For modifiable templates, generate and register the default implementation. -----
-    if (isModifiable(node)) {
+    if (isModifiable(node) && !node.getChildren().isEmpty()) {
       String defaultImplName = alias + "__default_impl";
       JsDoc jsDoc =
           generatePositionalParamsSignature
