@@ -139,6 +139,9 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
       SoyErrorKind.of("'{'call'}' is only valid on template types, but found type ''{0}''.");
   private static final SoyErrorKind CANNOT_CALL_MIXED_CONTENT_TYPE =
       SoyErrorKind.of("Cannot call expressions of different content types; found {0} and {1}.");
+  private static final SoyErrorKind CANNOT_CALL_MODIFYING_TEMPLATE_DIRECTLY =
+      SoyErrorKind.of(
+          "Cannot call modifying templates directly. Call the main modifiable template instead.");
 
   private static final SoyErrorKind INVALID_DATA_EXPR =
       SoyErrorKind.of("''data='' should be a record type, found ''{0}''.", StyleAllowance.NO_CAPS);
@@ -298,6 +301,9 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
       checkStrictHtml(callerTemplate, node, calleeType);
       checkCallParamTypes(callerTemplate, node, calleeType);
       checkVariant(node, calleeType);
+      if (calleeType.isModifying()) {
+        errorReporter.report(node.getSourceLocation(), CANNOT_CALL_MODIFYING_TEMPLATE_DIRECTLY);
+      }
     }
 
     void checkCall(
