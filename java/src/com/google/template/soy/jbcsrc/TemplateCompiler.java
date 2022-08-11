@@ -56,6 +56,7 @@ import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.PartialFileSetMetadata;
 import com.google.template.soy.soytree.SoyNode;
+import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.Visibility;
@@ -86,6 +87,8 @@ import org.objectweb.asm.commons.Method;
 final class TemplateCompiler {
   private static final AnnotationRef<TemplateMetadata> TEMPLATE_METADATA_REF =
       AnnotationRef.forType(TemplateMetadata.class);
+
+  public static final String VARIANT_VAR_NAME = "__modifiable_variant__";
 
   private final FieldManager fields;
   private final CompiledTemplateMetadata template;
@@ -136,9 +139,15 @@ final class TemplateCompiler {
     // write the methods to the writer after generating everything.
     // this should make the order of operations clearer and limit access to the writer.
 
-    generateTemplateMethod();
+    if (template.defaultModTemplateMethod().isPresent()) {
+      generateTemplateMethod(template.templateMethod(), template.modifiableSelectMethod().get());
+      generateTemplateMethod(template.defaultModTemplateMethod().get(), template.renderMethod());
+    } else {
+      generateTemplateMethod(template.templateMethod(), template.renderMethod());
+    }
     generateDelegateRenderMethod();
     generateRenderMethod();
+    generateModifiableSelectMethod();
   }
 
   private static final Handle METAFACTORY_HANDLE =
@@ -175,7 +184,8 @@ final class TemplateCompiler {
           BytecodeUtils.LOGGING_ADVISING_APPENDABLE_TYPE,
           BytecodeUtils.RENDER_CONTEXT_TYPE);
 
-  private void generateTemplateMethod() {
+  /** Write the function "templateMethod", which returns a reference to "renderMethod". */
+  private void generateTemplateMethod(MethodRef templateMethod, MethodRef renderMethod) {
     // use invoke dynamic to lazily allocate the template instance.
     // templates are needed for direct java->soy calls, references to template literals and
     // deltemplates, which
@@ -188,7 +198,6 @@ final class TemplateCompiler {
     //  return foo::render;
     // }
     // assuming foo is the name of the template class.
-    Handle renderHandle = template.renderMethod().asHandle();
     Statement methodBody =
         Statement.returnExpression(
             new Expression(BytecodeUtils.COMPILED_TEMPLATE_TYPE) {
@@ -199,22 +208,28 @@ final class TemplateCompiler {
                     COMPILED_TEMPLATE_INIT_DESCRIPTOR,
                     METAFACTORY_HANDLE,
                     COMPILED_TEMPLATE_RENDER_DESCRIPTOR,
-                    renderHandle,
+                    renderMethod.asHandle(),
                     COMPILED_TEMPLATE_RENDER_DESCRIPTOR);
               }
             });
     CodeBuilder methodWriter =
-        new CodeBuilder(
-            methodAccess(), template.templateMethod().method(), /* exceptions=*/ null, writer);
+        new CodeBuilder(methodAccess(), templateMethod.method(), /* exceptions=*/ null, writer);
     generateTemplateMetadata(methodWriter);
     methodBody.writeMethodTo(methodWriter);
+  }
+
+  private boolean isModifyingTemplate() {
+    return templateNode instanceof TemplateBasicNode
+        && ((TemplateBasicNode) templateNode).getModifiesExpr() != null;
   }
 
   private int methodAccess() {
     // TODO(lukes): private templates need to have default access so they can be called by our
     // generated inner classes (e.g. a let).  Once jdk11 has landed we could workaround by declaring
     // our inner classes as 'nestmates' see https://openjdk.java.net/jeps/181
-    return (templateNode.getVisibility() == Visibility.PUBLIC ? Opcodes.ACC_PUBLIC : 0)
+    return (templateNode.getVisibility() == Visibility.PUBLIC || isModifyingTemplate()
+            ? Opcodes.ACC_PUBLIC
+            : 0)
         | Opcodes.ACC_STATIC;
   }
 
@@ -248,6 +263,8 @@ final class TemplateCompiler {
               nullToEmpty(delegateNode.getDelPackageName()),
               delegateNode.getDelTemplateName(),
               delegateNode.getDelTemplateVariant());
+    } else if (templateNode instanceof TemplateBasicNode) {
+      deltemplateMetadata = metadataForBasicNode((TemplateBasicNode) templateNode);
     } else {
       deltemplateMetadata = createDefaultDelTemplateMetadata();
     }
@@ -272,6 +289,34 @@ final class TemplateCompiler {
         createTemplateMetadata(
             kind, namespaces, cssPaths, uniqueIjs, callees, delCallees, deltemplateMetadata);
     TEMPLATE_METADATA_REF.write(metadata, builder);
+  }
+
+  TemplateMetadata.DelTemplateMetadata metadataForBasicNode(TemplateBasicNode templateBasicNode) {
+    if (templateBasicNode.isModifiable()) {
+      return createDelTemplateMetadata(
+          nullToEmpty(templateBasicNode.getDelPackageName()),
+          modifiableImplsMapKey(templateBasicNode),
+          templateBasicNode.getDelTemplateVariant());
+    } else if (templateBasicNode.getModifiesExpr() != null) {
+      TemplateLiteralNode modifiedTemplate =
+          (TemplateLiteralNode) templateBasicNode.getModifiesExpr().getRoot();
+      TemplateType modifiedType = (TemplateType) modifiedTemplate.getType();
+      String mapKey =
+          !modifiedType.getLegacyDeltemplateNamespace().isEmpty()
+              ? modifiedType.getLegacyDeltemplateNamespace()
+              : modifiedTemplate.getResolvedName();
+      return createDelTemplateMetadata(
+          nullToEmpty(templateBasicNode.getDelPackageName()),
+          mapKey,
+          templateBasicNode.getDelTemplateVariant());
+    }
+    return createDefaultDelTemplateMetadata();
+  }
+
+  private static final String modifiableImplsMapKey(TemplateBasicNode templateBasicNode) {
+    return !templateBasicNode.getLegacyDeltemplateNamespace().isEmpty()
+        ? templateBasicNode.getLegacyDeltemplateNamespace()
+        : templateBasicNode.getTemplateName();
   }
 
   @AutoAnnotation
@@ -520,6 +565,94 @@ final class TemplateCompiler {
       return MethodRef.RUNTIME_GET_FIELD_PROVIDER_DEFAULT.invoke(
           record, BytecodeUtils.constant(name), defaultValue.box());
     }
+  }
+
+  /**
+   * Generates the main method that selects the implementation out of the map. Generates code like:
+   *
+   * <pre>{@code
+   * public static RenderResult fooTemplate(
+   *     SoyRecord params,
+   *     SoyRecord ijData,
+   *     LoggingAdvisingAppendable appendable,
+   *     RenderContext renderContext) {
+   *   return renderContext
+   *       .getDelTemplate(
+   *           "fooTemplate",
+   *           params.getFieldProvider("__modifiable_variant__", "").resolve().coerceToString())
+   *       .render(params, ijData, appendable, renderContext);
+   * }
+   * }</pre>
+   */
+  private void generateModifiableSelectMethod() {
+    if (!template.modifiableSelectMethod().isPresent()) {
+      return;
+    }
+    Method method = template.renderMethod().method();
+    final Label start = new Label();
+    final Label end = new Label();
+
+    ImmutableList.Builder<String> paramNames = ImmutableList.builder();
+    paramNames.add(StandardNames.PARAMS);
+    paramNames.add(StandardNames.IJ);
+    paramNames.add(StandardNames.APPENDABLE);
+    paramNames.add(StandardNames.RENDER_CONTEXT);
+
+    final TemplateVariableManager variableSet =
+        new TemplateVariableManager(
+            template.typeInfo().type(), method, paramNames.build(), start, end, /*isStatic=*/ true);
+    Expression paramsVar = variableSet.getVariable(StandardNames.PARAMS);
+    Expression ijVar = variableSet.getVariable(StandardNames.IJ);
+    TemplateVariables variables =
+        new TemplateVariables(
+            variableSet,
+            Optional.of(paramsVar),
+            ijVar,
+            new RenderContextExpression(variableSet.getVariable(StandardNames.RENDER_CONTEXT)));
+    TemplateVariableManager.Scope scope = variableSet.enterScope();
+
+    Expression variantExpr =
+        getFieldProviderOrDefault(
+                VARIANT_VAR_NAME, paramsVar, SoyExpression.forString(BytecodeUtils.constant("")))
+            .invoke(MethodRef.SOY_VALUE_PROVIDER_RESOLVE)
+            .invoke(MethodRef.RUNTIME_COERCE_TO_STRING);
+    TemplateVariableManager.Variable variantVariable =
+        scope.createSynthetic(
+            SyntheticVarName.renderee(), variantExpr, TemplateVariableManager.SaveStrategy.STORE);
+
+    TemplateBasicNode templateBasicNode = (TemplateBasicNode) templateNode;
+    Expression selectedCompiledTemplate =
+        variables
+            .getRenderContext()
+            .getDeltemplate(
+                modifiableImplsMapKey(templateBasicNode), variantVariable.accessor(), false);
+
+    AppendableExpression appendable =
+        AppendableExpression.forExpression(
+            variableSet.getVariable(StandardNames.APPENDABLE).asNonNullable());
+    Expression renderExpression =
+        selectedCompiledTemplate.invoke(
+            MethodRef.COMPILED_TEMPLATE_RENDER,
+            paramsVar,
+            variables.getIjRecord(),
+            appendable,
+            variables.getRenderContext());
+
+    Statement exitScope = scope.exitScope();
+    Statement returnExpression = Statement.returnExpression(renderExpression);
+
+    new Statement() {
+      @Override
+      protected void doGen(CodeBuilder adapter) {
+        adapter.mark(start);
+        variantVariable.initializer().gen(adapter);
+        exitScope.gen(adapter);
+        adapter.mark(end);
+        returnExpression.gen(adapter);
+        variableSet.generateTableEntries(adapter);
+      }
+    }.writeIOExceptionMethod(
+        methodAccess(), template.modifiableSelectMethod().get().method(), writer);
   }
 
   private static final class TemplateVariables implements TemplateParameterLookup {
