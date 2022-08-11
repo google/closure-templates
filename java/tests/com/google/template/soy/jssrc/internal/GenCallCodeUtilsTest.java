@@ -118,15 +118,8 @@ public final class GenCallCodeUtilsTest {
   public void testGenCallExprForDelegateCalls() {
     assertThat(getCallExprTextHelper("{delcall delegateForUnitTest data=\"all\" /}"))
         .isEqualTo(
-            "soy.$$getDelegateFn(soy.$$getDelTemplateId('delegateForUnitTest'), '', false)(/**"
+            "soy.$$getDelegateFn(soy.$$getDelTemplateId('delegateForUnitTest'), '')(/**"
                 + " @type {?} */ (opt_data), $ijData);");
-
-    assertThat(
-            getCallExprTextHelper(
-                "{delcall delegateForUnitTest data=\"all\" allowemptydefault=\"true\" /}"))
-        .isEqualTo(
-            "soy.$$getDelegateFn(soy.$$getDelTemplateId('delegateForUnitTest'), '', true)(/** @type"
-                + " {?} */ (opt_data), $ijData);");
 
     assertThat(
             getCallExprTextHelper(
@@ -136,7 +129,7 @@ public final class GenCallCodeUtilsTest {
                 "{/delcall}"))
         .isEqualTo(
             "soy.$$getDelegateFn("
-                + "soy.$$getDelTemplateId('my.other.delegate'), '', false)("
+                + "soy.$$getDelTemplateId('my.other.delegate'), '')("
                 + "/** @type {?} */ ({goo: opt_data.moo}), $ijData);");
   }
 
@@ -145,7 +138,7 @@ public final class GenCallCodeUtilsTest {
     assertThat(
             getCallExprTextHelper("{delcall delegateForUnitTest variant=\"'voo'\" data=\"all\" /}"))
         .isEqualTo(
-            "soy.$$getDelegateFn(soy.$$getDelTemplateId('delegateForUnitTest'), 'voo', false)"
+            "soy.$$getDelegateFn(soy.$$getDelTemplateId('delegateForUnitTest'), 'voo')"
                 + "(/** @type {?} */ (opt_data), $ijData);");
 
     assertThat(
@@ -154,7 +147,7 @@ public final class GenCallCodeUtilsTest {
                 "{delcall delegateForUnitTest variant=\"$voo\" data=\"all\""
                     + " allowemptydefault=\"true\" /}"))
         .isEqualTo(
-            "soy.$$getDelegateFn(soy.$$getDelTemplateId('delegateForUnitTest'), opt_data.voo, true)"
+            "soy.$$getDelegateFn(soy.$$getDelTemplateId('delegateForUnitTest'), opt_data.voo)"
                 + "(/** @type {?} */ (opt_data), $ijData);");
   }
 
@@ -166,8 +159,8 @@ public final class GenCallCodeUtilsTest {
                 "  {param goo kind=\"html\"}Blah{/param}",
                 "{/delcall}"))
         .isEqualTo(
-            "soy.$$getDelegateFn(soy.$$getDelTemplateId('my.other.delegate'), '',"
-                + " false)(/** @type {?} */ ({goo:"
+            "soy.$$getDelegateFn(soy.$$getDelTemplateId('my.other.delegate'), '')"
+                + "(/** @type {?} */ ({goo:"
                 + " soy.VERY_UNSAFE.$$ordainSanitizedHtmlForInternalBlocks('Blah')}), "
                 + "$ijData);");
 
@@ -182,8 +175,8 @@ public final class GenCallCodeUtilsTest {
         .that(callExprText)
         .matches(
             Pattern.quote(
-                    "soy.$$getDelegateFn(soy.$$getDelTemplateId('my.other.delegate'), '',"
-                        + " false)(/** @type {?} */ ({goo:"
+                    "soy.$$getDelegateFn(soy.$$getDelTemplateId('my.other.delegate'), '')"
+                        + "(/** @type {?} */ ({goo:"
                         + " soy.VERY_UNSAFE.$$ordainSanitizedHtmlForInternalBlocks(param")
                 + "\\d+"
                 + Pattern.quote(")})," + " $ijData);"));

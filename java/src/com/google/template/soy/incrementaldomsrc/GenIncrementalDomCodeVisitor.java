@@ -272,7 +272,11 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     }
 
     super.visitTemplateNode(node);
-
+    if ((node instanceof TemplateDelegateNode
+            && ((TemplateDelegateNode) node).getChildren().isEmpty())
+        || (isModifiable(node) && node.getChildren().isEmpty())) {
+      return;
+    }
     if (kind.isHtml() || kind == SanitizedContentKind.ATTRIBUTES) {
       Expression type;
       if (kind.isHtml()) {

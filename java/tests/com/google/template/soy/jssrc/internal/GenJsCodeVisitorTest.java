@@ -169,7 +169,7 @@ public final class GenJsCodeVisitorTest {
             + "  }\n"
             + "  return"
             + " soy.VERY_UNSAFE.ordainSanitizedHtml(soy.$$getDelegateFn(soy.$$getDelTemplateId('delegateForUnitTest'),"
-            + " '', true)(null, $ijData));\n"
+            + " '')(null, $ijData));\n"
             + "};\n"
             + "if (goog.DEBUG) {\n"
             + "  /**\n"
@@ -238,7 +238,7 @@ public final class GenJsCodeVisitorTest {
             + "  }\n"
             + "  return"
             + " soy.VERY_UNSAFE.ordainSanitizedHtml(soy.$$getDelegateFn(soy.$$getDelTemplateId('delegateForUnitTest'),"
-            + " 'moomoo', true)(null, $ijData));\n"
+            + " 'moomoo')(null, $ijData));\n"
             + "};\n"
             + "if (goog.DEBUG) {\n"
             + "  /**\n"
@@ -566,7 +566,7 @@ public final class GenJsCodeVisitorTest {
     assertGeneratedJsCode(
         "{@param boo : ?}\n"
             + "{delcall delegateForUnitTest data=\"$boo.foo\" allowemptydefault=\"true\" /}\n",
-        "output += soy.$$getDelegateFn(soy.$$getDelTemplateId('delegateForUnitTest'), '', true)"
+        "output += soy.$$getDelegateFn(soy.$$getDelTemplateId('delegateForUnitTest'), '')"
             + "(/** @type {?} */ (opt_data.boo.foo), $ijData);\n");
 
     assertGeneratedJsCode(
@@ -575,7 +575,7 @@ public final class GenJsCodeVisitorTest {
             + "{delcall delegateForUnitTest variant=\"$voo\" data=\"$boo.foo\""
             + " allowemptydefault=\"true\" /}\n",
         "output += soy.$$getDelegateFn("
-            + "soy.$$getDelTemplateId('delegateForUnitTest'), opt_data.voo, true)"
+            + "soy.$$getDelTemplateId('delegateForUnitTest'), opt_data.voo)"
             + "(/** @type {?} */ (opt_data.boo.foo), $ijData);\n");
   }
 

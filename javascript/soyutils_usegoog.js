@@ -655,12 +655,9 @@ const $$registerDelegateFn = function(
  * @param {string} delTemplateId The delegate template id.
  * @param {string} delTemplateVariant The delegate template variant (can be
  *     empty string).
- * @param {boolean} allowsEmptyDefault Whether to default to the empty template
- *     function if there's no active implementation.
  * @return {!Function} The retrieved implementation function.
  */
-const $$getDelegateFn = function(
-    delTemplateId, delTemplateVariant, allowsEmptyDefault) {
+const $$getDelegateFn = function(delTemplateId, delTemplateVariant) {
   let delFn =
       DELEGATE_REGISTRY_FUNCTIONS_['key_' + delTemplateId + ':' + delTemplateVariant];
   if (!delFn && delTemplateVariant !== '') {
@@ -670,13 +667,8 @@ const $$getDelegateFn = function(
 
   if (delFn) {
     return delFn;
-  } else if (allowsEmptyDefault) {
-    return $$EMPTY_TEMPLATE_FN_;
   } else {
-    throw Error(
-        'Found no active impl for delegate call to "' + delTemplateId +
-        (delTemplateVariant ? ':' + delTemplateVariant : '') +
-        '" (and delcall does not set allowemptydefault="true").');
+    return $$EMPTY_TEMPLATE_FN_;
   }
 };
 
