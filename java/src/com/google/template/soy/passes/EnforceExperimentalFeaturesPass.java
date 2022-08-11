@@ -25,7 +25,6 @@ import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
-import com.google.template.soy.soytree.TemplateBasicNode;
 
 /**
  * A pass that ensures that experimental features are only used when enabled.
@@ -40,9 +39,6 @@ final class EnforceExperimentalFeaturesPass implements CompilerFilePass {
   private static final SoyErrorKind NON_NULL_ASSERTION_BANNED =
       SoyErrorKind.of(
           "Non-null assertion operator not supported, use the ''checkNotNull'' function instead.");
-  private static final SoyErrorKind MODIFIES_GUARDED =
-      SoyErrorKind.of(
-          "\"modifies\" attribute needs experimental_feature \"enableSymbolizeDeltemplates\".");
 
   private final ImmutableSet<String> features;
   private final ErrorReporter reporter;
@@ -62,15 +58,6 @@ final class EnforceExperimentalFeaturesPass implements CompilerFilePass {
               assertNonNullOpNode ->
                   reporter.report(
                       assertNonNullOpNode.getSourceLocation(), NON_NULL_ASSERTION_BANNED));
-    }
-    if (!features.contains("enableSymbolizeDeltemplates")) {
-      SoyTreeUtils.allNodesOfType(file, TemplateBasicNode.class)
-          .forEach(
-              node -> {
-                if (node.getModifiesExpr() != null) {
-                  reporter.report(node.getSourceLocation(), MODIFIES_GUARDED);
-                }
-              });
     }
   }
 }
