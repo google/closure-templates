@@ -35,6 +35,8 @@ import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.primitives.Ints;
+import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.basetree.Node;
 import com.google.template.soy.data.SoyRecord;
@@ -1455,6 +1457,15 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   }
 
   private RecordOrPositional prepareParamsHelper(CallNode node) {
+    if (node instanceof CallBasicNode && ((CallBasicNode) node).getVariantExpr() != null) {
+      CallBasicNode callBasicNode = (CallBasicNode) node;
+      node.addChild(
+          new CallParamValueNode(
+              0,
+              callBasicNode.getVariantExpr().getSourceLocation(),
+              Identifier.create(TemplateCompiler.VARIANT_VAR_NAME, SourceLocation.UNKNOWN),
+              callBasicNode.getVariantExpr().getRoot()));
+    }
     if (node.numChildren() == 0) {
       if (!node.isPassingData()) {
         return RecordOrPositional.create(
