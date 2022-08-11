@@ -242,7 +242,6 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
           // $ experimental/users/nicholasyu/del/regendata.sh
           // $ grep allowemptydefault /tmp/delcalls.txt | awk '{printf "\"%s\",\n", $3}' | sort |
           // uniq | grep -v '^"boq.dpanelchromeui.'
-          "boq.ads.townsquare.marketplaceui.components.componentregistry.classes.templates.type",
           "del2.implByInactiveDelPkg",
           "delegateBoo",
           "soyfmt.deltemp");
