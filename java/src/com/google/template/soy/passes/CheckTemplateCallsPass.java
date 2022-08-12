@@ -242,7 +242,7 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
           // Entries below generated with:
           // $ experimental/users/nicholasyu/del/regendata.sh
           // $ grep allowemptydefault /tmp/delcalls.txt | awk '{printf "\"%s\",\n", $3}' | sort |
-          // uniq | grep -v '^"boq.dpanelchromeui.'
+          // uniq
           "del2.implByInactiveDelPkg",
           "delegateBoo",
           "soyfmt.deltemp");
@@ -364,7 +364,6 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
 
     boolean isPasslistedForAllowEmptyDefault(String delCalleeName, String callerFilename) {
       return ALLOWEMPTYDEFAULT_PASSLIST.contains(delCalleeName)
-          || delCalleeName.startsWith("boq.dpanelchromeui.") // gencode
           || callerFilename.contains("/java_src/soy/integrationtest");
     }
 
