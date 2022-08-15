@@ -300,7 +300,7 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
             potentialCallees.stream()
                 .filter(
                     delTemplate ->
-                        delTemplate.getDelPackageName() == null
+                        delTemplate.getModName() == null
                             && isNullOrEmpty(delTemplate.getDelTemplateVariant()))
                 .collect(toImmutableList());
         if (defaultImpl.isEmpty()) {

@@ -761,7 +761,7 @@ public final class Metadata {
       ErrorReporter errorReporter,
       FileSetMetadata fileSetMetadata,
       DelTemplateSelector.Builder<TemplateMetadata> builder) {
-    String delPackageName = template.getDelPackageName();
+    String delPackageName = template.getModName();
     String variant = template.getDelTemplateVariant();
     TemplateMetadata previous;
     if (delPackageName == null) {

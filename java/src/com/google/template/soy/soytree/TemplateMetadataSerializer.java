@@ -87,7 +87,7 @@ public final class TemplateMetadataSerializer {
       SoyFileP.Builder fileBuilder =
           SoyFileP.newBuilder()
               .setNamespace(file.getNamespace())
-              .setDelpackage(Strings.nullToEmpty(file.getDelPackageName()))
+              .setModName(Strings.nullToEmpty(file.getModName()))
               .setFilePath(file.getFilePath().path());
       file.getConstants().stream()
           .filter(ConstNode::isExported)
@@ -177,7 +177,7 @@ public final class TemplateMetadataSerializer {
     TemplateMetadata.Builder builder = TemplateMetadata.builder();
     TemplateType.TemplateKind templateKind =
         TEMPLATE_KIND_CONVERTER.convert(templateProto.getTemplateKind());
-    @Nullable String delPackageName = emptyToNull(fileProto.getDelpackage());
+    @Nullable String modName = emptyToNull(fileProto.getModName());
     String templateName;
     String variant = templateProto.getDelTemplateVariant();
     switch (templateKind) {
@@ -197,7 +197,7 @@ public final class TemplateMetadataSerializer {
             TemplateNodeBuilder.combineNsAndName(
                 fileProto.getNamespace(),
                 TemplateDelegateNodeBuilder.partialDeltemplateTemplateName(
-                    delTemplateName, delPackageName, variant));
+                    delTemplateName, modName, variant));
         builder.setDelTemplateVariant(variant).setDelTemplateName(delTemplateName);
         break;
       default:
@@ -218,7 +218,7 @@ public final class TemplateMetadataSerializer {
     return builder
         .setTemplateName(templateName)
         .setSoyFileKind(fileKind)
-        .setDelPackageName(delPackageName)
+        .setModName(modName)
         .setHtmlElement(templateProto.getHtmlElement())
         .setSoyElement(templateProto.getSoyElement())
         .setTemplateType(

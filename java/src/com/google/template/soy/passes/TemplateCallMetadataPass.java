@@ -90,7 +90,7 @@ public final class TemplateCallMetadataPass implements CompilerFileSetPass {
         template.addTemplateCallMetadata(
             TemplateCallMetadata.Template.newBuilder()
                 .setName(template.getTemplateName())
-                .setDelpackage(nullToEmpty(template.getDelPackageName()))
+                .setDelpackage(nullToEmpty(template.getModName()))
                 .addAllCalls(
                     SoyTreeUtils.getAllNodesOfType(template, CallNode.class).stream()
                         .map(TemplateCallMetadataPass::calculateTemplateCall)

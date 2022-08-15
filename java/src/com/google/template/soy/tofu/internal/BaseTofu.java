@@ -117,12 +117,12 @@ public final class BaseTofu implements SoyTofu {
         if (template instanceof TemplateDelegateNode) {
           TemplateDelegateNode delegateNode = (TemplateDelegateNode) template;
           String delTemplateName = delegateNode.getDelTemplateName();
-          String delPackageName = delegateNode.getDelPackageName();
+          String modName = delegateNode.getModName();
           String variant = delegateNode.getDelTemplateVariant();
-          if (delPackageName == null) {
+          if (modName == null) {
             delTemplates.addDefault(delTemplateName, variant, delegateNode);
           } else {
-            delTemplates.add(delTemplateName, delPackageName, variant, delegateNode);
+            delTemplates.add(delTemplateName, modName, variant, delegateNode);
           }
         } else {
           basicTemplates.put(template.getTemplateName(), template);
@@ -156,7 +156,7 @@ public final class BaseTofu implements SoyTofu {
       TemplateLiteralNode modifiedTemplate =
           (TemplateLiteralNode) templateBasicNode.getModifiesExpr().getRoot();
       TemplateType modifiedType = (TemplateType) modifiedTemplate.getType();
-      String delPackageName = templateBasicNode.getDelPackageName();
+      String delPackageName = templateBasicNode.getModName();
       String mapKey =
           !modifiedType.getLegacyDeltemplateNamespace().isEmpty()
               ? modifiedType.getLegacyDeltemplateNamespace()

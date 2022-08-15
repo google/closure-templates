@@ -65,7 +65,7 @@ public @interface TemplateMetadata {
      * The name of the delpackage this is in. If this is a default deltemplate the package will be
      * {@code ""}.
      */
-    String delPackage() default "";
+    String modName() default "";
 
     /** The name of the deltemplate this template is implementing. */
     String name() default "";

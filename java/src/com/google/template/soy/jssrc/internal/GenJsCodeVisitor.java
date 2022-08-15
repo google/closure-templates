@@ -431,8 +431,8 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     if (node.getTemplates().stream().anyMatch(tmpl -> tmpl instanceof TemplateElementNode)) {
       jsDocBuilder.addParameterizedAnnotation("suppress", "extraRequire");
     }
-    if (node.getDelPackageName() != null) {
-      jsDocBuilder.addParameterizedAnnotation("modName", node.getDelPackageName());
+    if (node.getModName() != null) {
+      jsDocBuilder.addParameterizedAnnotation("modName", node.getModName());
     }
     addHasSoyDelTemplateAnnotations(jsDocBuilder, node);
     addHasSoyDelCallAnnotations(jsDocBuilder, node);
@@ -925,7 +925,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       // Don't emit anything for an empty default deltemplate, at runtime a missing entry in the
       // runtime map will be assumed to be an explicit empty template
       if (nodeAsDelTemplate.getDelTemplateVariant().isEmpty()
-          && nodeAsDelTemplate.getDelPackageName() == null) {
+          && nodeAsDelTemplate.getModName() == null) {
         return;
       }
       Expression emptyFnCall = SOY_MAKE_EMPTY_TEMPLATE_FN.call(stringLiteral(templateName));

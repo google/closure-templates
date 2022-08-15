@@ -92,7 +92,7 @@ final class CheckDelegatesPass implements CompilerFileSetPass {
       LocalVariables localVariables = LocalVariablesNodeVisitor.getFileScopeVariables(fileNode);
       for (TemplateNode template : fileNode.getTemplates()) {
         String currTemplateNameForUserMsgs = template.getTemplateNameForUserMsgs();
-        String currDelPackageName = template.getDelPackageName();
+        String currDelPackageName = template.getModName();
         for (TemplateLiteralNode templateLiteralNode :
             SoyTreeUtils.getAllNodesOfType(template, TemplateLiteralNode.class)) {
           checkTemplateLiteralNode(
@@ -211,7 +211,7 @@ final class CheckDelegatesPass implements CompilerFileSetPass {
     // Check that the callee is either not in a delegate package or in the same delegate package.
     TemplateMetadata callee = templateRegistryFull.get().getBasicTemplateOrElement(calleeName);
     if (callee != null) {
-      String calleeDelPackageName = callee.getDelPackageName();
+      String calleeDelPackageName = callee.getModName();
       if (calleeDelPackageName != null && !calleeDelPackageName.equals(currDelPackageName)) {
         if (node.getNearestAncestor(CallParamContentNode.class) == null) {
           errorReporter.report(

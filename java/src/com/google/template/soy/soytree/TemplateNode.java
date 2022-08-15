@@ -96,7 +96,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
       SoyErrorKind.of("Duplicate alias definition ''{0}''.");
 
   /**
-   * Info from the containing Soy file's {@code delpackage} and {@code namespace} declarations.
+   * Info from the containing Soy file's {@code modname} and {@code namespace} declarations.
    *
    * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
    *
@@ -123,7 +123,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
      */
     private final ImmutableList<String> importSymbols;
 
-    @Nullable private final DelPackageDeclaration delPackage;
+    @Nullable private final ModNameDeclaration modNameDeclaration;
     private final Priority priority;
     @Nullable private final String namespace;
 
@@ -131,12 +131,12 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
 
     public SoyFileHeaderInfo(
         ErrorReporter errorReporter,
-        @Nullable DelPackageDeclaration delPackage,
+        @Nullable ModNameDeclaration modNameDeclaration,
         NamespaceDeclaration namespaceDeclaration,
         Collection<AliasDeclaration> aliases,
         Collection<String> importSymbols) {
       this(
-          delPackage,
+          modNameDeclaration,
           namespaceDeclaration.getNamespace(),
           createAliasMap(errorReporter, namespaceDeclaration, aliases),
           ImmutableList.copyOf(aliases),
@@ -149,13 +149,13 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     }
 
     private SoyFileHeaderInfo(
-        @Nullable DelPackageDeclaration delPackage,
+        @Nullable ModNameDeclaration modNameDeclaration,
         String namespace,
         ImmutableMap<String, String> aliasToNamespaceMap,
         ImmutableList<AliasDeclaration> aliasDeclarations,
         ImmutableList<String> importSymbols) {
-      this.delPackage = delPackage;
-      this.priority = (delPackage == null) ? Priority.STANDARD : Priority.HIGH_PRIORITY;
+      this.modNameDeclaration = modNameDeclaration;
+      this.priority = (modNameDeclaration == null) ? Priority.STANDARD : Priority.HIGH_PRIORITY;
       this.namespace = namespace;
       this.aliasToNamespaceMap = aliasToNamespaceMap;
       this.aliasDeclarations = aliasDeclarations;
@@ -164,7 +164,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     }
 
     private SoyFileHeaderInfo(SoyFileHeaderInfo orig) {
-      this.delPackage = orig.delPackage;
+      this.modNameDeclaration = orig.modNameDeclaration;
       this.priority = orig.priority;
       this.namespace = orig.namespace;
       this.aliasToNamespaceMap = orig.aliasToNamespaceMap;
@@ -213,12 +213,12 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
       return namespace;
     }
 
-    public String getDelPackageName() {
-      return delPackage == null ? null : delPackage.name().identifier();
+    public String getModName() {
+      return modNameDeclaration == null ? null : modNameDeclaration.name().identifier();
     }
 
-    public DelPackageDeclaration getDelPackage() {
-      return delPackage;
+    public ModNameDeclaration getModNameDeclaration() {
+      return modNameDeclaration;
     }
 
     public ImmutableList<AliasDeclaration> getAliases() {
@@ -411,8 +411,8 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
   }
 
   /** Returns the name of the containing delegate package, or null if none. */
-  public String getDelPackageName() {
-    return soyFileHeaderInfo.getDelPackageName();
+  public String getModName() {
+    return soyFileHeaderInfo.getModName();
   }
 
   @Override

@@ -1566,12 +1566,12 @@ public class RenderVisitorTest {
         if (template instanceof TemplateDelegateNode) {
           TemplateDelegateNode delegateNode = (TemplateDelegateNode) template;
           String delTemplateName = delegateNode.getDelTemplateName();
-          String delPackageName = delegateNode.getDelPackageName();
+          String modName = delegateNode.getModName();
           String variant = delegateNode.getDelTemplateVariant();
-          if (delPackageName == null) {
+          if (modName == null) {
             deltemplates.addDefault(delTemplateName, variant, delegateNode);
           } else {
-            deltemplates.add(delTemplateName, delPackageName, variant, delegateNode);
+            deltemplates.add(delTemplateName, modName, variant, delegateNode);
           }
         }
       }

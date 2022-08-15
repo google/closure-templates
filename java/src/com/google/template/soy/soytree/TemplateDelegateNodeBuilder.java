@@ -104,8 +104,7 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder<TemplateDel
       }
     }
     String generatedPartialTemplateName =
-        partialDeltemplateTemplateName(
-            delTemplateName, soyFileHeaderInfo.getDelPackageName(), variant);
+        partialDeltemplateTemplateName(delTemplateName, soyFileHeaderInfo.getModName(), variant);
     setTemplateNames(
         Identifier.create(
             generatedPartialTemplateName,

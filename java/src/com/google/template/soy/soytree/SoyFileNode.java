@@ -81,8 +81,8 @@ public final class SoyFileNode extends AbstractParentSoyNode<SoyNode>
     }
   }
 
-  /** The name and location of the containing delegate package, or null if none. */
-  @Nullable private final DelPackageDeclaration delPackage;
+  /** The name and location of the containing modname, or null if none. */
+  @Nullable private final ModNameDeclaration modName;
 
   /** This Soy file's namespace, or null if syntax version V1. */
   private final NamespaceDeclaration namespaceDeclaration;
@@ -102,7 +102,7 @@ public final class SoyFileNode extends AbstractParentSoyNode<SoyNode>
    * @param sourceLocation The source location of the file.
    * @param namespaceDeclaration This Soy file's namespace and attributes. Nullable for backwards
    *     compatibility only.
-   * @param headerInfo Other file metadata, (e.g. delpackages, aliases)
+   * @param headerInfo Other file metadata, (e.g. modnames, aliases)
    */
   public SoyFileNode(
       int id,
@@ -112,7 +112,7 @@ public final class SoyFileNode extends AbstractParentSoyNode<SoyNode>
       ImmutableList<Comment> comments) {
     super(id, sourceLocation);
     this.headerInfo = headerInfo;
-    this.delPackage = headerInfo.getDelPackage();
+    this.modName = headerInfo.getModNameDeclaration();
     this.namespaceDeclaration = namespaceDeclaration; // Immutable
     this.aliasDeclarations = headerInfo.getAliases(); // immutable
     this.comments = comments;
@@ -130,7 +130,7 @@ public final class SoyFileNode extends AbstractParentSoyNode<SoyNode>
    */
   private SoyFileNode(SoyFileNode orig, CopyState copyState) {
     super(orig, copyState);
-    this.delPackage = orig.delPackage;
+    this.modName = orig.modName;
     this.namespaceDeclaration = orig.namespaceDeclaration.copy(copyState);
     this.aliasDeclarations = orig.aliasDeclarations; // immutable
     this.headerInfo = orig.headerInfo.copy();
@@ -154,14 +154,14 @@ public final class SoyFileNode extends AbstractParentSoyNode<SoyNode>
 
   /** Returns the name of the containing delegate package, or null if none. */
   @Nullable
-  public String getDelPackageName() {
-    return delPackage == null ? null : delPackage.name().identifier();
+  public String getModName() {
+    return modName == null ? null : modName.name().identifier();
   }
 
   /** Returns info about the containing delegate package, or null if none. */
   @Nullable
-  public DelPackageDeclaration getDelPackage() {
-    return delPackage;
+  public ModNameDeclaration getModNameDeclaration() {
+    return modName;
   }
 
   /** Returns this Soy file's namespace. */
@@ -277,8 +277,8 @@ public final class SoyFileNode extends AbstractParentSoyNode<SoyNode>
 
     StringBuilder sb = new StringBuilder();
 
-    if (delPackage != null) {
-      sb.append("{modname ").append(delPackage.name()).append("}\n");
+    if (modName != null) {
+      sb.append("{modname ").append(modName.name()).append("}\n");
     }
     sb.append(namespaceDeclaration.toSourceString());
 

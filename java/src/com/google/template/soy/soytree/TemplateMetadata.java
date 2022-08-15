@@ -65,7 +65,7 @@ public abstract class TemplateMetadata {
                     .build())
             .setTemplateType(buildTemplateType(template))
             .setComponent(template.getComponent())
-            .setDelPackageName(template.getDelPackageName())
+            .setModName(template.getModName())
             .setVisibility(template.getVisibility());
     // In various conditions such as Conformance tests, this can be null.
     if (template.getHtmlElementMetadata() != null) {
@@ -206,7 +206,7 @@ public abstract class TemplateMetadata {
   public abstract Visibility getVisibility();
 
   @Nullable
-  public abstract String getDelPackageName();
+  public abstract String getModName();
 
   public abstract boolean getComponent();
 
@@ -231,7 +231,7 @@ public abstract class TemplateMetadata {
 
     public abstract Builder setTemplateType(TemplateType templateType);
 
-    public abstract Builder setDelPackageName(@Nullable String delPackageName);
+    public abstract Builder setModName(@Nullable String modName);
 
     public abstract Builder setVisibility(Visibility visibility);
 

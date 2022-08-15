@@ -93,7 +93,7 @@ import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.exprtree.VeLiteralNode;
 import com.google.template.soy.soytree.AbstractSoyNode;
 import com.google.template.soy.soytree.AliasDeclaration;
-import com.google.template.soy.soytree.DelPackageDeclaration;
+import com.google.template.soy.soytree.ModNameDeclaration;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallNode;
@@ -1482,7 +1482,7 @@ private SoyFileNode EmptySoyFile() :
 
 private SoyFileNode NonEmptySoyFile() :
 {
-  DelPackageDeclaration delpackageDecl = null;
+  ModNameDeclaration modNameDecl = null;
   NamespaceDeclaration namespace;
   AliasDeclaration alias;
   ImportNode importNode;
@@ -1496,7 +1496,7 @@ private SoyFileNode NonEmptySoyFile() :
   Token eof;
 }
 {
-  [ delpackageDecl = DelPackage() ]
+  [ modNameDecl = ModName() ]
 
   namespace = Namespace()
 
@@ -1535,7 +1535,7 @@ private SoyFileNode NonEmptySoyFile() :
   )*
 
   {
-    headerInfo = new SoyFileHeaderInfo(errorReporter, delpackageDecl, namespace,
+    headerInfo = new SoyFileHeaderInfo(errorReporter, modNameDecl, namespace,
         aliases.build(), importSymbols);
     List<TemplateNode> templates = new ArrayList<TemplateNode>();
   }
@@ -1982,9 +1982,9 @@ private CommandTagAttribute Attribute() :
 /**
  * Matches a {modname ...} declaration.
  *
- * DelPackage -> DelpackageOpen DottedIdent CmdEnd
+ * ModName -> DelpackageOpen DottedIdent CmdEnd
  */
-private DelPackageDeclaration DelPackage() :
+private ModNameDeclaration ModName() :
 {
   Identifier name;
   Token open, close;
@@ -1993,7 +1993,7 @@ private DelPackageDeclaration DelPackage() :
   open = <MODNAME_OPEN>
   name = DottedIdent()
   close = <CMD_END>
-  { return DelPackageDeclaration.create(createSrcLoc(open,close), name); }
+  { return ModNameDeclaration.create(createSrcLoc(open,close), name); }
 }
 
 

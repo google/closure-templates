@@ -65,14 +65,14 @@ public class CompiledTemplates {
             "Expected " + delTemplateImplName + " to be a deltemplate");
       }
       String delTemplateName = data.delTemplateName.get();
-      if (data.delPackage.isPresent()) {
-        String delpackage = data.delPackage.get();
-        TemplateData prev = builder.add(delTemplateName, delpackage, data.variant, data);
+      if (data.modName.isPresent()) {
+        String modName = data.modName.get();
+        TemplateData prev = builder.add(delTemplateName, modName, data.variant, data);
         if (prev != null) {
           throw new IllegalArgumentException(
               String.format(
                   "Found multiple deltemplates with the same name (%s) and package (%s). %s and %s",
-                  delTemplateName, delpackage, delTemplateImplName, prev.soyTemplateName()));
+                  delTemplateName, modName, delTemplateImplName, prev.soyTemplateName()));
         }
       } else {
         TemplateData prev = builder.addDefault(delTemplateName, data.variant, data);
@@ -288,7 +288,7 @@ public class CompiledTemplates {
 
     // If this is a deltemplate then delTemplateName will be present
     final Optional<String> delTemplateName;
-    final Optional<String> delPackage;
+    final Optional<String> modName;
     final String variant;
 
     // Lazily initialized by getTransitiveIjParamsForTemplate.  We initialize lazily because in
@@ -317,13 +317,13 @@ public class CompiledTemplates {
       variant = deltemplateMetadata.variant();
       if (!deltemplateMetadata.name().isEmpty()) {
         delTemplateName = Optional.of(deltemplateMetadata.name());
-        delPackage =
-            deltemplateMetadata.delPackage().isEmpty()
+        modName =
+            deltemplateMetadata.modName().isEmpty()
                 ? Optional.empty()
-                : Optional.of(deltemplateMetadata.delPackage());
+                : Optional.of(deltemplateMetadata.modName());
       } else {
         this.delTemplateName = Optional.empty();
-        this.delPackage = Optional.empty();
+        this.modName = Optional.empty();
       }
     }
 

@@ -24,10 +24,10 @@ import com.google.template.soy.base.internal.Identifier;
 /** A {@code {delpackage ..}} declaration. */
 @AutoValue
 @Immutable
-public abstract class DelPackageDeclaration {
+public abstract class ModNameDeclaration {
 
-  public static DelPackageDeclaration create(SourceLocation location, Identifier name) {
-    return new AutoValue_DelPackageDeclaration(location, name);
+  public static ModNameDeclaration create(SourceLocation location, Identifier name) {
+    return new AutoValue_ModNameDeclaration(location, name);
   }
 
   public abstract SourceLocation location();

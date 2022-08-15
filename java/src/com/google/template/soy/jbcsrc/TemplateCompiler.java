@@ -260,7 +260,7 @@ final class TemplateCompiler {
       TemplateDelegateNode delegateNode = (TemplateDelegateNode) templateNode;
       deltemplateMetadata =
           createDelTemplateMetadata(
-              nullToEmpty(delegateNode.getDelPackageName()),
+              nullToEmpty(delegateNode.getModName()),
               delegateNode.getDelTemplateName(),
               delegateNode.getDelTemplateVariant());
     } else if (templateNode instanceof TemplateBasicNode) {
@@ -294,7 +294,7 @@ final class TemplateCompiler {
   TemplateMetadata.DelTemplateMetadata metadataForBasicNode(TemplateBasicNode templateBasicNode) {
     if (templateBasicNode.isModifiable()) {
       return createDelTemplateMetadata(
-          nullToEmpty(templateBasicNode.getDelPackageName()),
+          nullToEmpty(templateBasicNode.getModName()),
           modifiableImplsMapKey(templateBasicNode),
           templateBasicNode.getDelTemplateVariant());
     } else if (templateBasicNode.getModifiesExpr() != null) {
@@ -306,7 +306,7 @@ final class TemplateCompiler {
               ? modifiedType.getLegacyDeltemplateNamespace()
               : modifiedTemplate.getResolvedName();
       return createDelTemplateMetadata(
-          nullToEmpty(templateBasicNode.getDelPackageName()),
+          nullToEmpty(templateBasicNode.getModName()),
           mapKey,
           templateBasicNode.getDelTemplateVariant());
     }
@@ -345,8 +345,8 @@ final class TemplateCompiler {
 
   @AutoAnnotation
   static TemplateMetadata.DelTemplateMetadata createDelTemplateMetadata(
-      String delPackage, String name, String variant) {
-    return new AutoAnnotation_TemplateCompiler_createDelTemplateMetadata(delPackage, name, variant);
+      String modName, String name, String variant) {
+    return new AutoAnnotation_TemplateCompiler_createDelTemplateMetadata(modName, name, variant);
   }
 
   /**

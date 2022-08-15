@@ -27,8 +27,8 @@ message CompilationUnit {
 message SoyFileP {
   // The original file path for the soy file.
   string file_path = 1;
-  // The delpackage of the file, or "" if there was no delpackage
-  string delpackage = 2;
+  // The modname of the file, or "" if there was no modname
+  string mod_name = 2;
   // The namespace of the file
   string namespace = 3;
   // The exported constants in the file
