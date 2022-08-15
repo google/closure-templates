@@ -66,7 +66,7 @@ final class PrerenderVisitor extends RenderVisitor {
         ImmutableTable.of(),
         ParamStore.EMPTY_INSTANCE,
         /* ijData= */ null,
-        /* activeDelPackageSelector= */ null,
+        /* activeModSelector= */ null,
         /* msgBundle= */ null,
         /* xidRenamingMap= */ null,
         /* cssRenamingMap= */ null,

@@ -167,9 +167,7 @@ public interface SoyTofu {
      */
     Renderer setPluginInstances(Map<String, Supplier<Object>> pluginInstances);
 
-    /**
-     * Sets the predicate to use for testing whether or not a given {@code delpackage} is active.
-     */
+    /** Sets the predicate to use for testing whether or not a given {@code mod} is active. */
     Renderer setActiveDelegatePackageSelector(Predicate<String> activeDelegatePackageSelector);
 
     /** Sets the bundle of translated messages, or null to use the messages from the Soy source. */

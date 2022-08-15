@@ -92,7 +92,7 @@ sequence as raw text.
 
 ### File Structure
 
--   Delpackage declaration (optional)
+-   Mod declaration (optional)
 -   Namespace declaration
 -   Alias declarations (optional)
 -   Template declarations

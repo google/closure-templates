@@ -205,7 +205,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
         PluginInstances pluginInstances,
         ImmutableTable<SourceFilePath, String, ImmutableList<ExternNode>> externs,
         DelTemplateSelector<TemplateNode> deltemplates,
-        Predicate<String> activeDelPackageSelector);
+        Predicate<String> activeModSelector);
   }
 
   /** The current environment. */
@@ -236,7 +236,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
 
   private final ImmutableTable<SourceFilePath, String, ImmutableList<ExternNode>> externs;
   private final DelTemplateSelector<TemplateNode> deltemplates;
-  private final Predicate<String> activeDelPackageSelector;
+  private final Predicate<String> activeModSelector;
 
   /**
    * @param env The current environment.
@@ -252,7 +252,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       UndefinedDataHandlingMode undefinedDataHandlingMode,
       ImmutableTable<SourceFilePath, String, ImmutableList<ExternNode>> externs,
       DelTemplateSelector<TemplateNode> deltemplates,
-      Predicate<String> activeDelPackageSelector) {
+      Predicate<String> activeModSelector) {
     this.env = checkNotNull(env);
     this.msgBundle = msgBundle;
     this.cssRenamingMap = (cssRenamingMap == null) ? SoyCssRenamingMap.EMPTY : cssRenamingMap;
@@ -263,7 +263,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     this.undefinedDataHandlingMode = checkNotNull(undefinedDataHandlingMode);
     this.externs = externs;
     this.deltemplates = deltemplates;
-    this.activeDelPackageSelector = activeDelPackageSelector;
+    this.activeModSelector = activeModSelector;
   }
 
   // -----------------------------------------------------------------------------------------------
@@ -959,8 +959,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
 
   private RenderCssHelper getRenderCssHelper() {
     return (delTemplate, variant) -> {
-      TemplateNode data =
-          deltemplates.selectTemplate(delTemplate, variant, activeDelPackageSelector);
+      TemplateNode data = deltemplates.selectTemplate(delTemplate, variant, activeModSelector);
       return data != null ? data.getTemplateName() : null;
     };
   }

@@ -62,8 +62,7 @@ public @interface TemplateMetadata {
   @Retention(RUNTIME)
   @interface DelTemplateMetadata {
     /**
-     * The name of the delpackage this is in. If this is a default deltemplate the package will be
-     * {@code ""}.
+     * The name of the {modname} this is in. If this is a default deltemplate it will be {@code ""}.
      */
     String modName() default "";
 

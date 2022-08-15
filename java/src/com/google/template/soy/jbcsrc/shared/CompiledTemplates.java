@@ -134,14 +134,12 @@ public class CompiledTemplates {
    * Returns the transitive closure of all the css namespaces that might be used by this template.
    */
   public ImmutableList<String> getAllRequiredCssNamespaces(
-      String templateName,
-      Predicate<String> enabledDelpackages,
-      boolean collectCssFromDelvariants) {
+      String templateName, Predicate<String> enabledMods, boolean collectCssFromDelvariants) {
     TemplateData templateData = getTemplateData(templateName);
     Set<TemplateData> orderedTemplateCalls = Sets.newLinkedHashSet();
     Set<TemplateData> visited = Sets.newLinkedHashSet();
     collectTransitiveCallees(
-        templateData, orderedTemplateCalls, visited, enabledDelpackages, collectCssFromDelvariants);
+        templateData, orderedTemplateCalls, visited, enabledMods, collectCssFromDelvariants);
     LinkedHashSet<String> requiredNamespaces = Sets.newLinkedHashSet();
     for (TemplateData callee : orderedTemplateCalls) {
       requiredNamespaces.addAll(callee.requiredCssNamespaces);
@@ -153,14 +151,12 @@ public class CompiledTemplates {
    * Returns the transitive closure of all the css namespaces that might be used by this template.
    */
   public ImmutableList<String> getAllRequiredCssPaths(
-      String templateName,
-      Predicate<String> enabledDelpackages,
-      boolean collectCssFromDelvariants) {
+      String templateName, Predicate<String> enabledMods, boolean collectCssFromDelvariants) {
     TemplateData templateData = getTemplateData(templateName);
     Set<TemplateData> orderedTemplateCalls = Sets.newLinkedHashSet();
     Set<TemplateData> visited = Sets.newLinkedHashSet();
     collectTransitiveCallees(
-        templateData, orderedTemplateCalls, visited, enabledDelpackages, collectCssFromDelvariants);
+        templateData, orderedTemplateCalls, visited, enabledMods, collectCssFromDelvariants);
     LinkedHashSet<String> requiredPaths = Sets.newLinkedHashSet();
     for (TemplateData callee : orderedTemplateCalls) {
       requiredPaths.addAll(callee.requiredCssPaths);
@@ -171,9 +167,9 @@ public class CompiledTemplates {
   /** Returns an active delegate for the given name, variant and active package selector. */
   @Nullable
   CompiledTemplate selectDelTemplate(
-      String delTemplateName, String variant, Predicate<String> activeDelPackageSelector) {
+      String delTemplateName, String variant, Predicate<String> activeModSelector) {
     TemplateData selectedTemplate =
-        selector.selectTemplate(delTemplateName, variant, activeDelPackageSelector);
+        selector.selectTemplate(delTemplateName, variant, activeModSelector);
     if (selectedTemplate == null) {
       return null;
     }
@@ -234,7 +230,7 @@ public class CompiledTemplates {
       @Nullable TemplateData templateData,
       Set<TemplateData> orderedTemplateCalls,
       Set<TemplateData> visited,
-      Predicate<String> enabledDelpackages,
+      Predicate<String> enabledMods,
       boolean collectCssFromDelvariants) {
     // templateData is null if a deltemplate has no implementation.
     if (templateData == null || visited.contains(templateData)) {
@@ -248,7 +244,7 @@ public class CompiledTemplates {
           getTemplateData(callee),
           orderedTemplateCalls,
           visited,
-          enabledDelpackages,
+          enabledMods,
           collectCssFromDelvariants);
     }
     for (String delCallee : templateData.delCallees) {
@@ -259,10 +255,10 @@ public class CompiledTemplates {
           .forEach(
               variant ->
                   collectTransitiveCallees(
-                      selector.selectTemplate(delCallee, variant, enabledDelpackages),
+                      selector.selectTemplate(delCallee, variant, enabledMods),
                       orderedTemplateCalls,
                       visited,
-                      enabledDelpackages,
+                      enabledMods,
                       collectCssFromDelvariants));
     }
     orderedTemplateCalls.add(templateData);

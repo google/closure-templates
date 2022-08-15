@@ -92,13 +92,10 @@ final class CheckDelegatesPass implements CompilerFileSetPass {
       LocalVariables localVariables = LocalVariablesNodeVisitor.getFileScopeVariables(fileNode);
       for (TemplateNode template : fileNode.getTemplates()) {
         String currTemplateNameForUserMsgs = template.getTemplateNameForUserMsgs();
-        String currDelPackageName = template.getModName();
+        String currModName = template.getModName();
         for (TemplateLiteralNode templateLiteralNode :
             SoyTreeUtils.getAllNodesOfType(template, TemplateLiteralNode.class)) {
-          checkTemplateLiteralNode(
-              templateLiteralNode,
-              currDelPackageName,
-              currTemplateNameForUserMsgs);
+          checkTemplateLiteralNode(templateLiteralNode, currModName, currTemplateNameForUserMsgs);
         }
         for (CallDelegateNode callNode :
             SoyTreeUtils.getAllNodesOfType(template, CallDelegateNode.class)) {
@@ -203,16 +200,14 @@ final class CheckDelegatesPass implements CompilerFileSetPass {
   }
 
   private void checkTemplateLiteralNode(
-      TemplateLiteralNode node,
-      @Nullable String currDelPackageName,
-      String currTemplateNameForUserMsgs) {
+      TemplateLiteralNode node, @Nullable String currModName, String currTemplateNameForUserMsgs) {
     String calleeName = node.getResolvedName();
 
-    // Check that the callee is either not in a delegate package or in the same delegate package.
+    // Check that the callee is either in a file without modname, or in the same mod.
     TemplateMetadata callee = templateRegistryFull.get().getBasicTemplateOrElement(calleeName);
     if (callee != null) {
-      String calleeDelPackageName = callee.getModName();
-      if (calleeDelPackageName != null && !calleeDelPackageName.equals(currDelPackageName)) {
+      String calleeModName = callee.getModName();
+      if (calleeModName != null && !calleeModName.equals(currModName)) {
         if (node.getNearestAncestor(CallParamContentNode.class) == null) {
           errorReporter.report(
               node.getSourceLocation(),

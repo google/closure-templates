@@ -32,7 +32,7 @@ import org.junit.runners.JUnit4;
 public final class CheckDelegatesPassTest {
 
   @Test
-  public void testRecognizeValidDelegatePackage() {
+  public void testRecognizeValidMod() {
     assertValidSoyFiles(
         ""
             + "{namespace ns1}\n"
@@ -215,7 +215,7 @@ public final class CheckDelegatesPassTest {
   }
 
   @Test
-  public void testAllowPublicBasicTemplateInDelegatePackage() {
+  public void testAllowPublicBasicTemplateInMod() {
     assertValidSoyFiles(
         ""
             + "{namespace ns1}\n"
@@ -236,7 +236,7 @@ public final class CheckDelegatesPassTest {
   }
 
   @Test
-  public void testErrorBasicDepFromNonDelpackageOnOtherDelegatePackage() {
+  public void testErrorBasicDepFromNonModOnOtherMod() {
     assertInvalidSoyFiles(
         "Found illegal call from 'ns1.boo' to 'ns2.foo', which is in a different delegate package.",
         ""
@@ -258,7 +258,7 @@ public final class CheckDelegatesPassTest {
   }
 
   @Test
-  public void testErrorBasicDepOnOtherDelegatePackage() {
+  public void testErrorBasicDepOnOtherMod() {
     assertInvalidSoyFiles(
         "Found illegal call from 'ns1.boo' to 'ns2.foo', which is in a different delegate package.",
         ""

@@ -48,7 +48,7 @@ final class PreevalVisitorFactory implements EvalVisitorFactory {
       PluginInstances pluginInstances,
       ImmutableTable<SourceFilePath, String, ImmutableList<ExternNode>> externs,
       DelTemplateSelector<TemplateNode> deltemplates,
-      Predicate<String> activeDelPackageSelector) {
+      Predicate<String> activeModSelector) {
     return new PreevalVisitor(env);
   }
 }

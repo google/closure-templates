@@ -21,7 +21,7 @@ import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 
-/** A {@code {delpackage ..}} declaration. */
+/** A {@code {modname ..}} declaration. */
 @AutoValue
 @Immutable
 public abstract class ModNameDeclaration {

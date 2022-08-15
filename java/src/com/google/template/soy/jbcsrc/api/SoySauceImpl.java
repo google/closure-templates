@@ -105,20 +105,15 @@ public final class SoySauceImpl implements SoySauce {
 
   @Override
   public ImmutableList<String> getAllRequiredCssNamespaces(
-      String templateName,
-      Predicate<String> enabledDelpackages,
-      boolean collectCssFromDelvariants) {
+      String templateName, Predicate<String> enabledMods, boolean collectCssFromDelvariants) {
     return templates.getAllRequiredCssNamespaces(
-        templateName, enabledDelpackages, collectCssFromDelvariants);
+        templateName, enabledMods, collectCssFromDelvariants);
   }
 
   @Override
   public ImmutableList<String> getAllRequiredCssPaths(
-      String templateName,
-      Predicate<String> enabledDelpackages,
-      boolean collectCssFromDelvariants) {
-    return templates.getAllRequiredCssPaths(
-        templateName, enabledDelpackages, collectCssFromDelvariants);
+      String templateName, Predicate<String> enabledMods, boolean collectCssFromDelvariants) {
+    return templates.getAllRequiredCssPaths(templateName, enabledMods, collectCssFromDelvariants);
   }
 
   @Override
@@ -225,7 +220,7 @@ public final class SoySauceImpl implements SoySauce {
 
     @Override
     public RendererImpl setActiveDelegatePackageSelector(Predicate<String> active) {
-      contextBuilder.withActiveDelPackageSelector(checkNotNull(active));
+      contextBuilder.withActiveModSelector(checkNotNull(active));
       return this;
     }
 

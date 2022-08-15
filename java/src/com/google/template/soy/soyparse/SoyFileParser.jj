@@ -1445,7 +1445,7 @@ TOKEN_MGR_DECLS: {
 /**
  * Matches the whole input if it is a valid Soy file.
  *
- * SoyFile -> [ DelPackage ] Namespace ( Alias )* ( Template )+ EOF
+ * SoyFile -> [ ModName ] Namespace ( Alias )* ( Template )+ EOF
  */
 private SoyFileNode SoyFile() :
 {
@@ -1982,7 +1982,7 @@ private CommandTagAttribute Attribute() :
 /**
  * Matches a {modname ...} declaration.
  *
- * ModName -> DelpackageOpen DottedIdent CmdEnd
+ * ModName -> ModOpen DottedIdent CmdEnd
  */
 private ModNameDeclaration ModName() :
 {

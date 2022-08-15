@@ -115,16 +115,12 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder<TemplateDel
 
   /** Returns the inferred 'partial' name for a deltemplate. */
   public static String partialDeltemplateTemplateName(
-      String delTemplateName, @Nullable String delPackageName, String variant) {
-    String delPackageTemplateAndVariantStr =
-        (delPackageName == null ? "" : delPackageName)
-            + "_"
-            + delTemplateName.replace('.', '_')
-            + "_"
-            + variant;
-    delPackageTemplateAndVariantStr = delPackageTemplateAndVariantStr.replace('.', '_');
+      String delTemplateName, @Nullable String modName, String variant) {
+    String modTemplateAndVariantStr =
+        (modName == null ? "" : modName) + "_" + delTemplateName.replace('.', '_') + "_" + variant;
+    modTemplateAndVariantStr = modTemplateAndVariantStr.replace('.', '_');
     // Generate the actual internal-use template name.
-    return "__deltemplate_" + delPackageTemplateAndVariantStr;
+    return "__deltemplate_" + modTemplateAndVariantStr;
   }
 
   public static boolean isDeltemplateTemplateName(String templateName) {

@@ -156,17 +156,17 @@ public final class BaseTofu implements SoyTofu {
       TemplateLiteralNode modifiedTemplate =
           (TemplateLiteralNode) templateBasicNode.getModifiesExpr().getRoot();
       TemplateType modifiedType = (TemplateType) modifiedTemplate.getType();
-      String delPackageName = templateBasicNode.getModName();
+      String modName = templateBasicNode.getModName();
       String mapKey =
           !modifiedType.getLegacyDeltemplateNamespace().isEmpty()
               ? modifiedType.getLegacyDeltemplateNamespace()
               : modifiedTemplate.getResolvedName();
-      if (delPackageName == null) {
+      if (modName == null) {
         delTemplates.addDefault(
             mapKey, templateBasicNode.getDelTemplateVariant(), templateBasicNode);
       } else {
         delTemplates.add(
-            mapKey, delPackageName, templateBasicNode.getDelTemplateVariant(), templateBasicNode);
+            mapKey, modName, templateBasicNode.getDelTemplateVariant(), templateBasicNode);
       }
     }
   }
@@ -286,7 +286,7 @@ public final class BaseTofu implements SoyTofu {
    * @param templateName The full name of the template to render.
    * @param data The data to call the template with. Can be null if the template has no parameters.
    * @param ijData The injected data to call the template with. Can be null if not used.
-   * @param activeDelPackageNames The set of active delegate package names, or null if none.
+   * @param activeModNames The set of active delegate package names, or null if none.
    * @param msgBundle The bundle of translated messages, or null to use the messages from the Soy
    *     source.
    * @param cssRenamingMap Map for renaming selectors in 'css' tags, or null if not used.
@@ -298,15 +298,15 @@ public final class BaseTofu implements SoyTofu {
       String templateName,
       @Nullable SoyRecord data,
       @Nullable SoyRecord ijData,
-      @Nullable Predicate<String> activeDelPackageNames,
+      @Nullable Predicate<String> activeModNames,
       @Nullable SoyMsgBundle msgBundle,
       @Nullable SoyIdRenamingMap idRenamingMap,
       @Nullable SoyCssRenamingMap cssRenamingMap,
       boolean debugSoyTemplateInfo,
       PluginInstances pluginInstances) {
 
-    if (activeDelPackageNames == null) {
-      activeDelPackageNames = arg -> false;
+    if (activeModNames == null) {
+      activeModNames = arg -> false;
     }
 
     try (SoyScopedData.InScope inScope = apiCallScope.enter(msgBundle)) {
@@ -316,7 +316,7 @@ public final class BaseTofu implements SoyTofu {
           templateName,
           data,
           ijData,
-          activeDelPackageNames,
+          activeModNames,
           msgBundle,
           idRenamingMap,
           cssRenamingMap,
@@ -332,7 +332,7 @@ public final class BaseTofu implements SoyTofu {
    * @param templateName The full name of the template to render.
    * @param data The data to call the template with. Can be null if the template has no parameters.
    * @param ijData The injected data to call the template with. Can be null if not used.
-   * @param activeDelPackageNames The set of active delegate package names.
+   * @param activeModNames The set of active delegate package names.
    * @param msgBundle The bundle of translated messages, or null to use the messages from the Soy
    *     source.
    * @param cssRenamingMap Map for renaming selectors in 'css' tags, or null if not used.
@@ -343,7 +343,7 @@ public final class BaseTofu implements SoyTofu {
       String templateName,
       @Nullable SoyRecord data,
       @Nullable SoyRecord ijData,
-      Predicate<String> activeDelPackageNames,
+      Predicate<String> activeModNames,
       @Nullable SoyMsgBundle msgBundle,
       @Nullable SoyIdRenamingMap idRenamingMap,
       @Nullable SoyCssRenamingMap cssRenamingMap,
@@ -377,7 +377,7 @@ public final class BaseTofu implements SoyTofu {
               externs,
               data,
               ijData,
-              activeDelPackageNames,
+              activeModNames,
               msgBundle,
               idRenamingMap,
               cssRenamingMap,
@@ -406,7 +406,7 @@ public final class BaseTofu implements SoyTofu {
     private SoyMsgBundle msgBundle;
     private SoyIdRenamingMap idRenamingMap;
     private SoyCssRenamingMap cssRenamingMap;
-    private Predicate<String> activeDelPackageNames;
+    private Predicate<String> activeModNames;
     private SanitizedContent.ContentKind expectedContentKind;
     private boolean debugSoyTemplateInfo;
     private Map<String, Supplier<Object>> perRenderPluginInstances;
@@ -485,7 +485,7 @@ public final class BaseTofu implements SoyTofu {
     @Override
     public RendererImpl setActiveDelegatePackageSelector(
         Predicate<String> activeDelegatePackageNames) {
-      this.activeDelPackageNames = activeDelegatePackageNames;
+      this.activeModNames = activeDelegatePackageNames;
       return this;
     }
 
@@ -530,7 +530,7 @@ public final class BaseTofu implements SoyTofu {
               templateName,
               data,
               ijData,
-              activeDelPackageNames,
+              activeModNames,
               msgBundle,
               idRenamingMap,
               cssRenamingMap,
@@ -629,7 +629,7 @@ public final class BaseTofu implements SoyTofu {
               templateName,
               data,
               ijData,
-              activeDelPackageNames,
+              activeModNames,
               msgBundle,
               idRenamingMap,
               cssRenamingMap,
@@ -667,7 +667,7 @@ public final class BaseTofu implements SoyTofu {
           templateName,
           data,
           ijData,
-          activeDelPackageNames,
+          activeModNames,
           msgBundle,
           idRenamingMap,
           cssRenamingMap,

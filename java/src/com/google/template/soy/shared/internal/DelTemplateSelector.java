@@ -63,7 +63,7 @@ public final class DelTemplateSelector<T> {
       if (group.defaultValue != null) {
         delTemplateNameToValuesBuilder.put(delTemplateName, group.defaultValue);
       }
-      delTemplateNameToValuesBuilder.putAll(delTemplateName, group.delpackageToValue.values());
+      delTemplateNameToValuesBuilder.putAll(delTemplateName, group.modToValue.values());
     }
     this.nameAndVariantToGroup = nameAndVariantBuilder.buildOrThrow();
     this.delTemplateNameToValues = delTemplateNameToValuesBuilder.build();
@@ -91,10 +91,10 @@ public final class DelTemplateSelector<T> {
    */
   @Nullable
   public T selectTemplate(
-      String delTemplateName, String variant, Predicate<String> activeDelPackageSelector) {
+      String delTemplateName, String variant, Predicate<String> activeModSelector) {
     Group<T> group = nameAndVariantToGroup.get(delTemplateName, variant);
     if (group != null) {
-      T selection = group.select(activeDelPackageSelector);
+      T selection = group.select(activeModSelector);
       if (selection != null) {
         return selection;
       }
@@ -103,7 +103,7 @@ public final class DelTemplateSelector<T> {
       // Retry with an empty variant
       group = nameAndVariantToGroup.get(delTemplateName, "");
       if (group != null) {
-        return group.select(activeDelPackageSelector);
+        return group.select(activeModSelector);
       }
     }
     return null;
@@ -123,14 +123,14 @@ public final class DelTemplateSelector<T> {
     private final Table<String, String, Group.Builder<T>> nameAndVariantToGroup =
         Tables.newCustomTable(new LinkedHashMap<>(), LinkedHashMap::new);
 
-    /** Adds a template in the default delpackage. */
+    /** Adds the default template (not associated with any mod or variant). */
     public T addDefault(String delTemplateName, String variant, T value) {
       return getBuilder(delTemplateName, variant).setDefault(value);
     }
 
     /** Adds a deltemplate. */
-    public T add(String delTemplateName, String delpackage, String variant, T value) {
-      return getBuilder(delTemplateName, variant).add(delpackage, value);
+    public T add(String delTemplateName, String mod, String variant, T value) {
+      return getBuilder(delTemplateName, variant).add(mod, value);
     }
 
     private Group.Builder<T> getBuilder(String name, String variant) {
@@ -153,21 +153,21 @@ public final class DelTemplateSelector<T> {
   private static final class Group<T> {
     final String formattedName;
     @Nullable final T defaultValue;
-    final ImmutableMap<String, T> delpackageToValue;
+    final ImmutableMap<String, T> modToValue;
 
     private Group(Builder<T> builder) {
       this.formattedName = checkNotNull(builder.formattedName);
       this.defaultValue = builder.defaultValue;
-      this.delpackageToValue = ImmutableMap.copyOf(builder.delpackageToValue);
+      this.modToValue = ImmutableMap.copyOf(builder.modToValue);
     }
 
     /**
      * Returns the value from this group based on the current active packages, or the default if one
      * exists.
      */
-    T select(Predicate<String> activeDelPackageSelector) {
+    T select(Predicate<String> activeModSelector) {
       Map.Entry<String, T> selected = null;
-      // Select whatever delpackage is active and ensure that only one is activated.  If none are
+      // Select whatever mod is active and ensure that only one is activated.  If none are
       // active use the default.
       // This is analagous to what happens in JavaScript, see soy.$$registerDelegateFn.  The main
       // difference is that in JavaScript delegate conflicts are resolved/detected at code loading
@@ -177,8 +177,8 @@ public final class DelTemplateSelector<T> {
       // start of rendering which would flag erroneous Predicates even if no deltempate group
       // containing the conflict is ever rendered. However, this sounds like a potentially expensive
       // operation, so for now we delay detecting conflicts until selection time.
-      for (Map.Entry<String, T> entry : delpackageToValue.entrySet()) {
-        if (activeDelPackageSelector.test(entry.getKey())) {
+      for (Map.Entry<String, T> entry : modToValue.entrySet()) {
+        if (activeModSelector.test(entry.getKey())) {
           if (selected != null) {
             throw new IllegalArgumentException(
                 String.format(
@@ -198,13 +198,13 @@ public final class DelTemplateSelector<T> {
     Builder<T> toBuilder() {
       Builder<T> builder = new Builder<>(formattedName);
       builder.defaultValue = defaultValue;
-      builder.delpackageToValue.putAll(delpackageToValue);
+      builder.modToValue.putAll(modToValue);
       return builder;
     }
 
     static final class Builder<T> {
       final String formattedName;
-      Map<String, T> delpackageToValue = new LinkedHashMap<>();
+      Map<String, T> modToValue = new LinkedHashMap<>();
       T defaultValue;
 
       Builder(String formattedName) {
@@ -220,9 +220,9 @@ public final class DelTemplateSelector<T> {
         return null;
       }
 
-      T add(String delpackage, T value) {
-        checkArgument(!delpackage.isEmpty());
-        T prev = delpackageToValue.put(delpackage, checkNotNull(value));
+      T add(String mod, T value) {
+        checkArgument(!mod.isEmpty());
+        T prev = modToValue.put(mod, checkNotNull(value));
         return prev;
       }
 

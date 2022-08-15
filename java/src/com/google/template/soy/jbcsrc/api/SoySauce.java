@@ -66,7 +66,7 @@ public interface SoySauce {
    * Returns the transitive set of {@code $ij} params that might be needed to render this template.
    *
    * <p>NOTE: this will return a superset of the parameters that will actually be used at runtime;
-   * this is because it doesn't take delpackages or conditional logic inside templates into account.
+   * this is because it doesn't take mods or conditional logic inside templates into account.
    * Additionally, this treats all references to template literals as though they may be called.
    */
   ImmutableSet<String> getTransitiveIjParamsForTemplate(String templateInfo);
@@ -80,15 +80,13 @@ public interface SoySauce {
    * references to template literals as though they may be called.
    */
   ImmutableList<String> getAllRequiredCssNamespaces(
-      String templateName, Predicate<String> enabledDelpackages, boolean collectCssFromDelvariants);
+      String templateName, Predicate<String> enabledMods, boolean collectCssFromDelvariants);
 
   /** As above, but given a SoyTemplate instead of a template name. */
   default ImmutableList<String> getAllRequiredCssNamespaces(
-      SoyTemplate template,
-      Predicate<String> enabledDelpackages,
-      boolean collectCssFromDelvariants) {
+      SoyTemplate template, Predicate<String> enabledMods, boolean collectCssFromDelvariants) {
     return getAllRequiredCssNamespaces(
-        template.getTemplateName(), enabledDelpackages, collectCssFromDelvariants);
+        template.getTemplateName(), enabledMods, collectCssFromDelvariants);
   }
 
   /**
@@ -100,15 +98,13 @@ public interface SoySauce {
    * references to template literals as though they may be called.
    */
   ImmutableList<String> getAllRequiredCssPaths(
-      String templateName, Predicate<String> enabledDelpackages, boolean collectCssFromDelvariants);
+      String templateName, Predicate<String> enabledMods, boolean collectCssFromDelvariants);
 
   /** As above, but given a SoyTemplate instead of a template name. */
   default ImmutableList<String> getAllRequiredCssPaths(
-      SoyTemplate template,
-      Predicate<String> enabledDelpackages,
-      boolean collectCssFromDelvariants) {
+      SoyTemplate template, Predicate<String> enabledMods, boolean collectCssFromDelvariants) {
     return getAllRequiredCssPaths(
-        template.getTemplateName(), enabledDelpackages, collectCssFromDelvariants);
+        template.getTemplateName(), enabledMods, collectCssFromDelvariants);
   }
   /**
    * Indicates whether the current {@link SoySauce} instance holds a given template.
@@ -144,9 +140,7 @@ public interface SoySauce {
     /** Configures the {@code {xid ..}} renaming map. */
     Renderer setXidRenamingMap(SoyIdRenamingMap xidRenamingMap);
 
-    /**
-     * Sets the predicate to use for testing whether or not a given {@code delpackage} is active.
-     */
+    /** Sets the predicate to use for testing whether or not a given {@code modname} is active. */
     Renderer setActiveDelegatePackageSelector(Predicate<String> active);
 
     /** Configures the bundle of translated messages to use. */

@@ -761,10 +761,10 @@ public final class Metadata {
       ErrorReporter errorReporter,
       FileSetMetadata fileSetMetadata,
       DelTemplateSelector.Builder<TemplateMetadata> builder) {
-    String delPackageName = template.getModName();
+    String modName = template.getModName();
     String variant = template.getDelTemplateVariant();
     TemplateMetadata previous;
-    if (delPackageName == null) {
+    if (modName == null) {
       // default delegate
       previous = builder.addDefault(delTemplateName, variant, template);
       if (previous != null) {
@@ -775,13 +775,13 @@ public final class Metadata {
             previous.getSourceLocation());
       }
     } else {
-      previous = builder.add(delTemplateName, delPackageName, variant, template);
+      previous = builder.add(delTemplateName, modName, variant, template);
       if (previous != null) {
         errorReporter.report(
             template.getSourceLocation(),
             DUPLICATE_DELEGATE_TEMPLATES_IN_MOD,
             delTemplateName,
-            delPackageName,
+            modName,
             previous.getSourceLocation());
       }
     }

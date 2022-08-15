@@ -94,7 +94,7 @@ public class BytecodeCompilerTest {
   public static final SoyList EMPTY_LIST = ListImpl.forProviderList(ImmutableList.of());
 
   @Test
-  public void testDelCall_delPackageSelections() throws IOException {
+  public void testDelCall_modSelections() throws IOException {
     SoyFileSupplier soyFileContent1 =
         SoyFileSupplier.Factory.create(
             Joiner.on("\n")

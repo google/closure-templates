@@ -129,8 +129,8 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
   /** The current environment. */
   protected Environment env;
 
-  /** The predicate for testing whether a given delpackage is active. */
-  protected final Predicate<String> activeDelPackageSelector;
+  /** The predicate for testing whether a given mod is active. */
+  protected final Predicate<String> activeModSelector;
 
   /** The bundle of translated messages, or null to use the messages from the Soy source. */
   protected final SoyMsgBundle msgBundle;
@@ -175,8 +175,8 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
    * @param outputBuf The Appendable to append the output to.
    * @param data The current template data.
    * @param ijData The current injected data.
-   * @param activeDelPackageSelector The predicate for testing whether a given delpackage is active.
-   *     Allowed to be null when known to be irrelevant.
+   * @param activeModSelector The predicate for testing whether a given mod is active. Allowed to be
+   *     null when known to be irrelevant.
    * @param msgBundle The bundle of translated messages, or null to use the messages from the Soy
    *     source.
    * @param xidRenamingMap The 'xid' renaming map, or null if not applicable.
@@ -192,7 +192,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       ImmutableTable<SourceFilePath, String, ImmutableList<ExternNode>> externs,
       SoyRecord data,
       @Nullable SoyRecord ijData,
-      @Nullable Predicate<String> activeDelPackageSelector,
+      @Nullable Predicate<String> activeModSelector,
       @Nullable SoyMsgBundle msgBundle,
       @Nullable SoyIdRenamingMap xidRenamingMap,
       @Nullable SoyCssRenamingMap cssRenamingMap,
@@ -207,7 +207,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     this.externs = checkNotNull(externs);
     this.data = data;
     this.ijData = ijData;
-    this.activeDelPackageSelector = activeDelPackageSelector;
+    this.activeModSelector = activeModSelector;
     this.msgBundle = msgBundle;
     this.xidRenamingMap = (xidRenamingMap == null) ? SoyCssRenamingMap.EMPTY : xidRenamingMap;
     this.cssRenamingMap = (cssRenamingMap == null) ? SoyCssRenamingMap.EMPTY : cssRenamingMap;
@@ -261,7 +261,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
         externs,
         data,
         ijData,
-        activeDelPackageSelector,
+        activeModSelector,
         msgBundle,
         xidRenamingMap,
         cssRenamingMap,
@@ -302,7 +302,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
               ? templateBasicNode.getLegacyDeltemplateNamespace()
               : templateBasicNode.getTemplateName();
       return deltemplates.selectTemplate(
-          mapKey, data.getField(VARIANT_PARAM_NAME).stringValue(), activeDelPackageSelector);
+          mapKey, data.getField(VARIANT_PARAM_NAME).stringValue(), activeModSelector);
     }
 
     return template;
@@ -587,8 +587,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     }
     TemplateNode callee;
     try {
-      callee =
-          deltemplates.selectTemplate(node.getDelCalleeName(), variant, activeDelPackageSelector);
+      callee = deltemplates.selectTemplate(node.getDelCalleeName(), variant, activeModSelector);
     } catch (IllegalArgumentException e) {
       throw RenderException.createWithSource(e.getMessage(), e, node);
     }
@@ -871,7 +870,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
               pluginInstances,
               externs,
               deltemplates,
-              activeDelPackageSelector);
+              activeModSelector);
     }
 
     try {

@@ -15,8 +15,8 @@ message TemplateCallMetadata {
     // Globally unique name of the template
     string name = 1;
 
-    // delpackage if it is specified
-    string delpackage = 2;
+    // modname if it is specified
+    string modname = 2;
 
     // Includes all calls invoked within the template definition, including:
     // - Direct calls made within the template definition

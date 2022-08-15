@@ -99,16 +99,14 @@ public final class TemplateTester {
   }
 
   static RenderContext getDefaultContext(
-      CompiledTemplates templates, Predicate<String> activeDelPackages) {
-    return getDefaultContext(templates, activeDelPackages, /* debugSoyTemplateInfo= */ false);
+      CompiledTemplates templates, Predicate<String> activeMods) {
+    return getDefaultContext(templates, activeMods, /* debugSoyTemplateInfo= */ false);
   }
 
   static RenderContext getDefaultContext(
-      CompiledTemplates templates,
-      Predicate<String> activeDelPackages,
-      boolean debugSoyTemplateInfo) {
+      CompiledTemplates templates, Predicate<String> activeMods, boolean debugSoyTemplateInfo) {
     return createDefaultBuilder(templates)
-        .withActiveDelPackageSelector(activeDelPackages)
+        .withActiveModSelector(activeMods)
         .withDebugSoyTemplateInfo(debugSoyTemplateInfo)
         .build();
   }

@@ -182,7 +182,7 @@ public final class SaveStateMetaFactoryTest {
                 ImmutableSet.of(), SaveStateMetaFactoryTest.class.getClassLoader()),
             ImmutableMap.of(),
             PluginInstances.empty())
-        .withActiveDelPackageSelector(arg -> false)
+        .withActiveModSelector(arg -> false)
         .withDebugSoyTemplateInfo(false)
         .build();
   }

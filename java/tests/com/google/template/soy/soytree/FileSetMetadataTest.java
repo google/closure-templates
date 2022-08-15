@@ -384,7 +384,7 @@ public final class FileSetMetadataTest {
   }
 
   @Test
-  public void testDuplicateDeltemplatesInSameDelpackage() {
+  public void testDuplicateDeltemplatesInSameMod() {
     String file =
         "{modname foo}\n"
             + "{namespace ns}\n"
@@ -402,7 +402,7 @@ public final class FileSetMetadataTest {
   }
 
   @Test
-  public void testDuplicateDeltemplatesInSameDelpackage_differentFiles() {
+  public void testDuplicateDeltemplatesInSameMod_differentFiles() {
     String file =
         "{modname foo}\n"
             + "{namespace ns}\n"

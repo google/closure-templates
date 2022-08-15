@@ -148,9 +148,6 @@ This deprecated feature still works for the ID parameter to the
 
 ## modname {#modname}
 
-IMPORTANT: The command {delpackage} is in the process of being renamed to
-{modname}, currently they are treated identically.
-
 Syntax:
 
 ```soy

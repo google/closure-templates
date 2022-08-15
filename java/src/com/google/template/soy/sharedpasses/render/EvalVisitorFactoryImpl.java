@@ -47,7 +47,7 @@ public final class EvalVisitorFactoryImpl implements EvalVisitorFactory {
       PluginInstances pluginInstances,
       ImmutableTable<SourceFilePath, String, ImmutableList<ExternNode>> externs,
       DelTemplateSelector<TemplateNode> deltemplates,
-      Predicate<String> activeDelPackageSelector) {
+      Predicate<String> activeModSelector) {
     return new EvalVisitor(
         env,
         cssRenamingMap,
@@ -63,6 +63,6 @@ public final class EvalVisitorFactoryImpl implements EvalVisitorFactory {
         EvalVisitor.UndefinedDataHandlingMode.BUGGED,
         externs,
         deltemplates,
-        activeDelPackageSelector);
+        activeModSelector);
   }
 }

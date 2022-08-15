@@ -58,12 +58,12 @@ public final class RenderContext {
   }
 
   // TODO(lukes):  within this object most of these fields are constant across all renders while
-  // some are expected to change frequently (the renaming maps, msgBundle and activeDelPackages).
+  // some are expected to change frequently (the renaming maps, msgBundle and activeModSelector).
   // Consider splitting this into two objects to represent the changing lifetimes.  We are kind of
   // doing this now by having SoySauceImpl reuse the Builder, but this is a little strange and could
   // be theoretically made more efficient to construct.
 
-  private final Predicate<String> activeDelPackageSelector;
+  private final Predicate<String> activeModSelector;
   private final CompiledTemplates templates;
   private final SoyCssRenamingMap cssRenamingMap;
   private final SoyIdRenamingMap xidRenamingMap;
@@ -93,7 +93,7 @@ public final class RenderContext {
       CompiledTemplates templates,
       ImmutableMap<String, SoyJavaPrintDirective> soyJavaDirectivesMap,
       PluginInstances pluginInstances,
-      @Nullable Predicate<String> activeDelPackageSelector,
+      @Nullable Predicate<String> activeModSelector,
       @Nullable SoyCssRenamingMap cssRenamingMap,
       @Nullable SoyIdRenamingMap xidRenamingMap,
       @Nullable SoyMsgBundle msgBundle,
@@ -102,8 +102,7 @@ public final class RenderContext {
     this.templates = templates;
     this.soyJavaDirectivesMap = soyJavaDirectivesMap;
     this.pluginInstances = pluginInstances;
-    this.activeDelPackageSelector =
-        activeDelPackageSelector != null ? activeDelPackageSelector : delPackage -> false;
+    this.activeModSelector = activeModSelector != null ? activeModSelector : mod -> false;
     this.cssRenamingMap = cssRenamingMap == null ? SoyCssRenamingMap.EMPTY : cssRenamingMap;
     this.xidRenamingMap = xidRenamingMap == null ? SoyCssRenamingMap.EMPTY : xidRenamingMap;
     this.msgBundle = msgBundle == null ? SoyMsgBundle.EMPTY : msgBundle;
@@ -119,17 +118,17 @@ public final class RenderContext {
   public RenderCssHelper getRenderCssHelper() {
     return (delTemplate, variant) -> {
       TemplateData data =
-          templates.selector.selectTemplate(delTemplate, variant, activeDelPackageSelector);
+          templates.selector.selectTemplate(delTemplate, variant, activeModSelector);
       return data != null ? data.soyTemplateName : null;
     };
   }
 
   public ImmutableList<String> getAllRequiredCssNamespaces(String template) {
-    return templates.getAllRequiredCssNamespaces(template, activeDelPackageSelector, false);
+    return templates.getAllRequiredCssNamespaces(template, activeModSelector, false);
   }
 
   public ImmutableList<String> getAllRequiredCssPaths(String template) {
-    return templates.getAllRequiredCssPaths(template, activeDelPackageSelector, false);
+    return templates.getAllRequiredCssPaths(template, activeModSelector, false);
   }
 
   public BidiGlobalDir getBidiGlobalDir() {
@@ -208,8 +207,7 @@ public final class RenderContext {
   }
 
   public CompiledTemplate getDelTemplate(String calleeName, String variant) {
-    CompiledTemplate callee =
-        templates.selectDelTemplate(calleeName, variant, activeDelPackageSelector);
+    CompiledTemplate callee = templates.selectDelTemplate(calleeName, variant, activeModSelector);
     if (callee == null) {
       throw new IllegalArgumentException(
           "Found no active impl for delegate call to \""
@@ -353,7 +351,7 @@ public final class RenderContext {
   @VisibleForTesting
   public Builder toBuilder() {
     return new Builder(templates, soyJavaDirectivesMap, pluginInstances)
-        .withActiveDelPackageSelector(this.activeDelPackageSelector)
+        .withActiveModSelector(this.activeModSelector)
         .withPluginInstances(pluginInstances)
         .withCssRenamingMap(cssRenamingMap)
         .withXidRenamingMap(xidRenamingMap)
@@ -365,7 +363,7 @@ public final class RenderContext {
     private final CompiledTemplates templates;
     private final ImmutableMap<String, SoyJavaPrintDirective> soyJavaDirectivesMap;
     private PluginInstances pluginInstances;
-    private Predicate<String> activeDelPackageSelector;
+    private Predicate<String> activeModSelector;
     private SoyCssRenamingMap cssRenamingMap;
     private SoyIdRenamingMap xidRenamingMap;
     private SoyMsgBundle msgBundle;
@@ -381,8 +379,8 @@ public final class RenderContext {
       this.pluginInstances = pluginInstances;
     }
 
-    public Builder withActiveDelPackageSelector(Predicate<String> activeDelPackageSelector) {
-      this.activeDelPackageSelector = checkNotNull(activeDelPackageSelector);
+    public Builder withActiveModSelector(Predicate<String> activeModSelector) {
+      this.activeModSelector = checkNotNull(activeModSelector);
       return this;
     }
 
@@ -421,7 +419,7 @@ public final class RenderContext {
           templates,
           soyJavaDirectivesMap,
           pluginInstances,
-          activeDelPackageSelector,
+          activeModSelector,
           cssRenamingMap,
           xidRenamingMap,
           msgBundle,

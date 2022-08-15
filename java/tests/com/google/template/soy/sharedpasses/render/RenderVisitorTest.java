@@ -307,13 +307,13 @@ public class RenderVisitorTest {
       String templateName,
       SoyRecord data,
       SoyRecord ijData,
-      Predicate<String> activeDelPackageNames) {
+      Predicate<String> activeModNames) {
     return renderTemplateInFile(
         SoyFileSetParserBuilder.forFileContents(soyFileContent).errorReporter(FAIL).parse(),
         templateName,
         data,
         ijData,
-        activeDelPackageNames);
+        activeModNames);
   }
 
   private String renderTemplateInFile(
@@ -321,9 +321,9 @@ public class RenderVisitorTest {
       String templateName,
       SoyRecord data,
       SoyRecord ijData,
-      Predicate<String> activeDelPackageNames) {
+      Predicate<String> activeModNames) {
     return renderTemplateInFile(
-        parseResult, templateName, data, ijData, activeDelPackageNames, new StringBuilder());
+        parseResult, templateName, data, ijData, activeModNames, new StringBuilder());
   }
 
   private String renderTemplateInFile(
@@ -331,7 +331,7 @@ public class RenderVisitorTest {
       String templateName,
       SoyRecord data,
       SoyRecord ijData,
-      Predicate<String> activeDelPackageNames,
+      Predicate<String> activeModNames,
       StringBuilder outputSb) {
     ImmutableMap<String, TemplateNode> basicTemplates = getBasicTemplates(parseResult.fileSet());
     RenderVisitor rv =
@@ -344,7 +344,7 @@ public class RenderVisitorTest {
             ImmutableTable.of(),
             data,
             ijData,
-            activeDelPackageNames,
+            activeModNames,
             null,
             xidRenamingMap,
             cssRenamingMap,
@@ -1090,35 +1090,34 @@ public class RenderVisitorTest {
             .parse();
     final SoyRecord data = SoyValueConverterUtility.newDict();
 
-    Predicate<String> activeDelPackageNames = arg -> false;
+    Predicate<String> activeModNames = arg -> false;
     assertThat(
             renderTemplateInFile(
-                parseResult, "ns1.callerTemplate", data, TEST_IJ_DATA, activeDelPackageNames))
+                parseResult, "ns1.callerTemplate", data, TEST_IJ_DATA, activeModNames))
         .isEqualTo("000");
 
-    activeDelPackageNames = "SecretFeature"::equals;
+    activeModNames = "SecretFeature"::equals;
     assertThat(
             renderTemplateInFile(
-                parseResult, "ns1.callerTemplate", data, TEST_IJ_DATA, activeDelPackageNames))
+                parseResult, "ns1.callerTemplate", data, TEST_IJ_DATA, activeModNames))
         .isEqualTo("111 aaaaaah");
 
-    activeDelPackageNames = "AlternateSecretFeature"::equals;
+    activeModNames = "AlternateSecretFeature"::equals;
     assertThat(
             renderTemplateInFile(
-                parseResult, "ns1.callerTemplate", data, TEST_IJ_DATA, activeDelPackageNames))
+                parseResult, "ns1.callerTemplate", data, TEST_IJ_DATA, activeModNames))
         .isEqualTo("222 aaaaaah injected");
 
-    activeDelPackageNames = "NonexistentFeature"::equals;
+    activeModNames = "NonexistentFeature"::equals;
     assertThat(
             renderTemplateInFile(
-                parseResult, "ns1.callerTemplate", data, TEST_IJ_DATA, activeDelPackageNames))
+                parseResult, "ns1.callerTemplate", data, TEST_IJ_DATA, activeModNames))
         .isEqualTo("000");
 
-    activeDelPackageNames =
-        ImmutableSet.of("NonexistentFeature", "AlternateSecretFeature")::contains;
+    activeModNames = ImmutableSet.of("NonexistentFeature", "AlternateSecretFeature")::contains;
     assertThat(
             renderTemplateInFile(
-                parseResult, "ns1.callerTemplate", data, TEST_IJ_DATA, activeDelPackageNames))
+                parseResult, "ns1.callerTemplate", data, TEST_IJ_DATA, activeModNames))
         .isEqualTo("222 aaaaaah injected");
 
     try {
@@ -1226,35 +1225,34 @@ public class RenderVisitorTest {
             .errorReporter(FAIL)
             .parse();
 
-    Predicate<String> activeDelPackageNames = arg -> false;
+    Predicate<String> activeModNames = arg -> false;
     assertThat(
             renderTemplateInFile(
-                result, "ns1.callerTemplate", TEST_DATA, TEST_IJ_DATA, activeDelPackageNames))
+                result, "ns1.callerTemplate", TEST_DATA, TEST_IJ_DATA, activeModNames))
         .isEqualTo("000alpha000beta000empty");
 
-    activeDelPackageNames = "SecretFeature"::equals;
+    activeModNames = "SecretFeature"::equals;
     assertThat(
             renderTemplateInFile(
-                result, "ns1.callerTemplate", TEST_DATA, TEST_IJ_DATA, activeDelPackageNames))
+                result, "ns1.callerTemplate", TEST_DATA, TEST_IJ_DATA, activeModNames))
         .isEqualTo("111alpha111beta111empty");
 
-    activeDelPackageNames = "AlternateSecretFeature"::equals;
+    activeModNames = "AlternateSecretFeature"::equals;
     assertThat(
             renderTemplateInFile(
-                result, "ns1.callerTemplate", TEST_DATA, TEST_IJ_DATA, activeDelPackageNames))
+                result, "ns1.callerTemplate", TEST_DATA, TEST_IJ_DATA, activeModNames))
         .isEqualTo("222alpha000beta222empty");
 
-    activeDelPackageNames = "NonexistentFeature"::equals;
+    activeModNames = "NonexistentFeature"::equals;
     assertThat(
             renderTemplateInFile(
-                result, "ns1.callerTemplate", TEST_DATA, TEST_IJ_DATA, activeDelPackageNames))
+                result, "ns1.callerTemplate", TEST_DATA, TEST_IJ_DATA, activeModNames))
         .isEqualTo("000alpha000beta000empty");
 
-    activeDelPackageNames =
-        ImmutableSet.of("NonexistentFeature", "AlternateSecretFeature")::contains;
+    activeModNames = ImmutableSet.of("NonexistentFeature", "AlternateSecretFeature")::contains;
     assertThat(
             renderTemplateInFile(
-                result, "ns1.callerTemplate", TEST_DATA, TEST_IJ_DATA, activeDelPackageNames))
+                result, "ns1.callerTemplate", TEST_DATA, TEST_IJ_DATA, activeModNames))
         .isEqualTo("222alpha000beta222empty");
     try {
       renderTemplateInFile(
