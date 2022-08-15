@@ -34,8 +34,7 @@ import java.util.List;
 final class RenderContextExpression extends Expression implements JbcSrcPluginContext {
 
   private static final MethodRef GET_DELTEMPLATE =
-      MethodRef.create(
-          RenderContext.class, "getDelTemplate", String.class, String.class, boolean.class);
+      MethodRef.create(RenderContext.class, "getDelTemplate", String.class, String.class);
 
   private static final MethodRef GET_PLUGIN_INSTANCE =
       MethodRef.create(RenderContext.class, "getPluginInstance", String.class);
@@ -173,10 +172,8 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
     return delegate.invoke(RENAME_CSS_SELECTOR, constant(value));
   }
 
-  Expression getDeltemplate(
-      String delCalleeName, Expression variantExpr, boolean allowEmptyDefault) {
-    return delegate.invoke(
-        GET_DELTEMPLATE, constant(delCalleeName), variantExpr, constant(allowEmptyDefault));
+  Expression getDeltemplate(String delCalleeName, Expression variantExpr) {
+    return delegate.invoke(GET_DELTEMPLATE, constant(delCalleeName), variantExpr);
   }
 
   @Override

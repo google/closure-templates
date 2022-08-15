@@ -169,8 +169,7 @@ def get_delegate_fn(template_id, variant, allow_empty_default):
   elif allow_empty_default:
     return _empty_template_function
   else:
-    msg = ('Found no active impl for delegate call to "%s%s" '
-           '(and delcall does not set allowemptydefault="true").')
+    msg = ('Found no active impl for delegate call to "%s%s".')
     raise RuntimeError(msg % (template_id, ':' + variant if variant else ''))
 
 

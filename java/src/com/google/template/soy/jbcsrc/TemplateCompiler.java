@@ -624,8 +624,7 @@ final class TemplateCompiler {
     Expression selectedCompiledTemplate =
         variables
             .getRenderContext()
-            .getDeltemplate(
-                modifiableImplsMapKey(templateBasicNode), variantVariable.accessor(), false);
+            .getDeltemplate(modifiableImplsMapKey(templateBasicNode), variantVariable.accessor());
 
     AppendableExpression appendable =
         AppendableExpression.forExpression(

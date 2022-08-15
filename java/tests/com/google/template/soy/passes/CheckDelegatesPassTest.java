@@ -300,9 +300,7 @@ public final class CheckDelegatesPassTest {
     assertThat(errorReporter.getErrors().get(0).message())
         .isEqualTo(
             "No default deltemplate found for foo. Please add a default deltemplate, even if it is"
-                + " empty.\nSee go/soy/reference/delegate-templates#basic-structure.\n"
-                + "NOTE: This check can be bypassed with allowemptydefault=\"true\", but"
-                + " that feature is deprecated and will be removed soon.");
+                + " empty.\nSee go/soy/reference/delegate-templates#basic-structure.");
     assertThat(errorReporter.getErrors().get(1).message())
         .isEqualTo("'delcall' to basic template defined at '2:9-2:11' (expected 'call').");
   }

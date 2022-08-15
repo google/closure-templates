@@ -207,18 +207,15 @@ public final class RenderContext {
     return templates.getTemplate(calleeName);
   }
 
-  public CompiledTemplate getDelTemplate(String calleeName, String variant, boolean allowEmpty) {
+  public CompiledTemplate getDelTemplate(String calleeName, String variant) {
     CompiledTemplate callee =
         templates.selectDelTemplate(calleeName, variant, activeDelPackageSelector);
     if (callee == null) {
-      if (allowEmpty) {
-        return RenderContext::emptyTemplate;
-      }
       throw new IllegalArgumentException(
           "Found no active impl for delegate call to \""
               + calleeName
               + (variant.isEmpty() ? "" : ":" + variant)
-              + "\" (and delcall does not set allowemptydefault=\"true\").");
+              + "\".");
     }
     return callee;
   }

@@ -1061,7 +1061,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   }
 
   /**
-   * Given this delcall: {@code {delcall foo.bar variant="$expr" allowemptydefault="true"}}
+   * Given this delcall: {@code {delcall foo.bar variant="$expr"}}
    *
    * <p>Generate code that looks like:
    *
@@ -1097,7 +1097,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
           }
           return parameterLookup
               .getRenderContext()
-              .getDeltemplate(node.getDelCalleeName(), variantExpr, node.allowEmptyDefault())
+              .getDeltemplate(node.getDelCalleeName(), variantExpr)
               .labelStart(reattachPoint);
         });
   }

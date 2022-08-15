@@ -16,25 +16,21 @@
 
 {namespace soy.examples.delegates}
 
-
 /**
  * Main template that calls delegates.
  */
 {template main}
   {@param moo: ?}
-  {delcall delegateBoo allowemptydefault="true" /}{\n}
+
   {delcall myDelegates.foo data="all" /}
 {/template}
-
-
-// Note: No default implementation for 'delegateBoo' (not required since allowemptydefault="true").
-
 
 /**
  * Default implementation of 'myDelegates.foo'.
  */
 {deltemplate myDelegates.foo kind="text"}
-  {@param moo: ?}  /** Note: Must list same params for all implementations, even if not all
-                       implementations use a param. */
+  {@param moo: ?}    /** Note: Must list same params for all implementations, even if not all
+                         implementations use a param. */
+
   myDelegates.foo default.
 {/deltemplate}

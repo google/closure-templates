@@ -44,12 +44,6 @@ public final class CallDelegateNode extends CallNode {
   /** The name of the delegate template being called. */
   private final String delCalleeName;
 
-  /**
-   * User-specified attribute to determine whether this delegate call defaults to empty string if
-   * there is no active implementation. Default is false.
-   */
-  private final boolean allowEmptyDefault;
-
   private final Supplier<ExprRootNode> memoizedVariantExpr =
       Suppliers.memoize(
           () ->
@@ -70,7 +64,6 @@ public final class CallDelegateNode extends CallNode {
     super(id, location, openTagLocation, "delcall", attributes, selfClosing, errorReporter);
     this.delCalleeName = delCalleeName.identifier();
     this.sourceDelCalleeName = delCalleeName;
-    boolean allowEmptyDefault = false;
 
     for (CommandTagAttribute attr : attributes) {
       String name = attr.getName().identifier();
@@ -84,21 +77,15 @@ public final class CallDelegateNode extends CallNode {
           break;
         case "variant":
           break;
-        case "allowemptydefault":
-          allowEmptyDefault = attr.valueAsEnabled(errorReporter);
-          break;
         default:
           errorReporter.report(
               attr.getName().location(),
               UNSUPPORTED_ATTRIBUTE_KEY,
               name,
               "call",
-              ImmutableList.of(
-                  "data", "key", PHNAME_ATTR, PHEX_ATTR, "variant", "allowemptydefault"));
+              ImmutableList.of("data", "key", PHNAME_ATTR, PHEX_ATTR, "variant"));
       }
     }
-
-    this.allowEmptyDefault = allowEmptyDefault;
   }
 
   /**
@@ -110,7 +97,6 @@ public final class CallDelegateNode extends CallNode {
     super(orig, copyState);
     this.delCalleeName = orig.delCalleeName;
     this.sourceDelCalleeName = orig.sourceDelCalleeName;
-    this.allowEmptyDefault = orig.allowEmptyDefault;
   }
 
   @Override
@@ -134,11 +120,6 @@ public final class CallDelegateNode extends CallNode {
     return memoizedVariantExpr.get();
   }
 
-  /** Returns whether this delegate call defaults to empty string if there's no active impl. */
-  public boolean allowEmptyDefault() {
-    return allowEmptyDefault;
-  }
-
   @Override
   public String getCommandText() {
     StringBuilder commandText = new StringBuilder(delCalleeName);
@@ -157,9 +138,6 @@ public final class CallDelegateNode extends CallNode {
     ExprRootNode variantExpr = getDelCalleeVariantExpr();
     if (variantExpr != null) {
       commandText.append(" variant=\"").append(variantExpr.toSourceString()).append('"');
-    }
-    if (allowEmptyDefault) {
-      commandText.append(" allowemptydefault=\"true\"");
     }
 
     return commandText.toString();

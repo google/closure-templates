@@ -595,16 +595,12 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
     if (callee != null) {
       visitCallNodeHelper(node, callee, Optional.empty());
-
-    } else if (node.allowEmptyDefault()) {
-      return; // no active delegate implementation, so the call output is empty string
-
     } else {
       throw RenderException.createWithSource(
           "Found no active impl for delegate call to \""
               + node.getDelCalleeName()
               + (variant.isEmpty() ? "" : ":" + variant)
-              + "\" (and delcall does not set allowemptydefault=\"true\").",
+              + "\".",
           node);
     }
   }

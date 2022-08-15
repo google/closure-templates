@@ -115,43 +115,6 @@ public final class GenCallCodeUtilsTest {
   }
 
   @Test
-  public void testGenCallExprForDelegateCalls() {
-    assertThat(getCallExprTextHelper("{delcall delegateForUnitTest data=\"all\" /}"))
-        .isEqualTo(
-            "soy.$$getDelegateFn(soy.$$getDelTemplateId('delegateForUnitTest'), '')(/**"
-                + " @type {?} */ (opt_data), $ijData);");
-
-    assertThat(
-            getCallExprTextHelper(
-                "{@param moo : ?}",
-                "{delcall my.other.delegate}",
-                "  {param goo: $moo /}",
-                "{/delcall}"))
-        .isEqualTo(
-            "soy.$$getDelegateFn("
-                + "soy.$$getDelTemplateId('my.other.delegate'), '')("
-                + "/** @type {?} */ ({goo: opt_data.moo}), $ijData);");
-  }
-
-  @Test
-  public void testGenCallExprForDelegateVariantCalls() {
-    assertThat(
-            getCallExprTextHelper("{delcall delegateForUnitTest variant=\"'voo'\" data=\"all\" /}"))
-        .isEqualTo(
-            "soy.$$getDelegateFn(soy.$$getDelTemplateId('delegateForUnitTest'), 'voo')"
-                + "(/** @type {?} */ (opt_data), $ijData);");
-
-    assertThat(
-            getCallExprTextHelper(
-                "{@param voo : ?}",
-                "{delcall delegateForUnitTest variant=\"$voo\" data=\"all\""
-                    + " allowemptydefault=\"true\" /}"))
-        .isEqualTo(
-            "soy.$$getDelegateFn(soy.$$getDelTemplateId('delegateForUnitTest'), opt_data.voo)"
-                + "(/** @type {?} */ (opt_data), $ijData);");
-  }
-
-  @Test
   public void testGenCallExprForDelegateCallsWithTypedParamBlocks() {
     assertThat(
             getCallExprTextHelper(

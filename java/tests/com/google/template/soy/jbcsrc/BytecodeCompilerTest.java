@@ -39,7 +39,6 @@ import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
-import com.google.template.soy.coredirectives.EscapeHtmlDirective;
 import com.google.template.soy.css.CssRegistry;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
@@ -73,11 +72,7 @@ import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
-import com.google.template.soy.soytree.CallDelegateNode;
-import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.Metadata.CompilationUnitAndKind;
-import com.google.template.soy.soytree.SoyFileSetNode;
-import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateMetadataSerializer;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import java.io.IOException;
@@ -289,10 +284,11 @@ public class BytecodeCompilerTest {
             .join(
                 "{namespace ns1}",
                 "",
+                "{deltemplate delegateForUnitTest}{/deltemplate}",
                 "/***/",
                 "{template callerTemplate}",
                 "  {@param variant : string}",
-                "  {delcall delegateForUnitTest variant=\"$variant\" allowemptydefault=\"true\"/}",
+                "  {delcall delegateForUnitTest variant=\"$variant\" /}",
                 "{/template}",
                 "",
                 "/** */",
@@ -1053,55 +1049,6 @@ public class BytecodeCompilerTest {
             "");
     tester.rendersAs(
         "hello", ImmutableMap.of("items", ImmutableList.of(ImmutableMap.of("foo", "hello"))));
-  }
-
-  // Tests for a bug where we would overescape deltemplates at the call site when the strict
-  // content kind of the deltemplate was unknown at compile time.
-  @Test
-  public void testDelCallEscaping_separateCompilation() throws IOException {
-    String soyFileContent1 =
-        Joiner.on("\n")
-            .join(
-                "{namespace ns}",
-                "",
-                "{template callerTemplate}",
-                "  {delcall delegateForUnitTest allowemptydefault=\"true\" /}",
-                "{/template}",
-                "");
-    SoyFileSetParser parser =
-        SoyFileSetParserBuilder.forFileContents(soyFileContent1)
-            .errorReporter(ErrorReporter.explodeOnErrorsAndIgnoreDeprecations())
-            .build();
-    ParseResult parseResult = parser.parse();
-    SoyFileSetNode soyTree = parseResult.fileSet();
-    FileSetMetadata fileSetMetadata = parseResult.registry();
-    // apply an escaping directive to the callsite, just like the autoescaper would
-    CallDelegateNode cdn =
-        SoyTreeUtils.getAllNodesOfType(soyTree.getChild(0), CallDelegateNode.class).get(0);
-    cdn.setEscapingDirectives(ImmutableList.of(new EscapeHtmlDirective()));
-    CompiledTemplates templates =
-        BytecodeCompiler.compile(
-                fileSetMetadata,
-                soyTree,
-                ErrorReporter.exploding(),
-                parser.soyFileSuppliers(),
-                parser.typeRegistry())
-            .get();
-    CompiledTemplate caller = templates.getTemplate("ns.callerTemplate");
-    renderWithContext(caller, getDefaultContext(templates));
-    String soyFileContent2 =
-        Joiner.on("\n")
-            .join(
-                "{namespace ns2}",
-                "",
-                "{deltemplate delegateForUnitTest}",
-                "  <span>Hello</span>",
-                "{/deltemplate}",
-                "");
-    CompiledTemplates templatesWithDeltemplate = compileFiles(soyFileContent2);
-    // By passing an alternate context, we ensure the deltemplate selector contains the delegate
-    assertThat(renderWithContext(caller, getDefaultContext(templatesWithDeltemplate)))
-        .isEqualTo("<span>Hello</span>");
   }
 
   @Test

@@ -106,26 +106,12 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
   private static final SoyErrorKind NO_DEFAULT_DELTEMPLATE =
       SoyErrorKind.of(
           "No default deltemplate found for {0}. Please add a default deltemplate, even if it is "
-              + "empty.\nSee go/soy/reference/delegate-templates#basic-structure.\n"
-              + "NOTE: This check can be bypassed with 'allowemptydefault=\"true\"', but "
-              + "that feature is deprecated and will be removed soon.");
+              + "empty.\nSee go/soy/reference/delegate-templates#basic-structure.");
   private static final SoyErrorKind NO_IMPORT_DEFAULT_DELTEMPLATE =
       SoyErrorKind.of(
           "Delcall without without import to file containing default deltemplate ''{0}''. Add:"
               + " import * as unused{1} from ''{2}'';\n"
-              + "See go/soy/reference/delegate-templates#basic-structure.\n"
-              + "NOTE: This check can be bypassed with 'allowemptydefault=\"true\"', but that "
-              + "feature is deprecated and will be removed soon.");
-  private static final SoyErrorKind ALLOW_EMPTY_DEFAULT_ERROR =
-      SoyErrorKind.of(
-          "Allowemptydefault=\"true\" is deprecated. Please remove it and add a default "
-              + "deltemplate and ensure the file that provides it is imported. NOTE: Some files "
-              + "are temporarily passlisted while the LSC to remove all usages are in progress.");
-  private static final SoyErrorKind ALLOW_EMPTY_DEFAULT_WARNING =
-      SoyErrorKind.deprecation(
-          "Allowemptydefault=\"true\" is deprecated. Please remove it and add a default "
-              + "deltemplate and ensure the file that provides it is imported. NOTE: This file "
-              + "is temporarily passlisted while the LSC to remove all usages are in progress.");
+              + "See go/soy/reference/delegate-templates#basic-structure.");
   private static final SoyErrorKind NO_USEVARIANTTYPE =
       SoyErrorKind.of("Cannot specify \"variant\" unless the callee specifies \"usevarianttype\".");
   private static final SoyErrorKind BAD_VARIANT_TYPE =
@@ -236,17 +222,6 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
           "boq.educmseditor.fields.templates.editor",
           "boq.educmseditor.fields.templates.preview");
 
-  private static final ImmutableSet<String> ALLOWEMPTYDEFAULT_PASSLIST =
-      ImmutableSet.of(
-          "delegateForUnitTest", // For unit test
-          // Entries below generated with:
-          // $ experimental/users/nicholasyu/del/regendata.sh
-          // $ grep allowemptydefault /tmp/delcalls.txt | awk '{printf "\"%s\",\n", $3}' | sort |
-          // uniq
-          "del2.implByInactiveDelPkg",
-          "delegateBoo",
-          "soyfmt.deltemp");
-
   private final class CheckCallsHelper {
 
     /** Registry of all templates in the Soy tree. */
@@ -320,7 +295,7 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
         checkCallParamNames(node, delTemplateType);
         // We don't call checkPassesUnusedParams here because we might not know all delegates.
       }
-      if (shouldEnforceDefaultDeltemplate(node.getDelCalleeName()) && !node.allowEmptyDefault()) {
+      if (shouldEnforceDefaultDeltemplate(node.getDelCalleeName())) {
         ImmutableList<TemplateMetadata> defaultImpl =
             potentialCallees.stream()
                 .filter(
@@ -346,13 +321,6 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
           }
         }
       }
-      if (node.allowEmptyDefault()) {
-        if (isPasslistedForAllowEmptyDefault(node.getDelCalleeName(), callerFilename)) {
-          errorReporter.warn(node.getSourceLocation(), ALLOW_EMPTY_DEFAULT_WARNING);
-        } else {
-          errorReporter.report(node.getSourceLocation(), ALLOW_EMPTY_DEFAULT_ERROR);
-        }
-      }
 
       // NOTE: we only need to check one of them.  If there is more than one of them and they have
       // different content kinds of stricthtml settings then the CheckDelegatesPass will flag that
@@ -360,11 +328,6 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
       if (!potentialCallees.isEmpty()) {
         checkStrictHtml(callerTemplate, node, potentialCallees.get(0).getTemplateType());
       }
-    }
-
-    boolean isPasslistedForAllowEmptyDefault(String delCalleeName, String callerFilename) {
-      return ALLOWEMPTYDEFAULT_PASSLIST.contains(delCalleeName)
-          || callerFilename.contains("/java_src/soy/integrationtest");
     }
 
     boolean shouldEnforceDefaultDeltemplate(String delCalleeName) {
