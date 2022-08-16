@@ -119,6 +119,6 @@ These are valid:
 {deltemplate my.legacy.name variant="'foo'"}
 {/deltemplate}
 
-{dellcall my.legacy.name}
+{delcall my.legacy.name}
 {/delcall}
 ```
