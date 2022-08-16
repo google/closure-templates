@@ -215,7 +215,7 @@ public class CompiledTemplates {
       collectTransitiveCallees(getTemplateData(callee), visited);
     }
     for (String delCallee : templateData.delCallees) {
-      // for {delcalls} we consider all possible targets
+      // for {delcalls} and calls to modifiable templates we consider all possible targets
       for (TemplateData potentialCallee : selector.delTemplateNameToValues().get(delCallee)) {
         collectTransitiveCallees(potentialCallee, visited);
       }

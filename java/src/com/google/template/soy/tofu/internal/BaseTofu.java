@@ -203,6 +203,10 @@ public final class BaseTofu implements SoyTofu {
           TemplateNode callee = basicTemplates.get(templateLiteralNode.getResolvedName());
           if (callee != null) {
             toVisit.add(callee);
+            if (callee instanceof TemplateBasicNode
+                && ((TemplateBasicNode) callee).isModifiable()) {
+              toVisit.addAll(delTemplates.delTemplateNameToValues().get(callee.getTemplateName()));
+            }
           }
         }
         for (CallDelegateNode callDelegateNode :
