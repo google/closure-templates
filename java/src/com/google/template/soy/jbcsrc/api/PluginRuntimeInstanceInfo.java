@@ -27,6 +27,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.io.ByteSource;
 import com.google.common.io.CharSource;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -155,11 +156,13 @@ public abstract class PluginRuntimeInstanceInfo {
      */
     abstract ImmutableSortedSet.Builder<String> sourceLocationsBuilder();
 
+    @CanIgnoreReturnValue
     public Builder addAllSourceLocations(Iterable<String> sourceLocations) {
       sourceLocationsBuilder().addAll(sourceLocations);
       return this;
     }
 
+    @CanIgnoreReturnValue
     public Builder addSourceLocation(String sourceLocation) {
       sourceLocationsBuilder().add(sourceLocation);
       return this;

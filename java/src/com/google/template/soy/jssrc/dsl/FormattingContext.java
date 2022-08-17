@@ -18,6 +18,7 @@ package com.google.template.soy.jssrc.dsl;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Set;
@@ -47,12 +48,14 @@ final class FormattingContext implements AutoCloseable {
     initialSize = curIndent.length();
   }
 
+  @CanIgnoreReturnValue
   FormattingContext append(String stuff) {
     maybeIndent();
     buf.append(stuff);
     return this;
   }
 
+  @CanIgnoreReturnValue
   FormattingContext append(char c) {
     maybeIndent();
     buf.append(c);
@@ -60,6 +63,7 @@ final class FormattingContext implements AutoCloseable {
   }
 
   /** Writes the jsdoc for the {@code jsDoc} to the buffer. */
+  @CanIgnoreReturnValue
   FormattingContext append(JsDoc jsDoc) {
     jsDoc.doFormatJsDoc(this);
     return this;
@@ -69,6 +73,7 @@ final class FormattingContext implements AutoCloseable {
    * Writes the initial statements for the {@code chunk} to the buffer. This is the only allowed
    * direct caller of {@link CodeChunk#doFormatInitialStatements}.
    */
+  @CanIgnoreReturnValue
   FormattingContext appendInitialStatements(CodeChunk chunk) {
     if (shouldFormat(chunk)) {
       chunk.doFormatInitialStatements(this);
@@ -77,12 +82,14 @@ final class FormattingContext implements AutoCloseable {
   }
 
   /** Writes the output expression for the {@code value} to the buffer. */
+  @CanIgnoreReturnValue
   FormattingContext appendOutputExpression(Expression value) {
     value.doFormatOutputExpr(this);
     return this;
   }
 
   /** Writes all code for the {@code chunk} to the buffer. */
+  @CanIgnoreReturnValue
   FormattingContext appendAll(CodeChunk chunk) {
     appendInitialStatements(chunk);
     if (chunk instanceof Expression) {
@@ -101,6 +108,7 @@ final class FormattingContext implements AutoCloseable {
     return shouldFormat;
   }
 
+  @CanIgnoreReturnValue
   FormattingContext enterBlock() {
     maybeIndent();
     buf.append('{');
@@ -114,6 +122,7 @@ final class FormattingContext implements AutoCloseable {
    * For use only by {@link Switch#doFormatInitialStatements}. It's not an error for bodies of case
    * clauses to be brace-delimited, but it is slightly less readable, so omit them.
    */
+  @CanIgnoreReturnValue
   FormattingContext enterCaseBody() {
     maybeIndent();
     increaseIndent();
@@ -122,6 +131,7 @@ final class FormattingContext implements AutoCloseable {
     return this;
   }
 
+  @CanIgnoreReturnValue
   FormattingContext endLine() {
     // To prevent spurious trailing whitespace, don't actually write the newline
     // until the next call to append().
@@ -141,6 +151,7 @@ final class FormattingContext implements AutoCloseable {
   }
 
   /** Increases the indent by the given number of times, where each indent is two spaces. */
+  @CanIgnoreReturnValue
   FormattingContext increaseIndent(int numIndents) {
     for (int i = 0; i < numIndents; i++) {
       curIndent += "  ";
@@ -154,6 +165,7 @@ final class FormattingContext implements AutoCloseable {
   }
 
   /** Decreases the indent by the given number of times, where each indent is two spaces. */
+  @CanIgnoreReturnValue
   FormattingContext decreaseIndent(int numIndents) {
     for (int i = 0; i < numIndents; i++) {
       Preconditions.checkState(!curIndent.isEmpty());

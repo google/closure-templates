@@ -19,6 +19,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingFunctionInvocation;
@@ -72,12 +73,14 @@ public final class StreamingAttributeEscaper extends LoggingAdvisingAppendable {
     }
   }
 
+  @CanIgnoreReturnValue
   @Override
   public final LoggingAdvisingAppendable append(CharSequence csq) throws IOException {
     getAppendable().append(csq);
     return this;
   }
 
+  @CanIgnoreReturnValue
   @Override
   public final LoggingAdvisingAppendable append(CharSequence csq, int start, int end)
       throws IOException {
@@ -85,12 +88,14 @@ public final class StreamingAttributeEscaper extends LoggingAdvisingAppendable {
     return this;
   }
 
+  @CanIgnoreReturnValue
   @Override
   public final LoggingAdvisingAppendable append(char c) throws IOException {
     getAppendable().append(c);
     return this;
   }
 
+  @CanIgnoreReturnValue
   @Override
   public LoggingAdvisingAppendable appendLoggingFunctionInvocation(
       LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)

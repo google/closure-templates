@@ -18,6 +18,7 @@ package com.google.template.soy.jssrc.dsl;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import javax.annotation.Nullable;
 
 /** Builds a {@link Switch} statement. */
@@ -34,6 +35,7 @@ public final class SwitchBuilder {
    * Adds a case clause (one or more {@code case} labels followed by a body) to this switch
    * statement.
    */
+  @CanIgnoreReturnValue
   public SwitchBuilder addCase(ImmutableList<Expression> caseLabels, Statement body) {
     Preconditions.checkState(!caseLabels.isEmpty(), "at least one case required");
     clauses.add(new Switch.CaseClause(caseLabels, body));
@@ -41,12 +43,14 @@ public final class SwitchBuilder {
   }
 
   /** Adds a case clause to this switch statement. */
+  @CanIgnoreReturnValue
   public SwitchBuilder addCase(Expression caseLabel, Statement body) {
     clauses.add(new Switch.CaseClause(ImmutableList.of(caseLabel), body));
     return this;
   }
 
   /** Adds a {@code default} clause to this switch statement. */
+  @CanIgnoreReturnValue
   public SwitchBuilder setDefault(Statement body) {
     Preconditions.checkState(defaultCaseBody == null);
     defaultCaseBody = body;

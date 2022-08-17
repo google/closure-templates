@@ -37,6 +37,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Maps;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.base.SoyBackendKind;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.TemplateContentKind;
@@ -689,26 +690,31 @@ public final class JsType {
     final ImmutableSet.Builder<GoogRequire> extraRequires = ImmutableSet.builder();
     @Nullable TypePredicate predicate;
 
+    @CanIgnoreReturnValue
     Builder addType(String typeExpr) {
       typeExpressions.add(typeExpr);
       return this;
     }
 
+    @CanIgnoreReturnValue
     Builder addTypes(Iterable<String> typeExpressions) {
       this.typeExpressions.addAll(typeExpressions);
       return this;
     }
 
+    @CanIgnoreReturnValue
     Builder addRequire(GoogRequire symbol) {
       extraRequires.add(symbol);
       return this;
     }
 
+    @CanIgnoreReturnValue
     Builder addRequires(Iterable<GoogRequire> symbols) {
       extraRequires.addAll(symbols);
       return this;
     }
 
+    @CanIgnoreReturnValue
     Builder setPredicate(TypePredicate predicate) {
       checkState(this.predicate == null);
       this.predicate = checkNotNull(predicate);

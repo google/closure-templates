@@ -19,6 +19,7 @@ package com.google.template.soy.jssrc.internal;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
@@ -73,11 +74,13 @@ public final class SoyToJsVariableMappings {
    * <p>TODO(user): this API requires callers to mangle the names they pass in to ensure
    * uniqueness. Do the mangling internally.
    */
+  @CanIgnoreReturnValue
   public SoyToJsVariableMappings put(String var, Expression translation) {
     mappings.put(var, translation);
     return this;
   }
 
+  @CanIgnoreReturnValue
   public SoyToJsVariableMappings setIsPrimaryMsgInUse(MsgFallbackGroupNode msg, Expression var) {
     isPrimaryMsgInUseForFallbackGroup.put(msg, var);
     return this;

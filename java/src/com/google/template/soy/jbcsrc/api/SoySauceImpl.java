@@ -29,6 +29,7 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedSet;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
@@ -189,18 +190,21 @@ public final class SoySauceImpl implements SoySauce {
       return dest;
     }
 
+    @CanIgnoreReturnValue
     @Override
     public RendererImpl setIj(Map<String, ?> record) {
       this.ij = mapAsParamStore(record);
       return this;
     }
 
+    @CanIgnoreReturnValue
     @Override
     public RendererImpl setIj(SoyTemplateData templateData) {
       this.ij = soyValueProviderMapAsParamStore(templateData.getParamsAsMap());
       return this;
     }
 
+    @CanIgnoreReturnValue
     @Override
     public RendererImpl setPluginInstances(Map<String, Supplier<Object>> pluginInstances) {
       contextBuilder.withPluginInstances(
@@ -208,6 +212,7 @@ public final class SoySauceImpl implements SoySauce {
       return this;
     }
 
+    @CanIgnoreReturnValue
     @Override
     public RendererImpl setData(Map<String, ?> record) {
       checkState(
@@ -218,36 +223,42 @@ public final class SoySauceImpl implements SoySauce {
       return this;
     }
 
+    @CanIgnoreReturnValue
     @Override
     public RendererImpl setActiveDelegatePackageSelector(Predicate<String> active) {
       contextBuilder.withActiveModSelector(checkNotNull(active));
       return this;
     }
 
+    @CanIgnoreReturnValue
     @Override
     public RendererImpl setCssRenamingMap(SoyCssRenamingMap cssRenamingMap) {
       contextBuilder.withCssRenamingMap(cssRenamingMap);
       return this;
     }
 
+    @CanIgnoreReturnValue
     @Override
     public RendererImpl setXidRenamingMap(SoyIdRenamingMap xidRenamingMap) {
       contextBuilder.withXidRenamingMap(xidRenamingMap);
       return this;
     }
 
+    @CanIgnoreReturnValue
     @Override
     public RendererImpl setMsgBundle(SoyMsgBundle msgs) {
       contextBuilder.withMessageBundle(msgs);
       return this;
     }
 
+    @CanIgnoreReturnValue
     @Override
     public RendererImpl setDebugSoyTemplateInfo(boolean debugSoyTemplateInfo) {
       contextBuilder.withDebugSoyTemplateInfo(debugSoyTemplateInfo);
       return this;
     }
 
+    @CanIgnoreReturnValue
     @Override
     public RendererImpl setSoyLogger(SoyLogger logger) {
       contextBuilder.withLogger(logger);

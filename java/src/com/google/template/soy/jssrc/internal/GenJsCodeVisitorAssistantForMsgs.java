@@ -27,6 +27,7 @@ import com.google.common.base.CaseFormat;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
@@ -657,6 +658,7 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
   private static final class MapLiteralBuilder {
     final Map<String, Expression> map = new LinkedHashMap<>();
 
+    @CanIgnoreReturnValue
     MapLiteralBuilder put(String key, Expression value) {
       Expression prev = map.put(key, value);
       if (prev != null) {
@@ -673,6 +675,7 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
       return map.isEmpty();
     }
 
+    @CanIgnoreReturnValue
     MapLiteralBuilder putAll(MapLiteralBuilder other) {
       checkState(Sets.intersection(map.keySet(), other.map.keySet()).isEmpty());
       map.putAll(other.map);

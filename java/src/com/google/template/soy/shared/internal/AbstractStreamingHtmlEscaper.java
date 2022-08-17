@@ -17,6 +17,7 @@ package com.google.template.soy.shared.internal;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
@@ -44,12 +45,14 @@ public abstract class AbstractStreamingHtmlEscaper extends LoggingAdvisingAppend
     activeAppendable = checkNotNull(escapingAppendable);
   }
 
+  @CanIgnoreReturnValue
   @Override
   public final LoggingAdvisingAppendable append(CharSequence csq) throws IOException {
     activeAppendable.append(csq);
     return this;
   }
 
+  @CanIgnoreReturnValue
   @Override
   public final LoggingAdvisingAppendable append(CharSequence csq, int start, int end)
       throws IOException {
@@ -57,6 +60,7 @@ public abstract class AbstractStreamingHtmlEscaper extends LoggingAdvisingAppend
     return this;
   }
 
+  @CanIgnoreReturnValue
   @Override
   public final LoggingAdvisingAppendable append(char c) throws IOException {
     activeAppendable.append(c);

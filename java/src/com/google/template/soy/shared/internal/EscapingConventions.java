@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.escape.Escaper;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -257,18 +258,21 @@ public final class EscapingConventions {
      */
     public final Appendable escape(final Appendable out) {
       return new Appendable() {
+        @CanIgnoreReturnValue
         @Override
         public Appendable append(CharSequence csq) throws IOException {
           maybeEscapeOnto(csq, out, 0, csq.length());
           return this;
         }
 
+        @CanIgnoreReturnValue
         @Override
         public Appendable append(CharSequence csq, int start, int end) throws IOException {
           maybeEscapeOnto(csq, out, start, end);
           return this;
         }
 
+        @CanIgnoreReturnValue
         @Override
         public Appendable append(char c) throws IOException {
           if (c < escapesByCodeUnit.length) { // Use the dense map.
@@ -411,6 +415,7 @@ public final class EscapingConventions {
     abstract String getNumericEscapeFor(char plainText);
 
     /** Adds an escape for the given code unit in the input language to the given escaped text. */
+    @CanIgnoreReturnValue
     final EscapeListBuilder escape(char plainText, String escaped) {
       escapes.add(new Escape(plainText, escaped));
       return this;
@@ -420,12 +425,14 @@ public final class EscapingConventions {
      * Adds an escape for the given code unit in the input language using the numeric escaping
      * scheme.
      */
+    @CanIgnoreReturnValue
     final EscapeListBuilder escape(char plainText) {
       escapes.add(new Escape(plainText, getNumericEscapeFor(plainText)));
       return this;
     }
 
     /** Adds a numeric escape for each code unit in the input string. */
+    @CanIgnoreReturnValue
     final EscapeListBuilder escapeAll(String plainTextCodeUnits) {
       int numCodeUnits = plainTextCodeUnits.length();
       for (int i = 0; i < numCodeUnits; ++i) {
@@ -435,6 +442,7 @@ public final class EscapingConventions {
     }
 
     /** Adds numeric escapes for each code unit in the given range not in the exclusion set. */
+    @CanIgnoreReturnValue
     final EscapeListBuilder escapeAllInRangeExcept(
         int startInclusive, int endExclusive, char... notEscaped) {
       notEscaped = notEscaped.clone();

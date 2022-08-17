@@ -32,6 +32,7 @@ import com.google.common.escape.Escaper;
 import com.google.common.flogger.GoogleLogger;
 import com.google.common.net.PercentEscaper;
 import com.google.common.primitives.Chars;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
@@ -172,6 +173,7 @@ public final class Sanitizers {
       }
     }
 
+    @CanIgnoreReturnValue
     @Override
     public LoggingAdvisingAppendable enterLoggableElement(LogStatement statement) {
       if (isInHtml()) {
@@ -183,6 +185,7 @@ public final class Sanitizers {
       return this;
     }
 
+    @CanIgnoreReturnValue
     @Override
     public LoggingAdvisingAppendable exitLoggableElement() {
       if (isInHtml()) {
@@ -191,6 +194,7 @@ public final class Sanitizers {
       return this;
     }
 
+    @CanIgnoreReturnValue
     @Override
     public LoggingAdvisingAppendable appendLoggingFunctionInvocation(
         LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
@@ -256,6 +260,7 @@ public final class Sanitizers {
       delegate.setKindAndDirectionality(kind, directionality);
     }
 
+    @CanIgnoreReturnValue
     @Override
     public LoggingAdvisingAppendable appendLoggingFunctionInvocation(
         LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
@@ -815,12 +820,14 @@ public final class Sanitizers {
       delegate.setKindAndDirectionality(kind, dir);
     }
 
+    @CanIgnoreReturnValue
     @Override
     public LoggingAdvisingAppendable append(CharSequence csq) throws IOException {
       getActiveAppendable().append(csq);
       return this;
     }
 
+    @CanIgnoreReturnValue
     @Override
     public LoggingAdvisingAppendable append(CharSequence csq, int start, int end)
         throws IOException {
@@ -828,12 +835,14 @@ public final class Sanitizers {
       return this;
     }
 
+    @CanIgnoreReturnValue
     @Override
     public LoggingAdvisingAppendable append(char c) throws IOException {
       getActiveAppendable().append(c);
       return this;
     }
 
+    @CanIgnoreReturnValue
     @Override
     public LoggingAdvisingAppendable enterLoggableElement(LogStatement statement) {
       logger.atWarning().withStackTrace(MEDIUM).log(
@@ -848,6 +857,7 @@ public final class Sanitizers {
       return this;
     }
 
+    @CanIgnoreReturnValue
     @Override
     public LoggingAdvisingAppendable appendLoggingFunctionInvocation(
         LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
@@ -948,6 +958,7 @@ public final class Sanitizers {
       delegate.setKindAndDirectionality(kind, dir);
     }
 
+    @CanIgnoreReturnValue
     @Override
     public LoggingAdvisingAppendable append(CharSequence csq) throws IOException {
       if (first && csq.length() > 0 && getSanitizedContentKind() == ContentKind.ATTRIBUTES) {
@@ -960,6 +971,7 @@ public final class Sanitizers {
       return this;
     }
 
+    @CanIgnoreReturnValue
     @Override
     public LoggingAdvisingAppendable append(CharSequence csq, int start, int end)
         throws IOException {
@@ -973,6 +985,7 @@ public final class Sanitizers {
       return this;
     }
 
+    @CanIgnoreReturnValue
     @Override
     public LoggingAdvisingAppendable append(char c) throws IOException {
       if (first && c != ' ' && getSanitizedContentKind() == ContentKind.ATTRIBUTES) {
@@ -983,6 +996,7 @@ public final class Sanitizers {
       return this;
     }
 
+    @CanIgnoreReturnValue
     @Override
     public LoggingAdvisingAppendable enterLoggableElement(LogStatement statement) {
       logger.atWarning().withStackTrace(MEDIUM).log(
@@ -997,6 +1011,7 @@ public final class Sanitizers {
       return this;
     }
 
+    @CanIgnoreReturnValue
     @Override
     public LoggingAdvisingAppendable appendLoggingFunctionInvocation(
         LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)

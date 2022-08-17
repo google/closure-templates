@@ -17,6 +17,7 @@ package com.google.template.soy.jbcsrc.api;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import java.io.IOException;
 
 /** Adapter for using an Appendable as an AdvisingAppendable. */
@@ -33,18 +34,21 @@ final class AppendableAsAdvisingAppendable implements AdvisingAppendable {
     this.appendable = checkNotNull(appendable);
   }
 
+  @CanIgnoreReturnValue
   @Override
   public AdvisingAppendable append(CharSequence csq) throws IOException {
     appendable.append(csq);
     return this;
   }
 
+  @CanIgnoreReturnValue
   @Override
   public AdvisingAppendable append(CharSequence csq, int start, int end) throws IOException {
     appendable.append(csq, start, end);
     return this;
   }
 
+  @CanIgnoreReturnValue
   @Override
   public AdvisingAppendable append(char c) throws IOException {
     appendable.append(c);

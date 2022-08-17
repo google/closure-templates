@@ -19,6 +19,7 @@ package com.google.template.soy.jssrc.dsl;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.errorprone.annotations.Immutable;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -53,31 +54,37 @@ public abstract class JsDoc {
 
     public abstract JsDoc build();
 
+    @CanIgnoreReturnValue
     public Builder addGoogRequire(GoogRequire require) {
       requiresBuilder().add(require);
       return this;
     }
 
+    @CanIgnoreReturnValue
     public Builder addParameterizedAnnotation(String name, String value) {
       paramsBuilder().add(Param.create(name, value));
       return this;
     }
 
+    @CanIgnoreReturnValue
     public Builder addAnnotation(String type) {
       paramsBuilder().add(Param.createAnnotation(type, null));
       return this;
     }
 
+    @CanIgnoreReturnValue
     public Builder addAnnotation(String type, String value) {
       paramsBuilder().add(Param.createAnnotation(type, value));
       return this;
     }
 
+    @CanIgnoreReturnValue
     public Builder addParam(String name, String type) {
       paramsBuilder().add(Param.create("param", type, name));
       return this;
     }
 
+    @CanIgnoreReturnValue
     public Builder addParam(String name, ImmutableMap<String, String> recordLiteralType) {
       paramsBuilder().add(Param.create("param", name, recordLiteralType));
       return this;

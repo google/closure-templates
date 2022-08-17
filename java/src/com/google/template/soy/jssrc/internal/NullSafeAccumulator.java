@@ -28,6 +28,7 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.protoByteStringTo
 import static com.google.template.soy.jssrc.internal.JsRuntime.protoToSanitizedContentConverterFunction;
 
 import com.google.auto.value.AutoValue;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.errorprone.annotations.ForOverride;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.template.soy.internal.proto.ProtoUtils;
@@ -68,11 +69,13 @@ final class NullSafeAccumulator {
    * @param nullSafe If true, code will be generated to ensure the chain is non-null before
    *     dereferencing {@code access}.
    */
+  @CanIgnoreReturnValue
   NullSafeAccumulator dotAccess(FieldAccess access, boolean nullSafe, boolean assertNonNull) {
     chain.add(access.toChainAccess(nullSafe, assertNonNull));
     return this;
   }
 
+  @CanIgnoreReturnValue
   NullSafeAccumulator mapGetAccess(Expression mapKeyCode, boolean nullSafe, boolean assertNonNull) {
     chain.add(FieldAccess.call("get", mapKeyCode).toChainAccess(nullSafe, assertNonNull));
     return this;
@@ -84,6 +87,7 @@ final class NullSafeAccumulator {
    * @param nullSafe If true, code will be generated to ensure the chain is non-null before
    *     dereferencing {@code arg}.
    */
+  @CanIgnoreReturnValue
   NullSafeAccumulator bracketAccess(Expression arg, boolean nullSafe, boolean assertNonNull) {
     chain.add(new Bracket(arg, nullSafe, assertNonNull));
     return this;
@@ -95,6 +99,7 @@ final class NullSafeAccumulator {
    * <p>If the previous tip is null, execution with throw an error before {@code extender} is
    * invoked.
    */
+  @CanIgnoreReturnValue
   NullSafeAccumulator functionCall(
       boolean nullSafe, boolean assertNonNull, Function<Expression, Expression> extender) {
     chain.add(new FunctionCall(nullSafe, assertNonNull, extender));

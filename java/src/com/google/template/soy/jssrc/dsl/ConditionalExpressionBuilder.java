@@ -21,6 +21,7 @@ import static com.google.template.soy.jssrc.dsl.Statement.ifStatement;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.errorprone.annotations.CheckReturnValue;
 import com.google.template.soy.jssrc.dsl.CodeChunk.Generator;
 import javax.annotation.Nullable;
@@ -41,11 +42,13 @@ public final class ConditionalExpressionBuilder {
     conditions.add(new IfThenPair<>(predicate, consequent));
   }
 
+  @CanIgnoreReturnValue
   public ConditionalExpressionBuilder addElseIf(Expression predicate, Expression consequent) {
     conditions.add(new IfThenPair<>(predicate, consequent));
     return this;
   }
 
+  @CanIgnoreReturnValue
   public ConditionalExpressionBuilder setElse(Expression trailingElse) {
     Preconditions.checkState(this.trailingElse == null);
     this.trailingElse = trailingElse;

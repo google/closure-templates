@@ -21,6 +21,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.jbcsrc.shared.Names;
 import com.google.template.soy.plugin.java.PluginInstances;
@@ -61,6 +62,7 @@ public final class SoySauceBuilder {
    * libraries (esp in shared code). Long term, we could consider adding a "buildWithoutChecks()"
    * and migrate these cases over, and then we could add validation to build().
    */
+  @CanIgnoreReturnValue
   public SoySauceBuilder withPluginInstances(Map<String, Supplier<Object>> pluginInstances) {
     this.userPluginInstances = PluginInstances.of(pluginInstances);
     return this;
@@ -74,12 +76,14 @@ public final class SoySauceBuilder {
    * located through the standard java binary classpath, so a special classloader can be set to
    * allow the soy framework to find generated classes.
    */
+  @CanIgnoreReturnValue
   public SoySauceBuilder withClassLoader(ClassLoader loader) {
     this.loader = loader;
     return this;
   }
 
   /** Sets the user functions. */
+  @CanIgnoreReturnValue
   SoySauceBuilder withFunctions(
       Iterable<? extends SoyFunction> userFunctions) {
     this.userFunctions = InternalPlugins.filterDuplicateFunctions(userFunctions);
@@ -90,6 +94,7 @@ public final class SoySauceBuilder {
    * Sets user directives. Not exposed externally because internal directives should be enough, and
    * additional functionality can be built as SoySourceFunctions.
    */
+  @CanIgnoreReturnValue
   SoySauceBuilder withDirectives(
       Iterable<? extends SoyPrintDirective> userDirectives) {
     this.userDirectives = InternalPlugins.filterDuplicateDirectives(userDirectives);
@@ -97,6 +102,7 @@ public final class SoySauceBuilder {
   }
 
   /** Non-public; for use by {@link StubbingSoySauce}. */
+  @CanIgnoreReturnValue
   SoySauceBuilder withCustomCompiledTemplatesFactory(
       CompiledTemplates.Factory compiledTemplatesFactory) {
     this.compiledTemplatesFactory = compiledTemplatesFactory;

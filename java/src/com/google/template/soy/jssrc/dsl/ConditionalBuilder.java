@@ -18,6 +18,7 @@ package com.google.template.soy.jssrc.dsl;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.errorprone.annotations.CheckReturnValue;
 import javax.annotation.Nullable;
 
@@ -33,12 +34,14 @@ public final class ConditionalBuilder {
   }
 
   /** Adds an {@code else if} clause with the given predicate and consequent to this conditional. */
+  @CanIgnoreReturnValue
   public ConditionalBuilder addElseIf(Expression predicate, Statement consequent) {
     conditions.add(new IfThenPair<>(predicate, consequent));
     return this;
   }
 
   /** Adds an {@code else} clause encapsulating the given chunk to this conditional. */
+  @CanIgnoreReturnValue
   public ConditionalBuilder setElse(Statement trailingElse) {
     Preconditions.checkState(this.trailingElse == null);
     this.trailingElse = trailingElse;

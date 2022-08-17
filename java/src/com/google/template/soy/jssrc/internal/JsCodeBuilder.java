@@ -21,6 +21,7 @@ import static com.google.template.soy.jssrc.dsl.Expression.id;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
 import com.google.template.soy.jssrc.dsl.Expression;
@@ -152,6 +153,7 @@ public class JsCodeBuilder {
    * Appends one or more lines representing the concatenation of the values of the given code chunks
    * saved to the current output variable.
    */
+  @CanIgnoreReturnValue
   public JsCodeBuilder addChunksToOutputVar(List<? extends Expression> codeChunks) {
     if (currOutputVarIsInited) {
       Expression rhs = CodeChunkUtils.concatChunks(codeChunks);
@@ -192,8 +194,10 @@ public class JsCodeBuilder {
 
   /**
    * Helper for the various indent methods.
+   *
    * @param chg The number of indent levels to change.
    */
+  @CanIgnoreReturnValue
   private JsCodeBuilder changeIndentHelper(int chg) {
     int newIndentDepth = indent.length() + chg * INDENT_SIZE;
     checkState(newIndentDepth >= 0);
@@ -207,8 +211,10 @@ public class JsCodeBuilder {
 
   /**
    * Pushes on a new current output variable.
+   *
    * @param outputVarName The new output variable name.
    */
+  @CanIgnoreReturnValue
   public JsCodeBuilder pushOutputVar(String outputVarName) {
     currOutputVar = id(outputVarName);
     outputVars.push(new OutputVar(currOutputVar, false));
@@ -219,6 +225,7 @@ public class JsCodeBuilder {
   /**
    * Pops off the current output variable. The previous output variable again becomes the current.
    */
+  @CanIgnoreReturnValue
   public JsCodeBuilder popOutputVar() {
     outputVars.pop();
     OutputVar top = outputVars.peek();  // null if outputVars is now empty
@@ -237,6 +244,7 @@ public class JsCodeBuilder {
    * causes {@code initOutputVarIfNecessary} and {@code addToOutputVar} to not add initialization
    * code even on the first use of the variable.
    */
+  @CanIgnoreReturnValue
   public JsCodeBuilder setOutputVarInited() {
     outputVars.pop();
     outputVars.push(new OutputVar(currOutputVar, /* initialized= */ true));
@@ -268,6 +276,7 @@ public class JsCodeBuilder {
    * @param codeFragments The code string(s) to append.
    * @return This CodeBuilder (for stringing together operations).
    */
+  @CanIgnoreReturnValue
   public JsCodeBuilder append(String... codeFragments) {
     for (String codeFragment : codeFragments) {
       code.append(codeFragment);
@@ -284,9 +293,11 @@ public class JsCodeBuilder {
 
   /**
    * Appends the current indent, then the given strings, then a newline.
+   *
    * @param codeFragments The code string(s) to append.
    * @return This CodeBuilder (for stringing together operations).
    */
+  @CanIgnoreReturnValue
   public JsCodeBuilder appendLine(String... codeFragments) {
     code.append(indent);
     append(codeFragments);
