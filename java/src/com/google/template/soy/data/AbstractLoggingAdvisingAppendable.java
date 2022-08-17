@@ -17,6 +17,7 @@ package com.google.template.soy.data;
 
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.errorprone.annotations.ForOverride;
 import java.io.IOException;
 
@@ -43,6 +44,7 @@ public abstract class AbstractLoggingAdvisingAppendable extends LoggingAdvisingA
 
   // covariant overrides
 
+  @CanIgnoreReturnValue
   @Override
   public final AbstractLoggingAdvisingAppendable append(CharSequence csq) throws IOException {
     if (!isLogOnly()) {
@@ -51,6 +53,7 @@ public abstract class AbstractLoggingAdvisingAppendable extends LoggingAdvisingA
     return this;
   }
 
+  @CanIgnoreReturnValue
   @Override
   public final AbstractLoggingAdvisingAppendable append(CharSequence csq, int start, int end)
       throws IOException {
@@ -60,6 +63,7 @@ public abstract class AbstractLoggingAdvisingAppendable extends LoggingAdvisingA
     return this;
   }
 
+  @CanIgnoreReturnValue
   @Override
   public final AbstractLoggingAdvisingAppendable append(char c) throws IOException {
     if (!isLogOnly()) {
@@ -69,6 +73,7 @@ public abstract class AbstractLoggingAdvisingAppendable extends LoggingAdvisingA
   }
 
   /** Called whenever a logging function is being rendered. */
+  @CanIgnoreReturnValue
   @Override
   public final AbstractLoggingAdvisingAppendable appendLoggingFunctionInvocation(
       LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
@@ -79,6 +84,7 @@ public abstract class AbstractLoggingAdvisingAppendable extends LoggingAdvisingA
     return this;
   }
 
+  @CanIgnoreReturnValue
   @Override
   public final AbstractLoggingAdvisingAppendable enterLoggableElement(LogStatement statement) {
     int depth = logOnlyDepth;
@@ -96,6 +102,7 @@ public abstract class AbstractLoggingAdvisingAppendable extends LoggingAdvisingA
     return this;
   }
 
+  @CanIgnoreReturnValue
   @Override
   public final AbstractLoggingAdvisingAppendable exitLoggableElement() {
     int depth = logOnlyDepth;

@@ -21,6 +21,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.errorprone.annotations.ForOverride;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.restricted.StringData;
@@ -138,6 +139,7 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
    * changing, we trust that the autoescaper has inserted the correct escape directives, so we do
    * not need to track this in the appendable.
    */
+  @CanIgnoreReturnValue
   public final LoggingAdvisingAppendable setKindAndDirectionality(
       ContentKind kind, @Nullable Dir direction) throws IOException {
     checkNotNull(kind);

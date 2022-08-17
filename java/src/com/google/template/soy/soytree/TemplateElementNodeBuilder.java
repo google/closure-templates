@@ -20,6 +20,7 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -51,6 +52,7 @@ public final class TemplateElementNodeBuilder
     super(soyFileHeaderInfo, errorReporter);
   }
 
+  @CanIgnoreReturnValue
   @Override
   public TemplateElementNodeBuilder setCommandValues(
       Identifier templateName, List<CommandTagAttribute> attrs) {

@@ -19,6 +19,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import java.io.IOException;
 
@@ -35,30 +36,35 @@ public abstract class ForwardingLoggingAdvisingAppendable extends LoggingAdvisin
     return delegate.softLimitReached();
   }
 
+  @CanIgnoreReturnValue
   @Override
   public LoggingAdvisingAppendable append(CharSequence csq) throws IOException {
     delegate.append(csq);
     return this;
   }
 
+  @CanIgnoreReturnValue
   @Override
   public LoggingAdvisingAppendable append(CharSequence csq, int start, int end) throws IOException {
     delegate.append(csq, start, end);
     return this;
   }
 
+  @CanIgnoreReturnValue
   @Override
   public LoggingAdvisingAppendable append(char c) throws IOException {
     delegate.append(c);
     return this;
   }
 
+  @CanIgnoreReturnValue
   @Override
   public LoggingAdvisingAppendable enterLoggableElement(LogStatement statement) {
     delegate.enterLoggableElement(statement);
     return this;
   }
 
+  @CanIgnoreReturnValue
   @Override
   public LoggingAdvisingAppendable exitLoggableElement() {
     delegate.exitLoggableElement();
@@ -70,6 +76,7 @@ public abstract class ForwardingLoggingAdvisingAppendable extends LoggingAdvisin
     delegate.setKindAndDirectionality(kind, dir);
   }
 
+  @CanIgnoreReturnValue
   @Override
   public LoggingAdvisingAppendable appendLoggingFunctionInvocation(
       LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)

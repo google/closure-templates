@@ -20,6 +20,7 @@ import static java.util.stream.Collectors.toMap;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -47,11 +48,13 @@ public final class SoyTemplateData {
       soyValueConverter = SoyValueConverter.INSTANCE;
     }
 
+    @CanIgnoreReturnValue
     public <T> Builder setParam(SoyTemplateParam<? super T> param, T value) {
       data.put(param.getName(), soyValueConverter.convert(value));
       return this;
     }
 
+    @CanIgnoreReturnValue
     public <T> Builder setParamFuture(
         SoyTemplateParam<? super T> param, ListenableFuture<T> value) {
       data.put(param.getName(), soyValueConverter.convert(value));

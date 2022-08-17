@@ -23,6 +23,7 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.errorprone.annotations.concurrent.LazyInit;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
@@ -403,6 +404,7 @@ public final class SoyProtoValue extends SoyAbstractValue implements SoyLegacyOb
       this.builder = clazz.defaultInstance.newBuilderForType();
     }
 
+    @CanIgnoreReturnValue
     public Builder setField(String field, SoyValue value) {
       clazz.fields.get(field).assignField(builder, value);
       return this;

@@ -165,6 +165,7 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
       return (B) this;
     }
 
+    @CanIgnoreReturnValue
     @Override
     public final <V> B setParam(SoyTemplateParam<? super V> param, V value) {
       // TODO(lukes): allParams uses .equals, perhaps we should use == so people don't use one
@@ -177,6 +178,7 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
       return setParamInternal(param, SoyValueConverter.INSTANCE.convert(value));
     }
 
+    @CanIgnoreReturnValue
     @Override
     public final <V> B setParamFuture(
         SoyTemplateParam<? super V> param, ListenableFuture<V> value) {

@@ -19,6 +19,7 @@ package com.google.template.soy.soytree;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
@@ -51,6 +52,7 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder<TemplateDel
     super(soyFileHeaderInfo, errorReporter);
   }
 
+  @CanIgnoreReturnValue
   @Override
   public TemplateDelegateNodeBuilder setCommandValues(
       Identifier templateName, List<CommandTagAttribute> attrs) {

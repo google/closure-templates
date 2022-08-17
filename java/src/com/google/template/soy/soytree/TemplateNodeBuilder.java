@@ -26,6 +26,7 @@ import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.TemplateContentKind;
@@ -130,6 +131,7 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
    *
    * @return This builder.
    */
+  @CanIgnoreReturnValue
   public T setId(int id) {
     Preconditions.checkState(this.id == null);
     this.id = id;
@@ -141,6 +143,7 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
   }
 
   /** Sets the source location. */
+  @CanIgnoreReturnValue
   public T setSourceLocation(SourceLocation location) {
     checkState(sourceLocation == null);
     this.sourceLocation = checkNotNull(location);
@@ -148,12 +151,14 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
   }
 
   /** Sets the source location. */
+  @CanIgnoreReturnValue
   public T setOpenTagLocation(SourceLocation location) {
     checkState(openTagLocation == null);
     this.openTagLocation = checkNotNull(location);
     return self();
   }
 
+  @CanIgnoreReturnValue
   public T setAllowExtraAttributes(SourceLocation loc) {
     this.allowExtraAttributesLoc = loc;
     return self();
@@ -215,6 +220,7 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
    *
    * @return This builder.
    */
+  @CanIgnoreReturnValue
   public T setSoyDoc(String soyDoc, SourceLocation soyDocLocation) {
     Preconditions.checkState(this.soyDoc == null);
     Preconditions.checkState(cmdText != null);
@@ -233,6 +239,7 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
   }
 
   /** This method is intended to be called at most once for header params. */
+  @CanIgnoreReturnValue
   public T addVarDefns(Iterable<? extends TemplateHeaderVarDefn> varDefns) {
     Preconditions.checkState(this.params == null);
     Set<String> seenVarDefns = new HashSet<>();

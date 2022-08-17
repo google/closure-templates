@@ -23,6 +23,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SourceLocation.Point;
@@ -691,6 +692,7 @@ public final class RawTextNode extends AbstractSoyNode
       private int endLine = -1;
       private int endCol = -1;
 
+      @CanIgnoreReturnValue
       public Builder add(int index, int startLine, int startCol, Reason reason) {
         checkArgument(index >= 0, "expected index to be non-negative: %s", index);
         checkArgument(startLine > 0, "expected startLine to be positive: %s", startLine);
@@ -706,6 +708,7 @@ public final class RawTextNode extends AbstractSoyNode
       }
 
       /** Update the end location only. */
+      @CanIgnoreReturnValue
       public Builder setEndLocation(int endLine, int endCol) {
         checkArgument(endLine > 0, "expected endLine to be positive: %s", endLine);
         checkArgument(endCol > 0, "expected endCol to be positive: %s", endCol);
@@ -715,6 +718,7 @@ public final class RawTextNode extends AbstractSoyNode
       }
 
       /** Delete all the offsets starting from the {@code from} index. */
+      @CanIgnoreReturnValue
       public Builder delete(int from) {
         // since we store end indexes in the list, we really just want to delete everything strictly
         // after 'from', this way if we leave 'from' as an end point
