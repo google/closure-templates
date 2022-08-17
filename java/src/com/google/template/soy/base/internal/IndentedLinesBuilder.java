@@ -17,6 +17,7 @@
 package com.google.template.soy.base.internal;
 
 import com.google.common.base.Preconditions;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 
 /**
  * A wrapped StringBuilder used for building text with indented lines.
@@ -133,6 +134,7 @@ public class IndentedLinesBuilder implements CharSequence, Appendable {
    * @param parts The parts to append.
    * @return This object.
    */
+  @CanIgnoreReturnValue
   public IndentedLinesBuilder appendParts(Object... parts) {
     for (Object part : parts) {
       sb.append(part);
@@ -146,6 +148,7 @@ public class IndentedLinesBuilder implements CharSequence, Appendable {
    * @param parts The parts to append.
    * @return This object.
    */
+  @CanIgnoreReturnValue
   public IndentedLinesBuilder appendLineStart(Object... parts) {
     sb.append(indent);
     appendParts(parts);
@@ -158,6 +161,7 @@ public class IndentedLinesBuilder implements CharSequence, Appendable {
    * @param parts The parts to append.
    * @return This object.
    */
+  @CanIgnoreReturnValue
   public IndentedLinesBuilder appendLineEnd(Object... parts) {
     appendParts(parts);
     sb.append("\n");
@@ -188,18 +192,21 @@ public class IndentedLinesBuilder implements CharSequence, Appendable {
     return sb.subSequence(start, end);
   }
 
+  @CanIgnoreReturnValue
   @Override
   public IndentedLinesBuilder append(CharSequence csq) {
     sb.append(csq);
     return this;
   }
 
+  @CanIgnoreReturnValue
   @Override
   public IndentedLinesBuilder append(CharSequence csq, int start, int end) {
     sb.append(csq, start, end);
     return this;
   }
 
+  @CanIgnoreReturnValue
   @Override
   public IndentedLinesBuilder append(char c) {
     sb.append(c);

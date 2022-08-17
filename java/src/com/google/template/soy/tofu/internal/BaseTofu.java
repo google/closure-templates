@@ -28,6 +28,7 @@ import com.google.common.collect.ImmutableTable;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Sets;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.SanitizedContent;
@@ -445,6 +446,7 @@ public final class BaseTofu implements SoyTofu {
       return dest;
     }
 
+    @CanIgnoreReturnValue
     @Override
     public RendererImpl setData(Map<String, ?> data) {
       Preconditions.checkState(
@@ -455,6 +457,7 @@ public final class BaseTofu implements SoyTofu {
       return this;
     }
 
+    @CanIgnoreReturnValue
     @Override
     public RendererImpl setData(SoyRecord data) {
       Preconditions.checkState(
@@ -464,24 +467,28 @@ public final class BaseTofu implements SoyTofu {
       return this;
     }
 
+    @CanIgnoreReturnValue
     @Override
     public RendererImpl setIjData(Map<String, ?> ijData) {
       this.ijData = (ijData == null) ? null : mapAsParamStore(ijData);
       return this;
     }
 
+    @CanIgnoreReturnValue
     @Override
     public RendererImpl setIjData(SoyRecord ijData) {
       this.ijData = ijData;
       return this;
     }
 
+    @CanIgnoreReturnValue
     @Override
     public RendererImpl setPluginInstances(Map<String, Supplier<Object>> pluginInstances) {
       this.perRenderPluginInstances = checkNotNull(pluginInstances);
       return this;
     }
 
+    @CanIgnoreReturnValue
     @Override
     public RendererImpl setActiveDelegatePackageSelector(
         Predicate<String> activeDelegatePackageNames) {
@@ -489,24 +496,28 @@ public final class BaseTofu implements SoyTofu {
       return this;
     }
 
+    @CanIgnoreReturnValue
     @Override
     public RendererImpl setMsgBundle(SoyMsgBundle msgBundle) {
       this.msgBundle = msgBundle;
       return this;
     }
 
+    @CanIgnoreReturnValue
     @Override
     public RendererImpl setIdRenamingMap(SoyIdRenamingMap idRenamingMap) {
       this.idRenamingMap = idRenamingMap;
       return this;
     }
 
+    @CanIgnoreReturnValue
     @Override
     public RendererImpl setCssRenamingMap(SoyCssRenamingMap cssRenamingMap) {
       this.cssRenamingMap = cssRenamingMap;
       return this;
     }
 
+    @CanIgnoreReturnValue
     @Override
     public RendererImpl setDebugSoyTemplateInfo(boolean debugSoyTemplateInfo) {
       this.debugSoyTemplateInfo = debugSoyTemplateInfo;

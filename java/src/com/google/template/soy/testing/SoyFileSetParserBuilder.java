@@ -24,6 +24,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Descriptors.FileDescriptor;
 import com.google.protobuf.Descriptors.GenericDescriptor;
@@ -185,11 +186,13 @@ public final class SoyFileSetParserBuilder {
   }
 
   /** Enable experiments. Returns this object, for chaining. */
+  @CanIgnoreReturnValue
   public SoyFileSetParserBuilder enableExperimentalFeatures(ImmutableList<String> experiments) {
     this.options.setExperimentalFeatures(experiments);
     return this;
   }
 
+  @CanIgnoreReturnValue
   public SoyFileSetParserBuilder errorReporter(ErrorReporter errorReporter) {
     this.errorReporter = errorReporter;
     return this;
@@ -199,11 +202,13 @@ public final class SoyFileSetParserBuilder {
     return addSoyFunctions(ImmutableList.of(function));
   }
 
+  @CanIgnoreReturnValue
   public SoyFileSetParserBuilder addSoyFunctions(Iterable<? extends SoyFunction> newSoyFunctions) {
     this.soyFunctions.addAll(newSoyFunctions);
     return this;
   }
 
+  @CanIgnoreReturnValue
   public SoyFileSetParserBuilder addSoySourceFunction(SoySourceFunction function) {
     boolean method = false;
     if (function.getClass().isAnnotationPresent(SoyMethodSignature.class)) {
@@ -216,6 +221,7 @@ public final class SoyFileSetParserBuilder {
     return this;
   }
 
+  @CanIgnoreReturnValue
   public SoyFileSetParserBuilder addSoySourceFunctions(
       Iterable<? extends SoySourceFunction> newSourceFunctions) {
     for (SoySourceFunction function : newSourceFunctions) {
@@ -224,6 +230,7 @@ public final class SoyFileSetParserBuilder {
     return this;
   }
 
+  @CanIgnoreReturnValue
   public SoyFileSetParserBuilder addPrintDirectives(
       Iterable<? extends SoyPrintDirective> newSoyPrintDirectives) {
     this.soyPrintDirectives.addAll(newSoyPrintDirectives);
@@ -234,6 +241,7 @@ public final class SoyFileSetParserBuilder {
     return addPrintDirectives(ImmutableList.of(printDirective));
   }
 
+  @CanIgnoreReturnValue
   public SoyFileSetParserBuilder addMethods(Iterable<? extends SoySourceFunction> newMethods) {
     this.soyMethods.addAll(newMethods);
     return this;
@@ -243,6 +251,7 @@ public final class SoyFileSetParserBuilder {
     return addMethods(ImmutableList.of(method));
   }
 
+  @CanIgnoreReturnValue
   public SoyFileSetParserBuilder addCompilationUnits(
       Iterable<CompilationUnitAndKind> newCompilationUnits) {
     compilationUnits =
@@ -257,11 +266,13 @@ public final class SoyFileSetParserBuilder {
     return addCompilationUnits(ImmutableList.of(unit));
   }
 
+  @CanIgnoreReturnValue
   public SoyFileSetParserBuilder options(SoyGeneralOptions options) {
     this.options = checkNotNull(options);
     return this;
   }
 
+  @CanIgnoreReturnValue
   public SoyFileSetParserBuilder typeRegistry(SoyTypeRegistry typeRegistry) {
     this.typeRegistry = typeRegistry;
     return this;
@@ -271,46 +282,55 @@ public final class SoyFileSetParserBuilder {
     return typeRegistry;
   }
 
+  @CanIgnoreReturnValue
   public SoyFileSetParserBuilder cssRegistry(CssRegistry cssRegistry) {
     this.cssRegistry = Optional.of(cssRegistry);
     return this;
   }
 
+  @CanIgnoreReturnValue
   public SoyFileSetParserBuilder allowUnboundGlobals(boolean allowUnboundGlobals) {
     this.allowUnboundGlobals = allowUnboundGlobals;
     return this;
   }
 
+  @CanIgnoreReturnValue
   public SoyFileSetParserBuilder allowUnknownJsGlobals(boolean allowUnknownJsGlobals) {
     this.allowUnknownJsGlobals = allowUnknownJsGlobals;
     return this;
   }
 
+  @CanIgnoreReturnValue
   public SoyFileSetParserBuilder setConformanceConfig(ValidatedConformanceConfig config) {
     this.conformanceConfig = checkNotNull(config);
     return this;
   }
 
+  @CanIgnoreReturnValue
   public SoyFileSetParserBuilder setLoggingConfig(ValidatedLoggingConfig loggingConfig) {
     this.loggingConfig = checkNotNull(loggingConfig);
     return this;
   }
 
+  @CanIgnoreReturnValue
   public SoyFileSetParserBuilder desugarHtmlNodes(boolean desugarHtmlNodes) {
     this.desugarHtmlNodes = desugarHtmlNodes;
     return this;
   }
 
+  @CanIgnoreReturnValue
   public SoyFileSetParserBuilder desugarIdomFeatures(boolean desugarIdomFeatures) {
     this.desugarIdomFeatures = desugarIdomFeatures;
     return this;
   }
 
+  @CanIgnoreReturnValue
   public SoyFileSetParserBuilder runAutoescaper(boolean runAutoescaper) {
     this.runAutoescaper = runAutoescaper;
     return this;
   }
 
+  @CanIgnoreReturnValue
   public SoyFileSetParserBuilder runOptimizer(boolean runOptimizer) {
     this.runOptimizer = runOptimizer;
     return this;
@@ -321,12 +341,14 @@ public final class SoyFileSetParserBuilder {
    * compiler pass is disabled for tests, since it modifies the AST structure and will break a lot
    * of unit tests that rely on particular structure.
    */
+  @CanIgnoreReturnValue
   public SoyFileSetParserBuilder addHtmlAttributesForDebugging(
       boolean addHtmlAttributesForDebugging) {
     this.addHtmlAttributesForDebugging = addHtmlAttributesForDebugging;
     return this;
   }
 
+  @CanIgnoreReturnValue
   public SoyFileSetParserBuilder disableAllTypeChecking(boolean disableAllTypeChecking) {
     this.disableAllTypeChecking = disableAllTypeChecking;
     return this;
@@ -353,6 +375,7 @@ public final class SoyFileSetParserBuilder {
    * <p>Tests can use this to build a parse tree using up to a certain pass. See, for example {@link
    * com.google.template.soy.passes.htmlmatcher.HtmlMatcherGraphTest}.
    */
+  @CanIgnoreReturnValue
   public SoyFileSetParserBuilder addPassContinuationRule(
       Class<? extends CompilerPass> pass, PassContinuationRule rule) {
     passManager.addPassContinuationRule(pass, rule);

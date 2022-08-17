@@ -23,6 +23,7 @@ import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SoyRecord;
@@ -379,36 +380,43 @@ public final class RenderContext {
       this.pluginInstances = pluginInstances;
     }
 
+    @CanIgnoreReturnValue
     public Builder withActiveModSelector(Predicate<String> activeModSelector) {
       this.activeModSelector = checkNotNull(activeModSelector);
       return this;
     }
 
+    @CanIgnoreReturnValue
     public Builder withCssRenamingMap(SoyCssRenamingMap cssRenamingMap) {
       this.cssRenamingMap = checkNotNull(cssRenamingMap);
       return this;
     }
 
+    @CanIgnoreReturnValue
     public Builder withXidRenamingMap(SoyIdRenamingMap xidRenamingMap) {
       this.xidRenamingMap = checkNotNull(xidRenamingMap);
       return this;
     }
 
+    @CanIgnoreReturnValue
     public Builder withPluginInstances(PluginInstances pluginInstances) {
       this.pluginInstances = checkNotNull(pluginInstances);
       return this;
     }
 
+    @CanIgnoreReturnValue
     public Builder withMessageBundle(SoyMsgBundle msgBundle) {
       this.msgBundle = checkNotNull(msgBundle);
       return this;
     }
 
+    @CanIgnoreReturnValue
     public Builder withDebugSoyTemplateInfo(boolean debugSoyTemplateInfo) {
       this.debugSoyTemplateInfo = debugSoyTemplateInfo;
       return this;
     }
 
+    @CanIgnoreReturnValue
     public Builder withLogger(SoyLogger logger) {
       this.logger = logger;
       return this;

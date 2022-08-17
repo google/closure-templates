@@ -17,6 +17,7 @@ package com.google.template.soy.basicdirectives;
 
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.ForwardingLoggingAdvisingAppendable;
 import com.google.template.soy.data.LogStatement;
@@ -89,24 +90,28 @@ public final class BasicDirectivesRuntime {
       this.addEllipsis = addEllipsis;
     }
 
+    @CanIgnoreReturnValue
     @Override
     public LoggingAdvisingAppendable append(CharSequence csq) {
       buffer.append(csq);
       return this;
     }
 
+    @CanIgnoreReturnValue
     @Override
     public LoggingAdvisingAppendable append(CharSequence csq, int start, int end) {
       buffer.append(csq, start, end);
       return this;
     }
 
+    @CanIgnoreReturnValue
     @Override
     public LoggingAdvisingAppendable append(char c) {
       buffer.append(c);
       return this;
     }
 
+    @CanIgnoreReturnValue
     @Override
     public LoggingAdvisingAppendable enterLoggableElement(LogStatement statement) {
       logger.log(
@@ -131,6 +136,7 @@ public final class BasicDirectivesRuntime {
       delegate.setKindAndDirectionality(ContentKind.TEXT, dir);
     }
 
+    @CanIgnoreReturnValue
     @Override
     public LoggingAdvisingAppendable appendLoggingFunctionInvocation(
         LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers) {
@@ -175,6 +181,7 @@ public final class BasicDirectivesRuntime {
     return new ForwardingLoggingAdvisingAppendable(appendable) {
       private boolean lastCharWasCarriageReturn;
 
+      @CanIgnoreReturnValue
       @Override
       public LoggingAdvisingAppendable append(char c) throws IOException {
         switch (c) {
@@ -201,6 +208,7 @@ public final class BasicDirectivesRuntime {
         return append(csq, 0, csq.length());
       }
 
+      @CanIgnoreReturnValue
       @Override
       public LoggingAdvisingAppendable append(CharSequence csq, int start, int end)
           throws IOException {
@@ -266,18 +274,21 @@ public final class BasicDirectivesRuntime {
       private final InsertWordBreaks insertWordBreaks =
           new InsertWordBreaks(maxCharsBetweenWordBreaks);
 
+      @CanIgnoreReturnValue
       @Override
       public LoggingAdvisingAppendable append(char c) throws IOException {
         delegate.append(insertWordBreaks.processChar(c));
         return this;
       }
 
+      @CanIgnoreReturnValue
       @Override
       public LoggingAdvisingAppendable append(CharSequence csq) throws IOException {
         delegate.append(insertWordBreaks.processString(csq.toString()));
         return this;
       }
 
+      @CanIgnoreReturnValue
       @Override
       public LoggingAdvisingAppendable append(CharSequence csq, int start, int end)
           throws IOException {

@@ -22,6 +22,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.errorprone.annotations.DoNotMock;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.base.SourceLocation;
@@ -75,7 +76,10 @@ public abstract class SoyMsg {
 
     private Builder() {}
 
-    /** @param id A unique id for this message (same across all translations). */
+    /**
+     * @param id A unique id for this message (same across all translations).
+     */
+    @CanIgnoreReturnValue
     public Builder setId(long id) {
       checkArgument(id >= 0L);
       this.id = id;
@@ -83,6 +87,7 @@ public abstract class SoyMsg {
     }
 
     /** Optional alternate id to be used if a translation for {@code id} is missing. */
+    @CanIgnoreReturnValue
     public Builder setAlternateId(long alternateId) {
       checkArgument(alternateId >= 0L);
       this.alternateId = OptionalLong.of(alternateId);
@@ -94,6 +99,7 @@ public abstract class SoyMsg {
      *     messages newly extracted from source files. Should always be set for messages parsed from
      *     message files/resources
      */
+    @CanIgnoreReturnValue
     public Builder setLocaleString(String localeString) {
       this.localeString = checkNotNull(localeString);
       return this;
@@ -107,12 +113,16 @@ public abstract class SoyMsg {
      *     but the messages would have meanings of "noun" and "verb".). May not be applicable to all
      *     message plugins.
      */
+    @CanIgnoreReturnValue
     public Builder setMeaning(String meaning) {
       this.meaning = checkNotNull(meaning);
       return this;
     }
 
-    /** @param desc The description for translators. */
+    /**
+     * @param desc The description for translators.
+     */
+    @CanIgnoreReturnValue
     public Builder setDesc(String desc) {
       this.desc = checkNotNull(desc);
       return this;
@@ -122,6 +132,7 @@ public abstract class SoyMsg {
      * @param contentType Content type of the document that this message will appear in (e.g.
      *     "{@code text/html}"). May not be applicable to all message plugins.
      */
+    @CanIgnoreReturnValue
     public Builder setContentType(String contentType) {
       this.contentType = checkNotNull(contentType);
       return this;
@@ -131,25 +142,35 @@ public abstract class SoyMsg {
      * @param sourceLocation Location of a source file that this message comes from.
      * @param templateName Name of template this message comes from
      */
+    @CanIgnoreReturnValue
     public Builder addSourceLocation(SourceLocation sourceLocation, String templateName) {
       sourceLocations.add(
           SourceLocationAndTemplate.create(checkNotNull(sourceLocation), templateName));
       return this;
     }
 
-    /** @param sourceLocations Locations of source files that this message comes from. */
+    /**
+     * @param sourceLocations Locations of source files that this message comes from.
+     */
+    @CanIgnoreReturnValue
     public Builder addAllSourceLocations(Iterable<SourceLocationAndTemplate> sourceLocations) {
       this.sourceLocations.addAll(sourceLocations);
       return this;
     }
 
-    /** @param isPlrselMsg Whether this is a plural/select message. */
+    /**
+     * @param isPlrselMsg Whether this is a plural/select message.
+     */
+    @CanIgnoreReturnValue
     public Builder setIsPlrselMsg(boolean isPlrselMsg) {
       this.isPlrselMsg = isPlrselMsg;
       return this;
     }
 
-    /** @param parts The parts that make up the message content. */
+    /**
+     * @param parts The parts that make up the message content.
+     */
+    @CanIgnoreReturnValue
     public Builder setParts(Iterable<? extends SoyMsgPart> parts) {
       this.parts = ImmutableList.copyOf(parts);
       checkArgument(!this.parts.isEmpty(), "Parts should never be empty");
@@ -157,6 +178,7 @@ public abstract class SoyMsg {
     }
 
     /** Marks this message as being the primary message in a fallback group. */
+    @CanIgnoreReturnValue
     public Builder setHasFallback(boolean hasFallback) {
       this.hasFallback = hasFallback;
       return this;

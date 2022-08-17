@@ -17,6 +17,7 @@ package com.google.template.soy.coredirectives;
 
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
@@ -76,6 +77,7 @@ public final class CoreDirectivesRuntime {
       delegate.setKindAndDirectionality(kind, dir);
     }
 
+    @CanIgnoreReturnValue
     @Override
     public LoggingAdvisingAppendable appendLoggingFunctionInvocation(
         LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
@@ -92,6 +94,7 @@ public final class CoreDirectivesRuntime {
     // of confusing and may require revisiting in the future once we have more examples of how
     // logging and print directives will interact.
 
+    @CanIgnoreReturnValue
     @Override
     public LoggingAdvisingAppendable enterLoggableElement(LogStatement statement) {
       if (isInHtml()) {
@@ -100,6 +103,7 @@ public final class CoreDirectivesRuntime {
       return this;
     }
 
+    @CanIgnoreReturnValue
     @Override
     public LoggingAdvisingAppendable exitLoggableElement() {
       if (isInHtml()) {

@@ -16,9 +16,9 @@
 
 package com.google.template.soy.pysrc.restricted;
 
-
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.LinkedHashMap;
@@ -47,36 +47,43 @@ public final class PyFunctionExprBuilder {
     this.kwargMap = new LinkedHashMap<>();
   }
 
+  @CanIgnoreReturnValue
   public PyFunctionExprBuilder addArg(PyExpr arg) {
     this.argList.add(arg);
     return this;
   }
 
+  @CanIgnoreReturnValue
   public PyFunctionExprBuilder addArg(String str) {
     this.argList.add(new PyStringExpr("'" + str + "'"));
     return this;
   }
 
+  @CanIgnoreReturnValue
   public PyFunctionExprBuilder addArg(boolean b) {
     this.argList.add(new PyExpr(b ? "True" : "False", Integer.MAX_VALUE));
     return this;
   }
 
+  @CanIgnoreReturnValue
   public PyFunctionExprBuilder addArg(int i) {
     this.argList.add(new PyExpr(String.valueOf(i), Integer.MAX_VALUE));
     return this;
   }
 
+  @CanIgnoreReturnValue
   public PyFunctionExprBuilder addArg(double i) {
     this.argList.add(new PyExpr(String.valueOf(i), Integer.MAX_VALUE));
     return this;
   }
 
+  @CanIgnoreReturnValue
   public PyFunctionExprBuilder addArg(long i) {
     this.argList.add(new PyExpr(String.valueOf(i), Integer.MAX_VALUE));
     return this;
   }
 
+  @CanIgnoreReturnValue
   public PyFunctionExprBuilder addArgs(List<PyExpr> argList) {
     this.argList.addAll(argList);
     return this;
@@ -86,26 +93,31 @@ public final class PyFunctionExprBuilder {
     return this.funcName;
   }
 
+  @CanIgnoreReturnValue
   public PyFunctionExprBuilder addKwarg(String key, PyExpr argValue) {
     kwargMap.put(key, argValue);
     return this;
   }
 
+  @CanIgnoreReturnValue
   public PyFunctionExprBuilder addKwarg(String key, String str) {
     kwargMap.put(key, new PyStringExpr("'" + str + "'"));
     return this;
   }
 
+  @CanIgnoreReturnValue
   public PyFunctionExprBuilder addKwarg(String key, int i) {
     kwargMap.put(key, new PyExpr(String.valueOf(i), Integer.MAX_VALUE));
     return this;
   }
 
+  @CanIgnoreReturnValue
   public PyFunctionExprBuilder addKwarg(String key, double i) {
     kwargMap.put(key, new PyExpr(String.valueOf(i), Integer.MAX_VALUE));
     return this;
   }
 
+  @CanIgnoreReturnValue
   public PyFunctionExprBuilder addKwarg(String key, long i) {
     kwargMap.put(key, new PyExpr(String.valueOf(i), Integer.MAX_VALUE));
     return this;
@@ -120,6 +132,7 @@ public final class PyFunctionExprBuilder {
    * @param mapping The mapping expression to unpack.
    * @return This PyFunctionExprBuilder instance.
    */
+  @CanIgnoreReturnValue
   public PyFunctionExprBuilder setUnpackedKwargs(PyExpr mapping) {
     if (unpackedKwargs != null) {
       throw new UnsupportedOperationException("Only one kwarg unpacking allowed per expression.");

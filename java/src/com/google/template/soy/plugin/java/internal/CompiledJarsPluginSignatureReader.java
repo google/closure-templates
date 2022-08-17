@@ -23,6 +23,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.jbcsrc.restricted.TypeInfo;
 import com.google.template.soy.plugin.java.MethodChecker;
 import com.google.template.soy.plugin.java.ReadMethodData;
@@ -248,6 +249,7 @@ public class CompiledJarsPluginSignatureReader implements PluginSignatureReader,
     static class Builder {
       final Map<PartialSignature, MethodSignatures.Builder> methodsBuilder = new LinkedHashMap<>();
 
+      @CanIgnoreReturnValue
       Builder add(PartialSignature partialSig, ReadMethodData data) {
         methodsBuilder.computeIfAbsent(partialSig, k -> new MethodSignatures.Builder()).add(data);
         return this;

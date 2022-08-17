@@ -28,6 +28,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.net.MediaType;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.errorprone.annotations.CheckReturnValue;
 import com.google.errorprone.annotations.ForOverride;
 import com.google.errorprone.annotations.Immutable;
@@ -1752,6 +1753,7 @@ abstract class Context {
      * corresponding {@link SanitizedContentKind} results in a value that adheres to the contract of
      * {@link com.google.template.soy.data.SanitizedContent} of this kind.
      */
+    @CanIgnoreReturnValue
     Builder withStartKind(SanitizedContentKind contentKind) {
       boolean inTag = false;
       withoutAttrContext();

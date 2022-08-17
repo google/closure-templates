@@ -18,6 +18,7 @@ package com.google.template.soy.exprtree;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SourceLocation.Point;
 import com.google.template.soy.base.internal.Identifier;
@@ -59,6 +60,7 @@ public final class CallableExprBuilder {
 
   private CallableExprBuilder() {}
 
+  @CanIgnoreReturnValue
   private CallableExprBuilder fillFrom(ExprNode.CallableExpr from) {
     setSourceLocation(from.getSourceLocation());
     setIdentifier(from.getIdentifier());
@@ -73,41 +75,49 @@ public final class CallableExprBuilder {
     return this;
   }
 
+  @CanIgnoreReturnValue
   public CallableExprBuilder setIdentifier(Identifier identifier) {
     this.identifier = identifier;
     return this;
   }
 
+  @CanIgnoreReturnValue
   public CallableExprBuilder setFunctionExpr(ExprNode functionExpr) {
     this.functionExpr = functionExpr;
     return this;
   }
 
+  @CanIgnoreReturnValue
   public CallableExprBuilder setSourceLocation(SourceLocation sourceLocation) {
     this.sourceLocation = sourceLocation;
     return this;
   }
 
+  @CanIgnoreReturnValue
   public CallableExprBuilder setParamNames(List<Identifier> paramNames) {
     this.paramNames = paramNames;
     return this;
   }
 
+  @CanIgnoreReturnValue
   public CallableExprBuilder setParamValues(List<ExprNode> paramValues) {
     this.paramValues = paramValues;
     return this;
   }
 
+  @CanIgnoreReturnValue
   public CallableExprBuilder setCommaLocations(List<Point> commaLocations) {
     this.commaLocations = commaLocations;
     return this;
   }
 
+  @CanIgnoreReturnValue
   public CallableExprBuilder setNullSafe(boolean nullSafe) {
     isNullSafe = nullSafe;
     return this;
   }
 
+  @CanIgnoreReturnValue
   public CallableExprBuilder setTarget(ExprNode target) {
     this.target = target;
     return this;

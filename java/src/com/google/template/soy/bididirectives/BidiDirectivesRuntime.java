@@ -18,6 +18,7 @@ package com.google.template.soy.bididirectives;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.ForwardingLoggingAdvisingAppendable;
 import com.google.template.soy.data.LogStatement;
@@ -130,18 +131,21 @@ public final class BidiDirectivesRuntime {
       commandBuffer.setKindAndDirectionality(kind, dir);
     }
 
+    @CanIgnoreReturnValue
     @Override
     public LoggingAdvisingAppendable enterLoggableElement(LogStatement statement) {
       commandBuffer.enterLoggableElement(statement);
       return this;
     }
 
+    @CanIgnoreReturnValue
     @Override
     public LoggingAdvisingAppendable exitLoggableElement() {
       commandBuffer.exitLoggableElement();
       return this;
     }
 
+    @CanIgnoreReturnValue
     @Override
     public LoggingAdvisingAppendable appendLoggingFunctionInvocation(
         LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
@@ -150,6 +154,7 @@ public final class BidiDirectivesRuntime {
       return this;
     }
 
+    @CanIgnoreReturnValue
     @Override
     public LoggingAdvisingAppendable append(char c) throws IOException {
       buffer.append(c);
@@ -157,6 +162,7 @@ public final class BidiDirectivesRuntime {
       return this;
     }
 
+    @CanIgnoreReturnValue
     @Override
     public LoggingAdvisingAppendable append(CharSequence csq) throws IOException {
       buffer.append(csq);
@@ -164,6 +170,7 @@ public final class BidiDirectivesRuntime {
       return this;
     }
 
+    @CanIgnoreReturnValue
     @Override
     public LoggingAdvisingAppendable append(CharSequence csq, int start, int end)
         throws IOException {

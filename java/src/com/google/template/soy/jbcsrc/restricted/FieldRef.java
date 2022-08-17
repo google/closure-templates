@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 
 import com.google.auto.value.AutoValue;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.data.internal.SoyMapImpl;
 import com.google.template.soy.data.restricted.BooleanData;
@@ -140,6 +141,7 @@ public abstract class FieldRef {
   private static final int VISIBILITY_MASK =
       Opcodes.ACC_PUBLIC | Opcodes.ACC_PROTECTED | Opcodes.ACC_PRIVATE;
 
+  @CanIgnoreReturnValue
   public final FieldRef setVisibility(int visibility) {
     checkArgument(visibility % VISIBILITY_MASK == visibility);
     accessFlags = (accessFlags & ~VISIBILITY_MASK) | visibility;
@@ -156,6 +158,7 @@ public abstract class FieldRef {
         null /* no initializer */);
   }
 
+  @CanIgnoreReturnValue
   public FieldRef asNonNull() {
     isNullable = false;
     return this;

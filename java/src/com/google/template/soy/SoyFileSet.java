@@ -32,6 +32,7 @@ import com.google.common.io.ByteSink;
 import com.google.common.io.ByteSource;
 import com.google.common.io.CharSink;
 import com.google.common.io.CharSource;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.protobuf.Descriptors.GenericDescriptor;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.base.SourceFilePath;
@@ -192,6 +193,7 @@ public final class SoyFileSet {
      *
      * <p>This must be called before any other setters.
      */
+    @CanIgnoreReturnValue
     public Builder setGeneralOptions(SoyGeneralOptions generalOptions) {
       Preconditions.checkState(
           lazyGeneralOptions == null,
@@ -256,12 +258,14 @@ public final class SoyFileSet {
           javaPluginValidator);
     }
 
+    @CanIgnoreReturnValue
     public Builder setJavaPluginValidator(MethodChecker javaPluginValidator) {
       this.javaPluginValidator = javaPluginValidator;
       return this;
     }
 
     /** Adds one {@link SoySourceFunction} to the functions used by this SoyFileSet. */
+    @CanIgnoreReturnValue
     public Builder addSourceFunction(SoySourceFunction function) {
       boolean method = false;
       if (function.getClass().isAnnotationPresent(SoyMethodSignature.class)) {
@@ -275,6 +279,7 @@ public final class SoyFileSet {
     }
 
     /** Adds many {@link SoySourceFunction}s to the functions used by this SoyFileSet. */
+    @CanIgnoreReturnValue
     public Builder addSourceFunctions(Iterable<? extends SoySourceFunction> function) {
       for (SoySourceFunction f : function) {
         addSourceFunction(f);
@@ -282,6 +287,7 @@ public final class SoyFileSet {
       return this;
     }
 
+    @CanIgnoreReturnValue
     public Builder addSourceMethod(SoySourceFunction function) {
       Preconditions.checkArgument(
           function.getClass().isAnnotationPresent(SoyMethodSignature.class));
@@ -290,24 +296,28 @@ public final class SoyFileSet {
     }
 
     /** Adds one {@link SoyFunction} to the functions used by this SoyFileSet. */
+    @CanIgnoreReturnValue
     public Builder addSoyFunction(SoyFunction function) {
       soyFunctions.add(function);
       return this;
     }
 
     /** Adds many {@link SoyFunction}s to the functions used by this SoyFileSet. */
+    @CanIgnoreReturnValue
     public Builder addSoyFunctions(Iterable<? extends SoyFunction> function) {
       soyFunctions.addAll(function);
       return this;
     }
 
     /** Adds one {@link SoyPrintDirective} to the print directives used by this SoyFileSet. */
+    @CanIgnoreReturnValue
     public Builder addSoyPrintDirective(SoyPrintDirective function) {
       soyPrintDirectives.add(function);
       return this;
     }
 
     /** Adds many {@link SoyPrintDirective}s to the print directives used by this SoyFileSet. */
+    @CanIgnoreReturnValue
     public Builder addSoyPrintDirectives(Iterable<? extends SoyPrintDirective> function) {
       soyPrintDirectives.addAll(function);
       return this;
@@ -397,6 +407,7 @@ public final class SoyFileSet {
      *     indicates not to use a cache.
      * @return This builder.
      */
+    @CanIgnoreReturnValue
     public Builder setSoyAstCache(SoyAstCache cache) {
       this.cache = cache;
       return this;
@@ -408,6 +419,7 @@ public final class SoyFileSet {
      * @param experimentalFeatures
      * @return This builder.
      */
+    @CanIgnoreReturnValue
     public Builder setExperimentalFeatures(List<String> experimentalFeatures) {
       getGeneralOptions().setExperimentalFeatures(experimentalFeatures);
       return this;
@@ -423,11 +435,13 @@ public final class SoyFileSet {
      *
      * @return This builder.
      */
+    @CanIgnoreReturnValue
     public Builder disableOptimizer() {
       optimize = false;
       return this;
     }
 
+    @CanIgnoreReturnValue
     public Builder setGeneratedPathsToCheck(Set<SourceFilePath> generatedPaths) {
       this.generatedPathsToCheck = generatedPaths;
       return this;
@@ -445,24 +459,28 @@ public final class SoyFileSet {
      * Registers a collection of protocol buffer descriptors. This makes all the types defined in
      * the provided descriptors available to use in soy.
      */
+    @CanIgnoreReturnValue
     public Builder addProtoDescriptors(Iterable<? extends GenericDescriptor> descriptors) {
       typeRegistryBuilder.addDescriptors(descriptors);
       return this;
     }
 
     /** Registers a conformance config proto. */
+    @CanIgnoreReturnValue
     Builder setConformanceConfig(ValidatedConformanceConfig config) {
       checkNotNull(config);
       this.conformanceConfig = config;
       return this;
     }
 
+    @CanIgnoreReturnValue
     Builder addCompilationUnit(SoyFileKind fileKind, CompilationUnit compilationUnit) {
       compilationUnitsBuilder.add(
           Metadata.CompilationUnitAndKind.create(fileKind, compilationUnit));
       return this;
     }
 
+    @CanIgnoreReturnValue
     private Builder addFile(SoyFileSupplier supplier) {
       filesBuilder.put(supplier.getFilePath(), supplier);
       return this;
@@ -474,6 +492,7 @@ public final class SoyFileSet {
      * <p>For compilation failures warnings are reported along with the errors, by throwing an
      * exception. The default is to report warnings to the logger for SoyFileSet.
      */
+    @CanIgnoreReturnValue
     Builder setWarningSink(Appendable warningSink) {
       this.warningSink = checkNotNull(warningSink);
       return this;
@@ -491,6 +510,7 @@ public final class SoyFileSet {
     }
 
     /** Sets the validated logging config to use. */
+    @CanIgnoreReturnValue
     Builder setValidatedLoggingConfig(ValidatedLoggingConfig parseLoggingConfigs) {
       this.loggingConfig = checkNotNull(parseLoggingConfigs);
       return this;
@@ -500,11 +520,13 @@ public final class SoyFileSet {
      * Sets the location of the jars containing plugin runtime code, for use validating plugin
      * MethodRefs.
      */
+    @CanIgnoreReturnValue
     Builder setPluginRuntimeJars(List<File> pluginRuntimeJars) {
       this.pluginRuntimeJars = ImmutableList.copyOf(pluginRuntimeJars);
       return this;
     }
 
+    @CanIgnoreReturnValue
     public Builder setCssRegistry(CssRegistry cssRegistry) {
       this.cssRegistry = Optional.of(cssRegistry);
       return this;
@@ -514,6 +536,7 @@ public final class SoyFileSet {
      * Sets whether or not to skip plugin validation. Defaults to false. This should usually not be
      * set unless you're doing something real funky.
      */
+    @CanIgnoreReturnValue
     public Builder setSkipPluginValidation(boolean skipPluginValidation) {
       this.skipPluginValidation = skipPluginValidation;
       return this;

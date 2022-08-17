@@ -18,6 +18,7 @@ package com.google.template.soy.shared;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableSet;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 
 /**
  * Compilation options applicable to the Soy frontend and/or to multiple Soy backends.
@@ -34,6 +35,7 @@ public final class SoyGeneralOptions implements Cloneable {
   }
 
   /** Sets experimental features. These features are unreleased and are not generally available. */
+  @CanIgnoreReturnValue
   public SoyGeneralOptions setExperimentalFeatures(Iterable<String> experimentalFeatures) {
     this.experimentalFeatures = ImmutableSet.copyOf(experimentalFeatures);
     return this;

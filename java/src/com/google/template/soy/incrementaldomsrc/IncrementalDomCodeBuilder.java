@@ -16,6 +16,7 @@
 
 package com.google.template.soy.incrementaldomsrc;
 
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.internal.JsCodeBuilder;
@@ -44,6 +45,7 @@ final class IncrementalDomCodeBuilder extends JsCodeBuilder {
     // NO-OP
   }
 
+  @CanIgnoreReturnValue
   @Override
   public IncrementalDomCodeBuilder addChunksToOutputVar(List<? extends Expression> codeChunks) {
     if (getContentKind().isHtml() || getContentKind() == SanitizedContentKind.ATTRIBUTES) {

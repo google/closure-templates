@@ -21,6 +21,7 @@ import static com.google.common.base.Preconditions.checkState;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SoyAbstractValue;
 import com.google.template.soy.data.SoyRecord;
@@ -61,6 +62,7 @@ public final class ParamStore extends SoyAbstractValue implements SoyRecord {
    * @param name The field name to set.
    * @param valueProvider A provider of the field value.
    */
+  @CanIgnoreReturnValue
   public ParamStore setField(String name, @Nonnull SoyValueProvider valueProvider) {
     Preconditions.checkNotNull(valueProvider);
     localStore.put(name, valueProvider);
@@ -75,6 +77,7 @@ public final class ParamStore extends SoyAbstractValue implements SoyRecord {
    * @param name The field name to set.
    * @param valueProvider A provider of the field value.
    */
+  @CanIgnoreReturnValue
   public ParamStore setFieldCritical(String name, @Nonnull SoyValueProvider valueProvider) {
     Preconditions.checkNotNull(valueProvider);
     SoyValueProvider previous = localStore.put(name, valueProvider);

@@ -22,6 +22,7 @@ import static com.google.common.base.Preconditions.checkState;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.protobuf.Descriptors.GenericDescriptor;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
@@ -66,6 +67,7 @@ public final class ExpressionParser {
   }
 
   /** Configures the expression to be parsed with a parameter with the given name and type. */
+  @CanIgnoreReturnValue
   public ExpressionParser withParam(String name, String type) {
     params.add(String.format("{@param %s: %s}", name, type));
     return this;
@@ -75,23 +77,27 @@ public final class ExpressionParser {
    * Configures the expression to be parsed with a let variable with the given name and expression
    * value.
    */
+  @CanIgnoreReturnValue
   public ExpressionParser withVar(String name, String expression) {
     vars.add(String.format("{let $%s: %s /}", name, expression));
     return this;
   }
 
   /** Configures the expression to be parsed with the given function. */
+  @CanIgnoreReturnValue
   public ExpressionParser withFunction(SoySourceFunction function) {
     functions.add(function);
     return this;
   }
 
   /** Configures the expression to be parsed with the given proto. */
+  @CanIgnoreReturnValue
   public ExpressionParser withProto(GenericDescriptor proto) {
     protos.add(proto);
     return this;
   }
 
+  @CanIgnoreReturnValue
   public ExpressionParser withExperimentalFeatures(String... experimentalFeatures) {
     Collections.addAll(this.experimentalFeatures, experimentalFeatures);
     return this;

@@ -25,6 +25,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.conformance.ValidatedConformanceConfig;
@@ -228,37 +229,44 @@ public final class PassManager {
     private boolean building;
     private final AccumulatedState accumulatedState = new AccumulatedState();
 
+    @CanIgnoreReturnValue
     public Builder setErrorReporter(ErrorReporter errorReporter) {
       this.errorReporter = checkNotNull(errorReporter);
       return this;
     }
 
+    @CanIgnoreReturnValue
     public Builder setSoyPrintDirectives(
         ImmutableList<? extends SoyPrintDirective> printDirectives) {
       this.soyPrintDirectives = checkNotNull(printDirectives);
       return this;
     }
 
+    @CanIgnoreReturnValue
     public Builder setJavaPluginValidator(MethodChecker javaPluginValidator) {
       this.javaPluginValidator = javaPluginValidator;
       return this;
     }
 
+    @CanIgnoreReturnValue
     public Builder setTypeRegistry(SoyTypeRegistry registry) {
       this.registry = checkNotNull(registry);
       return this;
     }
 
+    @CanIgnoreReturnValue
     public Builder setCssRegistry(Optional<CssRegistry> registry) {
       this.cssRegistry = registry;
       return this;
     }
 
+    @CanIgnoreReturnValue
     public Builder setPluginResolver(PluginResolver pluginResolver) {
       this.pluginResolver = pluginResolver;
       return this;
     }
 
+    @CanIgnoreReturnValue
     public Builder setGeneralOptions(SoyGeneralOptions options) {
       this.options = options;
       return this;
@@ -270,6 +278,7 @@ public final class PassManager {
      * <p>This should only be used for things like message extraction which doesn't tend to be
      * configured with a type registry.
      */
+    @CanIgnoreReturnValue
     public Builder disableAllTypeChecking() {
       this.disableAllTypeChecking = true;
       return this;
@@ -281,6 +290,7 @@ public final class PassManager {
      * <p>This option is only available for backwards compatibility with legacy js only templates
      * and for parseinfo generation.
      */
+    @CanIgnoreReturnValue
     public Builder allowUnknownGlobals() {
       this.allowUnknownGlobals = true;
       return this;
@@ -290,6 +300,7 @@ public final class PassManager {
      * Determines whether passes that modify the AST run. Typically analysis tools set this to false
      * since the resulting AST will not match the original source file.
      */
+    @CanIgnoreReturnValue
     public Builder astRewrites(AstRewrites astRewrites) {
       this.astRewrites = astRewrites;
       return this;
@@ -300,6 +311,7 @@ public final class PassManager {
      *
      * <p>This option is only available for backwards compatibility with legacy JS only templates.
      */
+    @CanIgnoreReturnValue
     public Builder allowUnknownJsGlobals() {
       this.allowUnknownJsGlobals = true;
       return this;
@@ -310,6 +322,7 @@ public final class PassManager {
      *
      * <p>The default is {@code true}.
      */
+    @CanIgnoreReturnValue
     public Builder desugarHtmlNodes(boolean desugarHtmlNodes) {
       this.desugarHtmlNodes = desugarHtmlNodes;
       return this;
@@ -320,6 +333,7 @@ public final class PassManager {
      *
      * <p>The default is {@code true}.
      */
+    @CanIgnoreReturnValue
     public Builder desugarIdomFeatures(boolean desugarIdomFeatures) {
       this.desugarIdomFeatures = desugarIdomFeatures;
       return this;
@@ -330,27 +344,32 @@ public final class PassManager {
      *
      * <p>The default is {@code true}.
      */
+    @CanIgnoreReturnValue
     public Builder optimize(boolean optimize) {
       this.optimize = optimize;
       return this;
     }
 
+    @CanIgnoreReturnValue
     public Builder setGeneratedPathsToCheck(ImmutableSet<SourceFilePath> generatedPaths) {
       this.generatedPathsToCheck = generatedPaths;
       return this;
     }
 
+    @CanIgnoreReturnValue
     public Builder addHtmlAttributesForDebugging(boolean addHtmlAttributesForDebugging) {
       this.addHtmlAttributesForDebugging = addHtmlAttributesForDebugging;
       return this;
     }
 
     /** Configures this passmanager to run the conformance pass using the given config object. */
+    @CanIgnoreReturnValue
     public Builder setConformanceConfig(ValidatedConformanceConfig conformanceConfig) {
       this.conformanceConfig = checkNotNull(conformanceConfig);
       return this;
     }
 
+    @CanIgnoreReturnValue
     public Builder setLoggingConfig(ValidatedLoggingConfig loggingConfig) {
       this.loggingConfig = checkNotNull(loggingConfig);
       return this;
@@ -361,6 +380,7 @@ public final class PassManager {
      *
      * <p>The autoescaper is enabled by default.
      */
+    @CanIgnoreReturnValue
     public Builder insertEscapingDirectives(boolean insertEscapingDirectives) {
       this.insertEscapingDirectives = insertEscapingDirectives;
       return this;
@@ -375,6 +395,7 @@ public final class PassManager {
      *
      * <p>This method overwrites any previously registered rule.
      */
+    @CanIgnoreReturnValue
     public Builder addPassContinuationRule(
         Class<? extends CompilerPass> pass, PassContinuationRule rule) {
       checkNotNull(rule);
@@ -615,6 +636,7 @@ public final class PassManager {
     private class PassBuilder {
       ImmutableList.Builder<CompilerFileSetPass> builder = ImmutableList.builder();
 
+      @CanIgnoreReturnValue
       PassBuilder add(CompilerFileSetPass pass) {
         Class<?> passClass = pass.getClass();
         PassContinuationRule rule = passContinuationRegistry.remove(passClass);

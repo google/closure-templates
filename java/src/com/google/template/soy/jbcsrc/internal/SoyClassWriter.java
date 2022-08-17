@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.OBJECT;
 
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.protobuf.GeneratedMessage;
 import com.google.template.soy.jbcsrc.restricted.Flags;
 import com.google.template.soy.jbcsrc.restricted.TypeInfo;
@@ -63,23 +64,27 @@ public final class SoyClassWriter extends ClassVisitor {
      * @param access The access permissions, a bit mask composed from constants like {@link
      *     Opcodes#ACC_PUBLIC}
      */
+    @CanIgnoreReturnValue
     public Builder setAccess(int access) {
       this.access = access;
       return this;
     }
 
     /** Sets the base class for this type. The default is {@code Object}. */
+    @CanIgnoreReturnValue
     public Builder extending(TypeInfo baseClass) {
       this.baseClass = checkNotNull(baseClass);
       return this;
     }
 
     /** Adds an {@code interface} to the class. */
+    @CanIgnoreReturnValue
     public Builder implementing(TypeInfo typeInfo) {
       interfaces.add(typeInfo.internalName());
       return this;
     }
 
+    @CanIgnoreReturnValue
     public Builder sourceFileName(String fileName) {
       this.fileName = checkNotNull(fileName);
       return this;
