@@ -21,6 +21,7 @@ import static com.google.common.truth.Fact.simpleFact;
 import com.google.common.truth.FailureMetadata;
 import com.google.common.truth.Subject;
 import com.google.common.truth.Truth;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyList;
@@ -132,6 +133,7 @@ public class SoyRuntimeTypeTest {
       return isBoxedAs(Type.getType(type));
     }
 
+    @CanIgnoreReturnValue
     SoyRuntimeTypeSubject isBoxedAs(Type type) {
       SoyRuntimeType boxed = SoyRuntimeType.getBoxedType(actual);
       check("boxed()").that(boxed.runtimeType()).isEqualTo(type);
@@ -142,6 +144,7 @@ public class SoyRuntimeTypeTest {
       return isUnboxedAs(Type.getType(type));
     }
 
+    @CanIgnoreReturnValue
     SoyRuntimeTypeSubject isUnboxedAs(Type type) {
       Optional<SoyRuntimeType> unboxedAs = SoyRuntimeType.getUnboxedType(actual);
       if (!unboxedAs.isPresent()) {
@@ -154,6 +157,7 @@ public class SoyRuntimeTypeTest {
       return this;
     }
 
+    @CanIgnoreReturnValue
     SoyRuntimeTypeSubject isNotUnboxable() {
       Optional<SoyRuntimeType> unboxedAs = SoyRuntimeType.getUnboxedType(actual);
       if (unboxedAs.isPresent()) {

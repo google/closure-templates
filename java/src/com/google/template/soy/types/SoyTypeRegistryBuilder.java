@@ -26,6 +26,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.SetMultimap;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.EnumDescriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
@@ -62,6 +63,7 @@ public final class SoyTypeRegistryBuilder {
   public SoyTypeRegistryBuilder() {}
 
   /** Registers a collection of descriptors of any type. */
+  @CanIgnoreReturnValue
   public SoyTypeRegistryBuilder addDescriptors(
       Iterable<? extends GenericDescriptor> descriptorsToAdd) {
     descriptors.addAll(descriptorsToAdd);

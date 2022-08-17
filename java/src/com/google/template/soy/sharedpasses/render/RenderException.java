@@ -16,6 +16,7 @@
 
 package com.google.template.soy.sharedpasses.render;
 
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.errorprone.annotations.FormatMethod;
 import com.google.errorprone.annotations.FormatString;
 import com.google.template.soy.base.SourceLocation;
@@ -92,6 +93,7 @@ public final class RenderException extends RuntimeException {
   }
 
   /** Add a partial stack trace element by specifying the source location of the soy file. */
+  @CanIgnoreReturnValue
   RenderException addStackTraceElement(TemplateNode template, SourceLocation location) {
     // Typically, this is fast since templates aren't that deep and we only do this in error
     // situations so performance matters less.

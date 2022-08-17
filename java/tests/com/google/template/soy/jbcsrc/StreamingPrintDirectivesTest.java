@@ -26,6 +26,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.SettableFuture;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.SoyFileSetParser;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.data.ForwardingLoggingAdvisingAppendable;
@@ -432,6 +433,7 @@ public final class StreamingPrintDirectivesTest {
       }
     }
 
+    @CanIgnoreReturnValue
     @Override
     public LoggingAdvisingAppendable append(CharSequence csq) throws IOException {
       delegate.append(wrap(csq));
@@ -449,18 +451,21 @@ public final class StreamingPrintDirectivesTest {
       return append("" + c);
     }
 
+    @CanIgnoreReturnValue
     @Override
     public LoggingAdvisingAppendable enterLoggableElement(LogStatement statement) {
       delegate.enterLoggableElement(statement);
       return this;
     }
 
+    @CanIgnoreReturnValue
     @Override
     public LoggingAdvisingAppendable exitLoggableElement() {
       delegate.exitLoggableElement();
       return this;
     }
 
+    @CanIgnoreReturnValue
     @Override
     public LoggingAdvisingAppendable appendLoggingFunctionInvocation(
         LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)

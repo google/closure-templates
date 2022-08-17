@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.truth.FailureMetadata;
 import com.google.common.truth.Subject;
 import com.google.common.truth.Truth;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.VarRefNode;
@@ -97,6 +98,7 @@ final class ExpressionSubject extends Subject {
     check("parseExpression().getName()").that(varNode.getName()).isEqualTo("$" + name);
   }
 
+  @CanIgnoreReturnValue
   ExpressionSubject withAlias(String alias, String namespace) {
     aliasesBuilder.put(alias, namespace);
     return this;

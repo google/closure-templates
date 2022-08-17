@@ -27,6 +27,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.errorprone.annotations.DoNotCall;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -202,11 +203,13 @@ public final class TypeNodeConverter
 
     private Builder() {}
 
+    @CanIgnoreReturnValue
     public Builder setErrorReporter(ErrorReporter errorReporter) {
       this.errorReporter = Preconditions.checkNotNull(errorReporter);
       return this;
     }
 
+    @CanIgnoreReturnValue
     public Builder setDisableAllTypeChecking(boolean disableAllTypeChecking) {
       this.disableAllTypeChecking = disableAllTypeChecking;
       return this;
@@ -216,11 +219,13 @@ public final class TypeNodeConverter
      * Set to true if {@link TypeNode} inputs will be parsed from non-template sources. If true then
      * FQ proto names will be supported.
      */
+    @CanIgnoreReturnValue
     public Builder setSystemExternal(boolean systemExternal) {
       this.systemExternal = systemExternal;
       return this;
     }
 
+    @CanIgnoreReturnValue
     public Builder setTypeRegistry(SoyTypeRegistry typeRegistry) {
       this.interner = typeRegistry;
       this.typeRegistry = typeRegistry;

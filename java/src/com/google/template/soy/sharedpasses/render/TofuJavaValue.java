@@ -19,6 +19,7 @@ package com.google.template.soy.sharedpasses.render;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.BooleanData;
@@ -88,24 +89,28 @@ final class TofuJavaValue implements JavaValue {
         sourceLocation);
   }
 
+  @CanIgnoreReturnValue
   @Override
   public TofuJavaValue asSoyBoolean() {
     checkType(BoolType.getInstance());
     return this;
   }
 
+  @CanIgnoreReturnValue
   @Override
   public TofuJavaValue asSoyFloat() {
     checkType(StringType.getInstance());
     return this;
   }
 
+  @CanIgnoreReturnValue
   @Override
   public TofuJavaValue asSoyInt() {
     checkType(IntType.getInstance());
     return this;
   }
 
+  @CanIgnoreReturnValue
   @Override
   public TofuJavaValue asSoyString() {
     checkType(StringType.getInstance());

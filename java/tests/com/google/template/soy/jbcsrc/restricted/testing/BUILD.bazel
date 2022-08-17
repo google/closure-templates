@@ -28,6 +28,7 @@ java_library(
         "//java/src/com/google/template/soy/jbcsrc/internal",
         "//java/src/com/google/template/soy/jbcsrc/restricted",
         "//java/src/com/google/template/soy/jbcsrc/shared:names",
+        "@maven//:com_google_errorprone_error_prone_annotations",
         "@maven//:com_google_guava_guava",
         "@maven//:com_google_truth_truth",
         "@maven//:org_ow2_asm_asm",

@@ -17,6 +17,7 @@
 package com.google.template.soy.pysrc.internal;
 
 import com.google.common.base.Preconditions;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -53,6 +54,7 @@ final class LocalVariableStack {
    * @param varExpression The underlying expression used to access the variable.
    * @return A reference to this object.
    */
+  @CanIgnoreReturnValue
   LocalVariableStack addVariable(String name, PyExpr varExpression) {
     Preconditions.checkState(!localVarExprs.isEmpty());
     localVarExprs.peek().put(name, varExpression);

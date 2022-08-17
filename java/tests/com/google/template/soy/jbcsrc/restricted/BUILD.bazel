@@ -34,6 +34,7 @@ java_library(
         "//java/src/com/google/template/soy/types",
         "//java/tests/com/google/template/soy/jbcsrc/restricted/testing",
         "//src/test/protobuf:test_protos_java_proto",
+        "@maven//:com_google_errorprone_error_prone_annotations",
         "@maven//:com_google_guava_guava",
         "@maven//:com_google_truth_truth",
         "@maven//:junit_junit",

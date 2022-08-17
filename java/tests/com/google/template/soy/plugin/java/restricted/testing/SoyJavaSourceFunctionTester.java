@@ -23,6 +23,7 @@ import static java.util.Arrays.stream;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
@@ -90,11 +91,13 @@ public class SoyJavaSourceFunctionTester {
       this.fn = checkNotNull(fn);
     }
 
+    @CanIgnoreReturnValue
     public Builder withBidiGlobalDir(BidiGlobalDir bidiGlobalDir) {
       this.bidiGlobalDir = checkNotNull(bidiGlobalDir);
       return this;
     }
 
+    @CanIgnoreReturnValue
     public Builder withLocale(ULocale locale) {
       this.locale = locale;
       return this;

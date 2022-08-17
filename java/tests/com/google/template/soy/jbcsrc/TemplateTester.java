@@ -33,6 +33,7 @@ import com.google.common.truth.FailureMetadata;
 import com.google.common.truth.IterableSubject;
 import com.google.common.truth.Subject;
 import com.google.common.truth.ThrowableSubject;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.errorprone.annotations.CheckReturnValue;
 import com.google.protobuf.Descriptors.GenericDescriptor;
 import com.google.template.soy.SoyFileSetParser;
@@ -169,6 +170,7 @@ public final class TemplateTester {
       this.actual = subject;
     }
 
+    @CanIgnoreReturnValue
     CompiledTemplateSubject withTypeRegistry(SoyTypeRegistry typeRegistry) {
       classData = null;
       template = null;
@@ -176,11 +178,13 @@ public final class TemplateTester {
       return this;
     }
 
+    @CanIgnoreReturnValue
     CompiledTemplateSubject withExperimentalFeatures(ImmutableList<String> experimentalFeatures) {
       this.experimentalFeatures = experimentalFeatures;
       return this;
     }
 
+    @CanIgnoreReturnValue
     CompiledTemplateSubject withLegacySoyFunction(SoyFunction soyFunction) {
       classData = null;
       template = null;
@@ -188,6 +192,7 @@ public final class TemplateTester {
       return this;
     }
 
+    @CanIgnoreReturnValue
     CompiledTemplateSubject withSoySourceFunction(SoySourceFunction soySourceFunction) {
       classData = null;
       template = null;
@@ -195,11 +200,13 @@ public final class TemplateTester {
       return this;
     }
 
+    @CanIgnoreReturnValue
     CompiledTemplateSubject withCssRenamingMap(SoyCssRenamingMap renamingMap) {
       this.cssRenamingMap = renamingMap;
       return this;
     }
 
+    @CanIgnoreReturnValue
     CompiledTemplateSubject withXidRenamingMap(SoyIdRenamingMap renamingMap) {
       this.xidRenamingMap = renamingMap;
       return this;
@@ -232,6 +239,7 @@ public final class TemplateTester {
       return failsToRenderWith(expected, ImmutableMap.of());
     }
 
+    @CanIgnoreReturnValue
     CompiledTemplateSubject failsToRenderWith(
         Class<? extends Throwable> expected, Map<String, ?> params) {
       BufferingAppendable builder = LoggingAdvisingAppendable.buffering();
@@ -306,6 +314,7 @@ public final class TemplateTester {
       return (SoyRecord) SoyValueConverter.INSTANCE.convert(params);
     }
 
+    @CanIgnoreReturnValue
     private CompiledTemplateSubject rendersAndLogs(
         String expectedOutput,
         String expectedLogged,

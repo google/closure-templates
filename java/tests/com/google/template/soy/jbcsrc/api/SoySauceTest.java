@@ -22,6 +22,7 @@ import static org.junit.Assert.fail;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.SettableFuture;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.SoyFileSet;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
@@ -372,18 +373,21 @@ public class SoySauceTest {
     private final StringBuilder delegate = new StringBuilder();
     boolean softLimitReached;
 
+    @CanIgnoreReturnValue
     @Override
     public TestAppendable append(CharSequence s) {
       delegate.append(s);
       return this;
     }
 
+    @CanIgnoreReturnValue
     @Override
     public TestAppendable append(CharSequence s, int start, int end) {
       delegate.append(s, start, end);
       return this;
     }
 
+    @CanIgnoreReturnValue
     @Override
     public TestAppendable append(char c) {
       delegate.append(c);

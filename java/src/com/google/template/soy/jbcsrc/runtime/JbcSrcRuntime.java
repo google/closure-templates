@@ -41,6 +41,7 @@ import com.google.common.html.types.SafeUrls;
 import com.google.common.html.types.TrustedResourceUrl;
 import com.google.common.html.types.TrustedResourceUrlProto;
 import com.google.common.html.types.TrustedResourceUrls;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.errorprone.annotations.Immutable;
 import com.google.protobuf.ExtensionLite;
 import com.google.protobuf.GeneratedMessage.ExtendableMessage;
@@ -650,6 +651,7 @@ public final class JbcSrcRuntime {
      * @param placeholderName The placeholder name
      * @param placeholderValue The placeholder value.
      */
+    @CanIgnoreReturnValue
     public MsgRenderer setPlaceholder(String placeholderName, SoyValueProvider placeholderValue) {
       Object prev = placeholders.put(placeholderName, placeholderValue);
       if (prev != null) {
@@ -679,6 +681,7 @@ public final class JbcSrcRuntime {
      *     SoyValueProvider
      * @param endPlaceholder The name of another placeholder that _must_ come _after_ this one.
      */
+    @CanIgnoreReturnValue
     public MsgRenderer setPlaceholderAndOrdering(
         String placeholderName, SoyValueProvider placeholderValue, String endPlaceholder) {
       if (endPlaceholderToStartPlaceholder == null) {

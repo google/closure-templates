@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkState;
 
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
@@ -156,6 +157,7 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
       buffer.setKindAndDirectionality(kind, contentDir);
     }
 
+    @CanIgnoreReturnValue
     @Override
     public TeeAdvisingAppendable append(CharSequence csq) throws IOException {
       delegate.append(csq);
@@ -163,6 +165,7 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
       return this;
     }
 
+    @CanIgnoreReturnValue
     @Override
     public TeeAdvisingAppendable append(CharSequence csq, int start, int end) throws IOException {
       delegate.append(csq, start, end);
@@ -170,6 +173,7 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
       return this;
     }
 
+    @CanIgnoreReturnValue
     @Override
     public TeeAdvisingAppendable append(char c) throws IOException {
       delegate.append(c);
@@ -194,6 +198,7 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
       return buffer.toString();
     }
 
+    @CanIgnoreReturnValue
     @Override
     public LoggingAdvisingAppendable enterLoggableElement(LogStatement statement) {
       delegate.enterLoggableElement(statement);
@@ -201,6 +206,7 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
       return this;
     }
 
+    @CanIgnoreReturnValue
     @Override
     public LoggingAdvisingAppendable exitLoggableElement() {
       delegate.exitLoggableElement();
@@ -208,6 +214,7 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
       return this;
     }
 
+    @CanIgnoreReturnValue
     @Override
     public LoggingAdvisingAppendable appendLoggingFunctionInvocation(
         LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)

@@ -25,6 +25,7 @@ import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.truth.FailureMetadata;
 import com.google.common.truth.Subject;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.Operator;
@@ -67,6 +68,7 @@ public final class SoyExprForPySubject extends Subject {
    * @param localVarFrame one frame of local variables
    * @return the current subject for chaining
    */
+  @CanIgnoreReturnValue
   public SoyExprForPySubject with(Map<String, PyExpr> localVarFrame) {
     localVarExprs.pushFrame();
     for (Map.Entry<String, PyExpr> entry : localVarFrame.entrySet()) {
@@ -75,6 +77,7 @@ public final class SoyExprForPySubject extends Subject {
     return this;
   }
 
+  @CanIgnoreReturnValue
   public SoyExprForPySubject withExperimentalFeatures(ImmutableList<String> experimetalFeatures) {
     this.experimentalFeatures = experimetalFeatures;
     return this;

@@ -108,11 +108,13 @@ abstract class JsSrcSubject<T extends Subject> extends Subject {
       this.exprText = exprText;
     }
 
+    @CanIgnoreReturnValue
     TestExpr withParam(String param) {
       paramDecls.append(param).append('\n');
       return this;
     }
 
+    @CanIgnoreReturnValue
     TestExpr withParam(String name, String type) {
       paramDecls.append("{@param ").append(name).append(": ").append(type).append("}\n");
       return this;
@@ -265,6 +267,7 @@ abstract class JsSrcSubject<T extends Subject> extends Subject {
               .exec(exprNode);
     }
 
+    @CanIgnoreReturnValue
     JsSrcSubject.ForExprs withInitialLocalVarTranslations(
         ImmutableMap<String, Expression> initialLocalVarTranslations) {
       this.initialLocalVarTranslations = initialLocalVarTranslations;

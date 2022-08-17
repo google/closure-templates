@@ -23,6 +23,7 @@ import com.google.common.base.Joiner;
 import com.google.common.truth.FailureMetadata;
 import com.google.common.truth.Subject;
 import com.google.common.truth.Truth;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.testing.ExpressionEvaluator.BooleanInvoker;
 import com.google.template.soy.jbcsrc.restricted.testing.ExpressionEvaluator.CharInvoker;
@@ -53,6 +54,7 @@ public final class ExpressionSubject extends Subject {
     this.actual = subject;
   }
 
+  @CanIgnoreReturnValue
   public ExpressionSubject evaluatesTo(int expected) {
     evaluator.compile(actual);
     check("invoke()").that(((IntInvoker) evaluator.invoker).invoke()).isEqualTo(expected);
@@ -123,6 +125,7 @@ public final class ExpressionSubject extends Subject {
    * Asserts on the literal code of the expression, use sparingly since it may lead to overly
    * coupled tests.
    */
+  @CanIgnoreReturnValue
   public ExpressionSubject hasCode(String... instructions) {
     evaluator.compile(actual);
     String formatted = Joiner.on('\n').join(instructions);
@@ -134,6 +137,7 @@ public final class ExpressionSubject extends Subject {
    * Asserts on the literal code of the expression, use sparingly since it may lead to overly
    * coupled tests.
    */
+  @CanIgnoreReturnValue
   public ExpressionSubject doesNotContainCode(String... instructions) {
     evaluator.compile(this.actual);
     String formatted = Joiner.on('\n').join(instructions);
@@ -142,6 +146,7 @@ public final class ExpressionSubject extends Subject {
     return this;
   }
 
+  @CanIgnoreReturnValue
   public ExpressionSubject evaluatesToInstanceOf(Class<?> expected) {
     evaluator.compile(this.actual);
     Object actual;
@@ -158,6 +163,7 @@ public final class ExpressionSubject extends Subject {
     return this;
   }
 
+  @CanIgnoreReturnValue
   private ExpressionSubject failExpectingValue(Object expected, Throwable t) {
     failWithoutActual(
         fact("expected to evaluate to", expected),
@@ -170,6 +176,7 @@ public final class ExpressionSubject extends Subject {
     return throwsException(clazz, null);
   }
 
+  @CanIgnoreReturnValue
   public ExpressionSubject throwsException(Class<? extends Throwable> clazz, String message) {
     evaluator.compile(actual);
     try {

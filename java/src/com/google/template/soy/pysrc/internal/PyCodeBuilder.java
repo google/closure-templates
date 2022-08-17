@@ -18,6 +18,7 @@ package com.google.template.soy.pysrc.internal;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyExprUtils;
 import com.google.template.soy.pysrc.restricted.PyListExpr;
@@ -224,6 +225,7 @@ final class PyCodeBuilder {
    * @param codeFragments The code string(s) to append.
    * @return This CodeBuilder (for stringing together operations).
    */
+  @CanIgnoreReturnValue
   public PyCodeBuilder append(String... codeFragments) {
     for (String codeFragment : codeFragments) {
       code.append(codeFragment);
@@ -237,6 +239,7 @@ final class PyCodeBuilder {
    * @param codeFragments The code string(s) to append.
    * @return This CodeBuilder (for stringing together operations).
    */
+  @CanIgnoreReturnValue
   public PyCodeBuilder appendLine(String... codeFragments) {
     code.append(indent);
     append(codeFragments);
@@ -250,6 +253,7 @@ final class PyCodeBuilder {
    * @param codeFragments The code string(s) to append.
    * @return This CodeBuilder (for stringing together operations).
    */
+  @CanIgnoreReturnValue
   public PyCodeBuilder appendLineStart(String... codeFragments) {
     code.append(indent);
     append(codeFragments);
@@ -262,6 +266,7 @@ final class PyCodeBuilder {
    * @param codeFragments The code string(s) to append.
    * @return This CodeBuilder (for stringing together operations).
    */
+  @CanIgnoreReturnValue
   public PyCodeBuilder appendLineEnd(String... codeFragments) {
     append(codeFragments);
     code.append("\n");
@@ -273,6 +278,7 @@ final class PyCodeBuilder {
    *
    * @return This CodeBuilder (for stringing together operations).
    */
+  @CanIgnoreReturnValue
   PyCodeBuilder appendOutputVarName() {
     code.append(currOutputVarName);
     return this;

@@ -18,6 +18,7 @@ package com.google.template.soy.sharedpasses.render;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyValue;
@@ -109,6 +110,7 @@ public abstract class RenderableThunk implements SoyValueProvider {
       this.delegate = delegate;
     }
 
+    @CanIgnoreReturnValue
     @Override
     public Appendable append(CharSequence csq) throws IOException {
       delegate.append(csq);
@@ -116,6 +118,7 @@ public abstract class RenderableThunk implements SoyValueProvider {
       return this;
     }
 
+    @CanIgnoreReturnValue
     @Override
     public Appendable append(CharSequence csq, int start, int end) throws IOException {
       delegate.append(csq, start, end);
@@ -123,6 +126,7 @@ public abstract class RenderableThunk implements SoyValueProvider {
       return this;
     }
 
+    @CanIgnoreReturnValue
     @Override
     public Appendable append(char c) throws IOException {
       delegate.append(c);

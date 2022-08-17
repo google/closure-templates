@@ -25,6 +25,7 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.truth.FailureMetadata;
 import com.google.common.truth.Subject;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.error.ErrorReporter;
@@ -76,27 +77,32 @@ public final class SoyCodeForPySubject extends Subject {
     this.isFile = isFile;
   }
 
+  @CanIgnoreReturnValue
   public SoyCodeForPySubject withEnvironmentModule(String environmentModulePath) {
     this.environmentModulePath = environmentModulePath;
     return this;
   }
 
+  @CanIgnoreReturnValue
   public SoyCodeForPySubject withBidi(String bidiIsRtlFn) {
     this.bidiIsRtlFn = bidiIsRtlFn;
     return this;
   }
 
+  @CanIgnoreReturnValue
   public SoyCodeForPySubject withTranslationClass(String translationClass) {
     this.translationClass = translationClass;
     return this;
   }
 
+  @CanIgnoreReturnValue
   public SoyCodeForPySubject withOutputFilePaths(
       ImmutableMap<SourceFilePath, Path> inputToOutputFilePaths) {
     this.inputToOutputFilePaths = inputToOutputFilePaths;
     return this;
   }
 
+  @CanIgnoreReturnValue
   public SoyCodeForPySubject withNamespaceManifest(ImmutableMap<String, String> namespaceManifest) {
     this.namespaceManifest = namespaceManifest;
     return this;
