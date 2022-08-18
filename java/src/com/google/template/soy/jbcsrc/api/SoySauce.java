@@ -24,6 +24,7 @@ import static com.google.template.soy.jbcsrc.api.AppendableAsAdvisingAppendable.
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.errorprone.annotations.CheckReturnValue;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
@@ -41,6 +42,7 @@ import java.util.function.Predicate;
 /**
  * Main entry point for rendering Soy templates on the server.
  */
+// TODO(kak): add @CheckReturnValue to the entire class
 public interface SoySauce {
   /**
    * Returns a new {@link Renderer} for configuring and rendering the given template.
@@ -116,11 +118,14 @@ public interface SoySauce {
   /** A Renderer can configure rendering parameters and render the template. */
   interface Renderer {
     /** Configures the data to pass to template. */
+    @CanIgnoreReturnValue
     Renderer setData(Map<String, ?> record);
 
     /** Configures the {@code $ij} to pass to the template. */
+    @CanIgnoreReturnValue
     Renderer setIj(Map<String, ?> record);
 
+    @CanIgnoreReturnValue
     default Renderer setIj(SoyTemplateData data) {
       return setIj(data.getParamsAsMap());
     }
@@ -132,27 +137,34 @@ public interface SoySauce {
      * <p>Most plugin instances should be associated with the SoySauce instance during construction,
      * but this method can be used to add more if that is not feasible.
      */
+    @CanIgnoreReturnValue
     Renderer setPluginInstances(Map<String, Supplier<Object>> pluginInstances);
 
     /** Configures the {@code {css ..}} renaming map. */
+    @CanIgnoreReturnValue
     Renderer setCssRenamingMap(SoyCssRenamingMap cssRenamingMap);
 
     /** Configures the {@code {xid ..}} renaming map. */
+    @CanIgnoreReturnValue
     Renderer setXidRenamingMap(SoyIdRenamingMap xidRenamingMap);
 
     /** Sets the predicate to use for testing whether or not a given {@code modname} is active. */
+    @CanIgnoreReturnValue
     Renderer setActiveDelegatePackageSelector(Predicate<String> active);
 
     /** Configures the bundle of translated messages to use. */
+    @CanIgnoreReturnValue
     Renderer setMsgBundle(SoyMsgBundle msgs);
 
     /**
      * When passing a value of true, Soy compiler will render additional HTML comments for runtime
      * inspection.
      */
+    @CanIgnoreReturnValue
     Renderer setDebugSoyTemplateInfo(boolean debugSoyTemplateInfo);
 
     /** Configures the {@link SoyLogger} to use. */
+    @CanIgnoreReturnValue
     Renderer setSoyLogger(SoyLogger logger);
 
     /**
