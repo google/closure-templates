@@ -151,6 +151,7 @@ public final class TemplateMetadataSerializer {
                 templateType.getTemplateKind() == TemplateType.TemplateKind.DELTEMPLATE
                     ? meta.getDelTemplateName()
                     : maybeShortenTemplateName(fileNode.getNamespace(), meta.getTemplateName()))
+            .setModifiableTemplateName(Strings.nullToEmpty(meta.getDelTemplateName()))
             .setTemplateKind(
                 TEMPLATE_KIND_CONVERTER.reverse().convert(templateType.getTemplateKind()))
             .setVisibility(VISIBILITY_CONVERTER.reverse().convert(meta.getVisibility()))
@@ -188,7 +189,9 @@ public final class TemplateMetadataSerializer {
                 fileProto.getNamespace(), templateProto.getTemplateName());
         if (templateProto.getTemplateType().getIsModifiable()
             || templateProto.getTemplateType().getIsModifying()) {
-          builder.setDelTemplateVariant(variant).setDelTemplateName(templateName);
+          builder
+              .setDelTemplateVariant(variant)
+              .setDelTemplateName(templateProto.getModifiableTemplateName());
         }
         break;
       case DELTEMPLATE:

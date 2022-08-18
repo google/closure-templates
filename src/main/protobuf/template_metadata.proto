@@ -227,9 +227,14 @@ message SoyElementMetadataP {
 message TemplateMetadataP {
   TemplateKindP template_kind = 1;
   // The template name.
-  // For basic templates or elements this will be a partial name
+  // For basic templates or elements this will be the local, non-namespaced name
   // For deltemplates it will be the fully qualified deltemplate name.
   string template_name = 2;
+
+  // Will be set for `modifies` template to the FQN of the associated
+  // `modifiable` template.
+  // For legacy deltemplates, will be set to the deltemplate name.
+  string modifiable_template_name = 15;
 
   // The variant string.  Will be empty for basic templates or deltemplates with
   // no variant.

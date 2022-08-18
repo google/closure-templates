@@ -121,10 +121,8 @@ public abstract class TemplateType extends SoyType {
 
   public abstract SoyType getUseVariantType();
 
-  // TODO(b/239930786): These are only needed for supporting legacydeltemplatenamespace.
   public abstract boolean isModifiable();
 
-  // TODO(b/239930786): These are only needed for supporting legacydeltemplatenamespace.
   public abstract boolean isModifying();
 
   // TODO(b/239930786): These are only needed for supporting legacydeltemplatenamespace.

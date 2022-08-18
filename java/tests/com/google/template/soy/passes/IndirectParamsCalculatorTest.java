@@ -166,4 +166,56 @@ public final class IndirectParamsCalculatorTest {
     // 'b4' listed by alpha.five
     assertThat(pktcm).valuesForKey("b4").containsExactly(a5, b4);
   }
+
+  @Test
+  public void testFindIndirectParamsDeltemplates() {
+
+    String fileContent =
+        "{namespace ns}"
+            + "{template test}{delcall del data=\"all\" /}{/template}"
+            + "{deltemplate del}"
+            + "  {@param m: ?}"
+            + "  {call x data=\"all\" /}"
+            + "{/deltemplate}"
+            + "{deltemplate del variant=\"'foo'\"}"
+            + "  {@param m: ?}"
+            + "  {call y data=\"all\" /}"
+            + "{/deltemplate}"
+            + "{template x}{@param x: ?}{/template}"
+            + "{template y}{@param y: ?}{/template}";
+
+    FileSetMetadata registry =
+        SoyFileSetParserBuilder.forFileContents(fileContent).parse().registry();
+
+    TemplateMetadata test = registry.getBasicTemplateOrElement("ns.test");
+    IndirectParamsInfo ipi =
+        new IndirectParamsCalculator(registry).calculateIndirectParams(test.getTemplateType());
+    assertThat(ipi.indirectParams.keySet()).containsExactly("m", "x", "y");
+  }
+
+  @Test
+  public void testFindIndirectParamsModifiables() {
+
+    String fileContent =
+        "{namespace ns}"
+            + "{template test}{call modifiable data=\"all\" /}{/template}"
+            + "{template modifiable modifiable=\"true\" usevarianttype=\"string\"}"
+            + "  {@param m: ?}"
+            + "  {call x data=\"all\" /}"
+            + "{/template}"
+            + "{template variant visibility=\"private\" modifies=\"modifiable\" variant=\"'foo'\"}"
+            + "  {@param m: ?}"
+            + "  {call y data=\"all\" /}"
+            + "{/template}"
+            + "{template x}{@param x: ?}{/template}"
+            + "{template y}{@param y: ?}{/template}";
+
+    FileSetMetadata registry =
+        SoyFileSetParserBuilder.forFileContents(fileContent).parse().registry();
+
+    TemplateMetadata test = registry.getBasicTemplateOrElement("ns.test");
+    IndirectParamsInfo ipi =
+        new IndirectParamsCalculator(registry).calculateIndirectParams(test.getTemplateType());
+    assertThat(ipi.indirectParams.keySet()).containsExactly("m", "x", "y");
+  }
 }

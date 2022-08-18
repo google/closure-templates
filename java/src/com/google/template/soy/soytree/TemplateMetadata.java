@@ -26,10 +26,12 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.SoyFileKind;
+import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.soytree.SoyNode.Kind;
 import com.google.template.soy.soytree.defn.AttrParam;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.NullType;
+import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.TemplateType.DataAllCallSituation;
 import com.google.template.soy.types.TemplateType.Parameter;
@@ -77,8 +79,16 @@ public abstract class TemplateMetadata {
       builder.setDelTemplateVariant(deltemplate.getDelTemplateVariant());
     } else if (template instanceof TemplateBasicNode) {
       TemplateBasicNode basicTemplate = (TemplateBasicNode) template;
-      if (basicTemplate.isModifiable() || basicTemplate.getModifiesExpr() != null) {
+      if (basicTemplate.isModifiable()) {
         builder.setDelTemplateName(basicTemplate.getTemplateName());
+        builder.setDelTemplateVariant(basicTemplate.getDelTemplateVariant());
+      } else if (basicTemplate.getModifiesExpr() != null) {
+        if (basicTemplate.getModifiesExpr().getRoot() instanceof TemplateLiteralNode) {
+          builder.setDelTemplateName(
+              ((TemplateLiteralNode) basicTemplate.getModifiesExpr().getRoot()).getResolvedName());
+        } else {
+          builder.setDelTemplateName("$__unresolvable__");
+        }
         builder.setDelTemplateVariant(basicTemplate.getDelTemplateVariant());
       }
     }
@@ -153,7 +163,9 @@ public abstract class TemplateMetadata {
               builder.setExplicitlyPassedParameters(explicitlyPassedParams.build());
               switch (call.getKind()) {
                 case CALL_BASIC_NODE:
-                  builder.setDelCall(false);
+                  SoyType type = ((CallBasicNode) call).getCalleeExpr().getType();
+                  builder.setDelCall(
+                      type instanceof TemplateType && ((TemplateType) type).isModifiable());
                   if (((CallBasicNode) call).isStaticCall()) {
                     builder.setTemplateName(((CallBasicNode) call).getCalleeName());
                   } else {
@@ -243,8 +255,7 @@ public abstract class TemplateMetadata {
           || built.getTemplateType().isModifiable()
           || built.getTemplateType().isModifying()) {
         checkState(built.getDelTemplateName() != null, "Deltemplates must have a deltemplateName");
-        checkState(
-            built.getDelTemplateVariant() != null, "Deltemplates must have a deltemplateName");
+        checkState(built.getDelTemplateVariant() != null, "Deltemplates must have a variant");
       } else {
         checkState(
             built.getDelTemplateVariant() == null, "non-Deltemplates must not have a variant");

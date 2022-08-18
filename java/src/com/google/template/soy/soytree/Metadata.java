@@ -767,7 +767,11 @@ public final class Metadata {
     if (modName == null) {
       // default delegate
       previous = builder.addDefault(delTemplateName, variant, template);
-      if (previous != null) {
+      if (previous != null
+          && !template.getTemplateType().isModifiable()
+          && !template.getTemplateType().isModifying()) {
+        // duplicate defaults for modifiable is already caught by the check that "modifies" must be
+        // on a template with "variant" or in a {modname}.
         errorReporter.report(
             template.getSourceLocation(),
             DUPLICATE_DEFAULT_DELEGATE_TEMPLATES,
