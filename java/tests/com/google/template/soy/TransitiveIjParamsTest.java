@@ -263,6 +263,36 @@ public final class TransitiveIjParamsTest {
     assertThat(tester.calculateIjs("ns.aaa")).isEqualTo(allIjs);
   }
 
+  @Test
+  public void testDelemplates() {
+    String fileContent =
+        "{namespace ns}"
+            + "{template test}{@inject a: ?}{$a}{delcall del /}{/template}"
+            + "{deltemplate del}"
+            + "  {@inject b: ?}{$b}"
+            + "{/deltemplate}"
+            + "{deltemplate del variant=\"'foo'\"}"
+            + "  {@inject c: ?}{$c}"
+            + "{/deltemplate}";
+    IjsTester tester = new IjsTester(fileContent);
+    assertThat(tester.calculateIjs("ns.test")).containsExactly("a", "b", "c");
+  }
+
+  @Test
+  public void testModifiableTemplates() {
+    String fileContent =
+        "{namespace ns}"
+            + "{template test}{@inject a: ?}{$a}{call modifiable /}{/template}"
+            + "{template modifiable modifiable=\"true\" usevarianttype=\"string\"}"
+            + "  {@inject b: ?}{$b}"
+            + "{/template}"
+            + "{template variant visibility=\"private\" modifies=\"modifiable\" variant=\"'foo'\"}"
+            + "  {@inject c: ?}{$c}"
+            + "{/template}";
+    IjsTester tester = new IjsTester(fileContent);
+    assertThat(tester.calculateIjs("ns.test")).containsExactly("a", "b", "c");
+  }
+
   static final class IjsTester {
     final SoyTofu tofu;
     final CompiledTemplates compiledTemplates;

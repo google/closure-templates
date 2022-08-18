@@ -24,6 +24,7 @@ import static java.util.stream.Collectors.toList;
 
 import com.google.auto.value.AutoAnnotation;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.internal.Converters;
@@ -250,10 +251,18 @@ final class TemplateCompiler {
             .map(TemplateLiteralNode::getResolvedName)
             .collect(toImmutableSet());
 
-    Set<String> delCallees =
-        allNodesOfType(templateNode, CallDelegateNode.class)
-            .map(CallDelegateNode::getDelCalleeName)
-            .collect(toImmutableSet());
+    ImmutableSet<String> delCallees =
+        ImmutableSet.<String>builder()
+            .addAll(
+                allNodesOfType(templateNode, CallDelegateNode.class)
+                    .map(CallDelegateNode::getDelCalleeName)
+                    .collect(toImmutableSet()))
+            .addAll(
+                allNodesOfType(templateNode, TemplateLiteralNode.class)
+                    .filter(literal -> ((TemplateType) literal.getType()).isModifiable())
+                    .map(TemplateLiteralNode::getResolvedName)
+                    .collect(toImmutableSet()))
+            .build();
 
     TemplateMetadata.DelTemplateMetadata deltemplateMetadata;
     if (templateNode.getKind() == SoyNode.Kind.TEMPLATE_DELEGATE_NODE) {
