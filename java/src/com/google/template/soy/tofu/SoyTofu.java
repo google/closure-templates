@@ -168,7 +168,11 @@ public interface SoyTofu {
     Renderer setPluginInstances(Map<String, Supplier<Object>> pluginInstances);
 
     /** Sets the predicate to use for testing whether or not a given {@code mod} is active. */
+    // TODO(b/233903311): Update callers to setActiveModSelector() then delete this.
     Renderer setActiveDelegatePackageSelector(Predicate<String> activeDelegatePackageSelector);
+
+    /** Sets the predicate to use for testing whether or not a given {@code mod} is active. */
+    Renderer setActiveModSelector(Predicate<String> activeModSelector);
 
     /** Sets the bundle of translated messages, or null to use the messages from the Soy source. */
     Renderer setMsgBundle(SoyMsgBundle msgBundle);

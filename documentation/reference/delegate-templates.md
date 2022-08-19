@@ -120,20 +120,20 @@ JavaScript, an active implementation is simply an implementation that is defined
 in the JavaScript files that are loaded. Ship only the generated JavaScript
 files for the active `modname`s.
 
-In Java, use `SoySauce.Renderer#setActiveDelegatePackageSelector` to set the
-active implementations. For example, with the example template code above, call
+In Java, use `SoySauce.Renderer#setActiveModSelector` to set the active
+implementations. For example, with the example template code above, call
 
 ```java
 soySauce.newRenderer(...)
-    .setActiveDelegatePackageSelector("MyExperiment"::equals)
+    .setActiveModSelector("MyExperiment"::equals)
     .setData(...)
     .render()
 ```
 
 This will use the non-default implementation of `aaa.bbb.myButton` from the
 `MyExperiment` delegate package. On the other hand, if you omit the call to
-`setActiveDelegatePackageSelector()`, or if you pass a set not including
-`MyExperiment`, it will use the default implementation of `aaa.bbb.myButton`.
+`setActiveModSelector()`, or if you pass a set not including `MyExperiment`, it
+will use the default implementation of `aaa.bbb.myButton`.
 
 In either backend, it is an error to have more than one active implementation at
 the same priority (for example, multiple active non-default implementations).

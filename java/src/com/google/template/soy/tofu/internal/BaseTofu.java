@@ -494,9 +494,14 @@ public final class BaseTofu implements SoyTofu {
 
     @CanIgnoreReturnValue
     @Override
-    public RendererImpl setActiveDelegatePackageSelector(
-        Predicate<String> activeDelegatePackageNames) {
-      this.activeModNames = activeDelegatePackageNames;
+    public RendererImpl setActiveDelegatePackageSelector(Predicate<String> activeModNames) {
+      return setActiveModSelector(activeModNames);
+    }
+
+    @CanIgnoreReturnValue
+    @Override
+    public RendererImpl setActiveModSelector(Predicate<String> activeModNames) {
+      this.activeModNames = activeModNames;
       return this;
     }
 

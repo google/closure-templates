@@ -99,7 +99,7 @@ The algorithm for selecting the implementation to invoke is:
 When rendering from Java, the set of active mods is determined by setting
 
 ```java
-SoySauce.Renderer.setActiveDelegatePackageSelector(Predicate<String> predicate)
+SoySauce.Renderer.setActiveModSelector(Predicate<String> predicate)
 ```
 
 When deciding which template to invoke the predicate will be queried to see

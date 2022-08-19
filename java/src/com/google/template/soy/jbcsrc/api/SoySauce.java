@@ -148,9 +148,16 @@ public interface SoySauce {
     @CanIgnoreReturnValue
     Renderer setXidRenamingMap(SoyIdRenamingMap xidRenamingMap);
 
-    /** Sets the predicate to use for testing whether or not a given {@code modname} is active. */
+    // TODO(b/233903311): Update callers to setActiveModSelector() then delete this.
+    /**
+     * Sets the predicate to use for testing whether or not a given {@code modname} is active.
+     * Deprecated, use setActiveModSelector() instead!
+     */
     @CanIgnoreReturnValue
     Renderer setActiveDelegatePackageSelector(Predicate<String> active);
+
+    /** Sets the predicate to use for testing whether or not a given {@code modname} is active. */
+    Renderer setActiveModSelector(Predicate<String> active);
 
     /** Configures the bundle of translated messages to use. */
     @CanIgnoreReturnValue

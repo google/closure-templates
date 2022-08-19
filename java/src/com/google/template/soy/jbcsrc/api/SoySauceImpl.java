@@ -226,6 +226,12 @@ public final class SoySauceImpl implements SoySauce {
     @CanIgnoreReturnValue
     @Override
     public RendererImpl setActiveDelegatePackageSelector(Predicate<String> active) {
+      return setActiveModSelector(active);
+    }
+
+    @CanIgnoreReturnValue
+    @Override
+    public RendererImpl setActiveModSelector(Predicate<String> active) {
       contextBuilder.withActiveModSelector(checkNotNull(active));
       return this;
     }
