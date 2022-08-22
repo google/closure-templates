@@ -70,7 +70,7 @@ interface TemplateAcceptor<TDATA extends {}> {
  * Takes a custom element and attaches relevant fields to it necessary for
  * rendering.
  */
-function upgrade<X, T extends TemplateAcceptor<X>>(
+function upgrade<X extends {}, T extends TemplateAcceptor<X>>(
     acceptor: new () => T, template: IdomTemplate<X>, sync: IdomSyncState<X>,
     init: (this: T) => void) {
   acceptor.prototype.init = init;
