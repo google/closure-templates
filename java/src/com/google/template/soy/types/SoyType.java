@@ -120,7 +120,7 @@ public abstract class SoyType {
     TEMPLATE_MODULE,
     ;
 
-    private static final ImmutableSet<Kind> STRING_KINDS =
+    public static final ImmutableSet<Kind> STRING_KINDS =
         Sets.immutableEnumSet(
             Kind.STRING,
             Kind.HTML,
@@ -131,7 +131,7 @@ public abstract class SoyType {
             Kind.URI,
             Kind.TRUSTED_RESOURCE_URI);
 
-    private static final ImmutableSet<Kind> ILLEGAL_OPERAND_KINDS_PLUS_OP =
+    public static final ImmutableSet<Kind> ILLEGAL_OPERAND_KINDS_PLUS_OP =
         Sets.immutableEnumSet(Kind.LIST, Kind.LEGACY_OBJECT_MAP, Kind.MAP, Kind.RECORD);
 
     /** Returns true for SoyTypes that are plain strings or sanitized subtypes of strings. */

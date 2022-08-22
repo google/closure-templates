@@ -67,24 +67,21 @@ public final class SoyTypes {
   private static final ImmutableSet<SoyType.Kind> ALWAYS_COMPARABLE_KINDS =
       Sets.immutableEnumSet(SoyType.Kind.UNKNOWN, SoyType.Kind.ANY, SoyType.Kind.NULL);
 
-  private static final ImmutableSet<SoyType.Kind> NUMERIC_PRIMITIVES =
-      Sets.immutableEnumSet(SoyType.Kind.INT, SoyType.Kind.FLOAT, SoyType.Kind.PROTO_ENUM);
+  public static final ImmutableSet<SoyType.Kind> ARITHMETIC_PRIMITIVES =
+      Sets.immutableEnumSet(Kind.INT, Kind.FLOAT);
 
-  /** Returns true if it is always "safe" to compare the input type to another type. */
-  private static boolean isDefiniteComparable(SoyType type) {
-    return ALWAYS_COMPARABLE_KINDS.contains(type.getKind());
-  }
+  public static final ImmutableSet<SoyType.Kind> NUMERIC_PRIMITIVES =
+      new ImmutableSet.Builder<SoyType.Kind>()
+          .addAll(ARITHMETIC_PRIMITIVES)
+          .add(SoyType.Kind.PROTO_ENUM)
+          .build();
 
-  /**
-   * Returns true if the input type is a primitive type. This includes bool, int, float, string and
-   * all sanitized contents. Two special cases are proto enum and number: these are proto or
-   * aggregate type in Soy's type system, but they should really be treated as primitive types.
-   */
-  private static boolean isDefinitePrimitive(SoyType type) {
-    return type.getKind() == SoyType.Kind.BOOL
-        || isNumericPrimitive(type)
-        || type.getKind().isKnownStringOrSanitizedContent();
-  }
+  private static final ImmutableSet<SoyType.Kind> PRIMITIVE_KINDS =
+      new ImmutableSet.Builder<SoyType.Kind>()
+          .addAll(NUMERIC_PRIMITIVES)
+          .addAll(SoyType.Kind.STRING_KINDS)
+          .add(SoyType.Kind.BOOL)
+          .build();
 
   /**
    * Returns true if the input type is a numeric primitive type, such as int, float, proto enum, and
@@ -92,6 +89,24 @@ public final class SoyTypes {
    */
   public static boolean isNumericPrimitive(SoyType type) {
     return isKindOrUnionOfKinds(type, NUMERIC_PRIMITIVES);
+  }
+
+  public static boolean bothOfKind(SoyType left, SoyType right, SoyType.Kind kind) {
+    ImmutableSet<SoyType.Kind> kinds = ImmutableSet.of(kind);
+    return isKindOrUnionOfKinds(left, kinds) && isKindOrUnionOfKinds(right, kinds);
+  }
+
+  public static boolean bothOfKind(SoyType left, SoyType right, Set<SoyType.Kind> kinds) {
+    return isKindOrUnionOfKinds(left, kinds) && isKindOrUnionOfKinds(right, kinds);
+  }
+
+  public static boolean eitherOfKind(SoyType left, SoyType right, SoyType.Kind kind) {
+    ImmutableSet<SoyType.Kind> kinds = ImmutableSet.of(kind);
+    return isKindOrUnionOfKinds(left, kinds) || isKindOrUnionOfKinds(right, kinds);
+  }
+
+  public static boolean eitherOfKind(SoyType left, SoyType right, Set<SoyType.Kind> kinds) {
+    return isKindOrUnionOfKinds(left, kinds) || isKindOrUnionOfKinds(right, kinds);
   }
 
   public static SoyType removeNull(SoyType type) {
@@ -433,10 +448,10 @@ public final class SoyTypes {
     @Nullable
     public SoyType resolve(SoyType left, SoyType right) {
       SoyType boolType = BoolType.getInstance();
-      if (isDefiniteComparable(left) || isDefiniteComparable(right)) {
+      if (eitherOfKind(left, right, ALWAYS_COMPARABLE_KINDS)) {
         return boolType;
       }
-      if (isDefinitePrimitive(left) && isDefinitePrimitive(right)) {
+      if (bothOfKind(left, right, PRIMITIVE_KINDS)) {
         return boolType;
       }
       return left.equals(right) ? boolType : null;
@@ -474,14 +489,13 @@ public final class SoyTypes {
     @Nullable
     public SoyType resolve(SoyType left, SoyType right) {
       SoyType boolType = BoolType.getInstance();
-      if (isDefiniteComparable(left) || isDefiniteComparable(right)) {
+      if (eitherOfKind(left, right, ALWAYS_COMPARABLE_KINDS)) {
         return boolType;
       }
-      if (isNumericPrimitive(left) && isNumericPrimitive(right)) {
+      if (bothOfKind(left, right, NUMERIC_PRIMITIVES)) {
         return boolType;
       }
-      if (left.getKind().isKnownStringOrSanitizedContent()
-          && right.getKind().isKnownStringOrSanitizedContent()) {
+      if (bothOfKind(left, right, SoyType.Kind.STRING_KINDS)) {
         return boolType;
       }
       return null;
@@ -502,27 +516,17 @@ public final class SoyTypes {
    * </ul>
    */
   public static final class SoyTypePlusOperator implements SoyTypeBinaryOperator {
-    /**
-     * Returns true for SoyTypes that are not allowed to be operands of plus operators. Note that a
-     * plus operator can be an arithmetic operator or a string concat operator.
-     */
-    private boolean isIllegalOperandForPlusOps(SoyType type) {
-      return type.getKind().isIllegalOperandForBinaryOps()
-          && !type.getKind().isKnownStringOrSanitizedContent();
-    }
-
     @Override
     @Nullable
     public SoyType resolve(SoyType left, SoyType right) {
       Optional<SoyType> arithmeticType = SoyTypes.computeLowestCommonTypeArithmetic(left, right);
       if (arithmeticType.isPresent()) {
         return arithmeticType.get();
-      } else if (isIllegalOperandForPlusOps(left) || isIllegalOperandForPlusOps(right)) {
+      } else if (eitherOfKind(left, right, SoyType.Kind.ILLEGAL_OPERAND_KINDS_PLUS_OP)) {
         // If any of the types is not allowed to be operands (for example, list and map), we return
         // null here. Returning null indicates a compilation error.
         return null;
-      } else if (left.getKind().isKnownStringOrSanitizedContent()
-          || right.getKind().isKnownStringOrSanitizedContent()) {
+      } else if (eitherOfKind(left, right, SoyType.Kind.STRING_KINDS)) {
         // If any of these types can be coerced to string, returns string type. In this case plus
         // operation means string concat (instead of arithmetic operation).
         return StringType.getInstance();
