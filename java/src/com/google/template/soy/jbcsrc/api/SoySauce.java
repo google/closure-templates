@@ -157,6 +157,7 @@ public interface SoySauce {
     Renderer setActiveDelegatePackageSelector(Predicate<String> active);
 
     /** Sets the predicate to use for testing whether or not a given {@code modname} is active. */
+    @CanIgnoreReturnValue
     Renderer setActiveModSelector(Predicate<String> active);
 
     /** Configures the bundle of translated messages to use. */

@@ -19,6 +19,7 @@ package com.google.template.soy.tofu;
 import com.google.common.annotations.Beta;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableSortedSet;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyTemplate;
@@ -131,6 +132,7 @@ public interface SoyTofu {
   interface Renderer {
 
     /** Sets the data to call the template with. Can be null if the template has no parameters. */
+    @CanIgnoreReturnValue
     Renderer setData(Map<String, ?> data);
 
     /**
@@ -140,11 +142,14 @@ public interface SoyTofu {
      *     benefits over native Java maps.
      */
     @Deprecated
+    @CanIgnoreReturnValue
     Renderer setData(SoyRecord data);
 
     /** Sets the injected data to call the template with. Can be null if not used. */
+    @CanIgnoreReturnValue
     Renderer setIjData(Map<String, ?> ijData);
 
+    @CanIgnoreReturnValue
     default Renderer setIjData(SoyTemplateData ijData) {
       return setIjData(ijData.getParamsAsMap());
     }
@@ -156,6 +161,7 @@ public interface SoyTofu {
      *     no benefits over native Java maps.
      */
     @Deprecated
+    @CanIgnoreReturnValue
     Renderer setIjData(SoyRecord ijData);
 
     /**
@@ -165,25 +171,32 @@ public interface SoyTofu {
      * <p>Most plugin instances should be associated with the Tofu instance during construction, but
      * this method can be used to add more if that is not feasible or desireable.
      */
+    @CanIgnoreReturnValue
     Renderer setPluginInstances(Map<String, Supplier<Object>> pluginInstances);
 
     /** Sets the predicate to use for testing whether or not a given {@code mod} is active. */
     // TODO(b/233903311): Update callers to setActiveModSelector() then delete this.
+    @CanIgnoreReturnValue
     Renderer setActiveDelegatePackageSelector(Predicate<String> activeDelegatePackageSelector);
 
     /** Sets the predicate to use for testing whether or not a given {@code mod} is active. */
+    @CanIgnoreReturnValue
     Renderer setActiveModSelector(Predicate<String> activeModSelector);
 
     /** Sets the bundle of translated messages, or null to use the messages from the Soy source. */
+    @CanIgnoreReturnValue
     Renderer setMsgBundle(SoyMsgBundle msgBundle);
 
     /** Sets the ID renaming map. */
+    @CanIgnoreReturnValue
     Renderer setIdRenamingMap(SoyIdRenamingMap idRenamingMap);
 
     /** Sets the CSS renaming map. */
+    @CanIgnoreReturnValue
     Renderer setCssRenamingMap(SoyCssRenamingMap cssRenamingMap);
 
     /** Configures if we should render additional HTML comments for runtime inspection. */
+    @CanIgnoreReturnValue
     Renderer setDebugSoyTemplateInfo(boolean debugSoyTemplateInfo);
 
     /**
