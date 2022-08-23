@@ -38,6 +38,7 @@ import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.TemplateType.Parameter;
 import java.util.Collection;
 import java.util.List;
@@ -240,7 +241,12 @@ final class CheckDelegatesPass implements CompilerFileSetPass {
     if (collision == null) {
       return;
     }
-    if (collision.kind() == Kind.TEMPLATE
+    if ((collision.kind() == Kind.TEMPLATE
+            && collision.type() instanceof TemplateType
+            && ((TemplateType) collision.type()).isModifiable()
+            && ((TemplateType) collision.type())
+                .getLegacyDeltemplateNamespace()
+                .equals(delCalleeName))
         || (collision.kind() == Kind.IMPORT_VAR
             && collision.hasType()
             && collision.type().getKind() == SoyType.Kind.TEMPLATE_TYPE)) {
