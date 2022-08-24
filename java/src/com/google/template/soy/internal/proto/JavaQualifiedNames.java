@@ -177,11 +177,41 @@ public final class JavaQualifiedNames {
   public static String getFieldName(
       Descriptors.FieldDescriptor field, boolean capitalizeFirstLetter) {
     String fieldName = field.getName();
+    if (fieldConflict(field)) {
+      // If there is a conflict, add the field number to the end of the field name. The same is done
+      // in Proto Java at
+      fieldName = fieldName + field.getNumber();
+    }
     String javaName = underscoresToCamelCase(fieldName, capitalizeFirstLetter);
     if (specialCases.contains(javaName)) {
       return javaName + '_';
     }
     return javaName;
+  }
+
+  private static boolean fieldConflict(Descriptors.FieldDescriptor field) {
+    // Check for conditions where Proto Java detects field conflicts because it generates a method
+    // ending in "Count" for repeated fields. This logic is similar to the Proto Java Compiler at
+    Descriptor message = field.getContainingType();
+    if (field.isRepeated()) {
+      // If this field is repeated, Proto Java will generate a method ending with "Count". Check if
+      // this conflicts with a scalar field.
+      Descriptors.FieldDescriptor conflictField =
+          message.findFieldByName(field.getName() + "_count");
+      if (conflictField != null && !conflictField.isRepeated()) {
+        return true;
+      }
+    } else if (field.getName().endsWith("_count")) {
+      // Otherwise, if this field is a scalar but ends in "_count" see if there's a repeated field
+      // with the same name as this field (without "_count") because those would conflict.
+      Descriptors.FieldDescriptor conflictField =
+          message.findFieldByName(
+              field.getName().substring(0, field.getName().length() - "_count".length()));
+      if (conflictField != null && conflictField.isRepeated()) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /** Returns the class name for the enum descriptor (uses '$' inner class seperator). */

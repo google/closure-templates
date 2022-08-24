@@ -222,3 +222,12 @@ enum TopLevelEnum {
 message SameName {
   optional string name = 1;
 }
+
+message Collisions {
+  repeated int32 num = 1;
+
+  // In Java this collides with the getNumCount() method generated for the
+  // repeated num field so Proto Java adds the tag number to the end of both
+  // fields to disambiguate.
+  optional int32 num_count = 2;
+}
