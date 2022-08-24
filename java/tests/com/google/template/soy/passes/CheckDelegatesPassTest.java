@@ -305,17 +305,6 @@ public final class CheckDelegatesPassTest {
         .isEqualTo("'delcall' to basic template defined at '2:9-2:11' (expected 'call').");
   }
 
-  @Test
-  public void testErrorDelegateCallToModifiableTemplate() {
-    ErrorReporter errorReporter = ErrorReporter.createForTest();
-    String soyFile =
-        "{namespace ns1}"
-            + "{template foo modifiable=\"true\" legacydeltemplatenamespace=\"foo\"}{/template}"
-            + "{template boo}{delcall foo /}{/template}";
-    SoyFileSetParserBuilder.forFileContents(soyFile).errorReporter(errorReporter).parse();
-    assertThat(errorReporter.getErrors()).isEmpty();
-  }
-
   private void assertValidSoyFiles(String... soyFileContents) {
     SoyFileSetParserBuilder.forFileContents(soyFileContents).parse();
   }
