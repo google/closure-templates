@@ -32,6 +32,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 /**
  * Marker class for a chunk of code that represents a value.
@@ -54,6 +55,36 @@ public abstract class Expression extends CodeChunk {
   public static final Expression LITERAL_EMPTY_LIST = arrayLiteral(ImmutableList.of());
   public static final Expression EMPTY_OBJECT_LITERAL = objectLiteral(ImmutableMap.of());
   public static final Expression THIS = id("this");
+  /** Exploding error expr. This will blow up if used to write gencode. */
+  public static final Expression ERROR_EXPR =
+      new Expression() {
+        @Override
+        void doFormatOutputExpr(FormattingContext ctx) {
+          throw new IllegalStateException(
+              "ERROR_EXPR should never be used to write gencode! This soy file had a problem, and"
+                  + " the resulting js/ts will be invalid.");
+        }
+
+        @Override
+        void doFormatInitialStatements(FormattingContext ctx) {
+          throw new IllegalStateException(
+              "ERROR_EXPR should never be used to write gencode! This soy file had a problem, and"
+                  + " the resulting js/ts will be invalid.");
+        }
+
+        @Override
+        public void collectRequires(Consumer<GoogRequire> collector) {}
+
+        @Override
+        public ImmutableList<Statement> initialStatements() {
+          return ImmutableList.of();
+        }
+
+        @Override
+        public JsExpr singleExprOrName() {
+          return new JsExpr("$$SOY_INTERNAL_ERROR_EXPR", Integer.MAX_VALUE);
+        }
+      };
 
   // Do not put public static constants or methods on this class.  If you do then this can trigger
   // classloading deadlocks due to cyclic references between this class, CodeChunk and the
@@ -61,6 +92,32 @@ public abstract class Expression extends CodeChunk {
 
   Expression() {
     /* no subclasses outside this package */
+  }
+
+  /**
+   * Gets code to write an expression inline (i.e. without a semicolon). If the expression has any
+   * initial statements, it will be wrapped in a lambda.
+   */
+  public String getCodeForInlineExpr(int startingIndent) {
+    FormattingContext outputExpr = new FormattingContext(startingIndent);
+    outputExpr.appendOutputExpression(this);
+
+    // If there were no initial statements, just return the expr string.
+    if (initialStatements().isEmpty()) {
+      return outputExpr.toString();
+    }
+
+    // Otherwise wrap in a lambda expression so we can include the initial statements (e.g. () -> {
+    // x = 5; return x + 1;}).
+    // TODO(user): Test this and adjust formatting once soy2tsx supports exprs that have initial
+    // statements.
+    FormattingContext lambda = new FormattingContext(startingIndent).append("() -> {").endLine();
+    lambda.appendInitialStatements(this);
+    lambda.append("return ");
+    doFormatOutputExpr(lambda);
+    lambda.append(";").endLine();
+    lambda.append("}");
+    return lambda.toString();
   }
 
   /** Starts a conditional expression beginning with the given predicate and consequent chunks. */

@@ -41,6 +41,11 @@ public abstract class TemplateLiteral extends Expression {
    */
   abstract ImmutableList<Expression> interpolatedParts();
 
+  /** Creates a TemplateLiteral for a single interpolated expr. */
+  public static TemplateLiteral create(Expression inerpolatedPart) {
+    return create(ImmutableList.of("", ""), ImmutableList.of(inerpolatedPart));
+  }
+
   public static TemplateLiteral create(
       ImmutableList<String> stringParts, ImmutableList<Expression> interpolatedParts) {
     int numStrings = stringParts.size();
