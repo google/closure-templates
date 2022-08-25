@@ -16,6 +16,7 @@
 
 package com.google.template.soy.passes;
 
+import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
 
 import com.google.common.collect.ImmutableList;
@@ -38,7 +39,6 @@ import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.TemplateType.Parameter;
 import java.util.Collection;
 import java.util.List;
@@ -74,6 +74,14 @@ final class CheckDelegatesPass implements CompilerFileSetPass {
       SoyErrorKind.of(
           "Found delegate template with same name ''{0}'' but different strict html mode "
               + "compared to the definition at {1}.");
+  private static final SoyErrorKind CANNOT_DELCALL_WITHOUT_LEGACY_NAMESPACE =
+      SoyErrorKind.of(
+          "Modifiable templates must have legacydeltemplatenamespace set to be used with"
+              + " `delcall`.");
+  private static final SoyErrorKind CANNOT_DELTEMPLATE_WITHOUT_LEGACY_NAMESPACE =
+      SoyErrorKind.of(
+          "Modifiable templates must have legacydeltemplatenamespace set to be used with"
+              + " `deltemplate`.");
 
   private final ErrorReporter errorReporter;
   private final Supplier<FileSetMetadata> templateRegistryFull;
@@ -100,7 +108,8 @@ final class CheckDelegatesPass implements CompilerFileSetPass {
         }
         for (CallDelegateNode callNode :
             SoyTreeUtils.getAllNodesOfType(template, CallDelegateNode.class)) {
-          checkCallDelegateNode(callNode, localVariables);
+          checkCallDelegateNode(
+              callNode, localVariables, templateRegistryFull.get().getDelTemplateSelector());
         }
       }
     }
@@ -189,6 +198,17 @@ final class CheckDelegatesPass implements CompilerFileSetPass {
               delTemplate.getSourceLocation().toString());
         }
       }
+      TemplateMetadata defaultTemplate = getDefault(delTemplateGroup);
+      if (defaultTemplate != null
+          && defaultTemplate.getTemplateType().isModifiable()
+          && defaultTemplate.getTemplateType().getLegacyDeltemplateNamespace().isEmpty()) {
+        for (TemplateMetadata template : delTemplateGroup) {
+          if (template != defaultTemplate && !template.getTemplateType().isModifying()) {
+            errorReporter.report(
+                template.getSourceLocation(), CANNOT_DELTEMPLATE_WITHOUT_LEGACY_NAMESPACE);
+          }
+        }
+      }
     }
   }
 
@@ -235,18 +255,34 @@ final class CheckDelegatesPass implements CompilerFileSetPass {
     }
   }
 
-  private void checkCallDelegateNode(CallDelegateNode node, LocalVariables localVariables) {
+  @Nullable
+  private TemplateMetadata getDefault(Iterable<TemplateMetadata> templates) {
+    for (TemplateMetadata callee : templates) {
+      if (callee.getModName() == null && isNullOrEmpty(callee.getDelTemplateVariant())) {
+        return callee;
+      }
+    }
+    return null;
+  }
+
+  private void checkCallDelegateNode(
+      CallDelegateNode node,
+      LocalVariables localVariables,
+      DelTemplateSelector<TemplateMetadata> fileSetDelTemplateSelector) {
     String delCalleeName = node.getDelCalleeName();
+    TemplateMetadata defaultTemplate =
+        getDefault(fileSetDelTemplateSelector.delTemplateNameToValues().get(delCalleeName));
+    if (defaultTemplate != null && defaultTemplate.getTemplateType().isModifiable()) {
+      if (defaultTemplate.getTemplateType().getLegacyDeltemplateNamespace().equals(delCalleeName)) {
+        return;
+      }
+      errorReporter.report(node.getSourceLocation(), CANNOT_DELCALL_WITHOUT_LEGACY_NAMESPACE);
+    }
     VarDefn collision = localVariables.lookup(delCalleeName);
     if (collision == null) {
       return;
     }
-    if ((collision.kind() == Kind.TEMPLATE
-            && collision.type() instanceof TemplateType
-            && ((TemplateType) collision.type()).isModifiable()
-            && ((TemplateType) collision.type())
-                .getLegacyDeltemplateNamespace()
-                .equals(delCalleeName))
+    if (collision.kind() == Kind.TEMPLATE
         || (collision.kind() == Kind.IMPORT_VAR
             && collision.hasType()
             && collision.type().getKind() == SoyType.Kind.TEMPLATE_TYPE)) {
