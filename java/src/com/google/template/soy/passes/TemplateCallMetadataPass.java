@@ -48,12 +48,14 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.LocalVarNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
+import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.templatecall.TemplateCallMetadata;
 import com.google.template.soy.templatecall.TemplateCallMetadata.TemplateCall;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.TemplateImportType;
+import com.google.template.soy.types.TemplateType;
 import java.util.List;
 import java.util.Optional;
 
@@ -89,7 +91,7 @@ public final class TemplateCallMetadataPass implements CompilerFileSetPass {
 
         template.addTemplateCallMetadata(
             TemplateCallMetadata.Template.newBuilder()
-                .setName(template.getTemplateName())
+                .setName(getTemplateName(template))
                 .setModname(nullToEmpty(template.getModName()))
                 .addAllCalls(
                     SoyTreeUtils.getAllNodesOfType(template, CallNode.class).stream()
@@ -100,6 +102,19 @@ public final class TemplateCallMetadataPass implements CompilerFileSetPass {
       }
     }
     return Result.CONTINUE;
+  }
+
+  private String getTemplateName(TemplateNode template) {
+    if (!(template instanceof TemplateBasicNode)) {
+      return template.getTemplateName();
+    }
+    TemplateBasicNode basicNode = (TemplateBasicNode) template;
+    if (basicNode.getModifiesExpr() != null
+        && basicNode.getModifiesExpr().getRoot() instanceof TemplateLiteralNode) {
+      TemplateLiteralNode literal = (TemplateLiteralNode) basicNode.getModifiesExpr().getRoot();
+      return literal.getResolvedName();
+    }
+    return template.getTemplateName();
   }
 
   /**
@@ -170,6 +185,7 @@ public final class TemplateCallMetadataPass implements CompilerFileSetPass {
         TemplateCallMetadata.TemplateCall.newBuilder()
             .setDestTemplateName(getDestTemplateName(templateCallNode))
             .setIsDelcall(templateCallNode.getKind() == SoyNode.Kind.CALL_DELEGATE_NODE)
+            .setIsModifiableCall(isModifiableCall(templateCallNode))
             .addAllParamArgs(callParamArgs);
     if (templateCallNode.isPassingAllData()) {
       templateCallMetaData.setIsPassingAllData(true);
@@ -180,6 +196,17 @@ public final class TemplateCallMetadataPass implements CompilerFileSetPass {
               TemplateCallMetadata.VarRefInfo.newBuilder()));
     }
     return templateCallMetaData.build();
+  }
+
+  private static boolean isModifiableCall(CallNode call) {
+    if (!(call instanceof CallBasicNode)) {
+      return false;
+    }
+    CallBasicNode callBasicNode = (CallBasicNode) call;
+    if (!(callBasicNode.getCalleeExpr().getRoot().getType() instanceof TemplateType)) {
+      return false;
+    }
+    return ((TemplateType) callBasicNode.getCalleeExpr().getRoot().getType()).isModifiable();
   }
 
   /**

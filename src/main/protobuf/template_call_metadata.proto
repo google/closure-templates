@@ -43,6 +43,9 @@ message TemplateCallMetadata {
     // True if this is a delcall (the name lookup behaves differently)
     bool is_delcall = 5;
 
+    // True if this is a call to a modifiable template.
+    bool is_modifiable_call = 8;
+
     // Populated if the template call was derived from a local variable
     // that is equal to a template parameter with some parameters bound
     string source_param = 6;
