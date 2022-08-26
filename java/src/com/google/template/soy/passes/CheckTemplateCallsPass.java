@@ -713,8 +713,7 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
       }
       if (calleeType.getUseVariantType().equals(NullType.getInstance())) {
         errorReporter.report(node.getSourceLocation(), NO_USEVARIANTTYPE);
-      } else if (!calleeType
-          .getUseVariantType()
+      } else if (!UnionType.of(calleeType.getUseVariantType(), NullType.getInstance())
           .isAssignableFromStrict(node.getVariantExpr().getType())) {
         errorReporter.report(
             node.getVariantExpr().getSourceLocation(),
