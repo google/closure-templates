@@ -1442,10 +1442,6 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         }
         builder.add(value);
       }
-      if (!explicit.isEmpty()) {
-        // sanity check
-        throw new AssertionError("failed to use: " + explicit);
-      }
       return Optional.of(
           ListOfExpressionsAndInitializer.create(
               builder.build(), Statement.concat(initStatements)));

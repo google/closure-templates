@@ -223,8 +223,6 @@ public class GenCallCodeUtils {
         params.add(explicitParam);
       }
     }
-    checkState(
-        explicitParams.isEmpty(), "Expected all params to be consumed, %s remain", explicitParams);
     // rather than foo(x,y, undefined, undefined) we should generate foo(x,y)
     if (numTrailingUndefineds > 0) {
       params = params.subList(0, params.size() - numTrailingUndefineds);
