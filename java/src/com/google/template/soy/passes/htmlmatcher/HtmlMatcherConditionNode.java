@@ -75,8 +75,8 @@ public final class HtmlMatcherConditionNode extends HtmlMatcherGraphNode {
         new HtmlTagMatchingPass(
             errorReporter,
             idGenerator,
-            /** inCondition */
-            true,
+
+            /* inCondition= */ true,
             foreignContentTagDepth,
             "condition");
     if (foreignContentTagDepth > 0) {
