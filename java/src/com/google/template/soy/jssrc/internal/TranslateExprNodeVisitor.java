@@ -91,8 +91,10 @@ import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.EqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.NotStrictEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.StrictEqualOpNode;
 import com.google.template.soy.exprtree.ProtoEnumValueNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
@@ -779,28 +781,17 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
           SoyType.Kind.INT, SoyType.Kind.FLOAT, SoyType.Kind.PROTO_ENUM, Kind.BOOL, Kind.STRING);
 
   private Expression visitEqualNodeHelper(OperatorNode node, Operator eq) {
-    boolean needsSoyEquals = false;
-    boolean neverSoyEquals = false;
+    SoyType left = node.getChild(0).getType();
+    SoyType right = node.getChild(1).getType();
 
-    for (ExprNode c : node.getChildren()) {
-      SoyType type = c.getType();
-      if (type.getKind() == SoyType.Kind.NULL) {
-        // If either operand is null always use ===.
-        neverSoyEquals = true;
-      } else if (!SoyTypes.isKindOrUnionOfKinds(type, CAN_USE_EQUALS)) {
-        // If either operand is not a JS primitive (number, string, bool) then use soy.$$equals.
-        needsSoyEquals = true;
-      }
+    if (SoyTypes.eitherOfKind(left, right, Kind.NULL)
+        || SoyTypes.bothOfKind(left, right, CAN_USE_EQUALS)) {
+      return operation(eq, visitChildren(node));
     }
 
-    Expression rv;
-    if (needsSoyEquals && !neverSoyEquals) {
-      rv = SOY_EQUALS.call(visitChildren(node));
-      if (eq == Operator.NOT_EQUAL) {
-        rv = not(rv);
-      }
-    } else {
-      rv = operation(eq, visitChildren(node));
+    Expression rv = SOY_EQUALS.call(visitChildren(node));
+    if (eq == Operator.NOT_EQUAL) {
+      rv = not(rv);
     }
     return rv;
   }
@@ -813,6 +804,16 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
   @Override
   protected Expression visitNotEqualOpNode(NotEqualOpNode node) {
     return visitEqualNodeHelper(node, Operator.NOT_EQUAL);
+  }
+
+  @Override
+  protected Expression visitStrictEqualOpNode(StrictEqualOpNode node) {
+    return operation(node.getOperator(), visitChildren(node));
+  }
+
+  @Override
+  protected Expression visitNotStrictEqualOpNode(NotStrictEqualOpNode node) {
+    return operation(node.getOperator(), visitChildren(node));
   }
 
   @Override

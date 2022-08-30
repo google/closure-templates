@@ -64,7 +64,7 @@ public final class SoyTypes {
               SanitizedType.TrustedResourceUriType.getInstance())
           .build();
 
-  private static final ImmutableSet<SoyType.Kind> ALWAYS_COMPARABLE_KINDS =
+  public static final ImmutableSet<SoyType.Kind> ALWAYS_COMPARABLE_KINDS =
       Sets.immutableEnumSet(SoyType.Kind.UNKNOWN, SoyType.Kind.ANY, SoyType.Kind.NULL);
 
   public static final ImmutableSet<SoyType.Kind> ARITHMETIC_PRIMITIVES =
@@ -452,6 +452,33 @@ public final class SoyTypes {
         return boolType;
       }
       if (bothOfKind(left, right, PRIMITIVE_KINDS)) {
+        return boolType;
+      }
+      return left.equals(right) ? boolType : null;
+    }
+  }
+
+  /**
+   * Type resolver for strict equal (===) and not strict equal (!==) operators. The resolver returns
+   * null if two {@code SoyType} instances are not comparable, otherwise always return {@code
+   * BoolType}.
+   *
+   * <p>In particular,
+   *
+   * <ul>
+   *   <li>Comparing anything with UNKNOWN, ANY, and NULL is legitimate.
+   *   <li>All other comparisons should have exactly the same types on both sides. Coercing is
+   *       unsafe, especially in JS backend. An example is a jspb message that contains a single
+   *       enum. Assuming that the enum is 1, the representation in JS is {@code [1]}, and this is
+   *       equivalent to a number.
+   * </ul>
+   */
+  public static final class SoyTypeStrictEqualComparisonOp implements SoyTypeBinaryOperator {
+    @Override
+    @Nullable
+    public SoyType resolve(SoyType left, SoyType right) {
+      SoyType boolType = BoolType.getInstance();
+      if (eitherOfKind(left, right, ALWAYS_COMPARABLE_KINDS)) {
         return boolType;
       }
       return left.equals(right) ? boolType : null;

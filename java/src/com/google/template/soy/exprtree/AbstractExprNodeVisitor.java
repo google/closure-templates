@@ -38,11 +38,13 @@ import com.google.template.soy.exprtree.OperatorNodes.ModOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NegativeOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.NotStrictEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ShiftLeftOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ShiftRightOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.StrictEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
 
 /**
@@ -176,6 +178,12 @@ public abstract class AbstractExprNodeVisitor<R> extends AbstractNodeVisitor<Exp
         break;
       case NOT_EQUAL_OP_NODE:
         visitNotEqualOpNode((NotEqualOpNode) node);
+        break;
+      case STRICT_EQUAL_OP_NODE:
+        visitStrictEqualOpNode((StrictEqualOpNode) node);
+        break;
+      case NOT_STRICT_EQUAL_OP_NODE:
+        visitNotStrictEqualOpNode((NotStrictEqualOpNode) node);
         break;
       case AND_OP_NODE:
         visitAndOpNode((AndOpNode) node);
@@ -401,6 +409,14 @@ public abstract class AbstractExprNodeVisitor<R> extends AbstractNodeVisitor<Exp
   }
 
   protected void visitNotEqualOpNode(NotEqualOpNode node) {
+    visitOperatorNode(node);
+  }
+
+  protected void visitStrictEqualOpNode(StrictEqualOpNode node) {
+    visitOperatorNode(node);
+  }
+
+  protected void visitNotStrictEqualOpNode(NotStrictEqualOpNode node) {
     visitOperatorNode(node);
   }
 

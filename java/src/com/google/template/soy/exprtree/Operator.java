@@ -46,11 +46,13 @@ import com.google.template.soy.exprtree.OperatorNodes.ModOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NegativeOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.NotStrictEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ShiftLeftOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ShiftRightOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.StrictEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
 import java.util.List;
 import javax.annotation.Nullable;
@@ -164,6 +166,18 @@ public enum Operator {
     @Override
     public OperatorNode createNode(SourceLocation location, SourceLocation operatorLocation) {
       return new NotEqualOpNode(location, operatorLocation);
+    }
+  },
+  STRICT_EQUAL(ImmutableList.of(OPERAND_0, SP, new Token("==="), SP, OPERAND_1), 7, LEFT) {
+    @Override
+    public OperatorNode createNode(SourceLocation location, SourceLocation operatorLocation) {
+      return new StrictEqualOpNode(location, operatorLocation);
+    }
+  },
+  NOT_STRICT_EQUAL(ImmutableList.of(OPERAND_0, SP, new Token("!=="), SP, OPERAND_1), 7, LEFT) {
+    @Override
+    public OperatorNode createNode(SourceLocation location, SourceLocation operatorLocation) {
+      return new NotStrictEqualOpNode(location, operatorLocation);
     }
   },
 

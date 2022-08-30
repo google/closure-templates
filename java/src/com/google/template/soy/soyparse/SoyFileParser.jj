@@ -415,7 +415,7 @@ import javax.annotation.Nullable;
  *       + Precedence 7:   *   /   %
  *       + Precedence 6:   +   - (binary)
  *       + Precedence 5:   <   >   <=   >=
- *       + Precedence 4:   ==   !=
+ *       + Precedence 4:   ==   !=   ===   !==
  *       + Precedence 3:   and
  *       + Precedence 2:   or
  *       + Precedence 1:   ?: (binary)   ? : (ternary)
@@ -1362,6 +1362,8 @@ TOKEN_MGR_DECLS: {
 | < BITWISE_AND: "&" >    // Precedence 6 operators
 | < DOUBLE_EQ: "==">      // Precedence 7 operators
 | < NOT_EQ: "!=" >
+| < STRICT_EQ: "===">
+| < NOT_STRICT_EQ: "!==">
 | < LANGLE: "<" >         // Precedence 8 operators
 | < RANGLE: ">" >
 | < LT_EQ: "<=" >
@@ -4229,6 +4231,10 @@ private ExprNode PrecExpr7(ExprState state) :
       op = <DOUBLE_EQ>
     |
       op = <NOT_EQ>
+    |
+      op = <STRICT_EQ>
+    |
+      op = <NOT_STRICT_EQ>
     )
     rightHand = PrecExpr8(state)
 

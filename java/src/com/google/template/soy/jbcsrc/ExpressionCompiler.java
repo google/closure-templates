@@ -77,11 +77,13 @@ import com.google.template.soy.exprtree.OperatorNodes.ModOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NegativeOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.NotStrictEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ShiftLeftOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ShiftRightOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.StrictEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
 import com.google.template.soy.exprtree.ProtoEnumValueNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
@@ -631,8 +633,7 @@ final class ExpressionCompiler {
 
     // Comparison operators
 
-    @Override
-    protected SoyExpression visitEqualOpNode(EqualOpNode node) {
+    private SoyExpression equalOpNodeHelper(Exprnode node) {
       if (node.getChild(0).getKind() == ExprNode.Kind.NULL_NODE) {
         return SoyExpression.forBool(BytecodeUtils.isNull(visit(node.getChild(1))));
       }
@@ -643,8 +644,7 @@ final class ExpressionCompiler {
           BytecodeUtils.compareSoyEquals(visit(node.getChild(0)), visit(node.getChild(1))));
     }
 
-    @Override
-    protected SoyExpression visitNotEqualOpNode(NotEqualOpNode node) {
+    private SoyExpression notEqualOpNodeHelper(Exprnode node) {
       if (node.getChild(0).getKind() == ExprNode.Kind.NULL_NODE) {
         return SoyExpression.forBool(BytecodeUtils.isNonNull(visit(node.getChild(1))));
       }
@@ -654,6 +654,26 @@ final class ExpressionCompiler {
       return SoyExpression.forBool(
           logicalNot(
               BytecodeUtils.compareSoyEquals(visit(node.getChild(0)), visit(node.getChild(1)))));
+    }
+
+    @Override
+    protected SoyExpression visitEqualOpNode(EqualOpNode node) {
+      return equalOpNodeHelper(node);
+    }
+
+    @Override
+    protected SoyExpression visitNotEqualOpNode(NotEqualOpNode node) {
+      return notEqualOpNodeHelper(node);
+    }
+
+    @Override
+    protected SoyExpression visitStrictEqualOpNode(StrictEqualOpNode node) {
+      return equalOpNodeHelper(node);
+    }
+
+    @Override
+    protected SoyExpression visitNotStrictEqualOpNode(NotStrictEqualOpNode node) {
+      return notEqualOpNodeHelper(node);
     }
 
     // binary comparison operators.  N.B. it is ok to coerce 'number' values to floats because that

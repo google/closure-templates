@@ -108,11 +108,13 @@ import com.google.template.soy.exprtree.OperatorNodes.ModOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NegativeOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.NotStrictEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ShiftLeftOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ShiftRightOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.StrictEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
@@ -1668,6 +1670,16 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
     }
 
     @Override
+    protected void visitStrictEqualOpNode(StrictEqualOpNode node) {
+      visitStrictEqualComparisonOpNode(node);
+    }
+
+    @Override
+    protected void visitNotStrictEqualOpNode(NotStrictEqualOpNode node) {
+      visitStrictEqualComparisonOpNode(node);
+    }
+
+    @Override
     protected void visitAndOpNode(AndOpNode node) {
       visit(node.getChild(0)); // Assign normal types to left child
 
@@ -2256,6 +2268,19 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
       SoyType result =
           SoyTypes.getSoyTypeForBinaryOperator(
               left, right, new SoyTypes.SoyTypeEqualComparisonOp());
+      if (result == null) {
+        errorReporter.report(node.getOperatorLocation(), TYPE_MISMATCH, left, right);
+      }
+      node.setType(BoolType.getInstance());
+    }
+
+    private void visitStrictEqualComparisonOpNode(AbstractOperatorNode node) {
+      visitChildren(node);
+      SoyType left = node.getChild(0).getType();
+      SoyType right = node.getChild(1).getType();
+      SoyType result =
+          SoyTypes.getSoyTypeForBinaryOperator(
+              left, right, new SoyTypes.SoyTypeStrictEqualComparisonOp());
       if (result == null) {
         errorReporter.report(node.getOperatorLocation(), TYPE_MISMATCH, left, right);
       }
@@ -2961,6 +2986,44 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
 
     @Override
     protected void visitNotEqualOpNode(NotEqualOpNode node) {
+      if (node.getChild(1).getKind() == ExprNode.Kind.NULL_NODE) {
+        ExprEquivalence.Wrapper wrappedExpr = exprEquivalence.wrap(node.getChild(0));
+        positiveTypeConstraints.put(
+            wrappedExpr, SoyTypes.tryRemoveNull(wrappedExpr.get().getType()));
+        negativeTypeConstraints.put(wrappedExpr, NullType.getInstance());
+      } else if (node.getChild(0).getKind() == ExprNode.Kind.NULL_NODE) {
+        ExprEquivalence.Wrapper wrappedExpr = exprEquivalence.wrap(node.getChild(1));
+        positiveTypeConstraints.put(
+            wrappedExpr, SoyTypes.tryRemoveNull(wrappedExpr.get().getType()));
+        negativeTypeConstraints.put(wrappedExpr, NullType.getInstance());
+      }
+      // Otherwise don't make any inferences (don't visit children).
+    }
+
+    @Override
+    protected void visitStrictEqualOpNode(StrictEqualOpNode node) {
+      ExprNode left = node.getChild(0);
+      ExprNode right = node.getChild(1);
+
+      if (SoyTypes.isKindOrUnionOfKinds(right.getType(), SoyTypes.ALWAYS_COMPARABLE_KINDS)) {
+        ExprEquivalence.Wrapper wrappedRight = exprEquivalence.wrap(right);
+        positiveTypeConstraints.put(wrappedRight, left.getType());
+        if (left.getKind() == ExprNode.Kind.NULL_NODE) {
+          negativeTypeConstraints.put(
+              wrappedRight, SoyTypes.tryRemoveNull(wrappedRight.get().getType()));
+        }
+      } else if (SoyTypes.isKindOrUnionOfKinds(left.getType(), SoyTypes.ALWAYS_COMPARABLE_KINDS)) {
+        ExprEquivalence.Wrapper wrappedLeft = exprEquivalence.wrap(left);
+        positiveTypeConstraints.put(wrappedLeft, right.getType());
+        if (right.getKind() == ExprNode.Kind.NULL_NODE) {
+          negativeTypeConstraints.put(
+              wrappedLeft, SoyTypes.tryRemoveNull(wrappedLeft.get().getType()));
+        }
+      }
+    }
+
+    @Override
+    protected void visitNotStrictEqualOpNode(NotStrictEqualOpNode node) {
       if (node.getChild(1).getKind() == ExprNode.Kind.NULL_NODE) {
         ExprEquivalence.Wrapper wrappedExpr = exprEquivalence.wrap(node.getChild(0));
         positiveTypeConstraints.put(

@@ -42,7 +42,7 @@ import com.google.template.soy.error.SoyErrors;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.NullNode;
-import com.google.template.soy.exprtree.OperatorNodes.NotEqualOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.NotStrictEqualOpNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
@@ -156,7 +156,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
 
   private static ExprNode buildNotNull(ExprNode node) {
     SourceLocation unknown = node.getSourceLocation().clearRange();
-    NotEqualOpNode ne = new NotEqualOpNode(unknown, unknown);
+    NotStrictEqualOpNode ne = new NotStrictEqualOpNode(unknown, unknown);
     ne.addChild(node.copy(new CopyState()));
     ne.addChild(new NullNode(unknown));
     ne.setType(BoolType.getInstance());

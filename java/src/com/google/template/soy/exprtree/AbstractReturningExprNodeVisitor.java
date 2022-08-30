@@ -38,11 +38,13 @@ import com.google.template.soy.exprtree.OperatorNodes.ModOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NegativeOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.NotStrictEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ShiftLeftOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ShiftRightOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.StrictEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
 import java.util.List;
 
@@ -58,13 +60,13 @@ import java.util.List;
  * <p>To create a visitor:
  *
  * <ol>
- *   <li> Subclass this class.
- *   <li> Implement {@code visit*Node()} methods for some specific node types.
- *   <li> Implement fallback methods for node types not specifically handled. The most general
+ *   <li>Subclass this class.
+ *   <li>Implement {@code visit*Node()} methods for some specific node types.
+ *   <li>Implement fallback methods for node types not specifically handled. The most general
  *       fallback method is {@link #visitExprNode visitExprNode()}, which is usually needed. Other
  *       fallback methods include {@code visitPrimitiveNode()} and {@code visitOperatorNode()}.
- *   <li> Maybe implement a constructor, taking appropriate parameters for your visitor call.
- *   <li> Maybe implement {@link #exec exec()} if this visitor needs to return a non-null final
+ *   <li>Maybe implement a constructor, taking appropriate parameters for your visitor call.
+ *   <li>Maybe implement {@link #exec exec()} if this visitor needs to return a non-null final
  *       result and/or if this visitor has state that needs to be setup/reset before each unrelated
  *       use of {@code visit()}.
  * </ol>
@@ -151,6 +153,10 @@ public abstract class AbstractReturningExprNodeVisitor<R>
         return visitEqualOpNode((EqualOpNode) node);
       case NOT_EQUAL_OP_NODE:
         return visitNotEqualOpNode((NotEqualOpNode) node);
+      case STRICT_EQUAL_OP_NODE:
+        return visitStrictEqualOpNode((StrictEqualOpNode) node);
+      case NOT_STRICT_EQUAL_OP_NODE:
+        return visitNotStrictEqualOpNode((NotStrictEqualOpNode) node);
       case AND_OP_NODE:
         return visitAndOpNode((AndOpNode) node);
       case OR_OP_NODE:
@@ -346,6 +352,14 @@ public abstract class AbstractReturningExprNodeVisitor<R>
   }
 
   protected R visitNotEqualOpNode(NotEqualOpNode node) {
+    return visitOperatorNode(node);
+  }
+
+  protected R visitStrictEqualOpNode(StrictEqualOpNode node) {
+    return visitOperatorNode(node);
+  }
+
+  protected R visitNotStrictEqualOpNode(NotStrictEqualOpNode node) {
     return visitOperatorNode(node);
   }
 

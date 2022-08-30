@@ -49,8 +49,10 @@ import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.EqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotEqualOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.NotStrictEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.StrictEqualOpNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
@@ -504,6 +506,35 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
 
   @Override
   protected PyExpr visitNotEqualOpNode(NotEqualOpNode node) {
+    // Invert type_safe_eq.
+    List<PyExpr> operandPyExprs = visitChildren(node);
+
+    return new PyExpr(
+        "not runtime.type_safe_eq("
+            + operandPyExprs.get(0).getText()
+            + ", "
+            + operandPyExprs.get(1).getText()
+            + ")",
+        PyExprUtils.pyPrecedenceForOperator(Operator.NOT));
+  }
+
+  @Override
+  protected PyExpr visitStrictEqualOpNode(StrictEqualOpNode node) {
+    // Python has stricter type casting rules during equality comparison. To get around this we
+    // use our custom utility to emulate the behavior of Soy/JS.
+    List<PyExpr> operandPyExprs = visitChildren(node);
+
+    return new PyExpr(
+        "runtime.type_safe_eq("
+            + operandPyExprs.get(0).getText()
+            + ", "
+            + operandPyExprs.get(1).getText()
+            + ")",
+        Integer.MAX_VALUE);
+  }
+
+  @Override
+  protected PyExpr visitNotStrictEqualOpNode(NotStrictEqualOpNode node) {
     // Invert type_safe_eq.
     List<PyExpr> operandPyExprs = visitChildren(node);
 

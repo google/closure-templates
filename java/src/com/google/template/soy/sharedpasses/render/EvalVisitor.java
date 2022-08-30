@@ -104,11 +104,13 @@ import com.google.template.soy.exprtree.OperatorNodes.ModOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NegativeOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.NotStrictEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ShiftLeftOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ShiftRightOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.StrictEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
 import com.google.template.soy.exprtree.ProtoEnumValueNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
@@ -766,12 +768,21 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
 
   @Override
   protected SoyValue visitEqualOpNode(EqualOpNode node) {
-
     return convertResult(equal(visit(node.getChild(0)), visit(node.getChild(1))));
   }
 
   @Override
   protected SoyValue visitNotEqualOpNode(NotEqualOpNode node) {
+    return convertResult(!equal(visit(node.getChild(0)), visit(node.getChild(1))));
+  }
+
+  @Override
+  protected SoyValue visitStrictEqualOpNode(StrictEqualOpNode node) {
+    return convertResult(equal(visit(node.getChild(0)), visit(node.getChild(1))));
+  }
+
+  @Override
+  protected SoyValue visitNotStrictEqualOpNode(NotStrictEqualOpNode node) {
     return convertResult(!equal(visit(node.getChild(0)), visit(node.getChild(1))));
   }
 
