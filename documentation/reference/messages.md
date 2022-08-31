@@ -329,6 +329,10 @@ previously.
 {/msg}
 ```
 
+Note: If migrating from TS/JS to Soy a Meaning is set automatically based on the
+variable name and needs to be set on the Soy message or your translation request
+will fail.
+
 ## fallbackmsg {#fallbackmsg}
 
 Syntax:
