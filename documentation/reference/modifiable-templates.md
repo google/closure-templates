@@ -73,12 +73,12 @@ Otherwise by default `modifiable` template will render.
   Something
 {/template}
 
-{template variant visibility="private" modifies"withVariants" variant="'foo'"}
+{template variant visibility="private" modifies="withVariants" variant="'foo'"}
   Foo
 {/template}
 
 // Compilation error, incorrect variant type.
-{template badVariant visibility="private" modifies"withVariants" variant="42"}
+{template badVariant visibility="private" modifies="withVariants" variant="42"}
 {/template}
 
 {template main}
