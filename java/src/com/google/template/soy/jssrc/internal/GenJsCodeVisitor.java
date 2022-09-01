@@ -1133,7 +1133,9 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
   protected JsDoc generateEmptyFunctionJsDoc(TemplateNode node) {
     JsDoc.Builder jsDocBuilder = JsDoc.builder();
-    jsDocBuilder.addAnnotation("type", "{function(?Object<string, *>=, ?goog.soy.IjData=):string}");
+    jsDocBuilder.addParam(StandardNames.OPT_DATA, "?Object<string, *>=");
+    addIjDataParam(jsDocBuilder, /*forPositionalSignature=*/ false);
+    addReturnTypeAndAnnotations(node, jsDocBuilder);
     jsDocBuilder.addParameterizedAnnotation("suppress", "checkTypes");
     return jsDocBuilder.build();
   }

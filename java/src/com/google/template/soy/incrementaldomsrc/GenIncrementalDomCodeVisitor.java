@@ -412,14 +412,6 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   }
 
   @Override
-  protected JsDoc generateEmptyFunctionJsDoc(TemplateNode node) {
-    JsDoc.Builder jsDocBuilder = JsDoc.builder();
-    jsDocBuilder.addAnnotation("type", "{function(?Object<string, *>=, ?$googSoy.IjData=):string}");
-    jsDocBuilder.addParameterizedAnnotation("suppress", "checkTypes");
-    return jsDocBuilder.build();
-  }
-
-  @Override
   protected JsDoc generateFunctionJsDoc(
       TemplateNode node, String alias, boolean suppressCheckTypes, boolean addVariantParam) {
     JsDoc.Builder jsDocBuilder = JsDoc.builder();
