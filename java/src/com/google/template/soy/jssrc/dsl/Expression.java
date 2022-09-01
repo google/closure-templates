@@ -245,7 +245,11 @@ public abstract class Expression extends CodeChunk {
 
   /** Creates a code chunk representing the logical negation {@code !} of the given chunk. */
   public static Expression not(Expression arg) {
-    return PrefixUnaryOperation.create(Operator.NOT, arg);
+    return UnaryOperation.create(Operator.NOT, arg);
+  }
+
+  public static Expression assertNonNull(Expression arg) {
+    return UnaryOperation.create(Operator.ASSERT_NON_NULL, arg);
   }
 
   /**
@@ -275,7 +279,7 @@ public abstract class Expression extends CodeChunk {
         op != Operator.AND && op != Operator.OR && op != Operator.CONDITIONAL);
     switch (op.getNumOperands()) {
       case 1:
-        return PrefixUnaryOperation.create(op, operands.get(0));
+        return UnaryOperation.create(op, operands.get(0));
       case 2:
         return BinaryOperation.create(op, operands.get(0), operands.get(1));
       default:
@@ -439,7 +443,8 @@ public abstract class Expression extends CodeChunk {
   }
 
   public final Expression typeof() {
-    return PrefixUnaryOperation.create("typeof ", Operator.NOT.getPrecedence(), this);
+    return UnaryOperation.create(
+        "typeof ", Operator.NOT.getPrecedence(), this, /* isPrefix= */ true);
   }
 
   public Expression assign(Expression rhs) {

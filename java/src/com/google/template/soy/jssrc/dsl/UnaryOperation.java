@@ -28,20 +28,24 @@ import java.util.function.Consumer;
 /** Represents a JavaScript unary operation. */
 @AutoValue
 @Immutable
-abstract class PrefixUnaryOperation extends Operation {
+abstract class UnaryOperation extends Operation {
   abstract String operator();
 
   abstract Expression arg();
 
-  static PrefixUnaryOperation create(Operator operator, Expression arg) {
+  abstract boolean isPrefix();
+
+  static UnaryOperation create(Operator operator, Expression arg) {
     // Operator.NOT is the only unary Soy operator whose text differs from its JS counterpart.
     // Patch things up here.
     String operatorString = (operator == Operator.NOT ? "!" : operator.getTokenString());
-    return new AutoValue_PrefixUnaryOperation(operator.getPrecedence(), operatorString, arg);
+    return new AutoValue_UnaryOperation(
+        operator.getPrecedence(), operatorString, arg, operator != Operator.ASSERT_NON_NULL);
   }
 
-  static PrefixUnaryOperation create(String operatorString, int precedence, Expression arg) {
-    return new AutoValue_PrefixUnaryOperation(precedence, operatorString, arg);
+  static UnaryOperation create(
+      String operatorString, int precedence, Expression arg, boolean isPrefix) {
+    return new AutoValue_UnaryOperation(precedence, operatorString, arg, isPrefix);
   }
 
   @Override
@@ -56,8 +60,13 @@ abstract class PrefixUnaryOperation extends Operation {
 
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
-    ctx.append(operator());
-    formatOperand(arg(), OperandPosition.LEFT /* it's unary, doesn't matter */, ctx);
+    if (isPrefix()) {
+      ctx.append(operator());
+      formatOperand(arg(), OperandPosition.LEFT /* it's unary, doesn't matter */, ctx);
+    } else {
+      formatOperand(arg(), OperandPosition.LEFT /* it's unary, doesn't matter */, ctx);
+      ctx.append(operator());
+    }
   }
 
   @Override
