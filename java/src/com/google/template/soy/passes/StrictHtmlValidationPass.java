@@ -88,12 +88,12 @@ public final class StrictHtmlValidationPass implements CompilerFilePass {
     new HtmlTagMatchingPass(
             reporter,
             idGenerator,
-            /** inCondition */
-            false,
-            /** foreignContentTagDepth */
-            0,
-            /** parentBlockType */
-            null)
+
+            /* inCondition= */ false,
+
+            /* foreignContentTagDepth= */ 0,
+
+            /* parentBlockType= */ null)
         .run(htmlMatcherGraph);
     if (node.isStrictHtml()) {
       reporter.copyTo(this.errorReporter);
@@ -287,10 +287,10 @@ public final class StrictHtmlValidationPass implements CompilerFilePass {
       new HtmlTagMatchingPass(
               errorReporter,
               idGenerator,
-              /** inCondition */
-              false,
-              /** foreignContentTagDepth */
-              0,
+
+              /* inCondition= */ false,
+
+              /* foreignContentTagDepth= */ 0,
               "let content")
           .run(htmlMatcherGraph);
     }
@@ -301,10 +301,10 @@ public final class StrictHtmlValidationPass implements CompilerFilePass {
       new HtmlTagMatchingPass(
               errorReporter,
               idGenerator,
-              /** inCondition */
-              false,
-              /** foreignContentTagDepth */
-              0,
+
+              /* inCondition= */ false,
+
+              /* foreignContentTagDepth= */ 0,
               "call param content")
           .run(htmlMatcherGraph);
     }
