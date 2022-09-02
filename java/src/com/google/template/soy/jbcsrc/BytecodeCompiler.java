@@ -29,6 +29,7 @@ import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.base.internal.SoyJarFileWriter;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.internal.exemptions.NamespaceExemptions;
 import com.google.template.soy.jbcsrc.api.PluginRuntimeInstanceInfo;
 import com.google.template.soy.jbcsrc.internal.ClassData;
 import com.google.template.soy.jbcsrc.restricted.Flags;
@@ -90,12 +91,19 @@ public final class BytecodeCompiler {
     return template.getTemplateType().isModifiable() || template.getTemplateType().isModifying();
   }
 
+  private static String namespaceFromTemplateName(String templateName) {
+    return templateName.substring(0, templateName.lastIndexOf("."));
+  }
+
   /** The name of the modifiable template implementation. */
   private static String modImplName(TemplateMetadata template) {
     return template.getTemplateName()
-        + (template.getTemplateType().isModifiable()
-            ? CompiledTemplateMetadata.DEFAULT_IMPL_JBC_CLASS_SUFFIX
-            : "");
+        + (!template.getTemplateType().isModifiable()
+            ? ""
+            : NamespaceExemptions.isKnownDuplicateNamespace(
+                    namespaceFromTemplateName(template.getTemplateName()))
+                ? ".render" + CompiledTemplateMetadata.DEFAULT_IMPL_JBC_CLASS_SUFFIX
+                : CompiledTemplateMetadata.DEFAULT_IMPL_JBC_CLASS_SUFFIX);
   }
 
   /**
