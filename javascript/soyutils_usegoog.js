@@ -653,13 +653,13 @@ const $$registerDelegateFn = function(
  * (i.e. rendered output would be empty string).
  *
  * @param {string} delTemplateId The delegate template id.
- * @param {string} delTemplateVariant The delegate template variant (can be
+ * @param {string=} delTemplateVariant The delegate template variant (can be
  *     empty string).
  * @return {!Function} The retrieved implementation function.
  */
 const $$getDelegateFn = function(delTemplateId, delTemplateVariant) {
   let delFn =
-      DELEGATE_REGISTRY_FUNCTIONS_['key_' + delTemplateId + ':' + delTemplateVariant];
+      DELEGATE_REGISTRY_FUNCTIONS_['key_' + delTemplateId + ':' + (delTemplateVariant || '')];
   if (!delFn && delTemplateVariant !== '') {
     // Fallback to empty variant.
     delFn = DELEGATE_REGISTRY_FUNCTIONS_['key_' + delTemplateId + ':'];

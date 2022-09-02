@@ -1280,13 +1280,13 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
               .asStatement());
     }
     bodyStatements.add(generateStubbingTest(node, alias, generatePositionalParamsSignature));
+    Expression templateId =
+        SOY_GET_DELTEMPLATE_ID.call(
+            stringLiteral(delTemplateNamer.getDelegateName((TemplateBasicNode) node)));
     Expression delegateFn =
-        SOY_GET_DELEGATE_FN.call(
-            SOY_GET_DELTEMPLATE_ID.call(
-                stringLiteral(delTemplateNamer.getDelegateName((TemplateBasicNode) node))),
-            isModifiableWithUseVariantType(node)
-                ? OPT_VARIANT.or(stringLiteral(""), codeGenerator)
-                : stringLiteral(""));
+        isModifiableWithUseVariantType(node)
+            ? SOY_GET_DELEGATE_FN.call(templateId, OPT_VARIANT)
+            : SOY_GET_DELEGATE_FN.call(templateId);
     if (!generatePositionalParamsSignature) {
       bodyStatements.add(returnValue(delegateFn.call(getFixedParamsForNonPositionalCall(node))));
     } else {
