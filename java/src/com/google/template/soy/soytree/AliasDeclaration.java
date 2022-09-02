@@ -31,13 +31,13 @@ public abstract class AliasDeclaration {
   public static AliasDeclaration create(SourceLocation location, Identifier namespace) {
     Identifier alias = namespace.extractPartAfterLastDot();
     checkArgument(alias.type() == Identifier.Type.SINGLE_IDENT);
-    return new AutoValue_AliasDeclaration(location, namespace, alias, /* isImplicit */ true);
+    return new AutoValue_AliasDeclaration(location, namespace, alias, /* isImplicit= */ true);
   }
 
   public static AliasDeclaration create(
       SourceLocation location, Identifier namespace, Identifier alias) {
     checkArgument(alias.type() == Identifier.Type.SINGLE_IDENT);
-    return new AutoValue_AliasDeclaration(location, namespace, alias, /* isImplicit */ false);
+    return new AutoValue_AliasDeclaration(location, namespace, alias, /* isImplicit= */ false);
   }
 
   public abstract SourceLocation location();

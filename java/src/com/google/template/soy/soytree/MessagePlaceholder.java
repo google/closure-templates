@@ -69,7 +69,7 @@ public abstract class MessagePlaceholder {
   @AutoValue
   public abstract static class Summary {
     public static Summary create(String name) {
-      return create(name, /* example */ Optional.empty());
+      return create(name, /* example= */ Optional.empty());
     }
 
     public static Summary create(String name, Optional<String> example) {
@@ -82,14 +82,14 @@ public abstract class MessagePlaceholder {
   }
 
   public static MessagePlaceholder create(String name) {
-    return create(name, /* example */ Optional.empty());
+    return create(name, /* example= */ Optional.empty());
   }
 
   public static MessagePlaceholder create(String name, Optional<String> example) {
     return new AutoValue_MessagePlaceholder(
         Summary.create(name, example),
-        /* userSuppliedName */ Optional.empty(),
-        /* userSuppliedNameLocation */ Optional.empty());
+        /* userSuppliedName= */ Optional.empty(),
+        /* userSuppliedNameLocation= */ Optional.empty());
   }
 
   /**
@@ -98,7 +98,7 @@ public abstract class MessagePlaceholder {
   public static MessagePlaceholder createWithUserSuppliedName(
       String userSuppliedName, SourceLocation userSuppliedNameLocation) {
     return createWithUserSuppliedName(
-        /* name */ userSuppliedName, userSuppliedName, userSuppliedNameLocation);
+        /* name= */ userSuppliedName, userSuppliedName, userSuppliedNameLocation);
   }
 
   /**
@@ -107,7 +107,7 @@ public abstract class MessagePlaceholder {
   public static MessagePlaceholder createWithUserSuppliedName(
       String name, String userSuppliedName, SourceLocation userSuppliedNameLocation) {
     return createWithUserSuppliedName(
-        name, userSuppliedName, userSuppliedNameLocation, /* example */ Optional.empty());
+        name, userSuppliedName, userSuppliedNameLocation, /* example= */ Optional.empty());
   }
 
   /**
