@@ -134,6 +134,8 @@ message Defaults {
   optional double double_with_default = 4 [default = 2.5];
   optional string string_with_default = 5 [default = 'string'];
   optional bool bool_with_default = 6 [default = true];
+  optional bytes bytes_with_default = 7
+      [default = 'bytes'];  // 'Ynl0ZXM=' in b64
 }
 
 message Proto2ImplicitDefaults {
@@ -143,6 +145,7 @@ message Proto2ImplicitDefaults {
   optional double double = 4;
   optional string string = 5;
   optional bool bool = 6;
+  optional bytes bytes = 8;
   optional SubMessage msg = 7;
   message SubMessage {
     optional string field = 1;

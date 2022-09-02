@@ -200,6 +200,12 @@ final class ProtoUtils {
   private static final RepeatedFieldInterpreter REPEATED_FIELD_INTERPRETER =
       new RepeatedFieldInterpreter();
 
+  static enum ScalarFieldMode {
+    DEFAULT_IF_UNSET,
+    NULL_IF_UNSET,
+    NULL_IF_BROKEN_SEMANTICS,
+  }
+
   /**
    * Returns a {@link SoyExpression} for accessing a field of a proto.
    *
@@ -208,10 +214,12 @@ final class ProtoUtils {
    * @param node The field access operation
    */
   static SoyExpression accessField(
-      SoyProtoType protoType, SoyExpression baseExpr, String fieldName, SoyType fieldType) {
-    return new AccessorGenerator(
-            protoType, baseExpr, fieldName, fieldType, /* useBrokenSemantics= */ true)
-        .generate();
+      SoyProtoType protoType,
+      SoyExpression baseExpr,
+      String fieldName,
+      SoyType fieldType,
+      ScalarFieldMode mode) {
+    return new AccessorGenerator(protoType, baseExpr, fieldName, fieldType, mode).generate();
   }
 
   static SoyExpression hasserField(SoyExpression baseExpr, String fieldName) {
@@ -227,9 +235,15 @@ final class ProtoUtils {
    * @param node The method operation.
    */
   static SoyExpression accessExtensionField(
-      SoyExpression baseExpr, MethodCallNode node, String fieldName, boolean useBrokenSemantics) {
+      SoyExpression baseExpr, MethodCallNode node, String fieldName) {
     SoyProtoType protoType = (SoyProtoType) baseExpr.soyType();
-    return new AccessorGenerator(protoType, baseExpr, fieldName, node.getType(), useBrokenSemantics)
+    return new AccessorGenerator(
+            protoType,
+            baseExpr,
+            fieldName,
+            node.getType(),
+            // TODO(b/230787876): this should be NULL_IF_UNSET to match jspb semantics.
+            ScalarFieldMode.NULL_IF_BROKEN_SEMANTICS)
         .generate();
   }
 
@@ -271,23 +285,22 @@ final class ProtoUtils {
    */
   private static final class AccessorGenerator extends BaseGenerator {
     final SoyType fieldType;
-    final String fieldName;
     final FieldDescriptor descriptor;
-    final boolean shouldCheckForFieldPresence;
+    final boolean retinterpretAbsenceAsNullable;
 
     AccessorGenerator(
         SoyProtoType protoType,
         SoyExpression baseExpr,
         String fieldName,
         SoyType fieldType,
-        boolean useBrokenSemantics) {
+        ScalarFieldMode mode) {
       super(SoyRuntimeType.getUnboxedType(protoType).get(), baseExpr);
-      this.fieldName = fieldName;
       this.fieldType = fieldType;
       this.descriptor = protoType.getFieldDescriptor(fieldName);
-      this.shouldCheckForFieldPresence =
-          useBrokenSemantics
-              && protoType.shouldCheckFieldPresenceToEmulateJspbNullability(fieldName);
+      this.retinterpretAbsenceAsNullable =
+          (mode == ScalarFieldMode.NULL_IF_UNSET && descriptor.hasPresence())
+              || (mode == ScalarFieldMode.NULL_IF_BROKEN_SEMANTICS
+                  && protoType.shouldCheckFieldPresenceToEmulateJspbNullability(fieldName));
     }
 
     SoyExpression generate() {
@@ -317,7 +330,7 @@ final class ProtoUtils {
       // a subset of fields as specified in SoyProtoType. Though, we should probably actually be
       // testing against jspb semantics.  The best way forward is probably to first invest in
       // support for protos in our integration tests.
-      if (!shouldCheckForFieldPresence) {
+      if (!retinterpretAbsenceAsNullable) {
         // Simple case, just call .get and interpret the result
         return interpretField(typedBaseExpr.invoke(getMethodRef));
       } else {
@@ -490,7 +503,7 @@ final class ProtoUtils {
                 FieldVisitor.visitField(descriptor, REPEATED_FIELD_INTERPRETER)));
       }
 
-      if (!descriptor.hasDefaultValue() && shouldCheckForFieldPresence) {
+      if (!descriptor.hasDefaultValue() && retinterpretAbsenceAsNullable) {
         final Label endLabel = new Label();
         SoyExpression interpretedField =
             interpretExtensionField(
@@ -623,6 +636,7 @@ final class ProtoUtils {
   private static final class ProtoUnionAccessorGenerator {
 
     private final SoyExpression baseExpr;
+    // TODO(b/230787876): add support for MethodCallNodes
     private final FieldAccessNode node;
     private final LocalVariableManager varManager;
 
@@ -670,7 +684,10 @@ final class ProtoUtils {
                 protoType,
                 SoyExpression.forProto(unboxed, base.checkedCast(unboxed.runtimeType())),
                 node.getFieldName(),
-                protoType.getFieldType(node.getFieldName()));
+                protoType.getFieldType(node.getFieldName()),
+                // TODO(b/230787876): This is to become NULL_IF_MISSING after all correct semantics
+                // field accesses are migrated to the getter syntax.
+                ScalarFieldMode.NULL_IF_BROKEN_SEMANTICS);
         if (fieldAccess.isBoxed()) {
           foundBoxed = true;
         }
@@ -742,12 +759,10 @@ final class ProtoUtils {
 
   private static final class HasserGenerator extends BaseGenerator {
 
-    final String fieldName;
     final FieldDescriptor descriptor;
 
     HasserGenerator(SoyProtoType protoType, SoyExpression baseExpr, String fieldName) {
       super(SoyRuntimeType.getUnboxedType(protoType).get(), baseExpr);
-      this.fieldName = fieldName;
       this.descriptor = protoType.getFieldDescriptor(fieldName);
     }
 

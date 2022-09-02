@@ -511,6 +511,8 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     // If the static type is a proto, access it using proto semantics
     // the base type is possibly nullable, so remove null before testing for being a proto
     if (isProtoOrUnionOfProtos(fieldAccess.getBaseExprChild().getType())) {
+      // TODO(b/230787876): After all correct-semantics field accesses have been migrated to getter
+      // syntax, this should become getProtoFieldOrNull.
       return ((SoyProtoValue) base).getProtoField(fieldAccess.getFieldName());
     }
     maybeMarkBadProtoAccess(fieldAccess, base);
@@ -650,6 +652,14 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
           return BooleanData.forValue(
               ((SoyProtoValue) base)
                   .hasProtoField(BuiltinMethod.getProtoFieldNameFromMethodCall(methodNode)));
+        case GET_PROTO_FIELD:
+          return ((SoyProtoValue) base)
+              .getProtoField(
+                  BuiltinMethod.getProtoFieldNameFromMethodCall(methodNode),
+                  /* useBrokenProtoSemantics= */ false);
+        case GET_PROTO_FIELD_OR_UNDEFINED:
+          return ((SoyProtoValue) base)
+              .getProtoFieldOrNull(BuiltinMethod.getProtoFieldNameFromMethodCall(methodNode));
         case BIND:
           TofuTemplateValue template = (TofuTemplateValue) base;
           SoyRecord params = (SoyRecord) visit(methodNode.getParams().get(0));

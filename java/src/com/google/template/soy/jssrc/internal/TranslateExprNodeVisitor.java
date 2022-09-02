@@ -649,6 +649,20 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
                   fieldName, ((SoyProtoType) baseType).getFieldDescriptor(fieldName)),
               nullSafe,
               assertNonNull);
+        case GET_PROTO_FIELD:
+          fieldName = BuiltinMethod.getProtoFieldNameFromMethodCall(methodCallNode);
+          return base.dotAccess(
+              ProtoCall.getField(
+                  fieldName, ((SoyProtoType) baseType).getFieldDescriptor(fieldName)),
+              nullSafe,
+              assertNonNull);
+        case GET_PROTO_FIELD_OR_UNDEFINED:
+          fieldName = BuiltinMethod.getProtoFieldNameFromMethodCall(methodCallNode);
+          return base.dotAccess(
+              ProtoCall.getFieldOrUndefined(
+                  fieldName, ((SoyProtoType) baseType).getFieldDescriptor(fieldName)),
+              nullSafe,
+              assertNonNull);
           // When adding new built-in methods it may be necessary to assert that the base expression
           // is not null in order to prevent a method call on a null instance from ever succeeding.
         case BIND:

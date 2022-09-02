@@ -99,14 +99,6 @@ public final class SoyProtoValue extends SoyAbstractValue implements SoyLegacyOb
       builder.setField(getDescriptor(), impl().protoFromSoy(value));
     }
 
-    boolean hasField(Message proto) {
-      // TODO(lukes):  Currently we assume that a field is present if it is repeated, has an
-      // explicit default value or is set.  However, the type of fields is not generally nullable,
-      // so we can return null for a non-nullable field type.  Given the current ToFu implementation
-      // this is not a problem, but modifying the field types to be nullable for non-repeated fields
-      // with non explicit defaults should probably happen.
-      return !shouldCheckFieldPresenceToEmulateJspbNullability() || proto.hasField(getDescriptor());
-    }
   }
 
   private static final LoadingCache<Descriptor, ProtoClass> classCache =
@@ -196,6 +188,28 @@ public final class SoyProtoValue extends SoyAbstractValue implements SoyLegacyOb
     if (useBrokenProtoSemantics
         && field.shouldCheckFieldPresenceToEmulateJspbNullability()
         && !proto.hasField(field.getDescriptor())) {
+      return NullData.INSTANCE;
+    }
+    return field.interpretField(proto);
+  }
+
+  /**
+   * Returns the value of the field, or null only if the field has presence semantics and is unset.
+   * For fields with no presence semantics (i.e., there's no hasser method), the value is never
+   * null.
+   *
+   * @deprecated Call getProto and downcast instead. This method only exists for the legacy Tofu
+   *     runtime.
+   */
+  @Deprecated
+  public SoyValue getProtoFieldOrNull(String name) {
+    FieldWithInterpreter field = clazz().fields.get(name);
+    if (field == null) {
+      throw new IllegalArgumentException(
+          "Proto " + proto.getClass().getName() + " does not have a field of name " + name);
+    }
+    FieldDescriptor fd = field.getDescriptor();
+    if (fd.hasPresence() && !proto.hasField(fd)) {
       return NullData.INSTANCE;
     }
     return field.interpretField(proto);

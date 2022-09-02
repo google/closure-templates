@@ -749,6 +749,8 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
               .getText();
         case GET_EXTENSION:
         case HAS_PROTO_FIELD:
+        case GET_PROTO_FIELD:
+        case GET_PROTO_FIELD_OR_UNDEFINED:
           errorReporter.report(
               methodCallNode.getAccessSourceLocation(),
               SOY_PY_SRC_METHOD_NOT_FOUND,

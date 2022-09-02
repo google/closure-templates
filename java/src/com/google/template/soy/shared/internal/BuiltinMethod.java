@@ -20,6 +20,7 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableListMultimap.flatteningToImmutableListMultimap;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 
+import com.google.common.base.Ascii;
 import com.google.common.base.CaseFormat;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableCollection;
@@ -174,6 +175,150 @@ public enum BuiltinMethod implements SoyMethod {
     }
   },
 
+  GET_PROTO_FIELD("get[X]", 0) {
+    @Override
+    public boolean appliesToBase(SoyType baseType) {
+      Preconditions.checkArgument(!SoyTypes.isNullable(baseType));
+      return baseType.getKind() == SoyType.Kind.PROTO;
+    }
+
+    @Override
+    public boolean appliesTo(String methodName, SoyType baseType) {
+      if (!appliesToBase(baseType)) {
+        return false;
+      }
+      if (!matchesName(methodName)) {
+        return false;
+      }
+      SoyProtoType protoType = (SoyProtoType) baseType;
+      String fieldName = methodToFieldName(methodName);
+      if (!protoType.getFieldNames().contains(fieldName)) {
+        return false;
+      }
+      return acceptFieldDescriptor(protoType.getFieldDescriptor(fieldName));
+    }
+
+    private boolean acceptFieldDescriptor(FieldDescriptor fd) {
+      if (fd.isExtension()) {
+        // should be impossibe
+        return false;
+      }
+      if (fd.isRepeated()) {
+        // TODO(b/230787876): add support for repeated field and map getters when we are ready to
+        // migrate
+        return false;
+      }
+      if (fd.getJavaType() == JavaType.MESSAGE) {
+        // TODO(b/230787876): add support for message getters when we are ready to migrate
+        return false;
+      }
+      return true;
+    }
+
+    @Override
+    public SoyType getReturnType(
+        String methodName,
+        SoyType baseType,
+        List<ExprNode> params,
+        SoyTypeRegistry soyTypeRegistry,
+        ErrorReporter errorReporter) {
+      String fieldName = methodToFieldName(methodName);
+      return ((SoyProtoType) baseType).getFieldType(fieldName);
+    }
+
+    boolean matchesName(String methodName) {
+      if (methodName.length() <= 3) {
+        return false;
+      }
+      if (!methodName.startsWith("get") || methodName.endsWith("OrUndefined")) {
+        return false;
+      }
+      char firstChar = methodName.charAt(3);
+      return Ascii.isUpperCase(firstChar);
+    }
+
+    @Override
+    ImmutableCollection<String> expandMethodNames(SoyType baseType, List<SoyType> argTypes) {
+      if (baseType.getKind() != SoyType.Kind.PROTO) {
+        return ImmutableList.of();
+      }
+      SoyProtoType protoType = (SoyProtoType) baseType;
+      return protoType.getFieldNames().stream()
+          .filter(name -> acceptFieldDescriptor(protoType.getFieldDescriptor(name)))
+          .map(BuiltinMethod::fieldToGetMethodName)
+          .collect(toImmutableSet());
+    }
+  },
+
+  GET_PROTO_FIELD_OR_UNDEFINED("get[X]OrUndefined", 0) {
+    @Override
+    public boolean appliesToBase(SoyType baseType) {
+      Preconditions.checkArgument(!SoyTypes.isNullable(baseType));
+      return baseType.getKind() == SoyType.Kind.PROTO;
+    }
+
+    @Override
+    public boolean appliesTo(String methodName, SoyType baseType) {
+      if (!appliesToBase(baseType)) {
+        return false;
+      }
+      if (!matchesName(methodName)) {
+        return false;
+      }
+      SoyProtoType protoType = (SoyProtoType) baseType;
+      String fieldName = methodToFieldName(methodName);
+      if (!protoType.getFieldNames().contains(fieldName)) {
+        return false;
+      }
+      return acceptFieldDescriptor(protoType.getFieldDescriptor(fieldName));
+    }
+
+    private boolean acceptFieldDescriptor(FieldDescriptor fd) {
+      if (fd.isExtension() || fd.isRepeated()) {
+        return false;
+      }
+      if (fd.getJavaType() == JavaType.MESSAGE) {
+        // Jspb doesn't have OrUndefined accessors for messages, so neither does soy.
+        return false;
+      }
+      return fd.hasPresence();
+    }
+
+    @Override
+    public SoyType getReturnType(
+        String methodName,
+        SoyType baseType,
+        List<ExprNode> params,
+        SoyTypeRegistry soyTypeRegistry,
+        ErrorReporter errorReporter) {
+      String fieldName = methodToFieldName(methodName);
+      return SoyTypes.makeNullable(((SoyProtoType) baseType).getFieldType(fieldName));
+    }
+
+    boolean matchesName(String methodName) {
+      if (methodName.length() <= 14) {
+        return false;
+      }
+      if (!methodName.startsWith("get") || !methodName.endsWith("OrUndefined")) {
+        return false;
+      }
+      char firstChar = methodName.charAt(3);
+      return Ascii.isUpperCase(firstChar);
+    }
+
+    @Override
+    ImmutableCollection<String> expandMethodNames(SoyType baseType, List<SoyType> argTypes) {
+      if (baseType.getKind() != SoyType.Kind.PROTO) {
+        return ImmutableList.of();
+      }
+      SoyProtoType protoType = (SoyProtoType) baseType;
+      return protoType.getFieldNames().stream()
+          .filter(name -> acceptFieldDescriptor(protoType.getFieldDescriptor(name)))
+          .map(BuiltinMethod::fieldToGetOrUndefinedMethodName)
+          .collect(toImmutableSet());
+    }
+  },
+
   BIND("bind", 1) {
 
     @Override
@@ -247,11 +392,24 @@ public enum BuiltinMethod implements SoyMethod {
   private static String methodToFieldName(String methodName) {
     Preconditions.checkArgument(
         methodName.length() >= 4 && (methodName.startsWith("get") || methodName.startsWith("has")));
-    return CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_CAMEL, methodName.substring(3));
+    if (methodName.endsWith("OrUndefined")) {
+      methodName = methodName.substring(3, methodName.length() - "OrUndefined".length());
+    } else {
+      methodName = methodName.substring(3);
+    }
+    return CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_CAMEL, methodName);
   }
 
   private static String fieldToHasMethodName(String fieldName) {
     return "has" + CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_CAMEL, fieldName);
+  }
+
+  private static String fieldToGetMethodName(String fieldName) {
+    return "get" + CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_CAMEL, fieldName);
+  }
+
+  private static String fieldToGetOrUndefinedMethodName(String fieldName) {
+    return "get" + CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_CAMEL, fieldName) + "OrUndefined";
   }
 
   private final String name;
@@ -312,7 +470,8 @@ public enum BuiltinMethod implements SoyMethod {
                 ((SoyProtoType) SoyTypes.removeNull(methodNode.getBaseExprChild().getType()))
                     .getFieldDescriptor(getProtoExtensionIdFromMethodCall(methodNode))));
       case HAS_PROTO_FIELD:
-        return ImmutableList.of();
+      case GET_PROTO_FIELD:
+      case GET_PROTO_FIELD_OR_UNDEFINED:
       case BIND:
         return ImmutableList.of();
     }

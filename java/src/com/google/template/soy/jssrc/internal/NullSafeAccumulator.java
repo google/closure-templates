@@ -359,6 +359,8 @@ final class NullSafeAccumulator {
     }
 
     static FieldAccess protoCall(String fieldName, FieldDescriptor desc) {
+      // TODO(b/230787876): After all correct-semantics field accesses have been migrated to getter
+      // syntax, this should become getFieldOrUndefined for singular primitive fields.
       return ProtoCall.getField(fieldName, desc);
     }
   }
@@ -390,17 +392,24 @@ final class NullSafeAccumulator {
   abstract static class ProtoCall extends FieldAccess {
 
     private enum Type {
-      GET("get"),
-      HAS("has");
+      GET("get", ""),
+      GET_OR_UNDEFINED("get", "OrUndefined"),
+      HAS("has", "");
 
       private final String prefix;
+      private final String suffix;
 
-      Type(String prefix) {
+      Type(String prefix, String suffix) {
         this.prefix = prefix;
+        this.suffix = suffix;
       }
 
       public String getPrefix() {
         return prefix;
+      }
+
+      public String getSuffix() {
+        return suffix;
       }
     }
 
@@ -433,32 +442,36 @@ final class NullSafeAccumulator {
       return accessor(fieldName, desc, Type.GET);
     }
 
+    static ProtoCall getFieldOrUndefined(String fieldName, FieldDescriptor desc) {
+      return accessor(fieldName, desc, Type.GET_OR_UNDEFINED);
+    }
+
     static ProtoCall hasField(String fieldName, FieldDescriptor desc) {
       return accessor(fieldName, desc, Type.HAS);
     }
 
-    private static ProtoCall accessor(String fieldName, FieldDescriptor desc, Type prefix) {
+    private static ProtoCall accessor(String fieldName, FieldDescriptor desc, Type type) {
       String getter;
       Expression arg;
       Expression unpackFunction = null;
 
-      if (desc.isExtension() && Type.HAS == prefix) {
+      if (desc.isExtension() && Type.HAS == type) {
         // JSPB doesn't have hasExtension().
         throw new IllegalArgumentException("hasExtension() not implemented");
-      } else if (Type.HAS == prefix
+      } else if (Type.HAS == type
           && desc.getType() == FieldDescriptor.Type.MESSAGE
           && ProtoUtils.getContainingOneof(desc) == null) {
         // JSPB doesn't have hassers for submessages.
         throw new IllegalArgumentException("Submessage hasser not implemented");
-      } else if (Type.GET == prefix) {
+      } else if (Type.GET == type || Type.GET_OR_UNDEFINED == type) {
         unpackFunction = getUnpackFunction(desc);
       }
 
       if (desc.isExtension()) {
-        getter = prefix.getPrefix() + "Extension";
+        getter = type.getPrefix() + "Extension";
         arg = extensionField(desc);
       } else {
-        getter = prefix.getPrefix() + LOWER_CAMEL.to(UPPER_CAMEL, fieldName);
+        getter = type.getPrefix() + LOWER_CAMEL.to(UPPER_CAMEL, fieldName) + type.getSuffix();
         arg = null;
       }
 

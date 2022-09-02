@@ -1228,7 +1228,14 @@ final class ExpressionCompiler {
         if (baseExpr.soyType().getKind() == Kind.PROTO) {
           // It is a single known proto field.  Generate code to call the getter directly
           SoyProtoType protoType = (SoyProtoType) baseExpr.soyType();
-          return ProtoUtils.accessField(protoType, baseExpr, node.getFieldName(), node.getType());
+          return ProtoUtils.accessField(
+              protoType,
+              baseExpr,
+              node.getFieldName(),
+              node.getType(),
+              // TODO(b/230787876): After all correct-semantics field accesses have been migrated to
+              // getter syntax, this should become NULL_IF_UNSET.
+              ProtoUtils.ScalarFieldMode.NULL_IF_BROKEN_SEMANTICS);
         } else {
           return ProtoUtils.accessProtoUnionField(baseExpr, node, varManager);
         }
@@ -1312,13 +1319,24 @@ final class ExpressionCompiler {
         switch (builtinMethod) {
           case GET_EXTENSION:
             return ProtoUtils.accessExtensionField(
-                baseExpr,
-                node,
-                BuiltinMethod.getProtoExtensionIdFromMethodCall(node),
-                /* useBrokenSemantics= */ true);
+                baseExpr, node, BuiltinMethod.getProtoExtensionIdFromMethodCall(node));
           case HAS_PROTO_FIELD:
             return ProtoUtils.hasserField(
                 baseExpr, BuiltinMethod.getProtoFieldNameFromMethodCall(node));
+          case GET_PROTO_FIELD:
+            return ProtoUtils.accessField(
+                (SoyProtoType) baseExpr.soyType(),
+                baseExpr,
+                BuiltinMethod.getProtoFieldNameFromMethodCall(node),
+                node.getType(),
+                ProtoUtils.ScalarFieldMode.DEFAULT_IF_UNSET);
+          case GET_PROTO_FIELD_OR_UNDEFINED:
+            return ProtoUtils.accessField(
+                (SoyProtoType) baseExpr.soyType(),
+                baseExpr,
+                BuiltinMethod.getProtoFieldNameFromMethodCall(node),
+                node.getType(),
+                ProtoUtils.ScalarFieldMode.NULL_IF_UNSET);
           case BIND:
             return SoyExpression.forSoyValue(
                 node.getType(),
