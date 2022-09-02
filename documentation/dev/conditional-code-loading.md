@@ -192,8 +192,8 @@ The algorithm for selecting the implementation to invoke is:
 You can use the two features above together, and it is occasionally useful,
 though it can get confusing quick! So do so sparingly.
 
-When these two features are combined, the algorithm for selecting the
-deltemplate implementation to all is:
+When these two features are combined, the algorithm for selecting the template
+to call is:
 
 1.  Use the template with a matching variant and active mod if there is one
 1.  Use the template with a matching variant if there is one
