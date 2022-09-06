@@ -168,8 +168,8 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
         idGenerator.genId(),
         new RawTextNode(idGenerator.genId(), "veAttr", SourceLocation.UNKNOWN),
         SourceLocation.UNKNOWN,
-        /** selfClosing */
-        false,
+
+        /* selfClosing= */ false,
         TagExistence.IN_TEMPLATE);
   }
 

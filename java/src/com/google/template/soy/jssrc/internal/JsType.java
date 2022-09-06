@@ -450,7 +450,7 @@ public final class JsType {
             builder.addRequires(forSoyType.getGoogRequires());
             parameters.put(
                 parameter.getName(),
-                forSoyType.typeExprForRecordMember(!parameter.isRequired() /* isOptional */));
+                forSoyType.typeExprForRecordMember(/* isOptional= */ !parameter.isRequired()));
           }
           JsType forReturnType = templateReturnType(templateType.getContentKind(), kind);
           builder.addRequires(forReturnType.getGoogRequires());
