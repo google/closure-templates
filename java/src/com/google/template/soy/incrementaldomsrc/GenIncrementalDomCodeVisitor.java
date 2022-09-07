@@ -49,6 +49,7 @@ import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SO
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_MAKE_HTML;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_PRINT;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_PRINT_DYNAMIC_ATTR;
+import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_SET_CONTENT_KIND;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_TYPE_ATTRIBUTE;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_TYPE_HTML;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_VISIT_HTML_COMMENT;
@@ -284,7 +285,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       } else {
         type = SOY_IDOM_TYPE_ATTRIBUTE;
       }
-      getJsCodeBuilder().append(Statement.assign(id(alias).dotAccess("contentKind"), type));
+      getJsCodeBuilder().append(SOY_IDOM_SET_CONTENT_KIND.call(id(alias), type).asStatement());
     }
 
     if (node instanceof TemplateElementNode) {

@@ -180,6 +180,10 @@ function handleSoyElement<T extends TemplateAcceptor<{}>>(
   return soyElement as unknown as T;
 }
 
+function setContentKind(fn: unknown, type: SanitizedContentKind) {
+  (fn as IdomFunction).contentKind = type;
+}
+
 function makeHtml(idomFn: PatchFunction): IdomFunction {
   const fn = ((renderer: IncrementalDomRenderer = defaultIdomRenderer) => {
                idomFn(renderer);
@@ -595,6 +599,7 @@ export {
   callDynamicJs as $$callDynamicJs,
   callDynamicCss as $$callDynamicCss,
   callDynamicHTML as $$callDynamicHTML,
+  setContentKind as $$setContentKind,
   callDynamicAttributes as $$callDynamicAttributes,
   callDynamicText as $$callDynamicText,
   handleSoyElement as $$handleSoyElement,
