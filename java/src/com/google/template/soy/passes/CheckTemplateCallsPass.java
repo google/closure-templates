@@ -174,7 +174,6 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
           "boq.ads.townsquare.marketplaceui.components.carousel.templates.item", // circular import
           "boq.ads.townsquare.marketplaceui.components.grid.templates.item", // circular import
           "boq.ads.townsquare.marketplaceui.components.grid.templates.itemKey", // circular import
-          "boq.dashersecurityadminconsoleui.reauth.common.templates.learnMoreLink_", // circular imp
           "boq.dynamitewebui.member.templates.isOneOnOneDm", // circular dep
           "boq.dynamitewebui.member.templates.readSingleUserFromDmHumanMembersList", // circular dep
           "boq.googlefinanceui.views.bundles.portfolio.templates.portfolioLayoutRedesign", // circular import
