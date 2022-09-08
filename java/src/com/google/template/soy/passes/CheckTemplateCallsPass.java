@@ -194,10 +194,8 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
           "boq.travelfrontendhotelssearchweb.component.bookingmodule.hotels.show_organic_prices.templates.bookingModuleHeader", // circular import
           "boq.travelfrontendhotelssearchweb.home.header.enable_expand_when_reach_bottom.templates.enableExpandWhenScrollToBottom", // circular import
           "boq.travelfrontendhotelssearchweb.home.header.enable_expand_when_scroll_up.templates.enableExpandWhenScrollUp", // circular import
-          "boq.visualfrontendui.explorepanel.templates.closeButton",
           "boq.visualfrontendviewer.imagecard.templates.ampViewerTray",
           "boq.visualfrontendviewer.imagecard.templates.navigationButtons", // circular dep
-          "boq.visualfrontendui.explorepanel.templates.header",
           "Corp.Projectmgmt.Primavera.App.Workflow.Template.Core", // gencode
           "drive.search.filetypeicons.delSvg.templates", // gencode
           "gcal.mat.detaildialog.event.soy.detaildialog.rsvpButton", // circular import
