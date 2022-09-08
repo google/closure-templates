@@ -104,8 +104,6 @@ final class IncrementalDomRuntime {
   public static final Expression SOY_IDOM_CALL_DYNAMIC_HTML =
       SOY_IDOM.dotAccess("$$callDynamicHTML");
 
-  public static final Expression SOY_IDOM_SET_CONTENT_KIND = SOY_IDOM.dotAccess("$$setContentKind");
-
   public static final Expression SOY_IDOM_PRINT_DYNAMIC_ATTR =
       SOY_IDOM.dotAccess("$$printDynamicAttr");
 
