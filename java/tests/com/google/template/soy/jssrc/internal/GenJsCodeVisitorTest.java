@@ -100,6 +100,7 @@ public final class GenJsCodeVisitorTest {
             + "/**\n"
             + " * @fileoverview Templates in namespace boo.foo.\n"
             + " * @suppress {missingRequire} TODO(b/152440355)\n"
+            + " * @suppress {suspiciousCode}\n"
             + " * @suppress {strictMissingProperties} TODO(b/214874268): Remove"
             + " strictMissingProperties suppression after b/214427036 is fixed\n"
             + " * @requirecss {aaa.bbb.ccc}\n"

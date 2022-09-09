@@ -424,6 +424,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     JsDoc.Builder jsDocBuilder = JsDoc.builder();
     jsDocBuilder.addAnnotation("fileoverview", fileOverviewDescription);
     jsDocBuilder.addAnnotation("suppress", "{missingRequire} TODO(b/152440355)");
+    jsDocBuilder.addAnnotation("suppress", "{suspiciousCode}");
     jsDocBuilder.addAnnotation(
         "suppress",
         "{strictMissingProperties} TODO(b/214874268): Remove strictMissingProperties suppression"
