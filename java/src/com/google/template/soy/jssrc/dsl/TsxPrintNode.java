@@ -16,6 +16,7 @@
 package com.google.template.soy.jssrc.dsl;
 
 import com.google.errorprone.annotations.Immutable;
+import java.util.Optional;
 import java.util.function.Consumer;
 
 /**
@@ -24,61 +25,39 @@ import java.util.function.Consumer;
  */
 @Immutable
 public class TsxPrintNode extends Statement {
-  private final Expression expr;
-
-  public static TsxPrintNode newLine() {
-    return new TsxPrintNode(StringLiteral.create("\\n")) {
-      @Override
-      void doFormatInitialStatements(FormattingContext ctx) {
-        ctx.append("{'\\n'}").endLine();
-      }
-    };
-  }
-
-  public static TsxPrintNode carriageReturn() {
-    return new TsxPrintNode(StringLiteral.create("\\r")) {
-      @Override
-      void doFormatInitialStatements(FormattingContext ctx) {
-        ctx.append("{'\\n'}").endLine();
-      }
-    };
-  }
+  private final Optional<Expression> expr;
 
   public static TsxPrintNode create(Expression expr) {
-    return new TsxPrintNode(expr);
+    return new TsxPrintNode(Optional.of(expr));
   }
 
-  private TsxPrintNode(Expression expr) {
+  private TsxPrintNode(Optional<Expression> expr) {
     this.expr = expr;
   }
 
-  Expression expr() {
+  Optional<Expression> expr() {
     return expr;
   }
 
   @Override
   void doFormatInitialStatements(FormattingContext ctx) {
+    if (!expr.isPresent()) {
+      ctx.append("{}");
+      return;
+    }
 
     ctx.append("{");
-
-    // make this unbreakable for short print nodes w/ no initial statements. and short body?
     ctx.increaseIndent();
-    ctx.appendOutputExpression(expr.asInlineExpr());
+    ctx.appendOutputExpression(expr.get().asInlineExpr());
     ctx.append("}");
     ctx.decreaseIndent();
-
-    // ctx.appendtoTsxElementMaybeOnNewLine(printNodeContents);
-
-    if (expr instanceof StringLiteral
-        && (expr.asStringLiteral().get().equals("'\\n'")
-            || expr.asStringLiteral().get().equals("'\\r'"))) {
-      ctx.endLine();
-    }
   }
 
   @Override
   public void collectRequires(Consumer<GoogRequire> collector) {
-    expr().collectRequires(collector);
+    if (expr.isPresent()) {
+      expr.get().collectRequires(collector);
+    }
   }
 
   /**
@@ -89,21 +68,34 @@ public class TsxPrintNode extends Statement {
     private final boolean endLineAfterChar;
 
     public static CommandChar create(String charContents) {
-      return new CommandChar(charContents, /* endLineAfterChar= */ false);
+      return new CommandChar(Optional.of(charContents));
     }
 
     public static CommandChar create(String charContents, boolean endLineAfterChar) {
-      return new CommandChar(charContents, endLineAfterChar);
+      return new CommandChar(Optional.of(charContents), endLineAfterChar);
     }
 
-    private CommandChar(String charContents, boolean endLineAfterChar) {
-      super(StringLiteral.create(charContents));
+    public static CommandChar createNil() {
+      return new CommandChar(Optional.empty());
+    }
+
+    private CommandChar(Optional<String> charContents, boolean endLineAfterChar) {
+      super(charContents.map(c -> StringLiteral.create(c)));
       this.endLineAfterChar = endLineAfterChar;
+    }
+
+    private CommandChar(Optional<String> charContents) {
+      this(charContents, /* endLineAfterChar= */ false);
     }
 
     @Override
     void doFormatInitialStatements(FormattingContext ctx) {
-      ctx.append("{'" + expr().asStringLiteral().get() + "'}");
+      if (!expr().isPresent()) {
+        ctx.append("{}");
+        return;
+      }
+
+      ctx.append("{'" + expr().get().asStringLiteral().get() + "'}");
 
       if (endLineAfterChar) {
         ctx.endLine();

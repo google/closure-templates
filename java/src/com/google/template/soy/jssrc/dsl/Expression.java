@@ -110,34 +110,6 @@ public abstract class Expression extends CodeChunk {
     return FunctionDeclaration.createArrowFunction(JsDoc.getDefaultInstance(), this);
   }
 
-  /**
-   * Gets code to write an expression inline (i.e. without a semicolon). If the expression has any
-   * initial statements, it will be wrapped in a lambda.
-   *
-   * <p>TODO: Delete this in cl/470062604.
-   */
-  public String getCodeForInlineExpr(int startingIndent) {
-    FormattingContext outputExpr = new FormattingContext(startingIndent);
-    outputExpr.appendOutputExpression(this);
-
-    // If there were no initial statements, just return the expr string.
-    if (initialStatements().isEmpty()) {
-      return outputExpr.toString();
-    }
-
-    // Otherwise wrap in a lambda expression so we can include the initial statements (e.g. () -> {
-    // x = 5; return x + 1;}).
-    // TODO(user): Test this and adjust formatting once soy2tsx supports exprs that have initial
-    // statements.
-    FormattingContext lambda = new FormattingContext(startingIndent).append("() -> {").endLine();
-    lambda.appendInitialStatements(this);
-    lambda.append("return ");
-    doFormatOutputExpr(lambda);
-    lambda.append(";").endLine();
-    lambda.append("}");
-    return lambda.toString();
-  }
-
   /** Starts a conditional expression beginning with the given predicate and consequent chunks. */
   public static ConditionalExpressionBuilder ifExpression(
       Expression predicate, Expression consequent) {
