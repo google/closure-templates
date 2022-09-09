@@ -30,12 +30,14 @@ import javax.annotation.Nullable;
  * and the current indentation level.
  */
 final class FormattingContext implements AutoCloseable {
+  private static final int MAX_LINE_LENGTH = 80;
   private final StringBuilder buf;
   private final int initialSize;
 
   private Scope curScope = new Scope(/* parent= */ null, /* emitClosingBrace= */ false);
   private String curIndent;
   private boolean nextAppendShouldStartNewLine = false;
+  private boolean applyTsxLineBreaks = false;
 
   FormattingContext() {
     this(/* startingIndent= */ 0);
@@ -48,18 +50,36 @@ final class FormattingContext implements AutoCloseable {
     initialSize = curIndent.length();
   }
 
+  /**
+   * If {@code applyTsxLineBreaks} is enabled, breaks lines to keep line length under 80 chars, and
+   * does things like split lines between curly/angle braces, to try to make gencode more readable.
+   * TODO: Either figure out a more long-term / sophisticated line breaking strategy, or if we want
+   * to just run the gencode through a formatter.
+   */
+  void enableTsxLineBreaks() {
+    applyTsxLineBreaks = true;
+  }
+
   @CanIgnoreReturnValue
   FormattingContext append(String stuff) {
-    maybeIndent();
+    maybeBreakLineInsideTsxElement(stuff);
+    maybeIndent(/* nextCharIsSpace= */ !stuff.isEmpty() && stuff.charAt(0) == ' ');
     buf.append(stuff);
     return this;
   }
 
   @CanIgnoreReturnValue
   FormattingContext append(char c) {
-    maybeIndent();
+    maybeBreakLineInsideTsxElement(Character.toString(c));
+    maybeIndent(c == ' ');
     buf.append(c);
     return this;
+  }
+
+  void appendBlankLine() {
+    endLine();
+    append("");
+    endLine();
   }
 
   /** Writes the jsdoc for the {@code jsDoc} to the buffer. */
@@ -110,7 +130,7 @@ final class FormattingContext implements AutoCloseable {
 
   @CanIgnoreReturnValue
   FormattingContext enterBlock() {
-    maybeIndent();
+    maybeIndent(/* nextCharIsSpace= */ false);
     buf.append('{');
     increaseIndent();
     endLine();
@@ -124,7 +144,7 @@ final class FormattingContext implements AutoCloseable {
    */
   @CanIgnoreReturnValue
   FormattingContext enterCaseBody() {
-    maybeIndent();
+    maybeIndent(false);
     increaseIndent();
     endLine();
     curScope = new Scope(curScope, /* emitClosingBrace= */ false);
@@ -139,11 +159,54 @@ final class FormattingContext implements AutoCloseable {
     return this;
   }
 
+  char getLastChar() {
+    return buf.length() == 0 ? '\0' : buf.charAt(buf.length() - 1);
+  }
+
+  private void maybeBreakLineInsideTsxElement(String nextAppendContent) {
+    if (!applyTsxLineBreaks || buf.length() == 0) {
+      return;
+    }
+    if (isRightAngleOrCurlyBracket(getLastChar())
+        && isLeftAngleOrCurlyBracket(
+            nextAppendContent.isEmpty() ? ' ' : nextAppendContent.charAt(0))) {
+      endLine();
+      return;
+    }
+
+    if (!fitsOnCurrentLine(nextAppendContent)) {
+      endLine();
+      return;
+    }
+  }
+
   /**
-   * If this is the first call to {@link #append} since the last {@link #endLine},
-   * writes the newline and leading indentation.
+   * Return whether a code string can be appended to the current line without going over
+   * MAX_LINE_LENGTH.
    */
-  private void maybeIndent() {
+  private boolean fitsOnCurrentLine(String stuff) {
+    int lastNewLine = buf.lastIndexOf("\n");
+    int currentLineLength =
+        lastNewLine < 0
+            ? buf.length()
+            : lastNewLine == buf.length() - 1 ? 0 : buf.substring(lastNewLine + 1).length();
+    return currentLineLength + stuff.length() < MAX_LINE_LENGTH;
+  }
+
+  /**
+   * If this is the first call to {@link #append} since the last {@link #endLine}, writes the
+   * newline and leading indentation.
+   *
+   * @param nextCharIsSpace Whether the first charater of the appended content will be a space char.
+   */
+  private void maybeIndent(boolean nextCharIsSpace) {
+    boolean prevCharIsSpace = buf.length() > 0 && (buf.charAt(buf.length() - 1) == ' ');
+    // TSX safeguard: it's never safe to break a line when there's a space character at the join
+    // location.
+    if (applyTsxLineBreaks && (nextCharIsSpace || prevCharIsSpace)) {
+      nextAppendShouldStartNewLine = false;
+    }
+
     if (nextAppendShouldStartNewLine) {
       buf.append('\n').append(curIndent);
       nextAppendShouldStartNewLine = false;
@@ -235,5 +298,13 @@ final class FormattingContext implements AutoCloseable {
     boolean alreadyFormatted(CodeChunk chunk) {
       return formatted.contains(chunk) || (parent != null && parent.alreadyFormatted(chunk));
     }
+  }
+
+  private static boolean isLeftAngleOrCurlyBracket(char c) {
+    return c == '<' || c == '{';
+  }
+
+  private static boolean isRightAngleOrCurlyBracket(char c) {
+    return c == '>' || c == '}';
   }
 }

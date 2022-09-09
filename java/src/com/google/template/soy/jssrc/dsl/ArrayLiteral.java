@@ -25,11 +25,11 @@ import java.util.function.Consumer;
 /** Represents a JavaScript array literal expression. */
 @AutoValue
 @Immutable
-abstract class ArrayLiteral extends Expression {
+public abstract class ArrayLiteral extends Expression {
 
   abstract ImmutableList<? extends Expression> elements();
 
-  static ArrayLiteral create(ImmutableList<? extends Expression> elements) {
+  public static ArrayLiteral create(ImmutableList<? extends Expression> elements) {
     ImmutableList.Builder<Statement> builder = ImmutableList.builder();
     for (Expression element : elements) {
       builder.addAll(element.initialStatements());

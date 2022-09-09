@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Google Inc.
+ * Copyright 2022 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,39 +19,28 @@ package com.google.template.soy.jssrc.dsl;
 import com.google.auto.value.AutoValue;
 import com.google.errorprone.annotations.Immutable;
 import java.util.function.Consumer;
-import javax.annotation.Nullable;
 
-/** Evaluates an expression as a statement. */
+/**
+ * Raw text within a TsxElement ("<></>"). Does not contain command chars like {sp}, since these are
+ * represented with TsxPrintNode.
+ */
 @AutoValue
 @Immutable
-public abstract class ExpressionStatement extends Statement {
+public abstract class RawText extends Statement {
+  abstract String value();
 
-  public static ExpressionStatement of(Expression expression) {
-    return of(expression, /* jsDoc= */ null);
+  public static RawText create(String value) {
+    return new AutoValue_RawText(value);
   }
-
-  static ExpressionStatement of(Expression expression, JsDoc jsDoc) {
-    return new AutoValue_ExpressionStatement(expression, jsDoc);
-  }
-
-  abstract Expression expr();
-
-  @Nullable
-  abstract JsDoc jsDoc();
 
   @Override
   void doFormatInitialStatements(FormattingContext ctx) {
-    ctx.appendInitialStatements(expr());
-    if (jsDoc() != null) {
-      ctx.append(jsDoc()).endLine();
+    if (value().length() == 0) {
+      return;
     }
-    ctx.appendOutputExpression(expr());
-    ctx.append(";");
-    ctx.endLine();
+    ctx.append(value());
   }
 
   @Override
-  public void collectRequires(Consumer<GoogRequire> collector) {
-    expr().collectRequires(collector);
-  }
+  public void collectRequires(Consumer<GoogRequire> collector) {}
 }

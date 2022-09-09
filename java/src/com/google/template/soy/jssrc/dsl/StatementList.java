@@ -23,12 +23,12 @@ import java.util.function.Consumer;
 
 /** Represents a sequence of statements. */
 @AutoValue
-abstract class StatementList extends Statement {
+public abstract class StatementList extends Statement {
   private static final StatementList EMPTY = new AutoValue_StatementList(ImmutableList.of());
 
   abstract ImmutableList<? extends Statement> statements();
 
-  static StatementList create(Iterable<? extends Statement> statements) {
+  public static StatementList create(Iterable<? extends Statement> statements) {
     if (Iterables.isEmpty(statements)) {
       return EMPTY;
     }

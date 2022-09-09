@@ -30,7 +30,7 @@ import java.util.function.Consumer;
  * }</code>
  */
 @AutoValue
-abstract class FunctionDeclaration extends Expression {
+public abstract class FunctionDeclaration extends Expression {
 
   abstract JsDoc jsDoc();
 
@@ -38,17 +38,17 @@ abstract class FunctionDeclaration extends Expression {
 
   abstract boolean isArrowFunction();
 
-  static FunctionDeclaration create(JsDoc jsDoc, Statement body) {
+  public static FunctionDeclaration create(JsDoc jsDoc, Statement body) {
     return new AutoValue_FunctionDeclaration(
         /* initialStatements= */ ImmutableList.of(), jsDoc, body, false);
   }
 
-  static FunctionDeclaration createArrowFunction(JsDoc jsDoc, Statement body) {
+  public static FunctionDeclaration createArrowFunction(JsDoc jsDoc, Statement body) {
     return new AutoValue_FunctionDeclaration(
         /* initialStatements= */ ImmutableList.of(), jsDoc, body, true);
   }
 
-  static FunctionDeclaration createArrowFunction(JsDoc jsDoc, Expression body) {
+  public static FunctionDeclaration createArrowFunction(JsDoc jsDoc, Expression body) {
     return new AutoValue_FunctionDeclaration(
         /* initialStatements= */ ImmutableList.of(), jsDoc, body, true);
   }

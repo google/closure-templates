@@ -30,9 +30,16 @@ import javax.annotation.Nullable;
 @Immutable
 public abstract class JsDoc {
 
-  public static Builder builder() {
-    return new AutoValue_JsDoc.Builder();
+  public static JsDoc getDefaultInstance() {
+    return builder().build();
   }
+
+  public static Builder builder() {
+    return new AutoValue_JsDoc.Builder().setOverviewComment("");
+  }
+
+  /** Comment before the {@code @param} decls. */
+  abstract String overviewComment();
 
   abstract ImmutableList<GoogRequire> requires();
 
@@ -52,6 +59,7 @@ public abstract class JsDoc {
 
     abstract ImmutableList.Builder<GoogRequire> requiresBuilder();
 
+
     public abstract JsDoc build();
 
     @CanIgnoreReturnValue
@@ -59,6 +67,9 @@ public abstract class JsDoc {
       requiresBuilder().add(require);
       return this;
     }
+
+    @CanIgnoreReturnValue
+    public abstract Builder setOverviewComment(String string);
 
     @CanIgnoreReturnValue
     public Builder addParameterizedAnnotation(String name, String value) {
@@ -169,6 +180,10 @@ public abstract class JsDoc {
     }
     ctx.append("/**");
     ctx.endLine();
+    if (overviewComment().length() > 0) {
+      ctx.append("* " + overviewComment());
+      ctx.endLine();
+    }
     for (Param param : params()) {
       ctx.append(" * ");
       param.format(ctx);
@@ -184,7 +199,8 @@ public abstract class JsDoc {
   @Override
   public final String toString() {
     if (this.isSingleLine()) {
-      return String.format("/** %s */", params().get(0));
+      return String.format(
+          "/** %s */", overviewComment() + (params().size() == 1 ? params().get(0) : ""));
     }
     StringBuilder sb = new StringBuilder();
     sb.append("/**\n");
@@ -196,10 +212,12 @@ public abstract class JsDoc {
   }
 
   private boolean isSingleLine() {
-    return params().size() == 1
-        // Typedefs usually span more than one line.
-        && !"typedef".equals(params().get(0).annotationType())
-        // Record literals always span more than one line.
-        && params().get(0).recordLiteralType() == null;
+    return params().size() == 0
+        || (overviewComment().isEmpty()
+            && params().size() == 1
+            // Typedefs usually span more than one line.
+            && !"typedef".equals(params().get(0).annotationType())
+            // Record literals always span more than one line.
+            && params().get(0).recordLiteralType() == null);
   }
 }

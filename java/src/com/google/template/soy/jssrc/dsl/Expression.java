@@ -95,8 +95,26 @@ public abstract class Expression extends CodeChunk {
   }
 
   /**
+   * If the expression has any initial statements, wraps it in a lambda so the expression can be
+   * written inline (i.e. without a semicolon).
+   */
+  public Expression asInlineExpr() {
+
+    // If there were no initial statements, just return the expr string.
+    if (initialStatements().isEmpty()) {
+      return this;
+    }
+
+    // Otherwise wrap in a lambda expression so we can include the initial statements (e.g. () -> {
+    // x = 5; return x + 1;}).
+    return FunctionDeclaration.createArrowFunction(JsDoc.getDefaultInstance(), this);
+  }
+
+  /**
    * Gets code to write an expression inline (i.e. without a semicolon). If the expression has any
    * initial statements, it will be wrapped in a lambda.
+   *
+   * <p>TODO: Delete this in cl/470062604.
    */
   public String getCodeForInlineExpr(int startingIndent) {
     FormattingContext outputExpr = new FormattingContext(startingIndent);

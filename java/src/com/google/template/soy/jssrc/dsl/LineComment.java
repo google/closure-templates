@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Google Inc.
+ * Copyright 2022 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,45 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
 import com.google.errorprone.annotations.Immutable;
 import java.util.function.Consumer;
-import javax.annotation.Nullable;
 
-/** Evaluates an expression as a statement. */
+/** Represents a "//..." line comment. */
 @AutoValue
 @Immutable
-public abstract class ExpressionStatement extends Statement {
+public abstract class LineComment extends Statement {
 
-  public static ExpressionStatement of(Expression expression) {
-    return of(expression, /* jsDoc= */ null);
+  abstract String comment();
+
+  public static LineComment create(String comment) {
+    return new AutoValue_LineComment(comment);
   }
-
-  static ExpressionStatement of(Expression expression, JsDoc jsDoc) {
-    return new AutoValue_ExpressionStatement(expression, jsDoc);
-  }
-
-  abstract Expression expr();
-
-  @Nullable
-  abstract JsDoc jsDoc();
 
   @Override
   void doFormatInitialStatements(FormattingContext ctx) {
-    ctx.appendInitialStatements(expr());
-    if (jsDoc() != null) {
-      ctx.append(jsDoc()).endLine();
-    }
-    ctx.appendOutputExpression(expr());
-    ctx.append(";");
+    ctx.append("// " + comment());
     ctx.endLine();
   }
 
   @Override
-  public void collectRequires(Consumer<GoogRequire> collector) {
-    expr().collectRequires(collector);
-  }
+  public void collectRequires(Consumer<GoogRequire> collector) {}
 }

@@ -34,7 +34,8 @@ public abstract class VariableDeclaration extends Statement {
         .setVarName(name)
         .setGoogRequires(ImmutableSet.of())
         // All variables should be const by default
-        .setIsMutable(false);
+        .setIsMutable(false)
+        .setIsExported(false);
   }
 
   public abstract String varName();
@@ -48,6 +49,8 @@ public abstract class VariableDeclaration extends Statement {
   abstract ImmutableSet<GoogRequire> googRequires();
 
   abstract boolean isMutable();
+
+  abstract boolean isExported();
 
   /** Returns an {@link Expression} representing a reference to this declared variable. */
   public Expression ref() {
@@ -77,6 +80,11 @@ public abstract class VariableDeclaration extends Statement {
     if (jsDoc() != null) {
       ctx.append(jsDoc()).endLine();
     }
+
+    if (isExported()) {
+      ctx.append("export ");
+    }
+
     // variables without initializing expressions cannot be const
     ctx.append((isMutable() || rhs() == null) ? "let " : "const ").append(varName());
     if (rhs() != null) {
@@ -131,6 +139,8 @@ public abstract class VariableDeclaration extends Statement {
     }
 
     abstract Builder setIsMutable(boolean isConst);
+
+    public abstract Builder setIsExported(boolean isExported);
 
     public abstract VariableDeclaration build();
   }

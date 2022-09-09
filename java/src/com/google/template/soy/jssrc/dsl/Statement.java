@@ -15,6 +15,8 @@
  */
 package com.google.template.soy.jssrc.dsl;
 
+import static com.google.template.soy.jssrc.dsl.Expression.ERROR_EXPR;
+
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
 
@@ -25,6 +27,9 @@ import com.google.errorprone.annotations.Immutable;
  */
 @Immutable
 public abstract class Statement extends CodeChunk {
+
+  public static final Statement ERROR_STMT = ExpressionStatement.of(ERROR_EXPR);
+
   Statement() {}
 
   /** Creates a new code chunk representing the concatenation of the given statements. */

@@ -24,18 +24,18 @@ import javax.annotation.Nullable;
 /** Represents a JavaScript return statement. */
 @AutoValue
 @Immutable
-abstract class Return extends Statement {
+public abstract class Return extends Statement {
   private static final Return EMPTY_RETURN = new AutoValue_Return(null);
 
   @Nullable
   abstract Expression value();
 
-  static Return create(Expression value) {
+  public static Return create(Expression value) {
     return new AutoValue_Return(value);
   }
 
   /** Creates an empty (no return value) return statement. */
-  static Return create() {
+  public static Return create() {
     return EMPTY_RETURN;
   }
 

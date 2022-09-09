@@ -18,6 +18,7 @@ package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.jssrc.restricted.JsExpr;
@@ -29,11 +30,15 @@ import java.util.function.Consumer;
  */
 @AutoValue
 @Immutable
-abstract class LeafStatement extends Statement {
+public abstract class LeafStatement extends Statement {
   abstract String value();
   abstract ImmutableSet<GoogRequire> requires();
 
-  static LeafStatement create(String value, Iterable<GoogRequire> requires) {
+  public static LeafStatement create(String value) {
+    return create(value, ImmutableList.of());
+  }
+
+  public static LeafStatement create(String value, Iterable<GoogRequire> requires) {
     // This hackery is to work around extra newlines and semi colons added by JsCodeBuilder
     // TODO(b/35203585): this (and leafstatement) should go away when jscodebuilder does
     while (value.endsWith("\n")) {

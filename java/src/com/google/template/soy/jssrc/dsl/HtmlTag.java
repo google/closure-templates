@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Google Inc.
+ * Copyright 2022 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,45 +13,43 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
 import com.google.errorprone.annotations.Immutable;
 import java.util.function.Consumer;
-import javax.annotation.Nullable;
 
-/** Evaluates an expression as a statement. */
+/** Represents an {@code HtmlTagNode}. */
 @AutoValue
 @Immutable
-public abstract class ExpressionStatement extends Statement {
+public abstract class HtmlTag extends Statement {
 
-  public static ExpressionStatement of(Expression expression) {
-    return of(expression, /* jsDoc= */ null);
+  public static final HtmlTag FRAGMENT_OPEN = createOpen("");
+  public static final HtmlTag FRAGMENT_CLOSE = createClose("");
+
+  abstract String tagName();
+
+  abstract boolean isClose();
+
+  public static HtmlTag createOpen(String tagName) {
+    return new AutoValue_HtmlTag(tagName, false);
   }
 
-  static ExpressionStatement of(Expression expression, JsDoc jsDoc) {
-    return new AutoValue_ExpressionStatement(expression, jsDoc);
+  public static HtmlTag createClose(String tagName) {
+    return new AutoValue_HtmlTag(tagName, true);
   }
-
-  abstract Expression expr();
-
-  @Nullable
-  abstract JsDoc jsDoc();
 
   @Override
   void doFormatInitialStatements(FormattingContext ctx) {
-    ctx.appendInitialStatements(expr());
-    if (jsDoc() != null) {
-      ctx.append(jsDoc()).endLine();
+    if (!isClose()) {
+      ctx.append("<" + tagName() + ">");
+      ctx.increaseIndent();
+    } else {
+      ctx.decreaseIndent();
+      ctx.append("</" + tagName() + ">");
     }
-    ctx.appendOutputExpression(expr());
-    ctx.append(";");
-    ctx.endLine();
   }
 
   @Override
-  public void collectRequires(Consumer<GoogRequire> collector) {
-    expr().collectRequires(collector);
-  }
+  public void collectRequires(Consumer<GoogRequire> collector) {}
 }
