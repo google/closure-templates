@@ -204,21 +204,7 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
           "gitiles.logEntry",
           "materialdesign.wiz.icon.svgs.delSvg.templates", // gencode
           "renderComponentWithUiReference",
-          "wiztest.pkg.deltemplates.passthroughTemplate",
-          // In contact with team, b/233902965
-          // https://groups.google.com/a/google.com/g/soy-dev/c/YV0d64vm0I4/m/4tI4J7PYAwAJ
-          "boq.educms.fields.dispatcher.templates.enumfield",
-          "boq.educms.fields.dispatcher.templates.groupfield",
-          "boq.educms.fields.dispatcher.templates.nodefield",
-          "boq.educms.fields.dispatcher.templates.repeatedenumfield",
-          "boq.educms.fields.dispatcher.templates.repeatedgroupfield",
-          "boq.educms.fields.dispatcher.templates.repeatednodefield",
-          "boq.educms.fields.dispatcher.templates.repeatedstringfield",
-          "boq.educms.fields.dispatcher.templates.stringfield",
-          "boq.educms.renderer.templates.component",
-          "boq.educms.renderer.templates.componentlist",
-          "boq.educmseditor.fields.templates.editor",
-          "boq.educmseditor.fields.templates.preview");
+          "wiztest.pkg.deltemplates.passthroughTemplate");
 
   private final class CheckCallsHelper {
 
