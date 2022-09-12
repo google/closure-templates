@@ -171,9 +171,6 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
 
   private static final ImmutableSet<String> DEFAULT_DELTEMPLATE_PASSLIST =
       ImmutableSet.of(
-          "boq.ads.townsquare.marketplaceui.components.carousel.templates.item", // circular import
-          "boq.ads.townsquare.marketplaceui.components.grid.templates.item", // circular import
-          "boq.ads.townsquare.marketplaceui.components.grid.templates.itemKey", // circular import
           "boq.dynamitewebui.member.templates.isOneOnOneDm", // circular dep
           "boq.dynamitewebui.member.templates.readSingleUserFromDmHumanMembersList", // circular dep
           "boq.googlefinanceui.views.bundles.portfolio.templates.portfolioLayoutRedesign", // circular import
