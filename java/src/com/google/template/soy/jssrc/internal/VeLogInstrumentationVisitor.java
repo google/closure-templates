@@ -192,7 +192,6 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
       SourceLocation insertionLocation =
           tag.getSourceLocation()
               .getEndPoint()
-              .offset(0, tag.isSelfClosing() ? -2 : -1)
               .asLocation(tag.getSourceLocation().getFilePath());
       FunctionNode funcNode =
           FunctionNode.newPositional(
