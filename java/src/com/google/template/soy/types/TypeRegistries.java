@@ -185,6 +185,7 @@ public final class TypeRegistries {
     private static final ImmutableMap<String, SoyType> BUILTIN_TYPES =
         ImmutableSortedMap.<String, SoyType>naturalOrder()
             .put("?", UnknownType.getInstance())
+            .put("UnknownTypeForDeltemplateMigration", UnknownType.getInstance())
             .put("any", AnyType.getInstance())
             .put("null", NullType.getInstance())
             .put("bool", BoolType.getInstance())
