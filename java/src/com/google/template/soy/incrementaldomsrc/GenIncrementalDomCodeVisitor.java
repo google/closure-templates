@@ -412,6 +412,17 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   }
 
   @Override
+  protected JsDoc generateEmptyFunctionJsDoc(TemplateNode node) {
+    JsDoc.Builder jsDocBuilder = JsDoc.builder();
+    String ijDataTypeExpression = ijDataTypeExpression(jsDocBuilder);
+    jsDocBuilder.addAnnotation(
+        "type",
+        String.format("{function(?Object<string, *>=, ?%s=):string}", ijDataTypeExpression));
+    jsDocBuilder.addParameterizedAnnotation("suppress", "checkTypes");
+    return jsDocBuilder.build();
+  }
+
+  @Override
   protected JsDoc generateFunctionJsDoc(
       TemplateNode node, String alias, boolean suppressCheckTypes, boolean addVariantParam) {
     JsDoc.Builder jsDocBuilder = JsDoc.builder();
@@ -457,13 +468,20 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     }
   }
 
+  /** Returns the simple type of IjData, adding requires as necessary. */
+  @Override
+  protected String ijDataTypeExpression(JsDoc.Builder jsDocBuilder) {
+    jsDocBuilder.addGoogRequire(GOOG_SOY_ALIAS);
+    return GOOG_SOY_ALIAS.alias() + ".IjData";
+  }
+
   @Override
   protected void addIjDataParam(JsDoc.Builder jsDocBuilder, boolean forPositionalSignature) {
-    jsDocBuilder.addGoogRequire(GOOG_SOY_ALIAS);
+    String ijDataTypeExpression = ijDataTypeExpression(jsDocBuilder);
     if (forPositionalSignature) {
-      jsDocBuilder.addParam(StandardNames.DOLLAR_IJDATA, "!" + GOOG_SOY_ALIAS.alias() + ".IjData");
+      jsDocBuilder.addParam(StandardNames.DOLLAR_IJDATA, "!" + ijDataTypeExpression);
     } else {
-      jsDocBuilder.addParam(StandardNames.OPT_IJDATA, "?" + GOOG_SOY_ALIAS.alias() + ".IjData=");
+      jsDocBuilder.addParam(StandardNames.OPT_IJDATA, "?" + ijDataTypeExpression + "=");
     }
   }
 

@@ -1134,9 +1134,10 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
   protected JsDoc generateEmptyFunctionJsDoc(TemplateNode node) {
     JsDoc.Builder jsDocBuilder = JsDoc.builder();
-    jsDocBuilder.addParam(StandardNames.OPT_DATA, "?Object<string, *>=");
-    addIjDataParam(jsDocBuilder, /*forPositionalSignature=*/ false);
-    addReturnTypeAndAnnotations(node, jsDocBuilder);
+    String ijDataTypeExpression = ijDataTypeExpression(jsDocBuilder);
+    jsDocBuilder.addAnnotation(
+        "type",
+        String.format("{function(?Object<string, *>=, ?%s=):string}", ijDataTypeExpression));
     jsDocBuilder.addParameterizedAnnotation("suppress", "checkTypes");
     return jsDocBuilder.build();
   }
@@ -1208,15 +1209,22 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         .build();
   }
 
-  protected void addIjDataParam(JsDoc.Builder jsDocBuilder, boolean forPositionalSignature) {
+  /** Returns the simple type of IjData, adding requires as necessary. */
+  protected String ijDataTypeExpression(JsDoc.Builder jsDocBuilder) {
     GoogRequire googSoy = jsSrcOptions.shouldGenerateGoogModules() ? GOOG_SOY_ALIAS : GOOG_SOY;
     jsDocBuilder.addGoogRequire(googSoy);
+    return googSoy.alias() + ".IjData";
+  }
+
+  protected void addIjDataParam(JsDoc.Builder jsDocBuilder, boolean forPositionalSignature) {
+    String ijDataTypeExpression = ijDataTypeExpression(jsDocBuilder);
     if (forPositionalSignature) {
-      jsDocBuilder.addParam(StandardNames.DOLLAR_IJDATA, "!" + googSoy.alias() + ".IjData");
+      jsDocBuilder.addParam(StandardNames.DOLLAR_IJDATA, "!" + ijDataTypeExpression);
     } else {
       // TODO(b/177856412): rename to something that doesn't begin with {@code opt_}
       jsDocBuilder.addParam(
-          StandardNames.OPT_IJDATA, "(?" + googSoy.alias() + ".IjData|?Object<string, *>)=");
+          StandardNames.OPT_IJDATA,
+          String.format("(?%s|?Object<string, *>)=", ijDataTypeExpression));
     }
   }
 
