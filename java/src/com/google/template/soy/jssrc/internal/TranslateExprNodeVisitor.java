@@ -128,12 +128,12 @@ import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypes;
-import com.google.template.soy.types.UnionType;
 import com.google.template.soy.types.UnknownType;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.function.Function;
 
 /**
  * Visitor for translating a Soy expression (in the form of an {@code ExprNode}) into an equivalent
@@ -584,38 +584,23 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
   private FieldAccess genCodeForFieldAccess(
       SoyType baseType, SourceLocation sourceLocation, String fieldName) {
     Preconditions.checkNotNull(baseType);
-    // For unions, attempt to generate the field access code for each member
-    // type, and then see if they all agree.
-    if (baseType.getKind() == SoyType.Kind.UNION) {
-      // TODO(msamuel): We will need to generate fallback code for each variant.
-      UnionType unionType = (UnionType) baseType;
-      FieldAccess fieldAccess = null;
-      for (SoyType memberType : unionType.getMembers()) {
-        if (memberType.getKind() != SoyType.Kind.NULL) {
-          FieldAccess fieldAccessForType =
-              genCodeForFieldAccess(memberType, sourceLocation, fieldName);
-          if (fieldAccess == null) {
-            fieldAccess = fieldAccessForType;
-          } else if (!fieldAccess.equals(fieldAccessForType)) {
-            errorReporter.report(sourceLocation, UNION_ACCESSOR_MISMATCH, fieldName, baseType);
+    return genCodeForMaybeUnion(
+        baseType,
+        fieldName,
+        sourceLocation,
+        type -> {
+          if (type.getKind() == SoyType.Kind.PROTO) {
+            SoyProtoType protoType = (SoyProtoType) type;
+            FieldDescriptor desc = protoType.getFieldDescriptor(fieldName);
+            Preconditions.checkNotNull(
+                desc,
+                "Error in proto %s, field not found: %s",
+                protoType.getDescriptor().getFullName(),
+                fieldName);
+            return FieldAccess.protoCall(fieldName, desc);
           }
-        }
-      }
-      return fieldAccess;
-    }
-
-    if (baseType.getKind() == SoyType.Kind.PROTO) {
-      SoyProtoType protoType = (SoyProtoType) baseType;
-      FieldDescriptor desc = protoType.getFieldDescriptor(fieldName);
-      Preconditions.checkNotNull(
-          desc,
-          "Error in proto %s, field not found: %s",
-          protoType.getDescriptor().getFullName(),
-          fieldName);
-      return FieldAccess.protoCall(fieldName, desc);
-    }
-
-    return FieldAccess.id(fieldName);
+          return FieldAccess.id(fieldName);
+        });
   }
 
   /**
@@ -635,6 +620,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     if (soyMethod instanceof BuiltinMethod) {
       BuiltinMethod builtinMethod = (BuiltinMethod) soyMethod;
       SoyType baseType = methodCallNode.getBaseType(nullSafe);
+      SourceLocation sourceLocation = methodCallNode.getAccessSourceLocation();
       switch (builtinMethod) {
         case GET_EXTENSION:
           String extName = BuiltinMethod.getProtoExtensionIdFromMethodCall(methodCallNode);
@@ -644,25 +630,37 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
               assertNonNull);
         case HAS_PROTO_FIELD:
           String fieldName = BuiltinMethod.getProtoFieldNameFromMethodCall(methodCallNode);
-          return base.dotAccess(
-              ProtoCall.hasField(
-                  fieldName, ((SoyProtoType) baseType).getFieldDescriptor(fieldName)),
-              nullSafe,
-              assertNonNull);
+          FieldAccess fieldAccess =
+              genCodeForMaybeUnion(
+                  baseType,
+                  fieldName,
+                  sourceLocation,
+                  type ->
+                      ProtoCall.hasField(
+                          fieldName, ((SoyProtoType) type).getFieldDescriptor(fieldName)));
+          return base.dotAccess(fieldAccess, nullSafe, assertNonNull);
         case GET_PROTO_FIELD:
           fieldName = BuiltinMethod.getProtoFieldNameFromMethodCall(methodCallNode);
-          return base.dotAccess(
-              ProtoCall.getField(
-                  fieldName, ((SoyProtoType) baseType).getFieldDescriptor(fieldName)),
-              nullSafe,
-              assertNonNull);
+          fieldAccess =
+              genCodeForMaybeUnion(
+                  baseType,
+                  fieldName,
+                  sourceLocation,
+                  type ->
+                      ProtoCall.getField(
+                          fieldName, ((SoyProtoType) type).getFieldDescriptor(fieldName)));
+          return base.dotAccess(fieldAccess, nullSafe, assertNonNull);
         case GET_PROTO_FIELD_OR_UNDEFINED:
           fieldName = BuiltinMethod.getProtoFieldNameFromMethodCall(methodCallNode);
-          return base.dotAccess(
-              ProtoCall.getFieldOrUndefined(
-                  fieldName, ((SoyProtoType) baseType).getFieldDescriptor(fieldName)),
-              nullSafe,
-              assertNonNull);
+          fieldAccess =
+              genCodeForMaybeUnion(
+                  baseType,
+                  fieldName,
+                  sourceLocation,
+                  type ->
+                      ProtoCall.getFieldOrUndefined(
+                          fieldName, ((SoyProtoType) type).getFieldDescriptor(fieldName)));
+          return base.dotAccess(fieldAccess, nullSafe, assertNonNull);
           // When adding new built-in methods it may be necessary to assert that the base expression
           // is not null in order to prevent a method call on a null instance from ever succeeding.
         case BIND:
@@ -693,6 +691,31 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     } else {
       throw new AssertionError(soyMethod.getClass());
     }
+  }
+
+  /** Generates a FieldAccess for a base expression that might be a union of types. */
+  private FieldAccess genCodeForMaybeUnion(
+      SoyType baseType,
+      String fieldName,
+      SourceLocation sourceLocation,
+      Function<SoyType, FieldAccess> memberGenerator) {
+    if (baseType.getKind() == SoyType.Kind.NULL) {
+      // This is a special edge case since the loop below would be a no-op.
+      return memberGenerator.apply(baseType);
+    }
+    FieldAccess fieldAccess = null;
+    for (SoyType type : SoyTypes.expandUnions(baseType)) {
+      if (type.getKind() == SoyType.Kind.NULL) {
+        continue;
+      }
+      FieldAccess fieldAccessForType = memberGenerator.apply(type);
+      if (fieldAccess == null) {
+        fieldAccess = fieldAccessForType;
+      } else if (!fieldAccess.equals(fieldAccessForType)) {
+        errorReporter.report(sourceLocation, UNION_ACCESSOR_MISMATCH, fieldName, baseType);
+      }
+    }
+    return fieldAccess;
   }
 
   protected Expression genCodeForBind(

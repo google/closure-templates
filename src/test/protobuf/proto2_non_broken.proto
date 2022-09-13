@@ -11,6 +11,7 @@ message Proto2ImplicitDefaults {
   optional double double = 4;
   optional string string = 5;
   optional bool bool = 6;
+  optional bytes bytes = 8;
   optional SubMessage msg = 7;
   message SubMessage {
     optional string field = 1;

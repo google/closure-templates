@@ -49,6 +49,8 @@ import com.google.template.soy.types.TemplateBindingUtil;
 import com.google.template.soy.types.UnknownType;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
 /** Enum of built-in functions supported in Soy expressions. */
 public enum BuiltinMethod implements SoyMethod {
@@ -105,23 +107,13 @@ public enum BuiltinMethod implements SoyMethod {
     @Override
     public boolean appliesToBase(SoyType baseType) {
       Preconditions.checkArgument(!SoyTypes.isNullable(baseType));
-      return baseType.getKind() == SoyType.Kind.PROTO;
+      return SoyTypes.isKindOrUnionOfKind(baseType, SoyType.Kind.PROTO);
     }
 
     @Override
     public boolean appliesTo(String methodName, SoyType baseType) {
-      if (!appliesToBase(baseType)) {
-        return false;
-      }
-      if (!matchesName(methodName)) {
-        return false;
-      }
-      SoyProtoType protoType = (SoyProtoType) baseType;
-      String fieldName = methodToFieldName(methodName);
-      if (!protoType.getFieldNames().contains(fieldName)) {
-        return false;
-      }
-      return acceptFieldDescriptor(protoType.getFieldDescriptor(fieldName));
+      return matchesName(methodName)
+          && appliesToProto(methodName, baseType, this::acceptFieldDescriptor);
     }
 
     private boolean acceptFieldDescriptor(FieldDescriptor fd) {
@@ -137,7 +129,6 @@ public enum BuiltinMethod implements SoyMethod {
       if (fd.getFile().getSyntax() == Syntax.PROTO3) {
         return fd.hasOptionalKeyword();
       }
-
       return true;
     }
 
@@ -159,19 +150,12 @@ public enum BuiltinMethod implements SoyMethod {
         return false;
       }
       char firstChar = methodName.charAt(3);
-      return firstChar >= 'A' && firstChar <= 'Z';
+      return Ascii.isUpperCase(firstChar);
     }
 
     @Override
     ImmutableCollection<String> expandMethodNames(SoyType baseType, List<SoyType> argTypes) {
-      if (baseType.getKind() != SoyType.Kind.PROTO) {
-        return ImmutableList.of();
-      }
-      SoyProtoType protoType = (SoyProtoType) baseType;
-      return protoType.getFieldNames().stream()
-          .filter(name -> acceptFieldDescriptor(protoType.getFieldDescriptor(name)))
-          .map(BuiltinMethod::fieldToHasMethodName)
-          .collect(toImmutableSet());
+      return expandMethodNamesForProto(baseType, BuiltinMethod::fieldToHasMethodName);
     }
   },
 
@@ -179,23 +163,13 @@ public enum BuiltinMethod implements SoyMethod {
     @Override
     public boolean appliesToBase(SoyType baseType) {
       Preconditions.checkArgument(!SoyTypes.isNullable(baseType));
-      return baseType.getKind() == SoyType.Kind.PROTO;
+      return SoyTypes.isKindOrUnionOfKind(baseType, SoyType.Kind.PROTO);
     }
 
     @Override
     public boolean appliesTo(String methodName, SoyType baseType) {
-      if (!appliesToBase(baseType)) {
-        return false;
-      }
-      if (!matchesName(methodName)) {
-        return false;
-      }
-      SoyProtoType protoType = (SoyProtoType) baseType;
-      String fieldName = methodToFieldName(methodName);
-      if (!protoType.getFieldNames().contains(fieldName)) {
-        return false;
-      }
-      return acceptFieldDescriptor(protoType.getFieldDescriptor(fieldName));
+      return matchesName(methodName)
+          && appliesToProto(methodName, baseType, this::acceptFieldDescriptor);
     }
 
     private boolean acceptFieldDescriptor(FieldDescriptor fd) {
@@ -223,7 +197,11 @@ public enum BuiltinMethod implements SoyMethod {
         SoyTypeRegistry soyTypeRegistry,
         ErrorReporter errorReporter) {
       String fieldName = methodToFieldName(methodName);
-      return ((SoyProtoType) baseType).getFieldType(fieldName);
+      ImmutableList<SoyType> types =
+          SoyTypes.expandUnions(baseType).stream()
+              .map(type -> ((SoyProtoType) type).getFieldType(fieldName))
+              .collect(toImmutableList());
+      return SoyTypes.computeLowestCommonType(soyTypeRegistry, types);
     }
 
     boolean matchesName(String methodName) {
@@ -239,14 +217,7 @@ public enum BuiltinMethod implements SoyMethod {
 
     @Override
     ImmutableCollection<String> expandMethodNames(SoyType baseType, List<SoyType> argTypes) {
-      if (baseType.getKind() != SoyType.Kind.PROTO) {
-        return ImmutableList.of();
-      }
-      SoyProtoType protoType = (SoyProtoType) baseType;
-      return protoType.getFieldNames().stream()
-          .filter(name -> acceptFieldDescriptor(protoType.getFieldDescriptor(name)))
-          .map(BuiltinMethod::fieldToGetMethodName)
-          .collect(toImmutableSet());
+      return expandMethodNamesForProto(baseType, BuiltinMethod::fieldToGetMethodName);
     }
   },
 
@@ -254,23 +225,13 @@ public enum BuiltinMethod implements SoyMethod {
     @Override
     public boolean appliesToBase(SoyType baseType) {
       Preconditions.checkArgument(!SoyTypes.isNullable(baseType));
-      return baseType.getKind() == SoyType.Kind.PROTO;
+      return SoyTypes.isKindOrUnionOfKind(baseType, SoyType.Kind.PROTO);
     }
 
     @Override
     public boolean appliesTo(String methodName, SoyType baseType) {
-      if (!appliesToBase(baseType)) {
-        return false;
-      }
-      if (!matchesName(methodName)) {
-        return false;
-      }
-      SoyProtoType protoType = (SoyProtoType) baseType;
-      String fieldName = methodToFieldName(methodName);
-      if (!protoType.getFieldNames().contains(fieldName)) {
-        return false;
-      }
-      return acceptFieldDescriptor(protoType.getFieldDescriptor(fieldName));
+      return matchesName(methodName)
+          && appliesToProto(methodName, baseType, this::acceptFieldDescriptor);
     }
 
     private boolean acceptFieldDescriptor(FieldDescriptor fd) {
@@ -291,8 +252,9 @@ public enum BuiltinMethod implements SoyMethod {
         List<ExprNode> params,
         SoyTypeRegistry soyTypeRegistry,
         ErrorReporter errorReporter) {
-      String fieldName = methodToFieldName(methodName);
-      return SoyTypes.makeNullable(((SoyProtoType) baseType).getFieldType(fieldName));
+      return SoyTypes.makeNullable(
+          GET_PROTO_FIELD.getReturnType(
+              methodName, baseType, params, soyTypeRegistry, errorReporter));
     }
 
     boolean matchesName(String methodName) {
@@ -308,14 +270,7 @@ public enum BuiltinMethod implements SoyMethod {
 
     @Override
     ImmutableCollection<String> expandMethodNames(SoyType baseType, List<SoyType> argTypes) {
-      if (baseType.getKind() != SoyType.Kind.PROTO) {
-        return ImmutableList.of();
-      }
-      SoyProtoType protoType = (SoyProtoType) baseType;
-      return protoType.getFieldNames().stream()
-          .filter(name -> acceptFieldDescriptor(protoType.getFieldDescriptor(name)))
-          .map(BuiltinMethod::fieldToGetOrUndefinedMethodName)
-          .collect(toImmutableSet());
+      return expandMethodNamesForProto(baseType, BuiltinMethod::fieldToGetOrUndefinedMethodName);
     }
   },
 
@@ -387,6 +342,36 @@ public enum BuiltinMethod implements SoyMethod {
   public static String getProtoExtensionIdFromMethodCall(MethodCallNode node) {
     ExprNode arg = node.getChild(1);
     return ((ProtoExtensionImportType) arg.getType()).getFieldName();
+  }
+
+  protected ImmutableCollection<String> expandMethodNamesForProto(
+      SoyType baseType, Function<String, String> fieldToMethodName) {
+    if (!appliesToBase(baseType)) {
+      return ImmutableList.of();
+    }
+    // If a union, we can pick any one of the types and look at all field names, as long as we check
+    // appliesTo with the entire union baseType.
+    SoyProtoType protoType = (SoyProtoType) SoyTypes.expandUnions(baseType).get(0);
+    return protoType.getFieldNames().stream()
+        .map(fieldToMethodName)
+        .filter(methodName -> appliesTo(methodName, baseType))
+        .collect(toImmutableSet());
+  }
+
+  protected boolean appliesToProto(
+      String methodName, SoyType baseType, Predicate<FieldDescriptor> acceptField) {
+    if (!appliesToBase(baseType)) {
+      return false;
+    }
+    String fieldName = methodToFieldName(methodName);
+    for (SoyType type : SoyTypes.expandUnions(baseType)) {
+      SoyProtoType protoType = (SoyProtoType) type;
+      if (!protoType.getFieldNames().contains(fieldName)
+          || !acceptField.test(protoType.getFieldDescriptor(fieldName))) {
+        return false;
+      }
+    }
+    return true;
   }
 
   private static String methodToFieldName(String methodName) {

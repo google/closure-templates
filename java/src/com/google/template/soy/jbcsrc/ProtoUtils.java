@@ -36,6 +36,7 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.unboxUnche
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.html.types.SafeHtmlProto;
 import com.google.common.html.types.SafeScriptProto;
 import com.google.common.html.types.SafeStyleProto;
@@ -63,7 +64,6 @@ import com.google.template.soy.data.ProtoFieldInterpreter;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContents;
 import com.google.template.soy.exprtree.ExprNode;
-import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
@@ -82,6 +82,7 @@ import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyRuntimeType;
 import com.google.template.soy.jbcsrc.restricted.Statement;
 import com.google.template.soy.jbcsrc.restricted.TypeInfo;
+import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.SoyProtoType;
@@ -92,7 +93,6 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import javax.annotation.Nullable;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
@@ -206,14 +206,34 @@ final class ProtoUtils {
     NULL_IF_BROKEN_SEMANTICS,
   }
 
-  /**
-   * Returns a {@link SoyExpression} for accessing a field of a proto.
-   *
-   * @param protoType The type of the proto being accessed
-   * @param baseExpr The proto being accessed
-   * @param node The field access operation
-   */
+  /** Returns a {@link SoyExpression} for accessing a field of a proto. */
   static SoyExpression accessField(
+      SoyExpression baseExpr,
+      String fieldName,
+      SoyType fieldType,
+      ScalarFieldMode mode,
+      LocalVariableManager varManager) {
+    SoyType type = baseExpr.soyType();
+    if (type.getKind() == SoyType.Kind.PROTO) {
+      return accessField((SoyProtoType) type, baseExpr, fieldName, fieldType, mode);
+    } else {
+      return accessProtoUnionField(
+          baseExpr,
+          fieldName,
+          fieldType,
+          varManager,
+          expr -> {
+            SoyProtoType protoType = (SoyProtoType) expr.soyType();
+            return accessField(protoType, expr, fieldName, protoType.getFieldType(fieldName), mode);
+          });
+    }
+  }
+
+  /**
+   * Returns a {@link SoyExpression} for accessing a field of a proto, limited to a single type of
+   * proto if the baseExpr can be a union of protos.
+   */
+  private static SoyExpression accessField(
       SoyProtoType protoType,
       SoyExpression baseExpr,
       String fieldName,
@@ -222,8 +242,26 @@ final class ProtoUtils {
     return new AccessorGenerator(protoType, baseExpr, fieldName, fieldType, mode).generate();
   }
 
-  static SoyExpression hasserField(SoyExpression baseExpr, String fieldName) {
-    SoyProtoType protoType = (SoyProtoType) baseExpr.soyType();
+  static SoyExpression hasserField(
+      SoyExpression baseExpr, String fieldName, LocalVariableManager varManager) {
+    SoyType type = baseExpr.soyType();
+    if (type.getKind() == SoyType.Kind.PROTO) {
+      return hasserField((SoyProtoType) type, baseExpr, fieldName);
+    } else {
+      return accessProtoUnionField(
+          baseExpr,
+          fieldName,
+          BoolType.getInstance(),
+          varManager,
+          expr -> {
+            SoyProtoType protoType = (SoyProtoType) expr.soyType();
+            return hasserField(protoType, expr, fieldName);
+          });
+    }
+  }
+
+  private static SoyExpression hasserField(
+      SoyProtoType protoType, SoyExpression baseExpr, String fieldName) {
     return new HasserGenerator(protoType, baseExpr, fieldName).generate();
   }
 
@@ -247,9 +285,15 @@ final class ProtoUtils {
         .generate();
   }
 
-  static SoyExpression accessProtoUnionField(
-      SoyExpression baseExpr, FieldAccessNode node, LocalVariableManager varManager) {
-    return new ProtoUnionAccessorGenerator(baseExpr, node, varManager).generate();
+  private static SoyExpression accessProtoUnionField(
+      SoyExpression baseExpr,
+      String fieldName,
+      SoyType fieldType,
+      LocalVariableManager varManager,
+      Function<SoyExpression, SoyExpression> memberGenerator) {
+    return new ProtoUnionAccessorGenerator(
+            baseExpr, fieldName, fieldType, varManager, memberGenerator)
+        .generate();
   }
 
   private abstract static class BaseGenerator {
@@ -636,16 +680,23 @@ final class ProtoUtils {
   private static final class ProtoUnionAccessorGenerator {
 
     private final SoyExpression baseExpr;
-    // TODO(b/230787876): add support for MethodCallNodes
-    private final FieldAccessNode node;
+    private final String fieldName;
+    private final SoyType fieldType;
     private final LocalVariableManager varManager;
+    private final Function<SoyExpression, SoyExpression> memberGenerator;
 
     ProtoUnionAccessorGenerator(
-        SoyExpression baseExpr, FieldAccessNode node, LocalVariableManager varManager) {
+        SoyExpression baseExpr,
+        String fieldName,
+        SoyType fieldType,
+        LocalVariableManager varManager,
+        Function<SoyExpression, SoyExpression> memberGenerator) {
       checkArgument(baseExpr.soyType().getKind() == SoyType.Kind.UNION, baseExpr.soyType());
       this.baseExpr = baseExpr;
-      this.node = node;
+      this.fieldName = fieldName;
+      this.fieldType = fieldType;
       this.varManager = varManager;
+      this.memberGenerator = memberGenerator;
     }
 
     private Expression getUnboxedBaseExpression() {
@@ -658,20 +709,20 @@ final class ProtoUtils {
       // Keep the result unboxed if possible, but the result must be boxed if the Java types of the
       // possible results are different.
       SoyRuntimeType resultType =
-          SoyRuntimeType.getUnboxedType(node.getType())
-              .orElseGet(() -> SoyRuntimeType.getBoxedType(node.getType()));
+          SoyRuntimeType.getUnboxedType(fieldType)
+              .orElseGet(() -> SoyRuntimeType.getBoxedType(fieldType));
 
       // Store the base value in a local variable so it's easy to repeatedly check the type and call
       // the correct getter method on it.
       LocalVariableManager.Scope scope = varManager.enterScope();
       Expression unboxedBaseExpr = getUnboxedBaseExpression();
       LocalVariable base =
-          scope.createTemporary(node.getFieldName() + "__base", unboxedBaseExpr.resultType());
+          scope.createTemporary(fieldName + "__base", unboxedBaseExpr.resultType());
       Statement baseInit = base.store(unboxedBaseExpr, base.start());
       Statement scopeExit = scope.exitScope();
 
       boolean foundBoxed = false;
-      Set<SoyType> members = ((UnionType) baseExpr.soyType()).getMembers();
+      ImmutableSet<SoyType> members = ((UnionType) baseExpr.soyType()).getMembers();
       // Each key is a possible type of the (union) base expression. The value is the code to access
       // the field for the key's type.
       Map<SoyRuntimeType, SoyExpression> getters = new LinkedHashMap<>();
@@ -680,14 +731,8 @@ final class ProtoUtils {
         SoyProtoType protoType = (SoyProtoType) member;
         SoyRuntimeType unboxed = SoyRuntimeType.getUnboxedType(protoType).get();
         SoyExpression fieldAccess =
-            accessField(
-                protoType,
-                SoyExpression.forProto(unboxed, base.checkedCast(unboxed.runtimeType())),
-                node.getFieldName(),
-                protoType.getFieldType(node.getFieldName()),
-                // TODO(b/230787876): This is to become NULL_IF_MISSING after all correct semantics
-                // field accesses are migrated to the getter syntax.
-                ScalarFieldMode.NULL_IF_BROKEN_SEMANTICS);
+            memberGenerator.apply(
+                SoyExpression.forProto(unboxed, base.checkedCast(unboxed.runtimeType())));
         if (fieldAccess.isBoxed()) {
           foundBoxed = true;
         }

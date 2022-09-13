@@ -1225,20 +1225,14 @@ final class ExpressionCompiler {
       // All null safe accesses should've already been converted to NullSafeAccessNodes.
       checkArgument(!node.isNullSafe());
       if (baseExpr.soyRuntimeType().isKnownProtoOrUnionOfProtos()) {
-        if (baseExpr.soyType().getKind() == Kind.PROTO) {
-          // It is a single known proto field.  Generate code to call the getter directly
-          SoyProtoType protoType = (SoyProtoType) baseExpr.soyType();
-          return ProtoUtils.accessField(
-              protoType,
-              baseExpr,
-              node.getFieldName(),
-              node.getType(),
-              // TODO(b/230787876): After all correct-semantics field accesses have been migrated to
-              // getter syntax, this should become NULL_IF_UNSET.
-              ProtoUtils.ScalarFieldMode.NULL_IF_BROKEN_SEMANTICS);
-        } else {
-          return ProtoUtils.accessProtoUnionField(baseExpr, node, varManager);
-        }
+        return ProtoUtils.accessField(
+            baseExpr,
+            node.getFieldName(),
+            node.getType(),
+            // TODO(b/230787876): After all correct-semantics field accesses have been migrated to
+            // getter syntax, this should become NULL_IF_UNSET.
+            ProtoUtils.ScalarFieldMode.NULL_IF_BROKEN_SEMANTICS,
+            varManager);
       }
       // Otherwise this must be a vanilla SoyRecord.  Box, call getField or getFieldProvider
       // depending on the resolution status.
@@ -1322,21 +1316,21 @@ final class ExpressionCompiler {
                 baseExpr, node, BuiltinMethod.getProtoExtensionIdFromMethodCall(node));
           case HAS_PROTO_FIELD:
             return ProtoUtils.hasserField(
-                baseExpr, BuiltinMethod.getProtoFieldNameFromMethodCall(node));
+                baseExpr, BuiltinMethod.getProtoFieldNameFromMethodCall(node), varManager);
           case GET_PROTO_FIELD:
             return ProtoUtils.accessField(
-                (SoyProtoType) baseExpr.soyType(),
                 baseExpr,
                 BuiltinMethod.getProtoFieldNameFromMethodCall(node),
                 node.getType(),
-                ProtoUtils.ScalarFieldMode.DEFAULT_IF_UNSET);
+                ProtoUtils.ScalarFieldMode.DEFAULT_IF_UNSET,
+                varManager);
           case GET_PROTO_FIELD_OR_UNDEFINED:
             return ProtoUtils.accessField(
-                (SoyProtoType) baseExpr.soyType(),
                 baseExpr,
                 BuiltinMethod.getProtoFieldNameFromMethodCall(node),
                 node.getType(),
-                ProtoUtils.ScalarFieldMode.NULL_IF_UNSET);
+                ProtoUtils.ScalarFieldMode.NULL_IF_UNSET,
+                varManager);
           case BIND:
             return SoyExpression.forSoyValue(
                 node.getType(),
