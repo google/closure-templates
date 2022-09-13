@@ -15,6 +15,9 @@ message TemplateCallMetadata {
     // Globally unique name of the template
     string name = 1;
 
+    // The legacydeltemplatenamespace, if it exists, else empty string.
+    string legacy_deltemplate_namespace = 4;
+
     // modname if it is specified
     string modname = 2;
 
