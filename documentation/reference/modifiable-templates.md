@@ -32,7 +32,7 @@ declaration that matches an active mod, it will be rendered.
 
 import {featureTemplate} from 'my/project/feature.soy';
 
-{template myExperimentArm visibility="private" modifies="featureTemplate"}
+{template featureTemplateMod visibility="private" modifies="featureTemplate"}
   A feature with blue text
 {/template}
 ```
@@ -73,7 +73,7 @@ Otherwise by default `modifiable` template will render.
   Something
 {/template}
 
-{template variant visibility="private" modifies="withVariants" variant="'foo'"}
+{template withVariantsFoo visibility="private" modifies="withVariants" variant="'foo'"}
   Foo
 {/template}
 
