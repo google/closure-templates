@@ -353,16 +353,16 @@ public final class GenLitCodeVisitor extends AbstractSoyNodeVisitor<List<String>
 
     GoogRequire externRequire =
         GoogRequire.createWithAlias(node.module(), node.module().replace('.', '$'));
-    ;
     Expression externReference =
         dottedIdNoRequire(externRequire.alias()).dotAccess(node.function());
-    ;
     jsCodeBuilder.addGoogRequire(externRequire);
     topLevelSymbols.put(externName, externReference);
 
     if (externNode.isExported()) {
       Expression export = JsRuntime.EXPORTS.dotAccess(externName);
-      jsCodeBuilder.append(Statement.assign(export, externReference));
+      jsCodeBuilder.append(
+          Statement.assign(
+              export, externReference, JsDoc.builder().addAnnotation("const").build()));
     }
   }
 
