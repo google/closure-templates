@@ -167,10 +167,20 @@ public final class SoyTreeUtils {
   public static <T extends Node> Stream<T> allNodesOfType(Node rootSoyNode, Class<T> classObject) {
     // optimization to avoid navigating into expr trees if we can't possibly match anything
     boolean exploreExpressions = ExprNode.class.isAssignableFrom(classObject);
-    return allNodes(
-            rootSoyNode, exploreExpressions ? SoyTreeUtils::visitAll : SoyTreeUtils::visitNonExpr)
-        .filter(classObject::isInstance)
-        .map(classObject::cast);
+    return allNodesOfType(
+        rootSoyNode,
+        classObject,
+        exploreExpressions ? SoyTreeUtils::visitAll : SoyTreeUtils::visitNonExpr);
+  }
+
+  /**
+   * Returns all nodes in the AST tree starting at {@code rootSoyNode} that are an instance of
+   * {@code classObject}. {@code visitor} can return {@link VisitDirective#SKIP_CHILDREN} to skip
+   * sections of the tree.
+   */
+  public static <T extends Node> Stream<T> allNodesOfType(
+      Node rootSoyNode, Class<T> classObject, NodeVisitor<? super Node, VisitDirective> visitor) {
+    return allNodes(rootSoyNode, visitor).filter(classObject::isInstance).map(classObject::cast);
   }
 
   /**

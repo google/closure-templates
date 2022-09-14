@@ -33,6 +33,7 @@ import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
+import com.google.template.soy.soytree.SoyTreeUtils.VisitDirective;
 import com.google.template.soy.types.ProtoImportType;
 import com.google.template.soy.types.SoyType;
 
@@ -56,7 +57,14 @@ final class ResolveTemplateFunctionsPass implements CompilerFilePass {
         .flatMap(
             tag ->
                 SoyTreeUtils.allNodesOfType(
-                    tag.getTagName().getDynamicTagName(), FunctionNode.class))
+                    tag.getTagName().getDynamicTagName(),
+                    FunctionNode.class,
+                    // Don't look at children of function nodes, a child (parameter) of a template
+                    // function call can't be a template function call.
+                    n ->
+                        n instanceof FunctionNode
+                            ? VisitDirective.SKIP_CHILDREN
+                            : VisitDirective.CONTINUE))
         .filter(
             fct ->
                 !fct.hasStaticName()
