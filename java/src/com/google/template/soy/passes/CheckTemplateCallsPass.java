@@ -187,8 +187,6 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
           "boq.visualfrontendui.explorepanel.templates.header",
           "Corp.Projectmgmt.Primavera.App.Workflow.Template.Core", // gencode
           "drive.search.filetypeicons.delSvg.templates", // gencode
-          "gcal.mat.detaildialog.event.soy.detaildialog.rsvpButton", // circular import
-          "gcal.mat.detaildialog.event.soy.detaildialog.rsvpButtonClasses", // circular import
           "gitiles.footerFormatBadge",
           "gitiles.logEntry",
           "materialdesign.wiz.icon.svgs.delSvg.templates", // gencode
