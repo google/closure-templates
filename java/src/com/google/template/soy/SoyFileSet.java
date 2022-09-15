@@ -75,6 +75,7 @@ import com.google.template.soy.plugin.java.MethodChecker;
 import com.google.template.soy.plugin.java.MethodChecker.Code;
 import com.google.template.soy.plugin.java.MethodChecker.Response;
 import com.google.template.soy.plugin.java.PluginInstances;
+import com.google.template.soy.plugin.java.ReflectiveMethodChecker;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.pysrc.SoyPySrcOptions;
 import com.google.template.soy.pysrc.internal.PySrcMain;
@@ -261,6 +262,17 @@ public final class SoyFileSet {
     @CanIgnoreReturnValue
     public Builder setJavaPluginValidator(MethodChecker javaPluginValidator) {
       this.javaPluginValidator = javaPluginValidator;
+      return this;
+    }
+
+    /**
+     * This is useful to get externs working in projects that use in-process Soy compilation via
+     * SoyFileSet. Instead of configuring complex plugin validators and the locations of the plugin
+     * runtime jars, this just uses reflection. It's less performant but much simpler to setup.
+     */
+    @CanIgnoreReturnValue
+    public Builder setReflectivePluginValidator() {
+      this.javaPluginValidator = new ReflectiveMethodChecker();
       return this;
     }
 
