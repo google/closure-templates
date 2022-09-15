@@ -2368,7 +2368,8 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
             UnionType unionType = (UnionType) baseType;
             List<SoyType> fieldTypes = new ArrayList<>(unionType.getMembers().size());
             for (SoyType unionMember : unionType.getMembers()) {
-              // TODO: Only exclude nulls when FieldAccessNode is null-safe.
+              // TODO:(b/246982549): Remoove this if-statement, as is this means you can freely
+              // dereference nullish types without the compiler complaining.
               if (unionMember.getKind() == SoyType.Kind.NULL) {
                 continue;
               }
