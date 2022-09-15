@@ -180,7 +180,6 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
           "boq.shopping.property.ui.components.grid.templates.item", // circular import
           "boq.shopping.property.ui.components.grid.templates.itemKey", // circular import
           "boq.shopping.property.ui.components.grid.templates.renderPopoutTooltipArrow", // c import
-          "boq.travel.frontend.core.map.web.layers.hotels.summarycards.content_enable_links_to_embedded_placesheet.templates.relativePath", // circular import
           "boq.visualfrontendui.explorepanel.templates.closeButton",
           "boq.visualfrontendviewer.imagecard.templates.navigationButtons", // circular dep
           "boq.visualfrontendui.explorepanel.templates.header",
