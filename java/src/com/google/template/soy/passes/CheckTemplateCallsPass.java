@@ -190,8 +190,7 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
           "gitiles.footerFormatBadge",
           "gitiles.logEntry",
           "materialdesign.wiz.icon.svgs.delSvg.templates", // gencode
-          "renderComponentWithUiReference",
-          "wiztest.pkg.deltemplates.passthroughTemplate");
+          "renderComponentWithUiReference");
 
   private final class CheckCallsHelper {
 
