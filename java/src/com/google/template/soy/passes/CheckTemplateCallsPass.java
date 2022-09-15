@@ -173,7 +173,6 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
       ImmutableSet.of(
           "boq.dynamitewebui.member.templates.isOneOnOneDm", // circular dep
           "boq.dynamitewebui.member.templates.readSingleUserFromDmHumanMembersList", // circular dep
-          "boq.googlefinanceui.views.bundles.portfolio.templates.portfolioLayoutRedesign", // circular import
           "boq.protoshop.viewer.templates.topLevelMessage", // circular dep
           "boq.saveui.listitem.templates.cardHeader", // circualr deps, cl/455220729 breaks tests
           "boq.shopping.property.ui.components.componentregistry.ghost.templates.type", // cir dep
