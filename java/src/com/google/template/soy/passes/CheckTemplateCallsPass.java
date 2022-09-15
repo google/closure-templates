@@ -187,8 +187,7 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
           "drive.search.filetypeicons.delSvg.templates", // gencode
           "gitiles.footerFormatBadge",
           "gitiles.logEntry",
-          "materialdesign.wiz.icon.svgs.delSvg.templates", // gencode
-          "renderComponentWithUiReference");
+          "materialdesign.wiz.icon.svgs.delSvg.templates"); // gencode
 
   private final class CheckCallsHelper {
 
