@@ -177,9 +177,6 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
           "boq.saveui.listitem.templates.cardHeader", // circualr deps, cl/455220729 breaks tests
           "boq.shopping.property.ui.components.componentregistry.ghost.templates.type", // cir dep
           "boq.shopping.property.ui.components.componentregistry.templates.type", // circular dep
-          "boq.shopping.property.ui.components.grid.templates.item", // circular import
-          "boq.shopping.property.ui.components.grid.templates.itemKey", // circular import
-          "boq.shopping.property.ui.components.grid.templates.renderPopoutTooltipArrow", // c import
           "boq.visualfrontendui.explorepanel.templates.closeButton",
           "boq.visualfrontendviewer.imagecard.templates.navigationButtons", // circular dep
           "boq.visualfrontendui.explorepanel.templates.header",
