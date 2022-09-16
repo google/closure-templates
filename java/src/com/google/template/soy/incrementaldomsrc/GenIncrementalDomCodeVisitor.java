@@ -988,7 +988,8 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
                       templateAliases,
                       templateTranslationContext,
                       errorReporter,
-                      getExprTranslator()));
+                      getExprTranslator(),
+                      GenCallCodeUtils.hasVariant(node)));
     }
     boolean shouldPushKey = false;
 

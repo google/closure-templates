@@ -54,6 +54,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Streams;
 import com.google.errorprone.annotations.CheckReturnValue;
 import com.google.template.soy.base.SourceFilePath;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.UniqueNameGenerator;
@@ -136,6 +137,7 @@ import com.google.template.soy.types.UnknownType;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -814,6 +816,10 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         && ((TemplateBasicNode) node).getModifiesExpr() != null;
   }
 
+  protected static TemplateType getModifiedTemplateType(TemplateBasicNode node) {
+    return (TemplateType) node.getModifiesExpr().getRoot().getType();
+  }
+
   /**
    * Generates the registerDelegateFn() call for the default modifiable template referenced by
    * aliasExp.
@@ -1100,12 +1106,43 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     return true;
   }
 
+  private final TemplateParam syntheticTemplateParam(TemplateType.Parameter typeParam) {
+    TemplateParam param =
+        new TemplateParam(
+            typeParam.getName(),
+            SourceLocation.UNKNOWN,
+            SourceLocation.UNKNOWN,
+            /* typeNode= */ null,
+            /* isInjected= */ false,
+            /* isImplicit= */ typeParam.isImplicit(),
+            /* optional= */ !typeParam.isRequired(),
+            /* desc= */ null,
+            /* defaultValue= */ null);
+    param.setType(typeParam.getType());
+    return param;
+  }
+
   protected final ImmutableList<TemplateParam> paramsInOrder(TemplateNode node) {
-    Map<String, TemplateParam> paramsByName =
-        node.getParams().stream().collect(toImmutableMap(TemplateParam::name, param -> param));
+    HashMap<String, TemplateParam> paramsByName = new HashMap<>();
+    for (TemplateParam param : node.getParams()) {
+      paramsByName.put(param.name(), param);
+    }
+    if (isModTemplate(node)) {
+      // Also add any parameters from the modifiable template that are missing.
+      for (TemplateType.Parameter param :
+          getModifiedTemplateType((TemplateBasicNode) node).getActualParameters()) {
+        paramsByName.putIfAbsent(param.getName(), syntheticTemplateParam(param));
+      }
+    }
+    // For modifies templates, use the signature of the modifiable template so that positional
+    // params work.
+    TemplateType templateType =
+        isModTemplate(node)
+            ? getModifiedTemplateType((TemplateBasicNode) node)
+            : TemplateMetadata.buildTemplateType(node);
     // Use the templatemetadata so we generate parameters in the correct order as
     // expected by callers, this is defined by TemplateMetadata.
-    return TemplateMetadata.buildTemplateType(node).getActualParameters().stream()
+    return templateType.getActualParameters().stream()
         .map(p -> paramsByName.get(p.getName()))
         .collect(toImmutableList());
   }

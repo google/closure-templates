@@ -171,7 +171,8 @@ public class GenCallCodeUtils {
               templateAliases,
               translationContext,
               errorReporter,
-              exprTranslator));
+              exprTranslator,
+              hasVariant(callNode)));
       maybeAddVariantParam(callNode, exprTranslator, params);
       call = callee.positionalStyle().get().call(params);
     } else {
@@ -189,6 +190,10 @@ public class GenCallCodeUtils {
     return applyEscapingDirectives(call, callNode);
   }
 
+  public static boolean hasVariant(CallNode callNode) {
+    return callNode instanceof CallBasicNode && ((CallBasicNode) callNode).getVariantExpr() != null;
+  }
+
   /**
    * Adds a parameter expression intended for opt_variant to the end of params, if the call has a
    * variant expression. The compiler enforces that the target of any call with "variant" has a
@@ -196,7 +201,7 @@ public class GenCallCodeUtils {
    */
   public static void maybeAddVariantParam(
       CallNode callNode, TranslateExprNodeVisitor exprTranslator, List<Expression> params) {
-    if (callNode instanceof CallBasicNode && ((CallBasicNode) callNode).getVariantExpr() != null) {
+    if (hasVariant(callNode)) {
       params.add(exprTranslator.exec(((CallBasicNode) callNode).getVariantExpr()));
     }
   }
@@ -206,7 +211,8 @@ public class GenCallCodeUtils {
       TemplateAliases templateAliases,
       TranslationContext translationContext,
       ErrorReporter errorReporter,
-      TranslateExprNodeVisitor exprTranslator) {
+      TranslateExprNodeVisitor exprTranslator,
+      boolean hasVariant) {
     Map<String, Expression> explicitParams =
         getExplicitParams(
             callNode, templateAliases, translationContext, errorReporter, exprTranslator);
@@ -225,8 +231,9 @@ public class GenCallCodeUtils {
     }
     checkState(
         explicitParams.isEmpty(), "Expected all params to be consumed, %s remain", explicitParams);
-    // rather than foo(x,y, undefined, undefined) we should generate foo(x,y)
-    if (numTrailingUndefineds > 0) {
+    // rather than foo(x,y, undefined, undefined) we should generate foo(x,y) unless there is a
+    // variant, which will be last param.
+    if (numTrailingUndefineds > 0 && !hasVariant) {
       params = params.subList(0, params.size() - numTrailingUndefineds);
     }
     return params;
