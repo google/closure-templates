@@ -307,6 +307,8 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
 
   private final SourceLocation openTagLocation;
 
+  private final SourceLocation closeTagLocation;
+
   private ImmutableList<TemplateHeaderVarDefn> headerParams;
 
   /** Used for formatting */
@@ -354,6 +356,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     this.strictHtml = computeStrictHtmlMode(nodeBuilder.getStrictHtmlDisabled());
     this.commandText = nodeBuilder.getCmdText().trim();
     this.openTagLocation = nodeBuilder.openTagLocation;
+    this.closeTagLocation = nodeBuilder.closeTagLocation;
     this.attributes = nodeBuilder.getAttributes();
     this.allowExtraAttributesLoc = nodeBuilder.allowExtraAttributesLoc;
     this.reservedAttributes = ImmutableSet.of();
@@ -381,6 +384,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     this.strictHtml = orig.strictHtml;
     this.commandText = orig.commandText;
     this.openTagLocation = orig.openTagLocation;
+    this.closeTagLocation = orig.closeTagLocation;
     this.templateMetadata = orig.templateMetadata;
     this.templateCallMetadata = orig.templateCallMetadata;
     this.attributes =
@@ -484,6 +488,11 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
   @Override
   public SourceLocation getOpenTagLocation() {
     return this.openTagLocation;
+  }
+
+  /** The location of the {/(del)template ...} */
+  public SourceLocation getCloseTagLocation() {
+    return this.closeTagLocation;
   }
 
   /** Returns the whitespace handling mode for this template. */

@@ -119,6 +119,7 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
 
   SourceLocation sourceLocation;
   SourceLocation openTagLocation;
+  SourceLocation closeTagLocation;
 
   /** @param soyFileHeaderInfo Info from the containing Soy file's header declarations. */
   protected TemplateNodeBuilder(SoyFileHeaderInfo soyFileHeaderInfo, ErrorReporter errorReporter) {
@@ -155,6 +156,14 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
   public T setOpenTagLocation(SourceLocation location) {
     checkState(openTagLocation == null);
     this.openTagLocation = checkNotNull(location);
+    return self();
+  }
+
+  /** Sets the source location. */
+  @CanIgnoreReturnValue
+  public T setCloseTagLocation(SourceLocation location) {
+    checkState(closeTagLocation == null);
+    this.closeTagLocation = checkNotNull(location);
     return self();
   }
 

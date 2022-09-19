@@ -2023,6 +2023,7 @@ private TemplateNode Template(SoyFileHeaderInfo soyFileHeaderInfo) :
       close = <CMD_CLOSE_TEMPLATE>
       {
         builder.setSourceLocation(createSrcLoc(open, close));
+        builder.setCloseTagLocation(createSrcLoc(close));
         templateNode = builder.build();
       }
 
@@ -2044,6 +2045,7 @@ private TemplateNode Template(SoyFileHeaderInfo soyFileHeaderInfo) :
       close = <CMD_CLOSE_DELTEMPLATE>
       {
         builder.setSourceLocation(createSrcLoc(open, close));
+        builder.setCloseTagLocation(createSrcLoc(close));
         templateNode = builder.build();
       }
     } catch (ParseException e) {
@@ -2063,6 +2065,7 @@ private TemplateNode Template(SoyFileHeaderInfo soyFileHeaderInfo) :
       close = <CMD_CLOSE_ELEMENT>
       {
         builder.setSourceLocation(createSrcLoc(open, close));
+        builder.setCloseTagLocation(createSrcLoc(close));
         templateNode = builder.build();
       }
     } catch (ParseException e) {
