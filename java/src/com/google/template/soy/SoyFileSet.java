@@ -1172,6 +1172,7 @@ public final class SoyFileSet {
                     .build();
           } else {
             warnings = errorReporter.getWarnings();
+            throwIfErrorsPresent();
           }
           return new AutoValue_SoyFileSet_AnalysisResult(
               result.hasRegistry() ? Optional.of(result.registry()) : Optional.empty(),
