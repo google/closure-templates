@@ -327,6 +327,7 @@ public final class SoyFileSet {
      * Adds an input Soy file, given a {@code CharSource} for the file content, as well as the
      * desired file path for messages.
      */
+    @CanIgnoreReturnValue
     public Builder add(SoyFileSupplier soyFileSupplier) {
       return addFile(soyFileSupplier);
     }
@@ -339,6 +340,7 @@ public final class SoyFileSet {
      * @param filePath The path to the Soy file (used for messages only).
      * @return This builder.
      */
+    @CanIgnoreReturnValue
     public Builder add(CharSource contentSource, String filePath) {
       return addFile(
           SoyFileSupplier.Factory.create(contentSource, SourceFilePath.create(filePath)));
@@ -352,6 +354,7 @@ public final class SoyFileSet {
      * @param filePath The path to the Soy file (used for messages only).
      * @return This builder.
      */
+    @CanIgnoreReturnValue
     public Builder add(URL inputFileUrl, String filePath) {
       return addFile(SoyFileSupplier.Factory.create(inputFileUrl, SourceFilePath.create(filePath)));
     }
@@ -370,6 +373,7 @@ public final class SoyFileSet {
      *     correct. Please call {@link #add(URL, String)} instead, or better yet, migrate off of
      *     SoyFileSet.
      */
+    @CanIgnoreReturnValue
     @Deprecated
     public Builder add(URL inputFileUrl) {
       return add(inputFileUrl, inputFileUrl.toString());
@@ -383,6 +387,7 @@ public final class SoyFileSet {
      * @param filePath The path to the Soy file (used for messages only).
      * @return This builder.
      */
+    @CanIgnoreReturnValue
     public Builder add(CharSequence content, String filePath) {
       return addFile(SoyFileSupplier.Factory.create(content, SourceFilePath.create(filePath)));
     }
@@ -393,6 +398,7 @@ public final class SoyFileSet {
      * @param inputFile The Soy file.
      * @return This builder.
      */
+    @CanIgnoreReturnValue
     public Builder add(File inputFile) {
       return addFile(SoyFileSupplier.Factory.create(inputFile));
     }
@@ -451,6 +457,7 @@ public final class SoyFileSet {
      * Registers a collection of protocol buffer descriptors. This makes all the types defined in
      * the provided descriptors available to use in soy.
      */
+    @CanIgnoreReturnValue
     public Builder addProtoDescriptors(GenericDescriptor... descriptors) {
       return addProtoDescriptors(Arrays.asList(descriptors));
     }
@@ -493,7 +500,7 @@ public final class SoyFileSet {
      * exception. The default is to report warnings to the logger for SoyFileSet.
      */
     @CanIgnoreReturnValue
-    Builder setWarningSink(Appendable warningSink) {
+    public Builder setWarningSink(Appendable warningSink) {
       this.warningSink = checkNotNull(warningSink);
       return this;
     }
@@ -505,6 +512,7 @@ public final class SoyFileSet {
      *     multiple elements with the same {@code name} or {@code id}, or if the name not a valid
      *     identifier.
      */
+    @CanIgnoreReturnValue
     public Builder setLoggingConfig(AnnotatedLoggingConfig config) {
       return setValidatedLoggingConfig(ValidatedLoggingConfig.create(config));
     }
