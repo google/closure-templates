@@ -472,7 +472,8 @@ public final class JsType {
                       parametersType, ijType, returnType));
               break;
             case LITSRC:
-              builder.addType(String.format("function(%s):(%s)", parametersType, "TemplateResult"));
+              builder.addType(
+                  String.format("function(%s):(%s)", parametersType, "lit_element.TemplateResult"));
               break;
             default:
               builder.addType(
