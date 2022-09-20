@@ -161,10 +161,6 @@ public final class JsRuntime {
 
   public static final Expression XID = XID_REQUIRE.reference();
 
-  public static final GoogRequire ELEMENT_LIB_IDOM =
-      GoogRequire.createWithAlias(
-          "google3.javascript.template.soy.element_lib_idom", "element_lib_idom");
-
   /**
    * A constant for the template parameter {@code opt_data}.
    *
