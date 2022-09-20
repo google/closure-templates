@@ -141,8 +141,7 @@ public final class JsTypeTest {
 
     assertThatTypeExprStrict(HtmlType.getInstance())
         .isEqualTo(
-            "!goog.html.SafeHtml|!goog.soy.data.SanitizedHtml"
-                + "|!google3.javascript.template.soy.element_lib_idom.IdomFunction"
+            "!element_lib_idom.IdomFunction|!goog.html.SafeHtml|!goog.soy.data.SanitizedHtml"
                 + "|function(!incrementaldomlib.IncrementalDomRenderer): undefined");
   }
 
