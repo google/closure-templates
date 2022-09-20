@@ -1339,7 +1339,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       List<Expression> callParams = new ArrayList<>();
       callParams.addAll(getFixedParamsToPositionalCall(node));
       for (TemplateParam param : paramsInOrder(node)) {
-        callParams.add(id(param.name()));
+        callParams.add(id(genParamAlias(param.name())));
       }
       bodyStatements.add(returnValue(delegateFn.call(callParams)));
     }
