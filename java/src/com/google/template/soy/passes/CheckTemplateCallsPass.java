@@ -180,10 +180,8 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
           "boq.visualfrontendviewer.imagecard.templates.navigationButtons", // circular dep
           "boq.visualfrontendui.explorepanel.templates.header",
           "Corp.Projectmgmt.Primavera.App.Workflow.Template.Core", // gencode
-          "drive.search.filetypeicons.delSvg.templates", // gencode
           "gitiles.footerFormatBadge",
-          "gitiles.logEntry",
-          "materialdesign.wiz.icon.svgs.delSvg.templates"); // gencode
+          "gitiles.logEntry");
 
   private final class CheckCallsHelper {
 
