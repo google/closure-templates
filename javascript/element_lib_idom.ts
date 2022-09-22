@@ -11,7 +11,7 @@ import {assert, assertExists} from 'google3/third_party/javascript/closure/asser
 import {IDisposable} from 'google3/third_party/javascript/closure/disposable/idisposable';
 
 import {IncrementalDomRenderer, patchOuter} from './api_idom';
-import {getGlobalSkipHandler, isTaggedForSkip} from './global';
+import {isTaggedForSkip} from './global';
 import {IdomTemplate, IjData} from './templates';
 
 /**
@@ -162,14 +162,6 @@ export abstract class SoyElement<TData extends {}|null, TInterface extends {}>
     const newNode =
         new (this.constructor as {new (): SoyElement<TData, TInterface>})();
     newNode.data = data;
-    const globalSkipHandler = getGlobalSkipHandler() as
-        unknown as ((prev: TInterface, next: TInterface) => boolean);
-    if (globalSkipHandler &&
-        globalSkipHandler(
-            this as unknown as TInterface, newNode as unknown as TInterface)) {
-      this.data = newNode.data;
-      return true;
-    }
     if (maybeSkipHandler || this.patchHandler) {
       // Users may configure a skip handler to avoid patching DOM in certain
       // cases.

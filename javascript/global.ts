@@ -22,22 +22,6 @@ declare global {
   }
 }
 
-
-let globalSkipHandler:
-    ((prev: SoyElement<{}, {}>, next: SoyElement<{}, {}>) => boolean)|
-    undefined = undefined;
-
-/** To execute code on all Soy elements. */
-export function getGlobalSkipHandler() {
-  return globalSkipHandler;
-}
-
-/** Set code that executes on all Soy elements. */
-export function setGlobalSkipHandler(
-    fn: ((prev: SoyElement<{}, {}>, next: SoyElement<{}, {}>) => boolean)) {
-  globalSkipHandler = fn;
-}
-
 interface ElementCtor<TElement extends SoyElement<{}|null, {}>> {
   new(data: unknown, ijData: IjData): TElement;
 }
