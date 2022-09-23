@@ -1375,6 +1375,7 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
       checkState(!node.isNullSafe());
       visit(node.getBaseExprChild());
       finishMethodCallNode(node, /* nullSafe= */ false);
+      tryApplySubstitution(node);
     }
 
     private void finishMethodCallNode(MethodCallNode node, boolean nullSafe) {
