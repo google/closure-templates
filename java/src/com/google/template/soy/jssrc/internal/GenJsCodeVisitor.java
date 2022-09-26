@@ -2086,7 +2086,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
     // Generate members for explicit params.
     Map<String, String> record = new LinkedHashMap<>();
-    for (TemplateParam param : node.getParams()) {
+    for (TemplateParam param : paramsInOrder(node)) {
       if (param.isImplicit()) {
         continue;
       }
