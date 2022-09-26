@@ -49,6 +49,16 @@ goog.require('soy');
  * @template K, V
  */
 class SoyMap {
+  constructor() {
+    /**
+     * The number of entries in the map.
+     *
+     * This should be treated as a readonly property.
+     * @public {number}
+     */
+    this.size;
+  }
+
   /**
    * @param {K} k
    * @return {V|undefined}
@@ -56,13 +66,22 @@ class SoyMap {
   get(k) {}
 
   /**
-   * Set method is required for the runtime method that copies the content of a
-   * ES6 map to jspb map.
    * @param {K} k
    * @param {V} v
    * @return {!SoyMap<K, V>}
    */
   set(k, v) {}
+
+  /**
+   * @param {K} k
+   * @return {boolean} Whether any entry with this key was deleted.
+   */
+  delete(k) {}
+
+  /**
+   * Deletes all entries from the map.
+   */
+  clear() {}
 
   /**
    * @return {!IteratorIterable<K>} An iterator that contains the keys for each
@@ -78,13 +97,6 @@ class SoyMap {
 
   /**
    * Returns an iterator over the [key, value] pair entries of this map.
-   *
-   * TODO(b/69049599): structural interfaces defeat property renaming.
-   * This could cause anything in the compilation unit that has get() and
-   * entries() methods to no longer rename entries(). If that increases code
-   * size too much, we could use the keys() method instead in
-   * $$mapToLegacyObjectMap. Not renaming "keys" is presumably ~43% less bad
-   * than not renaming "entries".
    *
    * @return {!IteratorIterable<!Array<K|V>>}
    */
@@ -150,9 +162,11 @@ function $$populateMap(proto, jspbMap, map) {
  * @suppress {missingProperties}
  */
 function $$isSoyMap(map) {
-  return goog.isObject(map) && typeof map.get === 'function' &&
-      typeof map.set === 'function' && typeof map.keys === 'function' &&
-      typeof map.values === 'function' && typeof map.entries === 'function';
+  return goog.isObject(map) && typeof map.size === 'number' &&
+      typeof map.get === 'function' && typeof map.set === 'function' &&
+      typeof map.delete === 'function' && typeof map.clear === 'function' &&
+      typeof map.keys === 'function' && typeof map.values === 'function' &&
+      typeof map.entries === 'function';
 }
 
 
