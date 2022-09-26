@@ -851,18 +851,6 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         .asStatement();
   }
 
-  private boolean isModifyingLegacyDeltemplateNamespace(TemplateNode node) {
-    if (!(node instanceof TemplateBasicNode)) {
-      return false;
-    }
-    TemplateBasicNode templateBasicNode = (TemplateBasicNode) node;
-    return templateBasicNode.getModifiesExpr() != null
-        && templateBasicNode.getModifiesExpr().getType() instanceof TemplateType
-        && !((TemplateType) templateBasicNode.getModifiesExpr().getType())
-            .getLegacyDeltemplateNamespace()
-            .isEmpty();
-  }
-
   /**
    * Outputs a {@link TemplateNode}, generating the function open and close, along with a a debug
    * template name.
@@ -896,11 +884,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   @Override
   protected void visitTemplateNode(TemplateNode node) {
     generatePositionalParamsSignature =
-        GenCallCodeUtils.hasPositionalSignature(TemplateMetadata.buildTemplateType(node))
-            // We cannot use positional signatures if this template is moding a
-            // legacydeltemplatenamespace. Those will only have non-positional template functions
-            // stored in the map.
-            && !isModifyingLegacyDeltemplateNamespace(node);
+        GenCallCodeUtils.hasPositionalSignature(TemplateMetadata.buildTemplateType(node));
     String templateName = node.getTemplateName();
     String partialName = node.getLocalTemplateSymbol();
     String alias;
