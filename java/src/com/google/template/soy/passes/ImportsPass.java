@@ -57,6 +57,9 @@ public final class ImportsPass implements CompilerFileSetPass {
           "Unknown import dep {0}.{1}"
           ,
           StyleAllowance.NO_PUNCTUATION);
+  private static final SoyErrorKind RELATIVE_IMPORT =
+      SoyErrorKind.of(
+          "Relative imports are not supported, use the fully qualified name of the file.");
   private static final SoyErrorKind UNKNOWN_SYMBOL =
       SoyErrorKind.of("Unknown symbol {0} in {1}.{2}", StyleAllowance.NO_PUNCTUATION);
   private static final SoyErrorKind SYMBOLS_REQUIRED =
@@ -194,18 +197,20 @@ public final class ImportsPass implements CompilerFileSetPass {
     if (disableAllTypeChecking) {
       return;
     }
-
     String nodePath = node.getPath();
     Set<String> allPaths =
         processors.stream()
             .flatMap(p -> p.getAllPaths().stream())
             .collect(toCollection(TreeSet::new));
     allPaths.remove(file.getFilePath().path());
-
-    errorReporter.report(
-        node.getPathSourceLocation(),
-        IMPORT_NOT_IN_DEPS,
-        nodePath,
-        SoyErrors.getDidYouMeanMessage(allPaths, nodePath) );
+    if (nodePath.startsWith(".")) {
+      errorReporter.report(node.getPathSourceLocation(), RELATIVE_IMPORT);
+    } else {
+      errorReporter.report(
+          node.getPathSourceLocation(),
+          IMPORT_NOT_IN_DEPS,
+          nodePath,
+          SoyErrors.getDidYouMeanMessage(allPaths, nodePath) );
+    }
   }
 }
