@@ -190,6 +190,8 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   /** The GenJsExprsVisitor used for the current template. */
   protected GenJsExprsVisitor genJsExprsVisitor;
 
+  protected final String modifiableDefaultImplSuffix = "__default_impl";
+
   /** The assistant visitor for msgs used for the current template (lazily initialized). */
   @VisibleForTesting GenJsCodeVisitorAssistantForMsgs assistantForMsgs;
 
@@ -1040,7 +1042,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
     // ------ For modifiable templates, generate and register the default implementation. -----
     if (isModifiable(node) && !node.getChildren().isEmpty()) {
-      String defaultImplName = alias + "__default_impl";
+      String defaultImplName = alias + modifiableDefaultImplSuffix;
       JsDoc jsDoc =
           generatePositionalParamsSignature
               ? generatePositionalFunctionJsDoc(node, /*addVariantParam=*/ false)

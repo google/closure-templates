@@ -285,6 +285,12 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
         type = SOY_IDOM_TYPE_ATTRIBUTE;
       }
       getJsCodeBuilder().append(Statement.assign(id(alias).dotAccess("contentKind"), type));
+      if (isModifiable(node) && !node.getChildren().isEmpty()) {
+        getJsCodeBuilder()
+            .append(
+                Statement.assign(
+                    id(alias + modifiableDefaultImplSuffix).dotAccess("contentKind"), type));
+      }
     }
 
     if (node instanceof TemplateElementNode) {
