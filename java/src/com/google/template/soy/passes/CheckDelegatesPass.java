@@ -82,6 +82,10 @@ final class CheckDelegatesPass implements CompilerFileSetPass {
       SoyErrorKind.of(
           "Modifiable templates must have legacydeltemplatenamespace set to be used with"
               + " `deltemplate`.");
+  private static final SoyErrorKind DELTEMPLATES_DEPRECATED =
+      SoyErrorKind.of(
+          "Deltemplates are deprecated. Use go/soy/reference/modifiable-templates instead. "
+              + "Migration instructions can be found at go/deltemplate-to-modifiable-lsc.");
 
   private final ErrorReporter errorReporter;
   private final Supplier<FileSetMetadata> templateRegistryFull;
@@ -199,13 +203,17 @@ final class CheckDelegatesPass implements CompilerFileSetPass {
         }
       }
       TemplateMetadata defaultTemplate = getDefault(delTemplateGroup);
-      if (defaultTemplate != null
-          && defaultTemplate.getTemplateType().isModifiable()
-          && defaultTemplate.getTemplateType().getLegacyDeltemplateNamespace().isEmpty()) {
-        for (TemplateMetadata template : delTemplateGroup) {
-          if (template != defaultTemplate && !template.getTemplateType().isModifying()) {
-            errorReporter.report(
-                template.getSourceLocation(), CANNOT_DELTEMPLATE_WITHOUT_LEGACY_NAMESPACE);
+      if (defaultTemplate != null) {
+        if (!defaultTemplate.getTemplateType().isModifiable()) {
+          errorReporter.warn(defaultTemplate.getSourceLocation(), DELTEMPLATES_DEPRECATED);
+        }
+        if (defaultTemplate.getTemplateType().isModifiable()
+            && defaultTemplate.getTemplateType().getLegacyDeltemplateNamespace().isEmpty()) {
+          for (TemplateMetadata template : delTemplateGroup) {
+            if (template != defaultTemplate && !template.getTemplateType().isModifying()) {
+              errorReporter.report(
+                  template.getSourceLocation(), CANNOT_DELTEMPLATE_WITHOUT_LEGACY_NAMESPACE);
+            }
           }
         }
       }
