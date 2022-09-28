@@ -171,8 +171,6 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
 
   private static final ImmutableSet<String> DEFAULT_DELTEMPLATE_PASSLIST =
       ImmutableSet.of(
-          "boq.dynamitewebui.member.templates.isOneOnOneDm", // circular dep
-          "boq.dynamitewebui.member.templates.readSingleUserFromDmHumanMembersList", // circular dep
           "boq.saveui.listitem.templates.cardHeader", // circualr deps, cl/455220729 breaks tests
           "boq.shopping.property.ui.components.componentregistry.ghost.templates.type", // cir dep
           "boq.shopping.property.ui.components.componentregistry.templates.type", // circular dep
