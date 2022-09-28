@@ -408,7 +408,12 @@ public final class JsType {
             if (member.getKind() == Kind.NULL) {
               continue; // handled above
             }
-            JsType memberType = forSoyType(member, kind, isStrict);
+            JsType memberType;
+            if (member.getKind() == Kind.TEMPLATE && kind == JsTypeKind.IDOMSRC) {
+              memberType = forSoyType(member, JsTypeKind.JSSRC, isStrict);
+            } else {
+              memberType = forSoyType(member, kind, isStrict);
+            }
             builder.addRequires(memberType.extraRequires);
             builder.addTypes(memberType.typeExpressions);
             types.add(memberType);

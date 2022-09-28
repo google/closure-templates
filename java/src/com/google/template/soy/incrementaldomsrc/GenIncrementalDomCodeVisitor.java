@@ -817,7 +817,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   /** Generates `get[X]` for a given parameter value. */
   private MethodDeclaration generateGetParamMethodForSoyElementClass(
       TemplateParam param, boolean isAbstract, boolean isInjected) {
-    JsType jsType = JsType.forIncrementalDomState(param.type());
+    JsType jsType = JsType.forJsSrcStrict(param.type());
     String accessorSuffix =
         Ascii.toUpperCase(param.name().substring(0, 1)) + param.name().substring(1);
     if (isAbstract) {
