@@ -104,6 +104,13 @@ final class IncrementalDomRuntime {
   public static final Expression SOY_IDOM_CALL_DYNAMIC_HTML =
       SOY_IDOM.dotAccess("$$callDynamicHTML");
 
+  public static final Expression SOY_IDOM_CONVERT_TO_TRUSTED_SCRIPT_URL =
+      SOY_IDOM.dotAccess("$$convertToTrustedScriptUrl");
+  public static final Expression SOY_IDOM_CONVERT_TO_TRUSTED_SCRIPT =
+      SOY_IDOM.dotAccess("$$convertToTrustedScript");
+  public static final Expression SOY_IDOM_CONVERT_TO_TRUSTED_HTML =
+      SOY_IDOM.dotAccess("$$convertToTrustedHtml");
+
   public static final Expression SOY_IDOM_PRINT_DYNAMIC_ATTR =
       SOY_IDOM.dotAccess("$$printDynamicAttr");
 

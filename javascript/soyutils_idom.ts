@@ -23,6 +23,8 @@ import {ordainSanitizedHtml} from 'goog:soydata.VERY_UNSAFE';  // from //javascr
 import {isAttribute} from 'google3/javascript/template/soy/checks';
 import * as soy from 'google3/javascript/template/soy/soyutils_usegoog';
 import {Logger} from 'google3/javascript/template/soy/soyutils_velog';
+import {unwrapTrustedHTML, unwrapTrustedScript, unwrapTrustedScriptURL} from 'google3/javascript/typescript/safevalues/safe_unwrappers';
+import {safeHtmlFromStringKnownToSatisfyTypeContract, safeScriptFromStringKnownToSatisfyTypeContract, trustedResourceUrlFromStringKnownToSatisfyTypeContract} from 'google3/javascript/typescript/safevalues/unchecked_conversions';
 import {cacheReturnValue} from 'google3/third_party/javascript/closure/functions/functions';
 import {SafeHtml} from 'google3/third_party/javascript/closure/html/safehtml';
 import * as googSoy from 'google3/third_party/javascript/closure/soy/soy';
@@ -354,7 +356,13 @@ function printDynamicAttr(
     if (attrName === 'zSoyz') {
       incrementaldom.attr(attrName, '');
     } else {
-      incrementaldom.attr(String(attrName), String(attribute[1]));
+      let attrValue = String(attribute[1]);
+      const attr = String(attrName);
+      // Best effort? These are usually resolved at compile time.
+      if (attr === 'src' || attr === 'href') {
+        attrValue = convertToTrustedScriptUrl(attrValue);
+      }
+      incrementaldom.attr(attr, attrValue);
     }
   }
 }
@@ -583,6 +591,22 @@ function stableUniqueAttributeIdHolder(): IdHolder {
   return goog.DEBUG ? new IdHolderForDebug() : {};
 }
 
+function convertToTrustedScriptUrl(value: string) {
+  return unwrapTrustedScriptURL(
+      trustedResourceUrlFromStringKnownToSatisfyTypeContract(
+          value, 'Value has been pre-sanitized by Soy.'));
+}
+
+function convertToTrustedScript(value: string) {
+  return unwrapTrustedScript(safeScriptFromStringKnownToSatisfyTypeContract(
+      value, 'Value has been pre-sanitized by Soy.'));
+}
+
+function convertToTrustedHtml(value: string) {
+  return unwrapTrustedHTML(safeHtmlFromStringKnownToSatisfyTypeContract(
+      value, 'Value has been pre-sanitized by Soy.'));
+}
+
 export {
   SoyTemplate as $SoyTemplate,
   SoyElement as $SoyElement,
@@ -602,5 +626,8 @@ export {
   stableUniqueAttribute as $$stableUniqueAttribute,
   stableUniqueAttributeIdHolder as $$stableUniqueAttributeIdHolder,
   visitHtmlCommentNode as $$visitHtmlCommentNode,
-  upgrade as $$upgrade
+  upgrade as $$upgrade,
+  convertToTrustedScriptUrl as $$convertToTrustedScriptUrl,
+  convertToTrustedScript as $$convertToTrustedScript,
+  convertToTrustedHtml as $$convertToTrustedHtml
 };

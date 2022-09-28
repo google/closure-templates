@@ -45,6 +45,9 @@ import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SO
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_CALL_DYNAMIC_HTML;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_CALL_DYNAMIC_JS;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_CALL_DYNAMIC_TEXT;
+import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_CONVERT_TO_TRUSTED_HTML;
+import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_CONVERT_TO_TRUSTED_SCRIPT;
+import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_CONVERT_TO_TRUSTED_SCRIPT_URL;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_MAKE_ATTRIBUTES;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_MAKE_HTML;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_PRINT;
@@ -1224,18 +1227,35 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     IncrementalDomCodeBuilder jsCodeBuilder = getJsCodeBuilder();
 
     if (node.hasValue()) {
+      Expression attrValue = maybeconvertToTrustedType(node);
       // Attribute keys can only be print statements or constants. As such, the first child
       // should be the key and the second the value.
       checkState(isComputableAsJsExprsVisitor.exec(node.getChild(0)));
-
       jsCodeBuilder.append(
           INCREMENTAL_DOM_ATTR.call(
               // Attributes can only be print nodes or constants
-              genJsExprsVisitor.exec(node.getChild(0)).get(0),
-              CodeChunkUtils.concatChunksForceString(getAttributeValues(node))));
+              genJsExprsVisitor.exec(node.getChild(0)).get(0), attrValue));
     } else {
       visitChildren(node); // Prints raw text or attributes node.
     }
+  }
+
+  private Expression maybeconvertToTrustedType(HtmlAttributeNode node) {
+    Expression expr = CodeChunkUtils.concatChunksForceString(getAttributeValues(node));
+    switch (node.getTrustedTypeValue()) {
+      case TRUSTED_RESOURCE_URI:
+        expr = SOY_IDOM_CONVERT_TO_TRUSTED_SCRIPT_URL.call(expr);
+        break;
+      case TRUSTED_SCRIPT:
+        expr = SOY_IDOM_CONVERT_TO_TRUSTED_SCRIPT.call(expr);
+        break;
+      case TRUSTED_HTML:
+        expr = SOY_IDOM_CONVERT_TO_TRUSTED_HTML.call(expr);
+        break;
+      case NONE:
+        break;
+    }
+    return expr;
   }
 
   @Override
@@ -1347,7 +1367,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
         return null;
       }
     }
-    return CodeChunkUtils.concatChunksForceString(getAttributeValues(node));
+    return maybeconvertToTrustedType(node);
   }
 
   private Expression getOpenSSRCall(HtmlOpenTagNode node) {

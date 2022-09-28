@@ -469,6 +469,13 @@ final class InferenceEngine {
       } else {
         visit(first);
       }
+      if (context.attrType() == Context.AttributeType.URI) {
+        node.setTrustedTypeValue(HtmlAttributeNode.TrustedTypeValue.TRUSTED_RESOURCE_URI);
+      } else if (context.attrType() == Context.AttributeType.HTML) {
+        node.setTrustedTypeValue(HtmlAttributeNode.TrustedTypeValue.TRUSTED_HTML);
+      } else if (context.attrType() == Context.AttributeType.SCRIPT) {
+        node.setTrustedTypeValue(HtmlAttributeNode.TrustedTypeValue.TRUSTED_SCRIPT);
+      }
       if (node.hasValue()) {
         visit(node.getChild(1));
       }
