@@ -305,30 +305,6 @@ NOTE: In the example above, the `attendees` subkeys are accessed using null-safe
 accesses (e.g. `$attendees[1]?.gender` instead of `$attendees[1].gender`) see
 the [pitfalls section](#placholder_error) for more information about this.
 
-### Alternate IDs
-
-If you migrate from another message management scheme to Soy, that will likely
-cause all your message IDs to change. In this case, use the `alternateId`
-attribute to leverage the existing translated message. Unlike the `fallbackmsg`
-feature, the `alternateId` is **only** applicable for cases where the message
-has not changed but the ID has. If you add an `alternateId` for a different
-message, your translation request will fail.
-
-The compiler chooses the proper version of the message to use. If the new
-message's translation is available, then it is used, else the compiler falls
-back to the alternate translation. If neither is accessible, the compiler then
-uses the `fallbackmsg` (if specified). The `fallbackmsg` attribute can also
-accept an alternate ID, and it follows the fallback mechanism described
-previously.
-
-```soy
-{msg desc="Description of the message" alternateId="582799623638"}
-    Message for a super secret new feature.
-  {fallbackmsg desc="Description" alternateId="4657498615649"}
-    Fallback message for a super secret new feature.
-{/msg}
-```
-
 ## fallbackmsg {#fallbackmsg}
 
 Syntax:
