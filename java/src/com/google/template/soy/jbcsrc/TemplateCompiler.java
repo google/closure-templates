@@ -260,7 +260,7 @@ final class TemplateCompiler {
             .addAll(
                 allNodesOfType(templateNode, TemplateLiteralNode.class)
                     .filter(literal -> ((TemplateType) literal.getType()).isModifiable())
-                    .map(TemplateLiteralNode::getResolvedName)
+                    .map(TemplateCompiler::legacyOrModifiableName)
                     .collect(toImmutableSet()))
             .build();
 
@@ -300,6 +300,13 @@ final class TemplateCompiler {
     TEMPLATE_METADATA_REF.write(metadata, builder);
   }
 
+  static String legacyOrModifiableName(TemplateLiteralNode node) {
+    TemplateType templateType = (TemplateType) node.getType();
+    return !templateType.getLegacyDeltemplateNamespace().isEmpty()
+        ? templateType.getLegacyDeltemplateNamespace()
+        : node.getResolvedName();
+  }
+
   TemplateMetadata.DelTemplateMetadata metadataForBasicNode(TemplateBasicNode templateBasicNode) {
     if (templateBasicNode.isModifiable()) {
       return createDelTemplateMetadata(
@@ -307,16 +314,10 @@ final class TemplateCompiler {
           modifiableImplsMapKey(templateBasicNode),
           templateBasicNode.getDelTemplateVariant());
     } else if (templateBasicNode.getModifiesExpr() != null) {
-      TemplateLiteralNode modifiedTemplate =
-          (TemplateLiteralNode) templateBasicNode.getModifiesExpr().getRoot();
-      TemplateType modifiedType = (TemplateType) modifiedTemplate.getType();
-      String mapKey =
-          !modifiedType.getLegacyDeltemplateNamespace().isEmpty()
-              ? modifiedType.getLegacyDeltemplateNamespace()
-              : modifiedTemplate.getResolvedName();
       return createDelTemplateMetadata(
           nullToEmpty(templateBasicNode.getModName()),
-          mapKey,
+          legacyOrModifiableName(
+              (TemplateLiteralNode) templateBasicNode.getModifiesExpr().getRoot()),
           templateBasicNode.getDelTemplateVariant());
     }
     return createDefaultDelTemplateMetadata();

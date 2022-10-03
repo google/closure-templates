@@ -283,14 +283,18 @@ public final class TransitiveIjParamsTest {
     String fileContent =
         "{namespace ns}"
             + "{template test}{@inject a: ?}{$a}{call modifiable /}{/template}"
-            + "{template modifiable modifiable=\"true\" usevarianttype=\"string\"}"
+            + "{template test2}{@inject e: ?}{$e}{delcall legacy /}{/template}"
+            + "{template modifiable modifiable=\"true\" usevarianttype=\"string\""
+            + "    legacydeltemplatenamespace=\"legacy\"}"
             + "  {@inject b: ?}{$b}"
             + "{/template}"
             + "{template variant visibility=\"private\" modifies=\"modifiable\" variant=\"'foo'\"}"
             + "  {@inject c: ?}{$c}"
-            + "{/template}";
+            + "{/template}"
+            + "{deltemplate legacy variant=\"'bar'\"}{@inject d: ?}{$d}{/deltemplate}";
     IjsTester tester = new IjsTester(fileContent);
-    assertThat(tester.calculateIjs("ns.test")).containsExactly("a", "b", "c");
+    assertThat(tester.calculateIjs("ns.test")).containsExactly("a", "b", "c", "d");
+    assertThat(tester.calculateIjs("ns.test2")).containsExactly("b", "c", "d", "e");
   }
 
   static final class IjsTester {
