@@ -205,7 +205,6 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
   protected List<Statement> staticVarDeclarations;
   protected boolean generatePositionalParamsSignature;
-  protected Expression dataSource = OPT_DATA;
 
   /**
    * Used for looking up the local name for a given template call to a fully qualified template
@@ -907,7 +906,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
             SoyToJsVariableMappings.startingWith(topLevelSymbols), codeGenerator, nameGenerator);
     genJsExprsVisitor =
         genJsExprsVisitorFactory.create(
-            templateTranslationContext, templateAliases, errorReporter, dataSource);
+            templateTranslationContext, templateAliases, errorReporter, OPT_DATA);
     assistantForMsgs = null;
 
     ImmutableList.Builder<Statement> declarations = ImmutableList.builder();
@@ -1680,7 +1679,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         templateTranslationContext,
         templateAliases,
         errorReporter,
-        dataSource);
+        OPT_DATA);
   }
 
   protected Expression translateExpr(ExprNode expr) {

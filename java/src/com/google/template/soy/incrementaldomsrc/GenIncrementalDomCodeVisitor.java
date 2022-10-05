@@ -61,6 +61,7 @@ import static com.google.template.soy.jssrc.dsl.Expression.stringLiteral;
 import static com.google.template.soy.jssrc.dsl.Statement.returnValue;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_SOY_ALIAS;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_STRING_UNESCAPE_ENTITIES;
+import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_DATA;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_ESCAPE_HTML;
 import static com.google.template.soy.soytree.SoyTreeUtils.isConstantExpr;
 
@@ -548,8 +549,8 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     if (!isPositionalStyle && new ShouldEnsureDataIsDefinedVisitor().exec(node)) {
       bodyStatements.add(
           Statement.assign(
-              JsRuntime.OPT_DATA,
-              JsRuntime.OPT_DATA.or(
+              OPT_DATA,
+              OPT_DATA.or(
                   EMPTY_OBJECT_LITERAL.castAs(objectParamName),
                   templateTranslationContext.codeGenerator())));
     }
@@ -568,8 +569,6 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   }
 
   private Statement genSyncStateCalls(TemplateElementNode node, String alias) {
-    Expression originalDataSource = dataSource;
-    dataSource = JsRuntime.OPT_DATA;
     Statement typeChecks = genParamTypeChecks(node, alias, false);
     ImmutableList<TemplateStateVar> headerVars = node.getStateVars();
     ImmutableMap<TemplateStateVar, Boolean> isNonConst =
@@ -599,7 +598,6 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     }
     List<Statement> assignments = stateReassignmentBuilder.build();
     Statement stateReassignments = Statement.of(assignments);
-    dataSource = originalDataSource;
     return Statement.of(typeChecks, stateReassignments);
   }
 
@@ -649,7 +647,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
             id(soyElementClassName),
             firstElementKey,
             Expression.stringLiteral(node.getHtmlElementMetadata().getTag()),
-            JsRuntime.OPT_DATA,
+            OPT_DATA,
             JsRuntime.IJ_DATA,
             id(soyElementClassName + "Render"));
     return Statement.of(
@@ -661,7 +659,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
                 Statement.of(
                     id("soyEl")
                         .dotAccess("renderInternal")
-                        .call(INCREMENTAL_DOM, JsRuntime.OPT_DATA)
+                        .call(INCREMENTAL_DOM, OPT_DATA)
                         .asStatement()))
             .build());
   }
@@ -1178,7 +1176,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
         templateTranslationContext,
         templateAliases,
         errorReporter,
-        dataSource);
+        OPT_DATA);
   }
 
   @Override
@@ -1376,7 +1374,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
                     .map(p -> id(genParamAlias(p.name())))
                     .collect(toImmutableList()));
       } else {
-        paramsObject = JsRuntime.OPT_DATA;
+        paramsObject = OPT_DATA;
       }
       args.add(
           Expression.ifExpression(JsRuntime.GOOG_DEBUG, paramsObject)
