@@ -84,8 +84,19 @@ public abstract class TemplateMetadata {
         builder.setDelTemplateVariant(basicTemplate.getDelTemplateVariant());
       } else if (basicTemplate.getModifiesExpr() != null) {
         if (basicTemplate.getModifiesExpr().getRoot() instanceof TemplateLiteralNode) {
+          SoyType modifiableType =
+              ((TemplateLiteralNode) basicTemplate.getModifiesExpr().getRoot()).getType();
           builder.setDelTemplateName(
-              ((TemplateLiteralNode) basicTemplate.getModifiesExpr().getRoot()).getResolvedName());
+              // In some cases the types won't be resolved to a TemplateType, eg Aspirin. In that
+              // case the deltemplate selector won't work correctly when modifiable templates are
+              // used with deltemplates and delcalls. For that we'd need to propagate
+              // legacydeltemplatenamespace from the `modifiable` templates to all of the associated
+              // `modifies` templates' TemplateMetadata.
+              modifiableType instanceof TemplateType
+                      && !((TemplateType) modifiableType).getLegacyDeltemplateNamespace().isEmpty()
+                  ? ((TemplateType) modifiableType).getLegacyDeltemplateNamespace()
+                  : ((TemplateLiteralNode) basicTemplate.getModifiesExpr().getRoot())
+                      .getResolvedName());
         } else {
           builder.setDelTemplateName("$__unresolvable__");
         }
@@ -164,10 +175,15 @@ public abstract class TemplateMetadata {
               switch (call.getKind()) {
                 case CALL_BASIC_NODE:
                   SoyType type = ((CallBasicNode) call).getCalleeExpr().getType();
-                  builder.setDelCall(
-                      type instanceof TemplateType && ((TemplateType) type).isModifiable());
+                  boolean isModifiable =
+                      type instanceof TemplateType && ((TemplateType) type).isModifiable();
+                  builder.setDelCall(isModifiable);
                   if (((CallBasicNode) call).isStaticCall()) {
-                    builder.setTemplateName(((CallBasicNode) call).getCalleeName());
+                    builder.setTemplateName(
+                        isModifiable
+                                && !((TemplateType) type).getLegacyDeltemplateNamespace().isEmpty()
+                            ? ((TemplateType) type).getLegacyDeltemplateNamespace()
+                            : ((CallBasicNode) call).getCalleeName());
                   } else {
                     builder.setTemplateName("$error");
                   }

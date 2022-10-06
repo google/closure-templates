@@ -218,4 +218,38 @@ public final class IndirectParamsCalculatorTest {
         new IndirectParamsCalculator(registry).calculateIndirectParams(test.getTemplateType());
     assertThat(ipi.indirectParams.keySet()).containsExactly("m", "x", "y");
   }
+
+  @Test
+  public void testFindIndirectParamsModifiablesWithLegacyNamespace() {
+
+    String fileContent =
+        "{namespace ns}"
+            + "{template test}{call modifiable data=\"all\" /}{/template}"
+            + "{template test2}{delcall legacy data=\"all\" /}{/template}"
+            + "{template modifiable modifiable=\"true\" usevarianttype=\"string\""
+            + "     legacydeltemplatenamespace=\"legacy\"}"
+            + "  {@param m: ?}"
+            + "  {call x data=\"all\" /}"
+            + "{/template}"
+            + "{template variant visibility=\"private\" modifies=\"modifiable\" variant=\"'foo'\"}"
+            + "  {@param m: ?}"
+            + "  {call y data=\"all\" /}"
+            + "{/template}"
+            + "{template x}{@param x: ?}{/template}"
+            + "{template y}{@param y: ?}{/template}"
+            + "{deltemplate legacy variant=\"'bar'\"}{@param z: ?}{/deltemplate}";
+
+    FileSetMetadata registry =
+        SoyFileSetParserBuilder.forFileContents(fileContent).parse().registry();
+
+    TemplateMetadata test = registry.getBasicTemplateOrElement("ns.test");
+    IndirectParamsInfo ipi =
+        new IndirectParamsCalculator(registry).calculateIndirectParams(test.getTemplateType());
+    assertThat(ipi.indirectParams.keySet()).containsExactly("m", "x", "y", "z");
+
+    TemplateMetadata test2 = registry.getBasicTemplateOrElement("ns.test2");
+    IndirectParamsInfo ipi2 =
+        new IndirectParamsCalculator(registry).calculateIndirectParams(test2.getTemplateType());
+    assertThat(ipi2.indirectParams.keySet()).containsExactly("m", "x", "y", "z");
+  }
 }

@@ -283,6 +283,21 @@ public final class TransitiveIjParamsTest {
     String fileContent =
         "{namespace ns}"
             + "{template test}{@inject a: ?}{$a}{call modifiable /}{/template}"
+            + "{template modifiable modifiable=\"true\" usevarianttype=\"string\"}"
+            + "  {@inject b: ?}{$b}"
+            + "{/template}"
+            + "{template variant visibility=\"private\" modifies=\"modifiable\" variant=\"'foo'\"}"
+            + "  {@inject c: ?}{$c}"
+            + "{/template}";
+    IjsTester tester = new IjsTester(fileContent);
+    assertThat(tester.calculateIjs("ns.test")).containsExactly("a", "b", "c");
+  }
+
+  @Test
+  public void testModifiableTemplatesWithLegacyNamespace() {
+    String fileContent =
+        "{namespace ns}"
+            + "{template test}{@inject a: ?}{$a}{call modifiable /}{/template}"
             + "{template test2}{@inject e: ?}{$e}{delcall legacy /}{/template}"
             + "{template modifiable modifiable=\"true\" usevarianttype=\"string\""
             + "    legacydeltemplatenamespace=\"legacy\"}"
