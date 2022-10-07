@@ -59,6 +59,7 @@ import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_EMPTY_STRING;
 import static com.google.template.soy.jssrc.dsl.Expression.id;
 import static com.google.template.soy.jssrc.dsl.Expression.stringLiteral;
 import static com.google.template.soy.jssrc.dsl.Statement.returnValue;
+import static com.google.template.soy.jssrc.internal.JsRuntime.ELEMENT_LIB_IDOM;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_SOY_ALIAS;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_STRING_UNESCAPE_ENTITIES;
 import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_DATA;
@@ -69,6 +70,7 @@ import com.google.common.base.Ascii;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContentOperator;
@@ -285,12 +287,25 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       } else {
         type = SOY_IDOM_TYPE_ATTRIBUTE;
       }
-      getJsCodeBuilder().append(Statement.assign(id(alias).dotAccess("contentKind"), type));
+      getJsCodeBuilder()
+          .append(
+              Statement.assign(
+                  id(alias)
+                      .castAs(
+                          "!" + ELEMENT_LIB_IDOM.alias() + ".IdomFunction",
+                          ImmutableSet.of(ELEMENT_LIB_IDOM))
+                      .dotAccess("contentKind"),
+                  type));
       if (isModifiable(node) && !node.getChildren().isEmpty()) {
         getJsCodeBuilder()
             .append(
                 Statement.assign(
-                    id(alias + modifiableDefaultImplSuffix).dotAccess("contentKind"), type));
+                    id(alias + modifiableDefaultImplSuffix)
+                        .castAs(
+                            "!" + ELEMENT_LIB_IDOM.alias() + ".IdomFunction",
+                            ImmutableSet.of(ELEMENT_LIB_IDOM))
+                        .dotAccess("contentKind"),
+                    type));
       }
     }
 

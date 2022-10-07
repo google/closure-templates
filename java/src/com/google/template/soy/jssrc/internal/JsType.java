@@ -21,6 +21,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.jssrc.dsl.Expression.stringLiteral;
 import static com.google.template.soy.jssrc.internal.JsRuntime.ARRAY_IS_ARRAY;
+import static com.google.template.soy.jssrc.internal.JsRuntime.ELEMENT_LIB_IDOM;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_HTML_SAFE_ATTRIBUTE;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_HTML_SAFE_HTML;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_IS_FUNCTION;
@@ -122,10 +123,9 @@ public final class JsType {
   private static final JsType IDOM_ATTRIBUTES =
       builder()
           .addType("function()")
-          .addType("!google3.javascript.template.soy.element_lib_idom.IdomFunction")
+          .addType("!" + ELEMENT_LIB_IDOM.alias() + ".IdomFunction")
           .addType("!goog.soy.data.SanitizedHtmlAttribute")
-          .addRequire(
-              GoogRequire.createTypeRequire("google3.javascript.template.soy.element_lib_idom"))
+          .addRequire(ELEMENT_LIB_IDOM)
           .addRequire(GoogRequire.create("goog.soy.data.SanitizedHtmlAttribute"))
           .setPredicate(
               (value, codeGenerator) ->
@@ -157,9 +157,8 @@ public final class JsType {
           .addType("!goog.html.SafeHtml")
           .addRequire(GoogRequire.createTypeRequire("goog.html.SafeHtml"))
           .addRequire(GoogRequire.createTypeRequire("goog.soy.data.SanitizedHtml"))
-          .addType("!google3.javascript.template.soy.element_lib_idom.IdomFunction")
-          .addRequire(
-              GoogRequire.createTypeRequire("google3.javascript.template.soy.element_lib_idom"))
+          .addType("!" + ELEMENT_LIB_IDOM.alias() + ".IdomFunction")
+          .addRequire(ELEMENT_LIB_IDOM)
           .addType("function(!incrementaldomlib.IncrementalDomRenderer): undefined")
           .addRequire(
               GoogRequire.createWithAlias(
