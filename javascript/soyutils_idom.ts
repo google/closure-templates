@@ -364,15 +364,15 @@ function printDynamicAttr(
  */
 function callDynamicHTML<TParams>(
     incrementaldom: IncrementalDomRenderer, expr: Template<TParams>,
-    data: TParams, ij: IjData) {
+    data: TParams, ij: IjData, variant?: string) {
   if (isIdom(expr)) {
     switch ((expr as IdomFunction).contentKind) {
       case SanitizedContentKind.HTML:
-        expr(incrementaldom, data, ij);
+        expr(incrementaldom, data, ij, variant);
         break;
       case SanitizedContentKind.ATTRIBUTES:
         const val = attributesToString(() => {
-          expr(defaultIdomRenderer, data, ij);
+          expr(defaultIdomRenderer, data, ij, variant);
         });
         incrementaldom.text(val);
         break;
@@ -380,7 +380,7 @@ function callDynamicHTML<TParams>(
         throw new Error('Bad content kind');
     }
   } else {
-    const val = expr(data, ij);
+    const val = expr(data, ij, variant);
     incrementaldom.text(String(val));
   }
 }
@@ -405,23 +405,23 @@ function callDynamicJs<TParams>(
  */
 function callDynamicText<TParams>(
     expr: Template<TParams>, data: TParams, ij: IjData,
-    escFn?: (i: string) => string) {
+    escFn?: (i: string) => string, variant?: string) {
   const transformFn = escFn ? escFn : (a: string) => a;
   if (isIdom(expr)) {
     switch ((expr as IdomFunction).contentKind) {
       case SanitizedContentKind.HTML:
         return transformFn(htmlToString(() => {
-          expr(defaultIdomRenderer, data, ij);
+          expr(defaultIdomRenderer, data, ij, variant);
         }));
       case SanitizedContentKind.ATTRIBUTES:
         return transformFn(attributesToString(() => {
-          expr(defaultIdomRenderer, data, ij);
+          expr(defaultIdomRenderer, data, ij, variant);
         }));
       default:
         throw new Error('Bad content kind');
     }
   } else {
-    return expr(data, ij);
+    return expr(data, ij, variant);
   }
 }
 

@@ -1037,9 +1037,18 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
         if (!kind.isPresent()
             || kind.get() == SanitizedContentKind.ATTRIBUTES
             || kind.get().isHtml()) {
-          textCall =
-              SOY_IDOM_CALL_DYNAMIC_TEXT.call(
-                  callee.objectStyle(), objToPass.get(), JsRuntime.IJ_DATA);
+          if (node instanceof CallBasicNode && ((CallBasicNode) node).getVariantExpr() != null) {
+            textCall =
+                SOY_IDOM_CALL_DYNAMIC_TEXT.call(
+                    callee.objectStyle(),
+                    objToPass.get(),
+                    JsRuntime.IJ_DATA,
+                    getExprTranslator().exec(((CallBasicNode) node).getVariantExpr().getRoot()));
+          } else {
+            textCall =
+                SOY_IDOM_CALL_DYNAMIC_TEXT.call(
+                    callee.objectStyle(), objToPass.get(), JsRuntime.IJ_DATA);
+          }
         } else {
           // This is executed in the case of TEXT Context -> Text Template
           textCall =
@@ -1056,9 +1065,19 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
         return;
       default:
         if (!kind.isPresent() || !kind.get().isHtml()) {
-          call =
-              SOY_IDOM_CALL_DYNAMIC_HTML.call(
-                  INCREMENTAL_DOM, callee.objectStyle(), objToPass.get(), JsRuntime.IJ_DATA);
+          if (node instanceof CallBasicNode && ((CallBasicNode) node).getVariantExpr() != null) {
+            call =
+                SOY_IDOM_CALL_DYNAMIC_HTML.call(
+                    INCREMENTAL_DOM,
+                    callee.objectStyle(),
+                    objToPass.get(),
+                    JsRuntime.IJ_DATA,
+                    getExprTranslator().exec(((CallBasicNode) node).getVariantExpr().getRoot()));
+          } else {
+            call =
+                SOY_IDOM_CALL_DYNAMIC_HTML.call(
+                    INCREMENTAL_DOM, callee.objectStyle(), objToPass.get(), JsRuntime.IJ_DATA);
+          }
           shouldPushKey = true;
         } else {
           // This is executed in the case of HTML/ATTR -> HTML/ATTR. All other ambiguous cases are
