@@ -27,6 +27,8 @@ import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SoyRecord;
+import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jbcsrc.api.RenderResult;
@@ -42,6 +44,7 @@ import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.ibm.icu.util.ULocale;
+import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
@@ -53,11 +56,6 @@ import javax.annotation.Nullable;
  * single instance of this object and it will be propagated throughout the render tree.
  */
 public final class RenderContext {
-  private static RenderResult emptyTemplate(
-      SoyRecord params, SoyRecord ij, LoggingAdvisingAppendable appendable, RenderContext context) {
-    return RenderResult.done();
-  }
-
   // TODO(lukes):  within this object most of these fields are constant across all renders while
   // some are expected to change frequently (the renaming maps, msgBundle and activeModSelector).
   // Consider splitting this into two objects to represent the changing lifetimes.  We are kind of
@@ -217,6 +215,28 @@ public final class RenderContext {
               + "\".");
     }
     return callee;
+  }
+
+  public RenderResult renderModifiable(
+      String delCalleeName,
+      SoyRecord params,
+      SoyRecord ijData,
+      LoggingAdvisingAppendable appendable)
+      throws IOException {
+    SoyValueProvider variantProvider = params.getFieldProvider(Names.VARIANT_VAR_NAME);
+    String variant;
+    if (variantProvider == null) {
+      variant = "";
+    } else {
+      RenderResult status = variantProvider.status();
+      if (!status.isDone()) {
+        return status;
+      }
+      SoyValue value = variantProvider.resolve();
+      variant = value == null ? "null" : value.coerceToString();
+    }
+    CompiledTemplate template = getDelTemplate(delCalleeName, variant);
+    return template.render(params, ijData, appendable, this);
   }
 
   /** Returns {@code true} if the primary msg should be used instead of the fallback. */

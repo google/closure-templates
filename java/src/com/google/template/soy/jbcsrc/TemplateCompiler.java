@@ -613,51 +613,23 @@ final class TemplateCompiler {
             template.typeInfo().type(), method, paramNames.build(), start, end, /*isStatic=*/ true);
     Expression paramsVar = variableSet.getVariable(StandardNames.PARAMS);
     Expression ijVar = variableSet.getVariable(StandardNames.IJ);
-    TemplateVariables variables =
-        new TemplateVariables(
-            variableSet,
-            Optional.of(paramsVar),
-            ijVar,
-            new RenderContextExpression(variableSet.getVariable(StandardNames.RENDER_CONTEXT)));
-    TemplateVariableManager.Scope scope = variableSet.enterScope();
-
-    Expression variantExpr =
-        getFieldProviderOrDefault(
-                VARIANT_VAR_NAME, paramsVar, SoyExpression.forString(BytecodeUtils.constant("")))
-            .invoke(MethodRef.SOY_VALUE_PROVIDER_RESOLVE)
-            .invoke(MethodRef.RUNTIME_COERCE_TO_STRING);
-    TemplateVariableManager.Variable variantVariable =
-        scope.createSynthetic(
-            SyntheticVarName.renderee(), variantExpr, TemplateVariableManager.SaveStrategy.STORE);
+    Expression appendableVar = variableSet.getVariable(StandardNames.APPENDABLE);
+    RenderContextExpression context =
+        new RenderContextExpression(variableSet.getVariable(StandardNames.RENDER_CONTEXT));
 
     TemplateBasicNode templateBasicNode = (TemplateBasicNode) templateNode;
-    Expression selectedCompiledTemplate =
-        variables
-            .getRenderContext()
-            .getDeltemplate(modifiableImplsMapKey(templateBasicNode), variantVariable.accessor());
-
-    AppendableExpression appendable =
-        AppendableExpression.forExpression(
-            variableSet.getVariable(StandardNames.APPENDABLE).asNonNullable());
     Expression renderExpression =
-        selectedCompiledTemplate.invoke(
-            MethodRef.COMPILED_TEMPLATE_RENDER,
-            paramsVar,
-            variables.getIjRecord(),
-            appendable,
-            variables.getRenderContext());
+        context.renderModifiable(
+            modifiableImplsMapKey(templateBasicNode), paramsVar, ijVar, appendableVar);
 
-    Statement exitScope = scope.exitScope();
     Statement returnExpression = Statement.returnExpression(renderExpression);
 
     new Statement() {
       @Override
       protected void doGen(CodeBuilder adapter) {
         adapter.mark(start);
-        variantVariable.initializer().gen(adapter);
-        exitScope.gen(adapter);
-        adapter.mark(end);
         returnExpression.gen(adapter);
+        adapter.mark(end);
         variableSet.generateTableEntries(adapter);
       }
     }.writeIOExceptionMethod(

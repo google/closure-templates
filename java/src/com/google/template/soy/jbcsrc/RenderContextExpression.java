@@ -18,6 +18,8 @@ package com.google.template.soy.jbcsrc;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.data.LoggingAdvisingAppendable;
+import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
@@ -35,6 +37,15 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
 
   private static final MethodRef GET_DELTEMPLATE =
       MethodRef.create(RenderContext.class, "getDelTemplate", String.class, String.class);
+
+  private static final MethodRef RENDER_MODIFIABLE =
+      MethodRef.create(
+          RenderContext.class,
+          "renderModifiable",
+          String.class,
+          SoyRecord.class,
+          SoyRecord.class,
+          LoggingAdvisingAppendable.class);
 
   private static final MethodRef GET_PLUGIN_INSTANCE =
       MethodRef.create(RenderContext.class, "getPluginInstance", String.class);
@@ -174,6 +185,12 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
 
   Expression getDeltemplate(String delCalleeName, Expression variantExpr) {
     return delegate.invoke(GET_DELTEMPLATE, constant(delCalleeName), variantExpr);
+  }
+
+  Expression renderModifiable(
+      String delCalleeName, Expression params, Expression ijData, Expression appendableExpression) {
+    return delegate.invoke(
+        RENDER_MODIFIABLE, constant(delCalleeName), params, ijData, appendableExpression);
   }
 
   @Override

@@ -38,6 +38,8 @@ public final class Names {
   public static final String CLASS_PREFIX = "com.google.template.soy.jbcsrc.gen.";
   public static final String INTERNAL_CLASS_PREFIX = CLASS_PREFIX.replace('.', '/');
 
+  public static final String VARIANT_VAR_NAME = "__modifiable_variant__";
+
   private Names() {}
 
   /**

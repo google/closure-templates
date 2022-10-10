@@ -65,6 +65,7 @@ import com.google.template.soy.jbcsrc.restricted.SoyRuntimeType;
 import com.google.template.soy.jbcsrc.restricted.Statement;
 import com.google.template.soy.jbcsrc.runtime.JbcSrcRuntime;
 import com.google.template.soy.jbcsrc.shared.ClassLoaderFallbackCallFactory;
+import com.google.template.soy.jbcsrc.shared.Names;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.msgs.internal.MsgUtils;
@@ -1128,6 +1129,9 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
 
   @Override
   protected Statement visitCallBasicNode(CallBasicNode node) {
+    // TODO(user): if there is a variant expression, we should evaluate it prior to calling
+    // the template since we know that it will always be the first thing evaluated, there is no
+    // benefit in lazy evaluation.
     if (node.isStaticCall()) {
       // Use invokedynamic to bind to the method.  This allows applications using complex
       // classloader setups to have {call} commands cross classloader boundaries.  It also enables
@@ -1463,7 +1467,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
           new CallParamValueNode(
               0,
               callBasicNode.getVariantExpr().getSourceLocation(),
-              Identifier.create(TemplateCompiler.VARIANT_VAR_NAME, SourceLocation.UNKNOWN),
+              Identifier.create(Names.VARIANT_VAR_NAME, SourceLocation.UNKNOWN),
               callBasicNode.getVariantExpr().getRoot()));
     }
     if (node.numChildren() == 0) {

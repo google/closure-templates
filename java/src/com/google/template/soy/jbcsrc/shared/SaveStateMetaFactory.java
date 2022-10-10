@@ -246,7 +246,7 @@ public final class SaveStateMetaFactory {
       renderContextSaveState =
           lookup.findVirtual(RenderContext.class, "pushFrame", SAVE_STATE_TYPE);
     } catch (ReflectiveOperationException nsme) {
-      throw new AssertionError(nsme);
+      throw new LinkageError(nsme.getMessage(), nsme);
     }
     // We generate a small class that is a subclass of StackFrame
     FrameKey frameKey = frameKeyFromSaveMethodType(type);
@@ -258,7 +258,7 @@ public final class SaveStateMetaFactory {
           lookup.findConstructor(
               frameClass, STACK_FRAME_CTOR_TYPE.appendParameterTypes(frameKey.fieldTypes()));
     } catch (ReflectiveOperationException nsme) {
-      throw new AssertionError(nsme);
+      throw new LinkageError(nsme.getMessage(), nsme);
     }
     MethodHandle stackFrameConstructionHandle =
         MethodHandles.insertArguments(ctorHandle, 0, stateNumber);
