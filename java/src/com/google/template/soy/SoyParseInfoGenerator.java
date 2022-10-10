@@ -62,13 +62,6 @@ public final class SoyParseInfoGenerator extends AbstractSoyCompiler {
   private File outputSrcJar;
 
   @Option(
-    name = "--javaPackage",
-    required = true,
-    usage = "[Required] The Java package name to use for the generated classes."
-  )
-  private String javaPackage = "";
-
-  @Option(
       name = "--javaClassNameSource",
       required = true,
       usage =

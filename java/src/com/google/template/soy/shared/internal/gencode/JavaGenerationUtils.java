@@ -18,7 +18,9 @@ package com.google.template.soy.shared.internal.gencode;
 import static com.google.common.collect.Streams.stream;
 import static java.util.stream.Collectors.toSet;
 
+import com.google.common.base.Ascii;
 import com.google.common.base.Joiner;
+import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
@@ -410,5 +412,38 @@ public final class JavaGenerationUtils {
   /** Returns whether the given symbol is a keyword reserved by the Java language. */
   public static boolean isReservedKeyword(String symbol) {
     return RESERVED_JAVA_KEYWORDS.contains(symbol);
+  }
+
+  /**
+   * Returns the simple class name of the outer class of the per-soy file invocations builders, e.g.
+   * file_name.soy -> FileNameTemplates`.
+   *
+   * @param fileName the file name only, not including directory path.
+   */
+  public static String buildTemplatesClassName(String fileName) {
+    Preconditions.checkNotNull(fileName);
+    Preconditions.checkArgument(!fileName.contains("/") && !fileName.contains("\\"));
+    if (Ascii.toLowerCase(fileName).endsWith(".soy")) {
+      fileName = fileName.substring(0, fileName.length() - 4);
+    }
+    String prefix = makeUpperCamelCase(fileName);
+    if (Character.isDigit(prefix.charAt(0))) {
+      prefix = "_" + prefix;
+    }
+    return prefix + "Templates";
+  }
+
+  /**
+   * Returns the simple class name of the Builder class for FQN (or local name) template name {@code
+   * namespacedTemplateName}. This computed value is simply the upper camel case form of the local
+   * template name, i.e. ns.foo -> Foo.
+   */
+  public static String buildTemplateClassName(String namespacedTemplateName) {
+    String templateName =
+        namespacedTemplateName.substring(namespacedTemplateName.lastIndexOf('.') + 1);
+
+    // Convert the template name to upper camel case (stripping non-alphanumeric characters),  (e.g.
+    // template "foo" -> "Foo").
+    return makeUpperCamelCase(templateName);
   }
 }

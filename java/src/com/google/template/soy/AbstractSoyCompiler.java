@@ -181,6 +181,14 @@ public abstract class AbstractSoyCompiler {
       usage = "Whether to allow generated source files without the blessed comment.")
   private boolean allowUnblessedGeneratedFiles = true;
 
+  @Option(
+      name = "--javaPackage",
+      required = false,
+      usage =
+          "The Java package name used for generated Java classes associated with these"
+              + " Soy sources. Required by some compilers.")
+  protected String javaPackage = "";
+
   /** The remaining arguments after parsing command-line flags. */
   @Argument private List<String> arguments = new ArrayList<>();
 

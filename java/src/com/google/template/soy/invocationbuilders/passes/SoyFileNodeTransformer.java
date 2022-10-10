@@ -21,7 +21,6 @@ import static com.google.template.soy.invocationbuilders.javatypes.JavaTypeUtils
 import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.makeUpperCamelCase;
 
 import com.google.auto.value.AutoValue;
-import com.google.common.base.Ascii;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -501,30 +500,16 @@ public class SoyFileNodeTransformer {
   }
 
   private static String convertSoyFileNameToJavaClassName(SoyFileNode soyFile) {
-    String fileName = soyFile.getFileName();
-    if (fileName == null) {
+    if (soyFile.getFileName() == null) {
       throw new IllegalArgumentException(
           "Trying to generate Java class name based on Soy file name, but Soy file name was"
               + " not provided.");
     }
-    if (Ascii.toLowerCase(fileName).endsWith(".soy")) {
-      fileName = fileName.substring(0, fileName.length() - 4);
-    }
-    String prefix = makeUpperCamelCase(fileName);
-    if (Character.isDigit(prefix.charAt(0))) {
-      prefix = "_" + prefix;
-    }
-    return prefix + "Templates";
+    return JavaGenerationUtils.buildTemplatesClassName(soyFile.getFileName());
   }
 
   private static String generateTemplateClassName(TemplateNode template) {
-    String namespacedTemplateName = template.getTemplateName();
-    String templateName =
-        namespacedTemplateName.substring(namespacedTemplateName.lastIndexOf('.') + 1);
-
-    // Convert the template name to upper camel case (stripping non-alphanumeric characters),  (e.g.
-    // template "foo" -> "Foo").
-    return makeUpperCamelCase(templateName);
+    return JavaGenerationUtils.buildTemplateClassName(template.getTemplateName());
   }
 
   private static String getParamSetterSuffix(String paramName) {
