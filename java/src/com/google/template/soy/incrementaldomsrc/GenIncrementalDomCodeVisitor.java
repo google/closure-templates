@@ -1761,6 +1761,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
         getJsCodeBuilder().addChunkToOutputVar(GOOG_STRING_UNESCAPE_ENTITIES.call(msgExpression));
         break;
       case HTML_RCDATA:
+      case CSS:
         msgExpression = getAssistantForMsgs().generateMsgGroupVariable(node);
         getJsCodeBuilder().append(INCREMENTAL_DOM_TEXT.call(id("String").call(msgExpression)));
         break;
