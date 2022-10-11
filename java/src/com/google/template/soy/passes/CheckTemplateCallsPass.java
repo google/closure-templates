@@ -171,15 +171,7 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
 
   private static final ImmutableSet<String> DEFAULT_DELTEMPLATE_PASSLIST =
       ImmutableSet.of(
-          "boq.saveui.listitem.templates.cardHeader", // circualr deps, cl/455220729 breaks tests
-          "boq.shopping.property.ui.components.componentregistry.ghost.templates.type", // cir dep
-          "boq.shopping.property.ui.components.componentregistry.templates.type", // circular dep
-          "boq.visualfrontendui.explorepanel.templates.closeButton",
-          "boq.visualfrontendviewer.imagecard.templates.navigationButtons", // circular dep
-          "boq.visualfrontendui.explorepanel.templates.header",
-          "Corp.Projectmgmt.Primavera.App.Workflow.Template.Core", // gencode
-          "gitiles.footerFormatBadge",
-          "gitiles.logEntry");
+          );
 
   private final class CheckCallsHelper {
 
