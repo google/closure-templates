@@ -17,19 +17,15 @@
 package com.google.template.soy.jssrc.internal;
 
 import static com.google.common.base.Preconditions.checkState;
-import static com.google.template.soy.jssrc.dsl.Expression.id;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
-import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.GoogRequire;
 import com.google.template.soy.jssrc.dsl.JsDoc;
-import com.google.template.soy.jssrc.dsl.VariableDeclaration;
-import java.util.ArrayDeque;
-import java.util.Deque;
+import com.google.template.soy.jssrc.dsl.Statement;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -39,6 +35,7 @@ import javax.annotation.Nullable;
  * A JavaScript implementation of the CodeBuilder class.
  *
  * <p>Usage example that demonstrates most of the methods:
+ *
  * <pre>
  *   JsCodeBuilder jcb = new JsCodeBuilder(CodeStyle.STRINGBUILDER);
  *   jcb.appendLine("story.title = function(opt_data) {");
@@ -61,6 +58,7 @@ import javax.annotation.Nullable;
  * </pre>
  *
  * <p>The above example builds the following JS code:
+ *
  * <pre>
  * story.title = function(opt_data) {
  *   var output = new soy.StringBuilder();
@@ -72,23 +70,13 @@ import javax.annotation.Nullable;
  */
 public class JsCodeBuilder {
 
-  private static final class OutputVar {
-    final Expression name;
-    final boolean initialized;
-
-    OutputVar(Expression name, boolean initialized) {
-      this.name = name;
-      this.initialized = initialized;
-    }
-  }
-
   /** The size of a single indent level. */
   private static final int INDENT_SIZE = 2;
 
   /** A buffer to accumulate the generated code. */
   private final StringBuilder code;
   /** The current stack of output variables. */
-  private final Deque<OutputVar> outputVars;
+  private final OutputVarHandler outputVars;
 
   /** The current indent (some even number of spaces). */
   private String indent;
@@ -96,31 +84,16 @@ public class JsCodeBuilder {
   // the set of symbols to require, indexed by symbol name to detect conflicting imports
   private final Map<String, GoogRequire> googRequires = new TreeMap<>();
 
-  /**
-   * The current output variable.
-   *
-   * <p>TODO(b/32224284): this is always an {@link Expression#id}. Consider exposing a subclass of
-   * CodeChunk so we can enforce this invariant at compile time.
-   */
-  @Nullable protected Expression currOutputVar;
-
-  /** Whether the current output variable is initialized. */
-  private boolean currOutputVarIsInited;
-
   public JsCodeBuilder() {
     code = new StringBuilder();
     indent = "";
-    outputVars = new ArrayDeque<>();
-    currOutputVar = null;
-    currOutputVarIsInited = false;
+    outputVars = new OutputVarHandler();
   }
 
   protected JsCodeBuilder(JsCodeBuilder parent) {
     code = new StringBuilder();
     indent = parent.indent;
     outputVars = parent.outputVars;
-    currOutputVar = parent.currOutputVar;
-    currOutputVarIsInited = parent.currOutputVarIsInited;
   }
 
   Iterable<GoogRequire> googRequires() {
@@ -128,20 +101,7 @@ public class JsCodeBuilder {
   }
 
   public void initOutputVarIfNecessary() {
-
-    if (currOutputVarIsInited) {
-      // Nothing to do since it's already initialized.
-      return;
-    }
-
-    // let output = '';
-    appendLine(
-        "let ",
-        // Don't tell the chunk about the current indent level.
-        // We're in the middle of a line!
-        currOutputVar.assertExpr().getText(),
-        " = '';");
-    setOutputVarInited();
+    outputVars.initOutputVarIfNecessary().ifPresent(this::append);
   }
 
   /** Appends the given code chunk to the current output variable. */
@@ -155,20 +115,9 @@ public class JsCodeBuilder {
    */
   @CanIgnoreReturnValue
   public JsCodeBuilder addChunksToOutputVar(List<? extends Expression> codeChunks) {
-    if (currOutputVarIsInited) {
-      Expression rhs = CodeChunkUtils.concatChunks(codeChunks);
-      rhs.collectRequires(this::addGoogRequire);
-      appendLine(currOutputVar.plusEquals(rhs).getCode());
-    } else {
-      Expression rhs = CodeChunkUtils.concatChunksForceString(codeChunks);
-      rhs.collectRequires(this::addGoogRequire);
-      append(
-          VariableDeclaration.builder(currOutputVar.singleExprOrName().getText())
-              .setMutable()
-              .setRhs(rhs)
-              .build());
-      setOutputVarInited();
-    }
+    Statement statement = outputVars.addChunksToOutputVar(codeChunks);
+    statement.collectRequires(this::addGoogRequire);
+    append(statement);
     return this;
   }
 
@@ -216,9 +165,7 @@ public class JsCodeBuilder {
    */
   @CanIgnoreReturnValue
   public JsCodeBuilder pushOutputVar(String outputVarName) {
-    currOutputVar = id(outputVarName);
-    outputVars.push(new OutputVar(currOutputVar, false));
-    currOutputVarIsInited = false;
+    outputVars.pushOutputVar(outputVarName);
     return this;
   }
 
@@ -227,15 +174,7 @@ public class JsCodeBuilder {
    */
   @CanIgnoreReturnValue
   public JsCodeBuilder popOutputVar() {
-    outputVars.pop();
-    OutputVar top = outputVars.peek();  // null if outputVars is now empty
-    if (top != null) {
-      currOutputVar = top.name;
-      currOutputVarIsInited = top.initialized;
-    } else {
-      currOutputVar = null;
-      currOutputVarIsInited = false;
-    }
+    outputVars.popOutputVar();
     return this;
   }
 
@@ -246,9 +185,7 @@ public class JsCodeBuilder {
    */
   @CanIgnoreReturnValue
   public JsCodeBuilder setOutputVarInited() {
-    outputVars.pop();
-    outputVars.push(new OutputVar(currOutputVar, /* initialized= */ true));
-    currOutputVarIsInited = true;
+    outputVars.setOutputVarInited();
     return this;
   }
 
