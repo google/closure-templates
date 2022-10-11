@@ -101,7 +101,8 @@ final class CheckDelegatesPass implements CompilerFileSetPass {
           "boq.apps.security.cse.adminconsole.ui.summary.kaclstable.templates.kaclsTableUrlOrStateColumnHeader",
           "boq.apps.security.cse.adminconsole.ui.summary.kaclstable.templates.kaclsTableNameColumnContent",
           "boq.apps.security.cse.adminconsole.ui.summary.kaclstable.templates.kaclsTableUrlOrStateColumnContent",
-          "boq.apps.security.cse.adminconsole.ui.summary.kaclstable.templates.kaclsAssignmentColumnContent");
+          "boq.apps.security.cse.adminconsole.ui.summary.kaclstable.templates.kaclsAssignmentColumnContent",
+          "pixel.urlsImpl");
 
   @Override
   public Result run(ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator) {
