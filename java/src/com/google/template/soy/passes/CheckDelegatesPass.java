@@ -98,7 +98,6 @@ final class CheckDelegatesPass implements CompilerFileSetPass {
 
   private static final ImmutableSet<String> DELTEMPLATE_PASSLIST =
       ImmutableSet.of(
-          "Corp.Projectmgmt.Primavera.App.Workflow.Template.Core",
           "boq.apps.security.cse.adminconsole.ui.summary.kaclstable.templates.kaclsTableUrlOrStateColumnHeader",
           "boq.apps.security.cse.adminconsole.ui.summary.kaclstable.templates.kaclsTableNameColumnContent",
           "boq.apps.security.cse.adminconsole.ui.summary.kaclstable.templates.kaclsTableUrlOrStateColumnContent",
