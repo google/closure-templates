@@ -57,14 +57,7 @@ public final class FindCalleesNotInFileTest {
             + "      {param b kind=\"text\"}{call booHooTmp.zoo /}{/param}"
             + "    {/call}"
             + "  {/for}\n"
-            + "{/template}\n"
-            + "\n"
-            + "/** Test template 3. */\n"
-            + "{deltemplate booHoo}\n"
-            + "  {call goo data=\"all\" /}\n"
-            + "  {call moo data=\"all\" /}\n"
-            + "  {call booHooTmp.roo data=\"all\" /}\n"
-            + "{/deltemplate}\n";
+            + "{/template}\n";
 
     String includesContent =
         ""
@@ -87,7 +80,6 @@ public final class FindCalleesNotInFileTest {
         Iterables.transform(
             FindCalleesNotInFile.findCalleesNotInFile(soyFile),
             TemplateLiteralNode::getResolvedName);
-    assertThat(calleesNotInFile)
-        .containsExactly("boo.hoo.hoo", "boo.hoo.too", "boo.hoo.zoo", "boo.hoo.roo");
+    assertThat(calleesNotInFile).containsExactly("boo.hoo.hoo", "boo.hoo.too", "boo.hoo.zoo");
   }
 }

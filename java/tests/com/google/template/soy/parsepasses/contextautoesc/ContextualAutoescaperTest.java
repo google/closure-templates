@@ -1381,25 +1381,6 @@ public final class ContextualAutoescaperTest {
   }
 
   @Test
-  public void testDelegateTemplatesAreEscaped() throws Exception {
-    assertContextualRewriting(
-        join(
-            "{modname dp}\n",
-            "{namespace ns}\n\n",
-            "{deltemplate ns.foo}\n",
-            "  {@param x: ?}\n",
-            "{$x |escapeHtml}\n",
-            "{/deltemplate}"),
-        join(
-            "{modname dp}\n",
-            "{namespace ns}\n\n",
-            "{deltemplate ns.foo}\n",
-            "  {@param x: ?}\n",
-            "{$x}\n",
-            "{/deltemplate}"));
-  }
-
-  @Test
   public void testTypedLetBlockIsContextuallyEscaped() {
     assertContextualRewriting(
         join(
@@ -1721,35 +1702,6 @@ public final class ContextualAutoescaperTest {
         .that(callNodes.get(0).getEscapingDirectives())
         .isEmpty();
     assertWithMessage("JS -> JS pruned").that(callNodes.get(1).getEscapingDirectives()).isEmpty();
-  }
-
-  @Test
-  public void testStrictModeOptimizesDelegates() {
-    String source =
-        "{namespace ns}\n\n"
-            + "{template main}\n"
-            + "{delcall ns.delegateHtml /}"
-            + "{delcall ns.delegateText /}"
-            + "\n{/template}\n\n"
-            + "/** A delegate returning HTML. */\n"
-            + "{deltemplate ns.delegateHtml}\n"
-            + "Hello World"
-            + "\n{/deltemplate}\n\n"
-            + "/** A delegate returning JS. */\n"
-            + "{deltemplate ns.delegateText kind=\"text\"}\n"
-            + "Hello World"
-            + "\n{/deltemplate}";
-
-    TemplateNode mainTemplate = (TemplateNode) rewrite(source).getChild(0);
-    assertWithMessage("Sanity check").that(mainTemplate.getTemplateName()).isEqualTo("ns.main");
-    final List<CallNode> callNodes = SoyTreeUtils.getAllNodesOfType(mainTemplate, CallNode.class);
-    assertThat(callNodes).hasSize(2);
-    assertWithMessage("We're compiling a complete set; we can optimize based on usages.")
-        .that(callNodes.get(0).getEscapingDirectives())
-        .isEmpty();
-    assertWithMessage("HTML -> TEXT requires escaping")
-        .that(getDirectiveNames(callNodes.get(1).getEscapingDirectives()))
-        .containsExactly("|escapeHtml");
   }
 
   private ImmutableList<String> getDirectiveNames(

@@ -17,10 +17,13 @@
 {modname beta}
 {namespace soy.examples.delegates.beta}
 
+import {myDelegatesFoo} from 'examples/delegates0.soy';
 
 /**
  * Delegate package 'beta' implementation of 'delegateBoo'.
  */
-{deltemplate delegateBoo kind="text"}
+{template myDelegatesFooBeta visibility="private" modifies="myDelegatesFoo" kind="text"}
+  {@param moo: ?}    /** Note: Must list same params for all implementations, even if not all
+                         implementations use a param. */
   delegateBoo from delegate package beta.
-{/deltemplate}
+{/template}

@@ -127,13 +127,6 @@ public class TemplateNodeTest {
 
     node = parse("{namespace ns}\n{template boo requirecss=\"foo.boo, foo.moo\"}{/template}");
     assertEquals(ImmutableList.of("foo.boo", "foo.moo"), node.getRequiredCssNamespaces());
-
-    // Now for deltemplates.
-    node =
-        parse(
-            "{namespace ns}\n"
-                + "{deltemplate namespace.boo requirecss=\"foo.boo, moo.hoo\"}{/deltemplate}");
-    assertEquals(ImmutableList.of("foo.boo", "moo.hoo"), node.getRequiredCssNamespaces());
   }
 
   @Test
@@ -160,22 +153,6 @@ public class TemplateNodeTest {
   }
 
   @Test
-  public void testValidVariant() {
-    // Variant is a string literal: There's no expression and the value is already resolved.
-
-    TemplateDelegateNode node =
-        (TemplateDelegateNode)
-            parse(
-                join(
-                    "{namespace ns}",
-                    "{deltemplate namespace.boo variant=\"'abc'\"}",
-                    "{/deltemplate}"));
-    assertEquals("namespace.boo", node.getDelTemplateName());
-    assertEquals("abc", node.getDelTemplateVariant());
-    assertEquals("abc", node.getDelTemplateKey().variant());
-  }
-
-  @Test
   public void testInvalidRequiredCss() {
     ErrorReporter errorReporter = ErrorReporter.createForTest();
     parse("{namespace ns}\n{template boo requirecss=\"\"}{/template}", errorReporter);
@@ -191,11 +168,6 @@ public class TemplateNodeTest {
     parse("{namespace ns}\n{template boo requirecss=\"9vol\"}{/template}", errorReporter);
     assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
         .isEqualTo("Invalid required CSS namespace name '9vol', expected an identifier.");
-
-    errorReporter = ErrorReporter.createForTest();
-    parse("{namespace ns}\n{deltemplate foo.boo requirecss=\"5ham\"}{/deltemplate}", errorReporter);
-    assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
-        .isEqualTo("Invalid required CSS namespace name '5ham', expected an identifier.");
   }
 
   @Test

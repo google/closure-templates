@@ -115,37 +115,6 @@ public final class GenCallCodeUtilsTest {
   }
 
   @Test
-  public void testGenCallExprForDelegateCallsWithTypedParamBlocks() {
-    assertThat(
-            getCallExprTextHelper(
-                "{delcall my.other.delegate}",
-                "  {param goo kind=\"html\"}Blah{/param}",
-                "{/delcall}"))
-        .isEqualTo(
-            "soy.$$getDelegateFn(soy.$$getDelTemplateId('my.other.delegate'), '')"
-                + "(/** @type {?} */ ({goo:"
-                + " soy.VERY_UNSAFE.$$ordainSanitizedHtmlForInternalBlocks('Blah')}), "
-                + "$ijData);");
-
-    String callExprText =
-        getCallExprTextHelper(
-            "{delcall my.other.delegate}",
-            "  {param goo kind=\"html\"}",
-            "    {for $i in range(3)}{$i}{/for}",
-            "  {/param}",
-            "{/delcall}");
-    assertWithMessage("Actual text:" + callExprText)
-        .that(callExprText)
-        .matches(
-            Pattern.quote(
-                    "soy.$$getDelegateFn(soy.$$getDelTemplateId('my.other.delegate'), '')"
-                        + "(/** @type {?} */ ({goo:"
-                        + " soy.VERY_UNSAFE.$$ordainSanitizedHtmlForInternalBlocks(param")
-                + "\\d+"
-                + Pattern.quote(")})," + " $ijData);"));
-  }
-
-  @Test
   public void testGenCallExprForDataAllAndDefaultParameter() {
     assertThat(
             getCallExprTextHelper(
@@ -176,9 +145,7 @@ public final class GenCallCodeUtilsTest {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forTemplateAndImports(
                 SharedTestUtils.buildTestTemplateContent(false, callSource)
-                    + "\n{template someFunc}{@param? goo: ?}{/template}"
-                    + "{deltemplate delegateForUnitTest}{/deltemplate}"
-                    + "{deltemplate my.other.delegate}{@param goo: any}{/deltemplate}",
+                    + "\n{template someFunc}{@param? goo: ?}{/template}",
                 desc)
             .errorReporter(ErrorReporter.explodeOnErrorsAndIgnoreDeprecations())
             .parse()

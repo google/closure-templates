@@ -20,6 +20,7 @@ import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.SoyFileKind;
@@ -36,6 +37,7 @@ import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
+import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.types.SoyType;
@@ -82,6 +84,9 @@ final class CheckDelegatesPass implements CompilerFileSetPass {
       SoyErrorKind.of(
           "Modifiable templates must have legacydeltemplatenamespace set to be used with"
               + " `deltemplate`.");
+  private static final SoyErrorKind DELTEMPLATES_DEPRECATED =
+      SoyErrorKind.of(
+          "Deltemplates are deprecated. Use go/soy/reference/modifiable-templates instead.");
 
   private final ErrorReporter errorReporter;
   private final Supplier<FileSetMetadata> templateRegistryFull;
@@ -90,6 +95,14 @@ final class CheckDelegatesPass implements CompilerFileSetPass {
     this.errorReporter = errorReporter;
     this.templateRegistryFull = templateRegistryFull;
   }
+
+  private static final ImmutableSet<String> DELTEMPLATE_PASSLIST =
+      ImmutableSet.of(
+          "Corp.Projectmgmt.Primavera.App.Workflow.Template.Core",
+          "boq.apps.security.cse.adminconsole.ui.summary.kaclstable.templates.kaclsTableUrlOrStateColumnHeader",
+          "boq.apps.security.cse.adminconsole.ui.summary.kaclstable.templates.kaclsTableNameColumnContent",
+          "boq.apps.security.cse.adminconsole.ui.summary.kaclstable.templates.kaclsTableUrlOrStateColumnContent",
+          "boq.apps.security.cse.adminconsole.ui.summary.kaclstable.templates.kaclsAssignmentColumnContent");
 
   @Override
   public Result run(ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator) {
@@ -100,6 +113,13 @@ final class CheckDelegatesPass implements CompilerFileSetPass {
     for (SoyFileNode fileNode : sourceFiles) {
       LocalVariables localVariables = LocalVariablesNodeVisitor.getFileScopeVariables(fileNode);
       for (TemplateNode template : fileNode.getTemplates()) {
+        if (template instanceof TemplateDelegateNode
+            && isNullOrEmpty(((TemplateDelegateNode) template).getDelTemplateVariant())
+            && isNullOrEmpty(template.getModName())
+            && !DELTEMPLATE_PASSLIST.contains(
+                ((TemplateDelegateNode) template).getDelTemplateName())) {
+          errorReporter.report(template.getSourceLocation(), DELTEMPLATES_DEPRECATED);
+        }
         String currTemplateNameForUserMsgs = template.getTemplateNameForUserMsgs();
         String currModName = template.getModName();
         for (TemplateLiteralNode templateLiteralNode :

@@ -31,16 +31,11 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyError;
 import com.google.template.soy.exprtree.ExprEquivalence;
 import com.google.template.soy.exprtree.FieldAccessNode;
-import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.OperatorNodes.GreaterThanOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
-import com.google.template.soy.soytree.CallBasicNode;
-import com.google.template.soy.soytree.CallDelegateNode;
-import com.google.template.soy.soytree.CallParamContentNode;
-import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.DebuggerNode;
 import com.google.template.soy.soytree.ForIfemptyNode;
 import com.google.template.soy.soytree.ForNode;
@@ -1355,123 +1350,6 @@ public final class TemplateParserTest {
     ForIfemptyNode fn1fin1 = (ForIfemptyNode) fn1.getChild(1);
     assertEquals(1, fn1fin1.numChildren());
     assertEquals("Sorry, no booze.", ((RawTextNode) fn1fin1.getChild(0)).getRawText());
-  }
-
-  @SuppressWarnings({"ConstantConditions"})
-  @Test
-  public void testParseDelegateCallStmt() throws Exception {
-
-    String templateBody =
-        SharedTestUtils.NS
-            + SharedTestUtils.buildTestTemplateContent(
-                false,
-                "{@param animals : ?}{@param too : ?}\n"
-                    + "  {delcall booTemplate /}\n"
-                    + "  {delcall foo.goo.mooTemplate data=\"all\" /}\n"
-                    + "  {delcall MySecretFeature.zooTemplate data=\"$animals\"}\n"
-                    + "    {param yoo: round($too) /}\n"
-                    + "    {param woo kind=\"html\"}poo{/param}\n"
-                    + "  {/delcall}\n")
-            + "{deltemplate booTemplate}{/deltemplate}"
-            + "{deltemplate foo.goo.mooTemplate}{/deltemplate}"
-            + "{deltemplate MySecretFeature.zooTemplate}{@param yoo: any}{@param woo: any}"
-            + "{/deltemplate}";
-
-    List<StandaloneNode> nodes = parseFileContent(templateBody, FAIL).getChildren();
-    assertEquals(3, nodes.size());
-
-    CallDelegateNode cn0 = (CallDelegateNode) nodes.get(0);
-    assertEquals("booTemplate", cn0.getDelCalleeName());
-    assertEquals(false, cn0.isPassingData());
-    assertEquals(false, cn0.isPassingAllData());
-    assertEquals(null, cn0.getDataExpr());
-    assertEquals(MessagePlaceholder.create("XXX"), cn0.getPlaceholder());
-    assertEquals(0, cn0.numChildren());
-
-    CallDelegateNode cn1 = (CallDelegateNode) nodes.get(1);
-    assertEquals("foo.goo.mooTemplate", cn1.getDelCalleeName());
-    assertEquals(true, cn1.isPassingData());
-    assertEquals(true, cn1.isPassingAllData());
-    assertEquals(null, cn1.getDataExpr());
-    assertFalse(cn1.genSamenessKey().equals(cn0.genSamenessKey()));
-    assertEquals(0, cn1.numChildren());
-
-    CallDelegateNode cn2 = (CallDelegateNode) nodes.get(2);
-    assertEquals("MySecretFeature.zooTemplate", cn2.getDelCalleeName());
-    assertEquals(true, cn2.isPassingData());
-    assertEquals(false, cn2.isPassingAllData());
-    assertTrue(cn2.getDataExpr().getRoot() != null);
-    assertEquals("$animals", cn2.getDataExpr().toSourceString());
-    assertEquals(2, cn2.numChildren());
-
-    CallParamValueNode cn2cpvn0 = (CallParamValueNode) cn2.getChild(0);
-    assertEquals("yoo", cn2cpvn0.getKey().identifier());
-    assertEquals("round($too)", cn2cpvn0.getExpr().toSourceString());
-    assertTrue(cn2cpvn0.getExpr().getRoot() instanceof FunctionNode);
-
-    CallParamContentNode cn2cpcn1 = (CallParamContentNode) cn2.getChild(1);
-    assertEquals("woo", cn2cpcn1.getKey().identifier());
-    assertEquals("poo", ((RawTextNode) cn2cpcn1.getChild(0)).getRawText());
-  }
-
-  @SuppressWarnings({"ConstantConditions"})
-  @Test
-  public void testParseCallStmtWithPhname() throws Exception {
-
-    String templateBody =
-        SharedTestUtils.NS
-            + SharedTestUtils.buildTestTemplateContent(
-                false,
-                "{@param animals:?}\n"
-                    + "{msg desc=\"...\"}\n"
-                    + "  {call booTemplate_ phname=\"booTemplate1_\" /}\n"
-                    + "  {call booTemplate_ phname=\"booTemplate2_\" /}\n"
-                    + "  {delcall MySecretFeature.zooTemplate data=\"$animals\""
-                    + " phname=\"secret_zoo\"}\n"
-                    + "    {param zoo: 0 /}\n"
-                    + "  {/delcall}\n"
-                    + "{/msg}")
-            + "\n\n{template booTemplate_}{/template}"
-            + "{deltemplate MySecretFeature.zooTemplate}{/deltemplate}\n";
-
-    List<StandaloneNode> nodes =
-        ((MsgFallbackGroupNode) parseFileContent(templateBody, FAIL).getChild(0))
-            .getChild(0)
-            .getChildren();
-    assertEquals(3, nodes.size());
-
-    CallBasicNode cn0 = (CallBasicNode) ((MsgPlaceholderNode) nodes.get(0)).getChild(0);
-    assertEquals(
-        MessagePlaceholder.createWithUserSuppliedName(
-            "BOO_TEMPLATE_1",
-            "booTemplate1_",
-            new SourceLocation(SoyFileSetParserBuilder.FILE_PATH, 6, 29, 6, 43)),
-        cn0.getPlaceholder());
-    assertEquals("brittle.test.ns.booTemplate_", cn0.getCalleeName());
-    assertEquals("booTemplate_", cn0.getSourceCalleeName());
-    assertEquals(false, cn0.isPassingData());
-    assertEquals(false, cn0.isPassingAllData());
-    assertEquals(null, cn0.getDataExpr());
-    assertEquals(0, cn0.numChildren());
-
-    CallBasicNode cn1 = (CallBasicNode) ((MsgPlaceholderNode) nodes.get(1)).getChild(0);
-
-    CallDelegateNode cn2 = (CallDelegateNode) ((MsgPlaceholderNode) nodes.get(2)).getChild(0);
-    assertEquals(
-        MessagePlaceholder.createWithUserSuppliedName(
-            "SECRET_ZOO",
-            "secret_zoo",
-            new SourceLocation(SoyFileSetParserBuilder.FILE_PATH, 8, 63, 8, 74)),
-        cn2.getPlaceholder());
-    assertEquals("MySecretFeature.zooTemplate", cn2.getDelCalleeName());
-    assertEquals(true, cn2.isPassingData());
-    assertEquals(false, cn2.isPassingAllData());
-    assertTrue(cn2.getDataExpr().getRoot() != null);
-    assertEquals("$animals", cn2.getDataExpr().toSourceString());
-    assertEquals(1, cn2.numChildren());
-
-    assertFalse(cn0.genSamenessKey().equals(cn1.genSamenessKey())); // CallNodes are never same
-    assertFalse(cn2.genSamenessKey().equals(cn0.genSamenessKey()));
   }
 
   @Test

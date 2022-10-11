@@ -28,6 +28,8 @@ import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.AbstractFuture;
 import com.google.common.util.concurrent.Futures;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
+import com.google.template.soy.base.SourceFilePath;
+import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyAbstractValue;
@@ -38,6 +40,7 @@ import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueConverterUtility;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.internal.MsgUtils;
 import com.google.template.soy.msgs.restricted.SoyMsg;
@@ -54,6 +57,7 @@ import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
+import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.testing.SharedTestUtils;
@@ -1042,36 +1046,38 @@ public class RenderVisitorTest {
             + "\n"
             + "/***/\n"
             + "{template callerTemplate}\n"
-            + "  {delcall myApp.myDelegate}\n"
+            + "  {call myDelegate}\n"
             + "    {param boo: 'aaaaaah' /}\n"
-            + "  {/delcall}\n"
+            + "  {/call}\n"
             + "{/template}\n"
             + "\n"
-            + "{deltemplate myApp.myDelegate}\n"
+            + "{template myDelegate modifiable='true'}\n"
             + "  {@param boo: ?}\n"
             + // default implementation (doesn't use $boo)
             "  000\n"
-            + "{/deltemplate}\n";
+            + "{/template}\n";
 
     String soyFileContent2 =
         "{modname SecretFeature}\n"
             + "{namespace ns2}\n"
+            + "import {myDelegate} from 'ns1.soy';"
             + "\n"
-            + "{deltemplate myApp.myDelegate}\n"
+            + "{template myDelegateMod visibility='private' modifies='myDelegate'}\n"
             + "  {@param boo: ?}\n"
             + // implementation in SecretFeature
             "  111 {$boo}\n"
-            + "{/deltemplate}\n";
+            + "{/template}\n";
 
     String soyFileContent3 =
         "{modname AlternateSecretFeature}\n"
             + "{namespace ns3}\n"
-            + "import {helper} from 'no-path-4';\n"
-            + "{deltemplate myApp.myDelegate}\n"
+            + "import {helper} from 'ns4.soy';\n"
+            + "import {myDelegate} from 'ns1.soy';\n"
+            + "{template myDelegateMod visibility='private' modifies='myDelegate'}\n"
             + "  {@param boo: ?}\n"
             + // implementation in AlternateSecretFeature
             "  222 {call helper data=\"all\" /}\n"
-            + "{/deltemplate}\n";
+            + "{/template}\n";
 
     String soyFileContent4 =
         "{modname AlternateSecretFeature}\n"
@@ -1084,8 +1090,11 @@ public class RenderVisitorTest {
             + "{/template}\n";
 
     final ParseResult parseResult =
-        SoyFileSetParserBuilder.forFileContents(
-                soyFileContent1, soyFileContent2, soyFileContent3, soyFileContent4)
+        SoyFileSetParserBuilder.forSuppliers(
+                SoyFileSupplier.Factory.create(soyFileContent1, SourceFilePath.create("ns1.soy")),
+                SoyFileSupplier.Factory.create(soyFileContent2, SourceFilePath.create("ns2.soy")),
+                SoyFileSupplier.Factory.create(soyFileContent3, SourceFilePath.create("ns3.soy")),
+                SoyFileSupplier.Factory.create(soyFileContent4, SourceFilePath.create("ns4.soy")))
             .errorReporter(FAIL)
             .parse();
     final SoyRecord data = SoyValueConverterUtility.newDict();
@@ -1128,11 +1137,11 @@ public class RenderVisitorTest {
           TEST_IJ_DATA,
           ImmutableSet.of("SecretFeature", "AlternateSecretFeature")::contains);
       fail("expected RenderException");
-    } catch (RenderException e) {
+    } catch (IllegalArgumentException e) {
       assertThat(e)
           .hasMessageThat()
           .contains(
-              "For delegate template 'myApp.myDelegate', found two active implementations with"
+              "For delegate template 'ns1.myDelegate', found two active implementations with"
                   + " equal priority");
     }
   }
@@ -1145,81 +1154,91 @@ public class RenderVisitorTest {
             + "\n"
             + "{template callerTemplate}\n"
             + "  {@param greekB: ?}\n"
-            + "  {delcall myApp.myDelegate variant=\"'alpha'\"}\n"
+            + "  {call myDelegate variant=\"'alpha'\"}\n"
             + // variant is string
             "    {param boo: 'zzz' /}\n"
-            + "  {/delcall}\n"
-            + "  {delcall myApp.myDelegate variant=\"$greekB\"}\n"
+            + "  {/call}\n"
+            + "  {call myDelegate variant=\"'' + $greekB\"}\n"
             + // variant is expression
             "    {param boo: 'zzz' /}\n"
-            + "  {/delcall}\n"
-            + "  {delcall myApp.myDelegate variant=\"'gamma'\"}\n"
+            + "  {/call}\n"
+            + "  {call myDelegate variant=\"'gamma'\"}\n"
             + // variant "gamma" not implemented
             "    {param boo: 'zzz' /}\n"
-            + "  {/delcall}\n"
+            + "  {/call}\n"
             + "{/template}\n"
             + "\n"
-            + "{deltemplate myApp.myDelegate}\n"
+            + "{template myDelegate modifiable='true' usevarianttype='string'}\n"
             + "  {@param boo: ?}\n"
             + // variant "" default
             "  000empty\n"
-            + "{/deltemplate}\n"
+            + "{/template}\n"
             + "\n"
-            + "{deltemplate myApp.myDelegate variant=\"'alpha'\"}\n"
+            + "{template myDelegateAlpha visibility='private' modifies='myDelegate'"
+            + " variant=\"'alpha'\"}\n"
             + "  {@param boo: ?}\n"
             + // variant "alpha" default
             "  000alpha\n"
-            + "{/deltemplate}\n"
+            + "{/template}\n"
             + "\n"
-            + "{deltemplate myApp.myDelegate variant=\"'beta'\"}\n"
+            + "{template myDelegateBeta visibility='private' modifies='myDelegate'"
+            + " variant=\"'beta'\"}\n"
             + "  {@param boo: ?}\n"
             + // variant "beta" default
             "  000beta\n"
-            + "{/deltemplate}\n";
+            + "{/template}\n";
 
     String soyFileContent2 =
         ""
             + "{modname SecretFeature}\n"
             + "{namespace ns2}\n"
+            + "import {myDelegate} from 'ns1.soy';"
             + "\n"
-            + "{deltemplate myApp.myDelegate}\n"
+            + "{template myDelegateNoVar visibility='private' modifies='myDelegate'}\n"
             + "  {@param boo: ?}\n"
             + // variant "" in SecretFeature
             "  111empty\n"
-            + "{/deltemplate}\n"
+            + "{/template}\n"
             + "\n"
-            + "{deltemplate myApp.myDelegate variant=\"'alpha'\"}\n"
+            + "{template myDelegateAlpha visibility='private' modifies='myDelegate'"
+            + " variant=\"'alpha'\"}\n"
             + "  {@param boo: ?}\n"
             + // "alpha" in SecretFeature
             "  111alpha\n"
-            + "{/deltemplate}\n"
+            + "{/template}\n"
             + "\n"
-            + "{deltemplate myApp.myDelegate variant=\"'beta'\"}\n"
+            + "{template myDelegateBeta visibility='private' modifies='myDelegate'"
+            + " variant=\"'beta'\"}\n"
             + "  {@param boo: ?}\n"
             + // "beta" in SecretFeature
             "  111beta\n"
-            + "{/deltemplate}\n";
+            + "{/template}\n";
 
     String soyFileContent3 =
         ""
             + "{modname AlternateSecretFeature}\n"
             + "{namespace ns3}\n"
+            + "import {myDelegate} from 'ns1.soy';"
             + "\n"
-            + "{deltemplate myApp.myDelegate}\n"
+            + "{template myDelegateNoVar visibility='private' modifies='myDelegate'}\n"
             + "  {@param boo: ?}\n"
             + // variant "" in AlternateSecretFeature
             "  222empty\n"
-            + "{/deltemplate}\n"
+            + "{/template}\n"
             + "\n"
-            + "{deltemplate myApp.myDelegate variant=\"'alpha'\"}\n"
+            + "{template myDelegateAlpha visibility='private' modifies='myDelegate'"
+            + " variant=\"'alpha'\"}\n"
             + "  {@param boo: ?}\n"
             + // variant "alpha" in Alternate
             "  222alpha\n"
-            + "{/deltemplate}\n"; // Note: No variant "beta" in AlternateSecretFeature.
+            + "{/template}\n"; // Note: No variant "beta" in AlternateSecretFeature.
 
     SoyGeneralOptions options = new SoyGeneralOptions();
     ParseResult result =
-        SoyFileSetParserBuilder.forFileContents(soyFileContent1, soyFileContent2, soyFileContent3)
+        SoyFileSetParserBuilder.forSuppliers(
+                SoyFileSupplier.Factory.create(soyFileContent1, SourceFilePath.create("ns1.soy")),
+                SoyFileSupplier.Factory.create(soyFileContent2, SourceFilePath.create("ns2.soy")),
+                SoyFileSupplier.Factory.create(soyFileContent3, SourceFilePath.create("ns3.soy")))
             .options(options)
             .runOptimizer(true)
             .errorReporter(FAIL)
@@ -1262,11 +1281,11 @@ public class RenderVisitorTest {
           TEST_IJ_DATA,
           ImmutableSet.of("SecretFeature", "AlternateSecretFeature")::contains);
       fail("expected RenderException");
-    } catch (RenderException e) {
+    } catch (IllegalArgumentException e) {
       assertThat(e)
           .hasMessageThat()
           .contains(
-              "For delegate template 'myApp.myDelegate:alpha', found two active implementations "
+              "For delegate template 'ns1.myDelegate:alpha', found two active implementations "
                   + "with equal priority");
     }
   }
@@ -1561,15 +1580,21 @@ public class RenderVisitorTest {
     DelTemplateSelector.Builder<TemplateNode> deltemplates = new DelTemplateSelector.Builder<>();
     for (SoyFileNode fileNode : fileSet.getChildren()) {
       for (TemplateNode template : SoyTreeUtils.getAllNodesOfType(fileNode, TemplateNode.class)) {
-        if (template instanceof TemplateDelegateNode) {
-          TemplateDelegateNode delegateNode = (TemplateDelegateNode) template;
-          String delTemplateName = delegateNode.getDelTemplateName();
-          String modName = delegateNode.getModName();
-          String variant = delegateNode.getDelTemplateVariant();
-          if (modName == null) {
-            deltemplates.addDefault(delTemplateName, variant, delegateNode);
-          } else {
-            deltemplates.add(delTemplateName, modName, variant, delegateNode);
+        if (template instanceof TemplateBasicNode) {
+          TemplateBasicNode templateBasicNode = (TemplateBasicNode) template;
+          if (templateBasicNode.isModifiable() || templateBasicNode.getModifiesExpr() != null) {
+            String delTemplateName =
+                templateBasicNode.isModifiable()
+                    ? templateBasicNode.getTemplateName()
+                    : ((TemplateLiteralNode) templateBasicNode.getModifiesExpr().getRoot())
+                        .getResolvedName();
+            String modName = templateBasicNode.getModName();
+            String variant = templateBasicNode.getDelTemplateVariant();
+            if (modName == null) {
+              deltemplates.addDefault(delTemplateName, variant, templateBasicNode);
+            } else {
+              deltemplates.add(delTemplateName, modName, variant, templateBasicNode);
+            }
           }
         }
       }

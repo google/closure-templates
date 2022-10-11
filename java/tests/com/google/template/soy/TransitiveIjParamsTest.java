@@ -264,21 +264,6 @@ public final class TransitiveIjParamsTest {
   }
 
   @Test
-  public void testDelemplates() {
-    String fileContent =
-        "{namespace ns}"
-            + "{template test}{@inject a: ?}{$a}{delcall del /}{/template}"
-            + "{deltemplate del}"
-            + "  {@inject b: ?}{$b}"
-            + "{/deltemplate}"
-            + "{deltemplate del variant=\"'foo'\"}"
-            + "  {@inject c: ?}{$c}"
-            + "{/deltemplate}";
-    IjsTester tester = new IjsTester(fileContent);
-    assertThat(tester.calculateIjs("ns.test")).containsExactly("a", "b", "c");
-  }
-
-  @Test
   public void testModifiableTemplates() {
     String fileContent =
         "{namespace ns}"

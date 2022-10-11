@@ -58,9 +58,9 @@ public final class FileSetMetadataTest {
                         + "/** Simple template. */\n"
                         + "{template foo}\n"
                         + "{/template}\n"
-                        + "/** Simple deltemplate. */\n"
-                        + "{deltemplate bar.baz}\n"
-                        + "{/deltemplate}",
+                        + "/** Simple modifiable. */\n"
+                        + "{template baz modifiable='true'}\n"
+                        + "{/template}",
                     FILE_PATH))
             .parse()
             .registry();
@@ -69,9 +69,8 @@ public final class FileSetMetadataTest {
         .definedAt(new SourceLocation(FILE_PATH, 3, 1, 4, 11));
     assertThatRegistry(registry).doesNotContainBasicTemplate("foo");
     assertThatRegistry(registry)
-        .containsDelTemplate("bar.baz")
-        .definedAt(new SourceLocation(FILE_PATH, 6, 1, 7, 14));
-    assertThatRegistry(registry).doesNotContainDelTemplate("ns.bar.baz");
+        .containsDelTemplate("ns.baz")
+        .definedAt(new SourceLocation(FILE_PATH, 6, 1, 7, 11));
   }
 
   /**
@@ -89,9 +88,9 @@ public final class FileSetMetadataTest {
                         + "/** Simple template. */\n"
                         + "{template foo}\n"
                         + "{/template}\n"
-                        + "/** Simple deltemplate. */\n"
-                        + "{deltemplate bar.baz}\n"
-                        + "{/deltemplate}",
+                        + "/** Simple modifiable. */\n"
+                        + "{template baz modifiable='true'}\n"
+                        + "{/template}",
                     FILE_PATH))
             .parse();
     CompilationUnitAndKind dependencyCompilationUnit =
@@ -110,8 +109,8 @@ public final class FileSetMetadataTest {
                         + "{template foo2}\n"
                         + "{/template}\n"
                         + "/** Simple deltemplate. */\n"
-                        + "{deltemplate bar.baz2}\n"
-                        + "{/deltemplate}",
+                        + "{template baz2 modifiable='true'}\n"
+                        + "{/template}",
                     FILE_PATH))
             .addCompilationUnits(ImmutableList.of(dependencyCompilationUnit))
             .build()
@@ -128,12 +127,11 @@ public final class FileSetMetadataTest {
         .definedAt(new SourceLocation(FILE_PATH, 3, 1, 4, 11));
     assertThatRegistry(registry).doesNotContainBasicTemplate("foo");
     assertThatRegistry(registry)
-        .containsDelTemplate("bar.baz")
+        .containsDelTemplate("ns.baz")
         .definedAt(new SourceLocation(FILE_PATH));
     assertThatRegistry(registry)
-        .containsDelTemplate("bar.baz2")
-        .definedAt(new SourceLocation(FILE_PATH, 6, 1, 7, 14));
-    assertThatRegistry(registry).doesNotContainDelTemplate("ns.bar.baz");
+        .containsDelTemplate("ns.baz2")
+        .definedAt(new SourceLocation(FILE_PATH, 6, 1, 7, 11));
   }
 
   @Test
@@ -164,31 +162,32 @@ public final class FileSetMetadataTest {
   }
 
   @Test
-  public void testDelTemplates() {
+  public void testModifiableTemplates() {
     FileSetMetadata registry =
         SoyFileSetParserBuilder.forSuppliers(
                 SoyFileSupplier.Factory.create(
                     "{namespace ns}\n"
-                        + "/** Deltemplate. */\n"
-                        + "{deltemplate foo.bar}\n"
-                        + "{/deltemplate}",
+                        + "/** Modifiable. */\n"
+                        + "{template foo modifiable='true'}\n"
+                        + "{/template}",
                     SourceFilePath.create("foo.soy")),
                 SoyFileSupplier.Factory.create(
                     "{modname foo}\n"
                         + "{namespace ns2}\n"
-                        + "/** Deltemplate. */\n"
-                        + "{deltemplate foo.bar}\n"
-                        + "{/deltemplate}",
+                        + "import {foo} from 'foo.soy';\n"
+                        + "/** Modifiable. */\n"
+                        + "{template bar visibility='private' modifies='foo'}\n"
+                        + "{/template}",
                     SourceFilePath.create("bar.soy")))
             .parse()
             .registry();
 
     assertThatRegistry(registry)
-        .containsDelTemplate("foo.bar")
-        .definedAt(new SourceLocation(SourceFilePath.create("foo.soy"), 3, 1, 4, 14));
+        .containsDelTemplate("ns.foo")
+        .definedAt(new SourceLocation(SourceFilePath.create("foo.soy"), 3, 1, 4, 11));
     assertThatRegistry(registry)
-        .containsDelTemplate("foo.bar")
-        .definedAt(new SourceLocation(SourceFilePath.create("bar.soy"), 4, 1, 5, 14));
+        .containsDelTemplate("ns.foo")
+        .definedAt(new SourceLocation(SourceFilePath.create("bar.soy"), 5, 1, 6, 11));
   }
 
   @Test
@@ -222,72 +221,20 @@ public final class FileSetMetadataTest {
   }
 
   @Test
-  public void testDuplicateDefaultDeltemplates() {
+  public void testDuplicateModifiableTemplates() {
     String file =
         "{namespace ns}\n"
             + "/** Foo. */\n"
-            + "{deltemplate foo.bar}\n"
-            + "{/deltemplate}\n"
+            + "{template foo modifiable='true'}\n"
+            + "{/template}\n"
             + "/** Foo. */\n"
-            + "{deltemplate foo.bar}\n"
-            + "{/deltemplate}\n";
-    ErrorReporter errorReporter = ErrorReporter.createForTest();
-    SoyFileSetParserBuilder.forFileContents(file).errorReporter(errorReporter).parse();
-    assertThat(errorReporter.getErrors()).hasSize(1);
-    assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
-        .isEqualTo(
-            "Delegate template 'foo.bar' already has a default defined at no-path:3:1-4:14.");
-  }
-
-  @Test
-  public void testDuplicateDefaultDeltemplates_differentFiles() {
-    String file =
-        "{namespace ns}\n" + "/** Foo. */\n" + "{deltemplate foo.bar}\n" + "{/deltemplate}\n";
-
-    String file2 =
-        "{namespace ns2}\n" + "/** Foo. */\n" + "{deltemplate foo.bar}\n" + "{/deltemplate}\n";
-
-    ErrorReporter errorReporter = ErrorReporter.createForTest();
-    SoyFileSetParserBuilder.forFileContents(file, file2).errorReporter(errorReporter).parse();
-    assertThat(errorReporter.getErrors()).hasSize(1);
-    assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
-        .isEqualTo(
-            "Delegate template 'foo.bar' already has a default defined at no-path:3:1-4:14.");
-  }
-
-  @Test
-  public void testDelTemplateHasSameNameAsTemplate() {
-    String file =
-        "{namespace ns}\n"
-            + "/** Foo. */\n"
-            + "{deltemplate ns.foo}\n"
-            + "{/deltemplate}\n"
-            + "/** Foo. */\n"
-            + "{template foo}\n"
+            + "{template foo modifiable='true'}\n"
             + "{/template}\n";
     ErrorReporter errorReporter = ErrorReporter.createForTest();
     SoyFileSetParserBuilder.forFileContents(file).errorReporter(errorReporter).parse();
     assertThat(errorReporter.getErrors()).hasSize(1);
     assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
-        .isEqualTo(
-            "Found deltemplate ns.foo with the same name as a template/element at"
-                + " no-path:6:1-7:11.");
-  }
-
-  @Test
-  public void testDelTemplateHasSameNameAsTemplate_differentFiles() {
-    String file =
-        "{namespace ns1}\n" + "/** Foo. */\n" + "{deltemplate ns.foo}\n" + "{/deltemplate}\n";
-
-    String file2 = "{namespace ns}\n" + "/** Foo. */\n" + "{template foo}\n" + "{/template}\n";
-
-    ErrorReporter errorReporter = ErrorReporter.createForTest();
-    SoyFileSetParserBuilder.forFileContents(file, file2).errorReporter(errorReporter).parse();
-    assertThat(errorReporter.getErrors()).hasSize(1);
-    assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
-        .isEqualTo(
-            "Found deltemplate ns.foo with the same name as a template/element at"
-                + " no-path-2:3:1-4:11.");
+        .isEqualTo("Template name 'foo' conflicts with symbol defined at 3:11-3:13.");
   }
 
   @Test
@@ -295,8 +242,8 @@ public final class FileSetMetadataTest {
     String fileContents =
         "{namespace ns}\n"
             + "/** Foo. */\n"
-            + "{deltemplate ns.foo}\n"
-            + "{/deltemplate}\n"
+            + "{template foo modifiable='true'}\n"
+            + "{/template}\n"
             + "/** Foo. */\n"
             + "{template bar}\n"
             + "{/template}\n";
@@ -304,15 +251,17 @@ public final class FileSetMetadataTest {
     String file2Contents =
         "{modname foo}"
             + "{namespace ns3}\n"
+            + "import {foo} from 'foo.soy';\n"
             + "/** Foo. */\n"
-            + "{deltemplate ns.foo}\n"
-            + "{/deltemplate}\n";
+            + "{template fooMod visibility='private' modifies='foo'}\n"
+            + "{/template}\n";
     ErrorReporter errorReporter = ErrorReporter.createForTest();
     ParseResult parseResult =
-        SoyFileSetParserBuilder.forFileContents(fileContents, file2Contents)
+        SoyFileSetParserBuilder.forSuppliers(
+                SoyFileSupplier.Factory.create(fileContents, SourceFilePath.create("foo.soy")),
+                SoyFileSupplier.Factory.create(file2Contents, SourceFilePath.create("foo2.soy")))
             .errorReporter(errorReporter)
             .parse();
-
     FileSetMetadata registry = parseResult.registry();
 
     TemplateNode firstTemplate = (TemplateNode) parseResult.fileSet().getChild(0).getChild(0);
@@ -332,8 +281,8 @@ public final class FileSetMetadataTest {
     String file1Contents =
         "{namespace ns}\n"
             + "/** Foo. */\n"
-            + "{deltemplate ns.foo}\n"
-            + "{/deltemplate}\n"
+            + "{template foo modifiable='true'}\n"
+            + "{/template}\n"
             + "/** Foo. */\n"
             + "{template bar}\n"
             + "{/template}\n";
@@ -341,8 +290,8 @@ public final class FileSetMetadataTest {
     String file2Contents =
         "{namespace ns2}\n"
             + "/** Foo. */\n"
-            + "{deltemplate ns2.foo}\n"
-            + "{/deltemplate}\n"
+            + "{template foo modifiable='true'}\n"
+            + "{/template}\n"
             + "/** Foo. */\n"
             + "{template bar}\n"
             + "{/template}\n";
@@ -350,12 +299,16 @@ public final class FileSetMetadataTest {
     String file3Contents =
         "{modname foo}"
             + "{namespace ns3}\n"
+            + "import {foo} from 'foo.soy';\n"
             + "/** Foo. */\n"
-            + "{deltemplate ns.foo}\n"
-            + "{/deltemplate}\n";
+            + "{template fooMod visibility='private' modifies='foo'}\n"
+            + "{/template}\n";
     ErrorReporter errorReporter = ErrorReporter.createForTest();
     ParseResult parseResult =
-        SoyFileSetParserBuilder.forFileContents(file1Contents, file2Contents, file3Contents)
+        SoyFileSetParserBuilder.forSuppliers(
+                SoyFileSupplier.Factory.create(file1Contents, SourceFilePath.create("foo.soy")),
+                SoyFileSupplier.Factory.create(file2Contents, SourceFilePath.create("foo2.soy")),
+                SoyFileSupplier.Factory.create(file3Contents, SourceFilePath.create("foo3.soy")))
             .errorReporter(errorReporter)
             .parse();
 
@@ -374,7 +327,7 @@ public final class FileSetMetadataTest {
         TemplateMetadata.fromTemplate((TemplateNode) file2.getChild(1));
 
     TemplateMetadata file3Template1 =
-        TemplateMetadata.fromTemplate((TemplateNode) file3.getChild(0));
+        TemplateMetadata.fromTemplate((TemplateNode) file3.getChild(1));
 
     FileSetMetadata registry = parseResult.registry();
     assertThat(registry.getAllTemplates())
@@ -398,7 +351,8 @@ public final class FileSetMetadataTest {
     SoyFileSetParserBuilder.forFileContents(file).errorReporter(errorReporter).parse();
     assertThat(errorReporter.getErrors()).hasSize(1);
     assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
-        .isEqualTo("Delegate template 'foo.bar' already defined in mod foo: no-path:4:1-5:14");
+        .isEqualTo(
+            "Delegate/Modifies template 'foo.bar' already defined in mod foo: no-path:4:1-5:14");
   }
 
   @Test
@@ -420,7 +374,65 @@ public final class FileSetMetadataTest {
     SoyFileSetParserBuilder.forFileContents(file, file2).errorReporter(errorReporter).parse();
     assertThat(errorReporter.getErrors()).hasSize(1);
     assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
-        .isEqualTo("Delegate template 'foo.bar' already defined in mod foo: no-path:4:1-5:14");
+        .isEqualTo(
+            "Delegate/Modifies template 'foo.bar' already defined in mod foo: no-path:4:1-5:14");
+  }
+
+  @Test
+  public void testDuplicateModifiesTemplatesInSameMod() {
+    String file1 = "{namespace nsmodifiable}{template foo modifiable='true'}{/template}";
+    String file2 =
+        "{modname foo}\n"
+            + "{namespace ns}\n"
+            + "import {foo} from 'foo.soy';\n"
+            + "/** Foo. */\n"
+            + "{template fooMod1 visibility='private' modifies='foo'}\n"
+            + "{/template}\n"
+            + "/** Foo. */\n"
+            + "{template fooMod2 visibility='private' modifies='foo'}\n"
+            + "{/template}\n";
+    ErrorReporter errorReporter = ErrorReporter.createForTest();
+    SoyFileSetParserBuilder.forSuppliers(
+            SoyFileSupplier.Factory.create(file1, SourceFilePath.create("foo.soy")),
+            SoyFileSupplier.Factory.create(file2, SourceFilePath.create("foo2.soy")))
+        .errorReporter(errorReporter)
+        .parse();
+    assertThat(errorReporter.getErrors()).hasSize(1);
+    assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
+        .isEqualTo(
+            "Delegate/Modifies template 'nsmodifiable.foo' already defined in mod foo:"
+                + " foo2.soy:5:1-6:11");
+  }
+
+  @Test
+  public void testDuplicateModifiesTemplatesInSameMod_differentFiles() {
+    String file1 = "{namespace nsmodifiable}{template foo modifiable='true'}{/template}";
+    String file2 =
+        "{modname foo}\n"
+            + "{namespace ns}\n"
+            + "import {foo} from 'foo.soy';\n"
+            + "/** Foo. */\n"
+            + "{template fooMod1 visibility='private' modifies='foo'}\n"
+            + "{/template}\n";
+    String file3 =
+        "{modname foo}\n"
+            + "{namespace ns2}\n"
+            + "import {foo} from 'foo.soy';\n"
+            + "/** Foo. */\n"
+            + "{template fooMod1 visibility='private' modifies='foo'}\n"
+            + "{/template}\n";
+    ErrorReporter errorReporter = ErrorReporter.createForTest();
+    SoyFileSetParserBuilder.forSuppliers(
+            SoyFileSupplier.Factory.create(file1, SourceFilePath.create("foo.soy")),
+            SoyFileSupplier.Factory.create(file2, SourceFilePath.create("foo2.soy")),
+            SoyFileSupplier.Factory.create(file3, SourceFilePath.create("foo3.soy")))
+        .errorReporter(errorReporter)
+        .parse();
+    assertThat(errorReporter.getErrors()).hasSize(1);
+    assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
+        .isEqualTo(
+            "Delegate/Modifies template 'nsmodifiable.foo' already defined in mod foo:"
+                + " foo2.soy:5:1-6:11");
   }
 
   @Test
@@ -475,14 +487,14 @@ public final class FileSetMetadataTest {
   }
 
   @Test
-  public void testGetCallContentKind_delTemplate() {
+  public void testGetCallContentKind_modifiableTemplate() {
     FileSetMetadata registry =
         SoyFileSetParserBuilder.forSuppliers(
                 SoyFileSupplier.Factory.create(
                     "{namespace ns}\n"
                         + "/** Simple template. */\n"
-                        + "{deltemplate ns.foo kind=\"attributes\"}\n"
-                        + "{/deltemplate}\n",
+                        + "{template foo modifiable='true' kind=\"attributes\"}\n"
+                        + "{/template}\n",
                     FILE_PATH))
             .parse()
             .registry();
@@ -500,14 +512,14 @@ public final class FileSetMetadataTest {
   }
 
   @Test
-  public void testGetCallContentKind_delTemplateMissing() {
+  public void testGetCallContentKind_modifiableTemplateMissing() {
     FileSetMetadata registry =
         SoyFileSetParserBuilder.forSuppliers(
                 SoyFileSupplier.Factory.create(
                     "{namespace ns}\n"
                         + "/** Simple template. */\n"
-                        + "{deltemplate ns.foo kind=\"attributes\"}\n"
-                        + "{/deltemplate}\n",
+                        + "{template foo modifiable='true' kind=\"attributes\"}\n"
+                        + "{/template}\n",
                     FILE_PATH))
             .parse()
             .registry();

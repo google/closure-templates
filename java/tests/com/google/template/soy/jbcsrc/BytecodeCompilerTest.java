@@ -103,18 +103,18 @@ public class BytecodeCompilerTest {
                     "",
                     "/***/",
                     "{template callerTemplate}",
-                    "  {delcall myApp.myDelegate}",
+                    "  {call myDelegate}",
                     "    {param boo: 'aaaaaah' /}",
-                    "  {/delcall}",
+                    "  {/call}",
                     "{/template}",
                     "",
                     "/** */",
-                    "{deltemplate myApp.myDelegate requirecss=\"ns.default\"}", // default
-                    // implementation
+                    "{template myDelegate requirecss=\"ns.default\" modifiable='true'}",
+                    // default implementation
                     // (doesn't use $boo)
                     "  {@param boo : string}",
                     "  default",
-                    "{/deltemplate}",
+                    "{/template}",
                     ""),
             SourceFilePath.create("ns1.soy"));
 
@@ -124,12 +124,14 @@ public class BytecodeCompilerTest {
                 .join(
                     "{modname SecretFeature}",
                     "{namespace ns2 requirecss=\"ns.foo\"}",
+                    "import {myDelegate} from 'ns1.soy';",
                     "",
                     "/** */",
-                    "{deltemplate myApp.myDelegate}", // implementation in SecretFeature
+                    // implementation in SecretFeature
+                    "{template myDelegateMod visibility='private' modifies='myDelegate'}",
                     "  {@param boo : string}",
                     "  SecretFeature {$boo}",
-                    "{/deltemplate}",
+                    "{/template}",
                     ""),
             SourceFilePath.create("ns2-dp.soy"));
 
@@ -140,12 +142,14 @@ public class BytecodeCompilerTest {
                     "{modname AlternateSecretFeature}",
                     "{namespace ns3 requirecss=\"ns.bar\"}",
                     "import {helper} from 'ns4.soy';",
+                    "import {myDelegate} from 'ns1.soy';",
                     "",
                     "/** */",
-                    "{deltemplate myApp.myDelegate}", // implementation in AlternateSecretFeature
+                    // implementation in AlternateSecretFeature
+                    "{template myDelegateMod  visibility='private' modifies='myDelegate'}",
                     "  {@param boo : string}",
                     "  AlternateSecretFeature {call helper data=\"all\" /}",
-                    "{/deltemplate}",
+                    "{/template}",
                     ""),
             SourceFilePath.create("ns3-dp.soy"));
 
@@ -185,20 +189,11 @@ public class BytecodeCompilerTest {
     assertThat(
             templates.getAllRequiredCssNamespaces(
                 "ns1.callerTemplate", arg -> arg.equals("SecretFeature"), false))
-        .containsExactly("ns.foo");
+        .containsExactly("ns.foo", "ns.default");
     assertThat(
             templates.getAllRequiredCssNamespaces(
                 "ns1.callerTemplate", arg -> arg.equals("AlternateSecretFeature"), false))
-        .containsExactly("ns.bar");
-
-    assertThat(
-            templates.getAllRequiredCssNamespaces(
-                "ns1.callerTemplate", arg -> arg.equals("SecretFeature"), false))
-        .containsExactly("ns.foo");
-    assertThat(
-            templates.getAllRequiredCssNamespaces(
-                "ns1.callerTemplate", arg -> arg.equals("AlternateSecretFeature"), false))
-        .containsExactly("ns.bar");
+        .containsExactly("ns.bar", "ns.default");
 
     assertThat(renderWithContext(template, getDefaultContext(templates, activePackages)))
         .isEqualTo("default");
@@ -275,69 +270,6 @@ public class BytecodeCompilerTest {
             template.render(ParamStore.EMPTY_INSTANCE, ParamStore.EMPTY_INSTANCE, builder, context))
         .isEqualTo(RenderResult.done());
     return builder.toString();
-  }
-
-  @Test
-  public void testDelCall_delVariant() throws IOException {
-    String soyFileContent1 =
-        Joiner.on("\n")
-            .join(
-                "{namespace ns1}",
-                "",
-                "{deltemplate delegateForUnitTest}{/deltemplate}",
-                "/***/",
-                "{template callerTemplate}",
-                "  {@param variant : string}",
-                "  {delcall delegateForUnitTest variant=\"$variant\" /}",
-                "{/template}",
-                "",
-                "/** */",
-                "{deltemplate delegateForUnitTest variant=\"'v1'\" requirecss=\"ns.foo\"}",
-                "  v1",
-                "{/deltemplate}",
-                "",
-                "/** */",
-                "{deltemplate delegateForUnitTest variant=\"'v2'\" requirecss=\"ns.bar\"}",
-                "  v2",
-                "{/deltemplate}",
-                "");
-
-    CompiledTemplates templates = compileFiles(soyFileContent1);
-    assertThat(templates.getAllRequiredCssNamespaces("ns1.callerTemplate", (arg) -> false, false))
-        .isEmpty();
-    CompiledTemplate template = templates.getTemplate("ns1.callerTemplate");
-    RenderContext context = getDefaultContext(templates);
-    BufferingAppendable builder = LoggingAdvisingAppendable.buffering();
-    assertThat(
-            template.render(
-                TemplateTester.asRecord(ImmutableMap.of("variant", "v1")),
-                ParamStore.EMPTY_INSTANCE,
-                builder,
-                context))
-        .isEqualTo(RenderResult.done());
-    assertThat(builder.getAndClearBuffer()).isEqualTo("v1");
-
-    assertThat(
-            template.render(
-                TemplateTester.asRecord(ImmutableMap.of("variant", "v2")),
-                ParamStore.EMPTY_INSTANCE,
-                builder,
-                context))
-        .isEqualTo(RenderResult.done());
-    assertThat(builder.getAndClearBuffer()).isEqualTo("v2");
-
-    assertThat(
-            template.render(
-                TemplateTester.asRecord(ImmutableMap.of("variant", "unknown")),
-                ParamStore.EMPTY_INSTANCE,
-                builder,
-                context))
-        .isEqualTo(RenderResult.done());
-    assertThat(builder.toString()).isEmpty();
-
-    TemplateMetadata templateMetadata = getTemplateMetadata(templates, "ns1.callerTemplate");
-    assertThat(templateMetadata.callees()).isEmpty();
-    assertThat(templateMetadata.delCallees()).asList().containsExactly("delegateForUnitTest");
   }
 
   @Test
@@ -1215,21 +1147,6 @@ public class BytecodeCompilerTest {
     public String get(String key) {
       return renamingMap.get(key);
     }
-  }
-
-  private CompiledTemplates compileFiles(String... soyFileContents) {
-    SoyFileSetParser parser =
-        SoyFileSetParserBuilder.forFileContents(soyFileContents)
-            .errorReporter(ErrorReporter.explodeOnErrorsAndIgnoreDeprecations())
-            .build();
-    ParseResult parseResult = parser.parse();
-    return BytecodeCompiler.compile(
-            parseResult.registry(),
-            parseResult.fileSet(),
-            ErrorReporter.explodeOnErrorsAndIgnoreDeprecations(),
-            parser.soyFileSuppliers(),
-            parser.typeRegistry())
-        .get();
   }
 
   @Test

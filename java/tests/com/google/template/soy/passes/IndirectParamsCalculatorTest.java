@@ -168,32 +168,6 @@ public final class IndirectParamsCalculatorTest {
   }
 
   @Test
-  public void testFindIndirectParamsDeltemplates() {
-
-    String fileContent =
-        "{namespace ns}"
-            + "{template test}{delcall del data=\"all\" /}{/template}"
-            + "{deltemplate del}"
-            + "  {@param m: ?}"
-            + "  {call x data=\"all\" /}"
-            + "{/deltemplate}"
-            + "{deltemplate del variant=\"'foo'\"}"
-            + "  {@param m: ?}"
-            + "  {call y data=\"all\" /}"
-            + "{/deltemplate}"
-            + "{template x}{@param x: ?}{/template}"
-            + "{template y}{@param y: ?}{/template}";
-
-    FileSetMetadata registry =
-        SoyFileSetParserBuilder.forFileContents(fileContent).parse().registry();
-
-    TemplateMetadata test = registry.getBasicTemplateOrElement("ns.test");
-    IndirectParamsInfo ipi =
-        new IndirectParamsCalculator(registry).calculateIndirectParams(test.getTemplateType());
-    assertThat(ipi.indirectParams.keySet()).containsExactly("m", "x", "y");
-  }
-
-  @Test
   public void testFindIndirectParamsModifiables() {
 
     String fileContent =

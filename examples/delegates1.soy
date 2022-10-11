@@ -17,20 +17,13 @@
 {modname alpha}
 {namespace soy.examples.delegates.alpha}
 
-
-/**
- * Delegate package 'alpha' implementation of 'delegateBoo'.
- */
-{deltemplate delegateBoo kind="text"}
-  delegateBoo from delegate package alpha.
-{/deltemplate}
-
+import {myDelegatesFoo} from 'examples/delegates0.soy';
 
 /**
  * Delegate package 'alpha' implementation of 'myDelegates.foo'.
  */
-{deltemplate myDelegates.foo kind="text"}
+{template myDelegatesFooAlpha visibility="private" modifies="myDelegatesFoo" kind="text"}
   {@param moo: ?}  /** Note: Must list same params for all implementations, even if not all
                        implementations use a param. */
   myDelegates.foo from delegate package alpha (moo = {$moo}).
-{/deltemplate}
+{/template}

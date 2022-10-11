@@ -64,11 +64,9 @@ public final class Metadata {
 
   private static final SoyErrorKind DUPLICATE_TEMPLATES =
       SoyErrorKind.of("Template/element ''{0}'' already defined at {1}.");
-  private static final SoyErrorKind DUPLICATE_DEFAULT_DELEGATE_TEMPLATES =
-      SoyErrorKind.of("Delegate template ''{0}'' already has a default defined at {1}.");
   private static final SoyErrorKind DUPLICATE_DELEGATE_TEMPLATES_IN_MOD =
       SoyErrorKind.of(
-          "Delegate template ''{0}'' already defined in mod {1}: {2}",
+          "Delegate/Modifies template ''{0}'' already defined in mod {1}: {2}",
           StyleAllowance.NO_PUNCTUATION);
   private static final SoyErrorKind TEMPLATE_OR_ELEMENT_AND_DELTEMPLATE_WITH_SAME_NAME =
       SoyErrorKind.of("Found deltemplate {0} with the same name as a template/element at {1}.");
@@ -767,17 +765,6 @@ public final class Metadata {
     if (modName == null) {
       // default delegate
       previous = builder.addDefault(delTemplateName, variant, template);
-      if (previous != null
-          && !template.getTemplateType().isModifiable()
-          && !template.getTemplateType().isModifying()) {
-        // duplicate defaults for modifiable is already caught by the check that "modifies" must be
-        // on a template with "variant" or in a {modname}.
-        errorReporter.report(
-            template.getSourceLocation(),
-            DUPLICATE_DEFAULT_DELEGATE_TEMPLATES,
-            delTemplateName,
-            previous.getSourceLocation());
-      }
     } else {
       previous = builder.add(delTemplateName, modName, variant, template);
       if (previous != null) {
@@ -792,8 +779,11 @@ public final class Metadata {
 
     TemplateMetadata nameCollision = fileSetMetadata.getBasicTemplateOrElement(delTemplateName);
     // getBasicTemplateOrElement() will return modifiable templates. We're only interested in name
-    // collisions with non-modifiable templates.
-    if (nameCollision != null && nameCollision.getDelTemplateName() == null) {
+    // collisions between deltemplates and non-modifiable templates.
+    if (nameCollision != null
+        && nameCollision.getDelTemplateName() == null
+        && !template.getTemplateType().isModifiable()
+        && !template.getTemplateType().isModifying()) {
       errorReporter.report(
           template.getSourceLocation(),
           TEMPLATE_OR_ELEMENT_AND_DELTEMPLATE_WITH_SAME_NAME,

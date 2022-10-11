@@ -22,15 +22,15 @@
 {template main}
   {@param moo: ?}
 
-  {delcall myDelegates.foo data="all" /}
+  {call myDelegatesFoo data="all" /}
 {/template}
 
 /**
  * Default implementation of 'myDelegates.foo'.
  */
-{deltemplate myDelegates.foo kind="text"}
+{template myDelegatesFoo modifiable="true" kind="text"}
   {@param moo: ?}    /** Note: Must list same params for all implementations, even if not all
                          implementations use a param. */
 
   myDelegates.foo default.
-{/deltemplate}
+{/template}
