@@ -103,7 +103,7 @@ public final class TemplateAnalysisTest {
     runTest("{@param p : list<string>}", "{notrefed($p[0])}", "{refed($p)}");
     runTest("{@param p : list<string>}", "{notrefed($p)}", "{notrefed($p[0])}");
 
-    // TODO(user): $p?[0] should imply $p[0] is already referenced.
+    // TODO(nicholasyu): $p?[0] should imply $p[0] is already referenced.
     // runTest("{@param p : list<string>}", "{notrefed($p?[0])}", "{refed($p[0])}");
     runTest("{@param p : list<string>}", "{notrefed($p?[0])}", "{refed($p)}");
     runTest("{@param p : list<string>}", "{notrefed($p)}", "{notrefed($p?[0])}");
@@ -112,7 +112,7 @@ public final class TemplateAnalysisTest {
     runTest("{@param p : [field:string]}", "{notrefed($p.field)}", "{refed($p)}");
     runTest("{@param p : [field:string]}", "{notrefed($p)}", "{notrefed($p.field)}");
 
-    // TODO(user): $p?.field should imply $p.field is already referenced.
+    // TODO(nicholasyu): $p?.field should imply $p.field is already referenced.
 
     // runTest("{@param p : [field:string]}", "{notrefed($p?.field)}", "{refed($p.field)}");
     runTest("{@param p : [field:string]}", "{notrefed($p?.field)}", "{refed($p)}");

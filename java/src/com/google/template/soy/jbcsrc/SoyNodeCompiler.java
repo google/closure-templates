@@ -1129,7 +1129,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
 
   @Override
   protected Statement visitCallBasicNode(CallBasicNode node) {
-    // TODO(user): if there is a variant expression, we should evaluate it prior to calling
+    // TODO(nicholasyu): if there is a variant expression, we should evaluate it prior to calling
     // the template since we know that it will always be the first thing evaluated, there is no
     // benefit in lazy evaluation.
     if (node.isStaticCall()) {
