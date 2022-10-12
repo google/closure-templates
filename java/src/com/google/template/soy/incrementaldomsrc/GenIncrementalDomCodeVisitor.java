@@ -137,8 +137,10 @@ import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.TemplateType;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -180,6 +182,8 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     }
   }
 
+  private final Deque<SanitizedContentKind> contentKind;
+
   // Counter for static variables that are declared at the global scope.
   private int staticsCounter = 0;
   private String alias = "";
@@ -203,11 +207,12 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
         canInitOutputVarVisitor,
         genIncrementalDomExprsVisitorFactory,
         typeRegistry);
+    contentKind = new ArrayDeque<>();
   }
 
   @Override
   protected JsCodeBuilder createCodeBuilder() {
-    return new IncrementalDomCodeBuilder();
+    return new IncrementalDomCodeBuilder(contentKind);
   }
 
   @Override
@@ -263,7 +268,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   protected void visitTemplateNode(TemplateNode node) {
     staticsCounter = 0;
     SanitizedContentKind kind = node.getContentKind();
-    getJsCodeBuilder().setContentKind(kind);
+    contentKind.push(kind);
     if (node instanceof TemplateDelegateNode) {
       alias = node.getLocalTemplateSymbol();
     } else {
@@ -278,6 +283,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     if ((node instanceof TemplateDelegateNode
             && ((TemplateDelegateNode) node).getChildren().isEmpty())
         || (isModifiable(node) && node.getChildren().isEmpty())) {
+      contentKind.pop();
       return;
     }
     if (kind.isHtml() || kind == SanitizedContentKind.ATTRIBUTES) {
@@ -321,6 +327,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       getJsCodeBuilder().append(generateClassForSoyElement(elementName, elementAccessor, element));
       getJsCodeBuilder().append(generateExportsForSoyElement(elementName));
     }
+    contentKind.pop();
   }
 
   private Statement generateRenderInternal(TemplateElementNode node) {
@@ -904,9 +911,8 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     checkState(node.getContentKind() != null);
 
     IncrementalDomCodeBuilder jsCodeBuilder = getJsCodeBuilder();
-    SanitizedContentKind prevContentKind = jsCodeBuilder.getContentKind();
 
-    jsCodeBuilder.setContentKind(node.getContentKind());
+    contentKind.push(node.getContentKind());
 
     CodeChunk definition;
     VariableDeclaration.Builder builder = VariableDeclaration.builder(generatedVarName);
@@ -952,7 +958,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       jsCodeBuilder.popOutputVar();
     }
 
-    jsCodeBuilder.setContentKind(prevContentKind);
+    contentKind.pop();
     jsCodeBuilder.append(definition);
   }
 
@@ -1183,10 +1189,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
    */
   @Override
   protected void visitIfNode(IfNode node) {
-    IncrementalDomCodeBuilder jsCodeBuilder = getJsCodeBuilder();
-    SanitizedContentKind currentContentKind = jsCodeBuilder.getContentKind();
-
-    if (!isTextContent(currentContentKind)) {
+    if (!isTextContent(contentKind.peek())) {
       super.generateNonExpressionIfNode(node);
     } else {
       super.visitIfNode(node);
@@ -1223,14 +1226,13 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
                 .setRhs(Expression.LITERAL_EMPTY_STRING)
                 .build());
     getJsCodeBuilder().pushOutputVar(id).setOutputVarInited();
-    SanitizedContentKind prev = getJsCodeBuilder().getContentKind();
-    getJsCodeBuilder().setContentKind(SanitizedContentKind.TEXT);
+    contentKind.push(SanitizedContentKind.TEXT);
     for (int i = 0; i < node.numChildren(); i++) {
       visit(node.getChild(i));
     }
     getJsCodeBuilder().append(SOY_IDOM_VISIT_HTML_COMMENT.call(INCREMENTAL_DOM, id(id)));
     getJsCodeBuilder().popOutputVar();
-    getJsCodeBuilder().setContentKind(prev);
+    contentKind.pop();
   }
 
   /**
@@ -1305,8 +1307,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     }
     if (!isComputableAsJsExprsVisitor.execOnChildren(value) || needsToBeCoerced) {
       getJsCodeBuilder().pushOutputVar(outputVar).setOutputVarInited();
-      SanitizedContentKind prev = getJsCodeBuilder().getContentKind();
-      getJsCodeBuilder().setContentKind(SanitizedContentKind.TEXT);
+      contentKind.push(SanitizedContentKind.TEXT);
       IncrementalDomCodeBuilder jsCodeBuilder = getJsCodeBuilder();
       jsCodeBuilder.append(
           VariableDeclaration.builder(outputVar)
@@ -1315,7 +1316,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
               .build());
       visit(value);
       getJsCodeBuilder().popOutputVar();
-      getJsCodeBuilder().setContentKind(prev);
+      contentKind.pop();
       return ImmutableList.of(id(outputVar));
     }
     return genJsExprsVisitor.exec(value);
@@ -1352,6 +1353,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
    * Extract static content from attributes, or return null if value is dynamic. Static content is
    * either an attribute value that is nonexistent or a combination of raw text and xid/css calls.
    */
+  @Nullable
   private Expression getStaticContent(HtmlAttributeNode node) {
     if (!node.hasValue()) {
       return Expression.stringLiteral("");
@@ -1503,7 +1505,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       scriptOutputVar = "script_" + staticsCounter++;
       jsCodeBuilder.pushOutputVar(scriptOutputVar).setOutputVarInited();
       jsCodeBuilder.appendLine("let ", scriptOutputVar, " = '';");
-      jsCodeBuilder.setContentKind(SanitizedContentKind.JS);
+      contentKind.push(SanitizedContentKind.JS);
     }
   }
 
@@ -1557,7 +1559,12 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
           Statement.ifStatement(currentElement, textContentAssignment.asStatement());
       getJsCodeBuilder().append(ifCurrentElementExists.build());
       getJsCodeBuilder().append(INCREMENTAL_DOM.dotAccess("skipNode").call());
-      getJsCodeBuilder().setContentKind(SanitizedContentKind.HTML);
+      // We could be in some other content kind (like JS in a <script> tag) or still in HTML. Either
+      // way, a closing HTML tag means we're back in HTML, so pop if needed for HTML.
+      if (!contentKind.peek().isHtml()) {
+        contentKind.pop();
+        checkState(contentKind.peek().isHtml(), "unexpected contentKind: %s", contentKind);
+      }
     }
     if (node.getTaggedPairs().size() == 1) {
       HtmlOpenTagNode openTag = (HtmlOpenTagNode) node.getTaggedPairs().get(0);

@@ -21,21 +21,23 @@ import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.internal.JsCodeBuilder;
 import com.google.template.soy.jssrc.restricted.JsExpr;
+import java.util.Deque;
 import java.util.List;
 
 /** Used to generate code by printing {@link JsExpr}s into an output buffer. */
 final class IncrementalDomCodeBuilder extends JsCodeBuilder {
 
   /** Used to track what kind of content is currently being processed. */
-  private SanitizedContentKind contentKind;
+  private final Deque<SanitizedContentKind> contentKind;
 
-  IncrementalDomCodeBuilder() {
+  IncrementalDomCodeBuilder(Deque<SanitizedContentKind> contentKind) {
     super();
+    this.contentKind = contentKind;
   }
 
   IncrementalDomCodeBuilder(IncrementalDomCodeBuilder parent) {
     super(parent);
-    this.contentKind = parent.getContentKind();
+    this.contentKind = parent.contentKind;
   }
 
   /**
@@ -48,7 +50,7 @@ final class IncrementalDomCodeBuilder extends JsCodeBuilder {
   @CanIgnoreReturnValue
   @Override
   public IncrementalDomCodeBuilder addChunksToOutputVar(List<? extends Expression> codeChunks) {
-    if (getContentKind().isHtml() || getContentKind() == SanitizedContentKind.ATTRIBUTES) {
+    if (contentKind.peek().isHtml() || contentKind.peek() == SanitizedContentKind.ATTRIBUTES) {
       for (Expression chunk : codeChunks) {
         append(chunk);
       }
@@ -56,15 +58,5 @@ final class IncrementalDomCodeBuilder extends JsCodeBuilder {
       super.addChunksToOutputVar(codeChunks);
     }
     return this;
-  }
-
-  /** @param contentKind The current kind of content being processed. */
-  void setContentKind(SanitizedContentKind contentKind) {
-    this.contentKind = contentKind;
-  }
-
-  /** @return The current kind of content being processed. */
-  SanitizedContentKind getContentKind() {
-    return contentKind;
   }
 }
