@@ -2400,10 +2400,12 @@ const $$bidiUnicodeWrap = function(bidiGlobalDir, text) {
 const assertParamType = function(
     condition, paramName, param, paramKind, jsDocTypeStr) {
   if (asserts.ENABLE_ASSERTS && !condition) {
-    const msg = 'expected ' + paramKind + ' ' + paramName + ' of type ' +
-        jsDocTypeStr +
-        (goog.DEBUG ? (', but got ' + googDebug.runtimeType(param)) : '') + '.';
-    asserts.fail(msg);
+    if (goog.DEBUG) {
+      asserts.fail(
+          'expected ' + paramKind + ' ' + paramName + ' of type ' +
+          jsDocTypeStr + ', but got ' + googDebug.runtimeType(param) + '.');
+    }
+    asserts.fail('parameter type error. Enable goog.DEBUG to see details.');
   }
   return param;
 };
