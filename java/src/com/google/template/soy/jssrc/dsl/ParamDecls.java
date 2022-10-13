@@ -46,7 +46,7 @@ public abstract class ParamDecls {
     // Generate the dict of param names (e.g. "{amount, name = ‘Vesper’}"). Default values are not
     // supported yet.
     String paramNamesDict =
-        "{" + params().stream().map(ParamDecl::name).collect(joining(", ")) + "}";
+        "{" + params().stream().map(ParamDecl::nameDecl).collect(joining(", ")) + "}";
 
     // Generate the dict of param types (e.g. "{amount: number, name?: string}").
     String paramTypesDict =

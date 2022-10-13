@@ -32,17 +32,27 @@ public abstract class ParamDecl {
 
   abstract String type();
 
-  abstract Optional<JsDoc> jsDoc();
+  abstract boolean isOptional();
+
+  abstract Optional<String> defaultValue();
 
   public static ParamDecl create(String name, String type) {
-    return new AutoValue_ParamDecl(name, type, Optional.empty());
+    return new AutoValue_ParamDecl(name, type, false, Optional.empty());
   }
 
-  public static ParamDecl create(String name, String type, JsDoc jsDoc) {
-    return new AutoValue_ParamDecl(name, type, Optional.of(jsDoc));
+  public static ParamDecl create(String name, String type, boolean isOptional) {
+    return new AutoValue_ParamDecl(name, type, isOptional, Optional.empty());
+  }
+
+  public static ParamDecl create(String name, String type, String defaultValue) {
+    return new AutoValue_ParamDecl(name, type, true, Optional.of(defaultValue));
+  }
+
+  public String nameDecl() {
+    return name() + defaultValue().map(value -> " = " + value).orElse("");
   }
 
   public String typeDecl() {
-    return name() + ": " + type();
+    return name() + (isOptional() ? "?" : "") + ": " + type();
   }
 }
