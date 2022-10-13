@@ -2405,7 +2405,7 @@ const assertParamType = function(
           'expected ' + paramKind + ' ' + paramName + ' of type ' +
           jsDocTypeStr + ', but got ' + googDebug.runtimeType(param) + '.');
     }
-    asserts.fail('parameter type error. Enable goog.DEBUG to see details.');
+    asserts.fail('parameter type error. Enable DEBUG to see details.');
   }
   return param;
 };
