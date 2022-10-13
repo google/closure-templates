@@ -32,7 +32,6 @@ import static com.google.template.soy.jssrc.dsl.Statement.forLoop;
 import static com.google.template.soy.jssrc.dsl.Statement.ifStatement;
 import static com.google.template.soy.jssrc.dsl.Statement.returnValue;
 import static com.google.template.soy.jssrc.dsl.Statement.throwValue;
-import static com.google.template.soy.jssrc.dsl.Statement.treatRawStringAsStatementLegacyOnly;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
@@ -120,7 +119,7 @@ public final class CodeChunkTest {
                 var.doubleEqualsNull(),
                 // We have to use a sketchy API to force an empty block.
                 // That's as it should be, since empty blocks are useless.
-                Statement.treatRawStringAsStatementLegacyOnly("", ImmutableList.of()))
+                Statement.of(ImmutableList.of()))
             .build();
     assertThat(statement.getCode())
         .isEqualTo(JOINER.join("const $tmp = 1 + 2;", "if ($tmp == null) {", "}"));
@@ -523,8 +522,7 @@ public final class CodeChunkTest {
         ifExpression(id("a").assign(id("b")).doubleEquals(id("c")), id("d"))
             .setElse(id("e"))
             .build(cg);
-    assertThat(conditional.getCode())
-        .isEqualTo("(a = b) == c ? d : e;");
+    assertThat(conditional.getCode()).isEqualTo("(a = b) == c ? d : e;");
   }
 
   @Test
@@ -603,9 +601,8 @@ public final class CodeChunkTest {
 
   @Test
   public void testBadPrecedenceOfJsExpr() {
-    JsExpr wrongPrecedence = new JsExpr(
-        "a / b",
-        Integer.MAX_VALUE); // should be Operator.DIVIDE_BY.getPrecedence()
+    JsExpr wrongPrecedence =
+        new JsExpr("a / b", Integer.MAX_VALUE); // should be Operator.DIVIDE_BY.getPrecedence()
     Expression bad = not(fromExpr(wrongPrecedence, ImmutableList.of()));
     assertThat(bad.getCode()).isEqualTo("!a / b;");
     Expression good = not(dontTrustPrecedenceOf(wrongPrecedence, ImmutableList.of()));
@@ -844,12 +841,14 @@ public final class CodeChunkTest {
     Statement chunk =
         ifStatement(
                 id("a"),
-                treatRawStringAsStatementLegacyOnly(
-                    "foo",
-                    ImmutableList.of(GoogRequire.create("foo.bar"), GoogRequire.create("foo.baz"))))
+                Expression.id(
+                        "foo",
+                        ImmutableList.of(
+                            GoogRequire.create("foo.bar"), GoogRequire.create("foo.baz")))
+                    .asStatement())
             .setElse(
-                treatRawStringAsStatementLegacyOnly(
-                    "foo", ImmutableList.of(GoogRequire.create("foo.quux"))))
+                Expression.id("foo", ImmutableList.of(GoogRequire.create("foo.quux")))
+                    .asStatement())
             .build();
     final List<String> namespaces = new ArrayList<>();
     chunk.collectRequires(r -> namespaces.add(r.symbol()));

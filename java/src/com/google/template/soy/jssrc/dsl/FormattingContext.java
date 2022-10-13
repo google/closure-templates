@@ -69,6 +69,13 @@ final class FormattingContext implements AutoCloseable {
   }
 
   @CanIgnoreReturnValue
+  FormattingContext appendForeignCode(String stuff) {
+    stuff = stuff.replaceAll("\n", "\n" + curIndent);
+    append(stuff);
+    return this;
+  }
+
+  @CanIgnoreReturnValue
   FormattingContext append(char c) {
     maybeBreakLineInsideTsxElement(Character.toString(c));
     maybeIndent(c == ' ');

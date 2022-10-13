@@ -73,7 +73,7 @@ abstract class Leaf extends Expression {
 
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
-    ctx.append(value().getText());
+    ctx.appendForeignCode(value().getText());
   }
 
   @Override

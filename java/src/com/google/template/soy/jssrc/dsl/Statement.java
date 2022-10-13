@@ -94,15 +94,8 @@ public abstract class Statement extends CodeChunk {
     return Throw.create(throwValue);
   }
 
-  /**
-   * Creates a code chunk from the given text, treating it as a series of statements rather than an
-   * expression. For use only by {@link
-   * com.google.template.soy.jssrc.internal.GenJsCodeVisitor#visitReturningCodeChunk}.
-   *
-   * <p>TODO(b/33382980): remove.
-   */
-  public static Statement treatRawStringAsStatementLegacyOnly(
-      String rawString, Iterable<GoogRequire> requires) {
-    return LeafStatement.create(rawString, requires);
+  /** Creates a code chunk that represents a debugger statement. */
+  public static Statement debugger() {
+    return Debugger.INSTANCE;
   }
 }

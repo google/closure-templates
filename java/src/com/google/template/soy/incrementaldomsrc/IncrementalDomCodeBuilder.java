@@ -20,6 +20,7 @@ import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.internal.JsCodeBuilder;
+import com.google.template.soy.jssrc.internal.OutputVarHandler;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import java.util.Deque;
 import java.util.List;
@@ -30,14 +31,9 @@ final class IncrementalDomCodeBuilder extends JsCodeBuilder {
   /** Used to track what kind of content is currently being processed. */
   private final Deque<SanitizedContentKind> contentKind;
 
-  IncrementalDomCodeBuilder(Deque<SanitizedContentKind> contentKind) {
-    super();
+  IncrementalDomCodeBuilder(OutputVarHandler outputVars, Deque<SanitizedContentKind> contentKind) {
+    super(outputVars);
     this.contentKind = contentKind;
-  }
-
-  IncrementalDomCodeBuilder(IncrementalDomCodeBuilder parent) {
-    super(parent);
-    this.contentKind = parent.contentKind;
   }
 
   /**

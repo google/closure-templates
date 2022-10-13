@@ -53,5 +53,6 @@ abstract class ForOf extends Statement {
     try (FormattingContext ignored = ctx.enterBlock()) {
       ctx.appendAll(body());
     }
+    ctx.endLine();
   }
 }

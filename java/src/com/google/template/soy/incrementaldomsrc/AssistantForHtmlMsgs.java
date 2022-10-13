@@ -23,7 +23,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
-import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.DoWhile;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.Statement;
@@ -33,6 +32,7 @@ import com.google.template.soy.jssrc.internal.GenCallCodeUtils;
 import com.google.template.soy.jssrc.internal.GenJsCodeVisitorAssistantForMsgs;
 import com.google.template.soy.jssrc.internal.GenJsExprsVisitor;
 import com.google.template.soy.jssrc.internal.IsComputableAsJsExprsVisitor;
+import com.google.template.soy.jssrc.internal.OutputVarHandler;
 import com.google.template.soy.jssrc.internal.TemplateAliases;
 import com.google.template.soy.jssrc.internal.TranslationContext;
 import com.google.template.soy.soytree.HtmlContext;
@@ -47,10 +47,10 @@ import java.util.Map;
 /**
  * Translates <code>{msg}</code> commands in HTML context into idom instructions.
  *
- * This class is not reusable.
+ * <p>This class is not reusable.
  *
- * This will pass all interpolated values as special placeholder strings. It will then extract these
- * placeholders from the translated message and execute the idom commands instead.
+ * <p>This will pass all interpolated values as special placeholder strings. It will then extract
+ * these placeholders from the translated message and execute the idom commands instead.
  */
 final class AssistantForHtmlMsgs extends GenJsCodeVisitorAssistantForMsgs {
 
@@ -61,7 +61,7 @@ final class AssistantForHtmlMsgs extends GenJsCodeVisitorAssistantForMsgs {
   private final Map<String, MsgPlaceholderNode> placeholderNames = new LinkedHashMap<>();
 
   /**
-   * Wrapper character around placeholder placeholders.  This is used to locate placeholder names in
+   * Wrapper character around placeholder placeholders. This is used to locate placeholder names in
    * the translated result so we can instead run the idom instructions in their MsgPlaceholderNodes.
    * The value is an arbitrary but short character that cannot appear in translated messages.
    */
@@ -71,10 +71,10 @@ final class AssistantForHtmlMsgs extends GenJsCodeVisitorAssistantForMsgs {
   private static final String PLACEHOLDER_REGEX = "/\\x01\\d+\\x01/g";
 
   private final String staticDecl;
-  private final GenIncrementalDomCodeVisitor idomMaster;
+  private final GenIncrementalDomTemplateBodyVisitor idomTemplateBodyVisitor;
 
   AssistantForHtmlMsgs(
-      GenIncrementalDomCodeVisitor master,
+      GenIncrementalDomTemplateBodyVisitor idomTemplateBodyVisitor,
       SoyJsSrcOptions jsSrcOptions,
       GenCallCodeUtils genCallCodeUtils,
       IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor,
@@ -82,18 +82,20 @@ final class AssistantForHtmlMsgs extends GenJsCodeVisitorAssistantForMsgs {
       GenJsExprsVisitor genJsExprsVisitor,
       TranslationContext translationContext,
       ErrorReporter errorReporter,
-      String staticDecl) {
+      String staticDecl,
+      OutputVarHandler outputVars) {
     super(
-        master,
+        idomTemplateBodyVisitor,
         jsSrcOptions,
         genCallCodeUtils,
         isComputableAsJsExprsVisitor,
         functionAliases,
         genJsExprsVisitor,
         translationContext,
-        errorReporter);
+        errorReporter,
+        outputVars);
     this.staticDecl = staticDecl;
-    this.idomMaster = master;
+    this.idomTemplateBodyVisitor = idomTemplateBodyVisitor;
   }
 
   @Override
@@ -137,12 +139,12 @@ final class AssistantForHtmlMsgs extends GenJsCodeVisitorAssistantForMsgs {
    * Each interpolated MsgPlaceholderNode (either for HTML tags or for print statements) compiles to
    * a separate {@code case} statement.
    */
-  CodeChunk generateMsgGroupCode(MsgFallbackGroupNode node) {
+  Statement generateMsgGroupCode(MsgFallbackGroupNode node) {
     Preconditions.checkState(placeholderNames.isEmpty(), "This class is not reusable.");
     // Non-HTML {msg}s should be extracted into LetContentNodes and handled by jssrc.
-    Preconditions.checkArgument(node.getHtmlContext() == HtmlContext.HTML_PCDATA,
+    Preconditions.checkArgument(
+        node.getHtmlContext() == HtmlContext.HTML_PCDATA,
         "AssistantForHtmlMsgs is only for HTML {msg}s.");
-
 
     // The raw translated text, with placeholder placeholders.
     Expression translationVar = super.generateMsgGroupVariable(node);
@@ -150,7 +152,7 @@ final class AssistantForHtmlMsgs extends GenJsCodeVisitorAssistantForMsgs {
     // If there are no placeholders, we don't need anything special (but we still need to unescape).
     if (placeholderNames.isEmpty()) {
       Expression unescape = GOOG_STRING_UNESCAPE_ENTITIES.call(translationVar);
-      return INCREMENTAL_DOM_TEXT.call(unescape);
+      return INCREMENTAL_DOM_TEXT.call(unescape).asStatement();
     }
 
     // The translationVar may be non-trivial if escaping directives are applied to it, if so bounce
@@ -186,18 +188,19 @@ final class AssistantForHtmlMsgs extends GenJsCodeVisitorAssistantForMsgs {
     // to decide which branch to execute.
     SwitchBuilder switchBuilder = Statement.switchValue(item.bracketAccess(Expression.number(1)));
     for (Map.Entry<String, MsgPlaceholderNode> ph : placeholderNames.entrySet()) {
-      Statement value = idomMaster.visitForUseByAssistantsAsCodeChunk(ph.getValue());
+      Statement value = idomTemplateBodyVisitor.visit(ph.getValue());
       MsgPlaceholderNode phNode = ph.getValue();
       if (phNode.getParent() instanceof VeLogNode) {
         VeLogNode parent = (VeLogNode) phNode.getParent();
         if (parent.getChild(0) == phNode) {
-          GenIncrementalDomCodeVisitor.VeLogStateHolder state = idomMaster.openVeLogNode(parent);
+          GenIncrementalDomTemplateBodyVisitor.VeLogStateHolder state =
+              idomTemplateBodyVisitor.openVeLogNode(parent);
           // It is a compiler failure to have a logOnly in a message node.
           Preconditions.checkState(state.logOnlyConditional == null);
           value = Statement.of(state.enterStatement, value);
         }
         if (parent.getChild(parent.numChildren() - 1) == phNode) {
-          value = Statement.of(value, idomMaster.exitVeLogNode(parent, null));
+          value = Statement.of(value, idomTemplateBodyVisitor.exitVeLogNode(parent, null));
         }
       }
       switchBuilder.addCase(Expression.stringLiteral(ph.getKey()), value);

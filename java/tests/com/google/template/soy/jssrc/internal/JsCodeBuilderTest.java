@@ -32,13 +32,16 @@ public final class JsCodeBuilderTest {
 
   @Test
   public void testOutputVarWithConcat() {
-    JsCodeBuilder jcb = new JsCodeBuilder().pushOutputVar("output");
+    JsCodeBuilder jcb = new JsCodeBuilder(new OutputVarHandler()).pushOutputVar("output");
     jcb.initOutputVarIfNecessary();
     assertThat(jcb.getCode()).isEqualTo("let output = '';\n");
     jcb.pushOutputVar("param5").setOutputVarInited().initOutputVarIfNecessary(); // nothing added
     assertThat(jcb.getCode()).isEqualTo("let output = '';\n");
 
-    jcb = new JsCodeBuilder().pushOutputVar("output").addChunkToOutputVar(id("boo"));
+    jcb =
+        new JsCodeBuilder(new OutputVarHandler())
+            .pushOutputVar("output")
+            .addChunkToOutputVar(id("boo"));
     assertThat(jcb.getCode()).isEqualTo("let output = '' + boo;\n");
     jcb.pushOutputVar("param5")
         .setOutputVarInited()

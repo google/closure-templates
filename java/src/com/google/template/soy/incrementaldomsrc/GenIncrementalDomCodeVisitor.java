@@ -16,54 +16,23 @@
 
 package com.google.template.soy.incrementaldomsrc;
 
-import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_APPLY_ATTRS;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_APPLY_STATICS;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_ATTR;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_CLOSE;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_ELEMENT_CLOSE;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_ENTER;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_EXIT;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_LIB;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_OPEN;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_OPEN_SSR;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_PARAM_NAME;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_POP_KEY;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_POP_MANUAL_KEY;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_PUSH_KEY;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_PUSH_MANUAL_KEY;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_TEXT;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_TODEFAULT;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_TONULL;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_VERIFY_LOGONLY;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_CALL_DYNAMIC_ATTRIBUTES;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_CALL_DYNAMIC_CSS;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_CALL_DYNAMIC_HTML;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_CALL_DYNAMIC_JS;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_CALL_DYNAMIC_TEXT;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_MAKE_ATTRIBUTES;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_MAKE_HTML;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_PRINT;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_PRINT_DYNAMIC_ATTR;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_TYPE_ATTRIBUTE;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_TYPE_HTML;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_VISIT_HTML_COMMENT;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.STATE_PREFIX;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.STATE_VAR_PREFIX;
 import static com.google.template.soy.jssrc.dsl.Expression.EMPTY_OBJECT_LITERAL;
 import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_EMPTY_STRING;
 import static com.google.template.soy.jssrc.dsl.Expression.id;
-import static com.google.template.soy.jssrc.dsl.Expression.stringLiteral;
 import static com.google.template.soy.jssrc.dsl.Statement.returnValue;
 import static com.google.template.soy.jssrc.internal.JsRuntime.ELEMENT_LIB_IDOM;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_SOY_ALIAS;
-import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_STRING_UNESCAPE_ENTITIES;
 import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_DATA;
-import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_ESCAPE_HTML;
 import static com.google.template.soy.soytree.SoyTreeUtils.isConstantExpr;
 
 import com.google.common.base.Ascii;
@@ -72,79 +41,38 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.internal.SanitizedContentKind;
-import com.google.template.soy.data.SanitizedContent;
-import com.google.template.soy.data.SanitizedContentOperator;
-import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.incrementaldomsrc.GenIncrementalDomExprsVisitor.GenIncrementalDomExprsVisitorFactory;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.ClassExpression;
 import com.google.template.soy.jssrc.dsl.ClassExpression.MethodDeclaration;
-import com.google.template.soy.jssrc.dsl.CodeChunk;
-import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
-import com.google.template.soy.jssrc.dsl.ConditionalBuilder;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.GoogRequire;
 import com.google.template.soy.jssrc.dsl.JsDoc;
 import com.google.template.soy.jssrc.dsl.Statement;
 import com.google.template.soy.jssrc.dsl.VariableDeclaration;
 import com.google.template.soy.jssrc.internal.CanInitOutputVarVisitor;
-import com.google.template.soy.jssrc.internal.GenCallCodeUtils;
 import com.google.template.soy.jssrc.internal.GenJsCodeVisitor;
-import com.google.template.soy.jssrc.internal.GenJsCodeVisitorAssistantForMsgs;
-import com.google.template.soy.jssrc.internal.GenJsExprsVisitor;
-import com.google.template.soy.jssrc.internal.IsComputableAsJsExprsVisitor;
 import com.google.template.soy.jssrc.internal.JavaScriptValueFactoryImpl;
 import com.google.template.soy.jssrc.internal.JsCodeBuilder;
 import com.google.template.soy.jssrc.internal.JsRuntime;
 import com.google.template.soy.jssrc.internal.JsType;
 import com.google.template.soy.jssrc.internal.StandardNames;
-import com.google.template.soy.jssrc.internal.TemplateAliases;
 import com.google.template.soy.jssrc.internal.TranslateExprNodeVisitor;
-import com.google.template.soy.jssrc.internal.TranslationContext;
 import com.google.template.soy.passes.ShouldEnsureDataIsDefinedVisitor;
-import com.google.template.soy.shared.internal.BuiltinFunction;
-import com.google.template.soy.soytree.CallBasicNode;
-import com.google.template.soy.soytree.CallNode;
-import com.google.template.soy.soytree.CallParamContentNode;
-import com.google.template.soy.soytree.CallParamNode;
-import com.google.template.soy.soytree.HtmlAttributeNode;
-import com.google.template.soy.soytree.HtmlAttributeValueNode;
-import com.google.template.soy.soytree.HtmlCloseTagNode;
-import com.google.template.soy.soytree.HtmlCommentNode;
-import com.google.template.soy.soytree.HtmlContext;
-import com.google.template.soy.soytree.HtmlOpenTagNode;
-import com.google.template.soy.soytree.IfNode;
-import com.google.template.soy.soytree.KeyNode;
-import com.google.template.soy.soytree.LetContentNode;
-import com.google.template.soy.soytree.Metadata;
-import com.google.template.soy.soytree.MsgFallbackGroupNode;
-import com.google.template.soy.soytree.MsgHtmlTagNode;
-import com.google.template.soy.soytree.MsgPlaceholderNode;
-import com.google.template.soy.soytree.PrintNode;
-import com.google.template.soy.soytree.RawTextNode;
-import com.google.template.soy.soytree.SkipNode;
 import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
-import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
-import com.google.template.soy.soytree.TagName;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateElementNode;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.VeLogNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.TemplateType;
 import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 /**
@@ -156,37 +84,8 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
 
   private static final String NAMESPACE_EXTENSION = ".incrementaldom";
 
-  /**
-   * Class that contains the state generated from visiting the beginning of a velogging statement.
-   * This allows one to generate code such as
-   *
-   * <pre>
-   *   var velog_1 = foobar;
-   *   if (velog_1) {
-   *     idom = idom.toNullRenderer();
-   *   }
-   *   idom.enter(new Metadata(...));
-   *   ...
-   *   if (velog_1) {
-   *     idom = idom.toDefaultRenderer();
-   *   }
-   * </pre>
-   */
-  static class VeLogStateHolder {
-    Expression logOnlyConditional; // Holds the variable reference to velog_1
-    Statement enterStatement; // Contains the idom.enter(...) statement
-
-    public VeLogStateHolder(Expression logOnlyConditional, Statement enterStatement) {
-      this.logOnlyConditional = logOnlyConditional;
-      this.enterStatement = enterStatement;
-    }
-  }
-
   private final Deque<SanitizedContentKind> contentKind;
 
-  // Counter for static variables that are declared at the global scope.
-  private int staticsCounter = 0;
-  private String alias = "";
   private boolean hasNonConstantState;
 
   GenIncrementalDomCodeVisitor(
@@ -212,13 +111,9 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
 
   @Override
   protected JsCodeBuilder createCodeBuilder() {
-    return new IncrementalDomCodeBuilder(contentKind);
+    return new IncrementalDomCodeBuilder(outputVars, contentKind);
   }
 
-  @Override
-  protected IncrementalDomCodeBuilder createChildJsCodeBuilder() {
-    return new IncrementalDomCodeBuilder(getJsCodeBuilder());
-  }
 
   @Override
   protected IncrementalDomCodeBuilder getJsCodeBuilder() {
@@ -266,9 +161,9 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
 
   @Override
   protected void visitTemplateNode(TemplateNode node) {
-    staticsCounter = 0;
     SanitizedContentKind kind = node.getContentKind();
     contentKind.push(kind);
+    String alias;
     if (node instanceof TemplateDelegateNode) {
       alias = node.getLocalTemplateSymbol();
     } else {
@@ -317,22 +212,23 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
 
     if (node instanceof TemplateElementNode) {
       TemplateElementNode element = (TemplateElementNode) node;
-      String elementName = this.getSoyElementClassName();
+      String elementName = this.getSoyElementClassName(alias);
       String elementAccessor = elementName + "Interface";
       getJsCodeBuilder().appendLine();
       getJsCodeBuilder().append(generateAccessorInterface(elementAccessor, element));
       getJsCodeBuilder().append(generateExportsForSoyElement(elementAccessor));
-      getJsCodeBuilder().append(generateRenderInternal(element));
-      getJsCodeBuilder().appendNullable(generateSyncInternal(element));
-      getJsCodeBuilder().append(generateClassForSoyElement(elementName, elementAccessor, element));
+      getJsCodeBuilder().append(generateRenderInternal(element, alias));
+      getJsCodeBuilder().appendNullable(generateSyncInternal(element, alias));
+      getJsCodeBuilder()
+          .append(generateClassForSoyElement(elementName, elementAccessor, element, alias));
       getJsCodeBuilder().append(generateExportsForSoyElement(elementName));
     }
     contentKind.pop();
   }
 
-  private Statement generateRenderInternal(TemplateElementNode node) {
+  private Statement generateRenderInternal(TemplateElementNode node, String alias) {
     String paramsType = hasOnlyImplicitParams(node) ? "null" : "!" + alias + ".Params";
-    String soyElementClassName = this.getSoyElementClassName();
+    String soyElementClassName = this.getSoyElementClassName(alias);
     JsDoc jsDoc =
         JsDoc.builder()
             .addParam(INCREMENTAL_DOM_PARAM_NAME, "!incrementaldomlib.IncrementalDomRenderer")
@@ -393,8 +289,8 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   }
 
   @Nullable
-  private Statement generateSyncInternal(TemplateElementNode node) {
-    String soyElementClassName = this.getSoyElementClassName();
+  private Statement generateSyncInternal(TemplateElementNode node, String alias) {
+    String soyElementClassName = this.getSoyElementClassName(alias);
     String paramsType = hasOnlyImplicitParams(node) ? "null" : "!" + alias + ".Params";
     JsDoc jsDoc =
         JsDoc.builder()
@@ -581,7 +477,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     }
     bodyStatements.add(
         node instanceof TemplateElementNode
-            ? this.generateFunctionBodyForSoyElement((TemplateElementNode) node)
+            ? this.generateFunctionBodyForSoyElement((TemplateElementNode) node, alias)
             : this.generateIncrementalDomRenderCalls(node, alias, isPositionalStyle));
     return Statement.of(bodyStatements.build());
   }
@@ -637,7 +533,25 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       // We do our own initialization below, so mark it as such.
       jsCodeBuilder.pushOutputVar("output").setOutputVarInited();
     }
-    Statement body = visitChildrenReturningCodeChunk(node);
+    Statement body =
+        Statement.of(
+            new GenIncrementalDomTemplateBodyVisitor(
+                    outputVars,
+                    jsSrcOptions,
+                    javaScriptValueFactory,
+                    genCallCodeUtils,
+                    isComputableAsJsExprsVisitor,
+                    canInitOutputVarVisitor,
+                    genJsExprsVisitor,
+                    errorReporter,
+                    templateTranslationContext,
+                    templateAliases,
+                    contentKind,
+                    staticVarDeclarations,
+                    generatePositionalParamsSignature,
+                    fileSetMetadata,
+                    alias)
+                .visitChildren(node));
 
     if (isTextTemplate) {
       VariableDeclaration declare =
@@ -653,8 +567,8 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
    * Generates main template function body for Soy elements. Specifically, generates code to create
    * a new instance of the element class and invoke its #render method.
    */
-  private Statement generateFunctionBodyForSoyElement(TemplateElementNode node) {
-    String soyElementClassName = this.getSoyElementClassName();
+  private Statement generateFunctionBodyForSoyElement(TemplateElementNode node, String alias) {
+    String soyElementClassName = this.getSoyElementClassName(alias);
     String tplName =
         node.getHtmlElementMetadata().getFinalCallee().isEmpty()
             ? node.getTemplateName()
@@ -686,20 +600,12 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
             .build());
   }
 
-  /**
-   * Visits the children of a ParentSoyNode. This function is overridden to not do all of the work
-   * that {@link GenJsCodeVisitor} does.
-   */
-  @Override
-  protected void visitChildren(ParentSoyNode<?> node) {
-    for (SoyNode child : node.getChildren()) {
-      visit(child);
-    }
-  }
-
   /** Generates class expression for the given template node, provided it is a Soy element. */
   private VariableDeclaration generateClassForSoyElement(
-      String soyElementClassName, String soyElementAccessorName, TemplateElementNode node) {
+      String soyElementClassName,
+      String soyElementAccessorName,
+      TemplateElementNode node,
+      String alias) {
 
     String paramsType = hasOnlyImplicitParams(node) ? "null" : "!" + alias + ".Params";
 
@@ -887,7 +793,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   }
 
   /** Constructs template class name, e.g. converts template `ns.foo` => `$FooElement`. */
-  private String getSoyElementClassName() {
+  private String getSoyElementClassName(String alias) {
     Preconditions.checkState(
         alias.startsWith("$"),
         "Alias should start with '$', or template class name may be malformed.");
@@ -897,303 +803,6 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
         /// ...and concat the rest of the alias.
         + alias.substring(2)
         + "Element";
-  }
-
-  /**
-   * Generates the content of a {@code let} or {@code param} statement. For HTML and attribute
-   * let/param statements, the generated instructions inside the node are wrapped in a function
-   * which will be optionally passed to another template and invoked in the correct location. All
-   * other kinds of let statements are generated as a simple variable.
-   */
-  private void visitLetParamContentNode(RenderUnitNode node, String generatedVarName) {
-    // The html transform step, performed by HtmlContextVisitor, ensures that
-    // we always have a content kind specified.
-    checkState(node.getContentKind() != null);
-
-    IncrementalDomCodeBuilder jsCodeBuilder = getJsCodeBuilder();
-
-    contentKind.push(node.getContentKind());
-
-    CodeChunk definition;
-    VariableDeclaration.Builder builder = VariableDeclaration.builder(generatedVarName);
-    SanitizedContentKind kind = node.getContentKind();
-    if (kind.isHtml() || kind == SanitizedContentKind.ATTRIBUTES) {
-      Expression constructor;
-      if (kind.isHtml()) {
-        constructor = SOY_IDOM_MAKE_HTML;
-      } else {
-        constructor = SOY_IDOM_MAKE_ATTRIBUTES;
-      }
-      JsDoc jsdoc =
-          JsDoc.builder()
-              .addParam(INCREMENTAL_DOM_PARAM_NAME, "incrementaldomlib.IncrementalDomRenderer")
-              .build();
-      definition =
-          builder
-              .setRhs(
-                  constructor.call(
-                      Expression.arrowFunction(jsdoc, visitChildrenReturningCodeChunk(node))))
-              .build();
-    } else {
-      // We do our own initialization, so mark it as such.
-      String outputVarName = generatedVarName + "_output";
-      jsCodeBuilder.pushOutputVar(outputVarName).setOutputVarInited();
-
-      // TODO(b/246994962): Skip this definition for SanitizedContentKind.TEXT.
-      definition =
-          Statement.of(
-              VariableDeclaration.builder(outputVarName)
-                  .setMutable()
-                  .setRhs(LITERAL_EMPTY_STRING)
-                  .build(),
-              visitChildrenReturningCodeChunk(node),
-              builder
-                  .setRhs(
-                      kind == SanitizedContentKind.TEXT
-                          ? id(outputVarName)
-                          : JsRuntime.sanitizedContentOrdainerFunctionForInternalBlocks(
-                                  node.getContentKind())
-                              .call(id(outputVarName)))
-                  .build());
-      jsCodeBuilder.popOutputVar();
-    }
-
-    contentKind.pop();
-    jsCodeBuilder.append(definition);
-  }
-
-  /**
-   * Generates the content of a {@code let} statement. For HTML and attribute let statements, the
-   * generated instructions inside the node are wrapped in a function which will be optionally
-   * passed to another template and invoked in the correct location. All other kinds of let/param
-   * statements are generated as a simple variable.
-   */
-  @Override
-  protected void visitLetContentNode(LetContentNode node) {
-    String generatedVarName = node.getUniqueVarName();
-    visitLetParamContentNode(node, generatedVarName);
-    templateTranslationContext.soyToJsVariableMappings().put(node.getVar(), id(generatedVarName));
-  }
-
-  @Override
-  protected void visitCallParamContentNode(CallParamContentNode node) {
-    String generatedVarName = "param" + node.getId();
-    visitLetParamContentNode(node, generatedVarName);
-  }
-
-  @Override
-  protected void visitCallNode(CallNode node) {
-    // If this node has any CallParamContentNode children those contents are not computable as JS
-    // expressions, visit them to generate code to define their respective 'param<n>' variables.
-    for (CallParamNode child : node.getChildren()) {
-      if (child instanceof CallParamContentNode && !isComputableAsJsExprsVisitor.exec(child)) {
-        visit(child);
-      }
-    }
-
-    Expression call;
-    Optional<SanitizedContentKind> kind = Metadata.getCallContentKind(fileSetMetadata, node);
-    GenCallCodeUtils.Callee callee =
-        genCallCodeUtils.genCallee(node, templateAliases, getExprTranslator());
-    Supplier<Expression> objToPass =
-        () ->
-            genCallCodeUtils.genObjToPass(
-                node,
-                templateAliases,
-                templateTranslationContext,
-                errorReporter,
-                getExprTranslator());
-    Optional<Supplier<List<Expression>>> positionalParameters = Optional.empty();
-    if (genCallCodeUtils.canPerformPositionalCall(node)) {
-      positionalParameters =
-          Optional.of(
-              () ->
-                  genCallCodeUtils.getPositionalParams(
-                      (CallBasicNode) node,
-                      templateAliases,
-                      templateTranslationContext,
-                      errorReporter,
-                      getExprTranslator(),
-                      GenCallCodeUtils.hasVariant(node)));
-    }
-    boolean shouldPushKey = false;
-
-    // TODO(lukes): instead of these helper functions callDynamicXXX for managing context mismatches
-    // maybe we should create IncrementalDomRenderer subtypes that can perform the coercions, this
-    // would be similar to how jbcsrc manages streaming escapers.
-
-    switch (node.getHtmlContext()) {
-      case HTML_TAG:
-        if (!kind.isPresent() || kind.get() != SanitizedContentKind.ATTRIBUTES) {
-          call =
-              SOY_IDOM_CALL_DYNAMIC_ATTRIBUTES.call(
-                  INCREMENTAL_DOM, callee.objectStyle(), objToPass.get(), JsRuntime.IJ_DATA);
-        } else {
-          call =
-              directCall(
-                  callee,
-                  node,
-                  getExprTranslator(),
-                  positionalParameters,
-                  objToPass,
-                  /*isIdomCall=*/ true);
-        }
-        break;
-      case CSS:
-        call =
-            SOY_IDOM_CALL_DYNAMIC_CSS.call(
-                INCREMENTAL_DOM, callee.objectStyle(), objToPass.get(), JsRuntime.IJ_DATA);
-        break;
-      case JS:
-        call =
-            SOY_IDOM_CALL_DYNAMIC_JS.call(
-                INCREMENTAL_DOM, callee.objectStyle(), objToPass.get(), JsRuntime.IJ_DATA);
-        break;
-        // stringlike kinds
-      case URI:
-      case TEXT:
-      case HTML_ATTRIBUTE_NAME:
-      case HTML_NORMAL_ATTR_VALUE:
-        Expression textCall;
-        if (!kind.isPresent()
-            || kind.get() == SanitizedContentKind.ATTRIBUTES
-            || kind.get().isHtml()) {
-          if (node instanceof CallBasicNode && ((CallBasicNode) node).getVariantExpr() != null) {
-            textCall =
-                SOY_IDOM_CALL_DYNAMIC_TEXT.call(
-                    callee.objectStyle(),
-                    objToPass.get(),
-                    JsRuntime.IJ_DATA,
-                    getExprTranslator().exec(((CallBasicNode) node).getVariantExpr().getRoot()));
-          } else {
-            textCall =
-                SOY_IDOM_CALL_DYNAMIC_TEXT.call(
-                    callee.objectStyle(), objToPass.get(), JsRuntime.IJ_DATA);
-          }
-        } else {
-          // This is executed in the case of TEXT Context -> Text Template
-          textCall =
-              directCall(
-                  callee,
-                  node,
-                  getExprTranslator(),
-                  positionalParameters,
-                  objToPass,
-                  /*isIdomCall=*/ false);
-        }
-        getJsCodeBuilder()
-            .addChunkToOutputVar(GenCallCodeUtils.applyEscapingDirectives(textCall, node));
-        return;
-      default:
-        if (!kind.isPresent() || !kind.get().isHtml()) {
-          if (node instanceof CallBasicNode && ((CallBasicNode) node).getVariantExpr() != null) {
-            call =
-                SOY_IDOM_CALL_DYNAMIC_HTML.call(
-                    INCREMENTAL_DOM,
-                    callee.objectStyle(),
-                    objToPass.get(),
-                    JsRuntime.IJ_DATA,
-                    getExprTranslator().exec(((CallBasicNode) node).getVariantExpr().getRoot()));
-          } else {
-            call =
-                SOY_IDOM_CALL_DYNAMIC_HTML.call(
-                    INCREMENTAL_DOM, callee.objectStyle(), objToPass.get(), JsRuntime.IJ_DATA);
-          }
-          shouldPushKey = true;
-        } else {
-          // This is executed in the case of HTML/ATTR -> HTML/ATTR. All other ambiguous cases are
-          // passed through to runtime functions.
-          call =
-              directCall(
-                  callee,
-                  node,
-                  getExprTranslator(),
-                  positionalParameters,
-                  objToPass,
-                  /*isIdomCall=*/ true);
-          shouldPushKey = true;
-        }
-        break;
-    }
-
-    String keyVariable = "_keyVariable" + staticsCounter++;
-    RenderUnitNode renderUnitNode = node.getNearestAncestor(RenderUnitNode.class);
-    boolean delegatesToTemplate = false;
-    if (renderUnitNode instanceof TemplateNode) {
-      TemplateNode template = (TemplateNode) renderUnitNode;
-      delegatesToTemplate =
-          template.getHtmlElementMetadata().getIsHtmlElement()
-              && !template.getHtmlElementMetadata().getFinalCallee().isEmpty();
-    }
-    if (shouldPushKey) {
-      if (node.getKeyExpr() != null) {
-        getJsCodeBuilder()
-            .append(INCREMENTAL_DOM_PUSH_MANUAL_KEY.call(translateExpr(node.getKeyExpr())));
-      } else if (!delegatesToTemplate) {
-        if (!delegatesToTemplate) {
-          getJsCodeBuilder()
-              .append(
-                  VariableDeclaration.builder(keyVariable)
-                      .setRhs(
-                          INCREMENTAL_DOM_PUSH_KEY.call(
-                              JsRuntime.XID.call(
-                                  Expression.stringLiteral(node.getTemplateCallKey()))))
-                      .build());
-        }
-      }
-    }
-    // TODO: In reality, the CALL_X functions are really just IDOM versions of the related
-    // escaping directives. Consider doing a replace instead of not using escaping directives
-    // at all.
-    if (node.getHtmlContext() == HtmlContext.JS) {
-      getJsCodeBuilder().addChunkToOutputVar(call);
-    } else {
-      getJsCodeBuilder().append(call);
-    }
-    if (shouldPushKey) {
-      if (node.getKeyExpr() != null) {
-        getJsCodeBuilder().append(INCREMENTAL_DOM_POP_MANUAL_KEY.call());
-      } else if (!delegatesToTemplate) {
-        getJsCodeBuilder().append(INCREMENTAL_DOM_POP_KEY.call(Expression.id(keyVariable)));
-      }
-    }
-  }
-
-  private static Expression directCall(
-      GenCallCodeUtils.Callee callee,
-      CallNode callNode,
-      TranslateExprNodeVisitor exprTranslator,
-      Optional<Supplier<List<Expression>>> positionalParameters,
-      Supplier<Expression> paramObject,
-      boolean isIdomCall) {
-    List<Expression> params = new ArrayList<>();
-    if (isIdomCall) {
-      params.add(INCREMENTAL_DOM);
-    }
-    if (positionalParameters.isPresent()) {
-      params.add(0, JsRuntime.IJ_DATA);
-      params.add(0, JsRuntime.SOY_INTERNAL_CALL_MARKER);
-      params.addAll(positionalParameters.get().get());
-      GenCallCodeUtils.maybeAddVariantParam(callNode, exprTranslator, params);
-      return callee.positionalStyle().get().call(params);
-    }
-    params.add(paramObject.get());
-    params.add(JsRuntime.IJ_DATA);
-    GenCallCodeUtils.maybeAddVariantParam(callNode, exprTranslator, params);
-    return callee.objectStyle().call(params);
-  }
-
-  /**
-   * Generates calls in HTML/Attributes content as non-JsExprs, since Incremental DOM instructions
-   * are needed and not a JavaScript expression.
-   */
-  @Override
-  protected void visitIfNode(IfNode node) {
-    if (!isTextContent(contentKind.peek())) {
-      super.generateNonExpressionIfNode(node);
-    } else {
-      super.visitIfNode(node);
-    }
   }
 
   /**
@@ -1214,620 +823,5 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
         templateAliases,
         errorReporter,
         OPT_DATA);
-  }
-
-  @Override
-  protected void visitHtmlCommentNode(HtmlCommentNode node) {
-    String id = "html_comment_" + node.getId();
-    getJsCodeBuilder()
-        .append(
-            VariableDeclaration.builder(id)
-                .setMutable()
-                .setRhs(Expression.LITERAL_EMPTY_STRING)
-                .build());
-    getJsCodeBuilder().pushOutputVar(id).setOutputVarInited();
-    contentKind.push(SanitizedContentKind.TEXT);
-    for (int i = 0; i < node.numChildren(); i++) {
-      visit(node.getChild(i));
-    }
-    getJsCodeBuilder().append(SOY_IDOM_VISIT_HTML_COMMENT.call(INCREMENTAL_DOM, id(id)));
-    getJsCodeBuilder().popOutputVar();
-    contentKind.pop();
-  }
-
-  /**
-   * Visits the {@link HtmlAttributeNode}. The attribute nodes will typically be children of the
-   * corresponding {@link HtmlOpenTagNode} or in a let/param of kind attributes, e.g.
-   *
-   * <pre>
-   * {let $attrs kind="attributes"}
-   *   attr="value"
-   * {/let}
-   * </pre>
-   *
-   * This method prints the attribute declaration calls. For example, given
-   *
-   * <pre>
-   * &lt;div {if $condition}attr="value"{/if}&gt;
-   * </pre>
-   *
-   * it would print the call to {@code incrementalDom.attr}, resulting in:
-   *
-   * <pre>
-   * if (condition) {
-   *   IncrementalDom.attr(attr, "value");
-   * }
-   * </pre>
-   */
-  @Override
-  protected void visitHtmlAttributeNode(HtmlAttributeNode node) {
-    IncrementalDomCodeBuilder jsCodeBuilder = getJsCodeBuilder();
-
-    if (node.hasValue()) {
-      // Attribute keys can only be print statements or constants. As such, the first child
-      // should be the key and the second the value.
-      checkState(isComputableAsJsExprsVisitor.exec(node.getChild(0)));
-
-      jsCodeBuilder.append(
-          INCREMENTAL_DOM_ATTR.call(
-              // Attributes can only be print nodes or constants
-              genJsExprsVisitor.exec(node.getChild(0)).get(0),
-              CodeChunkUtils.concatChunksForceString(getAttributeValues(node))));
-    } else {
-      visitChildren(node); // Prints raw text or attributes node.
-    }
-  }
-
-  @Override
-  protected void visitHtmlAttributeValueNode(HtmlAttributeValueNode node) {
-    // ignore quotes since idom doesn't care about them, so we just iterate the children.
-    visitChildren(node);
-  }
-
-  private List<Expression> getAttributeValues(HtmlAttributeNode node) {
-    if (!node.hasValue()) {
-      // No attribute value, e.g. "<button disabled></button>". Need to put an empty string so that
-      // the runtime knows to create an attribute.
-      return ImmutableList.of(LITERAL_EMPTY_STRING);
-    }
-    ParentSoyNode<?> value = (ParentSoyNode<?>) node.getChild(1);
-    String outputVar = "html_attribute_" + node.getId();
-    boolean needsToBeCoerced = false;
-    // There may be HTML nodes in the children that can get coerced to a string. In this case,
-    // the appending path needs to be executed.
-    for (SoyNode n : value.getChildren()) {
-      if (n instanceof CallNode) {
-        Optional<SanitizedContentKind> kind =
-            Metadata.getCallContentKind(fileSetMetadata, (CallNode) n);
-        needsToBeCoerced =
-            !kind.isPresent()
-                || kind.get().isHtml()
-                || kind.get() == SanitizedContentKind.ATTRIBUTES;
-      }
-    }
-    if (!isComputableAsJsExprsVisitor.execOnChildren(value) || needsToBeCoerced) {
-      getJsCodeBuilder().pushOutputVar(outputVar).setOutputVarInited();
-      contentKind.push(SanitizedContentKind.TEXT);
-      IncrementalDomCodeBuilder jsCodeBuilder = getJsCodeBuilder();
-      jsCodeBuilder.append(
-          VariableDeclaration.builder(outputVar)
-              .setMutable()
-              .setRhs(Expression.LITERAL_EMPTY_STRING)
-              .build());
-      visit(value);
-      getJsCodeBuilder().popOutputVar();
-      contentKind.pop();
-      return ImmutableList.of(id(outputVar));
-    }
-    return genJsExprsVisitor.exec(value);
-  }
-
-  /**
-   * Removes static children from {@code node} and returns them in a map of key to value. For
-   * attribute nodes that are known to be static, we can improve performance by adding them to the
-   * statics array(http://google.github.io/incremental-dom/#statics-array).
-   */
-  private ImmutableMap<String, Expression> getStaticAttributes(HtmlOpenTagNode node) {
-    List<HtmlAttributeNode> nodesToRemove = new ArrayList<>();
-    ImmutableMap.Builder<String, Expression> builder = ImmutableMap.builder();
-    // The 0th index is actually the tag itself, so we don't need to iterate over it.
-    for (int i = 1; i < node.numChildren(); i++) {
-      if (node.getChild(i) instanceof HtmlAttributeNode) {
-        HtmlAttributeNode attrNode = (HtmlAttributeNode) node.getChild(i);
-        String attributeKey = attrNode.getStaticKey();
-        Expression value = getStaticContent(attrNode);
-        if (attributeKey != null && value != null) {
-          nodesToRemove.add(attrNode);
-          builder.put(attributeKey, value);
-        }
-      }
-    }
-
-    for (HtmlAttributeNode child : nodesToRemove) {
-      node.removeChild(child);
-    }
-    return builder.build();
-  }
-
-  /**
-   * Extract static content from attributes, or return null if value is dynamic. Static content is
-   * either an attribute value that is nonexistent or a combination of raw text and xid/css calls.
-   */
-  @Nullable
-  private Expression getStaticContent(HtmlAttributeNode node) {
-    if (!node.hasValue()) {
-      return Expression.stringLiteral("");
-    }
-    // This case is some control flow like a switch, if, or for loop.
-    if (!(node.getChild(1) instanceof HtmlAttributeValueNode)) {
-      return null;
-    }
-    HtmlAttributeValueNode attrValue = (HtmlAttributeValueNode) node.getChild(1);
-    if (attrValue.numChildren() == 0) {
-      return Expression.stringLiteral("");
-    }
-    // If any children are not raw text or constant xid/css calls, return null
-    for (int i = 0; i < attrValue.numChildren(); i++) {
-      if (attrValue.getChild(i) instanceof RawTextNode) {
-        continue;
-      } else if (attrValue.getChild(i) instanceof PrintNode) {
-        PrintNode n = (PrintNode) attrValue.getChild(i);
-        if (n.getExpr().getRoot() instanceof FunctionNode) {
-          FunctionNode fnNode = (FunctionNode) n.getExpr().getRoot();
-          if (fnNode.getSoyFunction() != BuiltinFunction.XID
-              && fnNode.getSoyFunction() != BuiltinFunction.CSS) {
-            return null; // Function call was not xid or css
-          }
-        } else {
-          // Child is variable expression ie {$foo} or {$foo + $bar}
-          return null;
-        }
-      } else {
-        // Child was control flow.
-        return null;
-      }
-    }
-    return CodeChunkUtils.concatChunksForceString(getAttributeValues(node));
-  }
-
-  private Expression getOpenSSRCall(HtmlOpenTagNode node) {
-    List<Expression> args = new ArrayList<>();
-    args.add(getTagNameCodeChunk(node.getTagName()));
-
-    KeyNode keyNode = node.getKeyNode();
-    if (keyNode == null) {
-      args.add(JsRuntime.XID.call(Expression.stringLiteral(node.getKeyId())));
-    } else {
-      // Key difference between getOpen and getOpenSSR
-      args.add(translateExpr(node.getKeyNode().getExpr()));
-    }
-    if (node.isElementRoot()) {
-      Expression paramsObject;
-      if (generatePositionalParamsSignature) {
-        paramsObject =
-            Expression.arrayLiteral(
-                node.getNearestAncestor(TemplateNode.class).getParams().stream()
-                    .map(p -> id(genParamAlias(p.name())))
-                    .collect(toImmutableList()));
-      } else {
-        paramsObject = OPT_DATA;
-      }
-      args.add(
-          Expression.ifExpression(JsRuntime.GOOG_DEBUG, paramsObject)
-              .setElse(Expression.LITERAL_UNDEFINED)
-              .build(templateTranslationContext.codeGenerator()));
-    }
-    return INCREMENTAL_DOM_OPEN_SSR.call(args);
-  }
-
-  private Expression getOpenCall(HtmlOpenTagNode node) {
-    List<Expression> args = new ArrayList<>();
-    args.add(getTagNameCodeChunk(node.getTagName()));
-
-    KeyNode keyNode = node.getKeyNode();
-    Expression key = Expression.LITERAL_UNDEFINED;
-    if (keyNode == null) {
-      key = JsRuntime.XID.call(Expression.stringLiteral(node.getKeyId()));
-    }
-    args.add(key);
-
-    return INCREMENTAL_DOM_OPEN.call(args);
-  }
-
-  private Optional<Expression> getApplyStaticAttributes(HtmlOpenTagNode node) {
-    Map<String, Expression> staticAttributes = getStaticAttributes(node);
-    ImmutableList.Builder<Expression> staticsBuilder = ImmutableList.builder();
-    for (Map.Entry<String, Expression> entry : staticAttributes.entrySet()) {
-      staticsBuilder.add(Expression.stringLiteral(entry.getKey()));
-      staticsBuilder.add(entry.getValue());
-    }
-    // Instead of inlining the array, place the variable declaration in the global scope
-    // and lazily initialize it in the template.
-    if (!staticAttributes.isEmpty()) {
-      String id = "_statics_" + staticsCounter++;
-      Expression idExpr = id(alias + id);
-      Expression lazyAssignment =
-          // Generator can be null because we know this evaluates to an or
-          // ie alias_statics_1 || alias_statics_1 = []
-          idExpr.or(
-              idExpr.assign(Expression.arrayLiteral(staticsBuilder.build())),
-              /* codeGenerator= */ null);
-      staticVarDeclarations.add(VariableDeclaration.builder(alias + id).build());
-      return Optional.of(INCREMENTAL_DOM_APPLY_STATICS.call(lazyAssignment));
-    }
-    return Optional.empty();
-  }
-
-  private Expression getApplyAttrs(HtmlOpenTagNode node) {
-    for (int i = 1; i < node.numChildren(); i++) {
-      visit(node.getChild(i));
-    }
-    return INCREMENTAL_DOM_APPLY_ATTRS.call();
-  }
-
-  /**
-   * Visits an {@link HtmlOpenTagNode} and emits appropriate attr/staticAttr calls and maybe a self
-   * close tag.
-   *
-   * <pre>
-   * &lt;div attr="value" attr2="{$someVar}"&gt;...&lt;/div&gt;
-   * </pre>
-   *
-   * generates
-   *
-   * <pre>
-   * open('div');
-   * attr('attr', 'value');
-   * attr('attr2', someVar);
-   * applyAttrs()
-   * ...
-   *
-   * close()
-   * </pre>
-   */
-  @Override
-  protected void visitHtmlOpenTagNode(HtmlOpenTagNode node) {
-    IncrementalDomCodeBuilder jsCodeBuilder = getJsCodeBuilder();
-    getJsCodeBuilder().appendLine("// " + node.getSourceLocation());
-    if (!node.isSkipRoot()) {
-      if (node.getKeyNode() != null) {
-        // Push key BEFORE emitting `elementOpen`. Later, for `elementOpen` calls of keyed elements,
-        // we do not specify any key.
-        Expression key = translateExpr(node.getKeyNode().getExpr());
-        getJsCodeBuilder().append(INCREMENTAL_DOM_PUSH_MANUAL_KEY.call(key));
-      }
-      Expression openTagExpr = getOpenCall(node);
-      jsCodeBuilder.append(openTagExpr.asStatement());
-    }
-    jsCodeBuilder.append(getAttributeAndCloseCalls(node));
-    String tagName = node.getTagName().getTagString();
-    if (tagName != null && Ascii.equalsIgnoreCase(tagName, "script")) {
-      scriptOutputVar = "script_" + staticsCounter++;
-      jsCodeBuilder.pushOutputVar(scriptOutputVar).setOutputVarInited();
-      jsCodeBuilder.appendLine("let ", scriptOutputVar, " = '';");
-      contentKind.push(SanitizedContentKind.JS);
-    }
-  }
-
-  private String scriptOutputVar;
-
-  private Statement getAttributeAndCloseCalls(HtmlOpenTagNode node) {
-    List<Statement> statements = new ArrayList<>();
-    Optional<Expression> maybeApplyStatics = getApplyStaticAttributes(node);
-    Expression close = node.isElementRoot() ? INCREMENTAL_DOM_ELEMENT_CLOSE : INCREMENTAL_DOM_CLOSE;
-    if (maybeApplyStatics.isPresent()) {
-      statements.add(maybeApplyStatics.get().asStatement());
-    }
-    statements.add(getApplyAttrs(node).asStatement());
-
-    // Whether or not it is valid for this tag to be self closing has already been validated by the
-    // HtmlContextVisitor.  So we just need to output the close instructions if the node is self
-    // closing or definitely void.
-    if (node.isSelfClosing() || node.getTagName().isDefinitelyVoid()) {
-      statements.add(close.call().asStatement());
-    }
-    return Statement.of(statements);
-  }
-
-  /**
-   * Visits an {@link HtmlCloseTagNode}, which occurs when an HTML tag is closed. For example:
-   *
-   * <pre>
-   * &lt;/div&gt;
-   * </pre>
-   *
-   * generates
-   *
-   * <pre>
-   * incrementalDom.close('div');
-   * </pre>
-   */
-  @Override
-  protected void visitHtmlCloseTagNode(HtmlCloseTagNode node) {
-    // This case occurs in the case where we encounter the end of a keyed element.
-    getJsCodeBuilder().appendLine("// " + node.getSourceLocation());
-    String tagName = node.getTagName().getTagString();
-    if (tagName != null && Ascii.equalsIgnoreCase(tagName, "script")) {
-      getJsCodeBuilder().popOutputVar();
-      Expression ordainer = id("soy").dotAccess("VERY_UNSAFE").dotAccess("ordainSanitizedJs");
-      Expression safeScript = ordainer.call(id(scriptOutputVar)).dotAccess("toSafeScript").call();
-      GoogRequire require = GoogRequire.createWithAlias("goog.html.SafeScript", "SafeScript");
-      Expression unwrapped = require.dotAccess("unwrapTrustedScript").call(safeScript);
-      Expression currentElement = INCREMENTAL_DOM.dotAccess("currentElement").call();
-      Expression textContentAssignment = currentElement.dotAccess("textContent").assign(unwrapped);
-      ConditionalBuilder ifCurrentElementExists =
-          Statement.ifStatement(currentElement, textContentAssignment.asStatement());
-      getJsCodeBuilder().append(ifCurrentElementExists.build());
-      getJsCodeBuilder().append(INCREMENTAL_DOM.dotAccess("skipNode").call());
-      // We could be in some other content kind (like JS in a <script> tag) or still in HTML. Either
-      // way, a closing HTML tag means we're back in HTML, so pop if needed for HTML.
-      if (!contentKind.peek().isHtml()) {
-        contentKind.pop();
-        checkState(contentKind.peek().isHtml(), "unexpected contentKind: %s", contentKind);
-      }
-    }
-    if (node.getTaggedPairs().size() == 1) {
-      HtmlOpenTagNode openTag = (HtmlOpenTagNode) node.getTaggedPairs().get(0);
-      if (openTag.getKeyNode() != null && !(openTag.getParent() instanceof SkipNode)) {
-        getJsCodeBuilder().append(INCREMENTAL_DOM_POP_MANUAL_KEY.call());
-      }
-    }
-
-    Expression close = INCREMENTAL_DOM_CLOSE;
-    if (node.getTaggedPairs().size() == 1
-        && ((HtmlOpenTagNode) node.getTaggedPairs().get(0)).isElementRoot()) {
-      close = INCREMENTAL_DOM_ELEMENT_CLOSE;
-    }
-
-    if (!node.getTagName().isDefinitelyVoid()) {
-      getJsCodeBuilder().append(close.call().asStatement());
-    }
-  }
-
-  /**
-   * Visits a {@link RawTextNode}, which occurs either as a child of any BlockNode or the 'child' of
-   * an HTML tag. Note that in the soy tree, tags and their logical HTML children do not have a
-   * parent-child relationship, but are rather siblings. For example:
-   *
-   * <pre>
-   * &lt;div&gt;Hello world&lt;/div&gt;
-   * </pre>
-   *
-   * The text "Hello world" translates to
-   *
-   * <pre>
-   * incrementalDom.text('Hello world');
-   * </pre>
-   */
-  @Override
-  protected void visitRawTextNode(RawTextNode node) {
-    Expression textArg = stringLiteral(node.getRawText());
-    JsCodeBuilder jsCodeBuilder = getJsCodeBuilder();
-    switch (node.getHtmlContext()) {
-      case CSS:
-      case HTML_RCDATA:
-      case HTML_PCDATA:
-        // Note - we don't use generateTextCall since this text can never be null.
-        jsCodeBuilder.append(INCREMENTAL_DOM_TEXT.call(textArg));
-        break;
-      case HTML_TAG:
-        jsCodeBuilder.append(INCREMENTAL_DOM_ATTR.call(textArg, stringLiteral("")));
-        break;
-      default:
-        jsCodeBuilder.addChunkToOutputVar(textArg);
-        break;
-    }
-  }
-
-  /**
-   * Visit an {@link PrintNode}, with special cases for a variable being printed within an attribute
-   * declaration or as HTML content.
-   *
-   * <p>For attributes, if the variable is of kind attributes, it is invoked. Any other kind of
-   * variable is an error.
-   *
-   * <p>For HTML, if the variable is of kind HTML, it is invoked. Any other kind of variable gets
-   * wrapped in a call to {@code incrementalDom.text}, resulting in a Text node.
-   */
-  @Override
-  protected void visitPrintNode(PrintNode node) {
-    List<Expression> chunks = genJsExprsVisitor.exec(node);
-    switch (node.getHtmlContext()) {
-      case HTML_TAG:
-        getJsCodeBuilder()
-            .append(
-                SOY_IDOM_PRINT_DYNAMIC_ATTR.call(
-                    INCREMENTAL_DOM, CodeChunkUtils.concatChunks(chunks)));
-        break;
-      case JS:
-        getJsCodeBuilder().addChunkToOutputVar(CodeChunkUtils.concatChunks(chunks));
-        break;
-      case CSS:
-        // fall through
-      case HTML_PCDATA:
-        if (node.numChildren() > 0
-            && node.getChild(node.numChildren() - 1).getPrintDirective()
-                instanceof SanitizedContentOperator
-            && ((SanitizedContentOperator)
-                        node.getChild(node.numChildren() - 1).getPrintDirective())
-                    .getContentKind()
-                == SanitizedContent.ContentKind.HTML) {
-          getJsCodeBuilder()
-              .append(
-                  SOY_IDOM_PRINT.call(
-                      INCREMENTAL_DOM,
-                      CodeChunkUtils.concatChunks(chunks),
-                      Expression.LITERAL_TRUE));
-        } else {
-          getJsCodeBuilder()
-              .append(SOY_IDOM_PRINT.call(INCREMENTAL_DOM, CodeChunkUtils.concatChunks(chunks)));
-        }
-        break;
-      case HTML_RCDATA:
-        getJsCodeBuilder()
-            .append(
-                INCREMENTAL_DOM_TEXT.call(id("String").call(CodeChunkUtils.concatChunks(chunks))));
-        break;
-      default:
-        super.visitPrintNode(node);
-        break;
-    }
-  }
-
-  @Override
-  protected void visitSkipNode(SkipNode node) {
-    IncrementalDomCodeBuilder jsCodeBuilder = getJsCodeBuilder();
-    HtmlOpenTagNode openTag = (HtmlOpenTagNode) node.getChild(0);
-    Expression openTagExpr = getOpenSSRCall(openTag);
-    Statement childStatements = visitChildrenReturningCodeChunk(node);
-    jsCodeBuilder.append(Statement.ifStatement(openTagExpr, Statement.of(childStatements)).build());
-  }
-
-  @Override
-  protected void visitVeLogNode(VeLogNode node) {
-    VeLogStateHolder state = openVeLogNode(node);
-    getJsCodeBuilder().append(state.enterStatement);
-    visitChildren(node);
-    getJsCodeBuilder().append(exitVeLogNode(node, state.logOnlyConditional));
-  }
-
-  VeLogStateHolder openVeLogNode(VeLogNode node) {
-    Expression isLogOnly = Expression.LITERAL_FALSE;
-    VariableDeclaration isLogOnlyVar = null;
-    Expression isLogOnlyReference = null;
-    List<Statement> stmts = new ArrayList<>();
-    if (node.getLogonlyExpression() != null) {
-      String idName = "velog_" + staticsCounter++;
-      isLogOnlyReference = id(idName);
-      isLogOnly = getExprTranslator().exec(node.getLogonlyExpression());
-      isLogOnlyVar = VariableDeclaration.builder(idName).setRhs(isLogOnly).build();
-      stmts.add(isLogOnlyVar);
-      stmts.add(
-          Statement.ifStatement(
-                  INCREMENTAL_DOM_VERIFY_LOGONLY.call(isLogOnlyVar.ref()),
-                  Statement.assign(INCREMENTAL_DOM, INCREMENTAL_DOM_TONULL.call()))
-              .build());
-    }
-    Expression veData = getExprTranslator().exec(node.getVeDataExpression());
-    stmts.add(INCREMENTAL_DOM_ENTER.call(veData, isLogOnly).asStatement());
-    return new VeLogStateHolder(isLogOnlyReference, Statement.of(stmts));
-  }
-
-  Statement exitVeLogNode(VeLogNode node, @Nullable Expression isLogOnly) {
-    Statement exit = INCREMENTAL_DOM_EXIT.call().asStatement();
-    if (isLogOnly != null) {
-      return Statement.of(
-          exit,
-          Statement.ifStatement(
-                  isLogOnly, Statement.assign(INCREMENTAL_DOM, INCREMENTAL_DOM_TODEFAULT.call()))
-              .build());
-    }
-    return exit;
-  }
-
-  @Override
-  protected void visitMsgFallbackGroupNode(MsgFallbackGroupNode node) {
-    Expression msgExpression;
-    switch (node.getHtmlContext()) {
-      case HTML_PCDATA:
-        String id = "_msg_" + alias + "_" + staticsCounter++;
-        VariableDeclaration staticDecl =
-            VariableDeclaration.builder(id)
-                .setRhs(Expression.objectLiteral(ImmutableMap.of()))
-                .build();
-        staticVarDeclarations.add(staticDecl);
-        CodeChunk chunk =
-            new AssistantForHtmlMsgs(
-                    /* master= */ this,
-                    jsSrcOptions,
-                    genCallCodeUtils,
-                    isComputableAsJsExprsVisitor,
-                    templateAliases,
-                    genJsExprsVisitor,
-                    templateTranslationContext,
-                    errorReporter,
-                    id)
-                .generateMsgGroupCode(node);
-        getJsCodeBuilder().append(chunk);
-        break;
-        // Messages in attribute values are plain text. However, since the translated content
-        // includes entities (because other Soy backends treat these messages as HTML source), we
-        // must unescape the translations before passing them to the idom APIs.
-      case HTML_NORMAL_ATTR_VALUE:
-        msgExpression =
-            new AssistantForAttributeMsgs(
-                    /* master= */ this,
-                    jsSrcOptions,
-                    genCallCodeUtils,
-                    isComputableAsJsExprsVisitor,
-                    templateAliases,
-                    genJsExprsVisitor,
-                    templateTranslationContext,
-                    errorReporter)
-                .generateMsgGroupVariable(node);
-        getJsCodeBuilder().addChunkToOutputVar(GOOG_STRING_UNESCAPE_ENTITIES.call(msgExpression));
-        break;
-      case HTML_RCDATA:
-      case CSS:
-        msgExpression = getAssistantForMsgs().generateMsgGroupVariable(node);
-        getJsCodeBuilder().append(INCREMENTAL_DOM_TEXT.call(id("String").call(msgExpression)));
-        break;
-      default:
-        msgExpression = getAssistantForMsgs().generateMsgGroupVariable(node);
-        getJsCodeBuilder().addChunkToOutputVar(msgExpression);
-        break;
-    }
-  }
-
-  @Override
-  protected void visitMsgHtmlTagNode(MsgHtmlTagNode node) {
-    visitChildren(node);
-  }
-
-  private Expression getTagNameCodeChunk(TagName tagName) {
-    // No need to check if is computable as js expr because tag names can only be
-    // print nodes and constants.
-    return genJsExprsVisitor.exec(tagName.getNode()).get(0);
-  }
-
-  /**
-   * Handles <code>{msg}</code> commands in attribute context for idom. The literal text in the
-   * translated message must be unescaped after translation, because we pass the text directly to
-   * DOM text APIs, whereas translators write HTML with entities. Therefore, we must first escape
-   * all interpolated placeholders (which can only be TEXT values).
-   *
-   * <p>In non-idom, this happens in the contextual auto-escaper.
-   */
-  private static final class AssistantForAttributeMsgs extends GenJsCodeVisitorAssistantForMsgs {
-    AssistantForAttributeMsgs(
-        GenIncrementalDomCodeVisitor master,
-        SoyJsSrcOptions jsSrcOptions,
-        GenCallCodeUtils genCallCodeUtils,
-        IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor,
-        TemplateAliases functionAliases,
-        GenJsExprsVisitor genJsExprsVisitor,
-        TranslationContext translationContext,
-        ErrorReporter errorReporter) {
-      super(
-          master,
-          jsSrcOptions,
-          genCallCodeUtils,
-          isComputableAsJsExprsVisitor,
-          functionAliases,
-          genJsExprsVisitor,
-          translationContext,
-          errorReporter);
-    }
-
-    @Override
-    protected Expression genGoogMsgPlaceholder(MsgPlaceholderNode msgPhNode) {
-      Expression toEscape = super.genGoogMsgPlaceholder(msgPhNode);
-      return SOY_ESCAPE_HTML.call(toEscape);
-    }
-  }
-
-  @Override
-  protected boolean isIncrementalDom() {
-    return true;
   }
 }

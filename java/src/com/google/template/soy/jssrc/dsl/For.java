@@ -71,5 +71,6 @@ abstract class For extends Statement {
     try (FormattingContext ignored = ctx.enterBlock()) {
       ctx.appendAll(body());
     }
+    ctx.endLine();
   }
 }

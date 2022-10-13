@@ -19,6 +19,7 @@ package com.google.template.soy.jssrc.internal;
 import static com.google.template.soy.jssrc.dsl.Expression.id;
 
 import com.google.common.collect.ImmutableList;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.Statement;
@@ -29,7 +30,7 @@ import java.util.List;
 import java.util.Optional;
 
 /** Keeps track of the current output variable and generates code for declaring and assigning it. */
-final class OutputVarHandler {
+public final class OutputVarHandler {
 
   private static final class OutputVar {
     // TODO(b/32224284): this is always an {@link Expression#id}. Consider exposing a subclass of
@@ -46,7 +47,7 @@ final class OutputVarHandler {
   /** The current stack of output variables. */
   private final Deque<OutputVar> outputVars;
 
-  OutputVarHandler() {
+  public OutputVarHandler() {
     outputVars = new ArrayDeque<>();
   }
 
@@ -100,8 +101,9 @@ final class OutputVarHandler {
   /**
    * Pops off the current output variable. The previous output variable again becomes the current.
    */
-  public void popOutputVar() {
-    outputVars.pop();
+  @CanIgnoreReturnValue
+  public Expression popOutputVar() {
+    return outputVars.pop().name;
   }
 
   /**

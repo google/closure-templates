@@ -31,7 +31,6 @@ import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.Expression;
-import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.testing.SharedTestUtils;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
@@ -1019,7 +1018,7 @@ public final class GenJsCodeVisitorTest {
             + "}\n";
 
     // Setup the GenJsCodeVisitor's state before the template is visited.
-    genJsCodeVisitor.jsCodeBuilder = new JsCodeBuilder();
+    genJsCodeVisitor.jsCodeBuilder = new JsCodeBuilder(new OutputVarHandler());
     ParseResult parseResult = SoyFileSetParserBuilder.forFileContents(testFileContent).parse();
     TemplateNode template = (TemplateNode) SharedTestUtils.getNode(parseResult.fileSet());
     genJsCodeVisitor.visitForTesting(template, parseResult.registry(), ErrorReporter.exploding());
@@ -1042,7 +1041,7 @@ public final class GenJsCodeVisitorTest {
     TemplateNode templateNode = (TemplateNode) parseResult.fileSet().getChild(0).getChild(0);
 
     // Setup the GenJsCodeVisitor's state before the node is visited.
-    genJsCodeVisitor.jsCodeBuilder = new JsCodeBuilder();
+    genJsCodeVisitor.jsCodeBuilder = new JsCodeBuilder(genJsCodeVisitor.outputVars);
     genJsCodeVisitor.jsCodeBuilder.pushOutputVar("output");
     genJsCodeVisitor.jsCodeBuilder.setOutputVarInited();
     UniqueNameGenerator nameGenerator = JsSrcNameGenerators.forLocalVariables();
@@ -1056,11 +1055,9 @@ public final class GenJsCodeVisitorTest {
     genJsCodeVisitor.genJsExprsVisitor =
         JsSrcTestUtils.createGenJsExprsVisitorFactory()
             .create(translationContext, TEMPLATE_ALIASES, ErrorReporter.exploding(), OPT_DATA);
-    genJsCodeVisitor.assistantForMsgs = null; // will be created when used
 
-    for (SoyNode child : templateNode.getChildren()) {
-      genJsCodeVisitor.visitForTesting(child, parseResult.registry(), ErrorReporter.exploding());
-    }
+    genJsCodeVisitor.jsCodeBuilder.append(
+        genJsCodeVisitor.visitTemplateNodeChildren(templateNode, ErrorReporter.exploding()));
 
     String genCode = genJsCodeVisitor.jsCodeBuilder.getCode();
     assertThat(genCode).isEqualTo(expectedJsCode);

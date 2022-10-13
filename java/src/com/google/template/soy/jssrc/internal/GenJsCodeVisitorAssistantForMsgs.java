@@ -35,6 +35,7 @@ import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.JsDoc;
 import com.google.template.soy.jssrc.dsl.SoyJsPluginUtils;
+import com.google.template.soy.jssrc.dsl.Statement;
 import com.google.template.soy.jssrc.dsl.VariableDeclaration;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
 import com.google.template.soy.msgs.internal.IcuSyntaxUtils;
@@ -47,7 +48,7 @@ import com.google.template.soy.msgs.restricted.SoyMsgPluralRemainderPart;
 import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
 import com.google.template.soy.msgs.restricted.SoyMsgSelectPart;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
-import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
+import com.google.template.soy.soytree.AbstractReturningSoyNodeVisitor;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamNode;
@@ -73,7 +74,7 @@ import javax.annotation.Nullable;
  *
  * <p>Precondition: MsgNode should not exist in the tree.
  */
-public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
+public class GenJsCodeVisitorAssistantForMsgs extends AbstractReturningSoyNodeVisitor<Statement> {
 
   private static final Pattern LINE_BOUNDARY_PATTERN = Pattern.compile("\\s*?(\\n|\\r)\\s*");
   /** Regex pattern for an underscore-number suffix. */
@@ -82,8 +83,8 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
   /** The options for generating JS source code. */
   private final SoyJsSrcOptions jsSrcOptions;
 
-  /** Master instance of GenJsCodeVisitor. */
-  protected final GenJsCodeVisitor master;
+  /** Master instance of GenJsTemplateBodyVisitor. */
+  protected final GenJsTemplateBodyVisitor master;
 
   /** Instance of GenCallCodeUtils to use. */
   private final GenCallCodeUtils genCallCodeUtils;
@@ -104,15 +105,18 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
 
   private final ErrorReporter errorReporter;
 
+  private final OutputVarHandler outputVars;
+
   protected GenJsCodeVisitorAssistantForMsgs(
-      GenJsCodeVisitor master,
+      GenJsTemplateBodyVisitor master,
       SoyJsSrcOptions jsSrcOptions,
       GenCallCodeUtils genCallCodeUtils,
       IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor,
       TemplateAliases functionAliases,
       GenJsExprsVisitor genJsExprsVisitor,
       TranslationContext translationContext,
-      ErrorReporter errorReporter) {
+      ErrorReporter errorReporter,
+      OutputVarHandler outputVars) {
     this.master = master;
     this.jsSrcOptions = jsSrcOptions;
     this.genCallCodeUtils = genCallCodeUtils;
@@ -121,11 +125,7 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
     this.genJsExprsVisitor = genJsExprsVisitor;
     this.translationContext = translationContext;
     this.errorReporter = errorReporter;
-  }
-
-  @Override
-  public Void exec(SoyNode node) {
-    throw new AssertionError();
+    this.outputVars = outputVars;
   }
 
   /**
@@ -578,28 +578,30 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
           && !isComputableAsJsExprsVisitor.exec(contentNode)) {
         // This is a MsgHtmlTagNode that is not computable as JS expressions. Visit it to
         // generate code to define the 'htmlTag<n>' variable.
-        visit(contentNode);
-        contentChunks.add(id("htmlTag" + contentNode.getId()));
+        Statement decl = visit(contentNode);
+        contentChunks.add(id("htmlTag" + contentNode.getId()).withInitialStatement(decl));
 
       } else if (contentNode instanceof CallNode) {
         // If the CallNode has any CallParamContentNode children that are not computable as JS
         // expressions, visit them to generate code to define their respective 'param<n>' variables.
-
+        List<Statement> decls = new ArrayList<>();
         CallNode callNode = (CallNode) contentNode;
         for (CallParamNode grandchild : callNode.getChildren()) {
           if (grandchild instanceof CallParamContentNode
               && !isComputableAsJsExprsVisitor.exec(grandchild)) {
-            visit(grandchild);
+            decls.add(visit(grandchild));
           }
         }
 
         Expression call =
-            genCallCodeUtils.gen(
-                callNode,
-                templateAliases,
-                translationContext,
-                errorReporter,
-                master.getExprTranslator());
+            genCallCodeUtils
+                .gen(
+                    callNode,
+                    templateAliases,
+                    translationContext,
+                    errorReporter,
+                    master.getExprTranslator())
+                .withInitialStatements(decls);
         contentChunks.add(call);
       } else {
         List<Expression> chunks = genJsExprsVisitor.exec(contentNode);
@@ -629,7 +631,7 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
    * i80++) { htmlTag84.append('&amp;param', i80, '=', i80); } htmlTag84.append('"&gt;'); </pre>
    */
   @Override
-  protected void visitMsgHtmlTagNode(MsgHtmlTagNode node) {
+  protected Statement visitMsgHtmlTagNode(MsgHtmlTagNode node) {
 
     // This node should only be visited when it's not computable as JS expressions, because this
     // method just generates the code to define the temporary 'htmlTag<n>' variable.
@@ -638,17 +640,18 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
           "Should only define 'htmlTag<n>' when not computable as JS expressions.");
     }
 
-    master.getJsCodeBuilder().pushOutputVar("htmlTag" + node.getId());
-    visitChildren(node);
-    master.getJsCodeBuilder().popOutputVar();
+    outputVars.pushOutputVar("htmlTag" + node.getId());
+    List<Statement> children = visitChildren(node);
+    outputVars.popOutputVar();
+    return Statement.of(children);
   }
 
   // -----------------------------------------------------------------------------------------------
   // Fallback implementation.
 
   @Override
-  protected void visitSoyNode(SoyNode node) {
-    master.visitForUseByAssistants(node);
+  protected Statement visitSoyNode(SoyNode node) {
+    return master.visit(node);
   }
 
   /**

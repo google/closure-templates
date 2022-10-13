@@ -75,6 +75,7 @@ abstract class Switch extends Statement {
         }
       }
     }
+    ctx.endLine();
   }
 
   @Override

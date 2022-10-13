@@ -84,16 +84,10 @@ public class JsCodeBuilder {
   // the set of symbols to require, indexed by symbol name to detect conflicting imports
   private final Map<String, GoogRequire> googRequires = new TreeMap<>();
 
-  public JsCodeBuilder() {
+  public JsCodeBuilder(OutputVarHandler outputVars) {
     code = new StringBuilder();
     indent = "";
-    outputVars = new OutputVarHandler();
-  }
-
-  protected JsCodeBuilder(JsCodeBuilder parent) {
-    code = new StringBuilder();
-    indent = parent.indent;
-    outputVars = parent.outputVars;
+    this.outputVars = outputVars;
   }
 
   Iterable<GoogRequire> googRequires() {
