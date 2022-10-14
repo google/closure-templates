@@ -33,6 +33,7 @@ import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.error.SoyErrors;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.Kind;
+import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
@@ -45,8 +46,10 @@ import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
+import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TagName;
+import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypes;
@@ -61,6 +64,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Pass that runs secondary resolution of expressions after the template registry is executed.
@@ -156,32 +160,54 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
     return Result.CONTINUE;
   }
 
+  // Returns all child ExprNodes, omitting the "modifies" expression of TemplateBasicNodes.
+  private static Stream<ExprNode> nonModifiesExprs(ExprHolderNode exprHolderNode) {
+    if (exprHolderNode instanceof TemplateBasicNode) {
+      TemplateBasicNode templateBasicNode = (TemplateBasicNode) exprHolderNode;
+      Stream<ExprNode> stream = Stream.<ExprNode>builder().build();
+      for (ExprRootNode rootNode : exprHolderNode.getExprList()) {
+        if (rootNode != templateBasicNode.getModifiesExpr()) {
+          stream = Stream.concat(stream, SoyTreeUtils.allNodesOfType(rootNode, ExprNode.class));
+        }
+      }
+      return stream;
+    }
+    return SoyTreeUtils.allNodesOfType(exprHolderNode, ExprNode.class);
+  }
+
   private void checkTemplateLiteralsUsedInExpr(SoyFileNode file) {
-    SoyTreeUtils.allNodesOfType(file, ExprNode.class)
-        .filter(
-            exprNode ->
-                exprNode.getKind() == Kind.TEMPLATE_LITERAL_NODE
-                    && !((TemplateLiteralNode) exprNode).isStaticCall())
-        .map(TemplateLiteralNode.class::cast)
+    SoyTreeUtils.allNodesOfType(file, SoyNode.ExprHolderNode.class)
         .forEach(
-            templateNode ->
-                stream(SoyTypes.getTypeTraverser(templateNode.getType(), null))
-                    .filter(t -> t.getKind() == SoyType.Kind.TEMPLATE)
-                    .map(TemplateType.class::cast)
+            exprHolder ->
+                nonModifiesExprs(exprHolder)
                     .filter(
-                        templateType ->
-                            templateType.getContentKind().getSanitizedContentKind().isHtml()
-                                && !templateType.isStrictHtml())
+                        exprNode ->
+                            exprNode.getKind() == Kind.TEMPLATE_LITERAL_NODE
+                                && !((TemplateLiteralNode) exprNode).isStaticCall())
+                    .map(TemplateLiteralNode.class::cast)
                     .forEach(
-                        templateType ->
-                            // Only report errors for template literal nodes, to avoid reporting
-                            // errors multiple times (ie., once for everywhere the 'named' template
-                            // type has propagated in the expression tree).
-                            // TODO(b/180151169) Is this check necessary?
-                            errorReporter.report(
-                                templateNode.getSourceLocation(),
-                                ONLY_STRICT_HTML_TEMPLATES_ALLOWED,
-                                templateNode.getResolvedName())));
+                        templateNode ->
+                            stream(SoyTypes.getTypeTraverser(templateNode.getType(), null))
+                                .filter(t -> t.getKind() == SoyType.Kind.TEMPLATE)
+                                .map(TemplateType.class::cast)
+                                .filter(
+                                    templateType ->
+                                        templateType
+                                                .getContentKind()
+                                                .getSanitizedContentKind()
+                                                .isHtml()
+                                            && !templateType.isStrictHtml())
+                                .forEach(
+                                    templateType ->
+                                        // Only report errors for template literal nodes, to avoid
+                                        // reporting errors multiple times (ie., once for everywhere
+                                        // the 'named' template type has propagated in the
+                                        // expression tree).
+                                        // TODO(b/180151169) Is this check necessary?
+                                        errorReporter.report(
+                                            templateNode.getSourceLocation(),
+                                            ONLY_STRICT_HTML_TEMPLATES_ALLOWED,
+                                            templateNode.getResolvedName()))));
   }
 
   private void handleDynamicTagAndCheckForLegacyDynamicTags(SoyFileNode file) {
