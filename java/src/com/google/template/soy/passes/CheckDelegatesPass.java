@@ -20,7 +20,6 @@ import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.SoyFileKind;
@@ -96,10 +95,6 @@ final class CheckDelegatesPass implements CompilerFileSetPass {
     this.templateRegistryFull = templateRegistryFull;
   }
 
-  private static final ImmutableSet<String> DELTEMPLATE_PASSLIST =
-      ImmutableSet.of(
-          );
-
   @Override
   public Result run(ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator) {
     // Perform checks that only involve templates (uses fileset templateRegistry only, no traversal
@@ -111,9 +106,7 @@ final class CheckDelegatesPass implements CompilerFileSetPass {
       for (TemplateNode template : fileNode.getTemplates()) {
         if (template instanceof TemplateDelegateNode
             && isNullOrEmpty(((TemplateDelegateNode) template).getDelTemplateVariant())
-            && isNullOrEmpty(template.getModName())
-            && !DELTEMPLATE_PASSLIST.contains(
-                ((TemplateDelegateNode) template).getDelTemplateName())) {
+            && isNullOrEmpty(template.getModName())) {
           errorReporter.report(template.getSourceLocation(), DELTEMPLATES_DEPRECATED);
         }
         String currTemplateNameForUserMsgs = template.getTemplateNameForUserMsgs();
