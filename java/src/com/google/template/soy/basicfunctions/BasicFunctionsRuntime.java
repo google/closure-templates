@@ -166,6 +166,32 @@ public final class BasicFunctionsRuntime {
     return list.asJavaList().stream().distinct().collect(toImmutableList());
   }
 
+  public static ImmutableList<? extends SoyValueProvider> listFlat(SoyList list) {
+    return listFlatImpl(list, 1);
+  }
+
+  public static ImmutableList<? extends SoyValueProvider> listFlat(SoyList list, IntegerData data) {
+    return listFlatImpl(list, (int) data.getValue());
+  }
+
+  private static ImmutableList<? extends SoyValueProvider> listFlatImpl(
+      SoyList list, int maxDepth) {
+    ImmutableList.Builder<SoyValueProvider> builder = ImmutableList.builder();
+    listFlatImpl(list, builder, maxDepth);
+    return builder.build();
+  }
+
+  private static void listFlatImpl(
+      SoyList list, ImmutableList.Builder<SoyValueProvider> builder, int maxDepth) {
+    for (SoyValueProvider value : list.asJavaList()) {
+      if (maxDepth > 0 && value.resolve() instanceof SoyList) {
+        listFlatImpl((SoyList) value.resolve(), builder, maxDepth - 1);
+      } else {
+        builder.add(value);
+      }
+    }
+  }
+
   /**
    * Sorts a list in numerical order.
    *

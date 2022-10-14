@@ -453,6 +453,21 @@ def list_uniq(l):
   return [x for i, x in enumerate(l) if not any([y is x for y in l[:i]])]
 
 
+def list_flat(l, depth=1):
+  """Flatted a nested list."""
+  buffer = []
+  _list_flat_impl(l, buffer, depth)
+  return buffer
+
+
+def _list_flat_impl(l, buffer, depth):
+  for v in l:
+    if depth > 0 and isinstance(v, list):
+      _list_flat_impl(v, buffer, depth - 1)
+    else:
+      buffer.append(v)
+
+
 def number_list_sort(l):
   """Sorts in numerical order."""
   # Lists of numbers are sorted numerically by default.

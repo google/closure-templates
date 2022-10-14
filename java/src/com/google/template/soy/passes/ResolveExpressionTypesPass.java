@@ -49,6 +49,7 @@ import com.google.template.soy.basicfunctions.ConcatListsFunction;
 import com.google.template.soy.basicfunctions.ConcatMapsMethod;
 import com.google.template.soy.basicfunctions.KeysFunction;
 import com.google.template.soy.basicfunctions.LegacyObjectMapToMapFunction;
+import com.google.template.soy.basicfunctions.ListFlatMethod;
 import com.google.template.soy.basicfunctions.ListReverseMethod;
 import com.google.template.soy.basicfunctions.ListSliceMethod;
 import com.google.template.soy.basicfunctions.ListUniqMethod;
@@ -1437,6 +1438,42 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
           // list<T>.sort() returns list<T>
           // The sort() method only supports lists of number, int, or float.
           node.setType(node.getBaseExprChild().getType());
+        } else if (sourceFunction instanceof ListFlatMethod) {
+          // Determine type for common cases:
+          // list<X>.flat() -> list<X> (X not list)
+          // list<list<X>>.flat() or list<list<X>>.flat(1) -> list<X>
+          // list<list<list<X>>>.flat(2) etc -> list<X>
+          int maxDepth;
+          if (node.getParams().size() == 1) {
+            // This will only work for int literal in the source code.
+            if (node.getParams().get(0).getKind() == ExprNode.Kind.INTEGER_NODE) {
+              maxDepth = (int) ((IntegerNode) node.getParams().get(0)).getValue();
+            } else {
+              maxDepth = 0;
+            }
+          } else {
+            maxDepth = 1;
+          }
+
+          // Default type if logic below fails.
+          node.setType(sourceMethod.getReturnType());
+          ListType returnType = (ListType) node.getBaseExprChild().getType();
+          while (maxDepth-- > 0) {
+            if (returnType.getElementType().getKind() == Kind.LIST) {
+              returnType = (ListType) returnType.getElementType();
+            } else if (returnType.getElementType().getKind() == Kind.UNION) {
+              UnionType unionType = (UnionType) returnType.getElementType();
+              if (SoyTypes.containsKinds(unionType, ImmutableSet.of(Kind.LIST))) {
+                returnType = null;
+              }
+              break;
+            } else {
+              break;
+            }
+          }
+          if (returnType != null) {
+            node.setType(returnType);
+          }
         } else {
           node.setType(sourceMethod.getReturnType());
         }

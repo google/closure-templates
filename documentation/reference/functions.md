@@ -130,6 +130,13 @@ Checks if the given value is inside the list. This method implements JavaScript
 semantics, comparing elements with `==`. Therefore it only works on lists of
 primitive values.
 
+<span id="list-any_flat"></span>
+
+### `list.flat([depth])` {#listFlat}
+
+Flattens a nested list. The behavior matches JavaScript's `Array.prototype.flat`
+method.
+
 <span id="list-any_indexOf"></span>
 
 ### `list.indexOf(value[, startIndex])` {#listIndexOf}

@@ -2053,6 +2053,16 @@ const $$listUniq = function(list) {
 };
 
 /**
+ * Flattens a nested list. Delegates to Array.prototype.flat.
+ * @param {!Array} list
+ * @param {number=} depth
+ * @return {!Array}
+ */
+const $$listFlat = function(list, depth) {
+  return list.flat(depth);
+};
+
+/**
  * A helper function to provide tight type inference on array literals.
  * @param {...T} args
  * @return {!Array<T>}
@@ -2544,6 +2554,7 @@ exports = {
   $$listIndexOf,
   $$listReverse,
   $$listUniq,
+  $$listFlat,
   $$makeArray,
   $$filterAndMap,
   $$numberListSort,
