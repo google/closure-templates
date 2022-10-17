@@ -7,13 +7,7 @@
 The `call` command calls a template (the callee) and inserts its output into the
 current template (the caller).
 
-*   Syntax (basic form):
-
-    ```soy
-    {call <TEMPLATE_NAME> /}
-    ```
-
-*   With enclosed parameters:
+*   Syntax (command form):
 
     ```soy
     {call <TEMPLATE_NAME>}
@@ -24,24 +18,24 @@ current template (the caller).
     {/call}
     ```
 
-*   With parameter names and values (notice that `call` is not needed):
+*   Syntax (function form):
 
     ```soy
-    {<TEMPLATE_NAME>(<KEY1>: <EXPRESSION1>, <KEY2>: <EXPRESSION2>)}
+    {<TEMPLATE_NAME>(<KEY1>: <EXPRESSION1>, <KEY3>: <EXPRESSION3>)}
     ```
 
-*   With values from the caller template's data:
+    Note that `{call}` is not needed. Function form must appear inside a print
+    command (`{...}`).
 
-    ```soy
-    {call <TEMPLATE_NAME> data="<DATA_TO_PASS>"/}
-    ```
+    This second form may be preferred because it is more concise. However, it
+    does not allow passing block style parameters (those like `KEY2` above that
+    specify `kind=`).
 
 ### Passing values
 
-The following sections discuss these five options for passing values to a callee
+The following sections discuss these options for passing values to a callee
 template:
 
-1.  Pass values using `param` commands.
 1.  Pass values using parameter names.
 1.  Pass values using the `data` attribute.
 1.  Pass all of the caller template's `data`.
@@ -61,9 +55,9 @@ We'll use this callee template for the following examples:
 For information about passing templates as parameters, see
 [Passing Templates as Parameters](template-types.md#how-do-you-pass-in-a-template).
 
-#### Pass values using `param` commands (recommended) {#param}
+#### Pass values using parameter names (recommended) {#param}
 
-To pass values to the callee, use `param` commands inside the `call` function
+To pass values to the callee, use `param` commands inside the `call` command
 with names that match the callee's parameters.
 
 ```soy
@@ -78,13 +72,7 @@ with names that match the callee's parameters.
 {/template}
 ```
 
-This is the *recommended* way of calling templates in Soy as explicit data
-passing makes code more readable and easier to debug.
-
-#### Pass values using parameter names (recommended)
-
-In cases where all parameters are passed without blocks, the call can be
-shortened to a function-like call.
+The following function form call is equivalent to the above example.
 
 ```soy
 {template exampleCaller}
@@ -94,6 +82,9 @@ shortened to a function-like call.
   {exampleCallee(largerNum: $largerNum, smallerNum: $smallerNum)}
 {/template}
 ```
+
+These are the *recommended* ways of calling templates in Soy. Explicit parameter
+passing makes code more readable and easier to debug.
 
 #### Pass values using the `data` attribute
 
