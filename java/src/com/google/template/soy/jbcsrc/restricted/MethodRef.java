@@ -588,6 +588,8 @@ public abstract class MethodRef {
       create(JbcSrcRuntime.class, "unboxSafeHtml", SoyValueProvider.class);
   public static final MethodRef UNBOX_TRUSTED_RESOURCE_URL =
       create(JbcSrcRuntime.class, "unboxTrustedResourceUrl", SoyValueProvider.class);
+  public static final MethodRef CHECK_NOT_NULL =
+      create(JbcSrcRuntime.class, "checkExpressionNotNull", Object.class, String.class);
 
   public static final MethodRef STRING_DATA_FOR_VALUE =
       create(StringData.class, "forValue", String.class).asCheap().asNonNullable();

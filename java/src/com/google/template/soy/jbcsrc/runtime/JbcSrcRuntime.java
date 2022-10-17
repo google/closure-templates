@@ -130,6 +130,7 @@ public final class JbcSrcRuntime {
       return RenderResult.done();
     }
 
+    @Nullable
     @Override
     public SoyValue resolve() {
       return null;
@@ -204,6 +205,7 @@ public final class JbcSrcRuntime {
     return handleTofuNull(value);
   }
 
+  @Nullable
   public static SoyValueProvider soyValueProviderOrNull(SoyValueProvider provider) {
     if (resolveSoyValueProvider(provider) == null) {
       return null;
@@ -211,6 +213,7 @@ public final class JbcSrcRuntime {
     return provider;
   }
 
+  @Nullable
   private static SoyValue handleTofuNull(SoyValue value) {
     if (value instanceof NullData | value instanceof UndefinedData) {
       return null;
@@ -278,6 +281,7 @@ public final class JbcSrcRuntime {
   }
 
   /** Returns true if the value is derived from a missing parameter */
+  @Nullable
   public static SafeUrl unboxSafeUrl(SoyValueProvider provider) {
     if (provider == null) {
       return null;
@@ -286,6 +290,7 @@ public final class JbcSrcRuntime {
     return ((SanitizedContent) soyValue).toSafeUrl();
   }
 
+  @Nullable
   public static SafeUrlProto unboxSafeUrlProto(SoyValueProvider provider) {
     if (provider == null) {
       return null;
@@ -294,6 +299,7 @@ public final class JbcSrcRuntime {
     return SafeUrls.toProto(((SanitizedContent) soyValue).toSafeUrl());
   }
 
+  @Nullable
   public static SafeHtml unboxSafeHtml(SoyValueProvider provider) {
     if (provider == null) {
       return null;
@@ -302,6 +308,7 @@ public final class JbcSrcRuntime {
     return ((SanitizedContent) soyValue).toSafeHtml();
   }
 
+  @Nullable
   public static SafeHtmlProto unboxSafeHtmlProto(SoyValueProvider provider) {
     if (provider == null) {
       return null;
@@ -310,6 +317,7 @@ public final class JbcSrcRuntime {
     return SafeHtmls.toProto(((SanitizedContent) soyValue).toSafeHtml());
   }
 
+  @Nullable
   public static TrustedResourceUrl unboxTrustedResourceUrl(SoyValueProvider provider) {
     if (provider == null) {
       return null;
@@ -318,6 +326,7 @@ public final class JbcSrcRuntime {
     return ((SanitizedContent) soyValue).toTrustedResourceUrl();
   }
 
+  @Nullable
   public static TrustedResourceUrlProto unboxTrustedResourceUrlProto(SoyValueProvider provider) {
     if (provider == null) {
       return null;
@@ -366,6 +375,7 @@ public final class JbcSrcRuntime {
     return (int) value;
   }
 
+  @Nullable
   public static ImmutableList<String> listUnboxStrings(List<SoyValue> values) {
     if (values == null) {
       return null;
@@ -373,6 +383,7 @@ public final class JbcSrcRuntime {
     return values.stream().map(SoyValue::coerceToString).collect(toImmutableList());
   }
 
+  @Nullable
   public static ImmutableList<Long> listUnboxInts(List<SoyValue> values) {
     if (values == null) {
       return null;
@@ -380,6 +391,7 @@ public final class JbcSrcRuntime {
     return values.stream().map(SoyValue::longValue).collect(toImmutableList());
   }
 
+  @Nullable
   public static ImmutableList<Double> listUnboxFloats(List<SoyValue> values) {
     if (values == null) {
       return null;
@@ -387,6 +399,7 @@ public final class JbcSrcRuntime {
     return values.stream().map(SoyValue::floatValue).collect(toImmutableList());
   }
 
+  @Nullable
   public static ImmutableList<Double> listUnboxNumbers(List<SoyValue> values) {
     if (values == null) {
       return null;
@@ -394,6 +407,7 @@ public final class JbcSrcRuntime {
     return values.stream().map(SoyValue::numberValue).collect(toImmutableList());
   }
 
+  @Nullable
   public static ImmutableList<Boolean> listUnboxBools(List<SoyValue> values) {
     if (values == null) {
       return null;
@@ -401,6 +415,7 @@ public final class JbcSrcRuntime {
     return values.stream().map(SoyValue::coerceToBoolean).collect(toImmutableList());
   }
 
+  @Nullable
   public static ImmutableList<Message> listUnboxProtos(List<SoyValue> values) {
     if (values == null) {
       return null;
@@ -408,6 +423,7 @@ public final class JbcSrcRuntime {
     return values.stream().map(v -> ((SoyProtoValue) v).getProto()).collect(toImmutableList());
   }
 
+  @Nullable
   public static <T extends ProtocolMessageEnum> ImmutableList<T> listUnboxEnums(
       List<SoyValue> values, Class<T> type) {
     if (values == null) {
@@ -475,6 +491,7 @@ public final class JbcSrcRuntime {
     }
   }
 
+  @Nullable
   public static ImmutableMap<?, ?> unboxMap(SoyMap map, Class<?> keyType, Class<?> valueType) {
     if (map == null) {
       return null;
@@ -506,6 +523,7 @@ public final class JbcSrcRuntime {
     }
   }
 
+  @Nullable
   public static ImmutableMap<?, ?> unboxRecord(SoyRecord map) {
     if (map == null) {
       return null;
@@ -514,6 +532,7 @@ public final class JbcSrcRuntime {
         .collect(toImmutableMap(e -> e.getKey(), e -> SoyValueUnconverter.unconvert(e.getValue())));
   }
 
+  @Nullable
   public static List<SoyValueProvider> listBoxValues(List<?> javaValues) {
     if (javaValues == null) {
       return null;
@@ -1227,6 +1246,13 @@ public final class JbcSrcRuntime {
           return;
       }
     }
+  }
+
+  public static <T> T checkExpressionNotNull(T value, String expression) {
+    if (value == null) {
+      throw new NullPointerException("'" + expression + "' evaluates to null");
+    }
+    return value;
   }
 
   private JbcSrcRuntime() {}

@@ -1302,11 +1302,8 @@ final class ExpressionCompiler {
       checkArgument(!node.isNullSafe());
       checkArgument(node.isMethodResolved());
 
-      // Never allow a null method receiver.
-      if (!BytecodeUtils.isPrimitive(baseExpr.resultType())) {
-        baseExpr = assertNonNull(baseExpr, node.getBaseExprChild());
-      }
-
+      // NOTE: It is the responsibility of method implementations to null check receiver types.
+      // Doing it here, generically will be a code size and performance regression.
       SoyMethod function = node.getSoyMethod();
       if (function instanceof BuiltinMethod) {
         BuiltinMethod builtinMethod = (BuiltinMethod) function;
@@ -1455,20 +1452,13 @@ final class ExpressionCompiler {
     }
 
     private static SoyExpression assertNonNull(SoyExpression expr, ExprNode node) {
+      if (expr.isNonNullable()) {
+        return expr;
+      }
       return expr.withSource(
-              new Expression(expr.resultType(), expr.features()) {
-                @Override
-                protected void doGen(CodeBuilder adapter) {
-                  expr.gen(adapter);
-                  adapter.dup();
-                  Label end = new Label();
-                  adapter.ifNonNull(end);
-                  adapter.throwException(
-                      NULL_POINTER_EXCEPTION_TYPE,
-                      "'" + node.toSourceString() + "' evaluates to null");
-                  adapter.mark(end);
-                }
-              })
+              MethodRef.CHECK_NOT_NULL
+                  .invoke(expr, constant(node.toSourceString()))
+                  .checkedCast(expr.resultType()))
           .asNonNullable();
     }
 
