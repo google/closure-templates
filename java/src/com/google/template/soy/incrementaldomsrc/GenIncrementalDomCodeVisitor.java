@@ -110,17 +110,6 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   }
 
   @Override
-  protected JsCodeBuilder createCodeBuilder() {
-    return new IncrementalDomCodeBuilder(outputVars, contentKind);
-  }
-
-
-  @Override
-  protected IncrementalDomCodeBuilder getJsCodeBuilder() {
-    return (IncrementalDomCodeBuilder) super.getJsCodeBuilder();
-  }
-
-  @Override
   protected JsType getJsTypeForParamForDeclaration(SoyType paramType) {
     return JsType.forIncrementalDomState(paramType);
   }
@@ -267,7 +256,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
 
   private Statement generateInitInternal(TemplateElementNode node) {
     ImmutableList.Builder<Statement> stateVarInitializations = ImmutableList.builder();
-    IncrementalDomCodeBuilder jsCodeBuilder = getJsCodeBuilder();
+    JsCodeBuilder jsCodeBuilder = getJsCodeBuilder();
     for (TemplateStateVar stateVar : node.getStateVars()) {
       JsType jsType = JsType.forIncrementalDomState(stateVar.type());
       for (GoogRequire require : jsType.getGoogRequires()) {
@@ -522,7 +511,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   /** Generates idom#elementOpen, idom#elementClose, etc. function calls for the given node. */
   private Statement generateIncrementalDomRenderCalls(
       TemplateNode node, String alias, boolean isPositionalStyle) {
-    IncrementalDomCodeBuilder jsCodeBuilder = getJsCodeBuilder();
+    JsCodeBuilder jsCodeBuilder = getJsCodeBuilder();
     boolean isTextTemplate = isTextContent(node.getContentKind());
 
     Statement typeChecks = genParamTypeChecks(node, alias, isPositionalStyle);

@@ -16,9 +16,7 @@
 
 package com.google.template.soy.jssrc.dsl;
 
-
 import com.google.common.collect.ImmutableSet;
-import com.google.errorprone.annotations.ForOverride;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.base.internal.UniqueNameGenerator;
 import com.google.template.soy.jssrc.restricted.JsExpr;
@@ -80,7 +78,6 @@ public abstract class CodeChunk {
    * @param startingIndent The indent level of the foreign code into which this code will be
    *     inserted. This doesn't affect the correctness of the composed code, only its readability.
    */
-  @ForOverride
   String getCode(int startingIndent) {
     FormattingContext initialStatements = new FormattingContext(startingIndent);
     initialStatements.appendInitialStatements(this);
@@ -92,28 +89,6 @@ public abstract class CodeChunk {
     }
 
     return initialStatements.concat(outputExprs).toString();
-  }
-
-  /**
-   * Returns a sequence of JavaScript statements suitable for inserting into JS code that is not
-   * managed by the CodeChunk DSL. The string is guaranteed to end in a newline.
-   *
-   * <p>Callers should use {@link #getCode()} when the CodeChunk DSL is managing the entire code
-   * generation. getCode may drop variable declarations if there is no other code referencing those
-   * variables.
-   *
-   * <p>By contrast, this method is provided for incremental migration to the CodeChunk DSL.
-   * Variable declarations will not be dropped, since there may be gencode not managed by the
-   * CodeChunk DSL that references them.
-   *
-   * <p>TODO(b/33382980): remove.
-   *
-   * @param startingIndent The indent level of the foreign code into which this code will be
-   *     inserted. This doesn't affect the correctness of the composed code, only its readability.
-   */
-  public final String getStatementsForInsertingIntoForeignCodeAtIndent(int startingIndent) {
-    String code = getCode(startingIndent);
-    return code.endsWith("\n") ? code : code + "\n";
   }
 
   /**

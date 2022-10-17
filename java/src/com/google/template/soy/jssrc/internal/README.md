@@ -61,30 +61,3 @@ var output = '' + a + b + MSG_XXX;
 
 The jscompiler isn't sure that it is safe to reorder the declarations even though
 the second implementation is shorter.
-
-### Path to eliminating `JsCodeBuilder`
-
-We have a long term goal to eliminate `JsCodeBuilder` and instead deal entirely
-with `CodeChunks`. This is difficult however if we want to maintain the goals
-stated above. So a few concrete steps to take would be:
-
-*   Move the logic for file and template declarations from GenJsCodeVisitor to
-    another class, let GenJsCodeVisitor focus on template bodies. This would be
-    a straight refactoring.
-*   Introduce some kind of datastructure like `AppendsOrConcats` which would
-    either be a `CodeChunk` that assigns appends to a declared output variable,
-    or a sequence of `CodeChunk.WithValue` objects that evaluate to strings.
-    *   We may want to be able to lazily pick the output variable, so we may
-        need something like a `Function<CodeChunk.WithValue, CodeChunk>` instead
-        of just a `CodeChunk`
-*   Change `GenJsCodeVisitor` to return `AppendsOrConcats` objects instead of
-    appending to the `JsCodeBuilder`, at this point we would only be using the
-    'appends' half of the datastructure.
-*   Move the logic of `GenJsExprsVisitor` into `GenJsCodeVisitor`. This way
-    instead of using `IsComputableAsJsExprsVisitor` to decide whether we should
-    use `GenJsCodeVisitor` or `GenJsExprsVisitor` for a given expression, it
-    would just become if statements inside the `visit` methods.
-
-Some of these steps might be pretty difficult, but it should lead us to a
-solution that is easier to understand, relies less on mutable datastructures and
-it should actually allow us to generate less code.

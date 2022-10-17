@@ -759,8 +759,7 @@ public final class CodeChunkTest {
     assertThat(use.getCode()).isEqualTo(JOINER.join("const $tmp = bar;", "$tmp($tmp);"));
     // If the program is partially being built elsewhere,
     // something could reference the variable, so we need to keep it.
-    assertThat(decl.getStatementsForInsertingIntoForeignCodeAtIndent(0))
-        .isEqualTo("const $tmp = bar;\n");
+    assertThat(decl.getCode(0)).isEqualTo("const $tmp = bar;");
 
     // Now use a custom var name for the declaration.
     decl = VariableDeclaration.builder("foo").setRhs(id("bar")).build();
@@ -771,10 +770,8 @@ public final class CodeChunkTest {
     assertThat(use.getCode()).isEqualTo(JOINER.join("const foo = bar;", "foo(foo);"));
     // If the program is partially being built elsewhere, something could reference foo
     // so we need to keep it.
-    assertThat(decl.getStatementsForInsertingIntoForeignCodeAtIndent(0))
-        .isEqualTo("const foo = bar;\n");
-    assertThat(use.getStatementsForInsertingIntoForeignCodeAtIndent(0))
-        .isEqualTo(JOINER.join("const foo = bar;", "foo(foo);\n"));
+    assertThat(decl.getCode(0)).isEqualTo("const foo = bar;");
+    assertThat(use.getCode(0)).isEqualTo(JOINER.join("const foo = bar;", "foo(foo);"));
   }
 
   @Test
@@ -784,18 +781,17 @@ public final class CodeChunkTest {
         ifStatement(id("foo"), Statement.returnValue(id("bar").call()))
             .setElse(Statement.returnValue(id("baz").dotAccess("method").call()))
             .build();
-    assertThat(statement.getStatementsForInsertingIntoForeignCodeAtIndent(2))
+    assertThat(statement.getCode(2))
         .isEqualTo(
             JOINER.join(
                 "  if (foo) {",
                 "    return bar();",
                 "  } else {",
                 "    return baz.method();",
-                "  }\n"));
+                "  }"));
 
     Statement decl = VariableDeclaration.builder("blah").setRhs(number(2)).build();
-    assertThat(decl.getStatementsForInsertingIntoForeignCodeAtIndent(4))
-        .isEqualTo("    const blah = 2;\n");
+    assertThat(decl.getCode(4)).isEqualTo("    const blah = 2;");
   }
 
   @Test
