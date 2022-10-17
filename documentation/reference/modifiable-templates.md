@@ -58,8 +58,8 @@ Constraints:
 *   All modifies templates must have signatures that are compatible with the
     modifiable template.
 *   Calls can only be made to the modifiable template.
-*   A single Soy file can only modify templates from a single external
-    namespace, excluding variants.
+*   A single Soy file can only modify templates from a single external namespace
+    (ie, a single file).
 
 ## Variants
 
