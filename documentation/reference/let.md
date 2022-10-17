@@ -14,9 +14,10 @@ Syntax for rendering to string ("block form"):
 {let $<IDENTIFIER> kind="IDENTIFIER_TYPE"}...{/let}
 ```
 
-`let` defines a name for an intermediate value. The name is defined only within
-the immediate code block containing the `let` command, and the value is not
-modifiable.
+`let` defines a name for an intermediate immutable value. The name is defined
+only within the immediate code block containing the `let` command. As these
+values are immutable there is no syntax for updating their values and defining
+multiple `let` values with the same name is a compilation error.
 
 The `kind` attribute specifies the
 [content kind](../dev/security.md#content_kinds).
