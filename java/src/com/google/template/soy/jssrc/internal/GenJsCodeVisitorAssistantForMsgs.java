@@ -196,25 +196,19 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractReturningSoyNodeVi
     // the caller.
     // TODO(lukes): we don't really need this variable unless 'isPrimaryMsgInUse' is called,
     // consider adding translation logic for that conditionally.
-    VariableDeclaration selectedMessageDeclaration =
+    Expression selectedMsg =
         translationContext
             .codeGenerator()
             .declarationBuilder("selected_msg")
             .setRhs(
                 Expression.dottedIdNoRequire("goog.getMsgWithFallback")
                     .call(primaryCodeGenInfo.googMsgVar, fallbackCodeGenInfo.googMsgVar))
-            .build();
+            .build()
+            .ref();
 
-    Expression selectedMsg = selectedMessageDeclaration.ref();
-
-    // We use varName() and id() here instead of using the corresponding code chunks because the
-    // stupid
-    // jscodebuilder system causes us to regenerate the msg vars multiple times because it doesn't
-    // detect that they were already generated.
-    // TODO(b/33382980): clean this up
-    Expression isPrimaryMsgInUse =
-        Expression.id(selectedMessageDeclaration.varName())
-            .doubleEquals(Expression.id(primaryCodeGenInfo.googMsgVarName));
+    // TODO(b/33382980): In certain cases in IDOM this generates these variables multiple times
+    // (because they are used in separate scopes), clean this up.
+    Expression isPrimaryMsgInUse = selectedMsg.doubleEquals(primaryCodeGenInfo.googMsgVar);
     translationContext.soyToJsVariableMappings().setIsPrimaryMsgInUse(node, isPrimaryMsgInUse);
     if (primaryCodeGenInfo.placeholders == null && fallbackCodeGenInfo.placeholders == null) {
       // all placeholders have already been substituted, just return
@@ -352,7 +346,7 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractReturningSoyNodeVi
         msgNode.isPlrselMsg()
             ? placeholderInfo.pluralsAndSelects.putAll(placeholderInfo.placeholders).build()
             : null;
-    return new GoogMsgCodeGenInfo(builder.build().ref(), googMsgVarName, placeholders);
+    return new GoogMsgCodeGenInfo(builder.build().ref(), placeholders);
   }
 
   /**
@@ -413,11 +407,8 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractReturningSoyNodeVi
      */
     @Nullable final Expression placeholders;
 
-    final String googMsgVarName;
-
-    GoogMsgCodeGenInfo(Expression googMsgVar, String varName, Expression placeholders) {
+    GoogMsgCodeGenInfo(Expression googMsgVar, Expression placeholders) {
       this.googMsgVar = googMsgVar;
-      this.googMsgVarName = varName;
       this.placeholders = placeholders;
     }
   }
