@@ -401,11 +401,16 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
 
   @Override
   protected Expression visitMapLiteralNode(MapLiteralNode node) {
+    // Always construct maps as ES6 Maps so that we can call `set`.
     Expression map = Expression.constructMap();
     if (node.getType() != MapType.EMPTY_MAP) {
-      map = map.castAs(JsType.forJsSrc(node.getType()).typeExpr());
+      MapType mapType = (MapType) node.getType();
+      String keyTypeExpr = JsType.forJsSrc(mapType.getKeyType()).typeExpr();
+      String valueTypeExpr = JsType.forJsSrc(mapType.getValueType()).typeExpr();
+      map = map.castAs(String.format("!Map<%s, %s>", keyTypeExpr, valueTypeExpr));
     }
 
+    // Populate the map.
     for (int i = 0; i < node.numChildren(); i += 2) {
       ExprNode keyNode = node.getChild(i);
       // Constructing a map literal with a null key is a runtime error.
@@ -413,6 +418,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
       Expression value = visit(node.getChild(i + 1));
       map = map.dotAccess("set").call(key, value);
     }
+
     return map;
   }
 
@@ -903,11 +909,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
               SOY_NEWMAPS_TRANSFORM_VALUES.call(fieldValue, protoBytesPackToByteStringFunction());
         }
         // JSCompiler cannot infer that jspb.Map and soy.Map or Map are the same.
-        proto =
-            SOY_MAP_POPULATE.call(
-                protoVar,
-                protoVar.dotAccess(getFn).call().castAs("!soy.map.Map<?,?>"),
-                fieldValue.castAs("!soy.map.Map<?,?>"));
+        proto = SOY_MAP_POPULATE.call(protoVar, protoVar.dotAccess(getFn).call(), fieldValue);
       } else {
         String setFn = "set" + LOWER_CAMEL.to(UPPER_CAMEL, fieldName);
         proto = proto.dotAccess(setFn).call(fieldValue);
