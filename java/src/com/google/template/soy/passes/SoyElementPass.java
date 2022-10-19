@@ -160,6 +160,7 @@ public final class SoyElementPass implements CompilerFileSetPass {
     }
     visited.add(template);
     boolean isSoyElement = template instanceof TemplateElementNode;
+    boolean isElmOrHtml = template.getTemplateContentKind() instanceof ElementContentKind;
     // scan through all children skipping 'ALLOWED_CHILD_KINDS' until we find an HtmlOpenTagNode
     // or a VeLogNode
     // validate the corresponding dom structure ensuring that our constrains are met:
@@ -170,6 +171,8 @@ public final class SoyElementPass implements CompilerFileSetPass {
     VeLogNode veLogNode = null;
     HtmlOpenTagNode openTag = null;
     HtmlTagNode closeTag = null;
+    SourceLocation invalidReportLoc = template.getSourceLocation();
+    boolean reportedSingleHtmlElmError = false;
     for (int i = 0; i < template.numChildren(); i++) {
       SoyNode child = template.getChild(i);
       if (ALLOWED_CHILD_NODES.contains(child.getKind())) {
@@ -184,8 +187,9 @@ public final class SoyElementPass implements CompilerFileSetPass {
           && child instanceof CallBasicNode
           && ((CallBasicNode) child).isStaticCall()
           && i == template.numChildren() - 1) {
-        if (template.getTemplateContentKind() instanceof ElementContentKind) {
+        if (isElmOrHtml) {
           errorReporter.report(child.getSourceLocation(), ELEMENT_TEMPLATE_EXACTLY_ONE_TAG);
+          reportedSingleHtmlElmError = true;
         }
         if (isSoyElement && ((CallBasicNode) child).getKeyExpr() != null) {
           this.errorReporter.report(
@@ -214,8 +218,9 @@ public final class SoyElementPass implements CompilerFileSetPass {
             break; // skip reporting additional errors
           }
           openTag = maybeOpenTagNode;
-        } else if (template.getTemplateContentKind() instanceof ElementContentKind) {
+        } else if (isElmOrHtml) {
           this.errorReporter.report(template.getSourceLocation(), ELEMENT_TEMPLATE_EXACTLY_ONE_TAG);
+          reportedSingleHtmlElmError = true;
         } else {
           List<CallBasicNode> callNodes =
               veLogNode.getChildren().stream()
@@ -234,18 +239,14 @@ public final class SoyElementPass implements CompilerFileSetPass {
                 visited);
           } else if (isSoyElement) {
             this.errorReporter.report(veLogNode.getSourceLocation(), SOY_ELEMENT_EXACTLY_ONE_TAG);
+            reportedSingleHtmlElmError = true;
           }
         }
       } else {
         openTag = null;
         closeTag = null;
-        if (isSoyElement) {
-          errorReporter.report(child.getSourceLocation(), SOY_ELEMENT_EXACTLY_ONE_TAG);
-        }
-        if (template.getTemplateContentKind() instanceof ElementContentKind) {
-          errorReporter.report(child.getSourceLocation(), ELEMENT_TEMPLATE_EXACTLY_ONE_TAG);
-        }
-        break; // break after first error
+        invalidReportLoc = child.getSourceLocation();
+        break;
       }
     }
     if (openTag != null) {
@@ -281,8 +282,12 @@ public final class SoyElementPass implements CompilerFileSetPass {
       if (hasSkipNode && template instanceof TemplateElementNode) {
         errorReporter.report(openTag.getSourceLocation(), SOYELEMENT_CANNOT_BE_SKIPPED);
       }
-    } else if (isSoyElement) {
-      this.errorReporter.report(template.getSourceLocation(), ELEMENT_TEMPLATE_EXACTLY_ONE_TAG);
+    } else if (!reportedSingleHtmlElmError) {
+      if (isSoyElement) {
+        this.errorReporter.report(invalidReportLoc, SOY_ELEMENT_EXACTLY_ONE_TAG);
+      } else if (isElmOrHtml) {
+        this.errorReporter.report(invalidReportLoc, ELEMENT_TEMPLATE_EXACTLY_ONE_TAG);
+      }
     }
     String finalCallee = "";
     if (delegateTemplate != null) {

@@ -134,11 +134,7 @@ public abstract class TemplateContentKind {
     }
   }
 
-  /**
-   * Class for kind="element" types. Currently this just supports "element", but will likely be
-   * expanded to allow "element<div>", etc. TODO: Probably pull this into another file when we add
-   * element<div> etc?
-   */
+  /** Class for {element} templates and {template kind="html<...>"}. */
   public static class ElementContentKind extends TemplateContentKind {
 
     private static final String WILDCARD_CHAR = "?";
