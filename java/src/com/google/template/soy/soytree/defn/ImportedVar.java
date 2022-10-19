@@ -134,4 +134,14 @@ public final class ImportedVar extends AbstractVarDefn {
   public SourceFilePath getSourceFilePath() {
     return parent != null ? parent.getSourceFilePath() : filePath;
   }
+
+  /** Returns the location without any trailing "as Foo". */
+  public SourceLocation symbolLocation() {
+    SourceLocation full = nameLocation();
+    if (isAliased() && full.isSingleLine()) {
+      return full.substring(0, symbol.length());
+    } else {
+      return nameLocation();
+    }
+  }
 }
