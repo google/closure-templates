@@ -115,10 +115,13 @@ class ValidateExternsPass implements CompilerFilePass {
 
   private final ErrorReporter errorReporter;
   private final MethodChecker checker;
+  private final boolean validateJavaMethods;
 
-  ValidateExternsPass(ErrorReporter errorReporter, MethodChecker checker) {
+  ValidateExternsPass(
+      ErrorReporter errorReporter, MethodChecker checker, boolean validateJavaMethods) {
     this.errorReporter = errorReporter;
     this.checker = checker;
+    this.validateJavaMethods = validateJavaMethods;
   }
 
   @Override
@@ -234,6 +237,16 @@ class ValidateExternsPass implements CompilerFilePass {
             extern);
       }
     }
+
+    if (!validateJavaMethods) {
+      // Any validations beyond this require looking at the actual implementation of the Java
+      // method. We only want to do this in some cases, like when compiling for JBCSRC. If we're
+      // compiling for something that doesn't use the Java implementations (like JS or the header
+      // compiler) then we don't need the Java implementations so we don't do those validations here
+      // and then we don't have to require them.
+      return;
+    }
+
     MethodChecker.Response response =
         checker.findMethod(java.className(), java.methodName(), java.returnType(), java.params());
     switch (response.getCode()) {

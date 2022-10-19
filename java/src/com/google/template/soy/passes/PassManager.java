@@ -227,6 +227,7 @@ public final class PassManager {
     private final Map<Class<? extends CompilerPass>, PassContinuationRule>
         passContinuationRegistry = Maps.newHashMap();
     private boolean building;
+    private boolean validateJavaMethods = true;
     private final AccumulatedState accumulatedState = new AccumulatedState();
 
     @CanIgnoreReturnValue
@@ -386,6 +387,12 @@ public final class PassManager {
       return this;
     }
 
+    @CanIgnoreReturnValue
+    public Builder validateJavaMethods(boolean validate) {
+      validateJavaMethods = validate;
+      return this;
+    }
+
     /**
      * Registers a pass continuation rule.
      *
@@ -445,7 +452,8 @@ public final class PassManager {
       passes.add(new ResolvePluginsPass(pluginResolver));
       // When type checking is disabled, extern implementations will likely not be loaded.
       if (!disableAllTypeChecking) {
-        passes.add(new ValidateExternsPass(errorReporter, javaPluginValidator));
+        passes.add(
+            new ValidateExternsPass(errorReporter, javaPluginValidator, validateJavaMethods));
       }
 
       // Must come after ResolvePluginsPass.

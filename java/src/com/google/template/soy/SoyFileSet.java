@@ -787,7 +787,8 @@ public final class SoyFileSet {
                     .addHtmlAttributesForDebugging(false)
                     // TODO(lukes): kill the pass continuation mechanism
                     .addPassContinuationRule(
-                        SoyConformancePass.class, PassContinuationRule.STOP_AFTER_PASS)));
+                        SoyConformancePass.class, PassContinuationRule.STOP_AFTER_PASS)
+                    .validateJavaMethods(false)));
   }
 
   AnnotatedLoggingConfig generateAnnotatedLoggingConfig(
@@ -870,7 +871,8 @@ public final class SoyFileSet {
                     .allowUnknownJsGlobals()
                     // Skip optimization, we could run it but it seems to be a waste of time
                     .optimize(false)
-                    .desugarHtmlNodes(false))
+                    .desugarHtmlNodes(false)
+                    .validateJavaMethods(false))
             .fileSet();
     throwIfErrorsPresent();
     SoyMsgBundle bundle = new ExtractMsgsVisitor(errorReporter).exec(soyTree);
@@ -1054,7 +1056,10 @@ public final class SoyFileSet {
     return entryPoint(
         () -> {
           PassManager.Builder builder =
-              passManagerBuilder().allowUnknownJsGlobals().desugarHtmlNodes(false);
+              passManagerBuilder()
+                  .allowUnknownJsGlobals()
+                  .desugarHtmlNodes(false)
+                  .validateJavaMethods(false);
           ParseResult result = parse(builder);
           throwIfErrorsPresent();
           FileSetMetadata registry = result.registry();
@@ -1079,7 +1084,11 @@ public final class SoyFileSet {
           // For incremental dom backend, we don't desugar HTML nodes since it requires HTML
           // context.
           ParseResult result =
-              parse(passManagerBuilder().desugarHtmlNodes(false).desugarIdomFeatures(false));
+              parse(
+                  passManagerBuilder()
+                      .desugarHtmlNodes(false)
+                      .desugarIdomFeatures(false)
+                      .validateJavaMethods(false));
           throwIfErrorsPresent();
           return new IncrementalDomSrcMain(scopedData.enterable(), typeRegistry)
               .genJsSrc(result.fileSet(), result.registry(), jsSrcOptions, errorReporter);
@@ -1098,7 +1107,7 @@ public final class SoyFileSet {
     return entryPoint(
         () -> {
           try {
-            ParseResult result = parse();
+            ParseResult result = parse(passManagerBuilder().validateJavaMethods(false));
             throwIfErrorsPresent();
             return new PySrcMain(scopedData.enterable())
                 .genPyFiles(result.fileSet(), result.registry(), pySrcOptions, errorReporter);
@@ -1132,7 +1141,8 @@ public final class SoyFileSet {
                       .allowUnknownJsGlobals()
                       // Only run passes that not cross template checking.
                       .addPassContinuationRule(
-                          CheckTemplateHeaderVarsPass.class, PassContinuationRule.STOP_BEFORE_PASS),
+                          CheckTemplateHeaderVarsPass.class, PassContinuationRule.STOP_BEFORE_PASS)
+                      .validateJavaMethods(false),
                   typeRegistry);
           // throw before accessing registry() to make sure it is definitely available.
           throwIfErrorsPresent();
@@ -1179,7 +1189,8 @@ public final class SoyFileSet {
                       .desugarHtmlNodes(false)
                       // TODO(lukes): This is needed for kythe apparently
                       .allowUnknownGlobals()
-                      .allowUnknownJsGlobals(),
+                      .allowUnknownJsGlobals()
+                      .validateJavaMethods(false),
                   typeRegistry);
           ImmutableList<SoyError> warnings;
           if (treatErrorsAsWarnings) {
@@ -1207,19 +1218,7 @@ public final class SoyFileSet {
    * builders.
    */
   private ParseResult parseWithoutOptimizingOrDesugaringHtml() {
-    // N.B. we do not run the optimizer here for 2 reasons:
-    // 1. it would just waste time, since we are not running code generation the optimization
-    //    work doesn't help anything
-    // 2. it potentially removes metadata from the tree by precalculating expressions. For
-    //     example, trivial print nodes are evaluated, which can remove globals from the tree,
-    //     but the gencode needs to find these so that their proto types can be used to bootstrap
-    //     development mode compilation.
-    return parse(
-        passManagerBuilder()
-            .optimize(false)
-            // Don't desugar, this is a bit of a waste of time and it destroys type
-            // information about @state parameters
-            .desugarHtmlNodes(false));
+    return parse(passManagerBuilderWithoutOptimizingOrDesugaringHtml());
   }
 
   // Parse the current file set.
@@ -1266,6 +1265,21 @@ public final class SoyFileSet {
                 soySourceFunctions,
                 soyMethods,
                 errorReporter));
+  }
+
+  private PassManager.Builder passManagerBuilderWithoutOptimizingOrDesugaringHtml() {
+    // N.B. we do not run the optimizer here for 2 reasons:
+    // 1. it would just waste time, since we are not running code generation the optimization
+    //    work doesn't help anything
+    // 2. it potentially removes metadata from the tree by precalculating expressions. For
+    //     example, trivial print nodes are evaluated, which can remove globals from the tree,
+    //     but the gencode needs to find these so that their proto types can be used to bootstrap
+    //     development mode compilation.
+    return passManagerBuilder()
+        .optimize(false)
+        // Don't desugar, this is a bit of a waste of time and it destroys type
+        // information about @state parameters
+        .desugarHtmlNodes(false);
   }
 
   /**
