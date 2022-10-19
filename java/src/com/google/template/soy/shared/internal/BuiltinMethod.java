@@ -217,7 +217,7 @@ public enum BuiltinMethod implements SoyMethod {
 
     @Override
     ImmutableCollection<String> expandMethodNames(SoyType baseType, List<SoyType> argTypes) {
-      return expandMethodNamesForProto(baseType, BuiltinMethod::fieldToGetMethodName);
+      return expandMethodNamesForProto(baseType, BuiltinMethod::protoFieldToGetMethodName);
     }
   },
 
@@ -389,7 +389,7 @@ public enum BuiltinMethod implements SoyMethod {
     return "has" + CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_CAMEL, fieldName);
   }
 
-  private static String fieldToGetMethodName(String fieldName) {
+  public static String protoFieldToGetMethodName(String fieldName) {
     return "get" + CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_CAMEL, fieldName);
   }
 
