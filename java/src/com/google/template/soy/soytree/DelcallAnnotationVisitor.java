@@ -124,10 +124,9 @@ public class DelcallAnnotationVisitor extends AbstractSoyNodeVisitor<ImmutableSe
           && ((TemplateType) node.getType()).isModifiable()) {
         String legacyDeltemplateNamespace =
             ((TemplateType) node.getType()).getLegacyDeltemplateNamespace();
-        modTemplates.add(
-            !legacyDeltemplateNamespace.isEmpty()
-                ? legacyDeltemplateNamespace
-                : node.getResolvedName());
+        if (!legacyDeltemplateNamespace.isEmpty()) {
+          modTemplates.add(legacyDeltemplateNamespace);
+        }
       }
     }
 

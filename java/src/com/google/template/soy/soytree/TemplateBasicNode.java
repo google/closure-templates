@@ -194,24 +194,45 @@ public final class TemplateBasicNode extends TemplateNode {
   }
 
   /**
-   * The name to use for the @hassoydeltemplate annotation. For modifiable templates, return its own
-   * name or legacy namespace. For modifying templates, return the name or legacy namespace of the
-   * template being modified. Otherwise, return null (ie, don't emit @hassoydeltemplate).
+   * The name to use for the @mods JS annotation. For modifying templates, return the namespace of
+   * the template being modified, as long as it doesn't have legacydeltemplatenamespace. Otherwise,
+   * return null (ie, don't emit @mods).
    */
   @Nullable
-  // TODO(b/233903480): Remove these once we migrate to @mods
+  public String moddedSoyNamespace() {
+    if (getModifiesExpr() != null
+        && getModName() != null
+        && getModifiesExpr().getRoot() instanceof TemplateLiteralNode) {
+      TemplateLiteralNode templateLiteralNode = (TemplateLiteralNode) getModifiesExpr().getRoot();
+      SoyType nodeType = templateLiteralNode.getType();
+      if ((nodeType instanceof TemplateType)
+          && ((TemplateType) nodeType).getLegacyDeltemplateNamespace().isEmpty()) {
+        return templateLiteralNode
+            .getResolvedName()
+            .substring(0, templateLiteralNode.getResolvedName().lastIndexOf("."));
+      }
+    }
+    return null;
+  }
+
+  /**
+   * The name to use for the legacy @hassoydeltemplate annotation. For modifiable templates with,
+   * legacydeltemplatenamespace, return its own legacy namespace. For modifying templates, return
+   * the legacy namespace of the template being modified. Otherwise, return null (ie, don't emit
+   * hassoydeltemplate).
+   */
+  @Nullable
+  // TODO(b/233903480): Remove these once all deltemplates and delcalls are removed.
   public String deltemplateAnnotationName() {
     if (isModifiable()) {
-      return !getLegacyDeltemplateNamespace().isEmpty()
-          ? getLegacyDeltemplateNamespace()
-          : getTemplateName();
+      return !getLegacyDeltemplateNamespace().isEmpty() ? getLegacyDeltemplateNamespace() : null;
     }
     if (getModifiesExpr() != null && getModifiesExpr().getRoot() instanceof TemplateLiteralNode) {
       TemplateLiteralNode templateLiteralNode = (TemplateLiteralNode) getModifiesExpr().getRoot();
       SoyType nodeType = templateLiteralNode.getType();
       if (nodeType instanceof TemplateType) {
         String legacyNamespace = ((TemplateType) nodeType).getLegacyDeltemplateNamespace();
-        return !legacyNamespace.isEmpty() ? legacyNamespace : templateLiteralNode.getResolvedName();
+        return !legacyNamespace.isEmpty() ? legacyNamespace : null;
       }
     }
     return null;
