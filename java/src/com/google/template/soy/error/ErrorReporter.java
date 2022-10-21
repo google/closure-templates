@@ -140,6 +140,11 @@ public abstract class ErrorReporter {
     return getCurrentNumberOfErrors() > impl.errorsSoFar;
   }
 
+  public final ImmutableList<SoyError> getErrorsSince(Checkpoint checkpoint) {
+    ImmutableList<SoyError> allErrors = getErrors();
+    return allErrors.subList(checkpoint.errorsSoFar, allErrors.size());
+  }
+
   /** Returns true if any errors have been reported. */
   public final boolean hasErrors() {
     return getCurrentNumberOfErrors() != 0;

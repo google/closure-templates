@@ -44,6 +44,8 @@ public abstract class NamedFunctionDeclaration extends Statement {
 
   abstract boolean isExported();
 
+  abstract boolean isDeclaration();
+
   public static NamedFunctionDeclaration create(
       String name,
       ParamDecls params,
@@ -52,7 +54,7 @@ public abstract class NamedFunctionDeclaration extends Statement {
       ImmutableList<Statement> bodyStmts,
       boolean isExported) {
     return new AutoValue_NamedFunctionDeclaration(
-        name, params, returnType, Optional.of(jsDoc), bodyStmts, isExported);
+        name, params, returnType, Optional.of(jsDoc), bodyStmts, isExported, false);
   }
 
   public static NamedFunctionDeclaration create(
@@ -62,7 +64,13 @@ public abstract class NamedFunctionDeclaration extends Statement {
       ImmutableList<Statement> bodyStmts,
       boolean isExported) {
     return new AutoValue_NamedFunctionDeclaration(
-        name, params, returnType, /* jsDoc= */ Optional.empty(), bodyStmts, isExported);
+        name, params, returnType, /* jsDoc= */ Optional.empty(), bodyStmts, isExported, false);
+  }
+
+  public static NamedFunctionDeclaration declaration(
+      String name, ParamDecls params, String returnType, JsDoc jsDoc) {
+    return new AutoValue_NamedFunctionDeclaration(
+        name, params, returnType, Optional.of(jsDoc), ImmutableList.of(), true, true);
   }
 
   @Override
@@ -74,17 +82,24 @@ public abstract class NamedFunctionDeclaration extends Statement {
     if (isExported()) {
       ctx.append("export ");
     }
+    if (isDeclaration()) {
+      ctx.append("declare ");
+    }
     ctx.append("function " + name() + "(");
     ctx.append(params().getCode());
-    ctx.append("): " + returnType() + " ");
-
-    ctx.enterBlock();
-    ctx.endLine();
-    for (Statement stmt : bodyStmts()) {
-      ctx.appendAll(stmt);
+    ctx.append("): " + returnType());
+    if (!isDeclaration()) {
+      ctx.append(" ");
+      ctx.enterBlock();
       ctx.endLine();
+      for (Statement stmt : bodyStmts()) {
+        ctx.appendAll(stmt);
+        ctx.endLine();
+      }
+      ctx.close();
+    } else {
+      ctx.append(";");
     }
-    ctx.close();
     ctx.endLine();
   }
 
