@@ -50,39 +50,13 @@ goog.require('soy');
  * @template K, V
  */
 class SoyMap {
-  constructor() {
-    /**
-     * The number of entries in the map.
-     *
-     * This should be treated as a readonly property.
-     * @public {number}
-     */
-    this.size;
-  }
+  constructor() {}
 
   /**
    * @param {K} k
    * @return {V|undefined}
    */
   get(k) {}
-
-  /**
-   * @param {K} k
-   * @param {V} v
-   * @return {!SoyMap<K, V>}
-   */
-  set(k, v) {}
-
-  /**
-   * @param {K} k
-   * @return {boolean} Whether any entry with this key was deleted.
-   */
-  delete(k) {}
-
-  /**
-   * Deletes all entries from the map.
-   */
-  clear() {}
 
   /**
    * @return {!IteratorIterable<K>} An iterator that contains the keys for each
