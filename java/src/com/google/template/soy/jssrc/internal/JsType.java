@@ -216,6 +216,11 @@ public final class JsType {
   }
 
   /** Returns a JS type for idom with strict rules. */
+  public static JsType forIncrementalDomGetters(SoyType soyType) {
+    return forSoyType(soyType, JsTypeKind.IDOMSRC, /* isStrict= */ true);
+  }
+
+  /** Returns a JS type for idom with strict rules. */
   public static JsType forIncrementalDomState(SoyType soyType) {
     return forSoyType(soyType, JsTypeKind.IDOMSRC, /* isStrict= */ true);
   }
