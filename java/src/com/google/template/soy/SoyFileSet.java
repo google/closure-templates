@@ -1087,6 +1087,7 @@ public final class SoyFileSet {
               parse(
                   passManagerBuilder()
                       .desugarHtmlNodes(false)
+                      .allowUnknownJsGlobals()
                       .desugarIdomFeatures(false)
                       .validateJavaMethods(false));
           throwIfErrorsPresent();
