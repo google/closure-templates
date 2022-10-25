@@ -63,6 +63,9 @@ final class CheckModifiableTemplatesPass implements CompilerFilePass {
           "The \"modifies\" expression could not be statically resolved to a valid template "
               + "literal.");
 
+  private static final SoyErrorKind MODIFIES_NON_MODIFIABLE =
+      SoyErrorKind.of("Template in \"modifies\" expression must have `modifiable=\"true\"` set.");
+
   private final ErrorReporter errorReporter;
 
   CheckModifiableTemplatesPass(ErrorReporter errorReporter) {
@@ -99,7 +102,13 @@ final class CheckModifiableTemplatesPass implements CompilerFilePass {
           templateBasicNode.getModifiesExpr().getSourceLocation(), UNRESOLVED_MODIFIES_EXPR);
       return;
     }
-    SoyType modifiedTemplateType = templateBasicNode.getModifiesExpr().getRoot().getType();
+    TemplateType modifiedTemplateType =
+        (TemplateType) templateBasicNode.getModifiesExpr().getRoot().getType();
+    if (!modifiedTemplateType.isModifiable()) {
+      errorReporter.report(
+          templateBasicNode.getModifiesExpr().getSourceLocation(), MODIFIES_NON_MODIFIABLE);
+      return;
+    }
     SoyType modifyingType = TemplateMetadata.buildTemplateType(templateBasicNode);
     if (!modifyingType.isAssignableFromStrict(modifiedTemplateType)) {
       errorReporter.report(
