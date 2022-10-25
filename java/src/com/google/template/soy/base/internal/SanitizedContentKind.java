@@ -94,7 +94,11 @@ public enum SanitizedContentKind {
   }
 
   public boolean isHtml() {
-    return this == HTML || this == HTML_ELEMENT;
+    return this == HTML || isHtmlElement();
+  }
+
+  public boolean isHtmlElement() {
+    return this == HTML_ELEMENT;
   }
 
   /** Returns whether the sanitized types are equal. */
