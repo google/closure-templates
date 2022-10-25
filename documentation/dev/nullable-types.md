@@ -25,10 +25,10 @@ import {Person} from 'foo/bar.proto';
   {if $person}
     // Within this if-block, $person can never be null, so its type
     // is now ‘Person’, not ‘(Person|null)’
-    {$person.name}
+    {$person.getName()}
   {else}
     // Compile-time error: $person can only be null at this point.
-    {$person.name}
+    {$person.getName()}
   {/if}
 {/template}
 ```

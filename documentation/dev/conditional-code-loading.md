@@ -166,8 +166,8 @@ import {renderContent} from 'text.soy';
 {template render}
   {@param data: my.proto.Content}
   ...
-  {call renderContent variant="$data.contentType"}
-    {param content : $data.content /}
+  {call renderContent variant="$data.getContentType()"}
+    {param content : $data.getContent() /}
   {/call}
   ...
 {/template}
