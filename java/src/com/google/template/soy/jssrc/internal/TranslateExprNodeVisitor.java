@@ -885,8 +885,9 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
                 : protoBytesPackToByteStringFunction().call(fieldValue);
       }
       if (fieldDesc.getType() == FieldDescriptor.Type.ENUM && !fieldDesc.isRepeated()) {
-        fieldValue =
-            fieldValue.castAs("!" + ProtoUtils.calculateJsEnumName(fieldDesc.getEnumType()));
+        // TODO(b/255452370): no cast should be necessary, but soy eagerly desugars enum literals
+        // into numeric literals which drops type information.
+        fieldValue = fieldValue.castAs("?");
       }
 
       if (fieldDesc.isExtension()) {

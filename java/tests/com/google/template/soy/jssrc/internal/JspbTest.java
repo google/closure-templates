@@ -159,14 +159,13 @@ public final class JspbTest {
     assertThatSoyExpr("ExampleExtendable(someEnum: SomeEnum.SECOND)")
         .withProtoImports(DESCRIPTORS)
         .generatesCode(
-            "new proto.example.ExampleExtendable().setSomeEnum(/** @type {!proto.example.SomeEnum}"
-                + " */ (2));");
+            "new proto.example.ExampleExtendable().setSomeEnum(/** @type {?}" + " */ (2));");
 
     assertThatSoyExpr(expr("ExampleExtendable(someEnum: $e)").withParam("{@param e: SomeEnum}"))
         .withProtoImports(DESCRIPTORS)
         .generatesCode(
             "new proto.example.ExampleExtendable().setSomeEnum(/** @type"
-                + " {!proto.example.SomeEnum} */ (opt_data.e));");
+                + " {?} */ (opt_data.e));");
   }
 
   @Test
