@@ -16,6 +16,7 @@
 package com.google.template.soy.passes;
 
 import static com.google.common.collect.ImmutableSetMultimap.toImmutableSetMultimap;
+import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.joining;
 
 import com.google.common.collect.ImmutableList;
@@ -25,9 +26,11 @@ import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.internal.exemptions.NamespaceExemptions;
+import com.google.template.soy.passes.CompilerFileSetPass.Result;
 import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.TemplateMetadata;
+import java.util.TreeSet;
 import java.util.function.Supplier;
 
 /**
@@ -45,6 +48,8 @@ final class BanDuplicateNamespacesPass implements CompilerFileSetPass {
       SoyErrorKind.of(
           "Found another file ''{0}'' with the same namespace.  All files should have unique"
               + " namespaces. This will soon become an error.");
+  private static final SoyErrorKind NAMESPACE_COLLISION =
+      SoyErrorKind.of("Template ''{0}'' collides with namespace ''{1}'' declared in ''{2}''.");
   private final ErrorReporter errorReporter;
   private final Supplier<FileSetMetadata> fileSetTemplateRegistry;
 
@@ -80,6 +85,24 @@ final class BanDuplicateNamespacesPass implements CompilerFileSetPass {
               otherFiles);
         }
       }
+    }
+
+    // Check for template/namespace collisions by sorting all template names. If a template matches
+    // all or some of a namespace, they will be adjacent in the sorted set.
+    TreeSet<TemplateMetadata> allTemplatesSortedByName =
+        new TreeSet<>(comparing(TemplateMetadata::getTemplateName));
+    allTemplatesSortedByName.addAll(fileSetTemplateRegistry.get().getAllTemplates());
+    TemplateMetadata last = null;
+    for (TemplateMetadata next : allTemplatesSortedByName) {
+      if (last != null && next.getTemplateName().startsWith(last.getTemplateName() + ".")) {
+        errorReporter.report(
+            last.getSourceLocation(),
+            NAMESPACE_COLLISION,
+            last.getTemplateName(),
+            namespace(next),
+            next.getSourceLocation().getFilePath().toString());
+      }
+      last = next;
     }
     return Result.CONTINUE;
   }
