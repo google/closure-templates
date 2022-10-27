@@ -426,8 +426,13 @@ const $$getMapKeys = function(map) {
  * Returns the argument if it is not null.
  *
  * @param {T} val The value to check
- * @return {T} val if is isn't null
+ * @return {T_NOT_UNDEFINED} val if is isn't null
  * @template T
+ * @template T_NOT_UNDEFINED :=
+ *     cond(isUnknown(T), unknown(),
+ *       mapunion(T, (X) =>
+ *         cond(eq(X, 'undefined'), none(), cond(eq(X, 'null'), none(), X))))
+ * =:
  */
 const $$checkNotNull = function(val) {
   if (val == null) {

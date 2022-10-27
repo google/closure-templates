@@ -1007,12 +1007,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
   }
 
   private Expression assertNonNull(ExprNode expr) {
-    return SOY_CHECK_NOT_NULL
-        .call(visit(expr))
-        // It is impossible to make a Closure template function that takes T|null and returns T.  To
-        // avoid JSCompiler errors when passing checkNotNull to a function that doesn't accept null,
-        // we manually cast away the nullness.
-        .castAs(jsTypeFor(SoyTypes.tryRemoveNull(expr.getType())).typeExpr());
+    return SOY_CHECK_NOT_NULL.call(visit(expr));
   }
 
   private Expression visitIsSetFunction(FunctionNode node) {
