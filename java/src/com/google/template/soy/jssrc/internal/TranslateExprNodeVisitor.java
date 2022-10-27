@@ -405,9 +405,15 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     Expression map = Expression.constructMap();
     if (node.getType() != MapType.EMPTY_MAP) {
       MapType mapType = (MapType) node.getType();
-      String keyTypeExpr = JsType.forJsSrc(mapType.getKeyType()).typeExpr();
-      String valueTypeExpr = JsType.forJsSrc(mapType.getValueType()).typeExpr();
-      map = map.castAs(String.format("!Map<%s, %s>", keyTypeExpr, valueTypeExpr));
+      JsType keyType = JsType.forJsSrc(mapType.getKeyType());
+      JsType valueType = JsType.forJsSrc(mapType.getValueType());
+      map =
+          map.castAs(
+              String.format("!Map<%s, %s>", keyType.typeExpr(), valueType.typeExpr()),
+              ImmutableSet.<GoogRequire>builder()
+                  .addAll(keyType.getGoogRequires())
+                  .addAll(valueType.getGoogRequires())
+                  .build());
     }
 
     // Populate the map.
