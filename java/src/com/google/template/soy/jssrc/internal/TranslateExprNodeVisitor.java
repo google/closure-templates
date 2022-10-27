@@ -256,7 +256,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     if (varDefn instanceof TemplateParam && ((TemplateParam) varDefn).isImplicit()) {
       // implicit params are not in the type declaration for the opt_data parameter, so we need to
       // cast as ? to access implicit params
-      source = source.castAs("?");
+      source = source.castAsUnknown();
     }
     return source.dotAccess(paramName);
   }
@@ -577,7 +577,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
             : accumulator.bracketAccess(
                 // The key type may not match JsCompiler's type system (passing number as enum, or
                 // nullable proto field).  I could instead cast this to the map's key type.
-                visit(keyNode).castAs("?"), nullSafe, assertNonNull); // vanilla bracket access
+                visit(keyNode).castAsUnknown(), nullSafe, assertNonNull); // vanilla bracket access
       case METHOD_CALL_NODE:
         MethodCallNode methodCall = (MethodCallNode) dataAccessNode;
         return genCodeForMethodCall(accumulator, methodCall, nullSafe, assertNonNull);
@@ -893,7 +893,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
       if (fieldDesc.getType() == FieldDescriptor.Type.ENUM && !fieldDesc.isRepeated()) {
         // TODO(b/255452370): no cast should be necessary, but soy eagerly desugars enum literals
         // into numeric literals which drops type information.
-        fieldValue = fieldValue.castAs("?");
+        fieldValue = fieldValue.castAsUnknown();
       }
 
       if (fieldDesc.isExtension()) {

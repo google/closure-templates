@@ -45,6 +45,7 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.sanitizedContentO
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Streams;
 import com.google.errorprone.annotations.CheckReturnValue;
 import com.google.template.soy.base.SourceFilePath;
@@ -629,7 +630,8 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
                         fieldAliasExp.tripleEquals(Expression.LITERAL_UNDEFINED),
                         assign(fieldAliasExp, JsRuntime.FREEZE.call(translateExpr(node.getExpr()))))
                     .build(),
-                returnValue(fieldAliasExp.castAs(varType.typeExpr()))));
+                // TODO(b/255978614): add requires
+                returnValue(fieldAliasExp.castAsNoRequire(varType.typeExpr()))));
 
     if (jsSrcOptions.shouldGenerateGoogModules()) {
       declarations.add(
@@ -1161,7 +1163,9 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   protected final Statement redeclareIjData() {
     GoogRequire googSoy = jsSrcOptions.shouldGenerateGoogModules() ? GOOG_SOY_ALIAS : GOOG_SOY;
     return VariableDeclaration.builder(StandardNames.DOLLAR_IJDATA)
-        .setRhs(id(StandardNames.OPT_IJDATA).castAs("!" + googSoy.alias() + ".IjData"))
+        .setRhs(
+            id(StandardNames.OPT_IJDATA)
+                .castAs("!" + googSoy.alias() + ".IjData", ImmutableSet.of(googSoy)))
         .build();
   }
 
@@ -1235,7 +1239,8 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         // this cast, access to this variable can trigger JS conformance errors
         // due to unknown type.
         if (!stateVar.type().equals(stateVar.defaultValue().getType())) {
-          expr = expr.castAs(JsType.forJsSrc(stateVar.type()).typeExpr());
+          // TODO(b/255978614): add requires
+          expr = expr.castAsNoRequire(JsType.forJsSrc(stateVar.type()).typeExpr());
         }
         bodyStatements.add(VariableDeclaration.builder(stateVar.name()).setRhs(expr).build());
       }

@@ -417,7 +417,11 @@ public abstract class Expression extends CodeChunk {
     return Call.create(this, ImmutableList.copyOf(args));
   }
 
-  public final Expression castAs(String typeExpression) {
+  public final Expression castAsUnknown() {
+    return Cast.create(this, "?");
+  }
+
+  public final Expression castAsNoRequire(String typeExpression) {
     return Cast.create(this, typeExpression);
   }
 

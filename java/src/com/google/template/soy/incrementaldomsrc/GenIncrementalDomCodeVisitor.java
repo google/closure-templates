@@ -268,7 +268,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       if (isConstantExpr(stateVar.defaultValue())) {
         rhsValue = translateExpr(stateVar.defaultValue());
       } else {
-        rhsValue = Expression.LITERAL_UNDEFINED.castAs("?");
+        rhsValue = Expression.LITERAL_UNDEFINED.castAsUnknown();
       }
       stateVarInitializations.add(
           Statement.assign(
@@ -458,7 +458,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
           Statement.assign(
               OPT_DATA,
               OPT_DATA.or(
-                  EMPTY_OBJECT_LITERAL.castAs(objectParamName),
+                  EMPTY_OBJECT_LITERAL.castAsNoRequire(objectParamName),
                   templateTranslationContext.codeGenerator())));
     }
     if (isPositionalStyle && node instanceof TemplateElementNode) {

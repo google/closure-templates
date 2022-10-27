@@ -420,7 +420,7 @@ public class GenCallCodeUtils {
     // ------ Cases 2 and 3: Additional params with and without original data to pass ------
     if (dataToPass.isPresent()) {
       if (params.isEmpty()) {
-        return dataToPass.get().castAs("?");
+        return dataToPass.get().castAsUnknown();
       }
       // No need to cast; assignDefaults already returns {?}.
       return SOY_ASSIGN_DEFAULTS.call(Expression.objectLiteral(params), dataToPass.get());
@@ -429,7 +429,7 @@ public class GenCallCodeUtils {
         return LITERAL_NULL;
       }
       // Ignore inconsistencies between Closure Compiler & Soy type systems (eg, proto nullability).
-      return Expression.objectLiteral(params).castAs("?");
+      return Expression.objectLiteral(params).castAsUnknown();
     }
   }
 
