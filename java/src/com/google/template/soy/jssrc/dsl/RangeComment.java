@@ -20,22 +20,27 @@ import com.google.common.base.Preconditions;
 import com.google.errorprone.annotations.Immutable;
 import java.util.function.Consumer;
 
-/** Represents a "//..." line comment. */
+/** Represents a "/*... * /" range comment. */
 @AutoValue
 @Immutable
-public abstract class LineComment extends Statement {
+public abstract class RangeComment extends Statement {
 
   abstract String comment();
 
-  public static LineComment create(String comment) {
-    Preconditions.checkArgument(!comment.contains("\n"));
-    return new AutoValue_LineComment(comment);
+  abstract boolean inline();
+
+  public static RangeComment create(String comment, boolean inline) {
+    Preconditions.checkArgument(!comment.contains("*/"));
+    return new AutoValue_RangeComment(comment, inline);
   }
 
   @Override
   void doFormatInitialStatements(FormattingContext ctx) {
-    ctx.append("// " + comment());
-    ctx.endLine();
+    String c = comment();
+    ctx.append("/*" + (c.startsWith("\n") ? "" : " ") + c + (c.endsWith("\n") ? "" : " ") + "*/");
+    if (!inline()) {
+      ctx.endLine();
+    }
   }
 
   @Override

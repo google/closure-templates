@@ -20,6 +20,7 @@ import static java.util.stream.Collectors.joining;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
+import java.util.List;
 
 /**
  * Represent all of a function's params. Formats them as: "{amount, name = ‘Vesper’} : {amount:
@@ -33,8 +34,8 @@ public abstract class ParamDecls {
 
   abstract ImmutableList<ParamDecl> params();
 
-  public static ParamDecls create(ImmutableList<ParamDecl> params) {
-    return new AutoValue_ParamDecls(params);
+  public static ParamDecls create(List<ParamDecl> params) {
+    return new AutoValue_ParamDecls(ImmutableList.copyOf(params));
   }
 
   public String getCode() {

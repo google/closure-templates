@@ -33,10 +33,11 @@ import java.util.Optional;
  */
 final class ErrorReporterImpl extends ErrorReporter {
 
+  private static final SourceSnippetPrinter snippetPrinter = new SourceSnippetPrinter();
+
   private final List<RecordedError> reports = new ArrayList<>();
   private int errorCount;
   private final ImmutableMap<SourceFilePath, SoyFileSupplier> filePathsToSuppliers;
-  private static final SourceSnippetPrinter snippetPrinter = new SourceSnippetPrinter();
 
   ErrorReporterImpl(ImmutableMap<SourceFilePath, SoyFileSupplier> filePathsToSuppliers) {
     this.filePathsToSuppliers = filePathsToSuppliers;
