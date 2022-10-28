@@ -1175,24 +1175,7 @@ public final class SoyFileSet {
   public AnalysisResult compileForAnalysis(boolean treatErrorsAsWarnings, AstRewrites astRewrites) {
     return entryPoint(
         () -> {
-          ParseResult result =
-              parse(
-                  passManagerBuilder()
-                      // the optimizer mutates the AST heavily which inhibits certain source
-                      // analysis
-                      // rules.
-                      .optimize(false)
-                      .astRewrites(astRewrites)
-                      // skip adding extra attributes
-                      .addHtmlAttributesForDebugging(false)
-                      // skip the autoescaper
-                      .insertEscapingDirectives(false)
-                      .desugarHtmlNodes(false)
-                      // TODO(lukes): This is needed for kythe apparently
-                      .allowUnknownGlobals()
-                      .allowUnknownJsGlobals()
-                      .validateJavaMethods(false),
-                  typeRegistry);
+          ParseResult result = parse(passManagerBuilderForAnalysis(astRewrites));
           ImmutableList<SoyError> warnings;
           if (treatErrorsAsWarnings) {
             // we are essentially ignoring errors
@@ -1212,6 +1195,23 @@ public final class SoyFileSet {
               result.cssRegistry(),
               warnings);
         });
+  }
+
+  /** Parses the file set with the options we need for analysis. */
+  private PassManager.Builder passManagerBuilderForAnalysis(AstRewrites astRewrites) {
+    return passManagerBuilder()
+        // the optimizer mutates the AST heavily which inhibits certain source analysis rules.
+        .optimize(false)
+        .astRewrites(astRewrites)
+        // skip adding extra attributes
+        .addHtmlAttributesForDebugging(false)
+        // skip the autoescaper
+        .insertEscapingDirectives(false)
+        .desugarHtmlNodes(false)
+        // TODO(lukes): This is needed for kythe apparently
+        .allowUnknownGlobals()
+        .allowUnknownJsGlobals()
+        .validateJavaMethods(false);
   }
 
   /**
