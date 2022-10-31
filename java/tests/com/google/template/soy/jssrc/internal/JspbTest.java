@@ -97,7 +97,7 @@ public final class JspbTest {
 
   @Test
   public void testProto3Fields_int() {
-    assertThatSoyExpr(expr("$msg.intField * 5").withParam("{@param msg : Proto3Message}"))
+    assertThatSoyExpr(expr("$msg.getIntField() * 5").withParam("{@param msg : Proto3Message}"))
         .withProtoImports(DESCRIPTORS)
         .generatesCode("opt_data.msg.getIntField() * 5;")
         .withPrecedence(TIMES);
@@ -106,7 +106,8 @@ public final class JspbTest {
   @Test
   public void testProto3Fields_oneof() {
     assertThatSoyExpr(
-            expr("$msg.anotherMessageField.field * 5").withParam("{@param msg: Proto3Message}"))
+            expr("$msg.anotherMessageField.getField() * 5")
+                .withParam("{@param msg: Proto3Message}"))
         .withProtoImports(DESCRIPTORS)
         .generatesCode("opt_data.msg.getAnotherMessageField().getField() * 5;")
         .withPrecedence(TIMES);

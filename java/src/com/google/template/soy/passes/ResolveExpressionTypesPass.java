@@ -40,6 +40,7 @@ import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Table;
+import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
@@ -286,6 +287,10 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
   private static final SoyErrorKind PROTO_FIELD_DOES_NOT_EXIST =
       SoyErrorKind.of(
           "Proto field ''{0}'' does not exist in {1}.{2}", StyleAllowance.NO_PUNCTUATION);
+  private static final SoyErrorKind GETTER_ONLY_FIELD_FOR_PROTO_TYPE =
+      SoyErrorKind.of(
+          "Proto field ''{0}'' for proto type {1} can only be accessed via ''{2}()''.",
+          StyleAllowance.NO_PUNCTUATION);
   private static final SoyErrorKind PROTO_MISSING_REQUIRED_FIELD =
       SoyErrorKind.of("Missing required proto field ''{0}''.");
   private static final SoyErrorKind PROTO_NULL_ARG_TYPE =
@@ -2376,6 +2381,7 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
             SoyProtoType protoType = (SoyProtoType) baseType;
             SoyType fieldType = protoType.getFieldType(fieldName);
             if (fieldType != null) {
+              checkProtoFieldAccess(protoType, fieldName, sourceLocation);
               return fieldType;
             } else {
               String extraErrorMessage =
@@ -2469,6 +2475,24 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
         case FUNCTION:
       }
       throw new AssertionError("unhandled kind: " + baseType.getKind());
+    }
+
+    private void checkProtoFieldAccess(
+        SoyProtoType baseType, String fieldName, SourceLocation sourceLocation) {
+      FieldDescriptor fd = baseType.getFieldDescriptor(fieldName);
+      if ((!fd.hasPresence() && !fd.isRepeated())
+      ) {
+        // Scalar fields without presence are not allowed to be read using the field access
+        // syntax (only readable via getter method call). The field access syntax means
+        // nullish return for scalar fields, which cannot be supported if there's no
+        // presence semantics.
+        errorReporter.report(
+            sourceLocation,
+            GETTER_ONLY_FIELD_FOR_PROTO_TYPE,
+            fieldName,
+            baseType,
+            BuiltinMethod.protoFieldToGetMethodName(fieldName));
+      }
     }
 
     /** Given a base type and an item key type, compute the item value type. */

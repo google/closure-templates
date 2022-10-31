@@ -293,31 +293,32 @@ public final class ProtoSupportTest {
   @Test
   public void testProto3Fields_int() {
     CompiledTemplateSubject tester =
-        assertThatTemplateBody("{@param msg : Proto3Message}", "{$msg.intField * 5}");
+        assertThatTemplateBody("{@param msg : Proto3Message}", "{$msg.getIntField() * 5}");
     tester.rendersAs("10", ImmutableMap.of("msg", Proto3Message.newBuilder().setIntField(2)));
     tester.rendersAs("0", ImmutableMap.of("msg", Proto3Message.getDefaultInstance()));
   }
 
   @Test
   public void testProto3Fields_message() {
-    assertThatTemplateBody("{@param msg : Proto3Message}", "{$msg.intField * 5}")
+    assertThatTemplateBody("{@param msg : Proto3Message}", "{$msg.getIntField() * 5}")
         .rendersAs("10", ImmutableMap.of("msg", Proto3Message.newBuilder().setIntField(2)));
   }
 
   @Test
   public void testProto3Fields_oneof() {
-    assertThatTemplateBody("{@param msg: Proto3Message}", "{$msg.anotherMessageField.field * 5}")
+    assertThatTemplateBody(
+            "{@param msg: Proto3Message}", "{$msg.anotherMessageField.getField() * 5}")
         .rendersAs(
             "10",
             ImmutableMap.of(
                 "msg",
                 Proto3Message.newBuilder()
                     .setAnotherMessageField(Proto3Message.InnerMessage.newBuilder().setField(2))));
-    assertThatTemplateBody("{@param msg: Proto3Message}", "{$msg.anotherIntField * 5}")
+    assertThatTemplateBody("{@param msg: Proto3Message}", "{$msg.getAnotherIntField() * 5}")
         .rendersAs("10", ImmutableMap.of("msg", Proto3Message.newBuilder().setAnotherIntField(2)))
         // missing int from a oneof returns 0
         .rendersAs("0", ImmutableMap.of("msg", Proto3Message.getDefaultInstance()));
-    assertThatTemplateBody("{@param msg: Proto3Message}", "{$msg.anotherMessageField.field}")
+    assertThatTemplateBody("{@param msg: Proto3Message}", "{$msg.anotherMessageField.getField()}")
         .failsToRenderWith(
             NullPointerException.class, ImmutableMap.of("msg", Proto3Message.getDefaultInstance()));
   }
@@ -329,7 +330,7 @@ public final class ProtoSupportTest {
     // being parsed.
     assertThatTemplateBody(
             "{@param msg: Proto3Message}",
-            "{$msg.anEnum} {$msg.anEnumsList}"
+            "{$msg.getAnEnum()} {$msg.anEnumsList}"
             )
         .rendersAs(
             "11 [12, 13]"

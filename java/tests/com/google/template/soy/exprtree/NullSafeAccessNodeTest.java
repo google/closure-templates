@@ -37,12 +37,12 @@ public class NullSafeAccessNodeTest {
   @Test
   public void testSimpleToSourceString() {
     assertThat(
-            new ExpressionParser("$foo?.someString")
+            new ExpressionParser("$foo?.stringField")
                 .withProto(Foo.getDescriptor())
                 .withParam("foo", "Foo")
                 .parse()
                 .toSourceString())
-        .isEqualTo("$foo?.someString");
+        .isEqualTo("$foo?.stringField");
 
     assertThat(
             new ExpressionParser("$list?[$index]")
@@ -151,7 +151,7 @@ public class NullSafeAccessNodeTest {
   @Test
   public void testSimpleAst() {
     ExprNode expr =
-        new ExpressionParser("$foo?.someString")
+        new ExpressionParser("$foo?.stringField")
             .withProto(Foo.getDescriptor())
             .withParam("foo", "Foo")
             .parse();
@@ -160,9 +160,9 @@ public class NullSafeAccessNodeTest {
     assertThat(exprString)
         .isEqualTo(
             NEWLINE.join(
-                "NULL_SAFE_ACCESS_NODE: $foo?.someString",
+                "NULL_SAFE_ACCESS_NODE: $foo?.stringField",
                 "  VAR_REF_NODE: $foo",
-                "  FIELD_ACCESS_NODE: (null).someString",
+                "  FIELD_ACCESS_NODE: (null).stringField",
                 "    GROUP_NODE: (null)",
                 "      NULL_NODE: null",
                 ""));
