@@ -115,8 +115,13 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   }
 
   @Override
-  protected JsType getJsTypeForParamTypeCheck(SoyType paramType) {
+  protected JsType getJsTypeForParam(SoyType paramType) {
     return JsType.forIncrementalDom(paramType);
+  }
+
+  @Override
+  protected JsType getJsTypeForParamTypeCheck(SoyType paramType) {
+    return JsType.forIncrementalDomTypeChecks(paramType);
   }
 
   @Override

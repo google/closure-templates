@@ -1472,7 +1472,20 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
               generator);
       if (isThisParamPositional) {
         if (soyTypeAssertion.isPresent()) {
-          declarations.add(soyTypeAssertion.get().asStatement());
+          // Cast to a better type, if necessary.
+          JsType declType = getJsTypeForParam(paramType);
+          if (jsType.typeExpr().equalsIgnoreCase(declType.typeExpr())) {
+            declarations.add(soyTypeAssertion.get().asStatement());
+          } else {
+            // TODO(b/256679865): rename JS builtins here.
+            declarations.add(
+                Statement.assign(
+                    Expression.id(paramName),
+                    soyTypeAssertion
+                        .get()
+                        .castAs(jsType.typeExpr(), jsType.getGoogRequires())
+                        .asInlineExpr()));
+          }
         }
       } else {
         VariableDeclaration.Builder declarationBuilder =
@@ -1499,9 +1512,14 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     return JsType.forJsSrc(paramType);
   }
 
+  /** Gets the effective type of a positional parameter. */
+  protected JsType getJsTypeForParam(SoyType paramType) {
+    return JsType.forJsSrc(paramType);
+  }
+
   /** Gets the type to use for a parameter in runtime assertions. */
   protected JsType getJsTypeForParamTypeCheck(SoyType paramType) {
-    return getJsTypeForParamForDeclaration(paramType);
+    return JsType.forJsTypeCheck(paramType);
   }
 
   /**
