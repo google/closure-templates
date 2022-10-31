@@ -234,20 +234,20 @@ public final class JsType {
   public static JsType forIncrementalDomGetters(SoyType soyType) {
     // TODO(b/230911572): use only ReadonlyArray here.
     return forSoyType(
-        soyType, JsTypeKind.IDOMSRC, /* isStrict= */ true, ArrayTypeMode.MUTABLE_ARRAY);
+        soyType, JsTypeKind.IDOMSRC, /* isStrict= */ true, ArrayTypeMode.READONLY_ARRAY);
   }
 
   /** Returns a JS type for idom with strict rules. */
   public static JsType forIncrementalDomState(SoyType soyType) {
     // TODO(b/230911572): use only ReadonlyArray here.
     return forSoyType(
-        soyType, JsTypeKind.IDOMSRC, /* isStrict= */ true, ArrayTypeMode.MUTABLE_ARRAY);
+        soyType, JsTypeKind.IDOMSRC, /* isStrict= */ true, ArrayTypeMode.READONLY_ARRAY);
   }
 
   /** Returns a JS type for lit-html with strict rules. */
   public static JsType forLitSrc(SoyType soyType) {
     return forSoyType(
-        soyType, JsTypeKind.LITSRC, /* isStrict= */ true, ArrayTypeMode.MUTABLE_ARRAY);
+        soyType, JsTypeKind.LITSRC, /* isStrict= */ true, ArrayTypeMode.READONLY_ARRAY);
   }
 
   private enum JsTypeKind {
