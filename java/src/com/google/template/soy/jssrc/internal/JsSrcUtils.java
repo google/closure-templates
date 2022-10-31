@@ -26,9 +26,7 @@ import com.google.template.soy.base.internal.BaseUtils;
  */
 public final class JsSrcUtils {
 
-
   private JsSrcUtils() {}
-
 
   /**
    * Builds a version of the given string that has literal Unicode Format characters (Unicode
@@ -37,7 +35,7 @@ public final class JsSrcUtils {
    *
    * @param str The string to escape.
    * @return A version of the given string that has literal Unicode Format characters (Unicode
-   * category "Cf") changed to valid JavaScript Unicode escapes (i.e. &92;u####).
+   *     category "Cf") changed to valid JavaScript Unicode escapes (i.e. &92;u####).
    */
   static String escapeUnicodeFormatChars(String str) {
 
@@ -69,17 +67,16 @@ public final class JsSrcUtils {
     return out.toString();
   }
 
-
   /**
    * Returns true if key is a JavaScript reserved word.
    *
    * <p>TODO(lukes): rename to 'needs quoting for property access' and move callers using this for
    * local variables to use the name generator instead.
    */
-  static boolean isReservedWord(String key) {
+  public static boolean isReservedWord(String key) {
     return LEGACY_JS_RESERVED_WORDS.contains(key);
   }
-  
+
   static final ImmutableSet<String> JS_LITERALS =
       ImmutableSet.of("null", "true", "false", "NaN", "Infinity", "undefined");
 
