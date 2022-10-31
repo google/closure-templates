@@ -98,6 +98,22 @@ Otherwise by default `modifiable` template will render.
 
 Valid types for `usevarianttype` are `string`, `int`, or any proto enum type.
 
+When calling a modifiable template from Javascript, there will be an extra
+parameter `opt_variant` that can be used to pass the variant.
+
+Passing the variant using the Java API is not currently supported. Instead, use
+a wrapper template:
+
+```
+{template myModifiableWrapper}
+  {@param variant: string}
+  {call myModifiable variant="$variant" /}
+{/template}
+
+{template myModifiable modifiable="true" usevarianttype="string"}
+{/template}
+```
+
 ## legacydeltemplatenamespace
 
 To ease migration, the `legacydeltemplatenamespace` can be used to incrementally
