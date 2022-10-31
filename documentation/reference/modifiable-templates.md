@@ -114,6 +114,9 @@ a wrapper template:
 {/template}
 ```
 
+Note that for variants, dependencies need to be manually managed. Read details
+[here](http://go/soy/dev/conditional-code-loading.md#loading-variants).
+
 ## legacydeltemplatenamespace
 
 To ease migration, the `legacydeltemplatenamespace` can be used to incrementally
