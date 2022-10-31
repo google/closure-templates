@@ -29,10 +29,8 @@ import com.google.template.soy.passes.PassManager.AstRewrites;
 import com.google.template.soy.passes.PassManager.PassContinuationRule;
 import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.types.SoyTypeRegistryBuilder;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -193,15 +191,7 @@ public final class PassManagerTest {
   }
 
   private static Iterable<SoyGeneralOptions> allOptions() {
-    List<SoyGeneralOptions> allOptions = new ArrayList<>();
-    for (boolean enableNonNullAssertionOperator : bools()) {
-      SoyGeneralOptions options = new SoyGeneralOptions();
-      if (enableNonNullAssertionOperator) {
-        options.setExperimentalFeatures(Arrays.asList("enableNonNullAssertionOperator"));
-      }
-      allOptions.add(options);
-    }
-    return allOptions;
+    return ImmutableList.of(new SoyGeneralOptions());
   }
 
   private static <T extends CompilerPass> ImmutableList<String> names(ImmutableList<T> passes) {

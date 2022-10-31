@@ -310,7 +310,6 @@ public final class SimplifyExprVisitorTest {
     assertThat(
             new ExpressionParser("$null?.a!")
                 .withVar("null", "true ? null : record(a: 1)")
-                .withExperimentalFeatures("enableNonNullAssertionOperator")
                 .parseForParentNode())
         .simplifiesTo("null");
 
@@ -318,7 +317,6 @@ public final class SimplifyExprVisitorTest {
             new ExpressionParser("$r?.a!")
                 .withParam("p", "int|null")
                 .withVar("r", "true ? record(a: $p) : null")
-                .withExperimentalFeatures("enableNonNullAssertionOperator")
                 .parseForParentNode())
         .simplifiesTo("record(a: $p)?.a!");
 
@@ -326,7 +324,6 @@ public final class SimplifyExprVisitorTest {
             new ExpressionParser("$r!.a?.b")
                 .withParam("p", "int|null")
                 .withVar("r", "true ? record(a: true ? record(b: $p) : null) : null")
-                .withExperimentalFeatures("enableNonNullAssertionOperator")
                 .parseForParentNode())
         .simplifiesTo("$p");
 
@@ -334,7 +331,6 @@ public final class SimplifyExprVisitorTest {
             new ExpressionParser("$r?.a?.b!")
                 .withParam("p", "int|null")
                 .withVar("r", "true ? record(a: true ? record(b: $p) : null) : null")
-                .withExperimentalFeatures("enableNonNullAssertionOperator")
                 .parseForParentNode())
         .simplifiesTo("record(b: $p)?.b!");
   }

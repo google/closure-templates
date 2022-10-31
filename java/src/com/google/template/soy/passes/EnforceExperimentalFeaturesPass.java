@@ -21,10 +21,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyErrorKind;
-import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
 import com.google.template.soy.soytree.SoyFileNode;
-import com.google.template.soy.soytree.SoyTreeUtils;
 
 /**
  * A pass that ensures that experimental features are only used when enabled.
@@ -36,10 +33,6 @@ import com.google.template.soy.soytree.SoyTreeUtils;
  */
 final class EnforceExperimentalFeaturesPass implements CompilerFilePass {
 
-  private static final SoyErrorKind NON_NULL_ASSERTION_BANNED =
-      SoyErrorKind.of(
-          "Non-null assertion operator not supported, use the ''checkNotNull'' function instead.");
-
   private final ImmutableSet<String> features;
   private final ErrorReporter reporter;
 
@@ -49,15 +42,5 @@ final class EnforceExperimentalFeaturesPass implements CompilerFilePass {
   }
 
   @Override
-  public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-    // TOOD(b/22389927): enable the non-null assertion operator once we're ready to use for
-    // fixing proto nullability.
-    if (!features.contains("enableNonNullAssertionOperator")) {
-      SoyTreeUtils.allNodesOfType(file, AssertNonNullOpNode.class)
-          .forEach(
-              assertNonNullOpNode ->
-                  reporter.report(
-                      assertNonNullOpNode.getSourceLocation(), NON_NULL_ASSERTION_BANNED));
-    }
-  }
+  public void run(SoyFileNode file, IdGenerator nodeIdGen) {}
 }

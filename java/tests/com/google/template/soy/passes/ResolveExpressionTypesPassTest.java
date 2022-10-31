@@ -20,7 +20,6 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import com.google.common.base.Joiner;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.base.SourceFilePath;
@@ -986,7 +985,6 @@ public final class ResolveExpressionTypesPassTest {
                     "{assertType('string', $r?.a.b.c!)}",
                     "{assertType('null|string', $r!.a!.b!.c)}"))
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
-            .enableExperimentalFeatures(ImmutableList.of("enableNonNullAssertionOperator"))
             .parse()
             .fileSet();
     assertTypes(soyTree);

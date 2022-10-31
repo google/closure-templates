@@ -31,7 +31,6 @@ public final class SimplifyAssertNonNullPassTest {
     assertThat(
             new ExpressionParser("$r!.a!.b!.c")
                 .withParam("r", "null|[a: null|[b: null|[c: null|string]]]")
-                .withExperimentalFeatures("enableNonNullAssertionOperator")
                 .parse()
                 .toSourceString())
         .isEqualTo("$r.a.b.c");
@@ -42,7 +41,6 @@ public final class SimplifyAssertNonNullPassTest {
     assertThat(
             new ExpressionParser("$r!.a!")
                 .withParam("r", "null|[a: null|string]")
-                .withExperimentalFeatures("enableNonNullAssertionOperator")
                 .parse()
                 .toSourceString())
         .isEqualTo("$r.a!");
@@ -53,7 +51,6 @@ public final class SimplifyAssertNonNullPassTest {
     assertThat(
             new ExpressionParser("$r!.a?.b.c")
                 .withParam("r", "null|[a: null|[b: null|[c: null|string]]]")
-                .withExperimentalFeatures("enableNonNullAssertionOperator")
                 .parse()
                 .toSourceString())
         .isEqualTo("$r.a?.b.c");
@@ -64,7 +61,6 @@ public final class SimplifyAssertNonNullPassTest {
     assertThat(
             new ExpressionParser("$r.a?.b!.c")
                 .withParam("r", "null|[a: null|[b: null|[c: null|string]]]")
-                .withExperimentalFeatures("enableNonNullAssertionOperator")
                 .parse()
                 .toSourceString())
         .isEqualTo("$r.a?.b.c");
@@ -75,7 +71,6 @@ public final class SimplifyAssertNonNullPassTest {
     assertThat(
             new ExpressionParser("$r?.a.b.c!")
                 .withParam("r", "null|[a: null|[b: null|[c: null|string]]]")
-                .withExperimentalFeatures("enableNonNullAssertionOperator")
                 .parse()
                 .toSourceString())
         .isEqualTo("$r?.a.b.c!");
@@ -86,7 +81,6 @@ public final class SimplifyAssertNonNullPassTest {
     assertThat(
             new ExpressionParser("$r?.a.b!.c!")
                 .withParam("r", "null|[a: null|[b: null|[c: null|string]]]")
-                .withExperimentalFeatures("enableNonNullAssertionOperator")
                 .parse()
                 .toSourceString())
         .isEqualTo("$r?.a.b.c!");
@@ -97,7 +91,6 @@ public final class SimplifyAssertNonNullPassTest {
     assertThat(
             new ExpressionParser("($r.a.b)!.c!")
                 .withParam("r", "null|[a: null|[b: null|[c: null|string]]]")
-                .withExperimentalFeatures("enableNonNullAssertionOperator")
                 .parse()
                 .toSourceString())
         .isEqualTo("$r.a.b.c!");

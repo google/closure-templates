@@ -319,7 +319,6 @@ public class NullSafeAccessNodeTest {
         new ExpressionParser("$foo?.messageField!")
             .withProto(Foo.getDescriptor())
             .withParam("foo", "Foo")
-            .withExperimentalFeatures("enableNonNullAssertionOperator")
             .parse();
     String exprString =
         buildAstStringWithPreview(expr.getParent(), 0, new StringBuilder()).toString();
@@ -338,7 +337,6 @@ public class NullSafeAccessNodeTest {
         new ExpressionParser("$foo!.messageField?.foo")
             .withProto(Foo.getDescriptor())
             .withParam("foo", "Foo")
-            .withExperimentalFeatures("enableNonNullAssertionOperator")
             .parse();
     exprString = buildAstStringWithPreview(expr.getParent(), 0, new StringBuilder()).toString();
     assertThat(exprString)

@@ -160,7 +160,7 @@ For example: `$foo`
 Here are the supported operators, listed in decreasing order of precedence
 (highest precedence at the top):
 
-1.  `( <expr> )` `.` `?.` `[]`, `?[]`
+1.  `( <expr> )` `.` `?.` `[]`, `?[]`, `!`
 2.  `-`(unary) `not`
 3.  `*` `/` `%`
 4.  `+` `-`(binary)
@@ -227,6 +227,17 @@ is no 'index out of bounds' error for lists.
 
 Warning: The "short-circuiting" caveat described above (for `?.`) applies here
 as well. For example, the expression `$foo?[$bar] > 0` is *not* safe.
+
+### Non-null assertion operator `!` {#nonnull-assertion}
+
+A post-fix operator to assert that the operand is non-null. This removes `null`
+from the type of the operand and inserts a runtime check to throw an exception
+if the operand is `null`.
+
+For example,
+
+*   `$foo!`
+*   `$foo!.bar!.baz!`
 
 ### Minus operator `-`
 
