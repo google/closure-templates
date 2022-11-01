@@ -96,7 +96,7 @@ Otherwise by default `modifiable` template will render.
 {/template}
 ```
 
-Valid types for `usevarianttype` are `string`, `int`, or any proto enum type.
+Valid types for `usevarianttype` are `string`, `number`, or any proto enum type.
 
 When calling a modifiable template from Javascript, there will be an extra
 parameter `opt_variant` that can be used to pass the variant.
