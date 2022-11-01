@@ -151,6 +151,7 @@ import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.ImportNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetValueNode;
+import com.google.template.soy.soytree.MsgPluralNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
@@ -372,6 +373,10 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
       SoyErrorKind.of("Delcall variant must be of type string, int, or proto enum. Found ''{0}''.");
   private static final SoyErrorKind INVALID_VARIANT_EXPRESSION =
       SoyErrorKind.of("Invalid variant literal value ''{0}'' in ''delcall''.");
+  private static final SoyErrorKind PLURAL_EXPR_TYPE =
+      SoyErrorKind.of(
+          "Plural expression should be a number type. Other types will fail in Java rendering."
+              + " Found ''{0}''.");
 
   private final ErrorReporter errorReporter;
 
@@ -818,6 +823,15 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
         node.getIndexVar().setType(IntType.getInstance());
       }
       visitChildren(node);
+    }
+
+    @Override
+    protected void visitMsgPluralNode(MsgPluralNode node) {
+      super.visitMsgPluralNode(node);
+      SoyType exprType = node.getExpr().getType();
+      if (exprType != UnknownType.getInstance() && !SoyTypes.isIntFloatOrNumber(exprType)) {
+        errorReporter.warn(node.getExpr().getSourceLocation(), PLURAL_EXPR_TYPE, exprType);
+      }
     }
 
     private final ImmutableSet<SoyType.Kind> allowedVariantTypes =

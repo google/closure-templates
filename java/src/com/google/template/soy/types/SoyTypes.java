@@ -83,6 +83,10 @@ public final class SoyTypes {
           .add(SoyType.Kind.BOOL)
           .build();
 
+  public static boolean isIntFloatOrNumber(SoyType type) {
+    return isKindOrUnionOfKinds(type, ARITHMETIC_PRIMITIVES);
+  }
+
   /**
    * Returns true if the input type is a numeric primitive type, such as int, float, proto enum, and
    * number.
