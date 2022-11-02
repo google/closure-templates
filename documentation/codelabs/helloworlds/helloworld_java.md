@@ -287,7 +287,7 @@ below to use `SoyParseInfoGenerator` with the Hello World example:
 
     ```
     $ java -jar SoyParseInfoGenerator.jar \
-        --generateInvocationBuilders \
+        --generateBuilders \
         --javaPackage example \
         --javaClassNameSource filename \
         --srcs src/main/resources/example/simple.soy \

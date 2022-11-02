@@ -14,26 +14,26 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.invocationbuilders.javatypes;
+package com.google.template.soy.javagencode.javatypes;
 
 /** Represents a template type. */
-public final class TemplateJavaType extends JavaType {
-  public TemplateJavaType() {
+public final class VeDataJavaType extends JavaType {
+  public VeDataJavaType() {
     this(/* isNullable= */ false);
   }
 
-  public TemplateJavaType(boolean isNullable) {
+  public VeDataJavaType(boolean isNullable) {
     super(isNullable);
   }
 
   @Override
   public String toJavaTypeString() {
-    return "com.google.template.soy.testing.metadata.placeholdertypes.TemplatePlaceholderType";
+    return "com.google.template.soy.testing.metadata.placeholdertypes.VeDataPlaceholderType";
   }
 
   @Override
   public JavaType asNullable() {
-    return new TemplateJavaType(/* isNullable= */ true);
+    return new VeDataJavaType(/* isNullable= */ true);
   }
 
   @Override

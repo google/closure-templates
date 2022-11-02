@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.invocationbuilders.javatypes;
+package com.google.template.soy.javagencode.javatypes;
 
 /** Represents a list type for generated Soy Java invocation builders. */
 public final class ListJavaType extends JavaType {

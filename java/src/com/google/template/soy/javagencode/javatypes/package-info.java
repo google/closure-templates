@@ -14,6 +14,6 @@
  * limitations under the License.
  */
 @CheckReturnValue
-package com.google.template.soy.invocationbuilders.javatypes;
+package com.google.template.soy.javagencode.javatypes;
 
 import com.google.errorprone.annotations.CheckReturnValue;

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.invocationbuilders.javatypes;
+package com.google.template.soy.javagencode.javatypes;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 

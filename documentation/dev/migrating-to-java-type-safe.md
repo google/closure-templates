@@ -3,8 +3,8 @@
 
 Sometimes when migrating to the type safe API you will come across templates
 with complex parameters that are not well supported. Over time we hope to expand
-the number of supported usecases in the invocation builder API, but in the mean
-time here are some workarounds.
+the number of supported usecases in the builders API, but in the mean time here
+are some workarounds.
 
 These approaches won't all be the most type safe, but they will allow adopting
 the type safe api and provides for type safety improving over time.

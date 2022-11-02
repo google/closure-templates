@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.parseinfo.passes;
+package com.google.template.soy.javagencode;
 
 import static com.google.common.collect.ImmutableSortedSet.toImmutableSortedSet;
 import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.appendImmutableList;
@@ -42,7 +42,6 @@ import com.google.common.collect.Sets;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.IndentedLinesBuilder;
 import com.google.template.soy.exprtree.StringNode;
-import com.google.template.soy.invocationbuilders.passes.SoyFileNodeTransformer;
 import com.google.template.soy.passes.IndirectParamsCalculator;
 import com.google.template.soy.passes.IndirectParamsCalculator.IndirectParamsInfo;
 import com.google.template.soy.shared.internal.BuiltinFunction;

@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.invocationbuilders.javatypes;
+package com.google.template.soy.javagencode.javatypes;
 
-import static com.google.template.soy.invocationbuilders.javatypes.CodeGenUtils.castFunction;
+import static com.google.template.soy.javagencode.javatypes.CodeGenUtils.castFunction;
 
 /**
  * Class for simple java types (e.g. boolean, String, Number, SafeHtml) that do not need specialized

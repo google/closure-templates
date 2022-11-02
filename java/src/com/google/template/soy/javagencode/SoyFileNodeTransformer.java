@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.invocationbuilders.passes;
+package com.google.template.soy.javagencode;
 
 import static com.google.template.soy.base.SourceLocation.UNKNOWN;
-import static com.google.template.soy.invocationbuilders.javatypes.JavaTypeUtils.upcastTypesForIndirectParams;
+import static com.google.template.soy.javagencode.javatypes.JavaTypeUtils.upcastTypesForIndirectParams;
 import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.makeUpperCamelCase;
 
 import com.google.auto.value.AutoValue;
@@ -29,8 +29,8 @@ import com.google.common.collect.Streams;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
-import com.google.template.soy.invocationbuilders.javatypes.JavaType;
-import com.google.template.soy.invocationbuilders.javatypes.JavaTypeUtils;
+import com.google.template.soy.javagencode.javatypes.JavaType;
+import com.google.template.soy.javagencode.javatypes.JavaTypeUtils;
 import com.google.template.soy.passes.IndirectParamsCalculator;
 import com.google.template.soy.passes.IndirectParamsCalculator.IndirectParamsInfo;
 import com.google.template.soy.shared.internal.gencode.JavaGenerationUtils;

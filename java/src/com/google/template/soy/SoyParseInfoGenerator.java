@@ -38,12 +38,12 @@ import org.kohsuke.args4j.Option;
 public final class SoyParseInfoGenerator extends AbstractSoyCompiler {
 
   @Option(
-      name = "--generateInvocationBuilders",
+      name = "--generateBuilders",
       usage =
           "[Reqiured] Whether to generate the new java template invocation builders"
               + " (FooTemplates.java). If false, generates the old FooSoyInfo.java files"
               + " instead.")
-  private boolean generateInvocationBuilders = false;
+  private boolean generateBuilders = false;
 
   @Option(
       name = "--outputDirectory",
@@ -66,7 +66,7 @@ public final class SoyParseInfoGenerator extends AbstractSoyCompiler {
       required = true,
       usage =
           "[Required for *SoyInfo mode, Ignored for invocation builder mode (i.e. if"
-              + " --generateInvocationBuilders=true)]. The source for the"
+              + " --generateBuilders=true)]. The source for the"
               + " generated class names. Valid values are \"filename\", \"namespace\", and"
               + " \"generic\". Option \"filename\" turns a Soy file name AaaBbb.soy or aaa_bbb.soy"
               + " into AaaBbbSoyInfo. Option \"namespace\" turns a namespace aaa.bbb.cccDdd into"
@@ -104,7 +104,7 @@ public final class SoyParseInfoGenerator extends AbstractSoyCompiler {
         exitWithError("Must provide exactly one of --outputDirectory or --outputSrcJar");
       }
 
-    if (!generateInvocationBuilders && javaClassNameSource.isEmpty()) {
+    if (!generateBuilders && javaClassNameSource.isEmpty()) {
         exitWithError("Must provide Java class name source.");
     }
   }
@@ -114,8 +114,8 @@ public final class SoyParseInfoGenerator extends AbstractSoyCompiler {
     SoyFileSet sfs = sfsBuilder.build();
 
     ImmutableList<GeneratedFile> genFiles =
-        generateInvocationBuilders
-            ? sfs.generateInvocationBuilders(javaPackage)
+        generateBuilders
+            ? sfs.generateBuilders(javaPackage)
             : sfs.generateParseInfo(javaPackage, javaClassNameSource);
 
     if (outputSrcJar == null) {

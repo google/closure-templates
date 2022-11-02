@@ -13,30 +13,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.template.soy.invocationbuilders.javatypes;
+package com.google.template.soy.javagencode.javatypes;
 
-import com.google.protobuf.Descriptors.EnumDescriptor;
+import com.google.protobuf.Descriptors.Descriptor;
 import com.google.template.soy.internal.proto.JavaQualifiedNames;
 
-/** Represents a proto enum for generated Soy Java invocation builders. */
-public final class ProtoEnumJavaType extends JavaType {
-  private static final CodeGenUtils.Member AS_PROTO_ENUM = CodeGenUtils.castFunction("asProtoEnum");
-  private static final CodeGenUtils.Member AS_NULLABLE_PROTO_ENUM =
-      CodeGenUtils.castFunction("asNullableProtoEnum");
-  private final EnumDescriptor enumDescriptor;
+/** Represents a proto for generated Soy Java invocation builders. */
+public final class ProtoJavaType extends JavaType {
+  private static final CodeGenUtils.Member AS_PROTO = CodeGenUtils.castFunction("asProto");
+  private static final CodeGenUtils.Member AS_NULLABLE_PROTO =
+      CodeGenUtils.castFunction("asNullableProto");
+  private final Descriptor protoDescriptor;
 
-  public ProtoEnumJavaType(EnumDescriptor enumDescriptor) {
-    this(enumDescriptor, /* isNullable= */ false);
+  public ProtoJavaType(Descriptor protoDescriptor) {
+    this(protoDescriptor, /* isNullable= */ false);
   }
 
-  public ProtoEnumJavaType(EnumDescriptor enumDescriptor, boolean isNullable) {
+  public ProtoJavaType(Descriptor protoDescriptor, boolean isNullable) {
     super(isNullable);
-    this.enumDescriptor = enumDescriptor;
+    this.protoDescriptor = protoDescriptor;
   }
 
   @Override
   public String toJavaTypeString() {
-    return JavaQualifiedNames.getQualifiedName(enumDescriptor);
+    return JavaQualifiedNames.getQualifiedName(protoDescriptor);
   }
 
   @Override
@@ -45,8 +45,8 @@ public final class ProtoEnumJavaType extends JavaType {
   }
 
   @Override
-  public ProtoEnumJavaType asNullable() {
-    return new ProtoEnumJavaType(enumDescriptor, /* isNullable= */ true);
+  public ProtoJavaType asNullable() {
+    return new ProtoJavaType(protoDescriptor, /* isNullable= */ true);
   }
 
   @Override
@@ -55,7 +55,7 @@ public final class ProtoEnumJavaType extends JavaType {
   }
 
   private CodeGenUtils.Member getCastFunction() {
-    return (isNullable() ? AS_NULLABLE_PROTO_ENUM : AS_PROTO_ENUM);
+    return (isNullable() ? AS_NULLABLE_PROTO : AS_PROTO);
   }
 
   @Override

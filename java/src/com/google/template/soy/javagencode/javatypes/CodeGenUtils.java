@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.invocationbuilders.javatypes;
+package com.google.template.soy.javagencode.javatypes;
 
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.data.BaseSoyTemplateImpl.AbstractBuilder;

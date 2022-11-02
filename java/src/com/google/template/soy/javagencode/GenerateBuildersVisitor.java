@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.invocationbuilders.passes;
+package com.google.template.soy.javagencode;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.template.soy.base.SourceLocation.UNKNOWN;
-import static com.google.template.soy.invocationbuilders.javatypes.CodeGenUtils.ADD_TO_LIST_PARAM;
-import static com.google.template.soy.invocationbuilders.javatypes.CodeGenUtils.AS_RECORD;
-import static com.google.template.soy.invocationbuilders.javatypes.CodeGenUtils.INDIRECT_P;
-import static com.google.template.soy.invocationbuilders.javatypes.CodeGenUtils.INIT_LIST_PARAM;
-import static com.google.template.soy.invocationbuilders.javatypes.CodeGenUtils.INJECTED_P;
-import static com.google.template.soy.invocationbuilders.javatypes.CodeGenUtils.SET_PARAM_INTERNAL;
-import static com.google.template.soy.invocationbuilders.javatypes.CodeGenUtils.STANDARD_P;
+import static com.google.template.soy.javagencode.javatypes.CodeGenUtils.ADD_TO_LIST_PARAM;
+import static com.google.template.soy.javagencode.javatypes.CodeGenUtils.AS_RECORD;
+import static com.google.template.soy.javagencode.javatypes.CodeGenUtils.INDIRECT_P;
+import static com.google.template.soy.javagencode.javatypes.CodeGenUtils.INIT_LIST_PARAM;
+import static com.google.template.soy.javagencode.javatypes.CodeGenUtils.INJECTED_P;
+import static com.google.template.soy.javagencode.javatypes.CodeGenUtils.SET_PARAM_INTERNAL;
+import static com.google.template.soy.javagencode.javatypes.CodeGenUtils.STANDARD_P;
 import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.appendFunctionCallWithParamsOnNewLines;
 import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.appendImmutableList;
 import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.appendImmutableMap;
@@ -41,14 +41,14 @@ import com.google.common.collect.Streams;
 import com.google.template.soy.base.internal.IndentedLinesBuilder;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
-import com.google.template.soy.invocationbuilders.javatypes.CodeGenUtils;
-import com.google.template.soy.invocationbuilders.javatypes.FutureJavaType;
-import com.google.template.soy.invocationbuilders.javatypes.JavaType;
-import com.google.template.soy.invocationbuilders.javatypes.RecordJavaType;
-import com.google.template.soy.invocationbuilders.passes.SoyFileNodeTransformer.FileInfo;
-import com.google.template.soy.invocationbuilders.passes.SoyFileNodeTransformer.ParamInfo;
-import com.google.template.soy.invocationbuilders.passes.SoyFileNodeTransformer.ParamStatus;
-import com.google.template.soy.invocationbuilders.passes.SoyFileNodeTransformer.TemplateInfo;
+import com.google.template.soy.javagencode.SoyFileNodeTransformer.FileInfo;
+import com.google.template.soy.javagencode.SoyFileNodeTransformer.ParamInfo;
+import com.google.template.soy.javagencode.SoyFileNodeTransformer.ParamStatus;
+import com.google.template.soy.javagencode.SoyFileNodeTransformer.TemplateInfo;
+import com.google.template.soy.javagencode.javatypes.CodeGenUtils;
+import com.google.template.soy.javagencode.javatypes.FutureJavaType;
+import com.google.template.soy.javagencode.javatypes.JavaType;
+import com.google.template.soy.javagencode.javatypes.RecordJavaType;
 import com.google.template.soy.shared.internal.gencode.GeneratedFile;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.FileSetMetadata;
@@ -72,7 +72,7 @@ import java.util.Set;
  * <p>For example, "foo.soy" containing templates "bar" and "baz" would result in FooTemplates.java,
  * with inner classes Bar and Baz.
  */
-public final class GenInvocationBuildersVisitor
+public final class GenerateBuildersVisitor
     extends AbstractSoyNodeVisitor<ImmutableList<GeneratedFile>> {
 
   private static final String TEMPLATE_NAME_FIELD = "__NAME__";
@@ -128,7 +128,7 @@ public final class GenInvocationBuildersVisitor
   private IndentedLinesBuilder ilb; // Line formatter for the generated code.
   private ImmutableList.Builder<GeneratedFile> generatedFiles; // The generated Java files to write.
 
-  public GenInvocationBuildersVisitor(
+  public GenerateBuildersVisitor(
       ErrorReporter errorReporter, String javaPackage, FileSetMetadata registry) {
     this.errorReporter = errorReporter;
     this.transformer = new SoyFileNodeTransformer(javaPackage, registry);

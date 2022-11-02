@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.invocationbuilders.javatypes;
+package com.google.template.soy.javagencode.javatypes;
 
 import com.google.common.collect.ImmutableMap;
 
 /**
  * Represents a Soy RECORD type. Is handled with special logic in {@link
- * com.google.template.soy.invocationbuilders.passes.GenInvocationBuildersVisitor}.
+ * com.google.template.soy.javagencode.GenInvocationBuildersVisitor}.
  */
 public class RecordJavaType extends JavaType {
 

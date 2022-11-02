@@ -4,7 +4,7 @@
 
 <!--#include file="includes/configuring-java-builders.md"-->
 
-<!-- Open source docs. TODO(b/141946412): Remove this section once we support invocation builders in OS.  -->
+<!-- Open source docs. TODO(b/141946412): Remove this section once we support builders API in OS.  -->
 
 ### Prerequisite: Compiling the template in Java
 

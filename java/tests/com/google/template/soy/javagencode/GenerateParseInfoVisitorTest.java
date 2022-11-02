@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.parseinfo.passes;
+package com.google.template.soy.javagencode;
 
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.template.soy.parseinfo.passes.GenerateParseInfoVisitor.JavaClassNameSource.GENERIC;
-import static com.google.template.soy.parseinfo.passes.GenerateParseInfoVisitor.JavaClassNameSource.SOY_FILE_NAME;
-import static com.google.template.soy.parseinfo.passes.GenerateParseInfoVisitor.JavaClassNameSource.SOY_NAMESPACE_LAST_PART;
+import static com.google.template.soy.javagencode.GenerateParseInfoVisitor.JavaClassNameSource.GENERIC;
+import static com.google.template.soy.javagencode.GenerateParseInfoVisitor.JavaClassNameSource.SOY_FILE_NAME;
+import static com.google.template.soy.javagencode.GenerateParseInfoVisitor.JavaClassNameSource.SOY_NAMESPACE_LAST_PART;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;

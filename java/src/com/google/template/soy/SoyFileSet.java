@@ -47,7 +47,8 @@ import com.google.template.soy.error.SoyErrors;
 import com.google.template.soy.error.SoyInternalCompilerException;
 import com.google.template.soy.incrementaldomsrc.IncrementalDomSrcMain;
 import com.google.template.soy.incrementaldomsrc.SoyIncrementalDomSrcOptions;
-import com.google.template.soy.invocationbuilders.passes.GenInvocationBuildersVisitor;
+import com.google.template.soy.javagencode.GenerateBuildersVisitor;
+import com.google.template.soy.javagencode.GenerateParseInfoVisitor;
 import com.google.template.soy.jbcsrc.BytecodeCompiler;
 import com.google.template.soy.jbcsrc.api.SoySauce;
 import com.google.template.soy.jbcsrc.api.SoySauceImpl;
@@ -62,7 +63,6 @@ import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.SoyMsgBundleHandler;
 import com.google.template.soy.msgs.SoyMsgBundleHandler.OutputFileOptions;
 import com.google.template.soy.msgs.internal.ExtractMsgsVisitor;
-import com.google.template.soy.parseinfo.passes.GenerateParseInfoVisitor;
 import com.google.template.soy.passes.CheckTemplateHeaderVarsPass;
 import com.google.template.soy.passes.ClearSoyDocStringsVisitor;
 import com.google.template.soy.passes.PassManager;
@@ -704,7 +704,7 @@ public final class SoyFileSet {
    * @return A list of generated files to write (of the form "<*>FooSoyTemplates.java").
    * @throws SoyCompilationException If compilation fails.
    */
-  ImmutableList<GeneratedFile> generateInvocationBuilders(String javaPackage) {
+  ImmutableList<GeneratedFile> generateBuilders(String javaPackage) {
     return entryPoint(
         () -> {
           ParseResult result = parseWithoutOptimizingOrDesugaringHtml();
@@ -712,7 +712,7 @@ public final class SoyFileSet {
           SoyFileSetNode soyTree = result.fileSet();
 
           // Generate template invocation builders for the soy tree.
-          return new GenInvocationBuildersVisitor(errorReporter, javaPackage, result.registry())
+          return new GenerateBuildersVisitor(errorReporter, javaPackage, result.registry())
               .exec(soyTree);
         });
   }
