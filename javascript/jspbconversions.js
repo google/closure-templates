@@ -8,6 +8,12 @@ goog.module('security.html.jspbconversions');
 goog.module.declareLegacyNamespace();
 
 const Const = goog.require('goog.string.Const');
+const ReadonlySafeHtmlProto = goog.requireType('proto.html.ReadonlySafeHtmlProto');
+const ReadonlySafeScriptProto = goog.requireType('proto.html.ReadonlySafeScriptProto');
+const ReadonlySafeStyleProto = goog.requireType('proto.html.ReadonlySafeStyleProto');
+const ReadonlySafeStyleSheetProto = goog.requireType('proto.html.ReadonlySafeStyleSheetProto');
+const ReadonlySafeUrlProto = goog.requireType('proto.html.ReadonlySafeUrlProto');
+const ReadonlyTrustedResourceUrlProto = goog.requireType('proto.html.ReadonlyTrustedResourceUrlProto');
 const SafeHtml = goog.require('goog.html.SafeHtml');
 const SafeHtmlProto = goog.require('proto.webutil.html.types.SafeHtmlProto');
 const SafeScript = goog.require('goog.html.SafeScript');
@@ -36,7 +42,7 @@ const uncheckedconversions = goog.require('goog.html.uncheckedconversions');
  * message that has been received from an entity outside the application's
  * trust domain. Data coming from the browser is outside the application's trust
  * domain.
- * @param {!SafeHtmlProto} proto Protocol message to
+ * @param {!ReadonlySafeHtmlProto} proto Protocol message to
  *   convert from.
  * @return {!SafeHtml}
  * @deprecated Use safevalues.protoconversions instead.
@@ -83,7 +89,7 @@ function safeHtmlToProto(safehtml) {
  * message that has been received from an entity outside the application's
  * trust domain. Data coming from the browser is outside the application's trust
  * domain.
- * @param {!SafeScriptProto} proto Protocol message to
+ * @param {!ReadonlySafeScriptProto} proto Protocol message to
  *   convert from.
  * @return {!SafeScript}
  * @suppress {visibility}
@@ -131,7 +137,7 @@ function safeScriptToProto(script) {
  * message that has been received from an entity outside the application's
  * trust domain. Data coming from the browser is outside the application's trust
  * domain.
- * @param {!SafeStyleProto} proto Protocol message to
+ * @param {!ReadonlySafeStyleProto} proto Protocol message to
  *   convert from.
  * @return {!SafeStyle}
  * @suppress {visibility}
@@ -179,7 +185,7 @@ function safeStyleToProto(style) {
  * message that has been received from an entity outside the application's
  * trust domain. Data coming from the browser is outside the application's trust
  * domain.
- * @param {!SafeStyleSheetProto} proto Protocol message to
+ * @param {!ReadonlySafeStyleSheetProto} proto Protocol message to
  *   convert from.
  * @return {!SafeStyleSheet}
  * @suppress {visibility}
@@ -229,7 +235,7 @@ function safeStyleSheetToProto(styleSheet) {
  * message that has been received from an entity outside the application's
  * trust domain. Data coming from the browser is outside the application's trust
  * domain.
- * @param {!SafeUrlProto} proto Protocol message to
+ * @param {!ReadonlySafeUrlProto} proto Protocol message to
  *   convert from.
  * @return {!SafeUrl}
  * @suppress {visibility}
@@ -277,7 +283,7 @@ function safeUrlToProto(url) {
  * message that has been received from an entity outside the application's
  * trust domain. Data coming from the browser is outside the application's trust
  * domain.
- * @param {!TrustedResourceUrlProto} proto Protocol message to
+ * @param {!ReadonlyTrustedResourceUrlProto} proto Protocol message to
  *   convert from.
  * @return {!TrustedResourceUrl}
  * @suppress {visibility}

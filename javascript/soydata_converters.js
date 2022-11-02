@@ -27,6 +27,12 @@
 goog.module('soy.converters');
 
 const Const = goog.require('goog.string.Const');
+const ReadonlySafeHtmlProto = goog.requireType('proto.html.ReadonlySafeHtmlProto');
+const ReadonlySafeScriptProto = goog.requireType('proto.html.ReadonlySafeScriptProto');
+const ReadonlySafeStyleProto = goog.requireType('proto.html.ReadonlySafeStyleProto');
+const ReadonlySafeStyleSheetProto = goog.requireType('proto.html.ReadonlySafeStyleSheetProto');
+const ReadonlySafeUrlProto = goog.requireType('proto.html.ReadonlySafeUrlProto');
+const ReadonlyTrustedResourceUrlProto = goog.requireType('proto.html.ReadonlyTrustedResourceUrlProto');
 const SafeHtml = goog.require('goog.html.SafeHtml');
 const SafeHtmlProto = goog.require('proto.webutil.html.types.SafeHtmlProto');
 const SafeScript = goog.require('goog.html.SafeScript');
@@ -208,7 +214,7 @@ exports.packSanitizedUriToProtoSoyRuntimeOnly = function(sanitizedUri) {
 
 /**
  * Converts a Safe String Proto to HTML Sanitized Content.
- * @param {?SafeHtmlProto|undefined} x null or a safe string proto.
+ * @param {?ReadonlySafeHtmlProto|undefined} x null or a safe string proto.
  * @return {?SanitizedHtml}
  */
 exports.unpackProtoToSanitizedHtml = function(x) {
@@ -223,7 +229,7 @@ exports.unpackProtoToSanitizedHtml = function(x) {
 
 /**
  * Converts a Safe String Proto to CSS Sanitized Content.
- * @param {?SafeStyleProto | ?SafeStyleSheetProto | undefined} x
+ * @param {?ReadonlySafeStyleProto | ?ReadonlySafeStyleSheetProto | undefined} x
  *   null or a safe string proto.
  * @return {?SanitizedCss}
  */
@@ -242,7 +248,7 @@ exports.unpackProtoToSanitizedCss = function(x) {
 
 /**
  * Converts a Safe String Proto to JS Sanitized Content.
- * @param {?SafeScriptProto | undefined} x null or a safe string proto.
+ * @param {?ReadonlySafeScriptProto | undefined} x null or a safe string proto.
  * @return {?SanitizedJs}
  */
 exports.unpackProtoToSanitizedJs = function(x) {
@@ -256,7 +262,8 @@ exports.unpackProtoToSanitizedJs = function(x) {
 
 /**
  * Converts a Safe String Proto to URI Sanitized Content.
- * @param {?SafeUrlProto | ?TrustedResourceUrlProto | undefined} x
+ * @param {?ReadonlySafeUrlProto | ?ReadonlyTrustedResourceUrlProto | undefined}
+ *     x
  *   null or a safe string proto.
  * @return {?SanitizedUri}
  */
@@ -271,7 +278,7 @@ exports.unpackProtoToSanitizedUri = function(x) {
 
 /**
  * Converts a Safe String Proto to a Trusted Resource URI Sanitized Content.
- * @param {?TrustedResourceUrlProto | undefined} x
+ * @param {?ReadonlyTrustedResourceUrlProto | undefined} x
  *   null or a safe string proto.
  * @return {?SanitizedTrustedResourceUri}
  */
