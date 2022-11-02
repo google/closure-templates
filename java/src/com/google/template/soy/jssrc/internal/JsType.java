@@ -218,13 +218,7 @@ public final class JsType {
         JsTypeKind.JSSRC,
         /* isStrict= */ false,
         ArrayTypeMode.READONLY_ARRAY,
-        // This is currently set to assert types as mutable to avoid
-        // disambiguation errors inline in templates, presumably resulting
-        // either from runtime functions or externs, but the cause
-        // is not obvious.
-        //
-        // TODO(b/230911572): use only readonly messages here.
-        MessageTypeMode.ONLY_MUTABLE,
+        MessageTypeMode.READONLY,
         /* includeNullForMessages= */ false);
   }
 
@@ -257,13 +251,7 @@ public final class JsType {
         JsTypeKind.IDOMSRC,
         /* isStrict= */ false,
         ArrayTypeMode.READONLY_ARRAY,
-        // This is currently set to assert types as mutable to avoid
-        // disambiguation errors inline in templates, presumably resulting
-        // either from runtime functions or externs, but the cause
-        // is not obvious.
-        //
-        // TODO(b/230911572): use only readonly messages here.
-        MessageTypeMode.ONLY_MUTABLE,
+        MessageTypeMode.READONLY,
         /* includeNullForMessages= */ false);
   }
 
