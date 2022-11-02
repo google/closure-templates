@@ -257,13 +257,16 @@ public final class SoyProtoType extends SoyType {
   }
 
   /** Returns this proto's type name for the given backend. */
-  public String getNameForBackend(SoyBackendKind backend) {
+  public String getNameForBackend(SoyBackendKind backend, boolean readonly, boolean typeOnly) {
     switch (backend) {
       case JS_SRC:
         // The 'proto' prefix is JSPB-specific. If we ever support some other
         // JavaScript proto implementation, we'll need some way to determine which
         // proto implementation the user wants to use at this point.
-        return ProtoUtils.calculateQualifiedJsName(typeDescriptor);
+        //
+        // If we will only use this value as a type, we use the type name getter.
+        // Otherwise we need an unprefixed value.
+        return ProtoUtils.calculateUnprefixedJsName(typeDescriptor);
       case TOFU:
       case JBC_SRC:
         return JavaQualifiedNames.getClassName(typeDescriptor);

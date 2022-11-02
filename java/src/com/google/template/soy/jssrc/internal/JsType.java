@@ -203,57 +203,119 @@ public final class JsType {
   /** Returns a JS type with looser rules, allowing 1/0 for bools or nullable protos. */
   public static JsType forJsSrc(SoyType soyType) {
     return forSoyType(
-        soyType, JsTypeKind.JSSRC, /* isStrict= */ false, ArrayTypeMode.ARRAY_OR_READONLY_ARRAY);
+        soyType,
+        JsTypeKind.JSSRC,
+        /* isStrict= */ false,
+        ArrayTypeMode.ARRAY_OR_READONLY_ARRAY,
+        MessageTypeMode.READONLY,
+        /* includeNullForMessages= */ true);
   }
 
   /** Returns a JS type for internal type checks and assertions. */
   public static JsType forJsTypeCheck(SoyType soyType) {
     return forSoyType(
-        soyType, JsTypeKind.JSSRC, /* isStrict= */ false, ArrayTypeMode.READONLY_ARRAY);
+        soyType,
+        JsTypeKind.JSSRC,
+        /* isStrict= */ false,
+        ArrayTypeMode.READONLY_ARRAY,
+        // This is currently set to assert types as mutable to avoid
+        // disambiguation errors inline in templates, presumably resulting
+        // either from runtime functions or externs, but the cause
+        // is not obvious.
+        //
+        // TODO(b/230911572): use only readonly messages here.
+        MessageTypeMode.ONLY_MUTABLE,
+        /* includeNullForMessages= */ false);
   }
 
   /** Returns a JS type with strict rules. */
   public static JsType forJsSrcStrict(SoyType soyType) {
     return forSoyType(
-        soyType, JsTypeKind.JSSRC, /* isStrict= */ true, ArrayTypeMode.ARRAY_OR_READONLY_ARRAY);
+        soyType,
+        JsTypeKind.JSSRC,
+        /* isStrict= */ true,
+        ArrayTypeMode.ARRAY_OR_READONLY_ARRAY,
+        MessageTypeMode.READONLY,
+        /* includeNullForMessages= */ false);
   }
 
   /** Returns a JS type for idom with looser rules, allowing 1/0 for bools or nullable protos. */
   public static JsType forIncrementalDom(SoyType soyType) {
     return forSoyType(
-        soyType, JsTypeKind.IDOMSRC, /* isStrict= */ false, ArrayTypeMode.ARRAY_OR_READONLY_ARRAY);
+        soyType,
+        JsTypeKind.IDOMSRC,
+        /* isStrict= */ false,
+        ArrayTypeMode.ARRAY_OR_READONLY_ARRAY,
+        MessageTypeMode.READONLY,
+        /* includeNullForMessages= */ true);
   }
 
   /** Returns a JS type for idom with looser rules, allowing 1/0 for bools or nullable protos. */
   public static JsType forIncrementalDomTypeChecks(SoyType soyType) {
     return forSoyType(
-        soyType, JsTypeKind.IDOMSRC, /* isStrict= */ false, ArrayTypeMode.READONLY_ARRAY);
+        soyType,
+        JsTypeKind.IDOMSRC,
+        /* isStrict= */ false,
+        ArrayTypeMode.READONLY_ARRAY,
+        // This is currently set to assert types as mutable to avoid
+        // disambiguation errors inline in templates, presumably resulting
+        // either from runtime functions or externs, but the cause
+        // is not obvious.
+        //
+        // TODO(b/230911572): use only readonly messages here.
+        MessageTypeMode.ONLY_MUTABLE,
+        /* includeNullForMessages= */ false);
   }
 
   /** Returns a JS type for idom with strict rules. */
   public static JsType forIncrementalDomGetters(SoyType soyType) {
     // TODO(b/230911572): use only ReadonlyArray here.
+    // TODO(b/230911572): use only readonly messages here.
     return forSoyType(
-        soyType, JsTypeKind.IDOMSRC, /* isStrict= */ true, ArrayTypeMode.MUTABLE_ARRAY);
+        soyType,
+        JsTypeKind.IDOMSRC,
+        /* isStrict= */ true,
+        ArrayTypeMode.MUTABLE_ARRAY,
+        MessageTypeMode.ONLY_MUTABLE,
+        /* includeNullForMessages= */ false);
   }
 
   /** Returns a JS type for idom with strict rules. */
   public static JsType forIncrementalDomState(SoyType soyType) {
     // TODO(b/230911572): use only ReadonlyArray here.
+    // TODO(b/230911572): use only readonly messages here.
     return forSoyType(
-        soyType, JsTypeKind.IDOMSRC, /* isStrict= */ true, ArrayTypeMode.MUTABLE_ARRAY);
+        soyType,
+        JsTypeKind.IDOMSRC,
+        /* isStrict= */ true,
+        ArrayTypeMode.MUTABLE_ARRAY,
+        MessageTypeMode.ONLY_MUTABLE,
+        /* includeNullForMessages= */ false);
   }
 
   /** Returns a JS type for lit-html with strict rules. */
   public static JsType forLitSrc(SoyType soyType) {
+    // TODO(b/230911572): use only ReadonlyArray here.
+    // TODO(b/230911572): use only readonly messages here.
     return forSoyType(
-        soyType, JsTypeKind.LITSRC, /* isStrict= */ true, ArrayTypeMode.MUTABLE_ARRAY);
+        soyType,
+        JsTypeKind.LITSRC,
+        /* isStrict= */ true,
+        ArrayTypeMode.MUTABLE_ARRAY,
+        MessageTypeMode.READONLY,
+        /* includeNullForMessages= */ false);
   }
 
   private enum JsTypeKind {
     JSSRC,
     IDOMSRC,
     LITSRC
+  }
+
+  /** How we should type-annotate proto messages, as readonly or just mutable. */
+  private enum MessageTypeMode {
+    ONLY_MUTABLE,
+    READONLY,
   }
 
   /**
@@ -291,9 +353,15 @@ public final class JsType {
    * @param isStrict If true, generates stricter types than default (e.g. boolean values cannot be 0
    *     or 1).
    * @param arrayTypeMode describes our typing convention for arrays.
+   * @param messageTypeMode describes our typing convention for messages.
    */
   private static JsType forSoyType(
-      SoyType soyType, JsTypeKind kind, boolean isStrict, ArrayTypeMode arrayTypeMode) {
+      SoyType soyType,
+      JsTypeKind kind,
+      boolean isStrict,
+      ArrayTypeMode arrayTypeMode,
+      MessageTypeMode messageTypeMode,
+      boolean includeNullForMessages) {
     switch (soyType.getKind()) {
       case NULL:
         return NULL_OR_UNDEFINED_TYPE;
@@ -358,7 +426,14 @@ public final class JsType {
             || listType.getElementType().getKind() == SoyType.Kind.ANY) {
           return RAW_ARRAY_TYPE;
         }
-        JsType element = forSoyType(listType.getElementType(), kind, isStrict, arrayTypeMode);
+        JsType element =
+            forSoyType(
+                listType.getElementType(),
+                kind,
+                isStrict,
+                arrayTypeMode,
+                messageTypeMode,
+                includeNullForMessages);
 
         return builder()
             .addType(ArrayTypeMode.formatArrayType(arrayTypeMode, element.typeExpr()))
@@ -373,8 +448,22 @@ public final class JsType {
               && mapType.getValueType().getKind() == SoyType.Kind.ANY) {
             return RAW_OBJECT_TYPE;
           }
-          JsType keyTypeName = forSoyType(mapType.getKeyType(), kind, isStrict, arrayTypeMode);
-          JsType valueTypeName = forSoyType(mapType.getValueType(), kind, isStrict, arrayTypeMode);
+          JsType keyTypeName =
+              forSoyType(
+                  mapType.getKeyType(),
+                  kind,
+                  isStrict,
+                  arrayTypeMode,
+                  messageTypeMode,
+                  includeNullForMessages);
+          JsType valueTypeName =
+              forSoyType(
+                  mapType.getValueType(),
+                  kind,
+                  isStrict,
+                  arrayTypeMode,
+                  messageTypeMode,
+                  includeNullForMessages);
           return builder()
               .addType(
                   String.format("!Object<%s,%s>", keyTypeName.typeExpr(), valueTypeName.typeExpr()))
@@ -398,8 +487,21 @@ public final class JsType {
           JsType keyTypeName =
               keyKind == SoyType.Kind.STRING
                   ? STRING_TYPE
-                  : forSoyType(keyType, kind, isStrict, arrayTypeMode);
-          JsType valueTypeName = forSoyType(mapType.getValueType(), kind, isStrict, arrayTypeMode);
+                  : forSoyType(
+                      keyType,
+                      kind,
+                      isStrict,
+                      arrayTypeMode,
+                      messageTypeMode,
+                      includeNullForMessages);
+          JsType valueTypeName =
+              forSoyType(
+                  mapType.getValueType(),
+                  kind,
+                  isStrict,
+                  arrayTypeMode,
+                  messageTypeMode,
+                  includeNullForMessages);
           return builder()
               .addType(
                   String.format(
@@ -414,15 +516,14 @@ public final class JsType {
         return MESSAGE_TYPE;
       case PROTO:
         final SoyProtoType protoType = (SoyProtoType) soyType;
-        final String protoTypeName = protoType.getNameForBackend(SoyBackendKind.JS_SRC);
+        final String protoTypeName =
+            protoType.getNameForBackend(
+                SoyBackendKind.JS_SRC,
+                /* readonly = */ messageTypeMode == MessageTypeMode.READONLY,
+                /* typeOnly = */ true);
         return builder()
-            .addType(
-                isStrict
-                    ? "!" + protoTypeName
-                    // In theory this should be "!" + protoTypeName since we don't actually
-                    // allow null, but it isn't clear that this is very useful for users.
-                    : protoTypeName)
-            .addRequire(GoogRequire.create(protoTypeName))
+            .addType((isStrict || !includeNullForMessages ? "!" : "?") + protoTypeName)
+            .addRequire(GoogRequire.createTypeRequire(protoTypeName))
             .setPredicate(
                 (value, codeGenerator) ->
                     Optional.of(value.instanceOf(JsRuntime.protoConstructor(protoType))))
@@ -435,7 +536,14 @@ public final class JsType {
           Builder builder = builder();
           Map<String, String> members = new LinkedHashMap<>();
           for (RecordType.Member member : recordType.getMembers()) {
-            JsType forSoyType = forSoyType(member.checkedType(), kind, isStrict, arrayTypeMode);
+            JsType forSoyType =
+                forSoyType(
+                    member.checkedType(),
+                    kind,
+                    isStrict,
+                    arrayTypeMode,
+                    messageTypeMode,
+                    includeNullForMessages);
             builder.addRequires(forSoyType.getGoogRequires());
             members.put(member.name(), forSoyType.typeExprForRecordMember(/* isOptional= */ false));
           }
@@ -461,7 +569,9 @@ public final class JsType {
             if (member.getKind() == Kind.NULL) {
               continue; // handled above
             }
-            JsType memberType = forSoyType(member, kind, isStrict, arrayTypeMode);
+            JsType memberType =
+                forSoyType(
+                    member, kind, isStrict, arrayTypeMode, messageTypeMode, includeNullForMessages);
             builder.addRequires(memberType.extraRequires);
             builder.addTypes(memberType.typeExpressions);
             types.add(memberType);
@@ -499,7 +609,14 @@ public final class JsType {
           Builder builder = builder();
           Map<String, String> parameters = new LinkedHashMap<>();
           for (TemplateType.Parameter parameter : templateType.getParameters()) {
-            JsType forSoyType = forSoyType(parameter.getType(), kind, isStrict, arrayTypeMode);
+            JsType forSoyType =
+                forSoyType(
+                    parameter.getType(),
+                    kind,
+                    isStrict,
+                    arrayTypeMode,
+                    messageTypeMode,
+                    includeNullForMessages);
             builder.addRequires(forSoyType.getGoogRequires());
             parameters.put(
                 parameter.getName(),

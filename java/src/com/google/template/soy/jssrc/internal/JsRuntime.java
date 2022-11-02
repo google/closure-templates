@@ -262,7 +262,10 @@ public final class JsRuntime {
 
   /** Returns the constructor for the proto. */
   public static Expression protoConstructor(SoyProtoType type) {
-    return GoogRequire.create(type.getNameForBackend(SoyBackendKind.JS_SRC)).reference();
+    return GoogRequire.create(
+            type.getNameForBackend(
+                SoyBackendKind.JS_SRC, /* readonly = */ false, /* typeOnly = */ false))
+        .reference();
   }
 
   /**

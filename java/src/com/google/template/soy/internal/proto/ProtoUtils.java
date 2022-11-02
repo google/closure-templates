@@ -116,7 +116,7 @@ public final class ProtoUtils {
   public static String getJsExtensionImport(FieldDescriptor desc) {
     Descriptor scope = desc.getExtensionScope();
     if (scope != null) {
-      return calculateQualifiedJsName(scope);
+      return calculateUnprefixedJsName(scope);
     }
     return getJsPackage(desc.getFile()) + "." + computeJsExtensionName(desc);
   }
@@ -125,7 +125,7 @@ public final class ProtoUtils {
   public static String getJsExtensionName(FieldDescriptor desc) {
     Descriptor scope = desc.getExtensionScope();
     if (scope != null) {
-      return calculateQualifiedJsName(scope) + "." + computeJsExtensionName(desc);
+      return calculateUnprefixedJsName(scope) + "." + computeJsExtensionName(desc);
     }
     return getJsPackage(desc.getFile()) + "." + computeJsExtensionName(desc);
   }
@@ -191,10 +191,10 @@ public final class ProtoUtils {
   }
 
   public static String calculateJsEnumName(EnumDescriptor descriptor) {
-    return calculateQualifiedJsName(descriptor);
+    return calculateUnprefixedJsName(descriptor);
   }
 
-  public static String calculateQualifiedJsName(GenericDescriptor descriptor) {
+  public static String calculateUnprefixedJsName(GenericDescriptor descriptor) {
     String protoPackage = descriptor.getFile().getPackage();
     // We need a semi-qualified name: including containing types but not the package.
     String name = descriptor.getFullName();
@@ -202,12 +202,11 @@ public final class ProtoUtils {
       throw new AssertionError("Expected \"" + name + "\" to start with \"" + protoPackage + "\"");
     }
     String jsPackage = getJsPackage(descriptor.getFile());
+
     // When there is no protoPackage, the semi-qualified name does not have a package prefix nor the
     // "." separator.
-    if (protoPackage.isEmpty()) {
-      return jsPackage + "." + name;
-    }
-    return jsPackage + name.substring(protoPackage.length());
+    return jsPackage
+        + (protoPackage.isEmpty() ? "." + name : name.substring(protoPackage.length()));
   }
 
   /**

@@ -132,13 +132,14 @@ public final class JsSrcUtils {
    * Set of words that JavaScript considers reserved words. These words cannot be used as
    * identifiers. This list is from the ECMA-262 v5, section 7.6.1:
    * http://www.ecma-international.org/publications/files/drafts/tc39-2009-050.pdf plus the keywords
-   * for boolean values and {@code null}. (Also includes the identifiers "soy" and "soydata" which
-   * are used internally by Soy.)
+   * for boolean values and {@code null}. (Also includes the identifiers "proto", "soy", and
+   * "soydata", which are used internally by Soy.)
    */
   private static final ImmutableSet<String> LEGACY_JS_RESERVED_WORDS =
       ImmutableSet.<String>builder()
           .addAll(JS_LITERALS)
           .addAll(JS_RESERVED_WORDS)
+          .add("proto")
           .add("soy")
           .add("soydata")
           .build();

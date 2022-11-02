@@ -1472,9 +1472,11 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
               generator);
       if (isThisParamPositional) {
         if (soyTypeAssertion.isPresent()) {
-          // Cast to a better type, if necessary.
+          // Cast to a better type, if necessary and possible.
+          // TODO(b/256679865): prevent using reserved words.
           JsType declType = getJsTypeForParam(paramType);
-          if (jsType.typeExpr().equalsIgnoreCase(declType.typeExpr())) {
+          if (jsType.typeExpr().equals(declType.typeExpr())
+              || JsSrcUtils.isReservedWord(paramName)) {
             declarations.add(soyTypeAssertion.get().asStatement());
           } else {
             // TODO(b/256679865): rename JS builtins here.
