@@ -363,7 +363,7 @@ For example,
 
 Backend    | type in host language
 ---------- | ---------------------
-JavaScript | `soy.map` (which is a structural interface covering ES6 [`Map`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map) and [`jspb.Map`](https://github.com/protocolbuffers/protobuf/blob/master/js/map.js), the most common implementations)
+JavaScript | `soy.map` (which is a structural interface covering ES6 [`Map`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map) and [`jspb.Map`](https://github.com/protocolbuffers/protobuf/blob/master/js/map.js), the most common implementations.)
 SoySauce   | `java.util.Map`
 Tofu       | `java.util.Map`
 Python     | `dict`
@@ -457,7 +457,8 @@ See the [dev guide](../dev/protos.md) for more information on how protos work.
 Protocol buffers are supported in Soy. They can be accessed as though they were
 `record` types with the `.` operator.
 
-Protocol Buffers in Soy have the same semantics as `JSPB`, not `Java` protos.
+Protocol Buffers in Soy have the same semantics as `protocolbuffers-javascript`,
+not `Java` protos.
 
 See the [dev guide](../dev/protos.md) for more information on how protos work.
 
