@@ -704,7 +704,7 @@ public final class SoyFileSet {
    * @return A list of generated files to write (of the form "<*>FooSoyTemplates.java").
    * @throws SoyCompilationException If compilation fails.
    */
-  ImmutableList<GeneratedFile> generateBuilders(String javaPackage) {
+  ImmutableList<GeneratedFile> generateBuilders(String javaPackage, String kytheCorpus) {
     return entryPoint(
         () -> {
           ParseResult result = parseWithoutOptimizingOrDesugaringHtml();
@@ -712,7 +712,8 @@ public final class SoyFileSet {
           SoyFileSetNode soyTree = result.fileSet();
 
           // Generate template invocation builders for the soy tree.
-          return new GenerateBuildersVisitor(errorReporter, javaPackage, result.registry())
+          return new GenerateBuildersVisitor(
+                  errorReporter, javaPackage, kytheCorpus, result.registry())
               .exec(soyTree);
         });
   }
@@ -722,12 +723,14 @@ public final class SoyFileSet {
    * will be one Java class per Soy file.
    *
    * @param javaPackage The Java package for the generated classes.
+   * @param kytheCorpus
    * @param javaClassNameSource Source of the generated class names. Must be one of "filename",
    *     "namespace", or "generic".
    * @return A list of generated files to write (of the form "<*>SoyInfo.java").
    * @throws SoyCompilationException If compilation fails.
    */
-  ImmutableList<GeneratedFile> generateParseInfo(String javaPackage, String javaClassNameSource) {
+  ImmutableList<GeneratedFile> generateParseInfo(
+      String javaPackage, String kytheCorpus, String javaClassNameSource) {
     return entryPoint(
         () -> {
           ParseResult result = parseWithoutOptimizingOrDesugaringHtml();
@@ -737,7 +740,8 @@ public final class SoyFileSet {
           FileSetMetadata registry = result.registry();
 
           // Do renaming of package-relative class names.
-          return new GenerateParseInfoVisitor(javaPackage, javaClassNameSource, registry)
+          return new GenerateParseInfoVisitor(
+                  javaPackage, kytheCorpus, javaClassNameSource, registry)
               .exec(soyTree);
         });
   }

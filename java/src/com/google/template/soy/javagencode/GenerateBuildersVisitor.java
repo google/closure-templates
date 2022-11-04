@@ -41,6 +41,7 @@ import com.google.common.collect.Streams;
 import com.google.template.soy.base.internal.IndentedLinesBuilder;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.javagencode.KytheHelper.Span;
 import com.google.template.soy.javagencode.SoyFileNodeTransformer.FileInfo;
 import com.google.template.soy.javagencode.SoyFileNodeTransformer.ParamInfo;
 import com.google.template.soy.javagencode.SoyFileNodeTransformer.ParamStatus;
@@ -123,14 +124,20 @@ public final class GenerateBuildersVisitor
               + " parameter.");
 
   private final ErrorReporter errorReporter;
+  private final String kytheCorpus;
   private final SoyFileNodeTransformer transformer;
 
   private IndentedLinesBuilder ilb; // Line formatter for the generated code.
+  private KytheHelper kytheHelper;
   private ImmutableList.Builder<GeneratedFile> generatedFiles; // The generated Java files to write.
 
   public GenerateBuildersVisitor(
-      ErrorReporter errorReporter, String javaPackage, FileSetMetadata registry) {
+      ErrorReporter errorReporter,
+      String javaPackage,
+      String kytheCorpus,
+      FileSetMetadata registry) {
     this.errorReporter = errorReporter;
+    this.kytheCorpus = kytheCorpus;
     this.transformer = new SoyFileNodeTransformer(javaPackage, registry);
   }
 
@@ -138,6 +145,7 @@ public final class GenerateBuildersVisitor
   public ImmutableList<GeneratedFile> exec(SoyNode node) {
     generatedFiles = new ImmutableList.Builder<>();
     ilb = null;
+    kytheHelper = null;
     visit(node);
 
     ImmutableList<GeneratedFile> builtFileList = generatedFiles.build();
@@ -156,6 +164,7 @@ public final class GenerateBuildersVisitor
   protected void visitSoyFileNode(SoyFileNode soyFile) {
     FileInfo fileInfo = transformer.transform(soyFile);
     ilb = new IndentedLinesBuilder(2);
+    kytheHelper = new KytheHelper(kytheCorpus);
     appendFileHeaderAndImports(fileInfo);
 
     String javaClassNameForSoyFile = fileInfo.className();
@@ -170,8 +179,18 @@ public final class GenerateBuildersVisitor
         /* forceMultiline= */ false,
         /* wrapAt100Chars= */ true);
     ilb.appendLine(
-        "@javax.annotation.Generated(\"com.google.template.soy.SoyParseInfoGenerator\")");
-    ilb.appendLine("public final class " + javaClassNameForSoyFile + " {");
+        "@javax.annotation.Generated(\n"
+            + "    value = \"com.google.template.soy.SoyParseInfoGenerator\""
+            + (kytheHelper.isEnabled()
+                ? ",\n    comments = \"kythe-inline-metadata:GeneratedCodeInfo\""
+                : "")
+            + ")");
+
+    Span classSpan =
+        kytheHelper
+            .appendLineAndGetSpans(ilb, "public final class ", javaClassNameForSoyFile, " {")
+            .get(1);
+    kytheHelper.addKytheLinkTo(classSpan, soyFile);
 
     ilb.increaseIndent();
 
@@ -230,7 +249,8 @@ public final class GenerateBuildersVisitor
 
     // Add the file name and contents to the list of generated files to write.
     String fileName = javaClassNameForSoyFile + ".java";
-    generatedFiles.add(GeneratedFile.create(fileName, ilb.toString()));
+    generatedFiles.add(
+        GeneratedFile.create("", fileName, ilb.toString(), kytheHelper.getGeneratedCodeInfo()));
     ilb = null;
   }
 
@@ -258,7 +278,7 @@ public final class GenerateBuildersVisitor
    * com.google.template.soy.data.SoyTemplate}.
    */
   private void visitTemplateInfo(TemplateInfo template) {
-    String paramsClass = template.className();
+    String templateClass = template.className();
 
     // Start of Foo class.
     String templateDescription = template.soyDocDesc();
@@ -270,10 +290,17 @@ public final class GenerateBuildersVisitor
             + (templateDescription != null ? ": " + templateDescription : "."),
         /* forceMultiline= */ false,
         /* wrapAt100Chars= */ true);
-    ilb.appendLine(
-        "public static final class "
-            + paramsClass
-            + " extends com.google.template.soy.data.BaseSoyTemplateImpl {");
+
+    Span classNameSpan =
+        kytheHelper
+            .appendLineAndGetSpans(
+                ilb,
+                "public static final class ",
+                templateClass,
+                " extends com.google.template.soy.data.BaseSoyTemplateImpl {")
+            .get(1);
+    kytheHelper.addKytheLinkTo(classNameSpan, template);
+
     ilb.increaseIndent();
     ilb.appendLine();
     ilb.appendLine(
@@ -284,12 +311,12 @@ public final class GenerateBuildersVisitor
             + "\";");
     ilb.appendLine();
 
-    appendFutureWrapperMethod(paramsClass);
+    appendFutureWrapperMethod(templateClass);
 
     // Constructor for Foo.
     ilb.appendLine(
         "private "
-            + paramsClass
+            + templateClass
             + "(com.google.common.collect.ImmutableMap<java.lang.String,"
             + " com.google.template.soy.data.SoyValueProvider> data) {");
     ilb.increaseIndent();
@@ -307,7 +334,7 @@ public final class GenerateBuildersVisitor
     ilb.appendLine("}");
     ilb.appendLine();
 
-    appendParamsBuilderClass(template, paramsClass);
+    appendParamsBuilderClass(template, templateClass);
 
     // End of Foo class.
     ilb.decreaseIndent();
@@ -513,7 +540,7 @@ public final class GenerateBuildersVisitor
     // Add setters for each direct template param.
     nonInjectedParams.stream()
         .filter(p -> p.status() == ParamStatus.HANDLED)
-        .forEach(this::writeSettersForParam);
+        .forEach(p -> writeSettersForParam(p, template));
 
     ilb.appendLine();
 
@@ -644,15 +671,15 @@ public final class GenerateBuildersVisitor
    *
    * <p>TODO(b/77550695): Update docs for how we handle futures.
    */
-  private void writeSettersForParam(ParamInfo param) {
+  private void writeSettersForParam(ParamInfo param, TemplateInfo template) {
     // Add setters for this param.
-    param.javaTypes().forEach(javaType -> writeSetter(ilb, param, javaType));
+    param.javaTypes().forEach(javaType -> writeSetter(param, template, javaType));
 
     // For now only write the future interface if the setter is not already overloaded
     switch (param.futureStatus()) {
       case HANDLED:
         for (JavaType futureType : param.futureTypes()) {
-          writeFutureSetter(ilb, param, new FutureJavaType(futureType));
+          writeFutureSetter(ilb, param, template, new FutureJavaType(futureType));
         }
         break;
       case NAME_COLLISION:
@@ -664,7 +691,7 @@ public final class GenerateBuildersVisitor
   }
 
   /** Writes a setter method for the given param and java type. */
-  private static void writeSetter(IndentedLinesBuilder ilb, ParamInfo param, JavaType javaType) {
+  private void writeSetter(ParamInfo param, TemplateInfo template, JavaType javaType) {
     String paramDescription = param.param().getDescription();
     ilb.appendLine();
     appendJavadoc(
@@ -676,19 +703,24 @@ public final class GenerateBuildersVisitor
         /* wrapAt100Chars= */ true);
 
     if (javaType instanceof RecordJavaType) {
-      writeRecordSetter(ilb, param, (RecordJavaType) javaType);
+      writeRecordSetter(param, template, (RecordJavaType) javaType);
     } else {
       String javaTypeString = javaType.toJavaTypeString();
       boolean nullable = javaType.isNullable();
 
       ilb.appendLine("@com.google.errorprone.annotations.CanIgnoreReturnValue");
-      ilb.appendLine(
-          "public Builder "
-              + param.setterName()
-              + "("
-              + (nullable ? "@javax.annotation.Nullable " : "")
-              + javaTypeString
-              + " value) {");
+      Span paramSpan =
+          kytheHelper
+              .appendLineAndGetSpans(
+                  ilb,
+                  "public Builder ",
+                  param.setterName(),
+                  "("
+                      + (nullable ? "@javax.annotation.Nullable " : "")
+                      + javaTypeString
+                      + " value) {")
+              .get(1);
+      kytheHelper.addKytheLinkTo(paramSpan, param, template);
       ilb.increaseIndent();
 
       String newVariableName = javaType.asInlineCast("value");
@@ -703,11 +735,15 @@ public final class GenerateBuildersVisitor
     }
   }
 
-  private static void writeRecordSetter(
-      IndentedLinesBuilder ilb, ParamInfo param, RecordJavaType type) {
+  private void writeRecordSetter(ParamInfo param, TemplateInfo template, RecordJavaType type) {
     ilb.appendLine("@com.google.errorprone.annotations.CanIgnoreReturnValue");
-    ilb.appendLineStart(
-        "public Builder ", type.isList() ? param.adderName() : param.setterName(), "(");
+
+    Span paramSpan =
+        kytheHelper
+            .appendLineStartAndGetSpans(
+                ilb, "public Builder ", type.isList() ? param.adderName() : param.setterName(), "(")
+            .get(1);
+    kytheHelper.addKytheLinkTo(paramSpan, param, template);
 
     List<String> paramNames = type.getJavaTypeMap().keySet().asList();
     List<String> javaParamNames = new ArrayList<>();
@@ -718,13 +754,13 @@ public final class GenerateBuildersVisitor
       javaParamNames.add(paramName);
 
       if (!first) {
-        ilb.append(", ");
+        ilb.appendLineMiddle(", ");
       }
       JavaType paramType = entry.getValue();
       if (paramType.isNullable()) {
-        ilb.append("@javax.annotation.Nullable ");
+        ilb.appendLineMiddle("@javax.annotation.Nullable ");
       }
-      ilb.append(paramType.toJavaTypeString()).append(" ").append(paramName);
+      ilb.appendLineMiddle(paramType.toJavaTypeString(), " ", paramName);
       first = false;
     }
     ilb.appendLineEnd(") {");
@@ -737,12 +773,13 @@ public final class GenerateBuildersVisitor
     int numParams = paramNames.size();
     for (int i = 0; i < numParams; i++) {
       if (i != 0) {
-        ilb.append(", ");
+        ilb.appendLineMiddle(", ");
       }
-      ilb.append("\"")
-          .append(paramNames.get(i))
-          .append("\", ")
-          .append(type.getJavaTypeMap().get(paramNames.get(i)).asInlineCast(javaParamNames.get(i)));
+      ilb.appendLineMiddle(
+          "\"",
+          paramNames.get(i),
+          "\", ",
+          type.getJavaTypeMap().get(paramNames.get(i)).asInlineCast(javaParamNames.get(i)));
     }
     ilb.appendLineEnd("));");
     ilb.decreaseIndent();
@@ -750,8 +787,8 @@ public final class GenerateBuildersVisitor
   }
 
   /** Writes a setter method for the given param and java type. */
-  private static void writeFutureSetter(
-      IndentedLinesBuilder ilb, ParamInfo param, FutureJavaType javaType) {
+  private void writeFutureSetter(
+      IndentedLinesBuilder ilb, ParamInfo param, TemplateInfo template, FutureJavaType javaType) {
 
     ilb.appendLine();
     appendJavadoc(
@@ -764,12 +801,17 @@ public final class GenerateBuildersVisitor
         /* forceMultiline= */ false,
         /* wrapAt100Chars= */ true);
     ilb.appendLine("@com.google.errorprone.annotations.CanIgnoreReturnValue");
-    ilb.appendLine(
-        "public Builder "
-            + param.futureSetterName()
-            + "("
-            + javaType.toJavaTypeString()
-            + " future) {");
+
+    Span paramSpan =
+        kytheHelper
+            .appendLineAndGetSpans(
+                ilb,
+                "public Builder ",
+                param.futureSetterName(),
+                "(" + javaType.toJavaTypeString() + " future) {")
+            .get(1);
+    kytheHelper.addKytheLinkTo(paramSpan, param, template);
+
     ilb.increaseIndent();
 
     ilb.appendLine(

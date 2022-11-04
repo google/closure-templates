@@ -17,6 +17,7 @@
 package com.google.template.soy.base.internal;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Utf8;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 
 /**
@@ -26,7 +27,7 @@ import com.google.errorprone.annotations.CanIgnoreReturnValue;
  *
  * <p>The maximum indent length is 24.
  */
-public class IndentedLinesBuilder implements CharSequence, Appendable {
+public class IndentedLinesBuilder implements CharSequence {
 
   /** Constant string of 24 spaces (the maximum indent length). */
   private static final String SPACES = "                        ";
@@ -45,6 +46,8 @@ public class IndentedLinesBuilder implements CharSequence, Appendable {
 
   /** The current indent as a string of spaces. */
   private String indent;
+
+  private int byteLength = 0;
 
   /**
    * Constructor with initial indent length of 0.
@@ -72,12 +75,13 @@ public class IndentedLinesBuilder implements CharSequence, Appendable {
     indent = SPACES.substring(0, indentLen);
   }
 
-  /**
-   * Gets the internal StringBuilder for this instance. You may directly add content to it as long
-   * as you only add complete lines (i.e. the last character you add must be '\n').
-   */
-  public StringBuilder sb() {
-    return sb;
+  private void appendInternal(String s) {
+    sb.append(s);
+    byteLength += Utf8.encodedLength(s);
+  }
+
+  public int getByteLength() {
+    return byteLength;
   }
 
   /** Returns the number of spaces between indent stops. */
@@ -122,10 +126,10 @@ public class IndentedLinesBuilder implements CharSequence, Appendable {
    */
   public void appendLine(Object... parts) {
     if (parts.length > 0) {
-      sb.append(indent);
+      appendInternal(indent);
     }
     appendParts(parts);
-    sb.append('\n');
+    appendInternal("\n");
   }
 
   /**
@@ -137,7 +141,7 @@ public class IndentedLinesBuilder implements CharSequence, Appendable {
   @CanIgnoreReturnValue
   public IndentedLinesBuilder appendParts(Object... parts) {
     for (Object part : parts) {
-      sb.append(part);
+      appendInternal(part.toString());
     }
     return this;
   }
@@ -150,7 +154,13 @@ public class IndentedLinesBuilder implements CharSequence, Appendable {
    */
   @CanIgnoreReturnValue
   public IndentedLinesBuilder appendLineStart(Object... parts) {
-    sb.append(indent);
+    appendInternal(indent);
+    appendParts(parts);
+    return this;
+  }
+
+  @CanIgnoreReturnValue
+  public IndentedLinesBuilder appendLineMiddle(Object... parts) {
     appendParts(parts);
     return this;
   }
@@ -164,7 +174,7 @@ public class IndentedLinesBuilder implements CharSequence, Appendable {
   @CanIgnoreReturnValue
   public IndentedLinesBuilder appendLineEnd(Object... parts) {
     appendParts(parts);
-    sb.append("\n");
+    appendInternal("\n");
     return this;
   }
 
@@ -175,7 +185,7 @@ public class IndentedLinesBuilder implements CharSequence, Appendable {
   }
 
   // -----------------------------------------------------------------------------------------------
-  // Methods for CharSequence and Appendable interfaces.
+  // Methods for CharSequence interface.
 
   @Override
   public int length() {
@@ -190,26 +200,5 @@ public class IndentedLinesBuilder implements CharSequence, Appendable {
   @Override
   public CharSequence subSequence(int start, int end) {
     return sb.subSequence(start, end);
-  }
-
-  @CanIgnoreReturnValue
-  @Override
-  public IndentedLinesBuilder append(CharSequence csq) {
-    sb.append(csq);
-    return this;
-  }
-
-  @CanIgnoreReturnValue
-  @Override
-  public IndentedLinesBuilder append(CharSequence csq, int start, int end) {
-    sb.append(csq, start, end);
-    return this;
-  }
-
-  @CanIgnoreReturnValue
-  @Override
-  public IndentedLinesBuilder append(char c) {
-    sb.append(c);
-    return this;
   }
 }

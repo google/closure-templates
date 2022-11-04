@@ -146,6 +146,7 @@ public final class GenerateParseInfoVisitor
   /** Map from Soy file node to generated Java class name (built at start of pass). */
   private Map<SoyFileNode, String> soyFileToJavaClassNameMap;
 
+  private final String kytheCorpus;
   /** Registry of all templates in the Soy tree. */
   private final FileSetMetadata fileSetMetadata;
 
@@ -170,8 +171,12 @@ public final class GenerateParseInfoVisitor
    *     "namespace", or "generic".
    */
   public GenerateParseInfoVisitor(
-      String javaPackage, String javaClassNameSource, FileSetMetadata registry) {
+      String javaPackage,
+      String kytheCorpus,
+      String javaClassNameSource,
+      FileSetMetadata registry) {
     this.javaPackage = javaPackage;
+    this.kytheCorpus = kytheCorpus;
     this.fileSetMetadata = registry;
     switch (javaClassNameSource) {
       case "filename":

@@ -38,12 +38,10 @@ public final class IndentedLinesBuilderTest {
     ilb.increaseIndent(2);
     ilb.appendLineStart("Line ").appendLineEnd('3');
     ilb.decreaseIndent();
-    ilb.sb().append("Line 4 not indented\n");
-    ilb.appendLine("Line 5");
+    ilb.appendLine("Line 4");
 
     assertThat(ilb.getIndentIncrementLen()).isEqualTo(2);
     assertThat(ilb.getCurrIndentLen()).isEqualTo(4);
-    assertThat(ilb.toString())
-        .isEqualTo("Line 1\n  Line 2\n      Line 3\nLine 4 not indented\n    Line 5\n");
+    assertThat(ilb.toString()).isEqualTo("Line 1\n  Line 2\n      Line 3\n    Line 4\n");
   }
 }

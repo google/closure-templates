@@ -324,7 +324,7 @@ public final class JavaGenerationUtils {
       }
       ilb.appendLineStart(param);
     }
-    ilb.append(")");
+    ilb.appendLineMiddle(")");
     ilb.decreaseIndent(2);
   }
 

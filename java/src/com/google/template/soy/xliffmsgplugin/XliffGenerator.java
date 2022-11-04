@@ -106,7 +106,7 @@ class XliffGenerator {
       for (SoyMsgPart msgPart : msg.getParts()) {
         if (msgPart instanceof SoyMsgRawTextPart) {
           String rawText = ((SoyMsgRawTextPart) msgPart).getRawText();
-          ilb.append(contentEscaper.escape(rawText));
+          ilb.appendLineMiddle(contentEscaper.escape(rawText));
         } else if (msgPart instanceof SoyMsgPlaceholderPart) {
           SoyMsgPlaceholderPart placeholder = (SoyMsgPlaceholderPart) msgPart;
           Optional<String> example = placeholder.getPlaceholderExample();

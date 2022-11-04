@@ -171,7 +171,10 @@ java_library(
         ":soy_cmdline",
         "//java/src/com/google/template/soy/base/internal",
         "//java/src/com/google/template/soy/shared/internal/gencode",
+        "@com_google_protobuf//:protobuf_java",
         "@maven//:args4j_args4j",
+        "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:com_google_errorprone_error_prone_annotations",
         "@maven//:com_google_guava_guava",
     ],
 )
