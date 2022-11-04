@@ -1229,9 +1229,7 @@ final class ExpressionCompiler {
             baseExpr,
             node.getFieldName(),
             node.getType(),
-            // TODO(b/230787876): After all correct-semantics field accesses have been migrated to
-            // getter syntax, this should become NULL_IF_UNSET.
-            ProtoUtils.ScalarFieldMode.NULL_IF_BROKEN_SEMANTICS,
+            ProtoUtils.ScalarFieldMode.NULL_IF_UNSET,
             varManager);
       }
       // Otherwise this must be a vanilla SoyRecord.  Box, call getField or getFieldProvider

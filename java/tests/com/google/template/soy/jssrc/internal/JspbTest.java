@@ -76,7 +76,9 @@ public final class JspbTest {
   public void testSimpleProto() {
     assertThatSoyExpr(expr("$proto.key").withParam("{@param proto: KvPair}"))
         .withProtoImports(DESCRIPTORS)
-        .generatesCode("opt_data.proto.getKey();");
+        .generatesCode(
+            "goog.DEBUG ? opt_data.proto.getKeyOrUndefined() : "
+                + "opt_data.proto.getKey_legacyNullable();");
   }
 
   @Test
@@ -84,14 +86,18 @@ public final class JspbTest {
     assertThatSoyExpr(
             expr("$proto.field").withParam("{@param proto : ExampleExtendable.InnerMessage}"))
         .withProtoImports(DESCRIPTORS)
-        .generatesCode("opt_data.proto.getField();");
+        .generatesCode(
+            "goog.DEBUG ? opt_data.proto.getFieldOrUndefined() : "
+                + "opt_data.proto.getField_legacyNullable();");
   }
 
   @Test
   public void testMath() {
     assertThatSoyExpr(expr("$pair.anotherValue * 5").withParam("{@param pair : KvPair}"))
         .withProtoImports(DESCRIPTORS)
-        .generatesCode("opt_data.pair.getAnotherValue() * 5;")
+        .generatesCode(
+            "(goog.DEBUG ? opt_data.pair.getAnotherValueOrUndefined() : "
+                + "opt_data.pair.getAnotherValue_legacyNullable()) * 5;")
         .withPrecedence(TIMES);
   }
 

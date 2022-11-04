@@ -19,6 +19,7 @@ package com.google.template.soy.jssrc.internal;
 import static com.google.common.base.CaseFormat.LOWER_CAMEL;
 import static com.google.common.base.CaseFormat.UPPER_CAMEL;
 import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_NULL;
+import static com.google.template.soy.jssrc.dsl.Expression.dottedIdNoRequire;
 import static com.google.template.soy.jssrc.dsl.Expression.ifExpression;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_ARRAY_MAP;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_CHECK_NOT_NULL;
@@ -317,6 +318,20 @@ final class NullSafeAccumulator {
     Expression extend(Expression prevTip) {
       Expression arg = protoCall.getterArg();
       String getter = protoCall.getter();
+      // TODO(b/230787876): This is only here temporarily to use _legacyNullable accessors in prod
+      // (and OrUndefined accessors in goog.DEBUG). After ~2 weeks we will switch to using
+      // OrUndefined unconditionally.
+      if (getter.endsWith(ProtoCall.Type.GET_LEGACY_NULLABLE.getSuffix())) {
+        String orUndefinedGetter =
+            getter.replace(
+                ProtoCall.Type.GET_LEGACY_NULLABLE.getSuffix(),
+                ProtoCall.Type.GET_OR_UNDEFINED.getSuffix());
+        return ifExpression(
+                dottedIdNoRequire("goog.DEBUG").withInitialStatements(prevTip.initialStatements()),
+                prevTip.dotAccess(orUndefinedGetter).call())
+            .setElse(prevTip.dotAccess(getter).call())
+            .buildTernary();
+      }
       return arg == null ? prevTip.dotAccess(getter).call() : prevTip.dotAccess(getter).call(arg);
     }
 
@@ -359,9 +374,13 @@ final class NullSafeAccumulator {
     }
 
     static FieldAccess protoCall(String fieldName, FieldDescriptor desc) {
-      // TODO(b/230787876): After all correct-semantics field accesses have been migrated to getter
-      // syntax, this should become getFieldOrUndefined for singular primitive fields.
-      return ProtoCall.getField(fieldName, desc);
+      if (desc.hasPresence() && desc.getJavaType() != FieldDescriptor.JavaType.MESSAGE) {
+        // Singular primitive fields with presence use the OrUndefined getter.
+        // TODO(b/230787876): Change to getFieldOrUndefined. See note in ProtoDotCall.extend
+        return ProtoCall.getFieldLegacyNullable(fieldName, desc);
+      } else {
+        return ProtoCall.getField(fieldName, desc);
+      }
     }
   }
 
@@ -394,6 +413,7 @@ final class NullSafeAccumulator {
     private enum Type {
       GET("get", ""),
       GET_OR_UNDEFINED("get", "OrUndefined"),
+      GET_LEGACY_NULLABLE("get", "_legacyNullable"),
       HAS("has", "");
 
       private final String prefix;
@@ -446,6 +466,10 @@ final class NullSafeAccumulator {
       return accessor(fieldName, desc, Type.GET_OR_UNDEFINED);
     }
 
+    static ProtoCall getFieldLegacyNullable(String fieldName, FieldDescriptor desc) {
+      return accessor(fieldName, desc, Type.GET_LEGACY_NULLABLE);
+    }
+
     static ProtoCall hasField(String fieldName, FieldDescriptor desc) {
       return accessor(fieldName, desc, Type.HAS);
     }
@@ -463,7 +487,7 @@ final class NullSafeAccumulator {
           && ProtoUtils.getContainingOneof(desc) == null) {
         // JSPB doesn't have hassers for submessages.
         throw new IllegalArgumentException("Submessage hasser not implemented");
-      } else if (Type.GET == type || Type.GET_OR_UNDEFINED == type) {
+      } else if (Type.GET.getPrefix().equals(type.getPrefix())) {
         unpackFunction = getUnpackFunction(desc);
       }
 

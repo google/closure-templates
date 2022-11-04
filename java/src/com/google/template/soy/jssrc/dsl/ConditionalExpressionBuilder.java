@@ -97,4 +97,19 @@ public final class ConditionalExpressionBuilder {
     }
     return var.withInitialStatements(ImmutableList.of(decl, builder.build()));
   }
+
+  /**
+   * Builds this conditional into a ternary expression.
+   *
+   * @throws IllegalStateException if not in a form suitable for ternary expression
+   */
+  @CheckReturnValue
+  public Expression buildTernary() {
+    ImmutableList<IfThenPair<Expression>> pairs = conditions.build();
+    Expression ternary = tryCreateTernary(pairs);
+    if (ternary != null) {
+      return ternary;
+    }
+    throw new IllegalStateException("Unsuitable for ternary expression");
+  }
 }

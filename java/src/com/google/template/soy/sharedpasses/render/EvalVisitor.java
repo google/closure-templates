@@ -509,11 +509,9 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     }
 
     // If the static type is a proto, access it using proto semantics
-    // the base type is possibly nullable, so remove null before testing for being a proto
     if (isProtoOrUnionOfProtos(fieldAccess.getBaseExprChild().getType())) {
-      // TODO(b/230787876): After all correct-semantics field accesses have been migrated to getter
-      // syntax, this should become getProtoFieldOrNull.
-      return ((SoyProtoValue) base).getProtoField(fieldAccess.getFieldName());
+      // getProtoFieldOrNull can handle all fields and is only nullish for fields with presence.
+      return ((SoyProtoValue) base).getProtoFieldOrNull(fieldAccess.getFieldName());
     }
     maybeMarkBadProtoAccess(fieldAccess, base);
     // base is a valid SoyRecord: get value
@@ -645,6 +643,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       switch (builtinMethod) {
         case GET_EXTENSION:
           return ((SoyProtoValue) base)
+              // TODO(b/230787876): this should be getProtoFieldOrNull to match jspb semantics.
               .getProtoField(
                   BuiltinMethod.getProtoExtensionIdFromMethodCall(methodNode),
                   /* useBrokenProtoSemantics= */ true);
