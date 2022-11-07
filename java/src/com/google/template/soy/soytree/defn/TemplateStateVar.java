@@ -53,7 +53,7 @@ public final class TemplateStateVar extends AbstractVarDefn implements TemplateH
     this.desc = desc;
     this.initialValue =
         initialValue == null
-            ? new ExprRootNode(new NullNode(sourceLocation))
+            ? new ExprRootNode(new NullNode(/* Tell formatter to omit. */ SourceLocation.UNKNOWN))
             : new ExprRootNode(initialValue);
     this.sourceLocation = sourceLocation;
 
@@ -110,6 +110,7 @@ public final class TemplateStateVar extends AbstractVarDefn implements TemplateH
     return false;
   }
 
+  @Override
   public void setType(SoyType type) {
     if (this.type == null) {
       this.type = type;
