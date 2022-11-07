@@ -26,7 +26,6 @@ import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.soytree.SoyNode.Kind;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
-import com.google.template.soy.types.IntType;
 import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
@@ -121,14 +120,17 @@ public final class TemplateBasicNode extends TemplateNode {
   }
 
   private Optional<CommandTagAttribute> getCommandTagAttribute(String name) {
-    return getAttributes().stream()
-        .filter(a -> name.equals(a.getName().identifier()) && a.hasExprValue())
-        .findFirst();
+    return getAttributes().stream().filter(a -> name.equals(a.getName().identifier())).findFirst();
+  }
+
+  /** Returns the CommandTagAttribute, if it's an expression. */
+  private Optional<CommandTagAttribute> getCommandTagAttributeExpr(String name) {
+    return getCommandTagAttribute(name).map(a -> a.hasExprValue() ? a : null);
   }
 
   @Nullable
   public ExprRootNode getModifiesExpr() {
-    return getCommandTagAttribute("modifies").map(a -> a.valueAsExprList().get(0)).orElse(null);
+    return getCommandTagAttributeExpr("modifies").map(a -> a.valueAsExprList().get(0)).orElse(null);
   }
 
   public String getLegacyDeltemplateNamespace() {
@@ -137,15 +139,13 @@ public final class TemplateBasicNode extends TemplateNode {
 
   @Nullable
   public ExprRootNode getVariantExpr() {
-    return getCommandTagAttribute("variant").map(a -> a.valueAsExprList().get(0)).orElse(null);
+    return getCommandTagAttributeExpr("variant").map(a -> a.valueAsExprList().get(0)).orElse(null);
   }
 
   private static final boolean isValidVariantType(SoyType type) {
     return type.equals(SoyTypes.NUMBER_TYPE)
         || type.equals(StringType.getInstance())
-        || type.getKind().equals(SoyType.Kind.PROTO_ENUM)
-        // TODO(nicholasyu): Remove support for int once all usages are refactored out
-        || type.equals(IntType.getInstance());
+        || type.getKind().equals(SoyType.Kind.PROTO_ENUM);
   }
 
   public void resolveUseVariantType(SoyTypeRegistry registry, ErrorReporter errorReporter) {
@@ -156,7 +156,12 @@ public final class TemplateBasicNode extends TemplateNode {
     }
     SoyType resolvedType = registry.getType(useVariantTypeString);
     if (resolvedType == null || !isValidVariantType(resolvedType)) {
-      errorReporter.report(getSourceLocation(), INVALID_USEVARIANTTYPE, useVariantTypeString);
+      errorReporter.report(
+          getCommandTagAttribute("usevarianttype")
+              .map(CommandTagAttribute::getSourceLocation)
+              .orElse(getSourceLocation()),
+          INVALID_USEVARIANTTYPE,
+          useVariantTypeString);
       useVariantType = NullType.getInstance();
     } else {
       useVariantType = resolvedType;
