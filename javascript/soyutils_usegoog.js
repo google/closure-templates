@@ -901,7 +901,7 @@ const $$escapeHtml = function(value) {
  *
  * @param {?} value The string-like value to be escaped. May not be a string,
  *     but the value will be coerced to a string.
- * @param {?Array<string>=} safeTags Additional tag names to whitelist.
+ * @param {?ReadonlyArray<string>=} safeTags Additional tag names to whitelist.
  * @return {!SanitizedHtml} A sanitized and normalized version of
  *     value.
  */
@@ -1027,7 +1027,7 @@ class TagPreservesWhitespace {
  * Determines if whitespace should currently be preserved by inspecting the top
  * element of the stack.
  *
- * @param {!Array<!TagPreservesWhitespace>} preserveWhitespaceStack, an array of
+ * @param {!ReadonlyArray<!TagPreservesWhitespace>} preserveWhitespaceStack, an array of
  * structs with properties tag and preserveWhitespace. The last element in the
  * array is the top of the stack.
  * @return {boolean}
@@ -1303,7 +1303,7 @@ const $$embedCssIntoHtml_ = function(css) {
  * If `<table>` is used for formatting, embedded HTML shouldn't be able
  * to use a mismatched `</table>` to break page layout.
  *
- * @param {!Array<string>} tags Array of open/close tags (e.g. '<p>', '</p>')
+ * @param {!ReadonlyArray<string>} tags Array of open/close tags (e.g. '<p>', '</p>')
  *    that will be modified in place to be either an open tag, one or more close
  *    tags concatenated, or the empty string.
  * @return {string} zero or more closed tags that close all elements that are
@@ -1998,7 +1998,7 @@ const $$isLowSurrogate_ = function(cc) {
 
 /**
  * Checks if the list contains the given element.
- * @param {!Array<?>} list
+ * @param {!ReadonlyArray<?>} list
  * @param {*} val
  * @return {boolean}
  */
@@ -2009,7 +2009,7 @@ const $$listContains = function(list, val) {
 
 /**
  * Returns the index of val in list or -1
- * @param {!Array<?>} list
+ * @param {!ReadonlyArray<?>} list
  * @param {*} val
  * @param {number=} startIndex
  * @return {number}
@@ -2023,7 +2023,7 @@ const $$listIndexOf = function(list, val, startIndex = 0) {
 
 /**
  * Reverses a list and returns it. The original list passed is unaffected.
- * @param {!Array<T>} list
+ * @param {!ReadonlyArray<T>} list
  * @return {!Array<T>}
  * @template T
  */
@@ -2035,7 +2035,7 @@ const $$listReverse = function(list) {
 /**
  * A helper for Array methods that have optional startIndex
  *
- * @param {Array!} arr
+ * @param {ReadonlyArray!} arr
  * @param {number} startIndex
  * @return {number}
  */
@@ -2047,7 +2047,7 @@ const clampArrayStartIndex = function(arr, startIndex) {
 /**
  * Removes duplicates from a list and returns it.
  * The original list passed is unaffected.
- * @param {!Array<T>} list
+ * @param {!ReadonlyArray<T>} list
  * @return {!Array<T>}
  * @template T
  */
@@ -2059,12 +2059,12 @@ const $$listUniq = function(list) {
 
 /**
  * Flattens a nested list. Delegates to Array.prototype.flat.
- * @param {!Array} list
+ * @param {!ReadonlyArray} list
  * @param {number=} depth
  * @return {!Array}
  */
 const $$listFlat = function(list, depth) {
-  return list.flat(depth);
+  return /** @type {!Array<?>} */ (list).flat(depth);
 };
 
 /**
@@ -2082,7 +2082,7 @@ const $$makeArray = function(...args) {
  * @param {!IArrayLike<T>} list
  * @param {function(T,number):boolean} filter
  * @param {function(T,number):V} map
- * @return {!IArrayLike<V>}
+ * @return {!Array<V>}
  * @template T, V
  */
 const $$filterAndMap = function(list, filter, map) {
