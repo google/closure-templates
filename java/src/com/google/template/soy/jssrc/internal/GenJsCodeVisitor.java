@@ -1081,7 +1081,9 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       return ImmutableList.of(
           Expression.objectLiteral(
               node.getParams().stream()
-                  .collect(toImmutableMap(TemplateParam::name, p -> id(genParamAlias(p.name()))))),
+                  .collect(
+                      toImmutableMap(
+                          p -> genParamPropAlias(p.name()), p -> id(genParamAlias(p.name()))))),
           JsRuntime.IJ_DATA);
     }
     return ImmutableList.of(JsRuntime.OPT_DATA, JsRuntime.IJ_DATA);
@@ -1136,7 +1138,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     List<Expression> callParams = new ArrayList<>();
     callParams.addAll(getFixedParamsToPositionalCall(templateNode));
     for (TemplateParam param : paramsInOrder(templateNode)) {
-      callParams.add(genCodeForParamAccess(param.name(), param));
+      callParams.add(genCodeForParamAccess(genParamPropAlias(param.name()), param));
     }
     if (isModifiableWithUseVariantType(templateNode)) {
       callParams.add(OPT_VARIANT);
@@ -1375,7 +1377,8 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       }
       JsType jsType = getJsTypeForParamForDeclaration(param.type());
       record.put(
-          param.name(), jsType.typeExprForRecordMember(/* isOptional= */ !param.isRequired()));
+          genParamPropAlias(param.name()),
+          jsType.typeExprForRecordMember(/* isOptional= */ !param.isRequired()));
       for (GoogRequire require : jsType.getGoogRequires()) {
         // TODO(lukes): switch these to requireTypes
         jsCodeBuilder.addGoogRequire(require);
@@ -1530,6 +1533,14 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    */
   public static final String genParamAlias(String paramName) {
     return JsSrcUtils.isReservedWord(paramName) ? "param$" + paramName : paramName;
+  }
+
+  /**
+   * Generate a name for the field of a template opt_data typedef. These must not collide with
+   * built-in property names of Object.
+   */
+  public static final String genParamPropAlias(String paramName) {
+    return JsSrcUtils.isPropertyOfObject(paramName) ? "param$" + paramName : paramName;
   }
 
   protected boolean isIncrementalDom() {

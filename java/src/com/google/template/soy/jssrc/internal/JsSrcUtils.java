@@ -128,6 +128,25 @@ public final class JsSrcUtils {
           "async",
           "await");
 
+  static final ImmutableSet<String> OBJECT_PROPS =
+      ImmutableSet.of(
+          "constructor",
+          "__proto__",
+          "__defineGetter__",
+          "__defineSetter__",
+          "__lookupGetter__",
+          "__lookupSetter__",
+          "hasOwnProperty",
+          "isPrototypeOf",
+          "propertyIsEnumerable",
+          "toLocaleString",
+          "toString",
+          "valueOf");
+
+  public static boolean isPropertyOfObject(String identifier) {
+    return OBJECT_PROPS.contains(identifier);
+  }
+
   /**
    * Set of words that JavaScript considers reserved words. These words cannot be used as
    * identifiers. This list is from the ECMA-262 v5, section 7.6.1:
