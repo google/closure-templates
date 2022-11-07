@@ -16,9 +16,7 @@
 package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
-import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.Immutable;
 import java.util.function.Consumer;
 
@@ -29,7 +27,7 @@ public abstract class File extends Statement {
 
   abstract String fileOverviewComments();
 
-  abstract ImmutableSet<String> imports();
+  abstract Imports imports();
 
   abstract ImmutableList<Statement> children();
 
@@ -42,7 +40,7 @@ public abstract class File extends Statement {
 
   public static File create(
       String fileOverviewComments,
-      ImmutableSet<String> imports,
+      Imports imports,
       ImmutableList<Statement> children,
       boolean useTsxLineBreaks) {
     return new AutoValue_File(fileOverviewComments, imports, children, useTsxLineBreaks);
@@ -61,9 +59,9 @@ public abstract class File extends Statement {
     }
     ctx.append(fileOverviewComments());
 
-    if (!imports().isEmpty()) {
+    if (!imports().toSourceString().isEmpty()) {
       ctx.appendBlankLine();
-      ctx.append(Joiner.on("\n").join(imports()));
+      ctx.append(imports().toSourceString());
     }
 
     for (int i = 0; i < children().size(); i++) {
