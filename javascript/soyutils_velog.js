@@ -28,6 +28,7 @@
 goog.module('soy.velog');
 
 const LoggableElementMetadata = goog.require('proto.soy.LoggableElementMetadata');
+const ReadonlyLoggableElementMetadata = goog.requireType('proto.soy.ReadonlyLoggableElementMetadata');
 const {Message} = goog.require('jspb');
 const {assert} = goog.require('goog.asserts');
 const {startsWith} = goog.require('goog.string');
@@ -412,13 +413,13 @@ const UNDEFINED_VE_ID = -1;
 class $$VisualElement {
   /**
    * @param {number} id
-   * @param {!LoggableElementMetadata|undefined} metadata
+   * @param {!ReadonlyLoggableElementMetadata|undefined} metadata
    * @param {string=} name
    */
   constructor(id, metadata, name = undefined) {
     /** @private @const {number} */
     this.id_ = id;
-    /** @private @const {!LoggableElementMetadata|undefined} */
+    /** @private @const {!ReadonlyLoggableElementMetadata|undefined} */
     this.metadata_ = metadata;
     /** @private @const {string|undefined} */
     this.name_ = name;
@@ -429,7 +430,7 @@ class $$VisualElement {
     return this.id_;
   }
 
-  /** @return {!LoggableElementMetadata} */
+  /** @return {!ReadonlyLoggableElementMetadata} */
   getMetadata() {
     return this.metadata_ === undefined ? new LoggableElementMetadata() :
                                           this.metadata_;
@@ -500,7 +501,7 @@ class $$VisualElementData {
 
 /**
  * @param {!$$VisualElement} ve
- * @return {!LoggableElementMetadata}
+ * @return {!ReadonlyLoggableElementMetadata}
  */
 function $$getMetadata(ve) {
   return ve.getMetadata();
@@ -508,7 +509,7 @@ function $$getMetadata(ve) {
 
 /**
  * @param {!$$VisualElementData} veData
- * @return {!LoggableElementMetadata}
+ * @return {!ReadonlyLoggableElementMetadata}
  */
 function $$getVeMetadata(veData) {
   return $$getMetadata(veData.getVe());
