@@ -21,6 +21,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.SetMultimap;
@@ -35,6 +36,7 @@ import com.google.protobuf.Descriptors.FileDescriptor;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.internal.SoyFileKind;
+import com.google.template.soy.css.CssRegistry;
 import com.google.template.soy.error.SoyCompilationException;
 import com.google.template.soy.logging.AnnotatedLoggingConfig;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
@@ -296,6 +298,8 @@ public abstract class AbstractSoyCompiler {
           .ifPresent(b -> sfsBuilder.addSoyPrintDirectives(b.getProvider().get()));
       guiceTimer.stop();
     }
+    sfsBuilder.setCssRegistry(
+        CssRegistry.create(ImmutableSet.of(), com.google.common.collect.ImmutableMap.of()));
 
     ImmutableList.Builder<MethodChecker> builder = ImmutableList.builder();
     for (File dep : javaDeps) {
