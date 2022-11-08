@@ -41,7 +41,7 @@ public abstract class ParamDecls {
   public String getCode() {
 
     if (params().isEmpty()) {
-      return "";
+      return "{}: {}";
     }
 
     // Generate the dict of param names (e.g. "{amount, name = ‘Vesper’}"). Default values are not
