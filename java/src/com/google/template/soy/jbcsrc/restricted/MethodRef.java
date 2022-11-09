@@ -47,6 +47,7 @@ import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyProtoValue;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.SoyValueUnconverter;
 import com.google.template.soy.data.SoyVisualElement;
@@ -657,6 +658,9 @@ public abstract class MethodRef {
 
   public static final MethodRef SOY_RECORD_GET_FIELD_PROVIDER =
       MethodRef.create(SoyRecord.class, "getFieldProvider", String.class);
+
+  public static final MethodRef MARK_AS_SOY_MAP =
+      MethodRef.create(SoyValueConverter.class, "markAsSoyMap", Map.class);
 
   public static MethodRef create(Class<?> clazz, String methodName, Class<?>... params) {
     java.lang.reflect.Method m;

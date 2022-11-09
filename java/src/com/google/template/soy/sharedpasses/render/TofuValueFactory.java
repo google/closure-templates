@@ -103,27 +103,41 @@ class TofuValueFactory extends JavaValueFactory {
     return result.soyValue();
   }
 
-  @Override
-  public TofuJavaValue callStaticMethod(MethodSignature methodSig, JavaValue... params) {
-    return callStaticMethod(toMethod(methodSig), params);
+  TofuJavaValue callStaticMethod(
+      MethodSignature methodSig, @Nullable SoyType returnType, JavaValue... params) {
+    return callStaticMethod(toMethod(methodSig), returnType, params);
   }
 
   @Override
-  public TofuJavaValue callStaticMethod(Method method, JavaValue... params) {
+  public TofuJavaValue callStaticMethod(MethodSignature methodSig, JavaValue... params) {
+    return callStaticMethod(methodSig, null, params);
+  }
+
+  TofuJavaValue callStaticMethod(Method method, @Nullable SoyType returnType, JavaValue... params) {
     try {
-      return wrapInTofuValue(method, method.invoke(null, adaptParams(method, params)));
+      return wrapInTofuValue(method, method.invoke(null, adaptParams(method, params)), returnType);
     } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
       throw RenderException.create("Unexpected exception", e);
     }
   }
 
   @Override
-  public TofuJavaValue callInstanceMethod(MethodSignature methodSig, JavaValue... params) {
-    return callInstanceMethod(toMethod(methodSig), params);
+  public TofuJavaValue callStaticMethod(Method method, JavaValue... params) {
+    return callStaticMethod(method, null, params);
+  }
+
+  TofuJavaValue callInstanceMethod(
+      MethodSignature methodSig, @Nullable SoyType returnType, JavaValue... params) {
+    return callInstanceMethod(toMethod(methodSig), returnType, params);
   }
 
   @Override
-  public TofuJavaValue callInstanceMethod(Method method, JavaValue... params) {
+  public TofuJavaValue callInstanceMethod(MethodSignature methodSig, JavaValue... params) {
+    return callInstanceMethod(toMethod(methodSig), null, params);
+  }
+
+  TofuJavaValue callInstanceMethod(
+      Method method, @Nullable SoyType returnType, JavaValue... params) {
     Supplier<Object> instanceSupplier = pluginInstances.get(instanceKey);
     if (instanceSupplier == null) {
       throw RenderException.create(
@@ -134,10 +148,15 @@ class TofuValueFactory extends JavaValueFactory {
     }
     try {
       return wrapInTofuValue(
-          method, method.invoke(instanceSupplier.get(), adaptParams(method, params)));
+          method, method.invoke(instanceSupplier.get(), adaptParams(method, params)), returnType);
     } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
       throw RenderException.create("Unexpected exception", e);
     }
+  }
+
+  @Override
+  public TofuJavaValue callInstanceMethod(Method method, JavaValue... params) {
+    return callInstanceMethod(method, null, params);
   }
 
   @Override
@@ -183,9 +202,16 @@ class TofuValueFactory extends JavaValueFactory {
     return TofuJavaValue.forSoyValue(NullData.INSTANCE, SourceLocation.UNKNOWN);
   }
 
-  private TofuJavaValue wrapInTofuValue(Method method, Object object) {
+  private TofuJavaValue wrapInTofuValue(
+      Method method, Object object, @Nullable SoyType returnType) {
     if (object instanceof SoyValue) {
       return TofuJavaValue.forSoyValue((SoyValue) object, fnSourceLocation);
+    }
+    if (returnType != null && returnType.getKind() == SoyType.Kind.MAP && object instanceof Map) {
+      // When Soy sees a map, it defaults to thinking it's a legacy_object_map, which only allow
+      // string keys. We know that's not the case here (because the Soy return type of the extern
+      // is "map") so mark this as a "map" and not a "legacy_object_map".
+      object = SoyValueConverter.markAsSoyMap((Map) object);
     }
     try {
       return TofuJavaValue.forSoyValue(

@@ -16,6 +16,8 @@
 
 package com.google.template.soy.jbcsrc;
 
+import static com.google.common.base.Preconditions.checkState;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Streams;
 import com.google.template.soy.data.SoyValue;
@@ -372,6 +374,16 @@ public final class ExternCompiler {
         || externType.equals(BytecodeUtils.NUMBER_TYPE)
         || externType.equals(BytecodeUtils.MAP_TYPE)
         || externType.equals(BytecodeUtils.IMMUTIBLE_MAP_TYPE)) {
+      if (soyReturnType.getKind() == SoyType.Kind.MAP) {
+        checkState(
+            externType.equals(BytecodeUtils.MAP_TYPE)
+                || externType.equals(BytecodeUtils.IMMUTIBLE_MAP_TYPE),
+            externType);
+        // When Soy sees a map, it defaults to thinking it's a legacy_object_map, which only allow
+        // string keys. We know that's not the case here (because the Soy return type of the extern
+        // is "map") so mark this as a "map" and not a "legacy_object_map".
+        externCall = MethodRef.MARK_AS_SOY_MAP.invoke(externCall);
+      }
       return MethodRef.CONVERT_OBJECT_TO_SOY_VALUE_PROVIDER.invoke(externCall);
     } else if (externType.equals(BytecodeUtils.LIST_TYPE)
         || externType.equals(BytecodeUtils.IMMUTIBLE_LIST_TYPE)) {

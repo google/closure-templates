@@ -961,8 +961,8 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
             soyFunction.signature());
     TofuJavaValue value =
         java.isStatic()
-            ? factory.callStaticMethod(method, javaValues)
-            : factory.callInstanceMethod(method, javaValues);
+            ? factory.callStaticMethod(method, node.getType(), javaValues)
+            : factory.callInstanceMethod(method, node.getType(), javaValues);
     return value.soyValue();
   }
 
