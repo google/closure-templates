@@ -1063,19 +1063,32 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
       // Resolve the listExpr in "[itemMapExpr for $var, $index in listExpr if filterExpr]".
       visit(node.getListExpr());
 
+      SoyType listExprType = node.getListExpr().getType();
+
       // Report an error if listExpr did not actually evaluate to a list.
-      if (node.getListExpr().getType().getKind() != SoyType.Kind.LIST
-          && node.getListExpr().getType().getKind() != SoyType.Kind.UNKNOWN) {
+      if (!SoyTypes.isKindOrUnionOfKind(listExprType, SoyType.Kind.LIST)
+          && listExprType.getKind() != SoyType.Kind.UNKNOWN) {
         errorReporter.report(
             node.getListExpr().getSourceLocation(),
             BAD_LIST_COMP_TYPE,
             node.getListExpr().toSourceString(),
-            node.getListExpr().getType());
+            listExprType);
         node.getListIterVar().setType(UnknownType.getInstance());
-      } else if (node.getListExpr().getType().getKind() == SoyType.Kind.UNKNOWN) {
+      } else if (listExprType.getKind() == SoyType.Kind.UNKNOWN) {
         node.getListIterVar().setType(UnknownType.getInstance());
       } else {
-        SoyType listElementType = ((ListType) node.getListExpr().getType()).getElementType();
+        SoyType listElementType;
+        if (listExprType.getKind() == SoyType.Kind.LIST) {
+          listElementType = ((ListType) listExprType).getElementType();
+        } else {
+          UnionType union = (UnionType) listExprType;
+          listElementType =
+              UnionType.of(
+                  union.getMembers().stream()
+                      .map(member -> ((ListType) member).getElementType())
+                      .collect(toImmutableList()));
+        }
+
         if (listElementType == null) {
           // Report an error if listExpr was the empty list
           errorReporter.report(node.getListExpr().getSourceLocation(), EMPTY_LIST_COMPREHENSION);
