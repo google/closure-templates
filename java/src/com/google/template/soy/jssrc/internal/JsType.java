@@ -295,13 +295,11 @@ public final class JsType {
 
   /** Returns a JS type for lit-html with strict rules. */
   public static JsType forLitSrc(SoyType soyType) {
-    // TODO(b/230911572): use only ReadonlyArray here.
-    // TODO(b/230911572): use only readonly messages here.
     return forSoyType(
         soyType,
         JsTypeKind.LITSRC,
         /* isStrict= */ true,
-        ArrayTypeMode.MUTABLE_ARRAY,
+        ArrayTypeMode.READONLY_ARRAY,
         MessageTypeMode.READONLY,
         /* includeNullForMessages= */ false);
   }
