@@ -643,10 +643,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       switch (builtinMethod) {
         case GET_EXTENSION:
           return ((SoyProtoValue) base)
-              // TODO(b/230787876): this should be getProtoFieldOrNull to match jspb semantics.
-              .getProtoField(
-                  BuiltinMethod.getProtoExtensionIdFromMethodCall(methodNode),
-                  /* useBrokenProtoSemantics= */ true);
+              .getProtoFieldOrNull(BuiltinMethod.getProtoExtensionIdFromMethodCall(methodNode));
         case HAS_PROTO_FIELD:
           return BooleanData.forValue(
               ((SoyProtoValue) base)

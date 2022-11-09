@@ -276,12 +276,7 @@ final class ProtoUtils {
       SoyExpression baseExpr, MethodCallNode node, String fieldName) {
     SoyProtoType protoType = (SoyProtoType) baseExpr.soyType();
     return new AccessorGenerator(
-            protoType,
-            baseExpr,
-            fieldName,
-            node.getType(),
-            // TODO(b/230787876): this should be NULL_IF_UNSET to match jspb semantics.
-            ScalarFieldMode.NULL_IF_BROKEN_SEMANTICS)
+            protoType, baseExpr, fieldName, node.getType(), ScalarFieldMode.NULL_IF_UNSET)
         .generate();
   }
 
