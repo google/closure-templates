@@ -111,7 +111,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
 
   @Override
   protected JsType getJsTypeForParamForDeclaration(SoyType paramType) {
-    return JsType.forIncrementalDomState(paramType);
+    return JsType.forIncrementalDomDeclarations(paramType);
   }
 
   @Override
@@ -757,6 +757,10 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
           Statement.of(ImmutableList.of()));
     }
     Expression value = id("this").dotAccess(isInjected ? "ijData" : "data").dotAccess(param.name());
+    JsType declType = JsType.forIncrementalDomDeclarations(param.type());
+    if (!jsType.typeExpr().equals(declType.typeExpr())) {
+      value = value.castAs(jsType.typeExpr(), jsType.getGoogRequires());
+    }
     if (param.hasDefault()) {
       value =
           templateTranslationContext

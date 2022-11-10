@@ -280,6 +280,17 @@ public final class JsType {
         /* includeNullForMessages= */ false);
   }
 
+  /** Returns a JS type for idom template type decls. */
+  public static JsType forIncrementalDomDeclarations(SoyType soyType) {
+    return forSoyType(
+        soyType,
+        JsTypeKind.IDOMSRC,
+        /* isStrict= */ true,
+        ArrayTypeMode.READONLY_ARRAY,
+        MessageTypeMode.READONLY,
+        /* includeNullForMessages= */ false);
+  }
+
   /** Returns a JS type for idom with strict rules. */
   public static JsType forIncrementalDomState(SoyType soyType) {
     // TODO(b/230911572): use only ReadonlyArray here.
