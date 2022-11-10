@@ -21,12 +21,12 @@ import java.util.Optional;
 import java.util.function.Consumer;
 
 /**
- * Represents a named TS/JS function declaration.
+ * Represents a named TS function declaration.
  *
  * <p>Example:
  *
  * <p><code>{@literal
- * function foo(param1, param2) { < function body > }
+ * function foo(param1: string, param2: number): number { < function body > }
  * }</code>
  */
 @AutoValue
