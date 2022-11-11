@@ -374,9 +374,9 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
   private static final SoyErrorKind INVALID_VARIANT_EXPRESSION =
       SoyErrorKind.of("Invalid variant literal value ''{0}'' in ''delcall''.");
   private static final SoyErrorKind PLURAL_EXPR_TYPE =
-      SoyErrorKind.of(
-          "Plural expression should be a number type. Other types will fail in Java rendering."
-              + " Found ''{0}''.");
+      SoyErrorKind.of("Plural expression must be a number type. Found ''{0}''.");
+  private static final SoyErrorKind PLURAL_EXPR_NULLABLE =
+      SoyErrorKind.of("Plural expression should be a non-nullable number type. Found ''{0}''.");
 
   private final ErrorReporter errorReporter;
 
@@ -830,7 +830,12 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
       super.visitMsgPluralNode(node);
       SoyType exprType = node.getExpr().getType();
       if (exprType != UnknownType.getInstance() && !SoyTypes.isIntFloatOrNumber(exprType)) {
-        errorReporter.warn(node.getExpr().getSourceLocation(), PLURAL_EXPR_TYPE, exprType);
+        SoyType notNullable = SoyTypes.tryRemoveNull(exprType);
+        if (!notNullable.equals(exprType) && SoyTypes.isIntFloatOrNumber(notNullable)) {
+          errorReporter.warn(node.getExpr().getSourceLocation(), PLURAL_EXPR_NULLABLE, exprType);
+        } else {
+          errorReporter.report(node.getExpr().getSourceLocation(), PLURAL_EXPR_TYPE, exprType);
+        }
       }
     }
 
