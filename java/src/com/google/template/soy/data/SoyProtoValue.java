@@ -158,11 +158,6 @@ public final class SoyProtoValue extends SoyAbstractValue implements SoyLegacyOb
     return proto;
   }
 
-  /**
-   * @deprecated Call getProto and downcast instead. This method only exists for the legacy Tofu
-   *     runtime.
-   */
-  @Deprecated
   public SoyValue getProtoField(String name) {
     FieldWithInterpreter field = clazz().fields.get(name);
     if (field == null) {
@@ -176,11 +171,7 @@ public final class SoyProtoValue extends SoyAbstractValue implements SoyLegacyOb
    * Returns the value of the field, or null only if the field has presence semantics and is unset.
    * For fields with no presence semantics (i.e., there's no hasser method), the value is never
    * null.
-   *
-   * @deprecated Call getProto and downcast instead. This method only exists for the legacy Tofu
-   *     runtime.
    */
-  @Deprecated
   public SoyValue getProtoFieldOrNull(String name) {
     FieldWithInterpreter field = clazz().fields.get(name);
     if (field == null) {
@@ -194,11 +185,6 @@ public final class SoyProtoValue extends SoyAbstractValue implements SoyLegacyOb
     return field.interpretField(proto);
   }
 
-  /**
-   * @deprecated Call getProto and downcast instead. This method only exists for the legacy Tofu
-   *     runtime.
-   */
-  @Deprecated
   public boolean hasProtoField(String name) {
     FieldWithInterpreter field = clazz().fields.get(name);
     if (field == null) {
