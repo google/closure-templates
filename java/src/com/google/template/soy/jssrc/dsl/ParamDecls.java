@@ -47,7 +47,7 @@ public abstract class ParamDecls {
   public String getCode() {
     if (templateStyle()) {
       if (params().isEmpty()) {
-        return "{} : {}";
+        return "{}: {}";
       }
 
       // Generate the dict of param names (e.g. "{amount, name = ‘Vesper’}"). Default values are not
@@ -59,7 +59,7 @@ public abstract class ParamDecls {
       String paramTypesDict =
           "{" + params().stream().map(ParamDecl::typeDecl).collect(joining(", ")) + "}";
 
-      return paramNamesDict + " : " + paramTypesDict;
+      return paramNamesDict + ": " + paramTypesDict;
     } else {
       StringBuilder sb = new StringBuilder();
       boolean first = true;
