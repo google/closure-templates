@@ -123,6 +123,15 @@ public abstract class Expression extends CodeChunk {
     return Leaf.create(expr, /* isCheap= */ false, requires);
   }
 
+  public static Expression tsArrowFunction(
+      ParamDecls params, String returnType, ImmutableList<Statement> bodyStmts) {
+    return new TsArrowFunction(params, returnType, bodyStmts);
+  }
+
+  public static Expression genericType(Expression className, ImmutableList<Expression> generics) {
+    return new GenericType(className, generics);
+  }
+
   /**
    * Creates a code chunk representing a JavaScript identifier.
    *
