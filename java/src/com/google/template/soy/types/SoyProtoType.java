@@ -286,17 +286,6 @@ public final class SoyProtoType extends SoyType {
     builder.setProto(typeDescriptor.getFullName());
   }
 
-  /**
-   * Whether or not server side emuluation of jspb semantics needs to check for field presence and
-   * return null for absent fields.
-   *
-   * <p>This isn't necessary in the JS backends because we can rely on the proto->JS compiler to
-   * create these semantics.
-   */
-  public boolean shouldCheckFieldPresenceToEmulateJspbNullability(String fieldName) {
-    return fields.get(fieldName).shouldCheckFieldPresenceToEmulateJspbNullability();
-  }
-
   @Override
   public <T> T accept(SoyTypeVisitor<T> visitor) {
     return visitor.visit(this);

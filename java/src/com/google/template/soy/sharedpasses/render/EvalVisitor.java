@@ -650,9 +650,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
                   .hasProtoField(BuiltinMethod.getProtoFieldNameFromMethodCall(methodNode)));
         case GET_PROTO_FIELD:
           return ((SoyProtoValue) base)
-              .getProtoField(
-                  BuiltinMethod.getProtoFieldNameFromMethodCall(methodNode),
-                  /* useBrokenProtoSemantics= */ false);
+              .getProtoField(BuiltinMethod.getProtoFieldNameFromMethodCall(methodNode));
         case GET_PROTO_FIELD_OR_UNDEFINED:
           return ((SoyProtoValue) base)
               .getProtoFieldOrNull(BuiltinMethod.getProtoFieldNameFromMethodCall(methodNode));

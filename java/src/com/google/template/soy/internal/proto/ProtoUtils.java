@@ -31,9 +31,7 @@ import com.google.protobuf.DescriptorProtos.FieldOptions.JSType;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.EnumDescriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
-import com.google.protobuf.Descriptors.FieldDescriptor.JavaType;
 import com.google.protobuf.Descriptors.FileDescriptor;
-import com.google.protobuf.Descriptors.FileDescriptor.Syntax;
 import com.google.protobuf.Descriptors.GenericDescriptor;
 import com.google.protobuf.Descriptors.OneofDescriptor;
 import com.google.protobuf.ExtensionRegistry;
@@ -207,24 +205,6 @@ public final class ProtoUtils {
     // "." separator.
     return jsPackage
         + (protoPackage.isEmpty() ? "." + name : name.substring(protoPackage.length()));
-  }
-
-  /**
-   * Returns whether or not we should check for presence to emulate jspb nullability semantics in
-   * server side soy.
-   */
-  static boolean shouldCheckFieldPresenceToEmulateJspbNullability(FieldDescriptor desc) {
-    if (desc.hasDefaultValue() || desc.isRepeated()) {
-      return false;
-    } else if (desc.getJavaType() == JavaType.MESSAGE) {
-      // messages are always nullable
-      return true;
-    } else if (desc.getFile().getSyntax() == Syntax.PROTO3
-    ) {
-      return false;
-    } else {
-      return true;
-    }
   }
 
   public static OneofDescriptor getContainingOneof(FieldDescriptor fd) {

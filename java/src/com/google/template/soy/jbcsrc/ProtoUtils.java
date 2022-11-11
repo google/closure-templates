@@ -203,7 +203,6 @@ final class ProtoUtils {
   static enum ScalarFieldMode {
     DEFAULT_IF_UNSET,
     NULL_IF_UNSET,
-    NULL_IF_BROKEN_SEMANTICS,
   }
 
   /** Returns a {@link SoyExpression} for accessing a field of a proto. */
@@ -337,9 +336,7 @@ final class ProtoUtils {
       this.fieldType = fieldType;
       this.descriptor = protoType.getFieldDescriptor(fieldName);
       this.retinterpretAbsenceAsNullable =
-          (mode == ScalarFieldMode.NULL_IF_UNSET && descriptor.hasPresence())
-              || (mode == ScalarFieldMode.NULL_IF_BROKEN_SEMANTICS
-                  && protoType.shouldCheckFieldPresenceToEmulateJspbNullability(fieldName));
+          mode == ScalarFieldMode.NULL_IF_UNSET && descriptor.hasPresence();
     }
 
     SoyExpression generate() {

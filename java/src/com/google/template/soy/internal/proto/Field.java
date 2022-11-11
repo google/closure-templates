@@ -59,7 +59,6 @@ public abstract class Field {
   }
 
   private final FieldDescriptor fieldDesc;
-  private final boolean shouldCheckFieldPresenceToEmulateJspbNullability;
   private final String name;
   private final String fullyQualifiedName;
 
@@ -67,8 +66,6 @@ public abstract class Field {
     this.fieldDesc = checkNotNull(fieldDesc);
     this.name = computeSoyName(fieldDesc);
     this.fullyQualifiedName = computeSoyFullyQualifiedName(fieldDesc);
-    this.shouldCheckFieldPresenceToEmulateJspbNullability =
-        ProtoUtils.shouldCheckFieldPresenceToEmulateJspbNullability(fieldDesc);
   }
 
   /** Return the name of this member field. */
@@ -79,14 +76,6 @@ public abstract class Field {
   /** Return the fully qualified name of this member field. */
   public final String getFullyQualifiedName() {
     return fullyQualifiedName;
-  }
-
-  /**
-   * Returns whether or not we need to check for field presence to handle nullability semantics on
-   * the server.
-   */
-  public final boolean shouldCheckFieldPresenceToEmulateJspbNullability() {
-    return shouldCheckFieldPresenceToEmulateJspbNullability;
   }
 
   public final FieldDescriptor getDescriptor() {

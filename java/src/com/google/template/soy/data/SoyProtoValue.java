@@ -98,7 +98,6 @@ public final class SoyProtoValue extends SoyAbstractValue implements SoyLegacyOb
     public void assignField(Message.Builder builder, SoyValue value) {
       builder.setField(getDescriptor(), impl().protoFromSoy(value));
     }
-
   }
 
   private static final LoadingCache<Descriptor, ProtoClass> classCache =
@@ -160,35 +159,15 @@ public final class SoyProtoValue extends SoyAbstractValue implements SoyLegacyOb
   }
 
   /**
-   * Gets a value for the field for the underlying proto object. Not intended for general use.
-   *
-   * @param name The proto field name.
-   * @return The value of the given field for the underlying proto object, or NullData if either the
-   *     field does not exist or the value is not set in the underlying proto (according to the jspb
-   *     semantics)
    * @deprecated Call getProto and downcast instead. This method only exists for the legacy Tofu
    *     runtime.
    */
   @Deprecated
   public SoyValue getProtoField(String name) {
-    return getProtoField(name, /* useBrokenProtoSemantics= */ true);
-  }
-
-  /**
-   * @deprecated Call getProto and downcast instead. This method only exists for the legacy Tofu
-   *     runtime.
-   */
-  @Deprecated
-  public SoyValue getProtoField(String name, boolean useBrokenProtoSemantics) {
     FieldWithInterpreter field = clazz().fields.get(name);
     if (field == null) {
       throw new IllegalArgumentException(
           "Proto " + proto.getClass().getName() + " does not have a field of name " + name);
-    }
-    if (useBrokenProtoSemantics
-        && field.shouldCheckFieldPresenceToEmulateJspbNullability()
-        && !proto.hasField(field.getDescriptor())) {
-      return NullData.INSTANCE;
     }
     return field.interpretField(proto);
   }
