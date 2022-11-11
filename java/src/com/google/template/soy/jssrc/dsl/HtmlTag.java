@@ -16,6 +16,7 @@
 package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
+import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
 import java.util.function.Consumer;
 
@@ -24,29 +25,41 @@ import java.util.function.Consumer;
 @Immutable
 public abstract class HtmlTag extends Statement {
 
-  public static final HtmlTag FRAGMENT_OPEN = createOpen("");
-  public static final HtmlTag FRAGMENT_CLOSE = createClose("");
+  public static final HtmlTag FRAGMENT_OPEN = createOpen("", ImmutableList.of());
+  public static final HtmlTag FRAGMENT_CLOSE = createClose("", ImmutableList.of());
 
   abstract String tagName();
 
   abstract boolean isClose();
 
-  public static HtmlTag createOpen(String tagName) {
-    return new AutoValue_HtmlTag(tagName, false);
+  abstract ImmutableList<Statement> attributes();
+
+  public static HtmlTag createOpen(String tagName, ImmutableList<Statement> attributes) {
+    return new AutoValue_HtmlTag(tagName, false, attributes);
   }
 
-  public static HtmlTag createClose(String tagName) {
-    return new AutoValue_HtmlTag(tagName, true);
+  public static HtmlTag createClose(String tagName, ImmutableList<Statement> attributes) {
+    return new AutoValue_HtmlTag(tagName, true, attributes);
+  }
+
+  private boolean isOpen() {
+    return !isClose();
   }
 
   @Override
   void doFormatInitialStatements(FormattingContext ctx) {
-    if (!isClose()) {
-      ctx.append("<" + tagName() + ">");
-      ctx.increaseIndent();
-    } else {
+    if (isClose()) {
       ctx.decreaseIndent();
-      ctx.append("</" + tagName() + ">");
+    }
+    ctx.append(isClose() ? "</" : "<");
+    ctx.append(tagName());
+    for (Statement attribute : attributes()) {
+      ctx.append(" ");
+      ctx.append(attribute.getCode());
+    }
+    ctx.append(">");
+    if (isOpen()) {
+      ctx.increaseIndent();
     }
   }
 

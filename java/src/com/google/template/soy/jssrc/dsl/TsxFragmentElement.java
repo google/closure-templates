@@ -41,13 +41,13 @@ public abstract class TsxFragmentElement extends Expression {
 
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
-    ctx.appendAll(HtmlTag.createOpen(""));
+    ctx.appendAll(HtmlTag.createOpen("", ImmutableList.of()));
     ctx.endLine();
     for (Statement s : body()) {
       ctx.appendAll(s);
     }
     ctx.endLine();
-    ctx.appendAll(HtmlTag.createClose(""));
+    ctx.appendAll(HtmlTag.createClose("", ImmutableList.of()));
   }
 
   @Override
