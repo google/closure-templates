@@ -68,11 +68,11 @@ public final class CodeChunkUtils {
   public static Expression concatChunksForceString(List<? extends Expression> chunks) {
     if (!chunks.isEmpty()
         && chunks.get(0).isRepresentableAsSingleExpression()
-        && JsExprUtils.isStringLiteral(chunks.get(0).assertExprAndCollectRequires(r -> {}))) {
+        && Expressions.isStringLiteral(chunks.get(0))) {
       return concatChunks(chunks);
     } else if (chunks.size() > 1
         && chunks.get(1).isRepresentableAsSingleExpression()
-        && JsExprUtils.isStringLiteral(chunks.get(1).assertExprAndCollectRequires(r -> {}))) {
+        && Expressions.isStringLiteral(chunks.get(1))) {
       return concatChunks(chunks);
     } else {
       return concatChunks(

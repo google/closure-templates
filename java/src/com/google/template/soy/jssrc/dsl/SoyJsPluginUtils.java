@@ -28,7 +28,6 @@ import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
-import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
@@ -49,13 +48,6 @@ import java.util.List;
 public final class SoyJsPluginUtils {
 
   private SoyJsPluginUtils() {}
-
-  /** Generates a JS expression for the given operator and operands. */
-  public static JsExpr genJsExprUsingSoySyntax(Operator op, List<JsExpr> operandJsExprs) {
-    List<Expression> operands =
-        Lists.transform(operandJsExprs, input -> fromExpr(input, ImmutableList.<GoogRequire>of()));
-    return Expression.operation(op, operands).assertExpr();
-  }
 
   private static final SoyErrorKind UNEXPECTED_PLUGIN_ERROR =
       SoyErrorKind.of(formatPlain("{3}"), StyleAllowance.NO_PUNCTUATION);
