@@ -42,7 +42,7 @@ public abstract class HtmlTag extends Statement {
     return new AutoValue_HtmlTag(tagName, true, attributes);
   }
 
-  private boolean isOpen() {
+  boolean isOpen() {
     return !isClose();
   }
 
