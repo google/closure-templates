@@ -117,29 +117,110 @@ a wrapper template:
 Note that for variants, dependencies need to be manually managed. Read details
 [here](http://go/soy/dev/conditional-code-loading.md#loading-variants).
 
-## legacydeltemplatenamespace
+## Deltemplates migration guide
 
-To ease migration, the `legacydeltemplatenamespace` can be used to incrementally
-migrate your templates. A `modifiable` template with
-`legacydeltemplatenamespace` can interoperate with `deltemplates` and
-`delcalls`.
+To convert legacy [`deltemplates`](http://go/soy/reference/delegate-templates)
+to `modifiable`/`modifies` templates:
+
+*   The `deltemplate` which is the *default implementation* becomes the
+    `modifiable` template.
+*   All other `deltemplates` become `modifies` templates, and must explicitly
+    import the `modifiable` template.
+*   All `{delcall}` commands become regular `{call}` commands to the
+    `modifiable` template.
+
+For example:
+
+feature.soy:
 
 ```soy
-{template legacy modifiable="true" legacydeltemplatenamespace="my.legacy.name" usevarianttype="string"}
+{namespace my.app.feature}
+
+{deltemplate my.app.feature.foo}
+  The feature with no mods.
+{/deltemplate}
+```
+
+mod.soy:
+
+```soy
+{modname enableFeature}
+{namespace my.app.feature.mod}
+
+{deltemplate my.project.feature.foo}
+  The feature when the enableFeature mod is active.
+{/deltemplate}
+```
+
+app.soy:
+
+```soy
+{namespace my.app}
+
+{template app}
+  {delcall my.app.feature.foo}
 {/template}
 ```
 
-These are valid:
+Would become:
+
+feature.soy:
 
 ```soy
-{modname someMod}
+{namespace my.app.feature}
 
-{deltemplate my.legacy.name}
+{template feature modifiable="true"}
+  The feature with no mods.
+{/template}
+```
+
+mod.soy:
+
+```soy
+{modname enableFeature}
+{namespace my.app.feature.mod}
+
+import {feature} from 'feature.soy';
+
+{template featureMod visibility="private" modifies="feature"}
+  The feature when the enableFeature mod is active.
+{/template}
+```
+
+app.soy:
+
+```soy
+{namespace my.app}
+
+import {feature} from 'feature.soy';
+
+{template app}
+  {call feature /}
+{/template}
+```
+
+## legacydeltemplatenamespace
+
+To ease migration, the `legacydeltemplatenamespace` attribute can be used to
+incrementally migrate your templates. First, convert the default deltemplate to
+a `modifiable` template with `legacydeltemplatenamespace`. All `deltemplates`
+and `delcalls` can then be incrementally migrated. For example:
+
+```soy
+{template feature modifiable="true" legacydeltemplatenamespace="my.project.feature.foo"}
+{/template}
+```
+
+Then these are still valid:
+
+```soy
+{modname enableFeature}
+
+{deltemplate my.project.feature.foo}
 {/deltemplate}
+```
 
-{deltemplate my.legacy.name variant="'foo'"}
-{/deltemplate}
-
-{delcall my.legacy.name}
+```soy
+{delcall my.project.feature.foo}
 {/delcall}
 ```
