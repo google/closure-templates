@@ -19,6 +19,7 @@ package com.google.template.soy.jssrc.dsl;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
+import java.util.ArrayDeque;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Set;
@@ -38,6 +39,12 @@ final class FormattingContext implements AutoCloseable {
   private String curIndent;
   private boolean nextAppendShouldStartNewLine = false;
   private boolean applyTsxLineBreaks = false;
+  private final ArrayDeque<InterpolationKind> interpolationKindStack;
+
+  public enum InterpolationKind {
+    TSX,
+    TTL,
+  }
 
   FormattingContext() {
     this(/* startingIndent= */ 0);
@@ -48,6 +55,8 @@ final class FormattingContext implements AutoCloseable {
     curIndent = Strings.repeat(" ", startingIndent);
     buf = new StringBuilder(curIndent);
     initialSize = curIndent.length();
+    interpolationKindStack = new ArrayDeque<>();
+    interpolationKindStack.push(InterpolationKind.TSX);
   }
 
   /**
@@ -58,6 +67,22 @@ final class FormattingContext implements AutoCloseable {
    */
   void enableTsxLineBreaks() {
     applyTsxLineBreaks = true;
+  }
+
+  void pushInterpolationKind(InterpolationKind interpolationKind) {
+    interpolationKindStack.push(interpolationKind);
+  }
+
+  void popInterpolationKind() {
+    interpolationKindStack.pop();
+  }
+
+  InterpolationKind getCurrentInterpolationKind() {
+    return interpolationKindStack.peek();
+  }
+
+  String getInterpolationOpenString() {
+    return getCurrentInterpolationKind() == InterpolationKind.TSX ? "{" : "${";
   }
 
   @CanIgnoreReturnValue

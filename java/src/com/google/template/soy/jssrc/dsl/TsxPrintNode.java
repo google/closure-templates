@@ -20,8 +20,8 @@ import java.util.Optional;
 import java.util.function.Consumer;
 
 /**
- * Represents a TSX "{}" print node for inline JS within a fragment/element. For example, "{name}"
- * in "<>hi {name}".
+ * Represents a TSX "{}" print node for inline JS within a fragment/element or tagged template
+ * literal. For example, "{name}" in "<>hi {name}".
  */
 @Immutable
 public class TsxPrintNode extends Statement {
@@ -42,11 +42,11 @@ public class TsxPrintNode extends Statement {
   @Override
   void doFormatInitialStatements(FormattingContext ctx) {
     if (!expr.isPresent()) {
-      ctx.append("{}");
+      ctx.append(ctx.getInterpolationOpenString() + "}");
       return;
     }
 
-    ctx.append("{");
+    ctx.append(ctx.getInterpolationOpenString());
     ctx.increaseIndent();
     ctx.appendOutputExpression(expr.get().asInlineExpr());
     ctx.append("}");
@@ -91,11 +91,13 @@ public class TsxPrintNode extends Statement {
     @Override
     void doFormatInitialStatements(FormattingContext ctx) {
       if (!expr().isPresent()) {
-        ctx.append("{}");
+        ctx.append(ctx.getInterpolationOpenString() + "}");
         return;
       }
 
-      ctx.append("{'" + expr().get().asStringLiteral().get() + "'}");
+      ctx.append(
+          String.format(
+              "%s'%s'}", ctx.getInterpolationOpenString(), expr().get().asStringLiteral().get()));
 
       if (endLineAfterChar) {
         ctx.endLine();
