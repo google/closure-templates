@@ -718,7 +718,7 @@ public final class JsType {
   /** Builds and returns a TypePredicate comparing a value's 'typeof' against the given 'type' */
   private static TypePredicate typeofTypePredicate(String type) {
     return (value, codeGenerator) ->
-        Optional.of(value.typeof().tripleEquals(Expression.stringLiteral(type)));
+        Optional.of(value.typeOf().tripleEquals(Expression.stringLiteral(type)));
   }
 
   private final ImmutableSortedSet<String> typeExpressions;

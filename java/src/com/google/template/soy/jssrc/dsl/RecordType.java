@@ -16,32 +16,42 @@
 
 package com.google.template.soy.jssrc.dsl;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.jssrc.restricted.JsExpr;
+import java.util.List;
 import java.util.function.Consumer;
 
-/** Represents a TS generic type, for use with eg `new` statements. */
-public class GenericType extends Expression {
+/** Represents a TS record type, for use with eg `new` statements. */
+public class RecordType extends Expression {
 
-  private final Expression className;
-  private final ImmutableList<Expression> generics;
+  private final ImmutableList<Expression> keys;
+  private final ImmutableList<Expression> types;
+  private final ImmutableList<Boolean> optional;
 
-  GenericType(Expression className, ImmutableList<Expression> generics) {
-    this.className = className;
-    this.generics = generics;
+  RecordType(List<Expression> keys, List<Expression> types, List<Boolean> optional) {
+    Preconditions.checkArgument(keys.size() == types.size());
+    Preconditions.checkArgument(keys.size() == optional.size());
+    this.keys = ImmutableList.copyOf(keys);
+    this.types = ImmutableList.copyOf(types);
+    this.optional = ImmutableList.copyOf(optional);
   }
 
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
-    ctx.appendOutputExpression(className);
-    ctx.append("<");
-    for (int i = 0; i < generics.size(); i++) {
-      ctx.appendOutputExpression(generics.get(i));
-      if (i < generics.size() - 1) {
+    ctx.append("{");
+    for (int i = 0; i < keys.size(); i++) {
+      ctx.appendOutputExpression(keys.get(i));
+      if (optional.get(i)) {
+        ctx.append("?");
+      }
+      ctx.append(": ");
+      ctx.appendOutputExpression(types.get(i));
+      if (i < keys.size() - 1) {
         ctx.append(", ");
       }
     }
-    ctx.append(">");
+    ctx.append("}");
   }
 
   @Override

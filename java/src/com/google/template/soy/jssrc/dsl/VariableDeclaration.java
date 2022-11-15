@@ -56,7 +56,7 @@ public abstract class VariableDeclaration extends Statement {
   abstract boolean isDeclaration();
 
   @Nullable
-  abstract String type();
+  abstract Expression type();
 
   /** Returns an {@link Expression} representing a reference to this declared variable. */
   public Expression ref() {
@@ -98,7 +98,7 @@ public abstract class VariableDeclaration extends Statement {
     ctx.append((isMutable() || (rhs() == null && !isDeclaration())) ? "let " : "const ")
         .append(varName());
     if (type() != null) {
-      ctx.append(": " + type());
+      ctx.append(": ").appendOutputExpression(type());
     }
     if (rhs() != null) {
       ctx.append(" = ").appendOutputExpression(rhs());
@@ -157,7 +157,7 @@ public abstract class VariableDeclaration extends Statement {
 
     public abstract Builder setIsDeclaration(boolean isDeclaration);
 
-    public abstract Builder setType(String type);
+    public abstract Builder setType(Expression type);
 
     public abstract VariableDeclaration build();
   }

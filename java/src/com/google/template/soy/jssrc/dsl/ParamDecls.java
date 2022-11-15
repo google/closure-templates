@@ -69,7 +69,7 @@ public abstract class ParamDecls {
         } else {
           sb.append(", ");
         }
-        sb.append(param.name()).append(": ").append(param.type());
+        sb.append(param.name()).append(": ").append(param.type().singleExprOrName().getText());
       }
       return sb.toString();
     }

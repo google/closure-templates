@@ -124,12 +124,21 @@ public abstract class Expression extends CodeChunk {
   }
 
   public static Expression tsArrowFunction(
-      ParamDecls params, String returnType, ImmutableList<Statement> bodyStmts) {
+      ParamDecls params, Expression returnType, ImmutableList<Statement> bodyStmts) {
     return new TsArrowFunction(params, returnType, bodyStmts);
   }
 
   public static Expression genericType(Expression className, ImmutableList<Expression> generics) {
     return new GenericType(className, generics);
+  }
+
+  public static Expression unionType(List<Expression> members) {
+    return new UnionType(members);
+  }
+
+  public static Expression recordType(
+      List<Expression> keys, List<Expression> types, List<Boolean> optional) {
+    return new RecordType(keys, types, optional);
   }
 
   /**
@@ -445,7 +454,7 @@ public abstract class Expression extends CodeChunk {
         "instanceof", Operator.LESS_THAN.getPrecedence(), Associativity.LEFT, this, identifier);
   }
 
-  public final Expression typeof() {
+  public final Expression typeOf() {
     return UnaryOperation.create(
         "typeof ", Operator.NOT.getPrecedence(), this, /* isPrefix= */ true);
   }

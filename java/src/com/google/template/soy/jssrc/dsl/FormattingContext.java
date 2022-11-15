@@ -196,7 +196,7 @@ final class FormattingContext implements AutoCloseable {
     int currentLineLength =
         lastNewLine < 0
             ? buf.length()
-            : lastNewLine == buf.length() - 1 ? 0 : buf.substring(lastNewLine + 1).length();
+            : lastNewLine == buf.length() - 1 ? 0 : buf.length() - lastNewLine;
     return currentLineLength + stuff.length() < MAX_LINE_LENGTH;
   }
 

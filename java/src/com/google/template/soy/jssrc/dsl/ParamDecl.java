@@ -30,21 +30,21 @@ public abstract class ParamDecl {
 
   abstract String name();
 
-  abstract String type();
+  abstract Expression type();
 
   abstract boolean isOptional();
 
   abstract Optional<String> defaultValue();
 
-  public static ParamDecl create(String name, String type) {
+  public static ParamDecl create(String name, Expression type) {
     return new AutoValue_ParamDecl(name, type, false, Optional.empty());
   }
 
-  public static ParamDecl create(String name, String type, boolean isOptional) {
+  public static ParamDecl create(String name, Expression type, boolean isOptional) {
     return new AutoValue_ParamDecl(name, type, isOptional, Optional.empty());
   }
 
-  public static ParamDecl create(String name, String type, String defaultValue) {
+  public static ParamDecl create(String name, Expression type, String defaultValue) {
     return new AutoValue_ParamDecl(name, type, true, Optional.of(defaultValue));
   }
 
@@ -53,6 +53,6 @@ public abstract class ParamDecl {
   }
 
   public String typeDecl() {
-    return name() + (isOptional() ? "?" : "") + ": " + type();
+    return name() + (isOptional() ? "?" : "") + ": " + type().singleExprOrName().getText();
   }
 }

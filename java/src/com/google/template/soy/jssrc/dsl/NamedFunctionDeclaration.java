@@ -36,7 +36,7 @@ public abstract class NamedFunctionDeclaration extends Statement {
 
   abstract ParamDecls params();
 
-  abstract String returnType();
+  abstract Expression returnType();
 
   abstract Optional<JsDoc> jsDoc();
 
@@ -49,7 +49,7 @@ public abstract class NamedFunctionDeclaration extends Statement {
   public static NamedFunctionDeclaration create(
       String name,
       ParamDecls params,
-      String returnType,
+      Expression returnType,
       JsDoc jsDoc,
       ImmutableList<Statement> bodyStmts,
       boolean isExported) {
@@ -60,7 +60,7 @@ public abstract class NamedFunctionDeclaration extends Statement {
   public static NamedFunctionDeclaration create(
       String name,
       ParamDecls params,
-      String returnType,
+      Expression returnType,
       ImmutableList<Statement> bodyStmts,
       boolean isExported) {
     return new AutoValue_NamedFunctionDeclaration(
@@ -68,7 +68,7 @@ public abstract class NamedFunctionDeclaration extends Statement {
   }
 
   public static NamedFunctionDeclaration declaration(
-      String name, ParamDecls params, String returnType, JsDoc jsDoc) {
+      String name, ParamDecls params, Expression returnType, JsDoc jsDoc) {
     return new AutoValue_NamedFunctionDeclaration(
         name, params, returnType, Optional.of(jsDoc), ImmutableList.of(), true, true);
   }
@@ -87,7 +87,7 @@ public abstract class NamedFunctionDeclaration extends Statement {
     }
     ctx.append("function " + name() + "(");
     ctx.append(params().getCode());
-    ctx.append("): " + returnType());
+    ctx.append("): ").appendOutputExpression(returnType());
     if (!isDeclaration()) {
       ctx.append(" ");
       ctx.enterBlock();
