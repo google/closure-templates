@@ -69,8 +69,10 @@ public abstract class TsxElement extends Expression {
 
   @Override
   public void collectRequires(Consumer<GoogRequire> collector) {
+    openTag().collectRequires(collector);
     for (Statement s : body()) {
       s.collectRequires(collector);
     }
+    closeTag().collectRequires(collector);
   }
 }

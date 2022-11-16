@@ -111,5 +111,6 @@ public abstract class NamedFunctionDeclaration extends Statement {
     if (jsDoc().isPresent()) {
       jsDoc().get().collectRequires(collector);
     }
+    returnType().collectRequires(collector);
   }
 }

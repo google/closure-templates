@@ -27,7 +27,7 @@ public abstract class File extends Statement {
 
   abstract String fileOverviewComments();
 
-  abstract Imports imports();
+  abstract CodeChunk imports();
 
   abstract ImmutableList<Statement> children();
 
@@ -40,7 +40,7 @@ public abstract class File extends Statement {
 
   public static File create(
       String fileOverviewComments,
-      Imports imports,
+      CodeChunk imports,
       ImmutableList<Statement> children,
       boolean useTsxLineBreaks) {
     return new AutoValue_File(fileOverviewComments, imports, children, useTsxLineBreaks);
@@ -59,10 +59,10 @@ public abstract class File extends Statement {
     }
     ctx.append(fileOverviewComments());
 
-    if (!imports().toSourceString().isEmpty()) {
+    if (!(imports() instanceof StatementList && ((StatementList) imports()).isEmpty())) {
       ctx.appendBlankLine();
-      ctx.append(imports().toSourceString());
     }
+    ctx.appendAll(imports());
 
     for (int i = 0; i < children().size(); i++) {
       Statement child = children().get(i);

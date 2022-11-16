@@ -25,7 +25,10 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.Immutable;
 
-/** Represents a symbol that is imported via a {@code goog.require} statement. */
+/**
+ * Represents a symbol that is imported via a {@code goog.require} statement or via a TypeScript
+ * import statement.
+ */
 @AutoValue
 @Immutable
 public abstract class GoogRequire implements Comparable<GoogRequire> {
@@ -39,7 +42,7 @@ public abstract class GoogRequire implements Comparable<GoogRequire> {
    */
   public static GoogRequire create(String symbol) {
     return new AutoValue_GoogRequire(
-        symbol, symbol, GOOG_REQUIRE.call(stringLiteral(symbol)), /*isTypeRequire=*/ false);
+        symbol, symbol, GOOG_REQUIRE.call(stringLiteral(symbol)), /* isTypeRequire= */ false);
   }
 
   /**
@@ -48,7 +51,7 @@ public abstract class GoogRequire implements Comparable<GoogRequire> {
    */
   public static GoogRequire createTypeRequire(String symbol) {
     return new AutoValue_GoogRequire(
-        symbol, symbol, GOOG_REQUIRE_TYPE.call(stringLiteral(symbol)), /*isTypeRequire=*/ true);
+        symbol, symbol, GOOG_REQUIRE_TYPE.call(stringLiteral(symbol)), /* isTypeRequire= */ true);
   }
 
   /**
@@ -61,7 +64,7 @@ public abstract class GoogRequire implements Comparable<GoogRequire> {
         symbol,
         alias,
         VariableDeclaration.builder(alias).setRhs(GOOG_REQUIRE.call(stringLiteral(symbol))).build(),
-        /*isTypeRequire=*/ false);
+        /* isTypeRequire= */ false);
   }
 
   /**
@@ -76,7 +79,16 @@ public abstract class GoogRequire implements Comparable<GoogRequire> {
         VariableDeclaration.builder(alias)
             .setRhs(GOOG_REQUIRE_TYPE.call(stringLiteral(symbol)))
             .build(),
-        /*isTypeRequire=*/ true);
+        /* isTypeRequire= */ true);
+  }
+
+  public static GoogRequire createImport(String symbol, String path) {
+    return createImport(symbol, symbol, path);
+  }
+
+  public static GoogRequire createImport(String symbol, String alias, String path) {
+    return new AutoValue_GoogRequire(
+        symbol, alias, Import.symbolImport(symbol, alias, path), /* isTypeRequire= */ false);
   }
 
   /** The symbol to require. */

@@ -55,7 +55,11 @@ public class RecordType extends Expression {
   }
 
   @Override
-  public void collectRequires(Consumer<GoogRequire> collector) {}
+  public void collectRequires(Consumer<GoogRequire> collector) {
+    for (Expression memberType : types) {
+      memberType.collectRequires(collector);
+    }
+  }
 
   @Override
   public ImmutableList<Statement> initialStatements() {

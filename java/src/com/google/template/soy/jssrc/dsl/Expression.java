@@ -156,9 +156,18 @@ public abstract class Expression extends CodeChunk {
    *
    * @throws IllegalArgumentException if {@code id} is not a valid JavaScript identifier.
    */
-  static Expression id(String id, Iterable<GoogRequire> requires) {
+  public static Expression id(String id, Iterable<GoogRequire> requires) {
     CodeChunkUtils.checkId(id);
     return Leaf.create(id, /* isCheap= */ true, requires);
+  }
+
+  public static Expression id(String id, GoogRequire... requires) {
+    CodeChunkUtils.checkId(id);
+    return Leaf.create(id, /* isCheap= */ true, ImmutableList.copyOf(requires));
+  }
+
+  public static Expression importedId(String id, String path) {
+    return id(id, GoogRequire.createImport(id, path));
   }
 
   /**

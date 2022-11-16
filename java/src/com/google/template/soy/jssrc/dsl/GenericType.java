@@ -45,7 +45,12 @@ public class GenericType extends Expression {
   }
 
   @Override
-  public void collectRequires(Consumer<GoogRequire> collector) {}
+  public void collectRequires(Consumer<GoogRequire> collector) {
+    className.collectRequires(collector);
+    for (Expression generic : generics) {
+      generic.collectRequires(collector);
+    }
+  }
 
   @Override
   public ImmutableList<Statement> initialStatements() {

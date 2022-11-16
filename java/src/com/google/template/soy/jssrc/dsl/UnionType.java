@@ -41,7 +41,11 @@ public class UnionType extends Expression {
   }
 
   @Override
-  public void collectRequires(Consumer<GoogRequire> collector) {}
+  public void collectRequires(Consumer<GoogRequire> collector) {
+    for (Expression member : members) {
+      member.collectRequires(collector);
+    }
+  }
 
   @Override
   public ImmutableList<Statement> initialStatements() {

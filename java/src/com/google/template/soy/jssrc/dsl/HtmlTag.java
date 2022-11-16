@@ -64,5 +64,9 @@ public abstract class HtmlTag extends Statement {
   }
 
   @Override
-  public void collectRequires(Consumer<GoogRequire> collector) {}
+  public void collectRequires(Consumer<GoogRequire> collector) {
+    for (Statement attribute : attributes()) {
+      attribute.collectRequires(collector);
+    }
+  }
 }

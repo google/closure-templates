@@ -128,6 +128,9 @@ public abstract class VariableDeclaration extends Statement {
     if (jsDoc() != null) {
       jsDoc().collectRequires(requiresBuilder::add);
     }
+    if (type() != null) {
+      type().collectRequires(requiresBuilder::add);
+    }
     return requiresBuilder.build().toArray(new GoogRequire[0]);
   }
 
