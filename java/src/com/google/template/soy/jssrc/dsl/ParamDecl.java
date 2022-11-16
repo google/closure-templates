@@ -18,6 +18,7 @@ package com.google.template.soy.jssrc.dsl;
 import com.google.auto.value.AutoValue;
 import com.google.errorprone.annotations.Immutable;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 /**
  * Represents a single "name : type" tsx function param.
@@ -54,5 +55,9 @@ public abstract class ParamDecl {
 
   public String typeDecl() {
     return name() + (isOptional() ? "?" : "") + ": " + type().singleExprOrName().getText();
+  }
+
+  public void collectRequires(Consumer<GoogRequire> collector) {
+    type().collectRequires(collector);
   }
 }

@@ -21,6 +21,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * Represent all of a function's params. Formats them as: "{amount, name = ‘Vesper’} : {amount:
@@ -72,6 +73,12 @@ public abstract class ParamDecls {
         sb.append(param.name()).append(": ").append(param.type().singleExprOrName().getText());
       }
       return sb.toString();
+    }
+  }
+
+  public void collectRequires(Consumer<GoogRequire> collector) {
+    for (ParamDecl param : params()) {
+      param.collectRequires(collector);
     }
   }
 }
