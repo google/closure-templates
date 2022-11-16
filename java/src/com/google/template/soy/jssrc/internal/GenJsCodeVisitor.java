@@ -306,6 +306,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     }
     if (node.getModName() != null) {
       jsDocBuilder.addParameterizedAnnotation("modName", node.getModName());
+      addModsAnnotation(jsDocBuilder, node);
     }
     addHasSoyDelTemplateAnnotations(jsDocBuilder, node);
     addHasSoyDelCallAnnotations(jsDocBuilder, node);
@@ -499,7 +500,20 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
             });
   }
 
-  // TODO(b/233903480): Remove these once we migrate to @mods
+  private void addModsAnnotation(JsDoc.Builder header, SoyFileNode soyFile) {
+    Optional<String> mods =
+        soyFile.getTemplates().stream()
+            .filter(t -> t instanceof TemplateBasicNode)
+            .map(TemplateBasicNode.class::cast)
+            .map(TemplateBasicNode::moddedSoyNamespace)
+            .filter(t -> t != null)
+            .findFirst();
+    if (mods.isPresent()) {
+      header.addParameterizedAnnotation("mods", getGoogModuleNamespace(mods.get()));
+    }
+  }
+
+  // TODO(b/233903480): Remove these once all deltemplates and delcalls are fully migrated.
   private void addHasSoyDelTemplateAnnotations(JsDoc.Builder header, SoyFileNode soyFile) {
 
     SortedSet<String> delTemplateNames = new TreeSet<>();
@@ -518,7 +532,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     }
   }
 
-  // TODO(b/233903480): Remove these once we migrate to @mods
+  // TODO(b/233903480): Remove these once all deltemplates and delcalls are fully migrated.
   private void addHasSoyDelCallAnnotations(JsDoc.Builder header, SoyFileNode soyFile) {
 
     SortedSet<String> delTemplateNames = new TreeSet<>();
