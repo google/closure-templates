@@ -319,7 +319,8 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     for (TemplateParam param : paramsInOrder(node)) {
       JsType jsType = getJsTypeForParamForDeclaration(param.type());
       jsDocBuilder.addParam(
-          genParamAlias(param.name()), jsType.typeExpr() + (param.isRequired() ? "" : "="));
+          GenJsCodeVisitor.getPositionalParamName(param),
+          jsType.typeExpr() + (param.isRequired() ? "" : "="));
     }
     if (addVariantParam) {
       jsDocBuilder.addParam(StandardNames.OPT_VARIANT, "string=");

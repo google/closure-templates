@@ -1019,6 +1019,17 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     return jsDocBuilder.addParam(StandardNames.ARE_YOU_AN_INTERNAL_CALLER, "!Object");
   }
 
+  /**
+   * Parameter names in positional templates are always slightly mangled and then reassigned to
+   * locals with the right name.
+   *
+   * <p>This helps in cases where we need to narrow types since JSC type inference cannot realiably
+   * track reassignments to locals across function boundaries. See b/130651307
+   */
+  protected static String getPositionalParamName(TemplateParam param) {
+    return "p$" + param.name();
+  }
+
   protected JsDoc generatePositionalFunctionJsDoc(TemplateNode node, boolean addVariantParam) {
     JsDoc.Builder jsDocBuilder = JsDoc.builder();
     addInternalCallerParam(jsDocBuilder);
@@ -1026,7 +1037,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     for (TemplateParam param : paramsInOrder(node)) {
       JsType jsType = getJsTypeForParamForDeclaration(param.type());
       jsDocBuilder.addParam(
-          genParamAlias(param.name()), jsType.typeExpr() + (param.isRequired() ? "" : "="));
+          getPositionalParamName(param), jsType.typeExpr() + (param.isRequired() ? "" : "="));
     }
     if (addVariantParam) {
       jsDocBuilder.addParam(StandardNames.OPT_VARIANT, "string=");
@@ -1097,7 +1108,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
               node.getParams().stream()
                   .collect(
                       toImmutableMap(
-                          p -> genParamPropAlias(p.name()), p -> id(genParamAlias(p.name()))))),
+                          p -> genParamPropAlias(p.name()), p -> id(getPositionalParamName(p))))),
           JsRuntime.IJ_DATA);
     }
     return ImmutableList.of(JsRuntime.OPT_DATA, JsRuntime.IJ_DATA);
@@ -1470,7 +1481,9 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       CodeChunk.Generator generator = templateTranslationContext.codeGenerator();
       String paramAlias = genParamAlias(paramName);
       Expression paramChunk =
-          isThisParamPositional ? id(paramAlias) : genCodeForParamAccess(paramName, param);
+          isThisParamPositional
+              ? id(getPositionalParamName(param))
+              : genCodeForParamAccess(paramName, param);
       JsType jsType = getJsTypeForParamTypeCheck(paramType);
       // TODO(lukes): for positional style params we should switch to inline defaults in the
       // declaration and let the JS VM handle this.
@@ -1481,41 +1494,28 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         }
         declarations.add(genParamDefault(param, paramChunk, jsType, generator));
       }
-      Optional<Expression> soyTypeAssertion =
-          jsType.getSoyParamTypeAssertion(
-              paramChunk,
-              paramName,
-              /* paramKind= */ param.isInjected() ? "@inject" : "@param",
-              generator);
-      if (isThisParamPositional) {
-        if (soyTypeAssertion.isPresent()) {
-          // Cast to a better type, if necessary and possible.
-          // TODO(b/256679865): prevent using reserved words.
-          JsType declType = getJsTypeForParam(paramType);
-          if (jsType.typeExpr().equals(declType.typeExpr())
-              || JsSrcUtils.isReservedWord(paramName)) {
-            declarations.add(soyTypeAssertion.get().asStatement());
-          } else {
-            // TODO(b/256679865): rename JS builtins here.
-            declarations.add(
-                Statement.assign(
-                    Expression.id(paramName),
-                    soyTypeAssertion
-                        .get()
-                        .castAs(jsType.typeExpr(), jsType.getGoogRequires())
-                        .asInlineExpr()));
-          }
-        }
-      } else {
-        VariableDeclaration.Builder declarationBuilder =
-            VariableDeclaration.builder(paramAlias)
-                .setRhs(soyTypeAssertion.orElse(paramChunk))
-                .setGoogRequires(jsType.getGoogRequires());
-        declarationBuilder.setJsDoc(
-            JsDoc.builder().addParameterizedAnnotation("type", jsType.typeExpr()).build());
-        VariableDeclaration declaration = declarationBuilder.build();
-        declarations.add(declaration);
+      Expression initializer =
+          jsType
+              .getSoyParamTypeAssertion(
+                  paramChunk,
+                  paramName,
+                  /* paramKind= */ param.isInjected() ? "@inject" : "@param",
+                  generator)
+              .orElse(paramChunk);
+      // Cast to a better type, if necessary and possible.
+      // TODO(b/256679865): prevent using reserved words.
+      JsType declType = getJsTypeForParam(paramType);
+      if (!jsType.typeExpr().equals(declType.typeExpr())) {
+        initializer = initializer.castAs(jsType.typeExpr(), jsType.getGoogRequires());
       }
+      VariableDeclaration.Builder declarationBuilder =
+          VariableDeclaration.builder(paramAlias)
+              .setRhs(initializer)
+              .setGoogRequires(jsType.getGoogRequires());
+      declarationBuilder.setJsDoc(
+          JsDoc.builder().addParameterizedAnnotation("const", jsType.typeExpr()).build());
+      VariableDeclaration declaration = declarationBuilder.build();
+      declarations.add(declaration);
 
       templateTranslationContext
           .soyToJsVariableMappings()
