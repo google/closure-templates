@@ -132,6 +132,14 @@ public abstract class Expression extends CodeChunk {
     return new GenericType(className, generics);
   }
 
+  public static Expression genericType(Expression className, Expression... generics) {
+    return new GenericType(className, ImmutableList.copyOf(generics));
+  }
+
+  public static Expression arrayType(Expression simpleType, boolean readonly) {
+    return new ArrayType(readonly, simpleType);
+  }
+
   public static Expression unionType(List<Expression> members) {
     return new UnionType(members);
   }

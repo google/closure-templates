@@ -17,32 +17,23 @@
 package com.google.template.soy.jssrc.dsl;
 
 import com.google.common.collect.ImmutableList;
-import java.util.List;
-import java.util.function.Consumer;
+import com.google.template.soy.jssrc.restricted.JsExpr;
 
-/** Represents a TS union type, for use with eg `new` statements. */
-public class UnionType extends AbstractType {
+/** Abstract super type of non-simple types. */
+public abstract class AbstractType extends Expression {
 
-  private final ImmutableList<Expression> members;
-
-  UnionType(List<Expression> members) {
-    this.members = ImmutableList.copyOf(members);
+  @Override
+  public ImmutableList<Statement> initialStatements() {
+    return ImmutableList.of();
   }
 
   @Override
-  void doFormatOutputExpr(FormattingContext ctx) {
-    for (int i = 0; i < members.size(); i++) {
-      ctx.appendOutputExpression(members.get(i));
-      if (i < members.size() - 1) {
-        ctx.append("|");
-      }
-    }
-  }
+  void doFormatInitialStatements(FormattingContext ctx) {}
 
   @Override
-  public void collectRequires(Consumer<GoogRequire> collector) {
-    for (Expression member : members) {
-      member.collectRequires(collector);
-    }
+  public JsExpr singleExprOrName() {
+    FormattingContext ctx = new FormattingContext();
+    doFormatOutputExpr(ctx);
+    return new JsExpr(ctx.toString(), Integer.MAX_VALUE);
   }
 }

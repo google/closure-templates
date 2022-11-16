@@ -16,38 +16,29 @@
 
 package com.google.template.soy.jssrc.dsl;
 
-import com.google.common.collect.ImmutableList;
 import java.util.function.Consumer;
 
-/** Represents a TS generic type, for use with eg `new` statements. */
-public class GenericType extends AbstractType {
+/** Represents a TS record type, for use with eg `new` statements. */
+public class ArrayType extends AbstractType {
 
-  private final Expression className;
-  private final ImmutableList<Expression> generics;
+  private final boolean readonly;
+  private final Expression simpleType;
 
-  GenericType(Expression className, ImmutableList<Expression> generics) {
-    this.className = className;
-    this.generics = generics;
+  public ArrayType(boolean readonly, Expression simpleType) {
+    this.readonly = readonly;
+    this.simpleType = simpleType;
   }
 
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
-    ctx.appendOutputExpression(className);
-    ctx.append("<");
-    for (int i = 0; i < generics.size(); i++) {
-      ctx.appendOutputExpression(generics.get(i));
-      if (i < generics.size() - 1) {
-        ctx.append(", ");
-      }
+    if (readonly) {
+      ctx.append("readonly ");
     }
-    ctx.append(">");
+    ctx.appendOutputExpression(simpleType).append("[]");
   }
 
   @Override
   public void collectRequires(Consumer<GoogRequire> collector) {
-    className.collectRequires(collector);
-    for (Expression generic : generics) {
-      generic.collectRequires(collector);
-    }
+    simpleType.collectRequires(collector);
   }
 }

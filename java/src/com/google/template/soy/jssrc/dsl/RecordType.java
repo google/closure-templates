@@ -18,12 +18,11 @@ package com.google.template.soy.jssrc.dsl;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.jssrc.restricted.JsExpr;
 import java.util.List;
 import java.util.function.Consumer;
 
 /** Represents a TS record type, for use with eg `new` statements. */
-public class RecordType extends Expression {
+public class RecordType extends AbstractType {
 
   private final ImmutableList<Expression> keys;
   private final ImmutableList<Expression> types;
@@ -59,20 +58,5 @@ public class RecordType extends Expression {
     for (Expression memberType : types) {
       memberType.collectRequires(collector);
     }
-  }
-
-  @Override
-  public ImmutableList<Statement> initialStatements() {
-    return ImmutableList.of();
-  }
-
-  @Override
-  void doFormatInitialStatements(FormattingContext ctx) {}
-
-  @Override
-  public JsExpr singleExprOrName() {
-    FormattingContext ctx = new FormattingContext();
-    doFormatOutputExpr(ctx);
-    return new JsExpr(ctx.toString(), Integer.MAX_VALUE);
   }
 }
