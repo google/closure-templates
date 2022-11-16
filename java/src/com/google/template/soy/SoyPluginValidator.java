@@ -48,6 +48,12 @@ public final class SoyPluginValidator extends AbstractSoyCompiler {
       handler = SoyCmdLineParser.FileListOptionHandler.class)
   private List<File> pluginRuntimeJars;
 
+  @Option(
+      name = "--validateJavaImpls",
+      required = false,
+      usage = "[Optional] Whether to validate the plugin's Java implementations.")
+  private boolean validateJavaImpls = true;
+
   SoyPluginValidator(PluginLoader loader, SoyInputCache cache) {
     super(loader, cache);
   }
@@ -73,7 +79,7 @@ public final class SoyPluginValidator extends AbstractSoyCompiler {
     if (pluginRuntimeJars != null) {
       sfsBuilder.setPluginRuntimeJars(pluginRuntimeJars);
     }
-    sfsBuilder.build().validateUserPlugins();
+    sfsBuilder.build().validateUserPlugins(validateJavaImpls);
     Files.write(output.toPath(), ImmutableList.of("true"), UTF_8);
   }
 }

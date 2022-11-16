@@ -747,7 +747,7 @@ public final class SoyFileSet {
   }
 
   /** Validates any user SoySourceFunction plugins. */
-  void validateUserPlugins() {
+  void validateUserPlugins(boolean validateJavaImpls) {
     entryPointVoid(
         () -> {
           // First resolve all the plugins to ensure they're well-formed (no bad names, etc.).
@@ -760,19 +760,22 @@ public final class SoyFileSet {
               errorReporter);
           // if constructing the resolver found an error, bail out now.
           throwIfErrorsPresent();
-          // Then validate the user-specified source functions by filtering out the builtin ones
-          // TODO(lukes): maybe we should store internal functions and plugins in separate lists to
-          // avoid this filtering...
-          ImmutableSet<Class<?>> internalFunctionNames =
-              InternalPlugins.internalFunctions().stream()
-                  .map(Object::getClass)
-                  .collect(toImmutableSet());
-          new PluginValidator(errorReporter, typeRegistry, pluginRuntimeJars)
-              .validate(
-                  soySourceFunctions.stream()
-                      .filter(fn -> !internalFunctionNames.contains(fn.getClass()))
-                      .collect(toImmutableList()));
-          throwIfErrorsPresent();
+
+          if (validateJavaImpls) {
+            // Then validate the user-specified source functions by filtering out the builtin ones
+            // TODO(lukes): maybe we should store internal functions and plugins in separate lists
+            // to avoid this filtering...
+            ImmutableSet<Class<?>> internalFunctionNames =
+                InternalPlugins.internalFunctions().stream()
+                    .map(Object::getClass)
+                    .collect(toImmutableSet());
+            new PluginValidator(errorReporter, typeRegistry, pluginRuntimeJars)
+                .validate(
+                    soySourceFunctions.stream()
+                        .filter(fn -> !internalFunctionNames.contains(fn.getClass()))
+                        .collect(toImmutableList()));
+            throwIfErrorsPresent();
+          }
         });
   }
 
