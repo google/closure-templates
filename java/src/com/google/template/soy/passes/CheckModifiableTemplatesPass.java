@@ -24,6 +24,7 @@ import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.TemplateBasicNode;
+import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.types.SoyType;
@@ -40,6 +41,9 @@ final class CheckModifiableTemplatesPass implements CompilerFilePass {
           "\"modifies\" can only be used in a file with a '{'modname'}' command, unless it is used "
               + "on a variant template. If this is a non-variant template, did you forget to add a "
               + "'{'modname'}'? Or did you forget to mark this template as a variant?");
+
+  private static final SoyErrorKind MODNAME_WITHOUT_MODIFIES =
+      SoyErrorKind.of("'{'modname'}' can only be used in a file with a \"modifies\" template.");
 
   private static final SoyErrorKind MODIFIABLE_WITH_MODNAME =
       SoyErrorKind.of(
@@ -75,20 +79,28 @@ final class CheckModifiableTemplatesPass implements CompilerFilePass {
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
     TreeSet<String> modifiedNamespaces = new TreeSet<>();
+    boolean foundModTemplate = false;
     for (TemplateNode templateNode : file.getTemplates()) {
+      if (templateNode instanceof TemplateDelegateNode) {
+        foundModTemplate = true;
+      }
       if (templateNode instanceof TemplateBasicNode) {
         TemplateBasicNode templateBasicNode = (TemplateBasicNode) templateNode;
         if (templateBasicNode.isModifiable() && file.getModName() != null) {
           errorReporter.report(templateNode.getSourceLocation(), MODIFIABLE_WITH_MODNAME);
         }
-        if (templateBasicNode.getModifiesExpr() != null
-            && templateBasicNode.getVariantExpr() == null
-            && file.getModName() == null) {
-          errorReporter.report(templateNode.getSourceLocation(), MODIFIES_WITHOUT_MODNAME);
+        if (templateBasicNode.getModifiesExpr() != null) {
+          foundModTemplate = true;
+          if (templateBasicNode.getVariantExpr() == null && file.getModName() == null) {
+            errorReporter.report(templateNode.getSourceLocation(), MODIFIES_WITHOUT_MODNAME);
+          }
         }
         validateModifiesAttribute(templateBasicNode, file, modifiedNamespaces);
         validateVariantExpr(templateBasicNode);
       }
+    }
+    if (file.getModName() != null && !foundModTemplate) {
+      errorReporter.report(file.getModNameDeclaration().location(), MODNAME_WITHOUT_MODIFIES);
     }
   }
 
