@@ -387,9 +387,9 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
   private final Map<Signature, ResolvedSignature> signatureMap = new HashMap<>();
 
   private final ResolveTypesExprVisitor exprVisitor =
-      new ResolveTypesExprVisitor(/* inferringParam=*/ false);
+      new ResolveTypesExprVisitor(/* inferringParam= */ false);
   private final ResolveTypesExprVisitor paramInfExprVisitor =
-      new ResolveTypesExprVisitor(/* inferringParam=*/ true);
+      new ResolveTypesExprVisitor(/* inferringParam= */ true);
   private final ResolveTypesExprVisitor constExprVisitor = new ResolveTypesConstNodeVisitor();
 
   /** Current set of type substitutions. */
@@ -404,6 +404,7 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
   private ConstantsTypeIndex constantsTypeLookup;
   private ExternsTypeIndex externsTypeLookup;
   private SoyFileNode currentFile;
+  private boolean allowProtoFieldAccessForever;
 
   ResolveExpressionTypesPass(
       ErrorReporter errorReporter,
@@ -2511,6 +2512,9 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
 
     private void checkProtoFieldAccess(
         SoyProtoType baseType, String fieldName, SourceLocation sourceLocation) {
+      if (allowProtoFieldAccessForever) {
+        return;
+      }
       FieldDescriptor fd = baseType.getFieldDescriptor(fieldName);
       if ((!fd.hasPresence() && !fd.isRepeated())
       ) {
@@ -2996,13 +3000,13 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
       computeConstraintUnionInto(
           leftVisitor.positiveTypeConstraints,
           rightVisitor.positiveTypeConstraints,
-          /*into=*/ positiveTypeConstraints);
+          /* into= */ positiveTypeConstraints);
       // If the condition is false, then the overall constraint is the intersection of
       // the complements of the true constraints.
       computeConstraintIntersectionInto(
           leftVisitor.negativeTypeConstraints,
           rightVisitor.negativeTypeConstraints,
-          /*into=*/ negativeTypeConstraints);
+          /* into= */ negativeTypeConstraints);
     }
 
     @Override
@@ -3019,13 +3023,13 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
       computeConstraintIntersectionInto(
           leftVisitor.positiveTypeConstraints,
           rightVisitor.positiveTypeConstraints,
-          /*into=*/ positiveTypeConstraints);
+          /* into= */ positiveTypeConstraints);
       // If the condition is false, then both sides must be false, so the overall constraint
       // is the union of the complements of the constraints on each side.
       computeConstraintUnionInto(
           leftVisitor.negativeTypeConstraints,
           rightVisitor.negativeTypeConstraints,
-          /*into=*/ negativeTypeConstraints);
+          /* into= */ negativeTypeConstraints);
     }
 
     @Override
