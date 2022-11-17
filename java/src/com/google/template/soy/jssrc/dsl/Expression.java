@@ -136,6 +136,10 @@ public abstract class Expression extends CodeChunk {
     return new GenericType(className, ImmutableList.copyOf(generics));
   }
 
+  public static Expression functionType(Expression returnType, List<ParamDecl> params) {
+    return new FunctionType(returnType, params);
+  }
+
   public static Expression arrayType(Expression simpleType, boolean readonly) {
     return new ArrayType(readonly, simpleType);
   }
@@ -144,9 +148,8 @@ public abstract class Expression extends CodeChunk {
     return new UnionType(members);
   }
 
-  public static Expression recordType(
-      List<Expression> keys, List<Expression> types, List<Boolean> optional) {
-    return new RecordType(keys, types, optional);
+  public static Expression recordType(List<ParamDecl> params) {
+    return new RecordType(params);
   }
 
   /**

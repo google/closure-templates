@@ -20,18 +20,20 @@ import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.function.Consumer;
 
-/** Represents a TS record type, for use with eg `new` statements. */
-public class RecordType extends AbstractType {
+/** Represents a TS function type. */
+public class FunctionType extends AbstractType {
 
+  private final Expression returnType;
   private final ImmutableList<ParamDecl> params;
 
-  RecordType(List<ParamDecl> params) {
+  public FunctionType(Expression returnType, List<ParamDecl> params) {
+    this.returnType = returnType;
     this.params = ImmutableList.copyOf(params);
   }
 
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
-    ctx.append("{");
+    ctx.append("(");
     boolean first = true;
     for (ParamDecl param : params) {
       if (first) {
@@ -39,16 +41,18 @@ public class RecordType extends AbstractType {
       } else {
         ctx.append(", ");
       }
-
       ctx.append(param.name() + (param.isOptional() ? "?" : ""));
       ctx.append(": ");
-      ctx.appendOutputExpression(param.type());
+      Expression type = param.type();
+      type.doFormatOutputExpr(ctx);
     }
-    ctx.append("}");
+    ctx.append(") => ");
+    returnType.doFormatOutputExpr(ctx);
   }
 
   @Override
   public void collectRequires(Consumer<GoogRequire> collector) {
+    returnType.collectRequires(collector);
     for (ParamDecl param : params) {
       param.collectRequires(collector);
     }
