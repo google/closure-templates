@@ -192,7 +192,7 @@ public abstract class Expression extends CodeChunk {
     return dottedIdWithRequires(dotSeparatedIdentifiers, ImmutableSet.of());
   }
 
-  static Expression dottedIdWithRequires(
+  public static Expression dottedIdWithRequires(
       String dotSeparatedIdentifiers, Iterable<GoogRequire> requires) {
     List<String> ids = Splitter.on('.').splitToList(dotSeparatedIdentifiers);
     Preconditions.checkState(

@@ -192,19 +192,18 @@ public final class ProtoUtils {
     return calculateUnprefixedJsName(descriptor);
   }
 
-  public static String calculateUnprefixedJsName(GenericDescriptor descriptor) {
+  public static String calculateFileLocalName(GenericDescriptor descriptor) {
     String protoPackage = descriptor.getFile().getPackage();
-    // We need a semi-qualified name: including containing types but not the package.
     String name = descriptor.getFullName();
     if (!name.startsWith(protoPackage)) {
       throw new AssertionError("Expected \"" + name + "\" to start with \"" + protoPackage + "\"");
     }
-    String jsPackage = getJsPackage(descriptor.getFile());
+    return protoPackage.isEmpty() ? name : name.substring(protoPackage.length() + 1);
+  }
 
-    // When there is no protoPackage, the semi-qualified name does not have a package prefix nor the
-    // "." separator.
-    return jsPackage
-        + (protoPackage.isEmpty() ? "." + name : name.substring(protoPackage.length()));
+  public static String calculateUnprefixedJsName(GenericDescriptor descriptor) {
+    String jsPackage = getJsPackage(descriptor.getFile());
+    return jsPackage + "." + calculateFileLocalName(descriptor);
   }
 
   public static OneofDescriptor getContainingOneof(FieldDescriptor fd) {
