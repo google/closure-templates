@@ -144,13 +144,6 @@ public final class JsType {
           .googModuleGet()
           .dotAccess("$$isIdomFunctionType");
 
-  private static final JsType LIT_HTML =
-      builder()
-          .addType("lit_element.TemplateResult")
-          .addRequire(GoogRequire.createWithAlias("litElement", "lit_element"))
-          .setPredicate(TypePredicate.NO_OP)
-          .build();
-
   private static final JsType IDOM_HTML =
       builder()
           .addType("!goog.soy.data.SanitizedHtml")
@@ -324,21 +317,9 @@ public final class JsType {
         /* includeNullForMessages= */ false);
   }
 
-  /** Returns a JS type for lit-html with strict rules. */
-  public static JsType forLitSrc(SoyType soyType) {
-    return forSoyType(
-        soyType,
-        JsTypeKind.LITSRC,
-        /* isStrict= */ true,
-        ArrayTypeMode.READONLY_ARRAY,
-        MessageTypeMode.READONLY,
-        /* includeNullForMessages= */ false);
-  }
-
   private enum JsTypeKind {
     JSSRC,
     IDOMSRC,
-    LITSRC
   }
 
   /** How we should type-annotate proto messages, as readonly or just mutable. */
@@ -436,9 +417,6 @@ public final class JsType {
         if (kind == JsTypeKind.IDOMSRC) {
           // idom has a different strategy for handling these
           return IDOM_HTML;
-        }
-        if (kind == JsTypeKind.LITSRC) {
-          return LIT_HTML;
         }
         // fall-through
       case CSS:
@@ -670,10 +648,6 @@ public final class JsType {
                       "function(!incrementaldomlib.IncrementalDomRenderer, %s, %s):(%s)",
                       parametersType, ijType, returnType));
               break;
-            case LITSRC:
-              builder.addType(
-                  String.format("function(%s):(%s)", parametersType, "lit_element.TemplateResult"));
-              break;
             default:
               builder.addType(
                   String.format("function(%s, %s):(%s)", parametersType, ijType, returnType));
@@ -720,8 +694,6 @@ public final class JsType {
         if (kind == JsTypeKind.IDOMSRC
             && (contentKind.isHtml() || contentKind == SanitizedContentKind.ATTRIBUTES)) {
           builder.addType("void");
-        } else if (kind == JsTypeKind.LITSRC && contentKind.isHtml()) {
-          builder.addType("lit_element.TemplateResult");
         } else {
           builder.addType("!" + type);
         }
