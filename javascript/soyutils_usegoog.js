@@ -2078,6 +2078,16 @@ const $$makeArray = function(...args) {
 };
 
 /**
+ * A helper function to provide tight type inference on array loops.
+ * @param {!Array<T>|!ReadonlyArray<T>} arr
+ * @return {!ReadonlyArray<T>}
+ * @template T
+ */
+const $$asReadonlyArray = function(arr) {
+  return arr;
+};
+
+/**
  * A helper for list comprehension.
  * @param {!IArrayLike<T>} list
  * @param {function(T,number):boolean} filter
@@ -2504,6 +2514,7 @@ function $$freeze(object) {
 exports = {
   $$serializeKey,
   $$IS_LOCALE_RTL,
+  $$asReadonlyArray,
   $$assignDefaults,
   $$getMapKeys,
   $$checkNotNull,

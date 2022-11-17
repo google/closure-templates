@@ -111,7 +111,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
 
   @Override
   protected JsType getJsTypeForParamForDeclaration(SoyType paramType) {
-    return JsType.forIncrementalDomState(paramType);
+    return JsType.forIncrementalDomDeclarations(paramType);
   }
 
   @Override
@@ -248,11 +248,10 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
                             stateVar ->
                                 VariableDeclaration.builder(
                                         STATE_VAR_PREFIX + STATE_PREFIX + stateVar.name())
-                                    .setRhs(
-                                        Expression.THIS.dotAccess(STATE_PREFIX + stateVar.name()))
+                                    .setRhs(getStateVarWithCasts(stateVar))
                                     .build())
                         .collect(toImmutableList())),
-                generateIncrementalDomRenderCalls(node, alias, /*isPositionalStyle=*/ false)));
+                generateIncrementalDomRenderCalls(node, alias, /* isPositionalStyle= */ false)));
     return VariableDeclaration.builder(soyElementClassName + "Render")
         .setJsDoc(jsDoc)
         .setRhs(fn)
@@ -267,14 +266,19 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       for (GoogRequire require : jsType.getGoogRequires()) {
         jsCodeBuilder.addGoogRequire(require);
       }
-      JsDoc stateVarJsdoc =
-          JsDoc.builder().addParameterizedAnnotation("private", jsType.typeExpr()).build();
+
       Expression rhsValue;
       if (isConstantExpr(stateVar.defaultValue())) {
         rhsValue = translateExpr(stateVar.defaultValue());
+        if (!(rhsValue.hasOuterCast())) {
+          rhsValue = rhsValue.castAs(jsType.typeExpr(), jsType.getGoogRequires());
+        }
       } else {
         rhsValue = Expression.LITERAL_UNDEFINED.castAsUnknown();
       }
+
+      JsDoc stateVarJsdoc =
+          JsDoc.builder().addParameterizedAnnotation("private", jsType.typeExpr()).build();
       stateVarInitializations.add(
           Statement.assign(
               Expression.THIS.dotAccess(STATE_PREFIX + stateVar.name()), rhsValue, stateVarJsdoc));
@@ -314,7 +318,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   protected JsDoc generatePositionalFunctionJsDoc(TemplateNode node, boolean addVariantParam) {
     JsDoc.Builder jsDocBuilder = JsDoc.builder();
     addInternalCallerParam(jsDocBuilder);
-    addIjDataParam(jsDocBuilder, /*forPositionalSignature=*/ true);
+    addIjDataParam(jsDocBuilder, /* forPositionalSignature= */ true);
     maybeAddRenderer(jsDocBuilder, node);
     for (TemplateParam param : paramsInOrder(node)) {
       JsType jsType = getJsTypeForParamForDeclaration(param.type());
@@ -362,7 +366,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     } else {
       jsDocBuilder.addParam(StandardNames.OPT_DATA, "!" + alias + ".Params");
     }
-    addIjDataParam(jsDocBuilder, /*forPositionalSignature=*/ false);
+    addIjDataParam(jsDocBuilder, /* forPositionalSignature= */ false);
     if (addVariantParam) {
       jsDocBuilder.addParam(StandardNames.OPT_VARIANT, "string=");
     }
@@ -707,20 +711,27 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
    */
   private ImmutableList<MethodDeclaration> generateStateMethodsForSoyElementClass(
       String soyElementClassName, TemplateStateVar stateVar) {
-    JsType jsType = JsType.forIncrementalDomState(stateVar.type());
+    ImmutableList.Builder<MethodDeclaration> methods = ImmutableList.builder();
+
+    // Generate getters.
+    JsType typeForState = JsType.forIncrementalDomDeclarations(stateVar.type());
+    JsType typeForGetters = JsType.forIncrementalDomGetters(stateVar.type());
     String stateAccessorSuffix =
         Ascii.toUpperCase(stateVar.name().substring(0, 1)) + stateVar.name().substring(1);
-    Expression stateValue = id("this").dotAccess(STATE_PREFIX + stateVar.name());
-    MethodDeclaration getStateMethod =
+    Expression getterStateValue =
+        maybeCastAs(
+            id("this").dotAccess(STATE_PREFIX + stateVar.name()), typeForState, typeForGetters);
+    methods.add(
         MethodDeclaration.create(
             "get" + stateAccessorSuffix,
-            JsDoc.builder().addParameterizedAnnotation("return", jsType.typeExpr()).build(),
-            Statement.returnValue(stateValue));
+            JsDoc.builder().addParameterizedAnnotation("return", typeForGetters.typeExpr()).build(),
+            Statement.returnValue(getterStateValue)));
 
-    jsType = JsType.forIncrementalDomState(stateVar.type());
+    // Generate setters.
     ImmutableList.Builder<Statement> setStateMethodStatements = ImmutableList.builder();
+    JsType typeForSetters = JsType.forIncrementalDomSetters(stateVar.type());
     Optional<Expression> typeAssertion =
-        jsType.getSoyParamTypeAssertion(
+        typeForSetters.getSoyParamTypeAssertion(
             id(stateVar.name()),
             stateVar.name(),
             /* paramKind= */ "@state",
@@ -728,17 +739,21 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     if (typeAssertion.isPresent()) {
       setStateMethodStatements.add(typeAssertion.get().asStatement());
     }
+    Expression setterStateValue = id("this").dotAccess(STATE_PREFIX + stateVar.name());
+    // TODO(b/230911572): remove this cast when types are always aligned.
+    Expression setterParam = maybeCastAs(id(stateVar.name()), typeForSetters, typeForState);
     setStateMethodStatements.add(
-        stateValue.assign(id(stateVar.name())).asStatement(), Statement.returnValue(id("this")));
-    MethodDeclaration setStateMethod =
+        setterStateValue.assign(setterParam).asStatement(), Statement.returnValue(id("this")));
+    methods.add(
         MethodDeclaration.create(
             "set" + stateAccessorSuffix,
             JsDoc.builder()
-                .addParam(stateVar.name(), jsType.typeExpr())
+                .addParam(stateVar.name(), typeForSetters.typeExpr())
                 .addParameterizedAnnotation("return", "!" + soyElementClassName)
                 .build(),
-            Statement.of(setStateMethodStatements.build()));
-    return ImmutableList.of(getStateMethod, setStateMethod);
+            Statement.of(setStateMethodStatements.build())));
+
+    return methods.build();
   }
 
   /** Generates `get[X]` for a given parameter value. */
@@ -757,7 +772,12 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
               .build(),
           Statement.of(ImmutableList.of()));
     }
-    Expression value = id("this").dotAccess(isInjected ? "ijData" : "data").dotAccess(param.name());
+    // TODO(b/230911572): remove this cast when types are always aligned.
+    Expression value =
+        maybeCastAs(
+            id("this").dotAccess(isInjected ? "ijData" : "data").dotAccess(param.name()),
+            JsType.forIncrementalDomState(param.type()),
+            jsType);
     if (param.hasDefault()) {
       value =
           templateTranslationContext
@@ -808,6 +828,25 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
    */
   private static boolean isTextContent(SanitizedContentKind contentKind) {
     return !contentKind.isHtml() && contentKind != SanitizedContentKind.ATTRIBUTES;
+  }
+
+  private static Expression getStateVarWithCasts(TemplateStateVar stateVar) {
+    // Access the state variable and cast if the declared type is
+    // different from what we would expect it to be inline in a template,
+    // as described in the -TypeChecks accessors.
+    SoyType stateVarType = stateVar.typeOrDefault(null);
+    return maybeCastAs(
+        Expression.THIS.dotAccess(STATE_PREFIX + stateVar.name()),
+        JsType.forIncrementalDomState(stateVarType),
+        JsType.forIncrementalDomTypeChecks(stateVarType));
+  }
+
+  private static Expression maybeCastAs(
+      Expression expression, JsType currentType, JsType desiredType) {
+    if (!currentType.typeExpr().equals(desiredType.typeExpr())) {
+      expression = expression.castAs(desiredType.typeExpr(), desiredType.getGoogRequires());
+    }
+    return expression;
   }
 
   @Override

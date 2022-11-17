@@ -1502,12 +1502,16 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
                   /* paramKind= */ param.isInjected() ? "@inject" : "@param",
                   generator)
               .orElse(paramChunk);
+
       // Cast to a better type, if necessary and possible.
-      // TODO(b/256679865): prevent using reserved words.
-      JsType declType = getJsTypeForParam(paramType);
-      if (!jsType.typeExpr().equals(declType.typeExpr())) {
+      JsType declType = getJsTypeForParamForDeclaration(paramType);
+      boolean addedCast = false;
+      if (!jsType.typeExpr().equals(declType.typeExpr()) && !JsSrcUtils.isReservedWord(paramName)) {
+        // TODO(b/256679865): rename JS builtins here.
+        addedCast = true;
         initializer = initializer.castAs(jsType.typeExpr(), jsType.getGoogRequires());
       }
+
       VariableDeclaration.Builder declarationBuilder =
           VariableDeclaration.builder(paramAlias)
               .setRhs(initializer)

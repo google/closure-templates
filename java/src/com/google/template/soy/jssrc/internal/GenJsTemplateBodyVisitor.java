@@ -523,7 +523,16 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
       // Define list var and list-len var.
       Expression dataRef = translateExpr(node.getExpr());
       final String listVarName = varPrefix + "List";
-      Expression listVar = VariableDeclaration.builder(listVarName).setRhs(dataRef).build().ref();
+      Expression listVar =
+          VariableDeclaration.builder(listVarName)
+              .setRhs(
+                  // We must cast as readonly since if this ends up being a type union, the value
+                  // will be typed as `?` and we can have disambiguation errors.
+                  //
+                  // TODO(b/242196577): remove this.
+                  JsRuntime.SOY_AS_READONLY.call(dataRef))
+              .build()
+              .ref();
       // does it make sense to store this in a variable?
       limitInitializer = listVar.dotAccess("length");
       getDataItemFunction = index -> listVar.bracketAccess(index);

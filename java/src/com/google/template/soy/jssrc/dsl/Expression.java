@@ -452,6 +452,10 @@ public abstract class Expression extends CodeChunk {
     return Call.create(this, ImmutableList.copyOf(args));
   }
 
+  public final boolean hasOuterCast() {
+    return this instanceof Cast;
+  }
+
   public final Expression castAsUnknown() {
     return Cast.create(this, "?");
   }

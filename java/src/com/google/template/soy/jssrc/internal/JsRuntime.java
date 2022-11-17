@@ -87,6 +87,8 @@ public final class JsRuntime {
 
   public static final Expression SOY_MAKE_ARRAY = SOY.dotAccess("$$makeArray");
 
+  public static final Expression SOY_AS_READONLY = SOY.dotAccess("$$asReadonlyArray");
+
   public static final Expression SOY_FILTER_AND_MAP = SOY.dotAccess("$$filterAndMap");
 
   public static final Expression GOOG_IS_OBJECT = dottedIdNoRequire("goog.isObject");

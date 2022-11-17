@@ -239,6 +239,17 @@ public final class JsType {
         /* includeNullForMessages= */ false);
   }
 
+  /** Returns a JS type for inline value construction. */
+  public static JsType forJsValueConstruction(SoyType soyType) {
+    return forSoyType(
+        soyType,
+        JsTypeKind.JSSRC,
+        /* isStrict= */ true,
+        ArrayTypeMode.MUTABLE_ARRAY,
+        MessageTypeMode.ONLY_MUTABLE,
+        /* includeNullForMessages= */ false);
+  }
+
   /** Returns a JS type for idom with looser rules, allowing 1/0 for bools or nullable protos. */
   public static JsType forIncrementalDom(SoyType soyType) {
     return forSoyType(
@@ -281,15 +292,35 @@ public final class JsType {
   }
 
   /** Returns a JS type for idom with strict rules. */
-  public static JsType forIncrementalDomState(SoyType soyType) {
-    // TODO(b/230911572): use only ReadonlyArray here.
-    // TODO(b/230911572): use only readonly messages here.
+  public static JsType forIncrementalDomSetters(SoyType soyType) {
     return forSoyType(
         soyType,
         JsTypeKind.IDOMSRC,
         /* isStrict= */ true,
-        ArrayTypeMode.MUTABLE_ARRAY,
-        MessageTypeMode.ONLY_MUTABLE,
+        ArrayTypeMode.ARRAY_OR_READONLY_ARRAY,
+        MessageTypeMode.READONLY,
+        /* includeNullForMessages= */ false);
+  }
+
+  /** Returns a JS type for idom template type decls. */
+  public static JsType forIncrementalDomDeclarations(SoyType soyType) {
+    return forSoyType(
+        soyType,
+        JsTypeKind.IDOMSRC,
+        /* isStrict= */ true,
+        ArrayTypeMode.ARRAY_OR_READONLY_ARRAY,
+        MessageTypeMode.READONLY,
+        /* includeNullForMessages= */ false);
+  }
+
+  /** Returns a JS type for idom with strict rules. */
+  public static JsType forIncrementalDomState(SoyType soyType) {
+    return forSoyType(
+        soyType,
+        JsTypeKind.IDOMSRC,
+        /* isStrict= */ true,
+        ArrayTypeMode.READONLY_ARRAY,
+        MessageTypeMode.READONLY,
         /* includeNullForMessages= */ false);
   }
 
@@ -612,8 +643,8 @@ public final class JsType {
                     parameter.getType(),
                     kind,
                     isStrict,
-                    arrayTypeMode,
-                    messageTypeMode,
+                    ArrayTypeMode.ARRAY_OR_READONLY_ARRAY,
+                    MessageTypeMode.READONLY,
                     includeNullForMessages);
             builder.addRequires(forSoyType.getGoogRequires());
             parameters.put(
