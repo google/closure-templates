@@ -224,3 +224,40 @@ Then these are still valid:
 {delcall my.project.feature.foo}
 {/delcall}
 ```
+
+## allowemptydefault
+
+Deltemplates had an option `allowemptydefault` which allowed you to omit the
+default (ie non-mod, non-variant) deltemplate. `modifiable` templates do not
+allow this, since the `modifiable` template is the imported symbol that is the
+target of the `{call}` command. Instead, explicitly declare an empty
+`modifiable` template.
+
+`my/project/main.soy`
+
+```soy
+{namespace my.app}
+
+{template myApp}
+  {call myFeature /}
+{/template}
+
+{template myFeature modifiable="true"}
+  // By default, does nothing.
+{/template}
+```
+
+`my/project/experimental_feature.soy`
+
+```soy
+{modname enableExperimentalFeature}
+{namespace my.app.experimentalfeature}
+
+import {myFeature} from 'my/project/main.soy';
+
+{template myFeatureMod visibility="private" modifies="myFeature"}
+  <div>
+    My Feature...
+  </div>
+{/template}
+```
