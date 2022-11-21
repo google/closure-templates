@@ -44,6 +44,7 @@ const googSoy = goog.requireType('goog.soy');
 const googString = goog.require('goog.string');
 const soyChecks = goog.require('soy.checks');
 const uncheckedconversions = goog.require('goog.html.uncheckedconversions');
+const {SafeHtml: TsSafeHtml, SafeScript: TsSafeScript, SafeStyle: TsSafeStyle, SafeStyleSheet: TsSafeStyleSheet, SafeUrl: TsSafeUrl, TrustedResourceUrl: TsTrustedResourceUrl, unwrapHtml, unwrapResourceUrl, unwrapScript, unwrapStyle, unwrapStyleSheet, unwrapUrl} = goog.require('safevalues');
 const {SanitizedContent, SanitizedContentKind, SanitizedCss, SanitizedHtml, SanitizedHtmlAttribute, SanitizedJs, SanitizedTrustedResourceUri, SanitizedUri} = goog.require('goog.soy.data');
 
 // -----------------------------------------------------------------------------
@@ -132,8 +133,7 @@ const createSanitizedHtml = function(value) {
   }
   // MOE:begin_strip
   if (value instanceof TsSafeHtml) {
-    return VERY_UNSAFE.ordainSanitizedHtml(
-        tsSafeUnwrappers.unwrapSafeHtml(value));
+    return VERY_UNSAFE.ordainSanitizedHtml(unwrapHtml(value).toString());
   }
   // MOE:end_strip
   return VERY_UNSAFE.ordainSanitizedHtml(
@@ -941,8 +941,8 @@ const $$htmlToText = function(value) {
   } else if (isContentKind_(value, SanitizedContentKind.HTML)) {
     html = value.toString();
     // MOE:begin_strip
-  } else if (value instanceof TsSafeHtml) {
-    html = tsSafeUnwrappers.unwrapSafeHtml(value);
+  } else if (value instanceof SafeHtml) {
+    html = unwrapHtml(value).toString();
     // MOE:end_strip
   } else {
     return asserts.assertString(value);
@@ -1539,7 +1539,7 @@ const $$escapeJsValue = function(value) {
   }
   // MOE:begin_strip
   if (value instanceof TsSafeScript) {
-    return tsSafeUnwrappers.unwrapSafeScript(value);
+    return unwrapScript(value).toString();
   }
   // MOE:end_strip
   switch (typeof value) {
@@ -1644,7 +1644,7 @@ const $$filterNormalizeUri = function(value) {
   }
   // MOE:begin_strip
   if (value instanceof TsSafeUrl) {
-    return soy.$$normalizeUri(tsSafeUnwrappers.unwrapSafeUrl(value));
+    return soy.$$normalizeUri(unwrapUrl(value));
   }
   // MOE:end_strip
   if (value instanceof TrustedResourceUrl) {
@@ -1652,7 +1652,7 @@ const $$filterNormalizeUri = function(value) {
   }
   // MOE:begin_strip
   if (value instanceof TsTrustedResourceUrl) {
-    return soy.$$normalizeUri(tsSafeUnwrappers.unwrapTrustedResourceUrl(value));
+    return soy.$$normalizeUri(unwrapResourceUrl(value).toString());
   }
   // MOE:end_strip
   return $$filterNormalizeUriHelper(value);
@@ -1681,7 +1681,7 @@ const $$filterNormalizeMediaUri = function(value) {
   }
   // MOE:begin_strip
   if (value instanceof TsSafeUrl) {
-    return soy.$$normalizeUri(tsSafeUnwrappers.unwrapSafeUrl(value));
+    return soy.$$normalizeUri(unwrapUrl(value));
   }
   // MOE:end_strip
   if (value instanceof TrustedResourceUrl) {
@@ -1689,7 +1689,7 @@ const $$filterNormalizeMediaUri = function(value) {
   }
   // MOE:begin_strip
   if (value instanceof TsTrustedResourceUrl) {
-    return soy.$$normalizeUri(tsSafeUnwrappers.unwrapTrustedResourceUrl(value));
+    return soy.$$normalizeUri(unwrapResourceUrl(value).toString());
   }
   // MOE:end_strip
   return $$filterNormalizeMediaUriHelper(value);
@@ -1722,7 +1722,7 @@ const $$filterTrustedResourceUri = function(value) {
   }
   // MOE:begin_strip
   if (value instanceof TsTrustedResourceUrl) {
-    return soy.$$normalizeUri(tsSafeUnwrappers.unwrapTrustedResourceUrl(value));
+    return soy.$$normalizeUri(unwrapResourceUrl(value).toString());
   }
   // MOE:end_strip
   asserts.fail('Bad value `%s` for |filterTrustedResourceUri', [String(value)]);
@@ -1812,7 +1812,7 @@ const $$filterCssValue = function(value) {
   }
   // MOE:begin_strip
   if (value instanceof TsSafeStyle) {
-    return $$embedCssIntoHtml_(tsSafeUnwrappers.unwrapSafeStyle(value));
+    return $$embedCssIntoHtml_(unwrapStyle(value));
   }
   // MOE:end_strip
   // Note: SoyToJsSrcCompiler uses $$filterCssValue both for the contents of
@@ -1825,7 +1825,7 @@ const $$filterCssValue = function(value) {
   }
   // MOE:begin_strip
   if (value instanceof TsSafeStyleSheet) {
-    return $$embedCssIntoHtml_(tsSafeUnwrappers.unwrapSafeStyleSheet(value));
+    return $$embedCssIntoHtml_(unwrapStyleSheet(value));
   }
   // MOE:end_strip
   return $$filterCssValueHelper(value);
