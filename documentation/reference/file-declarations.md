@@ -151,9 +151,12 @@ This deprecated feature still works for the ID parameter to the
 Syntax:
 
 ```soy
-{modname <delegate_package_name>}
+{modname <JS mod name>}
 ```
 
 This command belongs at the start of a template file, before the `namespace`
-tag. It is one of the two ways to use delegate templates. For details, see the
-section on [using delegate templates with modname](delegate-templates.md).
+tag. It is one of the two ways to use
+[modifiable templates](http://go/soy/reference/modifiable-templates). It will
+add a `@modName` annotation to the JS gencode. A `@mods` annotation will also be
+added only if the file contains a `modifies` template (or legacy `deltemplate`
+with a matching default `deltemplate`).
