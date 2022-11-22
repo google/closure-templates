@@ -19,8 +19,11 @@ package com.google.template.soy.passes;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.SoyFileNode;
 
 /**
@@ -33,6 +36,12 @@ import com.google.template.soy.soytree.SoyFileNode;
  */
 final class EnforceExperimentalFeaturesPass implements CompilerFilePass {
 
+  private static final ImmutableSet<String> ALL_EXPERIMENTAL_FEATURES =
+      ImmutableSet.of("testonly_throw_on_warnings");
+
+  private static final SoyErrorKind INVALID_EXPERIMENTAL_FEATURE =
+      SoyErrorKind.of("Invalid Soy experimental feature(s): {0}.");
+
   private final ImmutableSet<String> features;
   private final ErrorReporter reporter;
 
@@ -42,5 +51,12 @@ final class EnforceExperimentalFeaturesPass implements CompilerFilePass {
   }
 
   @Override
-  public void run(SoyFileNode file, IdGenerator nodeIdGen) {}
+  public void run(SoyFileNode file, IdGenerator nodeIdGen) {
+    if (!ALL_EXPERIMENTAL_FEATURES.containsAll(features)) {
+      reporter.report(
+          SourceLocation.UNKNOWN,
+          INVALID_EXPERIMENTAL_FEATURE,
+          Sets.difference(features, ALL_EXPERIMENTAL_FEATURES));
+    }
+  }
 }
