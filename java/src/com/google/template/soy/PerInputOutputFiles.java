@@ -40,7 +40,7 @@ import javax.annotation.Nullable;
 import org.kohsuke.args4j.Option;
 
 /** A set of flags and utilities interpreting them for mapping source files to output files. */
-final class PerInputOutputFiles {
+class PerInputOutputFiles {
   // Concatenating JS files is not safe unless we know that the last statement from one
   // couldn't combine with the isFirst statement of the next.  Inserting a semicolon will
   // prevent this from happening.
@@ -101,7 +101,7 @@ final class PerInputOutputFiles {
     this(extension, null);
   }
 
-  void validateFlags() {
+  final void validateFlags() {
     if (outputPathFormat != null && (!inputRoots.isEmpty() || outputDirectory != null)) {
       exitWithError("Must set either --outputPathFormat or --outputDirectory and --inputRoots.");
     }
@@ -110,11 +110,11 @@ final class PerInputOutputFiles {
     }
   }
 
-  void writeFiles(List<File> srcs, List<String> outFileContents) {
+  final void writeFiles(List<File> srcs, List<String> outFileContents) {
     writeFiles(srcs, outFileContents, /* locale= */ null, /* omitIfEmpty = */ false);
   }
 
-  void writeFiles(List<File> srcs, List<String> outFileContents, @Nullable String locale) {
+  final void writeFiles(List<File> srcs, List<String> outFileContents, @Nullable String locale) {
     writeFiles(srcs, outFileContents, locale, /* omitIfEmpty = */ false);
   }
 
@@ -122,7 +122,7 @@ final class PerInputOutputFiles {
    * Writes per-input output files. When omitIfEmpty is true, this will skip writing a file if its
    * outFileContents are empty.
    */
-  void writeFiles(
+  final void writeFiles(
       List<File> srcs, List<String> outFileContents, @Nullable String locale, boolean omitIfEmpty) {
     if (srcs.size() != outFileContents.size()) {
       throw new AssertionError(
@@ -168,7 +168,7 @@ final class PerInputOutputFiles {
     }
   }
 
-  ImmutableMap<SourceFilePath, Path> getOutputFilePathsForInputs(List<SourceFilePath> srcs) {
+  final ImmutableMap<SourceFilePath, Path> getOutputFilePathsForInputs(List<SourceFilePath> srcs) {
     return srcs.stream()
         .collect(
             toImmutableMap(
@@ -176,12 +176,12 @@ final class PerInputOutputFiles {
   }
 
   @VisibleForTesting
-  Path getOutputPath(File input, @Nullable String locale) {
+  final Path getOutputPath(File input, @Nullable String locale) {
     return getOutputPath(input.toPath(), locale);
   }
 
   @VisibleForTesting
-  Path getOutputPath(Path inputPath, @Nullable String locale) {
+  final Path getOutputPath(Path inputPath, @Nullable String locale) {
     String transformedLocale = locale == null ? null : Ascii.toLowerCase(locale).replace('-', '_');
     if (outputDirectory != null) {
       for (Path root : inputRoots) {
@@ -191,20 +191,7 @@ final class PerInputOutputFiles {
         }
       }
 
-      String fileName = inputPath.getFileName().toString();
-      if (subdir != null && subdir.length() > 0) {
-        fileName = subdir + "/" + fileName;
-      }
-      int extensionLocation = fileName.lastIndexOf('.');
-      if (extensionLocation == -1) {
-        // consider making this an error, possibly an error if it isn't .soy
-        extensionLocation = fileName.length();
-      }
-      fileName =
-          fileName.substring(0, extensionLocation)
-              + (transformedLocale != null ? "_" + transformedLocale : "")
-              + "."
-              + extension;
+      String fileName = transformFilename(inputPath.getFileName().toString(), locale);
       inputPath = inputPath.resolveSibling(fileName);
       inputPath = outputDirectory.resolve(inputPath);
       return inputPath;
@@ -214,7 +201,23 @@ final class PerInputOutputFiles {
     }
   }
 
-  Optional<Path> getOutputDirectoryFlag() {
+  protected String transformFilename(String fileName, @Nullable String locale) {
+    String transformedLocale = locale == null ? null : Ascii.toLowerCase(locale).replace('-', '_');
+    if (subdir != null && subdir.length() > 0) {
+      fileName = subdir + "/" + fileName;
+    }
+    int extensionLocation = fileName.lastIndexOf('.');
+    if (extensionLocation == -1) {
+      // consider making this an error, possibly an error if it isn't .soy
+      extensionLocation = fileName.length();
+    }
+    return fileName.substring(0, extensionLocation)
+        + (transformedLocale != null ? "_" + transformedLocale : "")
+        + "."
+        + extension;
+  }
+
+  final Optional<Path> getOutputDirectoryFlag() {
     return Optional.ofNullable(outputDirectory);
   }
 
