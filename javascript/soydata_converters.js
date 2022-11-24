@@ -55,12 +55,24 @@ const {SanitizedCss, SanitizedHtml, SanitizedJs, SanitizedTrustedResourceUri, Sa
 
 /**
  * Converts a CSS Sanitized Content object to a corresponding Safe Style Proto.
- * @param {!SanitizedCss|string} sanitizedCss
+ * @param {!SanitizedCss|!SafeStyle|string} sanitizedCss
  * @return {!SafeStyleProto}
  */
 exports.packSanitizedCssToSafeStyleProtoSoyRuntimeOnly = function(
     sanitizedCss) {
-  if (sanitizedCss !== '' && !(sanitizedCss instanceof SanitizedCss)) {
+  let content;
+  let safeStyle;
+  if (sanitizedCss === '' || sanitizedCss instanceof SanitizedCss) {
+    content = sanitizedCss ?
+        /** @type {!SanitizedCss} */ (sanitizedCss).getContent() :
+        '';
+    safeStyle =
+        uncheckedconversions.safeStyleFromStringKnownToSatisfyTypeContract(
+            Const.from('from Soy SanitizedCss object'), content);
+  } else if (sanitizedCss instanceof SafeStyle) {
+    content = SafeStyle.unwrap(sanitizedCss);
+    safeStyle = sanitizedCss;
+  } else {
     throw new Error(
         'expected SanitizedCss, got ' + googDebug.runtimeType(sanitizedCss));
   }
@@ -71,18 +83,10 @@ exports.packSanitizedCssToSafeStyleProtoSoyRuntimeOnly = function(
   // quoted strings.
   //
   // This is a best-effort attempt to preserve SafeStyle's semantic guarantees.
-  if (sanitizedCss &&
-      googString.contains(
-          /** @type {!SanitizedCss} */ (sanitizedCss).getContent(), '{')) {
+  if (googString.contains(content, '{')) {
     throw new Error('Consider using packSanitizedCssToSafeStyleSheetProto().');
   }
 
-  const safeStyle =
-      uncheckedconversions.safeStyleFromStringKnownToSatisfyTypeContract(
-          Const.from('from Soy SanitizedCss object'),
-          sanitizedCss ?
-              /** @type {!SanitizedCss} */ (sanitizedCss).getContent() :
-              '');
   return jspbconversions.safeStyleToProto(safeStyle);
 };
 
@@ -90,12 +94,24 @@ exports.packSanitizedCssToSafeStyleProtoSoyRuntimeOnly = function(
 /**
  * Converts a CSS Sanitized Content object to a corresponding Safe Style Sheet
  * Proto.
- * @param {!SanitizedCss|string} sanitizedCss
+ * @param {!SanitizedCss|!SafeStyleSheet|string} sanitizedCss
  * @return {!SafeStyleSheetProto}
  */
 exports.packSanitizedCssToSafeStyleSheetProtoSoyRuntimeOnly = function(
     sanitizedCss) {
-  if (sanitizedCss !== '' && !(sanitizedCss instanceof SanitizedCss)) {
+  let content;
+  let safeStyleSheet;
+  if (sanitizedCss === '' || sanitizedCss instanceof SanitizedCss) {
+    content = sanitizedCss ?
+        /** @type {!SanitizedCss} */ (sanitizedCss).getContent() :
+        '';
+    safeStyleSheet =
+        uncheckedconversions.safeStyleSheetFromStringKnownToSatisfyTypeContract(
+            Const.from('from Soy SanitizedCss object'), content);
+  } else if (sanitizedCss instanceof SafeStyleSheet) {
+    content = SafeStyleSheet.unwrap(sanitizedCss);
+    safeStyleSheet = sanitizedCss;
+  } else {
     throw new Error(
         'expected SanitizedCss, got ' + googDebug.runtimeType(sanitizedCss));
   }
@@ -106,19 +122,10 @@ exports.packSanitizedCssToSafeStyleSheetProtoSoyRuntimeOnly = function(
   //
   // This is a best-effort attempt to preserve SafeStyleSheet's semantic
   // guarantees.
-  if (sanitizedCss &&
-      /** @type {!SanitizedCss} */ (sanitizedCss).getContent().length > 0 &&
-      !googString.contains(
-          /** @type {!SanitizedCss} */ (sanitizedCss).getContent(), '{')) {
+  if (content.length > 0 && !googString.contains(content, '{')) {
     throw new Error('Consider using packSanitizedCssToSafeStyleProto().');
   }
 
-  const safeStyleSheet =
-      uncheckedconversions.safeStyleSheetFromStringKnownToSatisfyTypeContract(
-          Const.from('from Soy SanitizedCss object'),
-          sanitizedCss ?
-              /** @type {!SanitizedCss} */ (sanitizedCss).getContent() :
-              '');
   return jspbconversions.safeStyleSheetToProto(safeStyleSheet);
 };
 
@@ -126,40 +133,49 @@ exports.packSanitizedCssToSafeStyleSheetProtoSoyRuntimeOnly = function(
 /**
  * Converts an HTML Sanitized Content object to a corresponding
  * Safe String Proto.
- * @param {!SanitizedHtml|string|!soy.IdomFunction|!Function}
+ * @param {!SanitizedHtml|string|!soy.IdomFunction|!Function|!SafeHtml}
  *     sanitizedHtml
  * @return {!SafeHtmlProto}
  */
 exports.packSanitizedHtmlToProtoSoyRuntimeOnly = function(sanitizedHtml) {
-  if (sanitizedHtml !== '' && !(sanitizedHtml instanceof SanitizedHtml)) {
+  let safeHtml;
+  if (sanitizedHtml === '' || sanitizedHtml instanceof SanitizedHtml) {
+    const content = sanitizedHtml ?
+        /** @type {!SanitizedHtml} */ (sanitizedHtml).getContent() :
+        '';
+    safeHtml =
+        uncheckedconversions.safeHtmlFromStringKnownToSatisfyTypeContract(
+            Const.from('from Soy SanitizedHtml object'), content);
+  } else if (sanitizedHtml instanceof SafeHtml) {
+    safeHtml = sanitizedHtml;
+  } else {
     throw new Error(
         'expected SanitizedHtml, got ' + googDebug.runtimeType(sanitizedHtml));
   }
-  const content = sanitizedHtml ?
-      /** @type {!SanitizedHtml} */ (sanitizedHtml).getContent() :
-      '';
-  const safeHtml =
-      uncheckedconversions.safeHtmlFromStringKnownToSatisfyTypeContract(
-          Const.from('from Soy SanitizedHtml object'), content);
   return jspbconversions.safeHtmlToProto(safeHtml);
 };
 
 
 /**
  * Converts a JS Sanitized Content object to a corresponding Safe Script Proto.
- * @param {!SanitizedJs|string} sanitizedJs
+ * @param {!SanitizedJs|!SafeScript|string} sanitizedJs
  * @return {!SafeScriptProto}
  */
 exports.packSanitizedJsToProtoSoyRuntimeOnly = function(sanitizedJs) {
-  if (sanitizedJs !== '' && !(sanitizedJs instanceof SanitizedJs)) {
+  let safeScript;
+  if (sanitizedJs === '' || sanitizedJs instanceof SanitizedJs) {
+    safeScript =
+        uncheckedconversions.safeScriptFromStringKnownToSatisfyTypeContract(
+            Const.from('from Soy SanitizedJs object'),
+            sanitizedJs ?
+                /** @type {!SanitizedJs} */ (sanitizedJs).getContent() :
+                '');
+  } else if (sanitizedJs instanceof SafeScript) {
+    safeScript = sanitizedJs;
+  } else {
     throw new Error(
         'expected SanitizedJs, got ' + googDebug.runtimeType(sanitizedJs));
   }
-  const safeScript =
-      uncheckedconversions.safeScriptFromStringKnownToSatisfyTypeContract(
-          Const.from('from Soy SanitizedJs object'),
-          sanitizedJs ? /** @type {!SanitizedJs} */ (sanitizedJs).getContent() :
-                        '');
   return jspbconversions.safeScriptToProto(safeScript);
 };
 
@@ -167,47 +183,56 @@ exports.packSanitizedJsToProtoSoyRuntimeOnly = function(sanitizedJs) {
 /**
  * Converts a Trusted Resource URI Sanitized Content object to a corresponding
  * Trusted Resource URL Proto.
- * @param {!SanitizedTrustedResourceUri|string}
+ * @param {!SanitizedTrustedResourceUri|!TrustedResourceUrl|string}
  *     sanitizedTrustedResourceUri
  * @return {!TrustedResourceUrlProto}
  */
 exports.packSanitizedTrustedResourceUriToProtoSoyRuntimeOnly = function(
     sanitizedTrustedResourceUri) {
-  if (sanitizedTrustedResourceUri !== '' &&
-      !(sanitizedTrustedResourceUri instanceof SanitizedTrustedResourceUri)) {
+  let trustedResourceUrl;
+  if (sanitizedTrustedResourceUri === '' ||
+      sanitizedTrustedResourceUri instanceof SanitizedTrustedResourceUri) {
+    trustedResourceUrl =
+        uncheckedconversions
+            .trustedResourceUrlFromStringKnownToSatisfyTypeContract(
+                Const.from('from Soy SanitizedTrustedResourceUri object'),
+                sanitizedTrustedResourceUri ?
+                    /** @type {!SanitizedTrustedResourceUri} */ (
+                        sanitizedTrustedResourceUri)
+                        .getContent() :
+                    '');
+  } else if (sanitizedTrustedResourceUri instanceof TrustedResourceUrl) {
+    trustedResourceUrl = sanitizedTrustedResourceUri;
+  } else {
     throw new Error(
         'expected SanitizedTrustedResourceUri, got ' +
         googDebug.runtimeType(sanitizedTrustedResourceUri));
   }
-  const trustedResourceUrl =
-      uncheckedconversions
-          .trustedResourceUrlFromStringKnownToSatisfyTypeContract(
-              Const.from('from Soy SanitizedTrustedResourceUri object'),
-              sanitizedTrustedResourceUri ?
-                  /** @type {!SanitizedTrustedResourceUri} */ (
-                      sanitizedTrustedResourceUri)
-                      .getContent() :
-                  '');
   return jspbconversions.trustedResourceUrlToProto(trustedResourceUrl);
 };
 
 
 /**
  * Converts a URI Sanitized Content object to a corresponding Safe URL Proto.
- * @param {!SanitizedUri|string} sanitizedUri
+ * @param {!SanitizedUri|!SafeUrl|string} sanitizedUri
  * @return {!SafeUrlProto}
  */
 exports.packSanitizedUriToProtoSoyRuntimeOnly = function(sanitizedUri) {
-  if (sanitizedUri !== '' && !(sanitizedUri instanceof SanitizedUri)) {
-    throw new Error(
-        'expected SanitizedUri, got ' + googDebug.runtimeType(sanitizedUri));
-  }
-  const safeUrl =
+  let safeUrl;
+  if (sanitizedUri === '' || sanitizedUri instanceof SanitizedUri) {
+    safeUrl =
       uncheckedconversions.safeUrlFromStringKnownToSatisfyTypeContract(
           Const.from('from Soy SanitizedUri object'),
           sanitizedUri ?
               /** @type {!SanitizedUri} */ (sanitizedUri).getContent() :
               '');
+  } else if (sanitizedUri instanceof SafeUrl) {
+    safeUrl = sanitizedUri;
+  } else {
+    throw new Error(
+      'expected SanitizedUri, got ' + googDebug.runtimeType(sanitizedUri));
+  }
+
   return jspbconversions.safeUrlToProto(safeUrl);
 };
 
