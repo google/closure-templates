@@ -45,6 +45,7 @@ const SafeUrl = goog.require('goog.html.SafeUrl');
 const SafeUrlProto = goog.require('proto.webutil.html.types.SafeUrlProto');
 const TrustedResourceUrl = goog.require('goog.html.TrustedResourceUrl');
 const TrustedResourceUrlProto = goog.require('proto.webutil.html.types.TrustedResourceUrlProto');
+const Uri = goog.require('goog.Uri');
 const googDebug = goog.require('goog.debug');
 const googString = goog.require('goog.string');
 const jspbconversions = goog.require('security.html.jspbconversions');
@@ -194,13 +195,23 @@ exports.packSanitizedTrustedResourceUriToProtoSoyRuntimeOnly = function(
 
 /**
  * Converts a URI Sanitized Content object to a corresponding Safe URL Proto.
- * @param {!SanitizedUri|string} sanitizedUri
+ * @param {!SanitizedUri|string|!Uri} sanitizedUri
  * @return {!SafeUrlProto}
  */
 exports.packSanitizedUriToProtoSoyRuntimeOnly = function(sanitizedUri) {
-  if (sanitizedUri !== '' && !(sanitizedUri instanceof SanitizedUri)) {
+  if (sanitizedUri !== '' && !(sanitizedUri instanceof SanitizedUri) &&
+      !(sanitizedUri instanceof Uri)) {
     throw new Error(
         'expected SanitizedUri, got ' + googDebug.runtimeType(sanitizedUri));
+  }
+  if (sanitizedUri instanceof Uri) {
+    const safeUrlForUri =
+        uncheckedconversions.safeUrlFromStringKnownToSatisfyTypeContract(
+            Const.from('from Soy Uri object'),
+            sanitizedUri ?
+                /** @type {!Uri} */ (sanitizedUri).toString() :
+                '');
+    return jspbconversions.safeUrlToProto(safeUrlForUri);
   }
   const safeUrl =
       uncheckedconversions.safeUrlFromStringKnownToSatisfyTypeContract(
