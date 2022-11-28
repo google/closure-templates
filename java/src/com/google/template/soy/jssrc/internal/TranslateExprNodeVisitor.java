@@ -337,10 +337,11 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
       variableMappings.put(node.getIndexVar(), id(indexVarTranslation));
     }
     SoyType listType = SoyTypes.tryRemoveNull(node.getListExpr().getType());
+    // elementType can be unknown if it is the special EMPTY_LIST or if it isn't a known list type.
     SoyType elementType =
-        listType.getKind() == SoyType.Kind.LIST ? ((ListType) listType).getElementType() : null;
-    // elementType can be null if it is the special EMPTY_LIST or if it isn't a known list type.
-    elementType = elementType == null ? UnknownType.getInstance() : elementType;
+        listType.getKind() == SoyType.Kind.LIST
+            ? ((ListType) listType).getElementType()
+            : UnknownType.getInstance();
     JsDoc doc =
         node.getIndexVar() == null
             ? JsDoc.builder()
@@ -361,7 +362,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
                   maybeCoerceToBoolean(
                       node.getFilterExpr().getType(),
                       visit(node.getFilterExpr()),
-                      /*force=*/ false)),
+                      /* force= */ false)),
               arrowFunction(doc, visit(node.getListItemTransformExpr())));
     }
     if (node.getFilterExpr() != null) {
@@ -373,7 +374,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
                       maybeCoerceToBoolean(
                           node.getFilterExpr().getType(),
                           visit(node.getFilterExpr()),
-                          /*force=*/ false)));
+                          /* force= */ false)));
     }
     // handle a special case for trivial transformations
     if (node.getListItemTransformExpr().getKind() == ExprNode.Kind.VAR_REF_NODE) {
