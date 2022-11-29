@@ -33,21 +33,22 @@ public class FunctionType extends AbstractType {
 
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
-    ctx.append("(");
-    boolean first = true;
-    for (ParamDecl param : params) {
-      if (first) {
-        first = false;
-      } else {
-        ctx.append(", ");
+    try (FormattingContext buffer = ctx.buffer()) {
+      buffer.append("(");
+      boolean first = true;
+      for (ParamDecl param : params) {
+        if (first) {
+          first = false;
+        } else {
+          buffer.append(", ");
+        }
+        buffer.append(param.name() + (param.isOptional() ? "?" : ""));
+        buffer.append(": ");
+        buffer.appendOutputExpression(param.type());
       }
-      ctx.append(param.name() + (param.isOptional() ? "?" : ""));
-      ctx.append(": ");
-      Expression type = param.type();
-      type.doFormatOutputExpr(ctx);
+      buffer.append(") => ");
+      buffer.appendOutputExpression(returnType);
     }
-    ctx.append(") => ");
-    returnType.doFormatOutputExpr(ctx);
   }
 
   @Override

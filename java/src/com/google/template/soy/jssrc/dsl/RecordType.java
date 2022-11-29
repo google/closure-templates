@@ -31,20 +31,22 @@ public class RecordType extends AbstractType {
 
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
-    ctx.append("{");
-    boolean first = true;
-    for (ParamDecl param : params) {
-      if (first) {
-        first = false;
-      } else {
-        ctx.append(", ");
-      }
+    try (FormattingContext buffer = ctx.buffer()) {
+      buffer.append("{");
+      boolean first = true;
+      for (ParamDecl param : params) {
+        if (first) {
+          first = false;
+        } else {
+          buffer.append(", ");
+        }
 
-      ctx.append(param.name() + (param.isOptional() ? "?" : ""));
-      ctx.append(": ");
-      ctx.appendOutputExpression(param.type());
+        buffer.append(param.name() + (param.isOptional() ? "?" : ""));
+        buffer.append(": ");
+        buffer.appendOutputExpression(param.type());
+      }
+      buffer.append("}");
     }
-    ctx.append("}");
   }
 
   @Override

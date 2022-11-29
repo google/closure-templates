@@ -31,10 +31,12 @@ public class UnionType extends AbstractType {
 
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
-    for (int i = 0; i < members.size(); i++) {
-      ctx.appendOutputExpression(members.get(i));
-      if (i < members.size() - 1) {
-        ctx.append("|");
+    try (FormattingContext buffer = ctx.buffer()) {
+      for (int i = 0; i < members.size(); i++) {
+        buffer.appendOutputExpression(members.get(i));
+        if (i < members.size() - 1) {
+          buffer.append("|");
+        }
       }
     }
   }

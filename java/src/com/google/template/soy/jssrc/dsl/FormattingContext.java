@@ -27,10 +27,10 @@ import javax.annotation.Nullable;
 
 /**
  * Helper class to keep track of state during a single call to {@link CodeChunk#getCode()},
- * including the initial statements that have already been formatted
- * and the current indentation level.
+ * including the initial statements that have already been formatted and the current indentation
+ * level.
  */
-final class FormattingContext implements AutoCloseable {
+class FormattingContext implements AutoCloseable {
   private static final int MAX_LINE_LENGTH = 80;
   private final StringBuilder buf;
   private final int initialSize;
@@ -57,6 +57,21 @@ final class FormattingContext implements AutoCloseable {
     initialSize = curIndent.length();
     interpolationKindStack = new ArrayDeque<>();
     interpolationKindStack.push(InterpolationKind.TSX);
+  }
+
+  /**
+   * Returns a buffering context that will not insert any line breaks or indents automatically. The
+   * contents of the buffer will be appended to the main context as a single string on close.
+   */
+  FormattingContext buffer() {
+    FormattingContext parent = this;
+    return new FormattingContext() {
+      @Override
+      public void close() {
+        String buffer = this.toString();
+        parent.append(buffer);
+      }
+    };
   }
 
   /**

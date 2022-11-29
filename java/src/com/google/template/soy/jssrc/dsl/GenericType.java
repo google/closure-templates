@@ -32,15 +32,17 @@ public class GenericType extends AbstractType {
 
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
-    ctx.appendOutputExpression(className);
-    ctx.append("<");
-    for (int i = 0; i < generics.size(); i++) {
-      ctx.appendOutputExpression(generics.get(i));
-      if (i < generics.size() - 1) {
-        ctx.append(", ");
+    try (FormattingContext buffer = ctx.buffer()) {
+      buffer.appendOutputExpression(className);
+      buffer.append("<");
+      for (int i = 0; i < generics.size(); i++) {
+        buffer.appendOutputExpression(generics.get(i));
+        if (i < generics.size() - 1) {
+          buffer.append(", ");
+        }
       }
+      buffer.append(">");
     }
-    ctx.append(">");
   }
 
   @Override
