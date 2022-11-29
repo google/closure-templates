@@ -31,10 +31,12 @@ public class ArrayType extends AbstractType {
 
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
-    if (readonly) {
-      ctx.append("readonly ");
+    try (FormattingContext buffer = ctx.buffer()) {
+      if (readonly) {
+        buffer.append("readonly ");
+      }
+      buffer.appendOutputExpression(simpleType).append("[]");
     }
-    ctx.appendOutputExpression(simpleType).append("[]");
   }
 
   @Override
