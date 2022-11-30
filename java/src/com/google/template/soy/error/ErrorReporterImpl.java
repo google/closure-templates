@@ -17,6 +17,7 @@
 package com.google.template.soy.error;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
@@ -28,9 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Simple {@link com.google.template.soy.error.ErrorReporter} implementation.
- */
+/** Simple {@link com.google.template.soy.error.ErrorReporter} implementation. */
 final class ErrorReporterImpl extends ErrorReporter {
 
   private static final SourceSnippetPrinter snippetPrinter = new SourceSnippetPrinter();
@@ -46,34 +45,42 @@ final class ErrorReporterImpl extends ErrorReporter {
   @Override
   public void report(SourceLocation location, SoyErrorKind kind, Object... args) {
     errorCount++;
-    reports.add(new RecordedError(location, kind, args, /*isWarning=*/ false));
+    reports.add(new RecordedError(location, kind, args, /* isWarning= */ false));
   }
 
   @Override
   public void warn(SourceLocation location, SoyErrorKind kind, Object... args) {
-    reports.add(new RecordedError(location, kind, args, /*isWarning=*/ true));
+    reports.add(new RecordedError(location, kind, args, /* isWarning= */ true));
+  }
+
+  @Override
+  protected ImmutableList<SoyError> getReports() {
+    return reports.stream().map(r -> r.asSoyError(filePathsToSuppliers)).collect(toImmutableList());
+  }
+
+  @Override
+  protected ImmutableList<SoyError> getReports(int from, int to) {
+    return reports.stream()
+        .skip(from)
+        .limit(to - from)
+        .map(r -> r.asSoyError(filePathsToSuppliers))
+        .collect(toImmutableList());
   }
 
   @Override
   public ImmutableList<SoyError> getErrors() {
-    ImmutableList.Builder<SoyError> builder = ImmutableList.builder();
-    for (RecordedError report : reports) {
-      if (!report.isWarning) {
-        builder.add(report.asSoyError(filePathsToSuppliers));
-      }
-    }
-    return builder.build();
+    return reports.stream()
+        .filter(r -> !r.isWarning)
+        .map(r -> r.asSoyError(filePathsToSuppliers))
+        .collect(toImmutableList());
   }
 
   @Override
   public ImmutableList<SoyError> getWarnings() {
-    ImmutableList.Builder<SoyError> builder = ImmutableList.builder();
-    for (RecordedError report : reports) {
-      if (report.isWarning) {
-        builder.add(report.asSoyError(filePathsToSuppliers));
-      }
-    }
-    return builder.build();
+    return reports.stream()
+        .filter(r -> r.isWarning)
+        .map(r -> r.asSoyError(filePathsToSuppliers))
+        .collect(toImmutableList());
   }
 
   @Override
