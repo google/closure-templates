@@ -426,9 +426,13 @@ function callDynamicText<TParams>(
 }
 
 declare global {
-  interface Element {
-    __innerHTML: string;
+  interface Node {
+    __originalContent: unknown;
   }
+}
+
+function getOriginalSanitizedContent(el: Element) {
+  return el.__originalContent;
 }
 
 /**
@@ -441,20 +445,27 @@ function print(
       expr instanceof SafeHtml) {
     const content =
         expr instanceof SafeHtml ? SafeHtml.unwrap(expr) : String(expr);
-    // If the string has no < or &, it's definitely not HTML. Otherwise
-    // proceed with caution.
-    if (!content.includes('<') && !content.includes('&')) {
+    if (!(/&|</.test(content))) {
       incrementaldom.text(content);
-    } else {
-      // For HTML content we need to insert a custom element where we can
-      // place the content without incremental dom modifying it.
-      const el = incrementaldom.open('html-blob', '');
-      if (el && el.__innerHTML !== content) {
-        googSoy.renderHtml(el, ordainSanitizedHtml(content));
-        el.__innerHTML = content;
+      return;
+    }
+    // For HTML content we need to insert a custom element where we can
+    // place the content without incremental dom modifying it.
+    const el = document.createElement('html-blob');
+    googSoy.renderHtml(el, ordainSanitizedHtml(content));
+    const childNodes = Array.from(el.childNodes);
+    for (const child of childNodes) {
+      const currentPointer = incrementaldom.currentPointer();
+      const currentElement = incrementaldom.currentElement();
+      child.__originalContent = expr;
+      if (currentElement) {
+        if (!currentPointer) {
+          currentElement.appendChild(child);
+        } else if (currentPointer.__originalContent !== expr) {
+          currentElement.insertBefore(child, currentPointer);
+        }
       }
-      incrementaldom.skip();
-      incrementaldom.close();
+      incrementaldom.skipNode();
     }
   } else if (expr !== undefined) {
     renderDynamicContent(incrementaldom, expr as IdomFunction);
@@ -602,5 +613,6 @@ export {
   stableUniqueAttribute as $$stableUniqueAttribute,
   stableUniqueAttributeIdHolder as $$stableUniqueAttributeIdHolder,
   visitHtmlCommentNode as $$visitHtmlCommentNode,
-  upgrade as $$upgrade
+  upgrade as $$upgrade,
+  getOriginalSanitizedContent
 };
