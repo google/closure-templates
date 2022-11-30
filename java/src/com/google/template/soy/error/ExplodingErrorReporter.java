@@ -74,7 +74,12 @@ class ExplodingErrorReporter extends ErrorReporter {
   public final void copyTo(ErrorReporter other) {}
 
   @Override
-  protected ImmutableList<SoyError> getReports() {
+  public final ImmutableList<SoyError> getErrors() {
+    return ImmutableList.of();
+  }
+
+  @Override
+  public final ImmutableList<SoyError> getWarnings() {
     return ImmutableList.of();
   }
 }
