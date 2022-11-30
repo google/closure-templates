@@ -16,6 +16,8 @@
 
 package com.google.template.soy.error;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -120,7 +122,7 @@ public abstract class ErrorReporter {
    * #errorsSince} to see if any errors have occurred in the interim.
    */
   public final Checkpoint checkpoint() {
-    return new Checkpoint(this, getCurrentNumberOfErrors());
+    return new Checkpoint(this, getCurrentNumberOfReports());
   }
 
   /**
@@ -131,18 +133,23 @@ public abstract class ErrorReporter {
    * errors (for example, returning an error node if parsing encountered errors).
    */
   public final boolean errorsSince(Checkpoint checkpoint) {
-    Checkpoint impl = checkpoint;
-    if (impl.owner != this) {
+    return !getErrorsSince(checkpoint).isEmpty();
+  }
+
+  public final ImmutableList<SoyError> getErrorsSince(Checkpoint checkpoint) {
+    return getReportsSince(checkpoint).stream()
+        .filter(e -> !e.isWarning())
+        .collect(toImmutableList());
+  }
+
+  public final ImmutableList<SoyError> getReportsSince(Checkpoint checkpoint) {
+    if (checkpoint.owner != this) {
       throw new IllegalArgumentException(
           "Can only call errorsSince on a Checkpoint instance that was returned from this same "
               + "reporter");
     }
-    return getCurrentNumberOfErrors() > impl.errorsSoFar;
-  }
-
-  public final ImmutableList<SoyError> getErrorsSince(Checkpoint checkpoint) {
-    ImmutableList<SoyError> allErrors = getErrors();
-    return allErrors.subList(checkpoint.errorsSoFar, allErrors.size());
+    ImmutableList<SoyError> allReports = getReports();
+    return allReports.subList(checkpoint.reportsSoFar, allReports.size());
   }
 
   /** Returns true if any errors have been reported. */
@@ -166,19 +173,26 @@ public abstract class ErrorReporter {
   abstract int getCurrentNumberOfReports();
 
   /** Returns all the errors reported so far. */
-  public abstract ImmutableList<SoyError> getErrors();
+  protected abstract ImmutableList<SoyError> getReports();
+
+  /** Returns all the errors reported so far. */
+  public ImmutableList<SoyError> getErrors() {
+    return getReports().stream().filter(r -> !r.isWarning()).collect(toImmutableList());
+  }
 
   /** Returns all the warnings reported so far. */
-  public abstract ImmutableList<SoyError> getWarnings();
+  public ImmutableList<SoyError> getWarnings() {
+    return getReports().stream().filter(SoyError::isWarning).collect(toImmutableList());
+  }
 
   /** Opaque token, used by {@link #checkpoint} and {@link #errorsSince}. */
   public static final class Checkpoint {
     private final ErrorReporter owner;
-    private final int errorsSoFar;
+    private final int reportsSoFar;
 
-    private Checkpoint(ErrorReporter owner, int errorsSoFar) {
+    private Checkpoint(ErrorReporter owner, int reportsSoFar) {
       this.owner = owner;
-      this.errorsSoFar = errorsSoFar;
+      this.reportsSoFar = reportsSoFar;
     }
   }
 

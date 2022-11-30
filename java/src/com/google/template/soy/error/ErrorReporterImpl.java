@@ -17,6 +17,7 @@
 package com.google.template.soy.error;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
@@ -55,25 +56,8 @@ final class ErrorReporterImpl extends ErrorReporter {
   }
 
   @Override
-  public ImmutableList<SoyError> getErrors() {
-    ImmutableList.Builder<SoyError> builder = ImmutableList.builder();
-    for (RecordedError report : reports) {
-      if (!report.isWarning) {
-        builder.add(report.asSoyError(filePathsToSuppliers));
-      }
-    }
-    return builder.build();
-  }
-
-  @Override
-  public ImmutableList<SoyError> getWarnings() {
-    ImmutableList.Builder<SoyError> builder = ImmutableList.builder();
-    for (RecordedError report : reports) {
-      if (report.isWarning) {
-        builder.add(report.asSoyError(filePathsToSuppliers));
-      }
-    }
-    return builder.build();
+  protected ImmutableList<SoyError> getReports() {
+    return reports.stream().map(r -> r.asSoyError(filePathsToSuppliers)).collect(toImmutableList());
   }
 
   @Override
