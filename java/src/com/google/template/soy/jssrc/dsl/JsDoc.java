@@ -17,6 +17,7 @@
 package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
@@ -58,7 +59,6 @@ public abstract class JsDoc {
     abstract ImmutableList.Builder<Param> paramsBuilder();
 
     abstract ImmutableList.Builder<GoogRequire> requiresBuilder();
-
 
     public abstract JsDoc build();
 
@@ -125,14 +125,17 @@ public abstract class JsDoc {
     abstract ImmutableMap<String, String> recordLiteralType();
 
     static Param createAnnotation(String annotationType, String field) {
+      Preconditions.checkArgument(!annotationType.startsWith("@"));
       return new AutoValue_JsDoc_Param(annotationType, field, null, null, null);
     }
 
     static Param create(String annotationType, String type) {
+      Preconditions.checkArgument(!annotationType.startsWith("@"));
       return new AutoValue_JsDoc_Param(annotationType, null, type, null, null);
     }
 
     static Param create(String annotationType, String type, String paramTypeName) {
+      Preconditions.checkArgument(!annotationType.startsWith("@"));
       return new AutoValue_JsDoc_Param(annotationType, null, type, paramTypeName, null);
     }
 
@@ -181,7 +184,7 @@ public abstract class JsDoc {
     ctx.append("/**");
     ctx.endLine();
     if (overviewComment().length() > 0) {
-      ctx.append("* " + overviewComment());
+      ctx.append(" * " + overviewComment());
       ctx.endLine();
     }
     for (Param param : params()) {
@@ -204,6 +207,9 @@ public abstract class JsDoc {
     }
     StringBuilder sb = new StringBuilder();
     sb.append("/**\n");
+    if (overviewComment().length() > 0) {
+      sb.append(" * ").append(overviewComment()).append("\n");
+    }
     for (Param param : params()) {
       sb.append(" * ").append(param).append("\n");
     }
