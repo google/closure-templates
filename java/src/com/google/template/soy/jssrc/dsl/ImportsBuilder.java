@@ -18,8 +18,12 @@ package com.google.template.soy.jssrc.dsl;
 
 import com.google.common.base.Preconditions;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
@@ -79,6 +83,22 @@ public class ImportsBuilder {
         throw new IllegalArgumentException("Not an import: " + require.chunk().getCode());
       }
     }
+  }
+
+  public Collection<String> getCollisions() {
+    SortedSet<String> collisions = new TreeSet<>();
+    Map<String, String> symbolToPathMap = new HashMap<>();
+    for (Entry<String, ImportList> entry : imports.entrySet()) {
+      for (String symbol : entry.getValue().importedSymbols) {
+        if (symbolToPathMap.containsKey(symbol)) {
+          collisions.add("{" + symbol + "} from " + entry.getKey());
+          collisions.add("{" + symbol + "} from " + symbolToPathMap.get(symbol));
+        } else {
+          symbolToPathMap.put(symbol, entry.getKey());
+        }
+      }
+    }
+    return collisions;
   }
 
   /** The imports from a single file. */
