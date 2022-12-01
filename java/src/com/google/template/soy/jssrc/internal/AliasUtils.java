@@ -100,7 +100,7 @@ final class AliasUtils {
             templateNode -> {
               // Need to start the alias with something that cannot be a part of a reserved
               // JavaScript identifier like 'function' or 'catch'.
-              String alias = "$" + templateNode.getLocalTemplateSymbol();
+              String alias = "$" + templateNode.getPartialTemplateName();
               aliasMap.put(templateNode.getTemplateName(), alias);
             });
     // Index local constants by their local name.

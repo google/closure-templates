@@ -258,7 +258,7 @@ public final class GenerateParseInfoVisitor
       if (template.getVisibility() == Visibility.PUBLIC
           && template.getKind() != SoyNode.Kind.TEMPLATE_DELEGATE_NODE) {
         publicBasicTemplateMap.put(
-            convertToUpperUnderscore(template.getLocalTemplateSymbol()), template);
+            convertToUpperUnderscore(template.getPartialTemplateName()), template);
       }
       for (TemplateParam param : template.getParams()) {
         if (!param.isImplicit()) {
@@ -501,7 +501,7 @@ public final class GenerateParseInfoVisitor
         new IndirectParamsCalculator(fileSetMetadata).calculateIndirectParams(node);
 
     @SuppressWarnings("ConstantConditions") // for IntelliJ
-    String upperUnderscoreName = convertToUpperUnderscore(node.getLocalTemplateSymbol());
+    String upperUnderscoreName = convertToUpperUnderscore(node.getPartialTemplateName());
     String templateInfoClassName =
         CaseFormat.UPPER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, upperUnderscoreName)
             + "SoyTemplateInfo";
@@ -526,7 +526,7 @@ public final class GenerateParseInfoVisitor
     ilb.increaseIndent();
 
     // ------ Constants for template name. ------
-    String templateFieldName = convertToUpperUnderscore(node.getLocalTemplateSymbol());
+    String templateFieldName = convertToUpperUnderscore(node.getPartialTemplateName());
 
     ilb.appendLine();
     ilb.appendLine("/** This template's full name. */");

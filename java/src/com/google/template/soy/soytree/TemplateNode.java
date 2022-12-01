@@ -473,12 +473,6 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     return partialTemplateName.identifier();
   }
 
-  /** Returns this template's partial name, with any leading dot removed. */
-  public String getLocalTemplateSymbol() {
-    String s = partialTemplateName.identifier();
-    return s != null && s.startsWith(".") ? s.substring(1) : s;
-  }
-
   /** Returns the visibility of this template. */
   public Visibility getVisibility() {
     return visibility;
@@ -735,7 +729,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
         /* declaringClass= */ soyFileHeaderInfo.namespace,
         // The partial template name begins with a '.' that causes the stack trace element to
         // print "namespace..templateName" otherwise.
-        /* methodName= */ getLocalTemplateSymbol(),
+        /* methodName= */ getPartialTemplateName(),
         srcLocation.getFileName(),
         srcLocation.getBeginLine());
   }
@@ -744,7 +738,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     TemplateVarDefn tmp = varDefn;
     if (tmp == null) {
       TemplateImportType importType = TemplateImportType.create(getTemplateName());
-      tmp = new TemplateVarDefn(getLocalTemplateSymbol(), getTemplateNameLocation(), importType);
+      tmp = new TemplateVarDefn(getPartialTemplateName(), getTemplateNameLocation(), importType);
       varDefn = tmp;
     }
     return tmp;

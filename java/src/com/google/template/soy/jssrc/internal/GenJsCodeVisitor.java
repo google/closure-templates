@@ -771,7 +771,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     generatePositionalParamsSignature =
         GenCallCodeUtils.hasPositionalSignature(TemplateMetadata.buildTemplateType(node));
     String templateName = node.getTemplateName();
-    String partialName = node.getLocalTemplateSymbol();
+    String partialName = node.getPartialTemplateName();
     String alias;
 
     if (jsSrcOptions.shouldGenerateGoogModules() && node instanceof TemplateDelegateNode) {
@@ -1505,10 +1505,8 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
       // Cast to a better type, if necessary and possible.
       JsType declType = getJsTypeForParamForDeclaration(paramType);
-      boolean addedCast = false;
       if (!jsType.typeExpr().equals(declType.typeExpr()) && !JsSrcUtils.isReservedWord(paramName)) {
         // TODO(b/256679865): rename JS builtins here.
-        addedCast = true;
         initializer = initializer.castAs(jsType.typeExpr(), jsType.getGoogRequires());
       }
 

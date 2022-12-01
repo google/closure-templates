@@ -517,7 +517,7 @@ public final class Metadata {
       this.namespace = ast.getNamespace();
       this.templateNames =
           ast.getTemplates().stream()
-              .map(TemplateNode::getLocalTemplateSymbol)
+              .map(TemplateNode::getPartialTemplateName)
               .collect(toImmutableSet());
       this.constantNames =
           ast.getConstants().stream()
@@ -599,7 +599,7 @@ public final class Metadata {
                 TemplateMetadata metadata = TemplateMetadata.fromTemplate(t);
                 templates.add(metadata);
                 // Duplicates reported elsewhere.
-                index.putIfAbsent(t.getLocalTemplateSymbol(), metadata);
+                index.putIfAbsent(t.getPartialTemplateName(), metadata);
               });
       this.allTemplates = templates.build();
       this.templateIndex = ImmutableMap.copyOf(index);

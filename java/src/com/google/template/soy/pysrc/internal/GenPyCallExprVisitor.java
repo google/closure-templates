@@ -289,7 +289,7 @@ final class GenPyCallExprVisitor extends AbstractReturningSoyNodeVisitor<PyExpr>
 
   /** Returns the python name for the template. Suitable for calling within the same module. */
   static String getLocalTemplateName(TemplateNode node) {
-    String templateName = node.getLocalTemplateSymbol();
+    String templateName = node.getPartialTemplateName();
     if (node.getVisibility() == Visibility.PRIVATE) {
       return "__" + templateName;
     }

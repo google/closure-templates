@@ -159,7 +159,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     contentKind.push(kind);
     String alias;
     if (node instanceof TemplateDelegateNode) {
-      alias = node.getLocalTemplateSymbol();
+      alias = node.getPartialTemplateName();
     } else {
       alias = templateAliases.get(node.getTemplateName());
     }
