@@ -24,8 +24,16 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.html.types.SafeHtml;
 import com.google.common.html.types.SafeHtmlProto;
+import com.google.common.html.types.SafeScript;
+import com.google.common.html.types.SafeScriptProto;
+import com.google.common.html.types.SafeStyle;
+import com.google.common.html.types.SafeStyleProto;
+import com.google.common.html.types.SafeStyleSheet;
+import com.google.common.html.types.SafeStyleSheetProto;
 import com.google.common.html.types.SafeUrl;
 import com.google.common.html.types.SafeUrlProto;
+import com.google.common.html.types.TrustedResourceUrl;
+import com.google.common.html.types.TrustedResourceUrlProto;
 import com.google.common.primitives.Primitives;
 import com.google.protobuf.Message;
 import com.google.protobuf.ProtocolMessageEnum;
@@ -351,12 +359,28 @@ class TofuValueFactory extends JavaValueFactory {
         }
       } else if (type == SafeHtml.class) {
         return ((SanitizedContent) value).toSafeHtml();
+      } else if (type == SafeScript.class) {
+        return ((SanitizedContent) value).toSafeScript();
+      } else if (type == SafeStyle.class) {
+        return ((SanitizedContent) value).toSafeStyle();
+      } else if (type == SafeStyleSheet.class) {
+        return ((SanitizedContent) value).toSafeStyleSheet();
       } else if (type == SafeUrl.class) {
         return ((SanitizedContent) value).toSafeUrl();
-      } else if (type == SafeUrlProto.class) {
-        return ((SanitizedContent) value).toSafeUrlProto();
+      } else if (type == TrustedResourceUrl.class) {
+        return ((SanitizedContent) value).toTrustedResourceUrl();
       } else if (type == SafeHtmlProto.class) {
         return ((SanitizedContent) value).toSafeHtmlProto();
+      } else if (type == SafeScriptProto.class) {
+        return ((SanitizedContent) value).toSafeScriptProto();
+      } else if (type == SafeStyleProto.class) {
+        return ((SanitizedContent) value).toSafeStyleProto();
+      } else if (type == SafeStyleSheetProto.class) {
+        return ((SanitizedContent) value).toSafeStyleSheetProto();
+      } else if (type == SafeUrlProto.class) {
+        return ((SanitizedContent) value).toSafeUrlProto();
+      } else if (type == TrustedResourceUrlProto.class) {
+        return ((SanitizedContent) value).toTrustedResourceUrlProto();
       } else if (Message.class.isAssignableFrom(type)) {
         return type.cast(((SoyProtoValue) value).getProto());
       } else {
