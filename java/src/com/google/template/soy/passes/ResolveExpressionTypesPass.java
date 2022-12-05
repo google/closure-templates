@@ -2516,8 +2516,7 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
         return;
       }
       FieldDescriptor fd = baseType.getFieldDescriptor(fieldName);
-      if ((!fd.hasPresence() && !fd.isRepeated())
-      ) {
+      if (!fd.hasPresence() && !fd.isRepeated()) {
         // Scalar fields without presence are not allowed to be read using the field access
         // syntax (only readable via getter method call). The field access syntax means
         // nullish return for scalar fields, which cannot be supported if there's no
