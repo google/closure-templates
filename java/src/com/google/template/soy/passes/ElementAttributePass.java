@@ -32,7 +32,6 @@ import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.TemplateContentKind.ElementContentKind;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.basetree.Node;
 import com.google.template.soy.basicfunctions.ConcatAttributeValuesFunction;
 import com.google.template.soy.basicfunctions.ConcatCssValuesFunction;
 import com.google.template.soy.error.ErrorReporter;
@@ -47,6 +46,7 @@ import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.shared.internal.BuiltinFunction;
+import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.HtmlAttributeValueNode;
@@ -60,10 +60,10 @@ import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileNode;
+import com.google.template.soy.soytree.SoyNode.Kind;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
-import com.google.template.soy.soytree.TagName;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.AttrParam;
@@ -80,12 +80,12 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 
 /**
  * Enforces rules on the usage of @attribute parameters within a template. Rewrites templates for
@@ -239,7 +239,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
         delegatingElementsWithAllAttrs.build(), allAstElements);
   }
 
-  private <T extends Node> void checkAttributeTypes(SoyFileNode file) {
+  private void checkAttributeTypes(SoyFileNode file) {
     file.getTemplates().stream()
         .flatMap(t -> t.getHeaderParams().stream())
         .filter(AttrParam.class::isInstance)
@@ -267,13 +267,12 @@ final class ElementAttributePass implements CompilerFileSetPass {
     Set<AttrParam> unseenParams = new HashSet<>(attrs.values());
     checkAttributeRefs(templateNode, unseenParams);
 
-    Optional<HtmlOpenTagNode> elmOpen = getElementOpen(templateNode);
-    if (!elmOpen.isPresent()) {
+    HtmlOpenTagNode openTagNode = getElementOpen(templateNode);
+    if (openTagNode == null) {
       return;
     }
     SourceLocation unknown = templateNode.getSourceLocation().clearRange();
 
-    HtmlOpenTagNode openTagNode = elmOpen.get();
     String delegateTemplateName = getDelegateCall(templateNode);
     boolean iAmAnElementCallingAnElement = !delegateTemplateName.isEmpty();
     ImmutableSet.Builder<String> foundNormalAttr = ImmutableSet.builder();
@@ -318,12 +317,6 @@ final class ElementAttributePass implements CompilerFileSetPass {
               if (attrNode.hasValue() && attr.isRequired()) {
                 errorReporter.report(
                     attrNode.getSourceLocation(), ATTRIBUTE_NOT_REQUIRED, attr.getAttrName());
-              }
-
-              if (!attrNode.hasValue() && iAmAnElementCallingAnElement && !isSoyAttr) {
-                // Pass through and handle in SoyElementCompositionPass since we cannot encode
-                // null/absent in an HtmlAttributeNode.
-                return;
               }
 
               // Creates a new HTML attribute containing the original name with the @ chopped off
@@ -658,19 +651,28 @@ final class ElementAttributePass implements CompilerFileSetPass {
       }
 
       String tag = node.getHtmlElementMetadata().getTag();
-      if (!"?".equals(tag) && !expectedTagName.equals(tag)) {
-        Optional<HtmlOpenTagNode> maybeTagNode = getElementOpen(node);
-        if (!maybeTagNode.isPresent()) {
-          // Error caught in earlier pass
-          continue;
-        }
-        TagName tagName = getElementOpen(node).get().getTagName();
-        if (tagName.isStatic()) {
-          errorReporter.report(tagName.getTagLocation(), ROOT_TAG_KIND_MISMATCH, expectedTagName);
-        } else {
-          errorReporter.report(
-              tagName.getTagLocation(), DELEGATE_KIND_MISMATCH, expectedTagName, tag);
-        }
+      if ("?".equals(tag) || expectedTagName.equals(tag)) {
+        continue;
+      }
+
+      HtmlOpenTagNode openTag = getElementOpen(node);
+      SourceLocation errorLoc = null;
+      if (openTag != null) {
+        errorLoc = openTag.getTagName().getTagLocation();
+      } else if (node.getChildren().size() == 1
+          && node.getChild(0).getKind() == Kind.CALL_BASIC_NODE) {
+        errorLoc = ((CallBasicNode) node.getChild(0)).getOpenTagLocation();
+      }
+
+      if (errorLoc == null) {
+        // Error caught in earlier pass
+        continue;
+      }
+
+      if (openTag != null && openTag.getTagName().isStatic()) {
+        errorReporter.report(errorLoc, ROOT_TAG_KIND_MISMATCH, expectedTagName);
+      } else {
+        errorReporter.report(errorLoc, DELEGATE_KIND_MISMATCH, expectedTagName, tag);
       }
     }
   }
@@ -712,9 +714,11 @@ final class ElementAttributePass implements CompilerFileSetPass {
         attrParam -> errorReporter.warn(attrParam.getSourceLocation(), UNUSED_ATTRIBUTE));
   }
 
-  static Optional<HtmlOpenTagNode> getElementOpen(TemplateNode node) {
+  @Nullable
+  static HtmlOpenTagNode getElementOpen(TemplateNode node) {
     return SoyTreeUtils.allNodesOfType(node, HtmlOpenTagNode.class)
         .filter(HtmlOpenTagNode::isElementRoot)
-        .findFirst();
+        .findFirst()
+        .orElse(null);
   }
 }

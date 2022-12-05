@@ -104,6 +104,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
@@ -1012,6 +1013,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     // expected by callers, this is defined by TemplateMetadata.
     return templateType.getActualParameters().stream()
         .map(p -> paramsByName.get(p.getName()))
+        .filter(Objects::nonNull)
         .collect(toImmutableList());
   }
 

@@ -187,10 +187,6 @@ public final class SoyElementPass implements CompilerFileSetPass {
           && child instanceof CallBasicNode
           && ((CallBasicNode) child).isStaticCall()
           && i == template.numChildren() - 1) {
-        if (isElmOrHtml) {
-          errorReporter.report(child.getSourceLocation(), ELEMENT_TEMPLATE_EXACTLY_ONE_TAG);
-          reportedSingleHtmlElmError = true;
-        }
         if (isSoyElement && ((CallBasicNode) child).getKeyExpr() != null) {
           this.errorReporter.report(
               ((CallBasicNode) child).getSourceCalleeLocation(), ROOT_HAS_KEY_NODE);
