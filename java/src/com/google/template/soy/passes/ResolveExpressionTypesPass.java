@@ -200,6 +200,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -1580,7 +1581,7 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
       } else {
         String didYouMean = "";
         Set<String> matching =
-            new HashSet<>(methodRegistry.matchForBaseAndArgs(baseType, argTypes).values());
+            new LinkedHashSet<>(methodRegistry.matchForBaseAndArgs(baseType, argTypes).values());
         if (!matching.isEmpty()) {
           didYouMean = SoyErrors.getDidYouMeanMessage(matching, methodName);
         }

@@ -178,9 +178,7 @@ public enum BuiltinMethod implements SoyMethod {
         return false;
       }
       if (fd.isRepeated()) {
-        // TODO(b/230787876): add support for repeated field and map getters when we are ready to
-        // migrate
-        return false;
+        return true;
       }
       if (fd.getJavaType() == JavaType.MESSAGE) {
         // TODO(b/230787876): add support for message getters when we are ready to migrate

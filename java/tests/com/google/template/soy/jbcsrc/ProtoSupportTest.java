@@ -211,6 +211,22 @@ public final class ProtoSupportTest {
   public void testRepeatedFields() {
     assertThatTemplateBody(
             "{@param e : ExampleExtendable}",
+            "{for $m in $e.getRepeatedEmbeddedMessageList()}",
+            "  {$m.someEmbeddedString}",
+            "{/for}")
+        .rendersAs(
+            "k1k2",
+            ImmutableMap.of(
+                "e",
+                ExampleExtendable.newBuilder()
+                    .addRepeatedEmbeddedMessage(
+                        SomeEmbeddedMessage.newBuilder().setSomeEmbeddedString("k1"))
+                    .addRepeatedEmbeddedMessage(
+                        SomeEmbeddedMessage.newBuilder().setSomeEmbeddedString("k2"))));
+
+    // TODO(b/230787876): remove once we drop support for repeated proto field access
+    assertThatTemplateBody(
+            "{@param e : ExampleExtendable}",
             "{for $m in $e.repeatedEmbeddedMessageList}",
             "  {$m.someEmbeddedString}",
             "{/for}")
@@ -227,6 +243,26 @@ public final class ProtoSupportTest {
 
   @Test
   public void testRepeatedFields_ofNullable() {
+    assertThatTemplateBody(
+            "{@param e : ExampleExtendable}",
+            "{for $str in $e.someEmbeddedMessage.getSomeEmbeddedRepeatedStringList()}",
+            "  {$str}",
+            "{/for}")
+        .rendersAs(
+            "abc",
+            ImmutableMap.of(
+                "e",
+                ExampleExtendable.newBuilder()
+                    .setSomeEmbeddedMessage(
+                        SomeEmbeddedMessage.newBuilder()
+                            .addSomeEmbeddedRepeatedString("a")
+                            .addSomeEmbeddedRepeatedString("b")
+                            .addSomeEmbeddedRepeatedString("c"))))
+        .failsToRenderWith(
+            NullPointerException.class,
+            ImmutableMap.of("e", ExampleExtendable.getDefaultInstance()));
+
+    // TODO(b/230787876): remove once we drop support for repeated proto field access
     assertThatTemplateBody(
             "{@param e : ExampleExtendable}",
             "{for $str in $e.someEmbeddedMessage.someEmbeddedRepeatedStringList}",

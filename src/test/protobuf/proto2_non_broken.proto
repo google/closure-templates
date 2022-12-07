@@ -1,8 +1,8 @@
 syntax = "proto2";
 
-option java_package = "com.google.template.soy.testing.nonbroken";
-
 package soy.test.nonbroken;
+
+option java_package = "com.google.template.soy.testing.nonbroken";
 
 message Proto2ImplicitDefaults {
   optional int32 int = 1;
@@ -16,6 +16,9 @@ message Proto2ImplicitDefaults {
   message SubMessage {
     optional string field = 1;
   }
+
+  repeated string strings = 9;
+  map<string, string> colors = 10;
 }
 
 message Foo {
