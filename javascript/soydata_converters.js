@@ -53,6 +53,7 @@ const soy = goog.require('soy');
 const uncheckedconversions = goog.require('goog.html.uncheckedconversions');
 const {ByteString} = goog.require('jspb.bytestring');
 const {SanitizedCss, SanitizedHtml, SanitizedJs, SanitizedTrustedResourceUri, SanitizedUri} = goog.require('goog.soy.data');
+const {htmlSafeByReview, scriptSafeByReview, styleSafeByReview, styleSheetSafeByReview, urlSafeByReview} = goog.require('safevalues.restricted.reviewed');
 
 /**
  * Converts a CSS Sanitized Content object to a corresponding Safe Style Proto.
@@ -78,12 +79,11 @@ exports.packSanitizedCssToSafeStyleProtoSoyRuntimeOnly = function(
     throw new Error('Consider using packSanitizedCssToSafeStyleSheetProto().');
   }
 
-  const safeStyle =
-      uncheckedconversions.safeStyleFromStringKnownToSatisfyTypeContract(
-          Const.from('from Soy SanitizedCss object'),
-          sanitizedCss ?
-              /** @type {!SanitizedCss} */ (sanitizedCss).getContent() :
-              '');
+  const safeStyle = styleSafeByReview(
+      sanitizedCss ?
+          /** @type {!SanitizedCss} */ (sanitizedCss).getContent() :
+          '',
+      'from Soy SanitizedCss object');
   return jspbconversions.safeStyleToProto(safeStyle);
 };
 
@@ -114,12 +114,11 @@ exports.packSanitizedCssToSafeStyleSheetProtoSoyRuntimeOnly = function(
     throw new Error('Consider using packSanitizedCssToSafeStyleProto().');
   }
 
-  const safeStyleSheet =
-      uncheckedconversions.safeStyleSheetFromStringKnownToSatisfyTypeContract(
-          Const.from('from Soy SanitizedCss object'),
-          sanitizedCss ?
-              /** @type {!SanitizedCss} */ (sanitizedCss).getContent() :
-              '');
+  const safeStyleSheet = styleSheetSafeByReview(
+      sanitizedCss ?
+          /** @type {!SanitizedCss} */ (sanitizedCss).getContent() :
+          '',
+      'from Soy SanitizedCss object');
   return jspbconversions.safeStyleSheetToProto(safeStyleSheet);
 };
 
@@ -139,9 +138,7 @@ exports.packSanitizedHtmlToProtoSoyRuntimeOnly = function(sanitizedHtml) {
   const content = sanitizedHtml ?
       /** @type {!SanitizedHtml} */ (sanitizedHtml).getContent() :
       '';
-  const safeHtml =
-      uncheckedconversions.safeHtmlFromStringKnownToSatisfyTypeContract(
-          Const.from('from Soy SanitizedHtml object'), content);
+  const safeHtml = htmlSafeByReview(content, 'from Soy SanitizedHtml object');
   return jspbconversions.safeHtmlToProto(safeHtml);
 };
 
@@ -156,11 +153,9 @@ exports.packSanitizedJsToProtoSoyRuntimeOnly = function(sanitizedJs) {
     throw new Error(
         'expected SanitizedJs, got ' + googDebug.runtimeType(sanitizedJs));
   }
-  const safeScript =
-      uncheckedconversions.safeScriptFromStringKnownToSatisfyTypeContract(
-          Const.from('from Soy SanitizedJs object'),
-          sanitizedJs ? /** @type {!SanitizedJs} */ (sanitizedJs).getContent() :
-                        '');
+  const safeScript = scriptSafeByReview(
+      sanitizedJs ? /** @type {!SanitizedJs} */ (sanitizedJs).getContent() : '',
+      'from Soy SanitizedJs object');
   return jspbconversions.safeScriptToProto(safeScript);
 };
 
@@ -205,20 +200,18 @@ exports.packSanitizedUriToProtoSoyRuntimeOnly = function(sanitizedUri) {
         'expected SanitizedUri, got ' + googDebug.runtimeType(sanitizedUri));
   }
   if (sanitizedUri instanceof Uri) {
-    const safeUrlForUri =
-        uncheckedconversions.safeUrlFromStringKnownToSatisfyTypeContract(
-            Const.from('from Soy Uri object'),
-            sanitizedUri ?
-                /** @type {!Uri} */ (sanitizedUri).toString() :
-                '');
+    const safeUrlForUri = urlSafeByReview(
+        sanitizedUri ?
+            /** @type {!Uri} */ (sanitizedUri).toString() :
+            '',
+        'from Soy Uri object');
     return jspbconversions.safeUrlToProto(safeUrlForUri);
   }
-  const safeUrl =
-      uncheckedconversions.safeUrlFromStringKnownToSatisfyTypeContract(
-          Const.from('from Soy SanitizedUri object'),
-          sanitizedUri ?
-              /** @type {!SanitizedUri} */ (sanitizedUri).getContent() :
-              '');
+  const safeUrl = urlSafeByReview(
+      sanitizedUri ?
+          /** @type {!SanitizedUri} */ (sanitizedUri).getContent() :
+          '',
+      'from Soy SanitizedUri object');
   return jspbconversions.safeUrlToProto(safeUrl);
 };
 

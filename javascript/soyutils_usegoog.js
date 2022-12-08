@@ -28,7 +28,6 @@ goog.module('soy');
 goog.module.declareLegacyNamespace();
 
 const BidiFormatter = goog.require('goog.i18n.BidiFormatter');
-const Const = goog.require('goog.string.Const');
 const SafeHtml = goog.require('goog.html.SafeHtml');
 const SafeScript = goog.require('goog.html.SafeScript');
 const SafeStyle = goog.require('goog.html.SafeStyle');
@@ -43,9 +42,9 @@ const googFormat = goog.require('goog.format');
 const googSoy = goog.requireType('goog.soy');
 const googString = goog.require('goog.string');
 const soyChecks = goog.require('soy.checks');
-const uncheckedconversions = goog.require('goog.html.uncheckedconversions');
 const {SafeHtml: TsSafeHtml, SafeScript: TsSafeScript, SafeStyle: TsSafeStyle, SafeStyleSheet: TsSafeStyleSheet, SafeUrl: TsSafeUrl, TrustedResourceUrl: TsTrustedResourceUrl, unwrapHtml, unwrapResourceUrl, unwrapScript, unwrapStyle, unwrapStyleSheet, unwrapUrl} = goog.require('safevalues');
 const {SanitizedContent, SanitizedContentKind, SanitizedCss, SanitizedHtml, SanitizedHtmlAttribute, SanitizedJs, SanitizedTrustedResourceUri, SanitizedUri} = goog.require('goog.soy.data');
+const {htmlSafeByReview} = goog.require('safevalues.restricted.reviewed');
 
 // -----------------------------------------------------------------------------
 // soydata: Defines typed strings, e.g. an HTML string `"a<b>c"` is
@@ -2338,10 +2337,8 @@ const $$bidiSpanWrap = function(bidiGlobalDir, text) {
   // |bidiSpanWrap because the BidiSpanWrapDirective Java class implements
   // SanitizedContentOperator, but this does not mean that the input has to be
   // HTML SanitizedContent.
-  const html =
-      uncheckedconversions.safeHtmlFromStringKnownToSatisfyTypeContract(
-          Const.from('Soy |bidiSpanWrap is applied on an autoescaped text.'),
-          String(text));
+  const html = htmlSafeByReview(
+      String(text), 'Soy |bidiSpanWrap is applied on an autoescaped text.');
   let dir = getContentDir(text);
   if (dir == null) {
     dir = bidi.estimateDirection(text + '', true);
