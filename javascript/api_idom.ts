@@ -10,6 +10,9 @@ import * as soy from 'google3/javascript/template/soy/soyutils_usegoog';
 import {$$VisualElementData, ElementMetadata, Logger} from 'google3/javascript/template/soy/soyutils_velog';
 import * as incrementaldom from 'incrementaldom';  // from //third_party/javascript/incremental_dom:incrementaldom
 
+import {attributes} from './api_idom_attributes';
+
+export {attributes} from './api_idom_attributes';
 export {IdomTemplate as Template} from './templates';
 
 declare global {
@@ -56,12 +59,6 @@ export const patchOuter =
     wrapAsGeneric(incrementaldom.createPatchOuter, patchConfig);
 /** PatchInner using Soy-IDOM semantics. */
 export const patch = patchInner;
-
-/**
- * Attributes object used only for Soy users. If using a mix of Soy and
- * non-Soy, isolate usages of attributes using your own attributes object.
- */
-export const attributes = incrementaldom.createAttributeMap();
 
 interface IdomRendererApi {
   open(nameOrCtor: string, key?: string): void|HTMLElement;
