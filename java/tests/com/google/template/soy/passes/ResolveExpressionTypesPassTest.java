@@ -990,6 +990,29 @@ public final class ResolveExpressionTypesPassTest {
     assertTypes(soyTree);
   }
 
+  @Test
+  public void testNullableExternRefinement() {
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(
+                Joiner.on('\n')
+                    .join(
+                        "{namespace ns}",
+                        "",
+                        "{extern returnsNullable: () => string|null}",
+                        "  {jsimpl namespace=\"this.is.not.real\" function=\"notReal\" /}",
+                        "{/extern}",
+                        "",
+                        "{template aaa}",
+                        "  {@param? nullableString: string}",
+                        "",
+                        "  {assertType('string', returnsNullable() ?: '')}",
+                        "{/template}"))
+            .addSoyFunction(ASSERT_TYPE_FUNCTION)
+            .parse()
+            .fileSet();
+    assertTypes(soyTree);
+  }
+
   private SoyType parseSoyType(String type) {
     return parseSoyType(type, ErrorReporter.exploding());
   }

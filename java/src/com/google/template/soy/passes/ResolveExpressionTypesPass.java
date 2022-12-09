@@ -1977,6 +1977,7 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
             List<ExternRef> externTypes = externsTypeLookup.getRefs(filePath, functionName);
             if (maybeSetExtern(node, externTypes)) {
               visitInternalExtern(node);
+              tryApplySubstitution(node);
               return;
             } else if (!externTypes.isEmpty()) {
               String providedParamTypes =
