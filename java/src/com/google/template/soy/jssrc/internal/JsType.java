@@ -279,7 +279,7 @@ public final class JsType {
         soyType,
         JsTypeKind.IDOMSRC,
         /* isStrict= */ true,
-        ArrayTypeMode.MUTABLE_ARRAY,
+        ArrayTypeMode.READONLY_ARRAY,
         MessageTypeMode.ONLY_MUTABLE,
         /* includeNullForMessages= */ false);
   }
