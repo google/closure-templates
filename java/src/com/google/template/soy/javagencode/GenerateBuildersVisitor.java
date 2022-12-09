@@ -56,7 +56,6 @@ import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -78,7 +77,6 @@ public final class GenerateBuildersVisitor
 
   private static final String TEMPLATE_NAME_FIELD = "__NAME__";
   private static final String PARAMS_FIELD = "__PARAMS__";
-  private static final String PROTOS_FIELD = "__PROTOS__";
   private static final String CSS_PROVIDES_FIELD = "__PROVIDED_CSS__";
   private static final String CSS_MAP_FIELD = "__PROVIDED_CSS_MAP__";
   private static final String DEFAULT_INSTANCE_FIELD = "__DEFAULT_INSTANCE__";
@@ -194,7 +192,6 @@ public final class GenerateBuildersVisitor
 
     ilb.increaseIndent();
 
-    appendProtoDescriptors(fileInfo, soyFile.getSoyTypeRegistry());
     HashMap<String, String> filePathToNamespace = new HashMap<>();
     fileInfo
         .fileNode()
@@ -340,32 +337,6 @@ public final class GenerateBuildersVisitor
     ilb.decreaseIndent();
     ilb.appendLine("}");
     ilb.appendLine();
-  }
-
-  private void appendProtoDescriptors(FileInfo fileInfo, SoyTypeRegistry typeRegistry) {
-    List<String> protoTypes =
-        fileInfo.getProtoTypes(typeRegistry).stream().sorted().collect(toList());
-
-    if (protoTypes.isEmpty()) {
-      return;
-    }
-
-    ilb.appendLine();
-    appendJavadoc(
-        ilb,
-        "The list of protos used by all templates (public and private) in this Soy file, which are "
-            + "used by 1) the edit-refresh development compiler and 2) the java compiler to "
-            + "enforce strict proto deps.",
-        false,
-        true);
-    ilb.appendLineStart(
-        "private static final com.google.common.collect.ImmutableList<"
-            + "com.google.protobuf.Descriptors.FileDescriptor> "
-            + PROTOS_FIELD
-            + " = ");
-    appendFunctionCallWithParamsOnNewLines(
-        ilb, "com.google.common.collect.ImmutableList.of", protoTypes);
-    ilb.appendLineEnd(";");
   }
 
   /**
