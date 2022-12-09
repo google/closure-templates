@@ -22,14 +22,13 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.EnumDescriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Descriptors.FileDescriptor;
-import com.google.protobuf.Descriptors.GenericDescriptor;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.internal.proto.Field;
 import com.google.template.soy.soytree.ImportNode;
 import com.google.template.soy.soytree.ImportNode.ImportType;
@@ -52,6 +51,9 @@ final class ProtoImportProcessor implements ImportsPass.ImportProcessor {
   private final ImmutableMap<String, FileDescriptor> pathToDescriptor;
   private Map<String, String> msgAndEnumLocalToFqn;
   private Map<String, String> extLocalToFqn;
+
+  private static final SoyErrorKind PROTO_MODULE_IMPORT =
+      SoyErrorKind.of("Module-level proto imports are forbidden. Import each message explicitly.");
 
   ProtoImportProcessor(
       SoyTypeRegistry typeRegistry, ErrorReporter errorReporter, boolean disableAllTypeChecking) {
@@ -81,7 +83,7 @@ final class ProtoImportProcessor implements ImportsPass.ImportProcessor {
     for (ImportNode anImport : imports) {
       anImport.setImportType(ImportType.PROTO);
       if (anImport.isModuleImport()) {
-        processImportedModule(anImport);
+        errorReporter.report(anImport.getSourceLocation(), PROTO_MODULE_IMPORT);
       } else {
         processImportedSymbols(anImport);
       }
@@ -139,33 +141,6 @@ final class ProtoImportProcessor implements ImportsPass.ImportProcessor {
           name,
           node.getPath(),
           Sets.union(messages.keySet(), Sets.union(enums.keySet(), extensions.keySet())));
-    }
-  }
-
-  private void processImportedModule(ImportNode node) {
-    if (disableAllTypeChecking) {
-      return;
-    }
-
-    FileDescriptor fd = pathToDescriptor.get(node.getPath());
-    node.getIdentifiers().get(0).setType(typeRegistry.getProtoImportType(fd));
-
-    // Add a mapping from "moduleName.ExtensionName" -> fqn, for every top-level extension in the
-    // file.
-    for (FieldDescriptor ext : fd.getExtensions()) {
-      String symbol = Field.computeSoyName(ext);
-      String moduleRelativeName = node.getModuleAlias() + "." + symbol;
-      String fullName = fd.getPackage().isEmpty() ? symbol : fd.getPackage() + "." + symbol;
-      putDistinct(extLocalToFqn, moduleRelativeName, fullName);
-    }
-
-    // Add a mapping from "moduleName.ProtoName" -> protoFqn, for every top-level message and enum
-    // in the file.
-    for (GenericDescriptor descriptor : Iterables.concat(fd.getMessageTypes(), fd.getEnumTypes())) {
-      String symbol = descriptor.getName();
-      String moduleRelativeName = node.getModuleAlias() + "." + symbol;
-      String fullName = fd.getPackage().isEmpty() ? symbol : fd.getPackage() + "." + symbol;
-      putDistinct(msgAndEnumLocalToFqn, moduleRelativeName, fullName);
     }
   }
 
