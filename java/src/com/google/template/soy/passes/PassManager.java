@@ -524,7 +524,7 @@ public final class PassManager {
             .add(new CheckModifiableTemplatesPass(errorReporter));
       }
       passes.add(new CheckAllFunctionsResolvedPass(pluginResolver));
-
+      passes.add(new SplitCssFunctionPass());
       passes.add(new ResolvePackageRelativeCssNamesPass(errorReporter));
 
       if (!allowUnknownGlobals) {
