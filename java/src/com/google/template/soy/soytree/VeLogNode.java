@@ -23,7 +23,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprEquivalence;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
@@ -40,11 +39,6 @@ import javax.annotation.Nullable;
  */
 public final class VeLogNode extends AbstractBlockCommandNode
     implements ExprHolderNode, StatementNode, MsgBlockNode, CommandTagAttributesHolder {
-
-  private static final SoyErrorKind DATA_ATTRIBUTE_UNSUPPORTED =
-      SoyErrorKind.of(
-          "The ''data='' attribute is no longer supported, use the new data syntax instead: "
-              + "'''{velog ve_data(MyVe, $data)}'''.");
 
   /**
    * An equivalence key for comparing {@link VeLogNode} instances.
@@ -111,10 +105,6 @@ public final class VeLogNode extends AbstractBlockCommandNode
       switch (attr.getName().identifier()) {
         case "logonly":
           logonlyExpr = attr.valueAsExpr(errorReporter);
-          break;
-        case "data":
-          // TODO(b/124762130): Remove this after 2019-08-26, when people are used to the new syntax
-          errorReporter.report(attr.getName().location(), DATA_ATTRIBUTE_UNSUPPORTED);
           break;
         default:
           errorReporter.report(
