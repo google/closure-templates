@@ -16,6 +16,7 @@
 
 package com.google.template.soy.jssrc.dsl;
 
+import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -23,17 +24,43 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import javax.annotation.Nullable;
 
-/** Allows building imports incrementally. */
+/**
+ * Allows building imports incrementally.
+ *
+ * <p>Also manages proto imports, keeping track of which imported symbols are referenced via
+ * getImportedProtoSymbol() and only emitting referenced symbols in the emitted import statements.
+ */
 public class ImportsBuilder {
 
-  private final TreeMap<String, ImportList> imports;
+  // A map of imported file to imported symbol(s).
+  private final SortedMap<String, ImportList> imports;
+
+  @AutoValue
+  abstract static class ProtoImportData {
+
+    static ProtoImportData create(String file, String symbol, String alias) {
+      return new AutoValue_ImportsBuilder_ProtoImportData(file, symbol, alias);
+    }
+
+    abstract String file();
+
+    abstract String symbol();
+
+    abstract String alias();
+  }
+
+  // A map of fully qualified proto name to the imported file, symbol, and alias.
+  private final Map<String, ProtoImportData> protoImportData;
 
   public ImportsBuilder() {
     this.imports = new TreeMap<>();
+    this.protoImportData = new HashMap<>();
   }
 
   /** Add an import for a single symbol from a single file */
@@ -53,15 +80,59 @@ public class ImportsBuilder {
     imports.computeIfAbsent(file, k -> new ImportList()).setModuleImport(symbol);
   }
 
+  /**
+   * Add an import for a single proto from a single file. Note that it won't be emitted from
+   * `build()` unless it is marked as used with `useImportedProtoSymbol()`.
+   */
+  public void importProto(String file, String symbol, String fqn) {
+    protoImportData.put(fqn, ProtoImportData.create(file, symbol, ""));
+  }
+
+  /**
+   * Add an aliased import for a single proto from a single file. Note that it won't be emitted from
+   * `build()` unless it is marked as used with `useImportedProtoSymbol()`.
+   */
+  public void importProtoAlias(String file, String symbol, String alias, String fqn) {
+    protoImportData.put(fqn, ProtoImportData.create(file, symbol, alias));
+  }
+
+  /**
+   * Given the fully qualified proto name, return the file local name (the imported symbol, plus any
+   * additional parts for nested protos), and mark the symbol as referenced.
+   */
+  @Nullable
+  public String useImportedProtoSymbol(String fqn) {
+    String symbol = fqn;
+    String rest = "";
+    do {
+      if (protoImportData.containsKey(symbol)) {
+        ProtoImportData data = protoImportData.get(symbol);
+        if (data.alias().isEmpty()) {
+          importSymbol(data.file(), data.symbol());
+        } else {
+          importSymbolAlias(data.file(), data.symbol(), data.alias());
+        }
+        return (data.alias().isEmpty() ? data.symbol() : data.alias()) + rest;
+      }
+      int dotIndex = symbol.lastIndexOf(".");
+      if (dotIndex == -1) {
+        break;
+      }
+      rest = symbol.substring(dotIndex) + rest;
+      symbol = symbol.substring(0, dotIndex);
+    } while (true);
+    return null;
+  }
+
   public CodeChunk build() {
     List<Statement> importStatements = new ArrayList<>();
     for (Entry<String, ImportList> entry : imports.entrySet()) {
-      ImportList list = entry.getValue();
-      if (!list.importedSymbols.isEmpty()) {
-        importStatements.add(Import.symbolImport(list.importedSymbols, entry.getKey()));
+      ImportList importList = entry.getValue();
+      if (!importList.importedSymbols.isEmpty()) {
+        importStatements.add(Import.symbolImport(importList.importedSymbols, entry.getKey()));
       }
-      if (!list.moduleImport.isEmpty()) {
-        importStatements.add(Import.moduleImport(list.moduleImport, entry.getKey()));
+      if (!importList.moduleImport.isEmpty()) {
+        importStatements.add(Import.moduleImport(importList.moduleImport, entry.getKey()));
       }
     }
     return Statement.of(importStatements);
