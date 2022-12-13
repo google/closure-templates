@@ -1124,8 +1124,8 @@ public final class ContextualAutoescaperTest {
             "</script>\n",
             "{/template}\n\n",
             "{template pagenum visibility=\"private\" kind=\"text\"}\n",
-            "  {@param pageIndex: ?}\n",
-            "  {@param pageCount: ?}\n",
+            "  {@param? pageIndex: ?}\n",
+            "  {@param? pageCount: ?}\n",
             "{$pageIndex |text} of {$pageCount |text}\n",
             "{/template}"),
         join(
@@ -1139,8 +1139,8 @@ public final class ContextualAutoescaperTest {
             "  </script>\n",
             "{/template}\n\n",
             "{template pagenum visibility=\"private\" kind=\"text\"}\n",
-            "  {@param pageIndex: ?}\n",
-            "  {@param pageCount: ?}\n",
+            "  {@param? pageIndex: ?}\n",
+            "  {@param? pageCount: ?}\n",
             "  {$pageIndex} of {$pageCount}\n",
             "{/template}"));
   }
@@ -1556,7 +1556,7 @@ public final class ContextualAutoescaperTest {
             "<a href=\"{call bar data=\"all\" /}\">Test</a>",
             "\n{/template}\n\n",
             "{template bar kind=\"uri\"}\n",
-            "  {@param x: ?}\n",
+            "  {@param? x: ?}\n",
             "http://www.google.com/search?q={$x |escapeUri}",
             "\n{/template}"),
         join(
@@ -1565,7 +1565,7 @@ public final class ContextualAutoescaperTest {
             "<a href=\"{call bar data=\"all\" /}\">Test</a>",
             "\n{/template}\n\n",
             "{template bar kind=\"uri\"}\n",
-            "  {@param x: ?}\n",
+            "  {@param? x: ?}\n",
             "http://www.google.com/search?q={$x}",
             "\n{/template}"));
   }

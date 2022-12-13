@@ -63,7 +63,7 @@ public final class FindCalleesNotInFileTest {
         ""
             + "{namespace boo.hoo}\n"
             + "\n"
-            + "{template hoo}{@param a: ?}{@param b: ?}{/template}\n"
+            + "{template hoo}{@param? a: ?}{@param? b: ?}{/template}\n"
             + "{template too}{/template}\n"
             + "{template zoo}{/template}\n"
             + "{template roo}{/template}\n";

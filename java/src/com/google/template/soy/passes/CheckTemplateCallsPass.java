@@ -220,7 +220,7 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
     }
 
     void checkCall(TemplateNode callerTemplate, CallBasicNode node, TemplateType calleeType) {
-      checkCallParamNames(node, calleeType);
+      checkCallParamNames(node, calleeType, callerTemplate);
       checkPassesUnusedParams(node, calleeType);
       checkStrictHtml(callerTemplate, node, calleeType);
       checkCallParamTypes(callerTemplate, node, calleeType);
@@ -243,7 +243,7 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
       for (TemplateMetadata delTemplate : potentialCallees) {
         TemplateType delTemplateType = delTemplate.getTemplateType();
         checkCallParamTypes(callerTemplate, node, delTemplateType);
-        checkCallParamNames(node, delTemplateType);
+        checkCallParamNames(node, delTemplateType, callerTemplate);
         // We don't call checkPassesUnusedParams here because we might not know all delegates.
       }
       if (shouldEnforceDefaultDeltemplate(node.getDelCalleeName())) {
@@ -379,7 +379,7 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
           // TODO(b/168852179): enforce that the correct set of properties are present
           if (!SoyTypes.isKindOrUnionOfKind(dataExpr.getType(), SoyType.Kind.RECORD)
               && dataExpr.getType().getKind() != SoyType.Kind.UNKNOWN
-              // We allow 'any' due to a convention in wiz components :(
+              // We allow 'any' due to a convention in wizcomponents :(
               && dataExpr.getType().getKind() != SoyType.Kind.ANY) {
             errorReporter.report(
                 dataExpr.getSourceLocation(), INVALID_DATA_EXPR, dataExpr.getType());
@@ -517,7 +517,8 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
      *   <li>Required parameters in callee template are not presented in the caller.
      * </ul>
      */
-    private void checkCallParamNames(CallNode caller, TemplateType callee) {
+    private void checkCallParamNames(
+        CallNode caller, TemplateType callee, TemplateNode callerTemplate) {
       // Get param keys passed by caller.
       Set<String> callerParamKeys = Sets.newHashSet();
       for (CallParamNode callerParam : caller.getChildren()) {
@@ -528,9 +529,15 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
               callerParam.getKey().location(), DUPLICATE_PARAM, callerParam.getKey().identifier());
         }
       }
-      // If all the data keys being passed are listed using 'param' commands, then check that all
-      // required params of the callee are included.
-      if (!caller.isPassingData()) {
+      if (caller.isPassingAllData()) {
+        for (TemplateParam param : callerTemplate.getParams()) {
+          callerParamKeys.add(param.name());
+        }
+      }
+      // If all the data keys being passed are listed using 'param' commands or with data="all",
+      // then check that all required params of the callee are included in a {param} or the calling
+      // template's parameters.
+      if (!caller.isPassingData() || caller.isPassingAllData()) {
         // Check param keys required by callee.
         List<String> missingParamKeys = Lists.newArrayListWithCapacity(2);
         for (TemplateType.Parameter calleeParam : callee.getParameters()) {
@@ -544,7 +551,12 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
               (missingParamKeys.size() == 1)
                   ? "param '" + missingParamKeys.get(0) + "'"
                   : "params " + missingParamKeys;
-          errorReporter.report(caller.getSourceLocation(), MISSING_PARAM, errorMsgEnd);
+          if (caller.isPassingAllData()) {
+            // TODO(b/32548487): Change this to an error when all usages are refactored out.
+            errorReporter.warn(caller.getSourceLocation(), MISSING_PARAM, errorMsgEnd);
+          } else {
+            errorReporter.report(caller.getSourceLocation(), MISSING_PARAM, errorMsgEnd);
+          }
         }
       }
     }

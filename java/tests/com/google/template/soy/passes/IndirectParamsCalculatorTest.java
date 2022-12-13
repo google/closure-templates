@@ -174,15 +174,15 @@ public final class IndirectParamsCalculatorTest {
         "{namespace ns}"
             + "{template test}{call modifiable data=\"all\" /}{/template}"
             + "{template modifiable modifiable=\"true\" usevarianttype=\"string\"}"
-            + "  {@param m: ?}"
+            + "  {@param? m: ?}"
             + "  {call x data=\"all\" /}"
             + "{/template}"
             + "{template variant visibility=\"private\" modifies=\"modifiable\" variant=\"'foo'\"}"
-            + "  {@param m: ?}"
+            + "  {@param? m: ?}"
             + "  {call y data=\"all\" /}"
             + "{/template}"
-            + "{template x}{@param x: ?}{/template}"
-            + "{template y}{@param y: ?}{/template}";
+            + "{template x}{@param? x: ?}{/template}"
+            + "{template y}{@param? y: ?}{/template}";
 
     FileSetMetadata registry =
         SoyFileSetParserBuilder.forFileContents(fileContent).parse().registry();
@@ -202,16 +202,16 @@ public final class IndirectParamsCalculatorTest {
             + "{template test2}{delcall legacy data=\"all\" /}{/template}"
             + "{template modifiable modifiable=\"true\" usevarianttype=\"string\""
             + "     legacydeltemplatenamespace=\"legacy\"}"
-            + "  {@param m: ?}"
+            + "  {@param? m: ?}"
             + "  {call x data=\"all\" /}"
             + "{/template}"
             + "{template variant visibility=\"private\" modifies=\"modifiable\" variant=\"'foo'\"}"
-            + "  {@param m: ?}"
+            + "  {@param? m: ?}"
             + "  {call y data=\"all\" /}"
             + "{/template}"
-            + "{template x}{@param x: ?}{/template}"
-            + "{template y}{@param y: ?}{/template}"
-            + "{deltemplate legacy variant=\"'bar'\"}{@param z: ?}{/deltemplate}";
+            + "{template x}{@param? x: ?}{/template}"
+            + "{template y}{@param? y: ?}{/template}"
+            + "{deltemplate legacy variant=\"'bar'\"}{@param? z: ?}{/deltemplate}";
 
     FileSetMetadata registry =
         SoyFileSetParserBuilder.forFileContents(fileContent).parse().registry();

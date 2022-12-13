@@ -106,11 +106,11 @@ public final class CheckTemplateHeaderVarsPassTest {
             + "  {@param too: ?}\n"
             + "  {@param woo: ?}\n"
             + "  {@param? zoo: ?}\n"
-            + "  {@param gee: ?}\n" // no 'mee' is okay because user may not want to list it
-            // (chrisn)
-            + "  {@param maa: ?}\n" // no 'gaa' is okay because it may be optional in 'baa.faa'
-            + "  {@param transParam: ?}\n" // okay (not required) because it's used in transitive
-            // callee
+            + "  {@param gee: ?}\n"
+            + "  {@param mee: ?}\n"
+            + "  {@param gaa: ?}\n"
+            + "  {@param maa: ?}\n"
+            + "  {@param transParam: ?}\n"
             + "  {call fee data=\"$goo.moo\" /}\n"
             + "  {call fee data=\"$too\"}\n"
             + "    {param gee : $woo.hoo /}\n"
@@ -130,6 +130,7 @@ public final class CheckTemplateHeaderVarsPassTest {
             + "{/template}\n"
             + "\n"
             + "{template transitive1}\n"
+            + "  {@param transParam: ?}\n"
             + "  {call transitive2 data=\"all\" /}\n"
             + "{/template}\n"
             + "\n"
