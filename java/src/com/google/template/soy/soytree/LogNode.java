@@ -17,15 +17,15 @@
 package com.google.template.soy.soytree;
 
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
 
-/**
- * Node representing the 'log' statement.
- */
+/** Node representing the 'log' statement. */
 public final class LogNode extends AbstractBlockCommandNode
-    implements StandaloneNode, StatementNode {
+    implements StandaloneNode, StatementNode, RenderUnitNode {
 
   public LogNode(int id, SourceLocation sourceLocation) {
     super(id, sourceLocation, sourceLocation, "log");
@@ -54,5 +54,10 @@ public final class LogNode extends AbstractBlockCommandNode
   @Override
   public LogNode copy(CopyState copyState) {
     return new LogNode(this, copyState);
+  }
+
+  @Override
+  public SanitizedContentKind getContentKind() {
+    return SanitizedContentKind.TEXT;
   }
 }

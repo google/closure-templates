@@ -44,6 +44,7 @@ import com.google.template.soy.soytree.HtmlTagNode;
 import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.LetContentNode;
+import com.google.template.soy.soytree.LogNode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.PrintNode;
@@ -282,6 +283,11 @@ final class InferenceEngine {
 
     @Override
     protected void visitLetContentNode(LetContentNode node) {
+      visitRenderUnitNode(node);
+    }
+
+    @Override
+    protected void visitLogNode(LogNode node) {
       visitRenderUnitNode(node);
     }
 
