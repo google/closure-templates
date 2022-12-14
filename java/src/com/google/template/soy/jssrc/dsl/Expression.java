@@ -336,6 +336,11 @@ public abstract class Expression extends CodeChunk {
     return ObjectLiteral.createWithQuotedKeys(object);
   }
 
+  public static Expression ternary(
+      Expression predicate, Expression consequent, Expression alternate) {
+    return Ternary.create(predicate, consequent, alternate);
+  }
+
   /**
    * Wraps a {@link JsExpr} that could have incorrect precedence in parens.
    *
