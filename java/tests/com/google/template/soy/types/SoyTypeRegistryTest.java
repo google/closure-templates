@@ -20,6 +20,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertThrows;
 
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.error.SoyInternalCompilerException;
 import org.junit.Before;
 import org.junit.Test;
@@ -141,6 +142,7 @@ public class SoyTypeRegistryTest {
     SoyTypeRegistryBuilder builder =
         new SoyTypeRegistryBuilder()
             .addDescriptors(
+                SoyFileKind.DEP,
                 ImmutableList.of(
                     com.google.template.soy.testing.KvPair.getDescriptor().getFile(),
                     com.google.template.soy.testing.collision.KvPair.getDescriptor().getFile()));

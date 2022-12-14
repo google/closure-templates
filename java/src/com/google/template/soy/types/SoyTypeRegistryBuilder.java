@@ -32,7 +32,9 @@ import com.google.protobuf.Descriptors.EnumDescriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Descriptors.FileDescriptor;
 import com.google.protobuf.Descriptors.GenericDescriptor;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyInternalCompilerException;
@@ -59,20 +61,24 @@ public final class SoyTypeRegistryBuilder {
   }
 
   private final ImmutableList.Builder<GenericDescriptor> descriptors = ImmutableList.builder();
+  private final Map<String, SoyFileKind> descriptorToDepKind = new HashMap<>();
 
   public SoyTypeRegistryBuilder() {}
 
   /** Registers a collection of descriptors of any type. */
   @CanIgnoreReturnValue
   public SoyTypeRegistryBuilder addDescriptors(
-      Iterable<? extends GenericDescriptor> descriptorsToAdd) {
+      SoyFileKind depKind, Iterable<? extends GenericDescriptor> descriptorsToAdd) {
     descriptors.addAll(descriptorsToAdd);
+    for (GenericDescriptor genericDescriptor : descriptorsToAdd) {
+      descriptorToDepKind.put(genericDescriptor.getFile().getFullName(), depKind);
+    }
     return this;
   }
 
   public SoyTypeRegistry build() {
-    ImmutableList<GenericDescriptor> tmp = descriptors.build();
-    ProtoFqnRegistryBuilder builder = new ProtoFqnRegistryBuilder(tmp);
+    ProtoFqnRegistryBuilder builder =
+        new ProtoFqnRegistryBuilder(descriptors.build(), ImmutableMap.copyOf(descriptorToDepKind));
     SoyTypeRegistry base = create();
     ProtoFqnTypeRegistry registry = (ProtoFqnTypeRegistry) builder.build(base);
     return new SoyTypeRegistryImpl(base, ImmutableSet.copyOf(builder.files.values()), registry);
@@ -98,14 +104,17 @@ public final class SoyTypeRegistryBuilder {
   public static class ProtoFqnRegistryBuilder {
     private final ErrorReporter errorReporter = ErrorReporter.create(ImmutableMap.of());
     private final ImmutableSet<GenericDescriptor> inputs;
+    private final ImmutableMap<String, SoyFileKind> importPathToDepKind;
     private final Predicate<GenericDescriptor> alreadyVisitedKey;
     private final Predicate<GenericDescriptor> alreadyVisitedIdentity;
     private final Map<String, GenericDescriptor> msgAndEnumFqnToDesc = new HashMap<>();
     private final SetMultimap<String, FieldDescriptor> msgFqnToExts = HashMultimap.create();
     private final Map<String, FileDescriptor> files = new LinkedHashMap<>();
 
-    public ProtoFqnRegistryBuilder(Iterable<GenericDescriptor> inputs) {
+    public ProtoFqnRegistryBuilder(
+        Iterable<GenericDescriptor> inputs, Map<String, SoyFileKind> importPathToDepKind) {
       this.inputs = ImmutableSet.copyOf(inputs); // maintain order
+      this.importPathToDepKind = ImmutableMap.copyOf(importPathToDepKind);
       Set<DescriptorKey> visitedKeys = new HashSet<>();
       alreadyVisitedKey = d -> !visitedKeys.add(DescriptorKey.of(d));
       Set<GenericDescriptor> visitedDescriptors = new HashSet<>();
@@ -137,7 +146,8 @@ public final class SoyTypeRegistryBuilder {
       return new ProtoFqnTypeRegistry(
           interner,
           ImmutableMap.copyOf(msgAndEnumFqnToDesc),
-          ImmutableSetMultimap.copyOf(msgFqnToExts));
+          ImmutableSetMultimap.copyOf(msgFqnToExts),
+          importPathToDepKind);
     }
 
     private void visitGeneric(GenericDescriptor descriptor) {
@@ -267,13 +277,17 @@ public final class SoyTypeRegistryBuilder {
     /** Multimap of FQN to extensions descriptor for all message descendants of imported symbols. */
     private final ImmutableSetMultimap<String, FieldDescriptor> msgFqnToExts;
 
+    private final ImmutableMap<String, SoyFileKind> importPathToDepKind;
+
     public ProtoFqnTypeRegistry(
         TypeInterner interner,
         ImmutableMap<String, GenericDescriptor> msgAndEnumFqnToDesc,
-        ImmutableSetMultimap<String, FieldDescriptor> msgFqnToExts) {
+        ImmutableSetMultimap<String, FieldDescriptor> msgFqnToExts,
+        ImmutableMap<String, SoyFileKind> importPathToDepKind) {
       this.interner = interner;
       this.msgAndEnumFqnToDesc = msgAndEnumFqnToDesc;
       this.msgFqnToExts = msgFqnToExts;
+      this.importPathToDepKind = importPathToDepKind;
     }
 
     @Nullable
@@ -290,6 +304,13 @@ public final class SoyTypeRegistryBuilder {
                     interner, this, (Descriptor) descriptor, msgFqnToExts.get(protoFqn)));
       }
       return null;
+    }
+
+    @Override
+    public SoyFileKind getDepKind(SourceFilePath importPath) {
+      SoyFileKind kind = importPathToDepKind.get(importPath.path());
+      Preconditions.checkArgument(kind != null, "Invalid path %s", importPath.path());
+      return kind;
     }
   }
 }

@@ -31,6 +31,7 @@ import com.google.protobuf.Descriptors.GenericDescriptor;
 import com.google.template.soy.SoyFileSetParser;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.base.SourceFilePath;
+import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.conformance.ValidatedConformanceConfig;
 import com.google.template.soy.css.CssRegistry;
@@ -104,7 +105,9 @@ public final class SoyFileSetParserBuilder {
     SoyFileSetParserBuilder builder =
         forFileContents(namespace + "\n" + importStatements(descriptors) + contents);
     builder.typeRegistry =
-        new SoyTypeRegistryBuilder().addDescriptors(Arrays.asList(descriptors)).build();
+        new SoyTypeRegistryBuilder()
+            .addDescriptors(SoyFileKind.DEP, Arrays.asList(descriptors))
+            .build();
     return builder;
   }
 

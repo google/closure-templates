@@ -21,10 +21,12 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.SetMultimap;
+import com.google.common.collect.Sets;
 import com.google.errorprone.annotations.CheckReturnValue;
 import com.google.errorprone.annotations.ForOverride;
 import com.google.inject.Guice;
@@ -34,6 +36,7 @@ import com.google.inject.Module;
 import com.google.protobuf.Descriptors.DescriptorValidationException;
 import com.google.protobuf.Descriptors.FileDescriptor;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.template.soy.CacheLoaders.CachedDescriptorSet;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.css.CssRegistry;
@@ -52,10 +55,12 @@ import java.io.PrintStream;
 import java.io.StringWriter;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -123,13 +128,22 @@ public abstract class AbstractSoyCompiler {
   private List<SoySourceFunction> sourceFunctions = new ArrayList<>();
 
   @Option(
-      name = "--protoFileDescriptors",
+      name = "--directProtoDeps",
       usage =
-          "Location of protocol buffer definitions in the form of a file descriptor set."
-              + "The compiler needs defs for parameter type checking and generating direct "
-              + "access support for proto types.",
+          "Location of protocol buffer definitions in the form of a file descriptor set. These are"
+              + " the 'direct dependencies' of the compilation unit -- any protos imported by Soy"
+              + " files in this compilation unit must be listed here.",
       handler = SoyCmdLineParser.FileListOptionHandler.class)
-  private List<File> protoFileDescriptors = new ArrayList<>();
+  private List<File> protoDescDirectDeps = new ArrayList<>();
+
+  @Option(
+      name = "--indirectProtoDeps",
+      usage =
+          "Location of protocol buffer definitions in the form of a file descriptor set. These are"
+              + " the 'indirect dependencies' of the compilation unit and must include all"
+              + " transitive dependencies of the files passed to --directProtoDeps.",
+      handler = SoyCmdLineParser.FileListOptionHandler.class)
+  private List<File> protoDescIndirectDeps = new ArrayList<>();
 
   @Option(
       name = "--loggingConfig",
@@ -274,7 +288,7 @@ public abstract class AbstractSoyCompiler {
       exitWithError("Must provide list of source Soy files (--srcs).");
     }
 
-    SoyFileSet.Builder sfsBuilder = new SoyFileSet.Builder(/*ignored=*/ true);
+    SoyFileSet.Builder sfsBuilder = new SoyFileSet.Builder(/* ignored= */ true);
 
     if (!pluginModules.isEmpty()) {
       guiceTimer.start();
@@ -312,8 +326,18 @@ public abstract class AbstractSoyCompiler {
         .setValidatedLoggingConfig(parseLoggingConfig())
         // Set experimental features that are not generally available.
         .setExperimentalFeatures(experimentalFeatures)
-        .addProtoDescriptors(parseProtos(protoFileDescriptors, cache, soyCompilerFileReader, err))
         .setSoyAstCache(cache.astCache());
+
+    Set<File> directProtoFiles = ImmutableSet.copyOf(protoDescDirectDeps);
+    Set<File> allProtoFiles =
+        Sets.union(directProtoFiles, ImmutableSet.copyOf(protoDescIndirectDeps));
+    ImmutableListMultimap<File, FileDescriptor> parsedProtos =
+        parseProtos(allProtoFiles, cache, soyCompilerFileReader, err);
+    for (Entry<File, Collection<FileDescriptor>> entry : parsedProtos.asMap().entrySet()) {
+      sfsBuilder.addProtoDescriptors(
+          directProtoFiles.contains(entry.getKey()) ? SoyFileKind.DEP : SoyFileKind.INDIRECT_DEP,
+          entry.getValue());
+    }
 
     if (!allowUnblessedGeneratedFiles) {
       sfsBuilder.setGeneratedPathsToCheck(
@@ -358,23 +382,22 @@ public abstract class AbstractSoyCompiler {
   }
 
   @VisibleForTesting
-  static List<FileDescriptor> parseProtos(
-      List<File> protoFileDescriptors,
+  static ImmutableListMultimap<File, FileDescriptor> parseProtos(
+      Collection<File> protoFileDescriptors,
       SoyInputCache cache,
       SoyCompilerFileReader reader,
       PrintStream err) {
-    SetMultimap<String, CacheLoaders.CachedDescriptorSet> protoFileToDescriptor =
+    SetMultimap<String, CachedDescriptorSet> protoFileToDescriptor =
         MultimapBuilder.linkedHashKeys().linkedHashSetValues().build();
-    List<CacheLoaders.CachedDescriptorSet> cachedDescriptors =
-        new ArrayList<>(protoFileDescriptors.size());
+    Map<File, CachedDescriptorSet> cachedDescriptors = new HashMap<>(protoFileDescriptors.size());
     for (File protoFileDescriptor : protoFileDescriptors) {
       try {
-        CacheLoaders.CachedDescriptorSet cachedDescriptor =
+        CachedDescriptorSet cachedDescriptor =
             cache.read(protoFileDescriptor, CacheLoaders.CACHED_DESCRIPTOR_SET_LOADER, reader);
         for (String protoFileName : cachedDescriptor.getProtoFileNames()) {
           protoFileToDescriptor.put(protoFileName, cachedDescriptor);
         }
-        cachedDescriptors.add(cachedDescriptor);
+        cachedDescriptors.put(protoFileDescriptor, cachedDescriptor);
       } catch (IOException ioe) {
         throw new CommandLineError(
             "Error parsing proto file descriptor from "
@@ -383,7 +406,7 @@ public abstract class AbstractSoyCompiler {
                 + ioe.getMessage());
       }
     }
-    for (Map.Entry<String, Set<CacheLoaders.CachedDescriptorSet>> entry :
+    for (Map.Entry<String, Set<CachedDescriptorSet>> entry :
         Multimaps.asMap(protoFileToDescriptor).entrySet()) {
       if (entry.getValue().size() > 1) {
         err.println(
@@ -397,19 +420,19 @@ public abstract class AbstractSoyCompiler {
                 + ". Do your proto_library rules have overlapping sources?");
       }
     }
-    List<FileDescriptor> descriptors = new ArrayList<>(protoFileToDescriptor.size());
-    for (CacheLoaders.CachedDescriptorSet cachedDescriptor : cachedDescriptors) {
+
+    ImmutableListMultimap.Builder<File, FileDescriptor> descriptors =
+        ImmutableListMultimap.builder();
+    for (Map.Entry<File, CachedDescriptorSet> entry : cachedDescriptors.entrySet()) {
       try {
-        descriptors.addAll(cachedDescriptor.getFileDescriptors(protoFileToDescriptor, cache));
+        descriptors.putAll(
+            entry.getKey(), entry.getValue().getFileDescriptors(protoFileToDescriptor, cache));
       } catch (DescriptorValidationException e) {
         throw new CommandLineError(
-            "Error parsing proto file descriptor from "
-                + cachedDescriptor.getFile()
-                + ": "
-                + e.getMessage());
+            "Error parsing proto file descriptor from " + entry.getKey() + ": " + e.getMessage());
       }
     }
-    return descriptors;
+    return descriptors.build();
   }
 
   private void addCompilationUnitsToBuilder(SoyFileSet.Builder sfsBuilder) {

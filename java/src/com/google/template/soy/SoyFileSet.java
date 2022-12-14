@@ -470,8 +470,8 @@ public final class SoyFileSet {
      * the provided descriptors available to use in soy.
      */
     @CanIgnoreReturnValue
-    public Builder addProtoDescriptors(GenericDescriptor... descriptors) {
-      return addProtoDescriptors(Arrays.asList(descriptors));
+    public Builder addProtoDescriptors(SoyFileKind depKind, GenericDescriptor... descriptors) {
+      return addProtoDescriptors(depKind, Arrays.asList(descriptors));
     }
 
     /**
@@ -479,8 +479,28 @@ public final class SoyFileSet {
      * the provided descriptors available to use in soy.
      */
     @CanIgnoreReturnValue
+    public Builder addProtoDescriptors(
+        SoyFileKind depKind, Iterable<? extends GenericDescriptor> descriptors) {
+      typeRegistryBuilder.addDescriptors(depKind, descriptors);
+      return this;
+    }
+
+    /**
+     * @deprecated Use {@link #addProtoDescriptors(SoyFileKind, GenericDescriptor...)} instead.
+     */
+    @CanIgnoreReturnValue
+    @Deprecated
+    public Builder addProtoDescriptors(GenericDescriptor... descriptors) {
+      return addProtoDescriptors(SoyFileKind.DEP, Arrays.asList(descriptors));
+    }
+
+    /**
+     * @deprecated Use {@link #addProtoDescriptors(SoyFileKind, Iterable)} instead.
+     */
+    @CanIgnoreReturnValue
+    @Deprecated
     public Builder addProtoDescriptors(Iterable<? extends GenericDescriptor> descriptors) {
-      typeRegistryBuilder.addDescriptors(descriptors);
+      typeRegistryBuilder.addDescriptors(SoyFileKind.DEP, descriptors);
       return this;
     }
 

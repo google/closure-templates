@@ -25,12 +25,14 @@ import static java.util.stream.Collectors.toCollection;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import com.google.common.collect.Streams;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.EnumDescriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Descriptors.FileDescriptor;
 import com.google.protobuf.Descriptors.GenericDescriptor;
 import com.google.template.soy.base.internal.Identifier;
+import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprNode;
@@ -58,6 +60,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.Test;
 
@@ -220,7 +223,14 @@ public final class SharedTestUtils {
    */
   public static SoyTypeRegistry importing(Iterable<GenericDescriptor> descriptors) {
     SoyTypeRegistry baseTypes = SoyTypeRegistryBuilder.create();
-    ProtoTypeRegistry fqnRegistry = new ProtoFqnRegistryBuilder(descriptors).build(baseTypes);
+    ProtoTypeRegistry fqnRegistry =
+        new ProtoFqnRegistryBuilder(
+                descriptors,
+                Streams.stream(descriptors)
+                    .collect(
+                        Collectors.toMap(
+                            v -> v.getFile().getFullName(), v -> SoyFileKind.DEP, (v1, v2) -> v1)))
+            .build(baseTypes);
     ImmutableMap<String, String> localToFqn =
         stream(descriptors)
             .filter(

@@ -17,15 +17,16 @@
 package com.google.template.soy.passes;
 
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
-import com.google.template.soy.soytree.FileMetadata;
 import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.ImportNode.ImportType;
 import com.google.template.soy.soytree.SoyFileNode;
+import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.function.Supplier;
 
 /** Checks that all calls are to direct, and not indirect, deps. */
@@ -39,11 +40,15 @@ public final class CheckIndirectDepsPass implements CompilerFileSetPass {
           StyleAllowance.NO_PUNCTUATION);
 
   private final ErrorReporter errorReporter;
+  private final SoyTypeRegistry registry;
   private final Supplier<FileSetMetadata> templateRegistryFull;
 
   public CheckIndirectDepsPass(
-      ErrorReporter errorReporter, Supplier<FileSetMetadata> templateRegistryFull) {
+      ErrorReporter errorReporter,
+      SoyTypeRegistry registry,
+      Supplier<FileSetMetadata> templateRegistryFull) {
     this.errorReporter = errorReporter;
+    this.registry = registry;
     this.templateRegistryFull = templateRegistryFull;
   }
 
@@ -51,15 +56,31 @@ public final class CheckIndirectDepsPass implements CompilerFileSetPass {
   public Result run(ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator) {
     sourceFiles.stream()
         .flatMap(f -> f.getImports().stream())
-        .filter(i -> i.getImportType() == ImportType.TEMPLATE)
+        .filter(
+            i -> i.getImportType() == ImportType.TEMPLATE || i.getImportType() == ImportType.PROTO)
         .forEach(
             i -> {
-              FileMetadata metadata = templateRegistryFull.get().getFile(i.getSourceFilePath());
-              SoyFileKind calleeKind = metadata.getSoyFileKind();
-              if (calleeKind == SoyFileKind.INDIRECT_DEP) {
-                String callerFilePath = i.getSourceLocation().getFilePath().path();
-                String calleeFilePath = i.getSourceFilePath().path();
+              SourceFilePath importPath = i.getSourceFilePath();
+              String callerFilePath = i.getSourceLocation().getFilePath().path();
+              String calleeFilePath = importPath.path();
+
+              SoyFileKind calleeKind =
+                  i.getImportType() == ImportType.TEMPLATE
+                      ? templateRegistryFull.get().getFile(importPath).getSoyFileKind()
+                      : registry.getProtoRegistry().getDepKind(importPath);
+
+              if (calleeKind != SoyFileKind.INDIRECT_DEP) {
+                return;
+              }
+
+              // TODO(b/262299215): Call report() in both cases and collapse branch.
+              if (i.getImportType() == ImportType.TEMPLATE) {
                 errorReporter.report(
+                    i.getPathSourceLocation(),
+                    CALL_TO_INDIRECT_DEPENDENCY,
+                    calleeFilePath);
+              } else {
+                errorReporter.warn(
                     i.getPathSourceLocation(),
                     CALL_TO_INDIRECT_DEPENDENCY,
                     calleeFilePath);

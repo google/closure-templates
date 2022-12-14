@@ -576,7 +576,8 @@ public final class PassManager {
             .add(new CheckValidVarrefsPass(errorReporter))
             .add(new CheckTemplateVisibilityPass(errorReporter, accumulatedState::registryFull))
             .add(new CheckDelegatesPass(errorReporter, accumulatedState::registryFull))
-            .add(new CheckIndirectDepsPass(errorReporter, accumulatedState::registryFull));
+            .add(
+                new CheckIndirectDepsPass(errorReporter, registry, accumulatedState::registryFull));
         if (desugarIdomFeatures && astRewrites == AstRewrites.ALL) {
           // always desugar before the end since the backends (besides incremental dom) cannot
           // handle

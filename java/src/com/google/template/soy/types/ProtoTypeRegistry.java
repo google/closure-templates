@@ -16,10 +16,16 @@
 
 package com.google.template.soy.types;
 
+import com.google.template.soy.base.SourceFilePath;
+import com.google.template.soy.base.internal.SoyFileKind;
 import javax.annotation.Nullable;
 
 /** A repository of proto descriptors that can lookup a type by its FQN. */
 public interface ProtoTypeRegistry {
   @Nullable
   SoyType getProtoType(String protoFqn);
+
+  default SoyFileKind getDepKind(SourceFilePath importPath) {
+    throw new UnsupportedOperationException();
+  }
 }

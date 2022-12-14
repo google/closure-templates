@@ -21,6 +21,7 @@ import static com.google.common.truth.Truth.assertThat;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.protobuf.Descriptors.FieldDescriptor;
+import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.testing.Example;
 import com.google.template.soy.testing.ExampleExtendable;
 import com.google.template.soy.testing.SomeNestedExtension.NestedExtension;
@@ -37,7 +38,7 @@ public class SoyProtoTypeTest {
     SoyTypeRegistryImpl typeRegistry =
         (SoyTypeRegistryImpl)
             new SoyTypeRegistryBuilder()
-                .addDescriptors(ImmutableList.of(Example.getDescriptor()))
+                .addDescriptors(SoyFileKind.DEP, ImmutableList.of(Example.getDescriptor()))
                 .build();
 
     ImmutableSet<FieldDescriptor> extensions =
