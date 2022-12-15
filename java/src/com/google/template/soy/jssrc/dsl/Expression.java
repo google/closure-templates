@@ -123,6 +123,12 @@ public abstract class Expression extends CodeChunk {
     return Leaf.create(expr, /* isCheap= */ false, requires);
   }
 
+  /** Arrow function with implicit return type. */
+  public static Expression tsArrowFunction(ParamDecls params, ImmutableList<Statement> bodyStmts) {
+    return new TsArrowFunction(params, bodyStmts);
+  }
+
+  /** Arrow function with explicit return type. */
   public static Expression tsArrowFunction(
       ParamDecls params, Expression returnType, ImmutableList<Statement> bodyStmts) {
     return new TsArrowFunction(params, returnType, bodyStmts);

@@ -17,6 +17,7 @@ package com.google.template.soy.jssrc.dsl;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.jssrc.restricted.JsExpr;
+import java.util.Optional;
 import java.util.function.Consumer;
 
 /**
@@ -31,20 +32,33 @@ import java.util.function.Consumer;
 public class TsArrowFunction extends Expression {
 
   private final ParamDecls params;
-  private final Expression returnType;
+  private final Optional<Expression> returnType;
   private final ImmutableList<Statement> bodyStmts;
 
+  /** Arrow function with implicit return type. */
+  TsArrowFunction(ParamDecls params, ImmutableList<Statement> bodyStmts) {
+    this.params = params;
+    this.returnType = Optional.empty();
+    this.bodyStmts = bodyStmts;
+  }
+
+  /** Arrow function with explicit return type. */
   TsArrowFunction(ParamDecls params, Expression returnType, ImmutableList<Statement> bodyStmts) {
     this.params = params;
-    this.returnType = returnType;
+    this.returnType = Optional.of(returnType);
     this.bodyStmts = bodyStmts;
   }
 
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
-    ctx.append(String.format("(%s): ", params.getCode()));
-    ctx.appendOutputExpression(returnType);
-    ctx.append(" => ");
+    try (FormattingContext buffer = ctx.buffer()) {
+      buffer.append(String.format("(%s)", params.getCode()));
+      if (returnType.isPresent()) {
+        buffer.append(": ");
+        buffer.appendOutputExpression(returnType.get());
+      }
+      buffer.append(" => ");
+    }
     ctx.enterBlock();
     ctx.endLine();
     for (Statement stmt : bodyStmts) {
