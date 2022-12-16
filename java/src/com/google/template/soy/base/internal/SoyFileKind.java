@@ -40,4 +40,8 @@ public enum SoyFileKind {
    * <p>Exist only to satisfy dependencies of direct dependencies, and cannot be used by sources.
    */
   INDIRECT_DEP;
+
+  public static SoyFileKind mostDirect(SoyFileKind v1, SoyFileKind v2) {
+    return v1.ordinal() <= v2.ordinal() ? v1 : v2;
+  }
 }

@@ -71,7 +71,10 @@ public final class SoyTypeRegistryBuilder {
       SoyFileKind depKind, Iterable<? extends GenericDescriptor> descriptorsToAdd) {
     descriptors.addAll(descriptorsToAdd);
     for (GenericDescriptor genericDescriptor : descriptorsToAdd) {
-      descriptorToDepKind.put(genericDescriptor.getFile().getFullName(), depKind);
+      descriptorToDepKind.compute(
+          genericDescriptor.getFile().getFullName(),
+          (key, oldValue) ->
+              oldValue == null ? depKind : SoyFileKind.mostDirect(oldValue, depKind));
     }
     return this;
   }

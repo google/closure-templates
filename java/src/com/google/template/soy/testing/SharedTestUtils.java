@@ -229,7 +229,9 @@ public final class SharedTestUtils {
                 Streams.stream(descriptors)
                     .collect(
                         Collectors.toMap(
-                            v -> v.getFile().getFullName(), v -> SoyFileKind.DEP, (v1, v2) -> v1)))
+                            v -> v.getFile().getFullName(),
+                            v -> SoyFileKind.DEP,
+                            SoyFileKind::mostDirect)))
             .build(baseTypes);
     ImmutableMap<String, String> localToFqn =
         stream(descriptors)
