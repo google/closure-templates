@@ -273,14 +273,12 @@ public final class JsType {
 
   /** Returns a JS type for idom with strict rules. */
   public static JsType forIncrementalDomGetters(SoyType soyType) {
-    // TODO(b/230911572): use only ReadonlyArray here.
-    // TODO(b/230911572): use only readonly messages here.
     return forSoyType(
         soyType,
         JsTypeKind.IDOMSRC,
         /* isStrict= */ true,
         ArrayTypeMode.READONLY_ARRAY,
-        MessageTypeMode.ONLY_MUTABLE,
+        MessageTypeMode.READONLY,
         /* includeNullForMessages= */ false);
   }
 
