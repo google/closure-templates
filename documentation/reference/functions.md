@@ -15,11 +15,6 @@ custom external functions, see
 
 ### `checkNotNull(value)` {#checkNotNull}
 
-WARNING: `checkNotNull` has been replaced with the
-[non-null assertion operator (`!`)](expressions.md#nonnull-assertion) and is
-deprecated. Please use `!` going forward as we are removing the `checkNotNull`
-function.
-
 Throws a runtime exception if the given value is `null` and returns the value
 otherwise.
 
