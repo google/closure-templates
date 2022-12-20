@@ -48,7 +48,7 @@ public final class ImportedVar extends AbstractVarDefn {
 
   public ImportedVar(String name, @Nullable String alias, SourceLocation nameLocation) {
     super(alias != null ? alias : name, nameLocation, null);
-    Preconditions.checkArgument(alias == null || (!alias.isEmpty() && !alias.equals(name)));
+    Preconditions.checkArgument(alias == null || !alias.isEmpty());
     this.nestedVarDefns = new LinkedHashMap<>();
     this.symbol = name;
     this.parent = null;
