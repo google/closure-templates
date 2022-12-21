@@ -52,6 +52,10 @@ message Requirement {
     repeated string text = 1;
     // However, if the text occurs inside the given html attributes, then it
     // will be allowed.
+    // Note: If a template of kind `trusted_resource_uri` contains banned text
+    // with except_in_html_attribute, it will still need an explicit exemption
+    // because the conformance test does not detect attributes in trusted
+    // resource uris.
     repeated string except_in_html_attribute = 2;
   }
 
