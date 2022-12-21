@@ -73,18 +73,10 @@ public final class CheckIndirectDepsPass implements CompilerFileSetPass {
                 return;
               }
 
-              // TODO(b/262299215): Call report() in both cases and collapse branch.
-              if (i.getImportType() == ImportType.TEMPLATE) {
-                errorReporter.report(
-                    i.getPathSourceLocation(),
-                    CALL_TO_INDIRECT_DEPENDENCY,
-                    calleeFilePath);
-              } else {
-                errorReporter.warn(
-                    i.getPathSourceLocation(),
-                    CALL_TO_INDIRECT_DEPENDENCY,
-                    calleeFilePath);
-              }
+              errorReporter.report(
+                  i.getPathSourceLocation(),
+                  CALL_TO_INDIRECT_DEPENDENCY,
+                  calleeFilePath);
             });
     return Result.CONTINUE;
   }
