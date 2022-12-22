@@ -16,6 +16,7 @@
 
 package com.google.template.soy.passes;
 
+import static com.google.common.base.Preconditions.checkState;
 import static java.util.stream.Collectors.toCollection;
 
 import com.google.common.collect.ImmutableCollection;
@@ -62,8 +63,6 @@ public final class ImportsPass implements CompilerFileSetPass {
           "Relative imports are not supported, use the fully qualified name of the file.");
   private static final SoyErrorKind UNKNOWN_SYMBOL =
       SoyErrorKind.of("Unknown symbol {0} in {1}.{2}", StyleAllowance.NO_PUNCTUATION);
-  private static final SoyErrorKind SYMBOLS_REQUIRED =
-      SoyErrorKind.of("One or more imported symbols are required for import.");
 
   // Naming conflict errors:
   private static final SoyErrorKind IMPORT_CONFLICTS_WITH_TYPE_NAME =
@@ -115,10 +114,7 @@ public final class ImportsPass implements CompilerFileSetPass {
         continue;
       }
 
-      if (importNode.getIdentifiers().isEmpty()) {
-        errorReporter.report(importNode.getSourceLocation(), SYMBOLS_REQUIRED);
-        continue;
-      }
+      checkState(!importNode.getIdentifiers().isEmpty());
 
       boolean foundSymbolErrors = false;
       for (ImportedVar symbol : importNode.getIdentifiers()) {

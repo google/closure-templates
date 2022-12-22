@@ -47,7 +47,6 @@ final class Tokens {
                 "In file: %s, expected %s to end after (%d, %d)",
                 filePath, toString(next), endLine, endColumn));
       }
-      ;
       endLine = next.endLine;
       endColumn = next.endColumn;
     }
@@ -112,6 +111,8 @@ final class Tokens {
         return "{element";
       case SoyFileParserConstants.EOF:
         return "eof";
+      case SoyFileParserConstants.AS:
+        return "\'as\'";
 
         // Template tokens:
       case SoyFileParserConstants.CMD_BEGIN_CALL:

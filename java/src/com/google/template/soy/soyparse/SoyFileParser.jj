@@ -1066,6 +1066,7 @@ TOKEN_MGR_DECLS: {
 | < RCURLY: "}"      >
 | < FROM: "from" >
 | < STAR: "*" >
+| < AS: "as" >
 }
 
 
@@ -1697,30 +1698,40 @@ private AliasDeclaration Alias() :
   }
 }
 
+/**
+  * An identifier allowed as the alias in an import. This allows "as" and "from"
+  * which are tokenized separately so have to be specially handled.
+  */
+private Token ImportIdent() :
+{
+  Token ident = null;
+}
+{
+  (
+    ident = <IDENT>
+  |
+    ident = <AS>
+  |
+    ident = <FROM>
+  )
+  {
+    return ident;
+  }
+}
+
 /** Matches a module import var ("* as Foo"), and throws an error if the alias is missing . */
 private ImportedVar ModuleImportVar() :
 {
   Token star = null;
-  Token identifier = null;
   Token alias = null;
 }
 {
   star = <STAR>
-
-  // The "as Foo" is NOT optional. This is just so we can catch all "import *" in this block and
-  // throw a better error.
-  [
-     Keyword("as")
-     alias = <IDENT>
-  ]
+  <AS>
+  alias = ImportIdent()
   {
-    if (alias == null) {
-      errorReporter.report(createSrcLoc(star), PARSER_ERROR, star.image, "'import * as Foo'");
-      return new ImportedVar("*", "ERROR", createSrcLoc(star));
-    } else {
-      importSymbols.add(alias.image);
-      return new ImportedVar("*", alias.image, createSrcLoc(star, alias));
-    }
+    importSymbols.add(alias.image);
+    return new ImportedVar("*", alias.image, createSrcLoc(star, alias));
   }
 }
 
@@ -1739,8 +1750,8 @@ private ImmutableList<ImportedVar> SymbolImportVarList() :
 {
   identifier = <IDENT>
   [
-    Keyword("as")
-    alias = <IDENT>
+    <AS>
+    alias = ImportIdent()
   ]
   {
     String a1 = null;
@@ -1759,8 +1770,8 @@ private ImmutableList<ImportedVar> SymbolImportVarList() :
     <DEFAULT_COMMA>
     identifier = <IDENT>
     [
-      Keyword("as")
-      alias = <IDENT>
+      <AS>
+      alias = ImportIdent()
     ]
     {
       String a2 = null;
@@ -1781,38 +1792,36 @@ private ImmutableList<ImportedVar> SymbolImportVarList() :
 
 private ImportNode Import() :
 {
-  Token open, close;
+  Token open = null;
+  Token close = null;
   StringNode path = null;
   ImportedVar moduleImportVar;
   ImmutableList<ImportedVar> identifiers = ImmutableList.of();
 }
 {
-  (
+  try {
     open = <IMPORT_OPEN>
-    [
     (
       // Module import ("import * as Foo from 'path/file.soy'").
-      (
         moduleImportVar = ModuleImportVar()
         {identifiers = ImmutableList.of(moduleImportVar);}
-      )
       |
-      (
         <LCURLY>
         // Individual symbol imports ("import {foo, bar as myBar} from 'path.file.soy'").
         identifiers = SymbolImportVarList()
         <RCURLY>
-      )
     )
     <FROM>
-    ]
     path = StringLiteral()
     close = <SEMICOLON>
-    {
-      return new ImportNode(nodeIdGen.genId(), createSrcLoc(open, close), path,
-          identifiers);
-    }
-  )
+  } catch (ParseException e) {
+    reportFileErrorAndSkipTo(e, SEMICOLON);
+    return null;
+  }
+  {
+    return new ImportNode(nodeIdGen.genId(), createSrcLoc(open, close), path,
+        identifiers);
+  }
 }
 
 
