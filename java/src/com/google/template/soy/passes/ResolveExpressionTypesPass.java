@@ -40,6 +40,7 @@ import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Table;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
@@ -207,6 +208,7 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
@@ -378,6 +380,10 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
       SoyErrorKind.of("Plural expression must be a number type. Found ''{0}''.");
   private static final SoyErrorKind PLURAL_EXPR_NULLABLE =
       SoyErrorKind.of("Plural expression should be a non-nullable number type. Found ''{0}''.");
+  private static final SoyErrorKind BAD_CLASS_STRING =
+      SoyErrorKind.of(
+          "Spaces are not allowed in CSS class names. Either remove the space(s) or pass the"
+              + " individual class names to multiple separate calls of the css() function.");
 
   private final ErrorReporter errorReporter;
 
@@ -2689,7 +2695,7 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
           node.setType(BoolType.getInstance());
           break;
         case CSS:
-          checkArgIsStringLiteral(node, node.numChildren() - 1, builtinFunction);
+          checkArgIsStringLiteralWithNoSpaces(node, node.numChildren() - 1, builtinFunction);
           node.setType(StringType.getInstance());
           break;
         case SOY_SERVER_KEY:
@@ -2734,17 +2740,33 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
       }
     }
 
-    /** Private helper that reports an error if the argument is not a string literal. */
-    private void checkArgIsStringLiteral(
+    /** Private helper that reports an error if the css() argument is not literal or has spaces. */
+    private void checkArgIsStringLiteralWithNoSpaces(
+        FunctionNode node, int childIndex, BuiltinFunction funcName) {
+      StringNode stringNode = checkArgIsStringLiteral(node, childIndex, funcName);
+      if (stringNode != null && Pattern.compile("\\s+").matcher(stringNode.getValue()).find()) {
+        errorReporter.report(node.getSourceLocation(), BAD_CLASS_STRING);
+      }
+    }
+
+    /**
+     * Private helper that reports an error if the argument is not a string literal. Returns the
+     * StringNode if it is a literal, otherwise null.
+     */
+    @CanIgnoreReturnValue
+    @Nullable
+    private StringNode checkArgIsStringLiteral(
         FunctionNode node, int childIndex, BuiltinFunction funcName) {
       if (childIndex < 0 || childIndex >= node.numChildren()) {
-        return;
+        return null;
       }
 
       ExprNode arg = node.getChild(childIndex);
       if (!(arg instanceof StringNode)) {
         errorReporter.report(arg.getSourceLocation(), STRING_LITERAL_REQUIRED, funcName.getName());
+        return null;
       }
+      return (StringNode) arg;
     }
 
     private void visitInternalExtern(FunctionNode node) {
