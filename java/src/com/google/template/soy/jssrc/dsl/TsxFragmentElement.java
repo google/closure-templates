@@ -19,14 +19,16 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.jssrc.restricted.JsExpr;
+import java.util.List;
 import java.util.function.Consumer;
 
 /** Represents a tsx fragment elemenet, e.g.: "<>body</>". */
 @AutoValue
 @Immutable
 public abstract class TsxFragmentElement extends Expression {
-  public static Expression create(ImmutableList<Statement> body) {
-    return new AutoValue_TsxFragmentElement(/* initialStatements= */ ImmutableList.of(), body);
+  public static Expression create(List<Statement> body) {
+    return new AutoValue_TsxFragmentElement(
+        /* initialStatements= */ ImmutableList.of(), ImmutableList.copyOf(body));
   }
 
   abstract ImmutableList<Statement> body();

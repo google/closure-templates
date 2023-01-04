@@ -21,6 +21,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.jssrc.restricted.JsExpr;
+import java.util.List;
 import java.util.function.Consumer;
 
 /** Represents a tsx elemenet, e.g.: "<div>body</div>". */
@@ -34,13 +35,12 @@ public abstract class TsxElement extends Expression {
 
   abstract ImmutableList<Statement> body();
 
-  public static Expression create(
-      HtmlTag openTag, HtmlTag closeTag, ImmutableList<Statement> body) {
+  public static Expression create(HtmlTag openTag, HtmlTag closeTag, List<Statement> body) {
     checkState(openTag.tagName().equals(closeTag.tagName()));
     checkState(openTag.isOpen());
     checkState(closeTag.isClose());
     return new AutoValue_TsxElement(
-        /* initialStatements= */ ImmutableList.of(), openTag, closeTag, body);
+        /* initialStatements= */ ImmutableList.of(), openTag, closeTag, ImmutableList.copyOf(body));
   }
 
   @Override

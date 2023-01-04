@@ -17,6 +17,7 @@ package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 
@@ -51,10 +52,16 @@ public abstract class NamedFunctionDeclaration extends Statement {
       ParamDecls params,
       Expression returnType,
       JsDoc jsDoc,
-      ImmutableList<Statement> bodyStmts,
+      List<Statement> bodyStmts,
       boolean isExported) {
     return new AutoValue_NamedFunctionDeclaration(
-        name, params, returnType, Optional.of(jsDoc), bodyStmts, isExported, false);
+        name,
+        params,
+        returnType,
+        Optional.of(jsDoc),
+        ImmutableList.copyOf(bodyStmts),
+        isExported,
+        false);
   }
 
   public static NamedFunctionDeclaration create(
