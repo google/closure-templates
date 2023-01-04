@@ -16,14 +16,13 @@
 package com.google.template.soy.jssrc.internal;
 
 import com.google.common.base.CharMatcher;
+import com.google.common.collect.Sets;
 import com.google.template.soy.base.internal.UniqueNameGenerator;
 
-/**
- * A name generator for jssrc local variables.
- */
+/** A name generator for jssrc local variables. */
 public final class JsSrcNameGenerators {
   // javascript is more permissive than this, but we are purposively restrictive
-  private static final CharMatcher DANGEROUS_CHARACTERS =
+  public static final CharMatcher DANGEROUS_CHARACTERS =
       CharMatcher.ascii()
           .or(CharMatcher.digit())
           .or(CharMatcher.anyOf("_$"))
@@ -32,9 +31,9 @@ public final class JsSrcNameGenerators {
 
   /** Returns a name generator suitable for generating local variable names. */
   public static UniqueNameGenerator forLocalVariables() {
-    UniqueNameGenerator generator = new UniqueNameGenerator(DANGEROUS_CHARACTERS, "$$");
-    generator.reserve(JsSrcUtils.JS_LITERALS);
-    generator.reserve(JsSrcUtils.JS_RESERVED_WORDS);
-    return generator;
+    return new UniqueNameGenerator(
+        DANGEROUS_CHARACTERS,
+        "$$",
+        Sets.union(JsSrcUtils.JS_LITERALS, JsSrcUtils.JS_RESERVED_WORDS));
   }
 }

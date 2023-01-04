@@ -45,12 +45,12 @@ final class FieldManager {
   }
 
   FieldRef addGeneratedFinalField(String suggestedName, Type type) {
-    String name = fieldNames.generateName(suggestedName);
+    String name = fieldNames.generate(suggestedName);
     return doAddField(name, type, Opcodes.ACC_PRIVATE + Opcodes.ACC_FINAL);
   }
 
   FieldRef addFinalField(String name, Type type) {
-    fieldNames.claimName(name);
+    fieldNames.exact(name);
     return doAddField(name, type, Opcodes.ACC_PRIVATE | Opcodes.ACC_FINAL);
   }
 
@@ -67,7 +67,7 @@ final class FieldManager {
   }
 
   private FieldRef addStaticField(String proposedName, Expression initializer, int accessFlags) {
-    String name = fieldNames.generateName(proposedName);
+    String name = fieldNames.generate(proposedName);
     FieldRef ref = doAddField(name, initializer.resultType(), accessFlags);
     if (initializer.isNonNullable()) {
       ref = ref.asNonNull();

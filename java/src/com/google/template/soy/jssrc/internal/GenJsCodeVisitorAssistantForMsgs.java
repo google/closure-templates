@@ -279,7 +279,7 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractReturningSoyNodeVi
         jsSrcOptions.googMsgsAreExternal()
             ? "MSG_EXTERNAL_" + MsgUtils.computeMsgIdForDualFormat(msgNode)
             : "MSG_UNNAMED";
-    return translationContext.nameGenerator().generateName(desiredName);
+    return translationContext.nameGenerator().generate(desiredName);
   }
 
   /**

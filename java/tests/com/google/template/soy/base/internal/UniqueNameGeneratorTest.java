@@ -20,6 +20,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.fail;
 
 import com.google.common.base.CharMatcher;
+import com.google.common.collect.ImmutableSet;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -32,50 +33,69 @@ public final class UniqueNameGeneratorTest {
   public void testFieldNames() {
     UniqueNameGenerator nameSet = new UniqueNameGenerator(CharMatcher.anyOf("<>"), "%");
     try {
-      nameSet.claimName("foo<int>");
+      nameSet.exact("foo<int>");
       fail();
     } catch (IllegalArgumentException expected) {
       assertThat(expected).hasMessageThat().contains("contains dangerous characters!");
     }
-    assertThat(nameSet.hasName("foo<int>")).isFalse();
+    assertThat(nameSet.has("foo<int>")).isFalse();
 
-    nameSet.claimName("foo");
+    nameSet.exact("foo");
     try {
-      nameSet.claimName("foo");
+      nameSet.exact("foo");
       fail();
     } catch (IllegalArgumentException expected) {
       assertThat(expected).hasMessageThat().contains("already claimed!");
     }
-    assertThat(nameSet.hasName("foo")).isTrue();
-    assertThat(nameSet.generateName("foo")).isEqualTo("foo%1");
-    assertThat(nameSet.generateName("foo")).isEqualTo("foo%2");
+    nameSet.exactLenient("foo");
+    assertThat(nameSet.has("foo")).isTrue();
+    assertThat(nameSet.generate("foo")).isEqualTo("foo%1");
+    assertThat(nameSet.generate("foo")).isEqualTo("foo%2");
   }
 
   @Test
   public void testClassNames() {
     UniqueNameGenerator nameSet = new UniqueNameGenerator(CharMatcher.anyOf("$"), "%");
     try {
-      nameSet.claimName("foo$"); // '$' is considered dangerous
+      nameSet.exact("foo$"); // '$' is considered dangerous
       fail();
     } catch (IllegalArgumentException expected) {
       assertThat(expected).hasMessageThat().contains("contains dangerous characters!");
     }
-    nameSet.claimName("foo");
+    nameSet.exact("foo");
   }
 
   @Test
   public void testHasName() {
     UniqueNameGenerator nameSet = new UniqueNameGenerator(CharMatcher.none(), "%");
-    String foo = nameSet.generateName("foo");
-    String foo2 = nameSet.generateName("foo");
-    String foo3 = nameSet.generateName("foo");
+    String foo = nameSet.generate("foo");
+    String foo2 = nameSet.generate("foo");
+    String foo3 = nameSet.generate("foo");
     assertThat(foo).isEqualTo("foo");
     assertThat(foo).isNotEqualTo(foo2);
     assertThat(foo).isNotEqualTo(foo3);
     assertThat(foo2).isNotEqualTo(foo3);
-    assertThat(nameSet.hasName("foo")).isTrue();
-    assertThat(nameSet.hasName(foo)).isTrue();
-    assertThat(nameSet.hasName(foo2)).isTrue();
-    assertThat(nameSet.hasName(foo3)).isTrue();
+    assertThat(nameSet.has("foo")).isTrue();
+    assertThat(nameSet.has(foo)).isTrue();
+    assertThat(nameSet.has(foo2)).isTrue();
+    assertThat(nameSet.has(foo3)).isTrue();
+  }
+
+  @Test
+  public void testSequence() {
+    UniqueNameGenerator nameSet =
+        new UniqueNameGenerator(CharMatcher.none(), "", ImmutableSet.of("private"));
+    assertThat(nameSet.generate("foo")).isEqualTo("foo");
+    assertThat(nameSet.generate("foo")).isEqualTo("foo1");
+    assertThat(nameSet.generate("foo")).isEqualTo("foo2");
+    assertThat(nameSet.generate("foo8")).isEqualTo("foo8");
+    assertThat(nameSet.generate("foo")).isEqualTo("foo9");
+    assertThat(nameSet.generate("foo5")).isEqualTo("foo5");
+    assertThat(nameSet.generate("foo")).isEqualTo("foo10");
+
+    assertThat(nameSet.generate("private")).isEqualTo("private1");
+
+    assertThat(nameSet.branch().generate("private")).isEqualTo("private2");
+    assertThat(nameSet.branch().generate("private")).isEqualTo("private2");
   }
 }

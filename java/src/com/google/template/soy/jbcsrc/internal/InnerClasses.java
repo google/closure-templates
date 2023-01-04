@@ -49,7 +49,7 @@ public final class InnerClasses {
    * @return A {@link TypeInfo} with the full class name
    */
   public TypeInfo registerInnerClass(String simpleName, int accessModifiers) {
-    classNames.claimName(simpleName);
+    classNames.exact(simpleName);
     TypeInfo innerClass = outer.innerClass(simpleName);
     innerClassesAccessModifiers.put(innerClass, accessModifiers);
     return innerClass;
@@ -62,7 +62,7 @@ public final class InnerClasses {
    * @return A {@link TypeInfo} with the full (possibly mangled) class name
    */
   public TypeInfo registerInnerClassWithGeneratedName(String simpleName, int accessModifiers) {
-    simpleName = classNames.generateName(simpleName);
+    simpleName = classNames.generate(simpleName);
     TypeInfo innerClass = outer.innerClass(simpleName);
     innerClassesAccessModifiers.put(innerClass, accessModifiers);
     return innerClass;
@@ -81,7 +81,7 @@ public final class InnerClasses {
   }
 
   private void checkRegistered(TypeInfo type) {
-    if (!classNames.hasName(type.simpleName())) {
+    if (!classNames.has(type.simpleName())) {
       throw new IllegalArgumentException(type + " wasn't registered");
     }
   }

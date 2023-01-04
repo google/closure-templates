@@ -154,7 +154,7 @@ public final class JsSrcUtils {
    * for boolean values and {@code null}. (Also includes the identifiers "proto", "soy", and
    * "soydata", which are used internally by Soy.)
    */
-  private static final ImmutableSet<String> LEGACY_JS_RESERVED_WORDS =
+  public static final ImmutableSet<String> LEGACY_JS_RESERVED_WORDS =
       ImmutableSet.<String>builder()
           .addAll(JS_LITERALS)
           .addAll(JS_RESERVED_WORDS)

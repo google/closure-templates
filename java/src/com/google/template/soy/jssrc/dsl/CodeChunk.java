@@ -161,7 +161,7 @@ public abstract class CodeChunk {
     }
 
     private String newVarName(String prefix) {
-      return nameGenerator.generateName(prefix);
+      return nameGenerator.generate(prefix);
     }
 
     private String newVarName() {

@@ -79,7 +79,7 @@ final class SimpleLocalVariableManager implements LocalVariableManager {
 
   private void reserveParameter(String name, Type type, Label methodBegin, Label methodEnd) {
     int slot = reserveSlotFor(type);
-    localNames.claimName(name);
+    localNames.exact(name);
     LocalVariable var =
         LocalVariable.createLocal(name, slot, type, /* start=*/ methodBegin, /* end=*/ methodEnd);
     allVariables.add(var);
@@ -155,11 +155,11 @@ final class SimpleLocalVariableManager implements LocalVariableManager {
       public LocalVariable createTemporary(String proposedName, Type type) {
         checkState(!generated);
         checkState(!exited);
-        String name = localNames.generateName(proposedName);
+        String name = localNames.generate(proposedName);
         int slot = reserveSlotFor(type);
         LocalVariable var =
             LocalVariable.createLocal(
-                name, slot, type, /* start=*/ new Label(), /* end=*/ scopeExit);
+                name, slot, type, /* start= */ new Label(), /* end= */ scopeExit);
         frame.add(var);
         return var;
       }
