@@ -43,5 +43,7 @@ public abstract class HtmlAttribute extends Statement {
   }
 
   @Override
-  public void collectRequires(Consumer<GoogRequire> collector) {}
+  public void collectRequires(Consumer<GoogRequire> collector) {
+    children().forEach(c -> c.collectRequires(collector));
+  }
 }
