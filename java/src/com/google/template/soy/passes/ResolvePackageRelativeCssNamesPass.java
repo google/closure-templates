@@ -16,10 +16,10 @@
 
 package com.google.template.soy.passes;
 
-import com.google.common.base.CaseFormat;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.QuoteStyle;
+import com.google.template.soy.css.CssPrefixUtil;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
@@ -60,27 +60,15 @@ final class ResolvePackageRelativeCssNamesPass implements CompilerFilePass {
     // 1) cssbase on the template
     // 2) cssbase or cssprefix on the namespace
     // 3) first requirecss on the namespace
-    String namespacePrefix = null;
-    if (file.getCssPrefix() != null) {
-      namespacePrefix = file.getCssPrefix();
-    } else if (file.getCssBaseNamespace() != null) {
-      namespacePrefix = toCamelCase(file.getCssBaseNamespace());
-    } else if (!file.getRequiredCssNamespaces().isEmpty()) {
-      namespacePrefix = toCamelCase(file.getRequiredCssNamespaces().get(0));
-    }
+    String namespacePrefix = CssPrefixUtil.getNamespacePrefix(file);
     for (TemplateNode template : file.getTemplates()) {
-      String packagePrefix = namespacePrefix;
-      if (template.getCssBaseNamespace() != null) {
-        packagePrefix = toCamelCase(template.getCssBaseNamespace());
-      }
-      String finalPackagePrefix = packagePrefix;
+      String templatePrefix = CssPrefixUtil.getTemplatePrefix(template, namespacePrefix);
       SoyTreeUtils.allFunctionInvocations(template, BuiltinFunction.CSS)
-          .forEach(fn -> resolveSelector(template, fn, finalPackagePrefix));
+          .forEach(fn -> resolveSelector(template, fn, templatePrefix));
     }
     for (ConstNode constNode : file.getConstants()) {
-      String prefix = namespacePrefix;
       SoyTreeUtils.allFunctionInvocations(constNode, BuiltinFunction.CSS)
-          .forEach(fn -> resolveSelector(constNode, fn, prefix));
+          .forEach(fn -> resolveSelector(constNode, fn, namespacePrefix));
     }
   }
 
@@ -121,10 +109,5 @@ final class ResolvePackageRelativeCssNamesPass implements CompilerFilePass {
     StringNode newSelector =
         new StringNode(prefixed, QuoteStyle.SINGLE, selector.getSourceLocation());
     node.replaceChild(selector, newSelector);
-  }
-
-  private static String toCamelCase(String packageName) {
-    String packageNameWithDashes = packageName.replace('.', '-');
-    return CaseFormat.LOWER_HYPHEN.to(CaseFormat.LOWER_CAMEL, packageNameWithDashes);
   }
 }

@@ -20,11 +20,11 @@ package(default_visibility = ["//:soy_internal"])
 
 java_library(
     name = "css",
-    srcs = [
-        "CssRegistry.java",
-    ],
+    srcs = glob(["*.java"]),
     deps = [
+        "//java/src/com/google/template/soy/soytree",
         "@com_google_auto_value_auto_value",
+        "@maven//:com_google_code_findbugs_jsr305",
         "@maven//:com_google_errorprone_error_prone_annotations",
         "@maven//:com_google_guava_guava",
     ],
