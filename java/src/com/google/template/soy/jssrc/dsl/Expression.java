@@ -307,6 +307,10 @@ public abstract class Expression extends CodeChunk {
    * variables for short-circuiting. Use {@link Expression#and}, {@link Expression#or}, and {@link
    * Generator#conditionalExpression} instead.
    */
+  public static Expression operation(Operator op, Expression... operands) {
+    return operation(op, ImmutableList.copyOf(operands));
+  }
+
   public static Expression operation(Operator op, List<Expression> operands) {
     Preconditions.checkArgument(operands.size() == op.getNumOperands());
     Preconditions.checkArgument(

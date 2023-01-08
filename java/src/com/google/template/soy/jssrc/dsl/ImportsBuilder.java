@@ -17,7 +17,6 @@
 package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
-import com.google.common.base.Preconditions;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -77,7 +76,7 @@ public class ImportsBuilder {
 
   /** Add a module level import. */
   public void importModule(String file, String symbol) {
-    imports.computeIfAbsent(file, k -> new ImportList()).setModuleImport(symbol);
+    imports.computeIfAbsent(file, k -> new ImportList()).addModuleImport(symbol);
   }
 
   /**
@@ -131,8 +130,8 @@ public class ImportsBuilder {
       if (!importList.importedSymbols.isEmpty()) {
         importStatements.add(Import.symbolImport(importList.importedSymbols, entry.getKey()));
       }
-      if (!importList.moduleImport.isEmpty()) {
-        importStatements.add(Import.moduleImport(importList.moduleImport, entry.getKey()));
+      for (String moduleAlias : importList.moduleAliases) {
+        importStatements.add(Import.moduleImport(moduleAlias, entry.getKey()));
       }
     }
     return Statement.of(importStatements);
@@ -174,12 +173,12 @@ public class ImportsBuilder {
 
   /** The imports from a single file. */
   private static class ImportList {
-    private final TreeSet<String> importedSymbols;
-    private String moduleImport;
+    private final SortedSet<String> importedSymbols;
+    private final SortedSet<String> moduleAliases;
 
     ImportList() {
       this.importedSymbols = new TreeSet<>();
-      moduleImport = "";
+      this.moduleAliases = new TreeSet<>();
     }
 
     void addSymbol(String symbol) {
@@ -188,18 +187,14 @@ public class ImportsBuilder {
 
     void addSymbolRaw(String symbol) {
       if (symbol.startsWith("* as ")) {
-        setModuleImport(symbol.substring(5));
+        addModuleImport(symbol.substring(5));
       } else {
         addSymbol(symbol);
       }
     }
 
-    void setModuleImport(String symbol) {
-      Preconditions.checkState(
-          moduleImport.isEmpty() || symbol.equals(moduleImport),
-          String.format(
-              "Attempting to reset import symbol from '%s' to '%s'.", moduleImport, symbol));
-      moduleImport = symbol;
+    void addModuleImport(String symbol) {
+      moduleAliases.add(symbol);
     }
   }
 }

@@ -35,7 +35,8 @@ import javax.annotation.Nullable;
  * unique names from other names, which may or may not be sufficiently unique on their own.
  */
 public final class UniqueNameGenerator {
-  private static final Pattern ENDING_DIGITS = Pattern.compile("[1-9]\\d*$");
+  // Only match 0-9999. Very large numbers may be larger than Integer.MAX_VALUE.
+  private static final Pattern ENDING_DIGITS = Pattern.compile("\\D([1-9]\\d{0,3})$");
 
   /** All reserved keywords. These will always be suffixed if passed to generate(). */
   private final ImmutableSet<String> reserved;
@@ -134,7 +135,7 @@ public final class UniqueNameGenerator {
   private Pair split(String name) {
     Matcher m = ENDING_DIGITS.matcher(name);
     if (m.find()) {
-      String intString = m.group();
+      String intString = m.group(1);
       String rest = name.substring(0, name.length() - intString.length());
       if (!rest.isEmpty() && rest.endsWith(collisionSeparator)) {
         return Pair.of(
