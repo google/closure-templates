@@ -112,9 +112,9 @@ public final class SoyClassWriter extends ClassVisitor {
         Opcodes.V1_8,
         builder.access,
         builder.type.internalName(),
-        null /* not generic */,
+        null ,
         builder.baseClass.internalName(),
-        builder.interfaces.toArray(new String[builder.interfaces.size()]));
+        builder.interfaces.toArray(new String[0]));
     if (builder.fileName != null) {
       super.visitSource(
           builder.fileName,
