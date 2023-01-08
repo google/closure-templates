@@ -19,6 +19,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.jssrc.restricted.JsExpr;
+import java.util.List;
 import java.util.function.Consumer;
 
 /** Represents a JavaScript template literal expression. */
@@ -28,13 +29,13 @@ public abstract class TemplateLiteral extends Expression {
 
   abstract ImmutableList<Statement> body();
 
-  public static TemplateLiteral create(ImmutableList<Statement> body) {
-    return new AutoValue_TemplateLiteral(/* initialStatements= */ ImmutableList.of(), body);
+  public static TemplateLiteral create(List<Statement> body) {
+    return new AutoValue_TemplateLiteral(
+        /* initialStatements= */ ImmutableList.of(), ImmutableList.copyOf(body));
   }
 
   @Override
-  void doFormatInitialStatements(FormattingContext ctx) {
-  }
+  void doFormatInitialStatements(FormattingContext ctx) {}
 
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
