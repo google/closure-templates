@@ -9,6 +9,7 @@ import SanitizedContentKind from 'goog:goog.soy.data.SanitizedContentKind'; // f
 import {Logger} from 'google3/javascript/template/soy/soyutils_velog';
 import {assert, assertExists} from 'google3/third_party/javascript/closure/asserts/asserts';
 import {IDisposable} from 'google3/third_party/javascript/closure/disposable/idisposable';
+import {SafeHtml} from 'google3/third_party/javascript/closure/html/safehtml';
 
 import {IncrementalDomRenderer, patchOuter} from './api_idom';
 import {isTaggedForSkip} from './global';
@@ -260,4 +261,5 @@ export interface IdomFunction {
   isInvokableFn: boolean;
   contentKind: SanitizedContentKind;
   toString: (renderer?: IncrementalDomRenderer) => string;
+  toSafeHtml: () => SafeHtml;
 }

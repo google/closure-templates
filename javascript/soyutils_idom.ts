@@ -15,8 +15,6 @@
  * limitations under the License.
  */
 
-import SanitizedContent from 'goog:goog.soy.data.SanitizedContent'; // from //third_party/javascript/closure/soy:data
-import SanitizedContentKind from 'goog:goog.soy.data.SanitizedContentKind'; // from //third_party/javascript/closure/soy:data
 import SanitizedHtml from 'goog:goog.soy.data.SanitizedHtml'; // from //third_party/javascript/closure/soy:data
 import SanitizedHtmlAttribute from 'goog:goog.soy.data.SanitizedHtmlAttribute'; // from //third_party/javascript/closure/soy:data
 import {ordainSanitizedHtml} from 'goog:soydata.VERY_UNSAFE';  // from //javascript/template/soy:soy_usegoog_js
@@ -25,6 +23,7 @@ import * as soy from 'google3/javascript/template/soy/soyutils_usegoog';
 import {Logger} from 'google3/javascript/template/soy/soyutils_velog';
 import {cacheReturnValue} from 'google3/third_party/javascript/closure/functions/functions';
 import {SafeHtml} from 'google3/third_party/javascript/closure/html/safehtml';
+import {SanitizedContent, SanitizedContentKind} from 'google3/third_party/javascript/closure/soy/data';
 import * as googSoy from 'google3/third_party/javascript/closure/soy/soy';
 import * as incrementaldom from 'incrementaldom';  // from //third_party/javascript/incremental_dom:incrementaldom
 
@@ -183,13 +182,15 @@ function handleSoyElement<T extends TemplateAcceptor<{}>>(
 function makeHtml(idomFn: PatchFunction): IdomFunction {
   const fn = ((renderer: IncrementalDomRenderer = defaultIdomRenderer) => {
                idomFn(renderer);
-             }) as unknown as (SanitizedHtml & IdomFunction);
+             }) as unknown as SanitizedHtml &
+      IdomFunction;
   fn.invoke = (renderer: IncrementalDomRenderer = defaultIdomRenderer) =>
       idomFn(renderer);
   fn.toString = (renderer: IncrementalDomRenderer = htmlToStringRenderer) =>
       htmlToString(idomFn, renderer);
   fn.getContent = fn.toString;
   fn.contentKind = SanitizedContentKind.HTML;
+  fn.toSafeHtml = () => ordainSanitizedHtml(fn.getContent()).toSafeHtml();
   fn.isInvokableFn = true;
   return fn;
 }
