@@ -20,6 +20,8 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableList;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.testing.ExpressionParser;
 import com.google.template.soy.soytree.SoyTreeUtils;
@@ -155,17 +157,19 @@ public class NullSafeAccessNodeTest {
             .withProto(Foo.getDescriptor())
             .withParam("foo", "Foo")
             .parse();
-    String exprString =
-        buildAstStringWithPreview(expr.getParent(), 0, new StringBuilder()).toString();
-    assertThat(exprString)
+    assertThat(buildAstStringWithPreview(expr))
         .isEqualTo(
             NEWLINE.join(
-                "NULL_SAFE_ACCESS_NODE: $foo?.stringField",
-                "  VAR_REF_NODE: $foo",
-                "  FIELD_ACCESS_NODE: (null).stringField",
-                "    GROUP_NODE: (null)",
-                "      NULL_NODE: null",
+                "NULL_SAFE_ACCESS_NODE: string: $foo?.stringField",
+                "  VAR_REF_NODE: *.Foo: $foo",
+                "  FIELD_ACCESS_NODE: string: (null).stringField",
+                "    GROUP_NODE: *.Foo: (null)",
+                "      NULL_NODE: null: null",
                 ""));
+    assertThat(buildAstStringWithPreview(((NullSafeAccessNode) expr).asDataAccessNode()))
+        .isEqualTo(
+            NEWLINE.join(
+                "FIELD_ACCESS_NODE: string: $foo?.stringField", "  VAR_REF_NODE: *.Foo: $foo", ""));
   }
 
   @Test
@@ -175,24 +179,30 @@ public class NullSafeAccessNodeTest {
             .withProto(Foo.getDescriptor())
             .withParam("foo", "Foo")
             .parse();
-    String exprString =
-        buildAstStringWithPreview(expr.getParent(), 0, new StringBuilder()).toString();
-    assertThat(exprString)
+    assertThat(buildAstStringWithPreview(expr))
         .isEqualTo(
             NEWLINE.join(
-                "NULL_SAFE_ACCESS_NODE: $foo?.messageField?.foo?.messageField",
-                "  VAR_REF_NODE: $foo",
-                "  NULL_SAFE_ACCESS_NODE:" + " (null).messageField?.foo?.messageField",
-                "    FIELD_ACCESS_NODE: (null).messageField",
-                "      GROUP_NODE: (null)",
-                "        NULL_NODE: null",
-                "    NULL_SAFE_ACCESS_NODE: (null).foo?.messageField",
-                "      FIELD_ACCESS_NODE: (null).foo",
-                "        GROUP_NODE: (null)",
-                "          NULL_NODE: null",
-                "      FIELD_ACCESS_NODE: (null).messageField",
-                "        GROUP_NODE: (null)",
-                "          NULL_NODE: null",
+                "NULL_SAFE_ACCESS_NODE: *.MessageField: $foo?.messageField?.foo?.messageField",
+                "  VAR_REF_NODE: *.Foo: $foo",
+                "  NULL_SAFE_ACCESS_NODE: *.MessageField: (null).messageField?.foo?.messageField",
+                "    FIELD_ACCESS_NODE: *.MessageField: (null).messageField",
+                "      GROUP_NODE: *.Foo: (null)",
+                "        NULL_NODE: null: null",
+                "    NULL_SAFE_ACCESS_NODE: *.MessageField: (null).foo?.messageField",
+                "      FIELD_ACCESS_NODE: *.Foo: (null).foo",
+                "        GROUP_NODE: *.MessageField: (null)",
+                "          NULL_NODE: null: null",
+                "      FIELD_ACCESS_NODE: *.MessageField: (null).messageField",
+                "        GROUP_NODE: *.Foo: (null)",
+                "          NULL_NODE: null: null",
+                ""));
+    assertThat(buildAstStringWithPreview(((NullSafeAccessNode) expr).asDataAccessNode()))
+        .isEqualTo(
+            NEWLINE.join(
+                "FIELD_ACCESS_NODE: *.MessageField: $foo?.messageField?.foo?.messageField",
+                "  FIELD_ACCESS_NODE: *.Foo: $foo?.messageField?.foo",
+                "    FIELD_ACCESS_NODE: *.MessageField: $foo?.messageField",
+                "      VAR_REF_NODE: *.Foo: $foo",
                 ""));
 
     expr =
@@ -200,17 +210,16 @@ public class NullSafeAccessNodeTest {
             .withProto(Foo.getDescriptor())
             .withParam("foo", "Foo")
             .parse();
-    exprString = buildAstStringWithPreview(expr.getParent(), 0, new StringBuilder()).toString();
-    assertThat(exprString)
+    assertThat(buildAstStringWithPreview(expr))
         .isEqualTo(
             NEWLINE.join(
-                "NULL_SAFE_ACCESS_NODE: $foo?.messageField.foo.messageField",
-                "  VAR_REF_NODE: $foo",
-                "  FIELD_ACCESS_NODE: (null).messageField.foo.messageField",
-                "    FIELD_ACCESS_NODE: (null).messageField.foo",
-                "      FIELD_ACCESS_NODE: (null).messageField",
-                "        GROUP_NODE: (null)",
-                "          NULL_NODE: null",
+                "NULL_SAFE_ACCESS_NODE: *.MessageField: $foo?.messageField.foo.messageField",
+                "  VAR_REF_NODE: *.Foo: $foo",
+                "  FIELD_ACCESS_NODE: *.MessageField: (null).messageField.foo.messageField",
+                "    FIELD_ACCESS_NODE: *.Foo: (null).messageField.foo",
+                "      FIELD_ACCESS_NODE: *.MessageField: (null).messageField",
+                "        GROUP_NODE: *.Foo: (null)",
+                "          NULL_NODE: null: null",
                 ""));
 
     expr =
@@ -218,17 +227,24 @@ public class NullSafeAccessNodeTest {
             .withProto(Foo.getDescriptor())
             .withParam("foo", "Foo")
             .parse();
-    exprString = buildAstStringWithPreview(expr.getParent(), 0, new StringBuilder()).toString();
-    assertThat(exprString)
+    assertThat(buildAstStringWithPreview(expr))
         .isEqualTo(
             NEWLINE.join(
-                "NULL_SAFE_ACCESS_NODE: $foo.messageField?.foo.messageField",
-                "  FIELD_ACCESS_NODE: $foo.messageField",
-                "    VAR_REF_NODE: $foo",
-                "  FIELD_ACCESS_NODE: (null).foo.messageField",
-                "    FIELD_ACCESS_NODE: (null).foo",
-                "      GROUP_NODE: (null)",
-                "        NULL_NODE: null",
+                "NULL_SAFE_ACCESS_NODE: *.MessageField: $foo.messageField?.foo.messageField",
+                "  FIELD_ACCESS_NODE: *.MessageField: $foo.messageField",
+                "    VAR_REF_NODE: *.Foo: $foo",
+                "  FIELD_ACCESS_NODE: *.MessageField: (null).foo.messageField",
+                "    FIELD_ACCESS_NODE: *.Foo: (null).foo",
+                "      GROUP_NODE: *.MessageField: (null)",
+                "        NULL_NODE: null: null",
+                ""));
+    assertThat(buildAstStringWithPreview(((NullSafeAccessNode) expr).asDataAccessNode()))
+        .isEqualTo(
+            NEWLINE.join(
+                "FIELD_ACCESS_NODE: *.MessageField: $foo.messageField?.foo.messageField",
+                "  FIELD_ACCESS_NODE: *.Foo: $foo.messageField?.foo",
+                "    FIELD_ACCESS_NODE: *.MessageField: $foo.messageField",
+                "      VAR_REF_NODE: *.Foo: $foo",
                 ""));
 
     expr =
@@ -236,17 +252,16 @@ public class NullSafeAccessNodeTest {
             .withProto(Foo.getDescriptor())
             .withParam("foo", "Foo")
             .parse();
-    exprString = buildAstStringWithPreview(expr.getParent(), 0, new StringBuilder()).toString();
-    assertThat(exprString)
+    assertThat(buildAstStringWithPreview(expr))
         .isEqualTo(
             NEWLINE.join(
-                "NULL_SAFE_ACCESS_NODE: $foo.messageField.foo?.messageField",
-                "  FIELD_ACCESS_NODE: $foo.messageField.foo",
-                "    FIELD_ACCESS_NODE: $foo.messageField",
-                "      VAR_REF_NODE: $foo",
-                "  FIELD_ACCESS_NODE: (null).messageField",
-                "    GROUP_NODE: (null)",
-                "      NULL_NODE: null",
+                "NULL_SAFE_ACCESS_NODE: *.MessageField: $foo.messageField.foo?.messageField",
+                "  FIELD_ACCESS_NODE: *.Foo: $foo.messageField.foo",
+                "    FIELD_ACCESS_NODE: *.MessageField: $foo.messageField",
+                "      VAR_REF_NODE: *.Foo: $foo",
+                "  FIELD_ACCESS_NODE: *.MessageField: (null).messageField",
+                "    GROUP_NODE: *.Foo: (null)",
+                "      NULL_NODE: null: null",
                 ""));
 
     expr =
@@ -254,41 +269,47 @@ public class NullSafeAccessNodeTest {
             .withProto(Foo.getDescriptor())
             .withParam("foo", "Foo")
             .parse();
-    exprString = buildAstStringWithPreview(expr.getParent(), 0, new StringBuilder()).toString();
-    assertThat(exprString)
+    assertThat(buildAstStringWithPreview(expr))
         .isEqualTo(
             NEWLINE.join(
-                "NULL_SAFE_ACCESS_NODE: $foo?.messageField?.foo.messageField",
-                "  VAR_REF_NODE: $foo",
-                "  NULL_SAFE_ACCESS_NODE:" + " (null).messageField?.foo.messageField",
-                "    FIELD_ACCESS_NODE: (null).messageField",
-                "      GROUP_NODE: (null)",
-                "        NULL_NODE: null",
-                "    FIELD_ACCESS_NODE: (null).foo.messageField",
-                "      FIELD_ACCESS_NODE: (null).foo",
-                "        GROUP_NODE: (null)",
-                "          NULL_NODE: null",
+                "NULL_SAFE_ACCESS_NODE: *.MessageField: $foo?.messageField?.foo.messageField",
+                "  VAR_REF_NODE: *.Foo: $foo",
+                "  NULL_SAFE_ACCESS_NODE: *.MessageField: (null).messageField?.foo.messageField",
+                "    FIELD_ACCESS_NODE: *.MessageField: (null).messageField",
+                "      GROUP_NODE: *.Foo: (null)",
+                "        NULL_NODE: null: null",
+                "    FIELD_ACCESS_NODE: *.MessageField: (null).foo.messageField",
+                "      FIELD_ACCESS_NODE: *.Foo: (null).foo",
+                "        GROUP_NODE: *.MessageField: (null)",
+                "          NULL_NODE: null: null",
                 ""));
 
     expr =
-        new ExpressionParser("$foo?.messageField.foo?.messageField")
+        new ExpressionParser("$foo?.messageField.foo?.stringField")
             .withProto(Foo.getDescriptor())
             .withParam("foo", "Foo")
             .parse();
-    exprString = buildAstStringWithPreview(expr.getParent(), 0, new StringBuilder()).toString();
-    assertThat(exprString)
+    assertThat(buildAstStringWithPreview(expr))
         .isEqualTo(
             NEWLINE.join(
-                "NULL_SAFE_ACCESS_NODE: $foo?.messageField.foo?.messageField",
-                "  VAR_REF_NODE: $foo",
-                "  NULL_SAFE_ACCESS_NODE:" + " (null).messageField.foo?.messageField",
-                "    FIELD_ACCESS_NODE: (null).messageField.foo",
-                "      FIELD_ACCESS_NODE: (null).messageField",
-                "        GROUP_NODE: (null)",
-                "          NULL_NODE: null",
-                "    FIELD_ACCESS_NODE: (null).messageField",
-                "      GROUP_NODE: (null)",
-                "        NULL_NODE: null",
+                "NULL_SAFE_ACCESS_NODE: string: $foo?.messageField.foo?.stringField",
+                "  VAR_REF_NODE: *.Foo: $foo",
+                "  NULL_SAFE_ACCESS_NODE: string: (null).messageField.foo?.stringField",
+                "    FIELD_ACCESS_NODE: *.Foo: (null).messageField.foo",
+                "      FIELD_ACCESS_NODE: *.MessageField: (null).messageField",
+                "        GROUP_NODE: *.Foo: (null)",
+                "          NULL_NODE: null: null",
+                "    FIELD_ACCESS_NODE: string: (null).stringField",
+                "      GROUP_NODE: *.Foo: (null)",
+                "        NULL_NODE: null: null",
+                ""));
+    assertThat(buildAstStringWithPreview(((NullSafeAccessNode) expr).asDataAccessNode()))
+        .isEqualTo(
+            NEWLINE.join(
+                "FIELD_ACCESS_NODE: string: $foo?.messageField.foo?.stringField",
+                "  FIELD_ACCESS_NODE: *.Foo: $foo?.messageField.foo",
+                "    FIELD_ACCESS_NODE: *.MessageField: $foo?.messageField",
+                "      VAR_REF_NODE: *.Foo: $foo",
                 ""));
 
     expr =
@@ -296,20 +317,19 @@ public class NullSafeAccessNodeTest {
             .withProto(Foo.getDescriptor())
             .withParam("foo", "Foo")
             .parse();
-    exprString = buildAstStringWithPreview(expr.getParent(), 0, new StringBuilder()).toString();
-    assertThat(exprString)
+    assertThat(buildAstStringWithPreview(expr))
         .isEqualTo(
             NEWLINE.join(
-                "NULL_SAFE_ACCESS_NODE: $foo.messageField?.foo?.messageField",
-                "  FIELD_ACCESS_NODE: $foo.messageField",
-                "    VAR_REF_NODE: $foo",
-                "  NULL_SAFE_ACCESS_NODE: (null).foo?.messageField",
-                "    FIELD_ACCESS_NODE: (null).foo",
-                "      GROUP_NODE: (null)",
-                "        NULL_NODE: null",
-                "    FIELD_ACCESS_NODE: (null).messageField",
-                "      GROUP_NODE: (null)",
-                "        NULL_NODE: null",
+                "NULL_SAFE_ACCESS_NODE: *.MessageField: $foo.messageField?.foo?.messageField",
+                "  FIELD_ACCESS_NODE: *.MessageField: $foo.messageField",
+                "    VAR_REF_NODE: *.Foo: $foo",
+                "  NULL_SAFE_ACCESS_NODE: *.MessageField: (null).foo?.messageField",
+                "    FIELD_ACCESS_NODE: *.Foo: (null).foo",
+                "      GROUP_NODE: *.MessageField: (null)",
+                "        NULL_NODE: null: null",
+                "    FIELD_ACCESS_NODE: *.MessageField: (null).messageField",
+                "      GROUP_NODE: *.Foo: (null)",
+                "        NULL_NODE: null: null",
                 ""));
   }
 
@@ -320,17 +340,15 @@ public class NullSafeAccessNodeTest {
             .withProto(Foo.getDescriptor())
             .withParam("foo", "Foo")
             .parse();
-    String exprString =
-        buildAstStringWithPreview(expr.getParent(), 0, new StringBuilder()).toString();
-    assertThat(exprString)
+    assertThat(buildAstStringWithPreview(expr))
         .isEqualTo(
             NEWLINE.join(
-                "NULL_SAFE_ACCESS_NODE: $foo?.messageField!",
-                "  VAR_REF_NODE: $foo",
-                "  ASSERT_NON_NULL_OP_NODE: (null).messageField!",
-                "    FIELD_ACCESS_NODE: (null).messageField",
-                "      GROUP_NODE: (null)",
-                "        NULL_NODE: null",
+                "NULL_SAFE_ACCESS_NODE: *.MessageField: $foo?.messageField!",
+                "  VAR_REF_NODE: *.Foo: $foo",
+                "  ASSERT_NON_NULL_OP_NODE: *.MessageField: (null).messageField!",
+                "    FIELD_ACCESS_NODE: *.MessageField: (null).messageField",
+                "      GROUP_NODE: *.Foo: (null)",
+                "        NULL_NODE: null: null",
                 ""));
 
     expr =
@@ -338,33 +356,39 @@ public class NullSafeAccessNodeTest {
             .withProto(Foo.getDescriptor())
             .withParam("foo", "Foo")
             .parse();
-    exprString = buildAstStringWithPreview(expr.getParent(), 0, new StringBuilder()).toString();
-    assertThat(exprString)
+    assertThat(buildAstStringWithPreview(expr))
         .isEqualTo(
             NEWLINE.join(
-                "NULL_SAFE_ACCESS_NODE: $foo.messageField?.foo",
-                "  FIELD_ACCESS_NODE: $foo.messageField",
-                "    VAR_REF_NODE: $foo",
-                "  FIELD_ACCESS_NODE: (null).foo",
-                "    GROUP_NODE: (null)",
-                "      NULL_NODE: null",
+                "NULL_SAFE_ACCESS_NODE: *.Foo: $foo.messageField?.foo",
+                "  FIELD_ACCESS_NODE: *.MessageField: $foo.messageField",
+                "    VAR_REF_NODE: *.Foo: $foo",
+                "  FIELD_ACCESS_NODE: *.Foo: (null).foo",
+                "    GROUP_NODE: *.MessageField: (null)",
+                "      NULL_NODE: null: null",
                 ""));
+  }
+
+  private static String buildAstStringWithPreview(ExprNode node) {
+    return buildAstStringWithPreview(ImmutableList.of(node), 0, new StringBuilder()).toString();
   }
 
   /**
    * Similar to {@link SoyTreeUtils#buildAstString}, but for ExprNodes and also prints the source
    * string for debug usages.
    */
+  @CanIgnoreReturnValue
   private static StringBuilder buildAstStringWithPreview(
-      ParentExprNode node, int indent, StringBuilder sb) {
-    for (ExprNode child : node.getChildren()) {
+      Iterable<ExprNode> nodes, int indent, StringBuilder sb) {
+    for (ExprNode child : nodes) {
       sb.append(Strings.repeat("  ", indent))
           .append(child.getKind())
+          .append(": ")
+          .append(child.getType().toString().replaceAll("soy\\.test\\.", "*."))
           .append(": ")
           .append(child.toSourceString())
           .append('\n');
       if (child instanceof ParentExprNode) {
-        buildAstStringWithPreview((ParentExprNode) child, indent + 1, sb);
+        buildAstStringWithPreview(((ParentExprNode) child).getChildren(), indent + 1, sb);
       }
     }
     return sb;

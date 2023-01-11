@@ -458,8 +458,16 @@ public abstract class Expression extends CodeChunk {
     return Dot.create(this, id(identifier));
   }
 
+  public final Expression dotAccess(String identifier, boolean nullSafe) {
+    return nullSafe ? Dot.createNullSafe(this, id(identifier)) : Dot.create(this, id(identifier));
+  }
+
   public final Expression bracketAccess(Expression arg) {
     return Bracket.create(this, arg);
+  }
+
+  public final Expression bracketAccess(Expression arg, boolean nullSafe) {
+    return nullSafe ? Bracket.createNullSafe(this, arg) : Bracket.create(this, arg);
   }
 
   public final Expression call(Expression... args) {

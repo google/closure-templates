@@ -62,7 +62,7 @@ public final class ItemAccessNode extends DataAccessNode {
    */
   @Override
   public String getSourceStringSuffix() {
-    return (isNullSafe ? "?[" : "[") + getChild(1).toSourceString() + "]";
+    return (isNullSafe() ? "?[" : "[") + getChild(1).toSourceString() + "]";
   }
 
   @Override

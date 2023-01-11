@@ -138,7 +138,7 @@ public final class MethodCallNode extends DataAccessNode implements ExprNode.Cal
   @Override
   public String getSourceStringSuffix() {
     StringBuilder sb = new StringBuilder();
-    sb.append(isNullSafe ? "?." : ".").append(getMethodName().identifier()).append('(');
+    sb.append(isNullSafe() ? "?." : ".").append(getMethodName().identifier()).append('(');
 
     for (int i = 1; i < numChildren(); i++) {
       if (i > 1) {

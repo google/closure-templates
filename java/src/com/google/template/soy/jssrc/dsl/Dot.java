@@ -33,6 +33,8 @@ abstract class Dot extends Operation {
 
   abstract Expression key();
 
+  abstract boolean nullSafe();
+
   static Dot create(Expression receiver, Expression key) {
     return new AutoValue_Dot(
         ImmutableList.<Statement>builder()
@@ -40,7 +42,19 @@ abstract class Dot extends Operation {
             .addAll(key.initialStatements())
             .build(),
         receiver,
-        key);
+        key,
+        false);
+  }
+
+  static Dot createNullSafe(Expression receiver, Expression key) {
+    return new AutoValue_Dot(
+        ImmutableList.<Statement>builder()
+            .addAll(receiver.initialStatements())
+            .addAll(key.initialStatements())
+            .build(),
+        receiver,
+        key,
+        true);
   }
 
   @Override
@@ -61,7 +75,7 @@ abstract class Dot extends Operation {
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
     formatOperand(receiver(), OperandPosition.LEFT, ctx);
-    ctx.append('.');
+    ctx.append(nullSafe() ? "?." : ".");
     formatOperand(key(), OperandPosition.RIGHT, ctx);
   }
 

@@ -40,7 +40,7 @@ import com.google.template.soy.exprtree.ListComprehensionNode;
 import com.google.template.soy.exprtree.MapLiteralFromListNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
-import com.google.template.soy.internal.util.BreadthFirstStream;
+import com.google.template.soy.internal.util.TreeStreams;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.Kind;
@@ -145,7 +145,7 @@ public final class SoyTreeUtils {
    */
   public static Stream<? extends Node> allNodes(
       Node root, NodeVisitor<? super Node, VisitDirective> visitor) {
-    return BreadthFirstStream.of(
+    return TreeStreams.breadthFirst(
         root,
         next -> {
           if (visitor.exec(next) == VisitDirective.CONTINUE) {
@@ -614,7 +614,7 @@ public final class SoyTreeUtils {
       };
 
   public static Stream<? extends TypeNode> allTypeNodes(TypeNode root) {
-    return BreadthFirstStream.of(root, next -> next.accept(TRAVERSING));
+    return TreeStreams.breadthFirst(root, next -> next.accept(TRAVERSING));
   }
 
 }

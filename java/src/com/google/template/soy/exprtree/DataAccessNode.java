@@ -29,7 +29,7 @@ import com.google.template.soy.exprtree.ExprNode.AccessChainComponentNode;
 public abstract class DataAccessNode extends AbstractParentExprNode
     implements AccessChainComponentNode {
 
-  protected final boolean isNullSafe;
+  private boolean isNullSafe;
 
   /**
    * @param base The base expression, that is a reference to the object containing the named field.
@@ -57,6 +57,10 @@ public abstract class DataAccessNode extends AbstractParentExprNode
   /** Returns whether this field reference is null-safe. */
   public boolean isNullSafe() {
     return isNullSafe;
+  }
+
+  void setNullSafe(boolean nullSafe) {
+    isNullSafe = nullSafe;
   }
 
   @Override

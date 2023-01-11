@@ -65,7 +65,7 @@ public final class FieldAccessNode extends DataAccessNode {
    */
   @Override
   public String getSourceStringSuffix() {
-    return (isNullSafe ? "?." : ".") + fieldName;
+    return (isNullSafe() ? "?." : ".") + fieldName;
   }
 
   @Override

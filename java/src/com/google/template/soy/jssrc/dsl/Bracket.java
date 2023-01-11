@@ -33,6 +33,8 @@ abstract class Bracket extends Operation {
 
   abstract Expression key();
 
+  abstract boolean nullSafe();
+
   static Bracket create(Expression receiver, Expression key) {
     return new AutoValue_Bracket(
         ImmutableList.<Statement>builder()
@@ -40,7 +42,19 @@ abstract class Bracket extends Operation {
             .addAll(key.initialStatements())
             .build(),
         receiver,
-        key);
+        key,
+        false);
+  }
+
+  static Bracket createNullSafe(Expression receiver, Expression key) {
+    return new AutoValue_Bracket(
+        ImmutableList.<Statement>builder()
+            .addAll(receiver.initialStatements())
+            .addAll(key.initialStatements())
+            .build(),
+        receiver,
+        key,
+        true);
   }
 
   @Override
@@ -69,7 +83,7 @@ abstract class Bracket extends Operation {
   void doFormatOutputExpr(FormattingContext ctx) {
     formatOperand(receiver(), OperandPosition.LEFT, ctx);
     // No need to protect the expression in the bracket with parens. it's unambiguous.
-    ctx.append('[').appendOutputExpression(key()).append(']');
+    ctx.append(nullSafe() ? "?.[" : "[").appendOutputExpression(key()).append(']');
   }
 
   @Override

@@ -27,7 +27,7 @@ import com.google.common.html.types.SafeStyleProto;
 import com.google.common.html.types.SafeStyleSheetProto;
 import com.google.common.html.types.SafeUrlProto;
 import com.google.common.html.types.TrustedResourceUrlProto;
-import com.google.template.soy.internal.util.BreadthFirstStream;
+import com.google.template.soy.internal.util.TreeStreams;
 import com.google.template.soy.types.SoyType.Kind;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -562,7 +562,7 @@ public final class SoyTypes {
    */
   public static Iterator<? extends SoyType> getTypeTraverser(
       SoyType root, @Nullable SoyTypeRegistry registry) {
-    return BreadthFirstStream.of(root, new SoyTypeSuccessorsFunction(registry)).iterator();
+    return TreeStreams.breadthFirst(root, new SoyTypeSuccessorsFunction(registry)).iterator();
   }
 
   /**

@@ -17,10 +17,15 @@
 package com.google.template.soy.exprtree;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.collect.ImmutableList.toImmutableList;
 
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
+import com.google.template.soy.internal.util.TreeStreams;
+import java.util.List;
 
 /**
  * Represents a null safe access: {@code ?.} or {@code ?[]}.
@@ -176,5 +181,63 @@ public final class NullSafeAccessNode extends AbstractParentExprNode {
       nullSafe = new NullSafeAccessNode(base, accessChainRoot);
     }
     accessChainParent.addChild(rootIndex, nullSafe);
+  }
+
+  /**
+   * Returns a copy of this root NullSafeAccessNode, transformed back into the original
+   * DataAccessNode that the Soy parser produced. This is the inverse AST operation as {@link
+   * com.google.template.soy.passes.NullSafeAccessPass}.
+   *
+   * <p>The returned view of the AST may make some calculations easier, at the cost of copying the
+   * AST.
+   */
+  public DataAccessNode asDataAccessNode() {
+    // Clone entire branch so we can modify without worrying.
+    NullSafeAccessNode nsan = (NullSafeAccessNode) this.copy(new CopyState());
+
+    Preconditions.checkState(!(nsan.getParent() instanceof NullSafeAccessNode));
+
+    ExprNode base = nsan.getBase();
+    Preconditions.checkState(!NullSafeAccessNode.isPlaceholder(base));
+
+    // Collect all the nodes with placeholder base expressions, in breadth first order. The last
+    // of these is the root of the tree once we have restored the base expressions.
+    ImmutableList<DataAccessNode> bfNodes =
+        TreeStreams.depthFirst(nsan, NullSafeAccessNode::dataAccessSuccessors)
+            .filter(DataAccessNode.class::isInstance)
+            .map(DataAccessNode.class::cast)
+            .filter(n -> NullSafeAccessNode.isPlaceholder(n.getBaseExprChild()))
+            .collect(toImmutableList());
+    Preconditions.checkState(!bfNodes.isEmpty());
+
+    for (DataAccessNode node : bfNodes) {
+      // Fix the base expression and set to null safe node. Safe since we've cloned the tree.
+      node.setNullSafe(true);
+      node.replaceChild(0, base);
+
+      base = node;
+      // Walk up any direct ancestors that are data access nodes (not null safe nodes).
+      while (base.getParent() instanceof DataAccessNode) {
+        base = base.getParent();
+      }
+    }
+    return (DataAccessNode) base;
+  }
+
+  /**
+   * We need special traversal rules so that we don't accidentally traverse into method parameters
+   * and other parts of the subtree that could contain independent null safe chains.
+   */
+  private static List<ExprNode> dataAccessSuccessors(ExprNode node) {
+    switch (node.getKind()) {
+      case NULL_SAFE_ACCESS_NODE:
+        return ((NullSafeAccessNode) node).getChildren();
+      case FIELD_ACCESS_NODE:
+      case METHOD_CALL_NODE:
+      case ITEM_ACCESS_NODE:
+        return ImmutableList.of(((DataAccessNode) node).getBaseExprChild());
+      default:
+        return ImmutableList.of();
+    }
   }
 }

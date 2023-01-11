@@ -25,6 +25,7 @@ java_library(
         "//java/src/com/google/template/soy/base",
         "//java/src/com/google/template/soy/base/internal",
         "//java/src/com/google/template/soy/basetree",
+        "//java/src/com/google/template/soy/internal/util",
         "//java/src/com/google/template/soy/logging:internal",
         "//java/src/com/google/template/soy/plugin/restricted",
         "//java/src/com/google/template/soy/shared/internal:builtin_function",
