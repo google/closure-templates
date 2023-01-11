@@ -391,12 +391,12 @@ Simplify or use `?:` for all new Soy code.
 
 ### Null coalescing operator `?:` {#null-coalescing-operator}
 
-The null coalescing operator (also known as the 'elvis operator'). Returns the
+The null coalescing operator (also known as the 'elvis operator') returns the
 left side if it is non-`null`, and the right side otherwise. This is often
 useful for supplying default values.
 
-This operator is short circuiting, if the left side is non-`null` the right side
-will not be evaluated.
+This operator is short circuiting &mdash; if the left side is non-`null` the
+right side will not be evaluated.
 
 For example,
 
