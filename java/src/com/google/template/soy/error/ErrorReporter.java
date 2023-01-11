@@ -70,6 +70,15 @@ public abstract class ErrorReporter {
     return ExplodingErrorReporter.EXPLODING;
   }
 
+  /**
+   * Returns an ErrorReporter that throws an IllegalArgumentException on every error and warning.
+   *
+   * <p>Useful for tests.
+   */
+  public static ErrorReporter illegalArgumentExceptionExploding() {
+    return IllegalArgumentExceptionErrorReporter.INSTANCE;
+  }
+
   /** Returns an ErrorReporter that throws assertion error on every error but ignores warnings. */
   public static ErrorReporter explodeOnErrorsAndIgnoreWarnings() {
     return ExplodingErrorReporter.EXPLODING_IGNORE_WARNINGS;

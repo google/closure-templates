@@ -35,7 +35,7 @@ public final class ValidatedLoggingConfigTest {
             () ->
                 LoggingConfigs.createLoggingConfig(
                     LoggableElement.newBuilder().setName("%%%").build()));
-    assertThat(expected).hasMessageThat().isEqualTo("'%%%' is not a valid identifier");
+    assertThat(expected).hasMessageThat().isEqualTo("'%%%' is not a valid identifier.");
   }
 
   @Test

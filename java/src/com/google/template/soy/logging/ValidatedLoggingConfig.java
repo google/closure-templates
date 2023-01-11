@@ -16,17 +16,22 @@
 
 package com.google.template.soy.logging;
 
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
+import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyErrorKind;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import javax.annotation.Nullable;
 
 /**
@@ -35,6 +40,19 @@ import javax.annotation.Nullable;
  * <p>Ensures that there are no duplicate names or ids and Enables easy lookup.
  */
 public final class ValidatedLoggingConfig {
+
+  private static final SoyErrorKind INVALID_VE_NAME =
+      SoyErrorKind.of("''{0}'' is not a valid identifier.");
+
+  private static final SoyErrorKind INVALID_VE_ID =
+      SoyErrorKind.of(
+          "ID {0,number,#} for ''{1}'' must be between {2,number,#} and {3,number,#} (inclusive).");
+
+  private static final SoyErrorKind DUPLICATE_VE_ID =
+      SoyErrorKind.of("Found 2 LoggableElements with the same id {0,number,#}:\n{1}\nand\n{2}.");
+
+  private static final SoyErrorKind DUPLICATE_VE_NAME =
+      SoyErrorKind.of("Found 2 LoggableElements with the same name {0}:\n{1}\nand\n{2}.");
 
   public static final String UNDEFINED_VE_NAME = "UndefinedVe";
 
@@ -65,61 +83,65 @@ public final class ValidatedLoggingConfig {
     if (configProto.getElementCount() == 0) {
       return EMPTY;
     }
+    return new ValidatedLoggingConfig(
+        ImmutableMap.copyOf(
+            validate(
+                configProto.getElementList().stream()
+                    .map(ValidatedLoggableElement::create)
+                    .collect(toImmutableSet()),
+                ErrorReporter.illegalArgumentExceptionExploding())));
+  }
 
+  public static void validate(
+      ValidatedLoggingConfig loggingConfig,
+      Set<ValidatedLoggableElement> ves,
+      ErrorReporter errorReporter) {
+    validate(
+        ImmutableSet.<ValidatedLoggableElement>builder()
+            .addAll(loggingConfig.elementsByName.values())
+            .addAll(ves)
+            .build(),
+        errorReporter);
+  }
+
+  @CanIgnoreReturnValue
+  private static Map<String, ValidatedLoggableElement> validate(
+      Set<ValidatedLoggableElement> ves, ErrorReporter errorReporter) {
     Map<String, ValidatedLoggableElement> elementsByName = new LinkedHashMap<>();
     Map<Long, ValidatedLoggableElement> elementsById = new LinkedHashMap<>();
-    Map<String, AnnotatedLoggableElement> rawElementsByName = new LinkedHashMap<>();
-    Map<Long, AnnotatedLoggableElement> rawElementsById = new LinkedHashMap<>();
 
-    for (AnnotatedLoggableElement annotatedElement : configProto.getElementList()) {
-      if (annotatedElement.getElement().getId() == SoyLogger.UNDEFINED_VE_ID) {
-        checkState(!annotatedElement.getHasMetadata(), "UndefinedVe cannot have metadata.");
+    for (ValidatedLoggableElement ve : ves) {
+      if (ve.getId() == SoyLogger.UNDEFINED_VE_ID) {
+        checkState(!ve.hasMetadata(), "UndefinedVe cannot have metadata.");
       }
 
-      LoggableElement element = annotatedElement.getElement();
-      String name = element.getName();
-      checkArgument(BaseUtils.isDottedIdentifier(name), "'%s' is not a valid identifier", name);
-      checkArgument(
-          MIN_ID_VALUE <= element.getId() && element.getId() <= MAX_ID_VALUE,
-          "ID %s for '%s' must be between %s and %s (inclusive).",
-          element.getId(),
-          name,
-          MIN_ID_VALUE,
-          MAX_ID_VALUE);
-      ValidatedLoggableElement elementConfig = ValidatedLoggableElement.create(annotatedElement);
-
-      ValidatedLoggableElement oldWithSameId =
-          elementsById.put(elementConfig.getId(), elementConfig);
-      if (oldWithSameId != null
-          && !elementsEquivalent(annotatedElement, rawElementsById.get(elementConfig.getId()))) {
-        throw new IllegalArgumentException(
-            String.format(
-                "Found 2 LoggableElements with the same id %d:\n\n%s\nand\n\n%s",
-                elementConfig.getId(),
-                annotatedElement,
-                rawElementsById.get(elementConfig.getId())));
+      String name = ve.getName();
+      if (!BaseUtils.isDottedIdentifier(name)) {
+        errorReporter.report(ve.getSourceLocation(), INVALID_VE_NAME, name);
       }
-      rawElementsById.put(elementConfig.getId(), annotatedElement);
 
-      ValidatedLoggableElement oldWithSameName =
-          elementsByName.put(elementConfig.getName(), elementConfig);
-      if (oldWithSameName != null
-          && !elementsEquivalent(
-              annotatedElement, rawElementsByName.get(elementConfig.getName()))) {
-        throw new IllegalArgumentException(
-            String.format(
-                "Found 2 LoggableElements with the same name %s:\n\n%s\nand\n\n%s",
-                elementConfig.getName(),
-                annotatedElement,
-                rawElementsByName.get(elementConfig.getName())));
+      if (ve.getId() < MIN_ID_VALUE || ve.getId() > MAX_ID_VALUE) {
+        errorReporter.report(
+            ve.getSourceLocation(), INVALID_VE_ID, ve.getId(), name, MIN_ID_VALUE, MAX_ID_VALUE);
       }
-      rawElementsByName.put(elementConfig.getName(), annotatedElement);
+
+      ValidatedLoggableElement oldWithSameId = elementsById.put(ve.getId(), ve);
+      ValidatedLoggableElement oldWithSameName = elementsByName.put(ve.getName(), ve);
+      if (oldWithSameId != null && !elementsEquivalent(ve, oldWithSameId)) {
+        errorReporter.report(
+            ve.getSourceLocation(), DUPLICATE_VE_ID, ve.getId(), ve, oldWithSameId);
+      } else if (oldWithSameName != null && !elementsEquivalent(ve, oldWithSameName)) {
+        errorReporter.report(
+            ve.getSourceLocation(), DUPLICATE_VE_NAME, ve.getName(), ve, oldWithSameName);
+      }
     }
+
     checkState(
         elementsByName.containsKey(UNDEFINED_VE_NAME)
             && elementsByName.get(UNDEFINED_VE_NAME).getId() == SoyLogger.UNDEFINED_VE_ID,
         "Logging config is missing UndefinedVe.");
-    return new ValidatedLoggingConfig(ImmutableMap.copyOf(elementsByName));
+
+    return elementsByName;
   }
 
   /**
@@ -130,19 +152,11 @@ public final class ValidatedLoggingConfig {
    * is equivalent it doesn't matter which file it gets it from.
    */
   private static boolean elementsEquivalent(
-      AnnotatedLoggableElement a1, AnnotatedLoggableElement a2) {
-    AnnotatedLoggableElement mod1 = createForComparison(a1);
-    AnnotatedLoggableElement mod2 = createForComparison(a2);
-    return mod1.equals(mod2);
-  }
-
-  private static AnnotatedLoggableElement createForComparison(AnnotatedLoggableElement e) {
-    return e.toBuilder()
-        .clearJavaPackage()
-        .clearJsPackage()
-        .clearClassName()
-        .clearJavaResourceFilename()
-        .build();
+      ValidatedLoggableElement a1, ValidatedLoggableElement a2) {
+    return a1.getName().equals(a2.getName())
+        && a1.getId() == a2.getId()
+        && a1.getProtoName().equals(a2.getProtoName())
+        && a1.getMetadata().equals(a2.getMetadata());
   }
 
   private final ImmutableMap<String, ValidatedLoggableElement> elementsByName;
@@ -165,6 +179,17 @@ public final class ValidatedLoggingConfig {
   /** A validated wrapper for {@link AnnotatedLoggableElement}. */
   @AutoValue
   public abstract static class ValidatedLoggableElement {
+
+    public static ValidatedLoggableElement create(
+        String name,
+        long id,
+        Optional<String> protoName,
+        Optional<Object> metadata,
+        SourceLocation sourceLocation) {
+      return new AutoValue_ValidatedLoggingConfig_ValidatedLoggableElement(
+          name, id, protoName, "", "", "", metadata, sourceLocation);
+    }
+
     static ValidatedLoggableElement create(AnnotatedLoggableElement annotatedElement) {
       LoggableElement element = annotatedElement.getElement();
       return new AutoValue_ValidatedLoggingConfig_ValidatedLoggableElement(
@@ -174,7 +199,10 @@ public final class ValidatedLoggingConfig {
           annotatedElement.getJavaPackage(),
           annotatedElement.getJsPackage(),
           annotatedElement.getClassName(),
-          annotatedElement.getHasMetadata());
+          annotatedElement.getHasMetadata()
+              ? Optional.of(annotatedElement.getElement().getMetadata())
+              : Optional.empty(),
+          SourceLocation.UNKNOWN);
     }
 
     ValidatedLoggableElement() {}
@@ -191,11 +219,28 @@ public final class ValidatedLoggingConfig {
 
     public abstract String getClassName();
 
-    public abstract boolean hasMetadata();
+    public abstract Optional<Object> getMetadata();
+
+    public abstract SourceLocation getSourceLocation();
+
+    public boolean hasMetadata() {
+      return getMetadata().isPresent();
+    }
 
     /** The name of the generated method to access the VE metadata for this VE ID. */
     public final String getGeneratedVeMetadataMethodName() {
       return String.format("v%s", getId());
+    }
+
+    @Override
+    public final String toString() {
+      return String.format(
+          "Ve{name=%s, id=%s%s%s} @ %s",
+          getName(),
+          getId(),
+          getProtoName().isPresent() ? ", data=" + getProtoName().get() : "",
+          getMetadata().isPresent() ? ", metadata=" + getMetadata().get() : "",
+          getSourceLocation());
     }
   }
 }
