@@ -58,7 +58,7 @@ import java.util.List;
           returnType = "string"),
     })
 @SoyPureFunction
-final class StrSubFunction
+public final class StrSubFunction
     implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPythonSourceFunction {
 
   @Override

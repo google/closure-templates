@@ -43,7 +43,7 @@ import java.util.List;
             parameterTypes = {"string", "string"},
             returnType = "string"))
 @SoyPureFunction
-final class StrReplaceAllMethod
+public final class StrReplaceAllMethod
     implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPythonSourceFunction {
 
   @Override

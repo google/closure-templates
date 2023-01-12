@@ -48,7 +48,7 @@ import java.util.List;
     baseType = "string",
     value = @Signature(parameterTypes = "string", returnType = "bool"))
 @SoyPureFunction
-final class StrContainsFunction
+public final class StrContainsFunction
     implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPythonSourceFunction {
 
   @Override

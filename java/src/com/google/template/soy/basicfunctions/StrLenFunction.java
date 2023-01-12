@@ -46,7 +46,7 @@ import java.util.List;
  */
 @SoyMethodSignature(name = "length", baseType = "string", value = @Signature(returnType = "int"))
 @SoyPureFunction
-final class StrLenFunction
+public final class StrLenFunction
     implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPythonSourceFunction {
 
   @Override

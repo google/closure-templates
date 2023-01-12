@@ -57,7 +57,7 @@ import java.util.List;
           returnType = "int")
     })
 @SoyPureFunction
-final class StrIndexOfFunction
+public final class StrIndexOfFunction
     implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPythonSourceFunction {
 
   @Override

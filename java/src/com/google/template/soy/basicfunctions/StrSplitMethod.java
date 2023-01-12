@@ -46,7 +46,7 @@ import java.util.List;
           returnType = "list<string>")
     })
 @SoyPureFunction
-final class StrSplitMethod
+public final class StrSplitMethod
     implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPythonSourceFunction {
 
   @Override

@@ -46,7 +46,7 @@ import java.util.List;
           returnType = "bool")
     })
 @SoyPureFunction
-final class StrEndsWithMethod
+public final class StrEndsWithMethod
     implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPythonSourceFunction {
 
   @Override

@@ -37,7 +37,7 @@ import java.util.List;
 /** Implements {@code str.trim()}. */
 @SoyMethodSignature(name = "trim", baseType = "string", value = @Signature(returnType = "string"))
 @SoyPureFunction
-final class StrTrimMethod
+public final class StrTrimMethod
     implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPythonSourceFunction {
 
   @Override

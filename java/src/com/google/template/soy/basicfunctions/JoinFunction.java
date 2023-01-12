@@ -49,7 +49,7 @@ import java.util.List;
     baseType = "list<string|int>",
     value = @Signature(parameterTypes = "string", returnType = "string"))
 @SoyPureFunction
-final class JoinFunction
+public final class JoinFunction
     implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPythonSourceFunction {
 
   @Override
