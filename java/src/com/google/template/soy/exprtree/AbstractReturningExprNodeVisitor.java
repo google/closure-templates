@@ -175,6 +175,8 @@ public abstract class AbstractReturningExprNodeVisitor<R>
 
       case VE_LITERAL_NODE:
         return visitVeLiteralNode((VeLiteralNode) node);
+      case VE_DEF_NODE:
+        return visitVeDefNode((VeDefNode) node);
       case TEMPLATE_LITERAL_NODE:
         return visitTemplateLiteralNode((TemplateLiteralNode) node);
 
@@ -400,6 +402,10 @@ public abstract class AbstractReturningExprNodeVisitor<R>
   // Implementations for ve nodes.
 
   protected R visitVeLiteralNode(VeLiteralNode node) {
+    return visitExprNode(node);
+  }
+
+  protected R visitVeDefNode(VeDefNode node) {
     return visitExprNode(node);
   }
 

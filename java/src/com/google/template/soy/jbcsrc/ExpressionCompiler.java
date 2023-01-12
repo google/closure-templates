@@ -88,6 +88,7 @@ import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.exprtree.VarRefNode;
+import com.google.template.soy.exprtree.VeDefNode;
 import com.google.template.soy.exprtree.VeLiteralNode;
 import com.google.template.soy.jbcsrc.ExpressionDetacher.BasicDetacher;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
@@ -1665,6 +1666,20 @@ final class ExpressionCompiler {
                 constant(node.getId()), constant(node.getName().identifier()));
       }
       return SoyExpression.forSoyValue(node.getType(), visualElement);
+    }
+
+    @Override
+    protected SoyExpression visitVeDefNode(VeDefNode node) {
+      Expression idExpr = constant(node.getId());
+      Expression nameExpr = constant(node.getName());
+      return SoyExpression.forSoyValue(
+          node.getType(),
+          node.getStaticMetadataExpr().isPresent()
+              ? MethodRef.SOY_VISUAL_ELEMENT_CREATE_WITH_METADATA.invoke(
+                  idExpr,
+                  nameExpr,
+                  visitProtoInitFunction((FunctionNode) node.getStaticMetadataExpr().get()))
+              : MethodRef.SOY_VISUAL_ELEMENT_CREATE.invoke(idExpr, nameExpr));
     }
 
     private static final Handle GET_TEMPLATE_VALUE_HANDLE =

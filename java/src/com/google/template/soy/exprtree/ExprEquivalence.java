@@ -25,6 +25,7 @@ import com.google.common.primitives.Longs;
 import com.google.template.soy.exprtree.ExprNode.CallableExpr.ParamsStyle;
 import com.google.template.soy.exprtree.ExprNode.OperatorNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
+import com.google.template.soy.types.SoyType;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.List;
@@ -223,11 +224,23 @@ public final class ExprEquivalence {
       this.other = other;
     }
 
+    private boolean isProtoImport(VarDefn def) {
+      return def.kind() == VarDefn.Kind.IMPORT_VAR
+          && def.hasType()
+          && (def.type().getKind() == SoyType.Kind.PROTO_TYPE
+              || def.type().getKind() == SoyType.Kind.PROTO_ENUM_TYPE);
+    }
+
     @Override
     protected Boolean visitVarRefNode(VarRefNode node) {
       VarRefNode typedOther = (VarRefNode) other;
       // VarRefs are considered equivalent if they have identical and non-null VarDefns.
       if (node.getDefnDecl() != null || typedOther.getDefnDecl() != null) {
+
+        // Imported protot types are considered equivalent if they point to the same type.
+        if (isProtoImport(node.getDefnDecl()) && isProtoImport(typedOther.getDefnDecl())) {
+          return node.getDefnDecl().type().equals(typedOther.getDefnDecl().type());
+        }
         return typedOther.getDefnDecl() == node.getDefnDecl();
       }
       // When getDefnDecl() are null, we should not directly return true. Instead, we should compare
@@ -497,6 +510,11 @@ public final class ExprEquivalence {
         return equivalence.equivalent(this.expr, otherWrapper.expr);
       }
       return false;
+    }
+
+    @Override
+    public String toString() {
+      return expr.toSourceString();
     }
   }
 }

@@ -122,6 +122,7 @@ import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
+import com.google.template.soy.exprtree.VeDefNode;
 import com.google.template.soy.exprtree.VeLiteralNode;
 import com.google.template.soy.internal.util.TopoSort;
 import com.google.template.soy.logging.LoggingFunction;
@@ -2295,6 +2296,16 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
         node.setLoggableElement(config);
       }
       node.setType(type);
+    }
+
+    @Override
+    protected void visitVeDefNode(VeDefNode node) {
+      visitChildren(node);
+      if (node.numChildren() >= 1) {
+        node.setType(VeType.of(node.getChild(0).getType().toString()));
+      } else {
+        node.setType(VeType.NO_DATA);
+      }
     }
 
     @Override

@@ -116,6 +116,7 @@ import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
+import com.google.template.soy.exprtree.VeDefNode;
 import com.google.template.soy.exprtree.VeLiteralNode;
 import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.logging.SoyLogger;
@@ -1087,6 +1088,11 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
 
   @Override
   protected SoyValue visitVeLiteralNode(VeLiteralNode node) {
+    return UNDEFINED_VE;
+  }
+
+  @Override
+  protected SoyValue visitVeDefNode(VeDefNode node) {
     return UNDEFINED_VE;
   }
 

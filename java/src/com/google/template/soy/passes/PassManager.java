@@ -509,12 +509,14 @@ public final class PassManager {
             // Run before ResolveExpressionTypesPass since this makes type analysis on null safe
             // accesses simpler.
             .add(new NullSafeAccessPass())
+            .add(new VeDefPass(errorReporter))
             .add(
                 new ResolveExpressionTypesPass(
                     errorReporter,
                     loggingConfig,
                     pluginResolver,
                     accumulatedState::registryFromDeps))
+            .add(new VeDefValidationPass(loggingConfig, errorReporter))
             // After ResolveExpressionTypesPass because ResolveExpressionTypesPass verifies usage
             // and types of non-null assertion operators.
             .add(new SimplifyAssertNonNullPass())

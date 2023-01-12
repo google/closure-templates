@@ -17,10 +17,11 @@
 package com.google.template.soy.logging;
 
 import static com.google.common.base.Preconditions.checkState;
-import static com.google.common.collect.ImmutableSet.toImmutableSet;
+import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
@@ -29,9 +30,9 @@ import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import javax.annotation.Nullable;
 
 /**
@@ -88,16 +89,16 @@ public final class ValidatedLoggingConfig {
             validate(
                 configProto.getElementList().stream()
                     .map(ValidatedLoggableElement::create)
-                    .collect(toImmutableSet()),
+                    .collect(toImmutableList()),
                 ErrorReporter.illegalArgumentExceptionExploding())));
   }
 
   public static void validate(
       ValidatedLoggingConfig loggingConfig,
-      Set<ValidatedLoggableElement> ves,
+      List<ValidatedLoggableElement> ves,
       ErrorReporter errorReporter) {
     validate(
-        ImmutableSet.<ValidatedLoggableElement>builder()
+        ImmutableList.<ValidatedLoggableElement>builder()
             .addAll(loggingConfig.elementsByName.values())
             .addAll(ves)
             .build(),
@@ -106,7 +107,7 @@ public final class ValidatedLoggingConfig {
 
   @CanIgnoreReturnValue
   private static Map<String, ValidatedLoggableElement> validate(
-      Set<ValidatedLoggableElement> ves, ErrorReporter errorReporter) {
+      List<ValidatedLoggableElement> ves, ErrorReporter errorReporter) {
     Map<String, ValidatedLoggableElement> elementsByName = new LinkedHashMap<>();
     Map<Long, ValidatedLoggableElement> elementsById = new LinkedHashMap<>();
 

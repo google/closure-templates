@@ -22,6 +22,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_FALSE;
 import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_NULL;
 import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_TRUE;
+import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_UNDEFINED;
 import static com.google.template.soy.jssrc.dsl.Expression.arrowFunction;
 import static com.google.template.soy.jssrc.dsl.Expression.construct;
 import static com.google.template.soy.jssrc.dsl.Expression.id;
@@ -99,6 +100,7 @@ import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
+import com.google.template.soy.exprtree.VeDefNode;
 import com.google.template.soy.exprtree.VeLiteralNode;
 import com.google.template.soy.internal.proto.ProtoUtils;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
@@ -1100,6 +1102,19 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
                 metadata,
                 Expression.stringLiteral(node.getName().identifier())))
         .setElse(construct(SOY_VISUAL_ELEMENT, Expression.number(node.getId()), metadata))
+        .build(codeGenerator);
+  }
+
+  @Override
+  protected Expression visitVeDefNode(VeDefNode node) {
+    Expression idExpr = Expression.number(node.getId());
+    Expression metadataExpr =
+        node.getStaticMetadataExpr().map(this::visit).orElse(LITERAL_UNDEFINED);
+    return Expression.ifExpression(
+            GOOG_DEBUG,
+            construct(
+                SOY_VISUAL_ELEMENT, idExpr, metadataExpr, Expression.stringLiteral(node.getName())))
+        .setElse(construct(SOY_VISUAL_ELEMENT, idExpr, metadataExpr))
         .build(codeGenerator);
   }
 
