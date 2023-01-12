@@ -213,6 +213,10 @@ public abstract class AbstractExprNodeVisitor<R> extends AbstractNodeVisitor<Exp
         visitVeLiteralNode((VeLiteralNode) node);
         break;
 
+      case VE_DEF_NODE:
+        visitVeDefNode((VeDefNode) node);
+        break;
+
       case TEMPLATE_LITERAL_NODE:
         visitTemplateLiteralNode((TemplateLiteralNode) node);
         break;
@@ -455,6 +459,10 @@ public abstract class AbstractExprNodeVisitor<R> extends AbstractNodeVisitor<Exp
   // Implementations for VE logging nodes.
 
   protected void visitVeLiteralNode(VeLiteralNode node) {
+    visitExprNode(node);
+  }
+
+  protected void visitVeDefNode(VeDefNode node) {
     visitExprNode(node);
   }
 
