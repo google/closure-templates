@@ -39,6 +39,27 @@ public final class SoyToIncrementalDomSrcCompiler extends AbstractSoyCompiler {
               + " the generated GSS header file.")
   private boolean dependOnCssHeader = false;
 
+  @Option(
+      name = "--googMsgsAreExternal",
+      usage =
+          "[Only applicable if --shouldGenerateGoogMsgDefs is true]"
+              + " If this option is true, then we generate"
+              + " \"var MSG_EXTERNAL_<soyGeneratedMsgId> = goog.getMsg(...);\"."
+              + " If this option is false, then we generate"
+              + " \"var MSG_UNNAMED_<uniquefier> = goog.getMsg(...);\"."
+              + "  [Explanation of true value]"
+              + " Set this option to true if your project is having Closure Templates do"
+              + " message extraction (e.g. with SoyMsgExtractor) and then having the Closure"
+              + " Compiler do translated message insertion."
+              + "  [Explanation of false value]"
+              + " Set this option to false if your project is having the Closure Compiler do"
+              + " all of its localization, i.e. if you want the Closure Compiler to do both"
+              + " message extraction and translated message insertion. A significant drawback"
+              + " to this setup is that, if your templates are used from both JS and Java, you"
+              + " will end up with two separate and possibly different sets of translations"
+              + " for your messages.")
+  private boolean googMsgsAreExternal = false;
+
   private final PerInputOutputFiles outputFiles =
       new PerInputOutputFiles("idom.soy.js", PerInputOutputFiles.JS_JOINER);
   /**
@@ -72,6 +93,8 @@ public final class SoyToIncrementalDomSrcCompiler extends AbstractSoyCompiler {
     SoyFileSet sfs = sfsBuilder.build();
     SoyIncrementalDomSrcOptions options = new SoyIncrementalDomSrcOptions();
     options.setDependOnCssHeader(dependOnCssHeader);
-    outputFiles.writeFiles(srcs, sfs.compileToIncrementalDomSrcInternal(options), /*locale=*/ null);
+    options.setGoogMsgsAreExternal(googMsgsAreExternal);
+    outputFiles.writeFiles(
+        srcs, sfs.compileToIncrementalDomSrcInternal(options), /* locale= */ null);
   }
 }

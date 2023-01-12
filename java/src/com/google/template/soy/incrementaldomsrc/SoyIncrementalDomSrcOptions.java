@@ -28,12 +28,16 @@ public final class SoyIncrementalDomSrcOptions {
   /** Whether we should add a requirecss annotation for the generated GSS header file. */
   private boolean dependOnCssHeader;
 
+  private boolean googMsgsAreExternal;
+
   public SoyIncrementalDomSrcOptions() {
     dependOnCssHeader = false;
+    googMsgsAreExternal = true;
   }
 
   private SoyIncrementalDomSrcOptions(SoyIncrementalDomSrcOptions orig) {
     this.dependOnCssHeader = orig.dependOnCssHeader;
+    this.googMsgsAreExternal = orig.googMsgsAreExternal;
   }
 
   /**
@@ -51,6 +55,20 @@ public final class SoyIncrementalDomSrcOptions {
   }
 
   /**
+   * Sets whether we should add a requirecss annotation for the generated GSS header file.
+   *
+   * @param dependOnCssHeader The value to set.
+   */
+  public void setGoogMsgsAreExternal(boolean googMsgsAreExternal) {
+    this.googMsgsAreExternal = googMsgsAreExternal;
+  }
+
+  /** Returns whether we should add a requirecss annotation for the generated GSS header file. */
+  public boolean googMsgsAreExternal() {
+    return googMsgsAreExternal;
+  }
+
+  /**
    * Convert to {@link SoyJsSrcOptions}. This is necessary since {@code incrementaldomsrc} reuses
    * lots of {@code jssrc} which needs to interact with this object.
    */
@@ -59,7 +77,7 @@ public final class SoyIncrementalDomSrcOptions {
     // Only goog.module generation supported
     jsSrcOptions.setShouldGenerateGoogModules(true);
     jsSrcOptions.setShouldGenerateGoogMsgDefs(true);
-    jsSrcOptions.setGoogMsgsAreExternal(true);
+    jsSrcOptions.setGoogMsgsAreExternal(googMsgsAreExternal);
     jsSrcOptions.setBidiGlobalDir(0);
     jsSrcOptions.setUseGoogIsRtlForBidiGlobalDir(true);
     jsSrcOptions.setDependOnCssHeader(dependOnCssHeader);
