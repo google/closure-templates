@@ -85,6 +85,8 @@ public final class JsRuntime {
 
   public static final Expression SOY_EQUALS = SOY.dotAccess("$$equals");
 
+  public static final Expression SHOULD_STUB = GOOG_SOY.dotAccess("shouldStub");
+
   public static final Expression SOY_MAKE_ARRAY = SOY.dotAccess("$$makeArray");
 
   public static final Expression SOY_AS_READONLY = SOY.dotAccess("$$asReadonlyArray");
@@ -216,7 +218,7 @@ public final class JsRuntime {
               SafeHtmlProto.getDescriptor().getFullName(),
               SOY_CONVERTERS.dotAccess("packSanitizedHtmlToProtoSoyRuntimeOnly"))
           .putAll(JS_TO_PROTO_PACK_FN_BASE)
-          .build();
+          .buildOrThrow();
 
   /** Returns the field containing the extension object for the given field descriptor. */
   public static Expression extensionField(FieldDescriptor desc) {

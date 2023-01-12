@@ -95,8 +95,10 @@ public abstract class VariableDeclaration extends Statement {
     }
 
     // variables without initializing expressions cannot be const
-    ctx.append((isMutable() || (rhs() == null && !isDeclaration())) ? "let " : "const ")
-        .append(varName());
+    if (!varName().contains(".")) {
+      ctx.append((isMutable() || (rhs() == null && !isDeclaration())) ? "let " : "const ");
+    }
+    ctx.append(varName());
     if (type() != null) {
       ctx.append(": ").appendOutputExpression(type());
     }

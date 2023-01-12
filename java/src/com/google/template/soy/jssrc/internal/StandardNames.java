@@ -27,6 +27,8 @@ public final class StandardNames {
 
   public static final String DOLLAR_DATA = "$data";
 
+  public static final String SOY_STUB = "soyInternalStubs";
+
   /**
    * Legacy name for the ijdata parameter.
    *
