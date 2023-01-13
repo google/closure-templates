@@ -2927,7 +2927,9 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
 
     @Override
     protected void visitNullNode(NullNode node) {
-      notAllowed(node);
+      if (node.getParent() instanceof ExprRootNode) {
+        notAllowed(node);
+      }
       super.visitNullNode(node);
     }
 

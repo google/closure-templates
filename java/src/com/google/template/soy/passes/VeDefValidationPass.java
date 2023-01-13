@@ -25,6 +25,7 @@ import com.google.template.soy.exprtree.ExprEquivalence;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.IntegerNode;
+import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.logging.ValidatedLoggingConfig.ValidatedLoggableElement;
@@ -54,7 +55,7 @@ final class VeDefValidationPass implements CompilerFileSetPass {
       SoyErrorKind.of("The second argument to ve_def() must be an integer literal.");
 
   private static final SoyErrorKind BAD_VE_DEF_DATA_PROTO_TYPE =
-      SoyErrorKind.of("The third argument to ve_def() must be proto type.");
+      SoyErrorKind.of("The third argument to ve_def() must be proto type or 'null'.");
 
   private static final SoyErrorKind BAD_VE_DEF_METADATA =
       SoyErrorKind.of(
@@ -121,7 +122,7 @@ final class VeDefValidationPass implements CompilerFileSetPass {
     long id = ((IntegerNode) func.getChild(1)).getValue();
 
     final Optional<String> dataProtoType;
-    if (func.getChildren().size() < 3) {
+    if (func.getChildren().size() < 3 || func.getChild(2) instanceof NullNode) {
       dataProtoType = Optional.empty();
     } else {
       if (!(func.getChild(2).getType() instanceof ProtoImportType)) {
