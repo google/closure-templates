@@ -73,10 +73,10 @@ public final class SoyJsPluginUtils {
       List<Expression> args,
       SourceLocation location,
       ErrorReporter errorReporter) {
-    List<JsExpr> argExprs = Lists.transform(args, Expression::singleExprOrName);
+    List<JsExpr> argExprs = Lists.transform(args, a -> a.singleExprOrName(FormatOptions.JSSRC));
     JsExpr applied;
     try {
-      applied = directive.applyForJsSrc(expr.singleExprOrName(), argExprs);
+      applied = directive.applyForJsSrc(expr.singleExprOrName(FormatOptions.JSSRC), argExprs);
     } catch (Throwable t) {
       applied = report(location, directive, t, errorReporter);
     }
@@ -114,7 +114,7 @@ public final class SoyJsPluginUtils {
     // Grab the JsExpr for each CodeChunk arg to deliver to the SoyToJsSrcFunction as input.
     for (Expression arg : args) {
       arg.collectRequires(requiresBuilder::add);
-      functionInputs.add(arg.singleExprOrName());
+      functionInputs.add(arg.singleExprOrName(FormatOptions.JSSRC));
       initialStatements.addAll(arg.initialStatements());
     }
 

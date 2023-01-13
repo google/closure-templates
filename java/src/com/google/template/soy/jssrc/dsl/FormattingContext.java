@@ -17,7 +17,6 @@
 package com.google.template.soy.jssrc.dsl;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Strings;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import java.util.ArrayDeque;
 import java.util.Collections;
@@ -35,10 +34,10 @@ class FormattingContext implements AutoCloseable {
   private final StringBuilder buf;
   private final int initialSize;
 
+  private final FormatOptions formatOptions;
   private Scope curScope = new Scope(/* parent= */ null, /* emitClosingBrace= */ false);
   private String curIndent;
   private boolean nextAppendShouldStartNewLine = false;
-  private boolean applyTsxLineBreaks = false;
   private final ArrayDeque<InterpolationKind> interpolationKindStack;
 
   public enum InterpolationKind {
@@ -46,17 +45,21 @@ class FormattingContext implements AutoCloseable {
     TTL,
   }
 
-  FormattingContext() {
-    this(/* startingIndent= */ 0);
-  }
-
-  /** @param startingIndent The number of columns to consider the "baseline" indentation level. */
-  FormattingContext(int startingIndent) {
-    curIndent = Strings.repeat(" ", startingIndent);
-    buf = new StringBuilder(curIndent);
-    initialSize = curIndent.length();
+  FormattingContext(FormatOptions formatOptions) {
+    this.formatOptions = formatOptions;
+    curIndent = "";
+    buf = new StringBuilder();
+    initialSize = 0;
     interpolationKindStack = new ArrayDeque<>();
     interpolationKindStack.push(InterpolationKind.TSX);
+  }
+
+  public FormatOptions getFormatOptions() {
+    return formatOptions;
+  }
+
+  public FormattingContext copyWithSameOptions() {
+    return new FormattingContext(formatOptions);
   }
 
   /**
@@ -65,23 +68,13 @@ class FormattingContext implements AutoCloseable {
    */
   FormattingContext buffer() {
     FormattingContext parent = this;
-    return new FormattingContext() {
+    return new FormattingContext(formatOptions) {
       @Override
       public void close() {
         String buffer = this.toString();
         parent.append(buffer);
       }
     };
-  }
-
-  /**
-   * If {@code applyTsxLineBreaks} is enabled, breaks lines to keep line length under 80 chars, and
-   * does things like split lines between curly/angle braces, to try to make gencode more readable.
-   * TODO: Either figure out a more long-term / sophisticated line breaking strategy, or if we want
-   * to just run the gencode through a formatter.
-   */
-  void enableTsxLineBreaks() {
-    applyTsxLineBreaks = true;
   }
 
   void pushInterpolationKind(InterpolationKind interpolationKind) {
@@ -211,7 +204,7 @@ class FormattingContext implements AutoCloseable {
   }
 
   private void maybeBreakLineInsideTsxElement(String nextAppendContent) {
-    if (!applyTsxLineBreaks || buf.length() == 0) {
+    if (!formatOptions.useTsxLineBreaks() || buf.length() == 0) {
       return;
     }
     if (isRightAngleOrCurlyBracket(getLastChar())
@@ -250,7 +243,7 @@ class FormattingContext implements AutoCloseable {
     boolean prevCharIsSpace = buf.length() > 0 && (buf.charAt(buf.length() - 1) == ' ');
     // TSX safeguard: it's never safe to break a line when there's a space character at the join
     // location.
-    if (applyTsxLineBreaks && (nextCharIsSpace || prevCharIsSpace)) {
+    if (formatOptions.useTsxLineBreaks() && (nextCharIsSpace || prevCharIsSpace)) {
       nextAppendShouldStartNewLine = false;
     }
 

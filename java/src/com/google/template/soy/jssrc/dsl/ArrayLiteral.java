@@ -19,7 +19,6 @@ package com.google.template.soy.jssrc.dsl;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
-import com.google.template.soy.jssrc.restricted.JsExpr;
 import java.util.function.Consumer;
 
 /** Represents a JavaScript array literal expression. */
@@ -42,13 +41,6 @@ public abstract class ArrayLiteral extends Expression {
     for (Expression element : elements()) {
       element.collectRequires(collector);
     }
-  }
-
-  @Override
-  public JsExpr singleExprOrName() {
-    FormattingContext ctx = new FormattingContext();
-    doFormatOutputExpr(ctx);
-    return new JsExpr(ctx.toString(), Integer.MAX_VALUE);
   }
 
   @Override

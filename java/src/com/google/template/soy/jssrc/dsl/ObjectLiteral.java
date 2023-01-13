@@ -20,7 +20,6 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.errorprone.annotations.Immutable;
-import com.google.template.soy.jssrc.restricted.JsExpr;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -49,13 +48,6 @@ abstract class ObjectLiteral extends Expression {
 
   static ObjectLiteral createWithQuotedKeys(Map<String, Expression> object) {
     return create(object, Expression::stringLiteral);
-  }
-
-  @Override
-  public JsExpr singleExprOrName() {
-    FormattingContext ctx = new FormattingContext();
-    ctx.appendOutputExpression(this);
-    return new JsExpr(ctx.toString(), Integer.MAX_VALUE);
   }
 
   @Override

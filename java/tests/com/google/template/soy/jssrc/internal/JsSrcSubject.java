@@ -41,6 +41,7 @@ import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.Expression;
+import com.google.template.soy.jssrc.dsl.FormatOptions;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.PrintNode;
@@ -289,7 +290,7 @@ abstract class JsSrcSubject<T extends Subject> extends Subject {
       generateCode();
 
       String expected = Joiner.on('\n').join(expectedLines);
-      assertThat(chunk.getCode()).isEqualTo(expected);
+      assertThat(chunk.getCode(FormatOptions.JSSRC)).isEqualTo(expected);
 
       return this;
     }

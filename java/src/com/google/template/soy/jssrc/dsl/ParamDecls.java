@@ -45,7 +45,7 @@ public abstract class ParamDecls {
     return new AutoValue_ParamDecls(ImmutableList.copyOf(params), false);
   }
 
-  public String getCode() {
+  public String getCode(FormatOptions formatOptions) {
     if (templateStyle()) {
       if (params().isEmpty()) {
         return "{}: {}";
@@ -58,7 +58,7 @@ public abstract class ParamDecls {
 
       // Generate the dict of param types (e.g. "{amount: number, name?: string}").
       String paramTypesDict =
-          "{" + params().stream().map(ParamDecl::typeDecl).collect(joining(", ")) + "}";
+          "{" + params().stream().map(p -> p.typeDecl(formatOptions)).collect(joining(", ")) + "}";
 
       return paramNamesDict + ": " + paramTypesDict;
     } else {
@@ -70,7 +70,9 @@ public abstract class ParamDecls {
         } else {
           sb.append(", ");
         }
-        sb.append(param.name()).append(": ").append(param.type().singleExprOrName().getText());
+        sb.append(param.name())
+            .append(": ")
+            .append(param.type().singleExprOrName(formatOptions).getText());
       }
       return sb.toString();
     }

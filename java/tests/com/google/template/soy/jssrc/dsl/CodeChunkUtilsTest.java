@@ -37,7 +37,8 @@ public final class CodeChunkUtilsTest {
                 stringLiteral("blah").plus(stringLiteral("blah")),
                 stringLiteral("bleh").plus(stringLiteral("bleh")),
                 number(2).times(number(8))));
-    assertThat(result.getCode()).isEqualTo("'blah' + 'blah' + ('bleh' + 'bleh') + 2 * 8;");
+    assertThat(result.getCode(FormatOptions.JSSRC))
+        .isEqualTo("'blah' + 'blah' + ('bleh' + 'bleh') + 2 * 8;");
   }
 
   @Test
@@ -54,7 +55,9 @@ public final class CodeChunkUtilsTest {
                 stringLiteral("a"),
                 Expression.id("x").assign(stringLiteral("b")),
                 stringLiteral("b")));
-    assertThat(CodeChunkUtils.concatChunks(ImmutableList.of(result, result2)).getCode())
+    assertThat(
+            CodeChunkUtils.concatChunks(ImmutableList.of(result, result2))
+                .getCode(FormatOptions.JSSRC))
         .isEqualTo("'a' + (x = 'b') + 'b' + 'a' + (x = 'b') + 'b';");
   }
 
@@ -66,14 +69,14 @@ public final class CodeChunkUtilsTest {
                 stringLiteral("a"),
                 Expression.id("x").assign(stringLiteral("b")),
                 stringLiteral("c")));
-    assertThat(result.getCode()).isEqualTo("'a' + (x = 'b') + 'c';");
+    assertThat(result.getCode(FormatOptions.JSSRC)).isEqualTo("'a' + (x = 'b') + 'c';");
   }
 
   @Test
   public void testConcatChunksForceString() {
     CodeChunk result =
         CodeChunkUtils.concatChunksForceString(ImmutableList.of(number(2), number(2)));
-    assertThat(result.getCode()).isEqualTo("'' + 2 + 2;");
+    assertThat(result.getCode(FormatOptions.JSSRC)).isEqualTo("'' + 2 + 2;");
   }
 
   @Test
@@ -81,7 +84,7 @@ public final class CodeChunkUtilsTest {
     CodeChunk result =
         CodeChunkUtils.concatChunksForceString(
             ImmutableList.of(number(2), number(2).plus(number(3))));
-    assertThat(result.getCode()).isEqualTo("'' + 2 + (2 + 3);");
+    assertThat(result.getCode(FormatOptions.JSSRC)).isEqualTo("'' + 2 + (2 + 3);");
   }
 
   @Test

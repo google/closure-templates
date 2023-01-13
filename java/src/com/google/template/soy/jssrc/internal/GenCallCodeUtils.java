@@ -37,6 +37,7 @@ import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
 import com.google.template.soy.jssrc.dsl.Expression;
+import com.google.template.soy.jssrc.dsl.FormatOptions;
 import com.google.template.soy.jssrc.dsl.GoogRequire;
 import com.google.template.soy.jssrc.internal.GenJsExprsVisitor.GenJsExprsVisitorFactory;
 import com.google.template.soy.jssrc.restricted.JsExpr;
@@ -264,7 +265,7 @@ public class GenCallCodeUtils {
     // The print directive system continues to use JsExpr, as it is a publicly available API and
     // migrating it to CodeChunk would be a major change. Therefore, we convert our CodeChunks
     // to JsExpr and back here.
-    JsExpr callResult = call.singleExprOrName();
+    JsExpr callResult = call.singleExprOrName(FormatOptions.JSSRC);
     ImmutableSet.Builder<GoogRequire> requiresBuilder = ImmutableSet.builder();
     call.collectRequires(requiresBuilder::add);
     for (SoyPrintDirective directive : callNode.getEscapingDirectives()) {

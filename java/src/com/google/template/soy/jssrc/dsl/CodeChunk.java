@@ -61,28 +61,14 @@ public abstract class CodeChunk {
    * <p>This method is intended to be used at the end of codegen to emit the entire gencode. It
    * should not be used within the codegen system for intermediate representations.
    *
-   * <p>Because the returned code is intended to be used at the end of codegen, it does not end
-   * in a newline.
+   * <p>Because the returned code is intended to be used at the end of codegen, it does not end in a
+   * newline.
    */
-  public final String getCode() {
-    return getCode(0);
-  }
-
-  /**
-   * {@link #doFormatInitialStatements} and {@link Expression#doFormatOutputExpr} are the main
-   * methods subclasses should override to control their formatting. Subclasses should only override
-   * this method in the special case that a code chunk needs to control its formatting when it is
-   * the only chunk being serialized. TODO(user): only one override, can probably be declared
-   * final.
-   *
-   * @param startingIndent The indent level of the foreign code into which this code will be
-   *     inserted. This doesn't affect the correctness of the composed code, only its readability.
-   */
-  String getCode(int startingIndent) {
-    FormattingContext initialStatements = new FormattingContext(startingIndent);
+  public String getCode(FormatOptions formatOptions) {
+    FormattingContext initialStatements = new FormattingContext(formatOptions);
     initialStatements.appendInitialStatements(this);
 
-    FormattingContext outputExprs = new FormattingContext(startingIndent);
+    FormattingContext outputExprs = new FormattingContext(formatOptions);
     if (this instanceof Expression) {
       outputExprs.appendOutputExpression((Expression) this);
       outputExprs.append(';').endLine();
@@ -128,10 +114,11 @@ public abstract class CodeChunk {
   public final JsExpr assertExprAndCollectRequires(Consumer<GoogRequire> collector) {
     Expression expression = (Expression) this;
     if (!expression.isRepresentableAsSingleExpression()) {
-      throw new IllegalStateException(String.format("Not an expr:\n%s", this.getCode()));
+      throw new IllegalStateException(
+          String.format("Not an expr:\n%s", this.getCode(FormatOptions.JSSRC)));
     }
     collectRequires(collector);
-    return expression.singleExprOrName();
+    return expression.singleExprOrName(FormatOptions.JSSRC);
   }
 
   /**

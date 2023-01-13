@@ -33,11 +33,11 @@ public abstract class HtmlAttribute extends Statement {
 
   @Override
   void doFormatInitialStatements(FormattingContext ctx) {
-    ctx.append(children().get(0).getCode());
+    ctx.append(children().get(0).getCode(ctx.getFormatOptions()));
     if (children().size() > 1) {
       ctx.append("=");
       for (Statement attribute : children().subList(1, children().size())) {
-        ctx.append(attribute.getCode());
+        ctx.append(attribute.getCode(ctx.getFormatOptions()));
       }
     }
   }

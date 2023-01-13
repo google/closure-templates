@@ -26,8 +26,8 @@ abstract class Operation extends Expression {
   abstract Associativity associativity();
 
   @Override
-  public final JsExpr singleExprOrName() {
-    FormattingContext ctx = new FormattingContext();
+  public final JsExpr singleExprOrName(FormatOptions formatOptions) {
+    FormattingContext ctx = new FormattingContext(formatOptions);
     ctx.appendOutputExpression(this);
     return new JsExpr(ctx.toString(), precedence());
   }

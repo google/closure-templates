@@ -18,7 +18,6 @@ package com.google.template.soy.jssrc.dsl;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
-import com.google.template.soy.jssrc.restricted.JsExpr;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -50,13 +49,6 @@ public abstract class TsxFragmentElement extends Expression {
     }
     ctx.endLine();
     ctx.appendAll(HtmlTag.createClose("", ImmutableList.of()));
-  }
-
-  @Override
-  public JsExpr singleExprOrName() {
-    FormattingContext ctx = new FormattingContext();
-    ctx.appendOutputExpression(this);
-    return new JsExpr(ctx.toString(), Integer.MAX_VALUE);
   }
 
   @Override

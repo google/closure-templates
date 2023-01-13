@@ -125,7 +125,7 @@ public abstract class GoogRequire implements Comparable<GoogRequire> {
   }
 
   public void writeTo(StringBuilder sb) {
-    sb.append(chunk().getCode()).append('\n');
+    sb.append(chunk().getCode(FormatOptions.JSSRC)).append('\n');
   }
 
   /** For 2 goog requires with the same symbol. Return the perfered one. */

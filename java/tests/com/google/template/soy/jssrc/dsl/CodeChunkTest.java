@@ -28,6 +28,7 @@ import static com.google.template.soy.jssrc.dsl.Expression.ifExpression;
 import static com.google.template.soy.jssrc.dsl.Expression.not;
 import static com.google.template.soy.jssrc.dsl.Expression.number;
 import static com.google.template.soy.jssrc.dsl.Expression.stringLiteral;
+import static com.google.template.soy.jssrc.dsl.FormatOptions.JSSRC;
 import static com.google.template.soy.jssrc.dsl.Statement.forLoop;
 import static com.google.template.soy.jssrc.dsl.Statement.ifStatement;
 import static com.google.template.soy.jssrc.dsl.Statement.returnValue;
@@ -63,9 +64,9 @@ public final class CodeChunkTest {
   public void testSingleExprIsPreserved() {
     JsExpr expr = new JsExpr("1 + 2", PLUS.getPrecedence());
     Expression chunk = fromExpr(expr, ImmutableList.of());
-    assertThat(chunk.getCode()).isEqualTo("1 + 2;");
+    assertThat(chunk.getCode(JSSRC)).isEqualTo("1 + 2;");
     assertThat(chunk.isRepresentableAsSingleExpression()).isTrue();
-    assertThat(chunk.singleExprOrName()).isSameInstanceAs(expr);
+    assertThat(chunk.singleExprOrName(JSSRC)).isSameInstanceAs(expr);
   }
 
   @Test
@@ -79,7 +80,7 @@ public final class CodeChunkTest {
             .build()
             .ref()
             .withInitialStatement(statement);
-    assertThat(tmp.getCode())
+    assertThat(tmp.getCode(JSSRC))
         .isEqualTo(
             JOINER.join(
                 "const $tmp = 3 / 4;",
@@ -94,7 +95,7 @@ public final class CodeChunkTest {
     Expression var = cg.declarationBuilder().setRhs(id("foo").dotAccess("bar")).build().ref();
     Statement statement =
         ifStatement(var.doubleEqualsNull(), id("expensiveFunction").call().asStatement()).build();
-    assertThat(statement.getCode())
+    assertThat(statement.getCode(JSSRC))
         .isEqualTo(
             JOINER.join(
                 "const $tmp = foo.bar;", "if ($tmp == null) {", "  expensiveFunction();", "}"));
@@ -105,7 +106,7 @@ public final class CodeChunkTest {
     Expression var = cg.declarationBuilder().setRhs(number(1).times(number(2))).build().ref();
     Statement statement =
         ifStatement(var.doubleEqualsNull(), id("expensiveFunction").call().asStatement()).build();
-    assertThat(statement.getCode())
+    assertThat(statement.getCode(JSSRC))
         .isEqualTo(
             JOINER.join(
                 "const $tmp = 1 * 2;", "if ($tmp == null) {", "  expensiveFunction();", "}"));
@@ -121,7 +122,7 @@ public final class CodeChunkTest {
                 // That's as it should be, since empty blocks are useless.
                 Statement.of(ImmutableList.of()))
             .build();
-    assertThat(statement.getCode())
+    assertThat(statement.getCode(JSSRC))
         .isEqualTo(JOINER.join("const $tmp = 1 + 2;", "if ($tmp == null) {", "}"));
   }
 
@@ -131,7 +132,7 @@ public final class CodeChunkTest {
         cg.declarationBuilder().setMutable().setRhs(number(1).plus(number(2))).build().ref();
     Statement statement =
         ifStatement(var.doubleEqualsNull(), var.assign(number(3)).asStatement()).build();
-    assertThat(statement.getCode())
+    assertThat(statement.getCode(JSSRC))
         .isEqualTo(JOINER.join("let $tmp = 1 + 2;", "if ($tmp == null) {", "  $tmp = 3;", "}"));
   }
 
@@ -147,7 +148,7 @@ public final class CodeChunkTest {
         Statement.of(
             var.dotAccess("veryExpensiveMethod").call().asStatement(),
             ifStatement(var.doubleEqualsNull(), var.assign(LITERAL_TRUE).asStatement()).build());
-    assertThat(statement.getCode())
+    assertThat(statement.getCode(JSSRC))
         .isEqualTo(
             JOINER.join(
                 "let $tmp = new VeryExpensiveCtor();",
@@ -165,7 +166,7 @@ public final class CodeChunkTest {
             .addElseIf(var.dotAccess("isBar").call(), var.dotAccess("doBar").call().asStatement())
             .setElse(var.dotAccess("doSomethingElse").call().asStatement())
             .build();
-    assertThat(statement.getCode())
+    assertThat(statement.getCode(JSSRC))
         .isEqualTo(
             JOINER.join(
                 "const $tmp = new Foo();",
@@ -187,7 +188,7 @@ public final class CodeChunkTest {
     Statement body = id("fn").call().asStatement();
 
     Statement forChunk = forLoop(localVar, initial, limit, increment, body);
-    assertThat(forChunk.getCode())
+    assertThat(forChunk.getCode(JSSRC))
         .isEqualTo(
             JOINER.join("for (let myVar = 100; myVar < 300; myVar += 10) {", "  fn();", "}"));
 
@@ -197,7 +198,7 @@ public final class CodeChunkTest {
     body = id("fn").call().asStatement();
 
     forChunk = forLoop(localVar, initial, limit, increment, body);
-    assertThat(forChunk.getCode())
+    assertThat(forChunk.getCode(JSSRC))
         .isEqualTo(
             JOINER.join(
                 "for (let myVar = initialFn(); myVar < limitFn(); myVar += incrementFn()) {",
@@ -222,7 +223,7 @@ public final class CodeChunkTest {
 
     Statement forChunk = forLoop(localVar, initial, limit, increment, body);
 
-    assertThat(forChunk.getCode())
+    assertThat(forChunk.getCode(JSSRC))
         .isEqualTo(
             JOINER.join(
                 "const $tmp = foo;",
@@ -256,7 +257,7 @@ public final class CodeChunkTest {
                 id("initializeBar").call().asStatement())
             .setElse(id("runBackupCode").call().asStatement())
             .build();
-    assertThat(conditional.getCode())
+    assertThat(conditional.getCode(JSSRC))
         .isEqualTo(
             JOINER.join(
                 "const $tmp = new Foo();",
@@ -277,8 +278,9 @@ public final class CodeChunkTest {
   @Test
   public void testFieldAccessExpr1() {
     Expression expr = id("foo").bracketAccess(number(1).minus(number(2)));
-    assertThat(expr.getCode()).isEqualTo("foo[1 - 2];"); // trailing semicolon
-    assertThat(expr.singleExprOrName().getText()).isEqualTo("foo[1 - 2]"); // no trailing semicolon
+    assertThat(expr.getCode(JSSRC)).isEqualTo("foo[1 - 2];"); // trailing semicolon
+    assertThat(expr.singleExprOrName(JSSRC).getText())
+        .isEqualTo("foo[1 - 2]"); // no trailing semicolon
     assertThat(expr.isRepresentableAsSingleExpression()).isTrue();
   }
 
@@ -292,7 +294,7 @@ public final class CodeChunkTest {
     Expression bracketAccess = id("foo").bracketAccess(varWithStatement);
     // The chunk inside the brackets cannot be represented as a single expression,
     // so it's extracted to a local variable.
-    assertThat(bracketAccess.getCode())
+    assertThat(bracketAccess.getCode(JSSRC))
         .isEqualTo(
             JOINER.join(
                 "const $tmp = new VeryExpensiveCtor();",
@@ -304,7 +306,7 @@ public final class CodeChunkTest {
   public void testTemporary() {
     Expression first =
         cg.declarationBuilder().setRhs(construct(id("VeryExpensiveCtor"))).build().ref();
-    assertThat(first.doubleEquals(first).getCode())
+    assertThat(first.doubleEquals(first).getCode(JSSRC))
         .isEqualTo("const $tmp = new VeryExpensiveCtor();\n$tmp == $tmp;");
   }
 
@@ -318,7 +320,7 @@ public final class CodeChunkTest {
     Expression first = cg.declarationBuilder().setMutable().setRhs(id("foo")).build().ref();
     Expression second = first.assign(id("bar"));
     assertThat(second.isRepresentableAsSingleExpression()).isFalse();
-    assertThat(second.getCode()).isEqualTo(JOINER.join("let $tmp = foo;", "$tmp = bar;"));
+    assertThat(second.getCode(JSSRC)).isEqualTo(JOINER.join("let $tmp = foo;", "$tmp = bar;"));
   }
 
   @Test
@@ -331,7 +333,7 @@ public final class CodeChunkTest {
                 fooWithStatement.dotAccess("isInitialized").call(),
                 fooWithStatement.dotAccess("launch").call().asStatement())
             .build();
-    assertThat(conditional.getCode())
+    assertThat(conditional.getCode(JSSRC))
         .isEqualTo(
             JOINER.join(
                 "const $tmp = new Foo();",
@@ -352,7 +354,7 @@ public final class CodeChunkTest {
             .setElse(fooWithStatement.dotAccess("abort").call())
             .build(cg);
     // ...so it is initialized once in each branch:
-    assertThat(conditional.getCode())
+    assertThat(conditional.getCode(JSSRC))
         .isEqualTo(
             JOINER.join(
                 "let $tmp$$1;",
@@ -381,7 +383,7 @@ public final class CodeChunkTest {
                 dosPromptWithSyscall.dotAccess("retry").call().asStatement())
             .setElse(id("fail").call().asStatement())
             .build();
-    assertThat(conditional.getCode())
+    assertThat(conditional.getCode(JSSRC))
         .isEqualTo(
             JOINER.join(
                 "if (shouldAbort()) {",
@@ -400,7 +402,7 @@ public final class CodeChunkTest {
   @Test
   public void testSimpleConditionalUsesTernaryExpression() {
     Expression ternary = ifExpression(id("foo"), id("bar")).setElse(id("baz")).build(cg);
-    assertThat(ternary.getCode()).isEqualTo("foo ? bar : baz;");
+    assertThat(ternary.getCode(JSSRC)).isEqualTo("foo ? bar : baz;");
   }
 
   @Test
@@ -410,7 +412,7 @@ public final class CodeChunkTest {
         foo.withInitialStatement(foo.dotAccess("expensiveMethod").call().asStatement());
     Expression ternary =
         ifExpression(fooWithStatement.doubleEqualsNull(), id("bar")).setElse(id("baz")).build(cg);
-    assertThat(ternary.getCode())
+    assertThat(ternary.getCode(JSSRC))
         .isEqualTo(
             JOINER.join(
                 "const $tmp = new Foo();", "$tmp.expensiveMethod();", "$tmp == null ? bar : baz;"));
@@ -425,7 +427,7 @@ public final class CodeChunkTest {
         ifStatement(id("shouldProceed").call(), fooWithStatement)
             .setElse(id("baz").asStatement())
             .build();
-    assertThat(ternary.getCode())
+    assertThat(ternary.getCode(JSSRC))
         .isEqualTo(
             JOINER.join(
                 "if (shouldProceed()) {",
@@ -445,7 +447,7 @@ public final class CodeChunkTest {
         ifStatement(id("shouldProceed").call(), id("bar").asStatement())
             .setElse(fooWithStatement)
             .build();
-    assertThat(ternary.getCode())
+    assertThat(ternary.getCode(JSSRC))
         .isEqualTo(
             JOINER.join(
                 "if (shouldProceed()) {",
@@ -461,7 +463,7 @@ public final class CodeChunkTest {
     Expression conditional = ifExpression(id("foo"), id("bar")).setElse(id("baz")).build(cg);
     Expression var = cg.declarationBuilder().setMutable().setRhs(id("blah")).build().ref();
     Expression assignment = var.assign(conditional);
-    assertThat(assignment.getCode())
+    assertThat(assignment.getCode(JSSRC))
         .isEqualTo(JOINER.join("let $tmp = blah;", "$tmp = foo ? bar : baz;"));
   }
 
@@ -471,7 +473,7 @@ public final class CodeChunkTest {
     Expression fooWithStatement =
         foo.withInitialStatement(foo.dotAccess("expensiveMethod").call().asStatement());
     Expression conditional = ifExpression(id("foo"), fooWithStatement).setElse(id("baz")).build(cg);
-    assertThat(conditional.getCode())
+    assertThat(conditional.getCode(JSSRC))
         .isEqualTo(
             JOINER.join(
                 "let $tmp$$1;",
@@ -492,7 +494,7 @@ public final class CodeChunkTest {
     Expression map =
         cg.declarationBuilder().setRhs(Expression.objectLiteral(ImmutableMap.of())).build().ref();
     Expression mapAssignment = map.bracketAccess(stringLiteral("foo")).assign(fooWithStatement);
-    assertThat(mapAssignment.getCode())
+    assertThat(mapAssignment.getCode(JSSRC))
         .isEqualTo(
             JOINER.join(
                 "const $tmp$$1 = {};",
@@ -508,12 +510,12 @@ public final class CodeChunkTest {
             ImmutableMap.of(
                 "plus", number(15).plus(Expression.number(4)), "string", stringLiteral("hello")));
 
-    assertThat(objectLiteral.getCode()).isEqualTo("{plus: 15 + 4, string: 'hello'};");
+    assertThat(objectLiteral.getCode(JSSRC)).isEqualTo("{plus: 15 + 4, string: 'hello'};");
 
     objectLiteral =
         Expression.objectLiteralWithQuotedKeys(ImmutableMap.of("quoted", stringLiteral("orange")));
 
-    assertThat(objectLiteral.getCode()).isEqualTo("{'quoted': 'orange'};");
+    assertThat(objectLiteral.getCode(JSSRC)).isEqualTo("{'quoted': 'orange'};");
   }
 
   @Test
@@ -522,7 +524,7 @@ public final class CodeChunkTest {
         ifExpression(id("a").assign(id("b")).doubleEquals(id("c")), id("d"))
             .setElse(id("e"))
             .build(cg);
-    assertThat(conditional.getCode()).isEqualTo("(a = b) == c ? d : e;");
+    assertThat(conditional.getCode(JSSRC)).isEqualTo("(a = b) == c ? d : e;");
   }
 
   @Test
@@ -531,18 +533,18 @@ public final class CodeChunkTest {
     Expression fooWithStatement =
         foo.withInitialStatement(foo.dotAccess("expensiveMethod").call().asStatement());
 
-    assertThat(fooWithStatement.getCode())
+    assertThat(fooWithStatement.getCode(JSSRC))
         .isEqualTo(JOINER.join("const $tmp = new Foo();", "$tmp.expensiveMethod();"));
-    assertThat(fooWithStatement.singleExprOrName().getText()).isEqualTo("$tmp");
+    assertThat(fooWithStatement.singleExprOrName(JSSRC).getText()).isEqualTo("$tmp");
 
     Expression val2 = fooWithStatement.doubleEqualsNull();
-    assertThat(val2.getCode())
+    assertThat(val2.getCode(JSSRC))
         .isEqualTo(
             JOINER.join("const $tmp = new Foo();", "$tmp.expensiveMethod();", "$tmp == null;"));
-    assertThat(val2.singleExprOrName().getText()).isEqualTo("$tmp == null");
+    assertThat(val2.singleExprOrName(JSSRC).getText()).isEqualTo("$tmp == null");
 
     Statement val3 = cg.declarationBuilder().setRhs(val2.plus(number(1))).build();
-    assertThat(val3.getCode())
+    assertThat(val3.getCode(JSSRC))
         .isEqualTo(
             JOINER.join(
                 "const $tmp = new Foo();",
@@ -553,24 +555,24 @@ public final class CodeChunkTest {
   @Test
   public void testPrecedence() {
     Expression call = id("a").plus(id("b")).call(id("c"), id("d"));
-    assertThat(call.getCode()).isEqualTo("(a + b)(c, d);");
+    assertThat(call.getCode(JSSRC)).isEqualTo("(a + b)(c, d);");
 
     Expression ternary = ifExpression(id("a").assign(id("b")), id("c")).setElse(id("d")).build(cg);
-    assertThat(ternary.getCode()).isEqualTo("(a = b) ? c : d;");
+    assertThat(ternary.getCode(JSSRC)).isEqualTo("(a = b) ? c : d;");
   }
 
   @Test
   public void testPrecedenceForLeafs() {
     Expression negate = not(id("a"));
-    assertThat(negate.getCode()).isEqualTo("!a;");
+    assertThat(negate.getCode(JSSRC)).isEqualTo("!a;");
     negate = not(id("a").plus(id("b")));
     // The argument to not() is a structured code chunk with lower precedence.
     // It should be parenthesized.
-    assertThat(negate.getCode()).isEqualTo("!(a + b);");
+    assertThat(negate.getCode(JSSRC)).isEqualTo("!(a + b);");
     negate = not(fromExpr(new JsExpr("a + b", PLUS.getPrecedence()), ImmutableList.of()));
     // Even though the argument to not() is a flat JsExpr, its precedence is preserved,
     // so it should be parenthesized.
-    assertThat(negate.getCode()).isEqualTo("!(a + b);");
+    assertThat(negate.getCode(JSSRC)).isEqualTo("!(a + b);");
   }
 
   @Test
@@ -578,12 +580,12 @@ public final class CodeChunkTest {
     Expression leaf = id("a").assign(id("b"));
     Expression branch = leaf.assign(id("c"));
     // assignment is right-associative, so requires parens when appearing as the left operand...
-    assertThat(branch.getCode()).isEqualTo("(a = b) = c;");
+    assertThat(branch.getCode(JSSRC)).isEqualTo("(a = b) = c;");
 
     leaf = id("b").assign(id("c"));
     branch = id("a").assign(leaf);
     // ...but not when appearing as the right operand.
-    assertThat(branch.getCode()).isEqualTo("a = b = c;");
+    assertThat(branch.getCode(JSSRC)).isEqualTo("a = b = c;");
   }
 
   @Test
@@ -591,12 +593,12 @@ public final class CodeChunkTest {
     Expression leaf = ifExpression(id("a"), id("b")).setElse(id("c")).build(cg);
     Expression branch = ifExpression(leaf, id("d")).setElse(id("e")).build(cg);
     // ?: is right-associative, so requires parens when appearing as the left operand...
-    assertThat(branch.getCode()).isEqualTo("(a ? b : c) ? d : e;");
+    assertThat(branch.getCode(JSSRC)).isEqualTo("(a ? b : c) ? d : e;");
 
     leaf = ifExpression(id("c"), id("d")).setElse(id("e")).build(cg);
     branch = ifExpression(id("a"), id("b")).setElse(leaf).build(cg);
     // ...but not when appearing as the right operand.
-    assertThat(branch.getCode()).isEqualTo("a ? b : c ? d : e;");
+    assertThat(branch.getCode(JSSRC)).isEqualTo("a ? b : c ? d : e;");
   }
 
   @Test
@@ -604,15 +606,15 @@ public final class CodeChunkTest {
     JsExpr wrongPrecedence =
         new JsExpr("a / b", Integer.MAX_VALUE); // should be Operator.DIVIDE_BY.getPrecedence()
     Expression bad = not(fromExpr(wrongPrecedence, ImmutableList.of()));
-    assertThat(bad.getCode()).isEqualTo("!a / b;");
+    assertThat(bad.getCode(JSSRC)).isEqualTo("!a / b;");
     Expression good = not(dontTrustPrecedenceOf(wrongPrecedence, ImmutableList.of()));
-    assertThat(good.getCode()).isEqualTo("!(a / b);");
+    assertThat(good.getCode(JSSRC)).isEqualTo("!(a / b);");
   }
 
   @Test
   public void testAnd_BothOperandsRepresentableAsSingleExprs() {
     Expression and = id("a").and(id("b"), cg);
-    assertThat(and.getCode()).isEqualTo("a && b;");
+    assertThat(and.getCode(JSSRC)).isEqualTo("a && b;");
   }
 
   @Test
@@ -623,7 +625,7 @@ public final class CodeChunkTest {
 
     // The first operand is always evaluated, so no explicit short-circuiting logic is needed.
     Expression and = fooWithStatement.and(id("a"), cg);
-    assertThat(and.getCode())
+    assertThat(and.getCode(JSSRC))
         .isEqualTo(JOINER.join("const $tmp = new Foo();", "$tmp.expensiveMethod();", "$tmp && a;"));
   }
 
@@ -635,7 +637,7 @@ public final class CodeChunkTest {
 
     // The second operand is evaluated only if the first operand evals as true.
     Expression and = id("a").and(fooWithStatement, cg);
-    assertThat(and.getCode())
+    assertThat(and.getCode(JSSRC))
         .isEqualTo(
             JOINER.join(
                 "let $tmp$$1 = a;",
@@ -658,7 +660,7 @@ public final class CodeChunkTest {
 
     // The second operand is evaluated only if the first operand evals as true.
     Expression and = fooWithStatement.and(barWithStatement, cg);
-    assertThat(and.getCode())
+    assertThat(and.getCode(JSSRC))
         .isEqualTo(
             JOINER.join(
                 "const $tmp = new Foo();",
@@ -674,7 +676,7 @@ public final class CodeChunkTest {
   @Test
   public void testOr_BothOperandsRepresentableAsSingleExprs() {
     Expression or = id("a").or(id("b"), cg);
-    assertThat(or.getCode()).isEqualTo("a || b;");
+    assertThat(or.getCode(JSSRC)).isEqualTo("a || b;");
   }
 
   @Test
@@ -685,7 +687,7 @@ public final class CodeChunkTest {
 
     // The first operand is always evaluated, so no explicit short-circuiting logic is needed.
     Expression or = fooWithStatement.or(id("a"), cg);
-    assertThat(or.getCode())
+    assertThat(or.getCode(JSSRC))
         .isEqualTo(JOINER.join("const $tmp = new Foo();", "$tmp.expensiveMethod();", "$tmp || a;"));
   }
 
@@ -697,7 +699,7 @@ public final class CodeChunkTest {
 
     // The second operand is evaluated only if the first operand is false.
     Expression or = id("a").or(fooWithStatement, cg);
-    assertThat(or.getCode())
+    assertThat(or.getCode(JSSRC))
         .isEqualTo(
             JOINER.join(
                 "let $tmp$$1 = a;",
@@ -720,7 +722,7 @@ public final class CodeChunkTest {
 
     // The second operand is evaluated only if the first operand is false.
     Expression or = fooWithStatement.or(barWithStatement, cg);
-    assertThat(or.getCode())
+    assertThat(or.getCode(JSSRC))
         .isEqualTo(
             JOINER.join(
                 "const $tmp = new Foo();",
@@ -738,13 +740,13 @@ public final class CodeChunkTest {
     Expression expression = Expression.THIS.dotAccess("myVar");
     Statement statement = expression.asStatement();
 
-    assertThat(statement.getCode()).isEqualTo("this.myVar;");
+    assertThat(statement.getCode(JSSRC)).isEqualTo("this.myVar;");
 
     statement =
         expression.asStatement(
             JsDoc.builder().addParameterizedAnnotation("private", "string").build());
 
-    assertThat(statement.getCode())
+    assertThat(statement.getCode(JSSRC))
         .isEqualTo(JOINER.join("/** @private {string} */", "this.myVar;"));
   }
 
@@ -753,57 +755,37 @@ public final class CodeChunkTest {
     // First use an automatic var name for the declaration.
     VariableDeclaration decl = cg.declarationBuilder().setRhs(id("bar")).build();
     // Even though this is the whole program, the var is declared.
-    assertThat(decl.getCode()).isEqualTo("const $tmp = bar;");
+    assertThat(decl.getCode(JSSRC)).isEqualTo("const $tmp = bar;");
     // If this is being used in another chunk, the var must be declared to prevent re-evaluation
     Expression use = decl.ref().call(decl.ref());
-    assertThat(use.getCode()).isEqualTo(JOINER.join("const $tmp = bar;", "$tmp($tmp);"));
+    assertThat(use.getCode(JSSRC)).isEqualTo(JOINER.join("const $tmp = bar;", "$tmp($tmp);"));
     // If the program is partially being built elsewhere,
     // something could reference the variable, so we need to keep it.
-    assertThat(decl.getCode(0)).isEqualTo("const $tmp = bar;");
+    assertThat(decl.getCode(JSSRC)).isEqualTo("const $tmp = bar;");
 
     // Now use a custom var name for the declaration.
     decl = VariableDeclaration.builder("foo").setRhs(id("bar")).build();
     // Even though this is the whole program, the var is declared.
-    assertThat(decl.getCode()).isEqualTo("const foo = bar;");
+    assertThat(decl.getCode(JSSRC)).isEqualTo("const foo = bar;");
     // If this is being used in another chunk, foo must be declared to prevent re-evaluation
     use = decl.ref().call(decl.ref());
-    assertThat(use.getCode()).isEqualTo(JOINER.join("const foo = bar;", "foo(foo);"));
+    assertThat(use.getCode(JSSRC)).isEqualTo(JOINER.join("const foo = bar;", "foo(foo);"));
     // If the program is partially being built elsewhere, something could reference foo
     // so we need to keep it.
-    assertThat(decl.getCode(0)).isEqualTo("const foo = bar;");
-    assertThat(use.getCode(0)).isEqualTo(JOINER.join("const foo = bar;", "foo(foo);"));
-  }
-
-  @Test
-  public void testCustomIndentation() {
-    // need to use code chunks that aren't CodeChunk.WithValues to avoid being turned into a ternary
-    Statement statement =
-        ifStatement(id("foo"), Statement.returnValue(id("bar").call()))
-            .setElse(Statement.returnValue(id("baz").dotAccess("method").call()))
-            .build();
-    assertThat(statement.getCode(2))
-        .isEqualTo(
-            JOINER.join(
-                "  if (foo) {",
-                "    return bar();",
-                "  } else {",
-                "    return baz.method();",
-                "  }"));
-
-    Statement decl = VariableDeclaration.builder("blah").setRhs(number(2)).build();
-    assertThat(decl.getCode(4)).isEqualTo("    const blah = 2;");
+    assertThat(decl.getCode(JSSRC)).isEqualTo("const foo = bar;");
+    assertThat(use.getCode(JSSRC)).isEqualTo(JOINER.join("const foo = bar;", "foo(foo);"));
   }
 
   @Test
   public void testReturn() {
     Statement returnStatement = returnValue(id("blah"));
-    assertThat(returnStatement.getCode()).isEqualTo("return blah;");
+    assertThat(returnStatement.getCode(JSSRC)).isEqualTo("return blah;");
 
     Expression foo = cg.declarationBuilder().setRhs(construct(id("Foo"))).build().ref();
     Expression fooWithStatement =
         foo.withInitialStatement(foo.dotAccess("expensiveMethod").call().asStatement());
     returnStatement = returnValue(fooWithStatement);
-    assertThat(returnStatement.getCode())
+    assertThat(returnStatement.getCode(JSSRC))
         .isEqualTo(
             JOINER.join("const $tmp = new Foo();", "$tmp.expensiveMethod();", "return $tmp;"));
   }
@@ -811,18 +793,18 @@ public final class CodeChunkTest {
   @Test
   public void testReturnNothing() {
     Statement returnNothingStatement = Statement.returnNothing();
-    assertThat(returnNothingStatement.getCode()).isEqualTo("return;");
+    assertThat(returnNothingStatement.getCode(JSSRC)).isEqualTo("return;");
   }
 
   @Test
   public void testThrow() {
     Statement throwStatement = throwValue(construct(id("Error"), stringLiteral("blah")));
-    assertThat(throwStatement.getCode()).isEqualTo("throw new Error('blah');");
+    assertThat(throwStatement.getCode(JSSRC)).isEqualTo("throw new Error('blah');");
 
     Expression foo =
         cg.declarationBuilder().setRhs(construct(id("Error"), stringLiteral("blah"))).build().ref();
     throwStatement = throwValue(foo);
-    assertThat(throwStatement.getCode())
+    assertThat(throwStatement.getCode(JSSRC))
         .isEqualTo(JOINER.join("const $tmp = new Error('blah');", "throw $tmp;"));
   }
 
@@ -863,7 +845,7 @@ public final class CodeChunkTest {
                 foo.dotAccess("bazOrQuux").call().asStatement())
             .setDefault(foo.dotAccess("somethingElse").call().asStatement())
             .build();
-    assertThat(switchStatement.getCode())
+    assertThat(switchStatement.getCode(JSSRC))
         .isEqualTo(
             JOINER.join(
                 "switch (foo.getStuff()) {",
@@ -898,7 +880,7 @@ public final class CodeChunkTest {
                 fooWithStatement.dotAccess("bazOrFoo2").call().asStatement())
             .setDefault(fooWithStatement.dotAccess("somethingElse").call().asStatement())
             .build();
-    assertThat(switchStatement.getCode())
+    assertThat(switchStatement.getCode(JSSRC))
         .isEqualTo(
             JOINER.join(
                 // The initial statements of the switch expression are hoisted to the top
@@ -927,7 +909,8 @@ public final class CodeChunkTest {
     jsDocBuilder.addParameterizedAnnotation("type", "boolean");
     VariableDeclaration variable =
         VariableDeclaration.builder("foo").setJsDoc(jsDocBuilder.build()).build();
-    assertThat(variable.getCode()).isEqualTo(JOINER.join("/** @type {boolean} */", "let foo;"));
+    assertThat(variable.getCode(JSSRC))
+        .isEqualTo(JOINER.join("/** @type {boolean} */", "let foo;"));
   }
 
   @Test
@@ -939,7 +922,7 @@ public final class CodeChunkTest {
     ClassExpression fooClass = ClassExpression.create(ImmutableList.of(method));
     VariableDeclaration fooClassExpression =
         VariableDeclaration.builder("FooClassTemplate").setRhs(fooClass).build();
-    assertThat(fooClassExpression.getCode())
+    assertThat(fooClassExpression.getCode(JSSRC))
         .isEqualTo(
             JOINER.join(
                 "const FooClassTemplate = class {",
@@ -953,7 +936,7 @@ public final class CodeChunkTest {
         ClassExpression.create(id("BaseClassTemplate"), ImmutableList.of(method));
     VariableDeclaration fooSubclassExpression =
         VariableDeclaration.builder("FooClassTemplate").setRhs(fooSubclass).build();
-    assertThat(fooSubclassExpression.getCode())
+    assertThat(fooSubclassExpression.getCode(JSSRC))
         .isEqualTo(
             JOINER.join(
                 "const FooClassTemplate = class extends BaseClassTemplate {",

@@ -24,6 +24,7 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.Expression;
+import com.google.template.soy.jssrc.dsl.FormatOptions;
 import com.google.template.soy.plugin.javascript.restricted.SoyJavaScriptSourceFunction;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -46,7 +47,7 @@ public final class JavaScriptValueFactoryImplTest {
     Expression expr = applyFunction(moduleExportFn);
 
     assertThat(getRequires(expr)).isEqualTo("goog.require('foo.bar');\n");
-    assertThat(expr.getCode()).isEqualTo("goog.module.get('foo.bar').baz.qux;");
+    assertThat(expr.getCode(FormatOptions.JSSRC)).isEqualTo("goog.module.get('foo.bar').baz.qux;");
   }
 
   @Test
@@ -54,7 +55,7 @@ public final class JavaScriptValueFactoryImplTest {
     Expression expr = applyFunction(callModuleFn);
 
     assertThat(getRequires(expr)).isEqualTo("goog.require('foo.bar');\n");
-    assertThat(expr.getCode()).isEqualTo("goog.module.get('foo.bar').baz();");
+    assertThat(expr.getCode(FormatOptions.JSSRC)).isEqualTo("goog.module.get('foo.bar').baz();");
   }
 
   @Test
@@ -65,7 +66,7 @@ public final class JavaScriptValueFactoryImplTest {
             (factory, args, context) -> factory.callNamespaceFunction("foo.bar", "foo.bar"));
 
     assertThat(getRequires(expr)).isEqualTo("goog.require('foo.bar');\n");
-    assertThat(expr.getCode()).isEqualTo("foo.bar();");
+    assertThat(expr.getCode(FormatOptions.JSSRC)).isEqualTo("foo.bar();");
   }
 
   @Test
@@ -75,7 +76,7 @@ public final class JavaScriptValueFactoryImplTest {
             (factory, args, context) -> factory.callNamespaceFunction("foo.bar", "foo.bar.baz"));
 
     assertThat(getRequires(expr)).isEqualTo("goog.require('foo.bar');\n");
-    assertThat(expr.getCode()).isEqualTo("foo.bar.baz();");
+    assertThat(expr.getCode(FormatOptions.JSSRC)).isEqualTo("foo.bar.baz();");
   }
 
   @Test

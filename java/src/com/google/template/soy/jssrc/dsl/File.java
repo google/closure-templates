@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
@@ -31,19 +32,9 @@ public abstract class File extends Statement {
 
   abstract ImmutableList<Statement> children();
 
-  /**
-   * Whether to apply {@code FormattingContext.applyTsxLineBreaks()}, which will do things like
-   * limit lines to 80 chars, and break lines between curly braces to try to make the gencode more
-   * readable.
-   */
-  abstract boolean useTsxLineBreaks();
-
   public static File create(
-      String fileOverviewComments,
-      CodeChunk imports,
-      ImmutableList<Statement> children,
-      boolean useTsxLineBreaks) {
-    return new AutoValue_File(fileOverviewComments, imports, children, useTsxLineBreaks);
+      String fileOverviewComments, CodeChunk imports, ImmutableList<Statement> children) {
+    return new AutoValue_File(fileOverviewComments, imports, children);
   }
 
   @Override
@@ -54,9 +45,6 @@ public abstract class File extends Statement {
 
   @Override
   void doFormatInitialStatements(FormattingContext ctx) {
-    if (useTsxLineBreaks()) {
-      ctx.enableTsxLineBreaks();
-    }
     ctx.append(fileOverviewComments());
 
     if (!(imports() instanceof StatementList && ((StatementList) imports()).isEmpty())) {

@@ -53,8 +53,11 @@ public abstract class ParamDecl {
     return name() + defaultValue().map(value -> " = " + value).orElse("");
   }
 
-  public String typeDecl() {
-    return name() + (isOptional() ? "?" : "") + ": " + type().singleExprOrName().getText();
+  public String typeDecl(FormatOptions formatOptions) {
+    return name()
+        + (isOptional() ? "?" : "")
+        + ": "
+        + type().singleExprOrName(formatOptions).getText();
   }
 
   public void collectRequires(Consumer<GoogRequire> collector) {

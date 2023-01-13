@@ -17,7 +17,6 @@ package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.jssrc.restricted.JsExpr;
 import java.util.function.Consumer;
 
 /**
@@ -51,13 +50,6 @@ public abstract class FunctionDeclaration extends Expression {
   public static FunctionDeclaration createArrowFunction(JsDoc jsDoc, Expression body) {
     return new AutoValue_FunctionDeclaration(
         /* initialStatements= */ ImmutableList.of(), jsDoc, body, true);
-  }
-
-  @Override
-  public JsExpr singleExprOrName() {
-    FormattingContext ctx = new FormattingContext();
-    ctx.appendOutputExpression(this);
-    return new JsExpr(ctx.toString(), Integer.MAX_VALUE);
   }
 
   @Override

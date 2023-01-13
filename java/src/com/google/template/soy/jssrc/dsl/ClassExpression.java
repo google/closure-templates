@@ -17,7 +17,6 @@ package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.jssrc.restricted.JsExpr;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
@@ -47,13 +46,6 @@ public abstract class ClassExpression extends Expression {
 
   public static ClassExpression create(ImmutableList<MethodDeclaration> methods) {
     return new AutoValue_ClassExpression(ImmutableList.of() /* initialStatements */, null, methods);
-  }
-
-  @Override
-  public JsExpr singleExprOrName() {
-    FormattingContext ctx = new FormattingContext();
-    ctx.appendOutputExpression(this);
-    return new JsExpr(ctx.toString(), Integer.MAX_VALUE);
   }
 
   @Override
@@ -110,13 +102,6 @@ public abstract class ClassExpression extends Expression {
     public static MethodDeclaration create(String name, JsDoc jsDoc, Statement body) {
       return new AutoValue_ClassExpression_MethodDeclaration(
           /* initialStatements= */ ImmutableList.of(), name, jsDoc, body);
-    }
-
-    @Override
-    public JsExpr singleExprOrName() {
-      FormattingContext ctx = new FormattingContext();
-      ctx.appendOutputExpression(this);
-      return new JsExpr(ctx.toString(), Integer.MAX_VALUE);
     }
 
     @Override

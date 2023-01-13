@@ -18,6 +18,7 @@ package com.google.template.soy.jssrc.internal;
 
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
+import com.google.template.soy.jssrc.dsl.FormatOptions;
 import com.google.template.soy.jssrc.dsl.GoogRequire;
 import java.util.Map;
 import java.util.TreeMap;
@@ -89,7 +90,7 @@ public final class JsCodeBuilder {
    */
   public JsCodeBuilder append(CodeChunk codeChunk) {
     codeChunk.collectRequires(this::addGoogRequire);
-    return appendLine(codeChunk.getCode());
+    return appendLine(codeChunk.getCode(FormatOptions.JSSRC));
   }
 
   public JsCodeBuilder appendNullable(@Nullable CodeChunk codeChunk) {

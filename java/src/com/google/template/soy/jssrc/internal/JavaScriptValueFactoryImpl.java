@@ -31,6 +31,7 @@ import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
 import com.google.template.soy.jssrc.dsl.Expression;
+import com.google.template.soy.jssrc.dsl.FormatOptions;
 import com.google.template.soy.jssrc.dsl.GoogRequire;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.plugin.javascript.restricted.JavaScriptPluginContext;
@@ -277,7 +278,7 @@ public final class JavaScriptValueFactoryImpl extends JavaScriptValueFactory {
 
     @Override
     public String toString() {
-      return impl.getCode();
+      return impl.getCode(FormatOptions.JSSRC);
     }
   }
 }

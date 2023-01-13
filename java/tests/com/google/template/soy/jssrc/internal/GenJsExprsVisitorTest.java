@@ -27,6 +27,7 @@ import com.google.template.soy.base.internal.UniqueNameGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.Expression;
+import com.google.template.soy.jssrc.dsl.FormatOptions;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
@@ -198,7 +199,7 @@ public final class GenJsExprsVisitorTest {
       Expression actual = actualChunks.get(i);
       String expected = expectedChunks[i];
 
-      assertThat(actual.getCode()).isEqualTo(expected);
+      assertThat(actual.getCode(FormatOptions.JSSRC)).isEqualTo(expected);
     }
   }
 

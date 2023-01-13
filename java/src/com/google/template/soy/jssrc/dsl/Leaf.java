@@ -77,7 +77,7 @@ abstract class Leaf extends Expression {
   }
 
   @Override
-  public JsExpr singleExprOrName() {
+  public JsExpr singleExprOrName(FormatOptions formatOptions) {
     return value();
   }
 

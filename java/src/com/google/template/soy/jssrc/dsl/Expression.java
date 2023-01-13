@@ -81,7 +81,7 @@ public abstract class Expression extends CodeChunk {
         }
 
         @Override
-        public JsExpr singleExprOrName() {
+        public JsExpr singleExprOrName(FormatOptions formatOptions) {
           return new JsExpr("$$SOY_INTERNAL_ERROR_EXPR", Integer.MAX_VALUE);
         }
       };
@@ -562,7 +562,11 @@ public abstract class Expression extends CodeChunk {
    * <p>This method should rarely be used, but is needed when interoperating with parts of the
    * codegen system that do not yet understand CodeChunks (e.g. {@link SoyJsSrcFunction}).
    */
-  public abstract JsExpr singleExprOrName();
+  public JsExpr singleExprOrName(FormatOptions formatOptions) {
+    FormattingContext ctx = new FormattingContext(formatOptions);
+    doFormatOutputExpr(ctx);
+    return new JsExpr(ctx.toString(), Integer.MAX_VALUE);
+  }
 
   /**
    * If this chunk can be represented as a single expression, writes that single expression to the

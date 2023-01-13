@@ -52,7 +52,7 @@ public class TsArrowFunction extends Expression {
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
     try (FormattingContext buffer = ctx.buffer()) {
-      buffer.append(String.format("(%s)", params.getCode()));
+      buffer.append(String.format("(%s)", params.getCode(ctx.getFormatOptions())));
       if (returnType.isPresent()) {
         buffer.append(": ");
         buffer.appendOutputExpression(returnType.get());
@@ -84,7 +84,7 @@ public class TsArrowFunction extends Expression {
   void doFormatInitialStatements(FormattingContext ctx) {}
 
   @Override
-  public JsExpr singleExprOrName() {
+  public JsExpr singleExprOrName(FormatOptions formatOptions) {
     return new JsExpr("$$SOY_INTERNAL_ERROR_EXPR", Integer.MAX_VALUE);
   }
 }

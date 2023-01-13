@@ -22,6 +22,7 @@ import com.google.common.truth.Truth;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.Expression;
+import com.google.template.soy.jssrc.dsl.FormatOptions;
 import com.google.template.soy.jssrc.internal.NullSafeAccumulator.FieldAccess;
 import com.google.template.soy.testing.Foo;
 import org.junit.Test;
@@ -231,7 +232,7 @@ public final class NullSafeAccumulatorTest {
       String actualCode =
           actual
               .result(CodeChunk.Generator.create(JsSrcNameGenerators.forLocalVariables()))
-              .getCode();
+              .getCode(FormatOptions.JSSRC);
       check("getCode()").that(actualCode).isEqualTo(expectedCode);
     }
   }

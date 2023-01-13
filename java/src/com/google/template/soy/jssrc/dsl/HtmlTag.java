@@ -55,7 +55,7 @@ public abstract class HtmlTag extends Statement {
     ctx.append(tagName());
     for (Statement attribute : attributes()) {
       ctx.append(" ");
-      ctx.append(attribute.getCode());
+      ctx.append(attribute.getCode(ctx.getFormatOptions()));
     }
     ctx.append(">");
     if (isOpen()) {

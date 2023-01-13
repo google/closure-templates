@@ -150,7 +150,8 @@ public class ImportsBuilder {
           list.addSymbolRaw(symbol);
         }
       } else {
-        throw new IllegalArgumentException("Not an import: " + require.chunk().getCode());
+        throw new IllegalArgumentException(
+            "Not an import: " + require.chunk().getCode(FormatOptions.JSSRC));
       }
     }
   }

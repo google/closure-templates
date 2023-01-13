@@ -72,8 +72,8 @@ public abstract class VariableDeclaration extends Statement {
    * </code> Override the superclass implementation to omit the trailing expression.
    */
   @Override
-  String getCode(int startingIndent) {
-    FormattingContext ctx = new FormattingContext(startingIndent);
+  public String getCode(FormatOptions formatOptions) {
+    FormattingContext ctx = new FormattingContext(formatOptions);
     ctx.appendInitialStatements(this);
     return ctx.toString();
   }

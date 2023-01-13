@@ -45,20 +45,20 @@ abstract class StringLiteral extends Expression {
 
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
-    ctx.append(quoteAndEscape(literalValue()));
+    ctx.append(quoteAndEscape(literalValue(), ctx.getFormatOptions()));
   }
 
   @Override
-  public JsExpr singleExprOrName() {
-    return new JsExpr(quoteAndEscape(literalValue()), Integer.MAX_VALUE);
+  public JsExpr singleExprOrName(FormatOptions formatOptions) {
+    return new JsExpr(quoteAndEscape(literalValue(), formatOptions), Integer.MAX_VALUE);
   }
 
-  private static String quoteAndEscape(String literal) {
+  private static String quoteAndEscape(String literal, FormatOptions formatOptions) {
     // Escape non-ASCII characters since browsers are inconsistent in how they interpret utf-8 in
     // JS source files.
     String escaped =
         BaseUtils.escapeToWrappedSoyString(
-            literal, /* shouldEscapeToAscii= */ true, QuoteStyle.SINGLE);
+            literal, formatOptions.htmlEscapeStrings(), QuoteStyle.SINGLE);
 
     // </script in a JavaScript string will end the current script tag in most browsers. Escape the
     // forward slash in the string to get around this issue.

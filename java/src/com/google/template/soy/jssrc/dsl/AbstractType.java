@@ -17,7 +17,6 @@
 package com.google.template.soy.jssrc.dsl;
 
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.jssrc.restricted.JsExpr;
 
 /** Abstract super type of non-simple types. */
 public abstract class AbstractType extends Expression {
@@ -29,11 +28,4 @@ public abstract class AbstractType extends Expression {
 
   @Override
   void doFormatInitialStatements(FormattingContext ctx) {}
-
-  @Override
-  public JsExpr singleExprOrName() {
-    FormattingContext ctx = new FormattingContext();
-    doFormatOutputExpr(ctx);
-    return new JsExpr(ctx.toString(), Integer.MAX_VALUE);
-  }
 }

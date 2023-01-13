@@ -34,7 +34,7 @@ abstract class VariableReference extends Expression {
   }
 
   @Override
-  public JsExpr singleExprOrName() {
+  public JsExpr singleExprOrName(FormatOptions options) {
     return new JsExpr(declaration().varName(), Integer.MAX_VALUE);
   }
 

@@ -29,6 +29,7 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.Expression;
+import com.google.template.soy.jssrc.dsl.FormatOptions;
 import com.google.template.soy.shared.internal.InternalPlugins;
 import com.google.template.soy.shared.internal.NoOpScopedData;
 import com.google.template.soy.soytree.CallNode;
@@ -183,6 +184,6 @@ public final class GenCallCodeUtilsTest {
             translationContext,
             errorReporter,
             exprTranslator);
-    return call.getCode();
+    return call.getCode(FormatOptions.JSSRC);
   }
 }

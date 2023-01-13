@@ -19,7 +19,6 @@ package com.google.template.soy.jssrc.dsl;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.Immutable;
-import com.google.template.soy.jssrc.restricted.JsExpr;
 import java.util.function.Consumer;
 
 /** Represents a JavaScript type cast. */
@@ -38,13 +37,6 @@ abstract class Cast extends Expression {
 
   static Cast create(Expression expr, String typeExpr, ImmutableSet<GoogRequire> googRequires) {
     return new AutoValue_Cast(expr.initialStatements(), expr, typeExpr, googRequires);
-  }
-
-  @Override
-  public JsExpr singleExprOrName() {
-    FormattingContext ctx = new FormattingContext();
-    doFormatOutputExpr(ctx);
-    return new JsExpr(ctx.toString(), Integer.MAX_VALUE);
   }
 
   @Override

@@ -78,7 +78,8 @@ public final class SoyJsPluginUtilsTest {
             ErrorReporter.exploding());
 
     assertThat(result.isRepresentableAsSingleExpression()).isTrue();
-    assertThat(result.getCode()).isEqualTo("new.directive(expr(), arg1(), arg2());");
+    assertThat(result.getCode(FormatOptions.JSSRC))
+        .isEqualTo("new.directive(expr(), arg1(), arg2());");
   }
 
   @Test
@@ -108,7 +109,7 @@ public final class SoyJsPluginUtilsTest {
             ErrorReporter.exploding());
 
     assertThat(result.isRepresentableAsSingleExpression()).isFalse();
-    assertThat(result.getCode())
+    assertThat(result.getCode(FormatOptions.JSSRC))
         .isEqualTo(
             JOINER.join(
                 "const $tmp = expr();",
@@ -151,7 +152,7 @@ public final class SoyJsPluginUtilsTest {
             ErrorReporter.exploding());
 
     assertThat(result.isRepresentableAsSingleExpression()).isFalse();
-    assertThat(result.getCode())
+    assertThat(result.getCode(FormatOptions.JSSRC))
         .isEqualTo(
             JOINER.join(
                 "const $tmp = expr();",

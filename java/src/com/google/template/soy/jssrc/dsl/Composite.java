@@ -54,10 +54,10 @@ abstract class Composite extends Expression {
    * <p>This heuristic appears to only be depended on by unit tests
    */
   @Override
-  String getCode(int startingIndent) {
+  public String getCode(FormatOptions formatOptions) {
     return value() instanceof VariableReference
-        ? new FormattingContext(startingIndent).appendInitialStatements(this).toString()
-        : super.getCode(startingIndent);
+        ? new FormattingContext(formatOptions).appendInitialStatements(this).toString()
+        : super.getCode(formatOptions);
   }
 
   @Override
@@ -82,7 +82,7 @@ abstract class Composite extends Expression {
   }
 
   @Override
-  public JsExpr singleExprOrName() {
-    return value().singleExprOrName();
+  public JsExpr singleExprOrName(FormatOptions formatOptions) {
+    return value().singleExprOrName(formatOptions);
   }
 }

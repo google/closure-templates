@@ -93,7 +93,7 @@ public abstract class NamedFunctionDeclaration extends Statement {
       ctx.append("declare ");
     }
     ctx.append("function " + name() + "(");
-    ctx.append(params().getCode());
+    ctx.append(params().getCode(ctx.getFormatOptions()));
     ctx.append("): ").appendOutputExpression(returnType());
     if (!isDeclaration()) {
       ctx.append(" ");
