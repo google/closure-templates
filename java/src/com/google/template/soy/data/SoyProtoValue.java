@@ -27,6 +27,7 @@ import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.errorprone.annotations.concurrent.LazyInit;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
+import com.google.protobuf.Descriptors.FieldDescriptor.JavaType;
 import com.google.protobuf.Message;
 import com.google.protobuf.TextFormat;
 import com.google.template.soy.data.restricted.NullData;
@@ -163,6 +164,11 @@ public final class SoyProtoValue extends SoyAbstractValue implements SoyLegacyOb
     if (field == null) {
       throw new IllegalArgumentException(
           "Proto " + proto.getClass().getName() + " does not have a field of name " + name);
+    }
+    FieldDescriptor fd = field.getDescriptor();
+    if (!fd.isRepeated() && fd.getJavaType() == JavaType.MESSAGE && !proto.hasField(fd)) {
+      // Unset singular message fields are always null to match JSPB semantics.
+      return NullData.INSTANCE;
     }
     return field.interpretField(proto);
   }

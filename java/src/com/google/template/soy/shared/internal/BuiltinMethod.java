@@ -99,7 +99,9 @@ public enum BuiltinMethod implements SoyMethod {
             extraErrorMessage);
         return UnknownType.getInstance();
       }
-      return protoType.getFieldType(fieldName);
+      // getExtension is incorrectly typed as non-nullable even though it can be null for singular
+      // fields.
+      return SoyTypes.removeNull(protoType.getFieldType(fieldName));
     }
   },
 
@@ -159,6 +161,7 @@ public enum BuiltinMethod implements SoyMethod {
     }
   },
 
+  // TODO(b/230787876): Also add getReadonly[X] method for singular message fields.
   GET_PROTO_FIELD("get[X]", 0) {
     @Override
     public boolean appliesToBase(SoyType baseType) {
@@ -181,8 +184,7 @@ public enum BuiltinMethod implements SoyMethod {
         return true;
       }
       if (fd.getJavaType() == JavaType.MESSAGE) {
-        // TODO(b/230787876): add support for message getters when we are ready to migrate
-        return false;
+        return true;
       }
       return true;
     }

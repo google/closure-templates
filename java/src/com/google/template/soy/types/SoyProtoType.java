@@ -48,19 +48,24 @@ public final class SoyProtoType extends SoyType {
 
     @Override
     protected SoyType visitMap(FieldDescriptor mapField, SoyType keyType, SoyType valueType) {
-      return interner.getOrCreateMapType(keyType, valueType);
+      // The value type of a map with a message value is non-nullable (as it is for any map value).
+      return interner.getOrCreateMapType(keyType, SoyTypes.removeNull(valueType));
     }
 
     @Override
     protected SoyType visitRepeated(SoyType value) {
-      return interner.getOrCreateListType(value);
+      // The element type of repeated message fields is non-nullable (as it is for any repeated
+      // field).
+      return interner.getOrCreateListType(SoyTypes.removeNull(value));
     }
 
     // For these we could directly invoke the constructor, but by recursing back through the
     // registry we can ensure that we return the cached instance
     @Override
     protected SoyType visitMessage(Descriptor messageType) {
-      return registry.getProtoType(messageType.getFullName());
+      // Message fields are nullable.
+      return interner.getOrCreateUnionType(
+          registry.getProtoType(messageType.getFullName()), NullType.getInstance());
     }
 
     @Override

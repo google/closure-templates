@@ -2423,7 +2423,9 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
             SoyType fieldType = protoType.getFieldType(fieldName);
             if (fieldType != null) {
               checkProtoFieldAccess(protoType, fieldName, sourceLocation);
-              return fieldType;
+              // With field access, message fields are incorrectly marked as non-nullable. Getter
+              // method access will fix this: http://b/230787876
+              return SoyTypes.removeNull(fieldType);
             } else {
               String extraErrorMessage =
                   SoyErrors.getDidYouMeanMessageForProtoFields(

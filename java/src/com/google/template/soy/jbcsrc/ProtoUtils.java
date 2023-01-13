@@ -87,6 +87,7 @@ import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.UnionType;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -324,7 +325,7 @@ final class ProtoUtils {
   private static final class AccessorGenerator extends BaseGenerator {
     final SoyType fieldType;
     final FieldDescriptor descriptor;
-    final boolean retinterpretAbsenceAsNullable;
+    final boolean reinterpretAbsenceAsNullable;
 
     AccessorGenerator(
         SoyProtoType protoType,
@@ -335,8 +336,9 @@ final class ProtoUtils {
       super(SoyRuntimeType.getUnboxedType(protoType).get(), baseExpr);
       this.fieldType = fieldType;
       this.descriptor = protoType.getFieldDescriptor(fieldName);
-      this.retinterpretAbsenceAsNullable =
-          mode == ScalarFieldMode.NULL_IF_UNSET && descriptor.hasPresence();
+      this.reinterpretAbsenceAsNullable =
+          (mode == ScalarFieldMode.NULL_IF_UNSET && descriptor.hasPresence())
+              || descriptor.getJavaType() == JavaType.MESSAGE;
     }
 
     SoyExpression generate() {
@@ -366,7 +368,7 @@ final class ProtoUtils {
       // a subset of fields as specified in SoyProtoType. Though, we should probably actually be
       // testing against jspb semantics.  The best way forward is probably to first invest in
       // support for protos in our integration tests.
-      if (!retinterpretAbsenceAsNullable) {
+      if (!reinterpretAbsenceAsNullable) {
         // Simple case, just call .get and interpret the result
         return interpretField(typedBaseExpr.invoke(getMethodRef));
       } else {
@@ -539,7 +541,7 @@ final class ProtoUtils {
                 FieldVisitor.visitField(descriptor, REPEATED_FIELD_INTERPRETER)));
       }
 
-      if (!descriptor.hasDefaultValue() && retinterpretAbsenceAsNullable) {
+      if (!descriptor.hasDefaultValue() && reinterpretAbsenceAsNullable) {
         final Label endLabel = new Label();
         SoyExpression interpretedField =
             interpretExtensionField(
@@ -656,8 +658,11 @@ final class ProtoUtils {
     }
 
     private SoyExpression messageToSoyExpression(Expression field) {
-      if (fieldType.getKind() == SoyType.Kind.PROTO) {
-        SoyProtoType fieldProtoType = (SoyProtoType) fieldType;
+      // Message fields are nullable, but we don't care about that here. This just needs the raw
+      // proto type and will still work even if the value is null.
+      SoyType nonNullableFieldType = SoyTypes.removeNull(fieldType);
+      if (nonNullableFieldType.getKind() == SoyType.Kind.PROTO) {
+        SoyProtoType fieldProtoType = (SoyProtoType) nonNullableFieldType;
         SoyRuntimeType protoRuntimeType = SoyRuntimeType.getUnboxedType(fieldProtoType).get();
         return SoyExpression.forProto(protoRuntimeType, field);
       } else {

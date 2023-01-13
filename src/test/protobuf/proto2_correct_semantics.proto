@@ -15,6 +15,7 @@ message Proto2ImplicitDefaults {
   optional SubMessage msg = 7;
   message SubMessage {
     optional string field = 1;
+    optional SubMessage msg = 2;
   }
 
   repeated string strings = 9;
