@@ -34,7 +34,7 @@ public abstract class ExpressionStatement extends Statement {
     return new AutoValue_ExpressionStatement(expression, jsDoc);
   }
 
-  abstract Expression expr();
+  public abstract Expression expr();
 
   @Nullable
   abstract JsDoc jsDoc();

@@ -28,18 +28,30 @@ import java.util.function.Consumer;
 @Immutable
 public abstract class TsxElement extends Expression {
 
-  abstract HtmlTag openTag();
+  public abstract HtmlTag openTag();
 
-  abstract HtmlTag closeTag();
+  public abstract HtmlTag closeTag();
 
-  abstract ImmutableList<Statement> body();
+  public abstract ImmutableList<Statement> body();
 
-  public static Expression create(HtmlTag openTag, HtmlTag closeTag, List<Statement> body) {
+  public static TsxElement create(HtmlTag openTag, HtmlTag closeTag, List<Statement> body) {
     checkState(openTag.tagName().equals(closeTag.tagName()));
     checkState(openTag.isOpen());
     checkState(closeTag.isClose());
     return new AutoValue_TsxElement(
         /* initialStatements= */ ImmutableList.of(), openTag, closeTag, ImmutableList.copyOf(body));
+  }
+
+  public TsxElement copyWithTagName(String newTagName) {
+    return create(
+        openTag().copyWithTagName(newTagName), closeTag().copyWithTagName(newTagName), body());
+  }
+
+  public TsxElement copyWithMoreBody(Statement... bodyToAppend) {
+    return create(
+        openTag(),
+        closeTag(),
+        ImmutableList.<Statement>builder().addAll(body()).add(bodyToAppend).build());
   }
 
   @Override

@@ -35,7 +35,7 @@ public abstract class RawText extends Statement {
 
   @Override
   void doFormatInitialStatements(FormattingContext ctx) {
-    if (value().length() == 0) {
+    if (value().isEmpty()) {
       return;
     }
     ctx.append(value());

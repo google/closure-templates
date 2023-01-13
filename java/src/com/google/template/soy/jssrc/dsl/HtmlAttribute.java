@@ -15,30 +15,59 @@
  */
 package com.google.template.soy.jssrc.dsl;
 
+import static com.google.template.soy.jssrc.dsl.Expression.id;
+import static com.google.template.soy.jssrc.dsl.Expression.stringLiteral;
+
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
+import java.util.List;
 import java.util.function.Consumer;
+import javax.annotation.Nullable;
 
 /** Represents an Html attribute. */
 @AutoValue
 @Immutable
 public abstract class HtmlAttribute extends Statement {
 
-  abstract ImmutableList<Statement> children();
+  abstract ImmutableList<CodeChunk> children();
 
-  public static HtmlAttribute create(ImmutableList<Statement> children) {
-    return new AutoValue_HtmlAttribute(children);
+  public static HtmlAttribute create(List<CodeChunk> children) {
+    return new AutoValue_HtmlAttribute(ImmutableList.copyOf(children));
+  }
+
+  public static HtmlAttribute create(String name, @Nullable String value) {
+    ImmutableList.Builder<CodeChunk> attrs = ImmutableList.<CodeChunk>builder().add(id(name));
+    if (value != null) {
+      attrs.add(stringLiteral(value));
+    }
+    return new AutoValue_HtmlAttribute(attrs.build());
+  }
+
+  public static HtmlAttribute create(String name, @Nullable Expression value) {
+    ImmutableList.Builder<CodeChunk> attrs = ImmutableList.<CodeChunk>builder().add(id(name));
+    if (value != null) {
+      attrs.add(TsxPrintNode.create(value));
+    }
+    return new AutoValue_HtmlAttribute(attrs.build());
   }
 
   @Override
   void doFormatInitialStatements(FormattingContext ctx) {
-    ctx.append(children().get(0).getCode(ctx.getFormatOptions()));
+    appendChild(ctx, children().get(0));
     if (children().size() > 1) {
       ctx.append("=");
-      for (Statement attribute : children().subList(1, children().size())) {
-        ctx.append(attribute.getCode(ctx.getFormatOptions()));
+      for (CodeChunk attribute : children().subList(1, children().size())) {
+        appendChild(ctx, attribute);
       }
+    }
+  }
+
+  private void appendChild(FormattingContext ctx, CodeChunk chunk) {
+    if (chunk instanceof Expression) {
+      ((Expression) chunk).doFormatOutputExpr(ctx);
+    } else {
+      ctx.append(chunk.getCode(ctx.getFormatOptions()));
     }
   }
 

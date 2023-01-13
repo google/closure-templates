@@ -18,6 +18,7 @@ package com.google.template.soy.jssrc.dsl;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
+import java.util.List;
 import java.util.function.Consumer;
 
 /** Represents an {@code HtmlTagNode}. */
@@ -32,14 +33,26 @@ public abstract class HtmlTag extends Statement {
 
   abstract boolean isClose();
 
-  abstract ImmutableList<Statement> attributes();
+  abstract ImmutableList<? extends Statement> attributes();
 
-  public static HtmlTag createOpen(String tagName, ImmutableList<Statement> attributes) {
-    return new AutoValue_HtmlTag(tagName, false, attributes);
+  public static HtmlTag createOpen(String tagName, List<? extends Statement> attributes) {
+    return new AutoValue_HtmlTag(tagName, false, ImmutableList.copyOf(attributes));
   }
 
-  public static HtmlTag createClose(String tagName, ImmutableList<Statement> attributes) {
-    return new AutoValue_HtmlTag(tagName, true, attributes);
+  public static HtmlTag createOpen(String tagName, Statement... attributes) {
+    return new AutoValue_HtmlTag(tagName, false, ImmutableList.copyOf(attributes));
+  }
+
+  public static HtmlTag createClose(String tagName, List<? extends Statement> attributes) {
+    return new AutoValue_HtmlTag(tagName, true, ImmutableList.copyOf(attributes));
+  }
+
+  public static HtmlTag createClose(String tagName, Statement... attributes) {
+    return new AutoValue_HtmlTag(tagName, true, ImmutableList.copyOf(attributes));
+  }
+
+  public HtmlTag copyWithTagName(String newTagName) {
+    return new AutoValue_HtmlTag(newTagName, isClose(), attributes());
   }
 
   boolean isOpen() {

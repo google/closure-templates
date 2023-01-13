@@ -144,4 +144,8 @@ public abstract class MessagePlaceholder {
   public Optional<String> example() {
     return summary().example();
   }
+
+  public boolean isDefault() {
+    return !userSuppliedName().isPresent() && !example().isPresent();
+  }
 }
