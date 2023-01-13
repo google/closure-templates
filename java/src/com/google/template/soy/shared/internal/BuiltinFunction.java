@@ -50,6 +50,7 @@ public enum BuiltinFunction implements SoyFunction {
   TO_FLOAT("$$toFloat"),
   DEBUG_SOY_TEMPLATE_INFO("$$debugSoyTemplateInfo"),
   PROTO_INIT("$$protoInit"),
+  VE_DEF("ve_def"),
   ;
 
   public static ImmutableSet<String> names() {
@@ -111,6 +112,8 @@ public enum BuiltinFunction implements SoyFunction {
         return ImmutableSet.of(1);
       case PROTO_INIT:
         throw new UnsupportedOperationException();
+      case VE_DEF:
+        return ImmutableSet.of(2, 3, 4);
     }
     throw new AssertionError(this);
   }
@@ -141,6 +144,7 @@ public enum BuiltinFunction implements SoyFunction {
       case REMAINDER: // implicitly depends on a plural value
       case IS_PRIMARY_MSG_IN_USE: // implicitly depends on a message bundle
       case DEBUG_SOY_TEMPLATE_INFO: // implicitly depends on a renderer param or js compiler flag
+      case VE_DEF:
         return false;
     }
     throw new AssertionError(this);

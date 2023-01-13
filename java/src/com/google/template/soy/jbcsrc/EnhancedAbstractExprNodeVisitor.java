@@ -108,6 +108,8 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
           return visitSoyServerKeyFunction(node);
         case PROTO_INIT:
           return visitProtoInitFunction(node);
+        case VE_DEF:
+          return visitVeDefNode(node);
         case MSG_WITH_ID:
         case REMAINDER:
           // should have been removed earlier in the compiler
@@ -178,6 +180,10 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
   }
 
   T visitVeDataFunction(FunctionNode node) {
+    return visitExprNode(node);
+  }
+
+  T visitVeDefNode(FunctionNode node) {
     return visitExprNode(node);
   }
 

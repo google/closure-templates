@@ -868,6 +868,8 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
           return BooleanData.forValue(debugSoyTemplateInfo);
         case VE_DATA:
           return UNDEFINED_VE_DATA;
+        case VE_DEF:
+          return UNDEFINED_VE;
         case MSG_WITH_ID:
         case REMAINDER:
           // should have been removed earlier in the compiler

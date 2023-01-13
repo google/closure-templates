@@ -548,6 +548,10 @@ JavaScript but all common HTML entities are supported.
 This function expects `kind="html"` values. If passed a string, it returns it
 unmodified.
 
+### `ve_def(id, name[, dataProtoType[, staticMetadata]])` {#ve_def}
+
+This is under development. Do not use.
+
 ### `ve_data(ve, data)` {#ve_data}
 
 See the documentation for the [ve_data literal](expressions.md#ve_data).

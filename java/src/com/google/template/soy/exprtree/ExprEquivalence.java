@@ -228,7 +228,7 @@ public final class ExprEquivalence {
       VarRefNode typedOther = (VarRefNode) other;
       // VarRefs are considered equivalent if they have identical and non-null VarDefns.
       if (node.getDefnDecl() != null || typedOther.getDefnDecl() != null) {
-        return typedOther.getDefnDecl() == node.getDefnDecl();
+        return node.getDefnDecl().isEquivalent(typedOther.getDefnDecl());
       }
       // When getDefnDecl() are null, we should not directly return true. Instead, we should compare
       // the names.
@@ -497,6 +497,11 @@ public final class ExprEquivalence {
         return equivalence.equivalent(this.expr, otherWrapper.expr);
       }
       return false;
+    }
+
+    @Override
+    public String toString() {
+      return expr.toSourceString();
     }
   }
 }

@@ -21,6 +21,7 @@ import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.exprtree.AbstractVarDefn;
+import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.types.SoyType;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -143,5 +144,27 @@ public final class ImportedVar extends AbstractVarDefn {
     } else {
       return nameLocation();
     }
+  }
+
+  private static boolean isProtoImport(ImportedVar var) {
+    return var.type().getKind() == SoyType.Kind.PROTO_TYPE
+        || var.type().getKind() == SoyType.Kind.PROTO_ENUM_TYPE;
+  }
+
+  @Override
+  public boolean isEquivalent(VarDefn other) {
+    // TODO: This logic is incomplete, there are other cases where imported vars should be
+    // considered equivalent. For now, only imported proto types are handled.
+    if (this == other) {
+      return true;
+    }
+    if (!(other instanceof ImportedVar)) {
+      return false;
+    }
+    return hasType()
+        && other.hasType()
+        && isProtoImport(this)
+        && isProtoImport((ImportedVar) other)
+        && type().equals(other.type());
   }
 }

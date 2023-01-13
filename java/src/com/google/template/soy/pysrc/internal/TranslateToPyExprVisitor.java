@@ -617,6 +617,7 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
                 + nonpluginFn.getName()
                 + " function can't be used in templates compiled to Python");
       case VE_DATA:
+      case VE_DEF:
         return NONE;
       case MSG_WITH_ID:
       case REMAINDER:

@@ -960,6 +960,9 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
           return GOOG_DEBUG.and(JsRuntime.SOY_DEBUG_SOY_TEMPLATE_INFO.call(), codeGenerator);
         case VE_DATA:
           return visitVeDataFunction(node);
+        case VE_DEF:
+          // TODO(b/264681212)
+          return LITERAL_NULL;
         case LEGACY_DYNAMIC_TAG:
         case REMAINDER:
         case MSG_WITH_ID:

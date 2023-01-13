@@ -515,6 +515,7 @@ public final class PassManager {
                     loggingConfig,
                     pluginResolver,
                     accumulatedState::registryFromDeps))
+            .add(new VeDefValidationPass(loggingConfig, errorReporter))
             // After ResolveExpressionTypesPass because ResolveExpressionTypesPass verifies usage
             // and types of non-null assertion operators.
             .add(new SimplifyAssertNonNullPass())

@@ -2715,6 +2715,13 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
           // Arg validation is already handled by the VeLogValidationPass
           node.setType(VeDataType.getInstance());
           break;
+        case VE_DEF:
+          if (node.numChildren() >= 3) {
+            node.setType(VeType.of(node.getChild(2).getType().toString()));
+          } else {
+            node.setType(VeType.NO_DATA);
+          }
+          break;
         case TO_FLOAT: // is added to the AST after this pass
         case REMAINDER:
           node.setType(IntType.getInstance());
@@ -2927,7 +2934,8 @@ public final class ResolveExpressionTypesPass implements CompilerFileSetPass.Top
       if (node.isResolved()
           && node.getSoyFunction() != BuiltinFunction.PROTO_INIT
           && node.getSoyFunction() != BuiltinFunction.CSS
-          && node.getSoyFunction() != BuiltinFunction.XID) {
+          && node.getSoyFunction() != BuiltinFunction.XID
+          && node.getSoyFunction() != BuiltinFunction.VE_DEF) {
         notAllowed(node);
       }
       super.visitFunctionNode(node);
