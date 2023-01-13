@@ -1667,6 +1667,21 @@ final class ExpressionCompiler {
       return SoyExpression.forSoyValue(node.getType(), visualElement);
     }
 
+    @Override
+    protected SoyExpression visitVeDefNode(FunctionNode node) {
+      Expression id = constant(((IntegerNode) node.getChild(1)).getValue());
+      Expression name = constant(((StringNode) node.getChild(0)).getValue());
+      final Expression visualElement;
+      if (node.numChildren() == 4) {
+        Expression metadata = visitProtoInitFunction((FunctionNode) node.getChild(3));
+        visualElement =
+            MethodRef.SOY_VISUAL_ELEMENT_CREATE_WITH_METADATA.invoke(id, name, metadata);
+      } else {
+        visualElement = MethodRef.SOY_VISUAL_ELEMENT_CREATE.invoke(id, name);
+      }
+      return SoyExpression.forSoyValue(node.getType(), visualElement);
+    }
+
     private static final Handle GET_TEMPLATE_VALUE_HANDLE =
         MethodRef.create(
                 ClassLoaderFallbackCallFactory.class,

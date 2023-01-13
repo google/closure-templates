@@ -22,6 +22,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_FALSE;
 import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_NULL;
 import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_TRUE;
+import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_UNDEFINED;
 import static com.google.template.soy.jssrc.dsl.Expression.arrowFunction;
 import static com.google.template.soy.jssrc.dsl.Expression.construct;
 import static com.google.template.soy.jssrc.dsl.Expression.id;
@@ -961,8 +962,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
         case VE_DATA:
           return visitVeDataFunction(node);
         case VE_DEF:
-          // TODO(b/264681212)
-          return LITERAL_NULL;
+          return visitVeDefFunction(node);
         case LEGACY_DYNAMIC_TAG:
         case REMAINDER:
         case MSG_WITH_ID:
@@ -1056,6 +1056,16 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
 
   private Expression visitVeDataFunction(FunctionNode node) {
     return construct(SOY_VISUAL_ELEMENT_DATA, visit(node.getChild(0)), visit(node.getChild(1)));
+  }
+
+  private Expression visitVeDefFunction(FunctionNode node) {
+    Expression metadataExpr = node.numChildren() == 4 ? visit(node.getChild(3)) : LITERAL_UNDEFINED;
+    return Expression.ifExpression(
+            GOOG_DEBUG,
+            construct(
+                SOY_VISUAL_ELEMENT, visit(node.getChild(1)), metadataExpr, visit(node.getChild(0))))
+        .setElse(construct(SOY_VISUAL_ELEMENT, visit(node.getChild(1)), metadataExpr))
+        .build(codeGenerator);
   }
 
   private static SoyJsSrcFunction getUnknownFunction(final String name, final int argSize) {

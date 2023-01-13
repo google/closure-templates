@@ -75,6 +75,7 @@ import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.LegacyFunctionAdapter;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.jbcsrc.shared.StackFrame;
+import com.google.template.soy.logging.LoggableElementMetadata;
 import com.google.template.soy.logging.SoyLogger;
 import com.google.template.soy.shared.internal.SharedRuntime;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
@@ -615,6 +616,14 @@ public abstract class MethodRef {
 
   public static final MethodRef SOY_VISUAL_ELEMENT_CREATE =
       MethodRef.create(SoyVisualElement.class, "create", long.class, String.class);
+
+  public static final MethodRef SOY_VISUAL_ELEMENT_CREATE_WITH_METADATA =
+      MethodRef.create(
+          SoyVisualElement.class,
+          "create",
+          long.class,
+          String.class,
+          LoggableElementMetadata.class);
 
   public static final MethodRef SOY_VISUAL_ELEMENT_DATA_CREATE =
       MethodRef.create(SoyVisualElementData.class, "create", SoyVisualElement.class, Message.class);
