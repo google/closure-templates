@@ -72,7 +72,7 @@ public class GenCallCodeUtils {
     return hasPositionalSignature(metadata.getTemplateType());
   }
 
-  static boolean hasPositionalSignature(TemplateType type) {
+  public static boolean hasPositionalSignature(TemplateType type) {
     // This signature style is not possible to do if there are indirect calls, since those require
     // the whole `opt_data` parameter
     // If there are no parameters, then there is no value in exploding into multiple functions

@@ -128,7 +128,7 @@ public final class JsCodeBuilder {
   }
 
   /** Should only be used by {@link GenJsCodeVisitor#visitSoyFileNode}. */
-  void appendGoogRequiresTo(StringBuilder sb) {
+  public void appendGoogRequiresTo(StringBuilder sb) {
     for (GoogRequire require : googRequires.values()) {
       // TODO(lukes): we need some namespace management here... though really we need namespace
       // management with all declarations... The problem is that a require could introduce a name

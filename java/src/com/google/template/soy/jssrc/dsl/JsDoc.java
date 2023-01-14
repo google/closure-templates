@@ -106,7 +106,7 @@ public abstract class JsDoc {
   @AutoValue
   @Immutable
   public abstract static class Param {
-    abstract String annotationType();
+    public abstract String annotationType();
 
     @Nullable
     abstract String field();
@@ -115,7 +115,7 @@ public abstract class JsDoc {
     public abstract String type();
 
     @Nullable
-    abstract String paramTypeName();
+    public abstract String paramTypeName();
 
     /**
      * Non-null if the param type is a record literal (e.g. `{foo: boolean}`, with key = `foo` and

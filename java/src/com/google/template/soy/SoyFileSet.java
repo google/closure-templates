@@ -45,6 +45,7 @@ import com.google.template.soy.error.SoyCompilationException;
 import com.google.template.soy.error.SoyError;
 import com.google.template.soy.error.SoyErrors;
 import com.google.template.soy.error.SoyInternalCompilerException;
+import com.google.template.soy.incrementaldomsrc.IncrementalDomInteropSrcMain;
 import com.google.template.soy.incrementaldomsrc.IncrementalDomSrcMain;
 import com.google.template.soy.incrementaldomsrc.SoyIncrementalDomSrcOptions;
 import com.google.template.soy.javagencode.GenerateBuildersVisitor;
@@ -1120,6 +1121,28 @@ public final class SoyFileSet {
           throwIfErrorsPresent();
           return new IncrementalDomSrcMain(scopedData.enterable(), typeRegistry)
               .genJsSrc(result.fileSet(), result.registry(), jsSrcOptions, errorReporter);
+        });
+  }
+
+  /**
+   * Compiles this Soy file set into code that pulls in IDOM source in a mod to replace SoyJS
+   *
+   * @param jsSrcOptions The compilation options for the JS Src output target.
+   * @return A list of strings where each string represents the JS source code that belongs in one
+   *     JS file. The generated JS files correspond one-to-one to the original Soy source files.
+   * @throws SoyCompilationException If compilation fails.
+   */
+  List<String> compileToIncrementalDomInteropSrcInternal() {
+    return entryPoint(
+        () -> {
+          ParseResult result =
+              parse(
+                  passManagerBuilder()
+                      .allowUnknownJsGlobals()
+                      .desugarIdomFeatures(false)
+                      .validateJavaMethods(false));
+          throwIfErrorsPresent();
+          return new IncrementalDomInteropSrcMain().genJsSrc(result.fileSet(), errorReporter);
         });
   }
 
