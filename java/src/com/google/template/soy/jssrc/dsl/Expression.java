@@ -94,6 +94,10 @@ public abstract class Expression extends CodeChunk {
     /* no subclasses outside this package */
   }
 
+  public static Expression spread(Expression expr) {
+    return UnaryOperation.create("...", Integer.MAX_VALUE, expr, /* isPrefix= */ true);
+  }
+
   /**
    * If the expression has any initial statements, wraps it in a lambda so the expression can be
    * written inline (i.e. without a semicolon).
