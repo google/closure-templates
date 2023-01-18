@@ -40,10 +40,14 @@ public final class CodeChunkUtils {
   private CodeChunkUtils() {}
 
   /** Validates that the given string is a valid javascript identifier. */
-  static void checkId(String id) {
-    if (!ID.matcher(id).matches()) {
+  public static void checkId(String id) {
+    if (!CodeChunkUtils.isValidId(id)) {
       throw new IllegalArgumentException(String.format("not a valid js identifier: %s", id));
     }
+  }
+
+  public static boolean isValidId(String id) {
+    return ID.matcher(id).matches();
   }
 
   /**
