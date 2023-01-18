@@ -615,5 +615,6 @@ export {
   stableUniqueAttributeIdHolder as $$stableUniqueAttributeIdHolder,
   visitHtmlCommentNode as $$visitHtmlCommentNode,
   upgrade as $$upgrade,
-  getOriginalSanitizedContent
+  getOriginalSanitizedContent,
+  defaultIdomRenderer as $$defaultIdomRenderer
 };
