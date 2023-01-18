@@ -182,7 +182,7 @@ public abstract class CodeChunk {
      */
     public Expression conditionalExpression(
         Expression predicate, Expression consequent, Expression alternate) {
-      return Expression.ifExpression(predicate, consequent).setElse(alternate).build(this);
+      return Expressions.ifExpression(predicate, consequent).setElse(alternate).build(this);
     }
   }
 }

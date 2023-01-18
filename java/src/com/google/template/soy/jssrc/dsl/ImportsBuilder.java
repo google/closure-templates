@@ -134,7 +134,7 @@ public class ImportsBuilder {
         importStatements.add(Import.moduleImport(moduleAlias, entry.getKey()));
       }
     }
-    return Statement.of(importStatements);
+    return Statements.of(importStatements);
   }
 
   public void ingest(Iterable<Statement> statements) {

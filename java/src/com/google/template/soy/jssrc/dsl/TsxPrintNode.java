@@ -97,7 +97,8 @@ public class TsxPrintNode extends Statement {
 
       ctx.append(
           String.format(
-              "%s'%s'}", ctx.getInterpolationOpenString(), expr().get().asStringLiteral().get()));
+              "%s'%s'}",
+              ctx.getInterpolationOpenString(), ((StringLiteral) expr().get()).literalValue()));
 
       if (endLineAfterChar) {
         ctx.endLine();

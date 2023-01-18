@@ -20,8 +20,8 @@ import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.IN
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_IS_TRUTHY;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.STATE_PREFIX;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.STATE_VAR_PREFIX;
-import static com.google.template.soy.jssrc.dsl.Expression.id;
-import static com.google.template.soy.jssrc.dsl.Expression.number;
+import static com.google.template.soy.jssrc.dsl.Expressions.id;
+import static com.google.template.soy.jssrc.dsl.Expressions.number;
 import static com.google.template.soy.jssrc.internal.JsRuntime.BIND_TEMPLATE_PARAMS_FOR_IDOM;
 import static com.google.template.soy.jssrc.internal.JsRuntime.XID;
 
@@ -34,6 +34,7 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.ProtoEnumValueNode;
 import com.google.template.soy.jssrc.dsl.Expression;
+import com.google.template.soy.jssrc.dsl.Expressions;
 import com.google.template.soy.jssrc.internal.JavaScriptValueFactoryImpl;
 import com.google.template.soy.jssrc.internal.JsType;
 import com.google.template.soy.jssrc.internal.TemplateAliases;
@@ -72,9 +73,9 @@ public class IncrementalDomTranslateExprNodeVisitor extends TranslateExprNodeVis
     if (node.getSoyFunction() instanceof LoggingFunction) {
       LoggingFunction loggingNode = (LoggingFunction) node.getSoyFunction();
       return INCREMENTAL_DOM_EVAL_LOG_FN.call(
-          XID.call(Expression.stringLiteral(node.getStaticFunctionName())),
-          Expression.arrayLiteral(visitChildren(node)),
-          Expression.stringLiteral(loggingNode.getPlaceholder()));
+          XID.call(Expressions.stringLiteral(node.getStaticFunctionName())),
+          Expressions.arrayLiteral(visitChildren(node)),
+          Expressions.stringLiteral(loggingNode.getPlaceholder()));
     }
     return super.visitFunctionNode(node);
   }

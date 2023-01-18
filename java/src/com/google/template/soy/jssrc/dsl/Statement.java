@@ -15,20 +15,15 @@
  */
 package com.google.template.soy.jssrc.dsl;
 
-import static com.google.template.soy.jssrc.dsl.Expression.ERROR_EXPR;
-
-import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
 
 /**
- * Marker class for {@link CodeChunk} instances that compile to one or more JavaScript statements.
+ * Subclass of {@link CodeChunk} that compile to one or more JavaScript statements.
  *
  * <p>It should be the case that any Statement will start and end in the same lexical scope.
  */
 @Immutable
 public abstract class Statement extends CodeChunk {
-
-  public static final Statement ERROR_STMT = ExpressionStatement.of(ERROR_EXPR);
 
   Statement() {}
 
@@ -39,71 +34,4 @@ public abstract class Statement extends CodeChunk {
 
   /** Appends this statement to the {@link FormattingContext}. */
   abstract void doFormatStatement(FormattingContext ctx);
-
-  /** Creates a new code chunk representing the concatenation of the given statements. */
-  public static Statement of(Statement first, Statement... rest) {
-    return of(ImmutableList.<Statement>builder().add(first).add(rest).build());
-  }
-
-  /** Creates a new code chunk representing the concatenation of the given statements. */
-  public static Statement of(Iterable<Statement> stmts) {
-    ImmutableList<Statement> copy = ImmutableList.copyOf(stmts);
-    return copy.size() == 1 ? copy.get(0) : StatementList.create(copy);
-  }
-
-  /** Starts a conditional statement beginning with the given predicate and consequent chunks. */
-  public static ConditionalBuilder ifStatement(Expression predicate, Statement consequent) {
-    return new ConditionalBuilder(predicate, consequent);
-  }
-
-  /** Creates a code chunk that assigns value to a preexisting variable with the given name. */
-  public static Statement assign(Expression lhs, Expression rhs) {
-    return Assignment.create(lhs, rhs, null);
-  }
-
-  /** Creates a code chunk that assigns and prints jsDoc above the assignment. */
-  public static Statement assign(Expression lhs, Expression rhs, JsDoc jsDoc) {
-    return Assignment.create(lhs, rhs, jsDoc);
-  }
-
-  /** Starts a {@code switch} statement dispatching on the given chunk. */
-  public static SwitchBuilder switchValue(Expression switchOn) {
-    return new SwitchBuilder(switchOn);
-  }
-
-  /** Creates a code chunk representing a for loop. */
-  public static Statement forLoop(
-      String localVar, Expression initial, Expression limit, Expression increment, Statement body) {
-    return For.create(localVar, initial, limit, increment, body);
-  }
-
-  /** Creates a code chunk representing a for loop, with default values for initial & increment. */
-  public static Statement forLoop(String localVar, Expression limit, Statement body) {
-    return For.create(localVar, Expression.number(0), limit, Expression.number(1), body);
-  }
-
-  /** Creates a code chunk representing a for of loop. */
-  public static Statement forOf(String localVar, Expression collection, Statement body) {
-    return ForOf.create(localVar, collection, body);
-  }
-
-  /** Creates a code chunk that represents a return statement returning the given value. */
-  public static Statement returnValue(Expression returnValue) {
-    return Return.create(returnValue);
-  }
-
-  /** Creates a code chunk that represents an empty return statement. */
-  public static Statement returnNothing() {
-    return Return.create();
-  }
-
-  /** Creates a code chunk that represents a throw statement. */
-  public static Statement throwValue(Expression throwValue) {
-    return Throw.create(throwValue);
-  }
-
-  /** Creates a code chunk that represents a debugger statement. */
-  public static Statement debugger() {
-    return Debugger.INSTANCE;
-  }
 }

@@ -16,8 +16,8 @@
 
 package com.google.template.soy.jssrc.internal;
 
-import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_EMPTY_STRING;
-import static com.google.template.soy.jssrc.dsl.Expression.stringLiteral;
+import static com.google.template.soy.jssrc.dsl.Expressions.LITERAL_EMPTY_STRING;
+import static com.google.template.soy.jssrc.dsl.Expressions.stringLiteral;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Supplier;
@@ -28,6 +28,7 @@ import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
 import com.google.template.soy.jssrc.dsl.ConditionalExpressionBuilder;
 import com.google.template.soy.jssrc.dsl.Expression;
+import com.google.template.soy.jssrc.dsl.Expressions;
 import com.google.template.soy.jssrc.dsl.SoyJsPluginUtils;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
@@ -331,7 +332,7 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<Expression>> 
 
     Preconditions.checkState(ifs.size() == thens.size());
 
-    ConditionalExpressionBuilder builder = Expression.ifExpression(ifs.get(0), thens.get(0));
+    ConditionalExpressionBuilder builder = Expressions.ifExpression(ifs.get(0), thens.get(0));
 
     for (int i = 1; i < ifs.size(); i++) {
       builder.addElseIf(ifs.get(i), thens.get(i));

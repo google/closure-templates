@@ -15,8 +15,8 @@
  */
 package com.google.template.soy.jssrc.internal;
 
-import static com.google.template.soy.jssrc.dsl.Expression.dottedIdNoRequire;
-import static com.google.template.soy.jssrc.dsl.Expression.id;
+import static com.google.template.soy.jssrc.dsl.Expressions.dottedIdNoRequire;
+import static com.google.template.soy.jssrc.dsl.Expressions.id;
 
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableMap;
@@ -34,6 +34,7 @@ import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.internal.proto.ProtoUtils;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.Expression;
+import com.google.template.soy.jssrc.dsl.Expressions;
 import com.google.template.soy.jssrc.dsl.GoogRequire;
 import com.google.template.soy.types.SoyProtoType;
 
@@ -157,9 +158,9 @@ public final class JsRuntime {
   // Explicitly group() these calls because they return constructors and the new operator has
   // curious precedence semantics if the constructor expression contains parens.
   public static final Expression SOY_VISUAL_ELEMENT =
-      Expression.group(SOY_VELOG.googModuleGet().dotAccess("$$VisualElement"));
+      Expressions.group(SOY_VELOG.googModuleGet().dotAccess("$$VisualElement"));
   public static final Expression SOY_VISUAL_ELEMENT_DATA =
-      Expression.group(SOY_VELOG.googModuleGet().dotAccess("$$VisualElementData"));
+      Expressions.group(SOY_VELOG.googModuleGet().dotAccess("$$VisualElementData"));
 
   public static final Expression WINDOW_CONSOLE_LOG = dottedIdNoRequire("window.console.log");
 

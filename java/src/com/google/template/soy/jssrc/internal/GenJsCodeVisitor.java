@@ -22,14 +22,14 @@ import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
-import static com.google.template.soy.jssrc.dsl.Expression.EMPTY_OBJECT_LITERAL;
-import static com.google.template.soy.jssrc.dsl.Expression.dottedIdNoRequire;
-import static com.google.template.soy.jssrc.dsl.Expression.id;
-import static com.google.template.soy.jssrc.dsl.Expression.number;
-import static com.google.template.soy.jssrc.dsl.Expression.stringLiteral;
-import static com.google.template.soy.jssrc.dsl.Statement.assign;
-import static com.google.template.soy.jssrc.dsl.Statement.ifStatement;
-import static com.google.template.soy.jssrc.dsl.Statement.returnValue;
+import static com.google.template.soy.jssrc.dsl.Expressions.EMPTY_OBJECT_LITERAL;
+import static com.google.template.soy.jssrc.dsl.Expressions.dottedIdNoRequire;
+import static com.google.template.soy.jssrc.dsl.Expressions.id;
+import static com.google.template.soy.jssrc.dsl.Expressions.number;
+import static com.google.template.soy.jssrc.dsl.Expressions.stringLiteral;
+import static com.google.template.soy.jssrc.dsl.Statements.assign;
+import static com.google.template.soy.jssrc.dsl.Statements.ifStatement;
+import static com.google.template.soy.jssrc.dsl.Statements.returnValue;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_DEBUG;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_MODULE_GET;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_REQUIRE;
@@ -61,9 +61,11 @@ import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
 import com.google.template.soy.jssrc.dsl.Expression;
+import com.google.template.soy.jssrc.dsl.Expressions;
 import com.google.template.soy.jssrc.dsl.GoogRequire;
 import com.google.template.soy.jssrc.dsl.JsDoc;
 import com.google.template.soy.jssrc.dsl.Statement;
+import com.google.template.soy.jssrc.dsl.Statements;
 import com.google.template.soy.jssrc.dsl.VariableDeclaration;
 import com.google.template.soy.jssrc.internal.GenJsExprsVisitor.GenJsExprsVisitorFactory;
 import com.google.template.soy.passes.IndirectParamsCalculator;
@@ -398,7 +400,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       staticVarDeclarations = new ArrayList<>();
       visit(template);
       if (!staticVarDeclarations.isEmpty()) {
-        jsCodeBuilder.append(Statement.of(staticVarDeclarations));
+        jsCodeBuilder.append(Statements.of(staticVarDeclarations));
       }
     }
 
@@ -636,14 +638,14 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     Expression fieldAliasExp = dottedIdNoRequire(fieldAlias);
 
     Expression constantGetterFunction =
-        Expression.function(
+        Expressions.function(
             jsDoc,
-            Statement.of(
+            Statements.of(
                 JsRuntime.SOY_ARE_YOU_AN_INTERNAL_CALLER
                     .call(id(StandardNames.ARE_YOU_AN_INTERNAL_CALLER))
                     .asStatement(),
                 ifStatement(
-                        fieldAliasExp.tripleEquals(Expression.LITERAL_UNDEFINED),
+                        fieldAliasExp.tripleEquals(Expressions.LITERAL_UNDEFINED),
                         assign(fieldAliasExp, JsRuntime.FREEZE.call(translateExpr(node.getExpr()))))
                     .build(),
                 // TODO(b/255978614): add requires
@@ -654,7 +656,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
           VariableDeclaration.builder(fieldAlias)
               .setJsDoc(fieldJsDoc)
               .setMutable()
-              .setRhs(Expression.LITERAL_UNDEFINED)
+              .setRhs(Expressions.LITERAL_UNDEFINED)
               .build());
       declarations.add(
           VariableDeclaration.builder(alias)
@@ -665,11 +667,11 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         declarations.add(assign(JsRuntime.EXPORTS.dotAccess(partialName), aliasExp));
       }
     } else {
-      declarations.add(Statement.assign(fieldAliasExp, Expression.LITERAL_UNDEFINED, fieldJsDoc));
-      declarations.add(Statement.assign(aliasExp, constantGetterFunction, jsDoc));
+      declarations.add(Statements.assign(fieldAliasExp, Expressions.LITERAL_UNDEFINED, fieldJsDoc));
+      declarations.add(Statements.assign(aliasExp, constantGetterFunction, jsDoc));
     }
 
-    jsCodeBuilder.append(Statement.of(declarations.build()));
+    jsCodeBuilder.append(Statements.of(declarations.build()));
     for (GoogRequire require : varType.getGoogRequires()) {
       jsCodeBuilder.addGoogRequire(require);
     }
@@ -811,10 +813,10 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         declarations.add(
             VariableDeclaration.builder(alias).setJsDoc(jsDoc).setRhs(emptyFnCall).build());
       } else {
-        declarations.add(Statement.assign(aliasExp, emptyFnCall, jsDoc));
+        declarations.add(Statements.assign(aliasExp, emptyFnCall, jsDoc));
       }
       declarations.add(makeRegisterDelegateFn(nodeAsDelTemplate, aliasExp));
-      jsCodeBuilder.append(Statement.of(declarations.build()));
+      jsCodeBuilder.append(Statements.of(declarations.build()));
       return;
     }
 
@@ -825,12 +827,13 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
               alias,
               /* suppressCheckTypes= */ false,
               /* addVariantParam= */ isModifiableWithUseVariantType(node));
-      Expression publicFunction = Expression.function(jsDoc, generateDelegateFunction(node, alias));
+      Expression publicFunction =
+          Expressions.function(jsDoc, generateDelegateFunction(node, alias));
       JsDoc positionalFunctionDoc =
           generatePositionalFunctionJsDoc(
               node, /* addVariantParam= */ isModifiableWithUseVariantType(node));
       Expression positionalFunction =
-          Expression.function(
+          Expressions.function(
               positionalFunctionDoc,
               isModifiable(node)
                   ? generateModTemplateSelection(node, alias, codeGenerator)
@@ -855,9 +858,9 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
               assign(JsRuntime.EXPORTS.dotAccess(partialName + "$"), positionalDeclaration.ref()));
         }
       } else {
-        declarations.add(Statement.assign(aliasExp, publicFunction, jsDoc));
+        declarations.add(Statements.assign(aliasExp, publicFunction, jsDoc));
         declarations.add(
-            Statement.assign(
+            Statements.assign(
                 dottedIdNoRequire(alias + "$"), positionalFunction, positionalFunctionDoc));
       }
     } else {
@@ -869,7 +872,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
               /* addVariantParam= */ isModifiableWithUseVariantType(node));
       String objectParamType = jsDoc.params().get(1).type();
       Expression function =
-          Expression.function(
+          Expressions.function(
               jsDoc,
               isModifiable(node)
                   ? generateModTemplateSelection(node, alias, codeGenerator)
@@ -890,7 +893,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
           declarations.add(assign(JsRuntime.EXPORTS.dotAccess(partialName), aliasExp));
         }
       } else {
-        declarations.add(Statement.assign(aliasExp, function, jsDoc));
+        declarations.add(Statements.assign(aliasExp, function, jsDoc));
       }
     }
 
@@ -945,7 +948,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
                   node, alias, /* suppressCheckTypes= */ true, /* addVariantParam= */ false);
       String objectParamType = jsDoc.params().get(1).type();
       Expression impl =
-          Expression.function(
+          Expressions.function(
               jsDoc,
               generateFunctionBody(
                   node,
@@ -959,7 +962,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         declarations.add(
             VariableDeclaration.builder(defaultImplName).setJsDoc(jsDoc).setRhs(impl).build());
       } else {
-        declarations.add(Statement.assign(dottedIdNoRequire(defaultImplName), impl, jsDoc));
+        declarations.add(Statements.assign(dottedIdNoRequire(defaultImplName), impl, jsDoc));
       }
       TemplateBasicNode templateBasicNode = (TemplateBasicNode) node;
       declarations.add(
@@ -974,7 +977,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
               dottedIdNoRequire(alias + (generatePositionalParamsSignature ? "$" : ""))));
     }
 
-    jsCodeBuilder.append(Statement.of(declarations.build()));
+    jsCodeBuilder.append(Statements.of(declarations.build()));
     this.generatePositionalParamsSignature = false;
   }
 
@@ -1118,7 +1121,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       TemplateNode node, boolean isPositionalStyle) {
     if (isPositionalStyle) {
       return ImmutableList.of(
-          Expression.objectLiteral(
+          Expressions.objectLiteral(
               node.getParams().stream()
                   .collect(
                       toImmutableMap(
@@ -1130,11 +1133,11 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
   protected final Statement generateStubbingTest(
       TemplateNode node, String alias, boolean isPositionalStyle) {
-    return Statement.ifStatement(
+    return Statements.ifStatement(
             JsRuntime.GOOG_DEBUG.and(
                 JsRuntime.SOY_STUBS_MAP.bracketAccess(stringLiteral(node.getTemplateName())),
                 templateTranslationContext.codeGenerator()),
-            Statement.returnValue(
+            Statements.returnValue(
                 JsRuntime.SOY_STUBS_MAP
                     .bracketAccess(stringLiteral(node.getTemplateName()))
                     .call(templateArguments(node, isPositionalStyle))))
@@ -1170,9 +1173,9 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         && templateNode.getVisibility() == Visibility.PUBLIC) {
       Expression stub = dottedIdNoRequire(alias + "_" + StandardNames.SOY_STUB);
       Statement functionStub =
-          Statement.ifStatement(
+          Statements.ifStatement(
                   SHOULD_STUB.and(stub, templateTranslationContext.codeGenerator()),
-                  Statement.returnValue(stub.call(callParams)))
+                  Statements.returnValue(stub.call(callParams)))
               .build();
       bodyStatements.add(functionStub);
     }
@@ -1204,7 +1207,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     String returnType = getTemplateReturnType(templateNode);
     Expression callExpr = dottedIdNoRequire(alias + "$").call(callParams);
     bodyStatements.add(returnType.equals("void") ? callExpr.asStatement() : returnValue(callExpr));
-    return Statement.of(bodyStatements.build());
+    return Statements.of(bodyStatements.build());
   }
 
   /** Return the parameters always present in positional calls. */
@@ -1259,7 +1262,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       }
       bodyStatements.add(returnValue(delegateFn.call(callParams)));
     }
-    return Statement.of(bodyStatements.build());
+    return Statements.of(bodyStatements.build());
   }
 
   /** Generates the function body. */
@@ -1329,9 +1332,9 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       jsCodeBuilder.pushOutputVar("$output");
       Statement codeChunk = visitTemplateNodeChildren(node);
       jsCodeBuilder.popOutputVar();
-      bodyStatements.add(Statement.of(codeChunk, returnValue(sanitize(id("$output"), kind))));
+      bodyStatements.add(Statements.of(codeChunk, returnValue(sanitize(id("$output"), kind))));
     }
-    return Statement.of(bodyStatements.build());
+    return Statements.of(bodyStatements.build());
   }
 
   private Statement visitTemplateNodeChildren(TemplateNode node) {
@@ -1340,7 +1343,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
   @VisibleForTesting
   Statement visitTemplateNodeChildren(TemplateNode node, ErrorReporter errorReporter) {
-    return Statement.of(
+    return Statements.of(
         new GenJsTemplateBodyVisitor(
                 outputVars,
                 jsSrcOptions,
@@ -1416,7 +1419,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
               : dottedIdNoRequire(file.getNamespace());
       Expression export = exportAlias.dotAccess(externName);
       jsCodeBuilder.append(
-          Statement.assign(
+          Statements.assign(
               export, externReference, JsDoc.builder().addAnnotation("const").build()));
     }
   }
@@ -1487,10 +1490,10 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     checkArgument(param.hasDefault());
 
     // var = var === undefined ? default : var;
-    return Statement.assign(
+    return Statements.assign(
         paramTempVar,
-        Expression.ifExpression(
-                paramTempVar.tripleEquals(Expression.LITERAL_UNDEFINED),
+        Expressions.ifExpression(
+                paramTempVar.tripleEquals(Expressions.LITERAL_UNDEFINED),
                 translateExpr(param.defaultValue()))
             .setElse(paramTempVar)
             .build(codeGenerator)
@@ -1559,7 +1562,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
           // everything is on the code chunk api.
           .put(param, id(paramAlias));
     }
-    return Statement.of(declarations.build());
+    return Statements.of(declarations.build());
   }
 
   /** Gets the type to use for a parameter in record type declarations. */

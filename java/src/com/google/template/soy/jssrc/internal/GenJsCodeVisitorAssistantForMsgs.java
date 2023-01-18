@@ -17,9 +17,9 @@
 package com.google.template.soy.jssrc.internal;
 
 import static com.google.common.base.Preconditions.checkState;
-import static com.google.template.soy.jssrc.dsl.Expression.construct;
-import static com.google.template.soy.jssrc.dsl.Expression.id;
-import static com.google.template.soy.jssrc.dsl.Expression.stringLiteral;
+import static com.google.template.soy.jssrc.dsl.Expressions.construct;
+import static com.google.template.soy.jssrc.dsl.Expressions.id;
+import static com.google.template.soy.jssrc.dsl.Expressions.stringLiteral;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_GET_MSG;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_I18N_MESSAGE_FORMAT;
 
@@ -33,9 +33,11 @@ import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
 import com.google.template.soy.jssrc.dsl.Expression;
+import com.google.template.soy.jssrc.dsl.Expressions;
 import com.google.template.soy.jssrc.dsl.JsDoc;
 import com.google.template.soy.jssrc.dsl.SoyJsPluginUtils;
 import com.google.template.soy.jssrc.dsl.Statement;
+import com.google.template.soy.jssrc.dsl.Statements;
 import com.google.template.soy.jssrc.dsl.VariableDeclaration;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
 import com.google.template.soy.msgs.internal.IcuSyntaxUtils;
@@ -160,7 +162,7 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractReturningSoyNodeVi
     if (node.numChildren() == 1) {
       translationContext
           .soyToJsVariableMappings()
-          .setIsPrimaryMsgInUse(node, Expression.LITERAL_TRUE);
+          .setIsPrimaryMsgInUse(node, Expressions.LITERAL_TRUE);
       msg = generateSingleMsgVariable(node.getChild(0));
     } else { // has fallbackmsg children
       msg = generateMsgGroupVariableWithFallback(node);
@@ -201,7 +203,7 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractReturningSoyNodeVi
             .codeGenerator()
             .declarationBuilder("selected_msg")
             .setRhs(
-                Expression.dottedIdNoRequire("goog.getMsgWithFallback")
+                Expressions.dottedIdNoRequire("goog.getMsgWithFallback")
                     .call(primaryCodeGenInfo.googMsgVar, fallbackCodeGenInfo.googMsgVar))
             .build()
             .ref();
@@ -219,7 +221,7 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractReturningSoyNodeVi
     Expression initializer;
     if (primaryCodeGenInfo.placeholders != null) {
       initializer =
-          Expression.ifExpression(
+          Expressions.ifExpression(
                   selectedMsg.doubleEquals(primaryCodeGenInfo.googMsgVar),
                   getMessageFormatCall(primaryCodeGenInfo))
               .setElse(
@@ -229,7 +231,7 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractReturningSoyNodeVi
               .build(translationContext.codeGenerator());
     } else {
       initializer =
-          Expression.ifExpression(
+          Expressions.ifExpression(
                   selectedMsg.doubleEquals(fallbackCodeGenInfo.googMsgVar),
                   getMessageFormatCall(fallbackCodeGenInfo))
               .setElse(selectedMsg)
@@ -330,9 +332,9 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractReturningSoyNodeVi
           GOOG_GET_MSG.call(
               googMsgContent,
               msgNode.isPlrselMsg()
-                  ? Expression.EMPTY_OBJECT_LITERAL
+                  ? Expressions.EMPTY_OBJECT_LITERAL
                   : placeholderInfo.placeholders.build(),
-              Expression.objectLiteral(ImmutableMap.of("html", Expression.LITERAL_TRUE))));
+              Expressions.objectLiteral(ImmutableMap.of("html", Expressions.LITERAL_TRUE))));
     } else if (msgNode.isPlrselMsg() || placeholderInfo.placeholders.isEmpty()) {
       // For plural/select msgs, we're letting goog.i18n.MessageFormat handle all placeholder
       // replacements, even ones that have nothing to do with plural/select. Therefore, this case
@@ -634,7 +636,7 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractReturningSoyNodeVi
     outputVars.pushOutputVar("htmlTag" + node.getId());
     List<Statement> children = visitChildren(node);
     outputVars.popOutputVar();
-    return Statement.of(children);
+    return Statements.of(children);
   }
 
   // -----------------------------------------------------------------------------------------------
@@ -646,7 +648,7 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractReturningSoyNodeVi
   }
 
   /**
-   * Helper class for building up the input to {@link Expression#objectLiteral}. TODO(user):
+   * Helper class for building up the input to {@link Expressions#objectLiteral}. TODO(user):
    * consider making this part of the CodeChunk DSL, since all callers seem to do something similar.
    */
   private static final class MapLiteralBuilder {
@@ -677,7 +679,7 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractReturningSoyNodeVi
     }
 
     Expression build() {
-      return Expression.objectLiteralWithQuotedKeys(map);
+      return Expressions.objectLiteralWithQuotedKeys(map);
     }
   }
 }

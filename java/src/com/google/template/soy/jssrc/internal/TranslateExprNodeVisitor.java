@@ -19,17 +19,17 @@ package com.google.template.soy.jssrc.internal;
 import static com.google.common.base.CaseFormat.LOWER_CAMEL;
 import static com.google.common.base.CaseFormat.UPPER_CAMEL;
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_FALSE;
-import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_NULL;
-import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_TRUE;
-import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_UNDEFINED;
-import static com.google.template.soy.jssrc.dsl.Expression.arrowFunction;
-import static com.google.template.soy.jssrc.dsl.Expression.construct;
-import static com.google.template.soy.jssrc.dsl.Expression.id;
-import static com.google.template.soy.jssrc.dsl.Expression.not;
-import static com.google.template.soy.jssrc.dsl.Expression.number;
-import static com.google.template.soy.jssrc.dsl.Expression.operation;
-import static com.google.template.soy.jssrc.dsl.Expression.stringLiteral;
+import static com.google.template.soy.jssrc.dsl.Expressions.LITERAL_FALSE;
+import static com.google.template.soy.jssrc.dsl.Expressions.LITERAL_NULL;
+import static com.google.template.soy.jssrc.dsl.Expressions.LITERAL_TRUE;
+import static com.google.template.soy.jssrc.dsl.Expressions.LITERAL_UNDEFINED;
+import static com.google.template.soy.jssrc.dsl.Expressions.arrowFunction;
+import static com.google.template.soy.jssrc.dsl.Expressions.construct;
+import static com.google.template.soy.jssrc.dsl.Expressions.id;
+import static com.google.template.soy.jssrc.dsl.Expressions.not;
+import static com.google.template.soy.jssrc.dsl.Expressions.number;
+import static com.google.template.soy.jssrc.dsl.Expressions.operation;
+import static com.google.template.soy.jssrc.dsl.Expressions.stringLiteral;
 import static com.google.template.soy.jssrc.internal.JsRuntime.BIND_TEMPLATE_PARAMS;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_ARRAY_MAP;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_DEBUG;
@@ -104,6 +104,7 @@ import com.google.template.soy.exprtree.VeLiteralNode;
 import com.google.template.soy.internal.proto.ProtoUtils;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.Expression;
+import com.google.template.soy.jssrc.dsl.Expressions;
 import com.google.template.soy.jssrc.dsl.GoogRequire;
 import com.google.template.soy.jssrc.dsl.JsDoc;
 import com.google.template.soy.jssrc.dsl.SoyJsPluginUtils;
@@ -270,7 +271,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
    * @return The code to access the value of that parameter.
    */
   protected Expression genCodeForStateAccess(String paramName, TemplateStateVar stateVar) {
-    return Expression.id(paramName);
+    return Expressions.id(paramName);
   }
 
   @Override
@@ -319,7 +320,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
   @Override
   protected Expression visitListLiteralNode(ListLiteralNode node) {
     if (node.numChildren() == 0) {
-      return Expression.arrayLiteral(ImmutableList.of());
+      return Expressions.arrayLiteral(ImmutableList.of());
     }
     return SOY_MAKE_ARRAY.call(visitChildren(node));
   }
@@ -398,13 +399,13 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     }
 
     // Build the record literal
-    return Expression.objectLiteral(objLiteral);
+    return Expressions.objectLiteral(objLiteral);
   }
 
   @Override
   protected Expression visitMapLiteralNode(MapLiteralNode node) {
     // Always construct maps as ES6 Maps so that we can call `set`.
-    Expression map = Expression.constructMap();
+    Expression map = Expressions.constructMap();
     if (node.getType() != MapType.EMPTY_MAP) {
       MapType mapType = (MapType) node.getType();
       JsType keyType = JsType.forJsSrc(mapType.getKeyType());
@@ -438,12 +439,12 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     SoyType listType = node.getListExpr().getType();
     if (!(listType instanceof ListType)) {
       errorReporter.report(node.getSourceLocation(), SOY_JS_SRC_BAD_LIST_TO_MAP_CONSTRUCTOR, list);
-      return Expression.constructMap();
+      return Expressions.constructMap();
     }
     if (listType.equals(ListType.EMPTY_LIST)) {
       // If the list is empty, trying to infer the type of the dummyVar is futile. So we create a
       // special case and directly return an empty list.
-      return Expression.constructMap();
+      return Expressions.constructMap();
     }
 
     String dummyVar = "list_to_map_constructor_" + node.getNodeId();
@@ -453,13 +454,13 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
             .build();
 
     Expression body =
-        Expression.arrayLiteral(
+        Expressions.arrayLiteral(
             Arrays.asList(
                 id(dummyVar).dotAccess(MapLiteralFromListNode.KEY_STRING),
                 id(dummyVar).dotAccess(MapLiteralFromListNode.VALUE_STRING)));
 
     Expression nestedList = list.dotAccess("map").call(arrowFunction(doc, body));
-    return Expression.constructMap(nestedList);
+    return Expressions.constructMap(nestedList);
   }
 
   private Expression genMapKeyCode(ExprNode keyNode) {
@@ -742,7 +743,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     // jssrc supports unknown globals by plopping the global name directly into the output
     // NOTE: this may cause the jscompiler to emit warnings, users will need to whitelist them or
     // fix their use of unknown globals.
-    return Expression.dottedIdNoRequire(node.getName());
+    return Expressions.dottedIdNoRequire(node.getName());
   }
 
   // -----------------------------------------------------------------------------------------------
@@ -757,7 +758,8 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     if (!consequent.isCheap()) {
       consequent = codeGenerator.declarationBuilder().setRhs(consequent).build().ref();
     }
-    return Expression.ifExpression(consequent.doubleNotEquals(Expression.LITERAL_NULL), consequent)
+    return Expressions.ifExpression(
+            consequent.doubleNotEquals(Expressions.LITERAL_NULL), consequent)
         .setElse(alternate)
         .build(codeGenerator);
   }
@@ -1016,7 +1018,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
 
   private Expression visitIsSetFunction(FunctionNode node) {
     Expression expression = visit(node.getChild(0));
-    return expression.tripleNotEquals(Expression.LITERAL_UNDEFINED);
+    return expression.tripleNotEquals(Expressions.LITERAL_UNDEFINED);
   }
 
   private Expression visitCssFunction(FunctionNode node) {
@@ -1048,7 +1050,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     StringNode expr = (StringNode) node.getChild(0);
     return codeGenerator
         .declarationBuilder()
-        .setRhs(Expression.dottedIdNoRequire(expr.getValue()))
+        .setRhs(Expressions.dottedIdNoRequire(expr.getValue()))
         .setJsDoc(JsDoc.builder().addParameterizedAnnotation("suppress", "missingRequire").build())
         .build()
         .ref();
@@ -1060,7 +1062,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
 
   private Expression visitVeDefFunction(FunctionNode node) {
     Expression metadataExpr = node.numChildren() == 4 ? visit(node.getChild(3)) : LITERAL_UNDEFINED;
-    return Expression.ifExpression(
+    return Expressions.ifExpression(
             GOOG_DEBUG,
             construct(
                 SOY_VISUAL_ELEMENT, visit(node.getChild(1)), metadataExpr, visit(node.getChild(0))))
@@ -1103,16 +1105,16 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
               .dotAccess(element.getGeneratedVeMetadataMethodName())
               .call();
     } else {
-      metadata = Expression.LITERAL_UNDEFINED;
+      metadata = Expressions.LITERAL_UNDEFINED;
     }
-    return Expression.ifExpression(
+    return Expressions.ifExpression(
             GOOG_DEBUG,
             construct(
                 SOY_VISUAL_ELEMENT,
-                Expression.number(node.getId()),
+                Expressions.number(node.getId()),
                 metadata,
-                Expression.stringLiteral(node.getName().identifier())))
-        .setElse(construct(SOY_VISUAL_ELEMENT, Expression.number(node.getId()), metadata))
+                Expressions.stringLiteral(node.getName().identifier())))
+        .setElse(construct(SOY_VISUAL_ELEMENT, Expressions.number(node.getId()), metadata))
         .build(codeGenerator);
   }
 
@@ -1122,7 +1124,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     // this will require knowing the current require strategy and whether or not the template is
     // defined in this file.
     Expression templateLiteral =
-        Expression.dottedIdNoRequire(templateAliases.get(node.getResolvedName()));
-    return MARK_TEMPLATE.call(templateLiteral, Expression.stringLiteral(node.getResolvedName()));
+        Expressions.dottedIdNoRequire(templateAliases.get(node.getResolvedName()));
+    return MARK_TEMPLATE.call(templateLiteral, Expressions.stringLiteral(node.getResolvedName()));
   }
 }

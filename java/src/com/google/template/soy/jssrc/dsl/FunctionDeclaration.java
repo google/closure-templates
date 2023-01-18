@@ -76,7 +76,8 @@ public abstract class FunctionDeclaration extends Expression
       Expression exprBody = (Expression) body();
       if (exprBody.isRepresentableAsSingleExpression()) {
         // protect with parens to avoid parsing ambiguity
-        // see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/Arrow_functions#Returning_object_literals
+        // see
+        // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/Arrow_functions#Returning_object_literals
         if (exprBody.initialExpressionIsObjectLiteral()) {
           exprBody = Group.create(exprBody);
         }

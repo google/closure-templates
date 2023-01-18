@@ -16,7 +16,5 @@
 
 package com.google.template.soy.jssrc.dsl;
 
-
 /** Abstract super type of non-simple types. */
-public abstract class AbstractType extends Expression {
-}
+public abstract class AbstractType extends Expression {}

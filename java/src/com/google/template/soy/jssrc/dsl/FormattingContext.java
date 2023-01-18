@@ -316,17 +316,16 @@ class FormattingContext implements AutoCloseable {
   }
 
   /**
-   * {@link FormattingContext} needs to keep track of the conditional nesting structure
-   * in order to avoid, for example, formatting the initial statements of a code chunk
-   * in one branch and referencing the chunk in another. The scopes form a simple tree,
-   * built and torn down by {@link #enterBlock()} and {@link #close()} respectively.
-   * {@link FormattingContext#curScope} points to the current tip of the tree.
+   * {@link FormattingContext} needs to keep track of the conditional nesting structure in order to
+   * avoid, for example, formatting the initial statements of a code chunk in one branch and
+   * referencing the chunk in another. The scopes form a simple tree, built and torn down by {@link
+   * #enterBlock()} and {@link #close()} respectively. {@link FormattingContext#curScope} points to
+   * the current tip of the tree.
    */
   private static final class Scope {
     private final Set<CodeChunk> appendedChunks =
         Collections.newSetFromMap(new IdentityHashMap<>());
-    @Nullable
-    final Scope parent;
+    @Nullable final Scope parent;
     final boolean emitClosingBrace;
 
     Scope(@Nullable Scope parent, boolean emitClosingBrace) {

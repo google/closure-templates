@@ -19,7 +19,6 @@ import com.google.auto.value.AutoValue;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.QuoteStyle;
-import com.google.template.soy.jssrc.restricted.JsExpr;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -47,11 +46,6 @@ abstract class StringLiteral extends Expression {
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
     ctx.append(quoteAndEscape(literalValue(), ctx.getFormatOptions()));
-  }
-
-  @Override
-  public JsExpr singleExprOrName(FormatOptions formatOptions) {
-    return new JsExpr(quoteAndEscape(literalValue(), formatOptions), Integer.MAX_VALUE);
   }
 
   private static String quoteAndEscape(String literal, FormatOptions formatOptions) {

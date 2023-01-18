@@ -17,7 +17,7 @@
 package com.google.template.soy.jssrc.dsl;
 
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.template.soy.jssrc.dsl.Expression.id;
+import static com.google.template.soy.jssrc.dsl.Expressions.id;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;

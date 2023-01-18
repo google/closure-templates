@@ -16,7 +16,6 @@
 
 package com.google.template.soy.jssrc.dsl;
 
-
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;

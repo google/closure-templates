@@ -35,17 +35,11 @@ abstract class Bracket extends Operation {
   abstract boolean nullSafe();
 
   static Bracket create(Expression receiver, Expression key) {
-    return new AutoValue_Bracket(
-        receiver,
-        key,
-        false);
+    return new AutoValue_Bracket(receiver, key, false);
   }
 
   static Bracket createNullSafe(Expression receiver, Expression key) {
-    return new AutoValue_Bracket(
-        receiver,
-        key,
-        true);
+    return new AutoValue_Bracket(receiver, key, true);
   }
 
   @Override

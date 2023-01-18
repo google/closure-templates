@@ -75,6 +75,7 @@ public class TsArrowFunction extends Expression implements Expression.InitialSta
 
   @Override
   public JsExpr singleExprOrName(FormatOptions formatOptions) {
+    // UnsupportedOperationException, essentially.
     return new JsExpr("$$SOY_INTERNAL_ERROR_EXPR", Integer.MAX_VALUE);
   }
 }

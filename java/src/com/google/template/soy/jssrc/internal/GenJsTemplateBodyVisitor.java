@@ -16,12 +16,12 @@
 
 package com.google.template.soy.jssrc.internal;
 
-import static com.google.template.soy.jssrc.dsl.Expression.dottedIdNoRequire;
-import static com.google.template.soy.jssrc.dsl.Expression.id;
-import static com.google.template.soy.jssrc.dsl.Expression.number;
-import static com.google.template.soy.jssrc.dsl.Statement.forLoop;
-import static com.google.template.soy.jssrc.dsl.Statement.ifStatement;
-import static com.google.template.soy.jssrc.dsl.Statement.switchValue;
+import static com.google.template.soy.jssrc.dsl.Expressions.dottedIdNoRequire;
+import static com.google.template.soy.jssrc.dsl.Expressions.id;
+import static com.google.template.soy.jssrc.dsl.Expressions.number;
+import static com.google.template.soy.jssrc.dsl.Statements.forLoop;
+import static com.google.template.soy.jssrc.dsl.Statements.ifStatement;
+import static com.google.template.soy.jssrc.dsl.Statements.switchValue;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_IS_OBJECT;
 import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_DATA;
 import static com.google.template.soy.jssrc.internal.JsRuntime.WINDOW_CONSOLE_LOG;
@@ -42,7 +42,9 @@ import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
 import com.google.template.soy.jssrc.dsl.ConditionalBuilder;
 import com.google.template.soy.jssrc.dsl.Expression;
+import com.google.template.soy.jssrc.dsl.Expressions;
 import com.google.template.soy.jssrc.dsl.Statement;
+import com.google.template.soy.jssrc.dsl.Statements;
 import com.google.template.soy.jssrc.dsl.SwitchBuilder;
 import com.google.template.soy.jssrc.dsl.VariableDeclaration;
 import com.google.template.soy.shared.RangeArgs;
@@ -244,7 +246,7 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
 
     // Generate code to define the local var.
     Expression value = translateExpr(node.getExpr());
-    if (value.equals(Expression.LITERAL_NULL)) {
+    if (value.equals(Expressions.LITERAL_NULL)) {
       // TODO(b/255978614): add requires
       value = value.castAsNoRequire(JsType.forJsSrc(node.getVar().type()).typeExpr());
     }
@@ -304,7 +306,7 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
     // Add a mapping for generating future references to this local var.
     templateTranslationContext.soyToJsVariableMappings().put(node.getVar(), generatedVar);
 
-    return Statement.of(statements);
+    return Statements.of(statements);
   }
 
   /**
@@ -348,7 +350,7 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
                 .maybeCoerceToBoolean(
                     condNode.getExpr().getType(), translateExpr(condNode.getExpr()), false);
         // Convert body.
-        Statement consequent = Statement.of(visitChildren(condNode));
+        Statement consequent = Statements.of(visitChildren(condNode));
         // Add if-block to conditional.
         if (conditional == null) {
           conditional = ifStatement(predicate, consequent);
@@ -358,7 +360,7 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
 
       } else if (child instanceof IfElseNode) {
         // Convert body.
-        Statement trailingElse = Statement.of(visitChildren((IfElseNode) child));
+        Statement trailingElse = Statements.of(visitChildren((IfElseNode) child));
         // Add else-block to conditional.
         conditional.setElse(trailingElse);
       } else {
@@ -412,10 +414,10 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
           Expression caseChunk = translateExpr(caseExpr);
           caseChunks.add(caseChunk);
         }
-        Statement body = Statement.of(visitChildren(scn));
+        Statement body = Statements.of(visitChildren(scn));
         switchBuilder.addCase(caseChunks.build(), body);
       } else if (child instanceof SwitchDefaultNode) {
-        Statement body = Statement.of(visitChildren((SwitchDefaultNode) child));
+        Statement body = Statements.of(visitChildren((SwitchDefaultNode) child));
         switchBuilder.setDefault(body);
       } else {
         throw new AssertionError();
@@ -438,7 +440,7 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
         || type.equals(UnknownType.getInstance())) {
       CodeChunk.Generator codeGenerator = templateTranslationContext.codeGenerator();
       Expression tmp = codeGenerator.declarationBuilder().setRhs(switchOn).build().ref();
-      return Expression.ifExpression(GOOG_IS_OBJECT.call(tmp), tmp.dotAccess("toString").call())
+      return Expressions.ifExpression(GOOG_IS_OBJECT.call(tmp), tmp.dotAccess("toString").call())
           .setElse(tmp)
           .build(codeGenerator);
     }
@@ -498,7 +500,9 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
       // if any of the expressions are too expensive, allocate local variables for them
       final Expression start =
           maybeStashInLocal(
-              range.start().isPresent() ? translateExpr(range.start().get()) : Expression.number(0),
+              range.start().isPresent()
+                  ? translateExpr(range.start().get())
+                  : Expressions.number(0),
               varPrefix + "_RangeStart");
       final Expression end =
           maybeStashInLocal(translateExpr(range.limit()), varPrefix + "_RangeEnd");
@@ -506,7 +510,7 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
           maybeStashInLocal(
               range.increment().isPresent()
                   ? translateExpr(range.increment().get())
-                  : Expression.number(1),
+                  : Expressions.number(1),
               varPrefix + "_RangeStep");
       // the logic we want is
       // step * (end-start) < 0 ? 0 : ( (end-start)/step + ((end-start) % step == 0 ? 0 : 1));
@@ -546,7 +550,7 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
     if (hasIfempty) {
       // If there is an ifempty node, wrap the foreach body in an if statement and append the
       // ifempty body as the else clause.
-      Statement ifemptyBody = Statement.of(visitChildren(node.getChild(1)));
+      Statement ifemptyBody = Statements.of(visitChildren(node.getChild(1)));
       Expression limitCheck = limit.op(Operator.GREATER_THAN, number(0));
 
       foreachBody = ifStatement(limitCheck, foreachBody).setElse(ifemptyBody).build();
@@ -610,7 +614,7 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
     }
 
     // Generate the loop body.
-    Statement foreachBody = Statement.of(data, Statement.of(visitChildren(node)));
+    Statement foreachBody = Statements.of(data, Statements.of(visitChildren(node)));
 
     // Create the entire for block.
     return forLoop(loopIndexName, limit, foreachBody);
@@ -684,7 +688,7 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
 
     outputVars.popOutputVar();
 
-    return Statement.of(content);
+    return Statements.of(content);
   }
 
   /**
@@ -725,14 +729,14 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
 
       statements.add(WINDOW_CONSOLE_LOG.call(outputVar).asStatement());
 
-      return Statement.of(statements);
+      return Statements.of(statements);
     }
   }
 
   @Override
   protected Statement visitKeyNode(KeyNode node) {
     // Do nothing. Outside of incremental dom, key nodes are a no-op.
-    return Statement.of(ImmutableList.of());
+    return Statements.of(ImmutableList.of());
   }
 
   /**
@@ -750,14 +754,14 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
    */
   @Override
   protected Statement visitDebuggerNode(DebuggerNode node) {
-    return Statement.debugger();
+    return Statements.debugger();
   }
 
   @Override
   protected Statement visitVeLogNode(VeLogNode node) {
     // no need to do anything, the VeLogInstrumentationVisitor has already handled these.
     if (!node.needsSyntheticVelogNode()) {
-      return Statement.of(visitChildren(node));
+      return Statements.of(visitChildren(node));
     }
     // Create synthetic velog nodes. These will be removed in JS.
     FunctionNode funcNode =
@@ -774,19 +778,19 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
     statements.add(
         outputVars.addChunksToOutputVar(
             ImmutableList.of(
-                Expression.stringLiteral("<velog"),
+                Expressions.stringLiteral("<velog"),
                 getExprTranslator().exec(funcNode),
-                Expression.stringLiteral(">"))));
+                Expressions.stringLiteral(">"))));
     statements.addAll(visitChildren(node));
-    statements.add(outputVars.addChunkToOutputVar(Expression.stringLiteral("</velog>")));
-    return Statement.of(statements);
+    statements.add(outputVars.addChunkToOutputVar(Expressions.stringLiteral("</velog>")));
+    return Statements.of(statements);
   }
 
   @Override
   protected Statement visitMsgPlaceholderNode(MsgPlaceholderNode node) {
     // PlaceholderNodes just wrap other nodes with placeholder metadata which is processed by the
     // GenJsCodeVisitorAssistentForMsgs
-    return Statement.of(visitChildren(node));
+    return Statements.of(visitChildren(node));
   }
 
   // -----------------------------------------------------------------------------------------------

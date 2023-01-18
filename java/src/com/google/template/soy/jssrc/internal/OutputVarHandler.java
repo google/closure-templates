@@ -16,12 +16,13 @@
 
 package com.google.template.soy.jssrc.internal;
 
-import static com.google.template.soy.jssrc.dsl.Expression.id;
+import static com.google.template.soy.jssrc.dsl.Expressions.id;
 
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
 import com.google.template.soy.jssrc.dsl.Expression;
+import com.google.template.soy.jssrc.dsl.Expressions;
 import com.google.template.soy.jssrc.dsl.FormatOptions;
 import com.google.template.soy.jssrc.dsl.Statement;
 import com.google.template.soy.jssrc.dsl.VariableDeclaration;
@@ -63,7 +64,7 @@ public final class OutputVarHandler {
     }
     return Optional.of(
         initOutputVar(
-            currentOutputVar().name.assertExpr().getText(), Expression.LITERAL_EMPTY_STRING));
+            currentOutputVar().name.assertExpr().getText(), Expressions.LITERAL_EMPTY_STRING));
   }
 
   private VariableDeclaration initOutputVar(String name, Expression rhs) {

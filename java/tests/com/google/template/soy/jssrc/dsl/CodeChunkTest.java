@@ -18,21 +18,23 @@ package com.google.template.soy.jssrc.dsl;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.exprtree.Operator.PLUS;
-import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_TRUE;
-import static com.google.template.soy.jssrc.dsl.Expression.arrayLiteral;
-import static com.google.template.soy.jssrc.dsl.Expression.construct;
-import static com.google.template.soy.jssrc.dsl.Expression.dontTrustPrecedenceOf;
-import static com.google.template.soy.jssrc.dsl.Expression.fromExpr;
-import static com.google.template.soy.jssrc.dsl.Expression.id;
-import static com.google.template.soy.jssrc.dsl.Expression.ifExpression;
-import static com.google.template.soy.jssrc.dsl.Expression.not;
-import static com.google.template.soy.jssrc.dsl.Expression.number;
-import static com.google.template.soy.jssrc.dsl.Expression.stringLiteral;
+import static com.google.template.soy.jssrc.dsl.Expressions.LITERAL_TRUE;
+import static com.google.template.soy.jssrc.dsl.Expressions.THIS;
+import static com.google.template.soy.jssrc.dsl.Expressions.arrayLiteral;
+import static com.google.template.soy.jssrc.dsl.Expressions.construct;
+import static com.google.template.soy.jssrc.dsl.Expressions.dontTrustPrecedenceOf;
+import static com.google.template.soy.jssrc.dsl.Expressions.fromExpr;
+import static com.google.template.soy.jssrc.dsl.Expressions.id;
+import static com.google.template.soy.jssrc.dsl.Expressions.ifExpression;
+import static com.google.template.soy.jssrc.dsl.Expressions.not;
+import static com.google.template.soy.jssrc.dsl.Expressions.number;
+import static com.google.template.soy.jssrc.dsl.Expressions.stringLiteral;
 import static com.google.template.soy.jssrc.dsl.FormatOptions.JSSRC;
-import static com.google.template.soy.jssrc.dsl.Statement.forLoop;
-import static com.google.template.soy.jssrc.dsl.Statement.ifStatement;
-import static com.google.template.soy.jssrc.dsl.Statement.returnValue;
-import static com.google.template.soy.jssrc.dsl.Statement.throwValue;
+import static com.google.template.soy.jssrc.dsl.Statements.forLoop;
+import static com.google.template.soy.jssrc.dsl.Statements.ifStatement;
+import static com.google.template.soy.jssrc.dsl.Statements.returnValue;
+import static com.google.template.soy.jssrc.dsl.Statements.switchValue;
+import static com.google.template.soy.jssrc.dsl.Statements.throwValue;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
@@ -121,7 +123,7 @@ public final class CodeChunkTest {
                 var.doubleEqualsNull(),
                 // We have to use a sketchy API to force an empty block.
                 // That's as it should be, since empty blocks are useless.
-                Statement.of(ImmutableList.of()))
+                Statements.of(ImmutableList.of()))
             .build();
     assertThat(statement.getCode(JSSRC))
         .isEqualTo(JOINER.join("const $tmp = 1 + 2;", "if ($tmp == null) {", "}"));
@@ -146,7 +148,7 @@ public final class CodeChunkTest {
             .build()
             .ref();
     Statement statement =
-        Statement.of(
+        Statements.of(
             var.dotAccess("veryExpensiveMethod").call().asStatement(),
             ifStatement(var.doubleEqualsNull(), var.assign(LITERAL_TRUE).asStatement()).build());
     assertThat(statement.getCode(JSSRC))
@@ -220,7 +222,7 @@ public final class CodeChunkTest {
     Expression baz = cg.declarationBuilder().setRhs(id("baz")).build().ref();
     Expression increment = baz.withInitialStatement(baz.dotAccess("method").call().asStatement());
 
-    Statement body = Statement.of(id("fn").call().asStatement(), id("fn2").call().asStatement());
+    Statement body = Statements.of(id("fn").call().asStatement(), id("fn2").call().asStatement());
 
     Statement forChunk = forLoop(localVar, initial, limit, increment, body);
 
@@ -424,7 +426,7 @@ public final class CodeChunkTest {
   public void testConditionalWithNonExpressionConsequentDoesntUseTernaryExpression() {
     VariableDeclaration foo = cg.declarationBuilder().setRhs(construct(id("Foo"))).build();
     Statement fooWithStatement =
-        Statement.of(foo, foo.ref().dotAccess("expensiveMethod").call().asStatement());
+        Statements.of(foo, foo.ref().dotAccess("expensiveMethod").call().asStatement());
     Statement ternary =
         ifStatement(id("shouldProceed").call(), fooWithStatement)
             .setElse(id("baz").asStatement())
@@ -444,7 +446,7 @@ public final class CodeChunkTest {
   public void testConditionalWithNonExpressionAlternateDoesntUseTernaryExpression() {
     VariableDeclaration foo = cg.declarationBuilder().setRhs(construct(id("Foo"))).build();
     Statement fooWithStatement =
-        Statement.of(foo, foo.ref().dotAccess("expensiveMethod").call().asStatement());
+        Statements.of(foo, foo.ref().dotAccess("expensiveMethod").call().asStatement());
     Statement ternary =
         ifStatement(id("shouldProceed").call(), id("bar").asStatement())
             .setElse(fooWithStatement)
@@ -495,7 +497,7 @@ public final class CodeChunkTest {
     Expression fooWithStatement =
         foo.withInitialStatement(foo.dotAccess("expensiveMethod").call().asStatement());
     Expression map =
-        cg.declarationBuilder().setRhs(Expression.objectLiteral(ImmutableMap.of())).build().ref();
+        cg.declarationBuilder().setRhs(Expressions.objectLiteral(ImmutableMap.of())).build().ref();
     Expression mapAssignment = map.bracketAccess(stringLiteral("foo")).assign(fooWithStatement);
     assertThat(mapAssignment.getCode(JSSRC))
         .isEqualTo(
@@ -509,14 +511,13 @@ public final class CodeChunkTest {
   @Test
   public void testObjectLiteral() {
     Expression objectLiteral =
-        Expression.objectLiteral(
-            ImmutableMap.of(
-                "plus", number(15).plus(Expression.number(4)), "string", stringLiteral("hello")));
+        Expressions.objectLiteral(
+            ImmutableMap.of("plus", number(15).plus(number(4)), "string", stringLiteral("hello")));
 
     assertThat(objectLiteral.getCode(JSSRC)).isEqualTo("{plus: 15 + 4, string: 'hello'};");
 
     objectLiteral =
-        Expression.objectLiteralWithQuotedKeys(ImmutableMap.of("quoted", stringLiteral("orange")));
+        Expressions.objectLiteralWithQuotedKeys(ImmutableMap.of("quoted", stringLiteral("orange")));
 
     assertThat(objectLiteral.getCode(JSSRC)).isEqualTo("{'quoted': 'orange'};");
   }
@@ -744,7 +745,7 @@ public final class CodeChunkTest {
 
   @Test
   public void testExpressionAsStatement() {
-    Expression expression = Expression.THIS.dotAccess("myVar");
+    Expression expression = THIS.dotAccess("myVar");
     Statement statement = expression.asStatement();
 
     assertThat(statement.getCode(JSSRC)).isEqualTo("this.myVar;");
@@ -799,7 +800,7 @@ public final class CodeChunkTest {
 
   @Test
   public void testReturnNothing() {
-    Statement returnNothingStatement = Statement.returnNothing();
+    Statement returnNothingStatement = Statements.returnNothing();
     assertThat(returnNothingStatement.getCode(JSSRC)).isEqualTo("return;");
   }
 
@@ -826,14 +827,12 @@ public final class CodeChunkTest {
     Statement chunk =
         ifStatement(
                 id("a"),
-                Expression.id(
+                id(
                         "foo",
                         ImmutableList.of(
                             GoogRequire.create("foo.bar"), GoogRequire.create("foo.baz")))
                     .asStatement())
-            .setElse(
-                Expression.id("foo", ImmutableList.of(GoogRequire.create("foo.quux")))
-                    .asStatement())
+            .setElse(id("foo", ImmutableList.of(GoogRequire.create("foo.quux"))).asStatement())
             .build();
     final List<String> namespaces = new ArrayList<>();
     chunk.collectRequires(r -> namespaces.add(r.symbol()));
@@ -844,7 +843,7 @@ public final class CodeChunkTest {
   public void testSwitch_simple() {
     Expression foo = id("foo");
     Statement switchStatement =
-        Statement.switchValue(foo.dotAccess("getStuff").call())
+        switchValue(foo.dotAccess("getStuff").call())
             .addCase(
                 ImmutableList.of(stringLiteral("bar")), foo.dotAccess("bar").call().asStatement())
             .addCase(
@@ -879,7 +878,7 @@ public final class CodeChunkTest {
         foo2.withInitialStatement(foo2.dotAccess("anotherExpensiveMethod").call().asStatement());
 
     Statement switchStatement =
-        Statement.switchValue(fooWithStatement.dotAccess("getStuff").call())
+        switchValue(fooWithStatement.dotAccess("getStuff").call())
             .addCase(
                 ImmutableList.of(stringLiteral("bar")), id("someFunction").call().asStatement())
             .addCase(
@@ -924,7 +923,7 @@ public final class CodeChunkTest {
   public void testClassExpression() {
     JsDoc.Builder jsDocBuilder = JsDoc.builder();
     jsDocBuilder.addParam("num", "number");
-    Statement body = returnValue(id("num").plus(Expression.number(1)));
+    Statement body = returnValue(id("num").plus(number(1)));
     MethodDeclaration method = MethodDeclaration.create("addOne", jsDocBuilder.build(), body);
     ClassExpression fooClass = ClassExpression.create(ImmutableList.of(method));
     VariableDeclaration fooClassExpression =
@@ -962,7 +961,7 @@ public final class CodeChunkTest {
     Expression root =
         VariableDeclaration.builder("root")
             .setGoogRequires(ImmutableSet.of(theOneRequire))
-            .setRhs(Expression.number(1))
+            .setRhs(number(1))
             .build()
             .ref();
 

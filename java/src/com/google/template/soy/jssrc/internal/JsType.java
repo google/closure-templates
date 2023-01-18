@@ -19,7 +19,7 @@ package com.google.template.soy.jssrc.internal;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
-import static com.google.template.soy.jssrc.dsl.Expression.stringLiteral;
+import static com.google.template.soy.jssrc.dsl.Expressions.stringLiteral;
 import static com.google.template.soy.jssrc.internal.JsRuntime.ARRAY_IS_ARRAY;
 import static com.google.template.soy.jssrc.internal.JsRuntime.ELEMENT_LIB_IDOM;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_HTML_SAFE_ATTRIBUTE;
@@ -45,6 +45,7 @@ import com.google.template.soy.base.internal.TemplateContentKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.jssrc.dsl.CodeChunk.Generator;
 import com.google.template.soy.jssrc.dsl.Expression;
+import com.google.template.soy.jssrc.dsl.Expressions;
 import com.google.template.soy.jssrc.dsl.GoogRequire;
 import com.google.template.soy.types.LegacyObjectMapType;
 import com.google.template.soy.types.ListType;
@@ -719,7 +720,7 @@ public final class JsType {
   /** Builds and returns a TypePredicate comparing a value's 'typeof' against the given 'type' */
   private static TypePredicate typeofTypePredicate(String type) {
     return (value, codeGenerator) ->
-        Optional.of(value.typeOf().tripleEquals(Expression.stringLiteral(type)));
+        Optional.of(value.typeOf().tripleEquals(Expressions.stringLiteral(type)));
   }
 
   private final ImmutableSortedSet<String> typeExpressions;

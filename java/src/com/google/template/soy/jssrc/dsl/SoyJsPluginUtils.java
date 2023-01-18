@@ -16,8 +16,8 @@
 
 package com.google.template.soy.jssrc.dsl;
 
-import static com.google.template.soy.jssrc.dsl.Expression.dontTrustPrecedenceOf;
-import static com.google.template.soy.jssrc.dsl.Expression.fromExpr;
+import static com.google.template.soy.jssrc.dsl.Expressions.dontTrustPrecedenceOf;
+import static com.google.template.soy.jssrc.dsl.Expressions.fromExpr;
 
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;

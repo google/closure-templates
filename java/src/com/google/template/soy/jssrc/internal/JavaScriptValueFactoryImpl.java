@@ -31,6 +31,7 @@ import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
 import com.google.template.soy.jssrc.dsl.Expression;
+import com.google.template.soy.jssrc.dsl.Expressions;
 import com.google.template.soy.jssrc.dsl.FormatOptions;
 import com.google.template.soy.jssrc.dsl.GoogRequire;
 import com.google.template.soy.jssrc.restricted.JsExpr;
@@ -49,7 +50,7 @@ import java.util.Optional;
 public final class JavaScriptValueFactoryImpl extends JavaScriptValueFactory {
   private static final JavaScriptValueImpl ERROR_VALUE =
       new JavaScriptValueImpl(
-          Expression.fromExpr(
+          Expressions.fromExpr(
               new JsExpr(
                   "(function(){throw new Error('if you see this, the soy compiler has swallowed "
                       + "an error :-(');})()",
@@ -79,11 +80,11 @@ public final class JavaScriptValueFactoryImpl extends JavaScriptValueFactory {
       @Override
       public JavaScriptValue getBidiDir() {
         if (dir.isStaticValue()) {
-          return new JavaScriptValueImpl(Expression.number(dir.getStaticValue()));
+          return new JavaScriptValueImpl(Expressions.number(dir.getStaticValue()));
         }
         return new JavaScriptValueImpl(
-            Expression.ifExpression(JsRuntime.SOY_IS_LOCALE_RTL, Expression.number(-1))
-                .setElse(Expression.number(1))
+            Expressions.ifExpression(JsRuntime.SOY_IS_LOCALE_RTL, Expressions.number(-1))
+                .setElse(Expressions.number(1))
                 .build(codeGenerator));
       }
     };
@@ -182,42 +183,42 @@ public final class JavaScriptValueFactoryImpl extends JavaScriptValueFactory {
   @Override
   public JavaScriptValueImpl unsafeUncheckedExpression(String expr) {
     return new JavaScriptValueImpl(
-        Expression.fromExpr(new JsExpr(expr, /*precedence=*/ 0), ImmutableList.of()));
+        Expressions.fromExpr(new JsExpr(expr, /* precedence= */ 0), ImmutableList.of()));
   }
 
   @Override
   public JavaScriptValueImpl constant(long num) {
-    return new JavaScriptValueImpl(Expression.number(num));
+    return new JavaScriptValueImpl(Expressions.number(num));
   }
 
   @Override
   public JavaScriptValueImpl constant(double num) {
-    return new JavaScriptValueImpl(Expression.number(num));
+    return new JavaScriptValueImpl(Expressions.number(num));
   }
 
   @Override
   public JavaScriptValueImpl constant(String str) {
-    return new JavaScriptValueImpl(Expression.stringLiteral(str));
+    return new JavaScriptValueImpl(Expressions.stringLiteral(str));
   }
 
   @Override
   public JavaScriptValueImpl constant(boolean bool) {
-    return new JavaScriptValueImpl(bool ? Expression.LITERAL_TRUE : Expression.LITERAL_FALSE);
+    return new JavaScriptValueImpl(bool ? Expressions.LITERAL_TRUE : Expressions.LITERAL_FALSE);
   }
 
   @Override
   public JavaScriptValue constantNull() {
-    return new JavaScriptValueImpl(Expression.LITERAL_NULL);
+    return new JavaScriptValueImpl(Expressions.LITERAL_NULL);
   }
 
   @Override
   public JavaScriptValue emptyObjLiteral() {
-    return new JavaScriptValueImpl(Expression.EMPTY_OBJECT_LITERAL);
+    return new JavaScriptValueImpl(Expressions.EMPTY_OBJECT_LITERAL);
   }
 
   @Override
   public JavaScriptValueImpl global(String globalSymbol) {
-    return new JavaScriptValueImpl(Expression.dottedIdNoRequire(globalSymbol));
+    return new JavaScriptValueImpl(Expressions.dottedIdNoRequire(globalSymbol));
   }
 
   private static List<Expression> unwrapParams(List<JavaScriptValue> params) {
@@ -246,12 +247,12 @@ public final class JavaScriptValueFactoryImpl extends JavaScriptValueFactory {
 
     @Override
     public JavaScriptValueImpl isNonNull() {
-      return new JavaScriptValueImpl(impl.doubleNotEquals(Expression.LITERAL_NULL));
+      return new JavaScriptValueImpl(impl.doubleNotEquals(Expressions.LITERAL_NULL));
     }
 
     @Override
     public JavaScriptValueImpl isNull() {
-      return new JavaScriptValueImpl(impl.doubleEquals(Expression.LITERAL_NULL));
+      return new JavaScriptValueImpl(impl.doubleEquals(Expressions.LITERAL_NULL));
     }
 
     @Override

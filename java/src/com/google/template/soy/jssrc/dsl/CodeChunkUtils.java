@@ -16,7 +16,7 @@
 
 package com.google.template.soy.jssrc.dsl;
 
-import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_EMPTY_STRING;
+import static com.google.template.soy.jssrc.dsl.Expressions.LITERAL_EMPTY_STRING;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.jssrc.restricted.JsExprUtils;

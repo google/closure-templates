@@ -51,12 +51,7 @@ abstract class BinaryOperation extends Operation {
       Associativity associativity,
       Expression arg1,
       Expression arg2) {
-    return new AutoValue_BinaryOperation(
-        precedence,
-        associativity,
-        operator,
-        arg1,
-        arg2);
+    return new AutoValue_BinaryOperation(precedence, associativity, operator, arg1, arg2);
   }
 
   static Expression and(Expression lhs, Expression rhs, CodeChunk.Generator codeGenerator) {
@@ -69,7 +64,7 @@ abstract class BinaryOperation extends Operation {
     // rhs should be evaluated only if lhs evaluates to true.
     Expression tmp = codeGenerator.declarationBuilder().setMutable().setRhs(lhs).build().ref();
     return Composite.create(
-        ImmutableList.of(Statement.ifStatement(tmp, tmp.assign(rhs).asStatement()).build()), tmp);
+        ImmutableList.of(Statements.ifStatement(tmp, tmp.assign(rhs).asStatement()).build()), tmp);
   }
 
   static Expression or(Expression lhs, Expression rhs, CodeChunk.Generator codeGenerator) {
@@ -82,7 +77,8 @@ abstract class BinaryOperation extends Operation {
     // rhs should be evaluated only if lhs evaluates to false.
     Expression tmp = codeGenerator.declarationBuilder().setMutable().setRhs(lhs).build().ref();
     return Composite.create(
-        ImmutableList.of(Statement.ifStatement(not(tmp), tmp.assign(rhs).asStatement()).build()),
+        ImmutableList.of(
+            Statements.ifStatement(Expressions.not(tmp), tmp.assign(rhs).asStatement()).build()),
         tmp);
   }
 

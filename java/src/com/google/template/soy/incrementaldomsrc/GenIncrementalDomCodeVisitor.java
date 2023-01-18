@@ -26,10 +26,10 @@ import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SO
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_TYPE_HTML;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.STATE_PREFIX;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.STATE_VAR_PREFIX;
-import static com.google.template.soy.jssrc.dsl.Expression.EMPTY_OBJECT_LITERAL;
-import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_EMPTY_STRING;
-import static com.google.template.soy.jssrc.dsl.Expression.id;
-import static com.google.template.soy.jssrc.dsl.Statement.returnValue;
+import static com.google.template.soy.jssrc.dsl.Expressions.EMPTY_OBJECT_LITERAL;
+import static com.google.template.soy.jssrc.dsl.Expressions.LITERAL_EMPTY_STRING;
+import static com.google.template.soy.jssrc.dsl.Expressions.id;
+import static com.google.template.soy.jssrc.dsl.Statements.returnValue;
 import static com.google.template.soy.jssrc.internal.JsRuntime.ELEMENT_LIB_IDOM;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_SOY_ALIAS;
 import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_DATA;
@@ -46,9 +46,11 @@ import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.ClassExpression;
 import com.google.template.soy.jssrc.dsl.ClassExpression.MethodDeclaration;
 import com.google.template.soy.jssrc.dsl.Expression;
+import com.google.template.soy.jssrc.dsl.Expressions;
 import com.google.template.soy.jssrc.dsl.GoogRequire;
 import com.google.template.soy.jssrc.dsl.JsDoc;
 import com.google.template.soy.jssrc.dsl.Statement;
+import com.google.template.soy.jssrc.dsl.Statements;
 import com.google.template.soy.jssrc.dsl.VariableDeclaration;
 import com.google.template.soy.jssrc.internal.CanInitOutputVarVisitor;
 import com.google.template.soy.jssrc.internal.GenJsCodeVisitor;
@@ -183,7 +185,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       }
       getJsCodeBuilder()
           .append(
-              Statement.assign(
+              Statements.assign(
                   id(alias)
                       .castAs(
                           "!" + ELEMENT_LIB_IDOM.alias() + ".IdomFunction",
@@ -193,7 +195,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       if (isModifiable(node) && !node.getChildren().isEmpty()) {
         getJsCodeBuilder()
             .append(
-                Statement.assign(
+                Statements.assign(
                     id(alias + modifiableDefaultImplSuffix)
                         .castAs(
                             "!" + ELEMENT_LIB_IDOM.alias() + ".IdomFunction",
@@ -233,15 +235,15 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
             .build();
     // Build `renderInternal` method.
     Expression fn =
-        Expression.function(
+        Expressions.function(
             jsDoc,
             // Various parts of the js codegen expects these values to be in the local
             // scope.
-            Statement.of(
+            Statements.of(
                 VariableDeclaration.builder(StandardNames.DOLLAR_IJDATA)
-                    .setRhs(Expression.THIS.dotAccess("ijData"))
+                    .setRhs(Expressions.THIS.dotAccess("ijData"))
                     .build(),
-                Statement.of(
+                Statements.of(
                     node.getStateVars().stream()
                         .map(
                             stateVar ->
@@ -269,20 +271,20 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       Expression rhsValue;
       if (isConstantExpr(stateVar.defaultValue())) {
         rhsValue = translateExpr(stateVar.defaultValue());
-        if (!(rhsValue.hasOuterCast())) {
+        if (!rhsValue.hasOuterCast()) {
           rhsValue = rhsValue.castAs(jsType.typeExpr(), jsType.getGoogRequires());
         }
       } else {
-        rhsValue = Expression.LITERAL_UNDEFINED.castAsUnknown();
+        rhsValue = Expressions.LITERAL_UNDEFINED.castAsUnknown();
       }
 
       JsDoc stateVarJsdoc =
           JsDoc.builder().addParameterizedAnnotation("private", jsType.typeExpr()).build();
       stateVarInitializations.add(
-          Statement.assign(
-              Expression.THIS.dotAccess(STATE_PREFIX + stateVar.name()), rhsValue, stateVarJsdoc));
+          Statements.assign(
+              Expressions.THIS.dotAccess(STATE_PREFIX + stateVar.name()), rhsValue, stateVarJsdoc));
     }
-    return Statement.of(stateVarInitializations.build());
+    return Statements.of(stateVarInitializations.build());
   }
 
   @Nullable
@@ -301,13 +303,13 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     return VariableDeclaration.builder(soyElementClassName + "SyncInternal")
         .setJsDoc(jsDoc)
         .setRhs(
-            Expression.function(
+            Expressions.function(
                 jsDoc,
-                Statement.of(
+                Statements.of(
                     // Various parts of the js codegen expects these parameters to be in the local
                     // scope.
                     VariableDeclaration.builder(StandardNames.DOLLAR_IJDATA)
-                        .setRhs(Expression.THIS.dotAccess("ijData"))
+                        .setRhs(Expressions.THIS.dotAccess("ijData"))
                         .build(),
                     genSyncStateCalls(node, alias))))
         .build();
@@ -464,7 +466,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     // Generate statement to ensure data is defined, if necessary.
     if (!isPositionalStyle && new ShouldEnsureDataIsDefinedVisitor().exec(node)) {
       bodyStatements.add(
-          Statement.assign(
+          Statements.assign(
               OPT_DATA,
               OPT_DATA.or(
                   EMPTY_OBJECT_LITERAL.castAsNoRequire(objectParamName),
@@ -477,7 +479,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
         node instanceof TemplateElementNode
             ? this.generateFunctionBodyForSoyElement((TemplateElementNode) node, alias)
             : this.generateIncrementalDomRenderCalls(node, alias, isPositionalStyle));
-    return Statement.of(bodyStatements.build());
+    return Statements.of(bodyStatements.build());
   }
 
   private boolean calcHasNonConstantState(TemplateElementNode node) {
@@ -499,8 +501,8 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     for (TemplateStateVar headerVar : headerVars) {
       if (isNonConst.get(headerVar)) {
         stateReassignmentBuilder.add(
-            Statement.assign(
-                Expression.THIS.dotAccess(prefix + headerVar.name()),
+            Statements.assign(
+                Expressions.THIS.dotAccess(prefix + headerVar.name()),
                 translateExpr(headerVar.defaultValue())));
       }
       haveVisitedLastNonConstVar = haveVisitedLastNonConstVar || headerVar.equals(lastNonConstVar);
@@ -508,13 +510,13 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       if (!haveVisitedLastNonConstVar) {
         stateReassignmentBuilder.add(
             VariableDeclaration.builder(STATE_VAR_PREFIX + STATE_PREFIX + headerVar.name())
-                .setRhs(Expression.THIS.dotAccess(prefix + headerVar.name()))
+                .setRhs(Expressions.THIS.dotAccess(prefix + headerVar.name()))
                 .build());
       }
     }
     List<Statement> assignments = stateReassignmentBuilder.build();
-    Statement stateReassignments = Statement.of(assignments);
-    return Statement.of(typeChecks, stateReassignments);
+    Statement stateReassignments = Statements.of(assignments);
+    return Statements.of(typeChecks, stateReassignments);
   }
 
   /** Generates idom#elementOpen, idom#elementClose, etc. function calls for the given node. */
@@ -532,7 +534,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       jsCodeBuilder.pushOutputVar("output").setOutputVarInited();
     }
     Statement body =
-        Statement.of(
+        Statements.of(
             new GenIncrementalDomTemplateBodyVisitor(
                     outputVars,
                     jsSrcOptions,
@@ -556,9 +558,9 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
           VariableDeclaration.builder("output").setMutable().setRhs(LITERAL_EMPTY_STRING).build();
       jsCodeBuilder.popOutputVar();
       body =
-          Statement.of(declare, body, returnValue(sanitize(declare.ref(), node.getContentKind())));
+          Statements.of(declare, body, returnValue(sanitize(declare.ref(), node.getContentKind())));
     }
-    return Statement.of(typeChecks, body);
+    return Statements.of(typeChecks, body);
   }
 
   /**
@@ -574,23 +576,23 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     Expression firstElementKey =
         // Since Soy element roots cannot have manual keys (see go/soy-element-keyed-roots),
         // this will always be the first element key.
-        JsRuntime.XID.call(Expression.stringLiteral(tplName + "-root"));
+        JsRuntime.XID.call(Expressions.stringLiteral(tplName + "-root"));
     List<Expression> params =
         Arrays.asList(
             INCREMENTAL_DOM,
             id(soyElementClassName),
             firstElementKey,
-            Expression.stringLiteral(node.getHtmlElementMetadata().getTag()),
+            Expressions.stringLiteral(node.getHtmlElementMetadata().getTag()),
             OPT_DATA,
             JsRuntime.IJ_DATA,
             id(soyElementClassName + "Render"));
-    return Statement.of(
+    return Statements.of(
         VariableDeclaration.builder("soyEl")
             .setRhs(SOY_IDOM.dotAccess("$$handleSoyElement").call(params))
             .build(),
-        Statement.ifStatement(
+        Statements.ifStatement(
                 id("soyEl"),
-                Statement.of(
+                Statements.of(
                     id("soyEl")
                         .dotAccess("renderInternal")
                         .call(INCREMENTAL_DOM, OPT_DATA)
@@ -632,14 +634,14 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     stateVarInitializations.add(generateInitInternal(node));
     if (hasNonConstantState) {
       stateVarInitializations.add(
-          Statement.assign(
-              Expression.THIS.dotAccess("syncStateFromData"),
+          Statements.assign(
+              Expressions.THIS.dotAccess("syncStateFromData"),
               id(soyElementClassName + "SyncInternal")));
     }
     // Build constructor method.
     Statement ctorBody =
-        Statement.of(
-            id("super").call().asStatement(), Statement.of(stateVarInitializations.build()));
+        Statements.of(
+            id("super").call().asStatement(), Statements.of(stateVarInitializations.build()));
     MethodDeclaration constructorMethod =
         MethodDeclaration.create("constructor", JsDoc.builder().build(), ctorBody);
     ImmutableList.Builder<MethodDeclaration> builder = ImmutableList.builder();
@@ -697,7 +699,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   }
 
   private static Statement generateExportsForSoyElement(String soyElementClassName) {
-    return Statement.assign(
+    return Statements.assign(
         // Idom only supports goog.module generation.
         JsRuntime.EXPORTS.dotAccess(
             // Drop the leading '$' from soyElementClassName.
@@ -724,7 +726,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
         MethodDeclaration.create(
             "get" + stateAccessorSuffix,
             JsDoc.builder().addParameterizedAnnotation("return", typeForGetters.typeExpr()).build(),
-            Statement.returnValue(getterStateValue)));
+            Statements.returnValue(getterStateValue)));
 
     // Generate setters.
     ImmutableList.Builder<Statement> setStateMethodStatements = ImmutableList.builder();
@@ -742,7 +744,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     // TODO(b/230911572): remove this cast when types are always aligned.
     Expression setterParam = maybeCastAs(id(stateVar.name()), typeForSetters, typeForState);
     setStateMethodStatements.add(
-        setterStateValue.assign(setterParam).asStatement(), Statement.returnValue(id("this")));
+        setterStateValue.assign(setterParam).asStatement(), Statements.returnValue(id("this")));
     methods.add(
         MethodDeclaration.create(
             "set" + stateAccessorSuffix,
@@ -750,7 +752,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
                 .addParam(stateVar.name(), typeForSetters.typeExpr())
                 .addParameterizedAnnotation("return", "!" + soyElementClassName)
                 .build(),
-            Statement.of(setStateMethodStatements.build())));
+            Statements.of(setStateMethodStatements.build())));
 
     return methods.build();
   }
@@ -769,7 +771,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
               // Injected params are marked as optional, see:
               .addParameterizedAnnotation("return", jsType.typeExpr())
               .build(),
-          Statement.of(ImmutableList.of()));
+          Statements.of(ImmutableList.of()));
     }
     // TODO(b/230911572): remove this cast when types are always aligned.
     Expression value =
@@ -803,7 +805,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     return MethodDeclaration.create(
         "get" + accessorSuffix,
         JsDoc.builder().addAnnotation("override").addAnnotation("public").build(),
-        Statement.returnValue(typeAssertion.orElse(value)));
+        Statements.returnValue(typeAssertion.orElse(value)));
   }
 
   /** Constructs template class name, e.g. converts template `ns.foo` => `$FooElement`. */
@@ -835,7 +837,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     // as described in the -TypeChecks accessors.
     SoyType stateVarType = stateVar.typeOrDefault(null);
     return maybeCastAs(
-        Expression.THIS.dotAccess(STATE_PREFIX + stateVar.name()),
+        Expressions.THIS.dotAccess(STATE_PREFIX + stateVar.name()),
         JsType.forIncrementalDomState(stateVarType),
         JsType.forIncrementalDomTypeChecks(stateVarType));
   }

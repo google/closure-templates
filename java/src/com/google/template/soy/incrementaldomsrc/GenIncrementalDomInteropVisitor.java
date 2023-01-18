@@ -22,9 +22,10 @@ import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.Expression;
+import com.google.template.soy.jssrc.dsl.Expressions;
 import com.google.template.soy.jssrc.dsl.GoogRequire;
 import com.google.template.soy.jssrc.dsl.JsDoc;
-import com.google.template.soy.jssrc.dsl.Statement;
+import com.google.template.soy.jssrc.dsl.Statements;
 import com.google.template.soy.jssrc.internal.CanInitOutputVarVisitor;
 import com.google.template.soy.jssrc.internal.DelTemplateNamer;
 import com.google.template.soy.jssrc.internal.GenCallCodeUtils;
@@ -109,18 +110,18 @@ public final class GenIncrementalDomInteropVisitor extends GenJsCodeVisitor {
         GenCallCodeUtils.hasPositionalSignature(TemplateMetadata.buildTemplateType(node));
     if (!hasPositionalSignature && node.getContentKind() == SanitizedContentKind.HTML) {
       codeBuilder.append(
-          Statement.ifStatement(
+          Statements.ifStatement(
                   shouldStub,
-                  Statement.assign(
+                  Statements.assign(
                       soyJsGoogRequire.dotAccess(
                           node.getPartialTemplateName() + "_" + StandardNames.SOY_STUB),
-                      Expression.arrowFunction(
+                      Expressions.arrowFunction(
                           JsDoc.builder()
                               .addParam(StandardNames.DOLLAR_DATA, "?")
                               .addParam(StandardNames.DOLLAR_IJDATA, "?")
                               .build(),
                           IncrementalDomRuntime.SOY_IDOM_MAKE_HTML.call(
-                              Expression.arrowFunction(
+                              Expressions.arrowFunction(
                                   JsDoc.builder().build(),
                                   idomGoogRequire
                                       .reference()
@@ -129,7 +130,7 @@ public final class GenIncrementalDomInteropVisitor extends GenJsCodeVisitor {
                                           IncrementalDomRuntime.SOY_IDOM
                                               .reference()
                                               .dotAccess("$$defaultIdomRenderer"),
-                                          Expression.id(StandardNames.DOLLAR_DATA),
+                                          Expressions.id(StandardNames.DOLLAR_DATA),
                                           JsRuntime.IJ_DATA))))))
               .build());
       return;
@@ -142,20 +143,20 @@ public final class GenIncrementalDomInteropVisitor extends GenJsCodeVisitor {
       ArrayList<Expression> callParams =
           jsDoc.params().stream()
               .filter(p -> p.annotationType().equals("param"))
-              .map(p -> Expression.id(p.paramTypeName()))
+              .map(p -> Expressions.id(p.paramTypeName()))
               .collect(Collectors.toCollection(ArrayList::new));
       callParams.add(
           2, IncrementalDomRuntime.SOY_IDOM.reference().dotAccess("$$defaultIdomRenderer"));
       codeBuilder.append(
-          Statement.ifStatement(
+          Statements.ifStatement(
                   shouldStub,
-                  Statement.assign(
+                  Statements.assign(
                       soyJsGoogRequire.dotAccess(
                           node.getPartialTemplateName() + "_" + StandardNames.SOY_STUB),
-                      Expression.arrowFunction(
+                      Expressions.arrowFunction(
                           jsDoc,
                           IncrementalDomRuntime.SOY_IDOM_MAKE_HTML.call(
-                              Expression.arrowFunction(
+                              Expressions.arrowFunction(
                                   JsDoc.builder().build(),
                                   idomGoogRequire
                                       .reference()

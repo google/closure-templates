@@ -15,8 +15,8 @@
  */
 package com.google.template.soy.jssrc.dsl;
 
-import static com.google.template.soy.jssrc.dsl.Expression.id;
-import static com.google.template.soy.jssrc.dsl.Expression.stringLiteral;
+import static com.google.template.soy.jssrc.dsl.Expressions.id;
+import static com.google.template.soy.jssrc.dsl.Expressions.stringLiteral;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;

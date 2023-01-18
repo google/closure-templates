@@ -15,7 +15,7 @@
  */
 package com.google.template.soy.incrementaldomsrc;
 
-import static com.google.template.soy.jssrc.dsl.Expression.id;
+import static com.google.template.soy.jssrc.dsl.Expressions.id;
 import static com.google.template.soy.jssrc.internal.JsRuntime.JS_TO_PROTO_PACK_FN_BASE;
 
 import com.google.common.collect.ImmutableMap;

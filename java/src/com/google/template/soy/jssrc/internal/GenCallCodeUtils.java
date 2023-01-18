@@ -17,12 +17,12 @@
 package com.google.template.soy.jssrc.internal;
 
 import static com.google.common.base.Preconditions.checkState;
-import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_EMPTY_STRING;
-import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_NULL;
-import static com.google.template.soy.jssrc.dsl.Expression.dottedIdNoRequire;
-import static com.google.template.soy.jssrc.dsl.Expression.fromExpr;
-import static com.google.template.soy.jssrc.dsl.Expression.id;
-import static com.google.template.soy.jssrc.dsl.Expression.stringLiteral;
+import static com.google.template.soy.jssrc.dsl.Expressions.LITERAL_EMPTY_STRING;
+import static com.google.template.soy.jssrc.dsl.Expressions.LITERAL_NULL;
+import static com.google.template.soy.jssrc.dsl.Expressions.dottedIdNoRequire;
+import static com.google.template.soy.jssrc.dsl.Expressions.fromExpr;
+import static com.google.template.soy.jssrc.dsl.Expressions.id;
+import static com.google.template.soy.jssrc.dsl.Expressions.stringLiteral;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_ASSIGN_DEFAULTS;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_GET_DELEGATE_FN;
 import static com.google.template.soy.jssrc.internal.JsRuntime.sanitizedContentOrdainerFunctionForInternalBlocks;
@@ -37,6 +37,7 @@ import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
 import com.google.template.soy.jssrc.dsl.Expression;
+import com.google.template.soy.jssrc.dsl.Expressions;
 import com.google.template.soy.jssrc.dsl.FormatOptions;
 import com.google.template.soy.jssrc.dsl.GoogRequire;
 import com.google.template.soy.jssrc.internal.GenJsExprsVisitor.GenJsExprsVisitorFactory;
@@ -223,7 +224,7 @@ public class GenCallCodeUtils {
       Expression explicitParam = explicitParams.remove(calleeParam.getName());
       if (explicitParam == null) {
         numTrailingUndefineds++;
-        params.add(Expression.LITERAL_UNDEFINED);
+        params.add(Expressions.LITERAL_UNDEFINED);
       } else {
         numTrailingUndefineds = 0;
         params.add(explicitParam);
@@ -312,7 +313,7 @@ public class GenCallCodeUtils {
       CallBasicNode callBasicNode = (CallBasicNode) callNode;
       if (callBasicNode.isStaticCall()) {
         // Skip checks for the common case of synthetic template literals.
-        callee = Expression.dottedIdNoRequire(templateAliases.get(callBasicNode.getCalleeName()));
+        callee = Expressions.dottedIdNoRequire(templateAliases.get(callBasicNode.getCalleeName()));
       } else {
         callee = exprTranslator.exec(callBasicNode.getCalleeExpr());
       }
@@ -424,13 +425,13 @@ public class GenCallCodeUtils {
         return dataToPass.get().castAsUnknown();
       }
       // No need to cast; assignDefaults already returns {?}.
-      return SOY_ASSIGN_DEFAULTS.call(Expression.objectLiteral(params), dataToPass.get());
+      return SOY_ASSIGN_DEFAULTS.call(Expressions.objectLiteral(params), dataToPass.get());
     } else {
       if (params.isEmpty()) {
         return LITERAL_NULL;
       }
       // Ignore inconsistencies between Closure Compiler & Soy type systems (eg, proto nullability).
-      return Expression.objectLiteral(params).castAsUnknown();
+      return Expressions.objectLiteral(params).castAsUnknown();
     }
   }
 

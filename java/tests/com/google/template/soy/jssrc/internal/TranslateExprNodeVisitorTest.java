@@ -19,7 +19,7 @@ package com.google.template.soy.jssrc.internal;
 import static com.google.template.soy.exprtree.Operator.CONDITIONAL;
 import static com.google.template.soy.exprtree.Operator.OR;
 import static com.google.template.soy.exprtree.Operator.PLUS;
-import static com.google.template.soy.jssrc.dsl.Expression.id;
+import static com.google.template.soy.jssrc.dsl.Expressions.id;
 import static com.google.template.soy.jssrc.internal.JsSrcSubject.assertThatSoyExpr;
 
 import com.google.common.collect.ImmutableMap;

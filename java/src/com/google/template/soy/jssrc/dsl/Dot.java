@@ -35,17 +35,11 @@ abstract class Dot extends Operation {
   abstract boolean nullSafe();
 
   static Dot create(Expression receiver, Expression key) {
-    return new AutoValue_Dot(
-        receiver,
-        key,
-        false);
+    return new AutoValue_Dot(receiver, key, false);
   }
 
   static Dot createNullSafe(Expression receiver, Expression key) {
-    return new AutoValue_Dot(
-        receiver,
-        key,
-        true);
+    return new AutoValue_Dot(receiver, key, true);
   }
 
   @Override

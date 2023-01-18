@@ -28,7 +28,7 @@ import com.google.template.soy.base.internal.UniqueNameGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
-import com.google.template.soy.jssrc.dsl.Expression;
+import com.google.template.soy.jssrc.dsl.Expressions;
 import com.google.template.soy.jssrc.dsl.FormatOptions;
 import com.google.template.soy.shared.internal.InternalPlugins;
 import com.google.template.soy.shared.internal.NoOpScopedData;
@@ -165,8 +165,8 @@ public final class GenCallCodeUtilsTest {
     TranslationContext translationContext =
         TranslationContext.of(
             SoyToJsVariableMappings.newEmpty()
-                .put("$boo", Expression.id("boo"))
-                .put("$goo", Expression.id("goo")),
+                .put("$boo", Expressions.id("boo"))
+                .put("$goo", Expressions.id("goo")),
             CodeChunk.Generator.create(nameGenerator),
             nameGenerator);
     ErrorReporter errorReporter = ErrorReporter.exploding();

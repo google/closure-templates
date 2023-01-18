@@ -31,7 +31,7 @@ abstract class ObjectLiteral extends Expression {
   abstract ImmutableMap<Expression, Expression> values();
 
   static ObjectLiteral create(Map<String, Expression> object) {
-    return create(object, Expression::id);
+    return create(object, Expressions::id);
   }
 
   private static ObjectLiteral create(
@@ -44,7 +44,7 @@ abstract class ObjectLiteral extends Expression {
   }
 
   static ObjectLiteral createWithQuotedKeys(Map<String, Expression> object) {
-    return create(object, Expression::stringLiteral);
+    return create(object, Expressions::stringLiteral);
   }
 
   @Override

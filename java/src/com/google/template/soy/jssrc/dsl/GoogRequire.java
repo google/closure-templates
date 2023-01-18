@@ -16,10 +16,10 @@
 package com.google.template.soy.jssrc.dsl;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.template.soy.jssrc.dsl.Expression.dottedIdNoRequire;
-import static com.google.template.soy.jssrc.dsl.Expression.dottedIdWithRequires;
-import static com.google.template.soy.jssrc.dsl.Expression.id;
-import static com.google.template.soy.jssrc.dsl.Expression.stringLiteral;
+import static com.google.template.soy.jssrc.dsl.Expressions.dottedIdNoRequire;
+import static com.google.template.soy.jssrc.dsl.Expressions.dottedIdWithRequires;
+import static com.google.template.soy.jssrc.dsl.Expressions.id;
+import static com.google.template.soy.jssrc.dsl.Expressions.stringLiteral;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;

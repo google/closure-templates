@@ -16,7 +16,7 @@
 
 package com.google.template.soy.jssrc.dsl;
 
-import static com.google.template.soy.jssrc.dsl.Statement.ifStatement;
+import static com.google.template.soy.jssrc.dsl.Statements.ifStatement;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;

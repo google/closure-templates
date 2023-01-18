@@ -18,8 +18,8 @@ package com.google.template.soy.jssrc.internal;
 
 import static com.google.common.base.CaseFormat.LOWER_CAMEL;
 import static com.google.common.base.CaseFormat.UPPER_CAMEL;
-import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_NULL;
-import static com.google.template.soy.jssrc.dsl.Expression.ifExpression;
+import static com.google.template.soy.jssrc.dsl.Expressions.LITERAL_NULL;
+import static com.google.template.soy.jssrc.dsl.Expressions.ifExpression;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_ARRAY_MAP;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_CHECK_NOT_NULL;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_NEWMAPS_TRANSFORM_VALUES;

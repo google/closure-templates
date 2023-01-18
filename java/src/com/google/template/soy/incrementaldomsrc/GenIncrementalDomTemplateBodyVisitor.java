@@ -47,9 +47,9 @@ import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SO
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_PRINT;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_PRINT_DYNAMIC_ATTR;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_VISIT_HTML_COMMENT;
-import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_EMPTY_STRING;
-import static com.google.template.soy.jssrc.dsl.Expression.id;
-import static com.google.template.soy.jssrc.dsl.Expression.stringLiteral;
+import static com.google.template.soy.jssrc.dsl.Expressions.LITERAL_EMPTY_STRING;
+import static com.google.template.soy.jssrc.dsl.Expressions.id;
+import static com.google.template.soy.jssrc.dsl.Expressions.stringLiteral;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_STRING_UNESCAPE_ENTITIES;
 import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_DATA;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_ESCAPE_HTML;
@@ -66,10 +66,12 @@ import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
 import com.google.template.soy.jssrc.dsl.ConditionalBuilder;
 import com.google.template.soy.jssrc.dsl.Expression;
+import com.google.template.soy.jssrc.dsl.Expressions;
 import com.google.template.soy.jssrc.dsl.GoogRequire;
 import com.google.template.soy.jssrc.dsl.JsDoc;
 import com.google.template.soy.jssrc.dsl.LineComment;
 import com.google.template.soy.jssrc.dsl.Statement;
+import com.google.template.soy.jssrc.dsl.Statements;
 import com.google.template.soy.jssrc.dsl.VariableDeclaration;
 import com.google.template.soy.jssrc.internal.CanInitOutputVarVisitor;
 import com.google.template.soy.jssrc.internal.GenCallCodeUtils;
@@ -240,7 +242,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
           builder
               .setRhs(
                   constructor.call(
-                      Expression.arrowFunction(jsdoc, Statement.of(visitChildren(node)))))
+                      Expressions.arrowFunction(jsdoc, Statements.of(visitChildren(node)))))
               .build();
     } else {
       // We do our own initialization, so mark it as such.
@@ -250,12 +252,12 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
 
       // TODO(b/246994962): Skip this definition for SanitizedContentKind.TEXT.
       definition =
-          Statement.of(
+          Statements.of(
               VariableDeclaration.builder(outputVarName)
                   .setMutable()
                   .setRhs(LITERAL_EMPTY_STRING)
                   .build(),
-              Statement.of(visitChildren(node)),
+              Statements.of(visitChildren(node)),
               builder
                   .setRhs(
                       kind == SanitizedContentKind.TEXT
@@ -395,7 +397,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
         statements.add(
             outputVars.addChunkToOutputVar(
                 GenCallCodeUtils.applyEscapingDirectives(textCall, node)));
-        return Statement.of(statements);
+        return Statements.of(statements);
       default:
         if (!kind.isPresent() || !kind.get().isHtml()) {
           if (node instanceof CallBasicNode && ((CallBasicNode) node).getVariantExpr() != null) {
@@ -446,7 +448,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
             VariableDeclaration.builder(keyVariable)
                 .setRhs(
                     INCREMENTAL_DOM_PUSH_KEY.call(
-                        JsRuntime.XID.call(Expression.stringLiteral(node.getTemplateCallKey()))))
+                        JsRuntime.XID.call(Expressions.stringLiteral(node.getTemplateCallKey()))))
                 .build());
       }
     }
@@ -462,10 +464,10 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
       if (node.getKeyExpr() != null) {
         statements.add(INCREMENTAL_DOM_POP_MANUAL_KEY.call().asStatement());
       } else if (!delegatesToTemplate) {
-        statements.add(INCREMENTAL_DOM_POP_KEY.call(Expression.id(keyVariable)).asStatement());
+        statements.add(INCREMENTAL_DOM_POP_KEY.call(Expressions.id(keyVariable)).asStatement());
       }
     }
-    return Statement.of(statements);
+    return Statements.of(statements);
   }
 
   private static Expression directCall(
@@ -532,7 +534,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
     statements.add(
         VariableDeclaration.builder(id)
             .setMutable()
-            .setRhs(Expression.LITERAL_EMPTY_STRING)
+            .setRhs(Expressions.LITERAL_EMPTY_STRING)
             .build());
     outputVars.pushOutputVar(id);
     outputVars.setOutputVarInited();
@@ -543,7 +545,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
     statements.add(SOY_IDOM_VISIT_HTML_COMMENT.call(INCREMENTAL_DOM, id(id)).asStatement());
     outputVars.popOutputVar();
     contentKind.pop();
-    return Statement.of(statements);
+    return Statements.of(statements);
   }
 
   /**
@@ -584,14 +586,14 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
               CodeChunkUtils.concatChunksForceString(getAttributeValues(node)))
           .asStatement();
     } else {
-      return Statement.of(visitChildren(node)); // Prints raw text or attributes node.
+      return Statements.of(visitChildren(node)); // Prints raw text or attributes node.
     }
   }
 
   @Override
   protected Statement visitHtmlAttributeValueNode(HtmlAttributeValueNode node) {
     // ignore quotes since idom doesn't care about them, so we just iterate the children.
-    return Statement.of(visitChildren(node));
+    return Statements.of(visitChildren(node));
   }
 
   private List<Expression> getAttributeValues(HtmlAttributeNode node) {
@@ -622,7 +624,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
       VariableDeclaration decl =
           VariableDeclaration.builder(outputVar)
               .setMutable()
-              .setRhs(Expression.LITERAL_EMPTY_STRING)
+              .setRhs(Expressions.LITERAL_EMPTY_STRING)
               .build();
       Statement statement = visit(value);
       outputVars.popOutputVar();
@@ -669,7 +671,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
   @Nullable
   private Expression getStaticContent(HtmlAttributeNode node) {
     if (!node.hasValue()) {
-      return Expression.stringLiteral("");
+      return Expressions.stringLiteral("");
     }
     // This case is some control flow like a switch, if, or for loop.
     if (!(node.getChild(1) instanceof HtmlAttributeValueNode)) {
@@ -677,7 +679,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
     }
     HtmlAttributeValueNode attrValue = (HtmlAttributeValueNode) node.getChild(1);
     if (attrValue.numChildren() == 0) {
-      return Expression.stringLiteral("");
+      return Expressions.stringLiteral("");
     }
     // If any children are not raw text or constant xid/css calls, return null
     for (int i = 0; i < attrValue.numChildren(); i++) {
@@ -709,7 +711,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
 
     KeyNode keyNode = node.getKeyNode();
     if (keyNode == null) {
-      args.add(JsRuntime.XID.call(Expression.stringLiteral(node.getKeyId())));
+      args.add(JsRuntime.XID.call(Expressions.stringLiteral(node.getKeyId())));
     } else {
       // Key difference between getOpen and getOpenSSR
       args.add(translateExpr(node.getKeyNode().getExpr()));
@@ -718,7 +720,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
       Expression paramsObject;
       if (generatePositionalParamsSignature) {
         paramsObject =
-            Expression.arrayLiteral(
+            Expressions.arrayLiteral(
                 node.getNearestAncestor(TemplateNode.class).getParams().stream()
                     .map(p -> id(GenJsCodeVisitor.genParamAlias(p.name())))
                     .collect(toImmutableList()));
@@ -726,8 +728,8 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
         paramsObject = OPT_DATA;
       }
       args.add(
-          Expression.ifExpression(JsRuntime.GOOG_DEBUG, paramsObject)
-              .setElse(Expression.LITERAL_UNDEFINED)
+          Expressions.ifExpression(JsRuntime.GOOG_DEBUG, paramsObject)
+              .setElse(Expressions.LITERAL_UNDEFINED)
               .build(templateTranslationContext.codeGenerator()));
     }
     return INCREMENTAL_DOM_OPEN_SSR.call(args);
@@ -738,9 +740,9 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
     args.add(getTagNameCodeChunk(node.getTagName()));
 
     KeyNode keyNode = node.getKeyNode();
-    Expression key = Expression.LITERAL_UNDEFINED;
+    Expression key = Expressions.LITERAL_UNDEFINED;
     if (keyNode == null) {
-      key = JsRuntime.XID.call(Expression.stringLiteral(node.getKeyId()));
+      key = JsRuntime.XID.call(Expressions.stringLiteral(node.getKeyId()));
     }
     args.add(key);
 
@@ -751,7 +753,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
     Map<String, Expression> staticAttributes = getStaticAttributes(node);
     ImmutableList.Builder<Expression> staticsBuilder = ImmutableList.builder();
     for (Map.Entry<String, Expression> entry : staticAttributes.entrySet()) {
-      staticsBuilder.add(Expression.stringLiteral(entry.getKey()));
+      staticsBuilder.add(Expressions.stringLiteral(entry.getKey()));
       staticsBuilder.add(entry.getValue());
     }
     // Instead of inlining the array, place the variable declaration in the global scope
@@ -763,7 +765,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
           // Generator can be null because we know this evaluates to an or
           // ie alias_statics_1 || alias_statics_1 = []
           idExpr.or(
-              idExpr.assign(Expression.arrayLiteral(staticsBuilder.build())),
+              idExpr.assign(Expressions.arrayLiteral(staticsBuilder.build())),
               /* codeGenerator= */ null);
       staticVarDeclarations.add(VariableDeclaration.builder(alias + id).build());
       return Optional.of(INCREMENTAL_DOM_APPLY_STATICS.call(lazyAssignment));
@@ -826,7 +828,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
               .build());
       contentKind.push(SanitizedContentKind.JS);
     }
-    return Statement.of(statements);
+    return Statements.of(statements);
   }
 
   private String scriptOutputVar;
@@ -846,7 +848,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
     if (node.isSelfClosing() || node.getTagName().isDefinitelyVoid()) {
       statements.add(close.call().asStatement());
     }
-    return Statement.of(statements);
+    return Statements.of(statements);
   }
 
   /**
@@ -877,7 +879,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
       Expression currentElement = INCREMENTAL_DOM.dotAccess("currentElement").call();
       Expression textContentAssignment = currentElement.dotAccess("textContent").assign(unwrapped);
       ConditionalBuilder ifCurrentElementExists =
-          Statement.ifStatement(currentElement, textContentAssignment.asStatement());
+          Statements.ifStatement(currentElement, textContentAssignment.asStatement());
       statements.add(ifCurrentElementExists.build());
       statements.add(INCREMENTAL_DOM.dotAccess("skipNode").call().asStatement());
       // We could be in some other content kind (like JS in a <script> tag) or still in HTML. Either
@@ -903,7 +905,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
     if (!node.getTagName().isDefinitelyVoid()) {
       statements.add(close.call().asStatement());
     }
-    return Statement.of(statements);
+    return Statements.of(statements);
   }
 
   /**
@@ -968,7 +970,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
                     .getContentKind()
                 == SanitizedContent.ContentKind.HTML) {
           return SOY_IDOM_PRINT
-              .call(INCREMENTAL_DOM, CodeChunkUtils.concatChunks(chunks), Expression.LITERAL_TRUE)
+              .call(INCREMENTAL_DOM, CodeChunkUtils.concatChunks(chunks), Expressions.LITERAL_TRUE)
               .asStatement();
         } else {
           return SOY_IDOM_PRINT
@@ -988,8 +990,8 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
   protected Statement visitSkipNode(SkipNode node) {
     HtmlOpenTagNode openTag = (HtmlOpenTagNode) node.getChild(0);
     Expression openTagExpr = getOpenSSRCall(openTag);
-    Statement childStatements = Statement.of(visitChildren(node));
-    return Statement.ifStatement(openTagExpr, Statement.of(childStatements)).build();
+    Statement childStatements = Statements.of(visitChildren(node));
+    return Statements.ifStatement(openTagExpr, Statements.of(childStatements)).build();
   }
 
   @Override
@@ -999,11 +1001,11 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
     statements.add(state.enterStatement);
     statements.addAll(visitChildren(node));
     statements.add(exitVeLogNode(node, state.logOnlyConditional));
-    return Statement.of(statements);
+    return Statements.of(statements);
   }
 
   VeLogStateHolder openVeLogNode(VeLogNode node) {
-    Expression isLogOnly = Expression.LITERAL_FALSE;
+    Expression isLogOnly = Expressions.LITERAL_FALSE;
     VariableDeclaration isLogOnlyVar = null;
     Expression isLogOnlyReference = null;
     List<Statement> stmts = new ArrayList<>();
@@ -1014,23 +1016,23 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
       isLogOnlyVar = VariableDeclaration.builder(idName).setRhs(isLogOnly).build();
       stmts.add(isLogOnlyVar);
       stmts.add(
-          Statement.ifStatement(
+          Statements.ifStatement(
                   INCREMENTAL_DOM_VERIFY_LOGONLY.call(isLogOnlyVar.ref()),
-                  Statement.assign(INCREMENTAL_DOM, INCREMENTAL_DOM_TONULL.call()))
+                  Statements.assign(INCREMENTAL_DOM, INCREMENTAL_DOM_TONULL.call()))
               .build());
     }
     Expression veData = getExprTranslator().exec(node.getVeDataExpression());
     stmts.add(INCREMENTAL_DOM_ENTER.call(veData, isLogOnly).asStatement());
-    return new VeLogStateHolder(isLogOnlyReference, Statement.of(stmts));
+    return new VeLogStateHolder(isLogOnlyReference, Statements.of(stmts));
   }
 
   Statement exitVeLogNode(VeLogNode node, @Nullable Expression isLogOnly) {
     Statement exit = INCREMENTAL_DOM_EXIT.call().asStatement();
     if (isLogOnly != null) {
-      return Statement.of(
+      return Statements.of(
           exit,
-          Statement.ifStatement(
-                  isLogOnly, Statement.assign(INCREMENTAL_DOM, INCREMENTAL_DOM_TODEFAULT.call()))
+          Statements.ifStatement(
+                  isLogOnly, Statements.assign(INCREMENTAL_DOM, INCREMENTAL_DOM_TODEFAULT.call()))
               .build());
     }
     return exit;
@@ -1044,11 +1046,11 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
         String id = "_msg_" + alias + "_" + staticsCounter++;
         VariableDeclaration staticDecl =
             VariableDeclaration.builder(id)
-                .setRhs(Expression.objectLiteral(ImmutableMap.of()))
+                .setRhs(Expressions.objectLiteral(ImmutableMap.of()))
                 .build();
         staticVarDeclarations.add(staticDecl);
         return new AssistantForHtmlMsgs(
-                /* master= */ this,
+                /* idomTemplateBodyVisitor= */ this,
                 jsSrcOptions,
                 genCallCodeUtils,
                 isComputableAsJsExprsVisitor,
@@ -1088,7 +1090,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
 
   @Override
   protected Statement visitMsgHtmlTagNode(MsgHtmlTagNode node) {
-    return Statement.of(visitChildren(node));
+    return Statements.of(visitChildren(node));
   }
 
   private Expression getTagNameCodeChunk(TagName tagName) {

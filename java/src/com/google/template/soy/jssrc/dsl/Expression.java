@@ -15,25 +15,18 @@
  */
 package com.google.template.soy.jssrc.dsl;
 
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 
-import com.google.common.base.Preconditions;
-import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.errorprone.annotations.Immutable;
-import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.Operator.Associativity;
 import com.google.template.soy.internal.util.TreeStreams;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import java.util.Arrays;
 import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -51,35 +44,6 @@ import java.util.stream.Stream;
 @Immutable
 public abstract class Expression extends CodeChunk {
 
-  public static final Expression LITERAL_TRUE = id("true");
-  public static final Expression LITERAL_FALSE = id("false");
-  public static final Expression LITERAL_NULL = id("null");
-  public static final Expression LITERAL_UNDEFINED = id("undefined");
-  public static final Expression LITERAL_EMPTY_STRING = stringLiteral("");
-  public static final Expression LITERAL_EMPTY_LIST = arrayLiteral(ImmutableList.of());
-  public static final Expression EMPTY_OBJECT_LITERAL = objectLiteral(ImmutableMap.of());
-  public static final Expression THIS = id("this");
-  /** Exploding error expr. This will blow up if used to write gencode. */
-  public static final Expression ERROR_EXPR =
-      new Expression() {
-        @Override
-        void doFormatOutputExpr(FormattingContext ctx) {
-          throw new IllegalStateException(
-              "ERROR_EXPR should never be used to write gencode! This soy file had a problem, and"
-                  + " the resulting js/ts will be invalid.");
-        }
-
-        @Override
-        Stream<? extends CodeChunk> childrenStream() {
-          return Stream.empty();
-        }
-
-        @Override
-        public JsExpr singleExprOrName(FormatOptions formatOptions) {
-          return new JsExpr("$$SOY_INTERNAL_ERROR_EXPR", Integer.MAX_VALUE);
-        }
-      };
-
   // Do not put public static constants or methods on this class.  If you do then this can trigger
   // classloading deadlocks due to cyclic references between this class, CodeChunk and the
   // implementation class of the constant.
@@ -88,15 +52,61 @@ public abstract class Expression extends CodeChunk {
     /* no subclasses outside this package */
   }
 
-  public static Expression spread(Expression expr) {
-    return UnaryOperation.create("...", Integer.MAX_VALUE, expr, /* isPrefix= */ true);
+  /** Whether when formatted, this expression will begin with an object literal. */
+  boolean initialExpressionIsObjectLiteral() {
+    return false;
   }
+
+  /**
+   * If this chunk can be represented as a single expression, returns that expression. If this chunk
+   * cannot be represented as a single expression, returns an expression containing references to a
+   * variable defined by the corresponding {@link #doFormatInitialStatements initial statements}.
+   *
+   * <p>This method should rarely be used, but is needed when interoperating with parts of the
+   * codegen system that do not yet understand CodeChunks (e.g. {@link SoyJsSrcFunction}).
+   */
+  public JsExpr singleExprOrName(FormatOptions formatOptions) {
+    FormattingContext ctx = new FormattingContext(formatOptions);
+    doFormatOutputExpr(ctx);
+    return new JsExpr(ctx.toString(), Integer.MAX_VALUE);
+  }
+
+  /**
+   * If this chunk can be represented as a single expression, writes that single expression to the
+   * buffer. If the chunk cannot be represented as a single expression, writes an expression to the
+   * buffer containing references to a variable defined by the corresponding {@link
+   * #doFormatInitialStatements initial statements}.
+   *
+   * <p>Must only be called by {@link FormattingContext#appendOutputExpression}.
+   */
+  abstract void doFormatOutputExpr(FormattingContext ctx);
+
+  /**
+   * Returns {@code true} if the expression represented by this code chunk is so trivial that it
+   * isn't worth storing it in a temporary if it needs to be referenced multiple times.
+   *
+   * <p>The default is {@code false}, only certain special code chunks return {@code true}.
+   */
+  public boolean isCheap() {
+    return false;
+  }
+
+  /** Returns the string literal value of this Expression if it is a string literal. */
+  public Optional<String> asStringLiteral() {
+    return Optional.empty();
+  }
+
+  /**
+   * Defines a list of child code chunks that should be traversed for collecting require and initial
+   * statements.
+   */
+  abstract Stream<? extends CodeChunk> childrenStream();
 
   /**
    * If the expression has any initial statements, wraps it in a lambda so the expression can be
    * written inline (i.e. without a semicolon).
    */
-  public Expression asInlineExpr() {
+  public final Expression asInlineExpr() {
     // If there were no initial statements, just return the expr string.
     if (!this.hasInitialStatements()) {
       return this;
@@ -107,265 +117,6 @@ public abstract class Expression extends CodeChunk {
     return FunctionDeclaration.createArrowFunction(JsDoc.getDefaultInstance(), this);
   }
 
-  /** Starts a conditional expression beginning with the given predicate and consequent chunks. */
-  public static ConditionalExpressionBuilder ifExpression(
-      Expression predicate, Expression consequent) {
-    return new ConditionalExpressionBuilder(predicate, consequent);
-  }
-
-  /**
-   * Creates a new code chunk from the given expression. The expression's precedence is preserved.
-   */
-  public static Expression fromExpr(JsExpr expr, Iterable<GoogRequire> requires) {
-    return Leaf.create(expr, /* isCheap= */ false, requires);
-  }
-
-  /** Arrow function with implicit return type. */
-  public static Expression tsArrowFunction(ParamDecls params, ImmutableList<Statement> bodyStmts) {
-    return new TsArrowFunction(params, bodyStmts);
-  }
-
-  /** Arrow function with explicit return type. */
-  public static Expression tsArrowFunction(
-      ParamDecls params, Expression returnType, ImmutableList<Statement> bodyStmts) {
-    return new TsArrowFunction(params, returnType, bodyStmts);
-  }
-
-  public static Expression genericType(Expression className, ImmutableList<Expression> generics) {
-    return new GenericType(className, generics);
-  }
-
-  public static Expression genericType(Expression className, Expression... generics) {
-    return new GenericType(className, ImmutableList.copyOf(generics));
-  }
-
-  public static Expression functionType(Expression returnType, List<ParamDecl> params) {
-    return new FunctionType(returnType, params);
-  }
-
-  public static Expression arrayType(Expression simpleType, boolean readonly) {
-    return new ArrayType(readonly, simpleType);
-  }
-
-  public static Expression unionType(List<Expression> members) {
-    return new UnionType(members);
-  }
-
-  public static Expression recordType(List<ParamDecl> params) {
-    return new RecordType(params);
-  }
-
-  /**
-   * Creates a code chunk representing a JavaScript identifier.
-   *
-   * @throws IllegalArgumentException if {@code id} is not a valid JavaScript identifier.
-   */
-  public static Expression id(String id) {
-    CodeChunkUtils.checkId(id);
-    return Leaf.create(id, /* isCheap= */ true);
-  }
-
-  /**
-   * Creates a code chunk representing a JavaScript identifier.
-   *
-   * @throws IllegalArgumentException if {@code id} is not a valid JavaScript identifier.
-   */
-  public static Expression id(String id, Iterable<GoogRequire> requires) {
-    CodeChunkUtils.checkId(id);
-    return Leaf.create(id, /* isCheap= */ true, requires);
-  }
-
-  public static Expression id(String id, GoogRequire... requires) {
-    CodeChunkUtils.checkId(id);
-    return Leaf.create(id, /* isCheap= */ true, ImmutableList.copyOf(requires));
-  }
-
-  public static Expression importedId(String id, String path) {
-    return id(id, GoogRequire.createImport(id, path));
-  }
-
-  /**
-   * Creates a code chunk representing a JavaScript "dotted identifier" which needs no {@code
-   * goog.require} statements to be added.
-   *
-   * <p>"Dotted identifiers" are really just sequences of dot-access operations off some base
-   * identifier, so this method is just a convenience for <code>id(...).dotAccess(...)...</code>.
-   * It's provided because working with raw dot-separated strings is common.
-   *
-   * <p>Most dotted identifiers should be accessed via the {@link GoogRequire} api.
-   */
-  public static Expression dottedIdNoRequire(String dotSeparatedIdentifiers) {
-    return dottedIdWithRequires(dotSeparatedIdentifiers, ImmutableSet.of());
-  }
-
-  public static Expression dottedIdWithRequires(
-      String dotSeparatedIdentifiers, Iterable<GoogRequire> requires) {
-    List<String> ids = Splitter.on('.').splitToList(dotSeparatedIdentifiers);
-    Preconditions.checkState(
-        !ids.isEmpty(),
-        "not a dot-separated sequence of JavaScript identifiers: %s",
-        dotSeparatedIdentifiers);
-    // Associate the requires with the base id for convenience.  It is arguable that they should
-    // be instead associated with the last dot. Or perhaps with the 'whole' expression somehow.
-    // This is a minor philosophical concern but it should be fine in practice because nothing would
-    // ever split apart a code chunk into sub-chunks.  So the requires could really go anywhere.
-    Expression tip = id(ids.get(0), requires);
-    for (int i = 1; i < ids.size(); ++i) {
-      tip = tip.dotAccess(ids.get(i));
-    }
-    return tip;
-  }
-
-  /**
-   * Creates a code chunk representing a JavaScript string literal.
-   *
-   * @param contents The contents of the string literal. The contents will be escaped appropriately
-   *     and embedded inside single quotes.
-   */
-  public static Expression stringLiteral(String contents) {
-    return StringLiteral.create(contents);
-  }
-
-  /**
-   * Creates a code chunk representing a JavaScript regular expression literal.
-   *
-   * @param contents The regex literal (including the opening and closing slashes).
-   */
-  public static Expression regexLiteral(String contents) {
-    int firstSlash = contents.indexOf('/');
-    int lastSlash = contents.lastIndexOf('/');
-    checkArgument(
-        firstSlash < lastSlash && firstSlash != -1,
-        "expected regex to start with a '/' and have a second '/' near the end, got %s",
-        contents);
-    return Leaf.create(contents, /* isCheap= */ false);
-  }
-
-  /** Creates a code chunk representing a JavaScript number literal. */
-  public static Expression number(long value) {
-    Preconditions.checkArgument(
-        IntegerNode.isInRange(value), "Number is outside JS safe integer range: %s", value);
-    return Leaf.create(Long.toString(value), /* isCheap= */ true);
-  }
-
-  /** Creates a code chunk representing a JavaScript number literal. */
-  public static Expression number(double value) {
-    return Leaf.create(Double.toString(value), /* isCheap= */ true);
-  }
-
-  /** Creates a code chunk representing an anonymous function literal. */
-  public static Expression function(JsDoc parameters, Statement body) {
-    return FunctionDeclaration.create(parameters, body);
-  }
-
-  /** Creates a code chunk representing an arrow function. */
-  public static Expression arrowFunction(JsDoc parameters, Statement body) {
-    return FunctionDeclaration.createArrowFunction(parameters, body);
-  }
-
-  /** Creates a code chunk representing an arrow function. */
-  public static Expression arrowFunction(JsDoc parameters, Expression body) {
-    return FunctionDeclaration.createArrowFunction(parameters, body);
-  }
-
-  /** Creates a code chunk representing an immediately invoked function expression. */
-  public static Expression iife(Expression expr) {
-    return Group.create(FunctionDeclaration.createArrowFunction(JsDoc.builder().build(), expr))
-        .call();
-  }
-
-  /** Creates a code chunk representing the logical negation {@code !} of the given chunk. */
-  public static Expression not(Expression arg) {
-    return UnaryOperation.create(Operator.NOT, arg);
-  }
-
-  public static Expression assertNonNull(Expression arg) {
-    return UnaryOperation.create(Operator.ASSERT_NON_NULL, arg);
-  }
-
-  /**
-   * Creates a code chunk representing the {@code new} operator applied to the given constructor. If
-   * you need to call the constructor with arguments, call {@link Expression#call} on the returned
-   * chunk.
-   */
-  public static Expression construct(Expression ctor, Expression... args) {
-    return New.create(ctor).call(args);
-  }
-
-  public static Expression constructMap(Expression... initializers) {
-    return New.create(id("Map", ImmutableList.of(GoogRequire.create("soy.map"))))
-        .call(initializers);
-  }
-
-  /**
-   * Creates a code chunk representing the given Soy operator applied to the given operands.
-   *
-   * <p>Cannot be used for {@link Operator#AND}, {@link Operator#OR}, or {@link
-   * Operator#CONDITIONAL}, as they require access to a {@link Generator} to generate temporary
-   * variables for short-circuiting. Use {@link Expression#and}, {@link Expression#or}, and {@link
-   * Generator#conditionalExpression} instead.
-   */
-  public static Expression operation(Operator op, Expression... operands) {
-    return operation(op, ImmutableList.copyOf(operands));
-  }
-
-  public static Expression operation(Operator op, List<Expression> operands) {
-    Preconditions.checkArgument(operands.size() == op.getNumOperands());
-    Preconditions.checkArgument(
-        op != Operator.AND && op != Operator.OR && op != Operator.CONDITIONAL);
-    switch (op.getNumOperands()) {
-      case 1:
-        return UnaryOperation.create(op, operands.get(0));
-      case 2:
-        return BinaryOperation.create(op, operands.get(0), operands.get(1));
-      default:
-        throw new AssertionError();
-    }
-  }
-
-  /** Creates a code chunk representing a javascript array literal. */
-  public static Expression arrayLiteral(Iterable<? extends Expression> elements) {
-    return ArrayLiteral.create(ImmutableList.copyOf(elements));
-  }
-
-  /**
-   * Creates a code chunk representing a javascript map literal: {@code {key1: value1, key2:
-   * value2}}
-   */
-  public static Expression objectLiteral(Map<String, Expression> object) {
-    return ObjectLiteral.create(object);
-  }
-
-  /**
-   * Creates a code chunk representing a javascript map literal, where the keys are quoted: {@code
-   * {'key1': value1, 'key2': value2}}
-   */
-  public static Expression objectLiteralWithQuotedKeys(Map<String, Expression> object) {
-    return ObjectLiteral.createWithQuotedKeys(object);
-  }
-
-  public static Expression ternary(
-      Expression predicate, Expression consequent, Expression alternate) {
-    return Ternary.create(predicate, consequent, alternate);
-  }
-
-  /**
-   * Wraps a {@link JsExpr} that could have incorrect precedence in parens.
-   *
-   * <p>The JsExpr constructor is inherently error-prone. It allows callers to pass a precedence
-   * unrelated to the topmost operator in the text string. While JsExprs created in the Soy codebase
-   * can be audited, JsExprs are also returned by {@link SoyJsSrcFunction functions} and {@link
-   * SoyJsSrcPrintDirective print directives} owned by others. This method should be used to wrap
-   * the results of those plugins.
-   */
-  public static Expression dontTrustPrecedenceOf(
-      JsExpr couldHaveWrongPrecedence, Iterable<GoogRequire> requires) {
-    return Group.create(fromExpr(couldHaveWrongPrecedence, requires));
-  }
-
-  public static Expression group(Expression e) {
-    return Group.create(e);
-  }
   /** Formats this expression as a statement. */
   public final Statement asStatement() {
     return ExpressionStatement.of(this);
@@ -412,7 +163,7 @@ public abstract class Expression extends CodeChunk {
   }
 
   public final Expression doubleEqualsNull() {
-    return doubleEquals(LITERAL_NULL);
+    return doubleEquals(Expressions.LITERAL_NULL);
   }
 
   public final Expression times(Expression rhs) {
@@ -448,16 +199,18 @@ public abstract class Expression extends CodeChunk {
   }
 
   public final Expression op(Operator op, Expression rhs) {
-    return operation(op, ImmutableList.of(this, rhs));
+    return Expressions.operation(op, ImmutableList.of(this, rhs));
   }
 
   /** Takes in a String identifier for convenience, since that's what most use cases need. */
   public final Expression dotAccess(String identifier) {
-    return Dot.create(this, id(identifier));
+    return Dot.create(this, Expressions.id(identifier));
   }
 
   public final Expression dotAccess(String identifier, boolean nullSafe) {
-    return nullSafe ? Dot.createNullSafe(this, id(identifier)) : Dot.create(this, id(identifier));
+    return nullSafe
+        ? Dot.createNullSafe(this, Expressions.id(identifier))
+        : Dot.create(this, Expressions.id(identifier));
   }
 
   public final Expression bracketAccess(Expression arg) {
@@ -547,41 +300,6 @@ public abstract class Expression extends CodeChunk {
     return !hasInitialStatements();
   }
 
-  /** Whether when formatted, this expression will begin with an object literal. */
-  boolean initialExpressionIsObjectLiteral() {
-    return false;
-  }
-
-  /**
-   * If this chunk can be represented as a single expression, returns that expression. If this chunk
-   * cannot be represented as a single expression, returns an expression containing references to a
-   * variable defined by the corresponding {@link #doFormatInitialStatements initial statements}.
-   *
-   * <p>This method should rarely be used, but is needed when interoperating with parts of the
-   * codegen system that do not yet understand CodeChunks (e.g. {@link SoyJsSrcFunction}).
-   */
-  public JsExpr singleExprOrName(FormatOptions formatOptions) {
-    FormattingContext ctx = new FormattingContext(formatOptions);
-    doFormatOutputExpr(ctx);
-    return new JsExpr(ctx.toString(), Integer.MAX_VALUE);
-  }
-
-  /**
-   * If this chunk can be represented as a single expression, writes that single expression to the
-   * buffer. If the chunk cannot be represented as a single expression, writes an expression to the
-   * buffer containing references to a variable defined by the corresponding {@link
-   * #doFormatInitialStatements initial statements}.
-   *
-   * <p>Must only be called by {@link FormattingContext#appendOutputExpression}.
-   */
-  abstract void doFormatOutputExpr(FormattingContext ctx);
-
-  /**
-   * Defines a list of child code chunks that should be traversed for collecting require and initial
-   * statements.
-   */
-  abstract Stream<? extends CodeChunk> childrenStream();
-
   @Override
   public final void collectRequires(Consumer<GoogRequire> collector) {
     if (this instanceof HasRequires) {
@@ -608,21 +326,6 @@ public abstract class Expression extends CodeChunk {
         // Do not traverse into child statements since this prints the entire statement.
         .filter(c -> !(c instanceof Statement))
         .forEach(ctx::appendInitialStatements);
-  }
-
-  /**
-   * Returns {@code true} if the expression represented by this code chunk is so trivial that it
-   * isn't worth storing it in a temporary if it needs to be referenced multiple times.
-   *
-   * <p>The default is {@code false}, only certain special code chunks return {@code true}.
-   */
-  public boolean isCheap() {
-    return false;
-  }
-
-  /** Returns the string literal value of this Expression if it is a string literal. */
-  public Optional<String> asStringLiteral() {
-    return Optional.empty();
   }
 
   private Stream<Statement> initialStatementsStream() {
@@ -658,7 +361,7 @@ public abstract class Expression extends CodeChunk {
   }
 
   /** An expression that requires initial statements in order to be valid. */
-  public interface HasInitialStatements {
+  interface HasInitialStatements {
     ImmutableList<Statement> initialStatements();
   }
 
@@ -666,10 +369,10 @@ public abstract class Expression extends CodeChunk {
    * An expression inside which initial statements may be printed, usually an expression that
    * contains a block inside. For example, a function declaration.
    */
-  public interface InitialStatementsScope {}
+  interface InitialStatementsScope {}
 
   /** An expression that requires imported symbols in order to be valid. */
-  public interface HasRequires {
+  interface HasRequires {
     ImmutableSet<GoogRequire> googRequires();
   }
 }

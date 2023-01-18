@@ -17,8 +17,9 @@
 package com.google.template.soy.jssrc.dsl;
 
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.template.soy.jssrc.dsl.Expression.number;
-import static com.google.template.soy.jssrc.dsl.Expression.stringLiteral;
+import static com.google.template.soy.jssrc.dsl.Expressions.id;
+import static com.google.template.soy.jssrc.dsl.Expressions.number;
+import static com.google.template.soy.jssrc.dsl.Expressions.stringLiteral;
 
 import com.google.common.collect.ImmutableList;
 import org.junit.Test;
@@ -46,15 +47,11 @@ public final class CodeChunkUtilsTest {
     Expression result =
         CodeChunkUtils.concatChunks(
             ImmutableList.of(
-                stringLiteral("a"),
-                Expression.id("x").assign(stringLiteral("b")),
-                stringLiteral("b")));
+                stringLiteral("a"), id("x").assign(stringLiteral("b")), stringLiteral("b")));
     Expression result2 =
         CodeChunkUtils.concatChunks(
             ImmutableList.of(
-                stringLiteral("a"),
-                Expression.id("x").assign(stringLiteral("b")),
-                stringLiteral("b")));
+                stringLiteral("a"), id("x").assign(stringLiteral("b")), stringLiteral("b")));
     assertThat(
             CodeChunkUtils.concatChunks(ImmutableList.of(result, result2))
                 .getCode(FormatOptions.JSSRC))
@@ -66,9 +63,7 @@ public final class CodeChunkUtilsTest {
     CodeChunk result =
         CodeChunkUtils.concatChunks(
             ImmutableList.of(
-                stringLiteral("a"),
-                Expression.id("x").assign(stringLiteral("b")),
-                stringLiteral("c")));
+                stringLiteral("a"), id("x").assign(stringLiteral("b")), stringLiteral("c")));
     assertThat(result.getCode(FormatOptions.JSSRC)).isEqualTo("'a' + (x = 'b') + 'c';");
   }
 

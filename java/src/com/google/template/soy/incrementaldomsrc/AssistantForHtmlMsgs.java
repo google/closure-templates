@@ -16,7 +16,7 @@
 package com.google.template.soy.incrementaldomsrc;
 
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_TEXT;
-import static com.google.template.soy.jssrc.dsl.Statement.forOf;
+import static com.google.template.soy.jssrc.dsl.Statements.forOf;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_STRING_UNESCAPE_ENTITIES;
 
 import com.google.common.base.Preconditions;
@@ -25,7 +25,9 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.DoWhile;
 import com.google.template.soy.jssrc.dsl.Expression;
+import com.google.template.soy.jssrc.dsl.Expressions;
 import com.google.template.soy.jssrc.dsl.Statement;
+import com.google.template.soy.jssrc.dsl.Statements;
 import com.google.template.soy.jssrc.dsl.SwitchBuilder;
 import com.google.template.soy.jssrc.dsl.VariableDeclaration;
 import com.google.template.soy.jssrc.internal.GenCallCodeUtils;
@@ -174,19 +176,19 @@ final class AssistantForHtmlMsgs extends GenJsCodeVisitorAssistantForMsgs {
     ImmutableList.Builder<Statement> body = ImmutableList.builder();
     String itemId = "i" + node.getId();
     // Get a handle to the ith item of the static array
-    Expression item = Expression.id("i" + node.getId());
+    Expression item = Expressions.id("i" + node.getId());
 
     // The first element contains some text that we call using itext
     body.add(
-        item.bracketAccess(Expression.number(0))
+        item.bracketAccess(Expressions.number(0))
             .and(
-                INCREMENTAL_DOM_TEXT.call(item.bracketAccess(Expression.number(0))),
+                INCREMENTAL_DOM_TEXT.call(item.bracketAccess(Expressions.number(0))),
                 translationContext.codeGenerator())
             .asStatement());
 
     // The second element contains a placeholder string. We then execute a switch statement
     // to decide which branch to execute.
-    SwitchBuilder switchBuilder = Statement.switchValue(item.bracketAccess(Expression.number(1)));
+    SwitchBuilder switchBuilder = Statements.switchValue(item.bracketAccess(Expressions.number(1)));
     for (Map.Entry<String, MsgPlaceholderNode> ph : placeholderNames.entrySet()) {
       Statement value = idomTemplateBodyVisitor.visit(ph.getValue());
       MsgPlaceholderNode phNode = ph.getValue();
@@ -197,13 +199,13 @@ final class AssistantForHtmlMsgs extends GenJsCodeVisitorAssistantForMsgs {
               idomTemplateBodyVisitor.openVeLogNode(parent);
           // It is a compiler failure to have a logOnly in a message node.
           Preconditions.checkState(state.logOnlyConditional == null);
-          value = Statement.of(state.enterStatement, value);
+          value = Statements.of(state.enterStatement, value);
         }
         if (parent.getChild(parent.numChildren() - 1) == phNode) {
-          value = Statement.of(value, idomTemplateBodyVisitor.exitVeLogNode(parent, null));
+          value = Statements.of(value, idomTemplateBodyVisitor.exitVeLogNode(parent, null));
         }
       }
-      switchBuilder.addCase(Expression.stringLiteral(ph.getKey()), value);
+      switchBuilder.addCase(Expressions.stringLiteral(ph.getKey()), value);
     }
     body.add(switchBuilder.build());
     // End of for loop
@@ -211,10 +213,10 @@ final class AssistantForHtmlMsgs extends GenJsCodeVisitorAssistantForMsgs {
     Statement loop =
         forOf(
             itemId,
-            Expression.id(staticDecl).bracketAccess(translationVar),
-            Statement.of(body.build()));
+            Expressions.id(staticDecl).bracketAccess(translationVar),
+            Statements.of(body.build()));
 
-    return Statement.of(staticsInitializer(node, translationVar), loop);
+    return Statements.of(staticsInitializer(node, translationVar), loop);
   }
 
   /**
@@ -234,7 +236,7 @@ final class AssistantForHtmlMsgs extends GenJsCodeVisitorAssistantForMsgs {
     // The mutable (tracking index of last match) regex to find the placeholder placeholders.
     VariableDeclaration regexVar =
         VariableDeclaration.builder("partRe_" + node.getId())
-            .setRhs(Expression.regexLiteral(PLACEHOLDER_REGEX))
+            .setRhs(Expressions.regexLiteral(PLACEHOLDER_REGEX))
             .build();
     // The current placeholder from the regex.
     VariableDeclaration matchVar =
@@ -243,13 +245,13 @@ final class AssistantForHtmlMsgs extends GenJsCodeVisitorAssistantForMsgs {
     VariableDeclaration lastIndexVar =
         VariableDeclaration.builder("lastIndex_" + node.getId())
             .setMutable()
-            .setRhs(Expression.number(0))
+            .setRhs(Expressions.number(0))
             .build();
     // A counter to increment and update the statics array.
     VariableDeclaration counter =
         VariableDeclaration.builder("counter_" + node.getId())
             .setMutable()
-            .setRhs(Expression.number(0))
+            .setRhs(Expressions.number(0))
             .build();
 
     List<Statement> doBody = new ArrayList<>();
@@ -268,7 +270,7 @@ final class AssistantForHtmlMsgs extends GenJsCodeVisitorAssistantForMsgs {
                     // parameter, so that it goes until the end of the string.  Otherwise, the
                     // non-numeric parameter
                     // would be coerced to zero.
-                    .or(Expression.id("undefined"), translationContext.codeGenerator()))
+                    .or(Expressions.id("undefined"), translationContext.codeGenerator()))
             .asStatement());
 
     // Emit the (possibly-empty) run of raw text since the last placeholder, until this placeholder,
@@ -285,40 +287,41 @@ final class AssistantForHtmlMsgs extends GenJsCodeVisitorAssistantForMsgs {
 
     // First start off by initializing the statics declaration array (it is undefined before)
     doBody.add(
-        Expression.id(staticDecl)
+        Expressions.id(staticDecl)
             .bracketAccess(translationVar)
             .bracketAccess(counter.ref())
             .assign(
-                Expression.arrayLiteral(
+                Expressions.arrayLiteral(
                     ImmutableList.of(
                         unescape,
                         matchVar
                             .ref()
                             .and(
-                                matchVar.ref().bracketAccess(Expression.number(0)),
+                                matchVar.ref().bracketAccess(Expressions.number(0)),
                                 translationContext.codeGenerator()))))
             .asStatement());
 
     // counter++
-    doBody.add(counter.ref().assign(counter.ref().plus(Expression.number(1))).asStatement());
+    doBody.add(counter.ref().assign(counter.ref().plus(Expressions.number(1))).asStatement());
     // Update the beginning of the string to parse to the end of the current one.
     doBody.add(lastIndexVar.ref().assign(regexVar.ref().dotAccess("lastIndex")).asStatement());
 
     Statement statement =
-        Statement.of(
-            Expression.id(staticDecl)
+        Statements.of(
+            Expressions.id(staticDecl)
                 .bracketAccess(translationVar)
-                .assign(Expression.arrayLiteral(ImmutableList.of()))
+                .assign(Expressions.arrayLiteral(ImmutableList.of()))
                 .asStatement(),
-            Statement.of(translationVar.allInitialStatementsInTopScope()),
+            Statements.of(translationVar.allInitialStatementsInTopScope()),
             regexVar,
             lastIndexVar,
             counter,
             matchVar,
-            DoWhile.builder().setCondition(matchVar.ref()).setBody(Statement.of(doBody)).build());
+            DoWhile.builder().setCondition(matchVar.ref()).setBody(Statements.of(doBody)).build());
     statement =
-        Statement.ifStatement(
-                Expression.not(Expression.id(staticDecl).bracketAccess(translationVar)), statement)
+        Statements.ifStatement(
+                Expressions.not(Expressions.id(staticDecl).bracketAccess(translationVar)),
+                statement)
             .build();
     return statement;
   }
@@ -329,6 +332,6 @@ final class AssistantForHtmlMsgs extends GenJsCodeVisitorAssistantForMsgs {
     String name = PLACEHOLDER_WRAPPER + placeholderNames.size() + PLACEHOLDER_WRAPPER;
     placeholderNames.put(name, msgPhNode);
     // Return the marker string to insert into the translated text.
-    return Expression.stringLiteral(name);
+    return Expressions.stringLiteral(name);
   }
 }

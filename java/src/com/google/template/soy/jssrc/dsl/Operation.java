@@ -23,6 +23,7 @@ import com.google.template.soy.jssrc.restricted.JsExpr;
 abstract class Operation extends Expression {
 
   abstract int precedence();
+
   abstract Associativity associativity();
 
   @Override
