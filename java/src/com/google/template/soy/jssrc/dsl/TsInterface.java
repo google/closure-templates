@@ -33,7 +33,7 @@ public abstract class TsInterface extends Statement {
   }
 
   @Override
-  void doFormatInitialStatements(FormattingContext ctx) {
+  void doFormatStatement(FormattingContext ctx) {
     ctx.append(String.format("interface %s ", name()));
     ctx.enterBlock();
     for (ParamDecl prop : properties()) {

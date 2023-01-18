@@ -81,7 +81,7 @@ public abstract class NamedFunctionDeclaration extends Statement {
   }
 
   @Override
-  void doFormatInitialStatements(FormattingContext ctx) {
+  void doFormatStatement(FormattingContext ctx) {
     if (jsDoc().isPresent()) {
       ctx.append(jsDoc().get().toString());
     }

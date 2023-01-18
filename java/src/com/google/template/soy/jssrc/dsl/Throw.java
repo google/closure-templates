@@ -32,7 +32,7 @@ abstract class Throw extends Statement {
   }
 
   @Override
-  void doFormatInitialStatements(FormattingContext ctx) {
+  void doFormatStatement(FormattingContext ctx) {
     ctx.appendInitialStatements(value())
         .append("throw ")
         .appendOutputExpression(value())

@@ -40,7 +40,7 @@ public abstract class Return extends Statement {
   }
 
   @Override
-  void doFormatInitialStatements(FormattingContext ctx) {
+  void doFormatStatement(FormattingContext ctx) {
     if (value() != null) {
       ctx.appendInitialStatements(value());
     }

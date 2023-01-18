@@ -40,7 +40,7 @@ public abstract class ExpressionStatement extends Statement {
   abstract JsDoc jsDoc();
 
   @Override
-  void doFormatInitialStatements(FormattingContext ctx) {
+  void doFormatStatement(FormattingContext ctx) {
     ctx.appendInitialStatements(expr());
     if (jsDoc() != null) {
       ctx.append(jsDoc()).endLine();

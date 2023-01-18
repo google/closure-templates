@@ -25,7 +25,7 @@ final class Debugger extends Statement {
   private Debugger() {}
 
   @Override
-  void doFormatInitialStatements(FormattingContext ctx) {
+  void doFormatStatement(FormattingContext ctx) {
     ctx.append("debugger;").endLine();
   }
 

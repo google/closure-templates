@@ -39,7 +39,7 @@ abstract class Conditional extends Statement {
   }
 
   @Override
-  void doFormatInitialStatements(FormattingContext ctx) {
+  void doFormatStatement(FormattingContext ctx) {
     formatIfClause(ctx);
     int numRightBracesToClose = 0;
     Expression firstPredicate = conditions().get(0).predicate;

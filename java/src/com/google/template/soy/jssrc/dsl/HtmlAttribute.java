@@ -53,7 +53,7 @@ public abstract class HtmlAttribute extends Statement {
   }
 
   @Override
-  void doFormatInitialStatements(FormattingContext ctx) {
+  void doFormatStatement(FormattingContext ctx) {
     appendChild(ctx, children().get(0));
     if (children().size() > 1) {
       ctx.append("=");

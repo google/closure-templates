@@ -40,7 +40,7 @@ public class TsxPrintNode extends Statement {
   }
 
   @Override
-  void doFormatInitialStatements(FormattingContext ctx) {
+  void doFormatStatement(FormattingContext ctx) {
     if (!expr.isPresent()) {
       ctx.append(ctx.getInterpolationOpenString() + "}");
       return;
@@ -89,7 +89,7 @@ public class TsxPrintNode extends Statement {
     }
 
     @Override
-    void doFormatInitialStatements(FormattingContext ctx) {
+    void doFormatStatement(FormattingContext ctx) {
       if (!expr().isPresent()) {
         ctx.append(ctx.getInterpolationOpenString() + "}");
         return;

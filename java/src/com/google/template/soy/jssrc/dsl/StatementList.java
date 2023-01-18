@@ -60,7 +60,7 @@ public abstract class StatementList extends Statement {
   }
 
   @Override
-  void doFormatInitialStatements(FormattingContext ctx) {
+  void doFormatStatement(FormattingContext ctx) {
     for (Statement statement : statements()) {
       ctx.appendAll(statement);
     }

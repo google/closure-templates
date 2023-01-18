@@ -42,7 +42,7 @@ abstract class Switch extends Statement {
   }
 
   @Override
-  void doFormatInitialStatements(FormattingContext ctx) {
+  void doFormatStatement(FormattingContext ctx) {
     // Append the initial statements for the switch expression and all the case labels.
     ctx.appendInitialStatements(switchOn());
     for (CaseClause caseClause : caseClauses()) {

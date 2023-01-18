@@ -35,7 +35,7 @@ public abstract class RangeComment extends Statement {
   }
 
   @Override
-  void doFormatInitialStatements(FormattingContext ctx) {
+  void doFormatStatement(FormattingContext ctx) {
     String c = comment();
     ctx.append("/*" + (c.startsWith("\n") ? "" : " ") + c + (c.endsWith("\n") ? "" : " ") + "*/");
     if (!inline()) {

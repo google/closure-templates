@@ -40,7 +40,7 @@ public abstract class DoWhile extends Statement {
   }
 
   @Override
-  void doFormatInitialStatements(FormattingContext ctx) {
+  void doFormatStatement(FormattingContext ctx) {
     ctx.appendInitialStatements(condition());
 
     ctx.append("do ");

@@ -32,6 +32,14 @@ public abstract class Statement extends CodeChunk {
 
   Statement() {}
 
+  @Override
+  final void doFormatInitialStatements(FormattingContext ctx) {
+    doFormatStatement(ctx);
+  }
+
+  /** Appends this statement to the {@link FormattingContext}. */
+  abstract void doFormatStatement(FormattingContext ctx);
+
   /** Creates a new code chunk representing the concatenation of the given statements. */
   public static Statement of(Statement first, Statement... rest) {
     return of(ImmutableList.<Statement>builder().add(first).add(rest).build());

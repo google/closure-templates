@@ -57,7 +57,7 @@ abstract class Import extends Statement {
   }
 
   @Override
-  void doFormatInitialStatements(FormattingContext ctx) {
+  void doFormatStatement(FormattingContext ctx) {
     StringBuilder singleLine = new StringBuilder();
     singleLine.append("import ");
 

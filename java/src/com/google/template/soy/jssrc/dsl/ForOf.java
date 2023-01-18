@@ -42,7 +42,7 @@ abstract class ForOf extends Statement {
   }
 
   @Override
-  void doFormatInitialStatements(FormattingContext ctx) {
+  void doFormatStatement(FormattingContext ctx) {
     ctx.appendInitialStatements(collection());
 
     ctx.append("for (const " + localVar())

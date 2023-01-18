@@ -33,7 +33,7 @@ public abstract class LineComment extends Statement {
   }
 
   @Override
-  void doFormatInitialStatements(FormattingContext ctx) {
+  void doFormatStatement(FormattingContext ctx) {
     ctx.append("// " + comment());
     ctx.endLine();
   }

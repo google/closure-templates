@@ -64,7 +64,7 @@ public abstract class VariableDeclaration extends Statement {
   }
 
   @Override
-  void doFormatInitialStatements(FormattingContext ctx) {
+  void doFormatStatement(FormattingContext ctx) {
     if (rhs() != null) {
       ctx.appendInitialStatements(rhs());
     }

@@ -44,7 +44,7 @@ public abstract class File extends Statement {
   }
 
   @Override
-  void doFormatInitialStatements(FormattingContext ctx) {
+  void doFormatStatement(FormattingContext ctx) {
     ctx.append(fileOverviewComments());
 
     if (!(imports() instanceof StatementList && ((StatementList) imports()).isEmpty())) {

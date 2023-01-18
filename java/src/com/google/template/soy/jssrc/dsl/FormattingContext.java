@@ -176,8 +176,8 @@ class FormattingContext implements AutoCloseable {
   }
 
   /**
-   * For use only by {@link Switch#doFormatInitialStatements}. It's not an error for bodies of case
-   * clauses to be brace-delimited, but it is slightly less readable, so omit them.
+   * For use only by {@link Switch#doFormatStatement}. It's not an error for bodies of case clauses
+   * to be brace-delimited, but it is slightly less readable, so omit them.
    */
   @CanIgnoreReturnValue
   FormattingContext enterCaseBody() {

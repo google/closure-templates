@@ -49,7 +49,7 @@ abstract class For extends Statement {
   }
 
   @Override
-  void doFormatInitialStatements(FormattingContext ctx) {
+  void doFormatStatement(FormattingContext ctx) {
     ctx.appendInitialStatements(initial())
         .appendInitialStatements(limit())
         .appendInitialStatements(increment());

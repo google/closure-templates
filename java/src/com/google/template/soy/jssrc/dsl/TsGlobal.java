@@ -30,7 +30,7 @@ public abstract class TsGlobal extends Statement {
   }
 
   @Override
-  void doFormatInitialStatements(FormattingContext ctx) {
+  void doFormatStatement(FormattingContext ctx) {
     ctx.append("declare global ");
     ctx.enterBlock();
     for (Statement stmt : bodyStmts()) {
