@@ -20,10 +20,9 @@ import static com.google.template.soy.exprtree.Operator.CONDITIONAL;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.exprtree.Operator.Associativity;
-import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 /**
  * Represents a ternary expression. Its consequent and alternate chunks are required to be
@@ -39,19 +38,9 @@ abstract class Ternary extends Operation {
   abstract Expression alternate();
 
   static Ternary create(Expression predicate, Expression consequent, Expression alternate) {
-    Preconditions.checkArgument(
-        predicate.initialStatements().containsAll(consequent.initialStatements()));
-    Preconditions.checkArgument(
-        predicate.initialStatements().containsAll(alternate.initialStatements()));
-    return new AutoValue_Ternary(
-        ImmutableList.<Statement>builder()
-            .addAll(predicate.initialStatements())
-            .addAll(consequent.initialStatements())
-            .addAll(alternate.initialStatements())
-            .build(),
-        predicate,
-        consequent,
-        alternate);
+    Preconditions.checkArgument(predicate.hasEquivalentInitialStatements(consequent));
+    Preconditions.checkArgument(predicate.hasEquivalentInitialStatements(alternate));
+    return new AutoValue_Ternary(predicate, consequent, alternate);
   }
 
   @Override
@@ -65,9 +54,8 @@ abstract class Ternary extends Operation {
   }
 
   @Override
-  void doFormatInitialStatements(FormattingContext ctx) {
-    ctx.appendInitialStatements(predicate());
-    // consequent and alternate cannot have initial statements
+  Stream<? extends CodeChunk> childrenStream() {
+    return Stream.of(predicate(), consequent(), alternate());
   }
 
   @Override
@@ -77,13 +65,6 @@ abstract class Ternary extends Operation {
     formatOperand(consequent(), OperandPosition.LEFT, ctx);
     ctx.append(" : ");
     formatOperand(alternate(), OperandPosition.RIGHT, ctx);
-  }
-
-  @Override
-  public void collectRequires(Consumer<GoogRequire> collector) {
-    predicate().collectRequires(collector);
-    consequent().collectRequires(collector);
-    alternate().collectRequires(collector);
   }
 
   @Override

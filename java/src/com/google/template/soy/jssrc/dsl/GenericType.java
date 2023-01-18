@@ -17,7 +17,7 @@
 package com.google.template.soy.jssrc.dsl;
 
 import com.google.common.collect.ImmutableList;
-import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 /** Represents a TS generic type, for use with eg `new` statements. */
 public class GenericType extends AbstractType {
@@ -46,10 +46,7 @@ public class GenericType extends AbstractType {
   }
 
   @Override
-  public void collectRequires(Consumer<GoogRequire> collector) {
-    className.collectRequires(collector);
-    for (Expression generic : generics) {
-      generic.collectRequires(collector);
-    }
+  Stream<? extends CodeChunk> childrenStream() {
+    return Stream.concat(Stream.of(className), generics.stream());
   }
 }

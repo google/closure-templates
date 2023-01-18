@@ -106,7 +106,7 @@ public abstract class VariableDeclaration extends Statement {
   // Use an array so our caller doesn't have to deal with allocating epic amounts of iterators.
   @ForOverride
   @Memoized
-  GoogRequire[] allRequires() {
+  ImmutableSet<GoogRequire> allRequires() {
     ImmutableSet.Builder<GoogRequire> requiresBuilder =
         ImmutableSet.<GoogRequire>builder().addAll(googRequires());
     if (rhs() != null) {
@@ -118,7 +118,7 @@ public abstract class VariableDeclaration extends Statement {
     if (type() != null) {
       type().collectRequires(requiresBuilder::add);
     }
-    return requiresBuilder.build().toArray(new GoogRequire[0]);
+    return requiresBuilder.build();
   }
 
   /** A builder for a {@link VariableDeclaration}. */

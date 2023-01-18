@@ -18,7 +18,7 @@ package com.google.template.soy.jssrc.dsl;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
-import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 /** Represents a TS function type. */
 public class FunctionType extends AbstractType {
@@ -52,10 +52,7 @@ public class FunctionType extends AbstractType {
   }
 
   @Override
-  public void collectRequires(Consumer<GoogRequire> collector) {
-    returnType.collectRequires(collector);
-    for (ParamDecl param : params) {
-      param.collectRequires(collector);
-    }
+  Stream<? extends CodeChunk> childrenStream() {
+    return Stream.concat(Stream.of(returnType), params.stream());
   }
 }

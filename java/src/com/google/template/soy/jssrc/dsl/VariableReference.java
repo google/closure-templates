@@ -20,17 +20,17 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.jssrc.restricted.JsExpr;
-import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 /** Represents a reference to a previously declared variable. */
 @AutoValue
 @Immutable
-abstract class VariableReference extends Expression {
+abstract class VariableReference extends Expression implements Expression.HasInitialStatements {
 
   abstract VariableDeclaration declaration();
 
   static VariableReference of(VariableDeclaration declaration) {
-    return new AutoValue_VariableReference(ImmutableList.of(declaration), declaration);
+    return new AutoValue_VariableReference(declaration);
   }
 
   @Override
@@ -57,12 +57,12 @@ abstract class VariableReference extends Expression {
   }
 
   @Override
-  public void collectRequires(Consumer<GoogRequire> collector) {
-    declaration().collectRequires(collector);
+  Stream<? extends CodeChunk> childrenStream() {
+    return Stream.of(declaration());
   }
 
   @Override
-  void doFormatInitialStatements(FormattingContext ctx) {
-    ctx.appendAll(declaration());
+  public ImmutableList<Statement> initialStatements() {
+    return ImmutableList.of(declaration());
   }
 }

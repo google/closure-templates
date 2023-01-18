@@ -19,10 +19,9 @@ package com.google.template.soy.jssrc.dsl;
 import static com.google.template.soy.exprtree.Operator.Associativity.LEFT;
 
 import com.google.auto.value.AutoValue;
-import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.exprtree.Operator.Associativity;
-import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 /** Represents a JavaScript computed member access ({@code []}) expression. */
 @AutoValue
@@ -37,10 +36,6 @@ abstract class Bracket extends Operation {
 
   static Bracket create(Expression receiver, Expression key) {
     return new AutoValue_Bracket(
-        ImmutableList.<Statement>builder()
-            .addAll(receiver.initialStatements())
-            .addAll(key.initialStatements())
-            .build(),
         receiver,
         key,
         false);
@@ -48,10 +43,6 @@ abstract class Bracket extends Operation {
 
   static Bracket createNullSafe(Expression receiver, Expression key) {
     return new AutoValue_Bracket(
-        ImmutableList.<Statement>builder()
-            .addAll(receiver.initialStatements())
-            .addAll(key.initialStatements())
-            .build(),
         receiver,
         key,
         true);
@@ -69,14 +60,8 @@ abstract class Bracket extends Operation {
   }
 
   @Override
-  public void collectRequires(Consumer<GoogRequire> collector) {
-    receiver().collectRequires(collector);
-    key().collectRequires(collector);
-  }
-
-  @Override
-  void doFormatInitialStatements(FormattingContext ctx) {
-    ctx.appendInitialStatements(receiver()).appendInitialStatements(key());
+  Stream<? extends CodeChunk> childrenStream() {
+    return Stream.of(receiver(), key());
   }
 
   @Override

@@ -17,11 +17,10 @@
 package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.jssrc.restricted.JsExpr;
-import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 /**
  * Holds {@link JsExpr expressions}. These chunks can always be represented as single expressions
@@ -29,21 +28,21 @@ import java.util.function.Consumer;
  */
 @AutoValue
 @Immutable
-abstract class Leaf extends Expression {
+abstract class Leaf extends Expression implements Expression.HasRequires {
   static Leaf create(String text, boolean isCheap, Iterable<GoogRequire> require) {
     return create(
         new JsExpr(text, Integer.MAX_VALUE),
         isCheap,
         ImmutableSet.copyOf(require),
-        /* initialExpressionIsObjectLiteral=*/ false);
+        /* initialExpressionIsObjectLiteral= */ false);
   }
 
   static Leaf create(String text, boolean isCheap) {
-    return create(text, isCheap, ImmutableSet.<GoogRequire>of());
+    return create(text, isCheap, ImmutableSet.of());
   }
 
   static Leaf create(JsExpr value, boolean isCheap, Iterable<GoogRequire> requires) {
-    return create(value, isCheap, requires, /* initialExpressionIsObjectLiteral=*/ true);
+    return create(value, isCheap, requires, /* initialExpressionIsObjectLiteral= */ true);
   }
 
   private static Leaf create(
@@ -52,23 +51,20 @@ abstract class Leaf extends Expression {
       Iterable<GoogRequire> requires,
       boolean initialExpressionIsObjectLiteral) {
     return new AutoValue_Leaf(
-        /* initialStatements= */ ImmutableList.of(),
-        value,
-        ImmutableSet.copyOf(requires),
-        isCheap,
-        initialExpressionIsObjectLiteral);
+        value, ImmutableSet.copyOf(requires), isCheap, initialExpressionIsObjectLiteral);
   }
 
   abstract JsExpr value();
 
-  abstract ImmutableSet<GoogRequire> requires();
+  @Override
+  public abstract ImmutableSet<GoogRequire> googRequires();
 
   @Override
   public abstract boolean isCheap();
 
   @Override
-  void doFormatInitialStatements(FormattingContext ctx) {
-    // nothing to do
+  Stream<? extends CodeChunk> childrenStream() {
+    return Stream.empty();
   }
 
   @Override
@@ -79,13 +75,6 @@ abstract class Leaf extends Expression {
   @Override
   public JsExpr singleExprOrName(FormatOptions formatOptions) {
     return value();
-  }
-
-  @Override
-  public void collectRequires(Consumer<GoogRequire> collector) {
-    for (GoogRequire require : requires()) {
-      collector.accept(require);
-    }
   }
 
   @Override

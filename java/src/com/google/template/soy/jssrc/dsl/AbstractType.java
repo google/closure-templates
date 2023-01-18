@@ -16,16 +16,7 @@
 
 package com.google.template.soy.jssrc.dsl;
 
-import com.google.common.collect.ImmutableList;
 
 /** Abstract super type of non-simple types. */
 public abstract class AbstractType extends Expression {
-
-  @Override
-  public ImmutableList<Statement> initialStatements() {
-    return ImmutableList.of();
-  }
-
-  @Override
-  void doFormatInitialStatements(FormattingContext ctx) {}
 }

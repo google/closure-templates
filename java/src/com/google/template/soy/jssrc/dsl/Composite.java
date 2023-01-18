@@ -21,23 +21,21 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.jssrc.restricted.JsExpr;
-import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 /** Represents an expression preceded by one or more initial statements. */
 @AutoValue
 @Immutable
-abstract class Composite extends Expression {
+abstract class Composite extends Expression implements Expression.HasInitialStatements {
+
+  @Override
+  public abstract ImmutableList<Statement> initialStatements();
 
   abstract Expression value();
 
   static Composite create(ImmutableList<Statement> initialStatements, Expression value) {
     Preconditions.checkState(!initialStatements.isEmpty());
-    return new AutoValue_Composite(
-        ImmutableList.<Statement>builder()
-            .addAll(initialStatements)
-            .addAll(value.initialStatements())
-            .build(),
-        value);
+    return new AutoValue_Composite(initialStatements, value);
   }
 
   @Override
@@ -46,19 +44,8 @@ abstract class Composite extends Expression {
   }
 
   @Override
-  void doFormatInitialStatements(FormattingContext ctx) {
-    for (CodeChunk stmt : initialStatements()) {
-      ctx.appendAll(stmt);
-    }
-    ctx.appendInitialStatements(value());
-  }
-
-  @Override
-  public void collectRequires(Consumer<GoogRequire> collector) {
-    for (Statement stmt : initialStatements()) {
-      stmt.collectRequires(collector);
-    }
-    value().collectRequires(collector);
+  Stream<? extends CodeChunk> childrenStream() {
+    return Stream.concat(initialStatements().stream(), Stream.of(value()));
   }
 
   @Override

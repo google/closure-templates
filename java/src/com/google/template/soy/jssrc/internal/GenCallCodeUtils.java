@@ -284,7 +284,7 @@ public class GenCallCodeUtils {
     }
 
     return fromExpr(callResult, requiresBuilder.build())
-        .withInitialStatements(call.initialStatements());
+        .withInitialStatements(call.allInitialStatementsInTopScope());
   }
 
   /** Represents a callable function symbol. */

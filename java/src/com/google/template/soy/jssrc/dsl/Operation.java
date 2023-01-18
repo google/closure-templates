@@ -44,7 +44,7 @@ abstract class Operation extends Expression {
     if (protect) {
       ctx.append('(');
     }
-    operand.doFormatOutputExpr(ctx);
+    ctx.appendOutputExpression(operand);
     if (protect) {
       ctx.append(')');
     }

@@ -20,7 +20,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.Operator.Associativity;
-import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 /**
  * Represents the concatenation of many chunks via the {@code +} operator.
@@ -34,17 +34,15 @@ import java.util.function.Consumer;
 abstract class Concatenation extends Operation {
 
   static Concatenation create(Iterable<? extends Expression> parts) {
-    ImmutableList.Builder<Statement> initialStatements = ImmutableList.builder();
     ImmutableList.Builder<Expression> partsBuilder = ImmutableList.builder();
     for (Expression part : parts) {
-      initialStatements.addAll(part.initialStatements());
       if (part instanceof Concatenation) {
         partsBuilder.addAll(((Concatenation) part).parts());
       } else {
         partsBuilder.add(part);
       }
     }
-    return new AutoValue_Concatenation(initialStatements.build(), partsBuilder.build());
+    return new AutoValue_Concatenation(partsBuilder.build());
   }
 
   abstract ImmutableList<Expression> parts();
@@ -60,10 +58,8 @@ abstract class Concatenation extends Operation {
   }
 
   @Override
-  public void collectRequires(Consumer<GoogRequire> collector) {
-    for (Expression part : parts()) {
-      part.collectRequires(collector);
-    }
+  Stream<? extends CodeChunk> childrenStream() {
+    return parts().stream();
   }
 
   @Override
@@ -78,13 +74,6 @@ abstract class Concatenation extends Operation {
         ctx.append(" + ");
         formatOperand(parts().get(i), OperandPosition.RIGHT, ctx);
       }
-    }
-  }
-
-  @Override
-  void doFormatInitialStatements(FormattingContext ctx) {
-    for (Expression part : parts()) {
-      ctx.appendInitialStatements(part);
     }
   }
 }

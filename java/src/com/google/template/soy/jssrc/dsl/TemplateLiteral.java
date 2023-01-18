@@ -19,7 +19,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
 import java.util.List;
-import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 /** Represents a JavaScript template literal expression. */
 @AutoValue
@@ -29,12 +29,13 @@ public abstract class TemplateLiteral extends Expression {
   abstract ImmutableList<Statement> body();
 
   public static TemplateLiteral create(List<Statement> body) {
-    return new AutoValue_TemplateLiteral(
-        /* initialStatements= */ ImmutableList.of(), ImmutableList.copyOf(body));
+    return new AutoValue_TemplateLiteral(ImmutableList.copyOf(body));
   }
 
   @Override
-  void doFormatInitialStatements(FormattingContext ctx) {}
+  Stream<? extends CodeChunk> childrenStream() {
+    return body().stream();
+  }
 
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
@@ -47,12 +48,5 @@ public abstract class TemplateLiteral extends Expression {
     ctx.append('`');
 
     ctx.popInterpolationKind();
-  }
-
-  @Override
-  public void collectRequires(Consumer<GoogRequire> collector) {
-    for (Statement s : body()) {
-      s.collectRequires(collector);
-    }
   }
 }

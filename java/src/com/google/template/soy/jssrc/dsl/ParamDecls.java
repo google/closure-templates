@@ -31,7 +31,7 @@ import java.util.function.Consumer;
  */
 @AutoValue
 @Immutable
-public abstract class ParamDecls {
+public abstract class ParamDecls extends CodeChunk {
 
   abstract ImmutableList<ParamDecl> params();
 
@@ -45,10 +45,12 @@ public abstract class ParamDecls {
     return new AutoValue_ParamDecls(ImmutableList.copyOf(params), false);
   }
 
-  public String getCode(FormatOptions formatOptions) {
+  @Override
+  void doFormatInitialStatements(FormattingContext ctx) {
     if (templateStyle()) {
       if (params().isEmpty()) {
-        return "{}: {}";
+        ctx.append("{}: {}");
+        return;
       }
 
       // Generate the dict of param names (e.g. "{amount, name = ‘Vesper’}"). Default values are not
@@ -58,9 +60,13 @@ public abstract class ParamDecls {
 
       // Generate the dict of param types (e.g. "{amount: number, name?: string}").
       String paramTypesDict =
-          "{" + params().stream().map(p -> p.typeDecl(formatOptions)).collect(joining(", ")) + "}";
+          "{"
+              + params().stream()
+                  .map(p -> p.typeDecl(ctx.getFormatOptions()))
+                  .collect(joining(", "))
+              + "}";
 
-      return paramNamesDict + ": " + paramTypesDict;
+      ctx.append(paramNamesDict + ": " + paramTypesDict);
     } else {
       StringBuilder sb = new StringBuilder();
       boolean first = true;
@@ -72,12 +78,13 @@ public abstract class ParamDecls {
         }
         sb.append(param.name())
             .append(": ")
-            .append(param.type().singleExprOrName(formatOptions).getText());
+            .append(param.type().singleExprOrName(ctx.getFormatOptions()).getText());
       }
-      return sb.toString();
+      ctx.append(sb.toString());
     }
   }
 
+  @Override
   public void collectRequires(Consumer<GoogRequire> collector) {
     for (ParamDecl param : params()) {
       param.collectRequires(collector);

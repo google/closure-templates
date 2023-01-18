@@ -18,7 +18,7 @@ package com.google.template.soy.jssrc.dsl;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import java.util.Optional;
-import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 /**
  * Represents a TS arrow function expression.
@@ -29,7 +29,7 @@ import java.util.function.Consumer;
  * (param: string): string => { ... }
  * }</code>
  */
-public class TsArrowFunction extends Expression {
+public class TsArrowFunction extends Expression implements Expression.InitialStatementsScope {
 
   private final ParamDecls params;
   private final Optional<Expression> returnType;
@@ -52,7 +52,7 @@ public class TsArrowFunction extends Expression {
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
     try (FormattingContext buffer = ctx.buffer()) {
-      buffer.append(String.format("(%s)", params.getCode(ctx.getFormatOptions())));
+      buffer.append("(").appendAll(params).append(")");
       if (returnType.isPresent()) {
         buffer.append(": ");
         buffer.appendOutputExpression(returnType.get());
@@ -69,19 +69,9 @@ public class TsArrowFunction extends Expression {
   }
 
   @Override
-  public void collectRequires(Consumer<GoogRequire> collector) {
-    for (Statement stmt : bodyStmts) {
-      stmt.collectRequires(collector);
-    }
+  Stream<? extends CodeChunk> childrenStream() {
+    return bodyStmts.stream();
   }
-
-  @Override
-  public ImmutableList<Statement> initialStatements() {
-    return ImmutableList.of();
-  }
-
-  @Override
-  void doFormatInitialStatements(FormattingContext ctx) {}
 
   @Override
   public JsExpr singleExprOrName(FormatOptions formatOptions) {

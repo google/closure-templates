@@ -19,42 +19,35 @@ package com.google.template.soy.jssrc.dsl;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.Immutable;
-import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 /** Represents a JavaScript type cast. */
 @AutoValue
 @Immutable
-abstract class Cast extends Expression {
+abstract class Cast extends Expression implements Expression.HasRequires {
   abstract Expression expr();
 
   abstract String typeExpr();
 
-  abstract ImmutableSet<GoogRequire> googRequires();
+  @Override
+  public abstract ImmutableSet<GoogRequire> googRequires();
 
   static Cast create(Expression expr, String typeExpr) {
-    return new AutoValue_Cast(expr.initialStatements(), expr, typeExpr, ImmutableSet.of());
+    return new AutoValue_Cast(expr, typeExpr, ImmutableSet.of());
   }
 
   static Cast create(Expression expr, String typeExpr, ImmutableSet<GoogRequire> googRequires) {
-    return new AutoValue_Cast(expr.initialStatements(), expr, typeExpr, googRequires);
+    return new AutoValue_Cast(expr, typeExpr, googRequires);
   }
 
   @Override
-  public void collectRequires(Consumer<GoogRequire> collector) {
-    for (GoogRequire require : googRequires()) {
-      collector.accept(require);
-    }
-    expr().collectRequires(collector);
+  Stream<? extends CodeChunk> childrenStream() {
+    return Stream.of(expr());
   }
 
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
     ctx.append("/** @type {" + typeExpr() + "} */ (").appendOutputExpression(expr()).append(')');
-  }
-
-  @Override
-  void doFormatInitialStatements(FormattingContext ctx) {
-    ctx.appendInitialStatements(expr());
   }
 
   @Override

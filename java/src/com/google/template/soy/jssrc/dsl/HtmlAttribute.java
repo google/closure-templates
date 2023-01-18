@@ -65,7 +65,7 @@ public abstract class HtmlAttribute extends Statement {
 
   private void appendChild(FormattingContext ctx, CodeChunk chunk) {
     if (chunk instanceof Expression) {
-      ((Expression) chunk).doFormatOutputExpr(ctx);
+      ctx.appendOutputExpression((Expression) chunk);
     } else {
       ctx.append(chunk.getCode(ctx.getFormatOptions()));
     }

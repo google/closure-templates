@@ -16,8 +16,7 @@
 package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
-import com.google.common.collect.ImmutableList;
-import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 /**
  * Represents an anonymous JavaScript function declaration.
@@ -29,7 +28,8 @@ import java.util.function.Consumer;
  * }</code>
  */
 @AutoValue
-public abstract class FunctionDeclaration extends Expression {
+public abstract class FunctionDeclaration extends Expression
+    implements Expression.InitialStatementsScope {
 
   abstract JsDoc jsDoc();
 
@@ -38,29 +38,20 @@ public abstract class FunctionDeclaration extends Expression {
   abstract boolean isArrowFunction();
 
   public static FunctionDeclaration create(JsDoc jsDoc, Statement body) {
-    return new AutoValue_FunctionDeclaration(
-        /* initialStatements= */ ImmutableList.of(), jsDoc, body, false);
+    return new AutoValue_FunctionDeclaration(jsDoc, body, false);
   }
 
   public static FunctionDeclaration createArrowFunction(JsDoc jsDoc, Statement body) {
-    return new AutoValue_FunctionDeclaration(
-        /* initialStatements= */ ImmutableList.of(), jsDoc, body, true);
+    return new AutoValue_FunctionDeclaration(jsDoc, body, true);
   }
 
   public static FunctionDeclaration createArrowFunction(JsDoc jsDoc, Expression body) {
-    return new AutoValue_FunctionDeclaration(
-        /* initialStatements= */ ImmutableList.of(), jsDoc, body, true);
+    return new AutoValue_FunctionDeclaration(jsDoc, body, true);
   }
 
   @Override
-  void doFormatInitialStatements(FormattingContext ctx) {
-    // there are none
-  }
-
-  @Override
-  public void collectRequires(Consumer<GoogRequire> collector) {
-    body().collectRequires(collector);
-    jsDoc().collectRequires(collector);
+  Stream<? extends CodeChunk> childrenStream() {
+    return Stream.of(body(), jsDoc());
   }
 
   @Override

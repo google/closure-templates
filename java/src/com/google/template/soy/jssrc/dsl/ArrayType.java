@@ -16,7 +16,7 @@
 
 package com.google.template.soy.jssrc.dsl;
 
-import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 /** Represents a TS record type, for use with eg `new` statements. */
 public class ArrayType extends AbstractType {
@@ -40,7 +40,7 @@ public class ArrayType extends AbstractType {
   }
 
   @Override
-  public void collectRequires(Consumer<GoogRequire> collector) {
-    simpleType.collectRequires(collector);
+  Stream<? extends CodeChunk> childrenStream() {
+    return Stream.of(simpleType);
   }
 }

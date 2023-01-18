@@ -21,7 +21,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
 import java.util.List;
-import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 /** Represents a tsx elemenet, e.g.: "<div>body</div>". */
 @AutoValue
@@ -38,8 +38,7 @@ public abstract class TsxElement extends Expression {
     checkState(openTag.tagName().equals(closeTag.tagName()));
     checkState(openTag.isOpen());
     checkState(closeTag.isClose());
-    return new AutoValue_TsxElement(
-        /* initialStatements= */ ImmutableList.of(), openTag, closeTag, ImmutableList.copyOf(body));
+    return new AutoValue_TsxElement(openTag, closeTag, ImmutableList.copyOf(body));
   }
 
   public TsxElement copyWithTagName(String newTagName) {
@@ -60,7 +59,9 @@ public abstract class TsxElement extends Expression {
   }
 
   @Override
-  void doFormatInitialStatements(FormattingContext ctx) {}
+  Stream<? extends CodeChunk> childrenStream() {
+    return Stream.concat(Stream.of(openTag(), closeTag()), body().stream());
+  }
 
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
@@ -69,14 +70,5 @@ public abstract class TsxElement extends Expression {
       ctx.appendAll(s);
     }
     ctx.appendAll(closeTag());
-  }
-
-  @Override
-  public void collectRequires(Consumer<GoogRequire> collector) {
-    openTag().collectRequires(collector);
-    for (Statement s : body()) {
-      s.collectRequires(collector);
-    }
-    closeTag().collectRequires(collector);
   }
 }

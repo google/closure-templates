@@ -22,7 +22,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.Operator.Associativity;
-import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 /** Represents a JavaScript binary operation. */
 @AutoValue
@@ -52,10 +52,6 @@ abstract class BinaryOperation extends Operation {
       Expression arg1,
       Expression arg2) {
     return new AutoValue_BinaryOperation(
-        ImmutableList.<Statement>builder()
-            .addAll(arg1.initialStatements())
-            .addAll(arg2.initialStatements())
-            .build(),
         precedence,
         associativity,
         operator,
@@ -66,7 +62,7 @@ abstract class BinaryOperation extends Operation {
   static Expression and(Expression lhs, Expression rhs, CodeChunk.Generator codeGenerator) {
     // If rhs has no initial statements, use the JS && operator directly.
     // It's already short-circuiting.
-    if (lhs.initialStatements().containsAll(rhs.initialStatements())) {
+    if (lhs.hasEquivalentInitialStatements(rhs)) {
       return create("&&", Operator.AND.getPrecedence(), Operator.AND.getAssociativity(), lhs, rhs);
     }
     // Otherwise, generate explicit short-circuiting code.
@@ -79,7 +75,7 @@ abstract class BinaryOperation extends Operation {
   static Expression or(Expression lhs, Expression rhs, CodeChunk.Generator codeGenerator) {
     // If rhs has no initial statements, use the JS || operator directly.
     // It's already short-circuiting.
-    if (lhs.initialStatements().containsAll(rhs.initialStatements())) {
+    if (lhs.hasEquivalentInitialStatements(rhs)) {
       return create("||", Operator.OR.getPrecedence(), Operator.OR.getAssociativity(), lhs, rhs);
     }
     // Otherwise, generate explicit short-circuiting code.
@@ -91,9 +87,8 @@ abstract class BinaryOperation extends Operation {
   }
 
   @Override
-  public void collectRequires(Consumer<GoogRequire> collector) {
-    arg1().collectRequires(collector);
-    arg2().collectRequires(collector);
+  Stream<? extends CodeChunk> childrenStream() {
+    return Stream.of(arg1(), arg2());
   }
 
   @Override
@@ -103,11 +98,6 @@ abstract class BinaryOperation extends Operation {
     formatOperand(arg2(), OperandPosition.RIGHT, ctx);
   }
 
-  @Override
-  void doFormatInitialStatements(FormattingContext ctx) {
-    ctx.appendInitialStatements(arg1()).appendInitialStatements(arg2());
-  }
-  
   @Override
   boolean initialExpressionIsObjectLiteral() {
     return arg1().initialExpressionIsObjectLiteral();

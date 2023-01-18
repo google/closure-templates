@@ -22,7 +22,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.exprtree.Operator.Associativity;
-import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 /** Represents a JavaScript function call. */
 @AutoValue
@@ -33,12 +33,7 @@ abstract class Call extends Operation {
   abstract ImmutableList<Expression> args();
 
   static Call create(Expression receiver, ImmutableList<Expression> args) {
-    ImmutableList.Builder<Statement> builder = ImmutableList.builder();
-    builder.addAll(receiver.initialStatements());
-    for (Expression arg : args) {
-      builder.addAll(arg.initialStatements());
-    }
-    return new AutoValue_Call(builder.build(), receiver, args);
+    return new AutoValue_Call(receiver, args);
   }
 
   @Override
@@ -53,11 +48,8 @@ abstract class Call extends Operation {
   }
 
   @Override
-  public void collectRequires(Consumer<GoogRequire> collector) {
-    receiver().collectRequires(collector);
-    for (Expression arg : args()) {
-      arg.collectRequires(collector);
-    }
+  Stream<? extends CodeChunk> childrenStream() {
+    return Stream.concat(Stream.of(receiver()), args().stream());
   }
 
   @Override
@@ -73,17 +65,9 @@ abstract class Call extends Operation {
       }
       // The comma is the lowest-precedence JavaScript operator, so none of the args
       // need to be protected.
-      arg.doFormatOutputExpr(ctx);
+      ctx.appendOutputExpression(arg);
     }
     ctx.append(')');
-  }
-
-  @Override
-  void doFormatInitialStatements(FormattingContext ctx) {
-    ctx.appendInitialStatements(receiver());
-    for (Expression arg : args()) {
-      ctx.appendInitialStatements(arg);
-    }
   }
 
   @Override

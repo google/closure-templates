@@ -65,8 +65,8 @@ public final class ConditionalExpressionBuilder {
     Expression predicate = ifThen.predicate;
     Expression consequent = ifThen.consequent;
     // TODO(lukes): we could support nested ternaries with little additional difficulty
-    if (predicate.initialStatements().containsAll(consequent.initialStatements())
-        && predicate.initialStatements().containsAll(trailingElse.initialStatements())) {
+    if (predicate.hasEquivalentInitialStatements(consequent)
+        && predicate.hasEquivalentInitialStatements(trailingElse)) {
       return Ternary.create(predicate, consequent, trailingElse);
     }
     return null;

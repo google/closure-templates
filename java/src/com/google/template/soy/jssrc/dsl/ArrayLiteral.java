@@ -19,7 +19,7 @@ package com.google.template.soy.jssrc.dsl;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
-import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 /** Represents a JavaScript array literal expression. */
 @AutoValue
@@ -29,18 +29,12 @@ public abstract class ArrayLiteral extends Expression {
   abstract ImmutableList<? extends Expression> elements();
 
   public static ArrayLiteral create(ImmutableList<? extends Expression> elements) {
-    ImmutableList.Builder<Statement> builder = ImmutableList.builder();
-    for (Expression element : elements) {
-      builder.addAll(element.initialStatements());
-    }
-    return new AutoValue_ArrayLiteral(builder.build(), elements);
+    return new AutoValue_ArrayLiteral(elements);
   }
 
   @Override
-  public void collectRequires(Consumer<GoogRequire> collector) {
-    for (Expression element : elements()) {
-      element.collectRequires(collector);
-    }
+  Stream<? extends CodeChunk> childrenStream() {
+    return elements().stream();
   }
 
   @Override
@@ -53,15 +47,8 @@ public abstract class ArrayLiteral extends Expression {
       } else {
         ctx.append(", ");
       }
-      element.doFormatOutputExpr(ctx);
+      ctx.appendOutputExpression(element);
     }
     ctx.append(']');
-  }
-
-  @Override
-  void doFormatInitialStatements(FormattingContext ctx) {
-    for (Expression element : elements()) {
-      ctx.appendInitialStatements(element);
-    }
   }
 }

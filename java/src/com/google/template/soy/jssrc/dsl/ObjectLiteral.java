@@ -17,12 +17,11 @@
 package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.errorprone.annotations.Immutable;
 import java.util.Map;
-import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 /** Represents a JavaScript object literal expression. */
 @AutoValue
@@ -37,13 +36,11 @@ abstract class ObjectLiteral extends Expression {
 
   private static ObjectLiteral create(
       Map<String, Expression> object, Function<String, Expression> createKeyFn) {
-    ImmutableList.Builder<Statement> initialStatements = ImmutableList.builder();
     ImmutableMap.Builder<Expression, Expression> values = ImmutableMap.builder();
     for (Map.Entry<String, Expression> entry : object.entrySet()) {
-      initialStatements.addAll(entry.getValue().initialStatements());
       values.put(createKeyFn.apply(entry.getKey()), entry.getValue());
     }
-    return new AutoValue_ObjectLiteral(initialStatements.build(), values.build());
+    return new AutoValue_ObjectLiteral(values.buildOrThrow());
   }
 
   static ObjectLiteral createWithQuotedKeys(Map<String, Expression> object) {
@@ -67,17 +64,8 @@ abstract class ObjectLiteral extends Expression {
   }
 
   @Override
-  void doFormatInitialStatements(FormattingContext ctx) {
-    for (Expression value : values().values()) {
-      ctx.appendInitialStatements(value);
-    }
-  }
-
-  @Override
-  public void collectRequires(Consumer<GoogRequire> collector) {
-    for (Expression value : values().values()) {
-      value.collectRequires(collector);
-    }
+  Stream<? extends CodeChunk> childrenStream() {
+    return Stream.concat(values().keySet().stream(), values().values().stream());
   }
 
   @Override

@@ -44,7 +44,7 @@ abstract class Conditional extends Statement {
     int numRightBracesToClose = 0;
     Expression firstPredicate = conditions().get(0).predicate;
     for (IfThenPair<Statement> condition : conditions().subList(1, conditions().size())) {
-      if (firstPredicate.initialStatements().containsAll(condition.predicate.initialStatements())) {
+      if (firstPredicate.hasEquivalentInitialStatements(condition.predicate)) {
         formatElseIfClauseWithNoDependencies(condition, ctx);
       } else {
         formatElseIfClauseWithDependencies(condition, ctx);

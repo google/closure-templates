@@ -68,13 +68,14 @@ public abstract class CodeChunk {
     FormattingContext initialStatements = new FormattingContext(formatOptions);
     initialStatements.appendInitialStatements(this);
 
-    FormattingContext outputExprs = new FormattingContext(formatOptions);
     if (this instanceof Expression) {
+      FormattingContext outputExprs = new FormattingContext(formatOptions);
       outputExprs.appendOutputExpression((Expression) this);
       outputExprs.append(';').endLine();
+      return initialStatements.concat(outputExprs).toString();
+    } else {
+      return initialStatements.toString();
     }
-
-    return initialStatements.concat(outputExprs).toString();
   }
 
   /**

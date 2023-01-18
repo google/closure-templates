@@ -93,9 +93,9 @@ public final class SoyJsPluginUtils {
     }
 
     ImmutableList.Builder<Statement> initialStatements =
-        ImmutableList.<Statement>builder().addAll(expr.initialStatements());
+        ImmutableList.<Statement>builder().addAll(expr.allInitialStatementsInTopScope());
     for (Expression arg : args) {
-      initialStatements.addAll(arg.initialStatements());
+      initialStatements.addAll(arg.allInitialStatementsInTopScope());
     }
     return fromExpr(applied, requiresBuilder.build())
         .withInitialStatements(initialStatements.build());
@@ -115,7 +115,7 @@ public final class SoyJsPluginUtils {
     for (Expression arg : args) {
       arg.collectRequires(requiresBuilder::add);
       functionInputs.add(arg.singleExprOrName(FormatOptions.JSSRC));
-      initialStatements.addAll(arg.initialStatements());
+      initialStatements.addAll(arg.allInitialStatementsInTopScope());
     }
 
     // Compute the function on the JsExpr inputs.

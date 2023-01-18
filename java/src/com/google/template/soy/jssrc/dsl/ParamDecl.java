@@ -27,7 +27,7 @@ import java.util.function.Consumer;
  */
 @AutoValue
 @Immutable
-public abstract class ParamDecl {
+public abstract class ParamDecl extends CodeChunk {
 
   abstract String name();
 
@@ -60,7 +60,13 @@ public abstract class ParamDecl {
         + type().singleExprOrName(formatOptions).getText();
   }
 
+  @Override
   public void collectRequires(Consumer<GoogRequire> collector) {
     type().collectRequires(collector);
+  }
+
+  @Override
+  void doFormatInitialStatements(FormattingContext ctx) {
+    ctx.append(typeDecl(ctx.getFormatOptions()));
   }
 }

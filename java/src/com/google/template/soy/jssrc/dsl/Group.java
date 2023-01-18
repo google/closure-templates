@@ -19,11 +19,10 @@ package com.google.template.soy.jssrc.dsl;
 import static com.google.template.soy.exprtree.Operator.Associativity.LEFT;
 
 import com.google.auto.value.AutoValue;
-import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.exprtree.Operator.Associativity;
 import com.google.template.soy.jssrc.restricted.JsExpr;
-import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 /**
  * Represents a JavaScript grouping ({@code (...)}).
@@ -53,22 +52,12 @@ abstract class Group extends Operation {
   }
 
   @Override
-  void doFormatInitialStatements(FormattingContext ctx) {
-    ctx.appendInitialStatements(underlying());
+  Stream<? extends CodeChunk> childrenStream() {
+    return Stream.of(underlying());
   }
 
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
     ctx.append('(').appendOutputExpression(underlying()).append(')');
-  }
-
-  @Override
-  public void collectRequires(Consumer<GoogRequire> collector) {
-    underlying().collectRequires(collector);
-  }
-
-  @Override
-  public ImmutableList<Statement> initialStatements() {
-    return underlying().initialStatements();
   }
 }

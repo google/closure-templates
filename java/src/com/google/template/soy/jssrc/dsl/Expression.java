@@ -16,6 +16,7 @@
 package com.google.template.soy.jssrc.dsl;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
@@ -27,12 +28,15 @@ import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.Operator.Associativity;
+import com.google.template.soy.internal.util.TreeStreams;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 /**
  * Marker class for a chunk of code that represents a value.
@@ -66,18 +70,8 @@ public abstract class Expression extends CodeChunk {
         }
 
         @Override
-        void doFormatInitialStatements(FormattingContext ctx) {
-          throw new IllegalStateException(
-              "ERROR_EXPR should never be used to write gencode! This soy file had a problem, and"
-                  + " the resulting js/ts will be invalid.");
-        }
-
-        @Override
-        public void collectRequires(Consumer<GoogRequire> collector) {}
-
-        @Override
-        public ImmutableList<Statement> initialStatements() {
-          return ImmutableList.of();
+        Stream<? extends CodeChunk> childrenStream() {
+          return Stream.empty();
         }
 
         @Override
@@ -103,9 +97,8 @@ public abstract class Expression extends CodeChunk {
    * written inline (i.e. without a semicolon).
    */
   public Expression asInlineExpr() {
-
     // If there were no initial statements, just return the expr string.
-    if (initialStatements().isEmpty()) {
+    if (!this.hasInitialStatements()) {
       return this;
     }
 
@@ -300,7 +293,8 @@ public abstract class Expression extends CodeChunk {
   }
 
   public static Expression constructMap(Expression... initializers) {
-    return New.create(id("Map"), GoogRequire.create("soy.map")).call(initializers);
+    return New.create(id("Map", ImmutableList.of(GoogRequire.create("soy.map"))))
+        .call(initializers);
   }
 
   /**
@@ -550,7 +544,7 @@ public abstract class Expression extends CodeChunk {
    * understand CodeChunks (e.g. {@link SoyJsSrcFunction}).
    */
   final boolean isRepresentableAsSingleExpression() {
-    return initialStatements().isEmpty();
+    return !hasInitialStatements();
   }
 
   /** Whether when formatted, this expression will begin with an object literal. */
@@ -583,15 +577,38 @@ public abstract class Expression extends CodeChunk {
   abstract void doFormatOutputExpr(FormattingContext ctx);
 
   /**
-   * Returns the initial statements associated with this value. The statements must be serialized
-   * before this value (for example, they could contain declarations of variables referenced in this
-   * value).
-   *
-   * <p>TODO(b/33382980): If we have this method, why do we need doFormatInitialStatements? should
-   * doFormatInitialStatements be implemented in terms of this method? is this method supposed to
-   * contain all initial statements? even from conditional branches?
+   * Defines a list of child code chunks that should be traversed for collecting require and initial
+   * statements.
    */
-  public abstract ImmutableList<Statement> initialStatements();
+  abstract Stream<? extends CodeChunk> childrenStream();
+
+  @Override
+  public final void collectRequires(Consumer<GoogRequire> collector) {
+    if (this instanceof HasRequires) {
+      ((HasRequires) this).googRequires().forEach(collector);
+    }
+    // Keep stack shorter so CodeChunkTest#testQuadraticVariableDeclaration passes without overflow.
+    Iterator<? extends CodeChunk> i = childrenStream().iterator();
+    while (i.hasNext()) {
+      i.next().collectRequires(collector);
+    }
+  }
+
+  @Override
+  final void doFormatInitialStatements(FormattingContext ctx) {
+    if (this instanceof HasInitialStatements) {
+      ((HasInitialStatements) this).initialStatements().forEach(ctx::appendInitialStatements);
+    }
+    // Do not traverse into a new scope since any initial statements therein should appear inside
+    // the scope.
+    if (this instanceof InitialStatementsScope) {
+      return;
+    }
+    childrenStream()
+        // Do not traverse into child statements since this prints the entire statement.
+        .filter(c -> !(c instanceof Statement))
+        .forEach(ctx::appendInitialStatements);
+  }
 
   /**
    * Returns {@code true} if the expression represented by this code chunk is so trivial that it
@@ -606,5 +623,53 @@ public abstract class Expression extends CodeChunk {
   /** Returns the string literal value of this Expression if it is a string literal. */
   public Optional<String> asStringLiteral() {
     return Optional.empty();
+  }
+
+  private Stream<Statement> initialStatementsStream() {
+    return TreeStreams.<CodeChunk>breadthFirst(
+            this,
+            c -> {
+              if (c instanceof Expression && !(c instanceof InitialStatementsScope)) {
+                return ((Expression) c).childrenStream().collect(toImmutableList());
+              }
+              return ImmutableList.of();
+            })
+        .filter(HasInitialStatements.class::isInstance)
+        .map(HasInitialStatements.class::cast)
+        .flatMap(e -> e.initialStatements().stream());
+  }
+
+  private boolean hasInitialStatements() {
+    return initialStatementsStream().iterator().hasNext();
+  }
+
+  final boolean hasEquivalentInitialStatements(Expression other) {
+    ImmutableList<Statement> s1 = allInitialStatementsInTopScope();
+    ImmutableList<Statement> s2 = other.allInitialStatementsInTopScope();
+    return s1.containsAll(s2);
+  }
+
+  /**
+   * Returns the transitive list of all initial statements in the expression tree starting at this
+   * expression node, with traversal terminating at a leaf or InitialStatementsScope.
+   */
+  public final ImmutableList<Statement> allInitialStatementsInTopScope() {
+    return initialStatementsStream().collect(toImmutableList());
+  }
+
+  /** An expression that requires initial statements in order to be valid. */
+  public interface HasInitialStatements {
+    ImmutableList<Statement> initialStatements();
+  }
+
+  /**
+   * An expression inside which initial statements may be printed, usually an expression that
+   * contains a block inside. For example, a function declaration.
+   */
+  public interface InitialStatementsScope {}
+
+  /** An expression that requires imported symbols in order to be valid. */
+  public interface HasRequires {
+    ImmutableSet<GoogRequire> googRequires();
   }
 }

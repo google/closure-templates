@@ -19,15 +19,14 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
 import java.util.List;
-import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 /** Represents a tsx fragment elemenet, e.g.: "<>body</>". */
 @AutoValue
 @Immutable
 public abstract class TsxFragmentElement extends Expression {
   public static Expression create(List<Statement> body) {
-    return new AutoValue_TsxFragmentElement(
-        /* initialStatements= */ ImmutableList.of(), ImmutableList.copyOf(body));
+    return new AutoValue_TsxFragmentElement(ImmutableList.copyOf(body));
   }
 
   abstract ImmutableList<Statement> body();
@@ -38,7 +37,9 @@ public abstract class TsxFragmentElement extends Expression {
   }
 
   @Override
-  void doFormatInitialStatements(FormattingContext ctx) {}
+  Stream<? extends CodeChunk> childrenStream() {
+    return body().stream();
+  }
 
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
@@ -49,12 +50,5 @@ public abstract class TsxFragmentElement extends Expression {
     }
     ctx.endLine();
     ctx.appendAll(HtmlTag.createClose("", ImmutableList.of()));
-  }
-
-  @Override
-  public void collectRequires(Consumer<GoogRequire> collector) {
-    for (Statement s : body()) {
-      s.collectRequires(collector);
-    }
   }
 }

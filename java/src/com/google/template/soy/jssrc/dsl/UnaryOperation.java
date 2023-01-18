@@ -19,11 +19,10 @@ package com.google.template.soy.jssrc.dsl;
 import static com.google.template.soy.exprtree.Operator.Associativity.LEFT;
 
 import com.google.auto.value.AutoValue;
-import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.Operator.Associativity;
-import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 /** Represents a JavaScript unary operation. */
 @AutoValue
@@ -54,8 +53,8 @@ abstract class UnaryOperation extends Operation {
   }
 
   @Override
-  void doFormatInitialStatements(FormattingContext ctx) {
-    ctx.appendInitialStatements(arg());
+  Stream<? extends CodeChunk> childrenStream() {
+    return Stream.of(arg());
   }
 
   @Override
@@ -67,15 +66,5 @@ abstract class UnaryOperation extends Operation {
       formatOperand(arg(), OperandPosition.LEFT /* it's unary, doesn't matter */, ctx);
       ctx.append(operator());
     }
-  }
-
-  @Override
-  public void collectRequires(Consumer<GoogRequire> collector) {
-    arg().collectRequires(collector);
-  }
-
-  @Override
-  public ImmutableList<Statement> initialStatements() {
-    return arg().initialStatements();
   }
 }

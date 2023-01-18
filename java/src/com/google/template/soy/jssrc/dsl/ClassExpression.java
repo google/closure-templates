@@ -17,7 +17,8 @@ package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
-import java.util.function.Consumer;
+import java.util.Objects;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 /**
@@ -32,7 +33,8 @@ import javax.annotation.Nullable;
  * }</code>
  */
 @AutoValue
-public abstract class ClassExpression extends Expression {
+public abstract class ClassExpression extends Expression
+    implements Expression.InitialStatementsScope {
   @Nullable
   abstract Expression baseClass();
 
@@ -40,27 +42,16 @@ public abstract class ClassExpression extends Expression {
 
   public static ClassExpression create(
       Expression baseClass, ImmutableList<MethodDeclaration> methods) {
-    return new AutoValue_ClassExpression(
-        ImmutableList.of() /* initialStatements */, baseClass, methods);
+    return new AutoValue_ClassExpression(baseClass, methods);
   }
 
   public static ClassExpression create(ImmutableList<MethodDeclaration> methods) {
-    return new AutoValue_ClassExpression(ImmutableList.of() /* initialStatements */, null, methods);
+    return new AutoValue_ClassExpression(null, methods);
   }
 
   @Override
-  void doFormatInitialStatements(FormattingContext ctx) {
-    // there are none
-  }
-
-  @Override
-  public void collectRequires(Consumer<GoogRequire> collector) {
-    if (baseClass() != null) {
-      baseClass().collectRequires(collector);
-    }
-    for (MethodDeclaration method : methods()) {
-      method.collectRequires(collector);
-    }
+  Stream<? extends CodeChunk> childrenStream() {
+    return Stream.concat(Stream.of(baseClass()).filter(Objects::nonNull), methods().stream());
   }
 
   @Override
@@ -77,7 +68,7 @@ public abstract class ClassExpression extends Expression {
           ctx.append('\n');
           ctx.endLine();
         }
-        methods().get(i).doFormatOutputExpr(ctx);
+        ctx.appendOutputExpression(methods().get(i));
       }
     }
   }
@@ -92,7 +83,8 @@ public abstract class ClassExpression extends Expression {
    * }</code>
    */
   @AutoValue
-  public abstract static class MethodDeclaration extends Expression {
+  public abstract static class MethodDeclaration extends Expression
+      implements Expression.InitialStatementsScope {
     abstract String name();
 
     abstract JsDoc jsDoc();
@@ -100,19 +92,12 @@ public abstract class ClassExpression extends Expression {
     abstract Statement body();
 
     public static MethodDeclaration create(String name, JsDoc jsDoc, Statement body) {
-      return new AutoValue_ClassExpression_MethodDeclaration(
-          /* initialStatements= */ ImmutableList.of(), name, jsDoc, body);
+      return new AutoValue_ClassExpression_MethodDeclaration(name, jsDoc, body);
     }
 
     @Override
-    void doFormatInitialStatements(FormattingContext ctx) {
-      // there are none
-    }
-
-    @Override
-    public void collectRequires(Consumer<GoogRequire> collector) {
-      body().collectRequires(collector);
-      jsDoc().collectRequires(collector);
+    Stream<? extends CodeChunk> childrenStream() {
+      return Stream.of(jsDoc(), body());
     }
 
     @Override

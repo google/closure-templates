@@ -310,7 +310,7 @@ final class AssistantForHtmlMsgs extends GenJsCodeVisitorAssistantForMsgs {
                 .bracketAccess(translationVar)
                 .assign(Expression.arrayLiteral(ImmutableList.of()))
                 .asStatement(),
-            Statement.of(translationVar.initialStatements()),
+            Statement.of(translationVar.allInitialStatementsInTopScope()),
             regexVar,
             lastIndexVar,
             counter,

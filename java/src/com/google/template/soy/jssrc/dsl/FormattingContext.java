@@ -102,17 +102,24 @@ class FormattingContext implements AutoCloseable {
   }
 
   @CanIgnoreReturnValue
-  FormattingContext appendForeignCode(String stuff) {
-    stuff = stuff.replaceAll("\n", "\n" + curIndent);
-    append(stuff);
-    return this;
-  }
-
-  @CanIgnoreReturnValue
   FormattingContext append(char c) {
     maybeBreakLineInsideTsxElement(Character.toString(c));
     maybeIndent(c == ' ');
     buf.append(c);
+    return this;
+  }
+
+  /** Writes the jsdoc for the {@code jsDoc} to the buffer. */
+  @CanIgnoreReturnValue
+  FormattingContext append(JsDoc jsDoc) {
+    jsDoc.doFormatInitialStatements(this);
+    return this;
+  }
+
+  @CanIgnoreReturnValue
+  FormattingContext appendForeignCode(String stuff) {
+    stuff = stuff.replace("\n", "\n" + curIndent);
+    append(stuff);
     return this;
   }
 
@@ -122,20 +129,14 @@ class FormattingContext implements AutoCloseable {
     endLine();
   }
 
-  /** Writes the jsdoc for the {@code jsDoc} to the buffer. */
-  @CanIgnoreReturnValue
-  FormattingContext append(JsDoc jsDoc) {
-    jsDoc.doFormatJsDoc(this);
-    return this;
-  }
-
   /**
    * Writes the initial statements for the {@code chunk} to the buffer. This is the only allowed
    * direct caller of {@link CodeChunk#doFormatInitialStatements}.
    */
   @CanIgnoreReturnValue
   FormattingContext appendInitialStatements(CodeChunk chunk) {
-    if (shouldFormat(chunk)) {
+    // Never write the same initial statement more than once.
+    if (shouldAppend(chunk)) {
       chunk.doFormatInitialStatements(this);
     }
     return this;
@@ -160,12 +161,8 @@ class FormattingContext implements AutoCloseable {
     return this;
   }
 
-  private boolean shouldFormat(CodeChunk chunk) {
-    boolean shouldFormat = !curScope.alreadyFormatted(chunk);
-    if (shouldFormat) {
-      curScope.formatted.add(chunk);
-    }
-    return shouldFormat;
+  private boolean shouldAppend(CodeChunk chunk) {
+    return curScope.append(chunk);
   }
 
   @CanIgnoreReturnValue
@@ -216,7 +213,6 @@ class FormattingContext implements AutoCloseable {
 
     if (!fitsOnCurrentLine(nextAppendContent)) {
       endLine();
-      return;
     }
   }
 
@@ -263,6 +259,7 @@ class FormattingContext implements AutoCloseable {
   }
 
   /** Increases the indent once (two spaces). */
+  @CanIgnoreReturnValue
   FormattingContext increaseIndent() {
     return increaseIndent(1);
   }
@@ -278,6 +275,7 @@ class FormattingContext implements AutoCloseable {
   }
 
   /** Decreases the indent once (two spaces). */
+  @CanIgnoreReturnValue
   FormattingContext decreaseIndent() {
     return decreaseIndent(1);
   }
@@ -325,7 +323,8 @@ class FormattingContext implements AutoCloseable {
    * {@link FormattingContext#curScope} points to the current tip of the tree.
    */
   private static final class Scope {
-    final Set<CodeChunk> formatted = Collections.newSetFromMap(new IdentityHashMap<>());
+    private final Set<CodeChunk> appendedChunks =
+        Collections.newSetFromMap(new IdentityHashMap<>());
     @Nullable
     final Scope parent;
     final boolean emitClosingBrace;
@@ -335,8 +334,16 @@ class FormattingContext implements AutoCloseable {
       this.emitClosingBrace = emitClosingBrace;
     }
 
-    boolean alreadyFormatted(CodeChunk chunk) {
-      return formatted.contains(chunk) || (parent != null && parent.alreadyFormatted(chunk));
+    boolean append(CodeChunk chunk) {
+      if (!alreadyAppended(chunk)) {
+        appendedChunks.add(chunk);
+        return true;
+      }
+      return false;
+    }
+
+    private boolean alreadyAppended(CodeChunk chunk) {
+      return appendedChunks.contains(chunk) || (parent != null && parent.alreadyAppended(chunk));
     }
   }
 

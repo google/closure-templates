@@ -18,7 +18,7 @@ package com.google.template.soy.jssrc.dsl;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
-import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 /** Represents a TS union type, for use with eg `new` statements. */
 public class UnionType extends AbstractType {
@@ -42,9 +42,7 @@ public class UnionType extends AbstractType {
   }
 
   @Override
-  public void collectRequires(Consumer<GoogRequire> collector) {
-    for (Expression member : members) {
-      member.collectRequires(collector);
-    }
+  Stream<? extends CodeChunk> childrenStream() {
+    return members.stream();
   }
 }

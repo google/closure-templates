@@ -19,10 +19,9 @@ package com.google.template.soy.jssrc.dsl;
 import static com.google.template.soy.exprtree.Operator.Associativity.LEFT;
 
 import com.google.auto.value.AutoValue;
-import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.exprtree.Operator.Associativity;
-import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 /** Represents a JavaScript tagged template literal. */
 @AutoValue
@@ -33,12 +32,7 @@ public abstract class TaggedTemplateLiteral extends Operation {
   abstract TemplateLiteral templateLiteral();
 
   public static TaggedTemplateLiteral create(Expression tag, TemplateLiteral templateLiteral) {
-    ImmutableList<Statement> initialStatements =
-        ImmutableList.<Statement>builder()
-            .addAll(tag.initialStatements())
-            .addAll(templateLiteral.initialStatements())
-            .build();
-    return new AutoValue_TaggedTemplateLiteral(initialStatements, tag, templateLiteral);
+    return new AutoValue_TaggedTemplateLiteral(tag, templateLiteral);
   }
 
   @Override
@@ -54,21 +48,14 @@ public abstract class TaggedTemplateLiteral extends Operation {
   }
 
   @Override
-  public void collectRequires(Consumer<GoogRequire> collector) {
-    tag().collectRequires(collector);
-    templateLiteral().collectRequires(collector);
+  Stream<? extends CodeChunk> childrenStream() {
+    return Stream.of(tag(), templateLiteral());
   }
 
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
     formatOperand(tag(), OperandPosition.LEFT, ctx);
-    templateLiteral().doFormatOutputExpr(ctx);
-  }
-
-  @Override
-  void doFormatInitialStatements(FormattingContext ctx) {
-    ctx.appendInitialStatements(tag());
-    ctx.appendInitialStatements(templateLiteral());
+    ctx.appendOutputExpression(templateLiteral());
   }
 
   @Override

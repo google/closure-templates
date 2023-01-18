@@ -19,11 +19,9 @@ package com.google.template.soy.jssrc.dsl;
 import static com.google.template.soy.exprtree.Operator.Associativity.LEFT;
 
 import com.google.auto.value.AutoValue;
-import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.exprtree.Operator.Associativity;
-import java.util.function.Consumer;
-import javax.annotation.Nullable;
+import java.util.stream.Stream;
 
 /** Represents the JavaScript {@code new} operator. */
 @AutoValue
@@ -32,15 +30,8 @@ abstract class New extends Operation {
 
   abstract Expression ctor();
 
-  @Nullable
-  abstract GoogRequire googRequire();
-
   static New create(Expression ctor) {
-    return new AutoValue_New(ctor, null);
-  }
-
-  static New create(Expression ctor, GoogRequire require) {
-    return new AutoValue_New(ctor, require);
+    return new AutoValue_New(ctor);
   }
 
   @Override
@@ -54,26 +45,13 @@ abstract class New extends Operation {
   }
 
   @Override
-  void doFormatInitialStatements(FormattingContext ctx) {
-    ctx.appendInitialStatements(ctor());
+  Stream<? extends CodeChunk> childrenStream() {
+    return Stream.of(ctor());
   }
 
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
     ctx.append("new ");
     formatOperand(ctor(), OperandPosition.LEFT, ctx);
-  }
-
-  @Override
-  public void collectRequires(Consumer<GoogRequire> collector) {
-    if (googRequire() != null) {
-      collector.accept(googRequire());
-    }
-    ctor().collectRequires(collector);
-  }
-
-  @Override
-  public ImmutableList<Statement> initialStatements() {
-    return ctor().initialStatements();
   }
 }
