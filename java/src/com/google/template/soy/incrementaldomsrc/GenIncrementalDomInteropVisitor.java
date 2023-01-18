@@ -15,6 +15,8 @@
  */
 package com.google.template.soy.incrementaldomsrc;
 
+import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_SOY_ALIAS;
+
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
@@ -51,6 +53,7 @@ public final class GenIncrementalDomInteropVisitor extends GenJsCodeVisitor {
   private JsCodeBuilder codeBuilder;
   private GoogRequire idomGoogRequire;
   private GoogRequire soyJsGoogRequire;
+  private final Expression shouldStub = GOOG_SOY_ALIAS.dotAccess("shouldStub");
 
   protected GenIncrementalDomInteropVisitor(
       SoyJsSrcOptions jsSrcOptions,
@@ -107,7 +110,7 @@ public final class GenIncrementalDomInteropVisitor extends GenJsCodeVisitor {
     if (!hasPositionalSignature && node.getContentKind() == SanitizedContentKind.HTML) {
       codeBuilder.append(
           Statement.ifStatement(
-                  JsRuntime.SHOULD_STUB,
+                  shouldStub,
                   Statement.assign(
                       soyJsGoogRequire.dotAccess(
                           node.getPartialTemplateName() + "_" + StandardNames.SOY_STUB),
@@ -145,7 +148,7 @@ public final class GenIncrementalDomInteropVisitor extends GenJsCodeVisitor {
           2, IncrementalDomRuntime.SOY_IDOM.reference().dotAccess("$$defaultIdomRenderer"));
       codeBuilder.append(
           Statement.ifStatement(
-                  JsRuntime.SHOULD_STUB,
+                  shouldStub,
                   Statement.assign(
                       soyJsGoogRequire.dotAccess(
                           node.getPartialTemplateName() + "_" + StandardNames.SOY_STUB),

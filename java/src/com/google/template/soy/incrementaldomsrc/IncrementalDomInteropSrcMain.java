@@ -32,8 +32,9 @@ public class IncrementalDomInteropSrcMain {
    *     JS file. The generated JS files correspond one-to-one to the original Soy source files.
    */
   public List<String> genJsSrc(SoyFileSetNode soyTree, ErrorReporter errorReporter) {
-    return new GenIncrementalDomInteropVisitor(
-            new SoyJsSrcOptions(), null, null, null, null, null, null, null)
+    SoyJsSrcOptions options = new SoyJsSrcOptions();
+    options.setShouldGenerateGoogModules(true);
+    return new GenIncrementalDomInteropVisitor(options, null, null, null, null, null, null, null)
         .gen(soyTree, errorReporter);
   }
 }
