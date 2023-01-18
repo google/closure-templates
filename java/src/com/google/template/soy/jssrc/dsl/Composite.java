@@ -45,21 +45,6 @@ abstract class Composite extends Expression {
     return value().isCheap();
   }
 
-  /**
-   * {@link CodeChunk#getCode} serializes both the chunk's initial statements and its output
-   * expression. When a composite is the only chunk being serialized, and its value is a variable
-   * reference, this leads to a redundant trailing expression (the variable name). Override the
-   * superclass implementation to omit it.
-   *
-   * <p>This heuristic appears to only be depended on by unit tests
-   */
-  @Override
-  public String getCode(FormatOptions formatOptions) {
-    return value() instanceof VariableReference
-        ? new FormattingContext(formatOptions).appendInitialStatements(this).toString()
-        : super.getCode(formatOptions);
-  }
-
   @Override
   void doFormatInitialStatements(FormattingContext ctx) {
     for (CodeChunk stmt : initialStatements()) {

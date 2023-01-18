@@ -145,7 +145,8 @@ public final class GenJsExprsVisitorTest {
             "  $tmp = 'Bleh';",
             "} else {",
             "  $tmp = 'Bluh';",
-            "}");
+            "}",
+            "$tmp;");
     assertGeneratedChunks(soyNodeCode, expectedJsExprText);
   }
 
@@ -170,7 +171,8 @@ public final class GenJsExprsVisitorTest {
             "  $tmp = 'Bleh';",
             "} else {",
             "  $tmp = '';",
-            "}");
+            "}",
+            "$tmp;");
     assertGeneratedChunks(soyNodeCode, expectedJsExprText);
   }
 

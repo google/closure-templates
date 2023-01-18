@@ -119,7 +119,8 @@ public final class TranslateExprNodeVisitorTest {
             "} else {",
             "  const $tmp = opt_data.b;",
             "  $tmp$$2 = $tmp != null ? $tmp : opt_data.c;",
-            "}");
+            "}",
+            "$tmp$$2;");
 
     assertThatSoyExpr("$a ?: $b ? $c : $d")
         .generatesCode(
@@ -134,7 +135,8 @@ public final class TranslateExprNodeVisitorTest {
             "  $tmp$$1 = $tmp != null ? $tmp : opt_data.c;",
             "} else {",
             "  $tmp$$1 = opt_data.d;",
-            "}");
+            "}",
+            "$tmp$$1;");
 
     assertThatSoyExpr("$a ? $b : $c ?: $d")
         .generatesCode(
@@ -144,7 +146,8 @@ public final class TranslateExprNodeVisitorTest {
             "} else {",
             "  const $tmp = opt_data.c;",
             "  $tmp$$1 = $tmp != null ? $tmp : opt_data.d;",
-            "}");
+            "}",
+            "$tmp$$1;");
 
     assertThatSoyExpr("($a ?: $b) ?: $c")
         .generatesCode(
@@ -161,7 +164,8 @@ public final class TranslateExprNodeVisitorTest {
             "} else {",
             "  const $tmp = opt_data.b;",
             "  $tmp$$2 = $tmp != null ? $tmp : opt_data.c;",
-            "}");
+            "}",
+            "$tmp$$2;");
 
     assertThatSoyExpr("($a ?: $b) ? $c : $d")
         .generatesCode(

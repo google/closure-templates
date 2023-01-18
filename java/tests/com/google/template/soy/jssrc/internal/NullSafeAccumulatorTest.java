@@ -50,7 +50,8 @@ public final class NullSafeAccumulatorTest {
                 + "} else {\n"
                 + "  const $tmp = a.b;\n"
                 + "  $tmp$$1 = $tmp == null ? null : $tmp[c];\n"
-                + "}");
+                + "}\n"
+                + "$tmp$$1;");
     assertThat(
             accum.dotAccess(FieldAccess.id("d"), /* nullSafe= */ true, /* assertNonNull= */ false))
         .generates(
@@ -67,7 +68,8 @@ public final class NullSafeAccumulatorTest {
                 + "    $tmp$$2 = $tmp$$1 == null ? null : $tmp$$1.d;\n"
                 + "  }\n"
                 + "  $tmp$$3 = $tmp$$2;\n"
-                + "}");
+                + "}\n"
+                + "$tmp$$3;");
     assertThat(
             accum.bracketAccess(
                 Expression.id("e"), /* nullSafe= */ true, /* assertNonNull= */ false))
@@ -92,7 +94,8 @@ public final class NullSafeAccumulatorTest {
                 + "    $tmp$$4 = $tmp$$3;\n"
                 + "  }\n"
                 + "  $tmp$$5 = $tmp$$4;\n"
-                + "}");
+                + "}\n"
+                + "$tmp$$5;");
   }
 
   @Test
@@ -135,7 +138,8 @@ public final class NullSafeAccumulatorTest {
                 + "} else {\n"
                 + "  const $tmp = a.b[c];\n"
                 + "  $tmp$$1 = $tmp == null ? null : $tmp.d;\n"
-                + "}");
+                + "}\n"
+                + "$tmp$$1;");
     assertThat(
             accum.bracketAccess(
                 Expression.id("e"), /* nullSafe= */ false, /* assertNonNull= */ false))
@@ -146,7 +150,8 @@ public final class NullSafeAccumulatorTest {
                 + "} else {\n"
                 + "  const $tmp = a.b[c];\n"
                 + "  $tmp$$1 = $tmp == null ? null : $tmp.d[e];\n"
-                + "}");
+                + "}\n"
+                + "$tmp$$1;");
   }
 
   @Test

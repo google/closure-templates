@@ -63,21 +63,6 @@ public abstract class VariableDeclaration extends Statement {
     return VariableReference.of(this);
   }
 
-  /**
-   * {@link CodeChunk#getCode} serializes both the chunk's initial statements and its output
-   * expression. When a declaration is the only chunk being serialized, this leads to a redundant
-   * trailing expression: <code>
-   *   var $$tmp = blah;
-   *   $$tmp
-   * </code> Override the superclass implementation to omit the trailing expression.
-   */
-  @Override
-  public String getCode(FormatOptions formatOptions) {
-    FormattingContext ctx = new FormattingContext(formatOptions);
-    ctx.appendInitialStatements(this);
-    return ctx.toString();
-  }
-
   @Override
   void doFormatInitialStatements(FormattingContext ctx) {
     if (rhs() != null) {

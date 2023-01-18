@@ -64,7 +64,7 @@ public abstract class CodeChunk {
    * <p>Because the returned code is intended to be used at the end of codegen, it does not end in a
    * newline.
    */
-  public String getCode(FormatOptions formatOptions) {
+  public final String getCode(FormatOptions formatOptions) {
     FormattingContext initialStatements = new FormattingContext(formatOptions);
     initialStatements.appendInitialStatements(this);
 

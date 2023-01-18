@@ -87,7 +87,8 @@ public final class CodeChunkTest {
                 "if ($tmp == null) {",
                 "  expensiveFunction();",
                 "}",
-                "const $tmp$$1 = $tmp * 5;"));
+                "const $tmp$$1 = $tmp * 5;",
+                "$tmp$$1;"));
   }
 
   @Test
@@ -366,7 +367,8 @@ public final class CodeChunkTest {
                 "  const $tmp = new Foo();",
                 "  $tmp.expensiveInit();",
                 "  $tmp$$1 = $tmp.abort();",
-                "}"));
+                "}",
+                "$tmp$$1;"));
   }
 
   @Test
@@ -483,7 +485,8 @@ public final class CodeChunkTest {
                 "  $tmp$$1 = $tmp;",
                 "} else {",
                 "  $tmp$$1 = baz;",
-                "}"));
+                "}",
+                "$tmp$$1;"));
   }
 
   @Test
@@ -534,7 +537,7 @@ public final class CodeChunkTest {
         foo.withInitialStatement(foo.dotAccess("expensiveMethod").call().asStatement());
 
     assertThat(fooWithStatement.getCode(JSSRC))
-        .isEqualTo(JOINER.join("const $tmp = new Foo();", "$tmp.expensiveMethod();"));
+        .isEqualTo(JOINER.join("const $tmp = new Foo();", "$tmp.expensiveMethod();", "$tmp;"));
     assertThat(fooWithStatement.singleExprOrName(JSSRC).getText()).isEqualTo("$tmp");
 
     Expression val2 = fooWithStatement.doubleEqualsNull();
@@ -645,7 +648,8 @@ public final class CodeChunkTest {
                 "  const $tmp = new Foo();",
                 "  $tmp.expensiveMethod();",
                 "  $tmp$$1 = $tmp;",
-                "}"));
+                "}",
+                "$tmp$$1;"));
   }
 
   @Test
@@ -670,7 +674,8 @@ public final class CodeChunkTest {
                 "  const $tmp$$1 = new Bar();",
                 "  $tmp$$1.anotherExpensiveMethod();",
                 "  $tmp$$2 = $tmp$$1;",
-                "}"));
+                "}",
+                "$tmp$$2;"));
   }
 
   @Test
@@ -707,7 +712,8 @@ public final class CodeChunkTest {
                 "  const $tmp = new Foo();",
                 "  $tmp.expensiveMethod();",
                 "  $tmp$$1 = $tmp;",
-                "}"));
+                "}",
+                "$tmp$$1;"));
   }
 
   @Test
@@ -732,7 +738,8 @@ public final class CodeChunkTest {
                 "  const $tmp$$1 = new Bar();",
                 "  $tmp$$1.anotherExpensiveMethod();",
                 "  $tmp$$2 = $tmp$$1;",
-                "}"));
+                "}",
+                "$tmp$$2;"));
   }
 
   @Test
