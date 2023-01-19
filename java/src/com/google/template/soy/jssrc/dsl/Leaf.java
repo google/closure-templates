@@ -28,7 +28,7 @@ import java.util.stream.Stream;
  */
 @AutoValue
 @Immutable
-abstract class Leaf extends Expression implements Expression.HasRequires {
+abstract class Leaf extends Expression implements CodeChunk.HasRequires {
   static Leaf create(String text, boolean isCheap, Iterable<GoogRequire> require) {
     return create(
         new JsExpr(text, Integer.MAX_VALUE),

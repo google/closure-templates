@@ -18,7 +18,7 @@ package com.google.template.soy.jssrc.dsl;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
-import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 /** Represents a TS interface declaration. */
 @AutoValue
@@ -46,9 +46,7 @@ public abstract class TsInterface extends Statement {
   }
 
   @Override
-  public void collectRequires(Consumer<GoogRequire> collector) {
-    for (ParamDecl param : properties()) {
-      param.collectRequires(collector);
-    }
+  Stream<? extends CodeChunk> childrenStream() {
+    return properties().stream();
   }
 }

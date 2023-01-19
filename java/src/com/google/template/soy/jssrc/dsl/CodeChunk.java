@@ -20,7 +20,9 @@ import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.base.internal.UniqueNameGenerator;
 import com.google.template.soy.jssrc.restricted.JsExpr;
+import java.util.Iterator;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 /**
  * DSL for constructing sequences of JavaScript code. Unlike {@link JsExpr}, it can handle code that
@@ -51,8 +53,25 @@ import java.util.function.Consumer;
 @Immutable
 public abstract class CodeChunk {
 
+  /** A code chunk that requires imported symbols in order to be valid. */
+  interface HasRequires {
+    ImmutableSet<GoogRequire> googRequires();
+  }
+
+  /** Defines a list of child code chunks that should be traversed for collecting requires. */
+  abstract Stream<? extends CodeChunk> childrenStream();
+
   /** Adds all the 'goog.require' identifiers needed by this CodeChunk to the given collection. */
-  public abstract void collectRequires(Consumer<GoogRequire> collector);
+  public final void collectRequires(Consumer<GoogRequire> collector) {
+    if (this instanceof HasRequires) {
+      ((HasRequires) this).googRequires().forEach(collector);
+    }
+    // Keep stack shorter so CodeChunkTest#testQuadraticVariableDeclaration passes without overflow.
+    Iterator<? extends CodeChunk> i = childrenStream().iterator();
+    while (i.hasNext()) {
+      i.next().collectRequires(collector);
+    }
+  }
 
   /**
    * Returns a sequence of JavaScript statements. In the special case that this chunk is

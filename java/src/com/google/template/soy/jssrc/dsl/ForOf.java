@@ -18,7 +18,7 @@ package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
 import com.google.errorprone.annotations.Immutable;
-import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 /** Represents a {@code for in} statement. */
 @AutoValue
@@ -36,9 +36,8 @@ abstract class ForOf extends Statement {
   }
 
   @Override
-  public void collectRequires(Consumer<GoogRequire> collector) {
-    collection().collectRequires(collector);
-    body().collectRequires(collector);
+  Stream<? extends CodeChunk> childrenStream() {
+    return Stream.of(collection(), body());
   }
 
   @Override

@@ -18,7 +18,7 @@ package com.google.template.soy.jssrc.dsl;
 import com.google.auto.value.AutoValue;
 import com.google.errorprone.annotations.Immutable;
 import java.util.Optional;
-import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 /**
  * Represents a single "name : type" tsx function param.
@@ -61,8 +61,8 @@ public abstract class ParamDecl extends CodeChunk {
   }
 
   @Override
-  public void collectRequires(Consumer<GoogRequire> collector) {
-    type().collectRequires(collector);
+  Stream<? extends CodeChunk> childrenStream() {
+    return Stream.of(type());
   }
 
   @Override

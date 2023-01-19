@@ -17,7 +17,6 @@ package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
-import java.util.Objects;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
@@ -51,7 +50,11 @@ public abstract class ClassExpression extends Expression
 
   @Override
   Stream<? extends CodeChunk> childrenStream() {
-    return Stream.concat(Stream.of(baseClass()).filter(Objects::nonNull), methods().stream());
+    Stream<? extends CodeChunk> children = methods().stream();
+    if (baseClass() != null) {
+      children = Stream.concat(Stream.of(baseClass()), children);
+    }
+    return children;
   }
 
   @Override

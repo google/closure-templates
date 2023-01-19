@@ -21,7 +21,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
 import java.util.List;
-import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 /**
  * Represent all of a function's params. Formats them as: "{amount, name = ‘Vesper’} : {amount:
@@ -85,9 +85,7 @@ public abstract class ParamDecls extends CodeChunk {
   }
 
   @Override
-  public void collectRequires(Consumer<GoogRequire> collector) {
-    for (ParamDecl param : params()) {
-      param.collectRequires(collector);
-    }
+  Stream<? extends CodeChunk> childrenStream() {
+    return params().stream();
   }
 }

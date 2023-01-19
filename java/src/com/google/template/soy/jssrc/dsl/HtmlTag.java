@@ -19,7 +19,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
 import java.util.List;
-import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 /** Represents an {@code HtmlTagNode}. */
 @AutoValue
@@ -77,9 +77,7 @@ public abstract class HtmlTag extends Statement {
   }
 
   @Override
-  public void collectRequires(Consumer<GoogRequire> collector) {
-    for (Statement attribute : attributes()) {
-      attribute.collectRequires(collector);
-    }
+  Stream<? extends CodeChunk> childrenStream() {
+    return attributes().stream();
   }
 }

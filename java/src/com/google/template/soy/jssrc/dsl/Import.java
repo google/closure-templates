@@ -20,7 +20,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.errorprone.annotations.Immutable;
-import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 /** Represents an {@code import} statement. */
 @AutoValue
@@ -75,5 +75,7 @@ abstract class Import extends Statement {
   }
 
   @Override
-  public void collectRequires(Consumer<GoogRequire> collector) {}
+  Stream<? extends CodeChunk> childrenStream() {
+    return Stream.empty();
+  }
 }

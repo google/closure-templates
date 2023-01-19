@@ -20,16 +20,17 @@ import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.errorprone.annotations.Immutable;
 import java.util.Map;
-import java.util.function.Consumer;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 /** Expresses JSDoc comment blocks and how to print them out. */
 @AutoValue
 @Immutable
-public abstract class JsDoc extends CodeChunk {
+public abstract class JsDoc extends CodeChunk implements CodeChunk.HasRequires {
 
   public static JsDoc getDefaultInstance() {
     return builder().build();
@@ -42,15 +43,14 @@ public abstract class JsDoc extends CodeChunk {
   /** Comment before the {@code @param} decls. */
   abstract String overviewComment();
 
-  abstract ImmutableList<GoogRequire> requires();
+  @Override
+  public abstract ImmutableSet<GoogRequire> googRequires();
 
   public abstract ImmutableList<Param> params();
 
   @Override
-  public void collectRequires(Consumer<GoogRequire> collector) {
-    for (GoogRequire require : requires()) {
-      collector.accept(require);
-    }
+  Stream<? extends CodeChunk> childrenStream() {
+    return Stream.empty();
   }
 
   /** Builder for JsDoc. */
@@ -59,13 +59,13 @@ public abstract class JsDoc extends CodeChunk {
 
     abstract ImmutableList.Builder<Param> paramsBuilder();
 
-    abstract ImmutableList.Builder<GoogRequire> requiresBuilder();
+    abstract ImmutableSet.Builder<GoogRequire> googRequiresBuilder();
 
     public abstract JsDoc build();
 
     @CanIgnoreReturnValue
     public Builder addGoogRequire(GoogRequire require) {
-      requiresBuilder().add(require);
+      googRequiresBuilder().add(require);
       return this;
     }
 

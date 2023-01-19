@@ -18,7 +18,7 @@ package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
 import com.google.errorprone.annotations.Immutable;
-import java.util.function.Consumer;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 /** Represents a JavaScript return statement. */
@@ -52,9 +52,7 @@ public abstract class Return extends Statement {
   }
 
   @Override
-  public void collectRequires(Consumer<GoogRequire> collector) {
-    if (value() != null) {
-      value().collectRequires(collector);
-    }
+  Stream<? extends CodeChunk> childrenStream() {
+    return value() != null ? Stream.of(value()) : Stream.empty();
   }
 }

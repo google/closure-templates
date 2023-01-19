@@ -20,7 +20,8 @@ import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
-import java.util.function.Consumer;
+import java.util.Objects;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 /** Represents an {@code if}-{@code else if}-{@code else} statement. */
@@ -60,14 +61,10 @@ abstract class Conditional extends Statement {
   }
 
   @Override
-  public void collectRequires(Consumer<GoogRequire> collector) {
-    for (IfThenPair<Statement> child : conditions()) {
-      child.predicate.collectRequires(collector);
-      child.consequent.collectRequires(collector);
-    }
-    if (trailingElse() != null) {
-      trailingElse().collectRequires(collector);
-    }
+  Stream<? extends CodeChunk> childrenStream() {
+    return Stream.concat(
+        Stream.of(trailingElse()).filter(Objects::nonNull),
+        conditions().stream().flatMap(child -> Stream.of(child.predicate, child.consequent)));
   }
 
   private void formatIfClause(FormattingContext ctx) {

@@ -1550,7 +1550,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       VariableDeclaration.Builder declarationBuilder =
           VariableDeclaration.builder(paramAlias)
               .setRhs(initializer)
-              .setGoogRequires(jsType.getGoogRequires());
+              .setRequires(jsType.getGoogRequires());
       declarationBuilder.setJsDoc(
           JsDoc.builder().addParameterizedAnnotation("const", jsType.typeExpr()).build());
       VariableDeclaration declaration = declarationBuilder.build();

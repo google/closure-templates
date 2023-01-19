@@ -18,7 +18,7 @@ package com.google.template.soy.jssrc.dsl;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import com.google.errorprone.annotations.Immutable;
-import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 /** Represents a "//..." line comment. */
 @AutoValue
@@ -39,5 +39,7 @@ public abstract class LineComment extends Statement {
   }
 
   @Override
-  public void collectRequires(Consumer<GoogRequire> collector) {}
+  Stream<? extends CodeChunk> childrenStream() {
+    return Stream.empty();
+  }
 }

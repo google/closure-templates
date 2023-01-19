@@ -18,7 +18,7 @@ package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
 import com.google.errorprone.annotations.Immutable;
-import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 /**
  * Raw text within a TsxElement ("<></>"). Does not contain command chars like {sp}, since these are
@@ -42,5 +42,7 @@ public abstract class RawText extends Statement {
   }
 
   @Override
-  public void collectRequires(Consumer<GoogRequire> collector) {}
+  Stream<? extends CodeChunk> childrenStream() {
+    return Stream.empty();
+  }
 }

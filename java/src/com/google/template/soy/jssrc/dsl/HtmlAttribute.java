@@ -22,7 +22,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
 import java.util.List;
-import java.util.function.Consumer;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 /** Represents an Html attribute. */
@@ -72,7 +72,7 @@ public abstract class HtmlAttribute extends Statement {
   }
 
   @Override
-  public void collectRequires(Consumer<GoogRequire> collector) {
-    children().forEach(c -> c.collectRequires(collector));
+  Stream<? extends CodeChunk> childrenStream() {
+    return children().stream();
   }
 }

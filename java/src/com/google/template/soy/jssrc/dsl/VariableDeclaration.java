@@ -19,20 +19,20 @@ package com.google.template.soy.jssrc.dsl;
 import com.google.auto.value.AutoValue;
 import com.google.auto.value.extension.memoized.Memoized;
 import com.google.common.collect.ImmutableSet;
-import com.google.errorprone.annotations.ForOverride;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.errorprone.annotations.Immutable;
-import java.util.function.Consumer;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 /** Represents a variable declaration. */
 @AutoValue
 @Immutable
-public abstract class VariableDeclaration extends Statement {
+public abstract class VariableDeclaration extends Statement implements CodeChunk.HasRequires {
 
   public static Builder builder(String name) {
     return new AutoValue_VariableDeclaration.Builder()
         .setVarName(name)
-        .setGoogRequires(ImmutableSet.of())
+        .setRequires(ImmutableSet.of())
         // All variables should be const by default
         .setIsMutable(false)
         .setIsExported(false)
@@ -47,7 +47,7 @@ public abstract class VariableDeclaration extends Statement {
   @Nullable
   abstract JsDoc jsDoc();
 
-  abstract ImmutableSet<GoogRequire> googRequires();
+  abstract ImmutableSet<GoogRequire> requires();
 
   abstract boolean isMutable();
 
@@ -94,21 +94,21 @@ public abstract class VariableDeclaration extends Statement {
   }
 
   @Override
-  public void collectRequires(Consumer<GoogRequire> collector) {
-    for (GoogRequire require : allRequires()) {
-      collector.accept(require);
-    }
+  Stream<? extends CodeChunk> childrenStream() {
+    // Special faking of requires children. See #googRequires(). Would be
+    // Stream.of(rhs(), jsDoc(), type()).filter(Objects::nonNull);
+    return Stream.empty();
   }
 
   // A cache of all the transitive requires.  Necessary because every time we traverse a variable
   // reference we collect requires from the declaration.  This means collectRequires will be called
   // once per reference instead of once per declaration which can lead to exponential behavior.
   // Use an array so our caller doesn't have to deal with allocating epic amounts of iterators.
-  @ForOverride
+  @Override
   @Memoized
-  ImmutableSet<GoogRequire> allRequires() {
+  public ImmutableSet<GoogRequire> googRequires() {
     ImmutableSet.Builder<GoogRequire> requiresBuilder =
-        ImmutableSet.<GoogRequire>builder().addAll(googRequires());
+        ImmutableSet.<GoogRequire>builder().addAll(requires());
     if (rhs() != null) {
       rhs().collectRequires(requiresBuilder::add);
     }
@@ -131,11 +131,12 @@ public abstract class VariableDeclaration extends Statement {
 
     public abstract Builder setRhs(Expression value);
 
-    public Builder setGoogRequires(Iterable<GoogRequire> requires) {
-      return setGoogRequires(ImmutableSet.copyOf(requires));
+    @CanIgnoreReturnValue
+    public Builder setRequires(Iterable<GoogRequire> requires) {
+      return setRequires(ImmutableSet.copyOf(requires));
     }
 
-    abstract Builder setGoogRequires(ImmutableSet<GoogRequire> requires);
+    abstract Builder setRequires(ImmutableSet<GoogRequire> requires);
 
     public final Builder setMutable() {
       return setIsMutable(true);

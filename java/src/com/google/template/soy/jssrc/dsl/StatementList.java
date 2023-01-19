@@ -19,7 +19,7 @@ package com.google.template.soy.jssrc.dsl;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 /** Represents a sequence of statements. */
 @AutoValue
@@ -53,10 +53,8 @@ public abstract class StatementList extends Statement {
   }
 
   @Override
-  public void collectRequires(Consumer<GoogRequire> collector) {
-    for (Statement statement : statements()) {
-      statement.collectRequires(collector);
-    }
+  Stream<? extends CodeChunk> childrenStream() {
+    return statements().stream();
   }
 
   @Override

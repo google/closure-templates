@@ -19,7 +19,8 @@ package com.google.template.soy.jssrc.dsl;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
-import java.util.function.Consumer;
+import java.util.Objects;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 /** Represents a {@code switch} statement. */
@@ -78,17 +79,13 @@ abstract class Switch extends Statement {
   }
 
   @Override
-  public void collectRequires(Consumer<GoogRequire> collector) {
-    switchOn().collectRequires(collector);
-    for (CaseClause caseClause : caseClauses()) {
-      for (Expression caseLabel : caseClause.caseLabels) {
-        caseLabel.collectRequires(collector);
-      }
-      caseClause.caseBody.collectRequires(collector);
-    }
-    if (defaultCaseBody() != null) {
-      defaultCaseBody().collectRequires(collector);
-    }
+  Stream<? extends CodeChunk> childrenStream() {
+    return Stream.concat(
+        Stream.of(switchOn(), defaultCaseBody()).filter(Objects::nonNull),
+        caseClauses().stream()
+            .flatMap(
+                caseClause ->
+                    Stream.concat(caseClause.caseLabels.stream(), Stream.of(caseClause.caseBody))));
   }
 
   /**

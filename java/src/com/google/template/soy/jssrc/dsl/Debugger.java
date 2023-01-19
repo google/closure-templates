@@ -16,7 +16,7 @@
 
 package com.google.template.soy.jssrc.dsl;
 
-import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 /** Represents a JavaScript {@code debugger;} statement. */
 final class Debugger extends Statement {
@@ -30,7 +30,7 @@ final class Debugger extends Statement {
   }
 
   @Override
-  public void collectRequires(Consumer<GoogRequire> collector) {
-    // Do nothing, there are none.
+  Stream<? extends CodeChunk> childrenStream() {
+    return Stream.empty();
   }
 }

@@ -26,9 +26,7 @@ import com.google.template.soy.exprtree.Operator.Associativity;
 import com.google.template.soy.internal.util.TreeStreams;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.Optional;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 /**
@@ -100,6 +98,7 @@ public abstract class Expression extends CodeChunk {
    * Defines a list of child code chunks that should be traversed for collecting require and initial
    * statements.
    */
+  @Override
   abstract Stream<? extends CodeChunk> childrenStream();
 
   /**
@@ -301,18 +300,6 @@ public abstract class Expression extends CodeChunk {
   }
 
   @Override
-  public final void collectRequires(Consumer<GoogRequire> collector) {
-    if (this instanceof HasRequires) {
-      ((HasRequires) this).googRequires().forEach(collector);
-    }
-    // Keep stack shorter so CodeChunkTest#testQuadraticVariableDeclaration passes without overflow.
-    Iterator<? extends CodeChunk> i = childrenStream().iterator();
-    while (i.hasNext()) {
-      i.next().collectRequires(collector);
-    }
-  }
-
-  @Override
   final void doFormatInitialStatements(FormattingContext ctx) {
     if (this instanceof HasInitialStatements) {
       ((HasInitialStatements) this).initialStatements().forEach(ctx::appendInitialStatements);
@@ -370,9 +357,4 @@ public abstract class Expression extends CodeChunk {
    * contains a block inside. For example, a function declaration.
    */
   interface InitialStatementsScope {}
-
-  /** An expression that requires imported symbols in order to be valid. */
-  interface HasRequires {
-    ImmutableSet<GoogRequire> googRequires();
-  }
 }

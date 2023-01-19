@@ -19,7 +19,7 @@ package com.google.template.soy.jssrc.dsl;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
-import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 /** Represents a single TS/JS gencode file. */
 @AutoValue
@@ -38,9 +38,8 @@ public abstract class File extends Statement {
   }
 
   @Override
-  public void collectRequires(Consumer<GoogRequire> collector) {
-    // todo(add a wrapper type to handle path-based imports as well, and then handle collecting
-    // imports for the file here).
+  Stream<? extends CodeChunk> childrenStream() {
+    return children().stream();
   }
 
   @Override

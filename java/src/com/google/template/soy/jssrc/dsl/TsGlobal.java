@@ -17,7 +17,7 @@ package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
-import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 /** Represents a TS global declaration. */
 @AutoValue
@@ -41,9 +41,7 @@ public abstract class TsGlobal extends Statement {
   }
 
   @Override
-  public void collectRequires(Consumer<GoogRequire> collector) {
-    for (Statement stmt : bodyStmts()) {
-      stmt.collectRequires(collector);
-    }
+  Stream<? extends CodeChunk> childrenStream() {
+    return bodyStmts().stream();
   }
 }

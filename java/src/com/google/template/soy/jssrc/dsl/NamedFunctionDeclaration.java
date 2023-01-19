@@ -17,9 +17,11 @@ package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Streams;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 /**
  * Represents a named TS function declaration.
@@ -111,14 +113,9 @@ public abstract class NamedFunctionDeclaration extends Statement {
   }
 
   @Override
-  public void collectRequires(Consumer<GoogRequire> collector) {
-    for (Statement stmt : bodyStmts()) {
-      stmt.collectRequires(collector);
-    }
-    if (jsDoc().isPresent()) {
-      jsDoc().get().collectRequires(collector);
-    }
-    params().collectRequires(collector);
-    returnType().collectRequires(collector);
+  Stream<? extends CodeChunk> childrenStream() {
+    return Streams.concat(
+        bodyStmts().stream(),
+        Stream.of(params(), returnType(), jsDoc().orElse(null)).filter(Objects::nonNull));
   }
 }

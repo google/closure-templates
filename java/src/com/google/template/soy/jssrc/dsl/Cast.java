@@ -24,7 +24,7 @@ import java.util.stream.Stream;
 /** Represents a JavaScript type cast. */
 @AutoValue
 @Immutable
-abstract class Cast extends Expression implements Expression.HasRequires {
+abstract class Cast extends Expression implements CodeChunk.HasRequires {
   abstract Expression expr();
 
   abstract String typeExpr();

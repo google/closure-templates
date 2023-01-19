@@ -18,7 +18,8 @@ package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
 import com.google.errorprone.annotations.Immutable;
-import java.util.function.Consumer;
+import java.util.Objects;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 /** Represents an assignment to a variable. */
@@ -37,12 +38,8 @@ abstract class Assignment extends Statement {
   }
 
   @Override
-  public void collectRequires(Consumer<GoogRequire> collector) {
-    lhs().collectRequires(collector);
-    rhs().collectRequires(collector);
-    if (jsDoc() != null) {
-      jsDoc().collectRequires(collector);
-    }
+  Stream<? extends CodeChunk> childrenStream() {
+    return Stream.of(lhs(), rhs(), jsDoc()).filter(Objects::nonNull);
   }
 
   @Override

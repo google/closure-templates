@@ -17,7 +17,7 @@ package com.google.template.soy.jssrc.dsl;
 
 import com.google.errorprone.annotations.Immutable;
 import java.util.Optional;
-import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 /**
  * Represents a TSX "{}" print node for inline JS within a fragment/element or tagged template
@@ -54,10 +54,8 @@ public class TsxPrintNode extends Statement {
   }
 
   @Override
-  public void collectRequires(Consumer<GoogRequire> collector) {
-    if (expr.isPresent()) {
-      expr.get().collectRequires(collector);
-    }
+  Stream<? extends CodeChunk> childrenStream() {
+    return expr.isPresent() ? Stream.of(expr.get()) : Stream.empty();
   }
 
   /**

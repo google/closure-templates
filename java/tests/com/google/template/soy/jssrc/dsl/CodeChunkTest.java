@@ -960,7 +960,7 @@ public final class CodeChunkTest {
     GoogRequire theOneRequire = GoogRequire.create("foo.bar");
     Expression root =
         VariableDeclaration.builder("root")
-            .setGoogRequires(ImmutableSet.of(theOneRequire))
+            .setRequires(ImmutableSet.of(theOneRequire))
             .setRhs(number(1))
             .build()
             .ref();

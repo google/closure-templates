@@ -18,7 +18,7 @@ package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
 import com.google.errorprone.annotations.Immutable;
-import java.util.function.Consumer;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 /** Evaluates an expression as a statement. */
@@ -51,7 +51,7 @@ public abstract class ExpressionStatement extends Statement {
   }
 
   @Override
-  public void collectRequires(Consumer<GoogRequire> collector) {
-    expr().collectRequires(collector);
+  Stream<? extends CodeChunk> childrenStream() {
+    return Stream.of(expr());
   }
 }

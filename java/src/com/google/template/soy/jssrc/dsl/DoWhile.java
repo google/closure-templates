@@ -18,7 +18,7 @@ package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
 import com.google.errorprone.annotations.Immutable;
-import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 /** Represents a {@code do {....} while(...);} loop. */
 @AutoValue
@@ -34,9 +34,8 @@ public abstract class DoWhile extends Statement {
   abstract Expression condition();
 
   @Override
-  public void collectRequires(Consumer<GoogRequire> collector) {
-    condition().collectRequires(collector);
-    body().collectRequires(collector);
+  Stream<? extends CodeChunk> childrenStream() {
+    return Stream.of(condition(), body());
   }
 
   @Override
