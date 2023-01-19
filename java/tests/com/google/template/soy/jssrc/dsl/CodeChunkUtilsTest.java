@@ -33,7 +33,7 @@ public final class CodeChunkUtilsTest {
   @Test
   public void testConcatChunks() {
     CodeChunk result =
-        CodeChunkUtils.concatChunks(
+        Expressions.concat(
             ImmutableList.of(
                 stringLiteral("blah").plus(stringLiteral("blah")),
                 stringLiteral("bleh").plus(stringLiteral("bleh")),
@@ -45,23 +45,21 @@ public final class CodeChunkUtilsTest {
   @Test
   public void testConcatChunks_twice() {
     Expression result =
-        CodeChunkUtils.concatChunks(
+        Expressions.concat(
             ImmutableList.of(
                 stringLiteral("a"), id("x").assign(stringLiteral("b")), stringLiteral("b")));
     Expression result2 =
-        CodeChunkUtils.concatChunks(
+        Expressions.concat(
             ImmutableList.of(
                 stringLiteral("a"), id("x").assign(stringLiteral("b")), stringLiteral("b")));
-    assertThat(
-            CodeChunkUtils.concatChunks(ImmutableList.of(result, result2))
-                .getCode(FormatOptions.JSSRC))
+    assertThat(Expressions.concat(ImmutableList.of(result, result2)).getCode(FormatOptions.JSSRC))
         .isEqualTo("'a' + (x = 'b') + 'b' + 'a' + (x = 'b') + 'b';");
   }
 
   @Test
   public void testConcatChunksRightAssociative() {
     CodeChunk result =
-        CodeChunkUtils.concatChunks(
+        Expressions.concat(
             ImmutableList.of(
                 stringLiteral("a"), id("x").assign(stringLiteral("b")), stringLiteral("c")));
     assertThat(result.getCode(FormatOptions.JSSRC)).isEqualTo("'a' + (x = 'b') + 'c';");
@@ -69,16 +67,14 @@ public final class CodeChunkUtilsTest {
 
   @Test
   public void testConcatChunksForceString() {
-    CodeChunk result =
-        CodeChunkUtils.concatChunksForceString(ImmutableList.of(number(2), number(2)));
+    CodeChunk result = Expressions.concatForceString(ImmutableList.of(number(2), number(2)));
     assertThat(result.getCode(FormatOptions.JSSRC)).isEqualTo("'' + 2 + 2;");
   }
 
   @Test
   public void testConcatChunksForceString_chunksHavePlusOps() {
     CodeChunk result =
-        CodeChunkUtils.concatChunksForceString(
-            ImmutableList.of(number(2), number(2).plus(number(3))));
+        Expressions.concatForceString(ImmutableList.of(number(2), number(2).plus(number(3))));
     assertThat(result.getCode(FormatOptions.JSSRC)).isEqualTo("'' + 2 + (2 + 3);");
   }
 

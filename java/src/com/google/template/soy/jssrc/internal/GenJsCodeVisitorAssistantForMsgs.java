@@ -31,7 +31,6 @@ import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
-import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.Expressions;
 import com.google.template.soy.jssrc.dsl.JsDoc;
@@ -598,11 +597,11 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractReturningSoyNodeVi
         contentChunks.add(call);
       } else {
         List<Expression> chunks = genJsExprsVisitor.exec(contentNode);
-        contentChunks.add(CodeChunkUtils.concatChunks(chunks));
+        contentChunks.add(Expressions.concat(chunks));
       }
     }
 
-    return CodeChunkUtils.concatChunks(contentChunks);
+    return Expressions.concat(contentChunks);
   }
 
   // -----------------------------------------------------------------------------------------------

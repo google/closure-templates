@@ -25,6 +25,7 @@ import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.jssrc.dsl.CodeChunk.Generator;
 import com.google.template.soy.jssrc.restricted.JsExpr;
+import com.google.template.soy.jssrc.restricted.JsExprUtils;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -329,5 +330,39 @@ public final class Expressions {
 
   public static Expression group(Expression e) {
     return Group.create(e);
+  }
+
+  /**
+   * Builds a {@link Expression} that represents the concatenation of the given code chunks. The
+   * {@code +} operator is used for concatenation.
+   *
+   * <p>The resulting chunk is not guaranteed to be string-valued if the first two operands do not
+   * produce strings when combined with the plus operator; e.g. 2+2 might be 4 instead of '22'.
+   *
+   * <p>This is a port of {@link JsExprUtils#concatJsExprs}, which should eventually go away.
+   * TODO(b/32224284): make that go away.
+   */
+  public static Expression concat(List<? extends Expression> chunks) {
+    return Concatenation.create(chunks);
+  }
+
+  /**
+   * Builds a {@link Expression} that represents the concatenation of the given code chunks. This
+   * doesn't assume the values represented by the inputs are necessarily strings, but guarantees
+   * that the value represented by the output is a string.
+   */
+  public static Expression concatForceString(List<? extends Expression> chunks) {
+    if (!chunks.isEmpty()
+        && chunks.get(0).isRepresentableAsSingleExpression()
+        && isStringLiteral(chunks.get(0))) {
+      return concat(chunks);
+    } else if (chunks.size() > 1
+        && chunks.get(1).isRepresentableAsSingleExpression()
+        && isStringLiteral(chunks.get(1))) {
+      return concat(chunks);
+    } else {
+      return concat(
+          ImmutableList.<Expression>builder().add(LITERAL_EMPTY_STRING).addAll(chunks).build());
+    }
   }
 }

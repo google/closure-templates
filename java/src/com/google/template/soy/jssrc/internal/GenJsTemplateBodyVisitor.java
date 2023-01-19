@@ -39,7 +39,6 @@ import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
-import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
 import com.google.template.soy.jssrc.dsl.ConditionalBuilder;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.Expressions;
@@ -718,7 +717,7 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
     if (isComputableAsJsExprsVisitor.execOnChildren(node)) {
       List<Expression> logMsgChunks = genJsExprsVisitor.execOnChildren(node);
 
-      return WINDOW_CONSOLE_LOG.call(CodeChunkUtils.concatChunks(logMsgChunks)).asStatement();
+      return WINDOW_CONSOLE_LOG.call(Expressions.concat(logMsgChunks)).asStatement();
     } else {
       // Must build log msg in a local var logMsg_s##.
       outputVars.pushOutputVar("logMsg_s" + node.getId());

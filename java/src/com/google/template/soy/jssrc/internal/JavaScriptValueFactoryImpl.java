@@ -29,7 +29,6 @@ import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
-import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.Expressions;
 import com.google.template.soy.jssrc.dsl.FormatOptions;
@@ -262,8 +261,7 @@ public final class JavaScriptValueFactoryImpl extends JavaScriptValueFactory {
 
     @Override
     public JavaScriptValueImpl coerceToString() {
-      return new JavaScriptValueImpl(
-          CodeChunkUtils.concatChunksForceString(ImmutableList.of(impl)));
+      return new JavaScriptValueImpl(Expressions.concatForceString(ImmutableList.of(impl)));
     }
 
     @Override

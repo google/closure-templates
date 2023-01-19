@@ -20,7 +20,6 @@ import static com.google.template.soy.jssrc.dsl.Expressions.id;
 
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
-import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.Expressions;
 import com.google.template.soy.jssrc.dsl.FormatOptions;
@@ -83,10 +82,10 @@ public final class OutputVarHandler {
    */
   public Statement addChunksToOutputVar(List<? extends Expression> codeChunks) {
     if (currentOutputVar().initialized) {
-      Expression rhs = CodeChunkUtils.concatChunks(codeChunks);
+      Expression rhs = Expressions.concat(codeChunks);
       return currentOutputVar().name.plusEquals(rhs).asStatement();
     } else {
-      Expression rhs = CodeChunkUtils.concatChunksForceString(codeChunks);
+      Expression rhs = Expressions.concatForceString(codeChunks);
       return initOutputVar(
           currentOutputVar().name.singleExprOrName(FormatOptions.JSSRC).getText(), rhs);
     }

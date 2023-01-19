@@ -59,7 +59,6 @@ import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
-import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.Expressions;
 import com.google.template.soy.jssrc.dsl.GoogRequire;
@@ -1324,8 +1323,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       // get an expression that produces SanitizedContent, which is indeed possible with an
       // escaping directive that produces SanitizedContent. Thus, we do not have to be extra
       // careful when concatenating the expressions in the list.
-      bodyStatements.add(
-          returnValue(sanitize(CodeChunkUtils.concatChunks(templateBodyChunks), kind)));
+      bodyStatements.add(returnValue(sanitize(Expressions.concat(templateBodyChunks), kind)));
     } else {
       // Case 2: Normal case.
 

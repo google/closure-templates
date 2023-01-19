@@ -63,7 +63,6 @@ import com.google.template.soy.data.SanitizedContentOperator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
-import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
 import com.google.template.soy.jssrc.dsl.ConditionalBuilder;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.Expressions;
@@ -583,7 +582,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
           .call(
               // Attributes can only be print nodes or constants
               genJsExprsVisitor.exec(node.getChild(0)).get(0),
-              CodeChunkUtils.concatChunksForceString(getAttributeValues(node)))
+              Expressions.concatForceString(getAttributeValues(node)))
           .asStatement();
     } else {
       return Statements.of(visitChildren(node)); // Prints raw text or attributes node.
@@ -702,7 +701,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
         return null;
       }
     }
-    return CodeChunkUtils.concatChunksForceString(getAttributeValues(node));
+    return Expressions.concatForceString(getAttributeValues(node));
   }
 
   private Expression getOpenSSRCall(HtmlOpenTagNode node) {
@@ -955,10 +954,10 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
     switch (node.getHtmlContext()) {
       case HTML_TAG:
         return SOY_IDOM_PRINT_DYNAMIC_ATTR
-            .call(INCREMENTAL_DOM, CodeChunkUtils.concatChunks(chunks))
+            .call(INCREMENTAL_DOM, Expressions.concat(chunks))
             .asStatement();
       case JS:
-        return outputVars.addChunkToOutputVar(CodeChunkUtils.concatChunks(chunks));
+        return outputVars.addChunkToOutputVar(Expressions.concat(chunks));
       case CSS:
         // fall through
       case HTML_PCDATA:
@@ -970,16 +969,14 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
                     .getContentKind()
                 == SanitizedContent.ContentKind.HTML) {
           return SOY_IDOM_PRINT
-              .call(INCREMENTAL_DOM, CodeChunkUtils.concatChunks(chunks), Expressions.LITERAL_TRUE)
+              .call(INCREMENTAL_DOM, Expressions.concat(chunks), Expressions.LITERAL_TRUE)
               .asStatement();
         } else {
-          return SOY_IDOM_PRINT
-              .call(INCREMENTAL_DOM, CodeChunkUtils.concatChunks(chunks))
-              .asStatement();
+          return SOY_IDOM_PRINT.call(INCREMENTAL_DOM, Expressions.concat(chunks)).asStatement();
         }
       case HTML_RCDATA:
         return INCREMENTAL_DOM_TEXT
-            .call(id("String").call(CodeChunkUtils.concatChunks(chunks)))
+            .call(id("String").call(Expressions.concat(chunks)))
             .asStatement();
       default:
         return super.visitPrintNode(node);

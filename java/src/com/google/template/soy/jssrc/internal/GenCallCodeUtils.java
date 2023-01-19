@@ -35,7 +35,6 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
-import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.Expressions;
 import com.google.template.soy.jssrc.dsl.FormatOptions;
@@ -461,7 +460,7 @@ public class GenCallCodeUtils {
                       errorReporter,
                       exprTranslator.getDataSource())
                   .exec(cpcn);
-          value = CodeChunkUtils.concatChunksForceString(chunks);
+          value = Expressions.concatForceString(chunks);
         } else {
           // This is a param with content that cannot be represented as JS expressions, so we assume
           // that code has been generated to define the temporary variable 'param<n>'.

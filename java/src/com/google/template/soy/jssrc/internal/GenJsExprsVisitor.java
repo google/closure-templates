@@ -25,7 +25,6 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
-import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
 import com.google.template.soy.jssrc.dsl.ConditionalExpressionBuilder;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.Expressions;
@@ -322,9 +321,9 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<Expression>> 
             getExprTranslator()
                 .maybeCoerceToBoolean(
                     ifCond.getExpr().getType(), translateExpr(ifCond.getExpr()), false));
-        thens.add(CodeChunkUtils.concatChunks(genJsExprsVisitor.exec(ifCond)));
+        thens.add(Expressions.concat(genJsExprsVisitor.exec(ifCond)));
       } else if (child instanceof IfElseNode) {
-        trailingElse = CodeChunkUtils.concatChunks(genJsExprsVisitor.exec(child));
+        trailingElse = Expressions.concat(genJsExprsVisitor.exec(child));
       } else {
         throw new AssertionError();
       }
