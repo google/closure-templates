@@ -67,10 +67,12 @@ public abstract class FunctionDeclaration extends Expression
         CodeChunkUtils.generateParamList(
             jsDoc(), /* addInlineTypeAnnotations= */ isArrowFunction()));
     if (paramsNeedParens) {
-      ctx.append(") ");
+      ctx.append(")");
     }
     if (isArrowFunction()) {
       ctx.append(" => ");
+    } else {
+      ctx.append(" ");
     }
     if (isArrowFunction() && body() instanceof Expression) {
       Expression exprBody = (Expression) body();
