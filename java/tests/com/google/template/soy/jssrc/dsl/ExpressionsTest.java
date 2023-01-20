@@ -26,9 +26,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-/** Tests for {@link CodeChunkUtils}. */
+/** Tests for {@link Expressions}. */
 @RunWith(JUnit4.class)
-public final class CodeChunkUtilsTest {
+public final class ExpressionsTest {
 
   @Test
   public void testConcatChunks() {
@@ -76,15 +76,5 @@ public final class CodeChunkUtilsTest {
     CodeChunk result =
         Expressions.concatForceString(ImmutableList.of(number(2), number(2).plus(number(3))));
     assertThat(result.getCode(FormatOptions.JSSRC)).isEqualTo("'' + 2 + (2 + 3);");
-  }
-
-  @Test
-  public void testGenerateParamList() {
-    JsDoc.Builder jsDocBuilder = JsDoc.builder();
-    jsDocBuilder.addParam("foo", "boolean");
-    jsDocBuilder.addParam("bar", "number");
-    jsDocBuilder.addParam("baz", "!Object<string, *>=");
-    String paramList = CodeChunkUtils.generateParamList(jsDocBuilder.build(), false);
-    assertThat(paramList).isEqualTo("foo, bar, baz");
   }
 }

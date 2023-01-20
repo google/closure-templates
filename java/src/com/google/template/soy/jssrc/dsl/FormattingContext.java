@@ -38,9 +38,10 @@ class FormattingContext implements AutoCloseable {
   private Scope curScope = new Scope(/* parent= */ null, /* emitClosingBrace= */ false);
   private String curIndent;
   private boolean nextAppendShouldStartNewLine = false;
-  private final ArrayDeque<InterpolationKind> interpolationKindStack;
+  private final ArrayDeque<LexicalState> lexicalStateStack;
 
-  public enum InterpolationKind {
+  public enum LexicalState {
+    JS,
     TSX,
     TTL,
   }
@@ -50,8 +51,8 @@ class FormattingContext implements AutoCloseable {
     curIndent = "";
     buf = new StringBuilder();
     initialSize = 0;
-    interpolationKindStack = new ArrayDeque<>();
-    interpolationKindStack.push(InterpolationKind.TSX);
+    lexicalStateStack = new ArrayDeque<>();
+    lexicalStateStack.push(LexicalState.JS);
   }
 
   public FormatOptions getFormatOptions() {
@@ -77,20 +78,50 @@ class FormattingContext implements AutoCloseable {
     };
   }
 
-  void pushInterpolationKind(InterpolationKind interpolationKind) {
-    interpolationKindStack.push(interpolationKind);
+  void pushLexicalState(LexicalState lexicalState) {
+    lexicalStateStack.push(lexicalState);
   }
 
-  void popInterpolationKind() {
-    interpolationKindStack.pop();
+  void popLexicalState() {
+    lexicalStateStack.pop();
   }
 
-  InterpolationKind getCurrentInterpolationKind() {
-    return interpolationKindStack.peek();
+  LexicalState getCurrentLexicalState() {
+    return lexicalStateStack.peek();
   }
 
   String getInterpolationOpenString() {
-    return getCurrentInterpolationKind() == InterpolationKind.TSX ? "{" : "${";
+    switch (getCurrentLexicalState()) {
+      case JS:
+        throw new IllegalStateException();
+      case TSX:
+        return "{";
+      case TTL:
+        return "${";
+    }
+    throw new AssertionError();
+  }
+
+  String getInterpolationCloseString() {
+    switch (getCurrentLexicalState()) {
+      case JS:
+        throw new IllegalStateException();
+      case TSX:
+      case TTL:
+        return "}";
+    }
+    throw new AssertionError();
+  }
+
+  String getConcatenationOperator() {
+    switch (getCurrentLexicalState()) {
+      case JS:
+        return " + ";
+      case TSX:
+      case TTL:
+        return "";
+    }
+    throw new AssertionError();
   }
 
   @CanIgnoreReturnValue
@@ -113,6 +144,14 @@ class FormattingContext implements AutoCloseable {
   @CanIgnoreReturnValue
   FormattingContext append(JsDoc jsDoc) {
     jsDoc.doFormatInitialStatements(this);
+    return this;
+  }
+
+  @CanIgnoreReturnValue
+  FormattingContext appendUnlessEmpty(String stuff) {
+    if (stuff != null && !stuff.isEmpty()) {
+      this.append(stuff);
+    }
     return this;
   }
 
@@ -155,8 +194,10 @@ class FormattingContext implements AutoCloseable {
     appendInitialStatements(chunk);
     if (chunk instanceof Expression) {
       appendOutputExpression((Expression) chunk);
-      append(";");
-      endLine();
+      if (getCurrentLexicalState() == LexicalState.JS) {
+        append(";");
+        endLine();
+      }
     }
     return this;
   }

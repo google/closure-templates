@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkState;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
+import com.google.template.soy.jssrc.dsl.FormattingContext.LexicalState;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -32,9 +33,10 @@ public abstract class TsxElement extends Expression {
 
   public abstract HtmlTag closeTag();
 
-  public abstract ImmutableList<Statement> body();
+  public abstract ImmutableList<? extends CodeChunk> body();
 
-  public static TsxElement create(HtmlTag openTag, HtmlTag closeTag, List<Statement> body) {
+  public static TsxElement create(
+      HtmlTag openTag, HtmlTag closeTag, List<? extends CodeChunk> body) {
     checkState(openTag.tagName().equals(closeTag.tagName()));
     checkState(openTag.isOpen());
     checkState(closeTag.isClose());
@@ -46,11 +48,11 @@ public abstract class TsxElement extends Expression {
         openTag().copyWithTagName(newTagName), closeTag().copyWithTagName(newTagName), body());
   }
 
-  public TsxElement copyWithMoreBody(Statement... bodyToAppend) {
+  public TsxElement copyWithMoreBody(CodeChunk... bodyToAppend) {
     return create(
         openTag(),
         closeTag(),
-        ImmutableList.<Statement>builder().addAll(body()).add(bodyToAppend).build());
+        ImmutableList.<CodeChunk>builder().addAll(body()).add(bodyToAppend).build());
   }
 
   @Override
@@ -65,10 +67,12 @@ public abstract class TsxElement extends Expression {
 
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
+    ctx.pushLexicalState(LexicalState.TSX);
     ctx.appendAll(openTag());
-    for (Statement s : body()) {
+    for (CodeChunk s : body()) {
       ctx.appendAll(s);
     }
     ctx.appendAll(closeTag());
+    ctx.popLexicalState();
   }
 }

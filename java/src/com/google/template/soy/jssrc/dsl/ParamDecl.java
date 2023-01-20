@@ -61,6 +61,11 @@ public abstract class ParamDecl extends CodeChunk {
   }
 
   @Override
+  public final Statement asStatement() {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
   Stream<? extends CodeChunk> childrenStream() {
     return Stream.of(type());
   }

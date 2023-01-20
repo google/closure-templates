@@ -16,13 +16,13 @@
 
 package com.google.template.soy.jssrc.dsl;
 
-import com.google.common.collect.ImmutableList;
-import java.util.ArrayList;
+import static com.google.common.collect.ImmutableList.toImmutableList;
+
 import java.util.List;
 import java.util.regex.Pattern;
 
 /** Utility methods for working with CodeChunks. */
-public final class CodeChunkUtils {
+public final class CodeChunks {
 
   /**
    * See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Grammar_and_types#Variables
@@ -34,7 +34,7 @@ public final class CodeChunkUtils {
    */
   private static final Pattern ID = Pattern.compile("[A-Za-z_$][\\w$]*");
 
-  private CodeChunkUtils() {}
+  private CodeChunks() {}
 
   /** Validates that the given string is a valid javascript identifier. */
   static void checkId(String id) {
@@ -43,29 +43,18 @@ public final class CodeChunkUtils {
     }
   }
 
-  /**
-   * Outputs a stringified parameter list (e.g. `foo, bar, baz`) from JsDoc. Used e.g. in function
-   * and method declarations.
-   */
-  static String generateParamList(JsDoc jsDoc, boolean addInlineTypeAnnotations) {
-    ImmutableList<JsDoc.Param> params = jsDoc.params();
-    List<String> functionParameters = new ArrayList<>();
-    for (JsDoc.Param param : params) {
-      if ("param".equals(param.annotationType())) {
-        if (addInlineTypeAnnotations) {
-          functionParameters.add(String.format("/* %s */ %s", param.type(), param.paramTypeName()));
-        } else {
-          functionParameters.add(param.paramTypeName());
-        }
-      }
-    }
-    StringBuilder sb = new StringBuilder();
-    for (int i = 0; i < functionParameters.size(); i++) {
-      sb.append(functionParameters.get(i));
-      if (i + 1 < functionParameters.size()) {
-        sb.append(", ");
-      }
-    }
-    return sb.toString();
+  public static Expression concat(List<? extends CodeChunk> chunks) {
+    return Concatenation.create(
+        chunks.stream()
+            .map(
+                c -> {
+                  if (c instanceof Expression) {
+                    return (Expression) c;
+                  } else {
+                    throw new ClassCastException(c.getClass().getName());
+                  }
+                })
+            .collect(toImmutableList()));
   }
+
 }

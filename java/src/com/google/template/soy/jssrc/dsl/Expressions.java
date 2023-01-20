@@ -127,7 +127,7 @@ public final class Expressions {
    * @throws IllegalArgumentException if {@code id} is not a valid JavaScript identifier.
    */
   public static Expression id(String id) {
-    CodeChunkUtils.checkId(id);
+    CodeChunks.checkId(id);
     return Leaf.create(id, /* isCheap= */ true);
   }
 
@@ -137,12 +137,12 @@ public final class Expressions {
    * @throws IllegalArgumentException if {@code id} is not a valid JavaScript identifier.
    */
   public static Expression id(String id, Iterable<GoogRequire> requires) {
-    CodeChunkUtils.checkId(id);
+    CodeChunks.checkId(id);
     return Leaf.create(id, /* isCheap= */ true, requires);
   }
 
   public static Expression id(String id, GoogRequire... requires) {
-    CodeChunkUtils.checkId(id);
+    CodeChunks.checkId(id);
     return Leaf.create(id, /* isCheap= */ true, ImmutableList.copyOf(requires));
   }
 
@@ -236,8 +236,7 @@ public final class Expressions {
 
   /** Creates a code chunk representing an immediately invoked function expression. */
   public static Expression iife(Expression expr) {
-    return Group.create(FunctionDeclaration.createArrowFunction(JsDoc.builder().build(), expr))
-        .call();
+    return Group.create(FunctionDeclaration.createArrowFunction(expr)).call();
   }
 
   /** Creates a code chunk representing the logical negation {@code !} of the given chunk. */

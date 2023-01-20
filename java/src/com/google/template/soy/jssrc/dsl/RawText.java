@@ -26,7 +26,7 @@ import java.util.stream.Stream;
  */
 @AutoValue
 @Immutable
-public abstract class RawText extends Statement {
+public abstract class RawText extends Expression {
   abstract String value();
 
   public static RawText create(String value) {
@@ -34,11 +34,8 @@ public abstract class RawText extends Statement {
   }
 
   @Override
-  void doFormatStatement(FormattingContext ctx) {
-    if (value().isEmpty()) {
-      return;
-    }
-    ctx.append(value());
+  void doFormatOutputExpr(FormattingContext ctx) {
+    ctx.appendUnlessEmpty(value());
   }
 
   @Override

@@ -61,6 +61,19 @@ public abstract class CodeChunk {
   /** Defines a list of child code chunks that should be traversed for collecting requires. */
   abstract Stream<? extends CodeChunk> childrenStream();
 
+  public final void appendDebug(StringBuilder sb, String prefix) {
+    String simpleName = this.getClass().getSimpleName().replace("AutoValue_", "");
+    String isScope = this instanceof Expression.InitialStatementsScope ? " *" : "";
+    String initialStatements =
+        this instanceof Expression.HasInitialStatements
+                && !((Expression.HasInitialStatements) this).initialStatements().isEmpty()
+            ? " (" + ((Expression.HasInitialStatements) this).initialStatements().size() + ")"
+            : "";
+    sb.append(prefix).append(simpleName).append(isScope).append(initialStatements).append("\n");
+    String indent = prefix + "  ";
+    childrenStream().forEach(c -> c.appendDebug(sb, indent));
+  }
+
   /** Adds all the 'goog.require' identifiers needed by this CodeChunk to the given collection. */
   public final void collectRequires(Consumer<GoogRequire> collector) {
     if (this instanceof HasRequires) {
@@ -72,6 +85,15 @@ public abstract class CodeChunk {
       i.next().collectRequires(collector);
     }
   }
+
+  /**
+   * If this chunk can be represented as a single expression, does nothing. If this chunk cannot be
+   * represented as a single expression, writes everything except the final expression to the
+   * buffer. Must only be called by {@link FormattingContext#appendInitialStatements}.
+   */
+  abstract void doFormatInitialStatements(FormattingContext ctx);
+
+  public abstract Statement asStatement();
 
   /**
    * Returns a sequence of JavaScript statements. In the special case that this chunk is
@@ -140,13 +162,6 @@ public abstract class CodeChunk {
     collectRequires(collector);
     return expression.singleExprOrName(FormatOptions.JSSRC);
   }
-
-  /**
-   * If this chunk can be represented as a single expression, does nothing. If this chunk cannot be
-   * represented as a single expression, writes everything except the final expression to the
-   * buffer. Must only be called by {@link FormattingContext#appendInitialStatements}.
-   */
-  abstract void doFormatInitialStatements(FormattingContext ctx);
 
   CodeChunk() {}
 

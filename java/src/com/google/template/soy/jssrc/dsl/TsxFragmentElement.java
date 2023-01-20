@@ -18,6 +18,7 @@ package com.google.template.soy.jssrc.dsl;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
+import com.google.template.soy.jssrc.dsl.FormattingContext.LexicalState;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -25,11 +26,30 @@ import java.util.stream.Stream;
 @AutoValue
 @Immutable
 public abstract class TsxFragmentElement extends Expression {
-  public static Expression create(List<Statement> body) {
+
+  /**
+   * If {@code body} is a TSX element or fragment, returns {@code body}, otherwise returns {@code
+   * body} wrapped inside a fragment.
+   */
+  public static Expression wrap(CodeChunk body) {
+    if (body instanceof TsxFragmentElement || body instanceof TsxElement) {
+      return (Expression) body;
+    }
+    return create(ImmutableList.of(body));
+  }
+
+  public static Expression wrap(List<? extends CodeChunk> children) {
+    if (children.size() == 1) {
+      return wrap(children.get(0));
+    }
+    return create(children);
+  }
+
+  public static Expression create(List<? extends CodeChunk> body) {
     return new AutoValue_TsxFragmentElement(ImmutableList.copyOf(body));
   }
 
-  abstract ImmutableList<Statement> body();
+  abstract ImmutableList<? extends CodeChunk> body();
 
   @Override
   public boolean isCheap() {
@@ -43,12 +63,14 @@ public abstract class TsxFragmentElement extends Expression {
 
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
-    ctx.appendAll(HtmlTag.createOpen("", ImmutableList.of()));
+    ctx.pushLexicalState(LexicalState.TSX);
+    ctx.appendAll(HtmlTag.FRAGMENT_OPEN);
     ctx.endLine();
-    for (Statement s : body()) {
+    for (CodeChunk s : body()) {
       ctx.appendAll(s);
     }
     ctx.endLine();
-    ctx.appendAll(HtmlTag.createClose("", ImmutableList.of()));
+    ctx.appendAll(HtmlTag.FRAGMENT_CLOSE);
+    ctx.popLexicalState();
   }
 }

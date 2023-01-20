@@ -59,7 +59,7 @@ public abstract class GoogRequire implements Comparable<GoogRequire> {
    * name: {@code var alias = goog.require('symbol'); }
    */
   public static GoogRequire createWithAlias(String symbol, String alias) {
-    CodeChunkUtils.checkId(alias);
+    CodeChunks.checkId(alias);
     return new AutoValue_GoogRequire(
         symbol,
         alias,
@@ -72,7 +72,7 @@ public abstract class GoogRequire implements Comparable<GoogRequire> {
    * name: {@code var alias = goog.requireType('symbol'); }
    */
   public static GoogRequire createTypeRequireWithAlias(String symbol, String alias) {
-    CodeChunkUtils.checkId(alias);
+    CodeChunks.checkId(alias);
     return new AutoValue_GoogRequire(
         symbol,
         alias,

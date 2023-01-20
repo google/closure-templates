@@ -16,6 +16,10 @@
 package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
+import com.google.common.collect.ImmutableList;
+import com.google.template.soy.jssrc.dsl.JsDoc.Param;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Stream;
 
 /**
@@ -31,9 +35,35 @@ import java.util.stream.Stream;
 public abstract class FunctionDeclaration extends Expression
     implements Expression.InitialStatementsScope {
 
+  /**
+   * Outputs a stringified parameter list (e.g. `foo, bar, baz`) from JsDoc. Used e.g. in function
+   * and method declarations.
+   */
+  static String generateParamList(JsDoc jsDoc, boolean addInlineTypeAnnotations) {
+    ImmutableList<Param> params = jsDoc.params();
+    List<String> functionParameters = new ArrayList<>();
+    for (Param param : params) {
+      if (param.annotationType().equals("param")) {
+        if (addInlineTypeAnnotations) {
+          functionParameters.add(String.format("/* %s */ %s", param.type(), param.paramTypeName()));
+        } else {
+          functionParameters.add(param.paramTypeName());
+        }
+      }
+    }
+    StringBuilder sb = new StringBuilder();
+    for (int i = 0; i < functionParameters.size(); i++) {
+      sb.append(functionParameters.get(i));
+      if (i + 1 < functionParameters.size()) {
+        sb.append(", ");
+      }
+    }
+    return sb.toString();
+  }
+
   abstract JsDoc jsDoc();
 
-  abstract CodeChunk body();
+  abstract Statement body();
 
   abstract boolean isArrowFunction();
 
@@ -46,7 +76,11 @@ public abstract class FunctionDeclaration extends Expression
   }
 
   public static FunctionDeclaration createArrowFunction(JsDoc jsDoc, Expression body) {
-    return new AutoValue_FunctionDeclaration(jsDoc, body, true);
+    return createArrowFunction(jsDoc, Statements.returnValue(body));
+  }
+
+  public static FunctionDeclaration createArrowFunction(Expression body) {
+    return createArrowFunction(JsDoc.getDefaultInstance(), Statements.returnValue(body));
   }
 
   @Override
@@ -63,9 +97,7 @@ public abstract class FunctionDeclaration extends Expression
     if (paramsNeedParens) {
       ctx.append("(");
     }
-    ctx.append(
-        CodeChunkUtils.generateParamList(
-            jsDoc(), /* addInlineTypeAnnotations= */ isArrowFunction()));
+    ctx.append(generateParamList(jsDoc(), /* addInlineTypeAnnotations= */ isArrowFunction()));
     if (paramsNeedParens) {
       ctx.append(")");
     }
@@ -74,21 +106,19 @@ public abstract class FunctionDeclaration extends Expression
     } else {
       ctx.append(" ");
     }
-    if (isArrowFunction() && body() instanceof Expression) {
-      Expression exprBody = (Expression) body();
-      if (exprBody.isRepresentableAsSingleExpression()) {
-        // protect with parens to avoid parsing ambiguity
-        // see
-        // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/Arrow_functions#Returning_object_literals
-        if (exprBody.initialExpressionIsObjectLiteral()) {
-          exprBody = Group.create(exprBody);
+    if (isArrowFunction()) {
+      if (body() instanceof Return) {
+        Expression exprBody = ((Return) body()).value();
+        if (exprBody.isRepresentableAsSingleExpression()) {
+          if (exprBody.initialExpressionIsObjectLiteral()) {
+            exprBody = Group.create(exprBody);
+          }
+          ctx.appendOutputExpression(exprBody);
+          return;
         }
-        // simplified arrow function body
-        ctx.appendOutputExpression(exprBody);
-      } else {
-        try (FormattingContext ignored = ctx.enterBlock()) {
-          ctx.appendAll(Return.create(exprBody));
-        }
+      }
+      try (FormattingContext ignored = ctx.enterBlock()) {
+        ctx.appendAll(body());
       }
     } else {
       try (FormattingContext ignored = ctx.enterBlock()) {

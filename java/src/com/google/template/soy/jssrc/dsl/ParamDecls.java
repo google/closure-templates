@@ -46,6 +46,11 @@ public abstract class ParamDecls extends CodeChunk {
   }
 
   @Override
+  public final Statement asStatement() {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
   void doFormatInitialStatements(FormattingContext ctx) {
     if (templateStyle()) {
       if (params().isEmpty()) {

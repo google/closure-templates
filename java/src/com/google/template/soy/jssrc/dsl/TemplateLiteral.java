@@ -18,6 +18,7 @@ package com.google.template.soy.jssrc.dsl;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
+import com.google.template.soy.jssrc.dsl.FormattingContext.LexicalState;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -26,9 +27,9 @@ import java.util.stream.Stream;
 @Immutable
 public abstract class TemplateLiteral extends Expression {
 
-  abstract ImmutableList<Statement> body();
+  abstract ImmutableList<? extends CodeChunk> body();
 
-  public static TemplateLiteral create(List<Statement> body) {
+  public static TemplateLiteral create(List<? extends CodeChunk> body) {
     return new AutoValue_TemplateLiteral(ImmutableList.copyOf(body));
   }
 
@@ -39,14 +40,14 @@ public abstract class TemplateLiteral extends Expression {
 
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
-    ctx.pushInterpolationKind(FormattingContext.InterpolationKind.TTL);
+    ctx.pushLexicalState(LexicalState.TTL);
 
     ctx.append('`');
-    for (Statement s : body()) {
+    for (CodeChunk s : body()) {
       ctx.appendAll(s);
     }
     ctx.append('`');
 
-    ctx.popInterpolationKind();
+    ctx.popLexicalState();
   }
 }

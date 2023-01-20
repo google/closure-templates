@@ -71,7 +71,7 @@ abstract class Concatenation extends Operation {
     } else {
       formatOperand(parts().get(0), OperandPosition.LEFT, ctx);
       for (int i = 1; i < parts().size(); i++) {
-        ctx.append(" + ");
+        ctx.appendUnlessEmpty(ctx.getConcatenationOperator());
         formatOperand(parts().get(i), OperandPosition.RIGHT, ctx);
       }
     }

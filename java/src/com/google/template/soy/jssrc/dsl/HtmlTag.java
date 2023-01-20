@@ -24,7 +24,7 @@ import java.util.stream.Stream;
 /** Represents an {@code HtmlTagNode}. */
 @AutoValue
 @Immutable
-public abstract class HtmlTag extends Statement {
+public abstract class HtmlTag extends Expression {
 
   public static final HtmlTag FRAGMENT_OPEN = createOpen("", ImmutableList.of());
   public static final HtmlTag FRAGMENT_CLOSE = createClose("", ImmutableList.of());
@@ -33,21 +33,21 @@ public abstract class HtmlTag extends Statement {
 
   abstract boolean isClose();
 
-  abstract ImmutableList<? extends Statement> attributes();
+  abstract ImmutableList<? extends CodeChunk> attributes();
 
-  public static HtmlTag createOpen(String tagName, List<? extends Statement> attributes) {
+  public static HtmlTag createOpen(String tagName, List<? extends CodeChunk> attributes) {
     return new AutoValue_HtmlTag(tagName, false, ImmutableList.copyOf(attributes));
   }
 
-  public static HtmlTag createOpen(String tagName, Statement... attributes) {
+  public static HtmlTag createOpen(String tagName, CodeChunk... attributes) {
     return new AutoValue_HtmlTag(tagName, false, ImmutableList.copyOf(attributes));
   }
 
-  public static HtmlTag createClose(String tagName, List<? extends Statement> attributes) {
+  public static HtmlTag createClose(String tagName, List<? extends CodeChunk> attributes) {
     return new AutoValue_HtmlTag(tagName, true, ImmutableList.copyOf(attributes));
   }
 
-  public static HtmlTag createClose(String tagName, Statement... attributes) {
+  public static HtmlTag createClose(String tagName, CodeChunk... attributes) {
     return new AutoValue_HtmlTag(tagName, true, ImmutableList.copyOf(attributes));
   }
 
@@ -60,15 +60,15 @@ public abstract class HtmlTag extends Statement {
   }
 
   @Override
-  void doFormatStatement(FormattingContext ctx) {
+  void doFormatOutputExpr(FormattingContext ctx) {
     if (isClose()) {
       ctx.decreaseIndent();
     }
     ctx.append(isClose() ? "</" : "<");
     ctx.append(tagName());
-    for (Statement attribute : attributes()) {
+    for (CodeChunk attribute : attributes()) {
       ctx.append(" ");
-      ctx.append(attribute.getCode(ctx.getFormatOptions()));
+      ctx.appendAll(attribute);
     }
     ctx.append(">");
     if (isOpen()) {

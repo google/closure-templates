@@ -32,6 +32,11 @@ public abstract class Statement extends CodeChunk {
     doFormatStatement(ctx);
   }
 
+  @Override
+  public final Statement asStatement() {
+    return this;
+  }
+
   /** Appends this statement to the {@link FormattingContext}. */
   abstract void doFormatStatement(FormattingContext ctx);
 }

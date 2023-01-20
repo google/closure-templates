@@ -49,6 +49,11 @@ public abstract class JsDoc extends CodeChunk implements CodeChunk.HasRequires {
   public abstract ImmutableList<Param> params();
 
   @Override
+  public final Statement asStatement() {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
   Stream<? extends CodeChunk> childrenStream() {
     return Stream.empty();
   }

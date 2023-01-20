@@ -113,10 +113,11 @@ public abstract class Expression extends CodeChunk {
 
     // Otherwise wrap in a lambda expression so we can include the initial statements (e.g. () -> {
     // x = 5; return x + 1;}).
-    return FunctionDeclaration.createArrowFunction(JsDoc.getDefaultInstance(), this);
+    return FunctionDeclaration.createArrowFunction(this);
   }
 
   /** Formats this expression as a statement. */
+  @Override
   public final Statement asStatement() {
     return ExpressionStatement.of(this);
   }
