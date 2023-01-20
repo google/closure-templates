@@ -29,7 +29,10 @@ import java.util.stream.Stream;
 @Immutable
 public abstract class TsxPrintNode extends Expression {
 
-  public static TsxPrintNode create(Expression expr) {
+  public static TsxPrintNode wrap(Expression expr) {
+    if (expr instanceof TsxPrintNode) {
+      return (TsxPrintNode) expr;
+    }
     return new AutoValue_TsxPrintNode(expr.asInlineExpr());
   }
 
@@ -88,17 +91,14 @@ public abstract class TsxPrintNode extends Expression {
 
     @Override
     void doFormatOutputExpr(FormattingContext ctx) {
-      if (!expr().isPresent()) {
-        ctx.append(ctx.getInterpolationOpenString() + ctx.getInterpolationCloseString());
-        return;
+      String open = ctx.getInterpolationOpenString();
+      String close = ctx.getInterpolationCloseString();
+      String value = "";
+      if (expr().isPresent()) {
+        value = "'" + ((StringLiteral) expr().get()).literalValue() + "'";
       }
 
-      ctx.append(
-          String.format(
-              "%s'%s'%s",
-              ctx.getInterpolationOpenString(),
-              ((StringLiteral) expr().get()).literalValue(),
-              ctx.getInterpolationCloseString()));
+      ctx.append(open + value + close);
 
       if (endLineAfterChar()) {
         ctx.endLine();

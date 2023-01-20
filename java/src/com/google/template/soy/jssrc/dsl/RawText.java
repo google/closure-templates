@@ -18,6 +18,9 @@ package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
 import com.google.errorprone.annotations.Immutable;
+import com.google.template.soy.base.internal.BaseUtils;
+import com.google.template.soy.base.internal.QuoteStyle;
+import com.google.template.soy.jssrc.dsl.FormattingContext.LexicalState;
 import java.util.stream.Stream;
 
 /**
@@ -35,11 +38,23 @@ public abstract class RawText extends Expression {
 
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
-    ctx.appendUnlessEmpty(value());
+    if (ctx.getCurrentLexicalState() == LexicalState.JS && !alreadyEscaped(value())) {
+      String escaped =
+          BaseUtils.escapeToWrappedSoyString(
+              value(), ctx.getFormatOptions().htmlEscapeStrings(), QuoteStyle.SINGLE);
+      ctx.append(escaped);
+    } else {
+      ctx.appendUnlessEmpty(value());
+    }
   }
 
   @Override
   Stream<? extends CodeChunk> childrenStream() {
     return Stream.empty();
+  }
+
+  private static boolean alreadyEscaped(String s) {
+    return s.length() >= 2
+        && ((s.startsWith("'") && s.endsWith("'")) || (s.startsWith("\"") && s.endsWith("\"")));
   }
 }

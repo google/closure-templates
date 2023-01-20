@@ -20,6 +20,9 @@ import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.Operator.Associativity;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 /**
@@ -46,6 +49,19 @@ abstract class Concatenation extends Operation {
   }
 
   abstract ImmutableList<Expression> parts();
+
+  public Concatenation map(Function<Expression, Expression> mapper) {
+    boolean diff = false;
+    List<Expression> mappedParts = new ArrayList<>(parts().size());
+    for (Expression part : parts()) {
+      Expression mapped = mapper.apply(part);
+      if (mapped != part) {
+        diff = true;
+      }
+      mappedParts.add(mapped);
+    }
+    return diff ? create(mappedParts) : this;
+  }
 
   @Override
   int precedence() {

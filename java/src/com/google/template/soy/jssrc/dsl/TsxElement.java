@@ -16,6 +16,7 @@
 package com.google.template.soy.jssrc.dsl;
 
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
@@ -40,7 +41,10 @@ public abstract class TsxElement extends Expression {
     checkState(openTag.tagName().equals(closeTag.tagName()));
     checkState(openTag.isOpen());
     checkState(closeTag.isClose());
-    return new AutoValue_TsxElement(openTag, closeTag, ImmutableList.copyOf(body));
+    return new AutoValue_TsxElement(
+        openTag,
+        closeTag,
+        body.stream().map(TsxFragmentElement::wrapChild).collect(toImmutableList()));
   }
 
   public TsxElement copyWithTagName(String newTagName) {

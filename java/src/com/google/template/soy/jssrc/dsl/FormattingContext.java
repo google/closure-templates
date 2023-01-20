@@ -93,7 +93,7 @@ class FormattingContext implements AutoCloseable {
   String getInterpolationOpenString() {
     switch (getCurrentLexicalState()) {
       case JS:
-        throw new IllegalStateException();
+        return "";
       case TSX:
         return "{";
       case TTL:
@@ -105,7 +105,7 @@ class FormattingContext implements AutoCloseable {
   String getInterpolationCloseString() {
     switch (getCurrentLexicalState()) {
       case JS:
-        throw new IllegalStateException();
+        return "";
       case TSX:
       case TTL:
         return "}";

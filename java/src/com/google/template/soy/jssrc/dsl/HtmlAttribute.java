@@ -28,7 +28,7 @@ import javax.annotation.Nullable;
 /** Represents an Html attribute. */
 @AutoValue
 @Immutable
-public abstract class HtmlAttribute extends Statement {
+public abstract class HtmlAttribute extends Expression {
 
   abstract ImmutableList<CodeChunk> children();
 
@@ -47,13 +47,13 @@ public abstract class HtmlAttribute extends Statement {
   public static HtmlAttribute create(String name, @Nullable Expression value) {
     ImmutableList.Builder<CodeChunk> attrs = ImmutableList.<CodeChunk>builder().add(id(name));
     if (value != null) {
-      attrs.add(TsxPrintNode.create(value));
+      attrs.add(TsxPrintNode.wrap(value));
     }
     return new AutoValue_HtmlAttribute(attrs.build());
   }
 
   @Override
-  void doFormatStatement(FormattingContext ctx) {
+  void doFormatOutputExpr(FormattingContext ctx) {
     appendChild(ctx, children().get(0));
     if (children().size() > 1) {
       ctx.append("=");

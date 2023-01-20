@@ -15,10 +15,13 @@
  */
 package com.google.template.soy.jssrc.dsl;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
+
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.jssrc.dsl.FormattingContext.LexicalState;
+import com.google.template.soy.jssrc.dsl.TsxPrintNode.CommandChar;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -27,11 +30,21 @@ import java.util.stream.Stream;
 @Immutable
 public abstract class TemplateLiteral extends Expression {
 
-  abstract ImmutableList<? extends CodeChunk> body();
-
   public static TemplateLiteral create(List<? extends CodeChunk> body) {
-    return new AutoValue_TemplateLiteral(ImmutableList.copyOf(body));
+    return new AutoValue_TemplateLiteral(
+        body.stream().map(TemplateLiteral::wrapChild).collect(toImmutableList()));
   }
+
+  private static Expression wrapChild(CodeChunk chunk) {
+    if (chunk instanceof TsxPrintNode || chunk instanceof RawText || chunk instanceof CommandChar) {
+      return (Expression) chunk;
+    } else if (chunk instanceof Concatenation) {
+      return ((Concatenation) chunk).map(TemplateLiteral::wrapChild);
+    }
+    return TsxPrintNode.wrap((Expression) chunk);
+  }
+
+  abstract ImmutableList<? extends CodeChunk> body();
 
   @Override
   Stream<? extends CodeChunk> childrenStream() {

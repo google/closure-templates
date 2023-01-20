@@ -137,9 +137,9 @@ public class ImportsBuilder {
     return Statements.of(importStatements);
   }
 
-  public void ingest(Iterable<Statement> statements) {
+  public void ingest(Iterable<? extends CodeChunk> statements) {
     List<GoogRequire> requires = new ArrayList<>();
-    for (Statement statement : statements) {
+    for (CodeChunk statement : statements) {
       statement.collectRequires(requires::add);
     }
     for (GoogRequire require : requires) {
