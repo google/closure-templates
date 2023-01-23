@@ -19,6 +19,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import java.util.Optional;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 /**
  * Represents a TS arrow function expression.
@@ -49,6 +50,25 @@ public class TsArrowFunction extends Expression implements Expression.InitialSta
     this.bodyStmts = bodyStmts;
   }
 
+  /**
+   * If the body is a single return statement of a single expression, return that expresion,
+   * otherwise return null.
+   */
+  @Nullable
+  private Expression getSingleExpression() {
+    if (bodyStmts.size() != 1 || !(bodyStmts.get(0) instanceof Return)) {
+      return null;
+    }
+    Expression exprBody = ((Return) bodyStmts.get(0)).value();
+    if (!exprBody.isRepresentableAsSingleExpression()) {
+      return null;
+    }
+    if (exprBody.initialExpressionIsObjectLiteral()) {
+      return Group.create(exprBody);
+    }
+    return exprBody;
+  }
+
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
     try (FormattingContext buffer = ctx.buffer()) {
@@ -59,13 +79,18 @@ public class TsArrowFunction extends Expression implements Expression.InitialSta
       }
       buffer.append(" => ");
     }
-    ctx.enterBlock();
-    ctx.endLine();
-    for (Statement stmt : bodyStmts) {
-      ctx.appendAll(stmt);
+    Expression singleExpression = getSingleExpression();
+    if (singleExpression != null) {
+      ctx.appendOutputExpression(singleExpression);
+    } else {
+      ctx.enterBlock();
       ctx.endLine();
+      for (CodeChunk stmt : bodyStmts) {
+        ctx.appendAll(stmt);
+        ctx.endLine();
+      }
+      ctx.close();
     }
-    ctx.close();
   }
 
   @Override

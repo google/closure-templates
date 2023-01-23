@@ -81,7 +81,8 @@ public class ImportsBuilder {
 
   /**
    * Add an import for a single proto from a single file. Note that it won't be emitted from
-   * `build()` unless it is marked as used with `useImportedProtoSymbol()`.
+   * `build()` unless it is marked as used with `useImportedProtoSymbol()`. Pass the non-immutable
+   * proto name as it appears in Soy.
    */
   public void importProto(String file, String symbol, String fqn) {
     protoImportData.put(fqn, ProtoImportData.create(file, symbol, ""));
@@ -89,29 +90,46 @@ public class ImportsBuilder {
 
   /**
    * Add an aliased import for a single proto from a single file. Note that it won't be emitted from
-   * `build()` unless it is marked as used with `useImportedProtoSymbol()`.
+   * `build()` unless it is marked as used with `useImportedProtoSymbol()`. Pass the non-immutable
+   * proto name as it appears in Soy.
    */
   public void importProtoAlias(String file, String symbol, String alias, String fqn) {
     protoImportData.put(fqn, ProtoImportData.create(file, symbol, alias));
   }
 
+  private String maybeMakeImmutable(String fqn, boolean makeImmutable) {
+    if (!makeImmutable) {
+      return fqn;
+    }
+    int immutableIndex = fqn.lastIndexOf(".") + 1;
+    return fqn.substring(0, immutableIndex) + "Immutable" + fqn.substring(immutableIndex);
+  }
+
   /**
-   * Given the fully qualified proto name, return the file local name (the imported symbol, plus any
-   * additional parts for nested protos), and mark the symbol as referenced.
+   * Given the proto type, return the file local name (the imported symbol, plus any additional
+   * parts for nested protos, possibly the immutable version) that should be used in Tsx, and mark
+   * the symbol as referenced.
    */
   @Nullable
-  public String useImportedProtoSymbol(String fqn) {
+  public String useImportedProtoSymbol(String fqn, boolean makeImmutable) {
     String symbol = fqn;
     String rest = "";
     do {
       if (protoImportData.containsKey(symbol)) {
         ProtoImportData data = protoImportData.get(symbol);
-        if (data.alias().isEmpty()) {
+        if (!rest.isEmpty()) {
+          // Nested, import the mutable version, nested messages are placed inside of the mutable
+          // message class.
           importSymbol(data.file(), data.symbol());
+          return data.symbol() + maybeMakeImmutable(rest, makeImmutable);
+        } else if (data.alias().isEmpty()) {
+          importSymbol(data.file(), maybeMakeImmutable(data.symbol(), makeImmutable));
+          return maybeMakeImmutable(data.symbol() + rest, makeImmutable);
         } else {
-          importSymbolAlias(data.file(), data.symbol(), data.alias());
+          importSymbolAlias(
+              data.file(), maybeMakeImmutable(data.symbol(), makeImmutable), data.alias());
+          return data.alias() + rest;
         }
-        return (data.alias().isEmpty() ? data.symbol() : data.alias()) + rest;
       }
       int dotIndex = symbol.lastIndexOf(".");
       if (dotIndex == -1) {
