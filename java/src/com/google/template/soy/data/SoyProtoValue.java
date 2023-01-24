@@ -400,5 +400,9 @@ public final class SoyProtoValue extends SoyAbstractValue implements SoyLegacyOb
       soyProtoValue.clazz = clazz;
       return soyProtoValue;
     }
+
+    public boolean hasField(String field) {
+      return clazz.fields.containsKey(field);
+    }
   }
 }

@@ -28,7 +28,12 @@ public final class LoggingConfigs {
   public static ValidatedLoggingConfig createLoggingConfig(LoggableElement... elements) {
     return createLoggingConfig(
         Arrays.stream(elements)
-            .map(element -> AnnotatedLoggableElement.newBuilder().setElement(element).build())
+            .map(
+                element ->
+                    AnnotatedLoggableElement.newBuilder()
+                        .setElement(element)
+                        .setHasMetadata(element.hasMetadata())
+                        .build())
             .toArray(AnnotatedLoggableElement[]::new));
   }
 
