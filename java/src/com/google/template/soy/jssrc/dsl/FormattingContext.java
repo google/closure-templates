@@ -126,8 +126,10 @@ class FormattingContext implements AutoCloseable {
 
   @CanIgnoreReturnValue
   FormattingContext append(String stuff) {
-    maybeBreakLineInsideTsxElement(stuff);
-    maybeIndent(/* nextCharIsSpace= */ !stuff.isEmpty() && stuff.charAt(0) == ' ');
+    if (!stuff.equals(";")) {
+      maybeBreakLineInsideTsxElement(stuff);
+      maybeIndent(/* nextCharIsSpace= */ !stuff.isEmpty() && stuff.charAt(0) == ' ');
+    }
     buf.append(stuff);
     return this;
   }
@@ -242,17 +244,17 @@ class FormattingContext implements AutoCloseable {
   }
 
   private void maybeBreakLineInsideTsxElement(String nextAppendContent) {
-    if (!formatOptions.useTsxLineBreaks() || buf.length() == 0) {
-      return;
-    }
-    if (isRightAngleOrCurlyBracket(getLastChar())
-        && isLeftAngleOrCurlyBracket(
-            nextAppendContent.isEmpty() ? ' ' : nextAppendContent.charAt(0))) {
-      endLine();
+    if (!formatOptions.useTsxLineBreaks() || buf.length() == 0 || nextAppendContent.isEmpty()) {
       return;
     }
 
-    if (!fitsOnCurrentLine(nextAppendContent)) {
+    char lastChar = getLastChar();
+    char nextChar = nextAppendContent.charAt(0);
+    if (getCurrentLexicalState() == LexicalState.TSX && lastChar == '>' && nextChar == '<') {
+      endLine();
+    } else if (lastChar == '}' && nextChar == '{') {
+      endLine();
+    } else if (!fitsOnCurrentLine(nextAppendContent)) {
       endLine();
     }
   }
@@ -385,13 +387,5 @@ class FormattingContext implements AutoCloseable {
     private boolean alreadyAppended(CodeChunk chunk) {
       return appendedChunks.contains(chunk) || (parent != null && parent.alreadyAppended(chunk));
     }
-  }
-
-  private static boolean isLeftAngleOrCurlyBracket(char c) {
-    return c == '<' || c == '{';
-  }
-
-  private static boolean isRightAngleOrCurlyBracket(char c) {
-    return c == '>' || c == '}';
   }
 }

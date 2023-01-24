@@ -16,9 +16,11 @@
 package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
+import com.google.common.base.Preconditions;
 import com.google.errorprone.annotations.Immutable;
-import java.util.Optional;
+import java.util.Objects;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 /**
  * Represents a single "name : type" tsx function param.
@@ -35,22 +37,26 @@ public abstract class ParamDecl extends CodeChunk {
 
   abstract boolean isOptional();
 
-  abstract Optional<String> defaultValue();
+  @Nullable
+  abstract Expression defaultValue();
 
   public static ParamDecl create(String name, Expression type) {
-    return new AutoValue_ParamDecl(name, type, false, Optional.empty());
+    return new AutoValue_ParamDecl(name, type, false, null);
   }
 
   public static ParamDecl create(String name, Expression type, boolean isOptional) {
-    return new AutoValue_ParamDecl(name, type, isOptional, Optional.empty());
+    return new AutoValue_ParamDecl(name, type, isOptional, null);
   }
 
-  public static ParamDecl create(String name, Expression type, String defaultValue) {
-    return new AutoValue_ParamDecl(name, type, true, Optional.of(defaultValue));
+  public static ParamDecl create(String name, Expression type, Expression defaultValue) {
+    return new AutoValue_ParamDecl(name, type, true, Preconditions.checkNotNull(defaultValue));
   }
 
-  public String nameDecl() {
-    return name() + defaultValue().map(value -> " = " + value).orElse("");
+  public String nameDecl(FormatOptions formatOptions) {
+    return name()
+        + (defaultValue() != null
+            ? " = " + defaultValue().singleExprOrName(formatOptions).getText()
+            : "");
   }
 
   public String typeDecl(FormatOptions formatOptions) {
@@ -67,7 +73,7 @@ public abstract class ParamDecl extends CodeChunk {
 
   @Override
   Stream<? extends CodeChunk> childrenStream() {
-    return Stream.of(type());
+    return Stream.of(type(), defaultValue()).filter(Objects::nonNull);
   }
 
   @Override
