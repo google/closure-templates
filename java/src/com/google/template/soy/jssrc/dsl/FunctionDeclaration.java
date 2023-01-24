@@ -83,6 +83,10 @@ public abstract class FunctionDeclaration extends Expression
     return createArrowFunction(JsDoc.getDefaultInstance(), Statements.returnValue(body));
   }
 
+  public static FunctionDeclaration createArrowFunction(List<Statement> statements) {
+    return createArrowFunction(JsDoc.getDefaultInstance(), Statements.of(statements));
+  }
+
   @Override
   Stream<? extends CodeChunk> childrenStream() {
     return Stream.of(body(), jsDoc());

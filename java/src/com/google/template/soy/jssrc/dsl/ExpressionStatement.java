@@ -36,6 +36,11 @@ public abstract class ExpressionStatement extends Statement {
 
   public abstract Expression expr();
 
+  @Override
+  public Expression asExpr() {
+    return expr();
+  }
+
   @Nullable
   abstract JsDoc jsDoc();
 

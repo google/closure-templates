@@ -87,13 +87,13 @@ public final class Expressions {
   }
 
   /** Arrow function with implicit return type. */
-  public static Expression tsArrowFunction(ParamDecls params, ImmutableList<Statement> bodyStmts) {
+  public static Expression tsArrowFunction(ParamDecls params, List<Statement> bodyStmts) {
     return new TsArrowFunction(params, bodyStmts);
   }
 
   /** Arrow function with explicit return type. */
   public static Expression tsArrowFunction(
-      ParamDecls params, Expression returnType, ImmutableList<Statement> bodyStmts) {
+      ParamDecls params, Expression returnType, List<Statement> bodyStmts) {
     return new TsArrowFunction(params, returnType, bodyStmts);
   }
 

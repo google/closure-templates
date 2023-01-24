@@ -55,4 +55,12 @@ public abstract class Return extends Statement {
   Stream<? extends CodeChunk> childrenStream() {
     return value() != null ? Stream.of(value()) : Stream.empty();
   }
+
+  @Override
+  public Expression asExpr() {
+    if (value() != null) {
+      return value();
+    }
+    return super.asExpr();
+  }
 }

@@ -37,6 +37,11 @@ public abstract class Statement extends CodeChunk {
     return this;
   }
 
+  public Expression asExpr() {
+    throw new UnsupportedOperationException(
+        this.getClass().getName() + " cannot be represented as an expression");
+  }
+
   /** Appends this statement to the {@link FormattingContext}. */
   abstract void doFormatStatement(FormattingContext ctx);
 }

@@ -40,6 +40,8 @@ public abstract class TemplateLiteral extends Expression {
       return (Expression) chunk;
     } else if (chunk instanceof Concatenation) {
       return ((Concatenation) chunk).map(TemplateLiteral::wrapChild);
+    } else if (chunk instanceof Statement) {
+      return TsxPrintNode.wrap(((Statement) chunk).asExpr());
     }
     return TsxPrintNode.wrap((Expression) chunk);
   }

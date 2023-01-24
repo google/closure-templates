@@ -17,6 +17,7 @@ package com.google.template.soy.jssrc.dsl;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.jssrc.restricted.JsExpr;
+import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
@@ -37,17 +38,17 @@ public class TsArrowFunction extends Expression implements Expression.InitialSta
   private final ImmutableList<Statement> bodyStmts;
 
   /** Arrow function with implicit return type. */
-  TsArrowFunction(ParamDecls params, ImmutableList<Statement> bodyStmts) {
+  TsArrowFunction(ParamDecls params, List<Statement> bodyStmts) {
     this.params = params;
     this.returnType = Optional.empty();
-    this.bodyStmts = bodyStmts;
+    this.bodyStmts = ImmutableList.copyOf(bodyStmts);
   }
 
   /** Arrow function with explicit return type. */
-  TsArrowFunction(ParamDecls params, Expression returnType, ImmutableList<Statement> bodyStmts) {
+  TsArrowFunction(ParamDecls params, Expression returnType, List<Statement> bodyStmts) {
     this.params = params;
     this.returnType = Optional.of(returnType);
-    this.bodyStmts = bodyStmts;
+    this.bodyStmts = ImmutableList.copyOf(bodyStmts);
   }
 
   /**

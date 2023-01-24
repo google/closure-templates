@@ -62,6 +62,8 @@ public abstract class HtmlTag extends Expression {
       return (Expression) chunk;
     } else if (chunk instanceof Concatenation) {
       return ((Concatenation) chunk).map(HtmlTag::wrapChild);
+    } else if (chunk instanceof Statement) {
+      return TsxPrintNode.wrap(((Statement) chunk).asExpr());
     }
     return TsxPrintNode.wrap((Expression) chunk);
   }
