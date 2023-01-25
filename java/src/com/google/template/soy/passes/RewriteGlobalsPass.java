@@ -36,10 +36,6 @@ final class RewriteGlobalsPass implements CompilerFilePass {
   }
 
   private void resolveGlobal(SoyFileNode file, GlobalNode global) {
-    // First check to see if this global matches a proto enum.  We do this because the enums from
-    // the type registry have better type information and for applications with legacy globals
-    // configs there is often overlap, so the order in which we check is actually important.
-    // proto enums are dotted identifiers
     Identifier original = global.getIdentifier();
     Identifier alias = file.resolveAlias(global.getIdentifier());
     if (!alias.equals(original)) {
