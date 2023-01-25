@@ -49,9 +49,7 @@ public final class ValidatedLoggingConfigTest {
                     LoggableElement.newBuilder().setName("Foo").setId(923456).build()));
     assertThat(expected)
         .hasMessageThat()
-        .startsWith("Found 2 LoggableElements with the same name Foo:");
-    assertThat(expected).hasMessageThat().contains("287545");
-    assertThat(expected).hasMessageThat().contains("923456");
+        .startsWith("Found VE definition that conflicts with Ve{name=Foo, id=287545}");
   }
 
   @Test
@@ -65,9 +63,7 @@ public final class ValidatedLoggingConfigTest {
                     LoggableElement.newBuilder().setName("Bar").setId(1).build()));
     assertThat(expected)
         .hasMessageThat()
-        .startsWith("Found 2 LoggableElements with the same id 1:");
-    assertThat(expected).hasMessageThat().contains("Foo");
-    assertThat(expected).hasMessageThat().contains("Bar");
+        .startsWith("Found VE definition that conflicts with Ve{name=Foo, id=1}");
   }
 
   @Test
@@ -128,9 +124,7 @@ public final class ValidatedLoggingConfigTest {
                         .build()));
     assertThat(expected)
         .hasMessageThat()
-        .startsWith("Found 2 LoggableElements with the same id -1:");
-    assertThat(expected).hasMessageThat().contains("UndefinedVe");
-    assertThat(expected).hasMessageThat().contains("BadVe");
+        .startsWith("Found VE definition that conflicts with Ve{name=UndefinedVe, id=-1}");
   }
 
   @Test

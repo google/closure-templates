@@ -49,11 +49,8 @@ public final class ValidatedLoggingConfig {
       SoyErrorKind.of(
           "ID {0,number,#} for ''{1}'' must be between {2,number,#} and {3,number,#} (inclusive).");
 
-  private static final SoyErrorKind DUPLICATE_VE_ID =
-      SoyErrorKind.of("Found 2 LoggableElements with the same id {0,number,#}:\n{1}\nand\n{2}.");
-
-  private static final SoyErrorKind DUPLICATE_VE_NAME =
-      SoyErrorKind.of("Found 2 LoggableElements with the same name {0}:\n{1}\nand\n{2}.");
+  private static final SoyErrorKind CONFLICTING_VE =
+      SoyErrorKind.of("Found VE definition that conflicts with {0}.");
 
   public static final String UNDEFINED_VE_NAME = "UndefinedVe";
 
@@ -129,11 +126,9 @@ public final class ValidatedLoggingConfig {
       ValidatedLoggableElement oldWithSameId = elementsById.put(ve.getId(), ve);
       ValidatedLoggableElement oldWithSameName = elementsByName.put(ve.getName(), ve);
       if (oldWithSameId != null && !elementsEquivalent(ve, oldWithSameId)) {
-        errorReporter.report(
-            ve.getSourceLocation(), DUPLICATE_VE_ID, ve.getId(), ve, oldWithSameId);
+        errorReporter.report(ve.getSourceLocation(), CONFLICTING_VE, oldWithSameId);
       } else if (oldWithSameName != null && !elementsEquivalent(ve, oldWithSameName)) {
-        errorReporter.report(
-            ve.getSourceLocation(), DUPLICATE_VE_NAME, ve.getName(), ve, oldWithSameName);
+        errorReporter.report(ve.getSourceLocation(), CONFLICTING_VE, oldWithSameName);
       }
     }
 
@@ -236,11 +231,11 @@ public final class ValidatedLoggingConfig {
     @Override
     public final String toString() {
       return String.format(
-          "Ve{name=%s, id=%s%s%s} @ %s",
+          "Ve{name=%s, id=%s%s%s} declared at %s",
           getName(),
           getId(),
           getProtoName().isPresent() ? ", data=" + getProtoName().get() : "",
-          getMetadata().isPresent() ? ", metadata=" + getMetadata().get() : "",
+          getMetadata().isPresent() ? ", metadata=" + getMetadata().get().toString().trim() : "",
           getSourceLocation());
     }
   }
