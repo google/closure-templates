@@ -20,6 +20,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableMap;
 import com.google.errorprone.annotations.Immutable;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -27,6 +28,17 @@ import java.util.stream.Stream;
 @AutoValue
 @Immutable
 abstract class ObjectLiteral extends Expression {
+
+  private static final String SPREAD_PREFIX = "_object_literal_spread_xxx_";
+  private static final AtomicInteger SERIAL = new AtomicInteger();
+
+  static String newSpread() {
+    return SPREAD_PREFIX + SERIAL.incrementAndGet();
+  }
+
+  private static boolean isSpread(Expression e) {
+    return e instanceof Leaf && ((Leaf) e).value().getText().startsWith(SPREAD_PREFIX);
+  }
 
   abstract ImmutableMap<Expression, Expression> values();
 
@@ -56,9 +68,13 @@ abstract class ObjectLiteral extends Expression {
         ctx.append(", ");
       }
       first = false;
-      ctx.appendOutputExpression(entry.getKey())
-          .append(": ")
-          .appendOutputExpression(entry.getValue());
+      if (isSpread(entry.getKey())) {
+        ctx.append("...").appendOutputExpression(entry.getValue());
+      } else {
+        ctx.appendOutputExpression(entry.getKey())
+            .append(": ")
+            .appendOutputExpression(entry.getValue());
+      }
     }
     ctx.append('}');
   }

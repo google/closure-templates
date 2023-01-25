@@ -301,6 +301,14 @@ public final class Expressions {
   }
 
   /**
+   * Returns a unique key that can be used in the parameter passed to {@link #objectLiteral} to
+   * cause the corresponding value to be interpreted as an object spread.
+   */
+  public static String objectLiteralSpreadKey() {
+    return ObjectLiteral.newSpread();
+  }
+
+  /**
    * Creates a code chunk representing a javascript map literal, where the keys are quoted: {@code
    * {'key1': value1, 'key2': value2}}
    */
