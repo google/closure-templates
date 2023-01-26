@@ -191,6 +191,21 @@ function makeHtml(idomFn: PatchFunction): IdomFunction {
   fn.getContent = fn.toString;
   fn.contentKind = SanitizedContentKind.HTML;
   fn.toSafeHtml = () => ordainSanitizedHtml(fn.getContent()).toSafeHtml();
+  fn.renderElement = (el: Element|ShadowRoot) => {
+    incrementaldom.patch(el, () => {
+      fn.invoke(defaultIdomRenderer);
+    });
+  };
+  fn.renderAsElement = () => {
+    const el = document.createElement('div');
+    incrementaldom.patch(el, () => {
+      fn.invoke(defaultIdomRenderer);
+    });
+    if (el.childNodes.length === 1 && el.childNodes[0] instanceof Element) {
+      return el.childNodes[0];
+    }
+    return el;
+  };
   fn.isInvokableFn = true;
   return fn;
 }
