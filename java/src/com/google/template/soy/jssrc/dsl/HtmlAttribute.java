@@ -15,13 +15,11 @@
  */
 package com.google.template.soy.jssrc.dsl;
 
-import static com.google.template.soy.jssrc.dsl.Expressions.id;
 import static com.google.template.soy.jssrc.dsl.Expressions.stringLiteral;
 
 import com.google.auto.value.AutoValue;
-import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
-import java.util.List;
+import com.google.template.soy.jssrc.dsl.FormattingContext.LexicalState;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
@@ -30,49 +28,36 @@ import javax.annotation.Nullable;
 @Immutable
 public abstract class HtmlAttribute extends Expression {
 
-  abstract ImmutableList<CodeChunk> children();
+  abstract String name();
 
-  public static HtmlAttribute create(List<CodeChunk> children) {
-    return new AutoValue_HtmlAttribute(ImmutableList.copyOf(children));
+  @Nullable
+  abstract Expression value();
+
+  public static HtmlAttribute create(String name, @Nullable Expression value) {
+    if (value != null && !(value instanceof StringLiteral)) {
+      value = TsxPrintNode.wrap(value);
+    }
+    return new AutoValue_HtmlAttribute(name, value);
   }
 
   public static HtmlAttribute create(String name, @Nullable String value) {
-    ImmutableList.Builder<CodeChunk> attrs = ImmutableList.<CodeChunk>builder().add(id(name));
-    if (value != null) {
-      attrs.add(stringLiteral(value));
-    }
-    return new AutoValue_HtmlAttribute(attrs.build());
-  }
-
-  public static HtmlAttribute create(String name, @Nullable Expression value) {
-    ImmutableList.Builder<CodeChunk> attrs = ImmutableList.<CodeChunk>builder().add(id(name));
-    if (value != null) {
-      attrs.add(TsxPrintNode.wrap(value));
-    }
-    return new AutoValue_HtmlAttribute(attrs.build());
+    return create(name, value != null ? stringLiteral(value) : null);
   }
 
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
-    appendChild(ctx, children().get(0));
-    if (children().size() > 1) {
+    ctx.append(name());
+    if (value() != null) {
+      ctx.pushLexicalState(LexicalState.TSX_ATTR);
       ctx.append("=");
-      for (CodeChunk attribute : children().subList(1, children().size())) {
-        appendChild(ctx, attribute);
-      }
-    }
-  }
-
-  private void appendChild(FormattingContext ctx, CodeChunk chunk) {
-    if (chunk instanceof Expression) {
-      ctx.appendOutputExpression((Expression) chunk);
-    } else {
-      ctx.append(chunk.getCode(ctx.getFormatOptions()));
+      ctx.appendOutputExpression(value());
+      ctx.popLexicalState();
     }
   }
 
   @Override
   Stream<? extends CodeChunk> childrenStream() {
-    return children().stream();
+    return value() != null ? Stream.of(value()) : Stream.empty();
   }
+
 }

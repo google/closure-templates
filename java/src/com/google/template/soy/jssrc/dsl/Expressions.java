@@ -21,6 +21,7 @@ import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.jssrc.dsl.CodeChunk.Generator;
@@ -190,6 +191,10 @@ public final class Expressions {
    */
   public static Expression stringLiteral(String contents) {
     return StringLiteral.create(contents);
+  }
+
+  public static Expression stringLiteral(String contents, QuoteStyle quoteStyle) {
+    return StringLiteral.create(contents, quoteStyle);
   }
 
   /**

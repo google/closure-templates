@@ -45,22 +45,18 @@ public final class CodeChunks {
   }
 
   public static Expression concat(List<? extends CodeChunk> chunks) {
-    if (chunks.size() == 1) {
+    if (chunks.isEmpty()) {
+      return StringLiteral.create("");
+    } else if (chunks.size() == 1) {
       return (Expression) chunks.get(0);
-    }
-    if (chunks.stream().allMatch(RawText.class::isInstance)) {
-      return RawText.create(
-          chunks.stream()
-              .map(RawText.class::cast)
-              .map(RawText::value)
-              .collect(Collectors.joining()));
     }
     if (chunks.stream().allMatch(StringLiteral.class::isInstance)) {
       return StringLiteral.create(
           chunks.stream()
               .map(StringLiteral.class::cast)
               .map(StringLiteral::literalValue)
-              .collect(Collectors.joining()));
+              .collect(Collectors.joining()),
+          ((StringLiteral) chunks.get(0)).quoteStyle());
     }
     return Concatenation.create(
         chunks.stream()

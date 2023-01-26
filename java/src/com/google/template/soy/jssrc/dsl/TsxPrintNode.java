@@ -17,6 +17,7 @@ package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
 import com.google.errorprone.annotations.Immutable;
+import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.jssrc.dsl.FormattingContext.LexicalState;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -34,6 +35,17 @@ public abstract class TsxPrintNode extends Expression {
       return (TsxPrintNode) expr;
     }
     return new AutoValue_TsxPrintNode(expr.asInlineExpr());
+  }
+
+  /**
+   * Wrap {@code s} in a print node if it is required in TSX context, i.e. it's a BACKTICK quoted
+   * string that can't be rendered without a TSX interpolation.
+   */
+  public static Expression wrapIfNeeded(StringLiteral s) {
+    if (s.quoteStyle() == QuoteStyle.BACKTICK) {
+      return wrap(s);
+    }
+    return s;
   }
 
   public abstract Expression expr();

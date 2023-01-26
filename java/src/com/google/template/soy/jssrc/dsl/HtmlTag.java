@@ -57,9 +57,10 @@ public abstract class HtmlTag extends Expression {
 
   private static Expression wrapChild(CodeChunk chunk) {
     if (chunk instanceof HtmlAttribute
-        || chunk instanceof RawText
         || chunk instanceof CommandChar) {
       return (Expression) chunk;
+    } else if (chunk instanceof StringLiteral) {
+      return TsxPrintNode.wrapIfNeeded((StringLiteral) chunk);
     } else if (chunk instanceof Concatenation) {
       return ((Concatenation) chunk).map(HtmlTag::wrapChild);
     } else if (chunk instanceof Statement) {
@@ -85,7 +86,7 @@ public abstract class HtmlTag extends Expression {
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
     if (isClose()) {
-      ctx.decreaseIndent();
+      ctx.decreaseIndentLenient();
     }
     ctx.append(isClose() ? "</" : "<");
     ctx.append(tagName());

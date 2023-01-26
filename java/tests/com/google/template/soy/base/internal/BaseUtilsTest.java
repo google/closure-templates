@@ -22,9 +22,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-/**
- * Unit tests for BaseUtils.
- */
+/** Unit tests for BaseUtils. */
 @RunWith(JUnit4.class)
 public final class BaseUtilsTest {
 
@@ -159,8 +157,8 @@ public final class BaseUtilsTest {
   public void testEscapeToSoyString_backtickQuoteStyle() {
     assertThat(
             BaseUtils.escapeToSoyString(
-                "console.log(\"test's\", `quote$`);", false, QuoteStyle.BACKTICK))
-        .isEqualTo("console.log(\"test's\", \\`quote\\$\\`);");
+                "console.log(\"test's\", `$quote${a}`);", false, QuoteStyle.BACKTICK))
+        .isEqualTo("console.log(\"test's\", \\`$quote\\${a}\\`);");
   }
 
   @Test

@@ -204,6 +204,10 @@ public final class BaseUtils {
   public static String escapeToSoyString(
       String value, boolean shouldEscapeToAscii, QuoteStyle quoteStyle) {
 
+    if (quoteStyle == QuoteStyle.BACKTICK) {
+      return value.replace("`", "\\`").replace("${", "\\${");
+    }
+
     // StringUtil.javaScriptEscape() is meant to be compatible with JS string syntax, which is a
     // superset of the Soy expression string syntax, so we can't depend on it to properly escape a
     // Soy expression string literal. For example, they switched the default character escaping
@@ -236,13 +240,6 @@ public final class BaseUtils {
         case '\\':
           out.append("\\\\");
           break;
-        case '$':
-          {
-            // TODO(user): We could probably be smarter and only escape when we look ahead and
-            // see `${`.
-            out.append(quoteStyle == QuoteStyle.BACKTICK ? "\\$" : "$");
-          break;
-          }
         default:
           if (codePoint == quoteStyle.getQuoteChar()) {
             out.append("\\").append(quoteStyle.getQuoteChar());

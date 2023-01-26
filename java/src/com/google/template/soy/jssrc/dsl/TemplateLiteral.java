@@ -36,7 +36,9 @@ public abstract class TemplateLiteral extends Expression {
   }
 
   private static Expression wrapChild(CodeChunk chunk) {
-    if (chunk instanceof TsxPrintNode || chunk instanceof RawText || chunk instanceof CommandChar) {
+    if (chunk instanceof TsxPrintNode
+        || chunk instanceof StringLiteral
+        || chunk instanceof CommandChar) {
       return (Expression) chunk;
     } else if (chunk instanceof Concatenation) {
       return ((Concatenation) chunk).map(TemplateLiteral::wrapChild);

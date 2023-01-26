@@ -43,6 +43,7 @@ class FormattingContext implements AutoCloseable {
   public enum LexicalState {
     JS,
     TSX,
+    TSX_ATTR,
     TTL,
   }
 
@@ -86,8 +87,18 @@ class FormattingContext implements AutoCloseable {
     lexicalStateStack.pop();
   }
 
-  LexicalState getCurrentLexicalState() {
+  private LexicalState getCurrentLexicalState() {
     return lexicalStateStack.peek();
+  }
+
+  public boolean stringNeedsQuotation() {
+    switch (getCurrentLexicalState()) {
+      case JS:
+      case TSX_ATTR:
+        return true;
+      default:
+        return false;
+    }
   }
 
   String getInterpolationOpenString() {
@@ -95,6 +106,7 @@ class FormattingContext implements AutoCloseable {
       case JS:
         return "";
       case TSX:
+      case TSX_ATTR:
         return "{";
       case TTL:
         return "${";
@@ -107,6 +119,7 @@ class FormattingContext implements AutoCloseable {
       case JS:
         return "";
       case TSX:
+      case TSX_ATTR:
       case TTL:
         return "}";
     }
@@ -118,6 +131,7 @@ class FormattingContext implements AutoCloseable {
       case JS:
         return " + ";
       case TSX:
+      case TSX_ATTR:
       case TTL:
         return "";
     }
@@ -146,6 +160,13 @@ class FormattingContext implements AutoCloseable {
   @CanIgnoreReturnValue
   FormattingContext append(JsDoc jsDoc) {
     jsDoc.doFormatInitialStatements(this);
+    return this;
+  }
+
+  /** Appends exactly {@code s} onto the buffer without attempting to add line breaks or indents. */
+  @CanIgnoreReturnValue
+  FormattingContext appendWithoutBreaks(String s) {
+    buf.append(s);
     return this;
   }
 
@@ -292,35 +313,26 @@ class FormattingContext implements AutoCloseable {
     }
   }
 
-  /** Increases the indent by the given number of times, where each indent is two spaces. */
-  @CanIgnoreReturnValue
-  FormattingContext increaseIndent(int numIndents) {
-    for (int i = 0; i < numIndents; i++) {
-      curIndent += "  ";
-    }
-    return this;
-  }
-
   /** Increases the indent once (two spaces). */
   @CanIgnoreReturnValue
   FormattingContext increaseIndent() {
-    return increaseIndent(1);
-  }
-
-  /** Decreases the indent by the given number of times, where each indent is two spaces. */
-  @CanIgnoreReturnValue
-  FormattingContext decreaseIndent(int numIndents) {
-    for (int i = 0; i < numIndents; i++) {
-      Preconditions.checkState(!curIndent.isEmpty());
-      curIndent = curIndent.substring(2);
-    }
+    curIndent += "  ";
     return this;
   }
 
   /** Decreases the indent once (two spaces). */
   @CanIgnoreReturnValue
   FormattingContext decreaseIndent() {
-    return decreaseIndent(1);
+    Preconditions.checkState(!curIndent.isEmpty());
+    return decreaseIndentLenient();
+  }
+
+  @CanIgnoreReturnValue
+  FormattingContext decreaseIndentLenient() {
+    if (curIndent.length() > 1) {
+      curIndent = curIndent.substring(2);
+    }
+    return this;
   }
 
   @Override
@@ -336,7 +348,7 @@ class FormattingContext implements AutoCloseable {
   public void close() {
     boolean emitClosingBrace = curScope.emitClosingBrace;
     curScope = Preconditions.checkNotNull(curScope.parent);
-    decreaseIndent();
+    decreaseIndentLenient();
     endLine();
     if (emitClosingBrace) {
       append('}');

@@ -57,9 +57,10 @@ public abstract class TsxFragmentElement extends Expression {
     if (chunk instanceof TsxElement
         || chunk instanceof TsxPrintNode
         || chunk instanceof HtmlTag
-        || chunk instanceof RawText
         || chunk instanceof CommandChar) {
       return (Expression) chunk;
+    } else if (chunk instanceof StringLiteral) {
+      return TsxPrintNode.wrapIfNeeded((StringLiteral) chunk);
     } else if (chunk instanceof Concatenation) {
       return ((Concatenation) chunk).map(TsxFragmentElement::wrapChild);
     } else if (chunk instanceof Statement) {

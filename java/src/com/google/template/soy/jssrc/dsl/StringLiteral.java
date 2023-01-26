@@ -25,13 +25,19 @@ import java.util.stream.Stream;
 /** Represents a string literal expression. */
 @AutoValue
 @Immutable
-abstract class StringLiteral extends Expression {
+public abstract class StringLiteral extends Expression {
 
   static Expression create(String literalValue) {
-    return new AutoValue_StringLiteral(literalValue);
+    return new AutoValue_StringLiteral(literalValue, QuoteStyle.SINGLE);
   }
 
-  abstract String literalValue();
+  static Expression create(String literalValue, QuoteStyle quoteStyle) {
+    return new AutoValue_StringLiteral(literalValue, quoteStyle);
+  }
+
+  public abstract String literalValue();
+
+  abstract QuoteStyle quoteStyle();
 
   @Override
   public boolean isCheap() {
@@ -45,15 +51,24 @@ abstract class StringLiteral extends Expression {
 
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
-    ctx.append(quoteAndEscape(literalValue(), ctx.getFormatOptions()));
+    if (ctx.stringNeedsQuotation()) {
+      String quoted = quoteAndEscape(literalValue(), ctx.getFormatOptions());
+      if (quoteStyle() == QuoteStyle.BACKTICK && quoted.contains("\n")) {
+        ctx.appendWithoutBreaks(quoted);
+      } else {
+        ctx.append(quoted);
+      }
+    } else {
+      ctx.append(literalValue());
+    }
   }
 
-  private static String quoteAndEscape(String literal, FormatOptions formatOptions) {
+  private String quoteAndEscape(String literal, FormatOptions formatOptions) {
     // Escape non-ASCII characters since browsers are inconsistent in how they interpret utf-8 in
     // JS source files.
     String escaped =
         BaseUtils.escapeToWrappedSoyString(
-            literal, formatOptions.htmlEscapeStrings(), QuoteStyle.SINGLE);
+            literal, formatOptions.htmlEscapeStrings(), quoteStyle());
 
     // </script in a JavaScript string will end the current script tag in most browsers. Escape the
     // forward slash in the string to get around this issue.
