@@ -2,8 +2,8 @@
 
 # Creating a Plugin
 
-**Warning:** For new custom functions, use an [external function](externs.md)
-instead of a plugin.
+**Warning:** The use of this is restricted. For new custom functions, use an
+[external function](externs.md) instead of a plugin.
 
 Soy allows users to write custom functions that templates can call. This is
 useful for when there is some logic that is difficult or impossible to express
