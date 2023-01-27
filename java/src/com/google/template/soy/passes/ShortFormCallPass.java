@@ -39,12 +39,12 @@ import com.google.template.soy.types.TemplateType;
 
 /** Rewrites short form calls to call nodes. */
 @RunAfter({ResolveExpressionTypesPass.class, FinalizeTemplateRegistryPass.class})
-final class ShortFormCallPass implements CompilerFileSetPass {
+public final class ShortFormCallPass implements CompilerFileSetPass {
 
   private final ErrorReporter errorReporter;
   private final AstRewrites astRewrites;
 
-  ShortFormCallPass(AstRewrites astRewrites, ErrorReporter errorReporter) {
+  public ShortFormCallPass(AstRewrites astRewrites, ErrorReporter errorReporter) {
     this.errorReporter = errorReporter;
     this.astRewrites = astRewrites;
   }
