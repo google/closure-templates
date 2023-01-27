@@ -17,9 +17,7 @@
 package com.google.template.soy.jbcsrc.shared;
 
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
-import java.lang.reflect.Method;
 import java.util.List;
 
 /**
@@ -27,8 +25,6 @@ import java.util.List;
  * for running the java code.
  */
 public final class LegacyFunctionAdapter {
-  public static final Method METHOD =
-      JavaValueFactory.createMethod(LegacyFunctionAdapter.class, "computeForJava", List.class);
 
   private final SoyJavaFunction legacyFn;
 

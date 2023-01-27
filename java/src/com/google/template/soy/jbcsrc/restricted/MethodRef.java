@@ -608,9 +608,6 @@ public abstract class MethodRef {
 
   public static final MethodRef CLOSEABLE_CLOSE = MethodRef.create(Closeable.class, "close");
 
-  public static final MethodRef LEGACY_ADAPTER_COMPUTE =
-      MethodRef.create(LegacyFunctionAdapter.METHOD);
-
   public static final MethodRef PROTOCOL_ENUM_GET_NUMBER =
       MethodRef.create(ProtocolMessageEnum.class, "getNumber").asCheap();
 
