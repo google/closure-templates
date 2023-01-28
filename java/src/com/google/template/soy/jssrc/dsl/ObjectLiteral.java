@@ -37,7 +37,9 @@ abstract class ObjectLiteral extends Expression {
   }
 
   private static boolean isSpread(Expression e) {
-    return e instanceof Leaf && ((Leaf) e).value().getText().startsWith(SPREAD_PREFIX);
+    return (e instanceof Leaf && ((Leaf) e).value().getText().startsWith(SPREAD_PREFIX))
+        || (e instanceof StringLiteral
+            && ((StringLiteral) e).literalValue().startsWith(SPREAD_PREFIX));
   }
 
   abstract ImmutableMap<Expression, Expression> values();
