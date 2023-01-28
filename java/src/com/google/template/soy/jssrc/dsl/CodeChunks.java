@@ -18,9 +18,12 @@ package com.google.template.soy.jssrc.dsl;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /** Utility methods for working with CodeChunks. */
 public final class CodeChunks {
@@ -69,5 +72,29 @@ public final class CodeChunks {
                   }
                 })
             .collect(toImmutableList()));
+  }
+
+  public static Expression concatAsObjectLiteral(List<CodeChunk> chunks) {
+    Map<String, Expression> map = new HashMap<>();
+    flatten(chunks.stream())
+        .forEach(
+            c -> {
+              if (c instanceof HtmlAttribute) {
+                HtmlAttribute htmlAttribute = (HtmlAttribute) c;
+                map.put(
+                    htmlAttribute.name(),
+                    htmlAttribute.value() != null
+                        ? htmlAttribute.value()
+                        : Expressions.LITERAL_TRUE);
+              } else {
+                map.put(Expressions.objectLiteralSpreadKey(), (Expression) c);
+              }
+            });
+    return Expressions.objectLiteralWithQuotedKeys(map);
+  }
+
+  public static Stream<CodeChunk> flatten(Stream<CodeChunk> chunk) {
+    return chunk.flatMap(
+        c -> c instanceof Concatenation ? ((Concatenation) c).childrenStream() : Stream.of(c));
   }
 }
