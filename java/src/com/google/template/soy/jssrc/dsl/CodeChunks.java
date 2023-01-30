@@ -18,7 +18,7 @@ package com.google.template.soy.jssrc.dsl;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -75,7 +75,7 @@ public final class CodeChunks {
   }
 
   public static Expression concatAsObjectLiteral(List<CodeChunk> chunks) {
-    Map<String, Expression> map = new HashMap<>();
+    Map<String, Expression> map = new LinkedHashMap<>();
     flatten(chunks.stream())
         .forEach(
             c -> {
