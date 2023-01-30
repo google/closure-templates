@@ -60,7 +60,7 @@ import java.util.List;
           parameterTypes = {"string", "int"},
           returnType = "int|null")
     })
-public final class ParseIntFunction
+final class ParseIntFunction
     implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPythonSourceFunction {
   @Override
   public JavaScriptValue applyForJavaScriptSource(

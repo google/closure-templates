@@ -53,7 +53,7 @@ import java.util.List;
             parameterTypes = {"string"},
             // TODO(b/70946095): should be nullable
             returnType = "float"))
-public final class ParseFloatFunction
+final class ParseFloatFunction
     implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPythonSourceFunction {
   @Override
   public JavaScriptValue applyForJavaScriptSource(

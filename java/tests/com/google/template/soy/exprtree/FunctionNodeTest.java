@@ -23,7 +23,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.QuoteStyle;
-import com.google.template.soy.basicfunctions.RoundFunction;
+import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
@@ -34,9 +34,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-/**
- * Unit tests for FunctionNode.
- */
+/** Unit tests for FunctionNode. */
 @RunWith(JUnit4.class)
 public final class FunctionNodeTest {
 
@@ -45,7 +43,7 @@ public final class FunctionNodeTest {
     FunctionNode fn =
         FunctionNode.newPositional(
             Identifier.create("round", SourceLocation.UNKNOWN),
-            new RoundFunction(),
+            new SoySourceFunction() {},
             SourceLocation.UNKNOWN);
     fn.addChild(new FloatNode(3.14159, SourceLocation.UNKNOWN));
     fn.addChild(new IntegerNode(2, SourceLocation.UNKNOWN));

@@ -42,7 +42,7 @@ import java.util.List;
             returnType = "number",
             parameterTypes = {"number", "number"}))
 @SoyPureFunction
-public class PowFunction
+class PowFunction
     implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPythonSourceFunction {
 
   @Override

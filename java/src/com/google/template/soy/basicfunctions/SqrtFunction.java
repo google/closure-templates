@@ -42,7 +42,7 @@ import java.util.List;
             returnType = "number",
             parameterTypes = {"number"}))
 @SoyPureFunction
-public class SqrtFunction
+class SqrtFunction
     implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPythonSourceFunction {
 
   @Override

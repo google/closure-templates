@@ -35,9 +35,7 @@ import com.google.template.soy.shared.restricted.SoyPureFunction;
 import java.lang.reflect.Method;
 import java.util.List;
 
-/**
- * Soy function that takes the floor of a number.
- */
+/** Soy function that takes the floor of a number. */
 @SoyPureFunction
 @SoyFunctionSignature(
     name = "floor",
@@ -45,7 +43,7 @@ import java.util.List;
         @Signature(
             parameterTypes = {"number"},
             returnType = "int"))
-public final class FloorFunction
+final class FloorFunction
     implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPythonSourceFunction {
 
   @Override

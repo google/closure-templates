@@ -55,7 +55,7 @@ import java.util.List;
           parameterTypes = {"?", "?"}),
     })
 @SoyPureFunction
-public final class RoundFunction
+final class RoundFunction
     implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPythonSourceFunction {
 
   @Override
