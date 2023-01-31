@@ -1127,7 +1127,6 @@ public final class SoyFileSet {
   /**
    * Compiles this Soy file set into code that pulls in IDOM source in a mod to replace SoyJS
    *
-   * @param jsSrcOptions The compilation options for the JS Src output target.
    * @return A list of strings where each string represents the JS source code that belongs in one
    *     JS file. The generated JS files correspond one-to-one to the original Soy source files.
    * @throws SoyCompilationException If compilation fails.

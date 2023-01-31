@@ -32,7 +32,7 @@ import java.util.function.Supplier;
   // Also ElementAttributePass.class but that pass may not run depending on settings.
   SoyElementPass.class // Calls setHtmlElementMetadata
 })
-class FinalizeTemplateRegistryPass implements CompilerFileSetPass {
+public class FinalizeTemplateRegistryPass implements CompilerFileSetPass {
 
   private final ErrorReporter errorReporter;
   private final Supplier<FileSetMetadata> registryFromDeps;

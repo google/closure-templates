@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.stream.Collectors.joining;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -79,14 +80,15 @@ import javax.annotation.Nullable;
 public final class PassManager {
 
   /**
-   * Pass continuation rules.
-   *
-   * <p>These rules are used when running compile passes. You can stop compilation either before or
-   * after a pass. By default, compilation continues after each pass without stopping.
+   * Pass continuation rules. By default, compilation continues after each pass without stopping.
    */
   public enum PassContinuationRule {
+    /** Stops compilation immediately before a pass. */
     STOP_BEFORE_PASS,
+    /** Stops compilation immediately after a pass. */
     STOP_AFTER_PASS,
+    /** Runs a particular pass even after compilation has stopped due to one of the other rules. */
+    RUN_AFTER_STOPPING
   }
 
   /** State used for inter-pass communication, without modifying the AST. */
@@ -650,22 +652,27 @@ public final class PassManager {
       PassBuilder add(CompilerFileSetPass pass) {
         Class<?> passClass = pass.getClass();
         PassContinuationRule rule = passContinuationRegistry.remove(passClass);
-        if (!building) {
-          return this;
-        }
         if (rule == null) {
-          builder.add(pass);
-          return this;
-        }
-        switch (rule) {
-          case STOP_AFTER_PASS:
+          if (building) {
             builder.add(pass);
-            // fall-through
-          case STOP_BEFORE_PASS:
-            building = false;
-            return this;
+          }
+        } else {
+          switch (rule) {
+            case STOP_AFTER_PASS:
+              builder.add(pass);
+              // fall-through
+            case STOP_BEFORE_PASS:
+              Preconditions.checkState(building, "Multiple STOP rules not allowed.");
+              building = false;
+              break;
+            case RUN_AFTER_STOPPING:
+              Preconditions.checkState(
+                  !building, "Unnecessary RUN_AFTER_STOPPING rule for %s", passClass.getName());
+              builder.add(pass);
+              break;
+          }
         }
-        throw new AssertionError("unhandled rule: " + rule);
+        return this;
       }
 
       ImmutableList<CompilerFileSetPass> build() {
