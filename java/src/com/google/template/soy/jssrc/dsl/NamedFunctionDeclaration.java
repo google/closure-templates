@@ -100,7 +100,6 @@ public abstract class NamedFunctionDeclaration extends Statement {
     if (!isDeclaration()) {
       ctx.append(" ");
       ctx.enterBlock();
-      ctx.endLine();
       for (Statement stmt : bodyStmts()) {
         ctx.appendAll(stmt);
         ctx.endLine();

@@ -59,6 +59,6 @@ public abstract class File extends Statement {
       }
       ctx.appendAll(child);
     }
-    ctx.appendBlankLine();
+    ctx.endLine().append("");
   }
 }
