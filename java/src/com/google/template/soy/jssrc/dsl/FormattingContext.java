@@ -142,7 +142,7 @@ class FormattingContext implements AutoCloseable {
   FormattingContext append(String stuff) {
     if (!stuff.equals(";")) {
       maybeBreakLineInsideTsxElement(stuff);
-      maybeIndent(/* nextCharIsSpace= */ !stuff.isEmpty() && stuff.charAt(0) == ' ');
+      maybeIndent(stuff.isEmpty() ? '\0' : stuff.charAt(0));
     }
     buf.append(stuff);
     return this;
@@ -151,7 +151,7 @@ class FormattingContext implements AutoCloseable {
   @CanIgnoreReturnValue
   FormattingContext append(char c) {
     maybeBreakLineInsideTsxElement(Character.toString(c));
-    maybeIndent(c == ' ');
+    maybeIndent(c);
     buf.append(c);
     return this;
   }
@@ -187,7 +187,7 @@ class FormattingContext implements AutoCloseable {
 
   void appendBlankLine() {
     endLine();
-    append("");
+    append("\n");
     endLine();
   }
 
@@ -231,7 +231,7 @@ class FormattingContext implements AutoCloseable {
 
   @CanIgnoreReturnValue
   FormattingContext enterBlock() {
-    maybeIndent(/* nextCharIsSpace= */ false);
+    maybeIndent('{');
     buf.append('{');
     increaseIndent();
     endLine();
@@ -245,7 +245,7 @@ class FormattingContext implements AutoCloseable {
    */
   @CanIgnoreReturnValue
   FormattingContext enterCaseBody() {
-    maybeIndent(false);
+    maybeIndent('\0');
     increaseIndent();
     endLine();
     curScope = new Scope(curScope, /* emitClosingBrace= */ false);
@@ -296,19 +296,22 @@ class FormattingContext implements AutoCloseable {
   /**
    * If this is the first call to {@link #append} since the last {@link #endLine}, writes the
    * newline and leading indentation.
-   *
-   * @param nextCharIsSpace Whether the first charater of the appended content will be a space char.
    */
-  private void maybeIndent(boolean nextCharIsSpace) {
-    boolean prevCharIsSpace = buf.length() > 0 && (buf.charAt(buf.length() - 1) == ' ');
+  private void maybeIndent(char nextChar) {
+    char lastChar = getLastChar();
     // TSX safeguard: it's never safe to break a line when there's a space character at the join
     // location.
-    if (formatOptions.useTsxLineBreaks() && (nextCharIsSpace || prevCharIsSpace)) {
+    if (formatOptions.useTsxLineBreaks() && (nextChar == ' ' || lastChar == ' ')) {
       nextAppendShouldStartNewLine = false;
     }
 
     if (nextAppendShouldStartNewLine) {
-      buf.append('\n').append(curIndent);
+      if (lastChar != '\n') {
+        buf.append('\n');
+      }
+      if (nextChar != '\n') {
+        buf.append(curIndent);
+      }
       nextAppendShouldStartNewLine = false;
     }
   }

@@ -85,7 +85,6 @@ public class TsArrowFunction extends Expression implements Expression.InitialSta
       ctx.appendOutputExpression(singleExpression);
     } else {
       ctx.enterBlock();
-      ctx.endLine();
       for (CodeChunk stmt : bodyStmts) {
         ctx.appendAll(stmt);
         ctx.endLine();

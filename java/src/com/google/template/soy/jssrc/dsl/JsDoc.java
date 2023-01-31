@@ -200,6 +200,7 @@ public abstract class JsDoc extends CodeChunk implements CodeChunk.HasRequires {
       ctx.endLine();
     }
     ctx.append(" */");
+    ctx.endLine();
   }
 
   /**

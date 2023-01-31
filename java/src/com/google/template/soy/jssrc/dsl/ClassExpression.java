@@ -68,8 +68,7 @@ public abstract class ClassExpression extends Expression
     try (FormattingContext ignored = ctx.enterBlock()) {
       for (int i = 0; i < methods().size(); i++) {
         if (i > 0) {
-          ctx.append('\n');
-          ctx.endLine();
+          ctx.appendBlankLine();
         }
         ctx.appendOutputExpression(methods().get(i));
       }
