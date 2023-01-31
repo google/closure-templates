@@ -54,7 +54,7 @@ final class ErrorReporterImpl extends ErrorReporter {
   }
 
   @Override
-  protected ImmutableList<SoyError> getReports() {
+  public ImmutableList<SoyError> getReports() {
     return reports.stream().map(r -> r.asSoyError(filePathsToSuppliers)).collect(toImmutableList());
   }
 

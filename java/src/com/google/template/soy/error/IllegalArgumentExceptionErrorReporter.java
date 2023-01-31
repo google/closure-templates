@@ -38,20 +38,10 @@ class IllegalArgumentExceptionErrorReporter extends ErrorReporter {
   }
 
   @Override
-  int getCurrentNumberOfErrors() {
-    return 0;
-  }
-
-  @Override
-  int getCurrentNumberOfReports() {
-    return 0;
-  }
-
-  @Override
   public void copyTo(ErrorReporter other) {}
 
   @Override
-  protected ImmutableList<SoyError> getReports() {
+  public ImmutableList<SoyError> getReports() {
     return ImmutableList.of();
   }
 }

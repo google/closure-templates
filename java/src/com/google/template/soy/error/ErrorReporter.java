@@ -180,13 +180,17 @@ public abstract class ErrorReporter {
    * reported.
    */
   @ForOverride
-  abstract int getCurrentNumberOfErrors();
+  int getCurrentNumberOfErrors() {
+    return (int) getReports().stream().filter(r -> !r.isWarning()).count();
+  }
 
   @ForOverride
-  abstract int getCurrentNumberOfReports();
+  int getCurrentNumberOfReports() {
+    return getReports().size();
+  }
 
   /** Returns all the errors reported so far. */
-  protected abstract ImmutableList<SoyError> getReports();
+  public abstract ImmutableList<SoyError> getReports();
 
   protected ImmutableList<SoyError> getReports(int from, int to) {
     return getReports().subList(from, to);

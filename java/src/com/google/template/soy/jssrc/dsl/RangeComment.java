@@ -44,7 +44,35 @@ public abstract class RangeComment extends Statement {
   }
 
   @Override
+  public Expression asExpr() {
+    return new StatementExpression(this);
+  }
+
+  @Override
   Stream<? extends CodeChunk> childrenStream() {
     return Stream.empty();
+  }
+
+  private static final class StatementExpression extends Expression {
+    private final Statement statement;
+
+    public StatementExpression(Statement statement) {
+      this.statement = statement;
+    }
+
+    @Override
+    void doFormatOutputExpr(FormattingContext ctx) {
+      ctx.appendAll(statement);
+    }
+
+    @Override
+    Stream<? extends CodeChunk> childrenStream() {
+      return statement.childrenStream();
+    }
+
+    @Override
+    public boolean isCheap() {
+      return true;
+    }
   }
 }
