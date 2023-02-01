@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-import SanitizedContentKind from 'goog:goog.soy.data.SanitizedContentKind'; // from //third_party/javascript/closure/soy:data
 import {ordainSanitizedHtml} from 'goog:soydata.VERY_UNSAFE';  // from //javascript/template/soy:soy_usegoog_js
 import {isAttribute} from 'google3/javascript/template/soy/checks';
 import * as soy from 'google3/javascript/template/soy/soyutils_usegoog';
+import {SanitizedContentKind} from 'google3/third_party/javascript/closure/soy/data';
 
 import {IncrementalDomRenderer} from './api_idom';
 import {IdomFunction} from './element_lib_idom';

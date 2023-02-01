@@ -5,11 +5,11 @@
 
 import './skiphandler';
 
-import SanitizedContentKind from 'goog:goog.soy.data.SanitizedContentKind'; // from //third_party/javascript/closure/soy:data
 import {Logger} from 'google3/javascript/template/soy/soyutils_velog';
 import {assert, assertExists} from 'google3/third_party/javascript/closure/asserts/asserts';
 import {IDisposable} from 'google3/third_party/javascript/closure/disposable/idisposable';
 import {SafeHtml} from 'google3/third_party/javascript/closure/html/safehtml';
+import {SanitizedContentKind} from 'google3/third_party/javascript/closure/soy/data';
 
 import {IncrementalDomRenderer, patchOuter} from './api_idom';
 import {isTaggedForSkip} from './global';

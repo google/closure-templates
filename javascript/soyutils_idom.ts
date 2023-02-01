@@ -15,15 +15,13 @@
  * limitations under the License.
  */
 
-import SanitizedHtml from 'goog:goog.soy.data.SanitizedHtml'; // from //third_party/javascript/closure/soy:data
-import SanitizedHtmlAttribute from 'goog:goog.soy.data.SanitizedHtmlAttribute'; // from //third_party/javascript/closure/soy:data
 import {ordainSanitizedHtml} from 'goog:soydata.VERY_UNSAFE';  // from //javascript/template/soy:soy_usegoog_js
 import {isAttribute} from 'google3/javascript/template/soy/checks';
 import * as soy from 'google3/javascript/template/soy/soyutils_usegoog';
 import {Logger} from 'google3/javascript/template/soy/soyutils_velog';
 import {cacheReturnValue} from 'google3/third_party/javascript/closure/functions/functions';
 import {SafeHtml} from 'google3/third_party/javascript/closure/html/safehtml';
-import {SanitizedContent, SanitizedContentKind} from 'google3/third_party/javascript/closure/soy/data';
+import {SanitizedContent, SanitizedContentKind, SanitizedHtml, SanitizedHtmlAttribute} from 'google3/third_party/javascript/closure/soy/data';
 import * as googSoy from 'google3/third_party/javascript/closure/soy/soy';
 import * as incrementaldom from 'incrementaldom';  // from //third_party/javascript/incremental_dom:incrementaldom
 
