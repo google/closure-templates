@@ -31,7 +31,7 @@ import java.util.function.Supplier;
 
 /** Checks that all calls are to direct, and not indirect, deps. */
 @RunAfter(SoyConformancePass.class) // not really needed
-public final class CheckIndirectDepsPass implements CompilerFileSetPass {
+final class CheckIndirectDepsPass implements CompilerFileSetPass {
 
   private static final SoyErrorKind CALL_TO_INDIRECT_DEPENDENCY =
       SoyErrorKind.of(

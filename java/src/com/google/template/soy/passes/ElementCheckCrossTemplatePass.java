@@ -34,7 +34,7 @@ import java.util.stream.Stream;
 
 /** Validates the contents included in the root tag of an element template. */
 @RunAfter(ResolveExpressionTypesCrossTemplatePass.class)
-public final class ElementCheckCrossTemplatePass implements CompilerFileSetPass {
+final class ElementCheckCrossTemplatePass implements CompilerFileSetPass {
 
   private static final SoyErrorKind BAD_CONTENT_IN_ROOT_ELM =
       SoyErrorKind.of("Only attributes are allowed inside the root element.");

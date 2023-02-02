@@ -138,7 +138,7 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
 
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
     for (TemplateNode template : file.getTemplates()) {
-      if (astRewrites == AstRewrites.ALL) {
+      if (astRewrites.isAll()) {
         for (HtmlTagNode tagNode : SoyTreeUtils.getAllNodesOfType(template, HtmlTagNode.class)) {
           process(template, tagNode, nodeIdGen);
         }

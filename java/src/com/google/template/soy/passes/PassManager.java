@@ -87,8 +87,6 @@ public final class PassManager {
     STOP_BEFORE_PASS,
     /** Stops compilation immediately after a pass. */
     STOP_AFTER_PASS,
-    /** Runs a particular pass even after compilation has stopped due to one of the other rules. */
-    RUN_AFTER_STOPPING
   }
 
   /** State used for inter-pass communication, without modifying the AST. */
@@ -195,13 +193,58 @@ public final class PassManager {
   /** See {@link Builder#astRewrites}. */
   public enum AstRewrites {
     /** No AST rewrites whatsoever. */
-    NONE,
+    NONE {
+      @Override
+      boolean isNone() {
+        return true;
+      }
+    },
+
     /** Enough AST rewrites for Kythe analysis to work. */
     KYTHE,
+
     /** Enough AST rewrites for Tricorder analysis to work. */
-    TRICORDER,
+    TRICORDER {
+      @Override
+      public boolean rewriteShortFormCalls() {
+        // It is OK for Kythe to depend on the rewritten call nodes since they have appropriate
+        // source locations to map back to the original template. For tricorder fixes, we need
+        // to make sure that we are only rewriting human-written call nodes.
+        return false;
+      }
+    },
+
+    /** Enough AST rewrites for TSX transpilation to work. */
+    TSX {
+      @Override
+      boolean combineTextNodes() {
+        return false;
+      }
+    },
+
     /** All the AST rewrites. */
-    ALL;
+    ALL {
+      @Override
+      boolean isAll() {
+        return true;
+      }
+    };
+
+    boolean combineTextNodes() {
+      return true;
+    }
+
+    boolean isAll() {
+      return false;
+    }
+
+    boolean isNone() {
+      return false;
+    }
+
+    public boolean rewriteShortFormCalls() {
+      return !isNone();
+    }
   }
 
   /** A builder for configuring the pass manager. */
@@ -408,7 +451,7 @@ public final class PassManager {
     public Builder addPassContinuationRule(
         Class<? extends CompilerPass> pass, PassContinuationRule rule) {
       checkNotNull(rule);
-      passContinuationRegistry.put(pass, rule);
+      Preconditions.checkState(passContinuationRegistry.put(pass, rule) == null);
       return this;
     }
 
@@ -426,7 +469,7 @@ public final class PassManager {
       PassBuilder passes =
           new PassBuilder()
               .add(new CheckGeneratedSourcesPass(errorReporter, generatedPathsToCheck));
-      if (astRewrites == AstRewrites.ALL) {
+      if (astRewrites.isAll()) {
         passes
             .add(new ContentSecurityPolicyNonceInjectionPass(errorReporter))
             // Needs to come after ContentSecurityPolicyNonceInjectionPass.
@@ -459,7 +502,7 @@ public final class PassManager {
       }
 
       // Must come after ResolvePluginsPass.
-      if (astRewrites == AstRewrites.ALL) {
+      if (astRewrites.isAll()) {
         passes
             .add(new RewriteDirectivesCallableAsFunctionsPass(errorReporter))
             .add(new RewriteRemaindersPass(errorReporter))
@@ -477,7 +520,7 @@ public final class PassManager {
           .add(new UnknownJsGlobalPass(allowUnknownJsGlobals, errorReporter))
           .add(new ResolveNamesPass(errorReporter))
           .add(new ResolveDottedImportsPass(errorReporter, registry));
-      if (astRewrites != AstRewrites.NONE) {
+      if (!astRewrites.isNone()) {
         passes.add(new ResolveTemplateFunctionsPass());
       }
       passes.add(new ResolveTemplateNamesPass(errorReporter));
@@ -487,7 +530,7 @@ public final class PassManager {
         passes.add(new ValidateVariantExpressionsPass(errorReporter));
       }
       // needs to be after ResolveNames and MsgsPass
-      if (astRewrites == AstRewrites.ALL) {
+      if (astRewrites.isAll()) {
         passes.add(new MsgWithIdFunctionPass(errorReporter));
       }
 
@@ -500,7 +543,7 @@ public final class PassManager {
         // and before ResolveExpressionTypesPass (since we insert expressions).
         passes.add(new AddDebugAttributesPass());
       }
-      if (astRewrites == AstRewrites.ALL) {
+      if (astRewrites.isAll()) {
         passes.add(
             new ElementAttributePass(
                 errorReporter, accumulatedState::registryFromDeps, desugarIdomFeatures));
@@ -522,9 +565,11 @@ public final class PassManager {
             // and types of non-null assertion operators.
             .add(new SimplifyAssertNonNullPass())
             // Must run after ResolveExpressionTypesPass to use allowedToInvokeAsFunction
-            .add(new TemplateCallMetadataPass(errorReporter))
-            .add(new VeLogRewritePass())
-            .add(new CheckModifiableTemplatesPass(errorReporter));
+            .add(new TemplateCallMetadataPass(errorReporter));
+        if (astRewrites.isAll()) {
+          passes.add(new VeLogRewritePass());
+        }
+        passes.add(new CheckModifiableTemplatesPass(errorReporter));
       }
       passes.add(new CheckAllFunctionsResolvedPass(pluginResolver));
 
@@ -541,7 +586,8 @@ public final class PassManager {
           .add(new KeyCommandPass(errorReporter, disableAllTypeChecking))
           .add(new IncrementalDomKeysPass(errorReporter));
 
-      if (!disableAllTypeChecking) {
+      if (!disableAllTypeChecking && astRewrites.isAll()) {
+        // Can't run this pass without VeLogRewritePass.
         passes.add(new VeLogValidationPass(errorReporter, registry));
       }
       // Cross template checking passes
@@ -563,9 +609,7 @@ public final class PassManager {
       // others.
       passes.add(new SoyConformancePass(conformanceConfig, errorReporter));
       if (!disableAllTypeChecking) {
-        passes.add(
-            new ResolveExpressionTypesCrossTemplatePass(
-                errorReporter, astRewrites == AstRewrites.ALL));
+        passes.add(new ResolveExpressionTypesCrossTemplatePass(errorReporter, astRewrites.isAll()));
       }
       passes.add(new CheckTemplateHeaderVarsPass(errorReporter, accumulatedState::registryFull));
       if (!disableAllTypeChecking) {
@@ -573,22 +617,27 @@ public final class PassManager {
             .add(
                 new EnforceExperimentalFeaturesPass(
                     options.getExperimentalFeatures(), errorReporter))
-            .add(new CheckTemplateCallsPass(errorReporter, accumulatedState::registryFull))
-            .add(new ShortFormCallPass(astRewrites, errorReporter))
+            .add(new CheckTemplateCallsPass(errorReporter, accumulatedState::registryFull));
+        if (astRewrites.rewriteShortFormCalls()) {
+          passes.add(new ShortFormCallPass(errorReporter));
+        }
+        passes
             .add(new ElementCheckCrossTemplatePass(errorReporter))
             .add(new CheckValidVarrefsPass(errorReporter))
             .add(new CheckTemplateVisibilityPass(errorReporter, accumulatedState::registryFull))
             .add(new CheckDelegatesPass(errorReporter, accumulatedState::registryFull))
             .add(
                 new CheckIndirectDepsPass(errorReporter, registry, accumulatedState::registryFull));
-        if (desugarIdomFeatures && astRewrites == AstRewrites.ALL) {
+        if (desugarIdomFeatures && astRewrites.isAll()) {
           // always desugar before the end since the backends (besides incremental dom) cannot
           // handle
           // the nodes.
           passes.add(new DesugarStateNodesPass());
         }
+        if (astRewrites.combineTextNodes()) {
+          passes.add(new CombineConsecutiveRawTextNodesPass());
+        }
         passes
-            .add(new CombineConsecutiveRawTextNodesPass())
             .add(
                 new AutoescaperPass(
                     errorReporter,
@@ -603,14 +652,16 @@ public final class PassManager {
                     accumulatedState::registryFull,
                     desugarIdomFeatures));
       } else {
-        passes
-            .add(new CombineConsecutiveRawTextNodesPass())
-            .add(
-                new AutoescaperPass(
-                    errorReporter,
-                    soyPrintDirectives,
-                    insertEscapingDirectives,
-                    accumulatedState::registryFull));
+        if (astRewrites.combineTextNodes()) {
+
+          passes.add(new CombineConsecutiveRawTextNodesPass());
+        }
+        passes.add(
+            new AutoescaperPass(
+                errorReporter,
+                soyPrintDirectives,
+                insertEscapingDirectives,
+                accumulatedState::registryFull));
       }
       passes.add(new CallAnnotationPass());
 
@@ -633,9 +684,10 @@ public final class PassManager {
       }
       // DesugarHtmlNodesPass may chop up RawTextNodes, and OptimizationPass may produce additional
       // RawTextNodes. Stich them back together here.
-      passes
-          .add(new CombineConsecutiveRawTextNodesPass())
-          .add(new BanDuplicateNamespacesPass(errorReporter, accumulatedState::registryFull));
+      if (astRewrites.combineTextNodes()) {
+        passes.add(new CombineConsecutiveRawTextNodesPass());
+      }
+      passes.add(new BanDuplicateNamespacesPass(errorReporter, accumulatedState::registryFull));
       building = false;
       if (!passContinuationRegistry.isEmpty()) {
         throw new IllegalStateException(
@@ -664,11 +716,6 @@ public final class PassManager {
             case STOP_BEFORE_PASS:
               Preconditions.checkState(building, "Multiple STOP rules not allowed.");
               building = false;
-              break;
-            case RUN_AFTER_STOPPING:
-              Preconditions.checkState(
-                  !building, "Unnecessary RUN_AFTER_STOPPING rule for %s", passClass.getName());
-              builder.add(pass);
               break;
           }
         }

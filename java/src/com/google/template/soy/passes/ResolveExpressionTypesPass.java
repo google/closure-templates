@@ -213,7 +213,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 /** Visitor which resolves all expression types. */
-public final class ResolveExpressionTypesPass implements CompilerFileSetPass.TopologicallyOrdered {
+final class ResolveExpressionTypesPass implements CompilerFileSetPass.TopologicallyOrdered {
   // Constant type resolution requires topological ordering of inputs.
 
   // Keep in alphabetical order.

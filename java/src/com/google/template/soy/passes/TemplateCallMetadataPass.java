@@ -66,7 +66,7 @@ import java.util.Optional;
   // Required to use allowedToInvokeAsFunction() to identify short form template calls
   ResolveExpressionTypesPass.class,
 })
-public final class TemplateCallMetadataPass implements CompilerFileSetPass {
+final class TemplateCallMetadataPass implements CompilerFileSetPass {
 
   private ErrorReporter errorReporter;
 

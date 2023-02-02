@@ -22,7 +22,7 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 
 /** Removes expression group nodes (i.e. "(Expr)"), and replaces each with just the expression. */
-public final class DesugarGroupNodesPass implements CompilerFilePass {
+final class DesugarGroupNodesPass implements CompilerFilePass {
 
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {

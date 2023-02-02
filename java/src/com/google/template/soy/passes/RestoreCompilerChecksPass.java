@@ -34,7 +34,7 @@ import com.google.template.soy.soytree.SoyTreeUtils;
  */
 @RunAfter(RestoreGlobalsPass.class)
 @RunBefore(ResolveTemplateNamesPass.class)
-public final class RestoreCompilerChecksPass implements CompilerFilePass {
+final class RestoreCompilerChecksPass implements CompilerFilePass {
 
   private static final SoyErrorKind MUST_BE_DOLLAR_IDENT =
       SoyErrorKind.of("Name must begin with a ''$''.");

@@ -32,7 +32,7 @@ import com.google.template.soy.soytree.SoyFileNode;
  * Visitor which resolves all variable and parameter references to point to the corresponding
  * declaration object.
  */
-public final class ResolveNamesPass implements CompilerFilePass {
+final class ResolveNamesPass implements CompilerFilePass {
 
   private static final SoyErrorKind GLOBAL_MATCHES_VARIABLE =
       SoyErrorKind.of(

@@ -142,18 +142,18 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
       SoyErrorKind.of("Element calls require all children to be <parameter> elements.");
 
   private final ErrorReporter errorReporter;
-  private final boolean astRewrites;
+  private final boolean rewriteDynamicTags;
 
-  ResolveExpressionTypesCrossTemplatePass(ErrorReporter errorReporter, boolean astRewrites) {
+  ResolveExpressionTypesCrossTemplatePass(ErrorReporter errorReporter, boolean rewriteDynamicTags) {
     this.errorReporter = errorReporter;
-    this.astRewrites = astRewrites;
+    this.rewriteDynamicTags = rewriteDynamicTags;
   }
 
   @Override
   public Result run(ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator) {
     for (SoyFileNode file : sourceFiles) {
       checkTemplateLiteralsUsedInExpr(file);
-      if (astRewrites) {
+      if (rewriteDynamicTags) {
         handleDynamicTagAndCheckForLegacyDynamicTags(file);
       }
     }

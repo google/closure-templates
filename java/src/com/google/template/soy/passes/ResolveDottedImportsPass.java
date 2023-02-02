@@ -63,7 +63,7 @@ import javax.annotation.Nullable;
 // Run before ResolveExpressionTypesPass to simplify that pass. I won't have to traverse dot
 // accesses on these types.
 @RunBefore(ResolveExpressionTypesPass.class)
-public final class ResolveDottedImportsPass implements CompilerFilePass {
+final class ResolveDottedImportsPass implements CompilerFilePass {
 
   private static final SoyErrorKind NO_SUCH_NESTED_TYPE =
       SoyErrorKind.of(

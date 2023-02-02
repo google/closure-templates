@@ -51,7 +51,7 @@ import java.util.TreeSet;
   ResolveTemplateNamesPass.class,
   ResolveUseVariantTypePass.class,
 })
-public final class ImportsPass implements CompilerFileSetPass {
+final class ImportsPass implements CompilerFileSetPass {
 
   private static final SoyErrorKind IMPORT_NOT_IN_DEPS =
       SoyErrorKind.of(

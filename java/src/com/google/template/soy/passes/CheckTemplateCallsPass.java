@@ -91,7 +91,7 @@ import java.util.function.Supplier;
  * <p>Note: This pass requires that the ResolveExpressionTypesPass has already been run.
  */
 @RunAfter(FinalizeTemplateRegistryPass.class)
-public final class CheckTemplateCallsPass implements CompilerFileSetPass {
+final class CheckTemplateCallsPass implements CompilerFileSetPass {
 
   static final SoyErrorKind ARGUMENT_TYPE_MISMATCH =
       SoyErrorKind.of(
@@ -379,7 +379,6 @@ public final class CheckTemplateCallsPass implements CompilerFileSetPass {
           // TODO(b/168852179): enforce that the correct set of properties are present
           if (!SoyTypes.isKindOrUnionOfKind(dataExpr.getType(), SoyType.Kind.RECORD)
               && dataExpr.getType().getKind() != SoyType.Kind.UNKNOWN
-              // We allow 'any' due to a convention in wiz components :(
               && dataExpr.getType().getKind() != SoyType.Kind.ANY) {
             errorReporter.report(
                 dataExpr.getSourceLocation(), INVALID_DATA_EXPR, dataExpr.getType());

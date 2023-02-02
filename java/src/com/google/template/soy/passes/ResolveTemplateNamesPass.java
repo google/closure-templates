@@ -45,7 +45,7 @@ import javax.annotation.Nullable;
 @RunBefore({
   SoyElementPass.class, // Needs {@link CallBasicNode#getCalleeName} to be resolved.
 })
-public final class ResolveTemplateNamesPass implements CompilerFileSetPass {
+final class ResolveTemplateNamesPass implements CompilerFileSetPass {
 
   private static final SoyErrorKind DATA_ATTRIBUTE_ONLY_ALLOWED_ON_STATIC_CALLS =
       SoyErrorKind.of("The `data` attribute is only allowed on static calls.");
