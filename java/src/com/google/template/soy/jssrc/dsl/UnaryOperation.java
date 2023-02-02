@@ -35,12 +35,9 @@ abstract class UnaryOperation extends Operation {
   abstract boolean isPrefix();
 
   static UnaryOperation create(Operator operator, Expression arg) {
-    // Operator.NOT is the only unary Soy operator whose text differs from its JS counterpart.
-    // Patch things up here.
-    String operatorString = (operator == Operator.NOT ? "!" : operator.getTokenString());
     return new AutoValue_UnaryOperation(
         Precedence.forSoyOperator(operator),
-        operatorString,
+        Operation.getOperatorToken(operator),
         arg,
         operator != Operator.ASSERT_NON_NULL);
   }

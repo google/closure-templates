@@ -16,11 +16,47 @@
 
 package com.google.template.soy.jssrc.dsl;
 
+import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.Operator.Associativity;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 
 /** Base class for representing a JavaScript operation. */
 abstract class Operation extends Expression {
+
+  public static String getOperatorToken(Operator soyOperator) {
+    switch (soyOperator) {
+      case NOT:
+        return "!";
+      case AND:
+        return "&&";
+      case OR:
+        return "||";
+      case NULL_COALESCING:
+        return "??";
+      case ASSERT_NON_NULL:
+      case NEGATIVE:
+      case TIMES:
+      case DIVIDE_BY:
+      case MOD:
+      case PLUS:
+      case MINUS:
+      case SHIFT_LEFT:
+      case SHIFT_RIGHT:
+      case LESS_THAN:
+      case GREATER_THAN:
+      case LESS_THAN_OR_EQUAL:
+      case GREATER_THAN_OR_EQUAL:
+      case EQUAL:
+      case NOT_EQUAL:
+      case BITWISE_AND:
+      case BITWISE_XOR:
+      case BITWISE_OR:
+        return soyOperator.getTokenString();
+      case CONDITIONAL:
+        throw new IllegalArgumentException("Not a single token.");
+    }
+    throw new AssertionError();
+  }
 
   abstract Precedence precedence();
 

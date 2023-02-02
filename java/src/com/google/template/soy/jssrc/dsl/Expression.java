@@ -16,6 +16,8 @@
 package com.google.template.soy.jssrc.dsl;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.template.soy.exprtree.Operator.AND;
+import static com.google.template.soy.exprtree.Operator.OR;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -186,7 +188,16 @@ public abstract class Expression extends CodeChunk {
    *     evaluates as true).
    */
   public final Expression and(Expression rhs, Generator codeGenerator) {
-    return BinaryOperation.and(this, rhs, codeGenerator);
+    // If rhs has no initial statements, use the JS && operator directly.
+    // It's already short-circuiting.
+    if (this.hasEquivalentInitialStatements(rhs)) {
+      return BinaryOperation.create(AND, this, rhs);
+    }
+    // Otherwise, generate explicit short-circuiting code.
+    // rhs should be evaluated only if lhs evaluates to true.
+    Expression tmp = codeGenerator.declarationBuilder().setMutable().setRhs(this).build().ref();
+    return Composite.create(
+        ImmutableList.of(Statements.ifStatement(tmp, tmp.assign(rhs).asStatement()).build()), tmp);
   }
 
   /**
@@ -198,7 +209,18 @@ public abstract class Expression extends CodeChunk {
    *     evaluates as false).
    */
   public final Expression or(Expression rhs, Generator codeGenerator) {
-    return BinaryOperation.or(this, rhs, codeGenerator);
+    // If rhs has no initial statements, use the JS || operator directly.
+    // It's already short-circuiting.
+    if (this.hasEquivalentInitialStatements(rhs)) {
+      return BinaryOperation.create(OR, this, rhs);
+    }
+    // Otherwise, generate explicit short-circuiting code.
+    // rhs should be evaluated only if lhs evaluates to false.
+    Expression tmp = codeGenerator.declarationBuilder().setMutable().setRhs(this).build().ref();
+    return Composite.create(
+        ImmutableList.of(
+            Statements.ifStatement(Expressions.not(tmp), tmp.assign(rhs).asStatement()).build()),
+        tmp);
   }
 
   public final Expression op(Operator op, Expression rhs) {

@@ -16,12 +16,7 @@
 
 package com.google.template.soy.jssrc.dsl;
 
-import static com.google.template.soy.exprtree.Operator.AND;
-import static com.google.template.soy.exprtree.Operator.OR;
-
 import com.google.auto.value.AutoValue;
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.Operator.Associativity;
@@ -38,10 +33,8 @@ abstract class BinaryOperation extends Operation {
   abstract Expression arg2();
 
   static Expression create(Operator operator, Expression arg1, Expression arg2) {
-    Preconditions.checkState(operator != AND, "use BinaryOperation::and");
-    Preconditions.checkState(operator != OR, "use BinaryOperation::or");
     return create(
-        operator.getTokenString(),
+        Operation.getOperatorToken(operator),
         Precedence.forSoyOperator(operator),
         operator.getAssociativity(),
         arg1,
@@ -55,34 +48,6 @@ abstract class BinaryOperation extends Operation {
       Expression arg1,
       Expression arg2) {
     return new AutoValue_BinaryOperation(precedence, associativity, operator, arg1, arg2);
-  }
-
-  static Expression and(Expression lhs, Expression rhs, CodeChunk.Generator codeGenerator) {
-    // If rhs has no initial statements, use the JS && operator directly.
-    // It's already short-circuiting.
-    if (lhs.hasEquivalentInitialStatements(rhs)) {
-      return create("&&", Precedence.forSoyOperator(AND), AND.getAssociativity(), lhs, rhs);
-    }
-    // Otherwise, generate explicit short-circuiting code.
-    // rhs should be evaluated only if lhs evaluates to true.
-    Expression tmp = codeGenerator.declarationBuilder().setMutable().setRhs(lhs).build().ref();
-    return Composite.create(
-        ImmutableList.of(Statements.ifStatement(tmp, tmp.assign(rhs).asStatement()).build()), tmp);
-  }
-
-  static Expression or(Expression lhs, Expression rhs, CodeChunk.Generator codeGenerator) {
-    // If rhs has no initial statements, use the JS || operator directly.
-    // It's already short-circuiting.
-    if (lhs.hasEquivalentInitialStatements(rhs)) {
-      return create("||", Precedence.forSoyOperator(OR), OR.getAssociativity(), lhs, rhs);
-    }
-    // Otherwise, generate explicit short-circuiting code.
-    // rhs should be evaluated only if lhs evaluates to false.
-    Expression tmp = codeGenerator.declarationBuilder().setMutable().setRhs(lhs).build().ref();
-    return Composite.create(
-        ImmutableList.of(
-            Statements.ifStatement(Expressions.not(tmp), tmp.assign(rhs).asStatement()).build()),
-        tmp);
   }
 
   @Override
