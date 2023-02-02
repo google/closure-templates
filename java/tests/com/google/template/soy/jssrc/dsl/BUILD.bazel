@@ -31,6 +31,7 @@ java_library(
         "//java/src/com/google/template/soy/error:error_reporter",
         "//java/src/com/google/template/soy/exprtree",
         "//java/src/com/google/template/soy/jssrc/dsl",
+        "//java/src/com/google/template/soy/jssrc/dsl:precendence",
         "//java/src/com/google/template/soy/jssrc/internal",
         "//java/src/com/google/template/soy/jssrc/restricted",
         "@maven//:com_google_guava_guava",

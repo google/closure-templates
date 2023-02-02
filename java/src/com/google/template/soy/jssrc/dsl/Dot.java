@@ -43,8 +43,8 @@ abstract class Dot extends Operation {
   }
 
   @Override
-  int precedence() {
-    return Integer.MAX_VALUE; // JS member access has higher precedence than any Soy operator
+  Precedence precedence() {
+    return Precedence.P17;
   }
 
   @Override

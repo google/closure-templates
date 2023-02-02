@@ -43,9 +43,8 @@ abstract class Bracket extends Operation {
   }
 
   @Override
-  int precedence() {
-    // JS computed member access has higher precedence than any Soy operator
-    return Integer.MAX_VALUE;
+  Precedence precedence() {
+    return Precedence.P17;
   }
 
   @Override

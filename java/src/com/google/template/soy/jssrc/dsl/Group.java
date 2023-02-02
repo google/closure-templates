@@ -41,9 +41,8 @@ abstract class Group extends Operation {
   }
 
   @Override
-  int precedence() {
-    // grouping is the highest-precedence JS operator
-    return Integer.MAX_VALUE;
+  Precedence precedence() {
+    return Precedence.P18;
   }
 
   @Override

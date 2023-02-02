@@ -64,8 +64,8 @@ abstract class Concatenation extends Operation {
   }
 
   @Override
-  int precedence() {
-    return Operator.PLUS.getPrecedence();
+  Precedence precedence() {
+    return Precedence.P11;
   }
 
   @Override

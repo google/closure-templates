@@ -39,11 +39,14 @@ abstract class UnaryOperation extends Operation {
     // Patch things up here.
     String operatorString = (operator == Operator.NOT ? "!" : operator.getTokenString());
     return new AutoValue_UnaryOperation(
-        operator.getPrecedence(), operatorString, arg, operator != Operator.ASSERT_NON_NULL);
+        Precedence.forSoyOperator(operator),
+        operatorString,
+        arg,
+        operator != Operator.ASSERT_NON_NULL);
   }
 
   static UnaryOperation create(
-      String operatorString, int precedence, Expression arg, boolean isPrefix) {
+      String operatorString, Precedence precedence, Expression arg, boolean isPrefix) {
     return new AutoValue_UnaryOperation(precedence, operatorString, arg, isPrefix);
   }
 

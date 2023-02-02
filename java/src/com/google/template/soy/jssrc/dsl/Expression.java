@@ -136,12 +136,7 @@ public abstract class Expression extends CodeChunk {
   }
 
   public final Expression plusEquals(Expression rhs) {
-    return BinaryOperation.create(
-        "+=",
-        0, // the precedence of JS assignments (including +=) is lower than any Soy operator
-        Associativity.RIGHT,
-        this,
-        rhs);
+    return BinaryOperation.create("+=", Precedence.P2, Associativity.RIGHT, this, rhs);
   }
 
   public final Expression doubleEquals(Expression rhs) {
@@ -154,12 +149,20 @@ public abstract class Expression extends CodeChunk {
 
   public final Expression tripleEquals(Expression rhs) {
     return BinaryOperation.create(
-        "===", Operator.EQUAL.getPrecedence(), Operator.EQUAL.getAssociativity(), this, rhs);
+        "===",
+        Precedence.forSoyOperator(Operator.EQUAL),
+        Operator.EQUAL.getAssociativity(),
+        this,
+        rhs);
   }
 
   public final Expression tripleNotEquals(Expression rhs) {
     return BinaryOperation.create(
-        "!==", Operator.EQUAL.getPrecedence(), Operator.EQUAL.getAssociativity(), this, rhs);
+        "!==",
+        Precedence.forSoyOperator(Operator.EQUAL),
+        Operator.EQUAL.getAssociativity(),
+        this,
+        rhs);
   }
 
   public final Expression doubleEqualsNull() {
@@ -249,21 +252,15 @@ public abstract class Expression extends CodeChunk {
     // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Operator_Precedence
     // instanceof has the same precedence as LESS_THAN
     return BinaryOperation.create(
-        "instanceof", Operator.LESS_THAN.getPrecedence(), Associativity.LEFT, this, identifier);
+        "instanceof", Precedence.P9, Associativity.LEFT, this, identifier);
   }
 
   public final Expression typeOf() {
-    return UnaryOperation.create(
-        "typeof ", Operator.NOT.getPrecedence(), this, /* isPrefix= */ true);
+    return UnaryOperation.create("typeof ", Precedence.P14, this, /* isPrefix= */ true);
   }
 
   public Expression assign(Expression rhs) {
-    return BinaryOperation.create(
-        "=",
-        0, // the precedence of JS assignments is lower than any Soy operator
-        Associativity.RIGHT,
-        this,
-        rhs);
+    return BinaryOperation.create("=", Precedence.P2, Associativity.RIGHT, this, rhs);
   }
 
   /**
@@ -294,7 +291,7 @@ public abstract class Expression extends CodeChunk {
   /**
    * Returns true if this chunk can be represented as a single expression. This method should be
    * rarely used, but is needed when interoperating with parts of the codegen system that do not yet
-   * understand CodeChunks (e.g. {@link SoyJsSrcFunction}).
+   * understand CodeChunks (e.g. {@link com.google.template.soy.jssrc.restricted.SoyJsSrcFunction}).
    */
   final boolean isRepresentableAsSingleExpression() {
     return !hasInitialStatements();

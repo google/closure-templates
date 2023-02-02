@@ -44,8 +44,8 @@ abstract class Ternary extends Operation {
   }
 
   @Override
-  int precedence() {
-    return CONDITIONAL.getPrecedence();
+  Precedence precedence() {
+    return Precedence.forSoyOperator(CONDITIONAL);
   }
 
   @Override

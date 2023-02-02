@@ -71,7 +71,7 @@ public final class Expressions {
   private Expressions() {}
 
   public static Expression spread(Expression expr) {
-    return UnaryOperation.create("...", Integer.MAX_VALUE, expr, /* isPrefix= */ true);
+    return UnaryOperation.create("...", Precedence.P2, expr, /* isPrefix= */ true);
   }
 
   /** Starts a conditional expression beginning with the given predicate and consequent chunks. */

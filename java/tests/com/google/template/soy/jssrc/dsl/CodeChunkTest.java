@@ -64,7 +64,7 @@ public final class CodeChunkTest {
 
   @Test
   public void testSingleExprIsPreserved() {
-    JsExpr expr = new JsExpr("1 + 2", PLUS.getPrecedence());
+    JsExpr expr = new JsExpr("1 + 2", Precedence.forSoyOperator(PLUS).toInt());
     Expression chunk = fromExpr(expr, ImmutableList.of());
     assertThat(chunk.getCode(JSSRC)).isEqualTo("1 + 2;");
     assertThat(chunk.isRepresentableAsSingleExpression()).isTrue();
@@ -573,7 +573,10 @@ public final class CodeChunkTest {
     // The argument to not() is a structured code chunk with lower precedence.
     // It should be parenthesized.
     assertThat(negate.getCode(JSSRC)).isEqualTo("!(a + b);");
-    negate = not(fromExpr(new JsExpr("a + b", PLUS.getPrecedence()), ImmutableList.of()));
+    negate =
+        not(
+            fromExpr(
+                new JsExpr("a + b", Precedence.forSoyOperator(PLUS).toInt()), ImmutableList.of()));
     // Even though the argument to not() is a flat JsExpr, its precedence is preserved,
     // so it should be parenthesized.
     assertThat(negate.getCode(JSSRC)).isEqualTo("!(a + b);");

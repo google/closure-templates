@@ -28,6 +28,7 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.FormatOptions;
+import com.google.template.soy.jssrc.dsl.Precedence;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
@@ -69,7 +70,7 @@ public final class GenJsExprsVisitorTest {
         JOINER.join("{@param url : ?}", "{msg desc=\"\"}<a href=\"{$url}\">Click here</a>{/msg}"),
         ImmutableList.of(
             new JsExpr("'<a href=\"'", Integer.MAX_VALUE),
-            new JsExpr("opt_data.url", Integer.MAX_VALUE),
+            new JsExpr("opt_data.url", Precedence.P17.toInt()),
             new JsExpr("'\">'", Integer.MAX_VALUE)),
         0,
         0,

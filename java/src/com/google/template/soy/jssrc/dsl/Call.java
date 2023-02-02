@@ -37,9 +37,8 @@ abstract class Call extends Operation {
   }
 
   @Override
-  int precedence() {
-    // The precedence of a JavaScript function call is higher than any Soy operator.
-    return Integer.MAX_VALUE;
+  Precedence precedence() {
+    return Precedence.P17;
   }
 
   @Override

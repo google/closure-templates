@@ -22,7 +22,7 @@ import com.google.template.soy.jssrc.restricted.JsExpr;
 /** Base class for representing a JavaScript operation. */
 abstract class Operation extends Expression {
 
-  abstract int precedence();
+  abstract Precedence precedence();
 
   abstract Associativity associativity();
 
@@ -30,7 +30,7 @@ abstract class Operation extends Expression {
   public final JsExpr singleExprOrName(FormatOptions formatOptions) {
     FormattingContext ctx = new FormattingContext(formatOptions);
     ctx.appendOutputExpression(this);
-    return new JsExpr(ctx.toString(), precedence());
+    return new JsExpr(ctx.toString(), precedence().toInt());
   }
 
   /**
@@ -65,13 +65,13 @@ abstract class Operation extends Expression {
   private boolean shouldProtect(Expression operand, OperandPosition operandPosition) {
     if (operand instanceof Operation) {
       Operation operation = (Operation) operand;
-      return operation.precedence() < this.precedence()
+      return operation.precedence().lessThan(this.precedence())
           || (operation.precedence() == this.precedence()
               && operandPosition.shouldParenthesize(operation.associativity()));
     } else if (operand instanceof Leaf) {
       // JsExprs have precedence info, but not associativity. So at least check the precedence.
       JsExpr expr = ((Leaf) operand).value();
-      return expr.getPrecedence() < this.precedence();
+      return expr.getPrecedence() < this.precedence().toInt();
     } else {
       return false;
     }

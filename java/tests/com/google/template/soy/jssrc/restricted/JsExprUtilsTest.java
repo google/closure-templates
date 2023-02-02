@@ -17,10 +17,14 @@
 package com.google.template.soy.jssrc.restricted;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.template.soy.exprtree.Operator.LESS_THAN;
+import static com.google.template.soy.exprtree.Operator.MINUS;
+import static com.google.template.soy.exprtree.Operator.PLUS;
+import static com.google.template.soy.exprtree.Operator.TIMES;
+import static com.google.template.soy.jssrc.dsl.Precedence.forSoyOperator;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
-import com.google.template.soy.exprtree.Operator;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -37,11 +41,11 @@ public class JsExprUtilsTest {
     JsExpr concatResult =
         JsExprUtils.concatJsExprs(
             ImmutableList.of(
-                new JsExpr("'blah' + 'blah'", Operator.MINUS.getPrecedence()),
-                new JsExpr("'bleh' + 'bleh'", Operator.MINUS.getPrecedence()),
-                new JsExpr("2 * 8", Operator.TIMES.getPrecedence())));
+                new JsExpr("'blah' + 'blah'", forSoyOperator(MINUS).toInt()),
+                new JsExpr("'bleh' + 'bleh'", forSoyOperator(MINUS).toInt()),
+                new JsExpr("2 * 8", forSoyOperator(TIMES).toInt())));
     assertThat(concatResult.getText()).isEqualTo("'blah' + 'blah' + ('bleh' + 'bleh') + 2 * 8");
-    assertThat(concatResult.getPrecedence()).isEqualTo(Operator.PLUS.getPrecedence());
+    assertThat(concatResult.getPrecedence()).isEqualTo(forSoyOperator(PLUS).toInt());
   }
 
   @Test
@@ -57,16 +61,16 @@ public class JsExprUtilsTest {
     assertThat(JsExprUtils.isStringLiteral(new JsExpr("abc", Integer.MAX_VALUE))).isFalse();
     assertThat(JsExprUtils.isStringLiteral(new JsExpr("123", Integer.MAX_VALUE))).isFalse();
     assertThat(JsExprUtils.isStringLiteral(new JsExpr("foo()", Integer.MAX_VALUE))).isFalse();
-    assertThat(JsExprUtils.isStringLiteral(new JsExpr("'a' + 1", Operator.MINUS.getPrecedence())))
+    assertThat(JsExprUtils.isStringLiteral(new JsExpr("'a' + 1", forSoyOperator(MINUS).toInt())))
         .isFalse();
-    assertThat(JsExprUtils.isStringLiteral(new JsExpr("1 + 'a'", Operator.MINUS.getPrecedence())))
+    assertThat(JsExprUtils.isStringLiteral(new JsExpr("1 + 'a'", forSoyOperator(MINUS).toInt())))
         .isFalse();
     assertThat(JsExprUtils.isStringLiteral(new JsExpr("foo('a')", Integer.MAX_VALUE))).isFalse();
   }
 
   @Test
   public void testWrapWithFunction() {
-    JsExpr expr = new JsExpr("'foo' + 'bar'", Operator.PLUS.getPrecedence());
+    JsExpr expr = new JsExpr("'foo' + 'bar'", forSoyOperator(PLUS).toInt());
 
     assertThat(JsExprUtils.wrapWithFunction("new Frob", expr).getText())
         .isEqualTo("new Frob('foo' + 'bar')");
@@ -92,7 +96,7 @@ public class JsExprUtilsTest {
     assertThat(JsExprUtils.concatJsExprs(ImmutableList.of(lhs, wrongPrecedence)).getText())
         .isEqualTo("a + b < c"); // wrong! should be a + (b < c)
 
-    JsExpr rightPrecedence = new JsExpr("b < c", Operator.LESS_THAN.getPrecedence());
+    JsExpr rightPrecedence = new JsExpr("b < c", forSoyOperator(LESS_THAN).toInt());
     assertThat(JsExprUtils.concatJsExprs(ImmutableList.of(lhs, rightPrecedence)).getText())
         .isEqualTo("a + (b < c)");
   }

@@ -23,6 +23,7 @@ import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.exprtree.Operator;
+import com.google.template.soy.jssrc.dsl.Precedence;
 import java.util.List;
 
 /**
@@ -57,7 +58,7 @@ public class JsExprUtils {
       return jsExprs.get(0);
     }
 
-    int plusOpPrec = Operator.PLUS.getPrecedence();
+    int plusOpPrec = Precedence.forSoyOperator(Operator.PLUS).toInt();
     StringBuilder resultSb = new StringBuilder();
 
     boolean isFirst = true;

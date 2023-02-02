@@ -18,10 +18,24 @@ load("@rules_java//java:defs.bzl", "java_library")
 
 package(default_visibility = ["//:soy_internal"])
 
+PRECEDENCE_SRCS = ["Precedence.java"]
+
+java_library(
+    name = "precendence",
+    srcs = PRECEDENCE_SRCS,
+    deps = [
+        "//java/src/com/google/template/soy/exprtree",
+    ],
+)
+
 java_library(
     name = "dsl",
-    srcs = glob(["*.java"]),
+    srcs = glob(
+        ["*.java"],
+        exclude = PRECEDENCE_SRCS,
+    ),
     deps = [
+        ":precendence",
         "//java/src/com/google/template/soy/base",
         "//java/src/com/google/template/soy/base/internal",
         "//java/src/com/google/template/soy/error:error_reporter",

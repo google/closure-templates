@@ -35,8 +35,8 @@ abstract class New extends Operation {
   }
 
   @Override
-  int precedence() {
-    return Integer.MAX_VALUE; // JS instantiation has higher precedence than any Soy operator
+  Precedence precedence() {
+    return Precedence.P17;
   }
 
   @Override

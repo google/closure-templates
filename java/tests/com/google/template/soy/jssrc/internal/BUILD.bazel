@@ -37,6 +37,7 @@ java_library(
         "//java/src/com/google/template/soy/internal/i18n",
         "//java/src/com/google/template/soy/jssrc",
         "//java/src/com/google/template/soy/jssrc/dsl",
+        "//java/src/com/google/template/soy/jssrc/dsl:precendence",
         "//java/src/com/google/template/soy/jssrc/internal",
         "//java/src/com/google/template/soy/jssrc/restricted",
         "//java/src/com/google/template/soy/logging:internal",

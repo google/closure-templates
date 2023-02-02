@@ -42,6 +42,7 @@ import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.FormatOptions;
+import com.google.template.soy.jssrc.dsl.Precedence;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.PrintNode;
@@ -280,7 +281,7 @@ abstract class JsSrcSubject<T extends Subject> extends Subject {
       Preconditions.checkNotNull(this.chunk, "Call generatesCode() first.");
 
       assertThat(this.chunk.assertExprAndCollectRequires(r -> {}).getPrecedence())
-          .isEqualTo(operator.getPrecedence());
+          .isEqualTo(Precedence.forSoyOperator(operator).toInt());
 
       return this;
     }

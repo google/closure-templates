@@ -16,6 +16,9 @@
 
 package com.google.template.soy.jssrc.dsl;
 
+import static com.google.template.soy.exprtree.Operator.AND;
+import static com.google.template.soy.exprtree.Operator.OR;
+
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -35,11 +38,11 @@ abstract class BinaryOperation extends Operation {
   abstract Expression arg2();
 
   static Expression create(Operator operator, Expression arg1, Expression arg2) {
-    Preconditions.checkState(operator != Operator.AND, "use BinaryOperation::and");
-    Preconditions.checkState(operator != Operator.OR, "use BinaryOperation::or");
+    Preconditions.checkState(operator != AND, "use BinaryOperation::and");
+    Preconditions.checkState(operator != OR, "use BinaryOperation::or");
     return create(
         operator.getTokenString(),
-        operator.getPrecedence(),
+        Precedence.forSoyOperator(operator),
         operator.getAssociativity(),
         arg1,
         arg2);
@@ -47,7 +50,7 @@ abstract class BinaryOperation extends Operation {
 
   static BinaryOperation create(
       String operator,
-      int precedence,
+      Precedence precedence,
       Associativity associativity,
       Expression arg1,
       Expression arg2) {
@@ -58,7 +61,7 @@ abstract class BinaryOperation extends Operation {
     // If rhs has no initial statements, use the JS && operator directly.
     // It's already short-circuiting.
     if (lhs.hasEquivalentInitialStatements(rhs)) {
-      return create("&&", Operator.AND.getPrecedence(), Operator.AND.getAssociativity(), lhs, rhs);
+      return create("&&", Precedence.forSoyOperator(AND), AND.getAssociativity(), lhs, rhs);
     }
     // Otherwise, generate explicit short-circuiting code.
     // rhs should be evaluated only if lhs evaluates to true.
@@ -71,7 +74,7 @@ abstract class BinaryOperation extends Operation {
     // If rhs has no initial statements, use the JS || operator directly.
     // It's already short-circuiting.
     if (lhs.hasEquivalentInitialStatements(rhs)) {
-      return create("||", Operator.OR.getPrecedence(), Operator.OR.getAssociativity(), lhs, rhs);
+      return create("||", Precedence.forSoyOperator(OR), OR.getAssociativity(), lhs, rhs);
     }
     // Otherwise, generate explicit short-circuiting code.
     // rhs should be evaluated only if lhs evaluates to false.
