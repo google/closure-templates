@@ -133,7 +133,6 @@ public final class PassManagerTest {
             ResolvePackageRelativeCssNamesPass.class,
             ResolveTemplateParamTypesPass.class,
             RewriteGenderMsgsPass.class,
-            SimplifyAssertNonNullPass.class,
             UnknownJsGlobalPass.class,
             ValidateAliasesPass.class,
             IncrementalDomKeysPass.class,

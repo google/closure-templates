@@ -35,6 +35,9 @@ import com.google.template.soy.soytree.SoyTreeUtils;
  * so will not generate correct code (or will fail) if they encounter non-null assertion operators
  * in data access chains.
  */
+// After ResolveExpressionTypesPass because ResolveExpressionTypesPass verifies usage
+// and types of non-null assertion operators.
+@RunAfter(ResolveExpressionTypesPass.class)
 final class SimplifyAssertNonNullPass implements CompilerFilePass {
 
   @Override

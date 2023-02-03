@@ -25,7 +25,7 @@ import com.google.common.base.CaseFormat;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor.JavaType;
@@ -325,7 +325,7 @@ public enum BuiltinMethod implements SoyMethod {
         }
 
         @Override
-        public ImmutableMultimap<SoyMethod, String> matchForBaseAndArgs(
+        public ImmutableListMultimap<SoyMethod, String> matchForBaseAndArgs(
             SoyType baseType, List<SoyType> argTypes) {
           return Arrays.stream(values())
               .filter(m -> m.appliesToBase(baseType) && m.appliesToArgs(argTypes))
@@ -411,7 +411,7 @@ public enum BuiltinMethod implements SoyMethod {
 
   protected abstract boolean appliesToBase(SoyType baseType);
 
-  protected abstract SoyType getReturnType(
+  public abstract SoyType getReturnType(
       String methodName,
       SoyType baseType,
       List<ExprNode> params,
