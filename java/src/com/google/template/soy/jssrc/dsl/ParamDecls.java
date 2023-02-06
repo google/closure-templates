@@ -85,9 +85,10 @@ public abstract class ParamDecls extends CodeChunk {
         } else {
           sb.append(", ");
         }
-        sb.append(param.name())
-            .append(": ")
-            .append(param.type().singleExprOrName(ctx.getFormatOptions()).getText());
+        sb.append(param.name());
+        if (param.type() != null) {
+          sb.append(": ").append(param.type().singleExprOrName(ctx.getFormatOptions()).getText());
+        }
       }
       ctx.append(sb.toString());
     }

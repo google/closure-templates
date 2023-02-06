@@ -43,8 +43,10 @@ public class FunctionType extends AbstractType {
           buffer.append(", ");
         }
         buffer.append(param.name() + (param.isOptional() ? "?" : ""));
-        buffer.append(": ");
-        buffer.appendOutputExpression(param.type());
+        if (param.type() != null) {
+          buffer.append(": ");
+          buffer.appendOutputExpression(param.type());
+        }
       }
       buffer.append(") => ");
       buffer.appendOutputExpression(returnType);

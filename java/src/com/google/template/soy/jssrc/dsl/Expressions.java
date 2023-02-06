@@ -98,6 +98,10 @@ public final class Expressions {
     return new TsArrowFunction(params, returnType, bodyStmts);
   }
 
+  public static Expression tsArrowFunction(ParamDecls params, Expression lambda) {
+    return new TsArrowFunction(params, ImmutableList.of(Return.create(lambda)));
+  }
+
   public static Expression genericType(Expression className, ImmutableList<Expression> generics) {
     return new GenericType(className, generics);
   }

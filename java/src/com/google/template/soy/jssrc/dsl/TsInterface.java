@@ -37,8 +37,11 @@ public abstract class TsInterface extends Statement {
     ctx.append(String.format("interface %s ", name()));
     ctx.enterBlock();
     for (ParamDecl prop : properties()) {
-      ctx.append(String.format("%s%s: ", prop.name(), prop.isOptional() ? "?" : ""));
-      ctx.appendOutputExpression(prop.type());
+      ctx.append(String.format("%s%s", prop.name(), prop.isOptional() ? "?" : ""));
+      if (prop.type() != null) {
+        ctx.append(": ");
+        ctx.appendOutputExpression(prop.type());
+      }
       ctx.append(";");
       ctx.endLine();
     }

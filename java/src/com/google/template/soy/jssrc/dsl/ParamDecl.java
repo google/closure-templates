@@ -33,12 +33,17 @@ public abstract class ParamDecl extends CodeChunk {
 
   abstract String name();
 
+  @Nullable
   abstract Expression type();
 
   abstract boolean isOptional();
 
   @Nullable
   abstract Expression defaultValue();
+
+  public static ParamDecl create(String name) {
+    return new AutoValue_ParamDecl(name, null, false, null);
+  }
 
   public static ParamDecl create(String name, Expression type) {
     return new AutoValue_ParamDecl(name, type, false, null);
@@ -62,8 +67,7 @@ public abstract class ParamDecl extends CodeChunk {
   public String typeDecl(FormatOptions formatOptions) {
     return name()
         + (isOptional() ? "?" : "")
-        + ": "
-        + type().singleExprOrName(formatOptions).getText();
+        + (type() != null ? ": " + type().singleExprOrName(formatOptions).getText() : "");
   }
 
   @Override
