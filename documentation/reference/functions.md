@@ -550,7 +550,20 @@ unmodified.
 
 ### `ve_def(id, name[, dataProtoType[, staticMetadata]])` {#ve_def}
 
-This is under development. Do not use.
+Declares a visual element. Returns a VE object that can be passed to `ve_data()`
+and `{velog}`. This can only be used within a `{const}` definition.
+
+`dataProtoType` should be a reference to an imported proto type, or `null`.
+
+`staticMetadata` should be a `soy.LoggableElementMetdata` proto instance.
+
+```soy
+{export const VeWithMetadata = ve_def(
+    'VeWithMetadata',
+    238,
+    DataProto,
+    LoggableElementMetadata(clickTrackType: ClickTrackType.CLICK_TRACK_REDIRECTED)) /}
+```
 
 ### `ve_data(ve, data)` {#ve_data}
 
