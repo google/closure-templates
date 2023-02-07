@@ -1302,7 +1302,7 @@ const $$embedCssIntoHtml_ = function(css) {
  * If `<table>` is used for formatting, embedded HTML shouldn't be able
  * to use a mismatched `</table>` to break page layout.
  *
- * @param {!ReadonlyArray<string>} tags Array of open/close tags (e.g. '<p>', '</p>')
+ * @param {!Array<string>} tags Array of open/close tags (e.g. '<p>', '</p>')
  *    that will be modified in place to be either an open tag, one or more close
  *    tags concatenated, or the empty string.
  * @return {string} zero or more closed tags that close all elements that are
