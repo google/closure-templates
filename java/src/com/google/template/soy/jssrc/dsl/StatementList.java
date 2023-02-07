@@ -63,4 +63,9 @@ public abstract class StatementList extends Statement {
       ctx.appendAll(statement);
     }
   }
+
+  @Override
+  public boolean isTerminal() {
+    return statements().stream().anyMatch(Statement::isTerminal);
+  }
 }

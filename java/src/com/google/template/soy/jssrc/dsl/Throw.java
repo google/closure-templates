@@ -43,4 +43,9 @@ abstract class Throw extends Statement {
   Stream<? extends CodeChunk> childrenStream() {
     return Stream.of(value());
   }
+
+  @Override
+  public boolean isTerminal() {
+    return true;
+  }
 }

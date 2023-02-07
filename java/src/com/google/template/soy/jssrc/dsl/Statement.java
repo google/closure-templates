@@ -44,4 +44,12 @@ public abstract class Statement extends CodeChunk {
 
   /** Appends this statement to the {@link FormattingContext}. */
   abstract void doFormatStatement(FormattingContext ctx);
+
+  /**
+   * Returns whether this statement interrupts control, causing subsequent statements to be
+   * unreachable.
+   */
+  public boolean isTerminal() {
+    return false;
+  }
 }

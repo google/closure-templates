@@ -63,4 +63,9 @@ public abstract class Return extends Statement {
     }
     return super.asExpr();
   }
+
+  @Override
+  public boolean isTerminal() {
+    return true;
+  }
 }

@@ -64,7 +64,10 @@ abstract class Switch extends Statement {
           }
         }
         try (FormattingContext ignored2 = ctx.enterCaseBody()) {
-          ctx.appendAll(caseClause.caseBody).endLine().append("break;").endLine();
+          ctx.appendAll(caseClause.caseBody).endLine();
+          if (!caseClause.caseBody.isTerminal()) {
+            ctx.append("break;").endLine();
+          }
         }
         ctx.endLine();
       }
