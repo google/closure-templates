@@ -821,10 +821,8 @@ final class ProtoUtils {
     }
 
     private SoyExpression handleNormalField(SoyExpression typedBaseExpr) {
-      if (descriptor.getFile().getSyntax() == Syntax.PROTO3
-          && descriptor.getJavaType() != JavaType.MESSAGE
-          && getContainingOneof(descriptor) != null) {
-        // In proto3 Java there aren't hassers for primitive fields inside oneofs.
+      if (!descriptor.hasPresence()) {
+        // There aren't hassers for fields without presence.
 
         MethodRef getCaseRef = getOneOfCaseMethod(descriptor.getContainingOneof());
         Expression fieldNumber = constant(descriptor.getNumber());
