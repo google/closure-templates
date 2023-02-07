@@ -22,6 +22,7 @@ import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static com.google.common.collect.ImmutableSortedSet.toImmutableSortedSet;
 import static com.google.template.soy.passes.CheckTemplateCallsPass.ARGUMENT_TYPE_MISMATCH;
 import static com.google.template.soy.types.SoyTypes.SAFE_PROTO_TO_SANITIZED_TYPE;
+import static com.google.template.soy.types.SoyTypes.tryRemoveNull;
 import static java.util.Comparator.naturalOrder;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
@@ -808,7 +809,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
             // of the following case statements.
             Map<ExprEquivalence.Wrapper, SoyType> negativeTypeConstraints = new HashMap<>();
             negativeTypeConstraints.put(
-                exprEquivalence.wrap(switchExpr), SoyTypes.tryRemoveNull(switchExpr.getType()));
+                exprEquivalence.wrap(switchExpr), tryRemoveNull(switchExpr.getType()));
             addTypeSubstitutions(negativeTypeConstraints);
           }
         } else if (child instanceof SwitchDefaultNode) {
@@ -838,7 +839,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       super.visitMsgPluralNode(node);
       SoyType exprType = node.getExpr().getType();
       if (exprType != UnknownType.getInstance() && !SoyTypes.isIntFloatOrNumber(exprType)) {
-        SoyType notNullable = SoyTypes.tryRemoveNull(exprType);
+        SoyType notNullable = tryRemoveNull(exprType);
         if (!notNullable.equals(exprType) && SoyTypes.isIntFloatOrNumber(notNullable)) {
           errorReporter.warn(node.getExpr().getSourceLocation(), PLURAL_EXPR_NULLABLE, exprType);
         } else {
@@ -863,8 +864,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       SourceLocation location = variant.getSourceLocation();
       SoyType variantType = variant.getType();
       if (variantType.getKind() == SoyType.Kind.NULL
-          || !SoyTypes.isKindOrUnionOfKinds(
-              SoyTypes.tryRemoveNull(variantType), allowedVariantTypes)) {
+          || !SoyTypes.isKindOrUnionOfKinds(tryRemoveNull(variantType), allowedVariantTypes)) {
         errorReporter.report(location, BAD_DELCALL_VARIANT_TYPE, variantType);
       }
 
@@ -1449,21 +1449,21 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
         } else if (sourceFunction instanceof ConcatMapsMethod) {
           node.setType(getGenericMapType(node.getChildren()));
         } else if (sourceFunction instanceof MapKeysFunction) {
-          MapType type = (MapType) node.getChild(0).getType();
+          MapType type = (MapType) baseType;
           if (type.equals(MapType.EMPTY_MAP)) {
             node.setType(ListType.EMPTY_LIST);
           } else {
             node.setType(ListType.of(type.getKeyType()));
           }
         } else if (sourceFunction instanceof MapValuesMethod) {
-          MapType type = (MapType) node.getChild(0).getType();
+          MapType type = (MapType) baseType;
           if (type.equals(MapType.EMPTY_MAP)) {
             node.setType(ListType.EMPTY_LIST);
           } else {
             node.setType(ListType.of(type.getValueType()));
           }
         } else if (sourceFunction instanceof MapEntriesMethod) {
-          MapType type = (MapType) node.getChild(0).getType();
+          MapType type = (MapType) baseType;
           if (type.equals(MapType.EMPTY_MAP)) {
             node.setType(ListType.EMPTY_LIST);
           } else {
@@ -1478,11 +1478,11 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
             || sourceFunction instanceof ListReverseMethod
             || sourceFunction instanceof ListUniqMethod) {
           // list<T>.slice(...), list<T>.uniq(), and list<T>.reverse() return list<T>
-          node.setType(node.getBaseExprChild().getType());
+          node.setType(baseType);
         } else if (sourceFunction instanceof NumberListSortMethod) {
           // list<T>.sort() returns list<T>
           // The sort() method only supports lists of number, int, or float.
-          node.setType(node.getBaseExprChild().getType());
+          node.setType(baseType);
         } else if (sourceFunction instanceof ListFlatMethod) {
           // Determine type for common cases:
           // list<X>.flat() -> list<X> (X not list)
@@ -1502,7 +1502,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
 
           // Default type if logic below fails.
           node.setType(sourceMethod.getReturnType());
-          ListType returnType = (ListType) node.getBaseExprChild().getType();
+          ListType returnType = (ListType) baseType;
           while (maxDepth-- > 0) {
             if (returnType.getElementType().getKind() == Kind.LIST) {
               returnType = (ListType) returnType.getElementType();
@@ -3015,7 +3015,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       // {if $var != null} but something like {if $var > 0} should not be changed.
       visit(node);
       ExprEquivalence.Wrapper wrapped = exprEquivalence.wrap(node);
-      positiveTypeConstraints.put(wrapped, SoyTypes.tryRemoveNull(node.getType()));
+      positiveTypeConstraints.put(wrapped, tryRemoveNull(node.getType()));
       // TODO(lukes): The 'negative' type constraint here is not optimal.  What we really know is
       // that the value of the expression is 'falsy' we could use that to inform later checks but
       // for now we just assume it has its normal type.
@@ -3082,13 +3082,11 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       if (node.getChild(1).getKind() == ExprNode.Kind.NULL_NODE) {
         ExprEquivalence.Wrapper wrappedExpr = exprEquivalence.wrap(node.getChild(0));
         positiveTypeConstraints.put(wrappedExpr, NullType.getInstance());
-        negativeTypeConstraints.put(
-            wrappedExpr, SoyTypes.tryRemoveNull(wrappedExpr.get().getType()));
+        negativeTypeConstraints.put(wrappedExpr, tryRemoveNull(wrappedExpr.get().getType()));
       } else if (node.getChild(0).getKind() == ExprNode.Kind.NULL_NODE) {
         ExprEquivalence.Wrapper wrappedExpr = exprEquivalence.wrap(node.getChild(1));
         positiveTypeConstraints.put(wrappedExpr, NullType.getInstance());
-        negativeTypeConstraints.put(
-            wrappedExpr, SoyTypes.tryRemoveNull(wrappedExpr.get().getType()));
+        negativeTypeConstraints.put(wrappedExpr, tryRemoveNull(wrappedExpr.get().getType()));
       }
       // Otherwise don't make any inferences (don't visit children).
     }
@@ -3097,13 +3095,11 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
     protected void visitNotEqualOpNode(NotEqualOpNode node) {
       if (node.getChild(1).getKind() == ExprNode.Kind.NULL_NODE) {
         ExprEquivalence.Wrapper wrappedExpr = exprEquivalence.wrap(node.getChild(0));
-        positiveTypeConstraints.put(
-            wrappedExpr, SoyTypes.tryRemoveNull(wrappedExpr.get().getType()));
+        positiveTypeConstraints.put(wrappedExpr, tryRemoveNull(wrappedExpr.get().getType()));
         negativeTypeConstraints.put(wrappedExpr, NullType.getInstance());
       } else if (node.getChild(0).getKind() == ExprNode.Kind.NULL_NODE) {
         ExprEquivalence.Wrapper wrappedExpr = exprEquivalence.wrap(node.getChild(1));
-        positiveTypeConstraints.put(
-            wrappedExpr, SoyTypes.tryRemoveNull(wrappedExpr.get().getType()));
+        positiveTypeConstraints.put(wrappedExpr, tryRemoveNull(wrappedExpr.get().getType()));
         negativeTypeConstraints.put(wrappedExpr, NullType.getInstance());
       }
       // Otherwise don't make any inferences (don't visit children).
