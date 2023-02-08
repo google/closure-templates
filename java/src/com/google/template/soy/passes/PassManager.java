@@ -220,6 +220,11 @@ public final class PassManager {
       boolean combineTextNodes() {
         return false;
       }
+
+      @Override
+      public boolean rewriteElementComposition() {
+        return true;
+      }
     },
 
     /** All the AST rewrites. */
@@ -230,10 +235,6 @@ public final class PassManager {
       }
     };
 
-    boolean combineTextNodes() {
-      return true;
-    }
-
     boolean isAll() {
       return false;
     }
@@ -242,8 +243,16 @@ public final class PassManager {
       return false;
     }
 
+    boolean combineTextNodes() {
+      return true;
+    }
+
     public boolean rewriteShortFormCalls() {
       return !isNone();
+    }
+
+    public boolean rewriteElementComposition() {
+      return isAll();
     }
   }
 
@@ -637,20 +646,20 @@ public final class PassManager {
         if (astRewrites.combineTextNodes()) {
           passes.add(new CombineConsecutiveRawTextNodesPass());
         }
-        passes
-            .add(
-                new AutoescaperPass(
-                    errorReporter,
-                    soyPrintDirectives,
-                    insertEscapingDirectives,
-                    accumulatedState::registryFull))
-            .add(
-                new SoyElementCompositionPass(
-                    astRewrites,
-                    errorReporter,
-                    soyPrintDirectives,
-                    accumulatedState::registryFull,
-                    desugarIdomFeatures));
+        passes.add(
+            new AutoescaperPass(
+                errorReporter,
+                soyPrintDirectives,
+                insertEscapingDirectives,
+                accumulatedState::registryFull));
+        if (astRewrites.rewriteElementComposition()) {
+          passes.add(
+              new SoyElementCompositionPass(
+                  errorReporter,
+                  soyPrintDirectives,
+                  accumulatedState::registryFull,
+                  desugarIdomFeatures));
+        }
       } else {
         if (astRewrites.combineTextNodes()) {
 

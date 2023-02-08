@@ -36,7 +36,6 @@ import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.parsepasses.contextautoesc.ContextualAutoescaper;
-import com.google.template.soy.passes.PassManager.AstRewrites;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallParamContentNode;
@@ -109,11 +108,9 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
   private final ErrorReporter errorReporter;
   private final ImmutableList<? extends SoyPrintDirective> printDirectives;
   private final Supplier<FileSetMetadata> templateRegistryFull;
-  private final AstRewrites astRewrites;
   private final boolean desugarIdomFeatures;
 
   SoyElementCompositionPass(
-      AstRewrites astRewrites,
       ErrorReporter errorReporter,
       ImmutableList<? extends SoyPrintDirective> printDirectives,
       Supplier<FileSetMetadata> templateRegistryFull,
@@ -121,7 +118,6 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
     this.errorReporter = errorReporter;
     this.printDirectives = printDirectives;
     this.templateRegistryFull = templateRegistryFull;
-    this.astRewrites = astRewrites;
     this.desugarIdomFeatures = desugarIdomFeatures;
   }
 
@@ -138,10 +134,8 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
 
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
     for (TemplateNode template : file.getTemplates()) {
-      if (astRewrites.isAll()) {
-        for (HtmlTagNode tagNode : SoyTreeUtils.getAllNodesOfType(template, HtmlTagNode.class)) {
-          process(template, tagNode, nodeIdGen);
-        }
+      for (HtmlTagNode tagNode : SoyTreeUtils.getAllNodesOfType(template, HtmlTagNode.class)) {
+        process(template, tagNode, nodeIdGen);
       }
     }
   }

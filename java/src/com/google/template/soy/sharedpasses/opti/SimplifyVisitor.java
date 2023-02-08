@@ -313,33 +313,7 @@ public final class SimplifyVisitor {
     @Override
     protected void visitCallBasicNode(CallBasicNode node) {
       super.visitCallBasicNode(node);
-
-      ExprNode calleeRoot = node.getCalleeExpr().getRoot();
-
-      // Simplify call(bind(args1), args2) to call(args1+args2).
-      if (calleeRoot.getKind() == Kind.METHOD_CALL_NODE
-          && ((MethodCallNode) calleeRoot).getSoyMethod() == BuiltinMethod.BIND) {
-        MethodCallNode methodCallNode = (MethodCallNode) calleeRoot;
-        if (methodCallNode.numParams() != 1) {
-          return;
-        }
-        RecordLiteralNode record = (RecordLiteralNode) methodCallNode.getParams().get(0);
-        ExprNode bindCallee = methodCallNode.getBaseExprChild();
-        node.getCalleeExpr().replaceChild(calleeRoot, bindCallee);
-        node.getCalleeExpr().setType(bindCallee.getType());
-
-        List<ExprNode> children = new ArrayList<>(record.getChildren());
-        for (int i = 0; i < children.size(); i++) {
-          Identifier key = record.getKey(i);
-          ExprNode value = children.get(i);
-          SourceLocation loc = key.location();
-          if (loc.isBefore(value.getSourceLocation())) {
-            loc = loc.extend(value.getSourceLocation());
-          }
-          CallParamValueNode paramNode = new CallParamValueNode(nodeIdGen.genId(), loc, key, value);
-          node.addChild(i, paramNode);
-        }
-      }
+      mergeBindAndCall(node, nodeIdGen);
     }
 
     @Override
@@ -601,7 +575,7 @@ public final class SimplifyVisitor {
         PlusOpNode op =
             new PlusOpNode(
                 result.getSourceLocation().extend(expr.getSourceLocation()),
-                /* operatorLocation=*/ SourceLocation.UNKNOWN);
+                /* operatorLocation= */ SourceLocation.UNKNOWN);
         op.addChild(result);
         op.addChild(expr);
         op.setType(StringType.getInstance());
@@ -651,5 +625,38 @@ public final class SimplifyVisitor {
     int indexInParent = parent.getChildIndex(origNode);
     parent.removeChild(indexInParent);
     parent.addChildren(indexInParent, replacementNodes);
+  }
+
+  /**
+   * If {@code node} is a call on a bound template, merges the bound params and the call params and
+   * modifies the node to be a single call.
+   */
+  public static void mergeBindAndCall(CallBasicNode node, IdGenerator nodeIdGen) {
+    ExprNode calleeRoot = node.getCalleeExpr().getRoot();
+
+    // Simplify call(bind(args1), args2) to call(args1+args2).
+    if (calleeRoot.getKind() == Kind.METHOD_CALL_NODE
+        && ((MethodCallNode) calleeRoot).getSoyMethod() == BuiltinMethod.BIND) {
+      MethodCallNode methodCallNode = (MethodCallNode) calleeRoot;
+      if (methodCallNode.numParams() != 1) {
+        return;
+      }
+      RecordLiteralNode record = (RecordLiteralNode) methodCallNode.getParams().get(0);
+      ExprNode bindCallee = methodCallNode.getBaseExprChild();
+      node.getCalleeExpr().replaceChild(calleeRoot, bindCallee);
+      node.getCalleeExpr().setType(bindCallee.getType());
+
+      List<ExprNode> children = new ArrayList<>(record.getChildren());
+      for (int i = 0; i < children.size(); i++) {
+        Identifier key = record.getKey(i);
+        ExprNode value = children.get(i);
+        SourceLocation loc = key.location();
+        if (loc.isBefore(value.getSourceLocation())) {
+          loc = loc.extend(value.getSourceLocation());
+        }
+        CallParamValueNode paramNode = new CallParamValueNode(nodeIdGen.genId(), loc, key, value);
+        node.addChild(i, paramNode);
+      }
+    }
   }
 }
