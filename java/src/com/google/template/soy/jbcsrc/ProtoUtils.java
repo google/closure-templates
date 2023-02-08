@@ -276,7 +276,7 @@ final class ProtoUtils {
       SoyExpression baseExpr, MethodCallNode node, String fieldName) {
     SoyProtoType protoType = (SoyProtoType) baseExpr.soyType();
     return new AccessorGenerator(
-            protoType, baseExpr, fieldName, node.getType(), ScalarFieldMode.NULL_IF_UNSET)
+            protoType, baseExpr, fieldName, node.getType(), ScalarFieldMode.DEFAULT_IF_UNSET)
         .generate();
   }
 
