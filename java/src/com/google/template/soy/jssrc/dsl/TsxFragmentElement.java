@@ -43,7 +43,13 @@ public abstract class TsxFragmentElement extends Expression {
 
   public static Expression wrap(List<? extends CodeChunk> children) {
     if (children.size() == 1) {
-      return wrap(children.get(0));
+      CodeChunk onlyChild = children.get(0);
+      if (onlyChild instanceof Call || onlyChild instanceof VariableReference) {
+        // No need to wrap if all we are doing is forwarding to a simple expression that will itself
+        // be a fragment.
+        return (Expression) onlyChild;
+      }
+      return wrap(onlyChild);
     }
     return create(children);
   }
