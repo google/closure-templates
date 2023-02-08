@@ -347,10 +347,10 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     JsDoc doc =
         node.getIndexVar() == null
             ? JsDoc.builder()
-                .addParam(listIterVarTranslation, jsTypeFor(elementType).typeExpr())
+                .addParam(listIterVarTranslation, jsTypeForStrict(elementType).typeExpr())
                 .build()
             : JsDoc.builder()
-                .addParam(listIterVarTranslation, jsTypeFor(elementType).typeExpr())
+                .addParam(listIterVarTranslation, jsTypeForStrict(elementType).typeExpr())
                 .addParam(indexVarTranslation, "number")
                 .build();
 
@@ -408,8 +408,8 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     Expression map = Expressions.constructMap();
     if (node.getType() != MapType.EMPTY_MAP) {
       MapType mapType = (MapType) node.getType();
-      JsType keyType = JsType.forJsSrc(mapType.getKeyType());
-      JsType valueType = JsType.forJsSrc(mapType.getValueType());
+      JsType keyType = jsTypeFor(mapType.getKeyType());
+      JsType valueType = jsTypeFor(mapType.getValueType());
       map =
           map.castAs(
               String.format("!Map<%s, %s>", keyType.typeExpr(), valueType.typeExpr()),
@@ -450,7 +450,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     String dummyVar = "list_to_map_constructor_" + node.getNodeId();
     JsDoc doc =
         JsDoc.builder()
-            .addParam(dummyVar, jsTypeFor(((ListType) listType).getElementType()).typeExpr())
+            .addParam(dummyVar, jsTypeForStrict(((ListType) listType).getElementType()).typeExpr())
             .build();
 
     Expression body =
@@ -1004,8 +1004,12 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     }
   }
 
-  protected JsType jsTypeFor(SoyType type) {
+  protected JsType jsTypeForStrict(SoyType type) {
     return JsType.forJsSrcStrict(type);
+  }
+
+  protected JsType jsTypeFor(SoyType type) {
+    return JsType.forJsSrc(type);
   }
 
   private Expression visitCheckNotNullFunction(FunctionNode node) {
