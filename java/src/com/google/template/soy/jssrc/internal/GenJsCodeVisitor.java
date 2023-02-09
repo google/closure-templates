@@ -387,11 +387,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     node.getExterns().stream()
         .map(ExternNode::getJsImpl)
         .flatMap(Streams::stream)
-        .forEach(
-            jsExtern -> {
-              jsCodeBuilder.appendLine().appendLine();
-              visit(jsExtern);
-            });
+        .forEach(this::visit);
 
     // Add code for each template.
     for (TemplateNode template : node.getTemplates()) {
@@ -1416,9 +1412,12 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
               ? JsRuntime.EXPORTS
               : dottedIdNoRequire(file.getNamespace());
       Expression export = exportAlias.dotAccess(externName);
-      jsCodeBuilder.append(
-          Statements.assign(
-              export, externReference, JsDoc.builder().addAnnotation("const").build()));
+      jsCodeBuilder
+          .appendLine()
+          .appendLine()
+          .append(
+              Statements.assign(
+                  export, externReference, JsDoc.builder().addAnnotation("const").build()));
     }
   }
 
