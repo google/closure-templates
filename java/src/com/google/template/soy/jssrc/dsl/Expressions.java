@@ -362,6 +362,10 @@ public final class Expressions {
     return Concatenation.create(chunks);
   }
 
+  public static Expression concat(Expression... chunks) {
+    return Concatenation.create(ImmutableList.copyOf(chunks));
+  }
+
   /**
    * Builds a {@link Expression} that represents the concatenation of the given code chunks. This
    * doesn't assume the values represented by the inputs are necessarily strings, but guarantees
