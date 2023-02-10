@@ -900,6 +900,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
               .setJsDoc(
                   generatePositionalFunctionJsDoc(
                       node, /* addVariantParam= */ isModifiableWithUseVariantType(node)))
+              .setRhs(Expressions.LITERAL_UNDEFINED)
               .build());
     }
 
