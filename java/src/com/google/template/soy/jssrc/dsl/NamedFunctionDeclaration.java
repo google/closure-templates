@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 /**
  * Represents a named TS function declaration.
@@ -77,9 +78,9 @@ public abstract class NamedFunctionDeclaration extends Statement {
   }
 
   public static NamedFunctionDeclaration declaration(
-      String name, ParamDecls params, Expression returnType, JsDoc jsDoc) {
+      String name, ParamDecls params, Expression returnType, @Nullable JsDoc jsDoc) {
     return new AutoValue_NamedFunctionDeclaration(
-        name, params, returnType, Optional.of(jsDoc), ImmutableList.of(), true, true);
+        name, params, returnType, Optional.ofNullable(jsDoc), ImmutableList.of(), true, true);
   }
 
   @Override

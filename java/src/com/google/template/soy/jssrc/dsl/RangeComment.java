@@ -30,14 +30,23 @@ public abstract class RangeComment extends Statement {
   abstract boolean inline();
 
   public static RangeComment create(String comment, boolean inline) {
-    Preconditions.checkArgument(!comment.contains("*/"));
+    if (comment.length() >= 4 && comment.startsWith("/*") && comment.endsWith("*/")) {
+      // pre-formatted.
+    } else {
+      Preconditions.checkArgument(!comment.contains("*/"));
+      comment =
+          "/*"
+              + (comment.startsWith("\n") ? "" : " ")
+              + comment
+              + (comment.endsWith("\n") ? "" : " ")
+              + "*/";
+    }
     return new AutoValue_RangeComment(comment, inline);
   }
 
   @Override
   void doFormatStatement(FormattingContext ctx) {
-    String c = comment();
-    ctx.append("/*" + (c.startsWith("\n") ? "" : " ") + c + (c.endsWith("\n") ? "" : " ") + "*/");
+    ctx.append(comment());
     if (!inline()) {
       ctx.endLine();
     }
