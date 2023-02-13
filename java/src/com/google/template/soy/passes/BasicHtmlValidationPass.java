@@ -26,14 +26,19 @@ import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.HtmlAttributeNode;
+import com.google.template.soy.soytree.HtmlAttributeValueNode;
 import com.google.template.soy.soytree.HtmlCloseTagNode;
 import com.google.template.soy.soytree.HtmlTagNode;
 import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.LetContentNode;
+import com.google.template.soy.soytree.PrintNode;
+import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.BlockNode;
@@ -107,10 +112,27 @@ final class BasicHtmlValidationPass implements CompilerFilePass {
   private static final Pattern JS_IDENTIFIER_PATTERN =
       Pattern.compile("^[$_\\p{IsLetter}][$_\\p{IsLetter}\\p{IsDigit}]*$");
 
+  private static boolean isIdShapedValue(HtmlAttributeValueNode node) {
+    if (node.numChildren() != 1) {
+      return false;
+    }
+    StandaloneNode attrValueNode = node.getChild(0);
+    if (attrValueNode instanceof RawTextNode) {
+      return JS_IDENTIFIER_PATTERN.matcher(((RawTextNode) attrValueNode).getRawText()).matches();
+    } else if (attrValueNode instanceof PrintNode) {
+      ExprNode exprRoot = ((PrintNode) attrValueNode).getExpr().getRoot();
+      // Cannot
+      return exprRoot instanceof FunctionNode
+          && ((FunctionNode) exprRoot).getFunctionName().equals("xid");
+    }
+    return false;
+  }
+
   private void warnOnIdAttributesMatchingJsIdentifiers(HtmlAttributeNode attributeNode) {
-    if (attributeNode.definitelyMatchesAttributeName("id")) {
-      String staticId = attributeNode.getStaticContent();
-      if (staticId != null && JS_IDENTIFIER_PATTERN.matcher(staticId).matches()) {
+    if (attributeNode.definitelyMatchesAttributeName("id") && attributeNode.hasValue()) {
+      SoyNode child = attributeNode.getChild(1);
+      if (child instanceof HtmlAttributeValueNode
+          && isIdShapedValue((HtmlAttributeValueNode) child)) {
         errorReporter.warn(attributeNode.getChild(1).getSourceLocation(), BAD_ID_VALUE);
       }
     }
