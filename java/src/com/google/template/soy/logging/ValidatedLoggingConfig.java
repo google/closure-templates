@@ -25,6 +25,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
+import com.google.protobuf.Message;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.error.ErrorReporter;
@@ -152,7 +153,29 @@ public final class ValidatedLoggingConfig {
     return a1.getName().equals(a2.getName())
         && a1.getId() == a2.getId()
         && a1.getProtoName().equals(a2.getProtoName())
-        && a1.getMetadata().equals(a2.getMetadata());
+        && metadataEqual(a1.getMetadata(), a2.getMetadata());
+  }
+
+  private static boolean metadataEqual(Optional<Object> m1, Optional<Object> m2) {
+    if (m1.isPresent() != m2.isPresent()) {
+      return false;
+    }
+    if (!m1.isPresent()) {
+      return true;
+    }
+    Object o1 = m1.get();
+    Object o2 = m2.get();
+    if (o1 instanceof Message != o2 instanceof Message) {
+      // Don't try to compare Messages with non-Messages.
+      // Textproto VEs will have the proto instance, while ve_def() defined VEs will have a Soy
+      // expression tree for the proto instantiation. These won't be comparable. Instead we'll rely
+      // on validating message vs message metadata, and the ve_def() metadata vs ve_def() metadata,
+      // since both sets are created from the same source data with the
+      // generate_visual_elements_soy_config and generate_visual_elements_soy_ve_def rules.
+      // TODO(b/264681521): Replace metadataEqual() with equals() when textproto VEs are removed.
+      return true;
+    }
+    return o1.equals(o2);
   }
 
   private final ImmutableMap<String, ValidatedLoggableElement> elementsByName;
