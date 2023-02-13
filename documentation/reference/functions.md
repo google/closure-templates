@@ -548,7 +548,7 @@ JavaScript but all common HTML entities are supported.
 This function expects `kind="html"` values. If passed a string, it returns it
 unmodified.
 
-### `ve_def(id, name[, dataProtoType[, staticMetadata]])` {#ve_def}
+### `ve_def(name, id[, dataProtoType[, staticMetadata]])` {#ve_def}
 
 Declares a visual element. Returns a VE object that can be passed to `ve_data()`
 and `{velog}`. This can only be used within a `{const}` definition.
