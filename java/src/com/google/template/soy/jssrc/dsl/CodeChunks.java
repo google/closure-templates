@@ -16,8 +16,8 @@
 
 package com.google.template.soy.jssrc.dsl;
 
-import static com.google.common.collect.ImmutableList.toImmutableList;
-
+import com.google.common.collect.Iterables;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -61,17 +61,30 @@ public final class CodeChunks {
               .collect(Collectors.joining()),
           ((StringLiteral) chunks.get(0)).quoteStyle());
     }
-    return Concatenation.create(
-        chunks.stream()
-            .map(
-                c -> {
-                  if (c instanceof Expression) {
-                    return (Expression) c;
-                  } else {
-                    throw new ClassCastException(c.getClass().getName());
-                  }
-                })
-            .collect(toImmutableList()));
+    List<SpecialToken> special = new ArrayList<>();
+    List<Expression> exprs = new ArrayList<>();
+    for (CodeChunk chunk : chunks) {
+      if (chunk instanceof SpecialToken) {
+        special.add((SpecialToken) chunk);
+      } else if (chunk instanceof Expression) {
+        Expression expr = (Expression) chunk;
+        if (!special.isEmpty()) {
+          expr = expr.prepend(special);
+          special.clear();
+        }
+        exprs.add(expr);
+      } else {
+        throw new ClassCastException(chunks.getClass().getName());
+      }
+    }
+    if (!special.isEmpty()) {
+      if (exprs.isEmpty()) {
+        exprs.add(Expressions.EMPTY.append(special));
+      } else {
+        exprs.set(exprs.size() - 1, Iterables.getLast(exprs).append(special));
+      }
+    }
+    return Concatenation.create(exprs);
   }
 
   public static Expression concatAsObjectLiteral(List<CodeChunk> chunks) {
@@ -94,7 +107,6 @@ public final class CodeChunks {
   }
 
   public static Stream<CodeChunk> flatten(Stream<CodeChunk> chunk) {
-    return chunk.flatMap(
-        c -> c instanceof Concatenation ? ((Concatenation) c).childrenStream() : Stream.of(c));
+    return chunk.flatMap(c -> c instanceof Concatenation ? c.childrenStream() : Stream.of(c));
   }
 }

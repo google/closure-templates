@@ -156,13 +156,6 @@ class FormattingContext implements AutoCloseable {
     return this;
   }
 
-  /** Writes the jsdoc for the {@code jsDoc} to the buffer. */
-  @CanIgnoreReturnValue
-  FormattingContext append(JsDoc jsDoc) {
-    jsDoc.doFormatInitialStatements(this);
-    return this;
-  }
-
   /** Appends exactly {@code s} onto the buffer without attempting to add line breaks or indents. */
   @CanIgnoreReturnValue
   FormattingContext appendWithoutBreaks(String s) {
@@ -221,6 +214,8 @@ class FormattingContext implements AutoCloseable {
         append(";");
         endLine();
       }
+    } else if (chunk instanceof SpecialToken) {
+      ((SpecialToken) chunk).doFormatToken(this);
     }
     return this;
   }

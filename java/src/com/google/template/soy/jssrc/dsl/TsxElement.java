@@ -44,7 +44,7 @@ public abstract class TsxElement extends Expression {
     return new AutoValue_TsxElement(
         openTag,
         closeTag,
-        body.stream().map(TsxFragmentElement::wrapChild).collect(toImmutableList()));
+        body.stream().flatMap(TsxFragmentElement::wrapChild).collect(toImmutableList()));
   }
 
   public TsxElement copyWithTagName(String newTagName) {

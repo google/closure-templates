@@ -30,7 +30,7 @@ import javax.annotation.Nullable;
 /** Expresses JSDoc comment blocks and how to print them out. */
 @AutoValue
 @Immutable
-public abstract class JsDoc extends CodeChunk implements CodeChunk.HasRequires {
+public abstract class JsDoc extends SpecialToken implements CodeChunk.HasRequires {
 
   public static JsDoc getDefaultInstance() {
     return builder().build();
@@ -47,11 +47,6 @@ public abstract class JsDoc extends CodeChunk implements CodeChunk.HasRequires {
   public abstract ImmutableSet<GoogRequire> googRequires();
 
   public abstract ImmutableList<Param> params();
-
-  @Override
-  public final Statement asStatement() {
-    throw new UnsupportedOperationException();
-  }
 
   @Override
   Stream<? extends CodeChunk> childrenStream() {
@@ -183,7 +178,7 @@ public abstract class JsDoc extends CodeChunk implements CodeChunk.HasRequires {
 
   /** Should only be invoked from FormattingContext#appendJsDoc. */
   @Override
-  void doFormatInitialStatements(FormattingContext ctx) {
+  void doFormatToken(FormattingContext ctx) {
     if (this.isSingleLine()) {
       ctx.append(this.toString());
       return;

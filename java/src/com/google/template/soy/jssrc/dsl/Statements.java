@@ -18,12 +18,18 @@ package com.google.template.soy.jssrc.dsl;
 
 import static com.google.template.soy.jssrc.dsl.Expressions.ERROR_EXPR;
 
+import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Streams;
+import com.google.template.soy.jssrc.dsl.Expressions.DecoratedExpression;
+import java.util.List;
+import java.util.stream.Stream;
 
 /** Static functions related to Expressions. */
 public final class Statements {
 
   public static final Statement ERROR_STMT = ExpressionStatement.of(ERROR_EXPR);
+  public static final Statement EMPTY = of(ImmutableList.of());
 
   private Statements() {}
 
@@ -92,5 +98,74 @@ public final class Statements {
   /** Creates a code chunk that represents a debugger statement. */
   public static Statement debugger() {
     return Debugger.INSTANCE;
+  }
+
+  @AutoValue
+  abstract static class DecoratedStatement extends Statement {
+
+    public static Statement create(
+        Statement statement, List<SpecialToken> before, List<SpecialToken> after) {
+      if (before.isEmpty() && after.isEmpty()) {
+        return statement;
+      }
+      return new AutoValue_Statements_DecoratedStatement(
+          ImmutableList.copyOf(before), statement, ImmutableList.copyOf(after));
+    }
+
+    abstract ImmutableList<SpecialToken> beforeTokens();
+
+    abstract Statement statement();
+
+    abstract ImmutableList<SpecialToken> afterTokens();
+
+    @Override
+    public Expression asExpr() {
+      Expression expr = statement().asExpr();
+      return DecoratedExpression.create(expr, beforeTokens(), afterTokens());
+    }
+
+    @Override
+    void doFormatStatement(FormattingContext ctx) {
+      for (CodeChunk chunk : beforeTokens()) {
+        ctx.appendAll(chunk);
+      }
+      ctx.appendAll(statement());
+      for (CodeChunk chunk : afterTokens()) {
+        ctx.appendAll(chunk);
+      }
+    }
+
+    @Override
+    public boolean isTerminal() {
+      return statement().isTerminal();
+    }
+
+    @Override
+    Stream<? extends CodeChunk> childrenStream() {
+      return Streams.concat(
+          beforeTokens().stream(), Stream.of(statement()), afterTokens().stream());
+    }
+
+    @Override
+    public Statement append(List<SpecialToken> tokens) {
+      if (tokens.isEmpty()) {
+        return this;
+      }
+      return create(
+          statement(),
+          beforeTokens(),
+          ImmutableList.<SpecialToken>builder().addAll(tokens).addAll(afterTokens()).build());
+    }
+
+    @Override
+    public Statement prepend(List<SpecialToken> tokens) {
+      if (tokens.isEmpty()) {
+        return this;
+      }
+      return create(
+          statement(),
+          ImmutableList.<SpecialToken>builder().addAll(tokens).addAll(beforeTokens()).build(),
+          afterTokens());
+    }
   }
 }

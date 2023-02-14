@@ -26,8 +26,10 @@ import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.Operator.Associativity;
 import com.google.template.soy.internal.util.TreeStreams;
+import com.google.template.soy.jssrc.dsl.Expressions.DecoratedExpression;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -102,6 +104,20 @@ public abstract class Expression extends CodeChunk {
    */
   @Override
   abstract Stream<? extends CodeChunk> childrenStream();
+
+  /** Creates a new expression by appending special tokens after this expression. */
+  public Expression append(List<SpecialToken> tokens) {
+    return DecoratedExpression.create(this, ImmutableList.of(), tokens);
+  }
+
+  /** Creates a new expression by prepending special tokens before this expression. */
+  public Expression prepend(List<SpecialToken> tokens) {
+    return DecoratedExpression.create(this, tokens, ImmutableList.of());
+  }
+
+  public final Expression prepend(SpecialToken... tokens) {
+    return this.prepend(ImmutableList.copyOf(tokens));
+  }
 
   /**
    * If the expression has any initial statements, wraps it in a lambda so the expression can be

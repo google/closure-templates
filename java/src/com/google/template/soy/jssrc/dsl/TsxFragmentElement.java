@@ -16,11 +16,14 @@
 package com.google.template.soy.jssrc.dsl;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.common.collect.MoreCollectors.onlyElement;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
+import com.google.template.soy.jssrc.dsl.Expressions.DecoratedExpression;
 import com.google.template.soy.jssrc.dsl.FormattingContext.LexicalState;
+import com.google.template.soy.jssrc.dsl.Statements.DecoratedStatement;
 import com.google.template.soy.jssrc.dsl.TsxPrintNode.CommandChar;
 import java.util.List;
 import java.util.stream.Stream;
@@ -56,23 +59,32 @@ public abstract class TsxFragmentElement extends Expression {
 
   public static Expression create(List<? extends CodeChunk> body) {
     return new AutoValue_TsxFragmentElement(
-        body.stream().map(TsxFragmentElement::wrapChild).collect(toImmutableList()));
+        body.stream().flatMap(TsxFragmentElement::wrapChild).collect(toImmutableList()));
   }
 
-  static Expression wrapChild(CodeChunk chunk) {
+  static Stream<CodeChunk> wrapChild(CodeChunk chunk) {
     if (chunk instanceof TsxElement
         || chunk instanceof TsxPrintNode
         || chunk instanceof HtmlTag
         || chunk instanceof CommandChar) {
-      return (Expression) chunk;
+      return Stream.of(chunk);
     } else if (chunk instanceof StringLiteral) {
-      return TsxPrintNode.wrapIfNeeded((StringLiteral) chunk);
+      return Stream.of(TsxPrintNode.wrapIfNeeded((StringLiteral) chunk));
     } else if (chunk instanceof Concatenation) {
-      return ((Concatenation) chunk).map(TsxFragmentElement::wrapChild);
+      return Stream.of(((Concatenation) chunk).map(TsxFragmentElement::wrapChildExpr));
+    } else if (chunk instanceof DecoratedStatement || chunk instanceof DecoratedExpression) {
+      return chunk.childrenStream().flatMap(TsxFragmentElement::wrapChild);
     } else if (chunk instanceof Statement) {
-      return TsxPrintNode.wrap(((Statement) chunk).asExpr());
+      return Stream.of(TsxPrintNode.wrap(((Statement) chunk).asExpr()));
+    } else if (chunk instanceof Whitespace) {
+      return Stream.of(chunk);
+    } else {
+      return Stream.of(TsxPrintNode.wrap(chunk));
     }
-    return TsxPrintNode.wrap((Expression) chunk);
+  }
+
+  private static Expression wrapChildExpr(CodeChunk chunk) {
+    return (Expression) wrapChild(chunk).collect(onlyElement());
   }
 
   abstract ImmutableList<? extends CodeChunk> body();

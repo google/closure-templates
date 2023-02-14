@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Google Inc.
+ * Copyright 2023 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,27 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
-import com.google.common.base.Preconditions;
 import com.google.errorprone.annotations.Immutable;
 
-/** Represents a "//..." line comment. */
+/** Preserved whitespace. */
 @AutoValue
 @Immutable
-public abstract class LineComment extends SpecialToken {
+public abstract class Whitespace extends SpecialToken {
 
-  abstract String comment();
+  abstract String content();
 
-  public static LineComment create(String comment) {
-    Preconditions.checkArgument(!comment.contains("\n"));
-    return new AutoValue_LineComment(comment);
+  public static Whitespace create(String content) {
+    return new AutoValue_Whitespace(content);
   }
 
   @Override
   void doFormatToken(FormattingContext ctx) {
-    ctx.append("// " + comment());
-    ctx.endLine();
+    ctx.appendWithoutBreaks(content());
   }
 }

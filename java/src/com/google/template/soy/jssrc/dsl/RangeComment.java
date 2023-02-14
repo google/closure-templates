@@ -18,12 +18,11 @@ package com.google.template.soy.jssrc.dsl;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import com.google.errorprone.annotations.Immutable;
-import java.util.stream.Stream;
 
 /** Represents a "/*... * /" range comment. */
 @AutoValue
 @Immutable
-public abstract class RangeComment extends Statement {
+public abstract class RangeComment extends SpecialToken {
 
   abstract String comment();
 
@@ -45,43 +44,10 @@ public abstract class RangeComment extends Statement {
   }
 
   @Override
-  void doFormatStatement(FormattingContext ctx) {
+  void doFormatToken(FormattingContext ctx) {
     ctx.append(comment());
     if (!inline()) {
       ctx.endLine();
-    }
-  }
-
-  @Override
-  public Expression asExpr() {
-    return new StatementExpression(this);
-  }
-
-  @Override
-  Stream<? extends CodeChunk> childrenStream() {
-    return Stream.empty();
-  }
-
-  private static final class StatementExpression extends Expression {
-    private final Statement statement;
-
-    public StatementExpression(Statement statement) {
-      this.statement = statement;
-    }
-
-    @Override
-    void doFormatOutputExpr(FormattingContext ctx) {
-      ctx.appendAll(statement);
-    }
-
-    @Override
-    Stream<? extends CodeChunk> childrenStream() {
-      return statement.childrenStream();
-    }
-
-    @Override
-    public boolean isCheap() {
-      return true;
     }
   }
 }

@@ -71,10 +71,16 @@ public abstract class NamedFunctionDeclaration extends Statement {
       String name,
       ParamDecls params,
       Expression returnType,
-      ImmutableList<Statement> bodyStmts,
+      List<Statement> bodyStmts,
       boolean isExported) {
     return new AutoValue_NamedFunctionDeclaration(
-        name, params, returnType, /* jsDoc= */ Optional.empty(), bodyStmts, isExported, false);
+        name,
+        params,
+        returnType,
+        /* jsDoc= */ Optional.empty(),
+        ImmutableList.copyOf(bodyStmts),
+        isExported,
+        false);
   }
 
   public static NamedFunctionDeclaration declaration(

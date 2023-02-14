@@ -30,11 +30,18 @@ import java.util.stream.Stream;
 @Immutable
 public abstract class TsxPrintNode extends Expression {
 
-  public static TsxPrintNode wrap(Expression expr) {
+  public static TsxPrintNode wrap(CodeChunk expr) {
     if (expr instanceof TsxPrintNode) {
       return (TsxPrintNode) expr;
+    } else if (expr instanceof Expression) {
+      return new AutoValue_TsxPrintNode(((Expression) expr).asInlineExpr());
+    } else if (expr instanceof LineComment) {
+      return new AutoValue_TsxPrintNode(RangeComment.create(((LineComment) expr).comment(), false));
+    } else if (expr instanceof RangeComment) {
+      return new AutoValue_TsxPrintNode(expr);
+    } else {
+      throw new ClassCastException(expr.getClass().getName());
     }
-    return new AutoValue_TsxPrintNode(expr.asInlineExpr());
   }
 
   /**
@@ -48,7 +55,7 @@ public abstract class TsxPrintNode extends Expression {
     return s;
   }
 
-  public abstract Expression expr();
+  public abstract CodeChunk expr();
 
   @Override
   Stream<? extends CodeChunk> childrenStream() {
@@ -60,7 +67,12 @@ public abstract class TsxPrintNode extends Expression {
     ctx.append(ctx.getInterpolationOpenString());
     ctx.pushLexicalState(LexicalState.JS);
     ctx.increaseIndent();
-    ctx.appendOutputExpression(expr());
+    if (expr() instanceof Expression) {
+      // If outputting an expression, omit any semicolon.
+      ctx.appendOutputExpression((Expression) expr());
+    } else {
+      ctx.appendAll(expr());
+    }
     ctx.popLexicalState();
     ctx.append(ctx.getInterpolationCloseString());
     ctx.decreaseIndent();
@@ -68,7 +80,7 @@ public abstract class TsxPrintNode extends Expression {
 
   @Override
   public boolean isCheap() {
-    return expr().isCheap();
+    return !(expr() instanceof Expression) || ((Expression) expr()).isCheap();
   }
 
   /**

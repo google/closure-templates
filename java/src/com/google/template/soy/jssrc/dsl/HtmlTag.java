@@ -16,11 +16,14 @@
 package com.google.template.soy.jssrc.dsl;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.common.collect.MoreCollectors.onlyElement;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
+import com.google.template.soy.jssrc.dsl.Expressions.DecoratedExpression;
 import com.google.template.soy.jssrc.dsl.FormattingContext.LexicalState;
+import com.google.template.soy.jssrc.dsl.Statements.DecoratedStatement;
 import com.google.template.soy.jssrc.dsl.TsxPrintNode.CommandChar;
 import java.util.List;
 import java.util.stream.Stream;
@@ -52,21 +55,26 @@ public abstract class HtmlTag extends Expression {
   private static HtmlTag create(
       String tagName, boolean isClose, Stream<? extends CodeChunk> attributes) {
     return new AutoValue_HtmlTag(
-        tagName, isClose, attributes.map(HtmlTag::wrapChild).collect(toImmutableList()));
+        tagName, isClose, attributes.flatMap(HtmlTag::wrapChild).collect(toImmutableList()));
   }
 
-  private static Expression wrapChild(CodeChunk chunk) {
-    if (chunk instanceof HtmlAttribute
-        || chunk instanceof CommandChar) {
-      return (Expression) chunk;
+  private static Stream<CodeChunk> wrapChild(CodeChunk chunk) {
+    if (chunk instanceof HtmlAttribute || chunk instanceof CommandChar) {
+      return Stream.of(chunk);
     } else if (chunk instanceof StringLiteral) {
-      return TsxPrintNode.wrapIfNeeded((StringLiteral) chunk);
+      return Stream.of(TsxPrintNode.wrapIfNeeded((StringLiteral) chunk));
     } else if (chunk instanceof Concatenation) {
-      return ((Concatenation) chunk).map(HtmlTag::wrapChild);
+      return Stream.of(((Concatenation) chunk).map(HtmlTag::wrapChildExpr));
+    } else if (chunk instanceof DecoratedStatement || chunk instanceof DecoratedExpression) {
+      return chunk.childrenStream().flatMap(TsxFragmentElement::wrapChild);
     } else if (chunk instanceof Statement) {
-      return TsxPrintNode.wrap(((Statement) chunk).asExpr());
+      return Stream.of(TsxPrintNode.wrap(((Statement) chunk).asExpr()));
     }
-    return TsxPrintNode.wrap((Expression) chunk);
+    return Stream.of(TsxPrintNode.wrap(chunk));
+  }
+
+  private static Expression wrapChildExpr(CodeChunk chunk) {
+    return (Expression) wrapChild(chunk).collect(onlyElement());
   }
 
   abstract String tagName();

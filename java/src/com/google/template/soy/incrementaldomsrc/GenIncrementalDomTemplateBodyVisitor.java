@@ -803,7 +803,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
   @Override
   protected Statement visitHtmlOpenTagNode(HtmlOpenTagNode node) {
     List<Statement> statements = new ArrayList<>();
-    statements.add(LineComment.create(node.getSourceLocation().toString()));
+    statements.add(LineComment.create(node.getSourceLocation().toString()).asStatement());
     if (!node.isSkipRoot()) {
       if (node.getKeyNode() != null) {
         // Push key BEFORE emitting `elementOpen`. Later, for `elementOpen` calls of keyed elements,
@@ -867,7 +867,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
   protected Statement visitHtmlCloseTagNode(HtmlCloseTagNode node) {
     // This case occurs in the case where we encounter the end of a keyed element.
     List<Statement> statements = new ArrayList<>();
-    statements.add(LineComment.create(node.getSourceLocation().toString()));
+    statements.add(LineComment.create(node.getSourceLocation().toString()).asStatement());
     String tagName = node.getTagName().getTagString();
     if (tagName != null && Ascii.equalsIgnoreCase(tagName, "script")) {
       outputVars.popOutputVar();

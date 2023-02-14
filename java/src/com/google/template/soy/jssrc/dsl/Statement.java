@@ -15,7 +15,10 @@
  */
 package com.google.template.soy.jssrc.dsl;
 
+import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
+import com.google.template.soy.jssrc.dsl.Statements.DecoratedStatement;
+import java.util.List;
 
 /**
  * Subclass of {@link CodeChunk} that compile to one or more JavaScript statements.
@@ -51,5 +54,19 @@ public abstract class Statement extends CodeChunk {
    */
   public boolean isTerminal() {
     return false;
+  }
+
+  /** Creates a new statement by appending special tokens after this statement. */
+  public Statement append(List<SpecialToken> tokens) {
+    return DecoratedStatement.create(this, tokens, ImmutableList.of());
+  }
+
+  /** Creates a new statement by prepending special tokens before this statement. */
+  public Statement prepend(List<SpecialToken> tokens) {
+    return DecoratedStatement.create(this, ImmutableList.copyOf(tokens), ImmutableList.of());
+  }
+
+  public final Statement prepend(SpecialToken... tokens) {
+    return prepend(ImmutableList.copyOf(tokens));
   }
 }

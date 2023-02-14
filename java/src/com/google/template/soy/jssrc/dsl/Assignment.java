@@ -47,7 +47,7 @@ abstract class Assignment extends Statement {
     ctx.appendInitialStatements(lhs()).appendInitialStatements(rhs());
 
     if (jsDoc() != null) {
-      ctx.append(jsDoc()).endLine();
+      ctx.appendAll(jsDoc()).endLine();
     }
 
     ctx.appendOutputExpression(lhs())

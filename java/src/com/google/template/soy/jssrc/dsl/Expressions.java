@@ -16,11 +16,13 @@
 
 package com.google.template.soy.jssrc.dsl;
 
+import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Streams;
 import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.Operator;
@@ -42,6 +44,16 @@ public final class Expressions {
   public static final Expression LITERAL_EMPTY_LIST = arrayLiteral(ImmutableList.of());
   public static final Expression EMPTY_OBJECT_LITERAL = objectLiteral(ImmutableMap.of());
   public static final Expression THIS = id("this");
+  public static final Expression EMPTY =
+      new Expression() {
+        @Override
+        void doFormatOutputExpr(FormattingContext ctx) {}
+
+        @Override
+        Stream<? extends CodeChunk> childrenStream() {
+          return Stream.empty();
+        }
+      };
 
   /** Exploding error expr. This will blow up if used to write gencode. */
   public static final Expression ERROR_EXPR =
@@ -383,6 +395,63 @@ public final class Expressions {
     } else {
       return concat(
           ImmutableList.<Expression>builder().add(LITERAL_EMPTY_STRING).addAll(chunks).build());
+    }
+  }
+
+  @AutoValue
+  abstract static class DecoratedExpression extends Expression {
+
+    public static Expression create(
+        Expression expr, List<SpecialToken> before, List<SpecialToken> after) {
+      if (before.isEmpty() && after.isEmpty()) {
+        return expr;
+      }
+      return new AutoValue_Expressions_DecoratedExpression(
+          ImmutableList.copyOf(before), expr, ImmutableList.copyOf(after));
+    }
+
+    abstract ImmutableList<SpecialToken> beforeTokens();
+
+    abstract Expression expr();
+
+    abstract ImmutableList<SpecialToken> afterTokens();
+
+    @Override
+    void doFormatOutputExpr(FormattingContext ctx) {
+      for (CodeChunk chunk : beforeTokens()) {
+        ctx.appendAll(chunk);
+      }
+      ctx.appendOutputExpression(expr());
+      for (CodeChunk chunk : afterTokens()) {
+        ctx.appendAll(chunk);
+      }
+    }
+
+    @Override
+    Stream<? extends CodeChunk> childrenStream() {
+      return Streams.concat(beforeTokens().stream(), Stream.of(expr()), afterTokens().stream());
+    }
+
+    @Override
+    public Expression append(List<SpecialToken> tokens) {
+      if (tokens.isEmpty()) {
+        return this;
+      }
+      return create(
+          expr(),
+          beforeTokens(),
+          ImmutableList.<SpecialToken>builder().addAll(tokens).addAll(afterTokens()).build());
+    }
+
+    @Override
+    public Expression prepend(List<SpecialToken> tokens) {
+      if (tokens.isEmpty()) {
+        return this;
+      }
+      return create(
+          expr(),
+          ImmutableList.<SpecialToken>builder().addAll(tokens).addAll(beforeTokens()).build(),
+          afterTokens());
     }
   }
 }

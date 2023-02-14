@@ -48,7 +48,7 @@ public abstract class ExpressionStatement extends Statement {
   void doFormatStatement(FormattingContext ctx) {
     ctx.appendInitialStatements(expr());
     if (jsDoc() != null) {
-      ctx.append(jsDoc()).endLine();
+      ctx.appendAll(jsDoc()).endLine();
     }
     ctx.appendOutputExpression(expr());
     ctx.append(";");

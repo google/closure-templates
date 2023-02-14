@@ -69,7 +69,7 @@ public abstract class VariableDeclaration extends Statement implements CodeChunk
       ctx.appendInitialStatements(rhs());
     }
     if (jsDoc() != null) {
-      ctx.append(jsDoc()).endLine();
+      ctx.appendAll(jsDoc()).endLine();
     }
 
     if (isExported()) {
