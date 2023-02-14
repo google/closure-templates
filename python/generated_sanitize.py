@@ -215,7 +215,7 @@ _MATCHER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MED
 
 _FILTER_FOR_FILTER_CSS_VALUE = re.compile(r"""^(?!-*(?:expression|(?:moz-)?binding))(?:(?:[.#]?-?(?:[_a-z0-9-]+)(?:-[_a-z0-9-]+)*-?|(?:rgb|rgba|hsl|hsla|calc|max|min|cubic-bezier)\([- 	,+.!#%_0-9a-zA-Z]+\)|[-+]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:e-?[0-9]+)?(?:[a-z]{1,4}|%)?|!important)(?:\s*[, ]\s*|\Z))*\Z""", re.U | re.I)
 
-_FILTER_FOR_FILTER_NORMALIZE_URI = re.compile(r"""^(?:(?:https?|mailto|ftp):|[^&:/?#]*(?:[/?#]|\Z))""", re.U | re.I)
+_FILTER_FOR_FILTER_NORMALIZE_URI = re.compile(r"""^(?!javascript:)(?:[a-z0-9+.-]+:|[^&:/?#]*(?:[/?#]|\Z))""", re.U | re.I)
 
 _FILTER_FOR_FILTER_NORMALIZE_MEDIA_URI = re.compile(r"""^[^&:/?#]*(?:[/?#]|\Z)|^https?:|^ftp:|^data:image/[a-z0-9+]+;base64,[a-z0-9+/]+=*\Z|^blob:""", re.U | re.I)
 
