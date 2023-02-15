@@ -1187,14 +1187,13 @@ final class ExpressionCompiler {
                   }
                 });
           }
-          return visitDataAccess((DataAccessNode) node, baseExpr, /* hasAssertNonNull= */ false);
+          return visitDataAccess((DataAccessNode) node, baseExpr);
         default:
           return visit(node);
       }
     }
 
-    private SoyExpression visitDataAccess(
-        DataAccessNode node, SoyExpression baseExpr, boolean hasAssertNonNull) {
+    private SoyExpression visitDataAccess(DataAccessNode node, SoyExpression baseExpr) {
       SoyExpression result;
       switch (node.getKind()) {
         case FIELD_ACCESS_NODE:
@@ -1214,9 +1213,6 @@ final class ExpressionCompiler {
           break;
         default:
           throw new AssertionError();
-      }
-      if (hasAssertNonNull) {
-        result = assertNonNull(result, node);
       }
       return result;
     }
@@ -1353,10 +1349,7 @@ final class ExpressionCompiler {
         NullSafeAccessNode node = (NullSafeAccessNode) dataAccess;
         accumulator =
             accumulateNullSafeDataAccess(
-                (DataAccessNode) node.getBase(),
-                accumulator,
-                nullSafeExit,
-                /* hasAssertNonNull= */ false);
+                (DataAccessNode) node.getBase(), accumulator, nullSafeExit);
         dataAccess = node.getDataAccess();
       }
       accumulator =
@@ -1387,33 +1380,24 @@ final class ExpressionCompiler {
 
     private SoyExpression accumulateNullSafeDataAccessTail(
         AccessChainComponentNode dataAccessNode, SoyExpression baseExpr, Label nullSafeExit) {
-      boolean hasAssertNonNull = false;
       if (dataAccessNode.getKind() == ExprNode.Kind.ASSERT_NON_NULL_OP_NODE) {
         AssertNonNullOpNode assertNonNull = (AssertNonNullOpNode) dataAccessNode;
         dataAccessNode = (AccessChainComponentNode) assertNonNull.getChild(0);
-        hasAssertNonNull = true;
       }
-      return accumulateNullSafeDataAccess(
-          (DataAccessNode) dataAccessNode, baseExpr, nullSafeExit, hasAssertNonNull);
+      return accumulateNullSafeDataAccess((DataAccessNode) dataAccessNode, baseExpr, nullSafeExit);
     }
 
     private SoyExpression accumulateNullSafeDataAccess(
-        DataAccessNode dataAccessNode,
-        SoyExpression baseExpr,
-        Label nullSafeExit,
-        boolean hasAssertNonNull) {
+        DataAccessNode dataAccessNode, SoyExpression baseExpr, Label nullSafeExit) {
       baseExpr = addNullSafetyCheck(baseExpr, nullSafeExit);
-      return accumulateDataAccess(dataAccessNode, baseExpr, hasAssertNonNull);
+      return accumulateDataAccess(dataAccessNode, baseExpr);
     }
 
     private SoyExpression accumulateDataAccess(
-        DataAccessNode dataAccessNode, SoyExpression baseExpr, boolean hasAssertNonNull) {
+        DataAccessNode dataAccessNode, SoyExpression baseExpr) {
       if (dataAccessNode.getBaseExprChild() instanceof DataAccessNode) {
         baseExpr =
-            accumulateDataAccess(
-                    (DataAccessNode) dataAccessNode.getBaseExprChild(),
-                    baseExpr,
-                    /* hasAssertNonNull= */ false)
+            accumulateDataAccess((DataAccessNode) dataAccessNode.getBaseExprChild(), baseExpr)
                 // Mark non nullable.
                 // Dereferencing for access below may require unboxing and there is no point in
                 // adding null safety checks to the unboxing code.  So we just mark non nullable.
@@ -1422,7 +1406,7 @@ final class ExpressionCompiler {
                 // dereference.
                 .asNonNullable();
       }
-      return visitDataAccess(dataAccessNode, baseExpr, hasAssertNonNull);
+      return visitDataAccess(dataAccessNode, baseExpr);
     }
 
     // Builtin functions
@@ -1436,26 +1420,20 @@ final class ExpressionCompiler {
 
     @Override
     protected SoyExpression visitAssertNonNullOpNode(AssertNonNullOpNode node) {
-      return assertNonNull(Iterables.getOnlyElement(node.getChildren()));
+      return visit(Iterables.getOnlyElement(node.getChildren())).asNonNullable();
     }
 
     @Override
     SoyExpression visitCheckNotNullFunction(FunctionNode node) {
       // there is only ever a single child
-      return assertNonNull(Iterables.getOnlyElement(node.getChildren()));
-    }
-
-    private SoyExpression assertNonNull(ExprNode node) {
-      return assertNonNull(visit(node), node);
-    }
-
-    private static SoyExpression assertNonNull(SoyExpression expr, ExprNode node) {
+      ExprNode childNode = Iterables.getOnlyElement(node.getChildren());
+      SoyExpression expr = visit(childNode);
       if (expr.isNonNullable()) {
         return expr;
       }
       return expr.withSource(
               MethodRef.CHECK_NOT_NULL
-                  .invoke(expr, constant(node.toSourceString()))
+                  .invoke(expr, constant(childNode.toSourceString()))
                   .checkedCast(expr.resultType()))
           .asNonNullable();
     }

@@ -231,8 +231,12 @@ as well. For example, the expression `$foo?[$bar] > 0` is *not* safe.
 ### Non-null assertion operator `!` {#nonnull-assertion}
 
 A post-fix operator to assert that the operand is non-null. This removes `null`
-from the type of the operand and inserts a runtime check to throw an exception
-if the operand is `null`.
+from the type of the operand.
+
+NOTE: This does NOT insert a runtime check, so could allow `null` to sneak into
+variables that are typed as non-nullable. Use the
+[`checkNotNull`](functions#checkNotNull) function instead if you'd also like a
+runtime check.
 
 For example,
 

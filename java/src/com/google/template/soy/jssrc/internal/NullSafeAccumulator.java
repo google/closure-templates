@@ -70,14 +70,14 @@ final class NullSafeAccumulator {
    *     dereferencing {@code access}.
    */
   @CanIgnoreReturnValue
-  NullSafeAccumulator dotAccess(FieldAccess access, boolean nullSafe, boolean assertNonNull) {
-    chain.add(access.toChainAccess(nullSafe, assertNonNull));
+  NullSafeAccumulator dotAccess(FieldAccess access, boolean nullSafe) {
+    chain.add(access.toChainAccess(nullSafe));
     return this;
   }
 
   @CanIgnoreReturnValue
-  NullSafeAccumulator mapGetAccess(Expression mapKeyCode, boolean nullSafe, boolean assertNonNull) {
-    chain.add(FieldAccess.call("get", mapKeyCode).toChainAccess(nullSafe, assertNonNull));
+  NullSafeAccumulator mapGetAccess(Expression mapKeyCode, boolean nullSafe) {
+    chain.add(FieldAccess.call("get", mapKeyCode).toChainAccess(nullSafe));
     return this;
   }
 
@@ -88,8 +88,8 @@ final class NullSafeAccumulator {
    *     dereferencing {@code arg}.
    */
   @CanIgnoreReturnValue
-  NullSafeAccumulator bracketAccess(Expression arg, boolean nullSafe, boolean assertNonNull) {
-    chain.add(new Bracket(arg, nullSafe, assertNonNull));
+  NullSafeAccumulator bracketAccess(Expression arg, boolean nullSafe) {
+    chain.add(new Bracket(arg, nullSafe));
     return this;
   }
 
@@ -100,9 +100,8 @@ final class NullSafeAccumulator {
    * invoked.
    */
   @CanIgnoreReturnValue
-  NullSafeAccumulator functionCall(
-      boolean nullSafe, boolean assertNonNull, Function<Expression, Expression> extender) {
-    chain.add(new FunctionCall(nullSafe, assertNonNull, extender));
+  NullSafeAccumulator functionCall(boolean nullSafe, Function<Expression, Expression> extender) {
+    chain.add(new FunctionCall(nullSafe, extender));
     return this;
   }
 
@@ -162,9 +161,6 @@ final class NullSafeAccumulator {
     } else {
       result = buildAccessChain(newBase, generator, chain, unpackBuffer);
     }
-    if (link.assertNonNull) {
-      result = SOY_CHECK_NOT_NULL.call(result);
-    }
     return result;
   }
 
@@ -207,11 +203,9 @@ final class NullSafeAccumulator {
     abstract Expression extend(Expression prevTip);
 
     final boolean nullSafe;
-    final boolean assertNonNull;
 
-    ChainAccess(boolean nullSafe, boolean assertNonNull) {
+    ChainAccess(boolean nullSafe) {
       this.nullSafe = nullSafe;
-      this.assertNonNull = assertNonNull;
     }
 
     /**
@@ -235,9 +229,8 @@ final class NullSafeAccumulator {
   private static final class FunctionCall extends ChainAccess {
     private final Function<Expression, Expression> funct;
 
-    public FunctionCall(
-        boolean nullSafe, boolean assertNonNull, Function<Expression, Expression> funct) {
-      super(nullSafe, assertNonNull);
+    public FunctionCall(boolean nullSafe, Function<Expression, Expression> funct) {
+      super(nullSafe);
       this.funct = funct;
     }
 
@@ -258,8 +251,8 @@ final class NullSafeAccumulator {
   private static final class Bracket extends ChainAccess {
     final Expression value;
 
-    Bracket(Expression value, boolean nullSafe, boolean assertNonNull) {
-      super(nullSafe, assertNonNull);
+    Bracket(Expression value, boolean nullSafe) {
+      super(nullSafe);
       this.value = value;
     }
 
@@ -273,8 +266,8 @@ final class NullSafeAccumulator {
   private static final class Dot extends ChainAccess {
     final String id;
 
-    Dot(String id, boolean nullSafe, boolean assertNonNull) {
-      super(nullSafe, assertNonNull);
+    Dot(String id, boolean nullSafe) {
+      super(nullSafe);
       this.id = id;
     }
 
@@ -292,8 +285,8 @@ final class NullSafeAccumulator {
     final String getter;
     @Nullable final Expression arg;
 
-    DotCall(String getter, @Nullable Expression arg, boolean nullSafe, boolean assertNonNull) {
-      super(nullSafe, assertNonNull);
+    DotCall(String getter, @Nullable Expression arg, boolean nullSafe) {
+      super(nullSafe);
       this.getter = getter;
       this.arg = arg;
     }
@@ -308,8 +301,8 @@ final class NullSafeAccumulator {
 
     private final ProtoCall protoCall;
 
-    ProtoDotCall(boolean nullSafe, boolean assertNonNull, ProtoCall protoCall) {
-      super(nullSafe, assertNonNull);
+    ProtoDotCall(boolean nullSafe, ProtoCall protoCall) {
+      super(nullSafe);
       this.protoCall = protoCall;
     }
 
@@ -348,7 +341,7 @@ final class NullSafeAccumulator {
   abstract static class FieldAccess {
 
     @ForOverride
-    abstract ChainAccess toChainAccess(boolean nullSafe, boolean assertNonNull);
+    abstract ChainAccess toChainAccess(boolean nullSafe);
 
     static FieldAccess id(String fieldName) {
       return new AutoValue_NullSafeAccumulator_Id(fieldName);
@@ -373,8 +366,8 @@ final class NullSafeAccumulator {
     abstract String fieldName();
 
     @Override
-    ChainAccess toChainAccess(boolean nullSafe, boolean assertNonNull) {
-      return new Dot(fieldName(), nullSafe, assertNonNull);
+    ChainAccess toChainAccess(boolean nullSafe) {
+      return new Dot(fieldName(), nullSafe);
     }
   }
 
@@ -386,8 +379,8 @@ final class NullSafeAccumulator {
     abstract Expression arg();
 
     @Override
-    ChainAccess toChainAccess(boolean nullSafe, boolean assertNonNull) {
-      return new DotCall(getter(), arg(), nullSafe, assertNonNull);
+    ChainAccess toChainAccess(boolean nullSafe) {
+      return new DotCall(getter(), arg(), nullSafe);
     }
   }
 
@@ -483,8 +476,8 @@ final class NullSafeAccumulator {
     }
 
     @Override
-    ChainAccess toChainAccess(boolean nullSafe, boolean assertNonNull) {
-      return new ProtoDotCall(nullSafe, assertNonNull, this);
+    ChainAccess toChainAccess(boolean nullSafe) {
+      return new ProtoDotCall(nullSafe, this);
     }
 
     @Nullable

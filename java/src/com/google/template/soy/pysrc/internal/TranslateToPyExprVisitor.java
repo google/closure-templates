@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Iterables;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.AbstractReturningExprNodeVisitor;
@@ -352,19 +353,12 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
   }
 
   private PyExpr visitDataAccessNode(
-      DataAccessNode dataAccess,
-      StringBuilder nullSafetyPrefix,
-      PyExpr base,
-      boolean nullSafe,
-      boolean hasAssertNonNull) {
+      DataAccessNode dataAccess, StringBuilder nullSafetyPrefix, PyExpr base, boolean nullSafe) {
     // Generate null safety check for base expression.
     if (nullSafe) {
       nullSafetyPrefix.append("None if ").append(base.getText()).append(" is None else ");
     }
     PyExpr result = new PyExpr(visitDataAccessNode(dataAccess, base), Integer.MAX_VALUE);
-    if (hasAssertNonNull) {
-      result = assertNotNull(result);
-    }
     return result;
   }
 
@@ -409,12 +403,7 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
     ExprNode dataAccess = nullSafeAccessNode.getDataAccess();
     while (dataAccess.getKind() == ExprNode.Kind.NULL_SAFE_ACCESS_NODE) {
       NullSafeAccessNode node = (NullSafeAccessNode) dataAccess;
-      access =
-          accumulateDataAccess(
-              (DataAccessNode) node.getBase(),
-              access,
-              nullSafetyPrefix,
-              /* hasAssertNonNull= */ false);
+      access = accumulateDataAccess((DataAccessNode) node.getBase(), access, nullSafetyPrefix);
       dataAccess = node.getDataAccess();
     }
     access =
@@ -430,33 +419,24 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
   }
 
   private PyExpr accumulateDataAccess(
-      DataAccessNode dataAccessNode,
-      PyExpr base,
-      StringBuilder nullSafetyPrefix,
-      boolean hasAssertNonNull) {
+      DataAccessNode dataAccessNode, PyExpr base, StringBuilder nullSafetyPrefix) {
     boolean nullSafe = true;
     if (dataAccessNode.getBaseExprChild() instanceof DataAccessNode) {
       base =
           accumulateDataAccess(
-              (DataAccessNode) dataAccessNode.getBaseExprChild(),
-              base,
-              nullSafetyPrefix,
-              /* hasAssertNonNull= */ false);
+              (DataAccessNode) dataAccessNode.getBaseExprChild(), base, nullSafetyPrefix);
       nullSafe = false;
     }
-    return visitDataAccessNode(dataAccessNode, nullSafetyPrefix, base, nullSafe, hasAssertNonNull);
+    return visitDataAccessNode(dataAccessNode, nullSafetyPrefix, base, nullSafe);
   }
 
   private PyExpr accumulateDataAccessTail(
       AccessChainComponentNode dataAccessNode, PyExpr base, StringBuilder nullSafetyPrefix) {
-    boolean hasAssertNonNull = false;
     if (dataAccessNode.getKind() == ExprNode.Kind.ASSERT_NON_NULL_OP_NODE) {
       AssertNonNullOpNode assertNonNull = (AssertNonNullOpNode) dataAccessNode;
       dataAccessNode = (AccessChainComponentNode) assertNonNull.getChild(0);
-      hasAssertNonNull = true;
     }
-    return accumulateDataAccess(
-        (DataAccessNode) dataAccessNode, base, nullSafetyPrefix, hasAssertNonNull);
+    return accumulateDataAccess((DataAccessNode) dataAccessNode, base, nullSafetyPrefix);
   }
 
   // -----------------------------------------------------------------------------------------------
@@ -550,7 +530,7 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
 
   @Override
   protected PyExpr visitAssertNonNullOpNode(AssertNonNullOpNode node) {
-    return assertNotNull(node.getChild(0));
+    return visit(Iterables.getOnlyElement(node.getChildren()));
   }
 
   /**

@@ -411,11 +411,10 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     // All null safe accesses should've already been converted to NullSafeAccessNodes.
     checkArgument(!node.isNullSafe());
     SoyValue base = visit(node.getBaseExprChild());
-    return visitDataAccessNode(node, base, /*nullSafe=*/ false, /* hasAssertNonNull= */ false);
+    return visitDataAccessNode(node, base, /* nullSafe= */ false);
   }
 
-  private SoyValue visitDataAccessNode(
-      DataAccessNode node, SoyValue base, boolean nullSafe, boolean hasAssertNonNull) {
+  private SoyValue visitDataAccessNode(DataAccessNode node, SoyValue base, boolean nullSafe) {
     SoyValue result;
     switch (node.getKind()) {
       case FIELD_ACCESS_NODE:
@@ -430,9 +429,6 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       default:
         throw new AssertionError(node.getKind());
     }
-    if (hasAssertNonNull) {
-      result = assertNotNull(result, node);
-    }
     return result;
   }
 
@@ -442,9 +438,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     ExprNode dataAccess = nullSafeAccessNode.getDataAccess();
     while (!isNullOrUndefinedBase(value) && dataAccess.getKind() == Kind.NULL_SAFE_ACCESS_NODE) {
       NullSafeAccessNode node = (NullSafeAccessNode) dataAccess;
-      value =
-          accumulateDataAccess(
-              (DataAccessNode) node.getBase(), value, /* hasAssertNonNull= */ false);
+      value = accumulateDataAccess((DataAccessNode) node.getBase(), value);
       dataAccess = node.getDataAccess();
     }
     if (isNullOrUndefinedBase(value)) {
@@ -453,29 +447,22 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     return accumulateDataAccessTail((AccessChainComponentNode) dataAccess, value);
   }
 
-  private SoyValue accumulateDataAccess(
-      DataAccessNode dataAccessNode, SoyValue base, boolean hasAssertNonNull) {
+  private SoyValue accumulateDataAccess(DataAccessNode dataAccessNode, SoyValue base) {
     boolean accessChain = false;
     if (dataAccessNode.getBaseExprChild() instanceof DataAccessNode) {
-      base =
-          accumulateDataAccess(
-              (DataAccessNode) dataAccessNode.getBaseExprChild(),
-              base,
-              /* hasAssertNonNull= */ false);
+      base = accumulateDataAccess((DataAccessNode) dataAccessNode.getBaseExprChild(), base);
       accessChain = true;
     }
-    return visitDataAccessNode(dataAccessNode, base, !accessChain, hasAssertNonNull);
+    return visitDataAccessNode(dataAccessNode, base, !accessChain);
   }
 
   private SoyValue accumulateDataAccessTail(
       AccessChainComponentNode dataAccessNode, SoyValue base) {
-    boolean hasAssertNonNull = false;
     if (dataAccessNode.getKind() == ExprNode.Kind.ASSERT_NON_NULL_OP_NODE) {
       AssertNonNullOpNode assertNonNull = (AssertNonNullOpNode) dataAccessNode;
       dataAccessNode = (AccessChainComponentNode) assertNonNull.getChild(0);
-      hasAssertNonNull = true;
     }
-    return accumulateDataAccess((DataAccessNode) dataAccessNode, base, hasAssertNonNull);
+    return accumulateDataAccess((DataAccessNode) dataAccessNode, base);
   }
 
   private SoyValue visitFieldAccessNode(
@@ -829,7 +816,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
 
   @Override
   protected SoyValue visitAssertNonNullOpNode(AssertNonNullOpNode node) {
-    return assertNotNull(node.getChild(0));
+    return visit(Iterables.getOnlyElement(node.getChildren()));
   }
 
   // -----------------------------------------------------------------------------------------------

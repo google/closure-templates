@@ -58,6 +58,7 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
@@ -497,9 +498,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     ExprNode dataAccess = nullSafeAccessNode.getDataAccess();
     while (dataAccess.getKind() == ExprNode.Kind.NULL_SAFE_ACCESS_NODE) {
       NullSafeAccessNode nullSafe = (NullSafeAccessNode) dataAccess;
-      accumulator =
-          accumulateNullSafeDataAccess(
-              (DataAccessNode) nullSafe.getBase(), accumulator, /* assertNonNull= */ false);
+      accumulator = accumulateNullSafeDataAccess((DataAccessNode) nullSafe.getBase(), accumulator);
       dataAccess = nullSafe.getDataAccess();
     }
     return accumulateNullSafeDataAccessTail((AccessChainComponentNode) dataAccess, accumulator)
@@ -513,18 +512,15 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
 
   private NullSafeAccumulator accumulateNullSafeDataAccessTail(
       AccessChainComponentNode dataAccess, NullSafeAccumulator accumulator) {
-    boolean foundAssertNonNull = false;
     if (dataAccess.getKind() == ExprNode.Kind.ASSERT_NON_NULL_OP_NODE) {
       AssertNonNullOpNode assertNonNull = (AssertNonNullOpNode) dataAccess;
       dataAccess = (AccessChainComponentNode) assertNonNull.getChild(0);
-      foundAssertNonNull = true;
     }
-    return accumulateNullSafeDataAccess(
-        (DataAccessNode) dataAccess, accumulator, foundAssertNonNull);
+    return accumulateNullSafeDataAccess((DataAccessNode) dataAccess, accumulator);
   }
 
   private NullSafeAccumulator accumulateNullSafeDataAccess(
-      DataAccessNode dataAccessNode, NullSafeAccumulator accumulator, boolean assertNonNull) {
+      DataAccessNode dataAccessNode, NullSafeAccumulator accumulator) {
     // All null safe accesses should've already been converted to NullSafeAccessNodes.
     checkArgument(!dataAccessNode.isNullSafe());
     boolean accessChain = false;
@@ -533,12 +529,10 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
       // ($foo.bar) first.
       accumulator =
           accumulateNullSafeDataAccess(
-              (DataAccessNode) dataAccessNode.getBaseExprChild(),
-              accumulator,
-              /* assertNonNull= */ false);
+              (DataAccessNode) dataAccessNode.getBaseExprChild(), accumulator);
       accessChain = true;
     }
-    return accumulateDataAccess(dataAccessNode, accumulator, !accessChain, assertNonNull);
+    return accumulateDataAccess(dataAccessNode, accumulator, !accessChain);
   }
 
   private NullSafeAccumulator accumulateDataAccess(DataAccessNode dataAccessNode) {
@@ -553,15 +547,11 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
       // The base expression is not a DataAccessNode, so this is the base of an access chain.
       accumulator = new NullSafeAccumulator(visit(dataAccessNode.getBaseExprChild()));
     }
-    return accumulateDataAccess(
-        dataAccessNode, accumulator, /* nullSafe= */ false, /* assertNonNull= */ false);
+    return accumulateDataAccess(dataAccessNode, accumulator, /* nullSafe= */ false);
   }
 
   private NullSafeAccumulator accumulateDataAccess(
-      DataAccessNode dataAccessNode,
-      NullSafeAccumulator accumulator,
-      boolean nullSafe,
-      boolean assertNonNull) {
+      DataAccessNode dataAccessNode, NullSafeAccumulator accumulator, boolean nullSafe) {
     switch (dataAccessNode.getKind()) {
       case FIELD_ACCESS_NODE:
         FieldAccessNode fieldAccess = (FieldAccessNode) dataAccessNode;
@@ -570,20 +560,20 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
                 fieldAccess.getBaseExprChild().getType(),
                 fieldAccess.getAccessSourceLocation(),
                 fieldAccess.getFieldName());
-        return accumulator.dotAccess(access, nullSafe, assertNonNull);
+        return accumulator.dotAccess(access, nullSafe);
       case ITEM_ACCESS_NODE:
         ItemAccessNode itemAccess = (ItemAccessNode) dataAccessNode;
         ExprNode keyNode = itemAccess.getKeyExprChild();
         SoyType baseType = itemAccess.getBaseExprChild().getType();
         return SoyTypes.isKindOrUnionOfKind(SoyTypes.removeNull(baseType), Kind.MAP) // soy.Map
-            ? accumulator.mapGetAccess(genMapKeyCode(keyNode), nullSafe, assertNonNull)
+            ? accumulator.mapGetAccess(genMapKeyCode(keyNode), nullSafe)
             : accumulator.bracketAccess(
                 // The key type may not match JsCompiler's type system (passing number as enum, or
                 // nullable proto field).  I could instead cast this to the map's key type.
-                visit(keyNode).castAsUnknown(), nullSafe, assertNonNull); // vanilla bracket access
+                visit(keyNode).castAsUnknown(), nullSafe); // vanilla bracket access
       case METHOD_CALL_NODE:
         MethodCallNode methodCall = (MethodCallNode) dataAccessNode;
-        return genCodeForMethodCall(accumulator, methodCall, nullSafe, assertNonNull);
+        return genCodeForMethodCall(accumulator, methodCall, nullSafe);
       default:
         throw new AssertionError(dataAccessNode.getKind());
     }
@@ -625,10 +615,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
    * @param methodCallNode The method call node.
    */
   private NullSafeAccumulator genCodeForMethodCall(
-      NullSafeAccumulator base,
-      MethodCallNode methodCallNode,
-      boolean nullSafe,
-      boolean assertNonNull) {
+      NullSafeAccumulator base, MethodCallNode methodCallNode, boolean nullSafe) {
     Preconditions.checkArgument(methodCallNode.isMethodResolved());
 
     SoyMethod soyMethod = methodCallNode.getSoyMethod();
@@ -641,8 +628,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
           String extName = BuiltinMethod.getProtoExtensionIdFromMethodCall(methodCallNode);
           return base.dotAccess(
               ProtoCall.getField(extName, ((SoyProtoType) baseType).getFieldDescriptor(extName)),
-              nullSafe,
-              assertNonNull);
+              nullSafe);
         case HAS_PROTO_FIELD:
           String fieldName = BuiltinMethod.getProtoFieldNameFromMethodCall(methodCallNode);
           FieldAccess fieldAccess =
@@ -653,7 +639,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
                   type ->
                       ProtoCall.hasField(
                           fieldName, ((SoyProtoType) type).getFieldDescriptor(fieldName)));
-          return base.dotAccess(fieldAccess, nullSafe, assertNonNull);
+          return base.dotAccess(fieldAccess, nullSafe);
         case GET_PROTO_FIELD:
           fieldName = BuiltinMethod.getProtoFieldNameFromMethodCall(methodCallNode);
           fieldAccess =
@@ -664,7 +650,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
                   type ->
                       ProtoCall.getField(
                           fieldName, ((SoyProtoType) type).getFieldDescriptor(fieldName)));
-          return base.dotAccess(fieldAccess, nullSafe, assertNonNull);
+          return base.dotAccess(fieldAccess, nullSafe);
         case GET_PROTO_FIELD_OR_UNDEFINED:
           fieldName = BuiltinMethod.getProtoFieldNameFromMethodCall(methodCallNode);
           fieldAccess =
@@ -675,13 +661,12 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
                   type ->
                       ProtoCall.getFieldOrUndefined(
                           fieldName, ((SoyProtoType) type).getFieldDescriptor(fieldName)));
-          return base.dotAccess(fieldAccess, nullSafe, assertNonNull);
+          return base.dotAccess(fieldAccess, nullSafe);
           // When adding new built-in methods it may be necessary to assert that the base expression
           // is not null in order to prevent a method call on a null instance from ever succeeding.
         case BIND:
           return base.functionCall(
               nullSafe,
-              assertNonNull,
               (baseExpr) ->
                   genCodeForBind(baseExpr, visit(methodCallNode.getParams().get(0)), baseType));
       }
@@ -691,7 +676,6 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
 
       return base.functionCall(
           nullSafe,
-          assertNonNull,
           baseExpr -> {
             List<Expression> args = new ArrayList<>();
             args.add(baseExpr);
@@ -870,7 +854,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
 
   @Override
   protected Expression visitAssertNonNullOpNode(AssertNonNullOpNode node) {
-    return assertNonNull(node.getChild(0));
+    return visit(Iterables.getOnlyElement(node.getChildren()));
   }
 
   protected Expression visitProtoInitFunction(FunctionNode node) {
