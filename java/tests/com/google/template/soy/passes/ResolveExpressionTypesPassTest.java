@@ -41,6 +41,7 @@ import com.google.template.soy.testing.Example;
 import com.google.template.soy.testing.ExampleExtendable;
 import com.google.template.soy.testing.SomeExtension;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
+import com.google.template.soy.testing.correct.Proto2CorrectSemantics.Proto2ImplicitDefaults;
 import com.google.template.soy.types.AnyType;
 import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.IntType;
@@ -762,13 +763,31 @@ public final class ResolveExpressionTypesPassTest {
   }
 
   @Test
-  public void testProtoInitTyping() {
+  public void testProtoTyping() {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forTemplateAndImports(
                 constructTemplateSource(
                     "{let $proto: ExampleExtendable() /}",
-                    "{assertType('example.ExampleExtendable', $proto)}"),
-                ExampleExtendable.getDescriptor())
+                    "{assertType('example.ExampleExtendable', $proto)}",
+                    "{assertType('string', $proto.someString)}",
+                    "{assertType('string', $proto.getSomeString())}",
+                    "{assertType('null|string', $proto.getSomeStringOrUndefined())}",
+                    "{assertType('int', $proto.someNumNoDefault)}",
+                    // getSomeNumNoDefault() doesn't exist because the proto has "incorrect"
+                    // semantics.
+                    "{assertType('int|null', $proto.getSomeNumNoDefaultOrUndefined())}",
+                    "{assertType('example.SomeEmbeddedMessage', $proto.someEmbeddedMessage)}",
+                    "{assertType('example.SomeEmbeddedMessage|null',"
+                        + " $proto.getSomeEmbeddedMessage())}",
+                    "{assertType('list<int>', $proto.repeatedLongWithInt52JsTypeList)}",
+                    "{assertType('list<int>', $proto.getRepeatedLongWithInt52JsTypeList())}",
+                    "",
+                    "{let $protoCorrect: Proto2ImplicitDefaults() /}",
+                    "{assertType('string', $protoCorrect.string)}",
+                    "{assertType('string', $protoCorrect.getString())}",
+                    "{assertType('null|string', $protoCorrect.getStringOrUndefined())}"),
+                ExampleExtendable.getDescriptor(),
+                Proto2ImplicitDefaults.getDescriptor())
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
             .parse()
             .fileSet();
