@@ -31,7 +31,7 @@ import javax.annotation.Nullable;
 @Immutable
 public abstract class ParamDecl extends CodeChunk {
 
-  abstract String name();
+  public abstract String name();
 
   @Nullable
   abstract Expression type();

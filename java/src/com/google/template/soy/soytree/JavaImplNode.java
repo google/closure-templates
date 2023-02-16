@@ -44,6 +44,7 @@ public final class JavaImplNode extends ExternImplNode {
       "static_interface"; // static method in a interface
   private static final ImmutableSet<String> ALLOWED_TYPES =
       ImmutableSet.of(TYPE_STATIC, TYPE_INSTANCE, TYPE_INTERFACE, TYPE_STATIC_INTERFACE);
+  public static final String DEFAULT_TYPE = TYPE_STATIC;
 
   private static final SoyErrorKind INVALID_IMPL_ATTRIBUTE =
       SoyErrorKind.of("Invalid attribute ''{0}''.");
@@ -146,7 +147,7 @@ public final class JavaImplNode extends ExternImplNode {
   }
 
   public String type() {
-    return type != null ? type.getValue() : TYPE_STATIC;
+    return type != null ? type.getValue() : DEFAULT_TYPE;
   }
 
   public boolean isStatic() {
