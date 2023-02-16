@@ -65,26 +65,8 @@ public abstract class FunctionDeclaration extends Expression
 
   abstract Statement body();
 
-  abstract boolean isArrowFunction();
-
   public static FunctionDeclaration create(JsDoc jsDoc, Statement body) {
-    return new AutoValue_FunctionDeclaration(jsDoc, body, false);
-  }
-
-  public static FunctionDeclaration createArrowFunction(JsDoc jsDoc, Statement body) {
-    return new AutoValue_FunctionDeclaration(jsDoc, body, true);
-  }
-
-  public static FunctionDeclaration createArrowFunction(JsDoc jsDoc, Expression body) {
-    return createArrowFunction(jsDoc, Statements.returnValue(body));
-  }
-
-  public static FunctionDeclaration createArrowFunction(Expression body) {
-    return createArrowFunction(JsDoc.getDefaultInstance(), Statements.returnValue(body));
-  }
-
-  public static FunctionDeclaration createArrowFunction(List<Statement> statements) {
-    return createArrowFunction(JsDoc.getDefaultInstance(), Statements.of(statements));
+    return new AutoValue_FunctionDeclaration(jsDoc, body);
   }
 
   @Override
@@ -94,40 +76,11 @@ public abstract class FunctionDeclaration extends Expression
 
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
-    if (!isArrowFunction()) {
-      ctx.append("function");
-    }
-    boolean paramsNeedParens = !isArrowFunction() || jsDoc().params().size() != 1;
-    if (paramsNeedParens) {
-      ctx.append("(");
-    }
-    ctx.append(generateParamList(jsDoc(), /* addInlineTypeAnnotations= */ isArrowFunction()));
-    if (paramsNeedParens) {
-      ctx.append(")");
-    }
-    if (isArrowFunction()) {
-      ctx.append(" => ");
-    } else {
-      ctx.append(" ");
-    }
-    if (isArrowFunction()) {
-      if (body() instanceof Return) {
-        Expression exprBody = ((Return) body()).value();
-        if (exprBody.isRepresentableAsSingleExpression()) {
-          if (exprBody.initialExpressionIsObjectLiteral()) {
-            exprBody = Group.create(exprBody);
-          }
-          ctx.appendOutputExpression(exprBody);
-          return;
-        }
-      }
-      try (FormattingContext ignored = ctx.enterBlock()) {
-        ctx.appendAll(body());
-      }
-    } else {
-      try (FormattingContext ignored = ctx.enterBlock()) {
-        ctx.appendAll(body());
-      }
+    ctx.append("function(");
+    ctx.append(generateParamList(jsDoc(), false));
+    ctx.append(") ");
+    try (FormattingContext ignored = ctx.enterBlock()) {
+      ctx.appendAll(body());
     }
   }
 }

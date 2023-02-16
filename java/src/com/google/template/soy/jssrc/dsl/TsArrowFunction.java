@@ -15,10 +15,10 @@
  */
 package com.google.template.soy.jssrc.dsl;
 
+import com.google.auto.value.AutoValue;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.jssrc.restricted.JsExpr;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
@@ -31,25 +31,25 @@ import javax.annotation.Nullable;
  * (param: string): string => { ... }
  * }</code>
  */
-public class TsArrowFunction extends Expression implements Expression.InitialStatementsScope {
+@AutoValue
+abstract class TsArrowFunction extends Expression implements Expression.InitialStatementsScope {
 
-  private final ParamDecls params;
-  private final Optional<Expression> returnType;
-  private final ImmutableList<Statement> bodyStmts;
-
-  /** Arrow function with implicit return type. */
-  TsArrowFunction(ParamDecls params, List<Statement> bodyStmts) {
-    this.params = params;
-    this.returnType = Optional.empty();
-    this.bodyStmts = ImmutableList.copyOf(bodyStmts);
+  static TsArrowFunction create(ParamDecls params, List<Statement> statements) {
+    return new AutoValue_TsArrowFunction(params, null, ImmutableList.copyOf(statements));
   }
 
-  /** Arrow function with explicit return type. */
-  TsArrowFunction(ParamDecls params, Expression returnType, List<Statement> bodyStmts) {
-    this.params = params;
-    this.returnType = Optional.of(returnType);
-    this.bodyStmts = ImmutableList.copyOf(bodyStmts);
+  static TsArrowFunction create(
+      ParamDecls params, Expression returnType, List<Statement> statements) {
+    return new AutoValue_TsArrowFunction(
+        params, Preconditions.checkNotNull(returnType), ImmutableList.copyOf(statements));
   }
+
+  abstract ParamDecls params();
+
+  @Nullable
+  abstract Expression returnType();
+
+  abstract ImmutableList<Statement> bodyStmts();
 
   /**
    * If the body is a single return statement of a single expression, return that expresion,
@@ -57,10 +57,10 @@ public class TsArrowFunction extends Expression implements Expression.InitialSta
    */
   @Nullable
   private Expression getSingleExpression() {
-    if (bodyStmts.size() != 1 || !(bodyStmts.get(0) instanceof Return)) {
+    if (bodyStmts().size() != 1 || !(bodyStmts().get(0) instanceof Return)) {
       return null;
     }
-    Expression exprBody = ((Return) bodyStmts.get(0)).value();
+    Expression exprBody = ((Return) bodyStmts().get(0)).value();
     if (!exprBody.isRepresentableAsSingleExpression()) {
       return null;
     }
@@ -73,10 +73,10 @@ public class TsArrowFunction extends Expression implements Expression.InitialSta
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
     try (FormattingContext buffer = ctx.buffer()) {
-      buffer.append("(").appendAll(params).append(")");
-      if (returnType.isPresent()) {
+      buffer.append("(").appendAll(params()).append(")");
+      if (returnType() != null) {
         buffer.append(": ");
-        buffer.appendOutputExpression(returnType.get());
+        buffer.appendOutputExpression(returnType());
       }
       buffer.append(" => ");
     }
@@ -85,7 +85,7 @@ public class TsArrowFunction extends Expression implements Expression.InitialSta
       ctx.appendOutputExpression(singleExpression);
     } else {
       ctx.enterBlock();
-      for (CodeChunk stmt : bodyStmts) {
+      for (CodeChunk stmt : bodyStmts()) {
         ctx.appendAll(stmt);
         ctx.endLine();
       }
@@ -95,12 +95,10 @@ public class TsArrowFunction extends Expression implements Expression.InitialSta
 
   @Override
   Stream<? extends CodeChunk> childrenStream() {
-    return bodyStmts.stream();
-  }
-
-  @Override
-  public JsExpr singleExprOrName(FormatOptions formatOptions) {
-    // UnsupportedOperationException, essentially.
-    return new JsExpr("$$SOY_INTERNAL_ERROR_EXPR", Integer.MAX_VALUE);
+    Stream<? extends CodeChunk> s = bodyStmts().stream();
+    if (returnType() != null) {
+      s = Stream.concat(s, Stream.of(returnType()));
+    }
+    return s;
   }
 }

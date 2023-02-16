@@ -99,19 +99,25 @@ public final class Expressions {
     return Leaf.create(expr, /* isCheap= */ false, requires);
   }
 
-  /** Arrow function with implicit return type. */
-  public static Expression tsArrowFunction(ParamDecls params, List<Statement> bodyStmts) {
-    return new TsArrowFunction(params, bodyStmts);
+  public static Expression tsArrowFunction(List<Statement> bodyStmts) {
+    return tsArrowFunction(ParamDecls.EMPTY, bodyStmts);
   }
 
-  /** Arrow function with explicit return type. */
+  public static Expression tsArrowFunction(ParamDecls params, List<Statement> bodyStmts) {
+    return TsArrowFunction.create(params, bodyStmts);
+  }
+
   public static Expression tsArrowFunction(
       ParamDecls params, Expression returnType, List<Statement> bodyStmts) {
-    return new TsArrowFunction(params, returnType, bodyStmts);
+    return TsArrowFunction.create(params, returnType, bodyStmts);
+  }
+
+  public static Expression tsArrowFunction(Expression lambda) {
+    return tsArrowFunction(ParamDecls.EMPTY, ImmutableList.of(Return.create(lambda)));
   }
 
   public static Expression tsArrowFunction(ParamDecls params, Expression lambda) {
-    return new TsArrowFunction(params, ImmutableList.of(Return.create(lambda)));
+    return tsArrowFunction(params, ImmutableList.of(Return.create(lambda)));
   }
 
   public static Expression genericType(Expression className, ImmutableList<Expression> generics) {
@@ -247,17 +253,12 @@ public final class Expressions {
 
   /** Creates a code chunk representing an arrow function. */
   public static Expression arrowFunction(JsDoc parameters, Statement body) {
-    return FunctionDeclaration.createArrowFunction(parameters, body);
+    return JsArrowFunction.create(parameters, body);
   }
 
   /** Creates a code chunk representing an arrow function. */
   public static Expression arrowFunction(JsDoc parameters, Expression body) {
-    return FunctionDeclaration.createArrowFunction(parameters, body);
-  }
-
-  /** Creates a code chunk representing an immediately invoked function expression. */
-  public static Expression iife(Expression expr) {
-    return Group.create(FunctionDeclaration.createArrowFunction(expr)).call();
+    return arrowFunction(parameters, Statements.returnValue(body));
   }
 
   /** Creates a code chunk representing the logical negation {@code !} of the given chunk. */

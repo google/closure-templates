@@ -131,7 +131,7 @@ public abstract class Expression extends CodeChunk {
 
     // Otherwise wrap in a lambda expression so we can include the initial statements (e.g. () -> {
     // x = 5; return x + 1;}).
-    return FunctionDeclaration.createArrowFunction(this);
+    return Expressions.tsArrowFunction(ParamDecls.EMPTY, this);
   }
 
   /** Formats this expression as a statement. */

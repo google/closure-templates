@@ -33,15 +33,17 @@ import java.util.stream.Stream;
 @Immutable
 public abstract class ParamDecls extends CodeChunk {
 
+  public static final ParamDecls EMPTY = create(ImmutableList.of());
+
   abstract ImmutableList<ParamDecl> params();
 
-  abstract boolean templateStyle();
+  abstract boolean namedStyle();
 
-  public static ParamDecls createForTemplate(List<ParamDecl> params) {
+  public static ParamDecls createNamed(List<ParamDecl> params) {
     return new AutoValue_ParamDecls(ImmutableList.copyOf(params), true);
   }
 
-  public static ParamDecls createForExtern(List<ParamDecl> params) {
+  public static ParamDecls create(List<ParamDecl> params) {
     return new AutoValue_ParamDecls(ImmutableList.copyOf(params), false);
   }
 
@@ -52,7 +54,7 @@ public abstract class ParamDecls extends CodeChunk {
 
   @Override
   void doFormatInitialStatements(FormattingContext ctx) {
-    if (templateStyle()) {
+    if (namedStyle()) {
       if (params().isEmpty()) {
         ctx.append("{}: {}");
         return;
