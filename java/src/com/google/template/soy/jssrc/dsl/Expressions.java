@@ -121,27 +121,27 @@ public final class Expressions {
   }
 
   public static Expression genericType(Expression className, ImmutableList<Expression> generics) {
-    return new GenericType(className, generics);
+    return GenericType.create(className, generics);
   }
 
   public static Expression genericType(Expression className, Expression... generics) {
-    return new GenericType(className, ImmutableList.copyOf(generics));
+    return GenericType.create(className, ImmutableList.copyOf(generics));
   }
 
   public static Expression functionType(Expression returnType, List<ParamDecl> params) {
-    return new FunctionType(returnType, params);
+    return FunctionType.create(returnType, params);
   }
 
   public static Expression arrayType(Expression simpleType, boolean readonly) {
-    return new ArrayType(readonly, simpleType);
+    return ArrayType.create(readonly, simpleType);
   }
 
   public static Expression unionType(List<Expression> members) {
-    return new UnionType(members);
+    return UnionType.create(members);
   }
 
   public static Expression recordType(List<ParamDecl> params) {
-    return new RecordType(params);
+    return RecordType.create(params);
   }
 
   /**

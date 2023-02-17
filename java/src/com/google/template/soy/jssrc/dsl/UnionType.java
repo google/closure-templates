@@ -16,25 +16,27 @@
 
 package com.google.template.soy.jssrc.dsl;
 
+import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.stream.Stream;
 
 /** Represents a TS union type, for use with eg `new` statements. */
-public class UnionType extends AbstractType {
+@AutoValue
+public abstract class UnionType extends AbstractType {
 
-  private final ImmutableList<Expression> members;
-
-  UnionType(List<Expression> members) {
-    this.members = ImmutableList.copyOf(members);
+  public static UnionType create(List<Expression> members) {
+    return new AutoValue_UnionType(ImmutableList.copyOf(members));
   }
+
+  abstract ImmutableList<Expression> members();
 
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
     try (FormattingContext buffer = ctx.buffer()) {
-      for (int i = 0; i < members.size(); i++) {
-        buffer.appendOutputExpression(members.get(i));
-        if (i < members.size() - 1) {
+      for (int i = 0; i < members().size(); i++) {
+        buffer.appendOutputExpression(members().get(i));
+        if (i < members().size() - 1) {
           buffer.append("|");
         }
       }
@@ -43,6 +45,6 @@ public class UnionType extends AbstractType {
 
   @Override
   Stream<? extends CodeChunk> childrenStream() {
-    return members.stream();
+    return members().stream();
   }
 }

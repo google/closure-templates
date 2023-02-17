@@ -16,27 +16,29 @@
 
 package com.google.template.soy.jssrc.dsl;
 
+import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.stream.Stream;
 
 /** Represents a TS function type. */
-public class FunctionType extends AbstractType {
+@AutoValue
+public abstract class FunctionType extends AbstractType {
 
-  private final Expression returnType;
-  private final ImmutableList<ParamDecl> params;
-
-  public FunctionType(Expression returnType, List<ParamDecl> params) {
-    this.returnType = returnType;
-    this.params = ImmutableList.copyOf(params);
+  public static FunctionType create(Expression returnType, List<ParamDecl> params) {
+    return new AutoValue_FunctionType(returnType, ImmutableList.copyOf(params));
   }
+
+  abstract Expression returnType();
+
+  abstract ImmutableList<ParamDecl> params();
 
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
     try (FormattingContext buffer = ctx.buffer()) {
       buffer.append("(");
       boolean first = true;
-      for (ParamDecl param : params) {
+      for (ParamDecl param : params()) {
         if (first) {
           first = false;
         } else {
@@ -49,12 +51,12 @@ public class FunctionType extends AbstractType {
         }
       }
       buffer.append(") => ");
-      buffer.appendOutputExpression(returnType);
+      buffer.appendOutputExpression(returnType());
     }
   }
 
   @Override
   Stream<? extends CodeChunk> childrenStream() {
-    return Stream.concat(Stream.of(returnType), params.stream());
+    return Stream.concat(Stream.of(returnType()), params().stream());
   }
 }

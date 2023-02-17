@@ -16,28 +16,31 @@
 
 package com.google.template.soy.jssrc.dsl;
 
+import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
+import java.util.List;
 import java.util.stream.Stream;
 
 /** Represents a TS generic type, for use with eg `new` statements. */
-public class GenericType extends AbstractType {
+@AutoValue
+public abstract class GenericType extends AbstractType {
 
-  private final Expression className;
-  private final ImmutableList<Expression> generics;
-
-  GenericType(Expression className, ImmutableList<Expression> generics) {
-    this.className = className;
-    this.generics = generics;
+  public static GenericType create(Expression className, List<Expression> generics) {
+    return new AutoValue_GenericType(className, ImmutableList.copyOf(generics));
   }
+
+  abstract Expression className();
+
+  abstract ImmutableList<Expression> generics();
 
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
     try (FormattingContext buffer = ctx.buffer()) {
-      buffer.appendOutputExpression(className);
+      buffer.appendOutputExpression(className());
       buffer.append("<");
-      for (int i = 0; i < generics.size(); i++) {
-        buffer.appendOutputExpression(generics.get(i));
-        if (i < generics.size() - 1) {
+      for (int i = 0; i < generics().size(); i++) {
+        buffer.appendOutputExpression(generics().get(i));
+        if (i < generics().size() - 1) {
           buffer.append(", ");
         }
       }
@@ -47,6 +50,6 @@ public class GenericType extends AbstractType {
 
   @Override
   Stream<? extends CodeChunk> childrenStream() {
-    return Stream.concat(Stream.of(className), generics.stream());
+    return Stream.concat(Stream.of(className()), generics().stream());
   }
 }

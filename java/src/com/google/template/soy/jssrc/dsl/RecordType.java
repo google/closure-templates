@@ -16,25 +16,27 @@
 
 package com.google.template.soy.jssrc.dsl;
 
+import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.stream.Stream;
 
 /** Represents a TS record type, for use with eg `new` statements. */
-public class RecordType extends AbstractType {
+@AutoValue
+public abstract class RecordType extends AbstractType {
 
-  private final ImmutableList<ParamDecl> params;
-
-  RecordType(List<ParamDecl> params) {
-    this.params = ImmutableList.copyOf(params);
+  public static RecordType create(List<ParamDecl> params) {
+    return new AutoValue_RecordType(ImmutableList.copyOf(params));
   }
+
+  abstract ImmutableList<ParamDecl> params();
 
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
     try (FormattingContext buffer = ctx.buffer()) {
       buffer.append("{");
       boolean first = true;
-      for (ParamDecl param : params) {
+      for (ParamDecl param : params()) {
         if (first) {
           first = false;
         } else {
@@ -53,6 +55,6 @@ public class RecordType extends AbstractType {
 
   @Override
   Stream<? extends CodeChunk> childrenStream() {
-    return params.stream();
+    return params().stream();
   }
 }

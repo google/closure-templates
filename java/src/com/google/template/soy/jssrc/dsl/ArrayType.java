@@ -16,31 +16,33 @@
 
 package com.google.template.soy.jssrc.dsl;
 
+import com.google.auto.value.AutoValue;
 import java.util.stream.Stream;
 
 /** Represents a TS record type, for use with eg `new` statements. */
-public class ArrayType extends AbstractType {
+@AutoValue
+public abstract class ArrayType extends AbstractType {
 
-  private final boolean readonly;
-  private final Expression simpleType;
-
-  public ArrayType(boolean readonly, Expression simpleType) {
-    this.readonly = readonly;
-    this.simpleType = simpleType;
+  public static ArrayType create(boolean readonly, Expression simpleType) {
+    return new AutoValue_ArrayType(readonly, simpleType);
   }
+
+  abstract boolean readonly();
+
+  abstract Expression simpleType();
 
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
     try (FormattingContext buffer = ctx.buffer()) {
-      if (readonly) {
+      if (readonly()) {
         buffer.append("readonly ");
       }
-      buffer.appendOutputExpression(simpleType).append("[]");
+      buffer.appendOutputExpression(simpleType()).append("[]");
     }
   }
 
   @Override
   Stream<? extends CodeChunk> childrenStream() {
-    return Stream.of(simpleType);
+    return Stream.of(simpleType());
   }
 }
