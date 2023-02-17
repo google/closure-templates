@@ -45,6 +45,7 @@ class FormattingContext implements AutoCloseable {
     TSX,
     TSX_ATTR,
     TTL,
+    RANGE_COMMENT
   }
 
   FormattingContext(FormatOptions formatOptions) {
@@ -110,6 +111,8 @@ class FormattingContext implements AutoCloseable {
         return "{";
       case TTL:
         return "${";
+      case RANGE_COMMENT:
+        throw new IllegalStateException();
     }
     throw new AssertionError();
   }
@@ -122,6 +125,8 @@ class FormattingContext implements AutoCloseable {
       case TSX_ATTR:
       case TTL:
         return "}";
+      case RANGE_COMMENT:
+        throw new IllegalStateException();
     }
     throw new AssertionError();
   }
@@ -134,6 +139,8 @@ class FormattingContext implements AutoCloseable {
       case TSX_ATTR:
       case TTL:
         return "";
+      case RANGE_COMMENT:
+        throw new IllegalStateException();
     }
     throw new AssertionError();
   }
@@ -264,6 +271,10 @@ class FormattingContext implements AutoCloseable {
       return;
     }
 
+    if (lexicalStateStack.peek() == LexicalState.RANGE_COMMENT) {
+      return;
+    }
+
     char lastChar = getLastChar();
     char nextChar = nextAppendContent.charAt(0);
     if (getCurrentLexicalState() == LexicalState.TSX && lastChar == '>' && nextChar == '<') {
@@ -294,10 +305,15 @@ class FormattingContext implements AutoCloseable {
    */
   private void maybeIndent(char nextChar) {
     char lastChar = getLastChar();
-    // TSX safeguard: it's never safe to break a line when there's a space character at the join
-    // location.
-    if (formatOptions.useTsxLineBreaks() && (nextChar == ' ' || lastChar == ' ')) {
-      nextAppendShouldStartNewLine = false;
+    LexicalState current = lexicalStateStack.peek();
+    if ((current != LexicalState.RANGE_COMMENT)) {
+      // TSX safeguard: it's never safe to break a line when there's a space character at the join
+      // location.
+      // The reasoning above is faulty (blaming this on TSX). Some line breaks in JS are also
+      // problematic (due to optional semicolon?).
+      if (formatOptions.useTsxLineBreaks() && (nextChar == ' ' || lastChar == ' ')) {
+        nextAppendShouldStartNewLine = false;
+      }
     }
 
     if (nextAppendShouldStartNewLine) {

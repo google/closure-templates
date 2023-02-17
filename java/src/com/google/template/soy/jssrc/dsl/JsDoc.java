@@ -18,11 +18,13 @@ package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.errorprone.annotations.Immutable;
+import com.google.template.soy.jssrc.dsl.FormattingContext.LexicalState;
 import java.util.Map;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
@@ -87,6 +89,16 @@ public abstract class JsDoc extends SpecialToken implements CodeChunk.HasRequire
     @CanIgnoreReturnValue
     public Builder addAnnotation(String type, String value) {
       paramsBuilder().add(Param.createAnnotation(type, value));
+      return this;
+    }
+
+    @CanIgnoreReturnValue
+    public Builder addTsParam(String name, String description) {
+      String value = name;
+      if (description != null && !description.isEmpty()) {
+        value += " " + description;
+      }
+      paramsBuilder().add(Param.createAnnotation("param", value));
       return this;
     }
 
@@ -179,15 +191,25 @@ public abstract class JsDoc extends SpecialToken implements CodeChunk.HasRequire
   /** Should only be invoked from FormattingContext#appendJsDoc. */
   @Override
   void doFormatToken(FormattingContext ctx) {
+    if (isEmpty()) {
+      return;
+    }
     if (this.isSingleLine()) {
       ctx.append(this.toString());
       return;
     }
     ctx.append("/**");
+    ctx.pushLexicalState(LexicalState.RANGE_COMMENT);
     ctx.endLine();
-    if (overviewComment().length() > 0) {
-      ctx.append(" * " + overviewComment());
-      ctx.endLine();
+    if (!overviewComment().isEmpty()) {
+      for (String s : Splitter.on('\n').split(overviewComment())) {
+        ctx.append(" *" + (s.isEmpty() ? "" : " " + s));
+        ctx.endLine();
+      }
+      if (!params().isEmpty()) {
+        ctx.append(" *");
+        ctx.endLine();
+      }
     }
     for (Param param : params()) {
       ctx.append(" * ");
@@ -195,6 +217,7 @@ public abstract class JsDoc extends SpecialToken implements CodeChunk.HasRequire
       ctx.endLine();
     }
     ctx.append(" */");
+    ctx.popLexicalState();
     ctx.endLine();
   }
 
@@ -204,6 +227,9 @@ public abstract class JsDoc extends SpecialToken implements CodeChunk.HasRequire
    */
   @Override
   public final String toString() {
+    if (isEmpty()) {
+      return "";
+    }
     if (this.isSingleLine()) {
       return String.format(
           "/** %s */", overviewComment() + (params().size() == 1 ? params().get(0) : ""));
@@ -211,7 +237,12 @@ public abstract class JsDoc extends SpecialToken implements CodeChunk.HasRequire
     StringBuilder sb = new StringBuilder();
     sb.append("/**\n");
     if (overviewComment().length() > 0) {
-      sb.append(" * ").append(overviewComment()).append("\n");
+      for (String s : Splitter.on('\n').split(overviewComment())) {
+        sb.append(" *").append(s.isEmpty() ? "" : " " + s).append("\n");
+      }
+      if (!params().isEmpty()) {
+        sb.append(" *\n");
+      }
     }
     for (Param param : params()) {
       sb.append(" * ").append(param).append("\n");
@@ -220,12 +251,19 @@ public abstract class JsDoc extends SpecialToken implements CodeChunk.HasRequire
     return sb.toString();
   }
 
+  public boolean isEmpty() {
+    return params().isEmpty() && overviewComment().isEmpty();
+  }
+
   private boolean isSingleLine() {
+    if (overviewComment().contains("\n")) {
+      return false;
+    }
     return params().size() == 0
         || (overviewComment().isEmpty()
             && params().size() == 1
             // Typedefs usually span more than one line.
-            && !"typedef".equals(params().get(0).annotationType())
+            && !params().get(0).annotationType().equals("typedef")
             // Record literals always span more than one line.
             && params().get(0).recordLiteralType() == null);
   }
