@@ -300,6 +300,9 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     jsDocBuilder.addAnnotation("fileoverview", fileOverviewDescription);
     jsDocBuilder.addAnnotation("suppress", "{missingRequire} TODO(b/152440355)");
     jsDocBuilder.addAnnotation("suppress", "{suspiciousCode}");
+    if (!jsSrcOptions.shouldGenerateGoogModules()) {
+      jsDocBuilder.addAnnotation("suppress", "{uselessCode}");
+    }
     jsDocBuilder.addAnnotation(
         "suppress",
         "{strictMissingProperties} TODO(b/214874268): Remove strictMissingProperties suppression"
@@ -896,11 +899,13 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         && node.getContentKind() == SanitizedContentKind.HTML
         && node.getVisibility() == Visibility.PUBLIC) {
       declarations.add(
-          VariableDeclaration.builder(alias + "_" + StandardNames.SOY_STUB)
-              .setJsDoc(
-                  generatePositionalFunctionJsDoc(
-                      node, /* addVariantParam= */ isModifiableWithUseVariantType(node)))
-              .setRhs(Expressions.LITERAL_UNDEFINED)
+          Statements.ifStatement(
+                  Expressions.LITERAL_FALSE,
+                  VariableDeclaration.builder(alias + "_" + StandardNames.SOY_STUB)
+                      .setJsDoc(
+                          generatePositionalFunctionJsDoc(
+                              node, /* addVariantParam= */ isModifiableWithUseVariantType(node)))
+                      .build())
               .build());
     }
 
