@@ -19,6 +19,7 @@ package com.google.template.soy.jssrc.dsl;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
+import java.util.List;
 import java.util.stream.Stream;
 
 /** Represents a single TS/JS gencode file. */
@@ -33,8 +34,8 @@ public abstract class File extends Statement {
   abstract ImmutableList<Statement> children();
 
   public static File create(
-      String fileOverviewComments, CodeChunk imports, ImmutableList<Statement> children) {
-    return new AutoValue_File(fileOverviewComments, imports, children);
+      String fileOverviewComments, CodeChunk imports, List<Statement> children) {
+    return new AutoValue_File(fileOverviewComments, imports, ImmutableList.copyOf(children));
   }
 
   @Override

@@ -89,6 +89,12 @@ public abstract class NamedFunctionDeclaration extends Statement {
         name, params, returnType, Optional.ofNullable(jsDoc), ImmutableList.of(), true, true);
   }
 
+  public static NamedFunctionDeclaration privateDeclaration(
+      String name, ParamDecls params, Expression returnType) {
+    return new AutoValue_NamedFunctionDeclaration(
+        name, params, returnType, Optional.empty(), ImmutableList.of(), false, true);
+  }
+
   @Override
   void doFormatStatement(FormattingContext ctx) {
     if (jsDoc().isPresent()) {
