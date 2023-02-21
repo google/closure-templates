@@ -142,10 +142,7 @@ const createSanitizedHtml = function(value) {
 
 /**
  * Empty string, used as a type in Soy templates.
- * TODO(lukes): this should not be private! it interferes with typechecking in
- * typescript.
  * @enum {string}
- * @private
  */
 const $$EMPTY_STRING_ = {
   VALUE: '',
