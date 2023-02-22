@@ -60,6 +60,12 @@ public final class SoyToJsSrcCompiler extends AbstractSoyCompiler {
   private boolean dependOnCssHeader = false;
 
   @Option(
+      name = "--incrementaldomInterop",
+      usage =
+          "When this option is used, JS files will depend on Incremental DOM from a goog.define.")
+  private boolean incrementalDomInterop = false;
+
+  @Option(
       name = "--shouldGenerateGoogMsgDefs",
       usage =
           "When this option is used, all 'msg' blocks will be turned into goog.getMsg"
@@ -153,6 +159,7 @@ public final class SoyToJsSrcCompiler extends AbstractSoyCompiler {
     jsSrcOptions.setGoogMsgsAreExternal(googMsgsAreExternal);
     jsSrcOptions.setBidiGlobalDir(bidiGlobalDir);
     jsSrcOptions.setUseGoogIsRtlForBidiGlobalDir(useGoogIsRtlForBidiGlobalDir);
+    jsSrcOptions.setIncrementalDomInterop(incrementalDomInterop);
 
     // Compile.
     boolean generateLocalizedJs = !locales.isEmpty();

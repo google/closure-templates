@@ -89,6 +89,8 @@ public final class JsRuntime {
   public static final Expression SHOULD_STUB =
       GOOG_SOY.dotAccess("shouldStub").and(GOOG_SOY.dotAccess("shouldStubAtRuntime").call(), null);
 
+  public static final Expression ALWAYS_STUB = GOOG_SOY.dotAccess("alwaysStub");
+
   public static final Expression SOY_MAKE_ARRAY = SOY.dotAccess("$$makeArray");
 
   public static final Expression SOY_AS_READONLY = SOY.dotAccess("$$asReadonlyArray");
@@ -170,6 +172,9 @@ public final class JsRuntime {
   public static final GoogRequire ELEMENT_LIB_IDOM =
       GoogRequire.createWithAlias(
           "google3.javascript.template.soy.element_lib_idom", "element_lib_idom");
+
+  static final GoogRequire SOY_IDOM =
+      GoogRequire.create("google3.javascript.template.soy.soyutils_idom");
 
   /**
    * A constant for the template parameter {@code opt_data}.

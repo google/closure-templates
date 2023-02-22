@@ -57,6 +57,9 @@ public final class SoyJsSrcOptions implements Cloneable {
    */
   private boolean useGoogIsRtlForBidiGlobalDir;
 
+  /** Whether to delegate to Incremental DOM under a goog.define (goog.soy.ALWAYS_STUB). */
+  private boolean setIncrementalDomInterop;
+
   public SoyJsSrcOptions() {
     depsStrategy = JsDepsStrategy.NAMESPACES;
 
@@ -74,6 +77,7 @@ public final class SoyJsSrcOptions implements Cloneable {
     this.googMsgsAreExternal = orig.googMsgsAreExternal;
     this.bidiGlobalDir = orig.bidiGlobalDir;
     this.useGoogIsRtlForBidiGlobalDir = orig.useGoogIsRtlForBidiGlobalDir;
+    this.setIncrementalDomInterop = orig.setIncrementalDomInterop;
   }
 
   /**
@@ -106,6 +110,10 @@ public final class SoyJsSrcOptions implements Cloneable {
   /** Returns whether goog.modules should be generated. */
   public boolean shouldGenerateGoogModules() {
     return depsStrategy == JsDepsStrategy.MODULE;
+  }
+
+  public boolean shouldDelegateToIncrementalDom() {
+    return this.setIncrementalDomInterop;
   }
 
   /**
@@ -212,6 +220,10 @@ public final class SoyJsSrcOptions implements Cloneable {
         !useGoogIsRtlForBidiGlobalDir || bidiGlobalDir == 0,
         "Must not specify both bidiGlobalDir and useGoogIsRtlForBidiGlobalDir.");
     this.useGoogIsRtlForBidiGlobalDir = useGoogIsRtlForBidiGlobalDir;
+  }
+
+  public void setIncrementalDomInterop(boolean setIncrementalDomInterop) {
+    this.setIncrementalDomInterop = setIncrementalDomInterop;
   }
 
   /**

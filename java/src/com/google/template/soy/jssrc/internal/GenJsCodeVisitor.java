@@ -30,6 +30,7 @@ import static com.google.template.soy.jssrc.dsl.Expressions.stringLiteral;
 import static com.google.template.soy.jssrc.dsl.Statements.assign;
 import static com.google.template.soy.jssrc.dsl.Statements.ifStatement;
 import static com.google.template.soy.jssrc.dsl.Statements.returnValue;
+import static com.google.template.soy.jssrc.internal.JsRuntime.ALWAYS_STUB;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_DEBUG;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_MODULE_GET;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_REQUIRE;
@@ -1182,6 +1183,35 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     }
   }
 
+  private void generateIdomAlwaysStub(
+      TemplateNode templateNode, ImmutableList.Builder<Statement> bodyStatements) {
+    if (!jsSrcOptions.shouldGenerateGoogModules()
+        && templateNode.getContentKind() == SanitizedContentKind.HTML
+        && templateNode.getVisibility() == Visibility.PUBLIC) {
+      jsCodeBuilder.addGoogRequire(
+          GoogRequire.create(templateNode.getParent().getNamespace() + ".incrementaldom"));
+      jsCodeBuilder.addGoogRequire(JsRuntime.SOY_IDOM);
+      Expression stub =
+          GOOG_MODULE_GET
+              .call(
+                  Expressions.stringLiteral(
+                      templateNode.getParent().getNamespace() + ".incrementaldom"))
+              .dotAccess(templateNode.getPartialTemplateName());
+      Statement functionStub =
+          Statements.ifStatement(
+                  ALWAYS_STUB,
+                  Statements.returnValue(
+                      stub.call(
+                          GOOG_MODULE_GET
+                              .call(Expressions.stringLiteral(JsRuntime.SOY_IDOM.symbol()))
+                              .dotAccess("$$defaultIdomRenderer"),
+                          OPT_DATA,
+                          JsRuntime.IJ_DATA)))
+              .build();
+      bodyStatements.add(functionStub);
+    }
+  }
+
   /**
    * Generates a function that simply unpacks the opt_data object and calls the positional function
    */
@@ -1205,6 +1235,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       callParams.add(OPT_VARIANT);
     }
     generateIdomStub(templateNode, alias, bodyStatements, callParams);
+    generateIdomAlwaysStub(templateNode, bodyStatements);
     String returnType = getTemplateReturnType(templateNode);
     Expression callExpr = dottedIdNoRequire(alias + "$").call(callParams);
     bodyStatements.add(returnType.equals("void") ? callExpr.asStatement() : returnValue(callExpr));
