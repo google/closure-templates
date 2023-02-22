@@ -141,6 +141,7 @@ import com.google.template.soy.shared.restricted.TypedSoyFunction;
 import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallDelegateNode;
+import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.ConstNode;
 import com.google.template.soy.soytree.ExternNode;
 import com.google.template.soy.soytree.FileMetadata;
@@ -364,7 +365,9 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
   private static final SoyErrorKind NOT_PROTO_MESSAGE =
       SoyErrorKind.of("Only proto messages may be instantiated.");
   private static final SoyErrorKind MUST_USE_TEMPLATES_IMMEDIATELY =
-      SoyErrorKind.of("Templates may only be called as the sole child of a print statement.");
+      SoyErrorKind.of(
+          "Templates may only be called to initialize a '{'let'}', set a '{'param'}', or as the"
+              + " sole child of a print statement.");
   private static final SoyErrorKind CONSTANTS_CANT_BE_NULLABLE =
       SoyErrorKind.of("Type calculated type, {0}, is nullable, which is not allowed for const.");
   private static final SoyErrorKind NOT_ALLOWED_IN_CONSTANT_VALUE =
@@ -667,14 +670,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
 
     @Override
     protected void visitPrintNode(PrintNode node) {
-      if (node.getExpr().getRoot() instanceof FunctionNode) {
-        FunctionNode fnNode = (FunctionNode) node.getExpr().getRoot();
-        if (!fnNode.hasStaticName()
-            && (fnNode.getNameExpr().getType() instanceof TemplateImportType
-                || fnNode.getNameExpr().getType() instanceof TemplateType)) {
-          fnNode.setAllowedToInvokeAsFunction(true);
-        }
-      }
+      allowShortFormCall(node.getExpr());
       visitSoyNode(node);
     }
 
@@ -693,8 +689,26 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
 
     @Override
     protected void visitLetValueNode(LetValueNode node) {
+      allowShortFormCall(node.getExpr());
       visitSoyNode(node);
       node.getVar().setType(node.getExpr().getType());
+    }
+
+    @Override
+    protected void visitCallParamValueNode(CallParamValueNode node) {
+      allowShortFormCall(node.getExpr());
+      visitSoyNode(node);
+    }
+
+    private void allowShortFormCall(ExprRootNode rootNode) {
+      if (rootNode.getRoot() instanceof FunctionNode) {
+        FunctionNode fnNode = (FunctionNode) rootNode.getRoot();
+        if (!fnNode.hasStaticName()
+            && (fnNode.getNameExpr().getType() instanceof TemplateImportType
+                || fnNode.getNameExpr().getType() instanceof TemplateType)) {
+          fnNode.setAllowedToInvokeAsFunction(true);
+        }
+      }
     }
 
     @Override
@@ -1946,11 +1960,17 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
         if (!node.allowedToInvokeAsFunction()
             && (node.getNameExpr().getType() instanceof TemplateImportType
                 || node.getNameExpr().getType() instanceof TemplateType)) {
-          node.setType(UnknownType.getInstance());
-          errorReporter.report(node.getSourceLocation(), MUST_USE_TEMPLATES_IMMEDIATELY);
-          // Suppress a followup error that this is unknown.
-          node.setAllowedToInvokeAsFunction(true);
-          return;
+          if (node.getParent() instanceof FunctionNode
+              && ((FunctionNode) node.getParent()).allowedToInvokeAsFunction()) {
+            // Recursively allow short form calls, e.g. {tmpl1(p: tmpl2())}
+            node.setAllowedToInvokeAsFunction(true);
+          } else {
+            node.setType(UnknownType.getInstance());
+            errorReporter.report(node.getSourceLocation(), MUST_USE_TEMPLATES_IMMEDIATELY);
+            // Suppress a followup error that this is unknown.
+            node.setAllowedToInvokeAsFunction(true);
+            return;
+          }
         }
         visit(node.getNameExpr());
         if (node.getNameExpr().getType().getKind() == Kind.TEMPLATE_TYPE) {

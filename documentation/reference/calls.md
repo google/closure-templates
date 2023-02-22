@@ -25,7 +25,8 @@ current template (the caller).
     ```
 
     Note that `{call}` is not needed. Function form must appear inside a print
-    command (`{...}`).
+    command (`{...}`), a let command (`{let $v: ... /}`), or a param command
+    (`{param p: ... /}`).
 
     This second form may be preferred because it is more concise. However, it
     does not allow passing block style parameters (those like `KEY2` above that
