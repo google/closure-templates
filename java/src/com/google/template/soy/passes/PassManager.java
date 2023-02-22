@@ -525,7 +525,9 @@ public final class PassManager {
       passes
           .add(new VeRewritePass())
           .add(new RewriteGlobalsPass())
-          .add(new XidPass(errorReporter))
+          .add(
+              new XidPass(
+                  errorReporter))
           .add(new UnknownJsGlobalPass(allowUnknownJsGlobals, errorReporter))
           .add(new ResolveNamesPass(errorReporter))
           .add(new ResolveDottedImportsPass(errorReporter, registry));

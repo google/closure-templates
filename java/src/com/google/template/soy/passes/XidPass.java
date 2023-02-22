@@ -31,7 +31,7 @@ import com.google.template.soy.soytree.SoyTreeUtils;
 
 /** Handles xid calls involving global nodes by rewriting them to be string literals. */
 @RunAfter(RewriteGlobalsPass.class)
-final class XidPass implements CompilerFilePass {
+public final class XidPass implements CompilerFilePass {
   private static final SoyErrorKind STRING_OR_GLOBAL_REQUIRED =
       SoyErrorKind.of(
           "Argument to function ''xid'' must be a string literal or a (possibly) "
@@ -39,7 +39,8 @@ final class XidPass implements CompilerFilePass {
 
   private final ErrorReporter reporter;
 
-  XidPass(ErrorReporter reporter) {
+  XidPass(
+      ErrorReporter reporter) {
     this.reporter = reporter;
   }
 
@@ -56,10 +57,9 @@ final class XidPass implements CompilerFilePass {
               switch (child.getKind()) {
                 case GLOBAL_NODE:
                   GlobalNode global = (GlobalNode) child;
+                  String xid = global.getName();
                   fn.replaceChild(
-                      0,
-                      new StringNode(
-                          global.getName(), QuoteStyle.SINGLE, global.getSourceLocation()));
+                      0, new StringNode(xid, QuoteStyle.SINGLE, global.getSourceLocation()));
                   break;
                 case VAR_REF_NODE:
                 case FIELD_ACCESS_NODE:
