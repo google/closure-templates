@@ -86,7 +86,8 @@ public final class JsRuntime {
 
   public static final Expression SOY_EQUALS = SOY.dotAccess("$$equals");
 
-  public static final Expression SHOULD_STUB = GOOG_SOY.dotAccess("shouldStub");
+  public static final Expression SHOULD_STUB =
+      GOOG_SOY.dotAccess("shouldStub").and(GOOG_SOY.dotAccess("shouldStubAtRuntime").call(), null);
 
   public static final Expression SOY_MAKE_ARRAY = SOY.dotAccess("$$makeArray");
 
@@ -269,7 +270,7 @@ public final class JsRuntime {
   public static Expression protoConstructor(SoyProtoType type) {
     return GoogRequire.create(
             type.getNameForBackend(
-                SoyBackendKind.JS_SRC, /* readonly = */ false, /* typeOnly = */ false))
+                SoyBackendKind.JS_SRC, /* readonly= */ false, /* typeOnly= */ false))
         .reference();
   }
 
