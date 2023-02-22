@@ -95,6 +95,9 @@ public final class ClassLoaderFallbackCallFactory {
   private static final MethodType SLOWPATH_TEMPLATE_VALUE_TYPE =
       methodType(CompiledTemplate.TemplateValue.class, String.class, RenderContext.class);
 
+  private static final MethodType SLOWPATH_CONST_TYPE =
+      methodType(Object.class, String.class, RenderContext.class);
+
   private static final MethodType RENDER_TYPE =
       methodType(
           RenderResult.class,
@@ -268,6 +271,51 @@ public final class ClassLoaderFallbackCallFactory {
           MethodHandles.collectArguments(slowPathRenderHandle, 0, positionalToRecordHandle);
     }
     return new ConstantCallSite(slowPathRenderHandle);
+  }
+  /**
+   * A JVM bootstrap method for resolving references to constants..
+   *
+   * @param lookup An object that allows us to resolve classes/methods in the context of the
+   *     callsite. Provided automatically by invokeDynamic JVM infrastructure
+   * @param name The name of the invokeDynamic method being called. This is provided by
+   *     invokeDynamic JVM infrastructure and currently unused.
+   * @param type The type of the method being called. This will be the method signature of the
+   *     callsite we produce. Provided automatically by invokeDynamic JVM infrastructure. For this
+   *     method it is always (RenderContext)->CompiledTemplate.
+   * @param constClassName The FQN of the class containing the constant.
+   * @param constName The local name of the constant.
+   */
+  public static CallSite bootstrapConstLookup(
+      MethodHandles.Lookup lookup,
+      String name,
+      MethodType type,
+      String constClassName,
+      String constName)
+      throws NoSuchMethodException, IllegalAccessException {
+    ClassLoader callerClassLoader = lookup.lookupClass().getClassLoader();
+    try {
+      Class<?> constClass = callerClassLoader.loadClass(constClassName);
+      MethodHandle handle =
+          lookup.findStatic(
+              constClass, constName, methodType(type.returnType(), RenderContext.class));
+      return new ConstantCallSite(handle);
+    } catch (ClassNotFoundException classNotFoundException) {
+      // Fall back to using the RenderContext class loader.
+    }
+    MethodHandle handle =
+        lookup.findStatic(
+            ClassLoaderFallbackCallFactory.class, "slowPathConst", SLOWPATH_CONST_TYPE);
+    handle = insertArguments(handle, 0, String.format("%s#%s", constClassName, constName));
+    return new ConstantCallSite(handle.asType(type));
+  }
+
+  /**
+   * The "slow path" for resolving constants. When the default class loader can't resolve the
+   * constant's static method, the bootstrap method returns this one instead. It delegates to
+   * RenderContext, which uses the CompiledTemplate's class loader to find the method.
+   */
+  public static Object slowPathConst(String constantFqn, RenderContext context) {
+    return context.getConstMethod(constantFqn).compute(context);
   }
 
   /**

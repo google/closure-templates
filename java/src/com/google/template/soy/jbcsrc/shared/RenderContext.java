@@ -333,6 +333,10 @@ public final class RenderContext {
     }
   }
 
+  public CompiledConstant getConstMethod(String constantFqn) {
+    return templates.getConstMethod(constantFqn);
+  }
+
   @Nullable
   public Object getConst(String key) {
     return constValues.get(key);

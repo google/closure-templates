@@ -1248,6 +1248,7 @@ public class BytecodeCompilerTest {
                     .join(
                         "{namespace loader1}",
                         "import {publicTemplate2} from 'loader2.soy';",
+                        "{export const CONST = 'CONST' /}",
                         "{template publicTemplate1}",
                         "L1T1",
                         "{sp}{call privateTemplate_ /}",
@@ -1279,6 +1280,7 @@ public class BytecodeCompilerTest {
                 Joiner.on("\n")
                     .join(
                         "{namespace loader1}",
+                        "{export const CONST = 'CONST RECOMPILED' /}",
                         "{template publicTemplate1}",
                         "L1T1 RECOMPILED",
                         "{/template}")));
@@ -1293,13 +1295,14 @@ public class BytecodeCompilerTest {
                 Joiner.on("\n")
                     .join(
                         "{namespace loader2}",
-                        "import {publicTemplate1} from 'loader1.soy';",
+                        "import {publicTemplate1, CONST} from 'loader1.soy';",
                         "{template publicTemplate}",
                         "{@param renderTemplate: bool = true}",
                         "{let $tpl: $renderTemplate ? publicTemplate1 : dummyTemplate /}",
                         "L2T",
                         "{sp}{call $tpl /}",
                         "{sp}{call $tpl /}",
+                        "{sp}{CONST}",
                         "{/template}",
                         "{template dummyTemplate visibility=\"private\"}dummy{/template}")),
             ImmutableList.of(dependency1));
@@ -1309,7 +1312,7 @@ public class BytecodeCompilerTest {
     DelegatingClassLoader delegatingClassLoader1 = new DelegatingClassLoader(loader1, loader2);
     SoySauce sauce = new SoySauceBuilder().withClassLoader(delegatingClassLoader1).build();
     assertThat(sauce.renderTemplate("loader2.publicTemplate").renderHtml().get().toString())
-        .isEqualTo("L2T L1T1 PVT L1T2 L1T1 PVT L1T2");
+        .isEqualTo("L2T L1T1 PVT L1T2 L1T1 PVT L1T2 CONST");
 
     assertThat(delegatingClassLoader1.loadedClasses()).containsNoDuplicates();
     assertThat(delegatingClassLoader1.loadedClasses().elementSet())
@@ -1321,7 +1324,7 @@ public class BytecodeCompilerTest {
         new DelegatingClassLoader(loader1Recompiled, loader2);
     SoySauce sauceReloaded = new SoySauceBuilder().withClassLoader(delegatingClassLoader2).build();
     assertThat(sauceReloaded.renderTemplate("loader2.publicTemplate").renderHtml().get().toString())
-        .isEqualTo("L2T L1T1 RECOMPILED L1T1 RECOMPILED");
+        .isEqualTo("L2T L1T1 RECOMPILED L1T1 RECOMPILED CONST RECOMPILED");
 
     assertThat(delegatingClassLoader1.loadedClasses()).containsNoDuplicates();
     assertThat(delegatingClassLoader1.loadedClasses().elementSet())

@@ -16,9 +16,11 @@
 
 package com.google.template.soy.jbcsrc.shared;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
@@ -31,6 +33,7 @@ import com.google.template.soy.shared.internal.DelTemplateSelector;
 import java.lang.reflect.Method;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -41,6 +44,8 @@ import javax.annotation.Nullable;
 public class CompiledTemplates {
   private final ClassLoader loader;
   private final ConcurrentHashMap<String, TemplateData> templateNameToFactory =
+      new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<String, CompiledConstant> constantNameToMethod =
       new ConcurrentHashMap<>();
   final DelTemplateSelector<TemplateData> selector;
 
@@ -174,6 +179,23 @@ public class CompiledTemplates {
       return null;
     }
     return selectedTemplate.template();
+  }
+
+  public CompiledConstant getConstMethod(String constantFqn) {
+    return constantNameToMethod.computeIfAbsent(
+        constantFqn,
+        key -> {
+          try {
+            List<String> parts = Splitter.on("#").splitToList(constantFqn);
+            checkArgument(parts.size() == 2, "Expected constant FQN with a single hash character");
+            return (CompiledConstant)
+                Class.forName(parts.get(0), /* initialize= */ true, getClassLoader())
+                    .getMethod(parts.get(1))
+                    .invoke(null);
+          } catch (ReflectiveOperationException e) {
+            throw new LinkageError("Could not invoke " + constantFqn, e);
+          }
+        });
   }
 
   public TemplateData getTemplateData(String name) {

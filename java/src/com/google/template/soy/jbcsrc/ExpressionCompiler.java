@@ -1071,11 +1071,39 @@ final class ExpressionCompiler {
 
     // Let vars
 
+    private static final Handle GET_CONST_HANDLE =
+        MethodRef.create(
+                ClassLoaderFallbackCallFactory.class,
+                "bootstrapConstLookup",
+                MethodHandles.Lookup.class,
+                String.class,
+                MethodType.class,
+                String.class,
+                String.class)
+            .asHandle();
+
     @Override
     SoyExpression visitImportedVar(VarRefNode varRef, ImportedVar importedVar) {
       String namespace = fileSetMetadata.getNamespaceForPath(importedVar.getSourceFilePath());
-      TypeInfo owningType = TypeInfo.createClass(Names.javaClassNameFromSoyNamespace(namespace));
-      return constVar(owningType, importedVar.getSymbol(), importedVar.type());
+      TypeInfo typeInfo = TypeInfo.createClass(Names.javaClassNameFromSoyNamespace(namespace));
+      Expression renderContext = parameters.getRenderContext();
+      Expression constExpression =
+          new Expression(
+              ConstantsCompiler.getConstantRuntimeType(importedVar.type()).runtimeType()) {
+            @Override
+            protected void doGen(CodeBuilder adapter) {
+              renderContext.gen(adapter);
+              adapter.visitInvokeDynamicInsn(
+                  "create",
+                  ConstantsCompiler.getConstantMethod(importedVar.name(), importedVar.type())
+                      .getDescriptor(),
+                  GET_CONST_HANDLE,
+                  typeInfo.className(),
+                  importedVar.getSymbol());
+            }
+          };
+      return SoyExpression.forRuntimeType(
+          ConstantsCompiler.getConstantRuntimeType(importedVar.type()), constExpression);
     }
 
     @Override
@@ -1083,16 +1111,11 @@ final class ExpressionCompiler {
       SoyFileNode fileNode = context.getNearestAncestor(SoyFileNode.class);
       TypeInfo typeInfo =
           TypeInfo.createClass(Names.javaClassNameFromSoyNamespace(fileNode.getNamespace()));
-      return constVar(typeInfo, constVar.name(), constVar.type());
-    }
-
-    private SoyExpression constVar(TypeInfo typeInfo, String varName, SoyType varType) {
       MethodRef methodRef =
           MethodRef.createStaticMethod(
-              typeInfo, ConstantsCompiler.getConstantMethod(varName, varType));
-      // TODO(b/184155734): Use ClassLoaderFallbackCallFactory here so GWS can use constants.
+              typeInfo, ConstantsCompiler.getConstantMethod(constVar.name(), constVar.type()));
       return SoyExpression.forRuntimeType(
-          ConstantsCompiler.getConstantRuntimeType(varType),
+          ConstantsCompiler.getConstantRuntimeType(constVar.type()),
           methodRef.invoke(parameters.getRenderContext()));
     }
 
