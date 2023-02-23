@@ -3019,7 +3019,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
 
     @Override
     public Void exec(ExprNode node) {
-      visit(node);
+      visitAndImplicitlyCastToBoolean(node);
       return null;
     }
 
