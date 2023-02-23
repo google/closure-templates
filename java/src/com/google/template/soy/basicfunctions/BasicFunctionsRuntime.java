@@ -87,8 +87,14 @@ public final class BasicFunctionsRuntime {
   }
 
   /** Checks if list contains a value. */
-  public static boolean listContains(SoyList list, SoyValue value) {
-    return list.asResolvedJavaList().contains(value);
+  public static boolean listContains(SoyList list, SoyValue value, NumberData startIndex) {
+    // startIndex not used but parameter needed to match typescript
+    if (startIndex == null) {
+      return list.asResolvedJavaList().contains(value);
+    }
+    return list.asResolvedJavaList()
+        .subList(startIndex.integerValue(), list.length())
+        .contains(value);
   }
 
   /** Checks if list contains a value. */

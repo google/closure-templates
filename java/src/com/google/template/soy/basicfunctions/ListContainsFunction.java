@@ -18,6 +18,7 @@ package com.google.template.soy.basicfunctions;
 
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
@@ -49,7 +50,12 @@ import java.util.List;
 @SoyMethodSignature(
     name = "contains",
     baseType = "list<any>",
-    value = @Signature(parameterTypes = "any", returnType = "bool"))
+    value = {
+      @Signature(parameterTypes = "any", returnType = "bool"),
+      @Signature(
+          parameterTypes = {"any", "number"},
+          returnType = "bool")
+    })
 @SoyPureFunction
 public class ListContainsFunction
     implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPythonSourceFunction {
@@ -57,25 +63,33 @@ public class ListContainsFunction
   @Override
   public JavaScriptValue applyForJavaScriptSource(
       JavaScriptValueFactory factory, List<JavaScriptValue> args, JavaScriptPluginContext context) {
-    return factory.callNamespaceFunction("soy", "soy.$$listContains", args.get(0), args.get(1));
+    return factory.callNamespaceFunction("soy", "soy.$$listContains", args.subList(1, args.size()));
   }
 
   @Override
   public PythonValue applyForPythonSource(
       PythonValueFactory factory, List<PythonValue> args, PythonPluginContext context) {
-    return factory.global("runtime.list_contains").call(args.get(0), args.get(1));
+    return factory.global("runtime.list_contains").call(args);
   }
 
   // lazy singleton pattern, allows other backends to avoid the work.
   private static final class Methods {
     static final Method LIST_CONTAINS_FN =
         JavaValueFactory.createMethod(
-            BasicFunctionsRuntime.class, "listContains", SoyList.class, SoyValue.class);
+            BasicFunctionsRuntime.class,
+            "listContains",
+            SoyList.class,
+            SoyValue.class,
+            NumberData.class);
   }
 
   @Override
   public JavaValue applyForJavaSource(
       JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
-    return factory.callStaticMethod(Methods.LIST_CONTAINS_FN, args.get(0), args.get(1));
+    return factory.callStaticMethod(
+        Methods.LIST_CONTAINS_FN,
+        args.get(0),
+        args.get(1),
+        args.size() == 3 ? args.get(2) : factory.constantNull());
   }
 }
