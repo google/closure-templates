@@ -18,7 +18,6 @@ package com.google.template.soy;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
-import static com.google.common.collect.ImmutableSet.toImmutableSet;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.annotations.VisibleForTesting;
@@ -72,6 +71,7 @@ import com.google.template.soy.passes.PassManager.PassContinuationRule;
 import com.google.template.soy.passes.PluginResolver;
 import com.google.template.soy.passes.SoyConformancePass;
 import com.google.template.soy.plugin.internal.PluginValidator;
+import com.google.template.soy.plugin.internal.SoySourceFunctionDescriptor;
 import com.google.template.soy.plugin.java.MethodChecker;
 import com.google.template.soy.plugin.java.MethodChecker.Code;
 import com.google.template.soy.plugin.java.MethodChecker.Response;
@@ -182,7 +182,8 @@ public final class SoyFileSet {
     private final ImmutableSet.Builder<SoyFunction> soyFunctions = ImmutableSet.builder();
     private final ImmutableSet.Builder<SoyPrintDirective> soyPrintDirectives =
         ImmutableSet.builder();
-    private final ImmutableSet.Builder<SoySourceFunction> sourceFunctions = ImmutableSet.builder();
+    private final ImmutableSet.Builder<SoySourceFunctionDescriptor> sourceFunctions =
+        ImmutableSet.builder();
     private final ImmutableSet.Builder<SoySourceFunction> sourceMethods = ImmutableSet.builder();
 
     Builder(boolean ignored) {
@@ -237,8 +238,8 @@ public final class SoyFileSet {
               .addAll(InternalPlugins.internalDirectives(data))
               .addAll(soyPrintDirectives.build())
               .build(),
-          ImmutableList.<SoySourceFunction>builder()
-              .addAll(InternalPlugins.internalFunctions())
+          ImmutableList.<SoySourceFunctionDescriptor>builder()
+              .addAll(InternalPlugins.internalFunctionDescriptors())
               .addAll(sourceFunctions.build())
               .build(),
           ImmutableList.<SoySourceFunction>builder()
@@ -277,16 +278,31 @@ public final class SoyFileSet {
       return this;
     }
 
-    /** Adds one {@link SoySourceFunction} to the functions used by this SoyFileSet. */
+    // Deprecate this?
     @CanIgnoreReturnValue
     public Builder addSourceFunction(SoySourceFunction function) {
+      return addSourceFunctionInternal(null, function);
+    }
+
+    @CanIgnoreReturnValue
+    public Builder addSourceFunction(String pluginTarget, SoySourceFunction function) {
+      return addSourceFunctionInternal(Preconditions.checkNotNull(pluginTarget), function);
+    }
+
+    /** Adds one {@link SoySourceFunction} to the functions used by this SoyFileSet. */
+    @CanIgnoreReturnValue
+    private Builder addSourceFunctionInternal(
+        @Nullable String pluginTarget, SoySourceFunction function) {
       boolean method = false;
       if (function.getClass().isAnnotationPresent(SoyMethodSignature.class)) {
         sourceMethods.add(function);
         method = true;
       }
       if (!method || function.getClass().isAnnotationPresent(SoyFunctionSignature.class)) {
-        sourceFunctions.add(function);
+        sourceFunctions.add(
+            pluginTarget != null
+                ? SoySourceFunctionDescriptor.create(pluginTarget, function)
+                : SoySourceFunctionDescriptor.createUnknownPlugin(function));
       }
       return this;
     }
@@ -295,7 +311,7 @@ public final class SoyFileSet {
     @CanIgnoreReturnValue
     public Builder addSourceFunctions(Iterable<? extends SoySourceFunction> function) {
       for (SoySourceFunction f : function) {
-        addSourceFunction(f);
+        addSourceFunctionInternal(null, f);
       }
       return this;
     }
@@ -602,7 +618,7 @@ public final class SoyFileSet {
 
   private final ImmutableList<SoyFunction> soyFunctions;
   private final ImmutableList<SoyPrintDirective> printDirectives;
-  private final ImmutableList<SoySourceFunction> soySourceFunctions;
+  private final ImmutableList<SoySourceFunctionDescriptor> soySourceFunctions;
   private final ImmutableList<SoySourceFunction> soyMethods;
 
   private final boolean skipPluginValidation;
@@ -621,7 +637,7 @@ public final class SoyFileSet {
       SoyTypeRegistry typeRegistry,
       ImmutableList<SoyFunction> soyFunctions,
       ImmutableList<SoyPrintDirective> printDirectives,
-      ImmutableList<SoySourceFunction> soySourceFunctions,
+      ImmutableList<SoySourceFunctionDescriptor> soySourceFunctions,
       ImmutableList<SoySourceFunction> soyMethods,
       ImmutableMap<SourceFilePath, SoyFileSupplier> soyFileSuppliers,
       ImmutableList<CompilationUnitAndKind> compilationUnits,
@@ -783,18 +799,13 @@ public final class SoyFileSet {
           throwIfErrorsPresent();
 
           if (validateJavaImpls) {
-            // Then validate the user-specified source functions by filtering out the builtin ones
-            // TODO(lukes): maybe we should store internal functions and plugins in separate lists
-            // to avoid this filtering...
-            ImmutableSet<Class<?>> internalFunctionNames =
-                InternalPlugins.internalFunctions().stream()
-                    .map(Object::getClass)
-                    .collect(toImmutableSet());
+            ImmutableList<SoySourceFunction> userSuppliedFunctions =
+                soySourceFunctions.stream()
+                    .filter(desc -> !desc.isInternal())
+                    .map(SoySourceFunctionDescriptor::soySourceFunction)
+                    .collect(toImmutableList());
             new PluginValidator(errorReporter, typeRegistry, pluginRuntimeJars)
-                .validate(
-                    soySourceFunctions.stream()
-                        .filter(fn -> !internalFunctionNames.contains(fn.getClass()))
-                        .collect(toImmutableList()));
+                .validate(userSuppliedFunctions);
             throwIfErrorsPresent();
           }
         });

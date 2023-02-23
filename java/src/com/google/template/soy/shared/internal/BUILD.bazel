@@ -78,6 +78,7 @@ java_library(
         "//java/src/com/google/template/soy/i18ndirectives",
         "//java/src/com/google/template/soy/internal/i18n",
         "//java/src/com/google/template/soy/msgs",
+        "//java/src/com/google/template/soy/plugin/internal",
         "//java/src/com/google/template/soy/plugin/restricted",
         "//java/src/com/google/template/soy/shared/restricted",
         "//java/src/com/google/template/soy/shared/restricted:method_annotation",
