@@ -47,7 +47,7 @@ SERVER_URLS = [
 
 maven_install(
     artifacts = [
-        "args4j:args4j:2.0.23",
+        "args4j:args4j:2.33",
         "com.google.code.findbugs:jsr305:3.0.2",
         "com.google.code.gson:gson:2.9.0",
         "com.google.common.html.types:types:1.0.8",
