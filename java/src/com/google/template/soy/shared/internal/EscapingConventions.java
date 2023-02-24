@@ -931,10 +931,11 @@ public final class EscapingConventions {
     public static final FilterNormalizeUri INSTANCE = new FilterNormalizeUri();
 
     private FilterNormalizeUri() {
-      // Disallows any protocol that is not in a whitelist.
+      // Disallows the javascript: protocol.
       // The below passes if there is
-      // (1) Either a protocol in an allowlist (ftp, http, https, mailto).  This could be expanded
-      //     but talk to your friendly local go/ise-team-yaqs first.
+      // (1) Either an explicit protocol that is not 'javascript' is provided. The protocol must
+      //     only contain characters allowed by the URL specification, namely ASCII alphanumerics,
+      //     U+002B (+), U+002D (-), or U+002E (.).
       // (2) or no protocol.  A protocol must be followed by a colon.  The below allows that by
       //     allowing colons only after one of the characters [/?#].
       //     A colon after a hash (#) must be in the fragment.
@@ -950,8 +951,11 @@ public final class EscapingConventions {
       // e.g. "foo&lt;bar/baz".  Our existing escaping functions should not produce that.
       // More importantly, it disallows masking of a colon, e.g. "javascript&#58;...".
       super(
+          // Pattern for the scheme: https://url.spec.whatwg.org/#scheme-state
+          // Must have an alphanumeric (or +-.) scheme that is not javascript, or no scheme. Case
+          // insensitive.
           Pattern.compile(
-              "^(?:(?:https?|mailto|ftp):|[^&:/?#]*(?:[/?#]|\\z))", Pattern.CASE_INSENSITIVE),
+              "^(?!javascript:)(?:[a-z0-9+.-]+:|[^&:/?#]*(?:[/?#]|\\z))", Pattern.CASE_INSENSITIVE),
           null);
     }
 

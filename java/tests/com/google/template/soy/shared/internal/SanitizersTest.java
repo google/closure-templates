@@ -340,11 +340,6 @@ public class SanitizersTest {
           // Test filtering of URI starts.
           "javascript:",
           "javascript:alert(1337)",
-          "vbscript:alert(1337)",
-          "livescript:alert(1337)",
-          "data:,alert(1337)",
-          "data:text/javascript,alert%281337%29",
-          "file:///etc/passwd",
           // Testcases from http://ha.ckers.org/xss.html
           "JaVaScRiPt:alert(1337)",
           // Using HTML entities to obfuscate javascript:alert('XSS');
