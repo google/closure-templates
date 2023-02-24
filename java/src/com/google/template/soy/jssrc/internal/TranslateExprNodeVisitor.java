@@ -625,10 +625,12 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
       SourceLocation sourceLocation = methodCallNode.getAccessSourceLocation();
       switch (builtinMethod) {
         case GET_EXTENSION:
+          // Nullability has already been checked, but nonnull assertion operators are removed by
+          // so the type may still appear nullable, in which case we can safely remove it.
+          SoyProtoType protoBaseType = (SoyProtoType) SoyTypes.removeNull(baseType);
           String extName = BuiltinMethod.getProtoExtensionIdFromMethodCall(methodCallNode);
           return base.dotAccess(
-              ProtoCall.getField(extName, ((SoyProtoType) baseType).getFieldDescriptor(extName)),
-              nullSafe);
+              ProtoCall.getField(extName, protoBaseType.getFieldDescriptor(extName)), nullSafe);
         case HAS_PROTO_FIELD:
           String fieldName = BuiltinMethod.getProtoFieldNameFromMethodCall(methodCallNode);
           FieldAccess fieldAccess =
