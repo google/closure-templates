@@ -42,6 +42,7 @@ import com.google.template.soy.passes.CompilerPass;
 import com.google.template.soy.passes.PassManager;
 import com.google.template.soy.passes.PassManager.PassContinuationRule;
 import com.google.template.soy.passes.PluginResolver;
+import com.google.template.soy.plugin.internal.SoySourceFunctionDescriptor;
 import com.google.template.soy.plugin.java.ReflectiveMethodChecker;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.shared.SoyAstCache;
@@ -75,7 +76,7 @@ public final class SoyFileSetParserBuilder {
   private final SoyScopedData scopedData;
   private ImmutableList.Builder<SoyFunction> soyFunctions;
   private ImmutableList.Builder<SoyPrintDirective> soyPrintDirectives;
-  private ImmutableList.Builder<SoySourceFunction> sourceFunctions;
+  private ImmutableList.Builder<SoySourceFunctionDescriptor> sourceFunctions;
   private ImmutableList.Builder<SoySourceFunction> soyMethods;
   private ImmutableList<CompilationUnitAndKind> compilationUnits;
   private SoyGeneralOptions options = new SoyGeneralOptions();
@@ -182,7 +183,8 @@ public final class SoyFileSetParserBuilder {
         ImmutableList.<SoyPrintDirective>builder()
             .addAll(InternalPlugins.internalDirectives(scopedData));
     this.sourceFunctions =
-        ImmutableList.<SoySourceFunction>builder().addAll(InternalPlugins.internalFunctions());
+        ImmutableList.<SoySourceFunctionDescriptor>builder()
+            .addAll(InternalPlugins.internalFunctionDescriptors());
     this.soyMethods =
         ImmutableList.<SoySourceFunction>builder().addAll(InternalPlugins.internalMethods());
     this.compilationUnits = ImmutableList.of();
@@ -219,7 +221,7 @@ public final class SoyFileSetParserBuilder {
       method = true;
     }
     if (!method || function.getClass().isAnnotationPresent(SoyFunctionSignature.class)) {
-      sourceFunctions.add(function);
+      sourceFunctions.add(SoySourceFunctionDescriptor.createUnknownPlugin(function));
     }
     return this;
   }

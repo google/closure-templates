@@ -15,14 +15,17 @@
  */
 package com.google.template.soy;
 
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static java.util.stream.Collectors.joining;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 import com.google.common.base.Stopwatch;
+import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ListMultimap;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.SetMultimap;
@@ -123,9 +126,11 @@ public abstract class AbstractSoyCompiler {
 
   @Option(
       name = "--pluginFunctions",
-      usage = "Specifies the full class names of SoySourceFunction plugins (comma-delimited list).",
+      usage =
+          "Specifies a multimap of plugin target to class name of SoySourceFunction plugin,"
+              + " in the form //target1=pkg.Class1,pkg.Class2,...;//target2=...",
       handler = SoyCmdLineParser.SourceFunctionListOptionHandler.class)
-  private List<SoySourceFunction> sourceFunctions = new ArrayList<>();
+  private ListMultimap<String, SoySourceFunction> sourceFunctions = ArrayListMultimap.create();
 
   @Option(
       name = "--directProtoDeps",
@@ -312,6 +317,11 @@ public abstract class AbstractSoyCompiler {
           .ifPresent(b -> sfsBuilder.addSoyPrintDirectives(b.getProvider().get()));
       guiceTimer.stop();
     }
+    ImmutableSet<? extends Class<?>> uniqueSourceFunctionClasses =
+        sourceFunctions.values().stream()
+            .map(SoySourceFunction::getClass)
+            .collect(toImmutableSet());
+    Set<String> uniqueClasses = new HashSet<>();
     sfsBuilder.setCssRegistry(
         CssRegistry.create(ImmutableSet.of(), com.google.common.collect.ImmutableMap.of()));
 
@@ -319,8 +329,15 @@ public abstract class AbstractSoyCompiler {
     for (File dep : javaDeps) {
       builder.add(cache.read(dep, CacheLoaders.JAVA_DEPS, soyCompilerFileReader));
     }
+    for (Entry<String, Collection<SoySourceFunction>> entry : sourceFunctions.asMap().entrySet()) {
+      for (SoySourceFunction function : entry.getValue()) {
+        String className = function.getClass().getName();
+        if (uniqueClasses.add(className)) {
+          sfsBuilder.addSourceFunction(entry.getKey(), function);
+        }
+      }
+    }
     sfsBuilder
-        .addSourceFunctions(sourceFunctions)
         .setWarningSink(err)
         .setJavaPluginValidator(new DelegatingMethodChecker(builder.build()))
         .setValidatedLoggingConfig(parseLoggingConfig())
