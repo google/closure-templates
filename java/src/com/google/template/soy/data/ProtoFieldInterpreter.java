@@ -491,9 +491,9 @@ public abstract class ProtoFieldInterpreter {
       public Object protoFromSoy(SoyValue field) {
         // The proto reflection api wants the EnumValueDescriptor, not the actual enum instance
         int value = field.integerValue();
-        // in proto3 we preserve unknown enum values (for consistency with jbcsrc), but for proto2
-        // we don't, and so if the field is unknown we will return null which will trigger an NPE
-        // again, for consistency with jbcsrc.
+        // in open enums we preserve unknown enum values (for consistency with jbcsrc), but for
+        // closed enums we don't, and so if the field is unknown we will return null which will
+        // trigger an NPE again, for consistency with jbcsrc.
         if (enumDescriptor.getFile().getSyntax() == Syntax.PROTO3) {
           return enumDescriptor.findValueByNumberCreatingIfUnknown(value);
         }
