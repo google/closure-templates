@@ -34,7 +34,6 @@ import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.error.SoyErrors;
 import com.google.template.soy.exprtree.FunctionNode;
-import com.google.template.soy.plugin.internal.SoySourceFunctionDescriptor;
 import com.google.template.soy.plugin.java.internal.PluginAnalyzer;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
@@ -149,14 +148,13 @@ public final class PluginResolver {
   private final ImmutableMap<String, SoyPrintDirective> printDirectives;
   private final ImmutableMap<String, Object> functions;
   private final ImmutableMap<String, ImmutableMap<String, SoySourceFunction>> methods;
-  private final ImmutableMap<SoySourceFunction, SoySourceFunctionDescriptor> functionToDesc;
   private final ErrorReporter reporter;
 
   public PluginResolver(
       Mode mode,
       List<SoyPrintDirective> soyPrintDirectives,
       List<SoyFunction> soyFunctions,
-      List<SoySourceFunctionDescriptor> sourceFunctions,
+      List<SoySourceFunction> sourceFunctions,
       List<SoySourceFunction> soyMethods,
       ErrorReporter reporter) {
     this.mode = checkNotNull(mode);
@@ -167,15 +165,8 @@ public final class PluginResolver {
     // Also confirm that each SoySourceFunction has a @SoyFunctionSignature, which is required.
     Map<String, Object> mergedFunctions =
         Maps.newLinkedHashMapWithExpectedSize(soyFunctions.size() + sourceFunctions.size());
-    ImmutableMap.Builder<SoySourceFunction, SoySourceFunctionDescriptor> functionToDesc =
-        ImmutableMap.builder();
     for (Object function : Iterables.concat(soyFunctions, sourceFunctions)) {
       String name;
-      if (function instanceof SoySourceFunctionDescriptor) {
-        SoySourceFunctionDescriptor desc = (SoySourceFunctionDescriptor) function;
-        functionToDesc.put(desc.soySourceFunction(), desc);
-        function = desc.soySourceFunction();
-      }
       if (function instanceof SoySourceFunction) {
         SoyFunctionSignature sig = function.getClass().getAnnotation(SoyFunctionSignature.class);
         if (sig == null) {
@@ -212,7 +203,6 @@ public final class PluginResolver {
       }
     }
     this.functions = ImmutableMap.copyOf(mergedFunctions);
-    this.functionToDesc = functionToDesc.buildOrThrow();
 
     Map<String, SoyPrintDirective> indexedDirectives =
         Maps.newLinkedHashMapWithExpectedSize(soyPrintDirectives.size());
@@ -375,11 +365,6 @@ public final class PluginResolver {
           "");
     }
     fct.setSoyFunction(ERROR_PLACEHOLDER_FUNCTION);
-  }
-
-  @Nullable
-  public SoySourceFunctionDescriptor getDescriptor(Object function) {
-    return functionToDesc.get(function);
   }
 
   private void reportMissing(

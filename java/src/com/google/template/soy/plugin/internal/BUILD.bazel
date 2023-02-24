@@ -34,7 +34,6 @@ java_library(
         "//java/src/com/google/template/soy/soyparse",
         "//java/src/com/google/template/soy/types",
         "//java/src/com/google/template/soy/types/ast",
-        "@com_google_auto_value_auto_value",
         "@maven//:com_google_guava_guava",
     ],
 )

@@ -30,7 +30,6 @@ import com.google.template.soy.bidifunctions.BidiFunctions;
 import com.google.template.soy.coredirectives.CoreDirectives;
 import com.google.template.soy.i18ndirectives.I18nFunctions;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
-import com.google.template.soy.plugin.internal.SoySourceFunctionDescriptor;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
@@ -56,12 +55,6 @@ public final class InternalPlugins {
             BidiFunctions.functions().stream(),
             I18nFunctions.functions().stream())
         .filter(f -> f.getClass().isAnnotationPresent(SoyFunctionSignature.class))
-        .collect(toImmutableList());
-  }
-
-  public static ImmutableList<SoySourceFunctionDescriptor> internalFunctionDescriptors() {
-    return internalFunctions().stream()
-        .map(SoySourceFunctionDescriptor::createInternal)
         .collect(toImmutableList());
   }
 

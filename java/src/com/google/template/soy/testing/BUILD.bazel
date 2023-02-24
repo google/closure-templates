@@ -68,7 +68,6 @@ java_library(
         "//java/src/com/google/template/soy/internal/proto",
         "//java/src/com/google/template/soy/logging:internal",
         "//java/src/com/google/template/soy/passes",
-        "//java/src/com/google/template/soy/plugin/internal",
         "//java/src/com/google/template/soy/plugin/java:reflective",
         "//java/src/com/google/template/soy/plugin/restricted",
         "//java/src/com/google/template/soy/shared",

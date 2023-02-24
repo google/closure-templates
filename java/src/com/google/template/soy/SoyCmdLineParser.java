@@ -19,11 +19,9 @@ package com.google.template.soy;
 import static com.google.common.base.CharMatcher.whitespace;
 
 import com.google.common.base.Splitter;
-import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableMultimap;
-import com.google.common.collect.ListMultimap;
-import com.google.common.collect.Multimap;
+import com.google.common.collect.ImmutableSetMultimap;
+import com.google.common.collect.SetMultimap;
 import com.google.errorprone.annotations.ForOverride;
 import com.google.inject.Module;
 import com.google.template.soy.msgs.SoyMsgPlugin;
@@ -192,28 +190,22 @@ public final class SoyCmdLineParser extends CmdLineParser {
 
   /** OptionHandler for args4j that handles a comma-delimited list of SoySourceFunctions. */
   public static final class SourceFunctionListOptionHandler
-      extends ListMultimapOptionHandler<String, SoySourceFunction> {
+      extends ListOptionHandler<SoySourceFunction> {
 
+    /** {@link ListOptionHandler#ListOptionHandler(CmdLineParser,OptionDef,Setter)} */
     public SourceFunctionListOptionHandler(
-        CmdLineParser parser,
-        OptionDef option,
-        Setter<? super ListMultimap<String, SoySourceFunction>> setter) {
+        CmdLineParser parser, OptionDef option, Setter<? super SoySourceFunction> setter) {
       super(parser, option, setter);
     }
 
     @Override
-    protected String parseKey(String key) {
-      return key;
-    }
-
-    @Override
-    protected SoySourceFunction parseValue(String value) {
+    SoySourceFunction parseItem(String item) {
       return instantiateObject(
           ((NamedOptionDef) option).name(),
           "plugin SoySourceFunction",
           SoySourceFunction.class,
           ((SoyCmdLineParser) this.owner).pluginLoader,
-          value);
+          item);
     }
   }
 
@@ -343,19 +335,16 @@ public final class SoyCmdLineParser extends CmdLineParser {
   }
 
   /**
-   * OptionHandler for args4j that handles a multimap, where each entry is delimited by a semicolon,
-   * keys are delimited from values by an equal sign, and values are delimited by a comma. For
-   * example: {@code KEY=VALUE1,VALUE2;KEY2=VALUE3,VALUE4;...}.
+   * OptionHandler for args4j that handles a set multimap, where each entry is delimited by a
+   * semicolon, keys are delimited from values by an equal sign, and values are delimited by a
+   * comma. For example: {@code KEY=VALUE1,VALUE2;KEY2=VALUE3,VALUE4;...}.
    */
-  abstract static class MultimapOptionHandler<T extends Multimap<K, V>, K, V>
-      extends OptionHandler<T> {
+  abstract static class SetMultimapOptionHandler<K, V> extends OptionHandler<SetMultimap<K, V>> {
 
-    protected MultimapOptionHandler(
-        CmdLineParser parser, OptionDef option, Setter<? super T> setter) {
+    SetMultimapOptionHandler(
+        CmdLineParser parser, OptionDef option, Setter<? super SetMultimap<K, V>> setter) {
       super(parser, option, setter);
     }
-
-    protected abstract ImmutableMultimap.Builder<K, V> valueBuilder();
 
     /**
      * Parses one key from the multimap into the appropriate type.
@@ -377,9 +366,9 @@ public final class SoyCmdLineParser extends CmdLineParser {
 
     @Override
     public int parseArguments(Parameters params) throws CmdLineException {
-      ImmutableMultimap.Builder<K, V> builder = valueBuilder();
+      ImmutableSetMultimap.Builder<K, V> builder = ImmutableSetMultimap.builder();
       String parameter = params.getParameter(0);
-      Splitter valueSplitter = Splitter.on(",").omitEmptyStrings();
+      Splitter valueSplitter = Splitter.on(",");
       for (String s : Splitter.on(";").omitEmptyStrings().split(parameter)) {
         int index = s.indexOf("=");
         if (index == -1) {
@@ -392,9 +381,7 @@ public final class SoyCmdLineParser extends CmdLineParser {
           }
         }
       }
-      @SuppressWarnings("unchecked")
-      T value = (T) builder.build();
-      setter.addValue(value);
+      setter.addValue(builder.build());
       return 1;
     }
 
@@ -404,17 +391,22 @@ public final class SoyCmdLineParser extends CmdLineParser {
     }
   }
 
-  abstract static class ListMultimapOptionHandler<K, V>
-      extends MultimapOptionHandler<ListMultimap<K, V>, K, V> {
-
-    ListMultimapOptionHandler(
-        CmdLineParser parser, OptionDef option, Setter<? super ListMultimap<K, V>> setter) {
+  /** OptionHandler for args4j that handles a set mulitmap with key strings and File values. */
+  public static final class StringFileSetMultimapHandler
+      extends SetMultimapOptionHandler<String, File> {
+    public StringFileSetMultimapHandler(
+        CmdLineParser parser, OptionDef option, Setter<? super SetMultimap<String, File>> setter) {
       super(parser, option, setter);
     }
 
     @Override
-    protected ImmutableMultimap.Builder<K, V> valueBuilder() {
-      return ImmutableListMultimap.builder();
+    protected String parseKey(String key) {
+      return key;
+    }
+
+    @Override
+    protected File parseValue(String value) {
+      return new File(value);
     }
   }
 

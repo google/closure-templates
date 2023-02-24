@@ -41,7 +41,6 @@ java_library(
         "//java/src/com/google/template/soy/msgs/internal",
         "//java/src/com/google/template/soy/parsepasses/contextautoesc",
         "//java/src/com/google/template/soy/passes/htmlmatcher",
-        "//java/src/com/google/template/soy/plugin/internal",
         "//java/src/com/google/template/soy/plugin/java",
         "//java/src/com/google/template/soy/plugin/java/internal",
         "//java/src/com/google/template/soy/plugin/java/restricted",

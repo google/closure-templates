@@ -61,13 +61,10 @@ returns a unique number. This might be useful for generating DOM ids. You would
 start by defining a `SoyFunction` subtype:
 
 ```java
-
 @SoyFunctionSignature(
     name = "uniqueId",
-    value = @Signature(returnType = "string"))
-class UniqueIdFunction implements SoySourceFunction {
-
-}
+    value = @Signature(returnType="string"))
+class UniqueIdFunction implements SoySourceFunction {}
 ```
 
 This tells the compiler basic information for your function (name and arity),
@@ -82,7 +79,7 @@ implement any of the following interfaces:
 1.  `SoyJavaScriptSourceFunction` for generating JS code
 1.  `SoyJavaSourceFunction` for generating Java bytecode
 1.  `SoyPythonSourceFunction` for generating Python code
-1.  *experimental* `LoggingFunction` for interacting with a `SoyLogger`. See the
+1.  _experimental_ `LoggingFunction` for interacting with a `SoyLogger`. See the
     [doc-logging](doc-logging#logging_function) guide for more information
 
 For example, if you wanted to have an implementation for both Java and JS you
@@ -90,7 +87,6 @@ would implement both those interfaces and write something like
 
 ```java
 public class UniqueIdFunctionRuntime {
-
   private static final AtomicLong counter = new AtomicLong();
 
   public static String nextId() {
@@ -100,25 +96,21 @@ public class UniqueIdFunctionRuntime {
 
 @SoyFunctionSignature(
     name = "uniqueId",
-    value = @Signature(returnType = "string"))
+    value = @Signature(returnType="string"))
 public class UniqueIdFunction implements
     SoyJavaSourceFunction, SoyJavaScriptSourceFunction {
-
   private static final MethodSignature NEXT_ID =
-      MethodSignature.create("example.package.UniqueIdFunctionRuntime",
-          "nextId", String.class);
+      MethodSignature.create("example.package.UniqueIdFunctionRuntime", "nextId", String.class);
 
   @Override
   public JavaValue applyForJavaSource(
-      JavaValueFactory factory, List<JavaValue> args,
-      JavaPluginContext context) {
+      JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
     return factory.callStaticMethod(NEXT_ID);
   }
 
   @Override
   public JavaScriptValue applyForJavaScriptSource(
-      JavaScriptValueFactory factory, List<JavaScriptValue> args,
-      JavaScriptPluginContext context) {
+     JavaScriptValueFactory factory, List<JavaScriptValue> args, JavaScriptPluginContext context) {
     // Note: If the library isn't provided by goog.module, use callNamespaceFunction instead.
     return factory.callModuleFunction("some.js.lib", "uniqueId");
   }
@@ -139,12 +131,10 @@ rendering to work, the instance the plugin will use must be passed to the
 
 ```java
 public class UniqueIdFunctionRuntime {
-
   private final AtomicLong counter = new AtomicLong();
   private final String prefix;
 
-  @Inject
-  UniqueIdFunctionRuntime(@Named("prefix") String prefix) {
+  @Inject UniqueIdFunctionRuntime(@Named("prefix") String prefix) {
     this.prefix = prefix;
   }
 
@@ -155,25 +145,22 @@ public class UniqueIdFunctionRuntime {
 
 @SoyFunctionSignature(
     name = "uniqueId",
-    value = @Signature(returnType = "string"))
+    value = @Signature(returnType="string"))
 public class UniqueIdFunction implements
     SoyJavaSourceFunction, SoyJavaScriptSourceFunction {
 
   private static final MethodSignature NEXT_ID =
-      MethodSignature.create("example.package.UniqueIdFunctionRuntime",
-          "nextId", String.class);
+      MethodSignature.create("example.package.UniqueIdFunctionRuntime", "nextId", String.class);
 
   @Override
   public JavaValue applyForJavaSource(
-      JavaValueFactory factory, List<JavaValue> args,
-      JavaPluginContext context) {
+      JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
     return factory.callInstanceMethod(NEXT_ID);
   }
 
   @Override
   JavaScriptValue applyForJavaScriptSource(
-      JavaScriptValueFactory factory, List<JavaScriptValue> args,
-      JavaScriptPluginContext context) {
+     JavaScriptValueFactory factory, List<JavaScriptValue> args, JavaScriptPluginContext context) {
     // Note: If the library isn't provided by goog.module, use callNamespaceFunction instead.
     return factory.callModuleFunction("some.js.lib", "uniqueId");
   }
@@ -201,10 +188,9 @@ get the same information.
 ### 3. Register your plugin with the compiler
 
 All SoySourceFunctions (e.g, `SoyJavaSourceFunction`) must be passed to the
-compiler via the `--pluginFunctions` flag. The flag takes a multimap whose keys
-are the plugin build target and whose values are the fully qualified class name
-of the function, in the form `//target1=pkg.Class1,pkg.Class2,...;//target2=...`
-. You will also need to make sure that the class is on the compiler's classpath.
+compiler via the `--pluginFunctions` flag. The flag takes a comma separated list
+of the fully qualified class name of the function. You will also need to make
+sure that the class is on the compiler's classpath.
 
 Google users should use the `af_soy_plugin` build rule to register their
 plugins. See go/af-soy/build_rules#af-soy-plugin-and-af-soy-legacy-plugin
@@ -241,21 +227,18 @@ Some plugins might behave differently when the input size changes. It is
 possible to define some overloads in the function signature annotation:
 
 ```java
-
 @SoyFunctionSignature(
-    name = "foo",
-    value = {
-        @Signature(
-            parameterTypes = {"string"},
-            returnType = "int"
-        ),
-        @Signature(
-            parameterTypes = {"string", "string"},
-            returnType = "string"
-        )})
-class FooFunction implements SoySourceFunction {
-
-}
+  name = "foo",
+  value = {
+    @Signature(
+      parameterTypes = {"string"},
+      returnType = "int"
+    ),
+    @Signature(
+      parameterTypes = {"string", "string"},
+      returnType = "string"
+    )})
+class FooFunction implements SoySourceFunction {}
 ```
 
 There are some restrictions to this annotation. First, it does not support
