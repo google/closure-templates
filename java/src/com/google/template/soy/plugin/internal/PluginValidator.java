@@ -81,9 +81,9 @@ public final class PluginValidator {
       Checkpoint checkpoint = errorReporter.checkpoint();
       List<SoyType> paramTypes =
           Arrays.stream(sig.parameterTypes())
-              .map(p -> typeFor(p, fn.getClass(), validatorReporter))
+              .map(p -> typeFor(p, fn, validatorReporter))
               .collect(toImmutableList());
-      SoyType returnType = typeFor(sig.returnType(), fn.getClass(), validatorReporter);
+      SoyType returnType = typeFor(sig.returnType(), fn, validatorReporter);
       // If we errored just getting the types, then don't bother reporting more errors during
       // validation.
       if (!errorReporter.errorsSince(checkpoint)) {
@@ -99,25 +99,32 @@ public final class PluginValidator {
   }
 
   private SoyType typeFor(
-      String typeStr,
-      Class<? extends SoySourceFunction> fnClass,
-      ValidatorErrorReporter validatorReporter) {
+      String typeStr, SoyJavaSourceFunction fn, ValidatorErrorReporter validatorReporter) {
     ErrorReporter localReporter = ErrorReporter.create(ImmutableMap.of());
-    TypeNode typeNode =
-        SoyFileParser.parseType(typeStr, SourceFilePath.create(fnClass.getName()), localReporter);
-    SoyType type =
-        typeNode == null
-            ? UnknownType.getInstance()
-            : TypeNodeConverter.builder(localReporter)
-                .setTypeRegistry(typeRegistry)
-                .setSystemExternal(true)
-                .build()
-                .getOrCreateType(typeNode);
+    SoyType type = parseType(typeStr, fn, localReporter, typeRegistry);
     // If any errors occurred while parsing the signature, wrap the errors in a more meaningful
     // message tailored to the plugin implementation.
     validatorReporter.wrapErrors(localReporter.getErrors());
     validatorReporter.wrapWarnings(localReporter.getWarnings());
 
     return type;
+  }
+
+  /** Shared utility function for parsing a SoyType from a string in a @SoyFunctionSignature. */
+  public static SoyType parseType(
+      String typeStr,
+      SoySourceFunction plugin,
+      ErrorReporter errorReporter,
+      SoyTypeRegistry typeRegistry) {
+    TypeNode typeNode =
+        SoyFileParser.parseType(
+            typeStr, SourceFilePath.create(plugin.getClass().getName()), errorReporter);
+    return typeNode == null
+        ? UnknownType.getInstance()
+        : TypeNodeConverter.builder(errorReporter)
+            .setTypeRegistry(typeRegistry)
+            .setSystemExternal(true)
+            .build()
+            .getOrCreateType(typeNode);
   }
 }

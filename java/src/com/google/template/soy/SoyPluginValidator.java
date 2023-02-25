@@ -54,6 +54,12 @@ public final class SoyPluginValidator extends AbstractSoyCompiler {
       usage = "[Optional] Whether to validate the plugin's Java implementations.")
   private boolean validateJavaImpls = true;
 
+  @Option(
+      name = "--tsxOutput",
+      usage =
+          "The file name of where to output the TSX declaration file for the validated plugins.")
+  private File tsxOutput;
+
   SoyPluginValidator(PluginLoader loader, SoyInputCache cache) {
     super(loader, cache);
   }
@@ -79,7 +85,10 @@ public final class SoyPluginValidator extends AbstractSoyCompiler {
     if (pluginRuntimeJars != null) {
       sfsBuilder.setPluginRuntimeJars(pluginRuntimeJars);
     }
-    sfsBuilder.build().validateUserPlugins(validateJavaImpls);
+    String tsxSource = sfsBuilder.build().validateUserPlugins(validateJavaImpls, tsxOutput != null);
     Files.write(output.toPath(), ImmutableList.of("true"), UTF_8);
+    if (tsxOutput != null) {
+      Files.write(tsxOutput.toPath(), tsxSource.getBytes(UTF_8));
+    }
   }
 }

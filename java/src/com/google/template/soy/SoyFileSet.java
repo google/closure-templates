@@ -783,9 +783,14 @@ public final class SoyFileSet {
         });
   }
 
-  /** Validates any user SoySourceFunction plugins. */
-  void validateUserPlugins(boolean validateJavaImpls) {
-    entryPointVoid(
+  /**
+   * Validates any user SoySourceFunction plugins.
+   *
+   * @return The source code of the TSX translation.
+   */
+  String validateUserPlugins(boolean validateJavaImpls, boolean translateToTsx) {
+    Preconditions.checkArgument(!translateToTsx || validateJavaImpls);
+    return entryPoint(
         () -> {
           // First resolve all the plugins to ensure they're well-formed (no bad names, etc.).
           new PluginResolver(
@@ -808,6 +813,7 @@ public final class SoyFileSet {
                 .validate(userSuppliedFunctions);
             throwIfErrorsPresent();
           }
+          return "";
         });
   }
 
@@ -1316,16 +1322,19 @@ public final class SoyFileSet {
         .setJavaPluginValidator(javaMethodChecker)
         .setConformanceConfig(conformanceConfig)
         .setLoggingConfig(loggingConfig)
-        .setPluginResolver(
-            new PluginResolver(
-                skipPluginValidation
-                    ? PluginResolver.Mode.ALLOW_UNDEFINED
-                    : PluginResolver.Mode.REQUIRE_DEFINITIONS,
-                printDirectives,
-                soyFunctions,
-                soySourceFunctions,
-                soyMethods,
-                errorReporter));
+        .setPluginResolver(buildPluginResolver());
+  }
+
+  private PluginResolver buildPluginResolver() {
+    return new PluginResolver(
+        skipPluginValidation
+            ? PluginResolver.Mode.ALLOW_UNDEFINED
+            : PluginResolver.Mode.REQUIRE_DEFINITIONS,
+        printDirectives,
+        soyFunctions,
+        soySourceFunctions,
+        soyMethods,
+        errorReporter);
   }
 
   private PassManager.Builder passManagerBuilderWithoutOptimizingOrDesugaringHtml() {
