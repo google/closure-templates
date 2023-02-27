@@ -61,6 +61,7 @@ public class BasicFunctions {
         new SqrtFunction(),
         new StrContainsFunction(),
         new StrEndsWithMethod(),
+        new StrIncludesFunction(),
         new StrIndexOfFunction(),
         new StrLenFunction(),
         new StrReplaceAllMethod(),

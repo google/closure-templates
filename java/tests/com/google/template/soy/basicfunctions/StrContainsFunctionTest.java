@@ -24,15 +24,16 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-/**
- * Unit tests for {@link StrContainsFunction}.
- */
+/** Unit tests for {@link StrContainsFunction} and {@link StrIncludesFunction}. */
 @RunWith(JUnit4.class)
 public class StrContainsFunctionTest {
 
   @Test
   public void testComputeForJavaSource_containsString() {
     SoyJavaSourceFunctionTester tester = new SoyJavaSourceFunctionTester(new StrContainsFunction());
+    assertThat(tester.callMethod("foobarfoo", "bar")).isEqualTo(true);
+
+    tester = new SoyJavaSourceFunctionTester(new StrIncludesFunction());
     assertThat(tester.callMethod("foobarfoo", "bar")).isEqualTo(true);
   }
 
@@ -41,12 +42,20 @@ public class StrContainsFunctionTest {
     SoyJavaSourceFunctionTester tester = new SoyJavaSourceFunctionTester(new StrContainsFunction());
     assertThat(tester.callMethod(StringData.forValue("foobarfoo"), StringData.forValue("bar")))
         .isEqualTo(true);
+
+    tester = new SoyJavaSourceFunctionTester(new StrIncludesFunction());
+    assertThat(tester.callMethod(StringData.forValue("foobarfoo"), StringData.forValue("bar")))
+        .isEqualTo(true);
   }
 
   @Test
   public void testComputeForJavaSource_doesNotContainString() {
     SoyJavaSourceFunctionTester tester = new SoyJavaSourceFunctionTester(new StrContainsFunction());
     assertThat(tester.callMethod("foobarfoo", "baz")).isEqualTo(false);
+
+    tester = new SoyJavaSourceFunctionTester(new StrIncludesFunction());
+    assertThat(tester.callMethod(StringData.forValue("foobarfoo"), StringData.forValue("bar")))
+        .isEqualTo(true);
   }
 
   @Test
@@ -54,5 +63,9 @@ public class StrContainsFunctionTest {
     SoyJavaSourceFunctionTester tester = new SoyJavaSourceFunctionTester(new StrContainsFunction());
     assertThat(tester.callMethod(StringData.forValue("foobarfoo"), StringData.forValue("baz")))
         .isEqualTo(false);
+
+    tester = new SoyJavaSourceFunctionTester(new StrIncludesFunction());
+    assertThat(tester.callMethod(StringData.forValue("foobarfoo"), StringData.forValue("bar")))
+        .isEqualTo(true);
   }
 }

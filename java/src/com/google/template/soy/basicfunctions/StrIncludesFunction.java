@@ -23,12 +23,13 @@ import com.google.template.soy.shared.restricted.SoyPureFunction;
 /**
  * A function that determines if a given string contains another given string.
  *
- * <p>Subclasses StrContainsBaseFunction without overriding any functionality but does set the
- * SoyMethodSignaturemethod name to contains.
+ * <p>Duplicate functionality as StrContainsFunction but given includes name to allow for automatic
+ * translation of TSX includes method. This method should only be used by TSX and not be hand
+ * written.
  */
 @SoyMethodSignature(
-    name = "contains",
+    name = "includes",
     baseType = "string",
     value = @Signature(parameterTypes = "string", returnType = "bool"))
 @SoyPureFunction
-public final class StrContainsFunction extends StrContainsBaseFunction {}
+public final class StrIncludesFunction extends StrContainsBaseFunction {}
