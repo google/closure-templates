@@ -1166,6 +1166,39 @@ public final class EscapingConventions {
   }
 
   /**
+   * Allows only a limited number of known to be safe protocols.
+   *
+   * <p>This is the historical behavior of the Soy URI sanitization. It is preserved for users that
+   * still want to block unknown schemes, while the default behavior is changed to only block
+   * javascript: URLs.
+   */
+  public static final class FilterLegacyUriBehavior extends CrossLanguageStringXform {
+    /** Implements the {@code |filterLegacyUriBehavior} directive. */
+    public static final FilterLegacyUriBehavior INSTANCE = new FilterLegacyUriBehavior();
+
+    private FilterLegacyUriBehavior() {
+      super(
+          Pattern.compile(
+              "^(?:(?:https?|mailto|ftp):|[^&:/?#]*(?:[/?#]|\\z))", Pattern.CASE_INSENSITIVE),
+          null);
+    }
+
+    @Override
+    protected ImmutableList<Escape> defineEscapes() {
+      return ImmutableList.of();
+    }
+
+    @Override
+    public String getInnocuousOutput() {
+      // NOTE: about:invalid is registered in http://www.w3.org/TR/css3-values/#about-invalid :
+      // "The about:invalid URI references a non-existent document with a generic error condition.
+      // It can be used when a URI is necessary, but the default value shouldn't be resolveable as
+      // any type of document."
+      return "about:invalid#" + INNOCUOUS_OUTPUT;
+    }
+  }
+
+  /**
    * Implements the {@code |escapeUri} directive which allows arbitrary content to be included in a
    * URI regardless of the string delimiters of the the surrounding language.
    */
@@ -1333,6 +1366,7 @@ public final class EscapingConventions {
         FilterSipUri.INSTANCE,
         FilterSmsUri.INSTANCE,
         FilterTelUri.INSTANCE,
+        FilterLegacyUriBehavior.INSTANCE,
         FilterHtmlAttributes.INSTANCE,
         FilterHtmlElementName.INSTANCE,
         FilterCspNonceValue.INSTANCE);

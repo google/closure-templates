@@ -397,6 +397,16 @@ def filter_tel_uri(value):
       generated_sanitize.filter_tel_uri_helper(value), approval=approval)
 
 
+def filter_legacy_uri_behavior(value):
+  approval = IActuallyUnderstandSoyTypeSafetyAndHaveSecurityApproval(
+      'Filtered URIs are by nature sanitized.'
+  )
+  return SanitizedUri(
+      generated_sanitize.filter_legacy_uri_behavior_helper(value),
+      approval=approval,
+  )
+
+
 def filter_normalize_uri(value):
   uri = _get_content_of_kind(value, CONTENT_KIND.URI)
   if uri is None:

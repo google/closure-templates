@@ -133,10 +133,16 @@ base64 encoded string as defined by the
 
 This directives is used internally by the compiler as part of its support for
 ContentSecurityPolicy nonces. See our
-[security guide](../dev/security.md#content_security_policy)
-for more information.
+[security guide](../dev/security.md#content_security_policy) for more
+information.
 
 ### `|whitespaceHtmlAttributes` {#whitespaceHtmlAttributes}
 
 This directive is used internally by the compiler to optimize whitespace inside
 of Html tags.
+
+### `|filterLegacyUriBehavior` {#filterLegacyUriBehavior}
+
+Legacy directive. Primarily used in templates that need to keep the legacy URI
+escaping behavior of Soy. Only allows URLs that have a `http:`, `https:`,
+`mailto:`, `ftp:` scheme, or no explicit scheme.

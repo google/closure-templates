@@ -1775,6 +1775,18 @@ const $$filterTelUri = function(value) {
   return VERY_UNSAFE.ordainSanitizedUri($$filterTelUriHelper(value));
 };
 
+/**
+ * Allows only a limited number of known to be safe protocols.
+ * This is the historical behavior of the Soy URI sanitization.
+ *
+ * @param {?} value The value to process. May not be a string, but the value
+ *     will be coerced to a string.
+ * @return {!SanitizedUri} An escaped version of value.
+ */
+const $$filterLegacyUriBehavior = function(value) {
+  // NOTE: Even if it's a SanitizedUri, we will still filter it.
+  return VERY_UNSAFE.ordainSanitizedUri($$filterLegacyUriBehaviorHelper(value));
+};
 
 /**
  * Escapes a string so it can safely be included inside a quoted CSS string.
@@ -2552,6 +2564,7 @@ exports = {
   $$filterSipUri,
   $$strSmsUriToUri,
   $$filterTelUri,
+  $$filterLegacyUriBehavior,
   $$escapeCssString,
   $$filterCssValue,
   $$filterCspNonceValue,
@@ -2872,7 +2885,7 @@ const $$FILTER_FOR_FILTER_CSS_VALUE_ = /^(?!-*(?:expression|(?:moz-)?binding))(?
  * A pattern that vets values produced by the named directives.
  * @type {!RegExp}
  */
-const $$FILTER_FOR_FILTER_NORMALIZE_URI_ = /^(?:(?:https?|mailto|ftp):|[^&:\/?#]*(?:[\/?#]|$))/i;
+const $$FILTER_FOR_FILTER_NORMALIZE_URI__AND__FILTER_LEGACY_URI_BEHAVIOR_ = /^(?:(?:https?|mailto|ftp):|[^&:\/?#]*(?:[\/?#]|$))/i;
 
 /**
  * A pattern that vets values produced by the named directives.
@@ -3039,7 +3052,7 @@ const $$normalizeUriHelper = function(value) {
  */
 const $$filterNormalizeUriHelper = function(value) {
   const str = String(value);
-  if (!$$FILTER_FOR_FILTER_NORMALIZE_URI_.test(str)) {
+  if (!$$FILTER_FOR_FILTER_NORMALIZE_URI__AND__FILTER_LEGACY_URI_BEHAVIOR_.test(str)) {
     asserts.fail('Bad value `%s` for |filterNormalizeUri', [str]);
     return 'about:invalid#zSoyz';
   }
@@ -3115,6 +3128,20 @@ const $$filterTelUriHelper = function(value) {
   const str = String(value);
   if (!$$FILTER_FOR_FILTER_TEL_URI_.test(str)) {
     asserts.fail('Bad value `%s` for |filterTelUri', [str]);
+    return 'about:invalid#zSoyz';
+  }
+  return str;
+};
+
+/**
+ * A helper for the Soy directive |filterLegacyUriBehavior
+ * @param {?} value Can be of any type but will be coerced to a string.
+ * @return {string} The escaped text.
+ */
+const $$filterLegacyUriBehaviorHelper = function(value) {
+  const str = String(value);
+  if (!$$FILTER_FOR_FILTER_NORMALIZE_URI__AND__FILTER_LEGACY_URI_BEHAVIOR_.test(str)) {
+    asserts.fail('Bad value `%s` for |filterLegacyUriBehavior', [str]);
     return 'about:invalid#zSoyz';
   }
   return str;

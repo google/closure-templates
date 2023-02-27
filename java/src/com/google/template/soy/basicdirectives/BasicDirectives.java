@@ -57,6 +57,7 @@ public final class BasicDirectives {
         new CleanHtmlDirective(),
         new FilterImageDataUriDirective(),
         new FilterSipUriDirective(),
-        new FilterTelUriDirective());
+        new FilterTelUriDirective(),
+        new FilterLegacyUriBehaviorDirective());
   }
 }
