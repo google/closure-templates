@@ -60,7 +60,6 @@ public final class JsRuntime {
 
   public static final GoogRequire GOOG_SOY = GoogRequire.create("goog.soy");
 
-  public static final Expression FREEZE = SOY.dotAccess("$$freeze");
   public static final Expression SOY_EMPTY_OBJECT = SOY.dotAccess("$$EMPTY_OBJECT");
   public static final Expression SOY_INTERCEPT_SOY_TEMPLATES =
       SOY.dotAccess("INTERCEPT_SOY_TEMPLATES");
@@ -140,6 +139,8 @@ public final class JsRuntime {
   public static final Expression SOY_GET_DELTEMPLATE_ID = SOY.dotAccess("$$getDelTemplateId");
 
   public static final Expression SOY_IS_LOCALE_RTL = SOY.dotAccess("$$IS_LOCALE_RTL");
+  public static final Expression SOY_CREATE_CONST = SOY.dotAccess("$$createConst");
+  public static final Expression SOY_GET_CONST = SOY.dotAccess("$$getConst");
 
   public static final Expression SOY_DEBUG_SOY_TEMPLATE_INFO =
       SOY.dotAccess("$$getDebugSoyTemplateInfo");
@@ -212,7 +213,7 @@ public final class JsRuntime {
           .put(
               TrustedResourceUrlProto.getDescriptor().getFullName(),
               SOY_CONVERTERS.dotAccess("packSanitizedTrustedResourceUriToProtoSoyRuntimeOnly"))
-          .build();
+          .buildOrThrow();
 
   public static final ImmutableMap<String, Expression> JS_TO_PROTO_PACK_FN =
       ImmutableMap.<String, Expression>builder()

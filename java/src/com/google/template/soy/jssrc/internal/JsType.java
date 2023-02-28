@@ -754,6 +754,15 @@ public final class JsType {
     return typeExpr();
   }
 
+  /** Returns a type expression suitable for a function return type */
+  public String typeExprForFunctionReturn() {
+    if (typeExpressions.size() > 1) {
+      // needs parens
+      return "(" + typeExpr() + ")";
+    }
+    return typeExpr();
+  }
+
   public final ImmutableSet<GoogRequire> getGoogRequires() {
     return extraRequires;
   }

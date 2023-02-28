@@ -1052,12 +1052,11 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
 
   private Expression visitVeDefFunction(FunctionNode node) {
     Expression metadataExpr = node.numChildren() == 4 ? visit(node.getChild(3)) : LITERAL_UNDEFINED;
-    return Expressions.ifExpression(
-            GOOG_DEBUG,
-            construct(
-                SOY_VISUAL_ELEMENT, visit(node.getChild(1)), metadataExpr, visit(node.getChild(0))))
-        .setElse(construct(SOY_VISUAL_ELEMENT, visit(node.getChild(1)), metadataExpr))
-        .build(codeGenerator);
+    Expression debugNameExpr =
+        Expressions.ifExpression(GOOG_DEBUG, visit(node.getChild(0)))
+            .setElse(Expressions.LITERAL_UNDEFINED)
+            .build(codeGenerator);
+    return construct(SOY_VISUAL_ELEMENT, visit(node.getChild(1)), metadataExpr, debugNameExpr);
   }
 
   private static SoyJsSrcFunction getUnknownFunction(final String name, final int argSize) {

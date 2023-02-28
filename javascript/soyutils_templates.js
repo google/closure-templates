@@ -25,8 +25,13 @@
  */
 
 goog.module('soy.templates');
-const incrementaldomlib = goog.requireType('google3.javascript.template.soy.api_idom');
 const {IjData} = goog.requireType('goog.soy');
+const {IncrementalDomRenderer} = goog.requireType('google3.javascript.template.soy.api_idom');
+
+/** @return {string} */
+function zSoyZFunction() {
+  return 'zSoyTemplatez';
+}
 
 /**
  * Marks a function as being a Soy template type.
@@ -35,15 +40,13 @@ const {IjData} = goog.requireType('goog.soy');
  * @return {T} fn
  * @template T
  */
-exports.$$markTemplate = function(fn, name = undefined) {
+exports.$$markTemplate = function(fn, name) {
   if (goog.DEBUG) {
     fn.toString = function() {
       return '** FOR DEBUGGING ONLY: ' + name + ' **';
     };
   } else {
-    fn.toString = function() {
-      return 'zSoyTemplatez';
-    };
+    fn.toString = zSoyZFunction;
   }
   return fn;
 };
@@ -61,9 +64,9 @@ exports.$$bindTemplateParams = function(fn, data) {
 };
 
 /**
- * @param {function(!incrementaldomlib.IncrementalDomRenderer, T, ?IjData)} fn
+ * @param {function(!IncrementalDomRenderer, T, ?IjData)} fn
  * @param {?} data
- * @return {function(!incrementaldomlib.IncrementalDomRenderer, T, ?IjData)}
+ * @return {function(!IncrementalDomRenderer, T, ?IjData)}
  * @template T
  */
 exports.$$bindTemplateParamsForIdom = function(fn, data) {

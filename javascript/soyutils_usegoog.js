@@ -2493,7 +2493,7 @@ function $$getDebugSoyTemplateInfo() {
  * @template T
  */
 function $$freeze(object) {
-  if (goog.DEBUG && Object.freeze) {
+  if (Object.freeze) {
     if (!object || typeof object !== 'object' ||
         Object.isFrozen(/** @type {!Object} */ (object))) {
       return object;
@@ -2506,10 +2506,61 @@ function $$freeze(object) {
     Object.freeze(object);
     Object.getOwnPropertyNames(object).forEach(function(name) {
       const property = object[name];
-      exports.$$freeze(property);
+      $$freeze(property);
     });
   }
   return object;
+}
+
+// Whether createConst and getConst are in debug mode or not.
+// Read the value into a module local so that both createConst and getConst are
+// in sync.  Some tests monkey patch ENABLE_ASSERTS.
+const /** boolean */ DEBUG_CONSTANTS = asserts.ENABLE_ASSERTS;
+
+/**
+ * Creates a Soy constant.  In debug mode this will return a function that
+ * enforces that only internal callers access the constant, in production modes
+ * it will simply return the constant.
+ *
+ * To access, call `$$getConst`.
+ *
+ * @param {function():T} valueFn
+ * The return type should be T|function(!Object):T but that type is not useful
+ * and function assignment rules are complex enough that it doesn't always work.
+ * Our callers always use a correct type so we can just return `?` and allow the
+ * caller to declare a better type.
+ * @return {?}
+ * @template T
+ * @nosideeffects
+ */
+function $$createConst(valueFn) {
+  let value = valueFn();
+  // We need to put the if-statement here so that this still optimizes in search
+  // which limits the number of optimization iterations.
+  if (goog.DEBUG) {
+    value = $$freeze(value);
+  }
+  if (DEBUG_CONSTANTS) {
+    return /** @return {T} */ (/** !Object */ areYouAnInternalCaller) => {
+      $$areYouAnInternalCaller(areYouAnInternalCaller);
+      return value;
+    };
+  }
+  return value;
+}
+
+/**
+ * Return the value of a constant constructed by `$$createConst`
+ * @param {function(!Object):T} value
+ * @param {!Object} areYouAnInternalCaller
+ * @return {T}
+ * @template T
+ */
+function $$getConst(value, areYouAnInternalCaller) {
+  if (DEBUG_CONSTANTS) {
+    return value(areYouAnInternalCaller);
+  }
+  return value;
 }
 
 // -----------------------------------------------------------------------------
@@ -2518,6 +2569,8 @@ function $$freeze(object) {
 
 
 exports = {
+  $$createConst,
+  $$getConst,
   $$serializeKey,
   $$IS_LOCALE_RTL,
   $$asReadonlyArray,
@@ -2526,7 +2579,6 @@ exports = {
   $$checkNotNull,
   $$parseInt,
   $$equals,
-  $$freeze,
   $$isFunction,
   $$parseFloat,
   $$randomInt,

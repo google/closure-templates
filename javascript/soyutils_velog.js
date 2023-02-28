@@ -98,7 +98,7 @@ class Metadata {
 /** Sets up the global metadata object before rendering any templates. */
 function setUpLogging() {
   assert(
-      !$$hasMetadata(),
+      !metadata,
       'Logging metadata already exists. Please call ' +
           'soy.velog.tearDownLogging after rendering a template.');
   metadata = new Metadata();
@@ -110,7 +110,7 @@ function setUpLogging() {
  */
 function tearDownLogging() {
   assert(
-      $$hasMetadata(),
+      metadata,
       'Logging metadata does not exist. ' +
           'Please call soy.velog.setUpLogging before rendering a template.');
   metadata = null;
@@ -144,7 +144,7 @@ function setMetadataTestOnly(testdata) {
  * @return {string} The HTML attribute that will be stored in the DOM.
  */
 function $$getLoggingAttribute(veData, logOnly) {
-  if ($$hasMetadata()) {
+  if (metadata) {
     const dataIdx = metadata.elements.push(new ElementMetadata(
                         veData.getVe().getId(), veData.getData(), logOnly)) -
         1;
@@ -177,7 +177,7 @@ function $$getLoggingAttribute(veData, logOnly) {
  * @return {string} The HTML attribute that will be stored in the DOM.
  */
 function $$getLoggingFunctionAttribute(name, args, attr) {
-  if ($$hasMetadata()) {
+  if (metadata) {
     const functionIdx =
         metadata.functions.push(new FunctionMetadata(name, args)) - 1;
     return ' ' + FUNCTION_ATTR + attr + '="' + functionIdx + '"';
@@ -488,7 +488,10 @@ class $$VisualElementData {
     return this.data_;
   }
 
-  /** @override */
+  /**
+   * @override
+   * @return {string}
+   */
   toString() {
     if (goog.DEBUG) {
       return `**FOR DEBUGGING ONLY ve_data(${this.ve_.toDebugString()}, ${
