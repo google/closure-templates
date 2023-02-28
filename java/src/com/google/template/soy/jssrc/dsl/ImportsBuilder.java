@@ -17,6 +17,7 @@
 package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
+import com.google.common.base.Preconditions;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -27,7 +28,6 @@ import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import javax.annotation.Nullable;
 
 /**
  * Allows building imports incrementally.
@@ -44,6 +44,7 @@ public class ImportsBuilder {
   abstract static class ProtoImportData {
 
     static ProtoImportData create(String file, String symbol, String alias) {
+      Preconditions.checkArgument(!symbol.equals(alias));
       return new AutoValue_ImportsBuilder_ProtoImportData(file, symbol, alias);
     }
 
@@ -52,6 +53,10 @@ public class ImportsBuilder {
     abstract String symbol();
 
     abstract String alias();
+
+    String aliasOrSymbol() {
+      return alias().isEmpty() ? symbol() : alias();
+    }
   }
 
   // A map of fully qualified proto name to the imported file, symbol, and alias.
@@ -60,6 +65,14 @@ public class ImportsBuilder {
   public ImportsBuilder() {
     this.imports = new TreeMap<>();
     this.protoImportData = new HashMap<>();
+  }
+
+  private void importSymbol(ProtoImportData data) {
+    if (data.alias().isEmpty()) {
+      importSymbol(data.file(), data.symbol());
+    } else {
+      importSymbolAlias(data.file(), data.symbol(), data.alias());
+    }
   }
 
   /** Add an import for a single symbol from a single file */
@@ -97,10 +110,7 @@ public class ImportsBuilder {
     protoImportData.put(fqn, ProtoImportData.create(file, symbol, alias));
   }
 
-  private String maybeMakeImmutable(String fqn, boolean makeImmutable) {
-    if (!makeImmutable) {
-      return fqn;
-    }
+  private String makeImmutable(String fqn) {
     int immutableIndex = fqn.lastIndexOf(".") + 1;
     return fqn.substring(0, immutableIndex) + "Immutable" + fqn.substring(immutableIndex);
   }
@@ -110,35 +120,53 @@ public class ImportsBuilder {
    * parts for nested protos, possibly the immutable version) that should be used in Tsx, and mark
    * the symbol as referenced.
    */
-  @Nullable
   public String useImportedProtoSymbol(String fqn, boolean makeImmutable) {
-    String symbol = fqn;
-    String rest = "";
-    do {
-      if (protoImportData.containsKey(symbol)) {
-        ProtoImportData data = protoImportData.get(symbol);
-        if (!rest.isEmpty()) {
-          // Nested, import the mutable version, nested messages are placed inside of the mutable
-          // message class.
-          importSymbol(data.file(), data.symbol());
-          return data.symbol() + maybeMakeImmutable(rest, makeImmutable);
-        } else if (data.alias().isEmpty()) {
-          importSymbol(data.file(), maybeMakeImmutable(data.symbol(), makeImmutable));
-          return maybeMakeImmutable(data.symbol() + rest, makeImmutable);
-        } else {
-          importSymbolAlias(
-              data.file(), maybeMakeImmutable(data.symbol(), makeImmutable), data.alias());
-          return data.alias() + rest;
-        }
+    String topLevelMsg = fqn;
+    String dotPlusNestedSymbol = "";
+
+    // fqn may be a symbol nested inside a top-level Message. Find the top-level message.
+    ProtoImportData data = null;
+    while (true) {
+      data = protoImportData.get(topLevelMsg);
+      if (data != null) {
+        break;
       }
-      int dotIndex = symbol.lastIndexOf(".");
+
+      int dotIndex = topLevelMsg.lastIndexOf(".");
       if (dotIndex == -1) {
         break;
       }
-      rest = symbol.substring(dotIndex) + rest;
-      symbol = symbol.substring(0, dotIndex);
-    } while (true);
-    return null;
+      dotPlusNestedSymbol = topLevelMsg.substring(dotIndex) + dotPlusNestedSymbol;
+      topLevelMsg = topLevelMsg.substring(0, dotIndex);
+    }
+
+    if (data == null) {
+      throw new IllegalArgumentException("Unexpected proto: " + fqn);
+    }
+
+    if (!makeImmutable) {
+      importSymbol(data);
+      // import {Foo} -> Foo, Foo.Nested
+      // import {Foo as FooAlias} -> FooAlias, FooAlias.Nested
+      return data.aliasOrSymbol() + dotPlusNestedSymbol;
+    }
+
+    if (!dotPlusNestedSymbol.isEmpty()) {
+      // import {Foo} -> Foo.ImmutableNested
+      // import {Foo as FooAlias} -> FooAlias.ImmutableNested
+      importSymbol(data);
+      return data.aliasOrSymbol() + makeImmutable(dotPlusNestedSymbol);
+    }
+
+    if (data.alias().isEmpty()) {
+      // import {Foo} -> ImmutableFoo
+      importSymbol(data.file(), makeImmutable(data.symbol()));
+      return makeImmutable(data.symbol());
+    }
+
+    // import {Foo as FooAlias} -> ImmutableFooAlias
+    importSymbolAlias(data.file(), makeImmutable(data.symbol()), makeImmutable(data.alias()));
+    return makeImmutable(data.alias());
   }
 
   public CodeChunk build() {
