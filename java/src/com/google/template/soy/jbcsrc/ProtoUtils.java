@@ -484,11 +484,11 @@ final class ProtoUtils {
         case DOUBLE:
           return SoyExpression.forFloat(field);
         case ENUM:
-          if (isProto3EnumField(descriptor)) {
+          if (isOpenEnumField(descriptor)) {
             // it already is an integer, cast to long
             return SoyExpression.forInt(numericConversion(field, Type.LONG_TYPE));
           }
-          // otherwise it is proto2 and we need to extract the number.
+          // otherwise it is closed and we need to extract the number.
           return SoyExpression.forInt(
               numericConversion(field.invoke(MethodRef.PROTOCOL_ENUM_GET_NUMBER), Type.LONG_TYPE));
         case INT:
@@ -1396,9 +1396,9 @@ final class ProtoUtils {
           if (!currentType.equals(Type.INT_TYPE)) {
             cb.cast(currentType, Type.INT_TYPE);
           }
-          // for proto 3 enums we call the setValue function which accepts an int so we don't need
+          // for open enums we call the setValue function which accepts an int so we don't need
           // to grab the actual enum value.
-          if (!isProto3EnumField(field)) {
+          if (!isOpenEnumField(field)) {
             getForNumberMethod(field.getEnumType()).invokeUnchecked(cb);
           }
           return;
@@ -1469,7 +1469,7 @@ final class ProtoUtils {
       case DOUBLE:
         return Type.DOUBLE_TYPE;
       case ENUM:
-        return isProto3EnumField(field)
+        return isOpenEnumField(field)
             ? Type.INT_TYPE
             : TypeInfo.createClass(JavaQualifiedNames.getClassName(field.getEnumType())).type();
       case FLOAT:
@@ -1493,15 +1493,15 @@ final class ProtoUtils {
     TypeInfo message = messageRuntimeType(descriptor.getContainingType());
     String repeatedType = "";
     Type runtimeType;
-    boolean isProto3Enum = isProto3EnumField(descriptor);
+    boolean isOpenEnum = isOpenEnumField(descriptor);
     if (descriptor.isMapField()) {
       repeatedType = "Map";
       runtimeType = BytecodeUtils.MAP_TYPE;
-      isProto3Enum = mapValueIsProto3Enum(descriptor);
+      isOpenEnum = mapValueIsOpenEnum(descriptor);
     } else if (descriptor.isRepeated()) {
       repeatedType = "List";
       runtimeType = BytecodeUtils.LIST_TYPE;
-    } else if (isProto3Enum) {
+    } else if (isOpenEnum) {
       runtimeType = Type.INT_TYPE;
     } else {
       runtimeType = getRuntimeType(descriptor);
@@ -1511,8 +1511,8 @@ final class ProtoUtils {
             new Method(
                 "get"
                     + getFieldName(descriptor, true)
-                    // For proto3 enums we access the Value field
-                    + (isProto3Enum ? "Value" : "")
+                    // For open enums we access the Value field
+                    + (isOpenEnum ? "Value" : "")
                     + repeatedType,
                 runtimeType,
                 MethodRef.NO_METHOD_ARGS))
@@ -1521,21 +1521,21 @@ final class ProtoUtils {
         .asCheap();
   }
 
-  private static boolean mapValueIsProto3Enum(FieldDescriptor descriptor) {
+  private static boolean mapValueIsOpenEnum(FieldDescriptor descriptor) {
     FieldDescriptor valueDescriptor = descriptor.getMessageType().getFields().get(1);
-    return isProto3EnumField(valueDescriptor);
+    return isOpenEnumField(valueDescriptor);
   }
 
   /**
-   * Proto3 enums fields can accept and return unknown values via the get<Field>Value() methods, we
+   * Open enums fields can accept and return unknown values via the get<Field>Value() methods, we
    * use those methods instead of the methods that deal with the enum constants in order to support
    * unknown enum values. If we didn't, any field with an unknown enum value would throw an
    * exception when we call {@code getNumber()} on the enum.
    *
-   * <p>For comparison, in proto2 unknown values always get mapped to 0, so this problem doesn't
-   * exist. Also, in proto2, the 'Value' functions don't exist, so we can't use them.
+   * <p>For comparison, in closed enums unknown values always get mapped to 0, so this problem
+   * doesn't exist. Also, in closed enums, the 'Value' functions don't exist, so we can't use them.
    */
-  private static boolean isProto3EnumField(FieldDescriptor descriptor) {
+  private static boolean isOpenEnumField(FieldDescriptor descriptor) {
     return descriptor.getType() == Descriptors.FieldDescriptor.Type.ENUM
         && descriptor.getFile().getSyntax() == Syntax.PROTO3;
   }
@@ -1590,14 +1590,14 @@ final class ProtoUtils {
   private static MethodRef getSetOrAddMethod(FieldDescriptor descriptor) {
     TypeInfo builder = builderRuntimeType(descriptor.getContainingType());
     String prefix = descriptor.isRepeated() ? "add" : "set";
-    boolean isProto3EnumField = isProto3EnumField(descriptor);
-    String suffix = isProto3EnumField ? "Value" : "";
+    boolean isOpenEnumField = isOpenEnumField(descriptor);
+    String suffix = isOpenEnumField ? "Value" : "";
     return MethodRef.createInstanceMethod(
             builder,
             new Method(
                 prefix + getFieldName(descriptor, true) + suffix,
                 builder.type(),
-                new Type[] {isProto3EnumField ? Type.INT_TYPE : getRuntimeType(descriptor)}))
+                new Type[] {isOpenEnumField ? Type.INT_TYPE : getRuntimeType(descriptor)}))
         .asNonNullable();
   }
 
@@ -1797,10 +1797,10 @@ final class ProtoUtils {
     @Override
     protected Expression visitEnum(EnumDescriptor enumType, FieldDescriptor fieldType) {
       // ENUM_FROM_PROTO converts a proto enum to an int, since Soy represents proto enums as ints
-      // internally. However, for a repeated enum field in a proto3 message we call
-      // getEnumNameValueList (which doesn't exist in proto2 messages and it is what allows proto3
-      // to retain unknown enum values), so the values are already ints.
-      if (fieldType.getFile().getSyntax() == Syntax.PROTO3) {
+      // internally. However, for a repeated open enum field we call
+      // getEnumNameValueList (which doesn't exist in closed enum fields and it is what allows open
+      // enum fields to retain unknown enum values), so the values are already ints.
+      if (isOpenEnumField(fieldType)) {
         return INT.accessor();
       }
       return ENUM_FROM_PROTO.accessor();
