@@ -97,6 +97,11 @@ public abstract class SanitizedType extends PrimitiveType {
       builder.setHtml(SoyTypeP.HtmlTypeP.newBuilder().setIsElement(false));
     }
 
+    @Override
+    boolean doIsAssignableFromNonUnionType(SoyType srcType) {
+      return (srcType instanceof ElementType || srcType instanceof HtmlType);
+    }
+
     /** Return the single instance of this type. */
     public static HtmlType getInstance() {
       return INSTANCE;
