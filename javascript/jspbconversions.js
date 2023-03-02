@@ -27,6 +27,7 @@ const SafeUrlProto = goog.require('proto.webutil.html.types.SafeUrlProto');
 const TrustedResourceUrl = goog.require('goog.html.TrustedResourceUrl');
 const TrustedResourceUrlProto = goog.require('proto.webutil.html.types.TrustedResourceUrlProto');
 const uncheckedconversions = goog.require('goog.html.uncheckedconversions');
+const {htmlSafeByReview, scriptSafeByReview, styleSafeByReview, urlSafeByReview} = goog.require('safevalues.restricted.reviewed');
 
 /**
  * Converts a protocol-message form of a SafeHtml into a
@@ -48,9 +49,9 @@ const uncheckedconversions = goog.require('goog.html.uncheckedconversions');
  * @deprecated Use safevalues.protoconversions instead.
  */
 function safeHtmlFromProto(proto) {
-  return uncheckedconversions.safeHtmlFromStringKnownToSatisfyTypeContract(
-      Const.from('From proto message. b/12014412'),
-      proto.getPrivateDoNotAccessOrElseSafeHtmlWrappedValue() || '');
+  return htmlSafeByReview(
+      proto.getPrivateDoNotAccessOrElseSafeHtmlWrappedValue() || '',
+      'From proto message. b/12014412');
 }
 
 /**
@@ -96,9 +97,9 @@ function safeHtmlToProto(safehtml) {
  * @deprecated Use safevalues.protoconversions instead.
  */
 function safeScriptFromProto(proto) {
-  return uncheckedconversions.safeScriptFromStringKnownToSatisfyTypeContract(
-      Const.from('From proto message. b/12014412'),
-      proto.getPrivateDoNotAccessOrElseSafeScriptWrappedValue() || '');
+  return scriptSafeByReview(
+      proto.getPrivateDoNotAccessOrElseSafeScriptWrappedValue() || '',
+      'From proto message. b/12014412');
 }
 
 /**
@@ -144,9 +145,9 @@ function safeScriptToProto(script) {
  * @deprecated Use safevalues.protoconversions instead.
  */
 function safeStyleFromProto(proto) {
-  return uncheckedconversions.safeStyleFromStringKnownToSatisfyTypeContract(
-      Const.from('From proto message. b/12014412'),
-      proto.getPrivateDoNotAccessOrElseSafeStyleWrappedValue() || '');
+  return styleSafeByReview(
+      proto.getPrivateDoNotAccessOrElseSafeStyleWrappedValue() || '',
+      'From proto message. b/12014412');
 }
 
 /**
@@ -242,9 +243,9 @@ function safeStyleSheetToProto(styleSheet) {
  * @deprecated Use safevalues.protoconversions instead.
  */
 function safeUrlFromProto(proto) {
-  return uncheckedconversions.safeUrlFromStringKnownToSatisfyTypeContract(
-      Const.from('From proto message. b/12014412'),
-      proto.getPrivateDoNotAccessOrElseSafeUrlWrappedValue() || '');
+  return urlSafeByReview(
+      proto.getPrivateDoNotAccessOrElseSafeUrlWrappedValue() || '',
+      'From proto message. b/12014412');
 }
 
 /**
