@@ -20,6 +20,7 @@ import static com.google.common.collect.MoreCollectors.onlyElement;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Streams;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.jssrc.dsl.Expressions.DecoratedExpression;
 import com.google.template.soy.jssrc.dsl.FormattingContext.LexicalState;
@@ -33,34 +34,43 @@ import java.util.stream.Stream;
 @Immutable
 public abstract class HtmlTag extends Expression {
 
-  public static final HtmlTag FRAGMENT_OPEN = createOpen("", ImmutableList.of());
-  public static final HtmlTag FRAGMENT_CLOSE = createClose("", ImmutableList.of());
+  /** Tag type. */
+  public enum Type {
+    OPEN,
+    CLOSE,
+    SELF_CLOSE
+  }
+
+  public static final HtmlTag FRAGMENT_OPEN = createOpen("");
+  public static final HtmlTag FRAGMENT_CLOSE = createClose("");
 
   public static HtmlTag createOpen(String tagName, List<? extends CodeChunk> attributes) {
-    return create(tagName, false, attributes.stream());
+    return create(tagName, Type.OPEN, attributes.stream());
   }
 
   public static HtmlTag createOpen(String tagName, CodeChunk... attributes) {
-    return create(tagName, false, Stream.of(attributes));
-  }
-
-  public static HtmlTag createClose(String tagName, List<? extends CodeChunk> attributes) {
-    return create(tagName, true, attributes.stream());
+    return create(tagName, Type.OPEN, Stream.of(attributes));
   }
 
   public static HtmlTag createClose(String tagName, CodeChunk... attributes) {
-    return create(tagName, true, Stream.of(attributes));
+    return create(tagName, Type.CLOSE, Stream.of(attributes));
   }
 
-  private static HtmlTag create(
-      String tagName, boolean isClose, Stream<? extends CodeChunk> attributes) {
+  public static HtmlTag create(
+      String tagName, Type type, Iterable<? extends CodeChunk> attributes) {
+    return create(tagName, type, Streams.stream(attributes));
+  }
+
+  private static HtmlTag create(String tagName, Type type, Stream<? extends CodeChunk> attributes) {
     return new AutoValue_HtmlTag(
-        tagName, isClose, attributes.flatMap(HtmlTag::wrapChild).collect(toImmutableList()));
+        tagName, type, attributes.flatMap(HtmlTag::wrapChild).collect(toImmutableList()));
   }
 
   private static Stream<CodeChunk> wrapChild(CodeChunk chunk) {
     if (chunk instanceof HtmlAttribute || chunk instanceof CommandChar) {
       return Stream.of(chunk);
+    } else if (chunk == Expressions.EMPTY) {
+      return Stream.of();
     } else if (chunk instanceof StringLiteral) {
       return Stream.of(TsxPrintNode.wrapIfNeeded((StringLiteral) chunk));
     } else if (chunk instanceof Concatenation) {
@@ -79,24 +89,28 @@ public abstract class HtmlTag extends Expression {
 
   abstract String tagName();
 
-  abstract boolean isClose();
+  abstract Type type();
 
   abstract ImmutableList<? extends CodeChunk> attributes();
 
   public HtmlTag copyWithTagName(String newTagName) {
-    return new AutoValue_HtmlTag(newTagName, isClose(), attributes());
+    return new AutoValue_HtmlTag(newTagName, type(), attributes());
   }
 
   boolean isOpen() {
-    return !isClose();
+    return type() == Type.OPEN;
+  }
+
+  boolean isClose() {
+    return type() == Type.CLOSE;
   }
 
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
-    if (isClose()) {
+    if (type() == Type.CLOSE) {
       ctx.decreaseIndentLenient();
     }
-    ctx.append(isClose() ? "</" : "<");
+    ctx.append(type() == Type.CLOSE ? "</" : "<");
     ctx.append(tagName());
     ctx.pushLexicalState(LexicalState.TSX);
     for (CodeChunk attribute : attributes()) {
@@ -104,8 +118,8 @@ public abstract class HtmlTag extends Expression {
       ctx.appendAll(attribute);
     }
     ctx.popLexicalState();
-    ctx.append(">");
-    if (isOpen()) {
+    ctx.append(type() == Type.SELF_CLOSE ? "/>" : ">");
+    if (type() == Type.OPEN) {
       ctx.increaseIndent();
     }
   }

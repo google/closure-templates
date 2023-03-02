@@ -68,6 +68,8 @@ public abstract class TsxFragmentElement extends Expression {
         || chunk instanceof HtmlTag
         || chunk instanceof CommandChar) {
       return Stream.of(chunk);
+    } else if (chunk == Expressions.EMPTY) {
+      return Stream.of();
     } else if (chunk instanceof StringLiteral) {
       return Stream.of(TsxPrintNode.wrapIfNeeded((StringLiteral) chunk));
     } else if (chunk instanceof Concatenation) {
