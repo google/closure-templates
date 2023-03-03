@@ -47,15 +47,16 @@
  */
 {template helloNames}
   {@param names: list<string>}  /** List of names of the people to say hello to. */
-  {for $name, $nameIndex in $names}
-    {call helloName}
-      {param name: $name /}
-    {/call}
-    {if $nameIndex != $names.length() - 1}
-      <br>  // break after every line except the last
-    {/if}
-  {ifempty}
-    // If names list is empty, say "Hello world".
+  {if $names.length() != 0}
+    {for $name, $nameIndex in $names}
+      {call helloName}
+        {param name: $name /}
+      {/call}
+      {if $nameIndex != $names.length() - 1}
+        <br>
+      {/if}
+    {/for}
+  {else}
     {call helloWorld /}
-  {/for}
+  {/if}
 {/template}
