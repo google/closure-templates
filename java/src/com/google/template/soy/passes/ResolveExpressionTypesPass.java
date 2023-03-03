@@ -415,7 +415,6 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
   private ConstantsTypeIndex constantsTypeLookup;
   private ExternsTypeIndex externsTypeLookup;
   private SoyFileNode currentFile;
-  private boolean allowProtoFieldAccessForever;
 
   ResolveExpressionTypesPass(
       ErrorReporter errorReporter,
@@ -2542,9 +2541,6 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
 
     private void checkProtoFieldAccess(
         SoyProtoType baseType, String fieldName, SourceLocation sourceLocation) {
-      if (allowProtoFieldAccessForever) {
-        return;
-      }
       FieldDescriptor fd = baseType.getFieldDescriptor(fieldName);
       if (!fd.hasPresence() && !fd.isRepeated()) {
         // Scalar fields without presence are not allowed to be read using the field access
