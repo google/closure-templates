@@ -486,7 +486,7 @@ import * as simple from 'examples/simple.soy';
   // which returns dir="ltr" for an LTR value in an RTL locale, dir="rtl" for an RTL value in an LTR
   // locale, and an empty string otherwise.
   //
-  <div id="title1" style="font-variant: small-caps;" {bidiDirAttr($title)}>
+  <div id="title-1" style="font-variant: small-caps;" {bidiDirAttr($title)}>
     {$title}
   </div>
 
@@ -495,7 +495,7 @@ import * as simple from 'examples/simple.soy';
   // dir attribute on the <div>, we declare $title's directionality using the |bidiSpanWrap print
   // directive, which wraps the value to be printed in a <span dir="ltr">, <span dir="rtl">, or
   // nothing at all when it has the same directionality as the locale.
-  <div id="title2" style="font-variant: small-caps;">
+  <div id="title-2" style="font-variant: small-caps;">
     {$title |bidiSpanWrap}
   </div>
 
@@ -512,7 +512,7 @@ import * as simple from 'examples/simple.soy';
     by {$author |bidiSpanWrap} ({$year})
   {/msg}
 
-  <div id="choose_a_keyword">
+  <div id="choose-a-keyword">
     // Please note that messages, by definition being in the language of the overall locale, can
     // not be of the opposite directionality and do not need directionality declaration.
     {msg desc="Ask user to pick best keyword"}Your favorite keyword{/msg}:{sp}
