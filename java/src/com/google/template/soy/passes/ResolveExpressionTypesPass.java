@@ -1339,7 +1339,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
     private DataAccessNode getDataAccessChild(AccessChainComponentNode expr) {
       AccessChainComponentNode child = expr;
       while (child.getKind() == ExprNode.Kind.ASSERT_NON_NULL_OP_NODE) {
-        child = (AccessChainComponentNode) ((AssertNonNullOpNode) child).getChild(0);
+        child = (AccessChainComponentNode) child.getChild(0);
       }
       return (DataAccessNode) child;
     }
@@ -3207,7 +3207,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
   /** Whether or not we allow unknown values to be accepted implicitly. */
   private enum UnknownPolicy {
     ALLOWED,
-    DISALLOWED;
+    DISALLOWED
   }
 
   /**

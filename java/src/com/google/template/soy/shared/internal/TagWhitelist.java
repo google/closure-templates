@@ -34,7 +34,7 @@ import java.util.regex.Pattern;
 public final class TagWhitelist {
 
   /** Additional tags which can be white-listed as safe. */
-  public static enum OptionalSafeTag {
+  public enum OptionalSafeTag {
     HR("hr"),
     LI("li"),
     OL("ol"),

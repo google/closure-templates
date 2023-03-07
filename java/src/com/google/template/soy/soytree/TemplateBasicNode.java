@@ -142,7 +142,7 @@ public final class TemplateBasicNode extends TemplateNode {
     return getCommandTagAttributeExpr("variant").map(a -> a.valueAsExprList().get(0)).orElse(null);
   }
 
-  private static final boolean isValidVariantType(SoyType type) {
+  private static boolean isValidVariantType(SoyType type) {
     return type.equals(SoyTypes.NUMBER_TYPE)
         || type.equals(StringType.getInstance())
         || type.getKind().equals(SoyType.Kind.PROTO_ENUM);

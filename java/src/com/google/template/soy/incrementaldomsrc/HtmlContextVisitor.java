@@ -167,7 +167,7 @@ final class HtmlContextVisitor extends AbstractSoyNodeVisitor<Void> {
   @Override
   protected void visitCallNode(CallNode node) {
     node.setHtmlContext(getState());
-    visitChildren((ParentSoyNode<?>) node);
+    visitChildren(node);
   }
 
   @Override

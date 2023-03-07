@@ -35,5 +35,5 @@ public interface SoyPySrcFunction extends SoyFunction {
    * @param args The function arguments.
    * @return The computed result of this function.
    */
-  public PyExpr computeForPySrc(List<PyExpr> args);
+  PyExpr computeForPySrc(List<PyExpr> args);
 }

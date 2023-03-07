@@ -452,7 +452,7 @@ public final class JbcSrcRuntime {
     if (value == null) {
       return null;
     } else if (value instanceof NumberData) {
-      return ((NumberData) value).numberValue();
+      return value.numberValue();
     }
     // This is probably an error, in which case this call with throw an appropriate exception.
     return value.floatValue();
@@ -462,7 +462,7 @@ public final class JbcSrcRuntime {
     if (value == null) {
       return null;
     } else if (value instanceof NumberData) {
-      return (float) ((NumberData) value).numberValue();
+      return (float) value.numberValue();
     }
     // This is probably an error, in which case this call with throw an appropriate exception.
     return (float) value.floatValue();
@@ -571,9 +571,8 @@ public final class JbcSrcRuntime {
 
   public static RenderResult getListStatus(List<? extends SoyValueProvider> soyValueProviders) {
     // avoid allocating an iterator
-    int size = soyValueProviders.size();
-    for (int i = 0; i < size; i++) {
-      RenderResult result = soyValueProviders.get(i).status();
+    for (SoyValueProvider soyValueProvider : soyValueProviders) {
+      RenderResult result = soyValueProvider.status();
       if (!result.isDone()) {
         return result;
       }
@@ -914,30 +913,30 @@ public final class JbcSrcRuntime {
   private static final LoggingAdvisingAppendable LOGGER =
       new AbstractLoggingAdvisingAppendable() {
         @Override
-        public final boolean softLimitReached() {
+        public boolean softLimitReached() {
           return false;
         }
 
         @Override
-        protected final void doAppend(char c) throws IOException {
+        protected void doAppend(char c) throws IOException {
           System.out.append(c);
         }
 
         @Override
-        protected final void doAppend(CharSequence csq, int start, int end) throws IOException {
+        protected void doAppend(CharSequence csq, int start, int end) throws IOException {
           System.out.append(csq, start, end);
         }
 
         @Override
-        protected final void doAppend(CharSequence csq) throws IOException {
+        protected void doAppend(CharSequence csq) throws IOException {
           System.out.append(csq);
         }
 
         @Override
-        protected final void doEnterLoggableElement(LogStatement statement) {}
+        protected void doEnterLoggableElement(LogStatement statement) {}
 
         @Override
-        protected final void doExitLoggableElement() {}
+        protected void doExitLoggableElement() {}
 
         @Override
         protected void doAppendLoggingFunctionInvocation(

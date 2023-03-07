@@ -35,7 +35,7 @@ public final class SoyMsgRawTextPart extends SoyMsgPart {
   }
 
   @Override
-  public final String toString() {
+  public String toString() {
     return getRawText();
   }
 

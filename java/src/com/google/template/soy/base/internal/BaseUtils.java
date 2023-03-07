@@ -181,11 +181,9 @@ public final class BaseUtils {
    */
   public static String escapeToWrappedSoyString(
       String value, boolean shouldEscapeToAscii, QuoteStyle quoteStyle) {
-    return new StringBuilder(value.length() + 2)
-        .append(quoteStyle.getQuoteChar())
-        .append(escapeToSoyString(value, shouldEscapeToAscii, quoteStyle))
-        .append(quoteStyle.getQuoteChar())
-        .toString();
+    return quoteStyle.getQuoteChar()
+        + escapeToSoyString(value, shouldEscapeToAscii, quoteStyle)
+        + quoteStyle.getQuoteChar();
   }
 
   /**

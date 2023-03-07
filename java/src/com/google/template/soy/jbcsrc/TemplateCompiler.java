@@ -322,7 +322,7 @@ final class TemplateCompiler {
     return createDefaultDelTemplateMetadata();
   }
 
-  private static final String modifiableImplsMapKey(TemplateBasicNode templateBasicNode) {
+  private static String modifiableImplsMapKey(TemplateBasicNode templateBasicNode) {
     return !templateBasicNode.getLegacyDeltemplateNamespace().isEmpty()
         ? templateBasicNode.getLegacyDeltemplateNamespace()
         : templateBasicNode.getTemplateName();

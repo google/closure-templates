@@ -53,7 +53,7 @@ abstract class CompiledTemplateMetadata {
    * The {@link Method} signature of the {@link
    * CompiledTemplate#render(SoyRecord,SoyRecord,AdvisingAppendable, RenderContext)} method.
    */
-  static final Method createRenderMethod(String methodName) {
+  static Method createRenderMethod(String methodName) {
     return new Method(
         methodName,
         Type.getMethodDescriptor(
@@ -81,7 +81,7 @@ abstract class CompiledTemplateMetadata {
   }
 
   /** The {@link Method} signature of the {@code static CompiledTemplate template()} method. */
-  private static final Method createTemplateMethod(String methodName) {
+  private static Method createTemplateMethod(String methodName) {
     return new Method(methodName, Type.getMethodDescriptor(BytecodeUtils.COMPILED_TEMPLATE_TYPE));
   }
 

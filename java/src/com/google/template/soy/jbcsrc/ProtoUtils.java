@@ -201,7 +201,7 @@ final class ProtoUtils {
   private static final RepeatedFieldInterpreter REPEATED_FIELD_INTERPRETER =
       new RepeatedFieldInterpreter();
 
-  static enum ScalarFieldMode {
+  enum ScalarFieldMode {
     DEFAULT_IF_UNSET,
     NULL_IF_UNSET,
   }
@@ -460,7 +460,7 @@ final class ProtoUtils {
               BytecodeUtils.constant(getKeyType(keyDescriptor))));
     }
 
-    private static final Type getKeyType(FieldDescriptor keyDescriptor) {
+    private static Type getKeyType(FieldDescriptor keyDescriptor) {
       switch (keyDescriptor.getJavaType()) {
         case INT:
           return BytecodeUtils.INTEGER_TYPE;

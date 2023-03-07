@@ -763,7 +763,7 @@ public final class JsType {
     return typeExpr();
   }
 
-  public final ImmutableSet<GoogRequire> getGoogRequires() {
+  public ImmutableSet<GoogRequire> getGoogRequires() {
     return extraRequires;
   }
 
@@ -771,7 +771,7 @@ public final class JsType {
    * Returns a code chunk that generates a 'test' for whether or not the given value has this type,
    * or {@link Optional#absent()} if no test is necessary.
    */
-  final Optional<Expression> getTypeAssertion(Expression value, Generator codeGenerator) {
+  Optional<Expression> getTypeAssertion(Expression value, Generator codeGenerator) {
     return predicate.maybeCheck(value, codeGenerator);
   }
 
@@ -779,7 +779,7 @@ public final class JsType {
    * Returns a Soy assertion expression that asserts that the given value has this type, or {@link
    * Optional#absent()} if no assertion is necessary.
    */
-  public final Optional<Expression> getSoyParamTypeAssertion(
+  public Optional<Expression> getSoyParamTypeAssertion(
       Expression value, String valueName, String paramKind, Generator codeGenerator) {
     Optional<Expression> typeAssertion = getTypeAssertion(value, codeGenerator);
     if (!typeAssertion.isPresent()) {

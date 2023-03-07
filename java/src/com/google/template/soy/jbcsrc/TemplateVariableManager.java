@@ -55,7 +55,7 @@ final class TemplateVariableManager implements LocalVariableManager {
     /** Means that the value of the variable should be recalculated rather than saved. */
     DERIVED,
     /** Means that the value of the variable should be saved . */
-    STORE;
+    STORE
   }
 
   abstract static class Scope implements LocalVariableManager.Scope {
@@ -121,7 +121,7 @@ final class TemplateVariableManager implements LocalVariableManager {
        * foreach} loop. For these we generate 'synthetic' variables to efficiently reference the
        * expression.
        */
-      SYNTHETIC;
+      SYNTHETIC
     }
 
     static VarKey create(String proposedName) {
@@ -181,16 +181,16 @@ final class TemplateVariableManager implements LocalVariableManager {
       this.strategy = strategy;
     }
 
-    final Statement initializer() {
+    Statement initializer() {
       return initializer;
     }
 
     @Override
-    final Expression accessor() {
+    Expression accessor() {
       return local();
     }
 
-    final LocalVariable local() {
+    LocalVariable local() {
       return local;
     }
   }

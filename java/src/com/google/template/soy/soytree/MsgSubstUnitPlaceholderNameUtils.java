@@ -253,7 +253,7 @@ public final class MsgSubstUnitPlaceholderNameUtils {
       String baseName = null;
 
       while (exprNode != null) {
-        String nameSegment = null;
+        String nameSegment;
         if (exprNode instanceof VarRefNode) {
           nameSegment = ((VarRefNode) exprNode).getNameWithoutLeadingDollar();
           exprNode = null;

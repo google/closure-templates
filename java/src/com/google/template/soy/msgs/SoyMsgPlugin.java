@@ -37,7 +37,7 @@ public interface SoyMsgPlugin {
    * @return The content of the generated extracted messages file.
    * @throws SoyMsgException If there was an error building the file content.
    */
-  public CharSequence generateExtractedMsgsFile(
+  CharSequence generateExtractedMsgsFile(
       SoyMsgBundle msgBundle, OutputFileOptions options, ErrorReporter errorReporter);
 
   /**
@@ -47,5 +47,5 @@ public interface SoyMsgPlugin {
    * @return The message bundle object built from the messages file.
    * @throws SoyMsgException If there was an error parsing the file content.
    */
-  public SoyMsgBundle parseTranslatedMsgsFile(String translatedMsgsFileContent);
+  SoyMsgBundle parseTranslatedMsgsFile(String translatedMsgsFileContent);
 }

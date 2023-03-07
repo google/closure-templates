@@ -743,7 +743,7 @@ public final class MsgNode extends AbstractBlockCommandNode
 
   private static Optional<String> getPhExample(MsgSubstUnitNode node) {
     if (node instanceof MsgPlaceholderNode) {
-      return ((MsgPlaceholderNode) node).getPlaceholder().example();
+      return node.getPlaceholder().example();
     }
     return Optional.empty();
   }

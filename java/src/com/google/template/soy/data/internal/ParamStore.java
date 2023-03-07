@@ -135,12 +135,12 @@ public final class ParamStore extends SoyAbstractValue implements SoyRecord {
   }
 
   @Override
-  public final boolean equals(Object other) {
+  public boolean equals(Object other) {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public final int hashCode() {
+  public int hashCode() {
     throw new UnsupportedOperationException();
   }
 

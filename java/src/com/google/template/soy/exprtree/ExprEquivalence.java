@@ -398,7 +398,7 @@ public final class ExprEquivalence {
     }
   }
 
-  private final HashMap<String, Wrapper> namedParamsMap(FunctionNode node) {
+  private HashMap<String, Wrapper> namedParamsMap(FunctionNode node) {
     HashMap<String, Wrapper> map = new HashMap<>();
     List<ExprNode> children = node.getChildren();
     for (int i = 0; i < children.size(); i++) {
@@ -407,7 +407,7 @@ public final class ExprEquivalence {
     return map;
   }
 
-  private final HashMap<String, Wrapper> recordLiteralFields(RecordLiteralNode node) {
+  private HashMap<String, Wrapper> recordLiteralFields(RecordLiteralNode node) {
     HashMap<String, Wrapper> map = new HashMap<>();
     List<ExprNode> children = node.getChildren();
     for (int i = 0; i < children.size(); i++) {
@@ -416,7 +416,7 @@ public final class ExprEquivalence {
     return map;
   }
 
-  private final HashMap<Wrapper, Wrapper> mapLiteralFields(MapLiteralNode node) {
+  private HashMap<Wrapper, Wrapper> mapLiteralFields(MapLiteralNode node) {
     // both of these nodes store keys and values as alternating children.  We don't want order to
     // matter so we store in a map
     HashMap<Wrapper, Wrapper> map = new HashMap<>();
@@ -427,11 +427,11 @@ public final class ExprEquivalence {
     return map;
   }
 
-  public final boolean equivalent(ExprNode a, ExprNode b) {
+  public boolean equivalent(ExprNode a, ExprNode b) {
     return equivalence.equivalent(a, b);
   }
 
-  public final boolean equivalent(List<ExprNode> a, List<ExprNode> b) {
+  public boolean equivalent(List<ExprNode> a, List<ExprNode> b) {
     if (a.size() != b.size()) {
       return false;
     }
@@ -443,11 +443,11 @@ public final class ExprEquivalence {
     return true;
   }
 
-  public final int hash(ExprNode a) {
+  public int hash(ExprNode a) {
     return wrap(a).hashCode();
   }
 
-  public final int hash(List<ExprNode> a) {
+  public int hash(List<ExprNode> a) {
     int result = 1;
     for (ExprNode element : a) {
       result = 31 * result + wrap(element).hashCode();

@@ -348,8 +348,8 @@ final class SoyElementPass implements CompilerFileSetPass {
       Map<String, TemplateNode> templatesInLibrary,
       Set<TemplateNode> visited) {
 
-    HtmlElementMetadataP calleeMetadata = null;
-    boolean isCalleeSoyElement = false;
+    HtmlElementMetadataP calleeMetadata;
+    boolean isCalleeSoyElement;
     TemplateMetadata templateMetadata =
         templateRegistryFromDeps.get().getBasicTemplateOrElement(callee);
 

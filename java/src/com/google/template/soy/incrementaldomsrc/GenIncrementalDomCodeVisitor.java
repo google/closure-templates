@@ -171,8 +171,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     }
 
     super.visitTemplateNode(node);
-    if ((node instanceof TemplateDelegateNode
-        && ((TemplateDelegateNode) node).getChildren().isEmpty())) {
+    if ((node instanceof TemplateDelegateNode && node.getChildren().isEmpty())) {
       contentKind.pop();
       return;
     }

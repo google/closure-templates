@@ -71,7 +71,7 @@ public abstract class Expression extends BytecodeProducer {
      * <p>Cheapness is useful when deciding if it would be reasonable to evaluate an expression more
      * than once if the alternative is generating additional fields and save/restore code.
      */
-    CHEAP;
+    CHEAP
     // TODO(lukes): an idempotent feature would be useful some expressions are not safe to gen more
     // than once.
   }

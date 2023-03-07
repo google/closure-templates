@@ -32,7 +32,7 @@ import javax.annotation.Nullable;
 public final class RenderException extends RuntimeException {
 
   public static RenderException create(String message) {
-    return create(message, (Throwable) null);
+    return create(message, null);
   }
 
   public static RenderException create(String message, Throwable cause) {
@@ -41,7 +41,7 @@ public final class RenderException extends RuntimeException {
 
   @FormatMethod
   public static RenderException createF(@FormatString String format, Object... args) {
-    return create(String.format(format, args), (Throwable) null);
+    return create(String.format(format, args), null);
   }
 
   @FormatMethod

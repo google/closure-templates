@@ -85,7 +85,7 @@ public final class JsImplNode extends ExternImplNode {
    * Pulls out relevant attributes into class fields for quick reference. Should only be used in
    * constructors.
    */
-  private final void initAttributes() {
+  private void initAttributes() {
     for (CommandTagAttribute attr : attributes) {
       if (attr.hasName(NAMESPACE)) {
         this.module = attr;

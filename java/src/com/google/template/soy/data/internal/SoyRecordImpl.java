@@ -93,12 +93,12 @@ public final class SoyRecordImpl extends SoyAbstractValue implements SoyRecord {
   }
 
   @Override
-  public final boolean equals(Object other) {
+  public boolean equals(Object other) {
     return this == other;
   }
 
   @Override
-  public final int hashCode() {
+  public int hashCode() {
     return System.identityHashCode(this);
   }
 

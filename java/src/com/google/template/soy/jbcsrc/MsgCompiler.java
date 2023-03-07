@@ -91,7 +91,7 @@ final class MsgCompiler {
    */
   interface PlaceholderCompiler {
     @AutoValue
-    abstract static class Placeholder {
+    abstract class Placeholder {
       static Placeholder create(Expression soyValueProvider, boolean requiresDetachLogicToResolve) {
         soyValueProvider.checkAssignableTo(SOY_VALUE_PROVIDER_TYPE);
         return new AutoValue_MsgCompiler_PlaceholderCompiler_Placeholder(

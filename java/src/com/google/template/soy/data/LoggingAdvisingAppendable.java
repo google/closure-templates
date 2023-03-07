@@ -277,13 +277,13 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
 
     /** Called whenever a loggable element is entered. */
     @Override
-    protected final void doEnterLoggableElement(LogStatement statement) {
+    protected void doEnterLoggableElement(LogStatement statement) {
       getCommandsAndAddPendingStringData().add(statement);
     }
 
     /** Called whenever a loggable element is exited. */
     @Override
-    protected final void doExitLoggableElement() {
+    protected void doExitLoggableElement() {
       getCommandsAndAddPendingStringData().add(EXIT_LOG_STATEMENT_MARKER);
     }
 

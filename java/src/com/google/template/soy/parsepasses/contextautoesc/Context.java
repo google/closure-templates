@@ -840,8 +840,7 @@ abstract class Context {
       throw new IllegalArgumentException(
           "Unable to parse context \"" + text + "\". Unparsed portion: " + parts);
     }
-    Context result = builder.build();
-    return result;
+    return builder.build();
   }
 
   /**
@@ -1187,7 +1186,7 @@ abstract class Context {
   private enum ScriptType {
     JAVASCRIPT,
     JSON,
-    UNKNOWN;
+    UNKNOWN
   }
   // See
   // https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types#JavaScript_types
@@ -1418,7 +1417,6 @@ abstract class Context {
 
     /** An element whose content is normal mixed PCDATA and child elements. */
     NORMAL,
-    ;
   }
 
   /** Describes the content of an HTML attribute. */
@@ -1444,7 +1442,6 @@ abstract class Context {
 
     /** Other content. Human readable or other non-structured plain text or keyword values. */
     PLAIN_TEXT,
-    ;
   }
 
   /** Describes the content that will end the current HTML attribute. */
@@ -1505,7 +1502,6 @@ abstract class Context {
      * token to be a slash.
      */
     UNKNOWN,
-    ;
   }
 
   /**
@@ -1583,7 +1579,7 @@ abstract class Context {
     UNKNOWN,
 
     /** A known-dangerous scheme where dynamic content is forbidden. */
-    DANGEROUS_SCHEME;
+    DANGEROUS_SCHEME
   }
 
   /**
@@ -1648,7 +1644,7 @@ abstract class Context {
      *   <li>If the prefix is dynamic then we require it to be a trusted_resource_uri.
      * </ul>
      */
-    TRUSTED_RESOURCE;
+    TRUSTED_RESOURCE
   }
 
   /** Describes position in HTML attribute value containing HTML (e.g. {@code <iframe srcdoc>}). */
@@ -1656,7 +1652,7 @@ abstract class Context {
     /** Not in HTML attribute value containing HTML or at its start. */
     NONE,
     /** Inside HTML attribute value containing HTML but not at the start. */
-    NOT_START;
+    NOT_START
   }
 
   /** A mutable builder for {@link Context}s. */

@@ -101,7 +101,7 @@ class FormatNumFunction
           .put("compact_long", "COMPACT_LONG")
           .build();
 
-  private static final JavaScriptValue jsArgToValue(String arg, JavaScriptValueFactory factory) {
+  private static JavaScriptValue jsArgToValue(String arg, JavaScriptValueFactory factory) {
     String formatEnum = JS_ARGS_TO_ENUM.get(arg);
     if (formatEnum == null) {
       throw new IllegalArgumentException(

@@ -55,7 +55,7 @@ final class FilterLegacyUriBehaviorDirective
   }
 
   @Override
-  public final Set<Integer> getValidArgsSizes() {
+  public Set<Integer> getValidArgsSizes() {
     return VALID_ARGS_SIZES;
   }
 

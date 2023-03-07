@@ -37,7 +37,7 @@ public interface SoyScopedData {
   Enterable enterable();
 
   /** Allows entering a portion of code from which SoyScopedData can be retrieved. */
-  public interface Enterable {
+  interface Enterable {
     /** Enters an occurrence of this scope. */
     @CheckReturnValue
     InScope enter(@Nullable SoyMsgBundle msgBundle);
@@ -52,7 +52,7 @@ public interface SoyScopedData {
   }
 
   /** A subtype of {@link AutoCloseable} that can be closed without an IOException. */
-  public interface InScope extends AutoCloseable {
+  interface InScope extends AutoCloseable {
 
     BidiGlobalDir getBidiGlobalDir();
 

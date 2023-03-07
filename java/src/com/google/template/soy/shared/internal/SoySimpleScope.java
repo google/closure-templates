@@ -81,7 +81,7 @@ public final class SoySimpleScope implements SoyScopedData, SoyScopedData.Entera
   public InScope enter(@Nullable SoyMsgBundle msgBundle, @Nullable BidiGlobalDir bidiGlobalDir) {
     return enter(
         bidiGlobalDir == null
-            ? BidiGlobalDir.forStaticIsRtl(msgBundle == null ? false : msgBundle.isRtl())
+            ? BidiGlobalDir.forStaticIsRtl(msgBundle != null && msgBundle.isRtl())
             : bidiGlobalDir);
   }
 

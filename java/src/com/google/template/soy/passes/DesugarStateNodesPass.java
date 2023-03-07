@@ -29,7 +29,6 @@ import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
-import com.google.template.soy.passes.CompilerFileSetPass.Result;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.HtmlAttributeValueNode;
@@ -100,8 +99,7 @@ final class DesugarStateNodesPass implements CompilerFileSetPass {
     }
   }
 
-  static FunctionNode extractKeyFunctionFromHtmlTag(
-      HtmlOpenTagNode openTag, IdGenerator idGenerator) {
+  static FunctionNode extractKeyFunctionFromHtmlTag(HtmlOpenTagNode openTag) {
     FunctionNode wrappedFn =
         FunctionNode.newPositional(
             Identifier.create(
@@ -109,20 +107,17 @@ final class DesugarStateNodesPass implements CompilerFileSetPass {
             BuiltinFunction.SOY_SERVER_KEY,
             openTag.getSourceLocation());
     wrappedFn.setType(StringType.getInstance());
-    SourceLocation attributeSourceLocation;
 
     if (openTag.getKeyNode() != null) {
-      attributeSourceLocation = openTag.getKeyNode().getSourceLocation();
       wrappedFn.addChild(openTag.getKeyNode().getExpr().getRoot().copy(new CopyState()));
     } else {
-      attributeSourceLocation = SourceLocation.UNKNOWN;
       FunctionNode funcNode =
           FunctionNode.newPositional(
-              Identifier.create(BuiltinFunction.XID.getName(), attributeSourceLocation),
+              Identifier.create(BuiltinFunction.XID.getName(), SourceLocation.UNKNOWN),
               BuiltinFunction.XID,
               openTag.getSourceLocation());
       funcNode.addChild(
-          new StringNode(openTag.getKeyId(), QuoteStyle.SINGLE, attributeSourceLocation));
+          new StringNode(openTag.getKeyId(), QuoteStyle.SINGLE, SourceLocation.UNKNOWN));
       funcNode.setType(StringType.getInstance());
       wrappedFn.addChild(funcNode);
     }
@@ -167,7 +162,7 @@ final class DesugarStateNodesPass implements CompilerFileSetPass {
           new RawTextNode(idGenerator.genId(), "ssk", SourceLocation.UNKNOWN));
       HtmlAttributeValueNode value =
           new HtmlAttributeValueNode(idGenerator.genId(), SourceLocation.UNKNOWN, Quotes.SINGLE);
-      FunctionNode wrappedFn = extractKeyFunctionFromHtmlTag(openTag, idGenerator);
+      FunctionNode wrappedFn = extractKeyFunctionFromHtmlTag(openTag);
       PrintNode printNode =
           new PrintNode(
               idGenerator.genId(),

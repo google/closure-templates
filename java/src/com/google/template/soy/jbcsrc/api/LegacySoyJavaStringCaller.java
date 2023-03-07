@@ -23,4 +23,4 @@ import java.lang.annotation.Target;
 
 @Target({ElementType.METHOD, ElementType.CONSTRUCTOR})
 @Retention(RUNTIME)
-public @interface LegacySoyJavaStringCaller {};
+public @interface LegacySoyJavaStringCaller {}

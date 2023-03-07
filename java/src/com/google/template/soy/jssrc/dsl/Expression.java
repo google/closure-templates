@@ -356,7 +356,7 @@ public abstract class Expression extends CodeChunk {
             this,
             c -> {
               if (c instanceof Expression && !(c instanceof InitialStatementsScope)) {
-                return ((Expression) c).childrenStream().collect(toImmutableList());
+                return c.childrenStream().collect(toImmutableList());
               }
               return ImmutableList.of();
             })

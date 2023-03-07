@@ -41,5 +41,5 @@ public interface SoyJsSrcPrintDirective extends SoyPrintDirective {
    * @param args The directive's arguments, if any (usually none).
    * @return The resulting value.
    */
-  public JsExpr applyForJsSrc(JsExpr value, List<JsExpr> args);
+  JsExpr applyForJsSrc(JsExpr value, List<JsExpr> args);
 }

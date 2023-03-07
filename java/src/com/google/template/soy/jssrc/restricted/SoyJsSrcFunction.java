@@ -36,5 +36,5 @@ public interface SoyJsSrcFunction extends SoyFunction {
    * @param args The function arguments.
    * @return The computed result of this function.
    */
-  public JsExpr computeForJsSrc(List<JsExpr> args);
+  JsExpr computeForJsSrc(List<JsExpr> args);
 }

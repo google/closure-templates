@@ -252,7 +252,7 @@ public enum Operator {
    * @return The matching OperatorNode.
    * @throws IllegalArgumentException If there is no Soy operator matching the given data.
    */
-  public static final OperatorNode createOperatorNode(
+  public static OperatorNode createOperatorNode(
       SourceLocation location,
       String op,
       SourceLocation operatorLocation,
@@ -297,8 +297,7 @@ public enum Operator {
    * @param precedence This operator's precedence level.
    * @param associativity This operator's associativity.
    */
-  private Operator(
-      ImmutableList<SyntaxElement> syntax, int precedence, Associativity associativity) {
+  Operator(ImmutableList<SyntaxElement> syntax, int precedence, Associativity associativity) {
     this(syntax, precedence, associativity, /* description= */ null);
   }
 
@@ -399,7 +398,7 @@ public enum Operator {
   // -----------------------------------------------------------------------------------------------
 
   /** Enum for an operator's associativity. */
-  public static enum Associativity {
+  public enum Associativity {
     /** Left-to-right. */
     LEFT,
     /** Right-to-left. */
@@ -408,7 +407,7 @@ public enum Operator {
 
   /** Represents a syntax element (used in a syntax specification for an operator). */
   @Immutable
-  public static interface SyntaxElement {}
+  public interface SyntaxElement {}
 
   /** A syntax element for an operand. */
   @Immutable

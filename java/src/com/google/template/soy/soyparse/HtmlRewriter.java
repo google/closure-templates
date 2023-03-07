@@ -273,7 +273,7 @@ final class HtmlRewriter {
     /** Means a literal block may start or stop here. */
     LITERAL_ALLOWED,
     /** Means a literal block may start here, in which case it must end before the state changes. */
-    LITERAL_STRICT;
+    LITERAL_STRICT
   }
 
   /**
@@ -775,7 +775,7 @@ final class HtmlRewriter {
         case RCDATA_TEXTAREA:
         case RCDATA_TITLE:
         case RCDATA_XMP:
-          return;
+          break;
       }
     }
 
@@ -1300,8 +1300,7 @@ final class HtmlRewriter {
       // rather than use a regex to match the prefix, we just consume all non-whitespace/non-meta
       // characters and then validate the text afterwards.
       advanceWhileMatches(TAG_DELIMITER_MATCHER);
-      RawTextNode node = consumeAsRawText();
-      return node;
+      return consumeAsRawText();
     }
 
     /**
@@ -2508,7 +2507,7 @@ final class HtmlRewriter {
       HtmlCommentNode replacement = new HtmlCommentNode(nodeIdGen.genId(), sourceLocation);
       edits.addChildren(replacement, directCommentChildren);
       // cast is safe because HtmlCommentNode implements StandaloneNode
-      edits.replace(commentStartNode, (StandaloneNode) replacement);
+      edits.replace(commentStartNode, replacement);
       directCommentChildren.clear();
       commentStartPoint = null;
       commentStartNode = null;

@@ -425,7 +425,7 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
       // checkRequired=false could be used in the future for "build partial"
       prepareDataForBuild();
       ImmutableMap.Builder<String, SoyValueProvider> finalDataBuilder =
-          ImmutableMap.<String, SoyValueProvider>builderWithExpectedSize(data.size());
+          ImmutableMap.builderWithExpectedSize(data.size());
       // Use forEach instead of looping over the entry set to avoid allocating entrySet+entry
       // objects
       data.forEach((k, v) -> finalDataBuilder.put(k.getName(), v));

@@ -46,11 +46,11 @@ public final class TofuTypeChecks {
   private static final CheckResult FAIL = new CheckResult(false, Optional.empty());
 
   private static final class CheckResult {
-    static final CheckResult fromBool(boolean result) {
+    static CheckResult fromBool(boolean result) {
       return result ? PASS : FAIL;
     }
 
-    static final CheckResult passWithWarning(Runnable onPass) {
+    static CheckResult passWithWarning(Runnable onPass) {
       return new CheckResult(true, Optional.of(onPass));
     }
 

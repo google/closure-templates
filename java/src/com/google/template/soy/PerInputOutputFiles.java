@@ -223,7 +223,7 @@ final class PerInputOutputFiles {
    *
    * @param errorMsg The error message to print.
    */
-  static final RuntimeException exitWithError(String errorMsg) {
+  static RuntimeException exitWithError(String errorMsg) {
     throw new CommandLineError("Error: " + errorMsg);
   }
 }

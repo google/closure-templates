@@ -800,8 +800,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
     ImmutableList.Builder<Statement> declarations = ImmutableList.builder();
 
-    if (node instanceof TemplateDelegateNode
-        && ((TemplateDelegateNode) node).getChildren().isEmpty()) {
+    if (node instanceof TemplateDelegateNode && node.getChildren().isEmpty()) {
       TemplateDelegateNode nodeAsDelTemplate = (TemplateDelegateNode) node;
       // Don't emit anything for an empty default deltemplate, at runtime a missing entry in the
       // runtime map will be assumed to be an explicit empty template
@@ -995,7 +994,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     return true;
   }
 
-  private final TemplateParam syntheticTemplateParam(TemplateType.Parameter typeParam) {
+  private TemplateParam syntheticTemplateParam(TemplateType.Parameter typeParam) {
     TemplateParam param =
         new TemplateParam(
             typeParam.getName(),
@@ -1200,8 +1199,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
               OPT_DATA.or(EMPTY_OBJECT_LITERAL, templateTranslationContext.codeGenerator())));
     }
     bodyStatements.add(redeclareIjData());
-    List<Expression> callParams = new ArrayList<>();
-    callParams.addAll(getFixedParamsToPositionalCall(templateNode));
+    List<Expression> callParams = new ArrayList<>(getFixedParamsToPositionalCall(templateNode));
     for (TemplateParam param : paramsInOrder(templateNode)) {
       callParams.add(genCodeForParamAccess(genParamPropAlias(param.name()), param));
     }
@@ -1260,8 +1258,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     if (!generatePositionalParamsSignature) {
       bodyStatements.add(returnValue(delegateFn.call(getFixedParamsForNonPositionalCall(node))));
     } else {
-      List<Expression> callParams = new ArrayList<>();
-      callParams.addAll(getFixedParamsToPositionalCall(node));
+      List<Expression> callParams = new ArrayList<>(getFixedParamsToPositionalCall(node));
       for (TemplateParam param : paramsInOrder(node)) {
         callParams.add(id(genParamAlias(param.name())));
       }
@@ -1591,7 +1588,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    * Generate a name for the local variable which will store the value of a parameter, avoiding
    * collision with JavaScript reserved words.
    */
-  public static final String genParamAlias(String paramName) {
+  public static String genParamAlias(String paramName) {
     return JsSrcUtils.isReservedWord(paramName) ? "param$" + paramName : paramName;
   }
 
@@ -1599,7 +1596,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    * Generate a name for the field of a template opt_data typedef. These must not collide with
    * built-in property names of Object.
    */
-  public static final String genParamPropAlias(String paramName) {
+  public static String genParamPropAlias(String paramName) {
     return JsSrcUtils.isPropertyOfObject(paramName) ? "param$" + paramName : paramName;
   }
 

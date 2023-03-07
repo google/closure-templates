@@ -321,7 +321,7 @@ public interface SoyNode extends Node {
     }
 
     /** A SamenessKey that uses the identity of a SoyNode. */
-    static final class IdentitySamenessKey implements SamenessKey {
+    final class IdentitySamenessKey implements SamenessKey {
       private SoyNode node;
 
       IdentitySamenessKey(SoyNode node) {

@@ -19,5 +19,4 @@ package com.google.template.soy.internal.proto;
 /** The type of Java generated proto. */
 public enum ProtoFlavor {
   PROTO2,
-;
 }

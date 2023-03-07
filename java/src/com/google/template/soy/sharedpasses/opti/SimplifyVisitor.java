@@ -414,7 +414,7 @@ public final class SimplifyVisitor {
         node.getParent().removeChild(node);
       }
       if (node.numChildren() == 1 && node.getChild(0) instanceof IfElseNode) {
-        replaceNodeWithList(node, ((IfElseNode) node.getChild(0)).getChildren());
+        replaceNodeWithList(node, node.getChild(0).getChildren());
       }
     }
 
@@ -480,7 +480,7 @@ public final class SimplifyVisitor {
       // (b) Has only one child left, and it's a SwitchDefaultNode: Replace this SwitchNode with its
       //     grandchildren.
       if (node.numChildren() == 1 && node.getChild(0) instanceof SwitchDefaultNode) {
-        replaceNodeWithList(node, ((SwitchDefaultNode) node.getChild(0)).getChildren());
+        replaceNodeWithList(node, node.getChild(0).getChildren());
       }
     }
 

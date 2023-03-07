@@ -39,9 +39,7 @@ final class SoySimpleCharStream extends SimpleCharStream {
   private void updateLineLengthsForNewChar() {
     // Increase the size of the array, if necessary.
     if (line >= lineLengths.length) {
-      int[] biggerLineLengthsArr =
-          Arrays.copyOf(lineLengths, Math.max(lineLengths.length, line) + 2048);
-      lineLengths = biggerLineLengthsArr;
+      lineLengths = Arrays.copyOf(lineLengths, Math.max(lineLengths.length, line) + 2048);
     }
 
     // Update the line lengths for the most recently parsed char.

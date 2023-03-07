@@ -145,7 +145,7 @@ public abstract class Statement extends BytecodeProducer {
     } catch (Throwable t) {
       // ASM fails in bizarre ways, attach a trace of the thing we tried to generate to the
       // exception.
-      String serialized = null;
+      String serialized;
       try {
         serialized = String.valueOf(this);
         throw new RuntimeException("Failed to generate method:\n" + serialized, t);

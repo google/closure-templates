@@ -101,12 +101,12 @@ public final class SoyLegacyObjectMapImpl extends SoyAbstractValue implements So
   }
 
   @Override
-  public final boolean equals(Object other) {
+  public boolean equals(Object other) {
     return this == other;
   }
 
   @Override
-  public final int hashCode() {
+  public int hashCode() {
     return System.identityHashCode(this);
   }
 

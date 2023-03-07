@@ -56,7 +56,7 @@ public final class HtmlCommentNode extends AbstractParentSoyNode<StandaloneNode>
 
   @SuppressWarnings("unchecked")
   @Override
-  public final ParentSoyNode<StandaloneNode> getParent() {
+  public ParentSoyNode<StandaloneNode> getParent() {
     return (ParentSoyNode<StandaloneNode>) super.getParent();
   }
 

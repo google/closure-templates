@@ -28,7 +28,7 @@ public final class SoyJsSrcOptions implements Cloneable {
     /** Whether we should generate code to provide/require Soy namespaces. */
     NAMESPACES,
     /** Whether we should generate code to declare/require goog.modules. */
-    MODULE;
+    MODULE
   }
 
   private JsDepsStrategy depsStrategy;
@@ -223,12 +223,12 @@ public final class SoyJsSrcOptions implements Cloneable {
   }
 
   @Override
-  public final SoyJsSrcOptions clone() {
+  public SoyJsSrcOptions clone() {
     return new SoyJsSrcOptions(this);
   }
 
   @Override
-  public final String toString() {
+  public String toString() {
     return MoreObjects.toStringHelper(this)
         .add("shouldProvideRequireSoyNamespaces", shouldProvideRequireSoyNamespaces())
         .add("dependOnCssHeader", dependOnCssHeader)

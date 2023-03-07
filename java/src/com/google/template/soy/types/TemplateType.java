@@ -65,7 +65,7 @@ public abstract class TemplateType extends SoyType {
   public enum TemplateKind {
     BASIC,
     DELTEMPLATE,
-    ELEMENT;
+    ELEMENT
   }
 
   /** The kind of template parameter. */

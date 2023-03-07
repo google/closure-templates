@@ -96,7 +96,7 @@ public final class ContentSecurityPolicyNonceInjectionPass implements CompilerFi
     NONE,
     STYLE,
     OTHER
-  };
+  }
 
   ContentSecurityPolicyNonceInjectionPass(ErrorReporter errorReporter) {
     this.errorReporter = errorReporter;

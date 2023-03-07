@@ -133,7 +133,7 @@ final class RawTextContextUpdater {
 
   interface Processor {
     @AutoValue
-    abstract static class Result {
+    abstract class Result {
       static Result create(Context next, int numCharactersConsumed) {
         return new AutoValue_RawTextContextUpdater_Processor_Result(next, numCharactersConsumed);
       }

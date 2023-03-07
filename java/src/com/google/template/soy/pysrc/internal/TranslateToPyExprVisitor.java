@@ -358,8 +358,7 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
     if (nullSafe) {
       nullSafetyPrefix.append("None if ").append(base.getText()).append(" is None else ");
     }
-    PyExpr result = new PyExpr(visitDataAccessNode(dataAccess, base), Integer.MAX_VALUE);
-    return result;
+    return new PyExpr(visitDataAccessNode(dataAccess, base), Integer.MAX_VALUE);
   }
 
   private String visitDataAccessNode(DataAccessNode dataAccess, PyExpr base) {
@@ -789,15 +788,14 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
     // Python's ternary operator switches the order from <conditional> ? <true> : <false> to
     // <true> if <conditional> else <false>.
     int conditionalPrecedence = PyExprUtils.pyPrecedenceForOperator(Operator.CONDITIONAL);
-    StringBuilder exprSb =
-        new StringBuilder()
-            .append(PyExprUtils.maybeProtect(trueExpr, conditionalPrecedence).getText())
-            .append(" if ")
-            .append(PyExprUtils.maybeProtect(conditionalExpr, conditionalPrecedence).getText())
-            .append(" else ")
-            .append(PyExprUtils.maybeProtect(falseExpr, conditionalPrecedence).getText());
+    String exprSb =
+        PyExprUtils.maybeProtect(trueExpr, conditionalPrecedence).getText()
+            + " if "
+            + PyExprUtils.maybeProtect(conditionalExpr, conditionalPrecedence).getText()
+            + " else "
+            + PyExprUtils.maybeProtect(falseExpr, conditionalPrecedence).getText();
 
-    return new PyExpr(exprSb.toString(), conditionalPrecedence);
+    return new PyExpr(exprSb, conditionalPrecedence);
   }
 
   @Override

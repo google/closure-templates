@@ -294,7 +294,7 @@ public abstract class ProtoFieldInterpreter {
       new ProtoFieldInterpreter() {
         @Override
         public SoyValue soyFromProto(Object field) {
-          return IntegerData.forValue(((Long) field).longValue());
+          return IntegerData.forValue((Long) field);
         }
 
         @Override
@@ -340,7 +340,7 @@ public abstract class ProtoFieldInterpreter {
       new ProtoFieldInterpreter() {
         @Override
         public SoyValue soyFromProto(Object field) {
-          return FloatData.forValue(((Float) field).floatValue());
+          return FloatData.forValue((Float) field);
         }
 
         @Override
@@ -354,7 +354,7 @@ public abstract class ProtoFieldInterpreter {
       new ProtoFieldInterpreter() {
         @Override
         public SoyValue soyFromProto(Object field) {
-          return FloatData.forValue(((Double) field).doubleValue());
+          return FloatData.forValue((Double) field);
         }
 
         @Override
@@ -479,7 +479,7 @@ public abstract class ProtoFieldInterpreter {
    * Returns a {@link ProtoFieldInterpreter} that has the given type and delegates to the
    * SoyValueConverter for interpretation.
    */
-  private static final ProtoFieldInterpreter enumTypeField(final EnumDescriptor enumDescriptor) {
+  private static ProtoFieldInterpreter enumTypeField(final EnumDescriptor enumDescriptor) {
     return new ProtoFieldInterpreter() {
 
       @Override

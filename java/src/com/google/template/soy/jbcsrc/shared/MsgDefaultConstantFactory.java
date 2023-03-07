@@ -84,7 +84,7 @@ public final class MsgDefaultConstantFactory {
     private static final Tag[] cached = Tag.values();
 
     static Tag fromRaw(Object object) {
-      return cached[(int) (Integer) object];
+      return cached[(Integer) object];
     }
   }
 
@@ -248,14 +248,12 @@ public final class MsgDefaultConstantFactory {
 
   private static <T> ImmutableList<Case<T>> parseCases(
       PeekingIterator<Object> rawParts, Function<Object, T> specFactory) {
-    Tag next = null;
     ImmutableList.Builder<Case<T>> cases = ImmutableList.builder();
     while (rawParts.hasNext()) {
-      next = Tag.fromRaw(rawParts.next());
+      Tag next = Tag.fromRaw(rawParts.next());
       if (next == Tag.BEGIN_CASE) {
         T spec = specFactory.apply(rawParts.next());
         cases.add(Case.create(spec, parseParts(rawParts, /* isCase=*/ true)));
-        next = null;
       } else if (next == Tag.END) {
         break;
       } else {

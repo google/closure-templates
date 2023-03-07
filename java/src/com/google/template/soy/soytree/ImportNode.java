@@ -54,7 +54,7 @@ public final class ImportNode extends AbstractSoyNode {
   public enum ImportType {
     PROTO,
     TEMPLATE,
-    UNKNOWN;
+    UNKNOWN
   }
 
   public ImportNode(int id, SourceLocation location, StringNode path, List<ImportedVar> defns) {

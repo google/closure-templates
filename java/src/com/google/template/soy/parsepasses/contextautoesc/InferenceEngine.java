@@ -372,10 +372,8 @@ final class InferenceEngine {
       if (escapingModes.isEmpty()) { // None specified.
         // The inferences set below specify which nodes to change. In the non-contextual modes,
         // we leave escapingModesToSet null since no changes are to be made to this print node.
-        List<EscapingMode> escapingModesToSet = null;
-        // Infer one.
-        escapingModes =
-            escapingModesToSet = context.getEscapingModes(printNode, printNode.getChildren());
+        List<EscapingMode> escapingModesToSet =
+            context.getEscapingModes(printNode, printNode.getChildren());
         inferences.setEscapingDirectives(printNode, prev, escapingModesToSet);
       } else if (!context.isCompatibleWith(escapingModes.get(0))) {
         String msg =

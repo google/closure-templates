@@ -125,7 +125,7 @@ public class ImportsBuilder {
     String dotPlusNestedSymbol = "";
 
     // fqn may be a symbol nested inside a top-level Message. Find the top-level message.
-    ProtoImportData data = null;
+    ProtoImportData data;
     while (true) {
       data = protoImportData.get(topLevelMsg);
       if (data != null) {

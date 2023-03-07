@@ -51,32 +51,32 @@ public interface CompiledTemplate {
     }
 
     @Override
-    public final boolean coerceToBoolean() {
+    public boolean coerceToBoolean() {
       return true;
     }
 
     @Override
-    public final String coerceToString() {
+    public String coerceToString() {
       return String.format("** FOR DEBUGGING ONLY: %s **", templateName);
     }
 
     @Override
-    public final void render(LoggingAdvisingAppendable appendable) {
+    public void render(LoggingAdvisingAppendable appendable) {
       throw new IllegalStateException("Printing template types is not allowed.");
     }
 
     @Override
-    public final boolean equals(Object other) {
+    public boolean equals(Object other) {
       return this == other;
     }
 
     @Override
-    public final int hashCode() {
+    public int hashCode() {
       return System.identityHashCode(this);
     }
 
     @Override
-    public final String toString() {
+    public String toString() {
       return coerceToString();
     }
   }

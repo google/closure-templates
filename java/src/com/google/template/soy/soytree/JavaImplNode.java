@@ -94,7 +94,7 @@ public final class JavaImplNode extends ExternImplNode {
    * Pulls out relevant attributes into class fields for quick reference. Should only be used in
    * constructors.
    */
-  private final void initAttributes(ErrorReporter errorReporter) {
+  private void initAttributes(ErrorReporter errorReporter) {
     for (CommandTagAttribute attr : attributes) {
       if (attr.hasName(CLASS)) {
         this.className = attr;

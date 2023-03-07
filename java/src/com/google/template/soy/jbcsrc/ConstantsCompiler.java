@@ -194,7 +194,7 @@ public final class ConstantsCompiler {
   }
 
   /** Returns the body of a function which returns a reference to the constant's static method. */
-  private static final Statement referenceMethod(String javaClassName, Method method) {
+  private static Statement referenceMethod(String javaClassName, Method method) {
     return Statement.returnExpression(
         new Expression(Type.getType(CompiledConstant.class)) {
           @Override

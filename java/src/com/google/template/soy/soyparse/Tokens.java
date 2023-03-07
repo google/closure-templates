@@ -112,7 +112,7 @@ final class Tokens {
       case SoyFileParserConstants.EOF:
         return "eof";
       case SoyFileParserConstants.AS:
-        return "\'as\'";
+        return "'as'";
 
         // Template tokens:
       case SoyFileParserConstants.CMD_BEGIN_CALL:
@@ -178,9 +178,9 @@ final class Tokens {
       case SoyFileParserConstants.DOUBLE_QUOTE:
         return "string";
       case SoyFileParserConstants.FOR:
-        return "\'for\'";
+        return "'for'";
       case SoyFileParserConstants.IN:
-        return "\'in\'";
+        return "'in'";
 
       case SoyFileParserConstants.UNEXPECTED_TOKEN:
         throw new AssertionError("we should never expect the unexpected token");

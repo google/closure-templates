@@ -181,8 +181,7 @@ class FormattingContext implements AutoCloseable {
   @CanIgnoreReturnValue
   FormattingContext appendForeignCode(String stuff) {
     stuff = stuff.replace("\n", "\n" + curIndent);
-    append(stuff);
-    return this;
+    return append(stuff);
   }
 
   void appendBlankLine() {

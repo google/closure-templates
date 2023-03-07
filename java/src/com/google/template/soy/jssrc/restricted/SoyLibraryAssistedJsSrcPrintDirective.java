@@ -36,5 +36,5 @@ public interface SoyLibraryAssistedJsSrcPrintDirective extends SoyJsSrcPrintDire
    *
    * @return A collection of strings representing Closure JS library names
    */
-  public ImmutableSet<String> getRequiredJsLibNames();
+  ImmutableSet<String> getRequiredJsLibNames();
 }

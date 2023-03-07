@@ -240,9 +240,7 @@ public final class MixinParentNode<N extends Node> {
    * @return A string that visually shows the subtree rooted at this node.
    */
   public String toTreeString(int indent) {
-    StringBuilder sb = new StringBuilder();
-    sb.append(SPACES, 0, indent).append("[").append(master).append("]\n");
-    return sb.toString();
+    return SPACES.substring(0, indent) + "[" + master + "]\n";
   }
 
   private static <N extends Node> void tryRemoveFromOldParent(N child) {

@@ -62,7 +62,7 @@ public final class SoyMapImpl extends AbstractSoyMap {
 
   @Override
   @Nonnull
-  public final Iterable<? extends SoyValue> keys() {
+  public Iterable<? extends SoyValue> keys() {
     return providerMap.keySet();
   }
 

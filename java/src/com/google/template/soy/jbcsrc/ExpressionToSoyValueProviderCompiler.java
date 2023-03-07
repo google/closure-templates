@@ -167,7 +167,7 @@ final class ExpressionToSoyValueProviderCompiler {
     }
 
     @Override
-    protected final Optional<Expression> visitExprRootNode(ExprRootNode node) {
+    protected Optional<Expression> visitExprRootNode(ExprRootNode node) {
       return visit(node.getRoot());
     }
 
@@ -222,7 +222,7 @@ final class ExpressionToSoyValueProviderCompiler {
     }
 
     @Override
-    protected final Optional<Expression> visitConditionalOpNode(ConditionalOpNode node) {
+    protected Optional<Expression> visitConditionalOpNode(ConditionalOpNode node) {
       if (allowsDetaches()) {
         Optional<Expression> trueBranch = visit(node.getChild(1));
         Optional<Expression> falseBranch = visit(node.getChild(2));
@@ -282,7 +282,7 @@ final class ExpressionToSoyValueProviderCompiler {
     }
 
     @Override
-    protected final Optional<Expression> visitExprNode(ExprNode node) {
+    protected Optional<Expression> visitExprNode(ExprNode node) {
       if (allowsBoxing()) {
         Optional<SoyExpression> compileWithNoDetaches = exprCompiler.compileWithNoDetaches(node);
         if (compileWithNoDetaches.isPresent()) {

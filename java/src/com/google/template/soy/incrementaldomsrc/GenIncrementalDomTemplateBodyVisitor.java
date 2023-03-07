@@ -1003,7 +1003,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
 
   VeLogStateHolder openVeLogNode(VeLogNode node) {
     Expression isLogOnly = Expressions.LITERAL_FALSE;
-    VariableDeclaration isLogOnlyVar = null;
+    VariableDeclaration isLogOnlyVar;
     Expression isLogOnlyReference = null;
     List<Statement> stmts = new ArrayList<>();
     if (node.getLogonlyExpression() != null) {

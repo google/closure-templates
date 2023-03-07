@@ -41,7 +41,7 @@ public final class BufferedSoyValueProvider implements SoyValueProvider {
   }
 
   @Override
-  public final SoyValue resolve() {
+  public SoyValue resolve() {
     if (resolvedValue == null) {
       resolvedValue = buffer.getAsSoyValue();
     }
@@ -49,7 +49,7 @@ public final class BufferedSoyValueProvider implements SoyValueProvider {
   }
 
   @Override
-  public final RenderResult status() {
+  public RenderResult status() {
     return RenderResult.done();
   }
 

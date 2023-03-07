@@ -34,5 +34,5 @@ public interface SoyEasyList extends SoyList, SoyLegacyObjectMap {
    *     itself, since all values are also providers.
    */
   @Deprecated
-  public void add(SoyValueProvider valueProvider);
+  void add(SoyValueProvider valueProvider);
 }

@@ -360,12 +360,11 @@ public final class GenerateParseInfoVisitor
     ilb.appendLine();
 
     for (Map.Entry<String, TemplateNode> templateEntry : publicBasicTemplateMap.entrySet()) {
-      StringBuilder javadocSb = new StringBuilder();
-      javadocSb
-          .append("The full template name of the ")
-          .append(templateEntry.getValue().getPartialTemplateName())
-          .append(" template.");
-      appendJavadoc(ilb, javadocSb.toString(), false, true);
+      String javadocSb =
+          "The full template name of the "
+              + templateEntry.getValue().getPartialTemplateName()
+              + " template.";
+      appendJavadoc(ilb, javadocSb, false, true);
       ilb.appendLine(
           "public static final String ",
           templateEntry.getKey(),
@@ -694,8 +693,7 @@ public final class GenerateParseInfoVisitor
    * @return The identifier in upper underscore format.
    */
   private String convertToUpperUnderscore(String ident) {
-    String result = convertedIdents.computeIfAbsent(ident, BaseUtils::convertToUpperUnderscore);
-    return result;
+    return convertedIdents.computeIfAbsent(ident, BaseUtils::convertToUpperUnderscore);
   }
 
   // -----------------------------------------------------------------------------------------------

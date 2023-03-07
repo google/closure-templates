@@ -200,7 +200,7 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
             expr = ExprNodes.nullLiteral();
           }
         } else {
-          expr = DesugarStateNodesPass.extractKeyFunctionFromHtmlTag(openTagNode, nodeIdGen);
+          expr = DesugarStateNodesPass.extractKeyFunctionFromHtmlTag(openTagNode);
         }
 
         call.addChild(

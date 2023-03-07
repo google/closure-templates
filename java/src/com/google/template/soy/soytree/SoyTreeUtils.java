@@ -115,7 +115,7 @@ public final class SoyTreeUtils {
      */
     SKIP_CHILDREN,
     /** This means that traversal should continue as normal. */
-    CONTINUE;
+    CONTINUE
   }
 
   private static VisitDirective visitAll(Node n) {

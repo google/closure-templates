@@ -570,8 +570,7 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
       List<Block> branchEnds = new ArrayList<>();
       Block previous = this.current;
       for (Case<?> caseOrDefault : cases) {
-        Block caseBlockStart = previous.addBranch();
-        this.current = caseBlockStart;
+        this.current = previous.addBranch();
         evaluateMsgParts(msgNode, caseOrDefault.parts(), placeholderBlocks);
         branchEnds.add(this.current);
       }
@@ -613,7 +612,7 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
   private enum StaticAnalysisResult {
     TRUE,
     FALSE,
-    UNKNOWN;
+    UNKNOWN
   }
 
   // consider moving this to SoyTreeUtils or some similar place.

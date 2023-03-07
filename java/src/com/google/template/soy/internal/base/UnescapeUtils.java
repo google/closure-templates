@@ -76,7 +76,7 @@ public class UnescapeUtils {
           //     ^           ^
           //   amp           end
           Integer cpI = HTML_ENTITY_TO_CODEPOINT.get(s.substring(amp, end));
-          cp = cpI != null ? cpI.intValue() : -1;
+          cp = cpI != null ? cpI : -1;
         }
       }
       if (cp == -1) { // Don't decode

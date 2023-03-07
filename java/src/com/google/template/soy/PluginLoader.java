@@ -23,7 +23,7 @@ import java.net.URLClassLoader;
 /** Defines a strategy for loading plugin classes. */
 public interface PluginLoader extends Closeable {
   /** The default implementation just loads directly from a single classloader. */
-  public static final class Default implements PluginLoader {
+  final class Default implements PluginLoader {
     private final ClassLoader classLoader;
     private final boolean closeable;
 

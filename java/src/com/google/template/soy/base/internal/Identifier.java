@@ -47,7 +47,7 @@ public abstract class Identifier {
      * <p>Note: if you want to handle 'fully qualified names' you will typically need to handle this
      * and {@link #SINGLE_IDENT}.
      */
-    DOTTED_IDENT;
+    DOTTED_IDENT
   }
 
   /**

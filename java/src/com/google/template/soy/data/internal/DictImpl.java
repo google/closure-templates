@@ -104,13 +104,13 @@ public final class DictImpl extends SoyAbstractValue implements SoyDict, SoyMap 
   private final RuntimeMapTypeTracker typeTracker;
 
   @Override
-  public final boolean hasField(String name) {
+  public boolean hasField(String name) {
     typeTracker.maybeSetLegacyObjectMapOrRecordType();
     return providerMap.containsKey(name);
   }
 
   @Override
-  public final SoyValue getField(String name) {
+  public SoyValue getField(String name) {
     typeTracker.maybeSetLegacyObjectMapOrRecordType();
     return getFieldInternal(name);
   }
@@ -121,13 +121,13 @@ public final class DictImpl extends SoyAbstractValue implements SoyDict, SoyMap 
   }
 
   @Override
-  public final SoyValueProvider getFieldProvider(String name) {
+  public SoyValueProvider getFieldProvider(String name) {
     typeTracker.maybeSetLegacyObjectMapOrRecordType();
     return providerMap.get(name);
   }
 
   @Override
-  public final ImmutableMap<String, SoyValueProvider> recordAsMap() {
+  public ImmutableMap<String, SoyValueProvider> recordAsMap() {
     typeTracker.maybeSetLegacyObjectMapOrRecordType();
     return ImmutableMap.copyOf(providerMap);
   }
@@ -145,7 +145,7 @@ public final class DictImpl extends SoyAbstractValue implements SoyDict, SoyMap 
   }
 
   @Override
-  public final int getItemCnt() {
+  public int getItemCnt() {
     typeTracker.maybeSetLegacyObjectMapOrRecordType();
     return providerMap.size();
   }
@@ -158,7 +158,7 @@ public final class DictImpl extends SoyAbstractValue implements SoyDict, SoyMap 
 
   @Override
   @Nonnull
-  public final Iterable<? extends SoyValue> getItemKeys() {
+  public Iterable<? extends SoyValue> getItemKeys() {
     typeTracker.maybeSetLegacyObjectMapOrRecordType();
     return Iterables.transform(providerMap.keySet(), StringData::forValue);
   }
@@ -171,7 +171,7 @@ public final class DictImpl extends SoyAbstractValue implements SoyDict, SoyMap 
   }
 
   @Override
-  public final boolean hasItem(SoyValue key) {
+  public boolean hasItem(SoyValue key) {
     typeTracker.maybeSetLegacyObjectMapOrRecordType();
     return providerMap.containsKey(getStringKey(key));
   }
@@ -183,7 +183,7 @@ public final class DictImpl extends SoyAbstractValue implements SoyDict, SoyMap 
   }
 
   @Override
-  public final SoyValue getItem(SoyValue key) {
+  public SoyValue getItem(SoyValue key) {
     typeTracker.maybeSetLegacyObjectMapOrRecordType();
     return getFieldInternal(getStringKey(key));
   }
@@ -195,7 +195,7 @@ public final class DictImpl extends SoyAbstractValue implements SoyDict, SoyMap 
   }
 
   @Override
-  public final SoyValueProvider getItemProvider(SoyValue key) {
+  public SoyValueProvider getItemProvider(SoyValue key) {
     typeTracker.maybeSetLegacyObjectMapOrRecordType();
     return providerMap.get(getStringKey(key));
   }
@@ -208,13 +208,13 @@ public final class DictImpl extends SoyAbstractValue implements SoyDict, SoyMap 
 
   @Override
   @Nonnull
-  public final Map<String, ? extends SoyValueProvider> asJavaStringMap() {
+  public Map<String, ? extends SoyValueProvider> asJavaStringMap() {
     return Collections.unmodifiableMap(providerMap);
   }
 
   @Override
   @Nonnull
-  public final Map<String, ? extends SoyValue> asResolvedJavaStringMap() {
+  public Map<String, ? extends SoyValue> asResolvedJavaStringMap() {
     return Maps.transformValues(asJavaStringMap(), SoyValueProvider::resolve);
   }
 
@@ -239,12 +239,12 @@ public final class DictImpl extends SoyAbstractValue implements SoyDict, SoyMap 
   }
 
   @Override
-  public final boolean coerceToBoolean() {
+  public boolean coerceToBoolean() {
     return true;
   }
 
   @Override
-  public final String coerceToString() {
+  public String coerceToString() {
     LoggingAdvisingAppendable mapStr = LoggingAdvisingAppendable.buffering();
     try {
       render(mapStr);
@@ -280,13 +280,13 @@ public final class DictImpl extends SoyAbstractValue implements SoyDict, SoyMap 
   }
 
   @Override
-  public final boolean equals(Object other) {
+  public boolean equals(Object other) {
     // Instance equality, to match Javascript behavior.
     return this == other;
   }
 
   @Override
-  public final int hashCode() {
+  public int hashCode() {
     return System.identityHashCode(this);
   }
 

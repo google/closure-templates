@@ -408,7 +408,7 @@ final class JbcSrcValueFactory extends JavaValueFactory {
   private SoyExpression toSoyExpression(JbcSrcJavaValue pluginReturnValue) {
     SoyType expectedType = fnNode.getReturnType();
     Expression expr = pluginReturnValue.expr();
-    SoyExpression soyExpr = null;
+    SoyExpression soyExpr;
 
     // Note: All expressions that were able to be converted in tryToWrapInSoyExpression
     // will be a SoyExpression.  Everything else will just be an Expression.

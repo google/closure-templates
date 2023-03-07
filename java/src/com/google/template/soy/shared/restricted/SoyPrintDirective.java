@@ -34,7 +34,7 @@ public interface SoyPrintDirective {
    *
    * @return The name of the Soy print directive.
    */
-  public String getName();
+  String getName();
 
   /**
    * Gets the set of valid args list sizes. For example, the set {0, 2} would indicate that this
@@ -42,5 +42,5 @@ public interface SoyPrintDirective {
    *
    * @return The set of valid args list sizes.
    */
-  public Set<Integer> getValidArgsSizes();
+  Set<Integer> getValidArgsSizes();
 }

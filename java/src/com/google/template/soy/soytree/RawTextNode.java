@@ -248,7 +248,7 @@ public final class RawTextNode extends AbstractSoyNode
    * @return {@code true} if whitespace was dropped
    */
   public boolean missingWhitespaceAt(int index) {
-    return offsets == null ? false : offsets.getReasonAt(index) == SourceOffsets.Reason.WHITESPACE;
+    return offsets != null && offsets.getReasonAt(index) == Reason.WHITESPACE;
   }
 
   /*
@@ -262,7 +262,7 @@ public final class RawTextNode extends AbstractSoyNode
    * @return {@code true} if command executed
    */
   public boolean commandAt(int index) {
-    return offsets == null ? false : offsets.getReasonAt(index) == SourceOffsets.Reason.COMMAND;
+    return offsets != null && offsets.getReasonAt(index) == Reason.COMMAND;
   }
 
   @Nullable
@@ -489,7 +489,7 @@ public final class RawTextNode extends AbstractSoyNode
        * There is no offset. This will happen for initial points and final points and possibly
        * others due to {@link #concat} because we performed whitespace joining.
        */
-      NONE;
+      NONE
     }
 
     @Nullable

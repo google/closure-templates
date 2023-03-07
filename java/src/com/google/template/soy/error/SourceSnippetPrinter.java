@@ -31,7 +31,7 @@ import java.util.Optional;
 /** Class responsible for extracting code snippets from soy sources. */
 public final class SourceSnippetPrinter {
   /** Represents an item that can be printed as part of a snippet. */
-  private static interface Printable {
+  private interface Printable {
     /**
      * Returns the string content of this Printable.
      *
@@ -120,7 +120,6 @@ public final class SourceSnippetPrinter {
 
   public SourceSnippetPrinter() {
     this.maxLines = Integer.MAX_VALUE;
-    ;
   }
 
   /**

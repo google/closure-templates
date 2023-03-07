@@ -299,8 +299,7 @@ public abstract class AbstractSoyCompiler {
       guiceTimer.start();
       // Only create the Builder through an Injector if the user passed pluginModules.
       // Otherwise, we don't need to go through Guice at all.
-      List<Module> modules = new ArrayList<>();
-      modules.addAll(pluginModules);
+      List<Module> modules = new ArrayList<>(pluginModules);
       Injector injector;
       try {
         injector = Guice.createInjector(modules);
@@ -540,7 +539,7 @@ public abstract class AbstractSoyCompiler {
    *
    * @param errorMsg The error message to print.
    */
-  protected static final RuntimeException exitWithError(String errorMsg) {
+  protected static RuntimeException exitWithError(String errorMsg) {
     throw new CommandLineError(errorMsg);
   }
 }

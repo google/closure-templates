@@ -85,17 +85,17 @@ public final class ForNonemptyNode extends AbstractBlockNode
   }
 
   @Override
-  public final LocalVar getVar() {
+  public LocalVar getVar() {
     return var;
   }
 
   @Nullable
-  public final LocalVar getIndexVar() {
+  public LocalVar getIndexVar() {
     return indexVar;
   }
 
   @Nullable
-  public final String getIndexVarName() {
+  public String getIndexVarName() {
     return indexVar.name();
   }
 

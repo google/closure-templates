@@ -95,7 +95,6 @@ public abstract class AbstractLoggingAdvisingAppendable extends LoggingAdvisingA
       }
       logOnlyDepth = depth;
     } else if (statement.logOnly()) {
-      depth = 1;
       logOnlyDepth = 1;
     }
     doEnterLoggableElement(statement);

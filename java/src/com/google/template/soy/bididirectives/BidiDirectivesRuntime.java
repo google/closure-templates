@@ -91,13 +91,11 @@ public final class BidiDirectivesRuntime {
     // do HTML escaping in Soy. (Both explicit and automatic HTML escaping, if any, is done before
     // calling |bidiSpanWrap because BidiSpanWrapDirective implements SanitizedContentOperator,
     // but this does not mean that the input has to be HTML SanitizedContent.
-    String wrappedValue =
-        bidiFormatter.spanWrap(valueDir, value.coerceToString(), /* isHtml= */ true);
 
     // Like other directives implementing SanitizedContentOperator, BidiSpanWrapDirective is called
     // after the escaping (if any) has already been done, and thus there is no need for it to
     // produce actual SanitizedContent.
-    return wrappedValue;
+    return bidiFormatter.spanWrap(valueDir, value.coerceToString(), /* isHtml= */ true);
   }
 
   public static LoggingAdvisingAppendable bidiSpanWrapStreaming(

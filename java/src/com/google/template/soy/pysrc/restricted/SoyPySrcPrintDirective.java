@@ -41,5 +41,5 @@ public interface SoyPySrcPrintDirective extends SoyPrintDirective {
    * @param args The directive's arguments, if any (usually none).
    * @return The resulting value.
    */
-  public PyExpr applyForPySrc(PyExpr value, List<PyExpr> args);
+  PyExpr applyForPySrc(PyExpr value, List<PyExpr> args);
 }

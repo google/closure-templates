@@ -41,5 +41,5 @@ public interface SoyJavaPrintDirective extends SoyPrintDirective {
    * @param args The directive's arguments, if any (often none).
    * @return The resulting value. Must be either {@code StringData} or {@code SanitizedContent}.
    */
-  public SoyValue applyForJava(SoyValue value, List<SoyValue> args);
+  SoyValue applyForJava(SoyValue value, List<SoyValue> args);
 }

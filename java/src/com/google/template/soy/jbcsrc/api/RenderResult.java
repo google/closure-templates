@@ -61,7 +61,7 @@ public final class RenderResult {
     /** Rendering has encountered an incomplete future. This future will be provided */
     DETACH,
     /** Rendering has completed successfully. */
-    DONE;
+    DONE
   }
 
   private final Type type;

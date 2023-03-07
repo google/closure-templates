@@ -105,17 +105,17 @@ public interface ExprNode extends Node {
    * @return This node's kind (corresponding to this node's specific type).
    */
   @Override
-  public Kind getKind();
+  Kind getKind();
 
   /** Gets the data type of this node. */
-  public SoyType getType();
+  SoyType getType();
 
   @Override
-  public ParentExprNode getParent();
+  ParentExprNode getParent();
 
   /** See {@link Node#copy(CopyState)} for a description of the copy contract. */
   @Override
-  public ExprNode copy(CopyState copyState);
+  ExprNode copy(CopyState copyState);
 
   // -----------------------------------------------------------------------------------------------
 
@@ -127,10 +127,10 @@ public interface ExprNode extends Node {
   /** A node representing an operator (with operands as children). */
   interface OperatorNode extends ParentExprNode {
 
-    public Operator getOperator();
+    Operator getOperator();
 
     @Override
-    public OperatorNode copy(CopyState copyState);
+    OperatorNode copy(CopyState copyState);
   }
 
   // -----------------------------------------------------------------------------------------------

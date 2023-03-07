@@ -1,6 +1,5 @@
 // Contains metadata describing Soy template calls.
 // - Produced by the SoyHeader compiler
-// - Intended for use by the Wiz Component compiler for validation
 syntax = "proto3";
 
 package soy.compiler;

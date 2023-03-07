@@ -92,7 +92,7 @@ public interface VarDefn {
   boolean isInjected();
 
   /** Returns true if the definitions can be considered equivalent. */
-  public default boolean isEquivalent(VarDefn other) {
+  default boolean isEquivalent(VarDefn other) {
     return this == other;
   }
 }

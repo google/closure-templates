@@ -47,12 +47,12 @@ public final class SoyGeneralOptions implements Cloneable {
   }
 
   @Override
-  public final SoyGeneralOptions clone() {
+  public SoyGeneralOptions clone() {
     return new SoyGeneralOptions(this);
   }
 
   @Override
-  public final String toString() {
+  public String toString() {
     return MoreObjects.toStringHelper(this)
         .add("experimentalFeatures", experimentalFeatures)
         .toString();

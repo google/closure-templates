@@ -84,8 +84,7 @@ public abstract class TemplateMetadata {
         builder.setDelTemplateVariant(basicTemplate.getDelTemplateVariant());
       } else if (basicTemplate.getModifiesExpr() != null) {
         if (basicTemplate.getModifiesExpr().getRoot() instanceof TemplateLiteralNode) {
-          SoyType modifiableType =
-              ((TemplateLiteralNode) basicTemplate.getModifiesExpr().getRoot()).getType();
+          SoyType modifiableType = basicTemplate.getModifiesExpr().getRoot().getType();
           builder.setDelTemplateName(
               // In some cases the types won't be resolved to a TemplateType, eg Aspirin. In that
               // case the deltemplate selector won't work correctly when modifiable templates are

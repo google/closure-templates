@@ -234,7 +234,7 @@ public final class SoyProtoValue extends SoyAbstractValue implements SoyLegacyOb
   }
 
   @Override
-  public final ImmutableMap<String, SoyValueProvider> recordAsMap() {
+  public ImmutableMap<String, SoyValueProvider> recordAsMap() {
     throw new UnsupportedOperationException();
   }
 

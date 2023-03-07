@@ -166,17 +166,17 @@ public final class SoyExpression extends Expression {
   }
 
   /** Returns the {@link SoyType} of the expression. */
-  public final SoyType soyType() {
+  public SoyType soyType() {
     return soyRuntimeType.soyType();
   }
 
   /** Returns the {@link SoyRuntimeType} of the expression. */
-  public final SoyRuntimeType soyRuntimeType() {
+  public SoyRuntimeType soyRuntimeType() {
     return soyRuntimeType;
   }
 
   @Override
-  protected final void doGen(CodeBuilder adapter) {
+  protected void doGen(CodeBuilder adapter) {
     delegate.gen(adapter);
   }
 
@@ -546,7 +546,7 @@ public final class SoyExpression extends Expression {
               adapter.checkCast(SOY_LIST_TYPE);
               MethodRef.SOY_LIST_AS_JAVA_LIST.invokeUnchecked(adapter);
               adapter.mark(end);
-            };
+            }
           };
     }
 

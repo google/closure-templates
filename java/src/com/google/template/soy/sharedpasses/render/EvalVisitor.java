@@ -180,7 +180,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
      */
     BUGGED,
     /** Normal mode just means not doing the bugged behavior. */
-    NORMAL;
+    NORMAL
   }
 
   /** Interface for a factory that creates an EvalVisitor. */

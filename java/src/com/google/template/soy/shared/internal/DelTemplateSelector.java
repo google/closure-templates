@@ -222,8 +222,7 @@ public final class DelTemplateSelector<T> {
 
       T add(String mod, T value) {
         checkArgument(!mod.isEmpty());
-        T prev = modToValue.put(mod, checkNotNull(value));
-        return prev;
+        return modToValue.put(mod, checkNotNull(value));
       }
 
       Group<T> build() {

@@ -63,7 +63,7 @@ public final class BasicFunctionsRuntime {
    */
   public static long ceil(SoyValue arg) {
     if (arg instanceof IntegerData) {
-      return ((IntegerData) arg).longValue();
+      return arg.longValue();
     } else {
       return (long) Math.ceil(arg.floatValue());
     }
@@ -81,8 +81,8 @@ public final class BasicFunctionsRuntime {
   @SuppressWarnings("unchecked")
   public static SoyMap concatMaps(SoyMap map, SoyMap mapTwo) {
     LinkedHashMap<SoyValue, SoyValueProvider> mapBuilder = new LinkedHashMap<>();
-    mapBuilder.putAll((Map<SoyValue, SoyValueProvider>) map.asJavaMap());
-    mapBuilder.putAll((Map<SoyValue, SoyValueProvider>) mapTwo.asJavaMap());
+    mapBuilder.putAll(map.asJavaMap());
+    mapBuilder.putAll(mapTwo.asJavaMap());
     return SoyMapImpl.forProviderMap(mapBuilder);
   }
 
@@ -220,7 +220,7 @@ public final class BasicFunctionsRuntime {
    */
   public static long floor(SoyValue arg) {
     if (arg instanceof IntegerData) {
-      return ((IntegerData) arg).longValue();
+      return arg.longValue();
     } else {
       return (long) Math.floor(arg.floatValue());
     }

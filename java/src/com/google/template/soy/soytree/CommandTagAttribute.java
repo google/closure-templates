@@ -78,7 +78,7 @@ public final class CommandTagAttribute {
    * A node that contains command tag attributes. Some examples of this include calls, templates,
    * msg, etc.
    */
-  public static interface CommandTagAttributesHolder extends SoyNode {
+  public interface CommandTagAttributesHolder extends SoyNode {
     List<CommandTagAttribute> getAttributes();
 
     SourceLocation getOpenTagLocation();

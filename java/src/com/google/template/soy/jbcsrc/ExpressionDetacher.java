@@ -79,7 +79,7 @@ interface ExpressionDetacher {
    *
    * <p>This assumes that all SoyValueProviders will be already resolved and simply calls resolve().
    */
-  static final class NullDetatcher implements ExpressionDetacher, Factory {
+  final class NullDetatcher implements ExpressionDetacher, Factory {
     static final NullDetatcher INSTANCE = new NullDetatcher();
 
     @Override
@@ -131,7 +131,7 @@ interface ExpressionDetacher {
    * expr.resolve();
    * }</pre>
    */
-  static final class BasicDetacher implements ExpressionDetacher {
+  final class BasicDetacher implements ExpressionDetacher {
     static final BasicDetacher INSTANCE = new BasicDetacher(() -> Statement.NULL_STATEMENT);
     private final Supplier<Statement> saveOperationSupplier;
 

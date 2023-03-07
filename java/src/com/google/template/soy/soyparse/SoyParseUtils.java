@@ -143,7 +143,7 @@ final class SoyParseUtils {
         "Quote style must be SINGLE or DOUBLE");
     // NOTE: we don't just use String.replace since it internally allocates/compiles a regular
     // expression.  Instead we have a handrolled loop.
-    int index = s.indexOf(quoteStyle == QuoteStyle.DOUBLE ? "\\\"" : "\\\'");
+    int index = s.indexOf(quoteStyle == QuoteStyle.DOUBLE ? "\\\"" : "\\'");
     if (index == -1) {
       return s;
     }

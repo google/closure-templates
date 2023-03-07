@@ -76,7 +76,7 @@ public final class GeneratePySanitizeEscapingDirectiveCode
 
   @Override
   protected String escapeOutputString(String input) {
-    String escapeCharacters = "\\\'\"\b\f\n\r\t";
+    String escapeCharacters = "\\'\"\b\f\n\r\t";
 
     // Give the string builder a little bit of extra space to account for new escape characters.
     StringBuilder result = new StringBuilder((int) (input.length() * 1.2));

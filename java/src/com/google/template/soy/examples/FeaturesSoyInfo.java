@@ -8,7 +8,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.parseinfo.SoyFileInfo;
 import com.google.template.soy.parseinfo.SoyTemplateInfo;
 
-
 /**
  * Soy parse info for features.soy.
  *
@@ -57,7 +56,9 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
     public static final String DEMO_FOR_RANGE = "soy.examples.features.demoFor_Range";
     public static final com.google.template.soy.parseinfo.TemplateName DEMO_FOR_RANGE__NAME = com.google.template.soy.parseinfo.TemplateName.of(DEMO_FOR_RANGE);
     /** The full template name of the .demoCallWithoutParam template. */
-    public static final String DEMO_CALL_WITHOUT_PARAM = "soy.examples.features.demoCallWithoutParam";
+    public static final String DEMO_CALL_WITHOUT_PARAM =
+        "soy.examples.features.demoCallWithoutParam";
+
     public static final com.google.template.soy.parseinfo.TemplateName DEMO_CALL_WITHOUT_PARAM__NAME = com.google.template.soy.parseinfo.TemplateName.of(DEMO_CALL_WITHOUT_PARAM);
     /** The full template name of the .demoCallOtherFile template. */
     public static final String DEMO_CALL_OTHER_FILE = "soy.examples.features.demoCallOtherFile";
@@ -66,10 +67,14 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
     public static final String DEMO_CALL_WITH_PARAM = "soy.examples.features.demoCallWithParam";
     public static final com.google.template.soy.parseinfo.TemplateName DEMO_CALL_WITH_PARAM__NAME = com.google.template.soy.parseinfo.TemplateName.of(DEMO_CALL_WITH_PARAM);
     /** The full template name of the .demoCallWithParamBlock template. */
-    public static final String DEMO_CALL_WITH_PARAM_BLOCK = "soy.examples.features.demoCallWithParamBlock";
+    public static final String DEMO_CALL_WITH_PARAM_BLOCK =
+        "soy.examples.features.demoCallWithParamBlock";
+
     public static final com.google.template.soy.parseinfo.TemplateName DEMO_CALL_WITH_PARAM_BLOCK__NAME = com.google.template.soy.parseinfo.TemplateName.of(DEMO_CALL_WITH_PARAM_BLOCK);
     /** The full template name of the .demoParamWithKindAttribute template. */
-    public static final String DEMO_PARAM_WITH_KIND_ATTRIBUTE = "soy.examples.features.demoParamWithKindAttribute";
+    public static final String DEMO_PARAM_WITH_KIND_ATTRIBUTE =
+        "soy.examples.features.demoParamWithKindAttribute";
+
     public static final com.google.template.soy.parseinfo.TemplateName DEMO_PARAM_WITH_KIND_ATTRIBUTE__NAME = com.google.template.soy.parseinfo.TemplateName.of(DEMO_PARAM_WITH_KIND_ATTRIBUTE);
     /** The full template name of the .demoExpressions template. */
     public static final String DEMO_EXPRESSIONS = "soy.examples.features.demoExpressions";
@@ -165,10 +170,7 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
     private static final com.google.template.soy.parseinfo.TemplateName __TEMPLATE_NAME__ = TemplateName.DEMO_COMMENTS__NAME;
 
     private DemoCommentsSoyTemplateInfo() {
-      super(
-          __NAME__,
-          __TEMPLATE_NAME__,
-          ImmutableMap.<String, ParamRequisiteness>of());
+      super(__NAME__, __TEMPLATE_NAME__, ImmutableMap.of());
     }
 
     private static final DemoCommentsSoyTemplateInfo __INSTANCE__ =
@@ -198,10 +200,7 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
     private static final com.google.template.soy.parseinfo.TemplateName __TEMPLATE_NAME__ = TemplateName.DEMO_LINE_JOINING__NAME;
 
     private DemoLineJoiningSoyTemplateInfo() {
-      super(
-          __NAME__,
-          __TEMPLATE_NAME__,
-          ImmutableMap.<String, ParamRequisiteness>of());
+      super(__NAME__, __TEMPLATE_NAME__, ImmutableMap.of());
     }
 
     private static final DemoLineJoiningSoyTemplateInfo __INSTANCE__ =
@@ -231,10 +230,7 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
     private static final com.google.template.soy.parseinfo.TemplateName __TEMPLATE_NAME__ = TemplateName.DEMO_RAW_TEXT_COMMANDS__NAME;
 
     private DemoRawTextCommandsSoyTemplateInfo() {
-      super(
-          __NAME__,
-          __TEMPLATE_NAME__,
-          ImmutableMap.<String, ParamRequisiteness>of());
+      super(__NAME__, __TEMPLATE_NAME__, ImmutableMap.of());
     }
 
     private static final DemoRawTextCommandsSoyTemplateInfo __INSTANCE__ =
@@ -580,10 +576,7 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
     private static final com.google.template.soy.parseinfo.TemplateName __TEMPLATE_NAME__ = TemplateName.DEMO_CALL_OTHER_FILE__NAME;
 
     private DemoCallOtherFileSoyTemplateInfo() {
-      super(
-          __NAME__,
-          __TEMPLATE_NAME__,
-          ImmutableMap.<String, ParamRequisiteness>of());
+      super(__NAME__, __TEMPLATE_NAME__, ImmutableMap.of());
     }
 
     private static final DemoCallOtherFileSoyTemplateInfo __INSTANCE__ =
@@ -867,10 +860,7 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
     private static final com.google.template.soy.parseinfo.TemplateName __TEMPLATE_NAME__ = TemplateName.BIDI_GLOBAL_DIR__NAME;
 
     private BidiGlobalDirSoyTemplateInfo() {
-      super(
-          __NAME__,
-          __TEMPLATE_NAME__,
-          ImmutableMap.<String, ParamRequisiteness>of());
+      super(__NAME__, __TEMPLATE_NAME__, ImmutableMap.of());
     }
 
     private static final BidiGlobalDirSoyTemplateInfo __INSTANCE__ =
@@ -932,7 +922,7 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
     super(
         "features.soy",
         __NAMESPACE__,
-        com.google.common.collect.ImmutableList.<SoyTemplateInfo>of(
+        com.google.common.collect.ImmutableList.of(
             DEMO_COMMENTS,
             DEMO_LINE_JOINING,
             DEMO_RAW_TEXT_COMMANDS,
@@ -953,7 +943,7 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
             DEMO_BIDI_SUPPORT,
             BIDI_GLOBAL_DIR,
             EXAMPLE_HEADER),
-        ImmutableSet.<String>of());
+        ImmutableSet.of());
   }
 
 

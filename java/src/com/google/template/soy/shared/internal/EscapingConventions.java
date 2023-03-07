@@ -60,7 +60,7 @@ public final class EscapingConventions {
   // generator uses a public accessor that ties them all together.
 
   /** The list of potential languages which are used by the escapers. */
-  public static enum EscapingLanguage {
+  public enum EscapingLanguage {
     JAVASCRIPT,
     PYTHON
   }
@@ -799,7 +799,7 @@ public final class EscapingConventions {
           // </style> which could prematurely close a style element.
           // Newlines are disallowed in strings, so not escaping them can trigger CSS error
           // recovery.
-          .escapeAll("\u0000\b\t\n\u000b\f\r\u0085\u00a0\u2028\u2029\"\'\\<>&{};:()@/=*")
+          .escapeAll("\u0000\b\t\n\u000b\f\r\u0085\u00a0\u2028\u2029\"'\\<>&{};:()@/=*")
           .build();
     }
   }
@@ -867,9 +867,9 @@ public final class EscapingConventions {
       byte[] bytes = Character.toString(plainText).getBytes(UTF_8);
       int numBytes = bytes.length;
       StringBuilder sb = new StringBuilder(numBytes * 3);
-      for (int i = 0; i < numBytes; ++i) {
+      for (byte aByte : bytes) {
         // Use uppercase escapes for consistency with CharEscapers.uriEscaper().
-        sb.append(String.format("%%%02X", bytes[i]));
+        sb.append(String.format("%%%02X", aByte));
       }
       return sb.toString();
     }
@@ -909,7 +909,7 @@ public final class EscapingConventions {
           //      background: {lb} background-image: url('/foo/{print $x}.png') {rb}
           // and
           //      <img src="/foo/{print $x}.png">
-          .escapeAll(" (){}\"\'\\<>")
+          .escapeAll(" (){}\"'\\<>")
           // More spaces and newlines.
           .escapeAll("\u0085\u00A0\u2028\u2029")
           // Make sure that full-width versions of reserved characters are escaped.
@@ -1341,7 +1341,7 @@ public final class EscapingConventions {
 
     @Override
     protected ImmutableList<Escape> defineEscapes() {
-      return ImmutableList.<Escape>of();
+      return ImmutableList.of();
     }
 
     @Override

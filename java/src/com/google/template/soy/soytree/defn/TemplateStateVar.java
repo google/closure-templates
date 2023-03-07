@@ -142,11 +142,9 @@ public final class TemplateStateVar extends AbstractVarDefn implements TemplateH
 
   @Override
   public String toString() {
-    StringBuilder description = new StringBuilder();
-    description.append(getClass().getSimpleName());
-    description.append("{name = ").append(name());
-    description.append(", desc = ").append(desc).append("}");
-    return description.toString();
+    String description =
+        getClass().getSimpleName() + "{name = " + name() + ", desc = " + desc + "}";
+    return description;
   }
 
   @Override

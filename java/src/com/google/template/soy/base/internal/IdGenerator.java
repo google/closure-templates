@@ -28,7 +28,7 @@ public interface IdGenerator {
    *
    * @return The generated id.
    */
-  public int genId();
+  int genId();
 
   /**
    * Clones this id generator, such that the original and new generators will generate the same list
@@ -36,5 +36,5 @@ public interface IdGenerator {
    *
    * @return A clone of this id generator.
    */
-  public IdGenerator copy();
+  IdGenerator copy();
 }

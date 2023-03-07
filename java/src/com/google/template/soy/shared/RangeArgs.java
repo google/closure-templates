@@ -48,7 +48,7 @@ public abstract class RangeArgs {
    * Returns a optional {@link RangeArgs} object if the for loop expression is a {@code range(...)}
    * expression.
    */
-  public static final Optional<RangeArgs> createFromNode(ForNode node) {
+  public static Optional<RangeArgs> createFromNode(ForNode node) {
     if (node.getExpr().getRoot() instanceof FunctionNode) {
       FunctionNode fn = (FunctionNode) node.getExpr().getRoot();
       if (fn.getSoyFunction() instanceof RangeFunction) {

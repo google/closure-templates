@@ -45,7 +45,7 @@ public abstract class TemplateLiteral extends Expression {
     } else if (chunk instanceof Statement) {
       return TsxPrintNode.wrap(((Statement) chunk).asExpr());
     }
-    return TsxPrintNode.wrap((Expression) chunk);
+    return TsxPrintNode.wrap(chunk);
   }
 
   abstract ImmutableList<? extends CodeChunk> body();

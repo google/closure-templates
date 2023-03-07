@@ -76,7 +76,7 @@ public final class SoyFutureValueProvider extends SoyAbstractCachingValueProvide
    */
   @Override
   @Nonnull
-  protected final SoyValue compute() {
+  protected SoyValue compute() {
     try {
       if (!future.isDone()) {
         futureBlockCallback.get().beforeBlock();

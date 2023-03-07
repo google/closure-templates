@@ -191,7 +191,6 @@ final class VeLogValidationPass implements CompilerFileSetPass {
           INVALID_LOGGING_FUNCTION_LOCATION,
           function.getStaticFunctionName(),
           " It has sibling nodes in the attribute value.");
-      return;
     }
   }
 

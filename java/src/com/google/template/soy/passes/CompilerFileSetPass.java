@@ -57,7 +57,7 @@ public interface CompilerFileSetPass extends CompilerPass {
    */
   enum Result {
     CONTINUE,
-    STOP;
+    STOP
   }
 
   Result run(ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator);

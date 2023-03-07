@@ -37,5 +37,5 @@ public interface SoyJavaFunction extends SoyFunction {
    * @param args The function arguments.
    * @return The computed result of this function.
    */
-  public SoyValue computeForJava(List<SoyValue> args);
+  SoyValue computeForJava(List<SoyValue> args);
 }

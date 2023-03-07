@@ -63,10 +63,8 @@ public final class BidiFunctionsRuntime {
       isHtml = isHtml || sanitizedContent.getContentKind() == ContentKind.HTML;
     }
 
-    String markAfterKnownDir =
-        BidiFormatter.getInstance(bidiGlobalDir.toDir())
-            .markAfter(valueDir, value.coerceToString(), isHtml);
-    return markAfterKnownDir;
+    return BidiFormatter.getInstance(bidiGlobalDir.toDir())
+        .markAfter(valueDir, value.coerceToString(), isHtml);
   }
 
   public static String bidiMark(BidiGlobalDir bidiGlobalDir) {

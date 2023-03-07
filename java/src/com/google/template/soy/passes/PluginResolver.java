@@ -142,7 +142,7 @@ public final class PluginResolver {
     /** Same as above, but issues warnings. */
     ALLOW_UNDEFINED_AND_WARN,
     /** This is the normal thing, it is an error for the plugin to not exist. */
-    REQUIRE_DEFINITIONS;
+    REQUIRE_DEFINITIONS
   }
 
   private final Mode mode;
@@ -466,7 +466,6 @@ public final class PluginResolver {
       SoyFunctionSignature sig = plugin.getClass().getAnnotation(SoyFunctionSignature.class);
       if (sig != null && !sig.deprecatedWarning().isEmpty()) {
         reporter.warn(location, DEPRECATED_PLUGIN, name, sig.deprecatedWarning());
-        return;
       }
     }
   }

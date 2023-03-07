@@ -270,7 +270,7 @@ public final class MsgFuncGenerator {
 
       if (part instanceof SoyMsgPlaceholderPart) {
         String phName = ((SoyMsgPlaceholderPart) part).getPlaceholderName();
-        rawMsgTextSb.append("{" + phName + "}");
+        rawMsgTextSb.append("{").append(phName).append("}");
       }
     }
     return rawMsgTextSb.toString();
@@ -284,12 +284,12 @@ public final class MsgFuncGenerator {
    * @see "https://docs.python.org/2/library/string.html#formatstrings"
    */
   private static final Function<String, String> escaperForPyFormatString =
-      str -> str.replaceAll("\\{", "{{").replaceAll("\\}", "}}").replace("'", "\\\'");
+      str -> str.replaceAll("\\{", "{{").replaceAll("\\}", "}}").replace("'", "\\'");
 
   /**
    * ICU messages use single quotes for escaping internal parts. This will escape the single quotes
    * so they can be embedded in a python string literal.
    */
   private static final Function<String, String> escaperForIcuSection =
-      str -> str.replace("'", "\\\'");
+      str -> str.replace("'", "\\'");
 }

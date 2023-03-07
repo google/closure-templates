@@ -122,12 +122,12 @@ public final class SoyListData extends CollectionData implements Iterable<SoyVal
   }
 
   @Override
-  public final boolean equals(Object other) {
+  public boolean equals(Object other) {
     return this == other; // fall back to object equality
   }
 
   @Override
-  public final int hashCode() {
+  public int hashCode() {
     return System.identityHashCode(this);
   }
 
@@ -489,7 +489,7 @@ public final class SoyListData extends CollectionData implements Iterable<SoyVal
    */
   private int getIntegerIndex(SoyValue key) {
     try {
-      return ((IntegerData) key).integerValue();
+      return key.integerValue();
     } catch (ClassCastException cce) {
       try {
         // TODO: Remove this old bad behavior after existing code is compliant.

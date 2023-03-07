@@ -42,7 +42,7 @@ public final class ProtoUtils {
 
   public static final ExtensionRegistry REGISTRY = createRegistry();
 
-  private static final ExtensionRegistry createRegistry() {
+  private static ExtensionRegistry createRegistry() {
     ExtensionRegistry instance = ExtensionRegistry.newInstance();
     // Add extensions needed for parsing descriptors here.
     return instance;

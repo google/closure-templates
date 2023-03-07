@@ -114,7 +114,7 @@ public final class SoyPySrcOptions implements Cloneable {
   }
 
   @Override
-  public final SoyPySrcOptions clone() {
+  public SoyPySrcOptions clone() {
     return new SoyPySrcOptions(this);
   }
 }

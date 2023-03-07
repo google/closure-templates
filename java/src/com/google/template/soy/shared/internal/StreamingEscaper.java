@@ -62,22 +62,21 @@ public final class StreamingEscaper extends LoggingAdvisingAppendable {
 
   @CanIgnoreReturnValue
   @Override
-  public final LoggingAdvisingAppendable append(CharSequence csq) throws IOException {
+  public LoggingAdvisingAppendable append(CharSequence csq) throws IOException {
     escapedAppendable.append(csq);
     return this;
   }
 
   @CanIgnoreReturnValue
   @Override
-  public final LoggingAdvisingAppendable append(CharSequence csq, int start, int end)
-      throws IOException {
+  public LoggingAdvisingAppendable append(CharSequence csq, int start, int end) throws IOException {
     escapedAppendable.append(csq, start, end);
     return this;
   }
 
   @CanIgnoreReturnValue
   @Override
-  public final LoggingAdvisingAppendable append(char c) throws IOException {
+  public LoggingAdvisingAppendable append(char c) throws IOException {
     escapedAppendable.append(c);
     return this;
   }
@@ -92,7 +91,7 @@ public final class StreamingEscaper extends LoggingAdvisingAppendable {
   }
 
   @Override
-  public final boolean softLimitReached() {
+  public boolean softLimitReached() {
     return delegate.softLimitReached();
   }
 

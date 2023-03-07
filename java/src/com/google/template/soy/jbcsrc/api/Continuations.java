@@ -71,17 +71,17 @@ public final class Continuations {
     }
 
     @Override
-    public final RenderResult result() {
+    public RenderResult result() {
       return delegate.result();
     }
 
     @Override
-    public final T get() {
+    public T get() {
       throw new IllegalStateException("Rendering is not complete: " + delegate.result());
     }
 
     @Override
-    public final Continuation<T> continueRender() {
+    public Continuation<T> continueRender() {
       try {
         return valueContinuation(delegate.continueRender(), supplier);
       } catch (IOException e) {

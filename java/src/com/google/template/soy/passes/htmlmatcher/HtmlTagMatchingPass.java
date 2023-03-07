@@ -129,7 +129,7 @@ public final class HtmlTagMatchingPass {
    * foreign content and a reference to the previous node. This allows pushing/popping to create a
    * traversal of the HTML Matcher Graph.
    */
-  class HtmlStack {
+  static class HtmlStack {
     final HtmlOpenTagNode tagNode;
     final int foreignContentTagDepth;
     final HtmlStack prev;
