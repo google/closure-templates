@@ -19,8 +19,8 @@ package com.google.template.soy.jssrc.restricted;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.data.internal.Converters;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.jssrc.dsl.Precedence;
@@ -152,7 +152,7 @@ public class JsExprUtils {
     } else {
       return wrapWithFunction(
           NodeContentKinds.toJsSanitizedContentOrdainer(
-              SanitizedContentKind.valueOf(contentKind.name())),
+              Converters.toSanitizedContentKind(contentKind)),
           jsExpr);
     }
   }

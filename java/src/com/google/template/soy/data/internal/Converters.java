@@ -16,17 +16,35 @@
 
 package com.google.template.soy.data.internal;
 
+import com.google.common.base.Converter;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 
 /** Converters between runtime and type system content kinds. */
 public final class Converters {
-  public static final ContentKind contentKindfromSanitizedContentKind(
-      SanitizedContentKind sanitizedContentKind) {
-    if (sanitizedContentKind == SanitizedContentKind.HTML_ELEMENT) {
-      return ContentKind.HTML;
-    }
-    return ContentKind.valueOf(sanitizedContentKind.name());
+
+  static final Converter<SanitizedContentKind, ContentKind> CONTENT_KIND_CONVERTER =
+      new Converter<>() {
+        @Override
+        protected ContentKind doForward(SanitizedContentKind sanitizedContentKind) {
+          if (sanitizedContentKind == SanitizedContentKind.HTML_ELEMENT) {
+            return ContentKind.HTML;
+          }
+          return ContentKind.valueOf(sanitizedContentKind.name());
+        }
+
+        @Override
+        protected SanitizedContentKind doBackward(ContentKind contentKind) {
+          return SanitizedContentKind.valueOf(contentKind.name());
+        }
+      };
+
+  public static ContentKind toContentKind(SanitizedContentKind sanitizedContentKind) {
+    return CONTENT_KIND_CONVERTER.convert(sanitizedContentKind);
+  }
+
+  public static SanitizedContentKind toSanitizedContentKind(ContentKind contentKind) {
+    return CONTENT_KIND_CONVERTER.reverse().convert(contentKind);
   }
 
   private Converters() {}

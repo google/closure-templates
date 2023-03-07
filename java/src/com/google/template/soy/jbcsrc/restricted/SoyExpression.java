@@ -27,6 +27,7 @@ import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyProtoValue;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
+import com.google.template.soy.data.internal.Converters;
 import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
 import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.FloatType;
@@ -302,7 +303,7 @@ public final class SoyExpression extends Expression {
   private static void doBox(CodeBuilder adapter, SoyRuntimeType type) {
     if (type.isKnownSanitizedContent()) {
       ContentKind kind =
-          ContentKind.valueOf(((SanitizedType) type.soyType()).getContentKind().name());
+          Converters.toContentKind(((SanitizedType) type.soyType()).getContentKind());
       checkState(kind != ContentKind.TEXT); // sanity check
       FieldRef.enumReference(kind).accessStaticUnchecked(adapter);
       MethodRef.ORDAIN_AS_SAFE.invokeUnchecked(adapter);

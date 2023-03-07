@@ -19,8 +19,8 @@ package com.google.template.soy.pysrc.restricted;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.data.internal.Converters;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.Operator.Associativity;
@@ -182,7 +182,7 @@ public final class PyExprUtils {
     }
     String sanitizer =
         NodeContentKinds.toPySanitizedContentOrdainer(
-            SanitizedContentKind.valueOf(contentKind.name()));
+            Converters.toSanitizedContentKind(contentKind));
     String approval =
         "sanitize.IActuallyUnderstandSoyTypeSafetyAndHaveSecurityApproval("
             + "'Internally created Sanitization.')";

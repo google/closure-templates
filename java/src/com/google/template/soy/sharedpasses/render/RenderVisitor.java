@@ -38,6 +38,7 @@ import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.TofuTemplateValue;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
+import com.google.template.soy.data.internal.Converters;
 import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
@@ -844,7 +845,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
   }
 
   private static ContentKind fromSanitizedContentKind(SanitizedContentKind kind) {
-    return ContentKind.valueOf(kind.name());
+    return Converters.toContentKind(kind);
   }
 
   /**
