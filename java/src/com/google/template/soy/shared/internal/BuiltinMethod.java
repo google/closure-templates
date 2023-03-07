@@ -29,7 +29,6 @@ import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor.JavaType;
-import com.google.protobuf.Descriptors.FileDescriptor.Syntax;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
@@ -119,19 +118,13 @@ public enum BuiltinMethod implements SoyMethod {
     }
 
     private boolean acceptFieldDescriptor(FieldDescriptor fd) {
-      if (fd.isExtension() || fd.isRepeated()) {
+      if (fd.isExtension()) {
         return false;
       }
-      if (ProtoUtils.getContainingOneof(fd) != null) {
-        return true;
-      }
-      if (fd.getJavaType() == JavaType.MESSAGE) {
+      if (fd.getJavaType() == JavaType.MESSAGE && fd.getContainingOneof() == null) {
         return false;
       }
-      if (fd.getFile().getSyntax() == Syntax.PROTO3) {
-        return fd.hasOptionalKeyword();
-      }
-      return true;
+      return fd.hasPresence();
     }
 
     @Override
