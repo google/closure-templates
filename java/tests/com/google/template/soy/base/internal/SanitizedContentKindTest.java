@@ -35,10 +35,10 @@ public final class SanitizedContentKindTest {
     // Make sure that there is a 1-1 relationship with ContentKind except for HTML, which has two
     // different SanitizedContentKind (HTML and HTML_ELEMENT)
     for (SanitizedContentKind sck : SanitizedContentKind.values()) {
-      Converters.contentKindfromSanitizedContentKind(sck);
+      ContentKind unused = Converters.toContentKind(sck);
     }
     for (ContentKind ck : ContentKind.values()) {
-      SanitizedContentKind.valueOf(ck.name());
+      SanitizedContentKind unused = Converters.toSanitizedContentKind(ck);
     }
   }
 

@@ -431,7 +431,7 @@ public final class BytecodeUtils {
    * equivalent to the given {@link SanitizedContentKind}, or null.
    */
   public static Expression constantSanitizedContentKindAsContentKind(SanitizedContentKind kind) {
-    return FieldRef.enumReference(Converters.contentKindfromSanitizedContentKind(kind)).accessor();
+    return FieldRef.enumReference(Converters.toContentKind(kind)).accessor();
   }
 
   /** Returns an {@link Expression} with the given type that always returns null. */

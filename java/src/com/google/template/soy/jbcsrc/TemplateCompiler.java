@@ -236,8 +236,7 @@ final class TemplateCompiler {
 
   /** Writes a {@link TemplateMetadata} to the generated {@code template()} method. */
   private void generateTemplateMetadata(CodeBuilder builder) {
-    ContentKind kind =
-        Converters.contentKindfromSanitizedContentKind(templateNode.getContentKind());
+    ContentKind kind = Converters.toContentKind(templateNode.getContentKind());
 
     // using linked hash sets below for determinism
     Set<String> uniqueIjs =

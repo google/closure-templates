@@ -27,13 +27,13 @@ import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
-import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyDict;
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
+import com.google.template.soy.data.internal.Converters;
 import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
@@ -256,7 +256,7 @@ public class SoyJavaSourceFunctionTester {
               BytecodeUtils.constant(content.getContentDirection()));
       SoyType type =
           SanitizedType.getTypeForContentKind(
-              SanitizedContentKind.valueOf(content.getContentKind().name()));
+              Converters.toSanitizedContentKind(content.getContentKind()));
       return SoyExpression.forSoyValue(type, sanitizedExpr);
     } else if (value instanceof SoyDict) {
       List<Expression> keys = new ArrayList<>();

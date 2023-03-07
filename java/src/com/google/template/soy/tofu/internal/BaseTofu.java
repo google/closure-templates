@@ -38,6 +38,7 @@ import com.google.template.soy.data.SoyTemplate;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
+import com.google.template.soy.data.internal.Converters;
 import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.msgs.SoyMsgBundle;
@@ -558,7 +559,7 @@ public final class BaseTofu implements SoyTofu {
               debugSoyTemplateInfo,
               getPluginInstances());
       enforceContentKind(template);
-      return SanitizedContent.ContentKind.valueOf(template.getContentKind().name());
+      return Converters.toContentKind(template.getContentKind());
     }
 
     private PluginInstances getPluginInstances() {
@@ -704,7 +705,7 @@ public final class BaseTofu implements SoyTofu {
       }
       checkNotNull(template.getContentKind());
       SanitizedContentKind expectedAsSanitizedContentKind =
-          SanitizedContentKind.valueOf(expectedContentKind.name());
+          Converters.toSanitizedContentKind(expectedContentKind);
       if (expectedAsSanitizedContentKind != template.getContentKind()) {
         throw new SoyTofuException(
             "Expected template '"

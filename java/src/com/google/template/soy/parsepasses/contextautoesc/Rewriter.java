@@ -117,8 +117,8 @@ final class Rewriter {
               printNode.getChild(newPrintDirectiveIndex - 1).getPrintDirective();
           SanitizedContentKind contentKind =
               printDirective instanceof SanitizedContentOperator
-                  ? SanitizedContentKind.valueOf(
-                      ((SanitizedContentOperator) printDirective).getContentKind().name())
+                  ? Converters.toSanitizedContentKind(
+                      ((SanitizedContentOperator) printDirective).getContentKind())
                   : null;
           if (contentKind == null || contentKind != escapingMode.contentKind) {
             break;
@@ -135,7 +135,7 @@ final class Rewriter {
       if (!printNode.hasUserSpecifiedPrintDirectives()) {
         SanitizedContentKind trustedKind = getTrustedContentKindForNode(printNode);
         if (trustedKind != null) {
-          ContentKind trustedContentKind = ContentKind.valueOf(trustedKind.name());
+          ContentKind trustedContentKind = Converters.toContentKind(trustedKind);
           // Remove the initial directive if it would short circuit for the given kind.
           while (printNode.numChildren() > 0) {
             PrintDirectiveNode directive = printNode.getChild(0);
@@ -278,7 +278,7 @@ final class Rewriter {
         if (!targets.isEmpty()) {
           directives =
               ShortCircuitables.filterDirectivesForKind(
-                  Converters.contentKindfromSanitizedContentKind(
+                  Converters.toContentKind(
                       targets.get(0).getContentKind().getSanitizedContentKind()),
                   directives);
         }
