@@ -918,17 +918,17 @@ public final class JbcSrcRuntime {
         }
 
         @Override
-        protected void doAppend(char c) throws IOException {
+        protected void doAppend(char c) {
           System.out.append(c);
         }
 
         @Override
-        protected void doAppend(CharSequence csq, int start, int end) throws IOException {
+        protected void doAppend(CharSequence csq, int start, int end) {
           System.out.append(csq, start, end);
         }
 
         @Override
-        protected void doAppend(CharSequence csq) throws IOException {
+        protected void doAppend(CharSequence csq) {
           System.out.append(csq);
         }
 
@@ -940,8 +940,7 @@ public final class JbcSrcRuntime {
 
         @Override
         protected void doAppendLoggingFunctionInvocation(
-            LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
-            throws IOException {
+            LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers) {
           String val = funCall.placeholderValue();
           for (Function<String, String> directive : escapers) {
             val = directive.apply(val);

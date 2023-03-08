@@ -19,7 +19,6 @@ package com.google.template.soy;
 import com.google.common.io.ByteSink;
 import com.google.common.io.Files;
 import java.io.File;
-import java.io.IOException;
 import java.util.Optional;
 import org.kohsuke.args4j.Option;
 
@@ -51,7 +50,7 @@ public final class SoyToJbcSrcCompiler extends AbstractSoyCompiler {
   SoyToJbcSrcCompiler() {}
 
   @Override
-  protected void compile(SoyFileSet.Builder sfsBuilder) throws IOException {
+  protected void compile(SoyFileSet.Builder sfsBuilder) {
     Optional<ByteSink> srcJarSink = Optional.empty();
     if (outputSrcJar != null) {
       srcJarSink = Optional.of(Files.asByteSink(outputSrcJar));
@@ -68,8 +67,7 @@ public final class SoyToJbcSrcCompiler extends AbstractSoyCompiler {
    * @param srcJarTarget If present, receives a JAR file containing the template sources. This may
    *     be useful for enabling IDE debugging scenarios.
    */
-  public static void compile(SoyFileSet sfs, ByteSink jarTarget, Optional<ByteSink> srcJarTarget)
-      throws IOException {
+  public static void compile(SoyFileSet sfs, ByteSink jarTarget, Optional<ByteSink> srcJarTarget) {
     // compileToJar disallows external calls so we don't need to enforce the external call
     // requirement here.
     sfs.compileToJar(jarTarget, srcJarTarget);

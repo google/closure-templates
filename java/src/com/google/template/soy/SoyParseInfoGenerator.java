@@ -100,9 +100,8 @@ public final class SoyParseInfoGenerator extends AbstractSoyCompiler {
    * non-zero exit status. On successful parse, the process terminates with a zero exit status.
    *
    * @param args Should contain command-line flags and the list of paths to the Soy files.
-   * @throws IOException If there are problems reading the input files or writing the output file.
    */
-  public static void main(final String[] args) throws IOException {
+  public static void main(final String[] args) {
     new SoyParseInfoGenerator().runMain(args);
   }
 

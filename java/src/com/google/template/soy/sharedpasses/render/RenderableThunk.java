@@ -61,12 +61,7 @@ public abstract class RenderableThunk implements SoyValueProvider {
   @Nonnull
   public SoyValue resolve() {
     if (resolved == null) {
-      try {
-        doResolveOnto(new StringBuilder());
-      } catch (IOException e) {
-        // StringBuilder is guaranteed to not throw IOException
-        throw new AssertionError(e);
-      }
+      doResolveOnto(new StringBuilder());
     }
     return resolved;
   }
@@ -83,7 +78,7 @@ public abstract class RenderableThunk implements SoyValueProvider {
    *
    * @param appendable An Appendable that you can call toString on to get the appended value
    */
-  void doResolveOnto(Appendable appendable) throws IOException {
+  void doResolveOnto(Appendable appendable) {
     doRender(appendable);
     content = appendable.toString();
     if (kind == ContentKind.TEXT) {
@@ -93,7 +88,7 @@ public abstract class RenderableThunk implements SoyValueProvider {
     }
   }
 
-  protected abstract void doRender(Appendable appendable) throws IOException;
+  protected abstract void doRender(Appendable appendable);
 
   /**
    * An {@link Appendable} that forwards to a delegate appenable but also saves all the same

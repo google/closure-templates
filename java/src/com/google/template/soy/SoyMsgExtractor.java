@@ -22,7 +22,6 @@ import com.google.template.soy.msgs.SoyMsgBundleHandler.OutputFileOptions;
 import com.google.template.soy.msgs.SoyMsgPlugin;
 import com.google.template.soy.xliffmsgplugin.XliffMsgPlugin;
 import java.io.File;
-import java.io.IOException;
 import org.kohsuke.args4j.Option;
 
 /**
@@ -71,9 +70,8 @@ public final class SoyMsgExtractor extends AbstractSoyCompiler {
    * Extracts messages from a set of Soy files into an output messages file.
    *
    * @param args Should contain command-line flags and the list of paths to the Soy files.
-   * @throws IOException If there are problems reading the input files or writing the output file.
    */
-  public static void main(String... args) throws IOException {
+  public static void main(String... args) {
     new SoyMsgExtractor().runMain(args);
   }
 
@@ -84,7 +82,7 @@ public final class SoyMsgExtractor extends AbstractSoyCompiler {
   SoyMsgExtractor() {}
 
   @Override
-  protected void compile(SoyFileSet.Builder sfsBuilder) throws IOException {
+  protected void compile(SoyFileSet.Builder sfsBuilder) {
     SoyFileSet sfs = sfsBuilder.build();
 
     OutputFileOptions options = new OutputFileOptions();

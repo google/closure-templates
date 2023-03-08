@@ -838,7 +838,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
   private SoyValueProvider renderRenderUnitNode(final RenderUnitNode renderUnitNode) {
     return new RenderableThunk(fromSanitizedContentKind(renderUnitNode.getContentKind())) {
       @Override
-      protected void doRender(Appendable appendable) throws IOException {
+      protected void doRender(Appendable appendable) {
         renderBlock(renderUnitNode, appendable);
       }
     };

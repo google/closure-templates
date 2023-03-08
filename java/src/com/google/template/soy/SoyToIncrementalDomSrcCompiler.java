@@ -18,7 +18,6 @@ package com.google.template.soy;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.incrementaldomsrc.SoyIncrementalDomSrcOptions;
-import java.io.IOException;
 import org.kohsuke.args4j.Option;
 
 /**
@@ -66,9 +65,8 @@ public final class SoyToIncrementalDomSrcCompiler extends AbstractSoyCompiler {
    * Compiles a set of Soy files into corresponding Incremental DOM source files.
    *
    * @param args Should contain command-line flags and the list of paths to the Soy files.
-   * @throws IOException If there are problems reading the input files or writing the output file.
    */
-  public static void main(final String[] args) throws IOException {
+  public static void main(final String[] args) {
     new SoyToIncrementalDomSrcCompiler().runMain(args);
   }
 
@@ -89,7 +87,7 @@ public final class SoyToIncrementalDomSrcCompiler extends AbstractSoyCompiler {
   }
 
   @Override
-  protected void compile(SoyFileSet.Builder sfsBuilder) throws IOException {
+  protected void compile(SoyFileSet.Builder sfsBuilder) {
     SoyFileSet sfs = sfsBuilder.build();
     SoyIncrementalDomSrcOptions options = new SoyIncrementalDomSrcOptions();
     options.setDependOnCssHeader(dependOnCssHeader);

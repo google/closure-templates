@@ -104,9 +104,8 @@ public final class SoyToPySrcCompiler extends AbstractSoyCompiler {
    * Compiles a set of Soy files into corresponding Python source files.
    *
    * @param args Should contain command-line flags and the list of paths to the Soy files.
-   * @throws IOException If there are problems reading the input files or writing the output file.
    */
-  public static void main(final String[] args) throws IOException {
+  public static void main(final String[] args) {
     new SoyToPySrcCompiler().runMain(args);
   }
 
@@ -125,7 +124,7 @@ public final class SoyToPySrcCompiler extends AbstractSoyCompiler {
   }
 
   @Override
-  protected void compile(SoyFileSet.Builder sfsBuilder) throws IOException {
+  protected void compile(SoyFileSet.Builder sfsBuilder) {
     SoyFileSet sfs = sfsBuilder.build();
     // Load the manifest if available.
     ImmutableMap<String, String> manifest = loadNamespaceManifest(namespaceManifestPaths);

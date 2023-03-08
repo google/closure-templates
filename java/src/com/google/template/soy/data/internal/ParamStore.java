@@ -27,7 +27,6 @@ import com.google.template.soy.data.SoyAbstractValue;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
-import java.io.IOException;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import javax.annotation.Nonnull;
@@ -130,7 +129,7 @@ public final class ParamStore extends SoyAbstractValue implements SoyRecord {
   }
 
   @Override
-  public void render(LoggingAdvisingAppendable appendable) throws IOException {
+  public void render(LoggingAdvisingAppendable appendable) {
     throw new UnsupportedOperationException();
   }
 

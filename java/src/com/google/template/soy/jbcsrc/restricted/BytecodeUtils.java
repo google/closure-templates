@@ -166,7 +166,7 @@ public final class BytecodeUtils {
           .build(
               new CacheLoader<Type, Optional<Class<?>>>() {
                 @Override
-                public Optional<Class<?>> load(Type key) throws Exception {
+                public Optional<Class<?>> load(Type key) {
                   switch (key.getSort()) {
                     case Type.ARRAY:
                       Optional<Class<?>> elementType =
@@ -206,7 +206,7 @@ public final class BytecodeUtils {
                         return Optional.of(
                             Class.forName(
                                 className,
-                                /*initialize=*/ false,
+                                /* initialize= */ false,
                                 BytecodeUtils.class.getClassLoader()));
                       } catch (ClassNotFoundException e) {
                         return Optional.empty();

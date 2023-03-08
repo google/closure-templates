@@ -220,8 +220,7 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
 
     @Override
     protected void doAppendLoggingFunctionInvocation(
-        LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
-        throws IOException {
+        LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers) {
       escapePlaceholder(funCall.placeholderValue(), escapers);
     }
 
@@ -289,8 +288,7 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
 
     @Override
     protected void doAppendLoggingFunctionInvocation(
-        LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
-        throws IOException {
+        LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers) {
       getCommandsAndAddPendingStringData().add(LoggingFunctionCommand.create(funCall, escapers));
     }
 

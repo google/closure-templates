@@ -44,7 +44,7 @@ public final class SoyConformanceChecker extends AbstractSoyCompiler {
 
   SoyConformanceChecker() {}
 
-  public static void main(final String[] args) throws IOException {
+  public static void main(final String[] args) {
     new SoyConformanceChecker().runMain(args);
   }
 

@@ -891,11 +891,9 @@ public final class SoyFileSet {
    * @param msgBundleHandler Handler to write the messages.
    * @param options Options to configure how to write the extracted messages.
    * @param output Where to write the extracted messages.
-   * @throws IOException If there are errors writing to the output.
    */
   void extractAndWriteMsgs(
-      SoyMsgBundleHandler msgBundleHandler, OutputFileOptions options, ByteSink output)
-      throws IOException {
+      SoyMsgBundleHandler msgBundleHandler, OutputFileOptions options, ByteSink output) {
     entryPointVoid(
         () -> {
           SoyMsgBundle bundle = doExtractMsgs();

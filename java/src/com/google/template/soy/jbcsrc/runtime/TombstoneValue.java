@@ -18,7 +18,6 @@ package com.google.template.soy.jbcsrc.runtime;
 
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SoyAbstractValue;
-import java.io.IOException;
 
 /**
  * A simple Tombstone SoyValue for state transitions in our SoyValueProvider subtypes.
@@ -29,7 +28,7 @@ final class TombstoneValue extends SoyAbstractValue {
   static final TombstoneValue INSTANCE = new TombstoneValue();
 
   @Override
-  public void render(LoggingAdvisingAppendable appendable) throws IOException {
+  public void render(LoggingAdvisingAppendable appendable) {
     throw new UnsupportedOperationException();
   }
 

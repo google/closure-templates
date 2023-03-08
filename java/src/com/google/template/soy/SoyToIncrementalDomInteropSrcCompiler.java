@@ -17,7 +17,6 @@
 package com.google.template.soy;
 
 import com.google.common.collect.ImmutableList;
-import java.io.IOException;
 
 /**
  * Executable for compiling a set of Soy files into a set of files with mods that replace SoyJS with
@@ -29,9 +28,8 @@ public final class SoyToIncrementalDomInteropSrcCompiler extends AbstractSoyComp
       new PerInputOutputFiles("useidom.js", PerInputOutputFiles.JS_JOINER);
   /**
    * @param args Should contain command-line flags and the list of paths to the Soy files.
-   * @throws IOException If there are problems reading the input files or writing the output file.
    */
-  public static void main(final String[] args) throws IOException {
+  public static void main(final String[] args) {
     new SoyToIncrementalDomInteropSrcCompiler().runMain(args);
   }
 
@@ -52,7 +50,7 @@ public final class SoyToIncrementalDomInteropSrcCompiler extends AbstractSoyComp
   }
 
   @Override
-  protected void compile(SoyFileSet.Builder sfsBuilder) throws IOException {
+  protected void compile(SoyFileSet.Builder sfsBuilder) {
     SoyFileSet sfs = sfsBuilder.build();
     outputFiles.writeFiles(
         srcs, sfs.compileToIncrementalDomInteropSrcInternal(), /* locale= */ null);
