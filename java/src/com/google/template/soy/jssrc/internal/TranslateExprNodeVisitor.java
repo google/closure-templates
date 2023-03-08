@@ -908,7 +908,10 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
         // JSCompiler cannot infer that jspb.Map and soy.Map or Map are the same.
         proto = SOY_MAP_POPULATE.call(protoVar, protoVar.dotAccess(getFn).call(), fieldValue);
       } else {
-        String setFn = "set" + LOWER_CAMEL.to(UPPER_CAMEL, fieldName);
+        String setFn =
+            "set"
+                + LOWER_CAMEL.to(UPPER_CAMEL, fieldName)
+                + ProtoUtils.getJsFieldSpecificSuffix(fieldDesc);
         proto = proto.dotAccess(setFn).call(fieldValue);
       }
     }

@@ -35,6 +35,8 @@ import com.google.protobuf.Descriptors.FileDescriptor;
 import com.google.protobuf.Descriptors.GenericDescriptor;
 import com.google.protobuf.Descriptors.OneofDescriptor;
 import com.google.protobuf.ExtensionRegistry;
+import java.util.HashMap;
+import java.util.Map;
 import javax.annotation.Nullable;
 
 /** A collection of protobuf utility methods. */
@@ -204,6 +206,12 @@ public final class ProtoUtils {
   public static String calculateUnprefixedJsName(GenericDescriptor descriptor) {
     String jsPackage = getJsPackage(descriptor.getFile());
     return jsPackage + "." + calculateFileLocalName(descriptor);
+  }
+
+  public static String getJsFieldSpecificSuffix(FieldDescriptor fieldDesc) {
+    Map<FieldDescriptor, String> fieldSpecificSuffixes = new HashMap<>();
+
+    return fieldSpecificSuffixes.getOrDefault(fieldDesc, "");
   }
 
   public static OneofDescriptor getContainingOneof(FieldDescriptor fd) {

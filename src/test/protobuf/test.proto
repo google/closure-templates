@@ -229,8 +229,15 @@ message SameName {
 message Collisions {
   repeated int32 num = 1;
 
-  // In Java this collides with the getNumCount() method generated for the
-  // repeated num field so Proto Java adds the tag number to the end of both
-  // fields to disambiguate.
+  // In Java and Apps JSPB JS this collides with the getNumCount() method
+  // generated for the repeated num field so they add the tag number to the end
+  // of both fields to disambiguate.
   optional int32 num_count = 2;
+
+  optional Collisions msg = 3;
+
+  // In Apps JSPB JS this collines with getMutableMsg() method generated for
+  // optional `msg` field so they add the tag number to the end of both fields
+  // to disambiguate.
+  optional Collisions mutable_msg = 4;
 }

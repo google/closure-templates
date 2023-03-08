@@ -21,6 +21,7 @@ import static com.google.template.soy.jssrc.internal.JsSrcSubject.assertThatSoyE
 import static com.google.template.soy.jssrc.internal.JsSrcSubject.expr;
 
 import com.google.protobuf.Descriptors.GenericDescriptor;
+import com.google.template.soy.testing.Collisions;
 import com.google.template.soy.testing.Example;
 import com.google.template.soy.testing.ExampleExtendable;
 import com.google.template.soy.testing.Foo;
@@ -52,6 +53,7 @@ public final class JspbTest {
         KvPair.getDescriptor(),
         SomeEmbeddedMessage.getDescriptor(),
         SomeEnum.getDescriptor(),
+        Collisions.getDescriptor(),
         Example.listExtension.getDescriptor(),
         Example.someIntExtension.getDescriptor()
       };

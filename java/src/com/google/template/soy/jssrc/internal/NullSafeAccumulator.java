@@ -467,7 +467,11 @@ final class NullSafeAccumulator {
         getter = type.getPrefix() + "Extension";
         arg = extensionField(desc);
       } else {
-        getter = type.getPrefix() + LOWER_CAMEL.to(UPPER_CAMEL, fieldName) + type.getSuffix();
+        getter =
+            type.getPrefix()
+                + LOWER_CAMEL.to(UPPER_CAMEL, fieldName)
+                + type.getSuffix()
+                + ProtoUtils.getJsFieldSpecificSuffix(desc);
         arg = null;
       }
 
