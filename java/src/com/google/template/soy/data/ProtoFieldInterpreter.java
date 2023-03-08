@@ -55,7 +55,7 @@ import java.util.Map;
  */
 public abstract class ProtoFieldInterpreter {
   private static final FieldVisitor<ProtoFieldInterpreter> VISITOR =
-      new FieldVisitor<ProtoFieldInterpreter>() {
+      new FieldVisitor<>() {
         @Override
         protected ProtoFieldInterpreter visitLongAsInt() {
           return LONG_AS_INT;
