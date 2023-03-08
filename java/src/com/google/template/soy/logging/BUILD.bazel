@@ -21,12 +21,8 @@ package(default_visibility = ["//:soy_internal"])
 java_library(
     name = "internal",
     srcs = [
-        "AnnotatedLoggingConfigGenerator.java",
         "ValidatedLoggingConfig.java",
-        "VeMetadataExtensionRegistry.java",
-        "VeMetadataGenerator.java",
     ],
-    resources = [":metadata_templates"],
     deps = [
         ":public",
         "//java/src/com/google/template/soy/base",
@@ -58,11 +54,6 @@ java_library(
         "//java/src/com/google/template/soy/plugin/restricted",
         "@maven//:com_google_common_html_types_types",
     ],
-)
-
-filegroup(
-    name = "metadata_templates",
-    srcs = glob(["*.vm"]),
 )
 
 java_library(
