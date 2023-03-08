@@ -18,14 +18,25 @@ package com.google.template.soy.passes;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.IdGenerator;
-import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.base.internal.Identifier;
+import com.google.template.soy.data.SoyProtoValue;
+import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.data.restricted.BooleanData;
+import com.google.template.soy.data.restricted.FloatData;
+import com.google.template.soy.data.restricted.IntegerData;
+import com.google.template.soy.data.restricted.NullData;
+import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
-import com.google.template.soy.exprtree.ExprEquivalence;
+import com.google.template.soy.exprtree.AbstractReturningExprNodeVisitor;
+import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.exprtree.FloatNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.NullNode;
+import com.google.template.soy.exprtree.ProtoEnumValueNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.logging.ValidatedLoggingConfig.ValidatedLoggableElement;
@@ -35,11 +46,13 @@ import com.google.template.soy.soytree.ConstNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.types.ProtoImportType;
+import com.google.template.soy.types.SoyProtoType;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import javax.annotation.Nullable;
 
 /** Validates the arguments to ve_def, and validates the VEs. */
 @RunAfter({ResolveExpressionTypesPass.class})
@@ -64,14 +77,12 @@ final class VeDefValidationPass implements CompilerFileSetPass {
 
   private final ValidatedLoggingConfig validatedLoggingConfig;
   private final ErrorReporter errorReporter;
-  private final ExprEquivalence exprEquivalence;
-  private final CopyState copyState;
+  private final ProtoEvalVisitor protoEvalVisitor;
 
   VeDefValidationPass(ValidatedLoggingConfig validatedLoggingConfig, ErrorReporter errorReporter) {
     this.validatedLoggingConfig = validatedLoggingConfig;
     this.errorReporter = errorReporter;
-    this.exprEquivalence = new ExprEquivalence();
-    this.copyState = new CopyState();
+    this.protoEvalVisitor = new ProtoEvalVisitor();
   }
 
   @Override
@@ -141,7 +152,12 @@ final class VeDefValidationPass implements CompilerFileSetPass {
         errorReporter.report(func.getChild(3).getSourceLocation(), BAD_VE_DEF_METADATA);
         return;
       }
-      staticMetadata = Optional.of(exprEquivalence.wrap(func.getChild(3).copy(copyState)));
+      SoyValue protoInstance = protoEvalVisitor.exec(func.getChild(3));
+      if (!(protoInstance instanceof SoyProtoValue)) {
+        errorReporter.report(func.getChild(3).getSourceLocation(), BAD_VE_DEF_METADATA);
+        return;
+      }
+      staticMetadata = Optional.of(((SoyProtoValue) protoInstance).getProto());
     }
 
     vedefs.add(
@@ -155,5 +171,82 @@ final class VeDefValidationPass implements CompilerFileSetPass {
     }
     FunctionNode functionNode = (FunctionNode) node;
     return functionNode.isResolved() && functionNode.getSoyFunction() == BuiltinFunction.VE_DEF;
+  }
+
+  /**
+   * If the expression is a proto init with only literal fields, return the equivalent
+   * SoyProtoValue, otherwise return null.
+   */
+  private static class ProtoEvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
+    @Override
+    @Nullable
+    protected SoyValue visitFunctionNode(FunctionNode node) {
+      Object soyFunction = node.getSoyFunction();
+      if (!(soyFunction instanceof BuiltinFunction)) {
+        return null;
+      }
+      BuiltinFunction builtin = (BuiltinFunction) soyFunction;
+      if (builtin != BuiltinFunction.PROTO_INIT) {
+        return null;
+      }
+      SoyProtoType soyProto = (SoyProtoType) node.getType();
+      ImmutableList<Identifier> paramNames = node.getParamNames();
+      SoyProtoValue.Builder builder = new SoyProtoValue.Builder(soyProto.getDescriptor());
+      for (int i = 0; i < node.numChildren(); i++) {
+        SoyValue fieldValue = visit(node.getChild(i));
+        if (fieldValue == null) {
+          return null;
+        }
+        String fieldName = paramNames.get(i).identifier();
+        if (!builder.hasField(fieldName)) {
+          // Ignore fields that don't exist. builder.setField() will throw a NPE on unknown field.
+          // A separate compilation error will have already been thrown for the bad proto init.
+          continue;
+        }
+        builder.setField(fieldName, fieldValue);
+      }
+      return builder.build();
+    }
+
+    @Override
+    protected SoyValue visitExprRootNode(ExprRootNode node) {
+      return visit(node.getRoot());
+    }
+
+    @Override
+    protected SoyValue visitNullNode(NullNode node) {
+      return NullData.INSTANCE;
+    }
+
+    @Override
+    protected SoyValue visitBooleanNode(BooleanNode node) {
+      return BooleanData.forValue(node.getValue());
+    }
+
+    @Override
+    protected SoyValue visitIntegerNode(IntegerNode node) {
+      return IntegerData.forValue(node.getValue());
+    }
+
+    @Override
+    protected SoyValue visitFloatNode(FloatNode node) {
+      return FloatData.forValue(node.getValue());
+    }
+
+    @Override
+    protected SoyValue visitStringNode(StringNode node) {
+      return StringData.forValue(node.getValue());
+    }
+
+    @Override
+    protected SoyValue visitProtoEnumValueNode(ProtoEnumValueNode node) {
+      return IntegerData.forValue(node.getValue());
+    }
+
+    @Override
+    @Nullable
+    protected SoyValue visitExprNode(ExprNode node) {
+      return null;
+    }
   }
 }
