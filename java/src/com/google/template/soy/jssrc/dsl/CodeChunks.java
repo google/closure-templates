@@ -74,7 +74,7 @@ public final class CodeChunks {
         }
         exprs.add(expr);
       } else {
-        throw new ClassCastException(chunks.getClass().getName());
+        throw new ClassCastException(chunk.getClass().getName());
       }
     }
     if (!special.isEmpty()) {

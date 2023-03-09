@@ -27,12 +27,12 @@ import java.util.stream.Stream;
 /** Represents a JavaScript function call. */
 @AutoValue
 @Immutable
-abstract class Call extends Operation {
-  abstract Expression receiver();
+public abstract class Call extends Operation {
+  public abstract Expression receiver();
 
-  abstract ImmutableList<Expression> args();
+  public abstract ImmutableList<Expression> args();
 
-  static Call create(Expression receiver, ImmutableList<Expression> args) {
+  public static Call create(Expression receiver, ImmutableList<Expression> args) {
     return new AutoValue_Call(receiver, args);
   }
 

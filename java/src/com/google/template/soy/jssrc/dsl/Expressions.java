@@ -318,6 +318,10 @@ public final class Expressions {
     return ArrayLiteral.create(ImmutableList.copyOf(elements));
   }
 
+  public static Expression arrayLiteral(Expression... elements) {
+    return ArrayLiteral.create(ImmutableList.copyOf(elements));
+  }
+
   /**
    * Creates a code chunk representing a javascript map literal: {@code {key1: value1, key2:
    * value2}}

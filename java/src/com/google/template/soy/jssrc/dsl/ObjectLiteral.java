@@ -27,7 +27,7 @@ import java.util.stream.Stream;
 /** Represents a JavaScript object literal expression. */
 @AutoValue
 @Immutable
-abstract class ObjectLiteral extends Expression {
+public abstract class ObjectLiteral extends Expression {
 
   private static final String SPREAD_PREFIX = "_object_literal_spread_xxx_";
   private static final AtomicInteger SERIAL = new AtomicInteger();
@@ -59,6 +59,14 @@ abstract class ObjectLiteral extends Expression {
 
   static ObjectLiteral createWithQuotedKeys(Map<String, Expression> object) {
     return create(object, Expressions::stringLiteral);
+  }
+
+  public ObjectLiteral append(String key, Expression expression) {
+    return new AutoValue_ObjectLiteral(
+        ImmutableMap.<Expression, Expression>builder()
+            .putAll(values())
+            .put(Expressions.id(key), expression)
+            .buildOrThrow());
   }
 
   @Override
