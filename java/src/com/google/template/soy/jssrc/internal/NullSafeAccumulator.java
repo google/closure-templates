@@ -470,8 +470,8 @@ final class NullSafeAccumulator {
         getter =
             type.getPrefix()
                 + LOWER_CAMEL.to(UPPER_CAMEL, fieldName)
-                + type.getSuffix()
-                + ProtoUtils.getJsFieldSpecificSuffix(desc);
+                + ProtoUtils.getJsFieldSpecificSuffix(desc)
+                + type.getSuffix();
         arg = null;
       }
 
