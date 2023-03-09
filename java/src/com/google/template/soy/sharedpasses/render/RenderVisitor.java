@@ -478,10 +478,6 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       int length = end - start;
       if ((length ^ step) < 0) {
         // sign mismatch, step will never cause start to reach end.
-        // handle ifempty, if present
-        if (node.numChildren() == 2) {
-          visit(node.getChild(1));
-        }
       } else {
         ForNonemptyNode child = (ForNonemptyNode) node.getChild(0);
         int size = length / step + (length % step == 0 ? 0 : 1);
@@ -509,11 +505,6 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
         ForNonemptyNode child = (ForNonemptyNode) node.getChild(0);
         for (int i = 0; i < listLength; ++i) {
           executeForeachBody(child, i, foreachList.getProvider(i));
-        }
-      } else {
-        // Case 2: Empty list. If the 'ifempty' node exists, visit it.
-        if (node.numChildren() == 2) {
-          visit(node.getChild(1));
         }
       }
     }

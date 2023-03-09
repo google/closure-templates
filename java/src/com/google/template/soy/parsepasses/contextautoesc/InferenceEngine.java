@@ -31,7 +31,6 @@ import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.EscapingMode;
-import com.google.template.soy.soytree.ForIfemptyNode;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.HtmlAttributeNode;
@@ -314,14 +313,6 @@ final class InferenceEngine {
     protected void visitForNode(ForNode forNode) {
       List<BlockNode> foreachChildren = forNode.getChildren();
       ForNonemptyNode neNode = (ForNonemptyNode) foreachChildren.get(0);
-      ForIfemptyNode ieNode;
-      if (foreachChildren.size() == 2) {
-        ieNode = (ForIfemptyNode) foreachChildren.get(1);
-      } else if (foreachChildren.size() == 1) {
-        ieNode = null;
-      } else {
-        throw new AssertionError();
-      }
       Context afterBody = context;
       if (neNode != null) {
         afterBody = infer(neNode, context);
@@ -337,24 +328,7 @@ final class InferenceEngine {
         }
         afterBody = combined.get();
       }
-      Context ifemptyContext;
-      if (ieNode != null) {
-        ifemptyContext = infer(ieNode, context);
-      } else {
-        ifemptyContext = context;
-      }
-      Optional<Context> combined = Context.union(ifemptyContext, afterBody);
-      if (!combined.isPresent()) {
-        throw SoyAutoescapeException.createWithNode(
-            "{"
-                + forNode.getCommandName()
-                + "} body "
-                + (ieNode == null
-                    ? "changes context."
-                    : "does not end in the same context as {ifempty}."),
-            ieNode == null ? forNode : ieNode);
-      }
-      context = combined.get();
+      context = afterBody;
     }
 
     /**

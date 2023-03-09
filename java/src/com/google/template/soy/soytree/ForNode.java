@@ -28,8 +28,7 @@ import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
 
 /**
- * Node representing a 'for' statement. Should always contain a ForNonemptyNode as the first child.
- * May contain a second child, which should be a ForIfemptyNode.
+ * Node representing a 'for' statement. Should always contain a ForNonemptyNode as only child.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  */
@@ -67,11 +66,6 @@ public final class ForNode extends AbstractParentCommandNode<BlockNode>
   @Override
   public Kind getKind() {
     return Kind.FOR_NODE;
-  }
-
-  /** Returns true if this {@code foreach} loop has and {@code ifempty} block. */
-  public boolean hasIfEmptyBlock() {
-    return numChildren() > 1;
   }
 
   /** Returns the parsed expression. */

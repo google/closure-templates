@@ -526,9 +526,6 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     final Statement loopBody = visitChildrenInNewScope(nonEmptyNode);
     final Statement exitScope = scope.exitScope();
 
-    // it important for this to be generated after exitScope is called (or before enterScope)
-    final Statement emptyBlock =
-        node.numChildren() == 2 ? visitChildrenInNewScope(node.getChild(1)) : null;
     return new Statement() {
       @Override
       protected void doGen(CodeBuilder adapter) {
@@ -553,16 +550,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         adapter.ifICmp(Opcodes.IFLT, loopStart); // if index < list.size(), goto loopstart
         // exit the loop
         exitScope.gen(adapter);
-
-        if (emptyBlock != null) {
-          Label skipIfEmptyBlock = new Label();
-          adapter.goTo(skipIfEmptyBlock);
-          adapter.mark(emptyListLabel);
-          emptyBlock.gen(adapter);
-          adapter.mark(skipIfEmptyBlock);
-        } else {
-          adapter.mark(emptyListLabel);
-        }
+        adapter.mark(emptyListLabel);
       }
     };
   }

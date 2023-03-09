@@ -35,7 +35,6 @@ import com.google.template.soy.passes.htmlmatcher.HtmlMatcherTagNode;
 import com.google.template.soy.passes.htmlmatcher.HtmlTagMatchingPass;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallParamContentNode;
-import com.google.template.soy.soytree.ForIfemptyNode;
 import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.HtmlCloseTagNode;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
@@ -255,13 +254,6 @@ public final class StrictHtmlValidationPass implements CompilerFilePass {
       htmlMatcherGraph.addNode(
           new HtmlMatcherBlockNode(
               new HtmlTagVisitor(idGenerator, errorReporter).exec(node), "msg"));
-    }
-
-    @Override
-    protected void visitForIfemptyNode(ForIfemptyNode node) {
-      htmlMatcherGraph.addNode(
-          new HtmlMatcherBlockNode(
-              new HtmlTagVisitor(idGenerator, errorReporter).exec(node), "loop"));
     }
 
     @Override

@@ -39,7 +39,6 @@ import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.ConstNode;
 import com.google.template.soy.soytree.DebuggerNode;
 import com.google.template.soy.soytree.FileSetMetadata;
-import com.google.template.soy.soytree.ForIfemptyNode;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.IfCondNode;
@@ -548,30 +547,7 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       }
     }
 
-    /**
-     * The top level ForNode primarily serves to test for the ifempty case. If present, the loop is
-     * wrapped in an if statement which checks for data in the list before iterating.
-     *
-     * <p>Example:
-     *
-     * <pre>
-     *   {for $foo in $boo}
-     *     ...
-     *   {ifempty}
-     *     ...
-     *   {/for}
-     * </pre>
-     *
-     * might generate
-     *
-     * <pre>
-     *   fooList2 = data.get('boo')
-     *   if fooList2:
-     *     ...loop...
-     *   else:
-     *     ...
-     * </pre>
-     */
+    /** Generates code for a for loop. */
     @Override
     protected void visitForNode(ForNode node) {
       ForNonemptyNode nonEmptyNode = (ForNonemptyNode) node.getChild(0);
@@ -584,28 +560,8 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       PyExpr dataRefPyExpr = translator.exec(node.getExpr());
       pyCodeBuilder.appendLine(listVarName, " = ", dataRefPyExpr.getText());
 
-      // If has 'ifempty' node, add the wrapper 'if' statement.
-      boolean hasIfemptyNode = node.numChildren() == 2;
-      if (hasIfemptyNode) {
-        // Empty lists are falsy in Python.
-        pyCodeBuilder.appendLine("if ", listVarName, ":");
-        pyCodeBuilder.increaseIndent();
-      }
-
       // Generate code for nonempty case.
       visit(nonEmptyNode);
-
-      // If has 'ifempty' node, add the 'else' block of the wrapper 'if' statement.
-      if (hasIfemptyNode) {
-        pyCodeBuilder.decreaseIndent();
-        pyCodeBuilder.appendLine("else:");
-        pyCodeBuilder.increaseIndent();
-
-        // Generate code for empty case.
-        visit(node.getChild(1));
-
-        pyCodeBuilder.decreaseIndent();
-      }
     }
 
     /**
@@ -659,11 +615,6 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
       // The end of the Python 'for' loop.
       pyCodeBuilder.decreaseIndent();
-    }
-
-    @Override
-    protected void visitForIfemptyNode(ForIfemptyNode node) {
-      visitChildren(node);
     }
 
     /**

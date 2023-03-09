@@ -71,7 +71,6 @@ import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.CaseOrDefaultNode;
 import com.google.template.soy.soytree.DebuggerNode;
-import com.google.template.soy.soytree.ForIfemptyNode;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.IfCondNode;
@@ -257,11 +256,6 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
             break;
         }
       }
-    }
-
-    @Override
-    protected void visitForIfemptyNode(ForIfemptyNode node) {
-      visitChildren(node);
     }
 
     @Override

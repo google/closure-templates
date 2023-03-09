@@ -637,35 +637,6 @@ public final class ContextualAutoescaperTest {
   }
 
   @Test
-  public void testForeachLoopWithIfempty() throws Exception {
-    assertContextualRewriting(
-        join(
-            "{namespace ns}\n\n",
-            "{template baz}\n",
-            "  {@param foo: ?}\n",
-            "<ol>",
-            "{for $x in $foo}",
-            "<li>{$x |escapeHtml}</li>",
-            "{ifempty}",
-            "<li><i>Nothing</i></li>",
-            "{/for}",
-            "</ol>\n",
-            "{/template}"),
-        join(
-            "{namespace ns}\n\n",
-            "{template baz}\n",
-            "  {@param foo: ?}\n",
-            "  <ol>\n",
-            "    {for $x in $foo}\n",
-            "      <li>{$x}</li>\n",
-            "    {ifempty}\n",
-            "      <li><i>Nothing</i></li>\n",
-            "    {/for}\n",
-            "  </ol>\n",
-            "{/template}"));
-  }
-
-  @Test
   public void testCall() throws Exception {
     assertContextualRewriting(
         join(

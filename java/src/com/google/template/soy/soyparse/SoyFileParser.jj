@@ -107,7 +107,6 @@ import com.google.template.soy.soytree.ConstNode;
 import com.google.template.soy.soytree.DebuggerNode;
 import com.google.template.soy.soytree.ExternImplNode;
 import com.google.template.soy.soytree.ExternNode;
-import com.google.template.soy.soytree.ForIfemptyNode;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.IfCondNode;
@@ -321,7 +320,7 @@ import javax.annotation.Nullable;
  *    {let ...}...{/let}
  *    {if ...}...{elseif ...}...{else ...}...{/if}
  *    {switch ...}{case ...}...{default}...{/switch}
- *    {foreach ...}...{ifempty}...{/foreach}
+ *    {foreach ...}...{/foreach}
  *    {for ...}...{/for}
  *    {call ... /}
  *    {delcall ... /}
@@ -1227,8 +1226,6 @@ TOKEN_MGR_DECLS: {
 
 | < CMD_BEGIN_CASE               : "{case" <WS>     > : EXPR
 | < CMD_FULL_DEFAULT             : "{default}"      >
-
-| < CMD_FULL_IFEMPTY             : "{ifempty}"      >
 
 | < CMD_OPEN_LOG                 : "{log}"          >
 | < CMD_CLOSE_LOG                : "{/log}"         >
@@ -3506,12 +3503,11 @@ private SwitchNode SwitchStmt() :
 
 
 /**
- * ForStatement -> CmdBeginFor VarRef Ident Expr CmdEnd TemplateBlock
- *                [ CmdFullIfempty TemplateBlock ] CmdCloseFor
+ * ForStatement -> CmdBeginFor VarRef Ident Expr CmdEnd TemplateBlock CmdCloseFor
  */
 private ForNode ForStmt() :
 {
-  Token tagBegin, tagClose, ifemptyTag, nameTok;
+  Token tagBegin, tagClose, nameTok;
   Token tagBeginEnd = null;
   Token indexTok = null;
   Identifier nameId = null;
@@ -3519,7 +3515,6 @@ private ForNode ForStmt() :
   ExprNode expr = null;
   String name = null;
   List<StandaloneNode> templateBlock;
-  ForIfemptyNode ifempty = null;
 }
 {
   tagBegin = <CMD_BEGIN_FOR>
@@ -3564,16 +3559,6 @@ private ForNode ForStmt() :
     nonEmpty.addChildren(templateBlock);
   }
 
-  [
-    ifemptyTag = <CMD_FULL_IFEMPTY>
-    templateBlock = TemplateBlock()
-    {
-      ifempty = new ForIfemptyNode(nodeIdGen.genId(), createSrcLoc(ifemptyTag, templateBlock),
-          createSrcLoc(ifemptyTag));
-      ifempty.addChildren(templateBlock);
-    }
-  ]
-
   tagClose = <CMD_CLOSE_FOR>
   {
     ForNode forNode =
@@ -3583,9 +3568,6 @@ private ForNode ForStmt() :
             tagBeginEnd == null ? createSrcLoc(tagBegin) : createSrcLoc(tagBegin, tagBeginEnd),
             expr);
     forNode.addChild(nonEmpty);
-    if (ifempty != null) {
-      forNode.addChild(ifempty);
-    }
     return forNode;
   }
 }

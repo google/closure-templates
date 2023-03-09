@@ -119,8 +119,6 @@ public abstract class AbstractReturningSoyNodeVisitor<R>
         return visitForNode((ForNode) node);
       case FOR_NONEMPTY_NODE:
         return visitForNonemptyNode((ForNonemptyNode) node);
-      case FOR_IFEMPTY_NODE:
-        return visitForIfemptyNode((ForIfemptyNode) node);
 
       case CALL_BASIC_NODE:
         return visitCallBasicNode((CallBasicNode) node);
@@ -308,10 +306,6 @@ public abstract class AbstractReturningSoyNodeVisitor<R>
   }
 
   protected R visitForNode(ForNode node) {
-    return visitSoyNode(node);
-  }
-
-  protected R visitForIfemptyNode(ForIfemptyNode node) {
     return visitSoyNode(node);
   }
 

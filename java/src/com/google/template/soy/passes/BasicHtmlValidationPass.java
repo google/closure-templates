@@ -182,7 +182,7 @@ final class BasicHtmlValidationPass implements CompilerFilePass {
     protected void visitForNode(ForNode node) {
       // loops are a little weird, consider reporting an error for all static attributes within the
       // loop body.
-      visitControlFlowNode(node, /* exhaustive=*/ node.hasIfEmptyBlock());
+      visitControlFlowNode(node, /* exhaustive= */ false);
     }
 
     private void visitControlFlowNode(

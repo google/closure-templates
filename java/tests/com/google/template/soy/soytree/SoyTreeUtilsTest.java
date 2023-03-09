@@ -192,8 +192,6 @@ public final class SoyTreeUtilsTest {
               "  <ol>",
               "    {for $item in $items}",
               "      <li>{$item}</li>",
-              "    {ifempty}",
-              "      <li><i>Nothing to see here!</i>",
               "    {/for}",
               "  </ol>",
               "  {let $local : 'foo' /}",

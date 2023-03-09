@@ -80,13 +80,11 @@ public final class CheckTemplateHeaderVarsPassTest {
             + "{/switch}\n";
     assertThat(paramsErrorsForTemplate(params, templateBody)).isEmpty();
 
-    // ------ 'foreach', 'ifempty', '/foreach' ------
+    // ------ 'foreach', '/foreach' ------
     params = "{@param moose: ?}{@param? meese: ?}";
     templateBody =
         "{for $moo in $moose}\n"
             + "  Cow says {$moo}.\n"
-            + "{ifempty}\n"
-            + "  No {$meese}.\n"
             + "{/for}\n";
     assertThat(paramsErrorsForTemplate(params, templateBody)).isEmpty();
 

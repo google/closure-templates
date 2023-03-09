@@ -218,8 +218,6 @@ public final class TemplateAnalysisTest {
         "{for $i in range(0, 1)}",
         "  {$p}",
         "  {$i}",
-        "{ifempty}",
-        "  {$p2}",
         "{/for}",
         "{refed($p)}",
         "{notrefed($p2)}");
@@ -230,16 +228,13 @@ public final class TemplateAnalysisTest {
         "{for $i in range(1, 1)}",
         "  {$p}",
         "  {$i}",
-        "{ifempty}",
-        "  {$p2}",
         "{/for}",
         "{notrefed($p)}",
-        "{refed($p2)}");
+        "{notrefed($p2)}");
   }
 
   @Test
   public void testForeach() {
-    // test ifempty blocks
     runTest(
         "{@param list : list<?>}",
         "{@param p: ?}",
@@ -248,12 +243,9 @@ public final class TemplateAnalysisTest {
         "{for $item in $list}",
         "  {$p}",
         "  {$p2}",
-        "{ifempty}",
-        "  {$p}",
-        "  {$p3}",
         "{/for}",
         "{refed($list)}",
-        "{refed($p)}",
+        "{notrefed($p)}",
         "{notrefed($p2)}",
         "{notrefed($p3)}");
   }
@@ -267,8 +259,6 @@ public final class TemplateAnalysisTest {
         "{@param p2: ?}",
         "{for $item in [1, 2, 3]}",
         "  {$p}",
-        "{ifempty}",
-        "  {$p2}",
         "{/for}",
         "{refed($p)}",
         "{notrefed($p2)}");

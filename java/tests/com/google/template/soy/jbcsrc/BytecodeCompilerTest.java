@@ -462,14 +462,8 @@ public class BytecodeCompilerTest {
     assertThatTemplateBody("{@param list: list<int>}", "{for $i in $list}", "  {$i}", "{/for}")
         .rendersAs("", ImmutableMap.of("list", EMPTY_LIST));
 
-    assertThatTemplateBody(
-            "{@param list: list<int>}",
-            "{for $i in $list}",
-            "  {$i}",
-            "{ifempty}",
-            "  empty",
-            "{/for}")
-        .rendersAs("empty", ImmutableMap.of("list", EMPTY_LIST));
+    assertThatTemplateBody("{@param list: list<int>}", "{for $i in $list}", "  {$i}", "{/for}")
+        .rendersAs("", ImmutableMap.of("list", EMPTY_LIST));
 
     assertThatTemplateBody("{for $i in [1,2,3,4,5]}", "  {$i}", "{/for}").rendersAs("12345");
   }

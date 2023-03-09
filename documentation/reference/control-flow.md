@@ -102,20 +102,11 @@ Syntax:
 The `for` command iterates over a list. The iterator `local_var` is a local
 variable that is defined only in the block.
 
-IMPORTANT {ifempty} is deprecated and will be removed soon.
-
-TODO(b/239056069): Remove {ifempty} docs once go/ifempty-lsc is complete.
-
-The optional `ifempty` command is for a fallback section that is executed when
-the list is empty.
-
 For example:
 
 ```soy
 {for $operand in $operands}
   {$operand}
-{ifempty}
-  0
 {/for}
 ```
 

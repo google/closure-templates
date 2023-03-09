@@ -36,7 +36,6 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FunctionNode;
-import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.ConditionalBuilder;
@@ -467,8 +466,6 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
    * <pre>
    *   {for $foo in $boo.foos}
    *     ...
-   *   {ifempty}
-   *     ...
    *   {/for}
    * </pre>
    *
@@ -479,14 +476,11 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
    * var foo2ListLen = foo2List.length;
    * if (foo2ListLen > 0) {
    *   ...
-   * } else {
-   *   ...
    * }
    * }</pre>
    */
   @Override
   protected Statement visitForNode(ForNode node) {
-    boolean hasIfempty = (node.numChildren() == 2);
     // Build some local variable names.
     ForNonemptyNode nonEmptyNode = (ForNonemptyNode) node.getChild(0);
     String varPrefix = nonEmptyNode.getVarName() + node.getId();
@@ -546,14 +540,6 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
         VariableDeclaration.builder(varPrefix + "ListLen").setRhs(limitInitializer).build().ref();
     Statement foreachBody = handleForeachLoop(nonEmptyNode, limit, getDataItemFunction);
 
-    if (hasIfempty) {
-      // If there is an ifempty node, wrap the foreach body in an if statement and append the
-      // ifempty body as the else clause.
-      Statement ifemptyBody = Statements.of(visitChildren(node.getChild(1)));
-      Expression limitCheck = limit.op(Operator.GREATER_THAN, number(0));
-
-      foreachBody = ifStatement(limitCheck, foreachBody).setElse(ifemptyBody).build();
-    }
     return foreachBody;
   }
 

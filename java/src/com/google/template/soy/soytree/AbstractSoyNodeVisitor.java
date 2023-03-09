@@ -152,9 +152,6 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
       case FOR_NONEMPTY_NODE:
         visitForNonemptyNode((ForNonemptyNode) node);
         break;
-      case FOR_IFEMPTY_NODE:
-        visitForIfemptyNode((ForIfemptyNode) node);
-        break;
 
       case CALL_BASIC_NODE:
         visitCallBasicNode((CallBasicNode) node);
@@ -386,10 +383,6 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
   }
 
   protected void visitForNode(ForNode node) {
-    visitSoyNode(node);
-  }
-
-  protected void visitForIfemptyNode(ForIfemptyNode node) {
     visitSoyNode(node);
   }
 

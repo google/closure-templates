@@ -86,7 +86,6 @@ public interface SoyNode extends Node {
 
     FOR_NODE,
     FOR_NONEMPTY_NODE,
-    FOR_IFEMPTY_NODE,
 
     CALL_BASIC_NODE,
     CALL_DELEGATE_NODE,
@@ -223,7 +222,7 @@ public interface SoyNode extends Node {
    * loops.
    *
    * <p>Includes nodes such as IfCondNode, IfElseNode, SwitchCaseNode, SwitchDefaultNode,
-   * ForNonemptyNode, ForIfemptyNode, ForNode etc.
+   * ForNonemptyNode, ForNode etc.
    */
   interface ConditionalBlockNode extends BlockNode {}
 

@@ -1548,7 +1548,7 @@ final class HtmlRewriter {
             return "ifempty block";
           },
           /* willExactlyOneBranchExecuteOnce= */ false,
-          node.hasIfEmptyBlock() /* one branch will execute if there is an ifempty block. */);
+          false); // branch may not execute if list is empty
     }
 
     @Override

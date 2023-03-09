@@ -37,7 +37,6 @@ import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.DebuggerNode;
-import com.google.template.soy.soytree.ForIfemptyNode;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.IfCondNode;
@@ -1316,8 +1315,6 @@ public final class TemplateParserTest {
             + "  {/for}\n"
             + "  {for $boo in $foo.booze}\n"
             + "    Scary drink {$boo.name}!\n"
-            + "  {ifempty}\n"
-            + "    Sorry, no booze.\n"
             + "  {/for}\n";
 
     List<StandaloneNode> nodes =
@@ -1339,17 +1336,13 @@ public final class TemplateParserTest {
     ForNode fn1 = (ForNode) nodes.get(1);
     assertEquals("$foo.booze", fn1.getExpr().toSourceString());
     assertTrue(fn1.getExpr().getRoot() instanceof FieldAccessNode);
-    assertEquals(2, fn1.numChildren());
+    assertEquals(1, fn1.numChildren());
 
     ForNonemptyNode fn1fnn0 = (ForNonemptyNode) fn1.getChild(0);
     assertEquals("boo", fn1fnn0.getVarName());
     assertEquals("$foo.booze", fn1fnn0.getExpr().toSourceString());
     assertEquals("boo", fn1fnn0.getVarName());
     assertEquals(3, fn1fnn0.numChildren());
-
-    ForIfemptyNode fn1fin1 = (ForIfemptyNode) fn1.getChild(1);
-    assertEquals(1, fn1fin1.numChildren());
-    assertEquals("Sorry, no booze.", ((RawTextNode) fn1fin1.getChild(0)).getRawText());
   }
 
   @Test

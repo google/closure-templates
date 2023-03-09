@@ -769,8 +769,6 @@ public class RenderVisitorTest {
             + "  {sp}\n"
             + "  {for $item in $list0}\n"
             + "    Blah\n"
-            + "  {ifempty}\n"
-            + "    Bluh\n"
             + "  {/for}\n"
             + "  {for $item in $list0}\n"
             + "    Blah\n"
@@ -788,7 +786,7 @@ public class RenderVisitorTest {
             + "10 = Sum of 1 through 4.\n"
             + "15 = Sum of 1 through 5.\n"
             + "21 = Sum of 1 through 6.\n"
-            + " 2 6 12 20 30 42 Bluh blah 123 8");
+            + " 2 6 12 20 30 42  blah 123 8");
 
     // Test iteration over map keys.
     templateBody =
