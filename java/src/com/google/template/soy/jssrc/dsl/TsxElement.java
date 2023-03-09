@@ -19,6 +19,7 @@ import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.google.auto.value.AutoValue;
+import com.google.common.base.Ascii;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.jssrc.dsl.FormattingContext.LexicalState;
@@ -69,6 +70,10 @@ public abstract class TsxElement extends Expression {
     return Stream.concat(Stream.of(openTag(), closeTag()), body().stream());
   }
 
+  private boolean isComponentCall() {
+    return Ascii.isUpperCase(openTag().tagName().charAt(0));
+  }
+
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
     ctx.pushLexicalState(LexicalState.TSX);
@@ -76,6 +81,9 @@ public abstract class TsxElement extends Expression {
     for (CodeChunk s : body()) {
       ctx.appendAll(s);
     }
+    ctx.popLexicalState();
+    ctx.pushLexicalState(
+        isComponentCall() ? LexicalState.TSX_COMPONENT_CALL_CLOSE : LexicalState.TSX);
     ctx.appendAll(closeTag());
     ctx.popLexicalState();
   }

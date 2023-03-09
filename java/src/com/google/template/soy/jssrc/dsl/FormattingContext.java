@@ -43,6 +43,7 @@ class FormattingContext implements AutoCloseable {
   public enum LexicalState {
     JS,
     TSX,
+    TSX_COMPONENT_CALL_CLOSE, // Inside the closing tag of a component call.
     TSX_ATTR,
     TTL,
     RANGE_COMMENT
@@ -108,6 +109,7 @@ class FormattingContext implements AutoCloseable {
         return "";
       case TSX:
       case TSX_ATTR:
+      case TSX_COMPONENT_CALL_CLOSE:
         return "{";
       case TTL:
         return "${";
@@ -123,6 +125,7 @@ class FormattingContext implements AutoCloseable {
         return "";
       case TSX:
       case TSX_ATTR:
+      case TSX_COMPONENT_CALL_CLOSE:
       case TTL:
         return "}";
       case RANGE_COMMENT:
@@ -137,6 +140,8 @@ class FormattingContext implements AutoCloseable {
         return " + ";
       case TSX:
       case TSX_ATTR:
+      case TSX_COMPONENT_CALL_CLOSE:
+
       case TTL:
         return "";
       case RANGE_COMMENT:
