@@ -41,7 +41,7 @@ public abstract class TemplateLiteral extends Expression {
         || chunk instanceof CommandChar) {
       return (Expression) chunk;
     } else if (chunk instanceof Concatenation) {
-      return ((Concatenation) chunk).map(TemplateLiteral::wrapChild);
+      return ((Concatenation) chunk).map1to1(TemplateLiteral::wrapChild);
     } else if (chunk instanceof Statement) {
       return TsxPrintNode.wrap(((Statement) chunk).asExpr());
     }

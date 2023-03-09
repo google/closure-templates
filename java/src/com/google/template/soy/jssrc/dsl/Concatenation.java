@@ -23,6 +23,7 @@ import com.google.template.soy.exprtree.Operator.Associativity;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -50,7 +51,8 @@ abstract class Concatenation extends Operation {
 
   abstract ImmutableList<Expression> parts();
 
-  public Concatenation map(Function<Expression, Expression> mapper) {
+  /** Returns a new concatenation by mapping each part of this instance with {@code mapper}. */
+  public Concatenation map1to1(Function<Expression, Expression> mapper) {
     boolean diff = false;
     List<Expression> mappedParts = new ArrayList<>(parts().size());
     for (Expression part : parts()) {
@@ -59,6 +61,25 @@ abstract class Concatenation extends Operation {
         diff = true;
       }
       mappedParts.add(mapped);
+    }
+    return diff ? create(mappedParts) : this;
+  }
+
+  /**
+   * Returns a new concatenation by mapping each part of this instance with {@code mapper}. The
+   * mapping function can return 0-n replacements for each part.
+   */
+  public Concatenation map1toN(Function<Expression, Stream<CodeChunk>> mapper) {
+    boolean diff = false;
+    List<Expression> mappedParts = new ArrayList<>(parts().size());
+    for (Expression part : parts()) {
+      List<CodeChunk> chunks = mapper.apply(part).collect(Collectors.toList());
+      if (chunks.size() != 1 || chunks.get(0) != part) {
+        diff = true;
+      }
+      for (CodeChunk chunk : chunks) {
+        mappedParts.add((Expression) chunk);
+      }
     }
     return diff ? create(mappedParts) : this;
   }

@@ -16,7 +16,6 @@
 package com.google.template.soy.jssrc.dsl;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
-import static com.google.common.collect.MoreCollectors.onlyElement;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
@@ -73,7 +72,7 @@ public abstract class TsxFragmentElement extends Expression {
     } else if (chunk instanceof StringLiteral) {
       return Stream.of(TsxPrintNode.wrapIfNeeded((StringLiteral) chunk));
     } else if (chunk instanceof Concatenation) {
-      return Stream.of(((Concatenation) chunk).map(TsxFragmentElement::wrapChildExpr));
+      return Stream.of(((Concatenation) chunk).map1toN(TsxFragmentElement::wrapChild));
     } else if (chunk instanceof DecoratedStatement || chunk instanceof DecoratedExpression) {
       return chunk.childrenStream().flatMap(TsxFragmentElement::wrapChild);
     } else if (chunk instanceof Statement) {
@@ -83,10 +82,6 @@ public abstract class TsxFragmentElement extends Expression {
     } else {
       return Stream.of(TsxPrintNode.wrap(chunk));
     }
-  }
-
-  private static Expression wrapChildExpr(CodeChunk chunk) {
-    return (Expression) wrapChild(chunk).collect(onlyElement());
   }
 
   abstract ImmutableList<? extends CodeChunk> body();
