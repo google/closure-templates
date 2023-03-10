@@ -52,7 +52,6 @@ import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
-import com.google.template.soy.exprtree.VeLiteralNode;
 import com.google.template.soy.jbcsrc.runtime.JbcSrcRuntime;
 import com.google.template.soy.msgs.internal.MsgUtils;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
@@ -723,11 +722,6 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
     @Override
     protected void visitAssertNonNullOpNode(AssertNonNullOpNode node) {
       visitChildren(node);
-    }
-
-    @Override
-    protected void visitVeLiteralNode(VeLiteralNode node) {
-      // do nothing
     }
 
     @Override

@@ -57,7 +57,6 @@ import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
-import com.google.template.soy.exprtree.VeLiteralNode;
 import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.plugin.python.restricted.SoyPythonSourceFunction;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
@@ -796,11 +795,6 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
             + PyExprUtils.maybeProtect(falseExpr, conditionalPrecedence).getText();
 
     return new PyExpr(exprSb, conditionalPrecedence);
-  }
-
-  @Override
-  protected PyExpr visitVeLiteralNode(VeLiteralNode node) {
-    return NONE;
   }
 
   PyExpr getCalleeExpr(TemplateLiteralNode node) {

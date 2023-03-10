@@ -123,11 +123,9 @@ import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
-import com.google.template.soy.exprtree.VeLiteralNode;
 import com.google.template.soy.internal.util.TopoSort;
 import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
-import com.google.template.soy.logging.ValidatedLoggingConfig.ValidatedLoggableElement;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.internal.BuiltinMethod;
@@ -2285,35 +2283,6 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
               argType);
         }
       }
-    }
-
-    @Override
-    protected void visitVeLiteralNode(VeLiteralNode node) {
-      SoyType type;
-      ValidatedLoggableElement config = loggingConfig.getElement(node.getName().identifier());
-      if (config == null) {
-        errorReporter.report(
-            node.getName().location(),
-            VE_NO_CONFIG_FOR_ELEMENT,
-            SoyErrors.getDidYouMeanMessage(
-                loggingConfig.allKnownIdentifiers(), node.getName().identifier()));
-        type = UnknownType.getInstance();
-      } else {
-        if (importIndex.containsKey(node.getName().identifier())) {
-          errorReporter.report(
-              node.getName().location(),
-              VE_CONFLICTS_WITH_TYPE,
-              importIndex.get(node.getName().identifier()).nameLocation().getBeginLine());
-        }
-
-        if (config.getProtoName().isPresent()) {
-          type = typeRegistry.getOrCreateVeType(config.getProtoName().get());
-        } else {
-          type = VeType.NO_DATA;
-        }
-        node.setLoggableElement(config);
-      }
-      node.setType(type);
     }
 
     @Override

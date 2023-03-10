@@ -94,8 +94,6 @@ public interface ExprNode extends Node {
 
     FUNCTION_NODE,
 
-    VE_LITERAL_NODE,
-
     TEMPLATE_LITERAL_NODE,
   }
 

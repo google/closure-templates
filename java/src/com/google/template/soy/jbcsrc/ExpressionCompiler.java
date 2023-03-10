@@ -88,7 +88,6 @@ import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.exprtree.VarRefNode;
-import com.google.template.soy.exprtree.VeLiteralNode;
 import com.google.template.soy.jbcsrc.ExpressionDetacher.BasicDetacher;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
@@ -104,7 +103,6 @@ import com.google.template.soy.jbcsrc.restricted.TypeInfo;
 import com.google.template.soy.jbcsrc.shared.ClassLoaderFallbackCallFactory;
 import com.google.template.soy.jbcsrc.shared.LegacyFunctionAdapter;
 import com.google.template.soy.jbcsrc.shared.Names;
-import com.google.template.soy.logging.ValidatedLoggingConfig.ValidatedLoggableElement;
 import com.google.template.soy.plugin.java.internal.PluginAnalyzer;
 import com.google.template.soy.plugin.java.restricted.MethodSignature;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
@@ -1640,35 +1638,6 @@ final class ExpressionCompiler {
             Type.LONG_TYPE);
 
     @Override
-    protected SoyExpression visitVeLiteralNode(VeLiteralNode node) {
-      Expression visualElement;
-      ValidatedLoggableElement element = node.getLoggableElement();
-      if (element.hasMetadata()) {
-        Expression renderContext = parameters.getRenderContext();
-        visualElement =
-            new Expression(BytecodeUtils.SOY_VISUAL_ELEMENT_TYPE) {
-              @Override
-              protected void doGen(CodeBuilder adapter) {
-                adapter.pushLong(node.getId());
-                adapter.pushString(node.getName().identifier());
-                renderContext.gen(adapter);
-                adapter.pushLong(node.getId());
-                adapter.visitInvokeDynamicInsn(
-                    "getVeWithMetadata",
-                    VE_WITH_METADATA_SIGNATURE,
-                    GET_VE_WITH_METADATA_HANDLE,
-                    String.format("%s.%s", element.getJavaPackage(), element.getClassName()));
-              }
-            };
-      } else {
-        visualElement =
-            MethodRef.SOY_VISUAL_ELEMENT_CREATE.invoke(
-                constant(node.getId()), constant(node.getName().identifier()));
-      }
-      return SoyExpression.forSoyValue(node.getType(), visualElement);
-    }
-
-    @Override
     protected SoyExpression visitVeDefNode(FunctionNode node) {
       Expression id = constant(((IntegerNode) node.getChild(1)).getValue());
       Expression name = constant(((StringNode) node.getChild(0)).getValue());
@@ -1761,12 +1730,6 @@ final class ExpressionCompiler {
     protected Boolean visitPrimitiveNode(PrimitiveNode node) {
       // primitives are fine
       return true;
-    }
-
-    @Override
-    protected Boolean visitVeLiteralNode(VeLiteralNode node) {
-      // VE metadata needs a RenderContext to resolve.
-      return !node.getLoggableElement().hasMetadata();
     }
 
     @Override

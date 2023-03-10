@@ -101,7 +101,6 @@ import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
-import com.google.template.soy.exprtree.VeLiteralNode;
 import com.google.template.soy.internal.proto.ProtoUtils;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.Expression;
@@ -114,7 +113,6 @@ import com.google.template.soy.jssrc.internal.NullSafeAccumulator.ProtoCall;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
 import com.google.template.soy.logging.LoggingFunction;
-import com.google.template.soy.logging.ValidatedLoggingConfig.ValidatedLoggableElement;
 import com.google.template.soy.plugin.javascript.restricted.SoyJavaScriptSourceFunction;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.internal.BuiltinMethod;
@@ -1083,31 +1081,6 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
         return ImmutableSet.of(argSize);
       }
     };
-  }
-
-  @Override
-  protected Expression visitVeLiteralNode(VeLiteralNode node) {
-    ValidatedLoggableElement element = node.getLoggableElement();
-    Expression metadata;
-    if (element.hasMetadata()) {
-      metadata =
-          GoogRequire.create(element.getJsPackage())
-              .googModuleGet()
-              .dotAccess(element.getClassName())
-              .dotAccess(element.getGeneratedVeMetadataMethodName())
-              .call();
-    } else {
-      metadata = Expressions.LITERAL_UNDEFINED;
-    }
-    return Expressions.ifExpression(
-            GOOG_DEBUG,
-            construct(
-                SOY_VISUAL_ELEMENT,
-                Expressions.number(node.getId()),
-                metadata,
-                Expressions.stringLiteral(node.getName().identifier())))
-        .setElse(construct(SOY_VISUAL_ELEMENT, Expressions.number(node.getId()), metadata))
-        .build(codeGenerator);
   }
 
   @Override

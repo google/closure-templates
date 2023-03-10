@@ -21,7 +21,6 @@ import com.google.template.soy.exprtree.ExprNode.Kind;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.NullNode;
-import com.google.template.soy.exprtree.VeLiteralNode;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
@@ -32,8 +31,7 @@ import com.google.template.soy.soytree.VeLogNode;
  *
  * <ul>
  *   <li>Rewrites {@code {velog MyVe}} to {@code {velog ve_data(MyVe)}}
- *   <li>Rewrites {@code ve_data(MyVe, $data)} to {@code ve_data(ve(MyVe), $data)}
- *   <li>Rewrites {@code ve_data(ve(MyVe))} to {@code ve_data(ve(MyVe), null)}
+ *   <li>Rewrites {@code ve_data(ve(MyVe))} to {@code ve_data(MyVe, null)}
  * </ul>
  */
 final class VeRewritePass implements CompilerFilePass {
@@ -65,16 +63,6 @@ final class VeRewritePass implements CompilerFilePass {
   private void maybeRewriteVeDataNode(FunctionNode node) {
     if (node.numChildren() < 1 || node.numChildren() > 2) {
       return; // an error has already been reported
-    }
-    if (node.getChild(0).getKind() == Kind.GLOBAL_NODE) {
-      // For something like ve_data(MyVe, $data) MyVe will be a global. Rewrite it to ve(MyVe).
-      GlobalNode global = (GlobalNode) node.getChild(0);
-      VeLiteralNode veNode =
-          new VeLiteralNode(
-              Identifier.create("ve", global.getSourceLocation()),
-              Identifier.create(global.getName(), global.getSourceLocation()),
-              global.getSourceLocation());
-      node.replaceChild(0, veNode);
     }
     if (node.numChildren() < 2) {
       // For ve_data(MyVe) set the data parameter to null.

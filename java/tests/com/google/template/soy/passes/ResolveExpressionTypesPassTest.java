@@ -25,9 +25,6 @@ import com.google.common.collect.Iterables;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.StringNode;
-import com.google.template.soy.exprtree.VeLiteralNode;
-import com.google.template.soy.logging.LoggableElement;
-import com.google.template.soy.logging.testing.LoggingConfigs;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -54,7 +51,6 @@ import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypeRegistryBuilder;
 import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.UnknownType;
-import com.google.template.soy.types.VeType;
 import com.google.template.soy.types.ast.TypeNode;
 import com.google.template.soy.types.ast.TypeNodeConverter;
 import java.util.List;
@@ -890,55 +886,16 @@ public final class ResolveExpressionTypesPassTest {
   }
 
   @Test
-  public void testVeLiteral() {
-    SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forTemplateAndImports(
-                constructTemplateSource(
-                    "{assertType('ve<example.ExampleExtendable>', ve(VeData))}",
-                    "{assertType('ve<null>', ve(VeNoData))}"),
-                ExampleExtendable.getDescriptor())
-            .addSoyFunction(ASSERT_TYPE_FUNCTION)
-            .setLoggingConfig(
-                LoggingConfigs.createLoggingConfig(
-                    LoggableElement.newBuilder()
-                        .setId(1)
-                        .setName("VeData")
-                        .setProtoType("example.ExampleExtendable")
-                        .build(),
-                    LoggableElement.newBuilder().setId(2).setName("VeNoData").build()))
-            .parse()
-            .fileSet();
-    assertTypes(soyTree);
-
-    List<VeLiteralNode> veNodes = SoyTreeUtils.getAllNodesOfType(soyTree, VeLiteralNode.class);
-    assertThat(veNodes).hasSize(2);
-
-    assertThat(veNodes.get(0).getId()).isEqualTo(1);
-    assertThat(veNodes.get(0).getName().identifier()).isEqualTo("VeData");
-    assertThat(veNodes.get(0).getType()).isEqualTo(VeType.of("example.ExampleExtendable"));
-
-    assertThat(veNodes.get(1).getId()).isEqualTo(2);
-    assertThat(veNodes.get(1).getName().identifier()).isEqualTo("VeNoData");
-    assertThat(veNodes.get(1).getType()).isEqualTo(VeType.of("null"));
-  }
-
-  @Test
   public void testVeDataLiteral() {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forTemplateAndImports(
-                constructTemplateSource(
-                    "{assertType('ve_data', ve_data(ve(VeData), ExampleExtendable()))}",
-                    "{assertType('ve_data', ve_data(ve(VeNoData), null))}"),
+                "{const VeData = ve_def('VeData', 1, ExampleExtendable) /}"
+                    + "{const VeNoData = ve_def('VeNoData', 2) /}"
+                    + constructTemplateSource(
+                        "{assertType('ve_data', ve_data(VeData, ExampleExtendable()))}",
+                        "{assertType('ve_data', ve_data(VeNoData, null))}"),
                 ExampleExtendable.getDescriptor())
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
-            .setLoggingConfig(
-                LoggingConfigs.createLoggingConfig(
-                    LoggableElement.newBuilder()
-                        .setId(1)
-                        .setName("VeData")
-                        .setProtoType("example.ExampleExtendable")
-                        .build(),
-                    LoggableElement.newBuilder().setId(2).setName("VeNoData").build()))
             .parse()
             .fileSet();
     assertTypes(soyTree);

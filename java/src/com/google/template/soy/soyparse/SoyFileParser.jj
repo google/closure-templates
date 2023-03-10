@@ -90,7 +90,6 @@ import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
-import com.google.template.soy.exprtree.VeLiteralNode;
 import com.google.template.soy.soytree.AbstractSoyNode;
 import com.google.template.soy.soytree.AliasDeclaration;
 import com.google.template.soy.soytree.ModNameDeclaration;
@@ -4596,11 +4595,6 @@ private ExprNode VarRefOrFunctionCallLike(ExprState state) :
         return MapLiteral(state, ident);
       }
     |
-      LOOKAHEAD( {identToken.image.equals("ve")} )
-      {
-        return VeLiteral(ident);
-      }
-    |
       callArgs = CallArgs()
       {
         SourceLocation loc = ident.location().extend(createSrcLoc(callArgs.close));
@@ -4686,21 +4680,6 @@ private ExprNode MapLiteral(ExprState state, Identifier ident) :
     // (positional vs. named), but that's not helpful when there are no params.)
     SourceLocation srcLoc = ident.location().extend(createSrcLoc(closeParen));
     return fromList ? new MapLiteralFromListNode(ident, key, srcLoc, nodeIdGen.genId()) : new MapLiteralNode(ident, kvPairs.build(), srcLoc);
-  }
-}
-
-/** Parses a VE literal: {@code ve(VeName)} */
-private ExprNode VeLiteral(Identifier ident) :
-{
-  Identifier name;
-  Token closeParen;
-}
-{
-  name = Identifier()
-  closeParen = <RPAREN>
-  {
-    SourceLocation srcLoc = ident.location().extend(createSrcLoc(closeParen));
-    return new VeLiteralNode(ident, name, srcLoc);
   }
 }
 

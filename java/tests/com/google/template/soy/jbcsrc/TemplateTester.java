@@ -54,7 +54,6 @@ import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.jbcsrc.shared.LegacyFunctionAdapter;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
-import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.plugin.java.PluginInstances;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.shared.SoyCssRenamingMap;
@@ -505,12 +504,11 @@ public final class TemplateTester {
         .get();
   }
 
-  static CompiledTemplates compileFileWithLoggingConfig(
-      ValidatedLoggingConfig loggingConfig, GenericDescriptor[] protoImports, String... fileBody) {
+  static CompiledTemplates compileFileWithImports(
+      GenericDescriptor[] protoImports, String... fileBody) {
     String file = Joiner.on('\n').join(fileBody);
     SoyFileSetParser parser =
         SoyFileSetParserBuilder.forTemplateAndImports(file, protoImports)
-            .setLoggingConfig(loggingConfig)
             .build();
     ParseResult parseResult = parser.parse();
     return BytecodeCompiler.compile(

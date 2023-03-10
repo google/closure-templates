@@ -23,9 +23,6 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 
 /** A {@link CompilerFilePass} that resolves globals against {alias} commands in the same file. */
-@RunAfter({
-  VeRewritePass.class, // rewrites some VE references that are parsed as globals in a different way
-})
 @RunBefore({CheckGlobalsPass.class})
 final class RewriteGlobalsPass implements CompilerFilePass {
 

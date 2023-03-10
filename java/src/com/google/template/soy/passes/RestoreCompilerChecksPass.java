@@ -22,7 +22,6 @@ import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.AbstractLocalVarDefn;
 import com.google.template.soy.exprtree.ListComprehensionNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
-import com.google.template.soy.exprtree.VeLiteralNode;
 import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.LetNode;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -82,14 +81,6 @@ final class RestoreCompilerChecksPass implements CompilerFilePass {
         .filter(k -> k.identifier().startsWith("$"))
         .forEach(k -> errorReporter.report(k.location(), MUST_NOT_BE_DOLLAR_IDENT));
 
-    // ve(...) will now parse if ... starts with "$". But that's an error.
-    SoyTreeUtils.allNodesOfType(file, VeLiteralNode.class)
-        .forEach(
-            veNode -> {
-              if (veNode.getName().identifier().startsWith("$")) {
-                errorReporter.report(veNode.getName().location(), MUST_BE_CONSTANT);
-              }
-            });
   }
 
   private void checkDollarIdent(AbstractLocalVarDefn<?> localVar) {

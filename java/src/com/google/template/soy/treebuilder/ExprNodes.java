@@ -43,7 +43,6 @@ import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.exprtree.VarRefNode;
-import com.google.template.soy.exprtree.VeLiteralNode;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import javax.annotation.Nullable;
 
@@ -236,10 +235,6 @@ public final class ExprNodes {
 
   public static VarRefNode varRef(String name) {
     return new VarRefNode("$" + name, SourceLocation.UNKNOWN, null);
-  }
-
-  public static VeLiteralNode veLiteral(String name) {
-    return new VeLiteralNode(identifier("ve"), identifier(name), SourceLocation.UNKNOWN);
   }
 
   public static Identifier identifier(String identifier) {

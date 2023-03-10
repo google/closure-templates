@@ -32,11 +32,8 @@ import com.google.template.soy.jbcsrc.api.OutputAppendable;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
-import com.google.template.soy.logging.LoggableElement;
 import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.logging.SoyLogger;
-import com.google.template.soy.logging.ValidatedLoggingConfig;
-import com.google.template.soy.logging.testing.LoggingConfigs;
 import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.testing.Foo;
@@ -51,28 +48,6 @@ import org.junit.runners.JUnit4;
 /** Tests {@code {velog}} support. */
 @RunWith(JUnit4.class)
 public final class VeLoggingTest {
-  private static final ValidatedLoggingConfig config =
-      LoggingConfigs.createLoggingConfig(
-          LoggableElement.newBuilder()
-              .setName("FooVe")
-              .setId(1L)
-              .setProtoType("soy.test.Foo")
-              .build(),
-          LoggableElement.newBuilder()
-              .setName("Bar")
-              .setId(2L)
-              .setProtoType("soy.test.Foo")
-              .build(),
-          LoggableElement.newBuilder()
-              .setName("Baz")
-              .setId(3L)
-              .setProtoType("soy.test.Foo")
-              .build(),
-          LoggableElement.newBuilder()
-              .setName("Quux")
-              .setId(4L)
-              .setProtoType("soy.test.Foo")
-              .build());
 
   private static class TestLogger implements SoyLogger {
     final StringBuilder builder = new StringBuilder();
@@ -327,9 +302,14 @@ public final class VeLoggingTest {
       throws IOException {
     SoyFileSetParserBuilder builder =
         SoyFileSetParserBuilder.forTemplateAndImports(
-                "{template foo}\n" + Joiner.on("\n").join(templateBodyLines) + "\n{/template}",
+                "{const FooVe = ve_def('FooVe', 1, Foo) /}"
+                    + "{const Bar = ve_def('Bar', 2, Foo) /}"
+                    + "{const Baz = ve_def('Baz', 3, Foo) /}"
+                    + "{const Quux = ve_def('Quux', 4, Foo) /}"
+                    + "{template foo}\n"
+                    + Joiner.on("\n").join(templateBodyLines)
+                    + "\n{/template}",
                 Foo.getDescriptor())
-            .setLoggingConfig(config)
             .addSoySourceFunction(new DepthFunction())
             .runAutoescaper(true);
     SoyFileSetParser parser = builder.build();

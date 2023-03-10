@@ -36,9 +36,6 @@ import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
-import com.google.template.soy.logging.LoggableElement;
-import com.google.template.soy.logging.ValidatedLoggingConfig;
-import com.google.template.soy.logging.testing.LoggingConfigs;
 import com.google.template.soy.testing.Foo;
 import java.io.IOException;
 import java.util.List;
@@ -368,18 +365,10 @@ public final class DetachStateTest {
   /** Tests a ve log inside msg to make we can successfully detach in the ve_data expr. */
   @Test
   public void testDetach_veLogInsideMsg() throws IOException {
-    ValidatedLoggingConfig config =
-        LoggingConfigs.createLoggingConfig(
-            LoggableElement.newBuilder()
-                .setName("WithData")
-                .setId(1L)
-                .setProtoType("soy.test.Foo")
-                .build());
-
     CompiledTemplates templates =
-        TemplateTester.compileFileWithLoggingConfig(
-            config,
+        TemplateTester.compileFileWithImports(
             new GenericDescriptor[] {Foo.getDescriptor()},
+            "{const WithData = ve_def('WithData', 1, Foo) /}",
             "{template t}",
             "  {@param myBool : bool}",
             "  {msg desc=\"foo\"}",

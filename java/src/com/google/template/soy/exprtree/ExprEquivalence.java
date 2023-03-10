@@ -157,11 +157,6 @@ public final class ExprEquivalence {
         // literals
 
         @Override
-        protected Integer visitVeLiteralNode(VeLiteralNode node) {
-          return Objects.hash(node.getId(), node.getName(), node.getType().toString());
-        }
-
-        @Override
         protected Integer visitTemplateLiteralNode(TemplateLiteralNode node) {
           return node.getResolvedName().hashCode();
         }
@@ -327,14 +322,6 @@ public final class ExprEquivalence {
     }
 
     // literals
-
-    @Override
-    protected Boolean visitVeLiteralNode(VeLiteralNode node) {
-      VeLiteralNode otherNode = (VeLiteralNode) other;
-      return node.getId().equals(otherNode.getId())
-          && node.getName().equals(otherNode.getName())
-          && node.getType().toString().equals(otherNode.getType().toString());
-    }
 
     @Override
     protected Boolean visitTemplateLiteralNode(TemplateLiteralNode node) {

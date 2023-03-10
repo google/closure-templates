@@ -24,9 +24,6 @@ import static com.google.template.soy.jssrc.internal.JsSrcSubject.assertThatSoyE
 
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.jssrc.dsl.Expression;
-import com.google.template.soy.logging.AnnotatedLoggableElement;
-import com.google.template.soy.logging.LoggableElement;
-import com.google.template.soy.logging.testing.LoggingConfigs;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -193,37 +190,6 @@ public final class TranslateExprNodeVisitorTest {
   @Test
   public void testXid() {
     assertThatSoyExpr("xid('foo')").generatesCode("xid('foo');");
-  }
-
-  @Test
-  public void testVeLiteral() {
-    assertThatSoyExpr("ve(MyVe)")
-        .withLoggingConfig(
-            LoggingConfigs.createLoggingConfig(
-                LoggableElement.newBuilder().setId(8675309).setName("MyVe").build()))
-        .generatesCode(
-            "goog.DEBUG ? new (goog.module.get('soy.velog').$$VisualElement)(8675309, undefined,"
-                + " 'MyVe') : new (goog.module.get('soy.velog').$$VisualElement)(8675309,"
-                + " undefined);");
-  }
-
-  @Test
-  public void testVeLiteralWithMetadata() {
-    assertThatSoyExpr("ve(MyMetadataVe)")
-        .withLoggingConfig(
-            LoggingConfigs.createLoggingConfig(
-                AnnotatedLoggableElement.newBuilder()
-                    .setElement(LoggableElement.newBuilder().setId(2383).setName("MyMetadataVe"))
-                    .setHasMetadata(true)
-                    .setClassName("MyTestLoggingConfig")
-                    .setJsPackage("root.this.is.a.package.logging_config")
-                    .build()))
-        .generatesCode(
-            "goog.DEBUG ? new (goog.module.get('soy.velog').$$VisualElement)(2383,"
-                + " goog.module.get('root.this.is.a.package.logging_config').MyTestLoggingConfig.v2383(),"
-                + " 'MyMetadataVe') : new (goog.module.get('soy.velog').$$VisualElement)(2383,"
-                + " goog.module.get('root.this.is.a.package.logging_config').MyTestLoggingConfig"
-                + ".v2383());");
   }
 
   @Test
