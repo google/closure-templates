@@ -223,19 +223,19 @@ public final class SoyFileNode extends AbstractParentSoyNode<SoyNode>
   }
 
   public ImmutableList<ConstNode> getConstants() {
-    return getChildrenOfType(this, ConstNode.class);
+    return getChildrenOfType(ConstNode.class);
   }
 
   public ImmutableList<TemplateNode> getTemplates() {
-    return getChildrenOfType(this, TemplateNode.class);
+    return getChildrenOfType(TemplateNode.class);
   }
 
   public ImmutableList<ImportNode> getImports() {
-    return getChildrenOfType(this, ImportNode.class);
+    return getChildrenOfType(ImportNode.class);
   }
 
   public ImmutableList<ExternNode> getExterns() {
-    return getChildrenOfType(this, ExternNode.class);
+    return getChildrenOfType(ExternNode.class);
   }
 
   /** Returns this Soy file's name. */

@@ -79,11 +79,11 @@ public final class ExternNode extends AbstractParentCommandNode<ExternImplNode>
   }
 
   public Optional<JsImplNode> getJsImpl() {
-    return getChildOfType(this, JsImplNode.class);
+    return getChildOfType(JsImplNode.class);
   }
 
   public Optional<JavaImplNode> getJavaImpl() {
-    return getChildOfType(this, JavaImplNode.class);
+    return getChildOfType(JavaImplNode.class);
   }
 
   public FunctionTypeNode typeNode() {

@@ -69,16 +69,15 @@ public interface ParentNode<N extends Node> extends Node {
    */
   List<N> getChildren();
 
-  default <T extends N> ImmutableList<T> getChildrenOfType(
-      ParentNode<? super T> root, Class<T> type) {
-    return root.getChildren().stream()
+  default <T extends N> ImmutableList<T> getChildrenOfType(Class<T> type) {
+    return getChildren().stream()
         .filter(type::isInstance)
         .map(type::cast)
         .collect(toImmutableList());
   }
 
-  default <T extends N> Optional<T> getChildOfType(ParentNode<? super T> root, Class<T> type) {
-    return root.getChildren().stream().filter(type::isInstance).map(type::cast).findFirst();
+  default <T extends N> Optional<T> getChildOfType(Class<T> type) {
+    return getChildren().stream().filter(type::isInstance).map(type::cast).findFirst();
   }
 
   /**
