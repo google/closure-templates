@@ -28,8 +28,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.io.ByteSink;
-import com.google.common.io.ByteSource;
-import com.google.common.io.CharSink;
 import com.google.common.io.CharSource;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.protobuf.Descriptors.GenericDescriptor;
@@ -56,9 +54,7 @@ import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.internal.JsSrcMain;
 import com.google.template.soy.logging.AnnotatedLoggingConfig;
-import com.google.template.soy.logging.AnnotatedLoggingConfigGenerator;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
-import com.google.template.soy.logging.VeMetadataGenerator;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.SoyMsgBundleHandler;
 import com.google.template.soy.msgs.SoyMsgBundleHandler.OutputFileOptions;
@@ -836,41 +832,6 @@ public final class SoyFileSet {
                     .validateJavaMethods(false)));
   }
 
-  AnnotatedLoggingConfig generateAnnotatedLoggingConfig(
-      CharSource rawLoggingConfig,
-      String javaPackage,
-      String jsPackage,
-      String className,
-      String javaResourceFilename) {
-    return entryPoint(
-        () -> {
-          try {
-            return new AnnotatedLoggingConfigGenerator(
-                    rawLoggingConfig,
-                    javaPackage,
-                    jsPackage,
-                    className,
-                    javaResourceFilename,
-                    typeRegistry,
-                    errorReporter)
-                .generate();
-          } catch (IOException e) {
-            throw new IllegalStateException(e);
-          }
-        });
-  }
-
-  void generateAndWriteVeMetadata(
-      VeMetadataGenerator.Mode mode,
-      ByteSource loggingConfigBytes,
-      String generator,
-      CharSink output,
-      Optional<ByteSink> resourceOutput)
-      throws IOException {
-    new VeMetadataGenerator(
-            mode, loggingConfigBytes, generator, typeRegistry, output, resourceOutput)
-        .generateAndWrite();
-  }
 
   /**
    * Extracts all messages from this Soy file set into a SoyMsgBundle (which can then be turned into
