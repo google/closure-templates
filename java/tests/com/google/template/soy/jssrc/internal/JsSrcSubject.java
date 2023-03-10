@@ -43,7 +43,6 @@ import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.FormatOptions;
 import com.google.template.soy.jssrc.dsl.Precedence;
-import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -66,7 +65,6 @@ abstract class JsSrcSubject<T extends Subject> extends Subject {
   private final String actual;
   SoyJsSrcOptions jsSrcOptions = new SoyJsSrcOptions();
   private GenericDescriptor[] protoDescriptors = new GenericDescriptor[0];
-  private ValidatedLoggingConfig loggingConfig = ValidatedLoggingConfig.EMPTY;
   private ImmutableList<String> experimentalFeatures = ImmutableList.of();
   ErrorReporter errorReporter = ErrorReporter.exploding();
   private final List<SoyFunction> soyFunctions = new ArrayList<>();
@@ -143,11 +141,6 @@ abstract class JsSrcSubject<T extends Subject> extends Subject {
     return typedThis();
   }
 
-  T withLoggingConfig(ValidatedLoggingConfig loggingConfig) {
-    this.loggingConfig = loggingConfig;
-    return typedThis();
-  }
-
   T withExperimentalFeatures(ImmutableList<String> experimetalFeatures) {
     this.experimentalFeatures = experimetalFeatures;
     return typedThis();
@@ -163,7 +156,6 @@ abstract class JsSrcSubject<T extends Subject> extends Subject {
     SoyFileSetParserBuilder builder =
         SoyFileSetParserBuilder.forTemplateAndImports(actual, protoDescriptors)
             .allowUnboundGlobals(true)
-            .setLoggingConfig(loggingConfig)
             .allowUnknownJsGlobals(true)
             .errorReporter(ErrorReporter.explodeOnErrorsAndIgnoreDeprecations())
             .enableExperimentalFeatures(experimentalFeatures);

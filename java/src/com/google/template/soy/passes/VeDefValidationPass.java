@@ -27,8 +27,8 @@ import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.StringNode;
-import com.google.template.soy.logging.ValidatedLoggingConfig;
-import com.google.template.soy.logging.ValidatedLoggingConfig.ValidatedLoggableElement;
+import com.google.template.soy.logging.LoggingConfigValidator;
+import com.google.template.soy.logging.LoggingConfigValidator.VisualElement;
 import com.google.template.soy.passes.CompilerFileSetPass.Result;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.ConstNode;
@@ -62,13 +62,11 @@ final class VeDefValidationPass implements CompilerFileSetPass {
           "The fourth argument to ve_def() must be an proto init expression of "
               + "LoggableElementMetadata. All fields must be literals.");
 
-  private final ValidatedLoggingConfig validatedLoggingConfig;
   private final ErrorReporter errorReporter;
   private final ExprEquivalence exprEquivalence;
   private final CopyState copyState;
 
-  VeDefValidationPass(ValidatedLoggingConfig validatedLoggingConfig, ErrorReporter errorReporter) {
-    this.validatedLoggingConfig = validatedLoggingConfig;
+  VeDefValidationPass(ErrorReporter errorReporter) {
     this.errorReporter = errorReporter;
     this.exprEquivalence = new ExprEquivalence();
     this.copyState = new CopyState();
@@ -77,7 +75,7 @@ final class VeDefValidationPass implements CompilerFileSetPass {
   @Override
   public Result run(ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator) {
     Set<ExprNode> vedefsInConstNodes = new HashSet<>();
-    List<ValidatedLoggableElement> vedefs = new ArrayList<>();
+    List<VisualElement> vedefs = new ArrayList<>();
 
     for (SoyFileNode file : sourceFiles) {
       // Find all ve_defs() that are assigned to a {const}, all others are errors.
@@ -94,7 +92,7 @@ final class VeDefValidationPass implements CompilerFileSetPass {
                 buildVeDefAndValidate(func, vedefs);
               });
     }
-    ValidatedLoggingConfig.validate(validatedLoggingConfig, vedefs, errorReporter);
+    LoggingConfigValidator.validate(vedefs, errorReporter);
     return Result.CONTINUE;
   }
 
@@ -104,7 +102,7 @@ final class VeDefValidationPass implements CompilerFileSetPass {
     }
   }
 
-  private void buildVeDefAndValidate(FunctionNode func, List<ValidatedLoggableElement> vedefs) {
+  private void buildVeDefAndValidate(FunctionNode func, List<VisualElement> vedefs) {
     if (func.numChildren() < 2) {
       // Wrong # argument errors are already thrown.
       return;
@@ -145,7 +143,7 @@ final class VeDefValidationPass implements CompilerFileSetPass {
     }
 
     vedefs.add(
-        ValidatedLoggingConfig.ValidatedLoggableElement.create(
+        LoggingConfigValidator.VisualElement.create(
             veName, id, dataProtoType, staticMetadata, func.getSourceLocation()));
   }
 

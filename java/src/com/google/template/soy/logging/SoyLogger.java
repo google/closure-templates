@@ -69,4 +69,7 @@ public interface SoyLogger {
 
   /** The ID of the UndefinedVe. */
   long UNDEFINED_VE_ID = -1;
+
+  /** The name of the UndefinedVe. */
+  String UNDEFINED_VE_NAME = "UndefinedVe";
 }

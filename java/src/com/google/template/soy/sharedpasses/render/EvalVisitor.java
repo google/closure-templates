@@ -118,7 +118,6 @@ import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.logging.SoyLogger;
-import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.plugin.internal.JavaPluginExecContext;
 import com.google.template.soy.plugin.java.PluginInstances;
@@ -166,7 +165,7 @@ import javax.annotation.Nullable;
 public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
 
   static final SoyVisualElement UNDEFINED_VE =
-      SoyVisualElement.create(SoyLogger.UNDEFINED_VE_ID, ValidatedLoggingConfig.UNDEFINED_VE_NAME);
+      SoyVisualElement.create(SoyLogger.UNDEFINED_VE_ID, SoyLogger.UNDEFINED_VE_NAME);
 
   static final SoyVisualElementData UNDEFINED_VE_DATA =
       SoyVisualElementData.create(UNDEFINED_VE, /* data= */ null);

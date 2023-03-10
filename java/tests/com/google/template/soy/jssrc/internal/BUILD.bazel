@@ -42,7 +42,6 @@ java_library(
         "//java/src/com/google/template/soy/jssrc/restricted",
         "//java/src/com/google/template/soy/logging:internal",
         "//java/src/com/google/template/soy/logging:public",
-        "//java/src/com/google/template/soy/logging/testing",
         "//java/src/com/google/template/soy/plugin/javascript/restricted",
         "//java/src/com/google/template/soy/shared/internal",
         "//java/src/com/google/template/soy/shared/restricted",

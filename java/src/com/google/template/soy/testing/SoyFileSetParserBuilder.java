@@ -37,7 +37,6 @@ import com.google.template.soy.conformance.ValidatedConformanceConfig;
 import com.google.template.soy.css.CssRegistry;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.internal.proto.Field;
-import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.passes.CompilerPass;
 import com.google.template.soy.passes.PassManager;
 import com.google.template.soy.passes.PassManager.PassContinuationRule;
@@ -81,7 +80,6 @@ public final class SoyFileSetParserBuilder {
   private ImmutableList<CompilationUnitAndKind> compilationUnits;
   private SoyGeneralOptions options = new SoyGeneralOptions();
   private ValidatedConformanceConfig conformanceConfig = ValidatedConformanceConfig.EMPTY;
-  private ValidatedLoggingConfig loggingConfig = ValidatedLoggingConfig.EMPTY;
   private boolean desugarHtmlNodes = true;
   private boolean desugarIdomFeatures = true;
   private Optional<CssRegistry> cssRegistry = Optional.empty();
@@ -312,12 +310,6 @@ public final class SoyFileSetParserBuilder {
   }
 
   @CanIgnoreReturnValue
-  public SoyFileSetParserBuilder setLoggingConfig(ValidatedLoggingConfig loggingConfig) {
-    this.loggingConfig = checkNotNull(loggingConfig);
-    return this;
-  }
-
-  @CanIgnoreReturnValue
   public SoyFileSetParserBuilder desugarHtmlNodes(boolean desugarHtmlNodes) {
     this.desugarHtmlNodes = desugarHtmlNodes;
     return this;
@@ -424,8 +416,7 @@ public final class SoyFileSetParserBuilder {
                 errorReporter))
         .insertEscapingDirectives(runAutoescaper)
         .optimize(runOptimizer)
-        .addHtmlAttributesForDebugging(addHtmlAttributesForDebugging)
-        .setLoggingConfig(loggingConfig);
+        .addHtmlAttributesForDebugging(addHtmlAttributesForDebugging);
     if (allowUnboundGlobals) {
       passManager.allowUnknownGlobals();
     }

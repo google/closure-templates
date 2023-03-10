@@ -125,7 +125,6 @@ import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.internal.util.TopoSort;
 import com.google.template.soy.logging.LoggingFunction;
-import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.internal.BuiltinMethod;
@@ -389,7 +388,6 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
 
   private final ErrorReporter errorReporter;
 
-  private final ValidatedLoggingConfig loggingConfig;
   private final SoyMethod.Registry methodRegistry;
   private final Supplier<FileSetMetadata> templateRegistryFromDeps;
   /** Cached map that converts a string representation of types to actual soy types. */
@@ -416,11 +414,9 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
 
   ResolveExpressionTypesPass(
       ErrorReporter errorReporter,
-      ValidatedLoggingConfig loggingConfig,
       PluginResolver pluginResolver,
       Supplier<FileSetMetadata> templateRegistryFromDeps) {
     this.errorReporter = errorReporter;
-    this.loggingConfig = loggingConfig;
     this.pluginResolutionMode =
         pluginResolver == null
             ? PluginResolver.Mode.REQUIRE_DEFINITIONS

@@ -21,7 +21,7 @@ package(default_visibility = ["//:soy_internal"])
 java_library(
     name = "internal",
     srcs = [
-        "ValidatedLoggingConfig.java",
+        "LoggingConfigValidator.java",
     ],
     deps = [
         ":public",

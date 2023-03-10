@@ -53,8 +53,6 @@ import com.google.template.soy.jbcsrc.api.SoySauceImpl;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.internal.JsSrcMain;
-import com.google.template.soy.logging.AnnotatedLoggingConfig;
-import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.SoyMsgBundleHandler;
 import com.google.template.soy.msgs.SoyMsgBundleHandler.OutputFileOptions;
@@ -160,8 +158,6 @@ public final class SoyFileSet {
 
     private ValidatedConformanceConfig conformanceConfig = ValidatedConformanceConfig.EMPTY;
 
-    private ValidatedLoggingConfig loggingConfig = ValidatedLoggingConfig.EMPTY;
-
     private ImmutableList<File> pluginRuntimeJars = ImmutableList.of();
 
     private Optional<CssRegistry> cssRegistry = Optional.empty();
@@ -247,7 +243,6 @@ public final class SoyFileSet {
           getGeneralOptions(),
           cache,
           conformanceConfig,
-          loggingConfig,
           warningSink,
           pluginRuntimeJars,
           skipPluginValidation,
@@ -551,25 +546,6 @@ public final class SoyFileSet {
     }
 
     /**
-     * Sets the logging config to use.
-     *
-     * @throws IllegalArgumentException if the config proto is invalid. For example, if there are
-     *     multiple elements with the same {@code name} or {@code id}, or if the name not a valid
-     *     identifier.
-     */
-    @CanIgnoreReturnValue
-    public Builder setLoggingConfig(AnnotatedLoggingConfig config) {
-      return setValidatedLoggingConfig(ValidatedLoggingConfig.create(config));
-    }
-
-    /** Sets the validated logging config to use. */
-    @CanIgnoreReturnValue
-    Builder setValidatedLoggingConfig(ValidatedLoggingConfig parseLoggingConfigs) {
-      this.loggingConfig = checkNotNull(parseLoggingConfigs);
-      return this;
-    }
-
-    /**
      * Sets the location of the jars containing plugin runtime code, for use validating plugin
      * MethodRefs.
      */
@@ -608,7 +584,6 @@ public final class SoyFileSet {
   private final SoyGeneralOptions generalOptions;
 
   private final ValidatedConformanceConfig conformanceConfig;
-  private final ValidatedLoggingConfig loggingConfig;
   private final ImmutableList<File> pluginRuntimeJars;
   private final Optional<CssRegistry> cssRegistry;
 
@@ -640,7 +615,6 @@ public final class SoyFileSet {
       SoyGeneralOptions generalOptions,
       @Nullable SoyAstCache cache,
       ValidatedConformanceConfig conformanceConfig,
-      ValidatedLoggingConfig loggingConfig,
       @Nullable Appendable warningSink,
       ImmutableList<File> pluginRuntimeJars,
       boolean skipPluginValidation,
@@ -659,7 +633,6 @@ public final class SoyFileSet {
     this.soySourceFunctions = soySourceFunctions;
     this.soyMethods = soyMethods;
     this.conformanceConfig = checkNotNull(conformanceConfig);
-    this.loggingConfig = checkNotNull(loggingConfig);
     this.warningSink = warningSink;
     this.pluginRuntimeJars = pluginRuntimeJars;
     this.skipPluginValidation = skipPluginValidation;
@@ -1280,7 +1253,6 @@ public final class SoyFileSet {
         .setErrorReporter(errorReporter)
         .setJavaPluginValidator(javaMethodChecker)
         .setConformanceConfig(conformanceConfig)
-        .setLoggingConfig(loggingConfig)
         .setPluginResolver(buildPluginResolver());
   }
 

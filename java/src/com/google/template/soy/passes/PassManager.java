@@ -32,7 +32,6 @@ import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.conformance.ValidatedConformanceConfig;
 import com.google.template.soy.css.CssRegistry;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.passes.CompilerFileSetPass.Result;
 import com.google.template.soy.passes.CompilerFileSetPass.TopologicallyOrdered;
 import com.google.template.soy.plugin.java.MethodChecker;
@@ -274,7 +273,6 @@ public final class PassManager {
     private boolean optimize = true;
     private ImmutableSet<SourceFilePath> generatedPathsToCheck = ImmutableSet.of();
     private ValidatedConformanceConfig conformanceConfig = ValidatedConformanceConfig.EMPTY;
-    private ValidatedLoggingConfig loggingConfig = ValidatedLoggingConfig.EMPTY;
     private boolean insertEscapingDirectives = true;
     private boolean addHtmlAttributesForDebugging = true;
     private AstRewrites astRewrites = AstRewrites.ALL;
@@ -424,12 +422,6 @@ public final class PassManager {
       return this;
     }
 
-    @CanIgnoreReturnValue
-    public Builder setLoggingConfig(ValidatedLoggingConfig loggingConfig) {
-      this.loggingConfig = checkNotNull(loggingConfig);
-      return this;
-    }
-
     /**
      * Can be used to enable/disable the autoescaper.
      *
@@ -567,11 +559,8 @@ public final class PassManager {
             .add(new NullSafeAccessPass())
             .add(
                 new ResolveExpressionTypesPass(
-                    errorReporter,
-                    loggingConfig,
-                    pluginResolver,
-                    accumulatedState::registryFromDeps))
-            .add(new VeDefValidationPass(loggingConfig, errorReporter));
+                    errorReporter, pluginResolver, accumulatedState::registryFromDeps))
+            .add(new VeDefValidationPass(errorReporter));
         if (astRewrites.isAll()) {
           passes.add(new SimplifyAssertNonNullPass());
         }
@@ -593,7 +582,7 @@ public final class PassManager {
         passes.add(new CheckGlobalsPass(errorReporter));
       }
       passes
-          .add(new ValidateAliasesPass(errorReporter, loggingConfig))
+          .add(new ValidateAliasesPass(errorReporter))
           .add(new KeyCommandPass(errorReporter, disableAllTypeChecking))
           .add(new IncrementalDomKeysPass(errorReporter));
 

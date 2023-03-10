@@ -38,14 +38,11 @@ import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.protobuf.Descriptors.DescriptorValidationException;
 import com.google.protobuf.Descriptors.FileDescriptor;
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.template.soy.CacheLoaders.CachedDescriptorSet;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.css.CssRegistry;
 import com.google.template.soy.error.SoyCompilationException;
-import com.google.template.soy.logging.AnnotatedLoggingConfig;
-import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.plugin.java.DelegatingMethodChecker;
 import com.google.template.soy.plugin.java.MethodChecker;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
@@ -149,13 +146,6 @@ public abstract class AbstractSoyCompiler {
               + " transitive dependencies of the files passed to --directProtoDeps.",
       handler = SoyCmdLineParser.FileListOptionHandler.class)
   private List<File> protoDescIndirectDeps = new ArrayList<>();
-
-  @Option(
-      name = "--loggingConfig",
-      aliases = "--loggingConfigs",
-      usage = "Location of logging config protos in binary proto format. Optional.",
-      handler = SoyCmdLineParser.FileListOptionHandler.class)
-  private List<File> loggingConfigs = new ArrayList<>();
 
   @Option(
       name = "--cssMetadata",
@@ -339,7 +329,6 @@ public abstract class AbstractSoyCompiler {
     sfsBuilder
         .setWarningSink(err)
         .setJavaPluginValidator(new DelegatingMethodChecker(builder.build()))
-        .setValidatedLoggingConfig(parseLoggingConfig())
         // Set experimental features that are not generally available.
         .setExperimentalFeatures(experimentalFeatures)
         .setSoyAstCache(cache.astCache());
@@ -479,26 +468,6 @@ public abstract class AbstractSoyCompiler {
 
   protected Map<String, String> getGeneratedFiles() {
     return generatedFiles;
-  }
-
-  private ValidatedLoggingConfig parseLoggingConfig() {
-    AnnotatedLoggingConfig.Builder configBuilder = AnnotatedLoggingConfig.newBuilder();
-    for (File loggingConfig : loggingConfigs) {
-      try {
-        configBuilder.mergeFrom(
-            cache.read(loggingConfig, CacheLoaders.LOGGING_CONFIG_LOADER, soyCompilerFileReader));
-      } catch (IllegalArgumentException e) {
-        throw new CommandLineError(
-            "Error parsing logging config proto: " + loggingConfig + ": " + e.getMessage());
-      } catch (InvalidProtocolBufferException e) {
-        throw new CommandLineError(
-            "Invalid logging config proto: " + loggingConfig + ": " + e.getMessage());
-      } catch (IOException e) {
-        throw new CommandLineError(
-            "Unable to read logging config proto: " + loggingConfig + ": " + e.getMessage());
-      }
-    }
-    return ValidatedLoggingConfig.create(configBuilder.build());
   }
 
   /**

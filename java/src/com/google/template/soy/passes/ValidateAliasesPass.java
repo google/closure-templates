@@ -19,7 +19,6 @@ package com.google.template.soy.passes;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
-import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.soytree.AliasDeclaration;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.types.SoyProtoEnumType;
@@ -36,15 +35,10 @@ final class ValidateAliasesPass implements CompilerFilePass {
   private static final SoyErrorKind ALIAS_CONFLICTS_WITH_TYPE_NAME =
       SoyErrorKind.of("Alias ''{0}'' conflicts with a type of the same name.");
 
-  private static final SoyErrorKind ALIAS_CONFLICTS_WITH_VE =
-      SoyErrorKind.of("Alias ''{0}'' conflicts with a VE of the same name.");
-
   private final ErrorReporter errorReporter;
-  private final ValidatedLoggingConfig loggingConfig;
 
-  ValidateAliasesPass(ErrorReporter errorReporter, ValidatedLoggingConfig loggingConfig) {
+  ValidateAliasesPass(ErrorReporter errorReporter) {
     this.errorReporter = errorReporter;
-    this.loggingConfig = loggingConfig;
   }
 
   @Override
@@ -60,10 +54,6 @@ final class ValidateAliasesPass implements CompilerFilePass {
           errorReporter.report(
               alias.alias().location(), ALIAS_CONFLICTS_WITH_TYPE_NAME, alias.alias());
         }
-      }
-
-      if (loggingConfig.getElement(alias.alias().identifier()) != null) {
-        errorReporter.report(alias.alias().location(), ALIAS_CONFLICTS_WITH_VE, alias.alias());
       }
     }
   }
