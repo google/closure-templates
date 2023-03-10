@@ -14,9 +14,17 @@
 # limitations under the License.
 ##
 
+load("@bazel_tools//tools/jdk:local_java_repository.bzl", "local_java_runtime")
+
 package_group(
     name = "soy_internal",
     packages = [
         "//...",
     ],
+)
+
+local_java_runtime(
+    name = "rbe_jdk",
+    java_home = "/usr/lib/jvm/11.29.3-ca-jdk11.0.2/reduced",
+    version = "11.0.2",
 )

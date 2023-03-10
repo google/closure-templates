@@ -19,15 +19,15 @@ workspace(name = "com_google_closure_templates")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("@bazel_tools//tools/build_defs/repo:jvm.bzl", "jvm_maven_import_external")
 
-RULES_JVM_EXTERNAL_TAG = "4.2"
-RULES_JVM_EXTERNAL_SHA = "cd1a77b7b02e8e008439ca76fd34f5b07aecb8c752961f9640dea15e9e5ba1ca"
+RULES_JVM_EXTERNAL_TAG = "4.5"
+RULES_JVM_EXTERNAL_SHA = "b17d7388feb9bfa7f2fa09031b32707df529f26c91ab9e5d909eb1676badd9a6"
 
 http_archive(
-    name = "rules_jvm_external",
-    strip_prefix = "rules_jvm_external-%s" % RULES_JVM_EXTERNAL_TAG,
-    sha256 = RULES_JVM_EXTERNAL_SHA,
-    url = "https://github.com/bazelbuild/rules_jvm_external/archive/%s.zip" % RULES_JVM_EXTERNAL_TAG,
-)
+        name = "rules_jvm_external",
+            strip_prefix = "rules_jvm_external-%s" % RULES_JVM_EXTERNAL_TAG,
+            sha256 = RULES_JVM_EXTERNAL_SHA,
+            url = "https://github.com/bazelbuild/rules_jvm_external/archive/%s.zip" % RULES_JVM_EXTERNAL_TAG,
+        )
 
 load("@rules_jvm_external//:repositories.bzl", "rules_jvm_external_deps")
 
@@ -171,34 +171,31 @@ jvm_maven_import_external(
     server_urls = SERVER_URLS,
 )
 
-# Apache 2.0
 http_archive(
     name = "rules_java",
-    url = "https://github.com/bazelbuild/rules_java/releases/download/4.0.0/rules_java-4.0.0.tar.gz",
-    sha256 = "34b41ec683e67253043ab1a3d1e8b7c61e4e8edefbcad485381328c934d072fe",
+    urls = [
+        "https://github.com/bazelbuild/rules_java/releases/download/5.4.1/rules_java-5.4.1.tar.gz",
+    ],
+    sha256 = "a1f82b730b9c6395d3653032bd7e3a660f9d5ddb1099f427c1e1fe768f92e395",
 )
 load("@rules_java//java:repositories.bzl", "rules_java_dependencies", "rules_java_toolchains")
 rules_java_dependencies()
 rules_java_toolchains()
 
-# Apache 2.0
 http_archive(
     name = "rules_proto",
-    sha256 = "e017528fd1c91c5a33f15493e3a398181a9e821a804eb7ff5acdd1d2d6c2b18d",
-    strip_prefix = "rules_proto-4.0.0-3.20.0",
+    sha256 = "dc3fb206a2cb3441b485eb1e423165b231235a1ea9b031b4433cf7bc1fa460dd",
+    strip_prefix = "rules_proto-5.3.0-21.7",
     urls = [
-        "https://github.com/bazelbuild/rules_proto/archive/refs/tags/4.0.0-3.20.0.tar.gz",
+        "https://github.com/bazelbuild/rules_proto/archive/refs/tags/5.3.0-21.7.tar.gz",
     ],
 )
-
 load("@rules_proto//proto:repositories.bzl", "rules_proto_dependencies", "rules_proto_toolchains")
-
 rules_proto_dependencies()
-
 rules_proto_toolchains()
 
 http_archive(
     name = "rbe_default",
-    sha256 = "c5f784299a319f39bbe51e38a49e2e779cc2eb3b1b06ce4e71d5e537ac95e134",
-    urls = ["https://storage.googleapis.com/rbe-toolchain/bazel-configs/bazel_4.1.0/rbe-ubuntu1604/latest/rbe_default.tar"],
+    sha256 = "027ecc6eed47a63a11951a68105c6b64c0d98d95691bc0b94e1c83b6221e9e61",
+    urls = ["https://storage.googleapis.com/rbe-toolchain/bazel-configs/bazel_6.1.0/rbe-ubuntu1604/latest/rbe_default.tar"],
 )
