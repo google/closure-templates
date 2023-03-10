@@ -76,14 +76,21 @@ public abstract class TsxElement extends Expression {
 
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
+    if (isComponentCall() && body().isEmpty()) {
+      try (FormattingContext buffer = ctx.buffer()) {
+        doFormatOutputExprHelper(buffer);
+      }
+    } else {
+      doFormatOutputExprHelper(ctx);
+    }
+  }
+
+  void doFormatOutputExprHelper(FormattingContext ctx) {
     ctx.pushLexicalState(LexicalState.TSX);
     ctx.appendAll(openTag());
     for (CodeChunk s : body()) {
       ctx.appendAll(s);
     }
-    ctx.popLexicalState();
-    ctx.pushLexicalState(
-        isComponentCall() ? LexicalState.TSX_COMPONENT_CALL_CLOSE : LexicalState.TSX);
     ctx.appendAll(closeTag());
     ctx.popLexicalState();
   }
