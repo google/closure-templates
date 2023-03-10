@@ -45,6 +45,8 @@ public abstract class FormatOptions {
    */
   public abstract boolean htmlEscapeStrings();
 
+  public abstract Builder toBuilder();
+
   /** Builder. */
   @AutoValue.Builder
   public abstract static class Builder {

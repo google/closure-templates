@@ -71,11 +71,14 @@ abstract class ObjectLiteral extends Expression {
       }
       first = false;
       if (isSpread(entry.getKey())) {
-        ctx.append("...").appendOutputExpression(entry.getValue());
+        try (FormattingContext buffer = ctx.buffer()) {
+          buffer.append("...").appendOutputExpression(entry.getValue());
+        }
       } else {
-        ctx.appendOutputExpression(entry.getKey())
-            .append(": ")
-            .appendOutputExpression(entry.getValue());
+        try (FormattingContext buffer = ctx.buffer()) {
+          buffer.appendOutputExpression(entry.getKey()).append(": ");
+        }
+        ctx.appendOutputExpression(entry.getValue());
       }
     }
     ctx.append('}');

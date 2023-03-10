@@ -72,7 +72,11 @@ class FormattingContext implements AutoCloseable {
    */
   FormattingContext buffer() {
     FormattingContext parent = this;
-    return new FormattingContext(formatOptions) {
+    FormatOptions bufferOptions =
+        formatOptions.useTsxLineBreaks()
+            ? formatOptions.toBuilder().setUseTsxLineBreaks(false).build()
+            : formatOptions;
+    return new FormattingContext(bufferOptions) {
       @Override
       public void close() {
         String buffer = this.toString();
