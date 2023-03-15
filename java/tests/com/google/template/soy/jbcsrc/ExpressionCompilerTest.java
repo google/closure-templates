@@ -74,7 +74,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-import org.objectweb.asm.Label;
 import org.objectweb.asm.Type;
 
 /** Tests for {@link ExpressionCompiler} */
@@ -624,10 +623,8 @@ public class ExpressionCompilerTest {
 
     return testExpressionCompiler.compileRootExpression(
         ((FunctionNode) code.getExpr().getChild(0)).getChild(0),
-        new ExpressionDetacher.Factory() {
-          @Override
-          public ExpressionDetacher createExpressionDetacher(Label label) {
-            return new ExpressionDetacher() {
+        label ->
+            new ExpressionDetacher() {
               @Override
               public Expression resolveSoyValueProvider(Expression soyValueProvider) {
                 if (variables.containsValue(soyValueProvider)) {
@@ -654,9 +651,7 @@ public class ExpressionCompilerTest {
               public Expression resolveSoyValueProviderMap(Expression soyValueProviderMap) {
                 throw new UnsupportedOperationException();
               }
-            };
-          }
-        });
+            });
   }
 
   /**

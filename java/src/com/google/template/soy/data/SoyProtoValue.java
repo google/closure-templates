@@ -105,7 +105,7 @@ public final class SoyProtoValue extends SoyAbstractValue implements SoyLegacyOb
       CacheBuilder.newBuilder()
           .weakKeys()
           .build(
-              new CacheLoader<Descriptor, ProtoClass>() {
+              new CacheLoader<>() {
                 final Field.Factory<FieldWithInterpreter> factory = FieldWithInterpreter::new;
 
                 @Override

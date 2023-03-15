@@ -24,7 +24,7 @@ import com.google.template.soy.data.SanitizedContent.ContentKind;
 public final class Converters {
 
   static final Converter<SanitizedContentKind, ContentKind> CONTENT_KIND_CONVERTER =
-      new Converter<SanitizedContentKind, ContentKind>() {
+      new Converter<>() {
         @Override
         protected ContentKind doForward(SanitizedContentKind sanitizedContentKind) {
           if (sanitizedContentKind == SanitizedContentKind.HTML_ELEMENT) {

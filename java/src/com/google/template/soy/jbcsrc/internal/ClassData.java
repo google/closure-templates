@@ -24,7 +24,6 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLStreamHandler;
@@ -96,30 +95,27 @@ public final class ClassData {
     try {
       // Needs specifyStreamHandler permission.
       return AccessController.doPrivileged(
-          new PrivilegedExceptionAction<URL>() {
-            @Override
-            public URL run() throws MalformedURLException {
-              return new URL(
-                  "mem",
-                  "",
-                  -1,
-                  type.internalName() + ".class",
-                  new URLStreamHandler() {
-                    @Override
-                    protected URLConnection openConnection(URL u) {
-                      return new URLConnection(u) {
+          (PrivilegedExceptionAction<URL>)
+              () ->
+                  new URL(
+                      "mem",
+                      "",
+                      -1,
+                      type.internalName() + ".class",
+                      new URLStreamHandler() {
                         @Override
-                        public void connect() {}
+                        protected URLConnection openConnection(URL u) {
+                          return new URLConnection(u) {
+                            @Override
+                            public void connect() {}
 
-                        @Override
-                        public InputStream getInputStream() {
-                          return new ByteArrayInputStream(data);
+                            @Override
+                            public InputStream getInputStream() {
+                              return new ByteArrayInputStream(data);
+                            }
+                          };
                         }
-                      };
-                    }
-                  });
-            }
-          });
+                      }));
     } catch (Exception e) {
       throw new IllegalStateException("Failed to create stream handler for resource url", e);
     }

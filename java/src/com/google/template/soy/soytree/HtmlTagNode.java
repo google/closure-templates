@@ -93,13 +93,7 @@ public abstract class HtmlTagNode extends AbstractParentSoyNode<StandaloneNode>
     copyState.updateRefs(orig, this);
     for (HtmlTagNode matchingNode : orig.taggedPairs) {
       copyState.registerRefListener(
-          matchingNode,
-          new CopyState.Listener<HtmlTagNode>() {
-            @Override
-            public void newVersion(HtmlTagNode newMatchingNode) {
-              taggedPairs.add(newMatchingNode);
-            }
-          });
+          matchingNode, newMatchingNode -> taggedPairs.add(newMatchingNode));
     }
   }
 

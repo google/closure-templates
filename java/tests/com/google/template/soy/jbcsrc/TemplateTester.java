@@ -458,12 +458,7 @@ public final class TemplateTester {
     SystemOutRestorer enter() {
       final PrintStream prevStream = System.out;
       System.setOut(stream);
-      return new SystemOutRestorer() {
-        @Override
-        public void close() {
-          System.setOut(prevStream);
-        }
-      };
+      return () -> System.setOut(prevStream);
     }
 
     @Override

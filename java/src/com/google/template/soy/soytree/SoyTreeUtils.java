@@ -575,7 +575,7 @@ public final class SoyTreeUtils {
   }
 
   private static final TypeNodeVisitor<List<? extends TypeNode>> TRAVERSING =
-      new TypeNodeVisitor<List<? extends TypeNode>>() {
+      new TypeNodeVisitor<>() {
         @Override
         public ImmutableList<? extends TypeNode> visit(NamedTypeNode node) {
           return ImmutableList.of();

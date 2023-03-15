@@ -36,14 +36,6 @@ final class ExpressionSubject extends Subject {
   private final String actual;
   private final ErrorReporter errorReporter;
 
-  private static final Subject.Factory<ExpressionSubject, String> FACTORY =
-      new Subject.Factory<ExpressionSubject, String>() {
-        @Override
-        public ExpressionSubject createSubject(FailureMetadata failureMetadata, String s) {
-          return new ExpressionSubject(failureMetadata, s, ErrorReporter.createForTest());
-        }
-      };
-
   private final ImmutableMap.Builder<String, String> aliasesBuilder = ImmutableMap.builder();
 
   public ExpressionSubject(FailureMetadata failureMetadata, String s, ErrorReporter errorReporter) {
@@ -53,7 +45,11 @@ final class ExpressionSubject extends Subject {
   }
 
   static ExpressionSubject assertThatExpression(String input) {
-    return Truth.assertAbout(FACTORY).that(input);
+    return Truth.assertAbout(
+            ((Subject.Factory<ExpressionSubject, String>)
+                (failureMetadata, s) ->
+                    new ExpressionSubject(failureMetadata, s, ErrorReporter.createForTest())))
+        .that(input);
   }
 
   void generatesASTWithRootOfType(Class<? extends ExprNode> clazz) {

@@ -75,17 +75,14 @@ public final class JavaScriptValueFactoryImpl extends JavaScriptValueFactory {
   private final BidiGlobalDir dir;
 
   private JavaScriptPluginContext createContext(final CodeChunk.Generator codeGenerator) {
-    return new JavaScriptPluginContext() {
-      @Override
-      public JavaScriptValue getBidiDir() {
-        if (dir.isStaticValue()) {
-          return new JavaScriptValueImpl(Expressions.number(dir.getStaticValue()));
-        }
-        return new JavaScriptValueImpl(
-            Expressions.ifExpression(JsRuntime.SOY_IS_LOCALE_RTL, Expressions.number(-1))
-                .setElse(Expressions.number(1))
-                .build(codeGenerator));
+    return () -> {
+      if (dir.isStaticValue()) {
+        return new JavaScriptValueImpl(Expressions.number(dir.getStaticValue()));
       }
+      return new JavaScriptValueImpl(
+          Expressions.ifExpression(JsRuntime.SOY_IS_LOCALE_RTL, Expressions.number(-1))
+              .setElse(Expressions.number(1))
+              .build(codeGenerator));
     };
   }
 

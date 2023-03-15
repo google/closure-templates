@@ -28,7 +28,6 @@ import com.google.template.soy.data.SoyDict;
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueConverterUtility;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.restricted.FloatData;
@@ -55,28 +54,10 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public class EvalVisitorTest {
 
-  protected static final SoyValueConverter CONVERTER = SoyValueConverter.INSTANCE;
-
   private static final ImmutableMap<String, SoyValueProvider> LOCALS =
       ImmutableMap.of(
           "zoo", StringData.forValue("loo"),
           "woo", FloatData.forValue(-1.618));
-
-  private static final SoyIdRenamingMap TEST_XID_RENAMING_MAP =
-      new SoyIdRenamingMap() {
-        @Override
-        public String get(String key) {
-          return key + "_renamed_xid";
-        }
-      };
-
-  private static final SoyCssRenamingMap TEST_CSS_RENAMING_MAP =
-      new SoyCssRenamingMap() {
-        @Override
-        public String get(String key) {
-          return key + "_renamed_css";
-        }
-      };
 
   private SoyRecord testData;
   private SoyIdRenamingMap xidRenamingMap = null;
@@ -504,7 +485,7 @@ public class EvalVisitorTest {
 
   @Test
   public void testCss() throws Exception {
-    cssRenamingMap = TEST_CSS_RENAMING_MAP;
+    cssRenamingMap = key -> key + "_renamed_css";
     assertEval("css('class')", "class_renamed_css");
     assertEval("css($zoo, 'class')", "loo-class_renamed_css");
 
@@ -515,7 +496,7 @@ public class EvalVisitorTest {
 
   @Test
   public void testXid() throws Exception {
-    xidRenamingMap = TEST_XID_RENAMING_MAP;
+    xidRenamingMap = key -> key + "_renamed_xid";
     assertEval("xid('id')", "id_renamed_xid");
 
     xidRenamingMap = null;

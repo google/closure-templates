@@ -100,12 +100,7 @@ public final class SaveStateMetaFactory {
       try {
         ProtectionDomain callerProtectionDomain =
             AccessController.doPrivileged(
-                new PrivilegedAction<ProtectionDomain>() {
-                  @Override
-                  public ProtectionDomain run() {
-                    return StackFrame.class.getProtectionDomain();
-                  }
-                });
+                (PrivilegedAction<ProtectionDomain>) StackFrame.class::getProtectionDomain);
         Field unsafeField = Unsafe.class.getDeclaredField("theUnsafe");
         unsafeField.setAccessible(true);
         Unsafe unsafeObject = (Unsafe) unsafeField.get(null);

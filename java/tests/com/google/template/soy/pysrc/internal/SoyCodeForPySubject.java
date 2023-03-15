@@ -241,20 +241,10 @@ public final class SoyCodeForPySubject extends Subject {
   // Public static functions for starting a SoyCodeForPySubject test.
 
   private static final Subject.Factory<SoyCodeForPySubject, String> SOYCODE =
-      new Subject.Factory<SoyCodeForPySubject, String>() {
-        @Override
-        public SoyCodeForPySubject createSubject(FailureMetadata failureMetadata, String code) {
-          return new SoyCodeForPySubject(failureMetadata, code, false);
-        }
-      };
+      (failureMetadata, code) -> new SoyCodeForPySubject(failureMetadata, code, false);
 
   private static final Subject.Factory<SoyCodeForPySubject, String> SOYFILE =
-      new Subject.Factory<SoyCodeForPySubject, String>() {
-        @Override
-        public SoyCodeForPySubject createSubject(FailureMetadata failureMetadata, String file) {
-          return new SoyCodeForPySubject(failureMetadata, file, true);
-        }
-      };
+      (failureMetadata, file) -> new SoyCodeForPySubject(failureMetadata, file, true);
 
   public static SoyCodeForPySubject assertThatSoyCode(String code) {
     return assertAbout(SOYCODE).that(code);

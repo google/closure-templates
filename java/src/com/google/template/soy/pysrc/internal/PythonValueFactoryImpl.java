@@ -65,12 +65,7 @@ final class PythonValueFactoryImpl extends PythonValueFactory {
     this.reporter = checkNotNull(reporter);
     checkNotNull(bidiDir);
     this.context =
-        new PythonPluginContext() {
-          @Override
-          public PythonValue getBidiDir() {
-            return new PythonValueImpl(new PyExpr(bidiDir.getCodeSnippet(), Integer.MIN_VALUE));
-          }
-        };
+        () -> new PythonValueImpl(new PyExpr(bidiDir.getCodeSnippet(), Integer.MIN_VALUE));
   }
 
   PyExpr applyFunction(

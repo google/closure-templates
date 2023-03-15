@@ -630,7 +630,7 @@ public class SanitizersTest {
     assertThat(Sanitizers.normalizeHtmlNospace(ASCII_CHARS_SOYDATA)).isEqualTo(escapedAscii);
   }
 
-  private static final String stripHtmlTags(String html, boolean spacesOk) {
+  private static String stripHtmlTags(String html, boolean spacesOk) {
     return Sanitizers.stripHtmlTags(html, null, spacesOk);
   }
 
@@ -652,7 +652,7 @@ public class SanitizersTest {
   private static final TagWhitelist TEST_WHITELIST =
       new TagWhitelist("b", "br", "ul", "li", "table", "tr", "td");
 
-  private static final String cleanHtml(String html) {
+  private static String cleanHtml(String html) {
     return Sanitizers.stripHtmlTags(html, TEST_WHITELIST, true);
   }
 

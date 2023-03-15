@@ -73,7 +73,7 @@ public final class TreeStreams {
     Deque<T> stack = new ArrayDeque<>();
     stack.add(root);
     return StreamSupport.stream(
-        new AbstractSpliterator<T>(
+        new AbstractSpliterator<>(
             // Our Baseclass says to pass MAX_VALUE for unsized streams
             Long.MAX_VALUE,
             // The order is meaningful and every item returned is unique.

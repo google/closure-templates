@@ -33,7 +33,6 @@ import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Maps;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.basetree.CopyState.Listener;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprEquivalence;
@@ -264,14 +263,7 @@ public final class MsgNode extends AbstractBlockCommandNode
       // NOTE: because we only hold references to our children, and all our children will have been
       // copied by the time 'super' returns, we can count on these listeners firing synchronously.
       for (final MsgSubstUnitNode old : orig.substUnitInfo.nodeToVarNameMap.keySet()) {
-        copyState.registerRefListener(
-            old,
-            new Listener<MsgSubstUnitNode>() {
-              @Override
-              public void newVersion(MsgSubstUnitNode newObject) {
-                oldToNew.put(old, newObject);
-              }
-            });
+        copyState.registerRefListener(old, newObject -> oldToNew.put(old, newObject));
       }
       this.substUnitInfo = orig.substUnitInfo.copy(oldToNew);
     }

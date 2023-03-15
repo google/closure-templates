@@ -42,14 +42,7 @@ public abstract class BytecodeProducer {
    * 'compilation state' or 'compiler' object in which this phase information could be stored.
    */
   private static final ThreadLocal<Boolean> isGenerating =
-      Flags.DEBUG
-          ? new ThreadLocal<Boolean>() {
-            @Override
-            protected Boolean initialValue() {
-              return false;
-            }
-          }
-          : null;
+      Flags.DEBUG ? ThreadLocal.withInitial(() -> false) : null;
 
   protected final SourceLocation location;
 

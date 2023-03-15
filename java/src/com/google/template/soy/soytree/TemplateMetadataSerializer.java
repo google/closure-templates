@@ -543,7 +543,7 @@ public final class TemplateMetadataSerializer {
         backwardMap.put(t2Instance, t1Instance);
       }
     }
-    return new Converter<T1, T2>() {
+    return new Converter<>() {
       @Override
       protected T2 doForward(T1 a) {
         T2 r = forwardMap.get(a);

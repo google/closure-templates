@@ -55,7 +55,7 @@ public final class ExprEquivalence {
   private final IdentityHashMap<ExprNode, Wrapper> interningMap = new IdentityHashMap<>();
 
   private final Equivalence<ExprNode> equivalence =
-      new Equivalence<ExprNode>() {
+      new Equivalence<>() {
         @Override
         protected boolean doEquivalent(ExprNode a, ExprNode b) {
           return a.getKind() == b.getKind() && new EqualsVisitor(a).exec(b);
@@ -69,7 +69,7 @@ public final class ExprEquivalence {
       };
 
   private final AbstractReturningExprNodeVisitor<Integer> hashCodeVisitor =
-      new AbstractReturningExprNodeVisitor<Integer>() {
+      new AbstractReturningExprNodeVisitor<>() {
         @Override
         protected Integer visitVarRefNode(VarRefNode node) {
           return Objects.hashCode(node.getDefnDecl());

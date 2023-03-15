@@ -941,13 +941,7 @@ public class RenderVisitorTest {
   public void testRenderFuture() throws Exception {
     final StringBuilder progress = new StringBuilder();
 
-    Flushable flushable =
-        new Flushable() {
-          @Override
-          public void flush() {
-            progress.append("flush;");
-          }
-        };
+    Flushable flushable = () -> progress.append("flush;");
     String soyFileContent =
         "{namespace ns}\n"
             + "\n"
@@ -1410,7 +1404,7 @@ public class RenderVisitorTest {
     final StringBuilder outputSb = new StringBuilder();
     final AtomicReference<String> outputAtFutureGetTime = new AtomicReference<>();
     AbstractFuture<Integer> fooFuture =
-        new AbstractFuture<Integer>() {
+        new AbstractFuture<>() {
           {
             set(1);
           }
@@ -1490,7 +1484,7 @@ public class RenderVisitorTest {
     final StringBuilder outputSb = new StringBuilder();
     final AtomicReference<String> outputAtFutureGetTime = new AtomicReference<>();
     AbstractFuture<String> future =
-        new AbstractFuture<String>() {
+        new AbstractFuture<>() {
           {
             set("future-content");
           }

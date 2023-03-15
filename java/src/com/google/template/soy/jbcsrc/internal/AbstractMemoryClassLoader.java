@@ -32,12 +32,7 @@ public abstract class AbstractMemoryClassLoader extends ClassLoader {
   static {
     DEFAULT_PROTECTION_DOMAIN =
         AccessController.doPrivileged(
-            new PrivilegedAction<ProtectionDomain>() {
-              @Override
-              public ProtectionDomain run() {
-                return MemoryClassLoader.class.getProtectionDomain();
-              }
-            });
+            (PrivilegedAction<ProtectionDomain>) MemoryClassLoader.class::getProtectionDomain);
   }
 
   protected AbstractMemoryClassLoader() {

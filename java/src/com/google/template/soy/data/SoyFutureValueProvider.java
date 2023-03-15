@@ -42,12 +42,7 @@ public final class SoyFutureValueProvider extends SoyAbstractCachingValueProvide
    * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
    */
   public static final ThreadLocal<FutureBlockCallback> futureBlockCallback =
-      new ThreadLocal<FutureBlockCallback>() {
-        @Override
-        protected FutureBlockCallback initialValue() {
-          return () -> {};
-        }
-      };
+      ThreadLocal.withInitial(() -> () -> {});
 
   /** The wrapped Future object that will provide the value, if needed. */
   private final Future<?> future;

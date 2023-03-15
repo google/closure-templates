@@ -259,7 +259,7 @@ public final class RenderOnlySoyMsgBundleImpl extends SoyMsgBundle {
 
   @Override
   public Iterator<SoyMsg> iterator() {
-    return new Iterator<SoyMsg>() {
+    return new Iterator<>() {
       int index = 0;
 
       @Override

@@ -49,7 +49,7 @@ public final class GetCssNamespacesFunction
 
   public GetCssNamespacesFunction() {}
 
-  public static final String getCssNamespaces(List<String> input) {
+  public static String getCssNamespaces(List<String> input) {
     return input.toString();
   }
 

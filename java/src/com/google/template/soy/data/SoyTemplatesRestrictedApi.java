@@ -37,7 +37,7 @@ public final class SoyTemplatesRestrictedApi {
   private SoyTemplatesRestrictedApi() {}
 
   private static final ClassValue<String> templateNameValue =
-      new ClassValue<String>() {
+      new ClassValue<>() {
         @Override
         protected String computeValue(Class<?> type) {
           try {
@@ -57,7 +57,7 @@ public final class SoyTemplatesRestrictedApi {
   }
 
   private static final ClassValue<ImmutableSet<SoyTemplateParam<?>>> templateParamsValue =
-      new ClassValue<ImmutableSet<SoyTemplateParam<?>>>() {
+      new ClassValue<>() {
         @Override
         @SuppressWarnings("unchecked")
         protected ImmutableSet<SoyTemplateParam<?>> computeValue(Class<?> type) {

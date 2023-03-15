@@ -91,15 +91,12 @@ public final class RemoveUnnecessaryEscapingDirectivesTest {
                 .parse()
                 .fileSet();
         assertThat(file.getChild(0).toSourceString().trim()).isEqualTo(compose(escapedTemplate));
-        return new RewrittenAsssertion() {
-          @Override
-          public void andHasUnnecessaryDirectivesRemovedTo(String removedDirectivesTemplate) {
-            new RemoveUnnecessaryEscapingDirectives(
-                    SoyBidiUtils.decodeBidiGlobalDirFromJsOptions(0, true))
-                .run(file);
-            assertThat(file.getChild(0).toSourceString().trim())
-                .isEqualTo(compose(removedDirectivesTemplate));
-          }
+        return removedDirectivesTemplate -> {
+          new RemoveUnnecessaryEscapingDirectives(
+                  SoyBidiUtils.decodeBidiGlobalDirFromJsOptions(0, true))
+              .run(file);
+          assertThat(file.getChild(0).toSourceString().trim())
+              .isEqualTo(compose(removedDirectivesTemplate));
         };
       }
     };

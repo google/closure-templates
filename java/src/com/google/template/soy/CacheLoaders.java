@@ -32,7 +32,6 @@ import com.google.template.soy.logging.VeMetadata;
 import com.google.template.soy.plugin.java.internal.CompiledJarsPluginSignatureReader;
 import com.google.template.soy.soytree.CompilationUnit;
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -43,16 +42,12 @@ import java.util.zip.GZIPInputStream;
 /** Implementations of {@link SoyInputCache.CacheLoader} for common compiler inputs. */
 final class CacheLoaders {
   static final SoyInputCache.CacheLoader<AnnotatedLoggingConfig> LOGGING_CONFIG_LOADER =
-      new SoyInputCache.CacheLoader<AnnotatedLoggingConfig>() {
-        @Override
-        public AnnotatedLoggingConfig read(
-            File file, SoyCompilerFileReader reader, SoyInputCache cache) throws IOException {
-          try (InputStream stream = reader.read(file).openStream()) {
-            // This could include VE metadata with extensions, but those are processed separately
-            // (via SoyAnnotatedLoggingConfigGenerator) and aren't needed here, so just pass an
-            // empty extension registry.
-            return AnnotatedLoggingConfig.parseFrom(stream, ExtensionRegistry.getEmptyRegistry());
-          }
+      (file, reader, cache) -> {
+        try (InputStream stream = reader.read(file).openStream()) {
+          // This could include VE metadata with extensions, but those are processed separately
+          // (via SoyAnnotatedLoggingConfigGenerator) and aren't needed here, so just pass an
+          // empty extension registry.
+          return AnnotatedLoggingConfig.parseFrom(stream, ExtensionRegistry.getEmptyRegistry());
         }
       };
 
@@ -178,37 +173,23 @@ final class CacheLoaders {
   }
 
   static final SoyInputCache.CacheLoader<CachedDescriptorSet> CACHED_DESCRIPTOR_SET_LOADER =
-      new SoyInputCache.CacheLoader<CachedDescriptorSet>() {
-        @Override
-        public CachedDescriptorSet read(
-            File file, SoyCompilerFileReader reader, SoyInputCache cache) throws IOException {
-          try (InputStream stream = reader.read(file).openStream()) {
-            return new CachedDescriptorSet(
-                file, FileDescriptorSet.parseFrom(stream, ProtoUtils.REGISTRY));
-          }
+      (file, reader, cache) -> {
+        try (InputStream stream = reader.read(file).openStream()) {
+          return new CachedDescriptorSet(
+              file, FileDescriptorSet.parseFrom(stream, ProtoUtils.REGISTRY));
         }
       };
 
   static final SoyInputCache.CacheLoader<CompiledJarsPluginSignatureReader> JAVA_DEPS =
-      new SoyInputCache.CacheLoader<CompiledJarsPluginSignatureReader>() {
-        @Override
-        public CompiledJarsPluginSignatureReader read(
-            File file, SoyCompilerFileReader reader, SoyInputCache cache) {
-          return new CompiledJarsPluginSignatureReader(ImmutableList.of(file), false);
-        }
-      };
+      (file, reader, cache) -> new CompiledJarsPluginSignatureReader(ImmutableList.of(file), false);
 
   // TODO(lukes): ideally this would be reading directly to a List<TemplateMetadata> objects by
   // invoking the TemplateMetadataSerializer.  Doing so will require changing how types are parsed.
   static final SoyInputCache.CacheLoader<CompilationUnit> COMPILATION_UNIT_LOADER =
-      new SoyInputCache.CacheLoader<CompilationUnit>() {
-        @Override
-        public CompilationUnit read(File file, SoyCompilerFileReader reader, SoyInputCache cache)
-            throws IOException {
-          try (InputStream is =
-              new GZIPInputStream(reader.read(file).openStream(), /* bufferSize */ 32 * 1024)) {
-            return CompilationUnit.parseFrom(is, ExtensionRegistry.getEmptyRegistry());
-          }
+      (file, reader, cache) -> {
+        try (InputStream is =
+            new GZIPInputStream(reader.read(file).openStream(), /* bufferSize */ 32 * 1024)) {
+          return CompilationUnit.parseFrom(is, ExtensionRegistry.getEmptyRegistry());
         }
       };
 

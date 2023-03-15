@@ -122,12 +122,9 @@ public final class CopyState {
 
   private static <T> Listener<T> chainListeners(
       final Listener<T> listener, final Listener<T> oldListener) {
-    return new Listener<T>() {
-      @Override
-      public void newVersion(T newObject) {
-        listener.newVersion(newObject);
-        oldListener.newVersion(newObject);
-      }
+    return newObject -> {
+      listener.newVersion(newObject);
+      oldListener.newVersion(newObject);
     };
   }
 }

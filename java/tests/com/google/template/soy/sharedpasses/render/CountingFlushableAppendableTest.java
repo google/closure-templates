@@ -30,13 +30,7 @@ public class CountingFlushableAppendableTest {
   @Test
   public void testAppendAndFlush() throws Exception {
     final StringBuilder progress = new StringBuilder();
-    Flushable flushable =
-        new Flushable() {
-          @Override
-          public void flush() {
-            progress.append("F");
-          }
-        };
+    Flushable flushable = () -> progress.append("F");
 
     CountingFlushableAppendable c = new CountingFlushableAppendable(progress, flushable);
     assertThat(c.getAppendedCountSinceLastFlush()).isEqualTo(0);

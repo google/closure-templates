@@ -1077,7 +1077,7 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
       for (Block predecessor : current.predecessors) {
         Set<T> predecessorBlockSet = blockToAccessedExprs.get(predecessor);
         if (currentBlockSet == null) {
-          currentBlockSet = new HashSet<T>(predecessorBlockSet);
+          currentBlockSet = new HashSet<>(predecessorBlockSet);
         } else {
           currentBlockSet.retainAll(predecessorBlockSet);
         }

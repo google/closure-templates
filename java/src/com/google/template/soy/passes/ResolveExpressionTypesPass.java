@@ -1000,7 +1000,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
     }
 
     private final AbstractExprNodeVisitor<Void> checkAllTypesAssignedVisitor =
-        new AbstractExprNodeVisitor<Void>() {
+        new AbstractExprNodeVisitor<>() {
           @Override
           protected void visitExprNode(ExprNode node) {
             if (node instanceof ParentExprNode) {
@@ -3231,7 +3231,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
     private final LoadingCache<String, ImmutableList<SoySourceFunctionMethod>> methodCache =
         CacheBuilder.newBuilder()
             .build(
-                new CacheLoader<String, ImmutableList<SoySourceFunctionMethod>>() {
+                new CacheLoader<>() {
                   @Override
                   public ImmutableList<SoySourceFunctionMethod> load(String methodName) {
                     ImmutableList.Builder<SoySourceFunctionMethod> methods =

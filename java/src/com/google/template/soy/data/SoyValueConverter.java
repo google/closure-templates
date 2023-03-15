@@ -343,7 +343,7 @@ public final class SoyValueConverter {
      * the last reference to it.
      */
     private final ClassValue<Function<?, ?>> converterValue =
-        new ClassValue<Function<?, ?>>() {
+        new ClassValue<>() {
 
           @Override
           protected Function<?, ?> computeValue(Class<?> clz) {

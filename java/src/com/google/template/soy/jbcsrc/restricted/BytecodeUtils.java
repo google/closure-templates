@@ -164,7 +164,7 @@ public final class BytecodeUtils {
   private static final LoadingCache<Type, Optional<Class<?>>> objectTypeToClassCache =
       CacheBuilder.newBuilder()
           .build(
-              new CacheLoader<Type, Optional<Class<?>>>() {
+              new CacheLoader<>() {
                 @Override
                 public Optional<Class<?>> load(Type key) {
                   switch (key.getSort()) {

@@ -130,12 +130,8 @@ public final class AnnotationRef<T extends Annotation> {
   /** Writes an annotation valued field to the writer. */
   private static <T extends Annotation> FieldWriter annotationFieldWriter(
       final String name, final AnnotationRef<T> ref) {
-    return new FieldWriter() {
-      @Override
-      public void write(AnnotationVisitor visitor, Object value) {
+    return (visitor, value) ->
         ref.doWrite(ref.annType.cast(value), visitor.visitAnnotation(name, ref.typeDescriptor));
-      }
-    };
   }
 
   /**
@@ -144,12 +140,7 @@ public final class AnnotationRef<T extends Annotation> {
    * <p>See {@link AnnotationVisitor#visit(String, Object)} for the valid types.
    */
   private static FieldWriter simpleFieldWriter(final String name) {
-    return new FieldWriter() {
-      @Override
-      public void write(AnnotationVisitor visitor, Object value) {
-        visitor.visit(name, value);
-      }
-    };
+    return (visitor, value) -> visitor.visit(name, value);
   }
 
   /**
@@ -159,44 +150,33 @@ public final class AnnotationRef<T extends Annotation> {
    */
   private static FieldWriter simpleEumFieldWriter(final String name, Class<?> enumType) {
     final String descriptor = Type.getDescriptor(enumType);
-    return new FieldWriter() {
-      @Override
-      public void write(AnnotationVisitor visitor, Object value) {
-        visitor.visitEnum(name, descriptor, ((Enum) value).name());
-      }
-    };
+    return (visitor, value) -> visitor.visitEnum(name, descriptor, ((Enum) value).name());
   }
 
   /** Writes an simple array valued field to the annotation visitor. */
   private static FieldWriter simpleArrayFieldWriter(final String name) {
-    return new FieldWriter() {
-      @Override
-      public void write(AnnotationVisitor visitor, Object value) {
-        int len = Array.getLength(value);
-        AnnotationVisitor arrayVisitor = visitor.visitArray(name);
-        for (int i = 0; i < len; i++) {
-          arrayVisitor.visit(null, Array.get(value, i));
-        }
-        arrayVisitor.visitEnd();
+    return (visitor, value) -> {
+      int len = Array.getLength(value);
+      AnnotationVisitor arrayVisitor = visitor.visitArray(name);
+      for (int i = 0; i < len; i++) {
+        arrayVisitor.visit(null, Array.get(value, i));
       }
+      arrayVisitor.visitEnd();
     };
   }
 
   /** Writes an annotation array valued field to the annotation visitor. */
   private static <T extends Annotation> FieldWriter annotationArrayFieldWriter(
       final String name, final AnnotationRef<T> ref) {
-    return new FieldWriter() {
-      @Override
-      public void write(AnnotationVisitor visitor, Object value) {
-        int len = Array.getLength(value);
-        AnnotationVisitor arrayVisitor = visitor.visitArray(name);
-        for (int i = 0; i < len; i++) {
-          ref.doWrite(
-              ref.annType.cast(Array.get(value, i)),
-              arrayVisitor.visitAnnotation(null, ref.typeDescriptor));
-        }
-        arrayVisitor.visitEnd();
+    return (visitor, value) -> {
+      int len = Array.getLength(value);
+      AnnotationVisitor arrayVisitor = visitor.visitArray(name);
+      for (int i = 0; i < len; i++) {
+        ref.doWrite(
+            ref.annType.cast(Array.get(value, i)),
+            arrayVisitor.visitAnnotation(null, ref.typeDescriptor));
       }
+      arrayVisitor.visitEnd();
     };
   }
 }

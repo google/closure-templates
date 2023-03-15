@@ -309,7 +309,7 @@ public final class SoyTypes {
       kindTest = t -> kinds.contains(t.getKind());
     }
     return type.accept(
-        new SoyTypeVisitor<Boolean>() {
+        new SoyTypeVisitor<>() {
           @Override
           public Boolean visit(LegacyObjectMapType type) {
             return kindTest.test(type)

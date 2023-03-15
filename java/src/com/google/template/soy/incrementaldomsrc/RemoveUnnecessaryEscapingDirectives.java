@@ -69,73 +69,70 @@ final class RemoveUnnecessaryEscapingDirectives {
   }
 
   private NodeVisitor<Node, VisitDirective> getVisitor() {
-    return new NodeVisitor<Node, VisitDirective>() {
-      @Override
-      public VisitDirective exec(Node node) {
-        // escaping directives are only applied to print,call, and msg nodes
-        if (node instanceof ExprNode) {
-          return VisitDirective.SKIP_CHILDREN;
-        }
-        SoyNode soyNode = (SoyNode) node;
-        switch (soyNode.getKind()) {
-          case PRINT_NODE:
-            {
-              PrintNode printNode = (PrintNode) soyNode;
-              // Remove all skippable nodes from the right first
-              for (int i = printNode.numChildren() - 1; i >= 0; i--) {
-                PrintDirectiveNode pdn = printNode.getChild(i);
-                SoyPrintDirective directive = pdn.getPrintDirective();
-                // If there are any directives to the left of a sanitized content operator,
-                // keep them.
-                if (directive instanceof SanitizedContentOperator) {
-                  break;
-                }
-                if (pdn.isSynthetic() && canSkip(directive)) {
-                  printNode.removeChild(i);
-                }
+    return node -> {
+      // escaping directives are only applied to print,call, and msg nodes
+      if (node instanceof ExprNode) {
+        return VisitDirective.SKIP_CHILDREN;
+      }
+      SoyNode soyNode = (SoyNode) node;
+      switch (soyNode.getKind()) {
+        case PRINT_NODE:
+          {
+            PrintNode printNode = (PrintNode) soyNode;
+            // Remove all skippable nodes from the right first
+            for (int i = printNode.numChildren() - 1; i >= 0; i--) {
+              PrintDirectiveNode pdn = printNode.getChild(i);
+              SoyPrintDirective directive = pdn.getPrintDirective();
+              // If there are any directives to the left of a sanitized content operator,
+              // keep them.
+              if (directive instanceof SanitizedContentOperator) {
+                break;
               }
-              // Replace directives with their Incremental DOM version
-              for (PrintDirectiveNode pdn : printNode.getChildren()) {
-                String directiveName = pdn.getPrintDirective().getName();
-                // Replacing this directive is required for plumbing through the IncrementalDom
-                // renderer. However, in a text context this isn't required since only text
-                // is being emitted.
-                if (printNode.getHtmlContext() == HtmlContext.TEXT
-                    && directiveName.equals(BIDI_UNICODE_WRAP)) {
-                  continue;
-                }
-                if (directives.containsKey(directiveName)) {
-                  printNode.replaceChild(
-                      pdn,
-                      PrintDirectiveNode.createSyntheticNode(
-                          pdn.getId(),
-                          Identifier.create(pdn.getName(), pdn.getNameLocation()),
-                          pdn.getSourceLocation(),
-                          directives.get(directiveName)));
-                }
+              if (pdn.isSynthetic() && canSkip(directive)) {
+                printNode.removeChild(i);
               }
-              return VisitDirective.SKIP_CHILDREN; // no need to look at the PrintDirectiveNodes
             }
+            // Replace directives with their Incremental DOM version
+            for (PrintDirectiveNode pdn : printNode.getChildren()) {
+              String directiveName = pdn.getPrintDirective().getName();
+              // Replacing this directive is required for plumbing through the IncrementalDom
+              // renderer. However, in a text context this isn't required since only text
+              // is being emitted.
+              if (printNode.getHtmlContext() == HtmlContext.TEXT
+                  && directiveName.equals(BIDI_UNICODE_WRAP)) {
+                continue;
+              }
+              if (directives.containsKey(directiveName)) {
+                printNode.replaceChild(
+                    pdn,
+                    PrintDirectiveNode.createSyntheticNode(
+                        pdn.getId(),
+                        Identifier.create(pdn.getName(), pdn.getNameLocation()),
+                        pdn.getSourceLocation(),
+                        directives.get(directiveName)));
+              }
+            }
+            return VisitDirective.SKIP_CHILDREN; // no need to look at the PrintDirectiveNodes
+          }
 
-          case CALL_BASIC_NODE:
-          case CALL_DELEGATE_NODE:
-            {
-              CallNode callNode = (CallNode) soyNode;
-              callNode.setEscapingDirectives(
-                  filterEscapingDirectives(callNode.getEscapingDirectives()));
-              return VisitDirective.CONTINUE;
-            }
-          case MSG_FALLBACK_GROUP_NODE:
-            {
-              MsgFallbackGroupNode msgNode = (MsgFallbackGroupNode) soyNode;
-              msgNode.setEscapingDirectives(
-                  filterEscapingDirectives(msgNode.getEscapingDirectives()));
-
-              return VisitDirective.CONTINUE;
-            }
-          default:
+        case CALL_BASIC_NODE:
+        case CALL_DELEGATE_NODE:
+          {
+            CallNode callNode = (CallNode) soyNode;
+            callNode.setEscapingDirectives(
+                filterEscapingDirectives(callNode.getEscapingDirectives()));
             return VisitDirective.CONTINUE;
-        }
+          }
+        case MSG_FALLBACK_GROUP_NODE:
+          {
+            MsgFallbackGroupNode msgNode = (MsgFallbackGroupNode) soyNode;
+            msgNode.setEscapingDirectives(
+                filterEscapingDirectives(msgNode.getEscapingDirectives()));
+
+            return VisitDirective.CONTINUE;
+          }
+        default:
+          return VisitDirective.CONTINUE;
       }
     };
   }
