@@ -25,10 +25,8 @@ import com.google.common.collect.ImmutableSet;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.EnumDescriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
-import com.google.template.soy.base.SoyBackendKind;
 import com.google.template.soy.internal.proto.Field;
 import com.google.template.soy.internal.proto.FieldVisitor;
-import com.google.template.soy.internal.proto.JavaQualifiedNames;
 import com.google.template.soy.internal.proto.ProtoUtils;
 import com.google.template.soy.soytree.SoyTypeP;
 import java.util.Set;
@@ -262,23 +260,8 @@ public final class SoyProtoType extends SoyType {
   }
 
   /** Returns this proto's type name for the given backend. */
-  public String getNameForBackend(SoyBackendKind backend, boolean readonly, boolean typeOnly) {
-    switch (backend) {
-      case JS_SRC:
-        // The 'proto' prefix is JSPB-specific. If we ever support some other
-        // JavaScript proto implementation, we'll need some way to determine which
-        // proto implementation the user wants to use at this point.
-        //
-        // If we will only use this value as a type, we use the type name getter.
-        // Otherwise we need an unprefixed value.
-        return ProtoUtils.calculateUnprefixedJsName(typeDescriptor);
-      case TOFU:
-      case JBC_SRC:
-        return JavaQualifiedNames.getClassName(typeDescriptor);
-      case PYTHON_SRC:
-        throw new UnsupportedOperationException();
-    }
-    throw new AssertionError(backend);
+  public String getJsName(ProtoUtils.MutabilityMode mutabilityMode) {
+    return ProtoUtils.calculateUnprefixedJsName(typeDescriptor);
   }
 
   @Override

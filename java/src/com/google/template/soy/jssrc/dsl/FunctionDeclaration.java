@@ -45,6 +45,8 @@ public abstract class FunctionDeclaration extends Expression
     for (Param param : params) {
       if (param.annotationType().equals("param")) {
         if (addInlineTypeAnnotations) {
+          // TODO(lukes): this is the wrong format for inline type annotations. comments need to
+          // start with '/**'.
           functionParameters.add(String.format("/* %s */ %s", param.type(), param.paramTypeName()));
         } else {
           functionParameters.add(param.paramTypeName());

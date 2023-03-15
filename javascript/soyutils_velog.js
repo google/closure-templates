@@ -27,10 +27,12 @@
 
 goog.module('soy.velog');
 
-const LoggableElementMetadata = goog.require('proto.soy.LoggableElementMetadata');
+const ImmutableLoggableElementMetadata = goog.require('proto.soy.ImmutableLoggableElementMetadata');
 const ReadonlyLoggableElementMetadata = goog.requireType('proto.soy.ReadonlyLoggableElementMetadata');
 const {Message} = goog.require('jspb');
 const {assert} = goog.require('goog.asserts');
+const {safeAttrPrefix} = goog.require('safevalues');
+const {safeElement} = goog.require('safevalues.dom');
 const {startsWith} = goog.require('goog.string');
 
 /** @final */
@@ -419,8 +421,9 @@ class $$VisualElement {
   constructor(id, metadata, name = undefined) {
     /** @private @const {number} */
     this.id_ = id;
-    /** @private @const {!ReadonlyLoggableElementMetadata|undefined} */
-    this.metadata_ = metadata;
+    /** @private @const {!ReadonlyLoggableElementMetadata} */
+    this.metadata_ =
+        metadata || ImmutableLoggableElementMetadata.getDefaultInstance();
     /** @private @const {string|undefined} */
     this.name_ = name;
   }
@@ -432,8 +435,7 @@ class $$VisualElement {
 
   /** @return {!ReadonlyLoggableElementMetadata} */
   getMetadata() {
-    return this.metadata_ === undefined ? new LoggableElementMetadata() :
-                                          this.metadata_;
+    return this.metadata_;
   }
 
   /** @package @return {string} */
@@ -441,7 +443,10 @@ class $$VisualElement {
     return `ve(${this.name_})`;
   }
 
-  /** @override */
+  /**
+   * @override
+   * @return {string}
+   */
   toString() {
     if (goog.DEBUG) {
       return `**FOR DEBUGGING ONLY ${this.toDebugString()}, id: ${this.id_}**`;

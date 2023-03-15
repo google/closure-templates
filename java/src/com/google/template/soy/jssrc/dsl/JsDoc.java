@@ -25,6 +25,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.jssrc.dsl.FormattingContext.LexicalState;
+import java.util.Collection;
 import java.util.Map;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
@@ -68,6 +69,12 @@ public abstract class JsDoc extends SpecialToken implements CodeChunk.HasRequire
     @CanIgnoreReturnValue
     public Builder addGoogRequire(GoogRequire require) {
       googRequiresBuilder().add(require);
+      return this;
+    }
+
+    @CanIgnoreReturnValue
+    public Builder addGoogRequires(Collection<? extends GoogRequire> requires) {
+      googRequiresBuilder().addAll(requires);
       return this;
     }
 

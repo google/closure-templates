@@ -208,6 +208,18 @@ public final class ProtoUtils {
     return jsPackage + "." + calculateFileLocalName(descriptor);
   }
 
+  /** Describes the mutability of a proto type. */
+  public enum MutabilityMode {
+    MUTABLE("Mutable"),
+    READONLY("Readonly"),
+    IMMUTABLE("Immutable");
+    final String prefix;
+
+    MutabilityMode(String prefix) {
+      this.prefix = prefix;
+    }
+  }
+
   public static String getJsFieldSpecificSuffix(FieldDescriptor fieldDesc) {
     Map<FieldDescriptor, String> fieldSpecificSuffixes = new HashMap<>();
 

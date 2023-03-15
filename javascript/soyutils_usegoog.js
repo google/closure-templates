@@ -42,8 +42,10 @@ const googFormat = goog.require('goog.format');
 const googSoy = goog.requireType('goog.soy');
 const googString = goog.require('goog.string');
 const soyChecks = goog.require('soy.checks');
+const {Message} = goog.requireType('jspb');
 const {SafeHtml: TsSafeHtml, SafeScript: TsSafeScript, SafeStyle: TsSafeStyle, SafeStyleSheet: TsSafeStyleSheet, SafeUrl: TsSafeUrl, TrustedResourceUrl: TsTrustedResourceUrl, unwrapHtml, unwrapResourceUrl, unwrapScript, unwrapStyle, unwrapStyleSheet, unwrapUrl} = goog.require('safevalues');
 const {SanitizedContent, SanitizedContentKind, SanitizedCss, SanitizedHtml, SanitizedHtmlAttribute, SanitizedJs, SanitizedTrustedResourceUri, SanitizedUri} = goog.require('goog.soy.data');
+const {defaultImmutableInstance} = goog.require('jspb.immutable_message');
 const {htmlSafeByReview} = goog.require('safevalues.restricted.reviewed');
 
 // -----------------------------------------------------------------------------
@@ -2563,12 +2565,42 @@ function $$getConst(value, areYouAnInternalCaller) {
   return value;
 }
 
+// TODO(b/230911572): roll this out to all environments. First tests, then goog.DEBUG, then production.
+const /** boolean */ SOY_CREATED_PROTOS_ARE_IMMUTABLE = false;
+
+/**
+ * Conditionally returns either a default immutable instance or constructs an
+ * empty proto. It is the callers responsibility to add a suitable type.
+ * @return {?}
+ */
+function $$emptyProto(/** function(new:Message,?Array<?>=)*/ ctor) {
+  if (SOY_CREATED_PROTOS_ARE_IMMUTABLE) {
+    return defaultImmutableInstance(ctor);
+  }
+  return new ctor();
+}
+
+/**
+ * Conditionally makes the parameter immutable or returns as is.
+ * It is the callers responsibility to add a suitable type.
+ * @return {?}
+ */
+function $$maybeMakeImmutableProto(/** !Message*/ message) {
+  if (SOY_CREATED_PROTOS_ARE_IMMUTABLE) {
+    return message.toImmutable();
+  }
+  return message;
+}
+
+
 // -----------------------------------------------------------------------------
 // Generated code.
 
 
 
 exports = {
+  $$maybeMakeImmutableProto,
+  $$emptyProto,
   $$createConst,
   $$getConst,
   $$serializeKey,

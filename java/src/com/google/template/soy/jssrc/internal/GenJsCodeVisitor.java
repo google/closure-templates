@@ -1059,6 +1059,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       JsType jsType = getJsTypeForParamForDeclaration(param.type());
       jsDocBuilder.addParam(
           getPositionalParamName(param), jsType.typeExpr() + (param.isRequired() ? "" : "="));
+      // TODO(lukes): this should add goog.requires for the referenced types
     }
     if (addVariantParam) {
       jsDocBuilder.addParam(StandardNames.OPT_VARIANT, "string=");

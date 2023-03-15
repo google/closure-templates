@@ -367,7 +367,12 @@ public final class SoyProtoValue extends SoyAbstractValue implements SoyLegacyOb
    */
   @Override
   public String toString() {
-    return String.format("SoyProtoValue<%s>", proto.getDescriptorForType().getFullName());
+    return String.format(
+        "SoyProtoValue<%s, %s>",
+        proto.getDescriptorForType().getFullName(),
+        proto.equals(proto.getDefaultInstanceForType())
+            ? (proto == proto.getDefaultInstanceForType() ? "empty(default)" : "empty")
+            : "not-empty");
   }
 
   @Override
@@ -382,21 +387,29 @@ public final class SoyProtoValue extends SoyAbstractValue implements SoyLegacyOb
    */
   public static final class Builder {
     private final ProtoClass clazz;
-    private final Message.Builder builder;
+    private Message.Builder builder;
 
     public Builder(Descriptor soyProto) {
       this.clazz = classCache.getUnchecked(soyProto);
-      this.builder = clazz.defaultInstance.newBuilderForType();
+    }
+
+    private Message.Builder builder() {
+      Message.Builder localBuilder = builder;
+      if (localBuilder == null) {
+        localBuilder = this.builder = clazz.defaultInstance.newBuilderForType();
+      }
+      return localBuilder;
     }
 
     @CanIgnoreReturnValue
     public Builder setField(String field, SoyValue value) {
-      clazz.fields.get(field).assignField(builder, value);
+      clazz.fields.get(field).assignField(builder(), value);
       return this;
     }
 
     public SoyProtoValue build() {
-      SoyProtoValue soyProtoValue = new SoyProtoValue(builder.build());
+      SoyProtoValue soyProtoValue =
+          new SoyProtoValue(builder == null ? clazz.defaultInstance : builder.build());
       soyProtoValue.clazz = clazz;
       return soyProtoValue;
     }

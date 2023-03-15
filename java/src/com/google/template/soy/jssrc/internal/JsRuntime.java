@@ -20,6 +20,7 @@ import static com.google.template.soy.jssrc.dsl.Expressions.id;
 
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.html.types.SafeHtmlProto;
 import com.google.common.html.types.SafeScriptProto;
 import com.google.common.html.types.SafeStyleProto;
@@ -28,7 +29,6 @@ import com.google.common.html.types.SafeUrlProto;
 import com.google.common.html.types.TrustedResourceUrlProto;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
-import com.google.template.soy.base.SoyBackendKind;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.internal.proto.ProtoUtils;
@@ -269,12 +269,23 @@ public final class JsRuntime {
 
   /** Returns the constructor for the proto. */
   public static Expression protoConstructor(SoyProtoType type) {
-    return GoogRequire.create(
-            type.getNameForBackend(
-                SoyBackendKind.JS_SRC, /* readonly= */ false, /* typeOnly= */ false))
-        .reference();
+    return GoogRequire.create(type.getJsName(ProtoUtils.MutabilityMode.MUTABLE)).reference();
   }
 
+  /** Returns an expression that constructs an empty proto. */
+  public static Expression emptyProto(SoyProtoType type) {
+    return castAsReadonlyProto(
+        SOY.dotAccess("$$emptyProto")
+            .call(
+                GoogRequire.create(type.getJsName(ProtoUtils.MutabilityMode.MUTABLE)).reference()),
+        type);
+  }
+
+  static Expression castAsReadonlyProto(Expression expr, SoyProtoType type) {
+    String readonlyName = type.getJsName(ProtoUtils.MutabilityMode.READONLY);
+    return expr.castAs(
+        "!" + readonlyName, ImmutableSet.of(GoogRequire.createTypeRequire(readonlyName)));
+  }
   /**
    * Returns the js type for the sanitized content object corresponding to the given ContentKind.
    */

@@ -343,32 +343,35 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
         listType.getKind() == SoyType.Kind.LIST
             ? ((ListType) listType).getElementType()
             : UnknownType.getInstance();
+    JsType elementJsType = jsTypeForStrict(elementType);
     JsDoc doc =
         node.getIndexVar() == null
             ? JsDoc.builder()
-                .addParam(listIterVarTranslation, jsTypeForStrict(elementType).typeExpr())
+                .addParam(listIterVarTranslation, elementJsType.typeExpr())
+                .addGoogRequires(elementJsType.getGoogRequires())
                 .build()
             : JsDoc.builder()
-                .addParam(listIterVarTranslation, jsTypeForStrict(elementType).typeExpr())
+                .addParam(listIterVarTranslation, elementJsType.typeExpr())
                 .addParam(indexVarTranslation, "number")
+                .addGoogRequires(elementJsType.getGoogRequires())
                 .build();
 
-    Expression filterAndIndexBase = null;
     if (node.getFilterExpr() != null && node.getIndexVar() != null) {
-      filterAndIndexBase =
-          SOY_FILTER_AND_MAP.call(
-              base,
-              arrowFunction(
-                  doc,
-                  maybeCoerceToBoolean(
-                      node.getFilterExpr().getType(),
-                      visit(node.getFilterExpr()),
-                      /* force= */ false)),
-              arrowFunction(doc, visit(node.getListItemTransformExpr())));
+      return SOY_FILTER_AND_MAP.call(
+          base,
+          arrowFunction(
+              doc,
+              maybeCoerceToBoolean(
+                  node.getFilterExpr().getType(), visit(node.getFilterExpr()), /* force= */ false)),
+          arrowFunction(doc, visit(node.getListItemTransformExpr())));
     }
     if (node.getFilterExpr() != null) {
+      // Cast the receiver type to ReadonlyArray to fix poor type inference on filter callback
+      // functions when the type is Array<X>|
       base =
-          base.dotAccess("filter")
+          JsRuntime.SOY_AS_READONLY
+              .call(base)
+              .dotAccess("filter")
               .call(
                   arrowFunction(
                       doc,
@@ -384,8 +387,13 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
         return base;
       }
     }
-    base = base.dotAccess("map").call(arrowFunction(doc, visit(node.getListItemTransformExpr())));
-    return filterAndIndexBase == null ? base : filterAndIndexBase;
+    // Cast the receiver type to ReadonlyArray to fix poor type inference on map callback functions
+    base =
+        JsRuntime.SOY_AS_READONLY
+            .call(base)
+            .dotAccess("map")
+            .call(arrowFunction(doc, visit(node.getListItemTransformExpr())));
+    return base;
   }
 
   @Override
@@ -859,6 +867,10 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
 
   protected Expression visitProtoInitFunction(FunctionNode node) {
     SoyProtoType type = (SoyProtoType) node.getType();
+    if (node.numChildren() == 0) {
+      // special case
+      return JsRuntime.emptyProto(type);
+    }
     Expression proto = construct(protoConstructor(type));
     for (int i = 0; i < node.numChildren(); i++) {
       String fieldName = node.getParamName(i).identifier();
@@ -914,7 +926,8 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
       }
     }
 
-    return proto;
+    return JsRuntime.castAsReadonlyProto(
+        JsRuntime.SOY.dotAccess("$$maybeMakeImmutableProto").call(proto), type);
   }
 
   // -----------------------------------------------------------------------------------------------

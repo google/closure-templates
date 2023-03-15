@@ -892,26 +892,29 @@ final class ProtoUtils {
     }
 
     SoyExpression generate() {
-      final Expression newBuilderCall = getBuilderMethod(descriptor).invoke();
       final ImmutableList<Statement> setters = getFieldSetters();
+      Expression builtProto;
+      if (setters.isEmpty()) {
+        builtProto = getDefaultInstanceMethod(descriptor).invoke();
+      } else {
+        final Expression newBuilderCall = getBuilderMethod(descriptor).invoke();
       final MethodRef buildCall = getBuildMethod(descriptor);
+        builtProto =
+            new Expression(messageRuntimeType(descriptor).type()) {
+              @Override
+              protected void doGen(CodeBuilder cb) {
+                newBuilderCall.gen(cb);
 
-      Expression expression =
-          new Expression(messageRuntimeType(descriptor).type()) {
-            @Override
-            protected void doGen(CodeBuilder cb) {
-              newBuilderCall.gen(cb);
+                for (Statement setter : setters) {
+                  setter.gen(cb);
+                }
 
-              for (Statement setter : setters) {
-                setter.gen(cb);
+                // builder is already on the stack from newBuilder() / set<Field>()
+                buildCall.invokeUnchecked(cb);
               }
-
-              // builder is already on the stack from newBuilder() / set<Field>()
-              buildCall.invokeUnchecked(cb);
-            }
-          }.asNonNullable();
-
-      return SoyExpression.forProto(SoyRuntimeType.getUnboxedType(protoType).get(), expression);
+            }.asNonNullable();
+      }
+      return SoyExpression.forProto(SoyRuntimeType.getUnboxedType(protoType).get(), builtProto);
     }
 
     private ImmutableList<Statement> getFieldSetters() {
@@ -1573,6 +1576,13 @@ final class ProtoUtils {
         .asNonNullable();
   }
 
+  /** Returns the {@link MethodRef} for the generated getDefaultInstance method. */
+  private static MethodRef getDefaultInstanceMethod(Descriptor descriptor) {
+    TypeInfo message = messageRuntimeType(descriptor);
+    return MethodRef.createStaticMethod(
+            message, new Method("getDefaultInstance", message.type(), MethodRef.NO_METHOD_ARGS))
+        .asNonNullable();
+  }
   /** Returns the {@link MethodRef} for the generated put method for proto map. */
   private static MethodRef getPutMethod(FieldDescriptor descriptor) {
     checkState(descriptor.isMapField());

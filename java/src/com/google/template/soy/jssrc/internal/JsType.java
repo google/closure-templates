@@ -43,6 +43,7 @@ import com.google.template.soy.base.SoyBackendKind;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.TemplateContentKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
+import com.google.template.soy.internal.proto.ProtoUtils;
 import com.google.template.soy.jssrc.dsl.CodeChunk.Generator;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.Expressions;
@@ -212,13 +213,7 @@ public final class JsType {
         JsTypeKind.JSSRC,
         /* isStrict= */ false,
         ArrayTypeMode.READONLY_ARRAY,
-        // This is currently set to assert types as mutable to avoid
-        // disambiguation errors inline in templates, presumably resulting
-        // either from runtime functions or externs, but the cause
-        // is not obvious.
-        //
-        // TODO(b/230911572): use only readonly messages here.
-        MessageTypeMode.ONLY_MUTABLE,
+        MessageTypeMode.READONLY,
         /* includeNullForMessages= */ false);
   }
 
@@ -230,17 +225,6 @@ public final class JsType {
         /* isStrict= */ true,
         ArrayTypeMode.ARRAY_OR_READONLY_ARRAY,
         MessageTypeMode.READONLY,
-        /* includeNullForMessages= */ false);
-  }
-
-  /** Returns a JS type for inline value construction. */
-  public static JsType forJsValueConstruction(SoyType soyType) {
-    return forSoyType(
-        soyType,
-        JsTypeKind.JSSRC,
-        /* isStrict= */ true,
-        ArrayTypeMode.MUTABLE_ARRAY,
-        MessageTypeMode.ONLY_MUTABLE,
         /* includeNullForMessages= */ false);
   }
 
@@ -262,13 +246,7 @@ public final class JsType {
         JsTypeKind.IDOMSRC,
         /* isStrict= */ false,
         ArrayTypeMode.READONLY_ARRAY,
-        // This is currently set to assert types as mutable to avoid
-        // disambiguation errors inline in templates, presumably resulting
-        // either from runtime functions or externs, but the cause
-        // is not obvious.
-        //
-        // TODO(b/230911572): use only readonly messages here.
-        MessageTypeMode.ONLY_MUTABLE,
+        MessageTypeMode.READONLY,
         /* includeNullForMessages= */ false);
   }
 
@@ -523,10 +501,10 @@ public final class JsType {
       case PROTO:
         final SoyProtoType protoType = (SoyProtoType) soyType;
         final String protoTypeName =
-            protoType.getNameForBackend(
-                SoyBackendKind.JS_SRC,
-                /* readonly = */ messageTypeMode == MessageTypeMode.READONLY,
-                /* typeOnly = */ true);
+            protoType.getJsName(
+                /* mutabilityMode= */ messageTypeMode == MessageTypeMode.READONLY
+                    ? ProtoUtils.MutabilityMode.READONLY
+                    : ProtoUtils.MutabilityMode.MUTABLE);
         return builder()
             .addType((isStrict || !includeNullForMessages ? "!" : "?") + protoTypeName)
             .addRequire(GoogRequire.createTypeRequire(protoTypeName))
