@@ -17,6 +17,7 @@
 package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
+import com.google.common.base.Splitter;
 import com.google.errorprone.annotations.Immutable;
 
 /** Preserved whitespace. */
@@ -32,6 +33,6 @@ public abstract class Whitespace extends SpecialToken {
 
   @Override
   void doFormatToken(FormattingContext ctx) {
-    ctx.appendWithoutBreaks(content());
+    Splitter.on('\n').splitToStream(content()).skip(2).forEach(line -> ctx.appendBlankLine());
   }
 }
