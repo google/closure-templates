@@ -130,4 +130,22 @@ public class EscapingConventionsTest {
       assertThat(uri).matches(EscapingConventions.FilterTelUri.INSTANCE.getValueFilter());
     }
   }
+
+  @Test
+  public void testFilterCss() {
+    String[] shouldReject = new String[] {"linear-gradient(rgba(calc())"};
+
+    String[] shouldAccept =
+        new String[] {
+          "linear-gradient(180deg, rgba(0, 0, 0, 0) 55%, rgba(0, 0, 0, 0.5) 80%,rgba(0, 0, 0,"
+              + " 0.75) 100%)",
+        };
+
+    for (String uri : shouldReject) {
+      assertThat(uri).doesNotMatch(EscapingConventions.FilterCssValue.INSTANCE.getValueFilter());
+    }
+    for (String uri : shouldAccept) {
+      assertThat(uri).matches(EscapingConventions.FilterCssValue.INSTANCE.getValueFilter());
+    }
+  }
 }
