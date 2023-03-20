@@ -148,16 +148,6 @@ public abstract class GoogRequire implements Comparable<GoogRequire> {
       }
       return other;
     }
-    // If one is a type require without a variable declaration, then use the other one.
-    // Types can be referenced in a fully qualified way even in a goog.module file with an alias
-    // This is unstylish but tricky to solve given the way we currently model requires and only half
-    // support goog.module.
-    if (other.isTypeRequire() && !(other.chunk() instanceof VariableDeclaration)) {
-      return this;
-    }
-    if (this.isTypeRequire() && !(this.chunk() instanceof VariableDeclaration)) {
-      return other;
-    }
     throw new IllegalArgumentException(
         "Found the same namespace added as a require in multiple incompatible ways: "
             + other
