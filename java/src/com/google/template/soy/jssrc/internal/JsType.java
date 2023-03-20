@@ -128,7 +128,7 @@ public final class JsType {
           .addType("!" + ELEMENT_LIB_IDOM.alias() + ".IdomFunction")
           .addType("!goog.soy.data.SanitizedHtmlAttribute")
           .addRequire(ELEMENT_LIB_IDOM)
-          .addRequire(GoogRequire.create("goog.soy.data.SanitizedHtmlAttribute"))
+          .addRequire(GoogRequire.createTypeRequire("goog.soy.data.SanitizedHtmlAttribute"))
           .setPredicate(
               (value, codeGenerator) ->
                   Optional.of(
@@ -653,9 +653,20 @@ public final class JsType {
     return sb.toString();
   }
 
+  public static JsType templateReturnTypeForIdom(SanitizedContentKind templateReturnType) {
+    return templateReturnType(templateReturnType, JsTypeKind.IDOMSRC);
+  }
+
+  public static JsType templateReturnTypeForJsSrc(SanitizedContentKind templateReturnType) {
+    return templateReturnType(templateReturnType, JsTypeKind.JSSRC);
+  }
+
   private static JsType templateReturnType(
       TemplateContentKind templateReturnType, JsTypeKind kind) {
-    SanitizedContentKind contentKind = templateReturnType.getSanitizedContentKind();
+    return templateReturnType(templateReturnType.getSanitizedContentKind(), kind);
+  }
+
+  private static JsType templateReturnType(SanitizedContentKind contentKind, JsTypeKind kind) {
     switch (contentKind) {
       case TEXT:
         return STRING_TYPE;
@@ -673,6 +684,7 @@ public final class JsType {
           builder.addType("void");
         } else {
           builder.addType("!" + type);
+          builder.addRequire(GoogRequire.createTypeRequire(type));
         }
         // Type predicate is not used for template return types.
         builder.setPredicate(TypePredicate.NO_OP);
@@ -786,7 +798,7 @@ public final class JsType {
     builder.addType("!soy.$$EMPTY_STRING_");
     builder.addRequire(JsRuntime.SOY);
     builder.addType("!" + type);
-    builder.addRequire(GoogRequire.create(type));
+    builder.addRequire(GoogRequire.createTypeRequire(type));
     if (!isStrict) {
       // All the sanitized types have an .isCompatibleWith method for testing for allowed types
       // NOTE: this actually allows 'string' to be passed, which is inconsistent with other backends
@@ -796,9 +808,6 @@ public final class JsType {
       builder.addType("string");
     } else {
       builder.addType("!soy.$$EMPTY_STRING_");
-      builder.addRequire(JsRuntime.SOY);
-      builder.addType("!" + type);
-      builder.addRequire(GoogRequire.create(type));
     }
     // add extra alternate types
     // TODO(lukes): instead of accepting alternates we should probably just coerce to sanitized
@@ -806,13 +815,16 @@ public final class JsType {
     switch (kind) {
       case CSS:
         builder.addType("!goog.html.SafeStyle");
+        builder.addRequire(GoogRequire.createTypeRequire("goog.html.SafeStyle"));
         break;
       case HTML_ELEMENT:
       case HTML:
         builder.addType("!goog.html.SafeHtml");
+        builder.addRequire(GoogRequire.createTypeRequire("goog.html.SafeHtml"));
         break;
       case JS:
         builder.addType("!goog.html.SafeScript");
+        builder.addRequire(GoogRequire.createTypeRequire("goog.html.SafeScript"));
         break;
       case ATTRIBUTES:
       case TEXT:
@@ -820,11 +832,15 @@ public final class JsType {
         break;
       case TRUSTED_RESOURCE_URI:
         builder.addType("!goog.html.TrustedResourceUrl");
+        builder.addRequire(GoogRequire.createTypeRequire("goog.html.TrustedResourceUrl"));
         break;
       case URI:
         builder.addType("!goog.html.TrustedResourceUrl");
+        builder.addRequire(GoogRequire.createTypeRequire("goog.html.TrustedResourceUrl"));
         builder.addType("!goog.html.SafeUrl");
+        builder.addRequire(GoogRequire.createTypeRequire("goog.html.SafeUrl"));
         builder.addType("!goog.Uri");
+        builder.addRequire(GoogRequire.createTypeRequire("goog.Uri"));
         break;
     }
 

@@ -145,14 +145,8 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   }
 
   @Override
-  protected String getTemplateReturnType(TemplateNode node) {
-    if (isTextContent(node.getContentKind())) {
-      return super.getTemplateReturnType(node);
-    }
-
-    // This template does not return any content but rather contains Incremental DOM
-    // instructions.
-    return "void";
+  protected JsType getTemplateReturnType(TemplateNode node) {
+    return JsType.templateReturnTypeForIdom(node.getContentKind());
   }
 
   @Override
@@ -857,5 +851,10 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
         templateAliases,
         errorReporter,
         OPT_DATA);
+  }
+
+  @Override
+  protected boolean isIncrementalDom() {
+    return true;
   }
 }

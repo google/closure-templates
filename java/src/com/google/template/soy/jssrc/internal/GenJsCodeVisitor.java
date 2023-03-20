@@ -53,7 +53,6 @@ import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.UniqueNameGenerator;
-import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
@@ -576,12 +575,8 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    *
    * @param node The template node that is being generated
    */
-  protected String getTemplateReturnType(TemplateNode node) {
-    // For strict autoescaping templates, the result is actually a typesafe wrapper.
-    // We prepend "!" to indicate it is non-nullable.
-    return node.getContentKind() == SanitizedContentKind.TEXT
-        ? "string"
-        : "!" + NodeContentKinds.toJsSanitizedContentCtorName(node.getContentKind());
+  protected JsType getTemplateReturnType(TemplateNode node) {
+    return JsType.templateReturnTypeForJsSrc(node.getContentKind());
   }
 
   @Override
@@ -1115,8 +1110,9 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   }
 
   protected final void addReturnTypeAndAnnotations(TemplateNode node, JsDoc.Builder jsDocBuilder) {
-    String returnType = getTemplateReturnType(node);
-    jsDocBuilder.addParameterizedAnnotation("return", returnType);
+    var returnType = getTemplateReturnType(node);
+    jsDocBuilder.addParameterizedAnnotation("return", returnType.typeExpr());
+    jsDocBuilder.addGoogRequires(returnType.getGoogRequires());
     if (node.getVisibility() == Visibility.PRIVATE) {
       jsDocBuilder.addAnnotation("private");
     }
@@ -1208,9 +1204,12 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       callParams.add(OPT_VARIANT);
     }
     generateIdomStub(templateNode, alias, bodyStatements, callParams);
-    String returnType = getTemplateReturnType(templateNode);
+    boolean voidReturn =
+        isIncrementalDom()
+            && (templateNode.getContentKind().isHtml()
+                || templateNode.getContentKind() == SanitizedContentKind.ATTRIBUTES);
     Expression callExpr = dottedIdNoRequire(alias + "$").call(callParams);
-    bodyStatements.add(returnType.equals("void") ? callExpr.asStatement() : returnValue(callExpr));
+    bodyStatements.add(voidReturn ? callExpr.asStatement() : returnValue(callExpr));
     return Statements.of(bodyStatements.build());
   }
 
