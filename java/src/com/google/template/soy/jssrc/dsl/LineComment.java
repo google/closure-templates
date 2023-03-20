@@ -24,16 +24,26 @@ import com.google.errorprone.annotations.Immutable;
 @Immutable
 public abstract class LineComment extends SpecialToken {
 
-  abstract String comment();
+  abstract String source();
 
   public static LineComment create(String comment) {
     Preconditions.checkArgument(!comment.contains("\n"));
+    if (!comment.startsWith("//")) {
+      comment = "// " + comment;
+    }
     return new AutoValue_LineComment(comment);
+  }
+
+  public String content() {
+    if (source().startsWith("// ")) {
+      return source().substring(3);
+    }
+    return source().substring(2);
   }
 
   @Override
   void doFormatToken(FormattingContext ctx) {
-    ctx.append("// " + comment());
+    ctx.append(source());
     ctx.endLine();
   }
 }

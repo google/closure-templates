@@ -36,7 +36,7 @@ public abstract class TsxPrintNode extends Expression {
     } else if (expr instanceof Expression) {
       return new AutoValue_TsxPrintNode(((Expression) expr).asInlineExpr());
     } else if (expr instanceof LineComment) {
-      return new AutoValue_TsxPrintNode(RangeComment.create(((LineComment) expr).comment(), false));
+      return new AutoValue_TsxPrintNode(RangeComment.create(((LineComment) expr).content(), true));
     } else if (expr instanceof RangeComment) {
       return new AutoValue_TsxPrintNode(expr);
     } else {
