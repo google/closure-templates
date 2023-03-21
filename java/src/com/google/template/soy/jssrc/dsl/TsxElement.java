@@ -17,6 +17,7 @@ package com.google.template.soy.jssrc.dsl;
 
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.template.soy.jssrc.dsl.TsxFragmentElement.mergeLineComments;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Ascii;
@@ -45,7 +46,9 @@ public abstract class TsxElement extends Expression {
     return new AutoValue_TsxElement(
         openTag,
         closeTag,
-        body.stream().flatMap(TsxFragmentElement::wrapChild).collect(toImmutableList()));
+        mergeLineComments(body.stream())
+            .flatMap(TsxFragmentElement::wrapChild)
+            .collect(toImmutableList()));
   }
 
   public TsxElement copyWithTagName(String newTagName) {

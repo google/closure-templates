@@ -16,6 +16,7 @@
 package com.google.template.soy.jssrc.dsl;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.template.soy.jssrc.dsl.TsxFragmentElement.mergeLineComments;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
@@ -32,7 +33,9 @@ public abstract class TemplateLiteral extends Expression {
 
   public static TemplateLiteral create(List<? extends CodeChunk> body) {
     return new AutoValue_TemplateLiteral(
-        body.stream().map(TemplateLiteral::wrapChild).collect(toImmutableList()));
+        mergeLineComments(body.stream())
+            .map(TemplateLiteral::wrapChild)
+            .collect(toImmutableList()));
   }
 
   private static Expression wrapChild(CodeChunk chunk) {

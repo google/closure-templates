@@ -16,6 +16,7 @@
 package com.google.template.soy.jssrc.dsl;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.template.soy.jssrc.dsl.TsxFragmentElement.mergeLineComments;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
@@ -62,7 +63,9 @@ public abstract class HtmlTag extends Expression {
 
   private static HtmlTag create(String tagName, Type type, Stream<? extends CodeChunk> attributes) {
     return new AutoValue_HtmlTag(
-        tagName, type, attributes.flatMap(HtmlTag::wrapChild).collect(toImmutableList()));
+        tagName,
+        type,
+        mergeLineComments(attributes).flatMap(HtmlTag::wrapChild).collect(toImmutableList()));
   }
 
   private static Stream<CodeChunk> wrapChild(CodeChunk chunk) {
@@ -75,7 +78,7 @@ public abstract class HtmlTag extends Expression {
     } else if (chunk instanceof Concatenation) {
       return Stream.of(((Concatenation) chunk).map1toN(HtmlTag::wrapChild));
     } else if (chunk instanceof DecoratedStatement || chunk instanceof DecoratedExpression) {
-      return chunk.childrenStream().flatMap(TsxFragmentElement::wrapChild);
+      return mergeLineComments(chunk.childrenStream()).flatMap(TsxFragmentElement::wrapChild);
     } else if (chunk instanceof Statement) {
       return Stream.of(TsxPrintNode.wrap(((Statement) chunk).asExpr()));
     }

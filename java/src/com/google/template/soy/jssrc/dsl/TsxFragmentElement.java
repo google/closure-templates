@@ -20,11 +20,13 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
+import com.google.template.soy.internal.util.TreeStreams;
 import com.google.template.soy.jssrc.dsl.Expressions.DecoratedExpression;
 import com.google.template.soy.jssrc.dsl.FormattingContext.LexicalState;
 import com.google.template.soy.jssrc.dsl.Statements.DecoratedStatement;
 import com.google.template.soy.jssrc.dsl.TsxPrintNode.CommandChar;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /** Represents a tsx fragment elemenet, e.g.: "<>body</>". */
@@ -58,7 +60,28 @@ public abstract class TsxFragmentElement extends Expression {
 
   public static Expression create(List<? extends CodeChunk> body) {
     return new AutoValue_TsxFragmentElement(
-        body.stream().flatMap(TsxFragmentElement::wrapChild).collect(toImmutableList()));
+        mergeLineComments(body.stream())
+            .flatMap(TsxFragmentElement::wrapChild)
+            .collect(toImmutableList()));
+  }
+
+  /**
+   * Merge consecutive line comments into a single range comment to avoid creating consecutive range
+   * comments from consecutive line comments.
+   */
+  static Stream<CodeChunk> mergeLineComments(Stream<? extends CodeChunk> s) {
+    return TreeStreams.collateAndMerge(
+        s,
+        (prev, next) -> prev instanceof LineComment && next instanceof LineComment,
+        comments ->
+            RangeComment.create(
+                "\n"
+                    + comments.stream()
+                        .map(LineComment.class::cast)
+                        .map(LineComment::content)
+                        .collect(Collectors.joining("\n"))
+                    + "\n",
+                true));
   }
 
   static Stream<CodeChunk> wrapChild(CodeChunk chunk) {
@@ -74,7 +97,7 @@ public abstract class TsxFragmentElement extends Expression {
     } else if (chunk instanceof Concatenation) {
       return Stream.of(((Concatenation) chunk).map1toN(TsxFragmentElement::wrapChild));
     } else if (chunk instanceof DecoratedStatement || chunk instanceof DecoratedExpression) {
-      return chunk.childrenStream().flatMap(TsxFragmentElement::wrapChild);
+      return mergeLineComments(chunk.childrenStream()).flatMap(TsxFragmentElement::wrapChild);
     } else if (chunk instanceof Statement) {
       return Stream.of(TsxPrintNode.wrap(((Statement) chunk).asExpr()));
     } else if (chunk instanceof Whitespace) {

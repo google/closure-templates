@@ -18,12 +18,16 @@ package com.google.template.soy.internal.util;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
+import com.google.common.collect.PeekingIterator;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 import java.util.Spliterator;
 import java.util.Spliterators.AbstractSpliterator;
+import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -95,6 +99,49 @@ public final class TreeStreams {
             }
 
             action.accept(next);
+            return true;
+          }
+        },
+        /* parallel= */ false);
+  }
+
+  /**
+   * Creates a lazy stream from the {@code source} stream, optionally collating consecutive items
+   * and merging them into a single item in the resulting stream.
+   *
+   * @param accept predicate that is passed two consecutive items and returns whether they should be
+   *     collated together
+   * @param merger function that merges collated items into a single item
+   */
+  public static <T> Stream<T> collateAndMerge(
+      Stream<? extends T> source, BiPredicate<T, T> accept, Function<List<T>, T> merger) {
+    PeekingIterator<T> i = Iterators.peekingIterator(source.iterator());
+    return StreamSupport.stream(
+        new AbstractSpliterator<>(
+            // Our Baseclass says to pass MAX_VALUE for unsized streams
+            Long.MAX_VALUE,
+            // The order is meaningful.
+            Spliterator.ORDERED) {
+          @Override
+          public boolean tryAdvance(Consumer<? super T> action) {
+            if (!i.hasNext()) {
+              return false;
+            }
+            T next = i.next();
+            List<T> merged = null;
+            while (i.hasNext() && accept.test(next, i.peek())) {
+              if (merged == null) {
+                merged = new ArrayList<>();
+                merged.add(next);
+              }
+              next = i.next();
+              merged.add(next);
+            }
+            if (merged != null) {
+              action.accept(merger.apply(merged));
+            } else {
+              action.accept(next);
+            }
             return true;
           }
         },
