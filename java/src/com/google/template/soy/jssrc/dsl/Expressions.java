@@ -231,19 +231,19 @@ public final class Expressions {
         firstSlash < lastSlash && firstSlash != -1,
         "expected regex to start with a '/' and have a second '/' near the end, got %s",
         contents);
-    return Leaf.create(contents, /* isCheap= */ false);
+    return Leaf.createNonNull(contents, /* isCheap= */ false);
   }
 
   /** Creates a code chunk representing a JavaScript number literal. */
   public static Expression number(long value) {
     Preconditions.checkArgument(
         IntegerNode.isInRange(value), "Number is outside JS safe integer range: %s", value);
-    return Leaf.create(Long.toString(value), /* isCheap= */ true);
+    return Leaf.createNonNull(Long.toString(value), /* isCheap= */ true);
   }
 
   /** Creates a code chunk representing a JavaScript number literal. */
   public static Expression number(double value) {
-    return Leaf.create(Double.toString(value), /* isCheap= */ true);
+    return Leaf.createNonNull(Double.toString(value), /* isCheap= */ true);
   }
 
   /** Creates a code chunk representing an anonymous function literal. */

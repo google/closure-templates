@@ -430,7 +430,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     for (int i = 0; i < node.numChildren(); i += 2) {
       ExprNode keyNode = node.getChild(i);
       // Constructing a map literal with a null key is a runtime error.
-      Expression key = SOY_CHECK_NOT_NULL.call(genMapKeyCode(keyNode));
+      Expression key = assertNonNull(keyNode);
       Expression value = visit(node.getChild(i + 1));
       map = map.dotAccess("set").call(key, value);
     }
@@ -468,10 +468,6 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
 
     Expression nestedList = list.dotAccess("map").call(arrowFunction(doc, body));
     return Expressions.constructMap(nestedList);
-  }
-
-  private Expression genMapKeyCode(ExprNode keyNode) {
-    return visit(keyNode);
   }
 
   // -----------------------------------------------------------------------------------------------
@@ -572,7 +568,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
         ExprNode keyNode = itemAccess.getKeyExprChild();
         SoyType baseType = itemAccess.getBaseExprChild().getType();
         return SoyTypes.isKindOrUnionOfKind(SoyTypes.removeNull(baseType), Kind.MAP) // soy.Map
-            ? accumulator.mapGetAccess(genMapKeyCode(keyNode), nullSafe)
+            ? accumulator.mapGetAccess(visit(keyNode), nullSafe)
             : accumulator.bracketAccess(
                 // The key type may not match JsCompiler's type system (passing number as enum, or
                 // nullable proto field).  I could instead cast this to the map's key type.
@@ -1017,7 +1013,8 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
   }
 
   private Expression assertNonNull(ExprNode expr) {
-    return SOY_CHECK_NOT_NULL.call(visit(expr));
+    Expression e = visit(expr);
+    return e.isDefinitelyNotNull() ? e : SOY_CHECK_NOT_NULL.call(e);
   }
 
   private Expression visitIsSetFunction(FunctionNode node) {

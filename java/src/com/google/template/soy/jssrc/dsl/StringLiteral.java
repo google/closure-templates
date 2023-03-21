@@ -40,6 +40,11 @@ public abstract class StringLiteral extends Expression {
   abstract QuoteStyle quoteStyle();
 
   @Override
+  public boolean isDefinitelyNotNull() {
+    return true;
+  }
+
+  @Override
   public boolean isCheap() {
     return true;
   }

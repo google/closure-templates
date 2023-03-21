@@ -59,6 +59,10 @@ public abstract class Expression extends CodeChunk {
     return false;
   }
 
+  public boolean isDefinitelyNotNull() {
+    return false;
+  }
+
   /**
    * If this chunk can be represented as a single expression, returns that expression. If this chunk
    * cannot be represented as a single expression, returns an expression containing references to a
