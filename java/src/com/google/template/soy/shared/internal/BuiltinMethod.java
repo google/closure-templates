@@ -173,9 +173,6 @@ public enum BuiltinMethod implements SoyMethod {
         // should be impossibe
         return false;
       }
-      if (fd.isRepeated()) {
-        return true;
-      }
       if (fd.getJavaType() == JavaType.MESSAGE) {
         return true;
       }
