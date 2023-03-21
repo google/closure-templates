@@ -38,6 +38,11 @@ public abstract class ArrayLiteral extends Expression {
   }
 
   @Override
+  public boolean isDefinitelyNotNull() {
+    return true;
+  }
+
+  @Override
   void doFormatOutputExpr(FormattingContext ctx) {
     ctx.append('[');
     boolean first = true;

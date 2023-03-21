@@ -34,24 +34,30 @@ abstract class Leaf extends Expression implements CodeChunk.HasRequires {
         new JsExpr(text, Integer.MAX_VALUE),
         isCheap,
         ImmutableSet.copyOf(require),
-        /* initialExpressionIsObjectLiteral= */ false);
+        /* initialExpressionIsObjectLiteral= */ false,
+        false);
   }
 
   static Leaf create(String text, boolean isCheap) {
     return create(text, isCheap, ImmutableSet.of());
   }
 
+  static Leaf createNonNull(String text, boolean isCheap) {
+    return create(new JsExpr(text, Integer.MAX_VALUE), isCheap, ImmutableSet.of(), false, true);
+  }
+
   static Leaf create(JsExpr value, boolean isCheap, Iterable<GoogRequire> requires) {
-    return create(value, isCheap, requires, /* initialExpressionIsObjectLiteral= */ true);
+    return create(value, isCheap, requires, /* initialExpressionIsObjectLiteral= */ true, false);
   }
 
   private static Leaf create(
       JsExpr value,
       boolean isCheap,
       Iterable<GoogRequire> requires,
-      boolean initialExpressionIsObjectLiteral) {
+      boolean initialExpressionIsObjectLiteral,
+      boolean nonNull) {
     return new AutoValue_Leaf(
-        value, ImmutableSet.copyOf(requires), isCheap, initialExpressionIsObjectLiteral);
+        value, ImmutableSet.copyOf(requires), isCheap, initialExpressionIsObjectLiteral, nonNull);
   }
 
   abstract JsExpr value();
@@ -61,6 +67,12 @@ abstract class Leaf extends Expression implements CodeChunk.HasRequires {
 
   @Override
   public abstract boolean isCheap();
+
+  @Override
+  abstract boolean initialExpressionIsObjectLiteral();
+
+  @Override
+  public abstract boolean isDefinitelyNotNull();
 
   @Override
   Stream<? extends CodeChunk> childrenStream() {
@@ -76,7 +88,4 @@ abstract class Leaf extends Expression implements CodeChunk.HasRequires {
   public JsExpr singleExprOrName(FormatOptions formatOptions) {
     return value();
   }
-
-  @Override
-  abstract boolean initialExpressionIsObjectLiteral();
 }

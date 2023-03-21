@@ -215,7 +215,8 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   }
 
   private Statement generateRenderInternal(TemplateElementNode node, String alias) {
-    String paramsType = hasOnlyImplicitParams(node) ? "null" : "!" + alias + ".Params";
+    String paramsType =
+        hasOnlyImplicitParams(node) ? "?Object<string, *>=" : "!" + alias + ".Params";
     String soyElementClassName = this.getSoyElementClassName(alias);
     JsDoc jsDoc =
         JsDoc.builder()
@@ -283,7 +284,8 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   @Nullable
   private Statement generateSyncInternal(TemplateElementNode node, String alias) {
     String soyElementClassName = this.getSoyElementClassName(alias);
-    String paramsType = hasOnlyImplicitParams(node) ? "null" : "!" + alias + ".Params";
+    String paramsType =
+        hasOnlyImplicitParams(node) ? "?Object<string, *>=" : "!" + alias + ".Params";
     JsDoc jsDoc =
         JsDoc.builder()
             .addParam(StandardNames.OPT_DATA, paramsType)
@@ -351,8 +353,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     if (hasOnlyImplicitParams(node)) {
       // If there are indirect parameters, allow an arbitrary object.
       // Either way, allow null, since the caller may not pass parameters.
-      jsDocBuilder.addParam(
-          StandardNames.OPT_DATA, noRequiredParams ? "?Object<string, *>=" : "null=");
+      jsDocBuilder.addParam(StandardNames.OPT_DATA, "?Object<string, *>=");
     } else if (noRequiredParams) {
       // All parameters are optional or only owned by an indirect callee; caller doesn't need to
       // pass an object.

@@ -85,6 +85,11 @@ abstract class ObjectLiteral extends Expression {
   }
 
   @Override
+  public boolean isDefinitelyNotNull() {
+    return true;
+  }
+
+  @Override
   Stream<? extends CodeChunk> childrenStream() {
     return Stream.concat(values().keySet().stream(), values().values().stream());
   }
