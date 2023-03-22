@@ -496,22 +496,21 @@ Avoid passing it as other content kinds.
 
 ### `xid(str), xid(id)` {#xid}
 
-Returns the minified and obfuscated version of a string. The argument can either
-be a `string` literal or a dotted identifier. The implementation of this
-function is configurable and depends on the backend. In JavaScript, this turns
-into a call to the `xid` function which uses the `@idgenerator` mechanism of the
-Closure Compiler to perform compile time obfuscation. In Java, this uses a
-`SoyIdRenamingMap` which can be configured directly with the renderering APIs
-(e.g. `SoySauce.Renderer.setXidRenamingMap` or
-`SoyTofu.Renderer.setIdRenamingMap`).
+Returns the minified and obfuscated version of a string. The argument can be
+either a `string` literal or a dotted identifier. Arguments that are dotted
+identifiers are subject to expansion by [`alias`](file-declarations.md#alias)
+commands. Otherwise the parameter types are interchangeable.
 
-When a dotted identifier is passed, it is as if you had passed an equivalent
-string literal, the benefit is that using this syntax you can take advantage of
-the [`alias`](file-declarations.md#alias) syntax to abbreviate the identifier.
+For example, assuming that the file has `{alias foo.bar as FooBar}`, then
+`xid('foo.bar.baz')`, `xid(foo.bar.baz)`, and `xid(FooBar.baz)` will all
+evaluate to the same value but `xid('FooBar.baz')` will be distinct.
 
-For example, assuming that the file has `{alias foo.bar}`, then
-`xid('foo.bar')`, `xid(foo.bar)`, and `xid(bar)` will all evaluate to the same
-value.
+The implementation of this function is configurable and depends on the backend.
+In JavaScript, this turns into a call to the `xid` function which uses the
+`@idgenerator` mechanism of the Closure Compiler to perform compile time
+obfuscation. In Java, this uses a `SoyIdRenamingMap` which can be configured
+directly with the renderering APIs (e.g. `SoySauce.Renderer.setXidRenamingMap`
+or `SoyTofu.Renderer.setIdRenamingMap`).
 
 The `xid()` function returns a string. If you need to pass it as a parameter,
 prefer the simple param syntax, e.g. `{param jsname: xid('input') /}`. In more
