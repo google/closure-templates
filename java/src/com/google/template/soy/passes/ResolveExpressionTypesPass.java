@@ -18,7 +18,6 @@ package com.google.template.soy.passes;
 
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableList.toImmutableList;
-import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static com.google.common.collect.ImmutableSortedSet.toImmutableSortedSet;
 import static com.google.template.soy.passes.CheckTemplateCallsPass.ARGUMENT_TYPE_MISMATCH;
 import static com.google.template.soy.types.SoyTypes.SAFE_PROTO_TO_SANITIZED_TYPE;
@@ -205,7 +204,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -344,12 +342,6 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       SoyErrorKind.of(
           "Using {0} in the initializer for a parameter with an inferred type is ambiguous. "
               + "Add an explicit type declaration.");
-  private static final SoyErrorKind VE_NO_CONFIG_FOR_ELEMENT =
-      SoyErrorKind.of(
-          "Could not find logging configuration for this element.{0}",
-          StyleAllowance.NO_PUNCTUATION);
-  private static final SoyErrorKind VE_CONFLICTS_WITH_TYPE =
-      SoyErrorKind.of("VE name conflicts with import on line {0}.");
   private static final SoyErrorKind TEMPLATE_TYPE_PARAMETERS_CANNOT_USE_INFERRED_TYPES =
       SoyErrorKind.of(
           "Template type parameters cannot be inferred. Instead, explicitly declare the type.");
@@ -406,7 +398,6 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
   private SoyTypeRegistry typeRegistry;
   private TypeNodeConverter pluginTypeConverter;
   private final PluginResolver.Mode pluginResolutionMode;
-  private ImmutableMap<String, ImportedVar> importIndex;
   private ImmutableMap<String, TemplateType> allTemplateTypes;
   private ConstantsTypeIndex constantsTypeLookup;
   private ExternsTypeIndex externsTypeLookup;
@@ -487,10 +478,6 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
     substitutions = null;
     typeRegistry = file.getSoyTypeRegistry();
     currentFile = file;
-    importIndex =
-        file.getImports().stream()
-            .flatMap(i -> i.getIdentifiers().stream())
-            .collect(toImmutableMap(AbstractVarDefn::name, Function.identity(), (e1, e2) -> e1));
     pluginTypeConverter =
         TypeNodeConverter.builder(errorReporter)
             .setTypeRegistry(typeRegistry)
@@ -740,12 +727,12 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
           // So for example if we have a variable whose type is (A|B|C) and the
           // first if-block tests whether that variable is type A, then in the
           // 'else' block it must be of type (B|C); If a subsequent 'elseif'
-          // statement tests whether it's type B, then in the following else block
+          // statement tests whether its type B, then in the following else block
           // it can only be of type C.
           substitutions = previousSubstitutionState;
           addTypeSubstitutions(visitor.negativeTypeConstraints);
         } else if (child instanceof IfElseNode) {
-          // For the else node, we simply inherit the previous set of subsitutions.
+          // For the else node, we simply inherit the previous set of substitutions.
           IfElseNode ien = (IfElseNode) child;
           visitChildren(ien);
         }
@@ -821,7 +808,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
           }
         } else if (child instanceof SwitchDefaultNode) {
           // No new type substitutions for a default statement, but inherit the previous (negative)
-          // subsitutions.
+          // substitutions.
           SwitchDefaultNode sdn = ((SwitchDefaultNode) child);
           visitChildren(sdn);
         }
@@ -902,7 +889,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
     }
   }
 
-  // Given a map of type subsitutions, add all the entries to the current set of
+  // Given a map of type substitutions, add all the entries to the current set of
   // active substitutions.
   private void addTypeSubstitutions(Map<ExprEquivalence.Wrapper, SoyType> substitutionsToAdd) {
     for (Map.Entry<ExprEquivalence.Wrapper, SoyType> entry : substitutionsToAdd.entrySet()) {
@@ -1142,7 +1129,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       visit(node.getListItemTransformExpr());
       node.setType(typeRegistry.getOrCreateListType(node.getListItemTransformExpr().getType()));
 
-      // Return the type substitions to their state before narrowing the list item type.
+      // Return the type substitutions to their state before narrowing the list item type.
       substitutions = savedSubstitutions;
 
       tryApplySubstitution(node);
@@ -2928,8 +2915,10 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
 
     @Override
     protected void visitMethodCallNode(MethodCallNode node) {
-      notAllowed(node);
       super.visitMethodCallNode(node);
+      if (!node.isMethodResolved() || node.getSoyMethod() != BuiltinMethod.BIND) {
+        notAllowed(node);
+      }
     }
 
     @Override
