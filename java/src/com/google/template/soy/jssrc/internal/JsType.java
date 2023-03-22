@@ -613,7 +613,6 @@ public final class JsType {
               parameters.isEmpty()
                   ? "null"
                   : "{" + Joiner.on(", ").withKeyValueSeparator(": ").join(parameters) + ",}";
-          String ijType = "(goog.soy.IjData|undefined)";
           String returnType = forReturnType.typeExpr();
           switch (kind) {
             case IDOMSRC:
@@ -623,11 +622,12 @@ public final class JsType {
               builder.addType(
                   String.format(
                       "function(!incrementaldomlib.IncrementalDomRenderer, %s, %s):(%s)",
-                      parametersType, ijType, returnType));
+                      parametersType, "(goog.soy.IjData|null" + ")", returnType));
               break;
             default:
               builder.addType(
-                  String.format("function(%s, %s):(%s)", parametersType, ijType, returnType));
+                  String.format(
+                      "function(%s, %s):(%s)", parametersType, "?(goog.soy.IjData)=", returnType));
           }
           builder.setPredicate(GOOG_IS_FUNCTION);
           return builder.build();
