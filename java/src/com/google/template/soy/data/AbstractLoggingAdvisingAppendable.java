@@ -15,11 +15,11 @@
  */
 package com.google.template.soy.data;
 
-import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.errorprone.annotations.ForOverride;
 import java.io.IOException;
+import java.util.function.Function;
 
 /**
  * A {@link LoggingAdvisingAppendable} that implements {@code logonly} behavior in response to log

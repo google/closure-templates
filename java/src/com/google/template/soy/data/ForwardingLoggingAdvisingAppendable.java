@@ -17,11 +17,11 @@ package com.google.template.soy.data;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import java.io.IOException;
+import java.util.function.Function;
 
 /** A simple forwarding implementation, forwards all calls to a delegate. */
 public abstract class ForwardingLoggingAdvisingAppendable extends LoggingAdvisingAppendable {

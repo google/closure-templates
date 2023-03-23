@@ -23,7 +23,6 @@ import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static java.lang.invoke.MethodType.methodType;
 import static java.util.stream.Collectors.toList;
 
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.HashMultiset;
@@ -104,6 +103,7 @@ import java.util.Set;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.annotation.Nullable;

@@ -16,10 +16,10 @@
 
 package com.google.template.soy.jssrc.internal;
 
-import com.google.common.base.Supplier;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jssrc.internal.GenJsExprsVisitor.GenJsExprsVisitorFactory;
+import java.util.function.Supplier;
 
 /**
  * Utilities for unit tests in the Js Src backend.

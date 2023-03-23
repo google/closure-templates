@@ -22,7 +22,6 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import com.google.auto.value.AutoValue;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -101,6 +100,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.annotation.Nullable;
@@ -695,11 +695,12 @@ public final class SoyFileSet {
 
   /** Template pattern for any public or package visible entry point method that is void. */
   private void entryPointVoid(Runnable variant) {
-    entryPoint(
-        () -> {
-          variant.run();
-          return null;
-        });
+    Object unused =
+        entryPoint(
+            () -> {
+              variant.run();
+              return null;
+            });
   }
 
   /**
@@ -882,7 +883,7 @@ public final class SoyFileSet {
    *     precompilation see SoySauceBuilder.
    */
   @Deprecated
-  public SoyTofu compileToTofu(Map<String, Supplier<Object>> pluginInstances) {
+  public SoyTofu compileToTofu(Map<String, ? extends Supplier<Object>> pluginInstances) {
     return entryPoint(
         () -> {
           ServerCompilationPrimitives primitives = compileForServerRendering();
@@ -893,7 +894,8 @@ public final class SoyFileSet {
 
   /** Helper method to compile SoyTofu from {@link ServerCompilationPrimitives} */
   private SoyTofu doCompileToTofu(
-      ServerCompilationPrimitives primitives, Map<String, Supplier<Object>> pluginInstances) {
+      ServerCompilationPrimitives primitives,
+      Map<String, ? extends Supplier<Object>> pluginInstances) {
     return new BaseTofu(
         scopedData.enterable(), primitives.soyTree, PluginInstances.of(pluginInstances));
   }
@@ -928,7 +930,7 @@ public final class SoyFileSet {
    * @return A set of compiled templates
    * @throws SoyCompilationException If compilation fails.
    */
-  public SoySauce compileTemplates(Map<String, Supplier<Object>> pluginInstances) {
+  public SoySauce compileTemplates(Map<String, ? extends Supplier<Object>> pluginInstances) {
     return entryPoint(
         () -> {
           ServerCompilationPrimitives primitives = compileForServerRendering();

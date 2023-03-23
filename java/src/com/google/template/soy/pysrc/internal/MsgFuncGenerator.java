@@ -16,7 +16,6 @@
 
 package com.google.template.soy.pysrc.internal;
 
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.error.ErrorReporter;
@@ -50,6 +49,7 @@ import com.google.template.soy.soytree.SoyNode.MsgSubstUnitNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.function.Function;
 
 /**
  * Class to generate python code for one {@link MsgNode}.

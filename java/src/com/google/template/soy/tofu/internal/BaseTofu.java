@@ -19,7 +19,6 @@ package com.google.template.soy.tofu.internal;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Supplier;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -71,6 +70,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 /**
@@ -422,7 +422,7 @@ public final class BaseTofu implements SoyTofu {
     private Predicate<String> activeModNames;
     private SanitizedContent.ContentKind expectedContentKind;
     private boolean debugSoyTemplateInfo;
-    private Map<String, Supplier<Object>> perRenderPluginInstances;
+    private Map<String, ? extends Supplier<Object>> perRenderPluginInstances;
     private boolean dataSetInConstructor;
 
     /**
@@ -495,7 +495,8 @@ public final class BaseTofu implements SoyTofu {
 
     @CanIgnoreReturnValue
     @Override
-    public RendererImpl setPluginInstances(Map<String, Supplier<Object>> pluginInstances) {
+    public RendererImpl setPluginInstances(
+        Map<String, ? extends Supplier<Object>> pluginInstances) {
       this.perRenderPluginInstances = checkNotNull(pluginInstances);
       return this;
     }

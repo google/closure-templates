@@ -18,7 +18,6 @@ package com.google.template.soy.jbcsrc.api;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.template.soy.jbcsrc.api.AppendableAsAdvisingAppendable.asAdvisingAppendable;
 
-import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
 import com.google.common.html.types.SafeHtml;
@@ -28,6 +27,7 @@ import com.google.template.soy.data.LoggingFunctionInvocation;
 import com.google.template.soy.logging.SoyLogger;
 import java.io.IOException;
 import java.util.Optional;
+import java.util.function.Function;
 
 /**
  * The outermost logger used in rendering.

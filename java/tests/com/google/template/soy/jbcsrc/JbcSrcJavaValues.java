@@ -16,7 +16,6 @@
 
 package com.google.template.soy.jbcsrc;
 
-import com.google.common.base.Function;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.MethodCallNode;
@@ -28,6 +27,7 @@ import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.shared.restricted.SoySourceFunctionMethod;
 import com.google.template.soy.types.SoyTypeRegistryBuilder;
 import java.util.List;
+import java.util.function.Function;
 
 /**
  * Utilites that expose JbcSrcJavaValue-related classes for testing.

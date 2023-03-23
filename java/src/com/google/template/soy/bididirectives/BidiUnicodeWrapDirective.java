@@ -16,7 +16,6 @@
 
 package com.google.template.soy.bididirectives;
 
-import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SoyValue;
@@ -36,6 +35,7 @@ import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.UnionType;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Supplier;
 
 /**
  * A directive that maybe wraps the output within Unicode bidi control characters -- start character

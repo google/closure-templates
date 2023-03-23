@@ -27,7 +27,6 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_DATA;
 import static com.google.template.soy.jssrc.internal.JsRuntime.WINDOW_CONSOLE_LOG;
 import static com.google.template.soy.jssrc.internal.JsRuntime.sanitizedContentOrdainerFunctionForInternalBlocks;
 
-import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.SanitizedContentKind;
@@ -79,6 +78,7 @@ import com.google.template.soy.types.UnknownType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 
 /**
  * Visitor for generating the full JS code (i.e. statements) for a template body.

@@ -20,7 +20,6 @@ import static com.google.template.soy.jssrc.dsl.Expressions.LITERAL_EMPTY_STRING
 import static com.google.template.soy.jssrc.dsl.Expressions.stringLiteral;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Supplier;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprRootNode;
@@ -48,6 +47,7 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.TemplateNode;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 
 /**
  * Visitor for generating JS expressions for parse tree nodes.

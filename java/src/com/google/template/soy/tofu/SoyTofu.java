@@ -17,7 +17,6 @@
 package com.google.template.soy.tofu;
 
 import com.google.common.annotations.Beta;
-import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.data.SanitizedContent;
@@ -31,6 +30,7 @@ import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import java.util.Map;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 /**
@@ -172,7 +172,7 @@ public interface SoyTofu {
      * this method can be used to add more if that is not feasible or desireable.
      */
     @CanIgnoreReturnValue
-    Renderer setPluginInstances(Map<String, Supplier<Object>> pluginInstances);
+    Renderer setPluginInstances(Map<String, ? extends Supplier<Object>> pluginInstances);
 
     /** Sets the predicate to use for testing whether or not a given {@code mod} is active. */
     @CanIgnoreReturnValue

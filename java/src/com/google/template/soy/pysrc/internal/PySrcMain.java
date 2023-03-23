@@ -19,7 +19,6 @@ package com.google.template.soy.pysrc.internal;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Files;
 import com.google.template.soy.base.SourceFilePath;
@@ -43,6 +42,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 /**
  * Main entry point for the Python Src backend (output target).

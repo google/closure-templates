@@ -16,10 +16,10 @@
 
 package com.google.template.soy.bididirectives;
 
-import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
+import java.util.function.Supplier;
 
 /** Lists all bidi directives. */
 public final class BidiDirectives {

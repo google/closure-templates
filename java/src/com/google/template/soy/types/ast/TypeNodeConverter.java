@@ -19,12 +19,10 @@ package com.google.template.soy.types.ast;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.template.soy.types.SoyTypes.SAFE_PROTO_TO_SANITIZED_TYPE;
 
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
@@ -49,6 +47,7 @@ import com.google.template.soy.types.UnknownType;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /** Resolves {@link TypeNode}s into {@link SoyType}s. */
@@ -358,7 +357,9 @@ public final class TypeNodeConverter
 
     SoyType type;
     if (genericType instanceof GenericTypeInfo) {
-      type = ((GenericTypeInfo) genericType).create(Lists.transform(args, this), interner);
+      type =
+          ((GenericTypeInfo) genericType)
+              .create(args.stream().map(this).collect(toImmutableList()), interner);
     } else if (genericType instanceof StringArgGenericTypeInfo) {
       type =
           ((StringArgGenericTypeInfo) genericType)

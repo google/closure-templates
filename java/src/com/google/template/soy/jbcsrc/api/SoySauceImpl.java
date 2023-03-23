@@ -23,7 +23,6 @@ import static com.google.template.soy.jbcsrc.api.AppendableAsAdvisingAppendable.
 import static com.google.template.soy.jbcsrc.shared.Names.rewriteStackTrace;
 
 import com.google.common.base.Ascii;
-import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
@@ -59,6 +58,7 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 /** Main entry point for rendering Soy templates on the server. */
@@ -206,7 +206,8 @@ public final class SoySauceImpl implements SoySauce {
 
     @CanIgnoreReturnValue
     @Override
-    public RendererImpl setPluginInstances(Map<String, Supplier<Object>> pluginInstances) {
+    public RendererImpl setPluginInstances(
+        Map<String, ? extends Supplier<Object>> pluginInstances) {
       contextBuilder.withPluginInstances(
           SoySauceImpl.this.pluginInstances.combine(pluginInstances));
       return this;

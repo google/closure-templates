@@ -17,7 +17,6 @@
 package com.google.template.soy.jssrc.internal;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Supplier;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.internal.i18n.SoyBidiUtils;
@@ -31,6 +30,7 @@ import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.List;
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 /**

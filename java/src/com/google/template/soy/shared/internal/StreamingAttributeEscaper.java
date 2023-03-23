@@ -17,7 +17,6 @@ package com.google.template.soy.shared.internal;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.data.LogStatement;
@@ -26,6 +25,7 @@ import com.google.template.soy.data.LoggingFunctionInvocation;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.shared.internal.EscapingConventions.CrossLanguageStringXform;
 import java.io.IOException;
+import java.util.function.Function;
 
 /**
  * A StreamingAttributeEscaper is a decorator for a {@link LoggingAdvisingAppendable} that applies

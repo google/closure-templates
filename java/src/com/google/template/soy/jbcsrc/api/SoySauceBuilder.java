@@ -18,7 +18,6 @@ package com.google.template.soy.jbcsrc.api;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
@@ -37,6 +36,7 @@ import java.io.InputStreamReader;
 import java.net.URL;
 import java.util.Enumeration;
 import java.util.Map;
+import java.util.function.Supplier;
 
 /** Constructs {@link SoySauce} implementations. */
 public final class SoySauceBuilder {
@@ -63,7 +63,8 @@ public final class SoySauceBuilder {
    * and migrate these cases over, and then we could add validation to build().
    */
   @CanIgnoreReturnValue
-  public SoySauceBuilder withPluginInstances(Map<String, Supplier<Object>> pluginInstances) {
+  public SoySauceBuilder withPluginInstances(
+      Map<String, ? extends Supplier<Object>> pluginInstances) {
     this.userPluginInstances = PluginInstances.of(pluginInstances);
     return this;
   }

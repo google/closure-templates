@@ -18,12 +18,12 @@ package com.google.template.soy.soytree;
 
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static com.google.template.soy.soytree.CommandTagAttribute.MISSING_ATTRIBUTE;
 import static com.google.template.soy.soytree.CommandTagAttribute.UNSUPPORTED_ATTRIBUTE_KEY;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Function;
 import com.google.common.base.Functions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
@@ -47,9 +47,11 @@ import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalLong;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
@@ -134,7 +136,9 @@ public final class MsgNode extends AbstractBlockCommandNode
         builder.put(oldToNew.get(entry.getKey()), entry.getValue());
       }
       return new SubstUnitInfo(
-          Maps.transformValues(varNameToRepNodeMap, oldToNewFunction), builder.buildOrThrow());
+          varNameToRepNodeMap.entrySet().stream()
+              .collect(toImmutableMap(Entry::getKey, e -> oldToNewFunction.apply(e.getValue()))),
+          builder.buildOrThrow());
     }
   }
 
@@ -638,7 +642,9 @@ public final class MsgNode extends AbstractBlockCommandNode
     abstract ImmutableMap<MsgSubstUnitNode, String> repNodeToPhExample();
   }
 
-  /** @return Location of `phname` attribute value, if found; otherwise, node location. */
+  /**
+   * @return Location of `phname` attribute value, if found; otherwise, node location.
+   */
   private static SourceLocation phnameLocation(MsgSubstUnitNode node) {
     return node.getPlaceholder().userSuppliedNameLocation().orElse(node.getSourceLocation());
   }

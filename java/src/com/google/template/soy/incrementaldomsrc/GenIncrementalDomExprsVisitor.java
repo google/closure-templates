@@ -16,8 +16,6 @@
 
 package com.google.template.soy.incrementaldomsrc;
 
-
-import com.google.common.base.Supplier;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.internal.GenJsExprsVisitor;
@@ -29,6 +27,7 @@ import com.google.template.soy.jssrc.internal.TranslationContext;
 import com.google.template.soy.soytree.SoyNode;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 
 /** Overrides the base class to provide the correct helpers classes. */
 public final class GenIncrementalDomExprsVisitor extends GenJsExprsVisitor {

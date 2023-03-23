@@ -18,7 +18,6 @@ package com.google.template.soy.shared.internal;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 
-import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
@@ -39,6 +38,7 @@ import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 /** Lists all functions & directives shipped with Soy. */
 public final class InternalPlugins {

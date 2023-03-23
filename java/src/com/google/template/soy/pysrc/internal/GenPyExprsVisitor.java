@@ -17,7 +17,6 @@
 package com.google.template.soy.pysrc.internal;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.QuoteStyle;
@@ -46,6 +45,7 @@ import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 
 /**
  * Visitor for generating Python expressions for parse tree nodes.

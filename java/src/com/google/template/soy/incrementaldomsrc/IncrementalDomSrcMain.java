@@ -16,7 +16,6 @@
 
 package com.google.template.soy.incrementaldomsrc;
 
-import com.google.common.base.Supplier;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.incrementaldomsrc.GenIncrementalDomExprsVisitor.GenIncrementalDomExprsVisitorFactory;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
@@ -31,6 +30,7 @@ import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Supplier;
 
 /**
  * Main entry point for the Incremental DOM JS Src backend (output target).

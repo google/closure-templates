@@ -22,7 +22,6 @@ import static java.util.stream.Collectors.joining;
 import com.google.auto.value.AutoValue;
 import com.google.auto.value.extension.memoized.Memoized;
 import com.google.common.base.CaseFormat;
-import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -35,6 +34,7 @@ import com.google.template.soy.soytree.ParameterP;
 import com.google.template.soy.soytree.SoyTypeP;
 import com.google.template.soy.types.SanitizedType.ElementType;
 import java.util.Map;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 

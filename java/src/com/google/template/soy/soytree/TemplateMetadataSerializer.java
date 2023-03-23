@@ -20,7 +20,6 @@ import static com.google.common.base.Strings.emptyToNull;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Converter;
 import com.google.common.base.Strings;
-import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.SourceFilePath;
@@ -62,6 +61,7 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 /** Utilities to transform TemplateMetadata objects to and From CompilationUnit protos */

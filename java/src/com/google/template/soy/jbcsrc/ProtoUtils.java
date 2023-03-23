@@ -33,7 +33,6 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.isPrimitiv
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.numericConversion;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.unboxUnchecked;
 
-import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -94,6 +93,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import javax.annotation.Nullable;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;

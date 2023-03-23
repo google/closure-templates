@@ -21,7 +21,6 @@ import static java.lang.Math.min;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Ascii;
-import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
@@ -48,6 +47,7 @@ import com.google.template.soy.shared.internal.TagWhitelist.OptionalSafeTag;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;

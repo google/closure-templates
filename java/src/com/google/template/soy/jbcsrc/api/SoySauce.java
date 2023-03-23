@@ -21,7 +21,6 @@ package com.google.template.soy.jbcsrc.api;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.jbcsrc.api.AppendableAsAdvisingAppendable.asAdvisingAppendable;
 
-import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
@@ -38,6 +37,7 @@ import com.google.template.soy.shared.SoyIdRenamingMap;
 import java.io.IOException;
 import java.util.Map;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 /**
  * Main entry point for rendering Soy templates on the server.
@@ -138,7 +138,7 @@ public interface SoySauce {
      * but this method can be used to add more if that is not feasible.
      */
     @CanIgnoreReturnValue
-    Renderer setPluginInstances(Map<String, Supplier<Object>> pluginInstances);
+    Renderer setPluginInstances(Map<String, ? extends Supplier<Object>> pluginInstances);
 
     /** Configures the {@code {css ..}} renaming map. */
     @CanIgnoreReturnValue

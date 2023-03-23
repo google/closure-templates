@@ -18,7 +18,6 @@ package com.google.template.soy.jbcsrc.runtime;
 
 import static com.google.common.base.Preconditions.checkState;
 
-import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.data.Dir;
@@ -32,6 +31,7 @@ import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import java.io.IOException;
+import java.util.function.Function;
 import javax.annotation.Nullable;
 
 /**

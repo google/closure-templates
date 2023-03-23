@@ -21,7 +21,6 @@ import static com.google.common.truth.Truth.assertAbout;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.testing.SharedTestUtils.untypedTemplateBodyForExpression;
 
-import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.truth.FailureMetadata;
 import com.google.common.truth.Subject;
@@ -41,6 +40,7 @@ import com.google.template.soy.testing.SharedTestUtils;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 /**
  * Truth assertion which compiles the provided soy code and asserts that the generated PyExprs match

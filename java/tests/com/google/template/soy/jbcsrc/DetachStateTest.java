@@ -20,7 +20,6 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.jbcsrc.TemplateTester.asRecord;
 import static com.google.template.soy.jbcsrc.TemplateTester.getDefaultContext;
 
-import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.SettableFuture;
@@ -39,6 +38,7 @@ import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.testing.Foo;
 import java.io.IOException;
 import java.util.List;
+import java.util.function.Function;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;

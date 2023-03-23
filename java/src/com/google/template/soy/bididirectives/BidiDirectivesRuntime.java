@@ -15,7 +15,6 @@
  */
 package com.google.template.soy.bididirectives;
 
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
@@ -34,6 +33,7 @@ import com.google.template.soy.internal.i18n.BidiFormatter;
 import com.google.template.soy.internal.i18n.BidiFormatter.BidiWrappingText;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import java.io.IOException;
+import java.util.function.Function;
 import javax.annotation.Nullable;
 
 /** Java implementations of the bididirectives. */

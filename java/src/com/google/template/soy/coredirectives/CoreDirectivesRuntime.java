@@ -15,7 +15,6 @@
  */
 package com.google.template.soy.coredirectives;
 
-import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.data.Dir;
@@ -30,6 +29,7 @@ import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.shared.internal.AbstractStreamingHtmlEscaper;
 import com.google.template.soy.shared.internal.EscapingConventions;
 import java.io.IOException;
+import java.util.function.Function;
 import javax.annotation.Nullable;
 
 /** Runtime functions for implementing the directives in this package. */
