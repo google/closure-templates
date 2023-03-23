@@ -20,6 +20,7 @@ import com.google.common.base.Preconditions;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.basetree.Copyable;
 import com.google.template.soy.exprtree.AbstractVarDefn;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.types.SoyType;
@@ -34,7 +35,7 @@ import javax.annotation.Nullable;
  * module or type, we may create nested instances of this class via {@link #nested}. Likewise for
  * templates and constants under a template module import.
  */
-public final class ImportedVar extends AbstractVarDefn {
+public final class ImportedVar extends AbstractVarDefn implements Copyable<ImportedVar> {
 
   public static final String MODULE_IMPORT = "*";
 
@@ -80,6 +81,7 @@ public final class ImportedVar extends AbstractVarDefn {
     this.filePath = path;
   }
 
+  @Override
   public ImportedVar copy(CopyState copyState) {
     return new ImportedVar(this, parent, copyState);
   }

@@ -23,8 +23,6 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
-import com.google.template.soy.soytree.SoyNode.Kind;
-import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.SoyType;
@@ -51,10 +49,10 @@ public final class TemplateBasicNode extends TemplateNode {
   private final boolean modifiable;
 
   /** The "legacydeltemplatenamespace" attribute. */
-  private final String legacyDeltemplateNamespace;
+  private final CommandTagAttribute legacyDeltemplateNamespaceAttr;
 
   /** The "usevarianttype" attribute, as a string. */
-  private final String useVariantTypeString;
+  private final CommandTagAttribute useVariantTypeAttr;
 
   private String variantString = null;
 
@@ -78,13 +76,13 @@ public final class TemplateBasicNode extends TemplateNode {
       SoyFileHeaderInfo soyFileHeaderInfo,
       Visibility visibility,
       boolean modifiable,
-      String legacyDeltemplateNamespace,
-      String useVariantTypeString,
+      @Nullable CommandTagAttribute legacyDeltemplateNamespaceAttr,
+      @Nullable CommandTagAttribute useVariantTypeAttr,
       @Nullable ImmutableList<TemplateHeaderVarDefn> params) {
     super(nodeBuilder, "template", soyFileHeaderInfo, visibility, params);
     this.modifiable = modifiable;
-    this.legacyDeltemplateNamespace = legacyDeltemplateNamespace;
-    this.useVariantTypeString = useVariantTypeString;
+    this.legacyDeltemplateNamespaceAttr = legacyDeltemplateNamespaceAttr;
+    this.useVariantTypeAttr = useVariantTypeAttr;
   }
 
   /**
@@ -95,8 +93,9 @@ public final class TemplateBasicNode extends TemplateNode {
   private TemplateBasicNode(TemplateBasicNode orig, CopyState copyState) {
     super(orig, copyState);
     this.modifiable = orig.modifiable;
-    this.legacyDeltemplateNamespace = orig.legacyDeltemplateNamespace;
-    this.useVariantTypeString = orig.useVariantTypeString;
+    this.legacyDeltemplateNamespaceAttr =
+        copyState.copyNullable(orig.legacyDeltemplateNamespaceAttr);
+    this.useVariantTypeAttr = copyState.copyNullable(orig.useVariantTypeAttr);
     this.useVariantType = orig.useVariantType;
   }
 
@@ -134,7 +133,7 @@ public final class TemplateBasicNode extends TemplateNode {
   }
 
   public String getLegacyDeltemplateNamespace() {
-    return legacyDeltemplateNamespace;
+    return legacyDeltemplateNamespaceAttr != null ? legacyDeltemplateNamespaceAttr.getValue() : "";
   }
 
   @Nullable
@@ -150,22 +149,27 @@ public final class TemplateBasicNode extends TemplateNode {
 
   public void resolveUseVariantType(SoyTypeRegistry registry, ErrorReporter errorReporter) {
     Preconditions.checkState(useVariantType == null);
-    if (useVariantTypeString.isEmpty()) {
+    if (useVariantTypeAttr == null) {
       useVariantType = NullType.getInstance();
       return;
     }
-    SoyType resolvedType = registry.getType(useVariantTypeString);
+    SoyType resolvedType = registry.getType(useVariantTypeAttr.getValue());
     if (resolvedType == null || !isValidVariantType(resolvedType)) {
       errorReporter.report(
           getCommandTagAttribute("usevarianttype")
               .map(CommandTagAttribute::getSourceLocation)
               .orElse(getSourceLocation()),
           INVALID_USEVARIANTTYPE,
-          useVariantTypeString);
+          useVariantTypeAttr.getValue());
       useVariantType = NullType.getInstance();
     } else {
       useVariantType = resolvedType;
     }
+  }
+
+  @Nullable
+  public CommandTagAttribute getUseVariantTypeAttribute() {
+    return useVariantTypeAttr;
   }
 
   /**

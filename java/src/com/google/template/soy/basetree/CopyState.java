@@ -21,6 +21,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.IdentityHashMap;
 import java.util.Map;
+import javax.annotation.Nullable;
 
 /**
  * An object that can hold extra state for tree copying operations, passed to {@link
@@ -126,5 +127,15 @@ public final class CopyState {
       listener.newVersion(newObject);
       oldListener.newVersion(newObject);
     };
+  }
+
+  @Nullable
+  public <T extends Copyable<?>> T copyNullable(@Nullable T node) {
+    if (node == null) {
+      return null;
+    }
+    @SuppressWarnings("unchecked")
+    T copy = (T) node.copy(this);
+    return copy;
   }
 }

@@ -27,7 +27,7 @@ import com.google.template.soy.base.SourceLocation;
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  */
-public interface Node {
+public interface Node extends Copyable<Node> {
 
   /** Returns the source location (file path and line number) for this node. */
   SourceLocation getSourceLocation();
@@ -95,7 +95,6 @@ public interface Node {
    *   return new T(this, copyState);
    * }
    * }</pre>
-   *
    *   <li>all non-leaf copy constructors should be protected
    * </ul>
    *
@@ -105,5 +104,6 @@ public interface Node {
    *
    * @return A clone of this code.
    */
+  @Override
   Node copy(CopyState copyState);
 }

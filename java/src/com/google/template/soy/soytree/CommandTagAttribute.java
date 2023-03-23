@@ -31,6 +31,7 @@ import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.TemplateContentKind;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.basetree.Copyable;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
@@ -45,7 +46,7 @@ import java.util.Set;
 import javax.annotation.Nullable;
 
 /** A name-attribute pair (e.g. {@code <name>="<attribute>"}) as parsed from a soy command. */
-public final class CommandTagAttribute {
+public final class CommandTagAttribute implements Copyable<CommandTagAttribute> {
 
   private static final SoyErrorKind DUPLICATE_ATTRIBUTE =
       SoyErrorKind.of("Attribute ''{0}'' was already specified.");
@@ -152,6 +153,7 @@ public final class CommandTagAttribute {
     this.valueExprList = ExprRootNode.wrap(valueExprList);
   }
 
+  @Override
   public CommandTagAttribute copy(CopyState copyState) {
     if (this.value == null) {
       return new CommandTagAttribute(
@@ -202,6 +204,11 @@ public final class CommandTagAttribute {
       errorReporter.report(valueLocation, INVALID_ATTRIBUTE, key.identifier(), "a number");
       return OptionalInt.empty();
     }
+  }
+
+  @Nullable
+  public Identifier valueAsIdentifier() {
+    return value != null ? Identifier.create(value, valueLocation) : null;
   }
 
   public OptionalLong valueAsOptionalLong(ErrorReporter errorReporter) {

@@ -18,6 +18,7 @@ package com.google.template.soy.soytree.defn;
 
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.basetree.Copyable;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.types.SoyType;
@@ -28,7 +29,7 @@ import javax.annotation.Nullable;
  * Interface for the definition of a template header variable, i.e. a value that is declared in a
  * template using {@code or} @state.
  */
-public interface TemplateHeaderVarDefn extends VarDefn {
+public interface TemplateHeaderVarDefn extends VarDefn, Copyable<TemplateHeaderVarDefn> {
 
   SourceLocation getSourceLocation();
 
@@ -56,5 +57,6 @@ public interface TemplateHeaderVarDefn extends VarDefn {
 
   void setDesc(String desc);
 
+  @Override
   TemplateHeaderVarDefn copy(CopyState copyState);
 }

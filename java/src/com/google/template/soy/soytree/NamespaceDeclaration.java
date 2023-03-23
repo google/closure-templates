@@ -24,13 +24,14 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.basetree.Copyable;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 import java.util.List;
 import javax.annotation.Nullable;
 
 /** A {@code {namespace ..}} declaration. */
-public final class NamespaceDeclaration {
+public final class NamespaceDeclaration implements Copyable<NamespaceDeclaration> {
   public static final NamespaceDeclaration EMPTY =
       new NamespaceDeclaration(
           Identifier.create(SoyFileHeaderInfo.EMPTY.getNamespace(), UNKNOWN),
@@ -102,6 +103,7 @@ public final class NamespaceDeclaration {
     this.cssPrefix = cssPrefix;
   }
 
+  @Override
   public NamespaceDeclaration copy(CopyState copyState) {
     return new NamespaceDeclaration(
         namespace,

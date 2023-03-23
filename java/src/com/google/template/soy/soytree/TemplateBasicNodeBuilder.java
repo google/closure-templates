@@ -58,13 +58,13 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder<TemplateBasicN
   private boolean hasModifies = false;
 
   /** The "legacydeltemplatenamespace" attribute. */
-  private String legacyDeltemplateNamespace = "";
+  private CommandTagAttribute legacyDeltemplateNamespaceAttr;
 
   /** Expression that will evaluate to the value of the "variant" attribute. */
   private boolean hasVariant = false;
 
   /** The "usevarianttype" attribute. */
-  private String useVariantTypeString = "";
+  private CommandTagAttribute useVariantTypeAttr;
 
   /** @param soyFileHeaderInfo Info from the containing Soy file's header declarations. */
   public TemplateBasicNodeBuilder(
@@ -96,13 +96,13 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder<TemplateBasicN
           hasModifies = attribute.valueAsExpr(errorReporter) != null;
           break;
         case "legacydeltemplatenamespace":
-          legacyDeltemplateNamespace = attribute.getValue();
+          legacyDeltemplateNamespaceAttr = attribute;
           break;
         case "variant":
           hasVariant = attribute.valueAsExpr(errorReporter) != null;
           break;
         case "usevarianttype":
-          useVariantTypeString = attribute.getValue();
+          useVariantTypeAttr = attribute;
           break;
         default:
           errorReporter.report(
@@ -132,10 +132,10 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder<TemplateBasicN
     if (modifiable && hasModifies) {
       errorReporter.report(openTagLocation, MODIFIABLE_AND_MODIFIES_BOTH_SET);
     }
-    if (!modifiable && !legacyDeltemplateNamespace.isEmpty()) {
+    if (!modifiable && legacyDeltemplateNamespaceAttr != null) {
       errorReporter.report(openTagLocation, LEGACYDELTEMPLATENAMESPACE_REQUIRES_MODIFIABLE);
     }
-    if (!modifiable && !useVariantTypeString.isEmpty()) {
+    if (!modifiable && useVariantTypeAttr != null) {
       errorReporter.report(openTagLocation, USEVARIANTTYPE_REQUIRES_MODIFIABLE);
     }
     if (modifiable && visibility != Visibility.PUBLIC) {
@@ -152,8 +152,8 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder<TemplateBasicN
         soyFileHeaderInfo,
         visibility,
         modifiable,
-        legacyDeltemplateNamespace,
-        useVariantTypeString,
+        legacyDeltemplateNamespaceAttr,
+        useVariantTypeAttr,
         params);
   }
 
