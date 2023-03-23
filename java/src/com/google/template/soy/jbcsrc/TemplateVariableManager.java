@@ -213,11 +213,8 @@ final class TemplateVariableManager implements LocalVariableManager {
     // seed our map with all the method parameters from our delegate.
     delegate
         .allActiveVariables()
-        .entrySet()
         .forEach(
-            entry ->
-                variablesByKey.put(
-                    VarKey.create(entry.getKey()), new TrivialVariable(entry.getValue())));
+            (key, value) -> variablesByKey.put(VarKey.create(key), new TrivialVariable(value)));
   }
 
   /** Enters a new scope. Variables may only be defined within a scope. */

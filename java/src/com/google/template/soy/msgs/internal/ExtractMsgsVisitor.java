@@ -34,7 +34,6 @@ import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.regex.Matcher;
@@ -69,8 +68,7 @@ public final class ExtractMsgsVisitor extends AbstractSoyNodeVisitor<SoyMsgBundl
     visit(node);
     // the messages in this list only have one source location.
     // messages gain extra source locations when merged together in a bundle.
-    Collections.sort(
-        msgs, comparing(m -> Iterables.getOnlyElement(m.getSourceLocations()).sourceLocation()));
+    msgs.sort(comparing(m -> Iterables.getOnlyElement(m.getSourceLocations()).sourceLocation()));
     return new SoyMsgBundleImpl(null, msgs, this::merge);
   }
 

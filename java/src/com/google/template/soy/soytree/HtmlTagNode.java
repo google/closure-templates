@@ -92,8 +92,7 @@ public abstract class HtmlTagNode extends AbstractParentSoyNode<StandaloneNode>
     // listen to updates
     copyState.updateRefs(orig, this);
     for (HtmlTagNode matchingNode : orig.taggedPairs) {
-      copyState.registerRefListener(
-          matchingNode, newMatchingNode -> taggedPairs.add(newMatchingNode));
+      copyState.registerRefListener(matchingNode, taggedPairs::add);
     }
   }
 

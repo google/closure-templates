@@ -512,7 +512,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
             .filter(t -> t instanceof TemplateBasicNode)
             .map(TemplateBasicNode.class::cast)
             .map(TemplateBasicNode::moddedSoyNamespace)
-            .filter(t -> t != null)
+            .filter(Objects::nonNull)
             .findFirst();
     if (mods.isPresent()) {
       header.addParameterizedAnnotation("mods", getGoogModuleNamespace(mods.get()));

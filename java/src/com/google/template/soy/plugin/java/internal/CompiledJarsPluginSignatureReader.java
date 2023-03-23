@@ -37,6 +37,7 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Consumer;
@@ -234,7 +235,7 @@ public class CompiledJarsPluginSignatureReader implements PluginSignatureReader,
     ClassSignatures(Builder builder) {
       this.methods =
           builder.methodsBuilder.entrySet().stream()
-              .collect(toImmutableMap(e -> e.getKey(), e -> e.getValue().build()));
+              .collect(toImmutableMap(Entry::getKey, e -> e.getValue().build()));
     }
 
     /** Returns all matching signatures for the partial signature. */

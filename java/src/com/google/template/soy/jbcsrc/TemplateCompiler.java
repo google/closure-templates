@@ -56,6 +56,7 @@ import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.PartialFileSetMetadata;
+import com.google.template.soy.soytree.SoyFileNode.CssPath;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
@@ -65,12 +66,14 @@ import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.TemplateType;
+import com.google.template.soy.types.TemplateType.Parameter;
 import java.lang.invoke.LambdaMetafactory;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -280,8 +283,8 @@ final class TemplateCompiler {
     // This ordering is critical to preserve css hierarchy.
     namespaces.addAll(templateNode.getParent().getRequiredCssNamespaces());
     templateNode.getParent().getRequiredCssPaths().stream()
-        .map(p -> p.getNamespace())
-        .filter(p -> p != null)
+        .map(CssPath::getNamespace)
+        .filter(Objects::nonNull)
         .forEach(namespaces::add);
     namespaces.addAll(templateNode.getRequiredCssNamespaces());
 
@@ -420,7 +423,7 @@ final class TemplateCompiler {
     if (template.hasPositionalSignature()) {
       paramNames.addAll(
           template.templateType().getActualParameters().stream()
-              .map(p -> p.getName())
+              .map(Parameter::getName)
               .collect(toList()));
     } else {
       paramNames.add(StandardNames.PARAMS);

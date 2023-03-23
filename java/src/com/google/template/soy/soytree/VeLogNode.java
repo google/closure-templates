@@ -56,11 +56,7 @@ public final class VeLogNode extends AbstractBlockCommandNode
     private SamenessKey(SamenessKey orig, CopyState copyState) {
       // store the original, this may still be valid if we are only copying a subtree
       this.delegate = orig.delegate;
-      copyState.registerRefListener(
-          orig.delegate,
-          newDelegate -> {
-            this.delegate = newDelegate;
-          });
+      copyState.registerRefListener(orig.delegate, newDelegate -> this.delegate = newDelegate);
     }
 
     SamenessKey copy(CopyState copyState) {

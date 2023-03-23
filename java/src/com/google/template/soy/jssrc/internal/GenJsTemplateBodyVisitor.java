@@ -532,7 +532,7 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
               .ref();
       // does it make sense to store this in a variable?
       limitInitializer = listVar.dotAccess("length");
-      getDataItemFunction = index -> listVar.bracketAccess(index);
+      getDataItemFunction = listVar::bracketAccess;
     }
 
     // Generate the foreach body as a CodeChunk.

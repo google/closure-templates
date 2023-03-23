@@ -201,11 +201,7 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
 
     SamenessKeyImpl(SamenessKeyImpl orig, CopyState copyState) {
       this.node = orig.node;
-      copyState.registerRefListener(
-          orig.node,
-          newNode -> {
-            this.node = newNode;
-          });
+      copyState.registerRefListener(orig.node, newNode -> this.node = newNode);
     }
 
     @Override

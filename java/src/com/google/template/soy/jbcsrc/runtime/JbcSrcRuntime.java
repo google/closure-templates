@@ -98,6 +98,7 @@ import java.lang.reflect.Method;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CancellationException;
@@ -529,7 +530,7 @@ public final class JbcSrcRuntime {
       return null;
     }
     return map.recordAsMap().entrySet().stream()
-        .collect(toImmutableMap(e -> e.getKey(), e -> SoyValueUnconverter.unconvert(e.getValue())));
+        .collect(toImmutableMap(Entry::getKey, e -> SoyValueUnconverter.unconvert(e.getValue())));
   }
 
   @Nullable

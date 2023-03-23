@@ -113,6 +113,7 @@ import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.VeLogNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.TemplateType;
+import com.google.template.soy.types.TemplateType.Parameter;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.util.ArrayList;
@@ -1174,7 +1175,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
                                 Stream.concat(
                                         Stream.of(node.getCalleeName()),
                                         metadata.templateType().getActualParameters().stream()
-                                            .map(p -> p.getName()))
+                                            .map(Parameter::getName))
                                     .toArray(Object[]::new));
                           }
                         };

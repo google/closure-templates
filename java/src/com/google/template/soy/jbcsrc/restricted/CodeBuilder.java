@@ -21,7 +21,6 @@ import static java.util.Comparator.comparingInt;
 
 import com.google.auto.value.AutoValue;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import javax.annotation.Nullable;
 import org.objectweb.asm.ClassVisitor;
@@ -347,11 +346,10 @@ public final class CodeBuilder extends MethodVisitor {
       //    index of the instruction we care about.
       // 2. There are multiple annotations at a single location and the other annotation has a
       //    greater line number.
-      Collections.sort(
-          lineNumberTable,
-          // sort by increasing bytecode offset and then by decreasing line number.  This ordering
-          // means that when looking at an element we can decide whether we should write an entry
-          // just by looking at the previous item.
+      // Sort by increasing bytecode offset and then by decreasing line number.  This ordering
+      // means that when looking at an element we can decide whether we should write an entry
+      // just by looking at the previous item.
+      lineNumberTable.sort(
           comparing((LineNumberTableEntry entry) -> entry.label().getOffset())
               .thenComparing(comparingInt(LineNumberTableEntry::lineNumber).reversed()));
       LineNumberTableEntry previous = lineNumberTable.get(0);

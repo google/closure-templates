@@ -49,6 +49,7 @@ import com.google.template.soy.types.ast.FunctionTypeNode;
 import com.google.template.soy.types.ast.GenericTypeNode;
 import com.google.template.soy.types.ast.NamedTypeNode;
 import com.google.template.soy.types.ast.RecordTypeNode;
+import com.google.template.soy.types.ast.RecordTypeNode.Property;
 import com.google.template.soy.types.ast.TemplateTypeNode;
 import com.google.template.soy.types.ast.TypeNode;
 import com.google.template.soy.types.ast.TypeNodeVisitor;
@@ -593,7 +594,7 @@ public final class SoyTreeUtils {
 
         @Override
         public ImmutableList<? extends TypeNode> visit(RecordTypeNode node) {
-          return node.properties().stream().map(p -> p.type()).collect(toImmutableList());
+          return node.properties().stream().map(Property::type).collect(toImmutableList());
         }
 
         @Override

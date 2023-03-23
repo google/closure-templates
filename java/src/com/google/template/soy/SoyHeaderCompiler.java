@@ -35,6 +35,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.LinkedHashSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.zip.GZIPOutputStream;
 import org.kohsuke.args4j.Option;
@@ -143,7 +144,7 @@ final class SoyHeaderCompiler extends AbstractSoyCompiler {
                 .map(namespace -> cssRegistry.symbolToFilePath().get(namespace))
                 // This shouldn't really happen due to the ValidateRequiredCssPass but that pass
                 // doesn't run in the open source build
-                .filter(f -> f != null)
+                .filter(Objects::nonNull)
                 .collect(toList()))
         .addAllCssClassNames(cssClassNames)
         .build();
