@@ -272,29 +272,34 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
                     reservedAttributes));
 
     HtmlTagNode closeTag = Iterables.getFirst(openTagNode.getTaggedPairs(), openTagNode);
-    SoyNode next = SoyTreeUtils.nextSibling(openTagNode);
-    boolean defaultSlotFulfilled =
-        !openTagNode.isSelfClosing()
-            && templateType.getParameters().stream()
-                    .filter(
-                        p ->
-                            SoyTypes.makeNullable(SanitizedType.HtmlType.getInstance())
-                                .isAssignableFromStrict(p.getType()))
-                    .count()
-                == 1
-            && !(next instanceof HtmlOpenTagNode && ((HtmlOpenTagNode) next).isSlot());
-
-    while (!defaultSlotFulfilled && next != closeTag && !openTagNode.isSelfClosing()) {
-      if (next == null) {
-        break;
+    if (!openTagNode.isSelfClosing()) {
+      // Hande slots
+      SoyNode next = SoyTreeUtils.nextSibling(openTagNode);
+      ImmutableList<Parameter> htmlTypeParams =
+          templateType.getParameters().stream()
+              .filter(
+                  p ->
+                      SoyTypes.makeNullable(SanitizedType.HtmlType.getInstance())
+                          .isAssignableFromStrict(p.getType()))
+              .collect(toImmutableList());
+      boolean childIsSlot = next instanceof HtmlOpenTagNode && ((HtmlOpenTagNode) next).isSlot();
+      if (!childIsSlot && htmlTypeParams.size() == 1) {
+        // Mark the single html typed param as set.
+        seenSlots.add(htmlTypeParams.get(0).getName());
+      } else {
+        while (next != closeTag) {
+          if (next == null) {
+            break;
+          }
+          next =
+              consumeSlot(
+                  next,
+                  openTagNode.getTagName().getDynamicTagName().getExpr(),
+                  openTagNode.getSourceLocation(),
+                  seenSlots::add,
+                  consumer);
+        }
       }
-      next =
-          consumeSlot(
-              next,
-              openTagNode.getTagName().getDynamicTagName().getExpr(),
-              openTagNode.getSourceLocation(),
-              seenSlots::add,
-              consumer);
     }
     templateType.getParameters().stream()
         .filter(Parameter::isRequired)
@@ -307,7 +312,11 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
                       MISSING_ATTRIBUTE,
                       Parameter.paramToAttrName(p.getName()));
                 }
-              } else if (!seenSlots.contains(p.getName()) && !defaultSlotFulfilled) {
+              } else if (!seenSlots.contains(p.getName())) {
+                // Note that <{tpl(a: 'foo')} /> is rewritten to <{tpl.bind(record(a: 'foo'))} />
+                // in ResolveTemplateFunctionsPass. So any params that are correctly set won't be
+                // in the resulting template type and won't need to be in `seenSlots` to validate
+                // correctly here.
                 errorReporter.report(openTagNode.getSourceLocation(), MISSING_PARAM, p.getName());
               }
             });
