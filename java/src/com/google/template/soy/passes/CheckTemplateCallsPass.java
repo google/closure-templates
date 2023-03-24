@@ -29,7 +29,6 @@ import com.google.common.collect.Sets;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
-import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.TemplateContentKind;
 import com.google.template.soy.error.ErrorReporter;
@@ -37,10 +36,7 @@ import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.error.SoyErrors;
 import com.google.template.soy.exprtree.ExprNode;
-import com.google.template.soy.exprtree.ExprNode.CallableExpr.ParamsStyle;
-import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.GlobalNode;
-import com.google.template.soy.passes.CompilerFileSetPass.Result;
 import com.google.template.soy.passes.IndirectParamsCalculator.IndirectParamsInfo;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
@@ -50,7 +46,6 @@ import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.ImportNode;
-import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
@@ -59,11 +54,9 @@ import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.SanitizedType;
-import com.google.template.soy.types.SanitizedType.ElementType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.StringType;
-import com.google.template.soy.types.TemplateImportType;
 import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.UnionType;
 import java.util.Collection;
@@ -101,8 +94,6 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
       SoyErrorKind.of(
           "''{0}'' is not a declared parameter of {1} or any indirect callee.{2}",
           StyleAllowance.NO_PUNCTUATION);
-  private static final SoyErrorKind EXPECTED_NAMED_PARAMETERS =
-      SoyErrorKind.of("Expected named parameters.");
   private static final SoyErrorKind NO_DEFAULT_DELTEMPLATE =
       SoyErrorKind.of(
           "No default deltemplate found for {0}. Please add a default deltemplate, even if it is "
@@ -155,13 +146,6 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
         for (CallDelegateNode callNode :
             SoyTreeUtils.getAllNodesOfType(template, CallDelegateNode.class)) {
           helper.checkCall(file, template, callNode, file.getFilePath().path());
-        }
-        for (PrintNode printNode : SoyTreeUtils.getAllNodesOfType(template, PrintNode.class)) {
-          if (printNode.getExpr().getRoot() instanceof FunctionNode
-              && (((FunctionNode) printNode.getExpr().getRoot()).allowedToInvokeAsFunction()
-                  || printNode.getExpr().getRoot().getType() instanceof ElementType)) {
-            helper.checkFnCall(template, printNode, (FunctionNode) printNode.getExpr().getRoot());
-          }
         }
       }
     }
@@ -285,23 +269,6 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
       return !DEFAULT_DELTEMPLATE_PASSLIST.contains(delCalleeName);
     }
 
-    void checkFnCall(TemplateNode callerTemplate, PrintNode printNode, FunctionNode fnNode) {
-      TemplateType type;
-      if (fnNode.getNameExpr().getType() instanceof TemplateImportType) {
-        type = ((TemplateImportType) fnNode.getNameExpr().getType()).getBasicTemplateType();
-      } else {
-        type = (TemplateType) fnNode.getNameExpr().getType();
-      }
-      if (fnNode.getParamsStyle() == ParamsStyle.POSITIONAL) {
-        errorReporter.report(fnNode.getSourceLocation(), EXPECTED_NAMED_PARAMETERS);
-        return;
-      }
-      checkCallParamNames(fnNode, type);
-      checkPassesUnusedParams(fnNode, type);
-      checkStrictHtml(callerTemplate, printNode, type);
-      checkCallParamTypes(fnNode, type);
-    }
-
     /**
      * Checks that the parameters being passed have compatble types and reports errors if they do
      * not.
@@ -383,34 +350,6 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
             errorReporter.report(
                 dataExpr.getSourceLocation(), INVALID_DATA_EXPR, dataExpr.getType());
           }
-        }
-      }
-    }
-
-    private void checkCallParamTypes(FunctionNode call, TemplateType callee) {
-      TemplateParamTypes calleeParamTypes = getTemplateParamTypes(callee);
-
-      // First check all the {param} blocks of the caller to make sure that the types match.
-      for (int i = 0; i < call.getParamNames().size(); i++) {
-        Identifier callerParam = call.getParamName(i);
-        String paramName = callerParam.identifier();
-        // The types of the parameters. If this is an explicitly declared parameter,
-        // then this collection will have only one member; If it's an implicit
-        // parameter then this may contain multiple types. Note we don't use
-        // a union here because the rules are a bit different than the normal rules
-        // for assigning union types.
-        // It's possible that the set may be empty, because all of the callees
-        // are external. In that case there's nothing we can do, so we don't
-        // report anything.
-        Collection<SoyType> declaredParamTypes = calleeParamTypes.params.get(paramName);
-
-        // Type of the param value.
-        SoyType argType =
-            RuntimeTypeCoercion.maybeCoerceType(call.getParams().get(i), declaredParamTypes);
-
-        for (SoyType formalType : declaredParamTypes) {
-          checkArgumentAgainstParamType(
-              callerParam.location(), paramName, argType, formalType, calleeParamTypes);
         }
       }
     }
@@ -499,15 +438,6 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
       }
     }
 
-    private void checkStrictHtml(
-        TemplateNode callerTemplate, PrintNode caller, TemplateType callee) {
-      if (callerTemplate.isStrictHtml()
-          && (callee.getContentKind().getSanitizedContentKind().isHtml()
-              && !callee.isStrictHtml())) {
-        errorReporter.report(caller.getSourceLocation(), STRICT_HTML);
-      }
-    }
-
     /**
      * Helper method that reports an error if:
      *
@@ -548,35 +478,6 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
       }
     }
 
-    private void checkCallParamNames(FunctionNode caller, TemplateType callee) {
-      // Get param keys passed by caller.
-      Set<String> callerParamKeys = Sets.newHashSet();
-      for (int i = 0; i < caller.getParams().size(); i++) {
-        boolean isUnique = callerParamKeys.add(caller.getParamNames().get(i).identifier());
-        if (!isUnique) {
-          // Found a duplicate param.
-          errorReporter.report(
-              caller.getParamNames().get(i).location(),
-              DUPLICATE_PARAM,
-              caller.getParamNames().get(i).identifier());
-        }
-      }
-      List<String> missingParamKeys = Lists.newArrayListWithCapacity(2);
-      for (TemplateType.Parameter calleeParam : callee.getParameters()) {
-        if (calleeParam.isRequired() && !callerParamKeys.contains(calleeParam.getName())) {
-          missingParamKeys.add(calleeParam.getName());
-        }
-      }
-      // Report errors.
-      if (!missingParamKeys.isEmpty()) {
-        String errorMsgEnd =
-            (missingParamKeys.size() == 1)
-                ? "param '" + missingParamKeys.get(0) + "'"
-                : "params " + missingParamKeys;
-        errorReporter.report(caller.getSourceLocation(), MISSING_PARAM, errorMsgEnd);
-      }
-    }
-
     /** Reports error if unused params are passed to a template. */
     private void checkPassesUnusedParams(CallNode caller, TemplateType callee) {
       if (caller.numChildren() == 0) {
@@ -609,45 +510,6 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
                   .build();
           errorReporter.report(
               callerParam.getKey().location(),
-              PASSES_UNUSED_PARAM,
-              paramName,
-              callee.getIdentifierForDebugging(),
-              SoyErrors.getDidYouMeanMessage(allParams, paramName));
-        }
-      }
-    }
-
-    private void checkPassesUnusedParams(FunctionNode caller, TemplateType callee) {
-      if (caller.numChildren() == 0) {
-        return;
-      }
-      Set<String> paramNames = Sets.newHashSet();
-      for (TemplateType.Parameter param : callee.getParameters()) {
-        paramNames.add(param.getName());
-      }
-      IndirectParamsInfo ipi = null; // Compute only if necessary.
-      for (Identifier callerParam : caller.getParamNames()) {
-        String paramName = callerParam.identifier();
-        if (paramNames.contains(paramName)) {
-          continue;
-        }
-        if (ipi == null) {
-          ipi = new IndirectParamsCalculator(fileSetMetadata).calculateIndirectParams(callee);
-          // If the callee has unknown indirect params then we can't validate that this isn't one
-          // of them. So just give up.
-          if (ipi.mayHaveIndirectParamsInExternalCalls
-              || ipi.mayHaveIndirectParamsInExternalDelCalls) {
-            return;
-          }
-        }
-        if (!ipi.indirectParams.containsKey(paramName)) {
-          Set<String> allParams =
-              ImmutableSet.<String>builder()
-                  .addAll(paramNames)
-                  .addAll(ipi.indirectParams.keySet())
-                  .build();
-          errorReporter.report(
-              callerParam.location(),
               PASSES_UNUSED_PARAM,
               paramName,
               callee.getIdentifierForDebugging(),

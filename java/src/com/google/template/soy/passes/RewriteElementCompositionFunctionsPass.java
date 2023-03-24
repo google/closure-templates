@@ -22,6 +22,7 @@ import static java.util.stream.Collectors.toList;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.CallableExpr.ParamsStyle;
 import com.google.template.soy.exprtree.ExprNode.Kind;
@@ -46,9 +47,13 @@ import com.google.template.soy.types.SoyType;
   ResolveDottedImportsPass.class, // So that all names are VarRefs.
 })
 @RunBefore({ResolveTemplateNamesPass.class})
-final class ResolveTemplateFunctionsPass implements CompilerFilePass {
+final class RewriteElementCompositionFunctionsPass implements CompilerFilePass {
 
-  ResolveTemplateFunctionsPass() {}
+  private final ErrorReporter errorReporter;
+
+  RewriteElementCompositionFunctionsPass(ErrorReporter errorReporter) {
+    this.errorReporter = errorReporter;
+  }
 
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
@@ -65,17 +70,18 @@ final class ResolveTemplateFunctionsPass implements CompilerFilePass {
                         n instanceof FunctionNode
                             ? VisitDirective.SKIP_CHILDREN
                             : VisitDirective.CONTINUE))
-        .filter(
-            fct ->
-                !fct.hasStaticName()
-                    && (fct.getParamsStyle() == ParamsStyle.NONE
-                        || fct.getParamsStyle() == ParamsStyle.NAMED))
+        .filter(fct -> !fct.hasStaticName())
         .filter(fct -> fct.getNameExpr().getKind() == Kind.VAR_REF_NODE)
         .collect(toList()) // Guard against concurrent modification.
-        .forEach(ResolveTemplateFunctionsPass::convertToBind);
+        .forEach(this::convertToBind);
   }
 
-  private static void convertToBind(FunctionNode fct) {
+  private void convertToBind(FunctionNode fct) {
+    if (fct.getParamsStyle() == ParamsStyle.POSITIONAL) {
+      errorReporter.report(
+          fct.getSourceLocation(), RewriteShortFormCallsPass.EXPECTED_NAMED_PARAMETERS);
+      return;
+    }
     ExprNode replacementExpr;
     VarRefNode varRefNode = (VarRefNode) fct.getNameExpr();
     if (varRefNode.hasType() && varRefNode.getType() instanceof ProtoImportType) {

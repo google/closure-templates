@@ -524,7 +524,7 @@ public final class PassManager {
           .add(new ResolveNamesPass(errorReporter))
           .add(new ResolveDottedImportsPass(errorReporter, registry));
       if (!astRewrites.isNone()) {
-        passes.add(new ResolveTemplateFunctionsPass());
+        passes.add(new RewriteElementCompositionFunctionsPass(errorReporter));
       }
       passes.add(new ResolveTemplateNamesPass(errorReporter));
 
@@ -609,19 +609,17 @@ public final class PassManager {
       // others.
       passes.add(new SoyConformancePass(conformanceConfig, errorReporter));
       if (!disableAllTypeChecking) {
-        passes.add(new ResolveExpressionTypesCrossTemplatePass(errorReporter, astRewrites.isAll()));
+        if (astRewrites.rewriteShortFormCalls()) {
+          passes.add(new RewriteShortFormCallsPass(errorReporter));
+        }
+        passes.add(new MoreCallValidationsPass(errorReporter, astRewrites.isAll()));
       }
       passes.add(new CheckTemplateHeaderVarsPass(errorReporter, accumulatedState::registryFull));
       if (!disableAllTypeChecking) {
+        passes.add(
+            new EnforceExperimentalFeaturesPass(options.getExperimentalFeatures(), errorReporter));
         passes
-            .add(
-                new EnforceExperimentalFeaturesPass(
-                    options.getExperimentalFeatures(), errorReporter))
-            .add(new CheckTemplateCallsPass(errorReporter, accumulatedState::registryFull));
-        if (astRewrites.rewriteShortFormCalls()) {
-          passes.add(new ShortFormCallPass(errorReporter));
-        }
-        passes
+            .add(new CheckTemplateCallsPass(errorReporter, accumulatedState::registryFull))
             .add(new ElementCheckCrossTemplatePass(errorReporter))
             .add(new CheckValidVarrefsPass(errorReporter))
             .add(new CheckTemplateVisibilityPass(errorReporter, accumulatedState::registryFull))

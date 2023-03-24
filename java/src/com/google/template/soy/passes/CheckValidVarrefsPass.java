@@ -27,7 +27,7 @@ import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.types.SoyType;
 
 /** Reports errors for illegal symbol references. */
-@RunAfter({ResolveExpressionTypesPass.class, ResolveExpressionTypesCrossTemplatePass.class})
+@RunAfter({ResolveExpressionTypesPass.class, MoreCallValidationsPass.class})
 final class CheckValidVarrefsPass implements CompilerFilePass {
 
   private static final ImmutableSet<SoyType.Kind> BAD_SOY_TYPE_KINDS =
