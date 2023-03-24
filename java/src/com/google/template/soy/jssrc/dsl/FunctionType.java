@@ -17,7 +17,6 @@
 package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
-import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -26,30 +25,22 @@ import java.util.stream.Stream;
 public abstract class FunctionType extends AbstractType {
 
   public static FunctionType create(Expression returnType, List<ParamDecl> params) {
-    return new AutoValue_FunctionType(returnType, ImmutableList.copyOf(params));
+    return new AutoValue_FunctionType(returnType, ParamDecls.create(params));
+  }
+
+  public static FunctionType create(Expression returnType, ParamDecls params) {
+    return new AutoValue_FunctionType(returnType, params);
   }
 
   abstract Expression returnType();
 
-  abstract ImmutableList<ParamDecl> params();
+  abstract ParamDecls params();
 
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
     try (FormattingContext buffer = ctx.buffer()) {
       buffer.append("(");
-      boolean first = true;
-      for (ParamDecl param : params()) {
-        if (first) {
-          first = false;
-        } else {
-          buffer.append(", ");
-        }
-        buffer.append(param.name() + (param.isOptional() ? "?" : ""));
-        if (param.type() != null) {
-          buffer.append(": ");
-          buffer.appendOutputExpression(param.type());
-        }
-      }
+      buffer.appendOutputExpression(params());
       buffer.append(") => ");
       buffer.appendOutputExpression(returnType());
     }
@@ -57,6 +48,6 @@ public abstract class FunctionType extends AbstractType {
 
   @Override
   Stream<? extends CodeChunk> childrenStream() {
-    return Stream.concat(Stream.of(returnType()), params().stream());
+    return Stream.of(returnType(), params());
   }
 }

@@ -29,7 +29,7 @@ import javax.annotation.Nullable;
  */
 @AutoValue
 @Immutable
-public abstract class ParamDecl extends CodeChunk {
+public abstract class ParamDecl extends Expression {
 
   public abstract String name();
 
@@ -71,17 +71,12 @@ public abstract class ParamDecl extends CodeChunk {
   }
 
   @Override
-  public final Statement asStatement() {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
   Stream<? extends CodeChunk> childrenStream() {
     return Stream.of(type(), defaultValue()).filter(Objects::nonNull);
   }
 
   @Override
-  void doFormatInitialStatements(FormattingContext ctx) {
+  void doFormatOutputExpr(FormattingContext ctx) {
     ctx.append(typeDecl(ctx.getFormatOptions()));
   }
 }

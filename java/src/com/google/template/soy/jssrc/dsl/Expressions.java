@@ -132,6 +132,10 @@ public final class Expressions {
     return FunctionType.create(returnType, params);
   }
 
+  public static Expression functionType(Expression returnType, ParamDecls params) {
+    return FunctionType.create(returnType, params);
+  }
+
   public static Expression arrayType(Expression simpleType, boolean readonly) {
     return ArrayType.create(readonly, simpleType);
   }

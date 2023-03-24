@@ -31,7 +31,7 @@ import java.util.stream.Stream;
  */
 @AutoValue
 @Immutable
-public abstract class ParamDecls extends CodeChunk {
+public abstract class ParamDecls extends Expression {
 
   public static final ParamDecls EMPTY = create(ImmutableList.of());
 
@@ -48,12 +48,7 @@ public abstract class ParamDecls extends CodeChunk {
   }
 
   @Override
-  public final Statement asStatement() {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  void doFormatInitialStatements(FormattingContext ctx) {
+  void doFormatOutputExpr(FormattingContext ctx) {
     if (namedStyle()) {
       if (params().isEmpty()) {
         ctx.append("{}: {}");

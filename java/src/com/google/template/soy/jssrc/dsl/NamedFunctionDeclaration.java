@@ -44,6 +44,7 @@ public abstract class NamedFunctionDeclaration extends Statement {
 
   abstract Optional<JsDoc> jsDoc();
 
+  @Nullable
   abstract ImmutableList<Statement> bodyStmts();
 
   abstract boolean isExported();
@@ -83,10 +84,16 @@ public abstract class NamedFunctionDeclaration extends Statement {
         false);
   }
 
+  public static NamedFunctionDeclaration overload(
+      String name, ParamDecls params, Expression returnType, boolean isExported) {
+    return new AutoValue_NamedFunctionDeclaration(
+        name, params, returnType, Optional.empty(), null, isExported, false);
+  }
+
   public static NamedFunctionDeclaration declaration(
       String name, ParamDecls params, Expression returnType, @Nullable JsDoc jsDoc) {
     return new AutoValue_NamedFunctionDeclaration(
-        name, params, returnType, Optional.ofNullable(jsDoc), ImmutableList.of(), true, true);
+        name, params, returnType, Optional.ofNullable(jsDoc), null, true, true);
   }
 
   public static NamedFunctionDeclaration privateDeclaration(
@@ -108,9 +115,9 @@ public abstract class NamedFunctionDeclaration extends Statement {
       ctx.append("declare ");
     }
     ctx.append("function " + name() + "(");
-    ctx.appendAll(params());
+    ctx.appendOutputExpression(params());
     ctx.append("): ").appendOutputExpression(returnType());
-    if (!isDeclaration()) {
+    if (bodyStmts() != null) {
       ctx.append(" ");
       ctx.enterBlock();
       for (Statement stmt : bodyStmts()) {
@@ -127,7 +134,7 @@ public abstract class NamedFunctionDeclaration extends Statement {
   @Override
   Stream<? extends CodeChunk> childrenStream() {
     return Streams.concat(
-        bodyStmts().stream(),
+        bodyStmts() != null ? bodyStmts().stream() : Stream.of(),
         Stream.of(params(), returnType(), jsDoc().orElse(null)).filter(Objects::nonNull));
   }
 }
