@@ -67,12 +67,11 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * Pass that runs secondary resolution of expressions after the template registry is executed.
- * Currently it: Upgrades template types from the "named template" placeholder type to proper types.
- * Validates Element Calls
+ * Catch-all pass that validates various things about template calls. Currently upgrades template
+ * types from the "named template" placeholder type to proper types. Validates Element Calls.
  */
 @RunAfter(ResolveExpressionTypesPass.class)
-final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPass {
+final class MoreCallValidationsPass implements CompilerFileSetPass {
 
   private static final SoyErrorKind ELEMENT_CALL_TO_HTML_TEMPLATE =
       SoyErrorKind.of(
@@ -142,18 +141,18 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
       SoyErrorKind.of("Element calls require all children to be <parameter> elements.");
 
   private final ErrorReporter errorReporter;
-  private final boolean rewriteDynamicTags;
+  private final boolean elementFunctionsWereRewritten;
 
-  ResolveExpressionTypesCrossTemplatePass(ErrorReporter errorReporter, boolean rewriteDynamicTags) {
+  MoreCallValidationsPass(ErrorReporter errorReporter, boolean elementFunctionsWereRewritten) {
     this.errorReporter = errorReporter;
-    this.rewriteDynamicTags = rewriteDynamicTags;
+    this.elementFunctionsWereRewritten = elementFunctionsWereRewritten;
   }
 
   @Override
   public Result run(ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator) {
     for (SoyFileNode file : sourceFiles) {
       checkTemplateLiteralsUsedInExpr(file);
-      if (rewriteDynamicTags) {
+      if (elementFunctionsWereRewritten) {
         handleDynamicTagAndCheckForLegacyDynamicTags(file);
       }
     }

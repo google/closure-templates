@@ -29,8 +29,10 @@ import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.ExprNode.CallableExpr.ParamsStyle;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
@@ -53,22 +55,22 @@ import javax.annotation.Nullable;
 
 /** Rewrites short form calls to call nodes. */
 @RunAfter({ResolveExpressionTypesPass.class, FinalizeTemplateRegistryPass.class})
-final class ShortFormCallPass implements CompilerFileSetPass {
+@RunBefore({CheckTemplateCallsPass.class, MoreCallValidationsPass.class})
+final class RewriteShortFormCallsPass implements CompilerFileSetPass {
 
   private static final SoyErrorKind OVERFLOW =
       SoyErrorKind.of("Overflowed short form call rewriting.");
+  static final SoyErrorKind EXPECTED_NAMED_PARAMETERS =
+      SoyErrorKind.of("Expected named parameters.");
 
   private final ErrorReporter errorReporter;
 
-  public ShortFormCallPass(ErrorReporter errorReporter) {
+  public RewriteShortFormCallsPass(ErrorReporter errorReporter) {
     this.errorReporter = errorReporter;
   }
 
   @Override
   public Result run(ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator) {
-    if (errorReporter.hasErrors()) {
-      return Result.CONTINUE;
-    }
     for (SoyFileNode file : sourceFiles) {
       run(file, idGenerator);
     }
@@ -199,6 +201,12 @@ final class ShortFormCallPass implements CompilerFileSetPass {
     } else {
       return null;
     }
+    if (fnNode.getParamsStyle() == ParamsStyle.POSITIONAL) {
+      errorReporter.report(fnNode.getSourceLocation(), EXPECTED_NAMED_PARAMETERS);
+      // Only report error once.
+      expr.replaceChild(0, new StringNode("$error", QuoteStyle.SINGLE, expr.getSourceLocation()));
+      return null;
+    }
     CallBasicNode call =
         new CallBasicNode(
             nodeIdGen.genId(),
@@ -220,6 +228,11 @@ final class ShortFormCallPass implements CompilerFileSetPass {
       valueNode.getExpr().setType(fnNode.getParams().get(i).getType());
       call.addChild(valueNode);
     }
+
+    // Allow CheckTemplateCallsPass to find stricthtml violations. This will be more strict than if
+    // the HtmlRewriter had been run on the transformed AST because we have to assume PCDATA state.
+    call.setIsPcData(true);
+
     return call;
   }
 }

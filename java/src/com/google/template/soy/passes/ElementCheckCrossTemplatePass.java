@@ -33,7 +33,7 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 /** Validates the contents included in the root tag of an element template. */
-@RunAfter(ResolveExpressionTypesCrossTemplatePass.class)
+@RunAfter(MoreCallValidationsPass.class)
 final class ElementCheckCrossTemplatePass implements CompilerFileSetPass {
 
   private static final SoyErrorKind BAD_CONTENT_IN_ROOT_ELM =
