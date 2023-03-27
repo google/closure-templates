@@ -497,8 +497,7 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
           ipi = new IndirectParamsCalculator(fileSetMetadata).calculateIndirectParams(callee);
           // If the callee has unknown indirect params then we can't validate that this isn't one
           // of them. So just give up.
-          if (ipi.mayHaveIndirectParamsInExternalCalls
-              || ipi.mayHaveIndirectParamsInExternalDelCalls) {
+          if (ipi.mayHaveIndirectParamsInExternalCalls) {
             return;
           }
         }

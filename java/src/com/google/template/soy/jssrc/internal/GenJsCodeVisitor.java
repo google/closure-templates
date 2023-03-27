@@ -1463,7 +1463,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     // the complete types of any indirect params. In such a case, we can simply
     // omit the indirect params from the function type signature, since record
     // types in JS allow additional undeclared fields to be present.
-    if (!ipi.mayHaveIndirectParamsInExternalCalls && !ipi.mayHaveIndirectParamsInExternalDelCalls) {
+    if (!ipi.mayHaveIndirectParamsInExternalCalls) {
       for (String indirectParamName : ipi.indirectParamTypes.keySet()) {
         if (paramNames.contains(indirectParamName)) {
           continue;

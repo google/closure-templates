@@ -67,31 +67,21 @@ public final class IndirectParamsCalculator {
     public final boolean mayHaveIndirectParamsInExternalCalls;
 
     /**
-     * Whether the template (that the pass was run on) may have indirect params in external delegate
-     * calls.
-     */
-    public final boolean mayHaveIndirectParamsInExternalDelCalls;
-
-    /**
      * @param indirectParams Indirect params of the template (that the pass was run on).
      * @param paramKeyToCalleesMultimap Multimap from param key to callees that explicitly list the
      *     param.
      * @param mayHaveIndirectParamsInExternalCalls Whether the template (that the pass was run on)
      *     may have indirect params in external basic calls.
-     * @param mayHaveIndirectParamsInExternalDelCalls Whether the template (that the pass was run
-     *     on) may have indirect params in external delegate calls.
      */
     public IndirectParamsInfo(
         ImmutableSortedMap<String, Parameter> indirectParams,
         ImmutableSetMultimap<String, TemplateMetadata> paramKeyToCalleesMultimap,
         ImmutableSetMultimap<String, SoyType> indirectParamTypes,
-        boolean mayHaveIndirectParamsInExternalCalls,
-        boolean mayHaveIndirectParamsInExternalDelCalls) {
+        boolean mayHaveIndirectParamsInExternalCalls) {
       this.indirectParams = indirectParams;
       this.paramKeyToCalleesMultimap = paramKeyToCalleesMultimap;
       this.indirectParamTypes = indirectParamTypes;
       this.mayHaveIndirectParamsInExternalCalls = mayHaveIndirectParamsInExternalCalls;
-      this.mayHaveIndirectParamsInExternalDelCalls = mayHaveIndirectParamsInExternalDelCalls;
     }
   }
 
@@ -172,12 +162,6 @@ public final class IndirectParamsCalculator {
    */
   private boolean mayHaveIndirectParamsInExternalCalls;
 
-  /**
-   * Whether the template (that the pass was run on) may have indirect params in external delegate
-   * calls.
-   */
-  private boolean mayHaveIndirectParamsInExternalDelCalls;
-
   /** @param fileSetMetadata Map from template name to TemplateNode to use during the pass. */
   public IndirectParamsCalculator(FileSetMetadata fileSetMetadata) {
     this.fileSetMetadata = checkNotNull(fileSetMetadata);
@@ -188,21 +172,18 @@ public final class IndirectParamsCalculator {
   }
 
   public IndirectParamsInfo calculateIndirectParams(TemplateType template) {
-
     visitedCallSituations = Sets.newHashSet();
     indirectParams = Maps.newHashMap();
     paramKeyToCalleesMultimap = HashMultimap.create();
     indirectParamTypes = LinkedHashMultimap.create();
     mayHaveIndirectParamsInExternalCalls = false;
-    mayHaveIndirectParamsInExternalDelCalls = false;
     visit(template, new HashSet<>(), new HashSet<>());
 
     return new IndirectParamsInfo(
         ImmutableSortedMap.copyOf(indirectParams),
         ImmutableSetMultimap.copyOf(paramKeyToCalleesMultimap),
         ImmutableSetMultimap.copyOf(indirectParamTypes),
-        mayHaveIndirectParamsInExternalCalls,
-        mayHaveIndirectParamsInExternalDelCalls);
+        mayHaveIndirectParamsInExternalCalls);
   }
 
   private void visit(
@@ -221,10 +202,6 @@ public final class IndirectParamsCalculator {
         newAllCallParamKeys.addAll(call.getExplicitlyPassedParameters());
       }
       if (call.isDelCall()) {
-        // There is no guarantee that we can see all delcall targets, so always assume that
-        // there may be some unknown ones.
-        mayHaveIndirectParamsInExternalDelCalls = true;
-        // TODO(lukes): this should probably take variants into account if they are present
         for (TemplateMetadata delCallee :
             fileSetMetadata
                 .getDelTemplateSelector()

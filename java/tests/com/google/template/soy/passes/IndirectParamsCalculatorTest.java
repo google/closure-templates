@@ -140,7 +140,6 @@ public final class IndirectParamsCalculatorTest {
     IndirectParamsInfo ipi =
         new IndirectParamsCalculator(registry).calculateIndirectParams(a0.getTemplateType());
     assertThat(ipi.mayHaveIndirectParamsInExternalCalls).isFalse();
-    assertThat(ipi.mayHaveIndirectParamsInExternalDelCalls).isFalse();
 
     Map<String, Parameter> ipMap = ipi.indirectParams;
     assertThat(ipMap).doesNotContainKey("a0");
