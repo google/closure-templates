@@ -221,6 +221,10 @@ not found, please check the type of your list.
 
 <span id="map-any,any_keys"></span>
 
+### `map.get(key)` {#map-any,any_get}
+
+Returns a single value from a map; equivalent to bracket access.
+
 ### `map.keys()` {#mapKeys}
 
 The keys of a [map](types.md#map) as a list. There is no guarantee on order.

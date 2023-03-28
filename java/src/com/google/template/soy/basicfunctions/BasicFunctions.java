@@ -43,6 +43,7 @@ public class BasicFunctions {
         new ListSliceMethod(),
         new ListUniqMethod(),
         new MapEntriesMethod(),
+        new MapGetMethod(),
         new MapKeysFunction(),
         new MapLengthMethod(),
         new MapToLegacyObjectMapFunction(),

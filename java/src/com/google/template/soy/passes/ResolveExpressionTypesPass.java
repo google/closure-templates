@@ -57,6 +57,7 @@ import com.google.template.soy.basicfunctions.ListReverseMethod;
 import com.google.template.soy.basicfunctions.ListSliceMethod;
 import com.google.template.soy.basicfunctions.ListUniqMethod;
 import com.google.template.soy.basicfunctions.MapEntriesMethod;
+import com.google.template.soy.basicfunctions.MapGetMethod;
 import com.google.template.soy.basicfunctions.MapKeysFunction;
 import com.google.template.soy.basicfunctions.MapToLegacyObjectMapFunction;
 import com.google.template.soy.basicfunctions.MapValuesMethod;
@@ -1456,6 +1457,21 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
           node.setType(getGenericListType(node.getChildren()));
         } else if (sourceFunction instanceof ConcatMapsMethod) {
           node.setType(getGenericMapType(node.getChildren()));
+        } else if (sourceFunction instanceof MapGetMethod) {
+          MapType type = (MapType) baseType;
+          node.setType(
+              type.equals(MapType.EMPTY_MAP)
+                  ? NullType.getInstance()
+                  : SoyTypes.makeNullable(type.getValueType()));
+          ExprNode arg = node.getParams().get(0);
+          if (!type.getKeyType().isAssignableFromStrict(arg.getType())) {
+            errorReporter.report(
+                arg.getSourceLocation(),
+                METHOD_INVALID_PARAM_TYPES,
+                ((SoySourceFunctionMethod) method).getMethodName(),
+                arg.getType(),
+                type.getKeyType());
+          }
         } else if (sourceFunction instanceof MapKeysFunction) {
           MapType type = (MapType) baseType;
           if (type.equals(MapType.EMPTY_MAP)) {

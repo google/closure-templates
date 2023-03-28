@@ -78,7 +78,6 @@ public final class BasicFunctionsRuntime {
     return flattened.build();
   }
 
-  @SuppressWarnings("unchecked")
   public static SoyMap concatMaps(SoyMap map, SoyMap mapTwo) {
     LinkedHashMap<SoyValue, SoyValueProvider> mapBuilder = new LinkedHashMap<>();
     mapBuilder.putAll(map.asJavaMap());
@@ -235,6 +234,11 @@ public final class BasicFunctionsRuntime {
     List<SoyValue> list = new ArrayList<>(map.getItemCnt());
     Iterables.addAll(list, map.getItemKeys());
     return list;
+  }
+
+  /** Gets a single item of a map. */
+  public static SoyValue mapGet(SoyMap map, SoyValue value) {
+    return map.get(value);
   }
 
   /** Returns a list of all the keys in the given map. */
