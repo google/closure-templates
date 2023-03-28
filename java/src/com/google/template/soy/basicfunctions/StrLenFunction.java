@@ -30,6 +30,7 @@ import com.google.template.soy.plugin.python.restricted.PythonValue;
 import com.google.template.soy.plugin.python.restricted.PythonValueFactory;
 import com.google.template.soy.plugin.python.restricted.SoyPythonSourceFunction;
 import com.google.template.soy.shared.restricted.Signature;
+import com.google.template.soy.shared.restricted.SoyFieldSignature;
 import com.google.template.soy.shared.restricted.SoyMethodSignature;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
 import java.lang.reflect.Method;
@@ -45,6 +46,7 @@ import java.util.List;
  * comes to astral plane codepoints. Python is the only backend doing it right.
  */
 @SoyMethodSignature(name = "length", baseType = "string", value = @Signature(returnType = "int"))
+@SoyFieldSignature(name = "length", baseType = "string", returnType = "int")
 @SoyPureFunction
 public final class StrLenFunction
     implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPythonSourceFunction {

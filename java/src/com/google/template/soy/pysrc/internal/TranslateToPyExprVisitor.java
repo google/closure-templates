@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -145,6 +146,8 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
       SoyErrorKind.of("Failed to find SoyPySrcFunction ''{0}''.");
   private static final SoyErrorKind SOY_PY_SRC_METHOD_NOT_FOUND =
       SoyErrorKind.of("Failed to find SoyPythonSourceFunction for method ''{0}''.");
+  private static final SoyErrorKind SOY_PY_SRC_FIELD_NOT_FOUND =
+      SoyErrorKind.of("Failed to find SoyPythonSourceFunction for field ''{0}''.");
   private static final SoyErrorKind UNTYPED_BRACKET_ACCESS_NOT_SUPPORTED =
       SoyErrorKind.of(
           "Bracket access on values of unknown type is not supported in pysrc. "
@@ -703,7 +706,22 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
    * @param fieldName the field name
    */
   private String genCodeForFieldAccess(
-      ExprNode node, SoyType baseType, PyExpr containerExpr, String fieldName) {
+      FieldAccessNode node, SoyType baseType, PyExpr containerExpr, String fieldName) {
+    SoySourceFunctionMethod sourceMethod = node.getSoyMethod();
+    if (sourceMethod != null) {
+      if (sourceMethod.getImpl() instanceof SoyPythonSourceFunction) {
+        return pluginValueFactory
+            .applyFunction(
+                node.getSourceLocation(),
+                sourceMethod.getMethodName(),
+                (SoyPythonSourceFunction) sourceMethod.getImpl(),
+                ImmutableList.of(containerExpr))
+            .getText();
+      } else {
+        errorReporter.report(node.getAccessSourceLocation(), SOY_PY_SRC_FIELD_NOT_FOUND, fieldName);
+        return ".ERROR";
+      }
+    }
     if (baseType != null && baseType.getKind() == SoyType.Kind.PROTO) {
       errorReporter.report(node.getSourceLocation(), PROTO_ACCESS_NOT_SUPPORTED);
       return ".ERROR";

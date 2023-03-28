@@ -18,6 +18,7 @@ package com.google.template.soy.passes;
 
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.common.collect.ImmutableSortedSet.toImmutableSortedSet;
 import static com.google.template.soy.passes.CheckTemplateCallsPass.ARGUMENT_TYPE_MISMATCH;
 import static com.google.template.soy.types.SoyTypes.SAFE_PROTO_TO_SANITIZED_TYPE;
@@ -129,6 +130,7 @@ import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.internal.BuiltinMethod;
 import com.google.template.soy.shared.internal.ResolvedSignature;
 import com.google.template.soy.shared.restricted.Signature;
+import com.google.template.soy.shared.restricted.SoyFieldSignature;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyMethod;
 import com.google.template.soy.shared.restricted.SoyMethodSignature;
@@ -235,8 +237,11 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       SoyErrorKind.of("Cannot {0} on a value with a static type of ''null''.");
   private static final SoyErrorKind REDUNDANT_NON_NULL_ASSERTION_OPERATOR =
       SoyErrorKind.of("Found redundant non-null assertion operators (''!'').");
-  private static final SoyErrorKind DOT_ACCESS_NOT_SUPPORTED =
-      SoyErrorKind.of("Type {0} does not support dot access.");
+  private static final SoyErrorKind NULLISH_FIELD_ACCESS =
+      SoyErrorKind.of("Field access not allowed on nullable type.");
+  private static final SoyErrorKind NO_SUCH_FIELD =
+      SoyErrorKind.of(
+          "Field ''{0}'' does not exist on type {1}.{2}", StyleAllowance.NO_PUNCTUATION);
   private static final SoyErrorKind DOT_ACCESS_NOT_SUPPORTED_CONSIDER_RECORD =
       SoyErrorKind.of("Type {0} does not support dot access (consider record instead of map).");
   private static final SoyErrorKind NO_SUCH_EXTERN_OVERLOAD_1 =
@@ -265,8 +270,6 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       SoyErrorKind.of("Accessing item in empty map.");
   private static final SoyErrorKind INVALID_TYPE_SUBSTITUTION =
       SoyErrorKind.of("Expected expression of type ''{0}'', found ''{1}''.");
-  private static final SoyErrorKind LIST_LENGTH_ERROR =
-      SoyErrorKind.of("Soy lists do not have a ''length'' field. Use function length() instead.");
   private static final SoyErrorKind MISSING_SOY_TYPE =
       SoyErrorKind.of("Missing Soy type for node {0}.");
   private static final SoyErrorKind NOT_PROTO_INIT =
@@ -277,8 +280,6 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
               + "Consider simplifying or using the ?: operator, see "
               + "go/soy/reference/expressions.md#logical-operators",
           StyleAllowance.NO_PUNCTUATION);
-  private static final SoyErrorKind STRING_LENGTH_ERROR =
-      SoyErrorKind.of("Soy strings do not have a ''length'' field. Use function length() instead.");
   private static final SoyErrorKind UNDEFINED_FIELD_FOR_PROTO_TYPE =
       SoyErrorKind.of(
           "Undefined field ''{0}'' for proto type {1}.{2}", StyleAllowance.NO_PUNCTUATION);
@@ -390,11 +391,12 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
   private final ResolveTypesExprVisitor paramInfExprVisitor =
       new ResolveTypesExprVisitor(/* inferringParam= */ true);
   private final ResolveTypesExprVisitor constExprVisitor = new ResolveTypesConstNodeVisitor();
+  private final FieldRegistry fieldRegistry;
 
   /** Current set of type substitutions. */
   private TypeSubstitution substitutions;
 
-  private ExprEquivalence exprEquivalence;
+  private final ExprEquivalence exprEquivalence;
   private SoyTypeRegistry typeRegistry;
   private TypeNodeConverter pluginTypeConverter;
   private final PluginResolver.Mode pluginResolutionMode;
@@ -416,6 +418,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
     this.methodRegistry =
         new CompositeMethodRegistry(
             ImmutableList.of(BuiltinMethod.REGISTRY, new PluginMethodRegistry(pluginResolver)));
+    this.fieldRegistry = new FieldRegistry(pluginResolver);
     this.exprEquivalence = new ExprEquivalence();
   }
 
@@ -1361,7 +1364,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
 
       switch (dataAccess.getKind()) {
         case FIELD_ACCESS_NODE:
-          finishFieldAccessNode((FieldAccessNode) dataAccess);
+          finishFieldAccessNode((FieldAccessNode) dataAccess, nullSafe);
           break;
         case ITEM_ACCESS_NODE:
           finishItemAccessNode((ItemAccessNode) dataAccess, nullSafe);
@@ -1378,15 +1381,26 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
     protected void visitFieldAccessNode(FieldAccessNode node) {
       checkState(!node.isNullSafe());
       visit(node.getBaseExprChild());
-      finishFieldAccessNode(node);
+      finishFieldAccessNode(node, /* nullSafe= */ false);
     }
 
-    private void finishFieldAccessNode(FieldAccessNode node) {
-      node.setType(
-          getFieldType(
-              node.getBaseExprChild().getType(),
-              node.getFieldName(),
-              node.getAccessSourceLocation()));
+    private void finishFieldAccessNode(FieldAccessNode node, boolean nullSafe) {
+      SoyType baseType = node.getBaseExprChild().getType();
+      if (nullSafe) {
+        baseType = SoyTypes.tryRemoveNull(baseType);
+      }
+
+      SoyType nonNullType = SoyTypes.tryRemoveNull(baseType);
+      SoySourceFunctionMethod fieldImpl = fieldRegistry.findField(node.getFieldName(), nonNullType);
+      if (fieldImpl != null) {
+        if (!nonNullType.equals(baseType)) {
+          errorReporter.report(node.getAccessSourceLocation(), NULLISH_FIELD_ACCESS);
+        }
+        node.setType(fieldImpl.getReturnType());
+        node.setSoyMethod(fieldImpl);
+      } else {
+        node.setType(getFieldType(baseType, node.getFieldName(), node.getAccessSourceLocation()));
+      }
       tryApplySubstitution(node);
     }
 
@@ -2442,53 +2456,20 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
             return SoyTypes.computeLowestCommonType(typeRegistry, fieldTypes);
           }
 
-          // calling .length on strings/lists is common in v1 templates. So provide better error
-          // messages for when users are migrating.
-        case STRING:
-        case CSS:
-        case JS:
-        case ATTRIBUTES:
-        case ELEMENT:
-        case HTML:
-        case URI:
-          if (fieldName.equals("length")) {
-            errorReporter.report(sourceLocation, STRING_LENGTH_ERROR);
-            return UnknownType.getInstance();
-          }
-          // else fall through
-
-        case LIST:
-          if (fieldName.equals("length")) {
-            errorReporter.report(sourceLocation, LIST_LENGTH_ERROR);
-            return UnknownType.getInstance();
-          }
-          // else fall through
-
-        case ANY:
-        case NULL:
-        case BOOL:
-        case INT:
-        case FLOAT:
-        case TRUSTED_RESOURCE_URI:
-        case MAP:
-        case PROTO_ENUM:
-        case TEMPLATE:
-        case VE:
-        case VE_DATA:
-        case MESSAGE:
-          errorReporter.report(sourceLocation, DOT_ACCESS_NOT_SUPPORTED, baseType);
-          return UnknownType.getInstance();
         case TEMPLATE_TYPE:
         case TEMPLATE_MODULE:
         case PROTO_TYPE:
         case PROTO_EXTENSION:
           // May not be erased if other errors are present.
           return UnknownType.getInstance();
-        case PROTO_MODULE:
-        case PROTO_ENUM_TYPE:
-        case FUNCTION:
+
+        default:
+          ImmutableSet<String> allFields = fieldRegistry.getAllFieldNames(tryRemoveNull(baseType));
+          String didYouMean =
+              allFields.isEmpty() ? "" : SoyErrors.getDidYouMeanMessage(allFields, fieldName);
+          errorReporter.report(sourceLocation, NO_SUCH_FIELD, fieldName, baseType, didYouMean);
+          return UnknownType.getInstance();
       }
-      throw new AssertionError("unhandled kind: " + baseType.getKind());
     }
 
     private void checkProtoFieldAccess(
@@ -3223,35 +3204,33 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
                 new CacheLoader<>() {
                   @Override
                   public ImmutableList<SoySourceFunctionMethod> load(String methodName) {
-                    ImmutableList.Builder<SoySourceFunctionMethod> methods =
-                        ImmutableList.builder();
-                    List<SoySourceFunction> functions = plugins.lookupSoyMethods(methodName);
-                    for (SoySourceFunction function : functions) {
-                      SoyMethodSignature methodSig =
-                          function.getClass().getAnnotation(SoyMethodSignature.class);
-                      SourceFilePath fakeFunctionPath =
-                          SourceFilePath.create(function.getClass().getName());
-                      SoyType baseType = parseType(methodSig.baseType(), fakeFunctionPath);
-                      for (Signature signature : methodSig.value()) {
-                        SoyType returnType = parseType(signature.returnType(), fakeFunctionPath);
-                        ImmutableList<SoyType> argTypes =
-                            Arrays.stream(signature.parameterTypes())
-                                .map(s -> parseType(s, fakeFunctionPath))
-                                .collect(toImmutableList());
+                    return plugins.lookupSoyMethods(methodName).stream()
+                        .flatMap(
+                            function -> {
+                              SoyMethodSignature methodSig =
+                                  function.getClass().getAnnotation(SoyMethodSignature.class);
+                              SourceFilePath fakeFunctionPath =
+                                  SourceFilePath.create(function.getClass().getName());
+                              SoyType baseType = parseType(methodSig.baseType(), fakeFunctionPath);
+                              return Arrays.stream(methodSig.value())
+                                  .map(
+                                      signature -> {
+                                        SoyType returnType =
+                                            parseType(signature.returnType(), fakeFunctionPath);
+                                        ImmutableList<SoyType> argTypes =
+                                            Arrays.stream(signature.parameterTypes())
+                                                .map(s -> parseType(s, fakeFunctionPath))
+                                                .collect(toImmutableList());
 
-                        methods.add(
-                            new SoySourceFunctionMethod(
-                                function, baseType, returnType, argTypes, methodSig.name()));
-                      }
-                    }
-                    return methods.build();
-                  }
-
-                  private SoyType parseType(String t, SourceFilePath path) {
-                    TypeNode typeNode = SoyFileParser.parseType(t, path, errorReporter);
-                    return typeNode != null
-                        ? pluginTypeConverter.getOrCreateType(typeNode)
-                        : UnknownType.getInstance();
+                                        return new SoySourceFunctionMethod(
+                                            function,
+                                            baseType,
+                                            returnType,
+                                            argTypes,
+                                            methodSig.name());
+                                      });
+                            })
+                        .collect(toImmutableList());
                   }
                 });
 
@@ -3283,6 +3262,62 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
                 }
               });
       return builder.build();
+    }
+  }
+
+  private SoyType parseType(String t, SourceFilePath path) {
+    TypeNode typeNode = SoyFileParser.parseType(t, path, errorReporter);
+    return typeNode != null
+        ? pluginTypeConverter.getOrCreateType(typeNode)
+        : UnknownType.getInstance();
+  }
+
+  private final class FieldRegistry {
+
+    private final PluginResolver plugins;
+    private final LoadingCache<String, ImmutableList<SoySourceFunctionMethod>> methodCache =
+        CacheBuilder.newBuilder()
+            .build(
+                new CacheLoader<>() {
+                  @Override
+                  public ImmutableList<SoySourceFunctionMethod> load(String methodName) {
+                    return plugins.lookupSoyFields(methodName).stream()
+                        .map(
+                            f -> {
+                              SoyFieldSignature fieldSig =
+                                  f.getClass().getAnnotation(SoyFieldSignature.class);
+                              SourceFilePath fakeFunctionPath =
+                                  SourceFilePath.create(f.getClass().getName());
+                              SoyType baseType = parseType(fieldSig.baseType(), fakeFunctionPath);
+                              SoyType returnType =
+                                  parseType(fieldSig.returnType(), fakeFunctionPath);
+                              return new SoySourceFunctionMethod(
+                                  f, baseType, returnType, ImmutableList.of(), fieldSig.name());
+                            })
+                        .collect(toImmutableList());
+                  }
+                });
+
+    FieldRegistry(PluginResolver plugins) {
+      this.plugins = plugins;
+    }
+
+    @Nullable
+    public SoySourceFunctionMethod findField(String fieldName, SoyType baseType) {
+      Preconditions.checkArgument(
+          baseType == NullType.getInstance() || !SoyTypes.isNullable(baseType));
+      return methodCache.getUnchecked(fieldName).stream()
+          .filter(method -> method.appliesToBase(baseType))
+          .findFirst()
+          .orElse(null);
+    }
+
+    public ImmutableSet<String> getAllFieldNames(SoyType baseType) {
+      return plugins.getAllFieldNames().stream()
+          .flatMap(methodName -> methodCache.getUnchecked(methodName).stream())
+          .filter(method -> method.appliesToBase(baseType))
+          .map(SoySourceFunctionMethod::getMethodName)
+          .collect(toImmutableSet());
     }
   }
 

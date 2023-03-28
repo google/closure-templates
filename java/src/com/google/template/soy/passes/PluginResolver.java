@@ -17,13 +17,14 @@
 package com.google.template.soy.passes;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.collect.ImmutableMap.toImmutableMap;
+import static com.google.common.collect.ImmutableSetMultimap.toImmutableSetMultimap;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
@@ -41,12 +42,13 @@ import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyDeprecated;
+import com.google.template.soy.shared.restricted.SoyFieldSignature;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyMethodSignature;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.shared.restricted.SoySourceFunctionMethod;
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -107,6 +109,11 @@ public final class PluginResolver {
           "Plugin method named ''{0}'' with base type ''{1}'' has two different implementations"
               + " registered: ''{2}'' and ''{3}''.");
 
+  private static final SoyErrorKind DIFFERENT_FIELD_IMPLS_REGISTERED =
+      SoyErrorKind.of(
+          "Plugin field named ''{0}'' with base type ''{1}'' has two different implementations"
+              + " registered: ''{2}'' and ''{3}''.");
+
   private static final SoyErrorKind MULTIPLE_PLUGIN_INSTANCES =
       SoyErrorKind.of(
           "Plugin class ''{0}'' uses callInstanceMethod for methods on multiple classes {1}. "
@@ -148,7 +155,8 @@ public final class PluginResolver {
   private final Mode mode;
   private final ImmutableMap<String, SoyPrintDirective> printDirectives;
   private final ImmutableMap<String, Object> functions;
-  private final ImmutableMap<String, ImmutableMap<String, SoySourceFunction>> methods;
+  private final ImmutableSetMultimap<String, SoySourceFunction> methodsByName;
+  private final ImmutableSetMultimap<String, SoySourceFunction> fieldsByName;
   private final ImmutableMap<SoySourceFunction, SoySourceFunctionDescriptor> functionToDesc;
   private final ErrorReporter reporter;
 
@@ -248,36 +256,68 @@ public final class PluginResolver {
     }
     this.printDirectives = ImmutableMap.copyOf(indexedDirectives);
 
-    Map<String, Map<String, SoySourceFunction>> methods =
-        Maps.newLinkedHashMapWithExpectedSize(soyMethods.size());
-    for (SoySourceFunction method : soyMethods) {
-      SoyMethodSignature sig = method.getClass().getAnnotation(SoyMethodSignature.class);
-      if (sig == null) {
-        reporter.report(
-            SourceLocation.UNKNOWN, MISSING_METHOD_SIGNATURE, method.getClass().getName());
-        continue;
-      }
-      String methodName = sig.name();
-      String baseType = sig.baseType();
+    Map<String, SoySourceFunction> uniqueMethods = new HashMap<>();
+    this.methodsByName =
+        soyMethods.stream()
+            .filter(
+                method -> {
+                  SoyMethodSignature sig =
+                      method.getClass().getAnnotation(SoyMethodSignature.class);
+                  if (sig == null) {
+                    reporter.report(
+                        SourceLocation.UNKNOWN,
+                        MISSING_METHOD_SIGNATURE,
+                        method.getClass().getName());
+                    return false;
+                  }
 
-      Map<String, SoySourceFunction> baseTypeToSourceFnMap =
-          methods.containsKey(methodName) ? methods.get(methodName) : new LinkedHashMap<>();
+                  String key = sig.name() + "/" + sig.baseType();
+                  SoySourceFunction old = uniqueMethods.put(key, method);
+                  if (old != null) {
+                    reporter.report(
+                        SourceLocation.UNKNOWN,
+                        DIFFERENT_METHOD_IMPLS_REGISTERED,
+                        sig.name(),
+                        sig.baseType(),
+                        old.getClass().getCanonicalName(),
+                        method.getClass().getCanonicalName());
+                    return false;
+                  }
+                  return true;
+                })
+            .collect(
+                toImmutableSetMultimap(
+                    method -> method.getClass().getAnnotation(SoyMethodSignature.class).name(),
+                    method -> method));
 
-      SoySourceFunction old = baseTypeToSourceFnMap.put(sig.baseType(), method);
-      if (old != null) {
-        reporter.report(
-            SourceLocation.UNKNOWN,
-            DIFFERENT_METHOD_IMPLS_REGISTERED,
-            methodName,
-            baseType,
-            old.getClass().getCanonicalName(),
-            method.getClass().getCanonicalName());
-      }
-      methods.put(methodName, baseTypeToSourceFnMap);
-    }
-    this.methods =
-        methods.entrySet().stream()
-            .collect(toImmutableMap(Map.Entry::getKey, e -> ImmutableMap.copyOf(e.getValue())));
+    Map<String, SoySourceFunction> uniqueFields = new HashMap<>();
+    this.fieldsByName =
+        soyMethods.stream()
+            .filter(
+                method -> {
+                  SoyFieldSignature sig = method.getClass().getAnnotation(SoyFieldSignature.class);
+                  if (sig == null) {
+                    return false;
+                  }
+
+                  String key = sig.name() + "/" + sig.baseType();
+                  SoySourceFunction old = uniqueFields.put(key, method);
+                  if (old != null) {
+                    reporter.report(
+                        SourceLocation.UNKNOWN,
+                        DIFFERENT_FIELD_IMPLS_REGISTERED,
+                        sig.name(),
+                        sig.baseType(),
+                        old.getClass().getCanonicalName(),
+                        method.getClass().getCanonicalName());
+                    return false;
+                  }
+                  return true;
+                })
+            .collect(
+                toImmutableSetMultimap(
+                    method -> method.getClass().getAnnotation(SoyFieldSignature.class).name(),
+                    method -> method));
   }
 
   public Mode getPluginResolutionMode() {
@@ -347,16 +387,20 @@ public final class PluginResolver {
     return soyFunction;
   }
 
-  public ImmutableList<SoySourceFunction> lookupSoyMethods(String methodName) {
-    ImmutableMap<String, SoySourceFunction> methodBaseTypeToFunctionMap = methods.get(methodName);
-    if (methodBaseTypeToFunctionMap == null) {
-      return ImmutableList.of();
-    }
-    return ImmutableList.copyOf(methodBaseTypeToFunctionMap.values());
+  public ImmutableSet<SoySourceFunction> lookupSoyMethods(String methodName) {
+    return methodsByName.get(methodName);
   }
 
   public ImmutableSet<String> getAllMethodNames() {
-    return methods.keySet();
+    return methodsByName.keySet();
+  }
+
+  public ImmutableSet<SoySourceFunction> lookupSoyFields(String methodName) {
+    return fieldsByName.get(methodName);
+  }
+
+  public ImmutableSet<String> getAllFieldNames() {
+    return fieldsByName.keySet();
   }
 
   public void reportUnresolved(FunctionNode fct) {

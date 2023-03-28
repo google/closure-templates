@@ -28,6 +28,7 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.numericCon
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.ternary;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Streams;
 import com.google.template.soy.base.internal.Identifier;
@@ -369,7 +370,7 @@ final class ExpressionCompiler {
                 analysis,
                 parameters,
                 varManager,
-                /* detacher=*/ null,
+                /* detacher= */ null,
                 sourceFunctionCompiler,
                 fileSetMetadata)
             .exec(node));
@@ -1241,6 +1242,13 @@ final class ExpressionCompiler {
     private SoyExpression visitFieldAccess(SoyExpression baseExpr, FieldAccessNode node) {
       // All null safe accesses should've already been converted to NullSafeAccessNodes.
       checkArgument(!node.isNullSafe());
+
+      SoySourceFunctionMethod sourceMethod = node.getSoyMethod();
+      if (sourceMethod != null) {
+        return sourceFunctionCompiler.compile(
+            node, sourceMethod, ImmutableList.of(baseExpr), parameters, detacher);
+      }
+
       if (baseExpr.soyRuntimeType().isKnownProtoOrUnionOfProtos()) {
         return ProtoUtils.accessField(
             baseExpr,

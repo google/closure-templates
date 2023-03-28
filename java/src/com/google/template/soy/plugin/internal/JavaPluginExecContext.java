@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.Node;
 import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
@@ -51,6 +52,15 @@ public final class JavaPluginExecContext {
             .add(method.getBaseType())
             .addAll(method.getArgTypes())
             .build());
+  }
+
+  public static JavaPluginExecContext forFieldAccessNode(
+      FieldAccessNode fieldAccessNode, SoySourceFunctionMethod method) {
+    return new JavaPluginExecContext(
+        (SoyJavaSourceFunction) method.getImpl(),
+        fieldAccessNode,
+        fieldAccessNode.getFieldName(),
+        ImmutableList.of(method.getBaseType()));
   }
 
   public static JavaPluginExecContext forFunctionNode(FunctionNode node, SoyJavaSourceFunction fn) {

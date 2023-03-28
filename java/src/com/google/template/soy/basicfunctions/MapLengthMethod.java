@@ -30,6 +30,7 @@ import com.google.template.soy.plugin.python.restricted.PythonValue;
 import com.google.template.soy.plugin.python.restricted.PythonValueFactory;
 import com.google.template.soy.plugin.python.restricted.SoyPythonSourceFunction;
 import com.google.template.soy.shared.restricted.Signature;
+import com.google.template.soy.shared.restricted.SoyFieldSignature;
 import com.google.template.soy.shared.restricted.SoyMethodSignature;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
 import java.lang.reflect.Method;
@@ -40,6 +41,7 @@ import java.util.List;
     name = "length",
     baseType = "map<any, any>",
     value = @Signature(returnType = "int"))
+@SoyFieldSignature(name = "size", baseType = "map<any, any>", returnType = "int")
 @SoyPureFunction
 public final class MapLengthMethod
     implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPythonSourceFunction {

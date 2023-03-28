@@ -908,7 +908,7 @@ public final class ResolveExpressionTypesPassTest {
         constructFileSource("{@param p: float|int}", "{$p[1]}"));
 
     assertResolveExpressionTypesFails(
-        "Type float does not support dot access.",
+        "Field 'a' does not exist on type float.",
         constructFileSource("{@param p: float|int}", "{$p.a}"));
   }
 

@@ -16,9 +16,12 @@
 
 package com.google.template.soy.exprtree;
 
+
 import com.google.common.base.Preconditions;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.shared.restricted.SoySourceFunctionMethod;
+import javax.annotation.Nullable;
 
 /**
  * Reference to a named field.
@@ -29,6 +32,9 @@ import com.google.template.soy.basetree.CopyState;
 public final class FieldAccessNode extends DataAccessNode {
 
   private final String fieldName;
+
+  /** May be set if this field access is implemented as a soy source method. */
+  @Nullable private SoySourceFunctionMethod method;
 
   /**
    * @param base The base expression, that is a reference to the object containing the named field.
@@ -71,5 +77,14 @@ public final class FieldAccessNode extends DataAccessNode {
   @Override
   public FieldAccessNode copy(CopyState copyState) {
     return new FieldAccessNode(this, copyState);
+  }
+
+  public void setSoyMethod(SoySourceFunctionMethod method) {
+    this.method = method;
+  }
+
+  @Nullable
+  public SoySourceFunctionMethod getSoyMethod() {
+    return method;
   }
 }

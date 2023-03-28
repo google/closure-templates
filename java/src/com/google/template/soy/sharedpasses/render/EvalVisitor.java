@@ -467,6 +467,13 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       FieldAccessNode fieldAccess, SoyValue base, boolean nullSafe) {
     // All null safe accesses should've already been converted to NullSafeAccessNodes.
     checkArgument(!fieldAccess.isNullSafe());
+
+    SoySourceFunctionMethod method = fieldAccess.getSoyMethod();
+    if (method != null) {
+      return computeFunctionHelper(
+          ImmutableList.of(base), JavaPluginExecContext.forFieldAccessNode(fieldAccess, method));
+    }
+
     // attempting field access on non-SoyRecord
     if (!(base instanceof SoyRecord) && !(base instanceof SoyProtoValue)) {
       if (nullSafe) {

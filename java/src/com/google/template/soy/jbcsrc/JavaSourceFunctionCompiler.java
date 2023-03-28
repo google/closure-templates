@@ -16,6 +16,7 @@
 package com.google.template.soy.jbcsrc;
 
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.jbcsrc.restricted.Expression;
@@ -57,6 +58,17 @@ final class JavaSourceFunctionCompiler {
     return compile(
         JavaPluginExecContext.forMethodCallNode(node, method), args, parameters, detacher);
   }
+
+  SoyExpression compile(
+      FieldAccessNode node,
+      SoySourceFunctionMethod method,
+      List<SoyExpression> args,
+      @Nullable TemplateParameterLookup parameters,
+      ExpressionDetacher detacher) {
+    return compile(
+        JavaPluginExecContext.forFieldAccessNode(node, method), args, parameters, detacher);
+  }
+
   /**
    * Compile the given function call to a {@link SoyExpression}
    *
