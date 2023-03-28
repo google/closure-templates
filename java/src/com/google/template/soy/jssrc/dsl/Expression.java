@@ -290,6 +290,10 @@ public abstract class Expression extends CodeChunk {
     return Cast.create(this, typeExpression, googRequires);
   }
 
+  public final Expression tsCast(Expression type) {
+    return TsCast.create(this, type);
+  }
+
   public final Expression instanceOf(Expression identifier) {
     // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Operator_Precedence
     // instanceof has the same precedence as LESS_THAN
