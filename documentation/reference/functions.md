@@ -1,10 +1,10 @@
-# Methods and Functions
+# Methods, Fields, and Functions
 
-Soy methods and functions are called from within Soy
+Soy methods, fields, and functions are called from within Soy
 [expressions](expressions.md).
 
-The table below lists basic Soy functions and methods that are available by
-default. For Soy functions related to bidirectional text, see
+The table below lists basic Soy methods, fields, and functions that are
+available by default. For Soy functions related to bidirectional text, see
 [Bidi Support](../dev/localization#bidi_functions). For information on writing
 custom external functions, see
 [Creating an External Function](../dev/externs.md).
@@ -106,15 +106,18 @@ Returns the square root of the number.
 Returns the value of the first argument raised to the power of the second
 argument.
 
-## List Methods
+## List Fields
 
 <span id="list-any_length"></span>
 
-### `list.length()` {#length}
+### `list.length` {#length}
 
 Returns the length of a list.
 
-Also callable as deprecated global function: `length(list)`
+Also callable as deprecated method `length()` and deprecated global function
+`length(list)`.
+
+## List Methods
 
 <span id="list-any_concat"></span>
 
@@ -217,6 +220,14 @@ for a description of these options.
 This method is only defined on lists of non-nullable strings. If the method is
 not found, please check the type of your list.
 
+## Map Fields
+
+### `map.size` {#map-any,any_length}
+
+Returns the number of keys in the map.
+
+Also callable as deprecated method `length()`.
+
 ## Map Methods
 
 <span id="map-any,any_keys"></span>
@@ -238,14 +249,25 @@ The values of a [map](types.md#map) as a list. There is no guarantee on order.
 The entries of a [map](types.md#map) as a list of records with fields `key` and
 `value`. There is no guarantee on order.
 
-### `map.length()` {#map-any,any_length}
-
-The number of keys in a [map](types.md#map).
-
 ### `map.concat(map)` {#map-any,any_concat}
 
 Combines two [map](types.md#map)s into one. If there's a key collision the value
 from the method parameter wins.
+
+## String Fields
+
+<span id="string_length"></span>
+
+### `str.length` {#strLen}
+
+Returns the length of a string in characters.
+
+Also callable as deprecated method `length()`.
+
+WARNING: The length is based on characters (aka java `char` or utf-16
+characters), not Unicode codepoints or more useful concepts like graphemes. It
+is almost never valid to use this to break text meant for users into parts since
+it will be very easy to break the string (e.g. split an emoji in half).
 
 ## String Methods
 
@@ -276,17 +298,6 @@ Returns the character index of the first occurrence of `substr` within `str`, or
 first index greater than or equal to position.
 
 WARNING: The index is based on characters (aka java `char` or utf-16
-characters), not Unicode codepoints or more useful concepts like graphemes. It
-is almost never valid to use this to break text meant for users into parts since
-it will be very easy to break the string (e.g. split an emoji in half).
-
-<span id="string_length"></span>
-
-### `str.length()` {#strLen}
-
-Returns the length of a string in characters.
-
-WARNING: The length is based on characters (aka java `char` or utf-16
 characters), not Unicode codepoints or more useful concepts like graphemes. It
 is almost never valid to use this to break text meant for users into parts since
 it will be very easy to break the string (e.g. split an emoji in half).

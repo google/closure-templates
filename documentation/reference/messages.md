@@ -271,19 +271,19 @@ special `remainder` function:
 {let $secondAttendeeGender: $attendees[1]?.gender /}
 {msg desc="Says how many people are attending, listing up to 2 names."
      genders="$firstAttendeeGender, $secondAttendeeGender"}
-  {plural $attendees.length() offset="2"}
+  {plural $attendees.length offset="2"}
     // Note: length() is never 0.
     {case 1}{$attendees[0].name} is attending
     {case 2}{$attendees[0].name} and {$attendees[1]?.name} are attending
     {case 3}{$attendees[0].name}, {$attendees[1]?.name}, and 1 other are attending
-    {default}{$attendees[0].name}, {$attendees[1]?.name}, and {remainder($attendees.length())} others are attending
+    {default}{$attendees[0].name}, {$attendees[1]?.name}, and {remainder($attendees.length)} others are attending
   {/plural}
 {/msg}
 ```
 
 The expression inside the `remainder` function must be exactly identical to the
-expression in the `plural` tag (in this case `$attendees.length()`). However,
-the above example could just as well be written without the use of `offset` and
+expression in the `plural` tag (in this case `$attendees.length`). However, the
+above example could just as well be written without the use of `offset` and
 `remainder`. It would be:
 
 ```soy
@@ -291,12 +291,12 @@ the above example could just as well be written without the use of `offset` and
 {let $secondAttendeeGender: $attendees[1]?.gender /}
 {msg desc="Says how many people are attending, listing up to 2 names."
      genders="$firstAttendeeGender, $secondAttendeeGender"}
-  {plural $attendees.length()}
+  {plural $attendees.length}
     // Note: length() is never 0.
     {case 1}{$attendees[0].name} is attending
     {case 2}{$attendees[0].name} and {$attendees[1]?.name} are attending
     {case 3}{$attendees[0].name}, {$attendees[1]?.name}, and 1 other are attending
-    {default}{$attendees[0].name}, {$attendees[1]?.name}, and {$attendees.length() - 2} others are attending
+    {default}{$attendees[0].name}, {$attendees[1]?.name}, and {$attendees.length - 2} others are attending
   {/plural}
 {/msg}
 ```
@@ -369,7 +369,7 @@ evaluated when their branch won't be expected.
 
 ```soy
 {msg desc="Welcomes everybody."}
-  {plural $people.length() offset="2"}
+  {plural $people.length offset="2"}
     {case 0}Nobody showed up :(
     {case 1}Greetings {$people[0].name}
     {case 2}Greeting {$people[0].name} and {$people[1].name})}
@@ -385,7 +385,7 @@ To fix this you can use null safe access patterns:
 
 ```soy
 {msg desc="Welcomes everybody."}
-  {plural $people.length() offset="2"}
+  {plural $people.length offset="2"}
     {case 0}Nobody showed up :(
     {case 1}Greetings {$people[0]?.name}
     {case 2}Greetings {$people[0]?.name} and {$people[1]?.name})}

@@ -210,7 +210,8 @@ throws a NullPointerException in Java.
 
 ### Indexed access operators `[]` `?[]` {#indexing-operators}
 
-Indexed access operators, used for accessing elements of `maps` and `lists`.
+Indexed access operators, used for accessing elements of `lists`. Using indexed
+access for `maps` is deprecated.
 
 The question-bracket operator is for null safe access. If the value of the
 preceding operand is `null` then the access will return `null` rather than

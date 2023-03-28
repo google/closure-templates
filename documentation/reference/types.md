@@ -76,7 +76,8 @@ primitive.)
 ### `string` {#string}
 
 `string` is one of the most common types in Soy. In addition to plain strings
-there are a number of safe subtypes.
+there are a number of safe subtypes. The string type defines several
+[fields](functions.md#string-fields) and [methods](functions.md#string-methods).
 
 <table>
 <thead>
@@ -310,7 +311,9 @@ An `A|B` union type can contain either a value of type `A` or a value of type
 ### `list<T>` {#list}
 
 A list can contain any type as an element. Lists can be accessed using the
-[indexed operators](expressions.md#indexing-operators).
+[indexed operators](expressions.md#indexing-operators). The list type defines
+several [fields](functions.md#list-fields) and
+[methods](functions.md#list-methods).
 
 For example,
 
@@ -344,8 +347,10 @@ Python     | `list`
 
 ### `map<K, V>` {#map}
 
-A map takes two parameters for the key and value types. Maps are accessed using
-the [indexed operators](expressions.md#indexing-operators).
+A map takes two parameters for the key and value types. Map values are accessed
+using the [get method](functions.md#map-any,any_get). The map type defines
+several [fields](functions.md#map-fields) and
+[methods](functions.md#map-methods).
 
 For example,
 

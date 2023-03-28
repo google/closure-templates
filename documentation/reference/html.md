@@ -424,7 +424,7 @@ supported by the compiler.
   {for $x, $i in $a}
     {if $i == 0}<ul>{/if}
     <li>{$x}
-    {if $i == $a.length() - 1}</ul>{/if}
+    {if $i == $a.length - 1}</ul>{/if}
   {/for}
 {/template}
 ```
@@ -442,7 +442,7 @@ exactly the same HTML, and is supported by the compiler.
 ```soy {.good}
 {template t}
   {@param a: list<string>}
-  {if $a.length() > 0}
+  {if $a.length > 0}
     <ul>
     {for $x in $a}
       <li>{$x}
