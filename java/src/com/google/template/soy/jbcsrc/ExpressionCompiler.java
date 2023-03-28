@@ -1619,24 +1619,6 @@ final class ExpressionCompiler {
       return ProtoUtils.createProto(node, this::visit, detacher, varManager);
     }
 
-    private static final Handle GET_VE_WITH_METADATA_HANDLE =
-        MethodRef.create(
-                ClassLoaderFallbackCallFactory.class,
-                "bootstrapVeWithMetadata",
-                MethodHandles.Lookup.class,
-                String.class,
-                MethodType.class,
-                String.class)
-            .asHandle();
-
-    private static final String VE_WITH_METADATA_SIGNATURE =
-        Type.getMethodDescriptor(
-            BytecodeUtils.SOY_VISUAL_ELEMENT_TYPE,
-            Type.LONG_TYPE,
-            BytecodeUtils.STRING_TYPE,
-            BytecodeUtils.RENDER_CONTEXT_TYPE,
-            Type.LONG_TYPE);
-
     @Override
     protected SoyExpression visitVeDefNode(FunctionNode node) {
       Expression id = constant(((IntegerNode) node.getChild(1)).getValue());
