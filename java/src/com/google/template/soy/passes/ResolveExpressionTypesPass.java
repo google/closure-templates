@@ -1309,7 +1309,7 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
         calculateAccessChainTypes(
             nullSafeAccessNode.getBase().getType(), (DataAccessNode) dataAccess.getBase());
         visitNullSafeAccessNodeRecurse(dataAccess);
-      } else {
+      } else if (nullSafeAccessNode.getDataAccess() instanceof AccessChainComponentNode) {
         AccessChainComponentNode dataAccess =
             (AccessChainComponentNode) nullSafeAccessNode.getDataAccess();
         DataAccessNode childDataAccess = getDataAccessChild(dataAccess);

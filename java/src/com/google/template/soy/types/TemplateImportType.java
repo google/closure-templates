@@ -16,6 +16,7 @@
 package com.google.template.soy.types;
 
 import com.google.auto.value.AutoValue;
+import com.google.common.base.Preconditions;
 
 /** Representing an imported template. */
 @AutoValue
@@ -39,7 +40,7 @@ public abstract class TemplateImportType extends ImportType {
   }
 
   public void setBasicTemplateType(TemplateType basicTemplateType) {
-    this.basicTemplateType = basicTemplateType;
+    this.basicTemplateType = Preconditions.checkNotNull(basicTemplateType);
   }
 
   @Override

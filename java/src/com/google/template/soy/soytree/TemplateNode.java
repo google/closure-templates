@@ -47,8 +47,8 @@ import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.templatecall.TemplateCallMetadata;
-import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.TemplateImportType;
+import com.google.template.soy.types.TemplateType;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -394,6 +394,10 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     this.component = orig.component;
     if (orig.varDefn != null) {
       this.asVarDefn();
+      TemplateType tt = orig.varDefn.type().getBasicTemplateType();
+      if (tt != null) {
+        this.varDefn.type().setBasicTemplateType(tt);
+      }
       copyState.updateRefs(orig.varDefn, this.varDefn);
     }
   }
@@ -746,8 +750,13 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
 
   private static class TemplateVarDefn extends AbstractVarDefn {
     public TemplateVarDefn(
-        String name, @Nullable SourceLocation nameLocation, @Nullable SoyType type) {
+        String name, @Nullable SourceLocation nameLocation, TemplateImportType type) {
       super(name, nameLocation, type);
+    }
+
+    @Override
+    public TemplateImportType type() {
+      return (TemplateImportType) super.type();
     }
 
     @Override
