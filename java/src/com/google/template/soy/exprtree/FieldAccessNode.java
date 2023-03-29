@@ -53,6 +53,7 @@ public final class FieldAccessNode extends DataAccessNode {
   private FieldAccessNode(FieldAccessNode orig, CopyState copyState) {
     super(orig, copyState);
     this.fieldName = orig.fieldName;
+    this.method = orig.method;
   }
 
   @Override
