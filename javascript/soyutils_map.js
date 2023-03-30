@@ -21,7 +21,6 @@
 goog.module('soy.map');
 goog.module.declareLegacyNamespace();
 
-const {Map: JspbMap} = goog.requireType('jspb.map');
 const {Message} = goog.require('jspb');
 const {assertString} = goog.require('goog.asserts');
 const {shuffle} = goog.require('goog.array');
@@ -112,29 +111,6 @@ function $$getMapKeys(map) {
   return keys;
 }
 
-/**
- * Saves the contents of a SoyMap to another SoyMap.
- * This is used for proto initialization in Soy. Protocol buffer in JS does not
- * generate setters for map fields. To construct a proto map field, we use this
- * help method to save the content of map literal to proto.
- * @param {T} proto
- * @param {!JspbMap<K, V_NOT_NULL>} jspbMap
- * @param {!SoyMap<K, V>} map
- * @return {T}
- * @template K, V, T
- * @template V_NOT_NULL :=
- *     cond(isUnknown(V), unknown(),
- *       mapunion(V, (X) =>
- *         cond(eq(X, 'null'), none(),
- *           cond(eq(X, 'undefined'), none(), X))))
- * =:
- */
-function $$populateJspbMap(proto, jspbMap, map) {
-  for (const [k, v] of map.entries()) {
-    jspbMap.set(k, v);
-  }
-  return proto;
-}
 
 /**
  * Determines if the argument matches the soy.map.Map interface.
@@ -238,7 +214,6 @@ function $$protoEquals(p1, p2) {
 
 exports = {
   $$mapToLegacyObjectMap,
-  $$populateJspbMap,
   $$getMapKeys,
   $$isProtoDefault,
   $$protoEquals,

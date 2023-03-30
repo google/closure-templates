@@ -43,7 +43,6 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_COERCE_TO_BOO
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_EQUALS;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_FILTER_AND_MAP;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_MAKE_ARRAY;
-import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_MAP_POPULATE;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_NEWMAPS_TRANSFORM_VALUES;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_VISUAL_ELEMENT;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_VISUAL_ELEMENT_DATA;
@@ -861,6 +860,29 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     return visit(Iterables.getOnlyElement(node.getChildren()));
   }
 
+  private Expression protoInitFieldValue(
+      FieldDescriptor fieldDesc, Expression fieldValue, boolean isRepeatedElement) {
+    boolean isArray = fieldDesc.isRepeated() && !isRepeatedElement;
+    if (ProtoUtils.isSanitizedContentField(fieldDesc)) {
+      Expression sanitizedContentPackFn =
+          sanitizedContentToProtoConverterFunction(fieldDesc.getMessageType());
+      return isArray
+          ? GOOG_ARRAY_MAP.call(fieldValue, sanitizedContentPackFn)
+          : sanitizedContentPackFn.call(fieldValue);
+    }
+    if (fieldDesc.getType() == FieldDescriptor.Type.BYTES) {
+      return isArray
+          ? GOOG_ARRAY_MAP.call(fieldValue, protoBytesPackToByteStringFunction())
+          : protoBytesPackToByteStringFunction().call(fieldValue);
+    }
+    if (fieldDesc.getType() == FieldDescriptor.Type.ENUM && !isArray) {
+      // TODO(b/255452370): no cast should be necessary, but soy eagerly desugars enum literals
+      // into numeric literals which drops type information.
+      return fieldValue.castAsUnknown();
+    }
+    return fieldValue;
+  }
+
   protected Expression visitProtoInitFunction(FunctionNode node) {
     SoyProtoType type = (SoyProtoType) node.getType();
     if (node.numChildren() == 0) {
@@ -871,54 +893,73 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     for (int i = 0; i < node.numChildren(); i++) {
       String fieldName = node.getParamName(i).identifier();
       FieldDescriptor fieldDesc = type.getFieldDescriptor(fieldName);
-      Expression fieldValue = visit(node.getChild(i));
-      if (ProtoUtils.isSanitizedContentField(fieldDesc)) {
-        Expression sanitizedContentPackFn =
-            sanitizedContentToProtoConverterFunction(fieldDesc.getMessageType());
-        fieldValue =
-            fieldDesc.isRepeated()
-                ? GOOG_ARRAY_MAP.call(fieldValue, sanitizedContentPackFn)
-                : sanitizedContentPackFn.call(fieldValue);
-      }
-      if (fieldDesc.getType() == FieldDescriptor.Type.BYTES) {
-        fieldValue =
-            fieldDesc.isRepeated()
-                ? GOOG_ARRAY_MAP.call(fieldValue, protoBytesPackToByteStringFunction())
-                : protoBytesPackToByteStringFunction().call(fieldValue);
-      }
-      if (fieldDesc.getType() == FieldDescriptor.Type.ENUM && !fieldDesc.isRepeated()) {
-        // TODO(b/255452370): no cast should be necessary, but soy eagerly desugars enum literals
-        // into numeric literals which drops type information.
-        fieldValue = fieldValue.castAsUnknown();
-      }
-
-      if (fieldDesc.isExtension()) {
-        Expression extInfo = extensionField(fieldDesc);
-        proto = proto.dotAccess("setExtension").call(extInfo, fieldValue);
-      } else if (fieldDesc.isMapField()) {
-        // Protocol buffer in JS does not generate setters for map fields. To construct a proto map
-        // field, we first save a reference to the empty instance using the getter,  and then load
-        // it with the contents of the SoyMap.
-        String getFn = "get" + LOWER_CAMEL.to(UPPER_CAMEL, fieldName);
-        Expression protoVar = codeGenerator.declarationBuilder().setRhs(proto).build().ref();
-        if (ProtoUtils.isSanitizedContentMap(fieldDesc)) {
-          Expression sanitizedContentPackFn =
-              sanitizedContentToProtoConverterFunction(
-                  ProtoUtils.getMapValueMessageType(fieldDesc));
-          fieldValue = SOY_NEWMAPS_TRANSFORM_VALUES.call(fieldValue, sanitizedContentPackFn);
-        } else if (ProtoUtils.getMapValueFieldDescriptor(fieldDesc).getType()
-            == FieldDescriptor.Type.BYTES) {
-          fieldValue =
-              SOY_NEWMAPS_TRANSFORM_VALUES.call(fieldValue, protoBytesPackToByteStringFunction());
-        }
-        // JSCompiler cannot infer that jspb.Map and soy.Map or Map are the same.
-        proto = SOY_MAP_POPULATE.call(protoVar, protoVar.dotAccess(getFn).call(), fieldValue);
-      } else {
-        String setFn =
-            "set"
-                + LOWER_CAMEL.to(UPPER_CAMEL, fieldName)
+      ExprNode child = node.getChild(i);
+      if (fieldDesc.isMapField() && child.getKind() == ExprNode.Kind.MAP_LITERAL_NODE) {
+        // use .put-er functions
+        // This saves allocating a map.
+        MapLiteralNode mapLiteral = (MapLiteralNode) child;
+        // Trim 'Map' from the field name
+        String fnName =
+            "put"
+                + LOWER_CAMEL.to(UPPER_CAMEL, fieldName.substring(0, fieldName.length() - 3))
                 + ProtoUtils.getJsFieldSpecificSuffix(fieldDesc);
-        proto = proto.dotAccess(setFn).call(fieldValue);
+        for (int j = 0; j < mapLiteral.numChildren(); j += 2) {
+          Expression key = visit(mapLiteral.getChild(j));
+          Expression value =
+              protoInitFieldValue(
+                  ProtoUtils.getMapValueFieldDescriptor(fieldDesc),
+                  visit(mapLiteral.getChild(j + 1)),
+                  false);
+          proto = proto.dotAccess(fnName).call(key, value);
+        }
+      } else if (fieldDesc.isRepeated()
+          && !fieldDesc.isExtension()
+          && child.getKind() == ExprNode.Kind.LIST_LITERAL_NODE) {
+        // use .add-er functions
+        // This saves allocating an array and makes later calls to toImmutable cheaper
+        ListLiteralNode listLiteral = (ListLiteralNode) child;
+        String fnName =
+            "add"
+                + LOWER_CAMEL.to(UPPER_CAMEL, fieldName.substring(0, fieldName.length() - 4))
+                + ProtoUtils.getJsFieldSpecificSuffix(fieldDesc);
+        for (int j = 0; j < listLiteral.numChildren(); j++) {
+          proto =
+              proto
+                  .dotAccess(fnName)
+                  .call(protoInitFieldValue(fieldDesc, visit(listLiteral.getChild(j)), true));
+        }
+      } else {
+        Expression fieldValue = protoInitFieldValue(fieldDesc, visit(child), false);
+        if (fieldDesc.isExtension()) {
+          Expression extInfo = extensionField(fieldDesc);
+          proto = proto.dotAccess("setExtension").call(extInfo, fieldValue);
+        } else if (fieldDesc.isMapField()) {
+          if (ProtoUtils.isSanitizedContentMap(fieldDesc)) {
+            Expression sanitizedContentPackFn =
+                sanitizedContentToProtoConverterFunction(
+                    ProtoUtils.getMapValueMessageType(fieldDesc));
+            fieldValue = SOY_NEWMAPS_TRANSFORM_VALUES.call(fieldValue, sanitizedContentPackFn);
+          } else if (ProtoUtils.getMapValueFieldDescriptor(fieldDesc).getType()
+              == FieldDescriptor.Type.BYTES) {
+            fieldValue =
+                SOY_NEWMAPS_TRANSFORM_VALUES.call(fieldValue, protoBytesPackToByteStringFunction());
+          }
+          proto =
+              proto
+                  .dotAccess(
+                      "putAll"
+                          + LOWER_CAMEL
+                              .to(UPPER_CAMEL, fieldName)
+                              .substring(0, fieldName.length() - 3)
+                          + ProtoUtils.getJsFieldSpecificSuffix(fieldDesc))
+                  .call(fieldValue);
+        } else {
+          String setFn =
+              "set"
+                  + LOWER_CAMEL.to(UPPER_CAMEL, fieldName)
+                  + ProtoUtils.getJsFieldSpecificSuffix(fieldDesc);
+          proto = proto.dotAccess(setFn).call(fieldValue);
+        }
       }
     }
 

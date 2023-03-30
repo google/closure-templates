@@ -34,7 +34,7 @@ public final class TranslateExprNodeVisitorTest {
 
   // Let 'goo' simulate a local variable from a 'foreach' loop.
   private static final ImmutableMap<String, Expression> LOCAL_VAR_TRANSLATIONS =
-      ImmutableMap.<String, Expression>builder().put("$goo", id("gooData8")).build();
+      ImmutableMap.of("$goo", id("gooData8"));
 
   @Test
   public void testStringLiteral() {
