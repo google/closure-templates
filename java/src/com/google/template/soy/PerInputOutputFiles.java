@@ -89,6 +89,9 @@ final class PerInputOutputFiles {
               + " 'jsouts', then the output file would be located at: my/path/jsouts/foo.soy.js'.")
   private String subdir;
 
+  @Option(name = "--outputExtension", usage = "File extension for output files.")
+  private String outputExtension = null;
+
   private final String extension;
   private final Optional<Joiner> fileJoiner;
 
@@ -101,12 +104,22 @@ final class PerInputOutputFiles {
     this(extension, null);
   }
 
+  PerInputOutputFiles(@Nullable Joiner fileJoiner) {
+    this(null, fileJoiner);
+  }
+
   void validateFlags() {
     if (outputPathFormat != null && (!inputRoots.isEmpty() || outputDirectory != null)) {
       exitWithError("Must set either --outputPathFormat or --outputDirectory and --inputRoots.");
     }
     if (outputPathFormat == null && outputDirectory == null) {
       exitWithError("Must set at least one of --outputPathFormat or --outputDirectory.");
+    }
+    if (extension == null && outputExtension == null) {
+      exitWithError("This compiler must specify --outputExtension");
+    }
+    if (extension != null && outputExtension != null) {
+      exitWithError("This compiler cannot specify --outputExtension");
     }
   }
 
@@ -204,7 +217,7 @@ final class PerInputOutputFiles {
           fileName.substring(0, extensionLocation)
               + (transformedLocale != null ? "_" + transformedLocale : "")
               + "."
-              + extension;
+              + (extension == null ? outputExtension : extension);
       inputPath = inputPath.resolveSibling(fileName);
       inputPath = outputDirectory.resolve(inputPath);
       return inputPath;
