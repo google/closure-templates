@@ -17,10 +17,14 @@
 package com.google.template.soy.passes;
 
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.exprtree.AbstractParentExprNode;
 import com.google.template.soy.exprtree.DataAccessNode;
+import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
+import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
+import com.google.template.soy.types.SoyTypes;
 
 /**
  * Removes redundant non-null assertion operators ({@code !}) from data access chains.
@@ -44,8 +48,17 @@ final class SimplifyAssertNonNullPass implements CompilerFilePass {
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
     for (AssertNonNullOpNode node :
         SoyTreeUtils.getAllNodesOfType(file, AssertNonNullOpNode.class)) {
+
       if (node.getParent() instanceof DataAccessNode) {
-        node.getParent().replaceChild(node, node.getChild(0));
+        ExprNode firstChild = node.getChild(0);
+        if (firstChild instanceof AbstractParentExprNode) {
+          ((AbstractParentExprNode) firstChild).setType(node.getType());
+        } else if (firstChild instanceof VarRefNode) {
+          ((VarRefNode) firstChild).setSubstituteType(node.getType());
+        } else if (SoyTypes.isNullable(firstChild.getType())) {
+          continue;
+        }
+        node.getParent().replaceChild(node, firstChild);
       }
     }
   }
