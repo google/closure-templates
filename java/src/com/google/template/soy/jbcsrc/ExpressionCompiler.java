@@ -1449,7 +1449,7 @@ final class ExpressionCompiler {
 
     @Override
     protected SoyExpression visitAssertNonNullOpNode(AssertNonNullOpNode node) {
-      return visit(Iterables.getOnlyElement(node.getChildren())).asNonNullable();
+      return visit(Iterables.getOnlyElement(node.getChildren()));
     }
 
     @Override
