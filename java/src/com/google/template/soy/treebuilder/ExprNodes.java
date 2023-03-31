@@ -203,6 +203,19 @@ public final class ExprNodes {
     return node;
   }
 
+  public static boolean isProtoInit(ExprNode node, String protoName) {
+    if (!(node instanceof FunctionNode)) {
+      return false;
+    }
+
+    FunctionNode functionNode = (FunctionNode) node;
+    if (!functionNode.isResolved() || functionNode.getSoyFunction() != BuiltinFunction.PROTO_INIT) {
+      return false;
+    }
+
+    return functionNode.getFunctionName().equals(protoName);
+  }
+
   public static RecordLiteralNode recordLiteral(NamedExprNode... children) {
     return recordLiteral(ImmutableList.copyOf(children));
   }
