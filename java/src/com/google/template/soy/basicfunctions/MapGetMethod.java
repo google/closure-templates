@@ -55,7 +55,7 @@ public final class MapGetMethod
   @Override
   public PythonValue applyForPythonSource(
       PythonValueFactory factory, List<PythonValue> args, PythonPluginContext context) {
-    return args.get(0).getItem(args.get(1));
+    return factory.global("runtime.key_safe_data_access").call(args.get(0), args.get(1));
   }
 
   // lazy singleton pattern, allows other backends to avoid the work.
