@@ -87,14 +87,12 @@ You have a normal number of marbles.
 
 For `numMarbles` = 4, the output would be empty.
 
-## for, ifempty {#for}
+## for {#for}
 
 Syntax:
 
 ```soy
 {for <local_var> in <data_ref>}
-  ...
-{ifempty}
   ...
 {/for}
 ```
@@ -125,8 +123,6 @@ as:
 {for $operand, $index in $operands}
   {if $index != 0} + {/if}
   {$operand}({$index})
-{ifempty}
-  0
 {/for}
 ```
 
