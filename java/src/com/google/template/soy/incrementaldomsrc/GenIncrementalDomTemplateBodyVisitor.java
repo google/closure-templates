@@ -839,9 +839,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
     if (maybeApplyStatics.isPresent()) {
       statements.add(maybeApplyStatics.get().asStatement());
     }
-    if (node.numChildren() - 1 > 0) {
-      statements.add(getApplyAttrs(node).asStatement());
-    }
+    statements.add(getApplyAttrs(node).asStatement());
 
     // Whether or not it is valid for this tag to be self closing has already been validated by the
     // HtmlContextVisitor.  So we just need to output the close instructions if the node is self
