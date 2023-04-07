@@ -141,7 +141,7 @@ public class ImportsBuilder {
     }
 
     if (data == null) {
-      throw new IllegalArgumentException("Unexpected proto: " + fqn);
+      throw new IllegalArgumentException("Unexpected proto: " + fqn + " (" + topLevelMsg + ")");
     }
 
     if (!makeImmutable) {
