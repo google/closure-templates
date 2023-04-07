@@ -366,7 +366,7 @@ export class NullRenderer extends IncrementalDomRenderer {
 
   /** Returns to the default renderer which will traverse the DOM. */
   override toDefaultRenderer() {
-    this.renderer!.setLogger(this.getLogger());
+    this.renderer.setLogger(this.getLogger());
     return this.renderer;
   }
 }

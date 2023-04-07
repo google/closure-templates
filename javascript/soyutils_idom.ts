@@ -155,7 +155,7 @@ function handleSoyElement<T extends TemplateAcceptor<{}>>(
     return null;
   }
   let soyElement: SoyElement<{}, {}>;
-  if (!(getSoyUntyped(element as HTMLElement) instanceof elementClassCtor)) {
+  if (!(getSoyUntyped(element) instanceof elementClassCtor)) {
     soyElement = new elementClassCtor() as unknown as SoyElement<{}, {}>;
     soyElement.data = data;
     soyElement.ijData = ijData;
@@ -165,8 +165,7 @@ function handleSoyElement<T extends TemplateAcceptor<{}>>(
   } else {
     soyElement = getSoyUntyped(element)!;
   }
-  const maybeSkip =
-      soyElement.handleSoyElementRuntime(element as HTMLElement, data);
+  const maybeSkip = soyElement.handleSoyElementRuntime(element, data);
   soyElement.template = template.bind(soyElement);
   if (maybeSkip) {
     incrementaldom.skip();
