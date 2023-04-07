@@ -74,7 +74,9 @@ public abstract class TsxElement extends Expression {
   }
 
   private boolean isComponentCall() {
-    return Ascii.isUpperCase(openTag().tagName().charAt(0));
+    Expression tagName = openTag().tagName();
+    return tagName instanceof Leaf
+        && Ascii.isUpperCase(tagName.singleExprOrName(FormatOptions.JSSRC).getText().charAt(0));
   }
 
   @Override

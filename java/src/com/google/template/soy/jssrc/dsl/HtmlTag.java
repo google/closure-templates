@@ -16,6 +16,7 @@
 package com.google.template.soy.jssrc.dsl;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.template.soy.jssrc.dsl.Expressions.stringLiteral;
 import static com.google.template.soy.jssrc.dsl.TsxFragmentElement.mergeLineComments;
 
 import com.google.auto.value.AutoValue;
@@ -45,23 +46,29 @@ public abstract class HtmlTag extends Expression {
   public static final HtmlTag FRAGMENT_CLOSE = createClose("");
 
   public static HtmlTag createOpen(String tagName, List<? extends CodeChunk> attributes) {
-    return create(tagName, Type.OPEN, attributes.stream());
+    return create(stringLiteral(tagName), Type.OPEN, attributes.stream());
   }
 
   public static HtmlTag createOpen(String tagName, CodeChunk... attributes) {
-    return create(tagName, Type.OPEN, Stream.of(attributes));
+    return create(stringLiteral(tagName), Type.OPEN, Stream.of(attributes));
   }
 
   public static HtmlTag createClose(String tagName, CodeChunk... attributes) {
-    return create(tagName, Type.CLOSE, Stream.of(attributes));
+    return create(stringLiteral(tagName), Type.CLOSE, Stream.of(attributes));
   }
 
   public static HtmlTag create(
       String tagName, Type type, Iterable<? extends CodeChunk> attributes) {
+    return create(stringLiteral(tagName), type, Streams.stream(attributes));
+  }
+
+  public static HtmlTag create(
+      Expression tagName, Type type, Iterable<? extends CodeChunk> attributes) {
     return create(tagName, type, Streams.stream(attributes));
   }
 
-  private static HtmlTag create(String tagName, Type type, Stream<? extends CodeChunk> attributes) {
+  private static HtmlTag create(
+      Expression tagName, Type type, Stream<? extends CodeChunk> attributes) {
     return new AutoValue_HtmlTag(
         tagName,
         type,
@@ -85,14 +92,14 @@ public abstract class HtmlTag extends Expression {
     return Stream.of(TsxPrintNode.wrap(chunk));
   }
 
-  abstract String tagName();
+  abstract Expression tagName();
 
   abstract Type type();
 
   abstract ImmutableList<? extends CodeChunk> attributes();
 
   public HtmlTag copyWithTagName(String newTagName) {
-    return new AutoValue_HtmlTag(newTagName, type(), attributes());
+    return create(newTagName, type(), attributes());
   }
 
   boolean isOpen() {
@@ -109,8 +116,8 @@ public abstract class HtmlTag extends Expression {
       ctx.decreaseIndentLenient();
     }
     ctx.append(type() == Type.CLOSE ? "</" : "<");
-    ctx.append(tagName());
     ctx.pushLexicalState(LexicalState.TSX);
+    ctx.appendAll(tagName());
     for (CodeChunk attribute : attributes()) {
       ctx.append(" ");
       ctx.appendAll(attribute);
@@ -124,6 +131,6 @@ public abstract class HtmlTag extends Expression {
 
   @Override
   Stream<? extends CodeChunk> childrenStream() {
-    return attributes().stream();
+    return Streams.concat(Stream.of(tagName()), attributes().stream());
   }
 }
