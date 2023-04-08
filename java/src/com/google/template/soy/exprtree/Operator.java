@@ -208,6 +208,7 @@ public enum Operator {
       return new NullCoalescingOpNode(location, operatorLocation);
     }
   },
+
   CONDITIONAL(
       ImmutableList.of(
           OPERAND_0, SP, new Token("?"), SP, OPERAND_1, SP, new Token(":"), SP, OPERAND_2),

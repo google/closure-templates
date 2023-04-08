@@ -18,8 +18,6 @@ package com.google.template.soy.jssrc.internal;
 
 import static com.google.common.base.CaseFormat.LOWER_CAMEL;
 import static com.google.common.base.CaseFormat.UPPER_CAMEL;
-import static com.google.template.soy.jssrc.dsl.Expressions.LITERAL_NULL;
-import static com.google.template.soy.jssrc.dsl.Expressions.ifExpression;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_ARRAY_MAP;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_CHECK_NOT_NULL;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_NEWMAPS_TRANSFORM_VALUES;
@@ -141,27 +139,15 @@ final class NullSafeAccumulator {
       return flushUnpackBuffer(base, unpackBuffer); // base case
     }
     ChainAccess link = chain.next();
-    Expression result;
-    if (link.nullSafe && !base.isCheap()) {
-      base = generator.declarationBuilder().setRhs(base).build().ref();
-    }
 
-    Expression newBase = base;
     if (link.getUnpacking() == Unpacking.STOP) {
-      newBase = flushUnpackBuffer(newBase, unpackBuffer);
+      base = flushUnpackBuffer(base, unpackBuffer);
     }
-    newBase = link.extend(newBase);
+    base = link.extend(base);
 
     unpackBuffer.addFirst(link);
-    if (link.nullSafe) {
-      result =
-          ifExpression(base.doubleEqualsNull(), LITERAL_NULL)
-              .setElse(buildAccessChain(newBase, generator, chain, unpackBuffer))
-              .build(generator);
-    } else {
-      result = buildAccessChain(newBase, generator, chain, unpackBuffer);
-    }
-    return result;
+
+    return buildAccessChain(base, generator, chain, unpackBuffer);
   }
 
   private static Expression flushUnpackBuffer(Expression base, Deque<ChainAccess> unpackBuffer) {
@@ -258,7 +244,7 @@ final class NullSafeAccumulator {
 
     @Override
     Expression extend(Expression prevTip) {
-      return prevTip.bracketAccess(value);
+      return prevTip.bracketAccess(value, nullSafe);
     }
   }
 
@@ -273,7 +259,7 @@ final class NullSafeAccumulator {
 
     @Override
     Expression extend(Expression prevTip) {
-      return prevTip.dotAccess(id);
+      return prevTip.dotAccess(id, nullSafe);
     }
   }
 
@@ -293,7 +279,9 @@ final class NullSafeAccumulator {
 
     @Override
     final Expression extend(Expression prevTip) {
-      return arg == null ? prevTip.dotAccess(getter).call() : prevTip.dotAccess(getter).call(arg);
+      return arg == null
+          ? prevTip.dotAccess(getter, nullSafe).call()
+          : prevTip.dotAccess(getter, nullSafe).call(arg);
     }
   }
 
@@ -310,7 +298,9 @@ final class NullSafeAccumulator {
     Expression extend(Expression prevTip) {
       Expression arg = protoCall.getterArg();
       String getter = protoCall.getter();
-      return arg == null ? prevTip.dotAccess(getter).call() : prevTip.dotAccess(getter).call(arg);
+      return arg == null
+          ? prevTip.dotAccess(getter, nullSafe).call()
+          : prevTip.dotAccess(getter, nullSafe).call(arg);
     }
 
     @Override
