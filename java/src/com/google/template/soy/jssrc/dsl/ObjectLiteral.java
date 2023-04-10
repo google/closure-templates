@@ -37,7 +37,8 @@ public abstract class ObjectLiteral extends Expression {
   }
 
   private static boolean isSpread(Expression e) {
-    return (e instanceof Leaf && ((Leaf) e).value().getText().startsWith(SPREAD_PREFIX))
+    String leafText = Expressions.getLeafText(e);
+    return (leafText != null && leafText.startsWith(SPREAD_PREFIX))
         || (e instanceof StringLiteral
             && ((StringLiteral) e).literalValue().startsWith(SPREAD_PREFIX));
   }
@@ -83,10 +84,16 @@ public abstract class ObjectLiteral extends Expression {
           buffer.append("...").appendOutputExpression(entry.getValue());
         }
       } else {
-        try (FormattingContext buffer = ctx.buffer()) {
-          buffer.appendOutputExpression(entry.getKey()).append(": ");
+        String keyText = Expressions.getLeafText(entry.getKey());
+        if (keyText != null && keyText.equals(Expressions.getLeafText(entry.getValue()))) {
+          // Support for object literal shorthand.
+          ctx.appendOutputExpression(entry.getKey());
+        } else {
+          try (FormattingContext buffer = ctx.buffer()) {
+            buffer.appendOutputExpression(entry.getKey()).append(": ");
+          }
+          ctx.appendOutputExpression(entry.getValue());
         }
-        ctx.appendOutputExpression(entry.getValue());
       }
     }
     ctx.append('}');

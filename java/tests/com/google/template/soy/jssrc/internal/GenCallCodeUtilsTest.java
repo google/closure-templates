@@ -124,7 +124,7 @@ public final class GenCallCodeUtilsTest {
                 "{call someFunc data='all'}",
                 "  {param goo: 59 /}",
                 "{/call}"))
-        .isEqualTo("ns.someFunc(soy.$$assignDefaults({boo: boo, goo: 59}, opt_data), $ijData);");
+        .isEqualTo("ns.someFunc(soy.$$assignDefaults({boo, goo: 59}, opt_data), $ijData);");
   }
 
   @Test

@@ -18,6 +18,7 @@ package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
 import com.google.errorprone.annotations.Immutable;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 /** Represents a {@code for} statement. */
@@ -57,7 +58,7 @@ abstract class For extends Statement {
         .appendOutputExpression(limit())
         .append("; ");
 
-    if ((increment() instanceof Leaf) && "1".equals(((Leaf) increment()).value().getText())) {
+    if (Objects.equals(Expressions.getLeafText(increment()), "1")) {
       ctx.append(localVar() + "++");
     } else {
       ctx.append(localVar() + " += ").appendOutputExpression(increment());

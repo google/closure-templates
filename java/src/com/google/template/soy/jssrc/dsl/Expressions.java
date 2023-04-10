@@ -32,6 +32,7 @@ import com.google.template.soy.jssrc.restricted.JsExprUtils;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 /** Static functions related to Expressions. */
 public final class Expressions {
@@ -405,6 +406,11 @@ public final class Expressions {
       return concat(
           ImmutableList.<Expression>builder().add(LITERAL_EMPTY_STRING).addAll(chunks).build());
     }
+  }
+
+  @Nullable
+  static String getLeafText(Expression expr) {
+    return expr instanceof Leaf ? ((Leaf) expr).value().getText() : null;
   }
 
   @AutoValue
