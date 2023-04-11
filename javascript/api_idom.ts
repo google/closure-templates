@@ -59,6 +59,9 @@ export const patchOuter =
     wrapAsGeneric(incrementaldom.createPatchOuter, patchConfig);
 /** PatchInner using Soy-IDOM semantics. */
 export const patch = patchInner;
+/** PatchInner using Soy-IDOM template cloning semantics. */
+export const create = wrapAsGeneric(
+    incrementaldom.createPatchInner, {inTemplateCloning: true, ...patchConfig});
 
 interface IdomRendererApi {
   open(nameOrCtor: string, key?: string): void|HTMLElement;
@@ -384,6 +387,12 @@ export class NullRenderer extends IncrementalDomRenderer {
  */
 export function isMatchingKey(
     proposedKey: unknown, currentPointerKey: unknown) {
+  // Using "==" instead of "===" is intentional. SSR serializes attributes
+  // differently than the type that keys are. For example "0" == 0.
+  // tslint:disable-next-line:triple-equals
+  if (proposedKey == currentPointerKey) {
+    return true;
+  }
   // This is always true in Soy-IDOM, but Incremental DOM believes that it may
   // be null or number.
   if (typeof proposedKey === 'string' &&
@@ -391,10 +400,7 @@ export function isMatchingKey(
     return proposedKey.startsWith(currentPointerKey) ||
         currentPointerKey.startsWith(proposedKey);
   }
-  // Using "==" instead of "===" is intentional. SSR serializes attributes
-  // differently than the type that keys are. For example "0" == 0.
-  // tslint:disable-next-line:triple-equals
-  return proposedKey == currentPointerKey;
+  return false;
 }
 
 function maybeReportErrors(el: HTMLElement, data: unknown) {

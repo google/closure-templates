@@ -558,6 +558,20 @@ function passToIdHolder(value: string, idHolder?: IdHolder) {
   return value;
 }
 
+function compileToTemplate(content: SanitizedContent): HTMLTemplateElement {
+  const el = document.createElement('template');
+  googSoy.renderHtml(el, content);
+  return el;
+}
+
+function appendCloneToCurrent(
+    content: HTMLTemplateElement, renderer: IncrementalDomRenderer) {
+  const currentElement = renderer.currentElement();
+  for (const el of (content.content ?? content).children) {
+    currentElement?.appendChild(el.cloneNode(true));
+  }
+}
+
 /**
  * Returns an idom- and classic- Soy compatible attribute with a unique value.
  *
@@ -629,5 +643,7 @@ export {
   visitHtmlCommentNode as $$visitHtmlCommentNode,
   upgrade as $$upgrade,
   getOriginalSanitizedContent,
-  defaultIdomRenderer as $$defaultIdomRenderer
+  defaultIdomRenderer as $$defaultIdomRenderer,
+  compileToTemplate as $$compileToTemplate,
+  appendCloneToCurrent as $$appendCloneToCurrent
 };
