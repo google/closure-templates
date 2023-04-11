@@ -142,6 +142,8 @@ public final class SoyFileSet {
     private final ImmutableMap.Builder<SourceFilePath, SoyFileSupplier> filesBuilder =
         ImmutableMap.builder();
 
+    private boolean allowFileReplacements;
+
     private final ImmutableList.Builder<CompilationUnitAndKind> compilationUnitsBuilder =
         ImmutableList.builder();
 
@@ -238,7 +240,7 @@ public final class SoyFileSet {
               .addAll(InternalPlugins.internalMethods())
               .addAll(sourceMethods.build())
               .build(),
-          filesBuilder.buildOrThrow(),
+          allowFileReplacements ? filesBuilder.buildKeepingLast() : filesBuilder.buildOrThrow(),
           compilationUnitsBuilder.build(),
           getGeneralOptions(),
           cache,
@@ -421,6 +423,16 @@ public final class SoyFileSet {
     @CanIgnoreReturnValue
     public Builder add(File inputFile) {
       return addFile(SoyFileSupplier.Factory.create(inputFile));
+    }
+
+    /**
+     * If called, then it is not an error to add the same file path multiple times to this builder
+     * and the last provided value will be used.
+     */
+    @CanIgnoreReturnValue
+    public Builder allowFileReplacements() {
+      allowFileReplacements = true;
+      return this;
     }
 
     /**
@@ -805,7 +817,6 @@ public final class SoyFileSet {
                         SoyConformancePass.class, PassContinuationRule.STOP_AFTER_PASS)
                     .validateJavaMethods(false)));
   }
-
 
   /**
    * Extracts all messages from this Soy file set into a SoyMsgBundle (which can then be turned into

@@ -118,4 +118,8 @@ public final class SoyErrorKind {
   public String toString() {
     return getClass().getSimpleName() + "{" + messageFormat.toPattern() + "}";
   }
+
+  public String getPattern() {
+    return messageFormat.toPattern();
+  }
 }
