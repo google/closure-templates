@@ -175,8 +175,8 @@ This escaping logic applies to:
 *   `iframe.src`
 *   `base.href`
 *   `object.data`
-*   `link.href` unless the `link` also has a `rel` attribute with one
-    of the following values:
+*   `link.href` unless the `link` also has a `rel` attribute with one of the
+    following values:
     *   alternate
     *   amphtml
     *   apple-touch-icon
@@ -189,6 +189,7 @@ This escaping logic applies to:
     *   dns-prefetch
     *   help
     *   icon
+    *   image_src
     *   license
     *   next
     *   preconnect

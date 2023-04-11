@@ -72,7 +72,8 @@ abstract class Context {
   /**
    * List of link types (values of the <link rel=...> attribute) for which the link is a regular
    * URL, and not a trusted resource URL. Most of these values are described at
-   * https://developer.mozilla.org/en-US/docs/Web/HTML/Link_types
+   * https://developer.mozilla.org/en-US/docs/Web/HTML/Link_types or
+   * http://microformats.org/wiki/existing-rel-values
    */
   private static final ImmutableSet<String> REGULAR_LINK_REL_VALUES =
       ImmutableSet.of(
@@ -88,6 +89,7 @@ abstract class Context {
           "dns-prefetch",
           "help",
           "icon",
+          "image_src",
           "license",
           "next",
           "preconnect",
