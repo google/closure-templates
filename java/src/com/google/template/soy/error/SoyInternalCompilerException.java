@@ -32,6 +32,11 @@ public final class SoyInternalCompilerException extends RuntimeException {
     checkArgument(!this.errors.isEmpty());
   }
 
+  /** Returns the list of errors in sorted order. */
+  public ImmutableList<SoyError> getErrors() {
+    return errors;
+  }
+
   @Override
   public String getMessage() {
     return "Unrecoverable internal Soy error. Prior to failure found "
