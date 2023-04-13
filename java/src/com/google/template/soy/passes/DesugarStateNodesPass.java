@@ -33,6 +33,7 @@ import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.HtmlAttributeValueNode;
 import com.google.template.soy.soytree.HtmlAttributeValueNode.Quotes;
+import com.google.template.soy.soytree.HtmlContext;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.PrintNode;
@@ -172,6 +173,7 @@ final class DesugarStateNodesPass implements CompilerFileSetPass {
               /* attributes= */ ImmutableList.of(),
               ErrorReporter.exploding());
       printNode.getExpr().setType(wrappedFn.getType());
+      printNode.setHtmlContext(HtmlContext.HTML_NORMAL_ATTR_VALUE);
       value.addChild(printNode);
       htmlAttributeNode.addChild(value);
       openTag.addChild(htmlAttributeNode);

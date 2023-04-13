@@ -540,6 +540,7 @@ public final class PassManager {
       // The StrictHtmlValidatorPass needs to run after ResolveNames.
       passes
           .add(new StrictHtmlValidationPass(errorReporter))
+          .add(new CheckSkipPass(errorReporter))
           .add(new SoyElementPass(errorReporter, accumulatedState::registryFromDeps));
       if (addHtmlAttributesForDebugging) {
         // needs to run after MsgsPass (so we don't mess up the auto placeholder naming algorithm)
@@ -583,8 +584,7 @@ public final class PassManager {
       }
       passes
           .add(new ValidateAliasesPass(errorReporter))
-          .add(new KeyCommandPass(errorReporter, disableAllTypeChecking))
-          .add(new IncrementalDomKeysPass(errorReporter));
+          .add(new KeyCommandPass(errorReporter, disableAllTypeChecking));
 
       if (!disableAllTypeChecking && astRewrites.isAll()) {
         // Can't run this pass without VeLogRewritePass.
@@ -626,12 +626,6 @@ public final class PassManager {
             .add(new CheckDelegatesPass(errorReporter, accumulatedState::registryFull))
             .add(
                 new CheckIndirectDepsPass(errorReporter, registry, accumulatedState::registryFull));
-        if (desugarIdomFeatures && astRewrites.isAll()) {
-          // always desugar before the end since the backends (besides incremental dom) cannot
-          // handle
-          // the nodes.
-          passes.add(new DesugarStateNodesPass());
-        }
         if (astRewrites.combineTextNodes()) {
           passes.add(new CombineConsecutiveRawTextNodesPass());
         }
@@ -641,6 +635,13 @@ public final class PassManager {
                 soyPrintDirectives,
                 insertEscapingDirectives,
                 accumulatedState::registryFull));
+        passes.add(new IncrementalDomKeysPass());
+        if (desugarIdomFeatures && astRewrites.isAll()) {
+          // always desugar before the end since the backends (besides incremental dom) cannot
+          // handle
+          // the nodes.
+          passes.add(new DesugarStateNodesPass());
+        }
         if (astRewrites.rewriteElementComposition()) {
           passes.add(
               new SoyElementCompositionPass(
@@ -660,6 +661,7 @@ public final class PassManager {
                 soyPrintDirectives,
                 insertEscapingDirectives,
                 accumulatedState::registryFull));
+        passes.add(new IncrementalDomKeysPass());
       }
       passes.add(new CallAnnotationPass());
 

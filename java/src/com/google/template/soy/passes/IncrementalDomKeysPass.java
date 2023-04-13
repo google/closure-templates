@@ -17,8 +17,6 @@
 package com.google.template.soy.passes;
 
 import com.google.template.soy.base.internal.IdGenerator;
-import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.HtmlCloseTagNode;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
@@ -31,24 +29,12 @@ import com.google.template.soy.soytree.TemplateNode;
 import java.util.ArrayDeque;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/** Checks for validity of skip nodes wrt their host node. */
+/** Annotates autokeys for HTML tags. */
 final class IncrementalDomKeysPass implements CompilerFilePass {
-
-  private static final SoyErrorKind SOY_SKIP_OPEN_TAG_CLOSE_AMBIGUOUS =
-      SoyErrorKind.of("Skip element open tags must map to exactly one close tag.");
-
-  private static final SoyErrorKind SOY_SKIP_MUST_BE_DIRECT_CHILD_OF_TAG =
-      SoyErrorKind.of("Skip commands must be direct children of html tags.");
-
-  private final ErrorReporter errorReporter;
-
-  public IncrementalDomKeysPass(ErrorReporter errorReporter) {
-    this.errorReporter = errorReporter;
-  }
 
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-    new IncrementalDomKeysPassVisitor(errorReporter).exec(file);
+    new IncrementalDomKeysPassVisitor().exec(file);
   }
 
   private static final class IncrementalDomKeysPassVisitor extends AbstractSoyNodeVisitor<Void> {
@@ -60,12 +46,7 @@ final class IncrementalDomKeysPass implements CompilerFilePass {
     // - When encountering a close tag that corresponds to an open tag with a manual key, the
     //   topmost counter is then popped from the stack.
     private ArrayDeque<AtomicInteger> keyCounterStack;
-    private final ErrorReporter errorReporter;
     private TemplateNode template;
-
-    public IncrementalDomKeysPassVisitor(ErrorReporter errorReporter) {
-      this.errorReporter = errorReporter;
-    }
 
     @Override
     public void visitTemplateNode(TemplateNode templateNode) {
@@ -93,19 +74,6 @@ final class IncrementalDomKeysPass implements CompilerFilePass {
         if (openTag.getKeyNode() != null && !(openTag.getParent() instanceof SkipNode)) {
           keyCounterStack.pop();
         }
-      }
-    }
-
-    @Override
-    public void visitSkipNode(SkipNode skipNode) {
-      if (skipNode.getParent() instanceof HtmlOpenTagNode) {
-        HtmlOpenTagNode openTag = (HtmlOpenTagNode) skipNode.getParent();
-        openTag.setSkipRoot();
-        if (!openTag.isSelfClosing() && openTag.getTaggedPairs().size() > 1) {
-          errorReporter.report(openTag.getSourceLocation(), SOY_SKIP_OPEN_TAG_CLOSE_AMBIGUOUS);
-        }
-      } else {
-        errorReporter.report(skipNode.getSourceLocation(), SOY_SKIP_MUST_BE_DIRECT_CHILD_OF_TAG);
       }
     }
 
