@@ -263,7 +263,7 @@
     <dependency>
       <groupId>org.json</groupId>
       <artifactId>json</artifactId>
-      <version>20211205</version>
+      <version>20230227</version>
     </dependency>
 
     <!-- soy build-time dependency only. see maven-antrun-plugin:generated-soyutils -->
