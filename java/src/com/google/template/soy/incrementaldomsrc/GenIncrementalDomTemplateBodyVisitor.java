@@ -26,8 +26,8 @@ import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.IN
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_ELEMENT_CLOSE;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_ENTER;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_EXIT;
+import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_KEEP_GOING;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_OPEN;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_OPEN_SSR;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_PARAM_NAME;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_POP_KEY;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_POP_MANUAL_KEY;
@@ -348,7 +348,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
                   getExprTranslator(),
                   positionalParameters,
                   objToPass,
-                  /*isIdomCall=*/ true);
+                  /* isIdomCall= */ true);
         }
         break;
       case CSS:
@@ -391,7 +391,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
                   getExprTranslator(),
                   positionalParameters,
                   objToPass,
-                  /*isIdomCall=*/ false);
+                  /* isIdomCall= */ false);
         }
         statements.add(
             outputVars.addChunkToOutputVar(
@@ -423,7 +423,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
                   getExprTranslator(),
                   positionalParameters,
                   objToPass,
-                  /*isIdomCall=*/ true);
+                  /* isIdomCall= */ true);
           shouldPushKey = true;
         }
         break;
@@ -704,18 +704,10 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
     return Expressions.concatForceString(getAttributeValues(node));
   }
 
-  private Expression getOpenSSRCall(HtmlOpenTagNode node) {
+  private Expression getMaybeSkip(HtmlOpenTagNode node) {
     List<Expression> args = new ArrayList<>();
-    args.add(getTagNameCodeChunk(node.getTagName()));
-
-    KeyNode keyNode = node.getKeyNode();
-    if (keyNode == null) {
-      args.add(JsRuntime.XID.call(Expressions.stringLiteral(node.getKeyId())));
-    } else {
-      // Key difference between getOpen and getOpenSSR
-      args.add(translateExpr(node.getKeyNode().getExpr()));
-    }
-    if (node.isElementRoot()) {
+    args.add(INCREMENTAL_DOM.dotAccess("currentElement").call());
+    if (node.isElementRoot() && !node.isSkipChildrenRoot()) {
       Expression paramsObject;
       if (generatePositionalParamsSignature) {
         paramsObject =
@@ -731,7 +723,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
               .setElse(Expressions.LITERAL_UNDEFINED)
               .build(templateTranslationContext.codeGenerator()));
     }
-    return INCREMENTAL_DOM_OPEN_SSR.call(args);
+    return INCREMENTAL_DOM_KEEP_GOING.call(args);
   }
 
   private Expression getOpenCall(HtmlOpenTagNode node) {
@@ -742,6 +734,8 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
     Expression key = Expressions.LITERAL_UNDEFINED;
     if (keyNode == null) {
       key = JsRuntime.XID.call(Expressions.stringLiteral(node.getKeyId()));
+    } else if (node.isSkipRoot() || node.isSkipChildrenRoot()) {
+      key = translateExpr(node.getKeyNode().getExpr());
     }
     args.add(key);
 
@@ -749,7 +743,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
   }
 
   private Optional<Expression> getApplyStaticAttributes(HtmlOpenTagNode node) {
-    Map<String, Expression> staticAttributes = getStaticAttributes(node);
+    ImmutableMap<String, Expression> staticAttributes = getStaticAttributes(node);
     ImmutableList.Builder<Expression> staticsBuilder = ImmutableList.builder();
     for (Map.Entry<String, Expression> entry : staticAttributes.entrySet()) {
       staticsBuilder.add(Expressions.stringLiteral(entry.getKey()));
@@ -803,18 +797,6 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
   @Override
   protected Statement visitHtmlOpenTagNode(HtmlOpenTagNode node) {
     List<Statement> statements = new ArrayList<>();
-    statements.add(LineComment.create(node.getSourceLocation().toString()).asStatement());
-    if (!node.isSkipRoot()) {
-      if (node.getKeyNode() != null) {
-        // Push key BEFORE emitting `elementOpen`. Later, for `elementOpen` calls of keyed elements,
-        // we do not specify any key.
-        Expression key = translateExpr(node.getKeyNode().getExpr());
-        statements.add(INCREMENTAL_DOM_PUSH_MANUAL_KEY.call(key).asStatement());
-      }
-      Expression openTagExpr = getOpenCall(node);
-      statements.add(openTagExpr.asStatement());
-    }
-    statements.add(getAttributeAndCloseCalls(node));
     String tagName = node.getTagName().getTagString();
     if (tagName != null && Ascii.equalsIgnoreCase(tagName, "script")) {
       scriptOutputVar = "script_" + staticsCounter++;
@@ -827,26 +809,43 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
               .build());
       contentKind.push(SanitizedContentKind.JS);
     }
+    if (node.isSkipRoot()) {
+      return Statements.of(statements);
+    }
+    statements.add(LineComment.create(node.getSourceLocation().toString()).asStatement());
+    if (node.getKeyNode() != null) {
+      // Push key BEFORE emitting `elementOpen`. Later, for `elementOpen` calls of keyed elements,
+      // we do not specify any key.
+      Expression key = translateExpr(node.getKeyNode().getExpr());
+      statements.add(INCREMENTAL_DOM_PUSH_MANUAL_KEY.call(key).asStatement());
+    }
+    Expression openTagExpr = getOpenCall(node);
+    statements.add(openTagExpr.asStatement());
+    statements.add(getAttributes(node));
+    getClose(node).ifPresent(statements::add);
     return Statements.of(statements);
   }
 
   private String scriptOutputVar;
 
-  private Statement getAttributeAndCloseCalls(HtmlOpenTagNode node) {
-    List<Statement> statements = new ArrayList<>();
-    Optional<Expression> maybeApplyStatics = getApplyStaticAttributes(node);
+  private Optional<Statement> getClose(HtmlOpenTagNode node) {
     Expression close = node.isElementRoot() ? INCREMENTAL_DOM_ELEMENT_CLOSE : INCREMENTAL_DOM_CLOSE;
-    if (maybeApplyStatics.isPresent()) {
-      statements.add(maybeApplyStatics.get().asStatement());
-    }
-    statements.add(getApplyAttrs(node).asStatement());
-
     // Whether or not it is valid for this tag to be self closing has already been validated by the
     // HtmlContextVisitor.  So we just need to output the close instructions if the node is self
     // closing or definitely void.
     if (node.isSelfClosing() || node.getTagName().isDefinitelyVoid()) {
-      statements.add(close.call().asStatement());
+      return Optional.of(close.call().asStatement());
     }
+    return Optional.empty();
+  }
+
+  private Statement getAttributes(HtmlOpenTagNode node) {
+    List<Statement> statements = new ArrayList<>();
+    Optional<Expression> maybeApplyStatics = getApplyStaticAttributes(node);
+    if (maybeApplyStatics.isPresent()) {
+      statements.add(maybeApplyStatics.get().asStatement());
+    }
+    statements.add(getApplyAttrs(node).asStatement());
     return Statements.of(statements);
   }
 
@@ -985,10 +984,26 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
 
   @Override
   protected Statement visitSkipNode(SkipNode node) {
+    var statements = new ImmutableList.Builder<Statement>();
     HtmlOpenTagNode openTag = (HtmlOpenTagNode) node.getChild(0);
-    Expression openTagExpr = getOpenSSRCall(openTag);
-    Statement childStatements = Statements.of(visitChildren(node));
-    return Statements.ifStatement(openTagExpr, Statements.of(childStatements)).build();
+    statements.add(getOpenCall(openTag).asStatement());
+    Statement attributes = getAttributes(openTag);
+    if (node.skipOnlyChildren()) {
+      statements.add(attributes);
+    }
+    Optional<Statement> maybeClose = getClose(openTag);
+
+    Statement childStatements =
+        maybeClose.isPresent()
+            ? Statements.of(Statements.of(visitChildren(node)), maybeClose.get())
+            : Statements.of(visitChildren(node));
+    Expression maybeSkip = getMaybeSkip(openTag);
+    var ifStmt =
+        Statements.ifStatement(
+            maybeSkip,
+            node.skipOnlyChildren() ? childStatements : Statements.of(attributes, childStatements));
+    statements.add(ifStmt.build());
+    return Statements.of(statements.build());
   }
 
   @Override

@@ -29,8 +29,16 @@ import com.google.template.soy.soytree.SoyNode.StatementNode;
 public final class SkipNode extends AbstractParentCommandNode<StandaloneNode>
     implements StatementNode {
 
+  private final boolean skipOnlyChildren;
+
   public SkipNode(int id, SourceLocation location) {
     super(id, location, "skip");
+    this.skipOnlyChildren = false;
+  }
+
+  public SkipNode(int id, SourceLocation location, boolean skipOnlyChildren) {
+    super(id, location, "skipchildren");
+    this.skipOnlyChildren = skipOnlyChildren;
   }
 
   /**
@@ -43,6 +51,7 @@ public final class SkipNode extends AbstractParentCommandNode<StandaloneNode>
     for (StandaloneNode node : this.getChildren()) {
       addChild(node.copy(copyState));
     }
+    this.skipOnlyChildren = orig.skipOnlyChildren;
   }
 
   @Override
@@ -52,17 +61,29 @@ public final class SkipNode extends AbstractParentCommandNode<StandaloneNode>
 
   @Override
   public String getCommandText() {
+    if (this.skipOnlyChildren) {
+      return "{skipchildren}";
+    }
     return "{skip}";
   }
 
   @Override
   public String toSourceString() {
     StringBuilder builder = new StringBuilder();
-    builder.append("{skip}");
+    builder.append(getCommandText());
     for (StandaloneNode node : this.getChildren()) {
       builder.append(node.toSourceString());
     }
-    return builder.append("{/skip}").toString();
+    if (this.skipOnlyChildren) {
+      builder.append("{/skipchildren}");
+    } else {
+      builder.append("{/skip}");
+    }
+    return builder.toString();
+  }
+
+  public boolean skipOnlyChildren() {
+    return this.skipOnlyChildren;
   }
 
   @SuppressWarnings("unchecked")

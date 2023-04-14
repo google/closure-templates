@@ -58,7 +58,11 @@ final class CheckSkipPass implements CompilerFilePass {
     public void visitSkipNode(SkipNode skipNode) {
       if (skipNode.getParent() instanceof HtmlOpenTagNode) {
         HtmlOpenTagNode openTag = (HtmlOpenTagNode) skipNode.getParent();
-        openTag.setSkipRoot();
+        if (skipNode.skipOnlyChildren()) {
+          openTag.setSkipChildren();
+        } else {
+          openTag.setSkipRoot();
+        }
         if (!openTag.isSelfClosing() && openTag.getTaggedPairs().size() > 1) {
           errorReporter.report(openTag.getSourceLocation(), SOY_SKIP_OPEN_TAG_CLOSE_AMBIGUOUS);
         }

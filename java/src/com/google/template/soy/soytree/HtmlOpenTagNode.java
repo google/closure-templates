@@ -36,10 +36,12 @@ public final class HtmlOpenTagNode extends HtmlTagNode {
   private final boolean selfClosing;
 
   /** Whether or not this node is the root of a soy element. Populated by the SoyElementPass. */
-  private boolean isElementRoot;
+  private boolean isElementRoot = false;
 
   /** Whether or not this node is the root of a skip node. Populated by ValidateSkipNodesPass. */
-  private boolean isSkipRoot;
+  private boolean isSkipRoot = false;
+
+  private boolean isSkipChildren = false;
 
   private String keyId = null;
 
@@ -58,6 +60,8 @@ public final class HtmlOpenTagNode extends HtmlTagNode {
     this.selfClosing = orig.selfClosing;
     this.isElementRoot = orig.isElementRoot;
     this.keyId = orig.keyId;
+    this.isSkipRoot = orig.isSkipRoot;
+    this.isSkipChildren = orig.isSkipChildren;
   }
 
   @Override
@@ -95,12 +99,21 @@ public final class HtmlOpenTagNode extends HtmlTagNode {
 
   /** Returns true if this is an skip root. */
   public boolean isSkipRoot() {
-    return isSkipRoot;
+    return isSkipRoot || isSkipChildren;
   }
 
   /** Marks this tag as an skip root. */
   public void setSkipRoot() {
     isSkipRoot = true;
+  }
+
+  public boolean isSkipChildrenRoot() {
+    return isSkipChildren;
+  }
+
+  /** Marks this tag as an skip root. */
+  public void setSkipChildren() {
+    isSkipChildren = true;
   }
 
   public KeyNode getKeyNode() {

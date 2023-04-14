@@ -65,7 +65,7 @@ export const create = wrapAsGeneric(
 
 interface IdomRendererApi {
   open(nameOrCtor: string, key?: string): void|HTMLElement;
-  openSSR(nameOrCtor: string, key?: string, data?: unknown): boolean;
+  keepGoing(el: HTMLElement|void, data: unknown): boolean;
   visit(el: void|HTMLElement): void;
   pushManualKey(key: incrementaldom.Key): void;
   popManualKey(): void;
@@ -124,16 +124,8 @@ export class IncrementalDomRenderer implements IdomRendererApi {
     return el;
   }
 
-  /**
-   * Open but for nodes that use {skip}. This uses a key that is serialized
-   * at server-side rendering.
-   * For more information, see go/typed-html-templates.
-   */
-  openSSR(nameOrCtor: string, key = '', data: unknown = null) {
-    key = this.getNewKey(key);
-    const el = incrementaldom.open(nameOrCtor, key);
-    this.visit(el);
 
+  keepGoing(el: HTMLElement|void, data: unknown) {
     // `data` is only passed by {skip} elements that are roots of templates.
     if (!COMPILED && goog.DEBUG && el && data) {
       maybeReportErrors(el, data);
@@ -141,7 +133,7 @@ export class IncrementalDomRenderer implements IdomRendererApi {
 
     // If the element has already been rendered, tell the template to skip it.
     // Caveat: if the element has only attributes, we will skip regardless.
-    if (el && el.hasChildNodes()) {
+    if (!el || el.hasChildNodes()) {
       this.skip();
       // And exit its node so that we will continue with the next node.
       this.close();
@@ -149,8 +141,8 @@ export class IncrementalDomRenderer implements IdomRendererApi {
     }
 
     // Only set the marker attribute when actually populating the element.
-    if (goog.DEBUG) {
-      this.attr('soy-skip-key-debug', key);
+    if (goog.DEBUG && el) {
+      el.setAttribute('soy-skip-key-debug', String(incrementaldom.getKey(el)));
     }
 
     // If we have not yet populated this element, tell the template to do so.
@@ -340,8 +332,8 @@ export class NullRenderer extends IncrementalDomRenderer {
     return undefined;
   }
 
-  override openSSR(nameOrCtor: string, key?: string) {
-    return true;
+  override keepGoing(el: HTMLElement|void, data: unknown) {
+    return false;
   }
 
   override close() {}
@@ -487,9 +479,7 @@ export class FalsinessRenderer implements IdomRendererApi {
     return undefined;
   }
 
-  openSSR(nameOrCtor: string, key?: string) {
-    this.rendered = true;
-    // Always skip, since we already know that we rendered things.
+  keepGoing(el: HTMLElement|void, data: unknown) {
     return false;
   }
 

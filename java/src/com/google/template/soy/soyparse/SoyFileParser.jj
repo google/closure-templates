@@ -1239,6 +1239,7 @@ TOKEN_MGR_DECLS: {
 | < CMD_CLOSE_VELOG              : "{/velog}"       >
 
 | < CMD_SKIP                     : "{skip}"         >
+| < CMD_SKIPCHILDREN             : "{skipchildren}" >
 }
 
 
@@ -2608,6 +2609,7 @@ private StatementNode NonPrintableStmt() :
   | stmt = VeLogStmt()
   | stmt = KeyStmt()
   | stmt = SkipStmt()
+  | stmt = SkipChildrenStmt()
   )
 
   { return stmt; }
@@ -3165,6 +3167,26 @@ private SkipNode SkipStmt() :
     SkipNode node = new SkipNode(
         nodeIdGen.genId(),
         createSrcLoc(tagBegin));
+    return node;
+  }
+}
+
+/**
+ * SkipStmt -> CMD_SKIP
+ */
+private SkipNode SkipChildrenStmt() :
+{
+  Token tagBegin;
+}
+{
+  (
+    tagBegin = <CMD_SKIPCHILDREN>
+  )
+
+  {
+    SkipNode node = new SkipNode(
+        nodeIdGen.genId(),
+        createSrcLoc(tagBegin), true);
     return node;
   }
 }
