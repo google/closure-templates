@@ -161,8 +161,8 @@ final class CheckDelegatesPass implements CompilerFileSetPass {
         // Not first template encountered.
         Set<Parameter> currRequiredParamSet = getRequiredParamSet(delTemplate);
         if (!paramSetsEqual(currRequiredParamSet, firstRequiredParamSet)
-            && !firstDelTemplate.getTemplateType().isModifiable()
-            && !firstDelTemplate.getTemplateType().isModifying()) {
+            && !delTemplate.getTemplateType().isModifiable()
+            && !delTemplate.getTemplateType().isModifying()) {
           // param compatability for modifiable templates is already caught by
           // CheckModifiableTemplatesPass.
           List<Parameter> firstParamList = firstDelTemplate.getTemplateType().getParameters();

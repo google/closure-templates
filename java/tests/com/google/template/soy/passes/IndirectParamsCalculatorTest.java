@@ -211,7 +211,9 @@ public final class IndirectParamsCalculatorTest {
             + "{/template}"
             + "{template x}{@param x: ?}{/template}"
             + "{template y}{@param y: ?}{/template}"
-            + "{deltemplate legacy variant=\"'bar'\"}{@param z: ?}{/deltemplate}";
+            + "{template z}{@param z: ?}{/template}"
+            + "{deltemplate legacy variant=\"'bar'\"}{@param m: ?}{call z data=\"all\" /}"
+            + "{/deltemplate}";
 
     FileSetMetadata registry =
         SoyFileSetParserBuilder.forFileContents(fileContent).parse().registry();
