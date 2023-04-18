@@ -65,6 +65,7 @@ export const create = wrapAsGeneric(
 
 interface IdomRendererApi {
   open(nameOrCtor: string, key?: string): void|HTMLElement;
+  openSimple(nameOrCtor: string, key?: string): void|HTMLElement;
   keepGoing(el: HTMLElement|void, data: unknown): boolean;
   visit(el: void|HTMLElement): void;
   pushManualKey(key: incrementaldom.Key): void;
@@ -124,6 +125,11 @@ export class IncrementalDomRenderer implements IdomRendererApi {
     return el;
   }
 
+  openSimple(nameOrCtor: string, key: string|undefined): HTMLElement|void {
+    const el = incrementaldom.open(nameOrCtor, key);
+    this.visit(el);
+    return el;
+  }
 
   keepGoing(el: HTMLElement|void, data: unknown) {
     // `data` is only passed by {skip} elements that are roots of templates.
@@ -332,6 +338,10 @@ export class NullRenderer extends IncrementalDomRenderer {
     return undefined;
   }
 
+  override openSimple(nameOrCtor: string, key?: string) {
+    return undefined;
+  }
+
   override keepGoing(el: HTMLElement|void, data: unknown) {
     return false;
   }
@@ -476,6 +486,10 @@ export class FalsinessRenderer implements IdomRendererApi {
 
   open(nameOrCtor: string, key?: string) {
     this.rendered = true;
+    return undefined;
+  }
+
+  openSimple(nameOrCtor: string, key?: string) {
     return undefined;
   }
 

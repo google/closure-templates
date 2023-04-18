@@ -378,6 +378,7 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
     SourceLocation unknown = attributesNode.getSourceLocation().clearRange();
     if (conditional.isPresent()) {
       IfNode ifNode = new IfNode(nodeIdGen.genId(), unknown);
+      ifNode.setHtmlContext(HtmlContext.HTML_TAG);
       IfCondNode ifCondNode =
           new IfCondNode(
               nodeIdGen.genId(), unknown, unknown, "if", conditional.get().copy(new CopyState()));
@@ -531,6 +532,7 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
                 : SanitizedContentKind.TEXT);
     call.getParent().addChild(call.getParent().getChildIndex(call), letContentNode);
     IfNode ifNode = new IfNode(nodeIdGen.genId(), unknown);
+    ifNode.setHtmlContext(HtmlContext.HTML_TAG);
     letContentNode.addChild(ifNode);
     IfCondNode ifCondNode =
         new IfCondNode(

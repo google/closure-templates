@@ -635,7 +635,7 @@ public final class PassManager {
                 soyPrintDirectives,
                 insertEscapingDirectives,
                 accumulatedState::registryFull));
-        passes.add(new IncrementalDomKeysPass());
+        passes.add(new IncrementalDomKeysPass(disableAllTypeChecking));
         if (desugarIdomFeatures && astRewrites.isAll()) {
           // always desugar before the end since the backends (besides incremental dom) cannot
           // handle
@@ -661,7 +661,7 @@ public final class PassManager {
                 soyPrintDirectives,
                 insertEscapingDirectives,
                 accumulatedState::registryFull));
-        passes.add(new IncrementalDomKeysPass());
+        passes.add(new IncrementalDomKeysPass(disableAllTypeChecking));
       }
       passes.add(new CallAnnotationPass());
 

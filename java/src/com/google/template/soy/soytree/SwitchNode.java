@@ -16,6 +16,8 @@
 
 package com.google.template.soy.soytree;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
@@ -28,6 +30,7 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
+import javax.annotation.Nullable;
 
 /**
  * Node representing a 'switch' statement.
@@ -36,6 +39,7 @@ import com.google.template.soy.soytree.SoyNode.StatementNode;
  */
 public final class SwitchNode extends AbstractParentCommandNode<CaseOrDefaultNode>
     implements StandaloneNode,
+        HtmlContext.HtmlContextHolder,
         SplitLevelTopNode<CaseOrDefaultNode>,
         StatementNode,
         ExprHolderNode,
@@ -45,6 +49,8 @@ public final class SwitchNode extends AbstractParentCommandNode<CaseOrDefaultNod
   private final ExprRootNode expr;
 
   private final SourceLocation openTagLocation;
+
+  @Nullable private HtmlContext htmlContext;
 
   public SwitchNode(
       int id, SourceLocation location, SourceLocation openTagLocation, ExprNode expr) {
@@ -62,6 +68,16 @@ public final class SwitchNode extends AbstractParentCommandNode<CaseOrDefaultNod
     super(orig, copyState);
     this.expr = orig.expr.copy(copyState);
     this.openTagLocation = orig.openTagLocation;
+  }
+
+  @Override
+  public HtmlContext getHtmlContext() {
+    return checkNotNull(
+        htmlContext, "Cannot access HtmlContext before HtmlContextVisitor or InferenceEngine.");
+  }
+
+  public void setHtmlContext(HtmlContext value) {
+    this.htmlContext = value;
   }
 
   @Override

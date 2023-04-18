@@ -16,6 +16,8 @@
 
 package com.google.template.soy.soytree;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
@@ -26,6 +28,7 @@ import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
+import javax.annotation.Nullable;
 
 /**
  * Node representing a 'for' statement. Should always contain a ForNonemptyNode as only child.
@@ -33,12 +36,18 @@ import com.google.template.soy.soytree.SoyNode.StatementNode;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  */
 public final class ForNode extends AbstractParentCommandNode<BlockNode>
-    implements StandaloneNode, SplitLevelTopNode<BlockNode>, StatementNode, ExprHolderNode {
+    implements StandaloneNode,
+        SplitLevelTopNode<BlockNode>,
+        StatementNode,
+        ExprHolderNode,
+        HtmlContext.HtmlContextHolder {
 
   /** The parsed expression for the list that we're iterating over. */
   private final ExprRootNode expr;
 
   private final SourceLocation openTagLocation;
+
+  @Nullable private HtmlContext htmlContext;
 
   /**
    * @param id The id for this node.
@@ -61,6 +70,16 @@ public final class ForNode extends AbstractParentCommandNode<BlockNode>
     super(orig, copyState);
     this.expr = orig.expr.copy(copyState);
     this.openTagLocation = orig.openTagLocation;
+  }
+
+  @Override
+  public HtmlContext getHtmlContext() {
+    return checkNotNull(
+        htmlContext, "Cannot access HtmlContext before HtmlContextVisitor or InferenceEngine.");
+  }
+
+  public void setHtmlContext(HtmlContext value) {
+    this.htmlContext = value;
   }
 
   @Override

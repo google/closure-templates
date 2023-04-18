@@ -302,6 +302,7 @@ final class InferenceEngine {
 
     @Override
     protected void visitSwitchNode(SwitchNode switchNode) {
+      switchNode.setHtmlContext(context.state());
       propagateAcrossDisjunction(switchNode);
     }
 
@@ -311,6 +312,7 @@ final class InferenceEngine {
      */
     @Override
     protected void visitForNode(ForNode forNode) {
+      forNode.setHtmlContext(context.state());
       List<BlockNode> foreachChildren = forNode.getChildren();
       ForNonemptyNode neNode = (ForNonemptyNode) foreachChildren.get(0);
       Context afterBody = context;

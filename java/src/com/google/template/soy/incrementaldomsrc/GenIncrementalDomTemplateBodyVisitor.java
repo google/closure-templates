@@ -28,6 +28,7 @@ import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.IN
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_EXIT;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_KEEP_GOING;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_OPEN;
+import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_OPEN_SIMPLE;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_PARAM_NAME;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_POP_KEY;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_POP_MANUAL_KEY;
@@ -739,7 +740,10 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
     }
     args.add(key);
 
-    return INCREMENTAL_DOM_OPEN.call(args);
+    if (node.isDynamic()) {
+      return INCREMENTAL_DOM_OPEN.call(args);
+    }
+    return INCREMENTAL_DOM_OPEN_SIMPLE.call(args);
   }
 
   private Optional<Expression> getApplyStaticAttributes(HtmlOpenTagNode node) {

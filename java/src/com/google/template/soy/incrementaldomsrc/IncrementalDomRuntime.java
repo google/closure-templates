@@ -45,6 +45,8 @@ final class IncrementalDomRuntime {
   public static final Expression INCREMENTAL_DOM = id(INCREMENTAL_DOM_PARAM_NAME);
 
   public static final Expression INCREMENTAL_DOM_OPEN = INCREMENTAL_DOM.dotAccess("open");
+  public static final Expression INCREMENTAL_DOM_OPEN_SIMPLE =
+      INCREMENTAL_DOM.dotAccess("openSimple");
 
   public static final Expression INCREMENTAL_DOM_KEEP_GOING =
       INCREMENTAL_DOM.dotAccess("keepGoing");

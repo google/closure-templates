@@ -45,6 +45,9 @@ public final class HtmlOpenTagNode extends HtmlTagNode {
 
   private String keyId = null;
 
+  /** Whether this node's position can change depending on control flow. */
+  private boolean isDynamic = true;
+
   public HtmlOpenTagNode(
       int id,
       StandaloneNode node,
@@ -62,6 +65,7 @@ public final class HtmlOpenTagNode extends HtmlTagNode {
     this.keyId = orig.keyId;
     this.isSkipRoot = orig.isSkipRoot;
     this.isSkipChildren = orig.isSkipChildren;
+    this.isDynamic = orig.isDynamic;
   }
 
   @Override
@@ -89,6 +93,14 @@ public final class HtmlOpenTagNode extends HtmlTagNode {
 
   public void setKeyId(String keyId) {
     this.keyId = keyId;
+  }
+
+  public boolean isDynamic() {
+    return this.isDynamic;
+  }
+
+  public void setIsDynamic(boolean isDynamic) {
+    this.isDynamic = isDynamic;
   }
 
   public boolean isSlot() {

@@ -13,32 +13,40 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.google.template.soy.passes;
 
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.HtmlCloseTagNode;
+import com.google.template.soy.soytree.HtmlContext;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.KeyNode;
+import com.google.template.soy.soytree.LetContentNode;
+import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SkipNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.VeLogNode;
+import com.google.template.soy.types.SanitizedType.HtmlType;
 import java.util.ArrayDeque;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/** Annotates autokeys for HTML tags. */
+/** Checks for validity of skip nodes wrt their host node. */
 final class IncrementalDomKeysPass implements CompilerFilePass {
+  private final boolean disableAllTypeChecking;
+
+  public IncrementalDomKeysPass(boolean disableAllTypeChecking) {
+    this.disableAllTypeChecking = disableAllTypeChecking;
+  }
 
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-    new IncrementalDomKeysPassVisitor().exec(file);
+    new IncrementalDomKeysPassVisitor(disableAllTypeChecking).exec(file);
   }
 
   private static final class IncrementalDomKeysPassVisitor extends AbstractSoyNodeVisitor<Void> {
-
     // Tracks the counter to use for a tag's generated key:
     // - When encountering an open tag without a manual key, the counter at the top of the stack is
     //   incremented.
@@ -46,25 +54,98 @@ final class IncrementalDomKeysPass implements CompilerFilePass {
     // - When encountering a close tag that corresponds to an open tag with a manual key, the
     //   topmost counter is then popped from the stack.
     private ArrayDeque<AtomicInteger> keyCounterStack;
+    private ArrayDeque<Boolean> htmlKeyStack;
     private TemplateNode template;
+    private boolean mustEmitKeyNodes = false;
+    private boolean templateContainsUnpredictableContent = false;
+    private final boolean disableAllTypeChecking;
+
+    public IncrementalDomKeysPassVisitor(boolean disableAllTypeChecking) {
+      this.disableAllTypeChecking = disableAllTypeChecking;
+    }
 
     @Override
     public void visitTemplateNode(TemplateNode templateNode) {
+      htmlKeyStack = new ArrayDeque<>();
       keyCounterStack = new ArrayDeque<>();
       keyCounterStack.push(new AtomicInteger());
       template = templateNode;
-      visitChildren(templateNode);
+      visitBlockNode(templateNode);
+    }
+    /**
+     * For all dynamic content, the exact number of nodes produced is unknown and could change from
+     * render to render. thus, we need to key all content within the block AND all content after the
+     * block.
+     */
+    private void visitBlockNode(ParentSoyNode<?> node) {
+      // Everything within and after the block node must be keyed as it may be conditionally
+      // rendered.
+      mustEmitKeyNodes = true;
+      visitChildren((ParentSoyNode) node);
+    }
+
+    /**
+     * A print node could contain dynamic content that produces HTML of varying lengths, so key
+     * everything after a well.
+     */
+    @Override
+    public void visitPrintNode(PrintNode node) {
+      if (!disableAllTypeChecking
+          && node.getExpr().getRoot().getType().isAssignableFromStrict(HtmlType.getInstance())) {
+        mustEmitKeyNodes = true;
+        htmlKeyStack.push(true);
+      }
+    }
+    /**
+     * We don't know how this content is going to be used, so key everything. But because we haven't
+     * rendered this let block yet, we don't set any mustEmitKeyNodes values after.
+     */
+    @Override
+    public void visitLetContentNode(LetContentNode node) {
+      var oldMustEmitKeyNodes = mustEmitKeyNodes;
+      mustEmitKeyNodes = true;
+      visitChildren((ParentSoyNode) node);
+      mustEmitKeyNodes = oldMustEmitKeyNodes;
+    }
+
+    @Override
+    public void visitSoyNode(SoyNode node) {
+      var isTemplateNode = node instanceof TemplateNode || node instanceof VeLogNode;
+      var isHtmlContextBlock =
+          node instanceof HtmlContext.HtmlContextHolder
+              && node instanceof ParentSoyNode
+              && ((HtmlContext.HtmlContextHolder) node).getHtmlContext() == HtmlContext.HTML_PCDATA;
+      if (isTemplateNode || isHtmlContextBlock) {
+        visitBlockNode((ParentSoyNode) node);
+        return;
+      }
+      if (node instanceof ParentSoyNode) {
+        visitChildren((ParentSoyNode) node);
+      }
     }
 
     @Override
     public void visitHtmlOpenTagNode(HtmlOpenTagNode openTagNode) {
       KeyNode keyNode = openTagNode.getKeyNode();
+      // Templates that contain unbalanced or dynamic tags are not eligible for key performance
+      // things, as
+      // we don't really have a good understanding of how the DOM will look.
+      if (openTagNode.getTaggedPairs().size() != 1
+          || openTagNode.getTaggedPairs().get(0).getTaggedPairs().size() != 1
+          || openTagNode.getTaggedPairs().get(0).getParent() != openTagNode.getParent()
+          || !openTagNode.getTagName().isStatic()) {
+        templateContainsUnpredictableContent = true;
+      }
       if (keyNode != null) {
         keyCounterStack.push(new AtomicInteger());
       } else {
+        openTagNode.setIsDynamic(
+            mustEmitKeyNodes || templateContainsUnpredictableContent || openTagNode.isSkipRoot());
         openTagNode.setKeyId(incrementKeyForTemplate(template, openTagNode.isElementRoot()));
       }
       visitChildren(openTagNode);
+      htmlKeyStack.push(mustEmitKeyNodes);
+      mustEmitKeyNodes = false;
     }
 
     @Override
@@ -74,13 +155,9 @@ final class IncrementalDomKeysPass implements CompilerFilePass {
         if (openTag.getKeyNode() != null && !(openTag.getParent() instanceof SkipNode)) {
           keyCounterStack.pop();
         }
-      }
-    }
-
-    @Override
-    public void visitSoyNode(SoyNode node) {
-      if (node instanceof ParentSoyNode) {
-        visitChildren((ParentSoyNode<?>) node);
+        if (!htmlKeyStack.isEmpty()) {
+          mustEmitKeyNodes = htmlKeyStack.pop();
+        }
       }
     }
 
