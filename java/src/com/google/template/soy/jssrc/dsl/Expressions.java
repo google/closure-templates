@@ -178,6 +178,10 @@ public final class Expressions {
     return id(id, GoogRequire.createImport(id, path));
   }
 
+  public static Expression importedId(String id, String alias, String path) {
+    return id(alias, GoogRequire.createImport(id, alias, path));
+  }
+
   /**
    * Creates a code chunk representing a JavaScript "dotted identifier" which needs no {@code
    * goog.require} statements to be added.
