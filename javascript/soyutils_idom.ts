@@ -567,8 +567,13 @@ function compileToTemplate(content: SanitizedContent): HTMLTemplateElement {
 function appendCloneToCurrent(
     content: HTMLTemplateElement, renderer: IncrementalDomRenderer) {
   const currentElement = renderer.currentElement();
-  for (const el of (content.content ?? content).children) {
-    currentElement?.appendChild(el.cloneNode(true));
+  const clone = content.cloneNode(true) as HTMLTemplateElement;
+  if (content.content) {
+    currentElement?.appendChild(clone.content);
+  } else {
+    for (const el of clone.children) {
+      currentElement?.appendChild(el);
+    }
   }
 }
 
