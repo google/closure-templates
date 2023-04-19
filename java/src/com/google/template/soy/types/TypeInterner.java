@@ -16,6 +16,7 @@
 
 package com.google.template.soy.types;
 
+import com.google.common.collect.ImmutableList;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.EnumDescriptor;
 import com.google.protobuf.Descriptors.FileDescriptor;
@@ -84,6 +85,11 @@ public interface TypeInterner {
       type = intern(type);
     }
     return type;
+  }
+
+  /** Factory function which creates a nullable type. */
+  default SoyType getOrCreateNullableType(SoyType type) {
+    return getOrCreateUnionType(ImmutableList.of(type, NullType.getInstance()));
   }
 
   /**

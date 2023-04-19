@@ -123,32 +123,32 @@ public final class SoyProtoType extends SoyType {
 
     @Override
     protected SoyType visitSafeHtml() {
-      return SanitizedType.HtmlType.getInstance();
+      return interner.getOrCreateNullableType(SanitizedType.HtmlType.getInstance());
     }
 
     @Override
     protected SoyType visitSafeScript() {
-      return SanitizedType.JsType.getInstance();
+      return interner.getOrCreateNullableType(SanitizedType.JsType.getInstance());
     }
 
     @Override
     protected SoyType visitSafeStyle() {
-      return SanitizedType.StyleType.getInstance();
+      return interner.getOrCreateNullableType(SanitizedType.StyleType.getInstance());
     }
 
     @Override
     protected SoyType visitSafeStyleSheet() {
-      return SanitizedType.StyleType.getInstance();
+      return interner.getOrCreateNullableType(SanitizedType.StyleType.getInstance());
     }
 
     @Override
     protected SoyType visitSafeUrl() {
-      return SanitizedType.UriType.getInstance();
+      return interner.getOrCreateNullableType(SanitizedType.UriType.getInstance());
     }
 
     @Override
     protected SoyType visitTrustedResourceUrl() {
-      return SanitizedType.TrustedResourceUriType.getInstance();
+      return interner.getOrCreateNullableType(SanitizedType.TrustedResourceUriType.getInstance());
     }
   }
 
