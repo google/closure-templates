@@ -155,10 +155,9 @@ function for each of the templates in `simple.soy`. In this case it contains the
 functions `examples.simple.helloWorld()` and `examples.simple.helloName()`.
 
 Add a third template to the file. This template, `helloNames`, demonstrates a
-`for` loop with an `ifempty` command. It also shows how to call other templates
-and insert their output using the `call` command. Note that the `data="all"`
-attribute in the `call` command passes all of the caller's template data to the
-callee template.
+`for` loop. It also shows how to call other templates and insert their output
+using the `call` command. Note that the `data="all"` attribute in the `call`
+command passes all of the caller's template data to the callee template.
 
 ```soy
 /**
@@ -177,8 +176,6 @@ callee template.
     {call helloName}
       {param name: $additionalName /}
     {/call}
-  {ifempty}
-    No additional people to greet.
   {/for}
 {/template}
 ```

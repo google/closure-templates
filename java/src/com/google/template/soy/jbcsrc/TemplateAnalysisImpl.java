@@ -228,32 +228,16 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
       Block loopEnd = exec(loopBody, node.getChild(0));
       // If we can statically prove the list empty, use that information.
       StaticAnalysisResult isLoopEmpty = isListExpressionEmpty(node);
-      if (node.numChildren() == 2) { // there is an {ifempty} block
-        Block ifEmptyBlock = loopBegin.addBranch();
-        Block ifEmptyEnd = exec(ifEmptyBlock, node.getChild(1));
-        switch (isLoopEmpty) {
-          case FALSE:
-            this.current = loopEnd.addBranch();
-            break;
-          case TRUE:
-            this.current = ifEmptyEnd.addBranch();
-            break;
-          case UNKNOWN:
-            this.current = Block.merge(loopEnd, ifEmptyEnd);
-            break;
-        }
-      } else {
-        switch (isLoopEmpty) {
-          case FALSE:
-            this.current = loopEnd.addBranch();
-            break;
-          case TRUE:
-            this.current = loopBegin.addBranch();
-            break;
-          case UNKNOWN:
-            this.current = Block.merge(loopEnd, loopBegin);
-            break;
-        }
+      switch (isLoopEmpty) {
+        case FALSE:
+          this.current = loopEnd.addBranch();
+          break;
+        case TRUE:
+          this.current = loopBegin.addBranch();
+          break;
+        case UNKNOWN:
+          this.current = Block.merge(loopEnd, loopBegin);
+          break;
       }
     }
 

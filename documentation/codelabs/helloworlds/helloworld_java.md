@@ -155,10 +155,10 @@ Follow these steps to create a simple Hello World template and use it in Java:
     ```
 
 2.  Add a third template to the file. This template, `helloNames`, demonstrates
-    a `for` loop with an `ifempty` command. It also shows how to call other
-    templates and insert their output using the `call` command. Note that the
-    `data="all"` attribute in the `call` command passes all of the caller's
-    template data to the callee template.
+    a `for` loop. It also shows how to call other templates and insert their
+    output using the `call` command. Note that the `data="all"` attribute in the
+    `call` command passes all of the caller's template data to the callee
+    template.
 
     ```soy
     /** Greets a person and optionally a list of other people. */
@@ -178,8 +178,6 @@ Follow these steps to create a simple Hello World template and use it in Java:
         {call helloName}
           {param name: $additionalName /}
         {/call}
-      {ifempty}
-        No additional people to greet.
       {/for}
     {/template}
     ```
