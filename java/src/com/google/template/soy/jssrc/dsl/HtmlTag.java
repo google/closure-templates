@@ -115,15 +115,19 @@ public abstract class HtmlTag extends Expression {
     if (type() == Type.CLOSE) {
       ctx.decreaseIndentLenient();
     }
-    ctx.append(type() == Type.CLOSE ? "</" : "<");
-    ctx.pushLexicalState(LexicalState.TSX);
-    ctx.appendAll(tagName());
+    FormattingContext buffer = attributes().isEmpty() ? ctx.buffer() : ctx;
+    buffer.append(type() == Type.CLOSE ? "</" : "<");
+    buffer.pushLexicalState(LexicalState.TSX);
+    buffer.appendAll(tagName());
     for (CodeChunk attribute : attributes()) {
-      ctx.append(" ");
-      ctx.appendAll(attribute);
+      buffer.append(" ");
+      buffer.appendAll(attribute);
     }
-    ctx.popLexicalState();
-    ctx.append(type() == Type.SELF_CLOSE ? "/>" : ">");
+    buffer.popLexicalState();
+    buffer.append(type() == Type.SELF_CLOSE ? "/>" : ">");
+    if (buffer != ctx) {
+      buffer.close();
+    }
     if (type() == Type.OPEN) {
       ctx.increaseIndent();
     }
