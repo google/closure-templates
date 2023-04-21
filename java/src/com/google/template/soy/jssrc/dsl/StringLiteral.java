@@ -17,7 +17,6 @@ package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
 import com.google.errorprone.annotations.Immutable;
-import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.QuoteStyle;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -56,28 +55,7 @@ public abstract class StringLiteral extends Expression {
 
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
-    if (ctx.stringNeedsQuotation()) {
-      String quoted = quoteAndEscape(literalValue(), ctx.getFormatOptions());
-      if (quoteStyle() == QuoteStyle.BACKTICK && quoted.contains("\n")) {
-        ctx.appendWithoutBreaks(quoted);
-      } else {
-        ctx.append(quoted);
-      }
-    } else {
-      ctx.append(literalValue());
-    }
-  }
-
-  private String quoteAndEscape(String literal, FormatOptions formatOptions) {
-    // Escape non-ASCII characters since browsers are inconsistent in how they interpret utf-8 in
-    // JS source files.
-    String escaped =
-        BaseUtils.escapeToWrappedSoyString(
-            literal, formatOptions.htmlEscapeStrings(), quoteStyle());
-
-    // </script in a JavaScript string will end the current script tag in most browsers. Escape the
-    // forward slash in the string to get around this issue.
-    return escaped.replace("</script", "<\\/script");
+    ctx.appendQuotedString(literalValue(), quoteStyle());
   }
 
   @Override

@@ -18,6 +18,8 @@ package com.google.template.soy.jssrc.dsl;
 
 import com.google.common.base.Preconditions;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
+import com.google.template.soy.base.internal.BaseUtils;
+import com.google.template.soy.base.internal.QuoteStyle;
 import java.util.ArrayDeque;
 import java.util.Collections;
 import java.util.IdentityHashMap;
@@ -96,14 +98,31 @@ class FormattingContext implements AutoCloseable {
     return lexicalStateStack.peek();
   }
 
-  public boolean stringNeedsQuotation() {
+  @CanIgnoreReturnValue
+  public FormattingContext appendQuotedString(String s, QuoteStyle style) {
     switch (getCurrentLexicalState()) {
       case JS:
       case TSX_ATTR:
-        return true;
+        return append(
+            escapeCloseScript(
+                BaseUtils.escapeToWrappedSoyString(s, formatOptions.htmlEscapeStrings(), style)));
+      case TTL:
+        String content =
+            BaseUtils.escapeToSoyString(s, formatOptions.htmlEscapeStrings(), QuoteStyle.BACKTICK);
+        if (content.contains("\n")) {
+          return appendWithoutBreaks(content);
+        } else {
+          return append(content);
+        }
       default:
-        return false;
+        return append(s);
     }
+  }
+
+  private static String escapeCloseScript(String s) {
+    // </script in a JavaScript string will end the current script tag in most browsers. Escape the
+    // forward slash in the string to get around this issue.
+    return s.replace("</script", "<\\/script");
   }
 
   String getInterpolationOpenString() {
