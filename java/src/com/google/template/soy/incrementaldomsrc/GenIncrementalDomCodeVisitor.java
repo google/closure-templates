@@ -526,25 +526,25 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       // We do our own initialization below, so mark it as such.
       jsCodeBuilder.pushOutputVar("output").setOutputVarInited();
     }
-    Statement body =
-        Statements.of(
-            new GenIncrementalDomTemplateBodyVisitor(
-                    outputVars,
-                    jsSrcOptions,
-                    javaScriptValueFactory,
-                    genCallCodeUtils,
-                    isComputableAsJsExprsVisitor,
-                    canInitOutputVarVisitor,
-                    genJsExprsVisitor,
-                    errorReporter,
-                    templateTranslationContext,
-                    templateAliases,
-                    contentKind,
-                    staticVarDeclarations,
-                    generatePositionalParamsSignature,
-                    fileSetMetadata,
-                    alias)
-                .visitChildren(node));
+    var visitor =
+        new GenIncrementalDomTemplateBodyVisitor(
+            outputVars,
+            jsSrcOptions,
+            javaScriptValueFactory,
+            genCallCodeUtils,
+            isComputableAsJsExprsVisitor,
+            canInitOutputVarVisitor,
+            genJsExprsVisitor,
+            errorReporter,
+            templateTranslationContext,
+            templateAliases,
+            contentKind,
+            staticVarDeclarations,
+            generatePositionalParamsSignature,
+            fileSetMetadata,
+            alias,
+            node.getContentKind().isHtml());
+    Statement body = visitor.addStaticsContent(() -> Statements.of(visitor.visitChildren(node)));
 
     if (isTextTemplate) {
       VariableDeclaration declare =

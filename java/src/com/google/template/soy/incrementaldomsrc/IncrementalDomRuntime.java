@@ -86,6 +86,12 @@ final class IncrementalDomRuntime {
   public static final Expression INCREMENTAL_DOM_POP_MANUAL_KEY =
       INCREMENTAL_DOM.dotAccess("popManualKey");
 
+  public static final Expression SOY_IDOM_APPEND_CLONE =
+      SOY_IDOM.dotAccess("$$appendCloneToCurrent");
+
+  public static final Expression SOY_IDOM_COMPILE_TO_TEMPLATE =
+      SOY_IDOM.dotAccess("$$compileToTemplate");
+
   public static final Expression SOY_IDOM_MAKE_HTML = SOY_IDOM.dotAccess("$$makeHtml");
 
   public static final Expression SOY_IDOM_TYPE_HTML = SANITIZED_CONTENT_KIND.dotAccess("HTML");

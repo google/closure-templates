@@ -68,6 +68,7 @@ public final class SwitchNode extends AbstractParentCommandNode<CaseOrDefaultNod
     super(orig, copyState);
     this.expr = orig.expr.copy(copyState);
     this.openTagLocation = orig.openTagLocation;
+    this.htmlContext = orig.htmlContext;
   }
 
   @Override

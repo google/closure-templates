@@ -38,11 +38,13 @@ import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.IN
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_TODEFAULT;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_TONULL;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_VERIFY_LOGONLY;
+import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_APPEND_CLONE;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_CALL_DYNAMIC_ATTRIBUTES;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_CALL_DYNAMIC_CSS;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_CALL_DYNAMIC_HTML;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_CALL_DYNAMIC_JS;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_CALL_DYNAMIC_TEXT;
+import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_COMPILE_TO_TEMPLATE;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_MAKE_ATTRIBUTES;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_MAKE_HTML;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_PRINT;
@@ -155,6 +157,8 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
     }
   }
 
+  private static final Expression EMPTY_STATIC_TEMPLATE = Expressions.stringLiteral("");
+
   private final Deque<SanitizedContentKind> contentKind;
   private final List<Statement> staticVarDeclarations;
   private final boolean generatePositionalParamsSignature;
@@ -163,6 +167,8 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
 
   // Counter for static variables that are declared at the global scope.
   private int staticsCounter = 0;
+  private Expression staticTemplate = EMPTY_STATIC_TEMPLATE;
+  private boolean shouldCollectHtml;
 
   GenIncrementalDomTemplateBodyVisitor(
       OutputVarHandler outputVars,
@@ -179,7 +185,8 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
       List<Statement> staticVarDeclarations,
       boolean generatePositionalParamsSignature,
       FileSetMetadata fileSetMetadata,
-      String alias) {
+      String alias,
+      boolean shouldCollectHtml) {
     super(
         outputVars,
         jsSrcOptions,
@@ -196,6 +203,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
     this.generatePositionalParamsSignature = generatePositionalParamsSignature;
     this.fileSetMetadata = fileSetMetadata;
     this.alias = alias;
+    this.shouldCollectHtml = shouldCollectHtml;
   }
 
   /**
@@ -238,12 +246,12 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
           JsDoc.builder()
               .addParam(INCREMENTAL_DOM_PARAM_NAME, "incrementaldomlib.IncrementalDomRenderer")
               .build();
+      var content =
+          kind.isHtml()
+              ? addStaticsContent(() -> Statements.of(visitChildren(node)))
+              : Statements.of(visitChildren(node));
       definition =
-          builder
-              .setRhs(
-                  constructor.call(
-                      Expressions.arrowFunction(jsdoc, Statements.of(visitChildren(node)))))
-              .build();
+          builder.setRhs(constructor.call(Expressions.arrowFunction(jsdoc, content))).build();
     } else {
       // We do our own initialization, so mark it as such.
       String outputVarName = generatedVarName + "_output";
@@ -507,6 +515,49 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
     }
   }
 
+  @Override
+  protected Statement addStaticsContent(Supplier<Statement> function) {
+    if (!shouldCollectHtml) {
+      return function.get();
+    }
+    var codeGenerator = templateTranslationContext.codeGenerator();
+    var oldStringBuilder = staticTemplate;
+    staticTemplate = EMPTY_STATIC_TEMPLATE;
+    var stmt = function.get();
+    if (staticTemplate != EMPTY_STATIC_TEMPLATE) {
+      var varDecl =
+          VariableDeclaration.builder("statics_template_" + alias + "_" + staticsCounter++)
+              .setMutable()
+              .build();
+      staticVarDeclarations.add(varDecl);
+      var expr =
+          JsRuntime.IJ_DATA
+              .bracketAccess(Expressions.stringLiteral("inTemplateCloning"))
+              .and(
+                  SOY_IDOM_APPEND_CLONE.call(
+                      id(varDecl.varName())
+                          .or(
+                              id(varDecl.varName())
+                                  .assign(
+                                      SOY_IDOM_COMPILE_TO_TEMPLATE.call(
+                                          JsRuntime.sanitizedContentOrdainerFunction(
+                                                  SanitizedContentKind.HTML)
+                                              .call(staticTemplate))),
+                              codeGenerator),
+                      Expressions.id(INCREMENTAL_DOM_PARAM_NAME)),
+                  codeGenerator);
+      staticTemplate = oldStringBuilder;
+      return Statements.of(
+          JsRuntime.IJ_DATA
+              .and(JsRuntime.GOOG_DEBUG, codeGenerator)
+              .and(expr, codeGenerator)
+              .asStatement(),
+          stmt);
+    }
+    staticTemplate = oldStringBuilder;
+    return stmt;
+  }
+
   /**
    * Determines if a given type of content represents text or some sort of HTML.
    *
@@ -739,15 +790,24 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
       key = translateExpr(node.getKeyNode().getExpr());
     }
     args.add(key);
-
+    shouldCollectHtml =
+        shouldCollectHtml
+            && ((node.getTaggedPairs().size() == 1 && !node.getTaggedPairs().get(0).isSynthetic())
+                || node.isSelfClosing())
+            && node.getTagName().isStatic();
+    if (shouldCollectHtml) {
+      staticTemplate =
+          Expressions.concat(
+              staticTemplate,
+              Expressions.stringLiteral("<" + node.getTagName().getStaticTagName()));
+    }
     if (node.isDynamic()) {
       return INCREMENTAL_DOM_OPEN.call(args);
     }
     return INCREMENTAL_DOM_OPEN_SIMPLE.call(args);
   }
 
-  private Optional<Expression> getApplyStaticAttributes(HtmlOpenTagNode node) {
-    ImmutableMap<String, Expression> staticAttributes = getStaticAttributes(node);
+  private Optional<Expression> getApplyStaticAttributes(Map<String, Expression> staticAttributes) {
     ImmutableList.Builder<Expression> staticsBuilder = ImmutableList.builder();
     for (Map.Entry<String, Expression> entry : staticAttributes.entrySet()) {
       staticsBuilder.add(Expressions.stringLiteral(entry.getKey()));
@@ -756,7 +816,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
     // Instead of inlining the array, place the variable declaration in the global scope
     // and lazily initialize it in the template.
     if (!staticAttributes.isEmpty()) {
-      String id = "_statics_" + staticsCounter++;
+      String id = "_statics_" + alias + staticsCounter++;
       Expression idExpr = id(alias + id);
       Expression lazyAssignment =
           // Generator can be null because we know this evaluates to an or
@@ -834,10 +894,17 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
 
   private Optional<Statement> getClose(HtmlOpenTagNode node) {
     Expression close = node.isElementRoot() ? INCREMENTAL_DOM_ELEMENT_CLOSE : INCREMENTAL_DOM_CLOSE;
+    boolean isSelfClosing = node.isSelfClosing() || node.getTagName().isDefinitelyVoid();
     // Whether or not it is valid for this tag to be self closing has already been validated by the
     // HtmlContextVisitor.  So we just need to output the close instructions if the node is self
     // closing or definitely void.
-    if (node.isSelfClosing() || node.getTagName().isDefinitelyVoid()) {
+    if (shouldCollectHtml) {
+      staticTemplate =
+          Expressions.concat(
+              staticTemplate,
+              isSelfClosing ? Expressions.stringLiteral(" />") : Expressions.stringLiteral(">"));
+    }
+    if (isSelfClosing) {
       return Optional.of(close.call().asStatement());
     }
     return Optional.empty();
@@ -845,11 +912,23 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
 
   private Statement getAttributes(HtmlOpenTagNode node) {
     List<Statement> statements = new ArrayList<>();
-    Optional<Expression> maybeApplyStatics = getApplyStaticAttributes(node);
+    var staticAttributes = getStaticAttributes(node);
+    Optional<Expression> maybeApplyStatics = getApplyStaticAttributes(staticAttributes);
     if (maybeApplyStatics.isPresent()) {
       statements.add(maybeApplyStatics.get().asStatement());
     }
     statements.add(getApplyAttrs(node).asStatement());
+    if (shouldCollectHtml) {
+      staticAttributes.forEach(
+          (key, valueExpression) -> {
+            staticTemplate =
+                Expressions.concat(
+                    staticTemplate,
+                    Expressions.stringLiteral(" " + key + "='"),
+                    valueExpression,
+                    Expressions.stringLiteral("' "));
+          });
+    }
     return Statements.of(statements);
   }
 
@@ -907,6 +986,15 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
     if (!node.getTagName().isDefinitelyVoid()) {
       statements.add(close.call().asStatement());
     }
+    shouldCollectHtml =
+        shouldCollectHtml && node.getTaggedPairs().size() == 1 && node.getTagName().isStatic();
+    if (shouldCollectHtml) {
+      staticTemplate =
+          Expressions.concat(
+              staticTemplate,
+              Expressions.stringLiteral(
+                  String.format("</%s>", node.getTagName().getStaticTagName())));
+    }
     return Statements.of(statements);
   }
 
@@ -932,6 +1020,8 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
       case CSS:
       case HTML_RCDATA:
       case HTML_PCDATA:
+        staticTemplate =
+            Expressions.concat(staticTemplate, Expressions.stringLiteral(node.getRawText()));
         // Note - we don't use generateTextCall since this text can never be null.
         return INCREMENTAL_DOM_TEXT.call(textArg).asStatement();
       case HTML_TAG:
@@ -1014,9 +1104,12 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
   protected Statement visitVeLogNode(VeLogNode node) {
     List<Statement> statements = new ArrayList<>();
     VeLogStateHolder state = openVeLogNode(node);
+    var oldStaticTemplate = staticTemplate;
+    staticTemplate = EMPTY_STATIC_TEMPLATE;
     statements.add(state.enterStatement);
     statements.addAll(visitChildren(node));
     statements.add(exitVeLogNode(node, state.logOnlyConditional));
+    staticTemplate = oldStaticTemplate;
     return Statements.of(statements);
   }
 
