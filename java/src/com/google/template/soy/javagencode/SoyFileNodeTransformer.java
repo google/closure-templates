@@ -25,7 +25,6 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Streams;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
@@ -42,7 +41,6 @@ import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.TemplateType.Parameter;
@@ -374,7 +372,7 @@ public class SoyFileNodeTransformer {
       if (!superType.isPresent()) {
         params.put(paramName, ParamInfo.of(param, ParamStatus.INDIRECT_INCOMPATIBLE_TYPES, true));
         continue;
-      } else if (hasProtoDep(superType.get())) {
+      } else if (SoyTypes.hasProtoDep(superType.get())) {
         // Temporarily skip any indirect params with proto dependencies since they can cause java
         // build errors.
         params.put(paramName, ParamInfo.of(param, ParamStatus.INDIRECT_PROTO, true));
@@ -394,11 +392,6 @@ public class SoyFileNodeTransformer {
               ParamStatus.HANDLED,
               true));
     }
-  }
-
-  private static boolean hasProtoDep(SoyType type) {
-    return Streams.stream(SoyTypes.getTypeTraverser(type, null))
-        .anyMatch(t -> t.getKind() == Kind.PROTO || t.getKind() == Kind.PROTO_ENUM);
   }
 
   private static void updateParamStatuses(Map<String, ParamInfo> params) {

@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import com.google.common.collect.Streams;
 import com.google.common.html.types.SafeHtmlProto;
 import com.google.common.html.types.SafeScriptProto;
 import com.google.common.html.types.SafeStyleProto;
@@ -665,5 +666,10 @@ public final class SoyTypes {
           return ImmutableList.of();
       }
     }
+  }
+
+  public static boolean hasProtoDep(SoyType type) {
+    return Streams.stream(SoyTypes.getTypeTraverser(type, null))
+        .anyMatch(t -> t.getKind() == Kind.PROTO || t.getKind() == Kind.PROTO_ENUM);
   }
 }

@@ -1459,29 +1459,28 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     // is not in the current compilation file set.
     IndirectParamsInfo ipi =
         new IndirectParamsCalculator(fileSetMetadata).calculateIndirectParams(node);
-    // If there are any calls outside of the file set, then we can't know
-    // the complete types of any indirect params. In such a case, we can simply
-    // omit the indirect params from the function type signature, since record
-    // types in JS allow additional undeclared fields to be present.
-    if (!ipi.mayHaveIndirectParamsInExternalCalls && !ipi.mayHaveIndirectParamsInExternalDelCalls) {
-      for (String indirectParamName : ipi.indirectParamTypes.keySet()) {
-        if (paramNames.contains(indirectParamName)) {
-          continue;
-        }
-        ImmutableSet<SoyType> paramTypes = ipi.indirectParamTypes.get(indirectParamName);
-        SoyType combinedType = SoyTypes.computeLowestCommonType(typeRegistry, paramTypes);
-        // Note that Union folds duplicate types and flattens unions, so if
-        // the combinedType is already a union this will do the right thing.
-        // TODO: detect cases where nullable is not needed (requires flow
-        // analysis to determine if the template is always called.)
-        SoyType indirectParamType =
-            typeRegistry.getOrCreateUnionType(combinedType, NullType.getInstance());
-        JsType jsType = getJsTypeForParamForDeclaration(indirectParamType);
-        // NOTE: we do not add goog.requires for indirect types.  This is because it might introduce
-        // strict deps errors.  This should be fine though since the transitive soy template that
-        // actually has the param will add them.
-        record.put(indirectParamName, jsType.typeExprForRecordMember(/* isOptional= */ true));
+    for (String indirectParamName : ipi.indirectParamTypes.keySet()) {
+      if (paramNames.contains(indirectParamName)) {
+        continue;
       }
+      ImmutableSet<SoyType> paramTypes = ipi.indirectParamTypes.get(indirectParamName);
+      SoyType combinedType = SoyTypes.computeLowestCommonType(typeRegistry, paramTypes);
+      if (ipi.mayHaveIndirectParamsInExternalDelCalls && SoyTypes.hasProtoDep(combinedType)) {
+        // Don't add proto types when modifiables are invovled since we might not have a dep to the
+        // template with the param. This matches what do for the Java builders.
+        continue;
+      }
+      // Note that Union folds duplicate types and flattens unions, so if
+      // the combinedType is already a union this will do the right thing.
+      // TODO: detect cases where nullable is not needed (requires flow
+      // analysis to determine if the template is always called.)
+      SoyType indirectParamType =
+          typeRegistry.getOrCreateUnionType(combinedType, NullType.getInstance());
+      JsType jsType = getJsTypeForParamForDeclaration(indirectParamType);
+      // NOTE: we do not add goog.requires for indirect types.  This is because it might introduce
+      // strict deps errors.  This should be fine though since the transitive soy template that
+      // actually has the param will add them.
+      record.put(indirectParamName, jsType.typeExprForRecordMember(/* isOptional= */ true));
     }
     return JsType.toRecord(record);
   }
