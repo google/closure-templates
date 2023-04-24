@@ -131,13 +131,13 @@ final class IncrementalDomKeysPass implements CompilerFilePass {
       // Templates that contain unbalanced or dynamic tags are not eligible for key performance
       // things, as
       // we don't really have a good understanding of how the DOM will look.
+      if (!openTagNode.isSelfClosing()) {
       boolean isUnpredictableTagPositions =
           openTagNode.getTaggedPairs().size() != 1
               || openTagNode.getTaggedPairs().get(0).getTaggedPairs().size() != 1
               || openTagNode.getTaggedPairs().get(0).getParent() != openTagNode.getParent();
-      boolean isSelfClosing = openTagNode.isSelfClosing();
-      if (!openTagNode.getTagName().isStatic() && (!isSelfClosing && isUnpredictableTagPositions)) {
-        templateContainsUnpredictableContent = true;
+        templateContainsUnpredictableContent =
+            templateContainsUnpredictableContent || isUnpredictableTagPositions;
       }
       if (keyNode != null) {
         keyCounterStack.push(new AtomicInteger());
