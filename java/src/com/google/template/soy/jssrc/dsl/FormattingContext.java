@@ -77,13 +77,16 @@ class FormattingContext implements AutoCloseable {
         formatOptions.useTsxLineBreaks()
             ? formatOptions.toBuilder().setUseTsxLineBreaks(false).build()
             : formatOptions;
-    return new FormattingContext(bufferOptions) {
-      @Override
-      public void close() {
-        String buffer = this.toString();
-        parent.append(buffer);
-      }
-    };
+    FormattingContext context =
+        new FormattingContext(bufferOptions) {
+          @Override
+          public void close() {
+            String buffer = this.toString();
+            parent.append(buffer);
+          }
+        };
+    context.lexicalStateStack.push(this.lexicalStateStack.peek());
+    return context;
   }
 
   void pushLexicalState(LexicalState lexicalState) {

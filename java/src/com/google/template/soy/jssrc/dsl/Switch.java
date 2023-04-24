@@ -32,12 +32,12 @@ abstract class Switch extends Statement {
   abstract ImmutableList<CaseClause> caseClauses();
 
   @Nullable
-  abstract CodeChunk defaultCaseBody();
+  abstract Statement defaultCaseBody();
 
   static Switch create(
       Expression switchOn,
       ImmutableList<CaseClause> caseClauses,
-      @Nullable CodeChunk defaultCaseBody) {
+      @Nullable Statement defaultCaseBody) {
     return new AutoValue_Switch(switchOn, caseClauses, defaultCaseBody);
   }
 
@@ -89,6 +89,13 @@ abstract class Switch extends Statement {
             .flatMap(
                 caseClause ->
                     Stream.concat(caseClause.caseLabels.stream(), Stream.of(caseClause.caseBody))));
+  }
+
+  @Override
+  public boolean isTerminal() {
+    return defaultCaseBody() != null
+        && defaultCaseBody().isTerminal()
+        && caseClauses().stream().allMatch(c -> c.caseBody.isTerminal());
   }
 
   /**

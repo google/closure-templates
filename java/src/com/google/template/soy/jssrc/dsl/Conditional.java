@@ -67,6 +67,17 @@ abstract class Conditional extends Statement {
         conditions().stream().flatMap(child -> Stream.of(child.predicate, child.consequent)));
   }
 
+  @Override
+  public boolean isTerminal() {
+    if (conditions().stream().anyMatch(p -> p.predicate.equals(Expressions.LITERAL_TRUE))) {
+      // Support {if true}{/if}... debugging idiom in Soy.
+      return true;
+    }
+    return trailingElse() != null
+        && trailingElse().isTerminal()
+        && conditions().stream().allMatch(p -> p.consequent.isTerminal());
+  }
+
   private void formatIfClause(FormattingContext ctx) {
     IfThenPair<Statement> first = conditions().get(0);
     ctx.appendInitialStatements(first.predicate)

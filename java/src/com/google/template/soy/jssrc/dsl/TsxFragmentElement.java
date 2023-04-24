@@ -122,13 +122,20 @@ public abstract class TsxFragmentElement extends Expression {
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
     ctx.pushLexicalState(LexicalState.TSX);
-    ctx.appendAll(HtmlTag.FRAGMENT_OPEN);
-    ctx.endLine();
-    for (CodeChunk s : body()) {
-      ctx.appendAll(s);
+    if (body().isEmpty()) {
+      try (FormattingContext buffer = ctx.buffer()) {
+        buffer.appendAll(HtmlTag.FRAGMENT_OPEN);
+        buffer.appendAll(HtmlTag.FRAGMENT_CLOSE);
+      }
+    } else {
+      ctx.appendAll(HtmlTag.FRAGMENT_OPEN);
+      ctx.endLine();
+      for (CodeChunk s : body()) {
+        ctx.appendAll(s);
+      }
+      ctx.endLine();
+      ctx.appendAll(HtmlTag.FRAGMENT_CLOSE);
     }
-    ctx.endLine();
-    ctx.appendAll(HtmlTag.FRAGMENT_CLOSE);
     ctx.popLexicalState();
   }
 }
