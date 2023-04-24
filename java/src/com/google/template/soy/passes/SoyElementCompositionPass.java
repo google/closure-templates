@@ -105,6 +105,11 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
   private static final SoyErrorKind SKIP_NODE_NOT_ALLOWED =
       SoyErrorKind.of("Skip nodes are not allowed on this template call.");
 
+  private static final SoyErrorKind EXTRA_ATTRIBUTES_NOT_ALLOWED =
+      SoyErrorKind.of(
+          "The called template does not specify '''{'attribute *'}''' so only "
+              + "static HTML attributes are allowed.");
+
   private final ErrorReporter errorReporter;
   private final ImmutableList<? extends SoyPrintDirective> printDirectives;
   private final Supplier<FileSetMetadata> templateRegistryFull;
@@ -326,7 +331,11 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
             });
 
     if (attributesNode != null && attributesNode.numChildren() > 0) {
-      call.addChild(attributesNode);
+      if (templateType.getAllowExtraAttributes()) {
+        call.addChild(attributesNode);
+      } else {
+        errorReporter.report(tagNode.getSourceLocation(), EXTRA_ATTRIBUTES_NOT_ALLOWED);
+      }
     }
 
     ResolveTemplateNamesPass.updateTemplateLiteralsStaticCallProperty(call);
