@@ -790,7 +790,11 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
       key = translateExpr(node.getKeyNode().getExpr());
     }
     args.add(key);
-    shouldCollectHtml = shouldCollectHtml && !node.hasUnpredictableTagLocation();
+    shouldCollectHtml =
+        shouldCollectHtml
+            && ((node.getTaggedPairs().size() == 1 && !node.getTaggedPairs().get(0).isSynthetic())
+                || node.isSelfClosing())
+            && node.getTagName().isStatic();
     if (shouldCollectHtml) {
       staticTemplate =
           Expressions.concat(

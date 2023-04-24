@@ -18,8 +18,6 @@ package com.google.template.soy.soytree;
 
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.soytree.HtmlTagNode.TagExistence;
-import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 
 /**
  * An HtmlOpenTagNode represents an opening html tag.
@@ -137,26 +135,6 @@ public final class HtmlOpenTagNode extends HtmlTagNode {
       }
     }
     return null;
-  }
-
-  public boolean hasUnpredictableTagLocation() {
-    if (isSelfClosing() || getTagName().isDefinitelyVoid()) {
-      return false;
-    }
-    if (!getTagName().isStatic()) {
-      return true;
-    }
-    if (getTaggedPairs().size() != 1 || getTaggedPairs().get(0).getTaggedPairs().size() != 1) {
-      return true;
-    }
-    var parent =
-        getParent() instanceof MsgHtmlTagNode ? getParent().getParent().getParent() : getParent();
-    var closeTag = getTaggedPairs().get(0);
-    var otherParent =
-        closeTag.getParent() instanceof MsgHtmlTagNode
-            ? closeTag.getParent().getParent().getParent()
-            : closeTag.getParent();
-    return parent != otherParent;
   }
 
   @Override

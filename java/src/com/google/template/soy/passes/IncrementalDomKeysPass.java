@@ -132,8 +132,12 @@ final class IncrementalDomKeysPass implements CompilerFilePass {
       // things, as
       // we don't really have a good understanding of how the DOM will look.
       if (!openTagNode.isSelfClosing()) {
+      boolean isUnpredictableTagPositions =
+          openTagNode.getTaggedPairs().size() != 1
+              || openTagNode.getTaggedPairs().get(0).getTaggedPairs().size() != 1
+              || openTagNode.getTaggedPairs().get(0).getParent() != openTagNode.getParent();
         templateContainsUnpredictableContent =
-            templateContainsUnpredictableContent || openTagNode.hasUnpredictableTagLocation();
+            templateContainsUnpredictableContent || isUnpredictableTagPositions;
       }
       if (keyNode != null) {
         keyCounterStack.push(new AtomicInteger());
