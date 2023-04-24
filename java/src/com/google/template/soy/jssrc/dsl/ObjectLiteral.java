@@ -53,7 +53,12 @@ public abstract class ObjectLiteral extends Expression {
       Map<String, Expression> object, Function<String, Expression> createKeyFn) {
     ImmutableMap.Builder<Expression, Expression> values = ImmutableMap.builder();
     for (Map.Entry<String, Expression> entry : object.entrySet()) {
-      values.put(createKeyFn.apply(entry.getKey()), entry.getValue());
+      Expression key = createKeyFn.apply(entry.getKey());
+      Expression value = entry.getValue();
+      if (isSpread(key) && !Expressions.isSpread(value)) {
+        value = Expressions.spread(value);
+      }
+      values.put(key, value);
     }
     return new AutoValue_ObjectLiteral(values.buildOrThrow());
   }
@@ -63,10 +68,14 @@ public abstract class ObjectLiteral extends Expression {
   }
 
   public ObjectLiteral append(String key, Expression expression) {
+    Expression newKey = Expressions.id(key);
+    if (isSpread(newKey) && !Expressions.isSpread(expression)) {
+      expression = Expressions.spread(expression);
+    }
     return new AutoValue_ObjectLiteral(
         ImmutableMap.<Expression, Expression>builder()
             .putAll(values())
-            .put(Expressions.id(key), expression)
+            .put(newKey, expression)
             .buildOrThrow());
   }
 
@@ -80,9 +89,8 @@ public abstract class ObjectLiteral extends Expression {
       }
       first = false;
       if (isSpread(entry.getKey())) {
-        try (FormattingContext buffer = ctx.buffer()) {
-          buffer.append("...").appendOutputExpression(entry.getValue());
-        }
+        // Value should already have been coerced to a spread expression in the class factory.
+        ctx.appendOutputExpression(entry.getValue());
       } else {
         String keyText = Expressions.getLeafText(entry.getKey());
         if (keyText != null && keyText.equals(Expressions.getLeafText(entry.getValue()))) {

@@ -93,6 +93,8 @@ public final class CodeChunks {
   public static Expression concatAsObjectLiteral(List<CodeChunk> chunks) {
     Map<String, Expression> map = new LinkedHashMap<>();
     flatten(chunks.stream())
+        // Un-wrap any print nodes, since we are in a TS expression.
+        .map(c -> c instanceof TsxPrintNode ? ((TsxPrintNode) c).expr() : c)
         .forEach(
             c -> {
               if (c instanceof HtmlAttribute) {

@@ -83,6 +83,10 @@ public final class Expressions {
 
   private Expressions() {}
 
+  static boolean isSpread(Expression expr) {
+    return expr instanceof UnaryOperation && ((UnaryOperation) expr).operator().equals("...");
+  }
+
   public static Expression spread(Expression expr) {
     return UnaryOperation.create("...", Precedence.P2, expr, /* isPrefix= */ true);
   }
