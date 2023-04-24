@@ -924,6 +924,18 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
                     valueExpression,
                     Expressions.stringLiteral("' "));
           });
+      node.getChildren()
+          .forEach(
+              child -> {
+                if (child instanceof HtmlAttributeNode
+                    && ((HtmlAttributeNode) child).getStaticKey() != null) {
+                  HtmlAttributeNode attributeNode = (HtmlAttributeNode) child;
+                  staticTemplate =
+                      Expressions.concat(
+                          staticTemplate,
+                          Expressions.stringLiteral(" " + attributeNode.getStaticKey() + "=''"));
+                }
+              });
     }
     return Statements.of(statements);
   }
@@ -1050,6 +1062,10 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
       case CSS:
         // fall through
       case HTML_PCDATA:
+        if (shouldCollectHtml) {
+          staticTemplate =
+              Expressions.concat(staticTemplate, Expressions.stringLiteral("<!-- -->l<!-- -->"));
+        }
         if (node.numChildren() > 0
             && node.getChild(node.numChildren() - 1).getPrintDirective()
                 instanceof SanitizedContentOperator
@@ -1064,6 +1080,10 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
           return SOY_IDOM_PRINT.call(INCREMENTAL_DOM, Expressions.concat(chunks)).asStatement();
         }
       case HTML_RCDATA:
+        if (shouldCollectHtml) {
+          staticTemplate =
+              Expressions.concat(staticTemplate, Expressions.stringLiteral("<!-- -->l<!-- -->"));
+        }
         return INCREMENTAL_DOM_TEXT
             .call(id("String").call(Expressions.concat(chunks)))
             .asStatement();
