@@ -722,7 +722,7 @@ public final class Sanitizers {
   /** Makes sure that the given input is a sip URI. */
   public static SanitizedContent filterSipUri(String value) {
     if (EscapingConventions.FilterSipUri.INSTANCE.getValueFilter().matcher(value).find()) {
-      // NOTE: No need to escape. Escaping for other contexts (e.g. HTML) happen after this.
+      // NOTE - happen after this.
       return UnsafeSanitizedContentOrdainer.ordainAsSafe(value, ContentKind.URI);
     }
     logger.atWarning().withStackTrace(MEDIUM).log("|filterSipUri received bad value '%s'", value);
@@ -740,7 +740,7 @@ public final class Sanitizers {
   /** Makes sure that the given input is a sms URI. */
   public static SanitizedContent filterSmsUri(String value) {
     if (EscapingConventions.FilterSmsUri.INSTANCE.getValueFilter().matcher(value).find()) {
-      // NOTE: No need to escape. Escaping for other contexts (e.g. HTML) happen after this.
+      // NOTE - happen after this.
       return UnsafeSanitizedContentOrdainer.ordainAsSafe(value, ContentKind.URI);
     }
     logger.atWarning().withStackTrace(MEDIUM).log("|filterSmsUri received bad value '%s'", value);
@@ -758,7 +758,7 @@ public final class Sanitizers {
   /** Makes sure that the given input is a tel URI. */
   public static SanitizedContent filterTelUri(String value) {
     if (EscapingConventions.FilterTelUri.INSTANCE.getValueFilter().matcher(value).find()) {
-      // NOTE: No need to escape. Escaping for other contexts (e.g. HTML) happen after this.
+      // NOTE - happen after this.
       return UnsafeSanitizedContentOrdainer.ordainAsSafe(value, ContentKind.URI);
     }
     logger.atWarning().withStackTrace(MEDIUM).log("|filterTelUri received bad value '%s'", value);
@@ -779,7 +779,7 @@ public final class Sanitizers {
         .getValueFilter()
         .matcher(value)
         .find()) {
-      // NOTE: No need to escape. Escaping for other contexts (e.g. HTML) happen after this.
+      // NOTE - happen after this.
       return UnsafeSanitizedContentOrdainer.ordainAsSafe(value, ContentKind.URI);
     }
     logger.atWarning().withStackTrace(MEDIUM).log(

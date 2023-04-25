@@ -89,7 +89,7 @@ final class RawTextContextUpdater {
     // If we are in an attribute value, then decode the text.
     if (context.delimType() != AttributeEndDelimiter.NONE) {
       // this text is part of an attribute value,  so we should unescape it.
-      // NOTE: our caller guarantees (by way of the html parser) that this text cannot exceed the
+      // NOTE - that this text cannot exceed the
       // bounds of the attribute, so we can just unescape the whole thing.
       rawText = UnescapeUtils.unescapeHtml(rawText);
     }
@@ -178,7 +178,7 @@ final class RawTextContextUpdater {
 
           // look for matches, if the match is later than the current earliest match, give up
           // otherwise if the match is applicable, store it.
-          // NOTE: matcher.find() returns matches in sequential order.
+          // NOTE: user - returns matches in sequential order.
           try {
             while (matcher.find() && matcher.start() < earliestStart) {
               int start = matcher.start();

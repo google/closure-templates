@@ -101,7 +101,7 @@ final class ResolvePackageRelativeCssNamesPass implements CompilerFilePass {
           selectorText,
           template.getRequiredCssNamespaces().isEmpty()
               ? ""
-              : " NOTE: ''requirecss'' on a template is not used to infer the CSS package.");
+              : " NOTE" + ": ''requirecss'' on a template is not used to infer the CSS package.");
     }
 
     // Replace the selector text with resolved selector text

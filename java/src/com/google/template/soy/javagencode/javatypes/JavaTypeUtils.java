@@ -54,7 +54,7 @@ public final class JavaTypeUtils {
   /**
    * Gets Java type from Soy type.
    *
-   * <p>NOTE: TODO(b/140064271): Add handling for composite types. Update this method's javadoc when
+   * <p>NOTE: user -: Add handling for composite types. Update this method's javadoc when
    * this returns a list of java types (for handling unions).
    */
   public static ImmutableList<JavaType> getJavaTypes(

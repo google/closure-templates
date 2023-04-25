@@ -164,7 +164,7 @@ public final class SoyToJsSrcCompiler extends AbstractSoyCompiler {
         SoyMsgBundle msgBundle =
             new SoyMsgBundleHandler(messagePlugin).createFromFile(new File(msgFilePath));
         if (msgBundle.getLocaleString() == null) {
-          // TODO: Remove this check (but make sure no projects depend on this behavior).
+          // TODO -.
           // There was an error reading the message file. We continue processing only if the locale
           // begins with "en", because falling back to the Soy source will probably be fine.
           if (!locale.startsWith("en")) {

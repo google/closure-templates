@@ -589,7 +589,7 @@ Optimizations performed on lets:
 *   Identify lets/params that simply alias other lets/params and 'inline' the
     references. e.g. `{let $foo : $bar /}` doesn't need a subclass.
 
-*   TODO: identify lets that (based on control flow analysis) will not need
+*   TODO - will not need
     detach logic and eagerly evaluate. (Work for this has started in
     `TemplateAnalysis`)
 
