@@ -549,7 +549,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
       staticTemplate = oldStringBuilder;
       return Statements.of(
           JsRuntime.IJ_DATA
-              .and(JsRuntime.GOOG_DEBUG, codeGenerator)
+              .and(IncrementalDomRuntime.USE_TEMPLATE_CLONING, codeGenerator)
               .and(expr, codeGenerator)
               .asStatement(),
           stmt);
