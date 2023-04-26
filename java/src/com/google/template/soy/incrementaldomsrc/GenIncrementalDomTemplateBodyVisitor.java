@@ -741,8 +741,8 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
         if (n.getExpr().getRoot() instanceof FunctionNode) {
           FunctionNode fnNode = (FunctionNode) n.getExpr().getRoot();
           if (fnNode.getSoyFunction() != BuiltinFunction.XID
-              && fnNode.getSoyFunction() != BuiltinFunction.CSS) {
-            return null; // Function call was not xid or css
+              && (fnNode.getSoyFunction() != BuiltinFunction.CSS || fnNode.numChildren() != 1)) {
+            return null; // Function call was not xid or css (with one argument)
           }
         } else {
           // Child is variable expression ie {$foo} or {$foo + $bar}
