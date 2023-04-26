@@ -104,8 +104,9 @@ class FormattingContext implements AutoCloseable {
   @CanIgnoreReturnValue
   public FormattingContext appendQuotedString(String s, QuoteStyle style) {
     switch (getCurrentLexicalState()) {
-      case JS:
       case TSX_ATTR:
+        style = style.escaped(); // fall-through
+      case JS:
         return append(
             escapeCloseScript(
                 BaseUtils.escapeToWrappedSoyString(s, formatOptions.htmlEscapeStrings(), style)));

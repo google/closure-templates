@@ -17,16 +17,41 @@ package com.google.template.soy.base.internal;
 
 /** It's what you think it is. */
 public enum QuoteStyle {
-  SINGLE,
-  DOUBLE,
-  BACKTICK;
+  SINGLE('\'', "\\'"),
+  SINGLE_ESCAPED('\'', "&#39;"),
+  DOUBLE('"', "\\\""),
+  DOUBLE_ESCAPED('\"', "&quot;"),
+  BACKTICK('`', "\\`");
+
+  private final char quotChar;
+  private final String escapeSeq;
+
+  QuoteStyle(char quotChar, String escapeSeq) {
+    this.quotChar = quotChar;
+    this.escapeSeq = escapeSeq;
+  }
 
   public char getQuoteChar() {
-    if (this == SINGLE) {
-      return '\'';
-    } else if (this == DOUBLE) {
-      return '"';
+    return quotChar;
+  }
+
+  public String getEscapeSeq() {
+    return escapeSeq;
+  }
+
+  /**
+   * Returns a version of this style that will URL encode any encountered characters that would
+   * close the string, e.g. ' -> &amp;#39;. This is necessary in HTML/JSX attributes and possibly
+   * other contexts.
+   */
+  public QuoteStyle escaped() {
+    switch (this) {
+      case SINGLE:
+        return SINGLE_ESCAPED;
+      case DOUBLE:
+        return DOUBLE_ESCAPED;
+      default:
+        return this;
     }
-    return '`';
   }
 }

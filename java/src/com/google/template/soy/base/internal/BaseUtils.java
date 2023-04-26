@@ -203,7 +203,9 @@ public final class BaseUtils {
       String value, boolean shouldEscapeToAscii, QuoteStyle quoteStyle) {
 
     if (quoteStyle == QuoteStyle.BACKTICK) {
-      return value.replace("`", "\\`").replace("${", "\\${");
+      return value
+          .replace("" + quoteStyle.getQuoteChar(), quoteStyle.getEscapeSeq())
+          .replace("${", "\\${");
     }
 
     // StringUtil.javaScriptEscape() is meant to be compatible with JS string syntax, which is a
@@ -240,7 +242,7 @@ public final class BaseUtils {
           break;
         default:
           if (codePoint == quoteStyle.getQuoteChar()) {
-            out.append("\\").append(quoteStyle.getQuoteChar());
+            out.append(quoteStyle.getEscapeSeq());
             break;
           }
           // If shouldEscapeToAscii, then hex escape characters outside the range 0x20 to 0x7F.
