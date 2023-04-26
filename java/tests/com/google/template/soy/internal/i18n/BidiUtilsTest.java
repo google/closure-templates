@@ -221,7 +221,7 @@ public class BidiUtilsTest {
   public void testGetExitDirOfHtml_EntitySkipped() {
     assertEquals(NEUTRAL, BidiUtils.getExitDir("&nbsp;", true));
 
-    // TODO - when we start to map entities to
+    // TODO: Uncomment these lines and rename test to ...Parsed() when we start to map entities to
     // the characters for which they stand.
     // assertEquals(LTR, BidiUtils.getExitDir("&rlm;"));
     // assertEquals(RTL, BidiUtils.getExitDir("&rlm;", true));

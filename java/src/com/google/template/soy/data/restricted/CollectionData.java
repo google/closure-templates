@@ -88,7 +88,7 @@ public abstract class CollectionData extends SoyAbstractValue {
    */
   public void put(Object... data) {
 
-    // TODO - elsewhere.
+    // TODO: Perhaps change to only convert varargs to Map, and do put(Map) elsewhere.
     if (data.length % 2 != 0) {
       throw new SoyDataException(
           "Varargs to put(...) must have an even number of arguments (key-value pairs).");

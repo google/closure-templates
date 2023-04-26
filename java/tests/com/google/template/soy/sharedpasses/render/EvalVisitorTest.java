@@ -287,7 +287,7 @@ public class EvalVisitorTest {
     assertThat(eval("$foo.too")).isInstanceOf(UndefinedData.class);
     assertThat(eval("$foo.goo2[22]")).isInstanceOf(UndefinedData.class);
 
-    // TODO -, uncomment tests below.
+    // TODO: If enabling exception for undefined LHS (see EvalVisitor), uncomment tests below.
     // assertRenderException(
     //    "$foo.bar.moo.tar", "encountered undefined LHS just before accessing \".tar\"");
     assertThat(eval("$foo.bar.moo.tar")).isInstanceOf(UndefinedData.class);

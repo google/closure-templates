@@ -640,7 +640,7 @@ abstract class Context {
    * @return Optional.empty() when there is no such context consistent with both.
    */
   static Optional<Context> union(Context a, Context b) {
-    // NOTE - check at the end
+    // NOTE: Avoid the temptation to return early; instead, rely on the equals() check at the end
     // to ensure all properties match. Checking equals() at the end ensures that when new
     // properties are added, they get checked automatically.
 

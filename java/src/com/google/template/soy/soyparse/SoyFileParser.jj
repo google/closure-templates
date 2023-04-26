@@ -1030,7 +1030,7 @@ TOKEN_MGR_DECLS: {
 // have to write BNF expressions to match (and ignore) soydoc in all other contexts, which would be
 // tedious.
 
-// NOTE -, this is because
+// NOTE: we don't use all the same states as normal multiline comments (see above), this is because
 // the distinction between 'doc comments' and 'multiline comments' is only relevant in these states.
 <DEFAULT, TEMPLATE_DEFAULT> MORE: {
   "/**" { pushState(IN_SOYDOC); }

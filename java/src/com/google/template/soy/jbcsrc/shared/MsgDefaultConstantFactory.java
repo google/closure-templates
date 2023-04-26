@@ -95,7 +95,7 @@ public final class MsgDefaultConstantFactory {
   public static ImmutableList<Object> msgToPartsList(ImmutableList<SoyMsgPart> parts) {
     ImmutableList<Object> constantParts = partsToConstantPartsList(parts);
     // remove trailing END markers, these are redundant with the end of the array
-    // NOTE -
+    // NOTE: there is no ambiguity with other integer values in the array (like plural offsets)
     // because those cannot appear in trailing position.
     Object last;
     int lastElement = constantParts.size() - 1;

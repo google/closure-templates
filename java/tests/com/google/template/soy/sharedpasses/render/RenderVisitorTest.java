@@ -1521,7 +1521,7 @@ public class RenderVisitorTest {
     return new SoyAbstractValue() {
       @Override
       public String toString() {
-        // NOTE - values, only the coerceToString() values.
+        // NOTE: Soy should not print the toString() values, only the coerceToString() values.
         return "toString()";
       }
 

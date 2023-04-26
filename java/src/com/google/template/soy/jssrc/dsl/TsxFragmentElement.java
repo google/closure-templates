@@ -38,14 +38,14 @@ public abstract class TsxFragmentElement extends Expression {
    * If {@code body} is a TSX element or fragment, returns {@code body}, otherwise returns {@code
    * body} wrapped inside a fragment.
    */
-  public static Expression wrap(CodeChunk body) {
+  public static Expression maybeWrap(CodeChunk body) {
     if (body instanceof TsxFragmentElement || body instanceof TsxElement) {
       return (Expression) body;
     }
     return create(ImmutableList.of(body));
   }
 
-  public static Expression wrap(List<? extends CodeChunk> children) {
+  public static Expression maybeWrap(List<? extends CodeChunk> children) {
     if (children.size() == 1) {
       CodeChunk onlyChild = children.get(0);
       if (onlyChild instanceof Call || onlyChild instanceof VariableReference) {
@@ -53,7 +53,7 @@ public abstract class TsxFragmentElement extends Expression {
         // be a fragment.
         return (Expression) onlyChild;
       }
-      return wrap(onlyChild);
+      return maybeWrap(onlyChild);
     }
     return create(children);
   }

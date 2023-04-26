@@ -279,7 +279,7 @@ final class HtmlRewriter {
   /**
    * Represents the contexutal state of the parser.
    *
-   * <p>NOTE -} depends on the ordering. So don't change the order without
+   * <p>NOTE: {@link #reconcile(State)} depends on the ordering. So don't change the order without
    * also inspecting {@link #reconcile(State)}.
    */
   private enum State {

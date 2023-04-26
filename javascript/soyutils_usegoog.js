@@ -1344,7 +1344,7 @@ const $$escapeHtmlAttribute = function(value) {
   // NOTE: We don't accept ATTRIBUTES here because ATTRIBUTES is actually not
   // the attribute value context, but instead k/v pairs.
   if (soyChecks.isHtml(value)) {
-    // NOTE - so that
+    // NOTE: After removing tags, we also escape quotes ("normalize") so that
     // the HTML can be embedded in attribute context.
     return $$normalizeHtmlHelper($$stripHtmlTags(value.getContent()));
   }

@@ -134,7 +134,7 @@ public class BasicEscapeDirectiveTest extends AbstractSoyPrintDirectiveTestCase 
     assertTofuOutput("zSoyz", "color:expression('foo')", filterCssValue);
     assertTofuOutput(
         "zSoyz",
-        // NOTE -
+        // NOTE: HTML content kind should not override CSS filtering :-)
         UnsafeSanitizedContentOrdainer.ordainAsSafe(
             "color:expression('foo')", SanitizedContent.ContentKind.HTML),
         filterCssValue);

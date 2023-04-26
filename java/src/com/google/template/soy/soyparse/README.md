@@ -28,7 +28,7 @@ Soy has a fairly complex grammar, this is due to a number of reasons.
 in the parser by looking ahead into the token stream. Additionally you can try
 matching full BNF expressions against the stream in order to see if they match.
 
-NOTE -` calls in the parser. These are no-op
+NOTE: there are a lot of `LOOKAHEAD(1)` calls in the parser. These are no-op
 LOOKAHEADs that disable ambiguity warnings. JavaCC will issue warnings if there
 is more than one way a given set of tokens could be matched. The default
 behavior is greedy and a `LOOKAHEAD(1)` just means that greedy matching is what
