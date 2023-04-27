@@ -43,7 +43,7 @@ const htmlToStringRenderer = new IncrementalDomRenderer();
  *     each template that can be used to cache initial renders.
  */
 const USE_TEMPLATE_CLONING =
-    goog.define('soyutils_useidom.USE_TEMPLATE_CLONING', false);
+    goog.define('soyutils_useidom.USE_TEMPLATE_CLONING', goog.DEBUG);
 
 const renderConfig = {USE_TEMPLATE_CLONING};
 
@@ -140,6 +140,19 @@ function handleSoyElement<T extends TemplateAcceptor<{}>>(
     return null;
   }
   const soyElementKey = firstElementKey + incrementaldom.getCurrentKeyStack();
+  let soyElement: SoyElement<{}, {}> =
+      new elementClassCtor() as unknown as SoyElement<{}, {}>;
+  soyElement = new elementClassCtor() as unknown as SoyElement<{}, {}>;
+  soyElement.data = data;
+  soyElement.ijData = ijData;
+  soyElement.key = soyElementKey;
+  soyElement.template = template.bind(soyElement);
+  // NOTE(b/166257386): Without this, SoyElement re-renders don't have logging
+  soyElement.setLogger(incrementaldom.getLogger());
+
+  if (ijData && (ijData as any)['inTemplateCloning']) {
+    return soyElement as unknown as T;
+  }
 
   /**
    * Open the element early in order to execute lifeycle hooks. Suppress the
@@ -158,21 +171,10 @@ function handleSoyElement<T extends TemplateAcceptor<{}>>(
   };
   if (!element) {
     // Template still needs to execute in order to trigger logging.
-    const soyElement = new elementClassCtor() as unknown as SoyElement<{}, {}>;
-    soyElement.data = data;
-    soyElement.ijData = ijData;
     template.call(soyElement, incrementaldom, data, ijData);
     return null;
   }
-  let soyElement: SoyElement<{}, {}>;
-  if (!(getSoyUntyped(element as HTMLElement) instanceof elementClassCtor)) {
-    soyElement = new elementClassCtor() as unknown as SoyElement<{}, {}>;
-    soyElement.data = data;
-    soyElement.ijData = ijData;
-    soyElement.key = soyElementKey;
-    // NOTE(b/166257386): Without this, SoyElement re-renders don't have logging
-    soyElement.setLogger(incrementaldom.getLogger());
-  } else {
+  if ((getSoyUntyped(element) instanceof elementClassCtor)) {
     soyElement = getSoyUntyped(element)!;
   }
   const maybeSkip =
@@ -452,6 +454,7 @@ function callDynamicText<TParams>(
 declare global {
   interface Node {
     __originalContent: unknown;
+    __clonePointer: NodeIterator|null;
   }
 }
 
@@ -577,12 +580,27 @@ function compileToTemplate(content: SanitizedContent): HTMLTemplateElement {
 function appendCloneToCurrent(
     content: HTMLTemplateElement, renderer: IncrementalDomRenderer) {
   const currentElement = renderer.currentElement();
+  if (!currentElement) {
+    return;
+  }
   const clone = content.cloneNode(true) as HTMLTemplateElement;
-  if (content.content) {
-    currentElement?.appendChild(clone.content);
+  const nextNode = incrementaldom.getNextNode();
+  if (nextNode?.nodeType === Node.COMMENT_NODE) {
+    if (content.content) {
+      currentElement.insertBefore(clone.content, nextNode);
+    } else {
+      for (const el of clone.children) {
+        currentElement.insertBefore(el, nextNode);
+      }
+    }
+    currentElement.removeChild(nextNode);
   } else {
-    for (const el of clone.children) {
-      currentElement?.appendChild(el);
+    if (content.content) {
+      currentElement.appendChild(clone.content);
+    } else {
+      for (const el of clone.children) {
+        currentElement.appendChild(el);
+      }
     }
   }
 }

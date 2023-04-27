@@ -742,7 +742,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
           FunctionNode fnNode = (FunctionNode) n.getExpr().getRoot();
           if (fnNode.getSoyFunction() != BuiltinFunction.XID
               && (fnNode.getSoyFunction() != BuiltinFunction.CSS || fnNode.numChildren() != 1)) {
-            return null; // Function call was not xid or css (with one argument)
+            return null; // Function call was not xid or css
           }
         } else {
           // Child is variable expression ie {$foo} or {$foo + $bar}
@@ -1064,7 +1064,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
       case HTML_PCDATA:
         if (shouldCollectHtml) {
           staticTemplate =
-              Expressions.concat(staticTemplate, Expressions.stringLiteral("<!-- -->l<!-- -->"));
+              Expressions.concat(staticTemplate, Expressions.stringLiteral("<!-- -->"));
         }
         if (node.numChildren() > 0
             && node.getChild(node.numChildren() - 1).getPrintDirective()
@@ -1082,7 +1082,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
       case HTML_RCDATA:
         if (shouldCollectHtml) {
           staticTemplate =
-              Expressions.concat(staticTemplate, Expressions.stringLiteral("<!-- -->l<!-- -->"));
+              Expressions.concat(staticTemplate, Expressions.stringLiteral("<!-- -->"));
         }
         return INCREMENTAL_DOM_TEXT
             .call(id("String").call(Expressions.concat(chunks)))
