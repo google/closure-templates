@@ -51,8 +51,7 @@ final class IncrementalDomRuntime {
   public static final Expression INCREMENTAL_DOM_KEEP_GOING =
       INCREMENTAL_DOM.dotAccess("keepGoing");
 
-  public static final Expression USE_TEMPLATE_CLONING =
-      SOY_IDOM.dotAccess("renderConfig").dotAccess("USE_TEMPLATE_CLONING");
+  public static final Expression USE_TEMPLATE_CLONING = SOY_IDOM.dotAccess("USE_TEMPLATE_CLONING");
 
   public static final Expression INCREMENTAL_DOM_ELEMENT_CLOSE =
       INCREMENTAL_DOM.dotAccess("elementClose");

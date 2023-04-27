@@ -45,8 +45,6 @@ const htmlToStringRenderer = new IncrementalDomRenderer();
 const USE_TEMPLATE_CLONING =
     goog.define('soyutils_useidom.USE_TEMPLATE_CLONING', goog.DEBUG);
 
-const renderConfig = {USE_TEMPLATE_CLONING};
-
 
 /**
  * A template acceptor is an object that a template can receive context from.
@@ -679,5 +677,5 @@ export {
   defaultIdomRenderer as $$defaultIdomRenderer,
   compileToTemplate as $$compileToTemplate,
   appendCloneToCurrent as $$appendCloneToCurrent,
-  renderConfig
+  USE_TEMPLATE_CLONING
 };
