@@ -40,10 +40,7 @@ import java.util.List;
  * point.
  *
  * <p>TODO(b/112835292): No one should use the 2 parameter overload, it is inaccurate because
- * floating point != decimal, instead they should use an i18n friendly number formatting routine. We
- * should deprecated the 2 argument overload by adding a new function {@code brokenRound()} and then
- * we can encourage people to migrate to a less broken approach. (or we could just add a pow
- * function and inline it).
+ * floating point != decimal, instead they should use an i18n friendly number formatting routine.
  */
 @SoyFunctionSignature(
     name = "round",
@@ -52,7 +49,9 @@ import java.util.List;
       @Signature(returnType = "int", parameterTypes = "?"),
       @Signature(
           returnType = "number",
-          parameterTypes = {"?", "?"}),
+          parameterTypes = {"?", "?"},
+          deprecatedWarning =
+              "round() with two parameters is deprecated. Use i18n formatting instead."),
     })
 @SoyPureFunction
 final class RoundFunction

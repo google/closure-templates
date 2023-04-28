@@ -34,4 +34,7 @@ public @interface Signature {
 
   /** Defines the return type of the function using the Soy type syntax. */
   String returnType();
+
+  /** Allows specifying a particular overload as deprecated. */
+  String deprecatedWarning() default "";
 }

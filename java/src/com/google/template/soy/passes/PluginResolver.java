@@ -74,7 +74,7 @@ public final class PluginResolver {
   private static final SoyErrorKind UNKNOWN_PLUGIN =
       SoyErrorKind.of("Unknown {0} ''{1}''.{2}", StyleAllowance.NO_PUNCTUATION);
 
-  private static final SoyErrorKind DEPRECATED_PLUGIN =
+  static final SoyErrorKind DEPRECATED_PLUGIN =
       SoyErrorKind.deprecation(
           "{0} is deprecated: {1}", StyleAllowance.NO_PUNCTUATION, StyleAllowance.NO_CAPS);
 

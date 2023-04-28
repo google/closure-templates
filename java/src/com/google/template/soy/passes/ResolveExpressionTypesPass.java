@@ -2081,6 +2081,13 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       for (Signature signature : fnSignature.value()) {
         if (signature.parameterTypes().length == node.numChildren()) {
           matchedSignature = getOrCreateFunctionSignature(signature, className, errorReporter);
+          if (!signature.deprecatedWarning().isEmpty()) {
+            errorReporter.warn(
+                node.getFunctionNameLocation(),
+                PluginResolver.DEPRECATED_PLUGIN,
+                fnSignature.name(),
+                signature.deprecatedWarning());
+          }
           break;
         }
       }
