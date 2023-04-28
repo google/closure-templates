@@ -1458,45 +1458,42 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
         } else if (sourceFunction instanceof ConcatMapsMethod) {
           node.setType(getGenericMapType(node.getChildren()));
         } else if (sourceFunction instanceof MapGetMethod) {
-          MapType type = (MapType) baseType;
           node.setType(
-              type.equals(MapType.EMPTY_MAP)
+              baseType.equals(MapType.EMPTY_MAP)
                   ? NullType.getInstance()
-                  : SoyTypes.makeNullable(type.getValueType()));
+                  : SoyTypes.makeNullable(getMapValuesType(baseType)));
           ExprNode arg = node.getParams().get(0);
-          if (!type.getKeyType().isAssignableFromStrict(arg.getType())) {
+          SoyType keyType = getMapKeysType(baseType);
+          if (!keyType.isAssignableFromStrict(arg.getType())) {
             errorReporter.report(
                 arg.getSourceLocation(),
                 METHOD_INVALID_PARAM_TYPES,
                 ((SoySourceFunctionMethod) method).getMethodName(),
                 arg.getType(),
-                type.getKeyType());
+                keyType);
           }
         } else if (sourceFunction instanceof MapKeysFunction) {
-          MapType type = (MapType) baseType;
-          if (type.equals(MapType.EMPTY_MAP)) {
+          if (baseType.equals(MapType.EMPTY_MAP)) {
             node.setType(ListType.EMPTY_LIST);
           } else {
-            node.setType(ListType.of(type.getKeyType()));
+            node.setType(ListType.of(getMapKeysType(baseType)));
           }
         } else if (sourceFunction instanceof MapValuesMethod) {
-          MapType type = (MapType) baseType;
-          if (type.equals(MapType.EMPTY_MAP)) {
+          if (baseType.equals(MapType.EMPTY_MAP)) {
             node.setType(ListType.EMPTY_LIST);
           } else {
-            node.setType(ListType.of(type.getValueType()));
+            node.setType(ListType.of(getMapValuesType(baseType)));
           }
         } else if (sourceFunction instanceof MapEntriesMethod) {
-          MapType type = (MapType) baseType;
-          if (type.equals(MapType.EMPTY_MAP)) {
+          if (baseType.equals(MapType.EMPTY_MAP)) {
             node.setType(ListType.EMPTY_LIST);
           } else {
             node.setType(
                 ListType.of(
                     RecordType.of(
                         ImmutableList.of(
-                            RecordType.memberOf("key", false, type.getKeyType()),
-                            RecordType.memberOf("value", false, type.getValueType())))));
+                            RecordType.memberOf("key", false, getMapKeysType(baseType)),
+                            RecordType.memberOf("value", false, getMapValuesType(baseType))))));
           }
         } else if (sourceFunction instanceof ListSliceMethod
             || sourceFunction instanceof ListReverseMethod
@@ -1549,6 +1546,28 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       } else {
         throw new AssertionError();
       }
+    }
+
+    private SoyType getMapKeysType(SoyType type) {
+      if (type instanceof MapType) {
+        return ((MapType) type).getKeyType();
+      }
+      return UnionType.of(
+          ((UnionType) type)
+              .getMembers().stream()
+                  .map(t -> ((MapType) t).getKeyType())
+                  .collect(toImmutableSet()));
+    }
+
+    private SoyType getMapValuesType(SoyType type) {
+      if (type instanceof MapType) {
+        return ((MapType) type).getValueType();
+      }
+      return UnionType.of(
+          ((UnionType) type)
+              .getMembers().stream()
+                  .map(t -> ((MapType) t).getValueType())
+                  .collect(toImmutableSet()));
     }
 
     @Nullable
