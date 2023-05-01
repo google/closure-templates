@@ -29,16 +29,7 @@ java_library(
         "//java/src/com/google/template/soy/base/internal",
         "//java/src/com/google/template/soy/error:error_reporter",
         "//java/src/com/google/template/soy/types",
-        "//src/main/protobuf:annotated_logging_config_java_proto",
-        "//src/main/protobuf:logging_config_java_proto",
-        "//src/main/protobuf:runtime_ve_metadata_java_proto",
-        "//src/main/protobuf:ve_metadata_java_proto",
         "@com_google_auto_value_auto_value",
-        "@com_google_protobuf//:protobuf_java",
-        "@maven//:com_google_code_findbugs_jsr305",
-        "@maven//:com_google_errorprone_error_prone_annotations",
-        "@maven//:com_google_escapevelocity_escapevelocity",
-        "@maven//:com_google_guava_guava",
     ],
 )
 

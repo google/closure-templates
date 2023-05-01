@@ -22,7 +22,6 @@ java_library(
     name = "runtime",
     srcs = glob(
         ["*.java"],
-        exclude = ["VeMetadataRuntime.java"],
     ),
     deps = [
         "//java/src/com/google/template/soy/data",
@@ -45,16 +44,6 @@ java_library(
     ],
 )
 
-java_library(
-    name = "ve_metadata_runtime",
-    srcs = ["VeMetadataRuntime.java"],
-    visibility = ["//visibility:public"],
-    deps = [
-        "//src/main/protobuf:runtime_ve_metadata_java_proto",
-        "@com_google_protobuf//:protobuf_java",
-        "@maven//:com_google_guava_guava",
-    ],
-)
 
 # All the runtime deps needed by the generated code
 java_library(
