@@ -85,12 +85,12 @@ public abstract class VariableDeclaration extends Statement implements CodeChunk
     }
     ctx.append(varName());
     if (type() != null) {
-      ctx.append(": ").appendOutputExpression(type());
+      ctx.noBreak().append(": ").appendOutputExpression(type());
     }
     if (rhs() != null) {
-      ctx.append(" = ").appendOutputExpression(rhs());
+      ctx.noBreak().append(" = ").appendOutputExpression(rhs());
     }
-    ctx.append(";").endLine();
+    ctx.noBreak().append(";").endLine();
   }
 
   @Override

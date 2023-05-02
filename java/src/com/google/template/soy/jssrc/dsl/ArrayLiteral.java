@@ -47,11 +47,7 @@ public abstract class ArrayLiteral extends Expression {
     ctx.append('[');
     boolean first = true;
     for (Expression element : elements()) {
-      if (first) {
-        first = false;
-      } else {
-        ctx.append(", ");
-      }
+      first = ctx.commaAfterFirst(first);
       ctx.appendOutputExpression(element);
     }
     ctx.append(']');

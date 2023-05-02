@@ -40,6 +40,6 @@ abstract class TsCast extends Expression {
 
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
-    ctx.appendOutputExpression(expr()).append(" as ").appendOutputExpression(type());
+    ctx.appendOutputExpression(expr()).noBreak().append(" as ").appendOutputExpression(type());
   }
 }

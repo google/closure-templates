@@ -54,14 +54,10 @@ public abstract class Call extends Operation {
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
     formatOperand(receiver(), OperandPosition.LEFT, ctx);
-    ctx.append('(');
+    ctx.noBreak().append('(');
     boolean first = true;
     for (Expression arg : args()) {
-      if (first) {
-        first = false;
-      } else {
-        ctx.append(", ");
-      }
+      first = ctx.commaAfterFirst(first);
       // The comma is the lowest-precedence JavaScript operator, so none of the args
       // need to be protected.
       ctx.appendOutputExpression(arg);

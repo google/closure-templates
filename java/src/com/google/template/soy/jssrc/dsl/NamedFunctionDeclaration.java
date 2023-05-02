@@ -126,7 +126,7 @@ public abstract class NamedFunctionDeclaration extends Statement {
       }
       ctx.close();
     } else {
-      ctx.append(";");
+      ctx.noBreak().append(";");
     }
     ctx.endLine();
   }

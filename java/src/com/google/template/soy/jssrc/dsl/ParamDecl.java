@@ -57,19 +57,6 @@ public abstract class ParamDecl extends Expression {
     return new AutoValue_ParamDecl(name, type, true, Preconditions.checkNotNull(defaultValue));
   }
 
-  public String nameDecl(FormatOptions formatOptions) {
-    return name()
-        + (defaultValue() != null
-            ? " = " + defaultValue().singleExprOrName(formatOptions).getText()
-            : "");
-  }
-
-  public String typeDecl(FormatOptions formatOptions) {
-    return name()
-        + (isOptional() ? "?" : "")
-        + (type() != null ? ": " + type().singleExprOrName(formatOptions).getText() : "");
-  }
-
   @Override
   Stream<? extends CodeChunk> childrenStream() {
     return Stream.of(type(), defaultValue()).filter(Objects::nonNull);
@@ -77,6 +64,12 @@ public abstract class ParamDecl extends Expression {
 
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
-    ctx.append(typeDecl(ctx.getFormatOptions()));
+    ctx.append(name());
+    if (isOptional()) {
+      ctx.noBreak().append("?");
+    }
+    if (type() != null) {
+      ctx.noBreak().append(": ").appendOutputExpression(type());
+    }
   }
 }

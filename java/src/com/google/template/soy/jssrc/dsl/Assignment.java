@@ -51,8 +51,10 @@ abstract class Assignment extends Statement {
     }
 
     ctx.appendOutputExpression(lhs())
+        .noBreak()
         .append(" = ")
         .appendOutputExpression(rhs())
+        .noBreak()
         .append(";")
         .endLine();
   }

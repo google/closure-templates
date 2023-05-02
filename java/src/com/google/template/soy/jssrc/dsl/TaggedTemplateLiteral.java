@@ -53,7 +53,7 @@ public abstract class TaggedTemplateLiteral extends Operation {
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
     formatOperand(tag(), OperandPosition.LEFT, ctx);
-    ctx.appendOutputExpression(templateLiteral());
+    ctx.noBreak().appendOutputExpression(templateLiteral());
   }
 
   @Override

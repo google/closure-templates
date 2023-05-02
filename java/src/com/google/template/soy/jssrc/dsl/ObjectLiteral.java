@@ -84,10 +84,7 @@ public abstract class ObjectLiteral extends Expression {
     ctx.append('{');
     boolean first = true;
     for (Map.Entry<Expression, Expression> entry : values().entrySet()) {
-      if (!first) {
-        ctx.append(", ");
-      }
-      first = false;
+      first = ctx.commaAfterFirst(first);
       if (isSpread(entry.getKey())) {
         // Value should already have been coerced to a spread expression in the class factory.
         ctx.appendOutputExpression(entry.getValue());
@@ -97,10 +94,10 @@ public abstract class ObjectLiteral extends Expression {
           // Support for object literal shorthand.
           ctx.appendOutputExpression(entry.getKey());
         } else {
-          try (FormattingContext buffer = ctx.buffer()) {
-            buffer.appendOutputExpression(entry.getKey()).append(": ");
-          }
-          ctx.appendOutputExpression(entry.getValue());
+          ctx.appendOutputExpression(entry.getKey())
+              .noBreak()
+              .append(": ")
+              .appendOutputExpression(entry.getValue());
         }
       }
     }

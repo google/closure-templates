@@ -15,8 +15,6 @@
  */
 package com.google.template.soy.jssrc.dsl;
 
-import static java.util.stream.Collectors.joining;
-
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
@@ -57,37 +55,31 @@ public abstract class ParamDecls extends Expression {
 
       // Generate the dict of param names (e.g. "{amount, name = ‘Vesper’}"). Default values are not
       // supported yet.
-      String paramNamesDict =
-          "{"
-              + params().stream()
-                  .map(p -> p.nameDecl(ctx.getFormatOptions()))
-                  .collect(joining(", "))
-              + "}";
-
-      // Generate the dict of param types (e.g. "{amount: number, name?: string}").
-      String paramTypesDict =
-          "{"
-              + params().stream()
-                  .map(p -> p.typeDecl(ctx.getFormatOptions()))
-                  .collect(joining(", "))
-              + "}";
-
-      ctx.append(paramNamesDict + ": " + paramTypesDict);
-    } else {
-      StringBuilder sb = new StringBuilder();
+      ctx.append("{");
       boolean first = true;
       for (ParamDecl param : params()) {
-        if (first) {
-          first = false;
-        } else {
-          sb.append(", ");
-        }
-        sb.append(param.name());
-        if (param.type() != null) {
-          sb.append(": ").append(param.type().singleExprOrName(ctx.getFormatOptions()).getText());
+        first = ctx.commaAfterFirst(first);
+
+        ctx.append(param.name());
+        if (param.defaultValue() != null) {
+          ctx.noBreak().append(" = ").appendOutputExpression(param.defaultValue());
         }
       }
-      ctx.append(sb.toString());
+      ctx.append("}: {");
+
+      // Generate the dict of param types (e.g. "{amount: number, name?: string}").
+      first = true;
+      for (ParamDecl param : params()) {
+        first = ctx.commaAfterFirst(first);
+        ctx.appendOutputExpression(param);
+      }
+      ctx.append("}");
+    } else {
+      boolean first = true;
+      for (ParamDecl param : params()) {
+        first = ctx.commaAfterFirst(first);
+        ctx.appendOutputExpression(param);
+      }
     }
   }
 

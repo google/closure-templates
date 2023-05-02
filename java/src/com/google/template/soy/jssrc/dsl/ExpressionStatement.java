@@ -51,7 +51,7 @@ public abstract class ExpressionStatement extends Statement {
       ctx.appendAll(jsDoc()).endLine();
     }
     ctx.appendOutputExpression(expr());
-    ctx.append(";");
+    ctx.noBreak().append(";");
     ctx.endLine();
   }
 

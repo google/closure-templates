@@ -46,9 +46,9 @@ public abstract class Return extends Statement {
     }
     ctx.append("return");
     if (value() != null) {
-      ctx.append(" ").appendOutputExpression(value());
+      ctx.noBreak().append(" ").noBreak().appendOutputExpression(value());
     }
-    ctx.append(";");
+    ctx.noBreak().append(";");
   }
 
   @Override

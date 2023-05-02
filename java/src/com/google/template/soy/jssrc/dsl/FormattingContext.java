@@ -40,6 +40,7 @@ class FormattingContext implements AutoCloseable {
   private Scope curScope = new Scope(/* parent= */ null, /* emitClosingBrace= */ false);
   private String curIndent;
   private boolean nextAppendShouldStartNewLine = false;
+  private boolean nextAppendShouldNeverStartNewLine = false;
   private final ArrayDeque<LexicalState> lexicalStateStack;
 
   public enum LexicalState {
@@ -114,7 +115,7 @@ class FormattingContext implements AutoCloseable {
         String content =
             BaseUtils.escapeToSoyString(s, formatOptions.htmlEscapeStrings(), QuoteStyle.BACKTICK);
         if (content.contains("\n")) {
-          return appendWithoutBreaks(content);
+          return noBreak().append(content);
         } else {
           return append(content);
         }
@@ -172,12 +173,24 @@ class FormattingContext implements AutoCloseable {
     throw new AssertionError();
   }
 
+  /** Delays any line breaking until after the next token append. */
+  @CanIgnoreReturnValue
+  public FormattingContext noBreak() {
+    nextAppendShouldNeverStartNewLine = true;
+    return this;
+  }
+
+  public boolean commaAfterFirst(boolean first) {
+    if (!first) {
+      noBreak().append(", ");
+    }
+    return false;
+  }
+
   @CanIgnoreReturnValue
   FormattingContext append(String stuff) {
-    if (!stuff.equals(";")) {
-      maybeBreakLineInsideTsxElement(stuff);
-      maybeIndent(stuff.isEmpty() ? '\0' : stuff.charAt(0));
-    }
+    maybeBreakLineInsideTsxElement(stuff);
+    maybeIndent(stuff.isEmpty() ? '\0' : stuff.charAt(0));
     buf.append(stuff);
     return this;
   }
@@ -187,13 +200,6 @@ class FormattingContext implements AutoCloseable {
     maybeBreakLineInsideTsxElement(Character.toString(c));
     maybeIndent(c);
     buf.append(c);
-    return this;
-  }
-
-  /** Appends exactly {@code s} onto the buffer without attempting to add line breaks or indents. */
-  @CanIgnoreReturnValue
-  FormattingContext appendWithoutBreaks(String s) {
-    buf.append(s);
     return this;
   }
 
@@ -285,6 +291,7 @@ class FormattingContext implements AutoCloseable {
     // To prevent spurious trailing whitespace, don't actually write the newline
     // until the next call to append().
     nextAppendShouldStartNewLine = true;
+    nextAppendShouldNeverStartNewLine = false;
     return this;
   }
 
@@ -293,6 +300,9 @@ class FormattingContext implements AutoCloseable {
   }
 
   private void maybeBreakLineInsideTsxElement(String nextAppendContent) {
+    boolean defer = nextAppendShouldNeverStartNewLine;
+    nextAppendShouldNeverStartNewLine = false;
+
     if (!formatOptions.useTsxLineBreaks() || buf.length() == 0 || nextAppendContent.isEmpty()) {
       return;
     }
@@ -301,13 +311,18 @@ class FormattingContext implements AutoCloseable {
       return;
     }
 
+    boolean endLine = false;
     char lastChar = getLastChar();
     char nextChar = nextAppendContent.charAt(0);
     if (getCurrentLexicalState() == LexicalState.TSX && lastChar == '>' && nextChar == '<') {
-      endLine();
+      endLine = true;
     } else if (lastChar == '}' && nextChar == '{') {
-      endLine();
+      endLine = true;
     } else if (!fitsOnCurrentLine(nextAppendContent)) {
+      endLine = true;
+    }
+
+    if (endLine && !defer) {
       endLine();
     }
   }

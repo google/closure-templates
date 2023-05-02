@@ -61,7 +61,7 @@ abstract class Bracket extends Operation {
   void doFormatOutputExpr(FormattingContext ctx) {
     formatOperand(receiver(), OperandPosition.LEFT, ctx);
     // No need to protect the expression in the bracket with parens. it's unambiguous.
-    ctx.append(nullSafe() ? "?.[" : "[").appendOutputExpression(key()).append(']');
+    ctx.noBreak().append(nullSafe() ? "?.[" : "[").appendOutputExpression(key()).append(']');
   }
 
   @Override

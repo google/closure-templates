@@ -60,7 +60,7 @@ abstract class Dot extends Operation {
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
     formatOperand(receiver(), OperandPosition.LEFT, ctx);
-    ctx.append(nullSafe() ? "?." : ".");
+    ctx.noBreak().append(nullSafe() ? "?." : ".");
     formatOperand(key(), OperandPosition.RIGHT, ctx);
   }
 

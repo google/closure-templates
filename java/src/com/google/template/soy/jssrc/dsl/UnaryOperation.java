@@ -61,9 +61,11 @@ abstract class UnaryOperation extends Operation {
   void doFormatOutputExpr(FormattingContext ctx) {
     if (isPrefix()) {
       ctx.append(operator());
+      ctx.noBreak();
       formatOperand(arg(), OperandPosition.LEFT /* it's unary, doesn't matter */, ctx);
     } else {
       formatOperand(arg(), OperandPosition.LEFT /* it's unary, doesn't matter */, ctx);
+      ctx.noBreak();
       ctx.append(operator());
     }
   }

@@ -72,14 +72,12 @@ abstract class TsArrowFunction extends Expression implements Expression.InitialS
 
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
-    try (FormattingContext buffer = ctx.buffer()) {
-      buffer.append("(").appendOutputExpression(params()).append(")");
-      if (returnType() != null) {
-        buffer.append(": ");
-        buffer.appendOutputExpression(returnType());
-      }
-      buffer.append(" => ");
+    ctx.append("(").appendOutputExpression(params()).append(")");
+    if (returnType() != null) {
+      ctx.noBreak().append(": ");
+      ctx.appendOutputExpression(returnType());
     }
+    ctx.noBreak().append(" => ");
     Expression singleExpression = getSingleExpression();
     if (singleExpression != null) {
       ctx.appendOutputExpression(singleExpression);
