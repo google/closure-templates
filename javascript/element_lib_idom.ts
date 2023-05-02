@@ -96,7 +96,7 @@ export abstract class SoyElement<TData extends {}|null, TInterface extends {}>
     return this.syncState;
   }
 
-  protected syncStateFromData(data: TData) {}
+  syncStateFromData(data: TData) {}
 
   /**
    * Patches the current dom node.

@@ -149,6 +149,7 @@ function handleSoyElement<T extends TemplateAcceptor<{}>>(
   soyElement.setLogger(incrementaldom.getLogger());
 
   if (ijData && (ijData as any)['inTemplateCloning']) {
+    soyElement.syncStateFromData(data);
     return soyElement as unknown as T;
   }
 
