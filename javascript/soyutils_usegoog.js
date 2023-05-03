@@ -132,11 +132,6 @@ const createSanitizedHtml = function(value) {
     return VERY_UNSAFE.ordainSanitizedHtml(
         SafeHtml.unwrap(value));
   }
-  // MOE:begin_strip
-  if (value instanceof TsSafeHtml) {
-    return VERY_UNSAFE.ordainSanitizedHtml(unwrapHtml(value).toString());
-  }
-  // MOE:end_strip
   return VERY_UNSAFE.ordainSanitizedHtml(
       $$escapeHtmlHelper(String(value)), getContentDir(value));
 };
@@ -938,10 +933,6 @@ const $$htmlToText = function(value) {
     html = SafeHtml.unwrap(value);
   } else if (isContentKind_(value, SanitizedContentKind.HTML)) {
     html = value.toString();
-    // MOE:begin_strip
-  } else if (value instanceof SafeHtml) {
-    html = unwrapHtml(value).toString();
-    // MOE:end_strip
   } else {
     return asserts.assertString(value);
   }
@@ -1535,11 +1526,6 @@ const $$escapeJsValue = function(value) {
   if (value instanceof SafeScript) {
     return SafeScript.unwrap(value);
   }
-  // MOE:begin_strip
-  if (value instanceof TsSafeScript) {
-    return unwrapScript(value).toString();
-  }
-  // MOE:end_strip
   switch (typeof value) {
     case 'boolean':
     case 'number':
@@ -1640,19 +1626,9 @@ const $$filterNormalizeUri = function(value) {
   if (value instanceof SafeUrl) {
     return $$normalizeUri(SafeUrl.unwrap(value));
   }
-  // MOE:begin_strip
-  if (value instanceof TsSafeUrl) {
-    return soy.$$normalizeUri(unwrapUrl(value));
-  }
-  // MOE:end_strip
   if (value instanceof TrustedResourceUrl) {
     return $$normalizeUri(TrustedResourceUrl.unwrap(value));
   }
-  // MOE:begin_strip
-  if (value instanceof TsTrustedResourceUrl) {
-    return soy.$$normalizeUri(unwrapResourceUrl(value).toString());
-  }
-  // MOE:end_strip
   return $$filterNormalizeUriHelper(value);
 };
 
@@ -1677,19 +1653,9 @@ const $$filterNormalizeMediaUri = function(value) {
   if (value instanceof SafeUrl) {
     return $$normalizeUri(SafeUrl.unwrap(value));
   }
-  // MOE:begin_strip
-  if (value instanceof TsSafeUrl) {
-    return soy.$$normalizeUri(unwrapUrl(value));
-  }
-  // MOE:end_strip
   if (value instanceof TrustedResourceUrl) {
     return $$normalizeUri(TrustedResourceUrl.unwrap(value));
   }
-  // MOE:begin_strip
-  if (value instanceof TsTrustedResourceUrl) {
-    return soy.$$normalizeUri(unwrapResourceUrl(value).toString());
-  }
-  // MOE:end_strip
   return $$filterNormalizeMediaUriHelper(value);
 };
 
@@ -1718,11 +1684,6 @@ const $$filterTrustedResourceUri = function(value) {
   if (value instanceof TrustedResourceUrl) {
     return TrustedResourceUrl.unwrap(value);
   }
-  // MOE:begin_strip
-  if (value instanceof TsTrustedResourceUrl) {
-    return soy.$$normalizeUri(unwrapResourceUrl(value).toString());
-  }
-  // MOE:end_strip
   asserts.fail('Bad value `%s` for |filterTrustedResourceUri', [String(value)]);
   return 'about:invalid#zSoyz';
 };
@@ -1820,11 +1781,6 @@ const $$filterCssValue = function(value) {
   if (value instanceof SafeStyle) {
     return $$embedCssIntoHtml_(SafeStyle.unwrap(value));
   }
-  // MOE:begin_strip
-  if (value instanceof TsSafeStyle) {
-    return $$embedCssIntoHtml_(unwrapStyle(value));
-  }
-  // MOE:end_strip
   // Note: SoyToJsSrcCompiler uses $$filterCssValue both for the contents of
   // <style> (list of rules) and for the contents of style="" (one set of
   // declarations). We support SafeStyleSheet here to be used inside <style> but
@@ -1833,11 +1789,6 @@ const $$filterCssValue = function(value) {
   if (value instanceof SafeStyleSheet) {
     return $$embedCssIntoHtml_(SafeStyleSheet.unwrap(value));
   }
-  // MOE:begin_strip
-  if (value instanceof TsSafeStyleSheet) {
-    return $$embedCssIntoHtml_(unwrapStyleSheet(value));
-  }
-  // MOE:end_strip
   return $$filterCssValueHelper(value);
 };
 
