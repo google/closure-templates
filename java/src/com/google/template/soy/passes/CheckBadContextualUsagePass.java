@@ -31,10 +31,13 @@ import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.HtmlContext;
+import com.google.template.soy.soytree.LetNode;
 import com.google.template.soy.soytree.Metadata;
 import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.PrintNode;
+import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileNode;
+import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.types.AnyType;
 import com.google.template.soy.types.SanitizedType;
@@ -80,6 +83,9 @@ final class CheckBadContextualUsagePass implements CompilerFileSetPass {
   private static final SoyErrorKind CALLS_NON_TRU_FROM_TRU =
       SoyErrorKind.of("In trusted_resource_uri context, only trusted_resource_uri can be called.");
 
+  private static final SoyErrorKind TRU_WITH_NON_CONSTANT_START =
+      SoyErrorKind.of("Trusted_resource_uri blocks must start with a constant.");
+
   private final ErrorReporter errorReporter;
   private final Supplier<FileSetMetadata> templateRegistryFull;
 
@@ -112,6 +118,22 @@ final class CheckBadContextualUsagePass implements CompilerFileSetPass {
               && !SanitizedType.TrustedResourceUriType.getInstance()
                   .isAssignableFromLoose(node.getExpr().getType())) {
             errorReporter.report(node.getSourceLocation(), PRINTS_NON_TRU_FROM_TRU);
+          }
+        }
+      }
+      // Validate that a trusted_resource_uri block starts with raw text or contains a single node.
+      for (RenderUnitNode renderNode : getAllNodesOfType(fileNode, RenderUnitNode.class)) {
+        if (renderNode.getContentKind() == SanitizedContentKind.TRUSTED_RESOURCE_URI
+            && renderNode.numChildren() > 1) {
+          for (int i = 0; i < renderNode.numChildren(); i++) {
+            if (renderNode.getChild(i) instanceof LetNode) {
+              continue;
+            }
+            if (!(renderNode.getChild(i) instanceof RawTextNode)) {
+              errorReporter.report(
+                  renderNode.getChild(i).getSourceLocation(), TRU_WITH_NON_CONSTANT_START);
+            }
+            break;
           }
         }
       }
