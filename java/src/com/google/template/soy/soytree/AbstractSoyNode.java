@@ -16,9 +16,11 @@
 
 package com.google.template.soy.soytree;
 
+import com.google.common.base.Preconditions;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.AbstractNode;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.basetree.Node;
 
 /**
  * Abstract implementation of a SoyNode.
@@ -89,5 +91,11 @@ public abstract class AbstractSoyNode extends AbstractNode implements SoyNode {
   @Override
   public String toString() {
     return super.toString() + "_" + id;
+  }
+
+  @Override
+  public <N extends Node> N getNearestAncestor(Class<N> ancestorClass) {
+    Preconditions.checkArgument(SoyNode.class.isAssignableFrom(ancestorClass));
+    return super.getNearestAncestor(ancestorClass);
   }
 }

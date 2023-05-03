@@ -50,19 +50,12 @@ public abstract class AbstractNode implements Node {
   }
 
   @Override
-  public boolean hasAncestor(Class<? extends Node> ancestorClass) {
-
-    for (Node node = this; node != null; node = node.getParent()) {
-      if (ancestorClass.isInstance(node)) {
-        return true;
-      }
-    }
-    return false;
+  public final boolean hasAncestor(Class<? extends Node> ancestorClass) {
+    return getNearestAncestor(ancestorClass) != null;
   }
 
   @Override
   public <N extends Node> N getNearestAncestor(Class<N> ancestorClass) {
-
     for (Node node = this; node != null; node = node.getParent()) {
       if (ancestorClass.isInstance(node)) {
         return ancestorClass.cast(node);

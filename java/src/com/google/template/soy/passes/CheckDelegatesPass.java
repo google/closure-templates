@@ -32,7 +32,6 @@ import com.google.template.soy.exprtree.VarDefn.Kind;
 import com.google.template.soy.passes.LocalVariablesNodeVisitor.LocalVariables;
 import com.google.template.soy.shared.internal.DelTemplateSelector;
 import com.google.template.soy.soytree.CallDelegateNode;
-import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
@@ -242,24 +241,11 @@ final class CheckDelegatesPass implements CompilerFileSetPass {
     if (callee != null) {
       String calleeModName = callee.getModName();
       if (calleeModName != null && !calleeModName.equals(currModName)) {
-        if (node.getNearestAncestor(CallParamContentNode.class) == null) {
-          errorReporter.report(
-              node.getSourceLocation(),
-              CROSS_PACKAGE_DELCALL,
-              currTemplateNameForUserMsgs,
-              callee.getTemplateName());
-        } else {
-          // downgrade to a warning for backwards compatibility reasons.  This pass used to have a
-          // bug where it failed to inspect CallParamContentNode and thus missed a number of call
-          // sites...and people depend on it.
-          // luckily this particular error doesn't seem very important. it doesn't violate Soy's
-          // invariants, it is just likely to not work with the pinto module system.
-          errorReporter.warn(
-              node.getSourceLocation(),
-              CROSS_PACKAGE_DELCALL,
-              currTemplateNameForUserMsgs,
-              callee.getTemplateName());
-        }
+        errorReporter.report(
+            node.getSourceLocation(),
+            CROSS_PACKAGE_DELCALL,
+            currTemplateNameForUserMsgs,
+            callee.getTemplateName());
       }
     }
   }

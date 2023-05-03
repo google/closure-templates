@@ -20,6 +20,7 @@ import com.google.common.base.Preconditions;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.AbstractNode;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.basetree.Node;
 
 /**
  * Abstract implementation of an ExprNode.
@@ -52,5 +53,11 @@ public abstract class AbstractExprNode extends AbstractNode implements ExprNode 
   @Override
   public SourceLocation getSourceLocation() {
     return sourceLocation;
+  }
+
+  @Override
+  public <N extends Node> N getNearestAncestor(Class<N> ancestorClass) {
+    Preconditions.checkArgument(ExprNode.class.isAssignableFrom(ancestorClass));
+    return super.getNearestAncestor(ancestorClass);
   }
 }
