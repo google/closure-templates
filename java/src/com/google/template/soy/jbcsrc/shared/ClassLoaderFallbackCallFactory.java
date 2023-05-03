@@ -26,6 +26,7 @@ import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.SoyVisualElement;
+import com.google.template.soy.data.TemplateValue;
 import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.logging.LoggableElementMetadata;
@@ -93,7 +94,7 @@ public final class ClassLoaderFallbackCallFactory {
       methodType(CompiledTemplate.class, String.class, RenderContext.class);
 
   private static final MethodType SLOWPATH_TEMPLATE_VALUE_TYPE =
-      methodType(CompiledTemplate.TemplateValue.class, String.class, RenderContext.class);
+      methodType(TemplateValue.class, String.class, RenderContext.class);
 
   private static final MethodType SLOWPATH_CONST_TYPE =
       methodType(Object.class, String.class, RenderContext.class);
@@ -177,10 +178,9 @@ public final class ClassLoaderFallbackCallFactory {
     Optional<Class<?>> templateClass = findTemplateClass(lookup, templateName);
     if (templateClass.isPresent()) {
       CompiledTemplate template = getTemplate(lookup, templateClass.get(), templateName);
-      CompiledTemplate.TemplateValue value =
-          CompiledTemplate.TemplateValue.create(templateName, template);
+      TemplateValue value = TemplateValue.create(templateName, template);
       // the initial renderContext is ignored in this case
-      MethodHandle getter = constant(CompiledTemplate.TemplateValue.class, value);
+      MethodHandle getter = constant(TemplateValue.class, value);
       getter = dropArguments(getter, 0, RenderContext.class);
       return new ConstantCallSite(getter);
     }
@@ -395,9 +395,8 @@ public final class ClassLoaderFallbackCallFactory {
   }
 
   /** The slow path for resolving template values. */
-  public static CompiledTemplate.TemplateValue slowPathTemplateValue(
-      String templateName, RenderContext context) {
-    return CompiledTemplate.TemplateValue.create(templateName, context.getTemplate(templateName));
+  public static TemplateValue slowPathTemplateValue(String templateName, RenderContext context) {
+    return TemplateValue.create(templateName, slowPathTemplate(templateName, context));
   }
 
   private static class SaveRestoreState {

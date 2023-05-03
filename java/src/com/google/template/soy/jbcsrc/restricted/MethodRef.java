@@ -52,6 +52,7 @@ import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.SoyValueUnconverter;
 import com.google.template.soy.data.SoyVisualElement;
 import com.google.template.soy.data.SoyVisualElementData;
+import com.google.template.soy.data.TemplateValue;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.internal.DictImpl;
 import com.google.template.soy.data.internal.LazyProtoToSoyValueList;
@@ -318,11 +319,7 @@ public abstract class MethodRef {
           List.class);
 
   public static final MethodRef RUNTIME_BIND_TEMPLATE_PARAMS =
-      create(
-          JbcSrcRuntime.class,
-          "bindTemplateParams",
-          CompiledTemplate.TemplateValue.class,
-          SoyRecord.class);
+      create(JbcSrcRuntime.class, "bindTemplateParams", TemplateValue.class, SoyRecord.class);
 
   public static final MethodRef RUNTIME_CALL_LEGACY_FUNCTION =
       create(JbcSrcRuntime.class, "callLegacySoyFunction", LegacyFunctionAdapter.class, List.class);
@@ -513,8 +510,11 @@ public abstract class MethodRef {
   public static final MethodRef SOY_VALUE_STRING_VALUE =
       create(SoyValue.class, "stringValue").asCheap().asNonNullable();
 
-  public static final MethodRef COMPILED_TEMPLATE_GET_TEMPLATE =
-      create(CompiledTemplate.TemplateValue.class, "getTemplate").asNonNullable();
+  public static final MethodRef GET_COMPILED_TEMPLATE =
+      create(CompiledTemplate.class, "createFromTemplateValue", TemplateValue.class);
+
+  public static final MethodRef GET_COMPILED_TEMPLATE_FROM_VALUE =
+      create(TemplateValue.class, "getCompiledTemplate");
 
   public static final MethodRef SOY_VALUE_PROVIDER_RENDER_AND_RESOLVE =
       create(
