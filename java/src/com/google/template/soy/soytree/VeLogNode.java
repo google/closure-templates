@@ -185,8 +185,9 @@ public final class VeLogNode extends AbstractBlockCommandNode
   }
 
   @Override
-  public BlockNode getParent() {
-    return (BlockNode) super.getParent();
+  @SuppressWarnings("unchecked")
+  public ParentSoyNode<StandaloneNode> getParent() {
+    return (ParentSoyNode<StandaloneNode>) super.getParent();
   }
 
   @Override
