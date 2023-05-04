@@ -93,7 +93,7 @@ abstract class TsArrowFunction extends Expression implements Expression.InitialS
 
   @Override
   Stream<? extends CodeChunk> childrenStream() {
-    Stream<? extends CodeChunk> s = bodyStmts().stream();
+    Stream<? extends CodeChunk> s = Stream.concat(bodyStmts().stream(), params().childrenStream());
     if (returnType() != null) {
       s = Stream.concat(s, Stream.of(returnType()));
     }
