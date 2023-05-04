@@ -91,6 +91,8 @@ interface IdomRendererApi {
   setLogger(logger: Logger|null): void;
   getLogger(): Logger|null;
   verifyLogOnly(logOnly: boolean): boolean;
+  openNodePart(): void;
+  closeNodePart(): void;
   evalLoggingFunction(name: string, args: Array<{}>, placeHolder: string):
       string;
 }
@@ -129,6 +131,14 @@ export class IncrementalDomRenderer implements IdomRendererApi {
     const el = incrementaldom.open(nameOrCtor, key);
     this.visit(el);
     return el;
+  }
+
+  openNodePart() {
+    incrementaldom.openNodePart();
+  }
+
+  closeNodePart() {
+    incrementaldom.closeNodePart();
   }
 
   keepGoing(el: HTMLElement|void, data: unknown) {
@@ -447,6 +457,8 @@ ${el.dataset['debugSoy'] || el.outerHTML}`);
 export class FalsinessRenderer implements IdomRendererApi {
   visit(el: void|HTMLElement): void {}
   pushManualKey(key: incrementaldom.Key) {}
+  openNodePart() {}
+  closeNodePart() {}
   popManualKey(): void {}
   pushKey(key: string): string {
     return '';

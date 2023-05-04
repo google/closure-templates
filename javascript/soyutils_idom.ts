@@ -45,6 +45,8 @@ const htmlToStringRenderer = new IncrementalDomRenderer();
 const USE_TEMPLATE_CLONING =
     goog.define('soyutils_useidom.USE_TEMPLATE_CLONING', goog.DEBUG);
 
+const NODE_PART = '<?child-node-part?><?/child-node-part?>';
+
 
 /**
  * A template acceptor is an object that a template can receive context from.
@@ -176,8 +178,7 @@ function handleSoyElement<T extends TemplateAcceptor<{}>>(
   if ((getSoyUntyped(element) instanceof elementClassCtor)) {
     soyElement = getSoyUntyped(element)!;
   }
-  const maybeSkip =
-      soyElement.handleSoyElementRuntime(element as HTMLElement, data);
+  const maybeSkip = soyElement.handleSoyElementRuntime(element, data);
   soyElement.template = template.bind(soyElement);
   if (maybeSkip) {
     incrementaldom.skip();
@@ -193,8 +194,9 @@ function makeHtml(idomFn: PatchFunction): IdomFunction {
                idomFn(renderer);
              }) as unknown as SanitizedHtml &
       IdomFunction;
-  fn.invoke = (renderer: IncrementalDomRenderer = defaultIdomRenderer) =>
-      idomFn(renderer);
+  fn.invoke = (renderer: IncrementalDomRenderer = defaultIdomRenderer) => {
+    idomFn(renderer);
+  };
   fn.toString = (renderer: IncrementalDomRenderer = htmlToStringRenderer) =>
       htmlToString(idomFn, renderer);
   fn.getContent = fn.toString;
@@ -582,23 +584,24 @@ function appendCloneToCurrent(
   if (!currentElement) {
     return;
   }
+  const currentPointer = renderer.currentPointer();
   const clone = content.cloneNode(true) as HTMLTemplateElement;
-  const nextNode = incrementaldom.getNextNode();
-  if (nextNode?.nodeType === Node.COMMENT_NODE) {
-    if (content.content) {
-      currentElement.insertBefore(clone.content, nextNode);
+  if (currentPointer?.nodeType === Node.COMMENT_NODE) {
+    if (clone.content) {
+      currentPointer.parentNode?.insertBefore(clone.content, currentPointer);
     } else {
-      for (const el of clone.children) {
-        currentElement.insertBefore(el, nextNode);
+      const childNodes = Array.from(clone.childNodes);
+      for (const child of childNodes) {
+        currentPointer.parentNode?.insertBefore(child, currentPointer);
       }
     }
-    currentElement.removeChild(nextNode);
   } else {
-    if (content.content) {
+    if (clone.content) {
       currentElement.appendChild(clone.content);
     } else {
-      for (const el of clone.children) {
-        currentElement.appendChild(el);
+      const childNodes = Array.from(clone.childNodes);
+      for (const child of childNodes) {
+        currentElement.appendChild(child);
       }
     }
   }
@@ -678,5 +681,6 @@ export {
   defaultIdomRenderer as $$defaultIdomRenderer,
   compileToTemplate as $$compileToTemplate,
   appendCloneToCurrent as $$appendCloneToCurrent,
-  USE_TEMPLATE_CLONING
+  USE_TEMPLATE_CLONING,
+  NODE_PART
 };

@@ -94,6 +94,7 @@ import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.FileSetMetadata;
+import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.HtmlAttributeValueNode;
 import com.google.template.soy.soytree.HtmlCloseTagNode;
@@ -475,6 +476,9 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
         statements.add(INCREMENTAL_DOM_POP_KEY.call(Expressions.id(keyVariable)).asStatement());
       }
     }
+    if (node.getHtmlContext() == HtmlContext.HTML_PCDATA) {
+      return wrapInTemplateCloning(Statements.of(statements));
+    }
     return Statements.of(statements);
   }
 
@@ -509,10 +513,22 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
   @Override
   protected Statement visitIfNode(IfNode node) {
     if (!isTextContent(contentKind.peek())) {
+      if (node.getHtmlContext() == HtmlContext.HTML_PCDATA) {
+        return wrapInTemplateCloning(super.generateNonExpressionIfNode(node));
+      }
       return super.generateNonExpressionIfNode(node);
     } else {
       return super.visitIfNode(node);
     }
+  }
+
+  @Override
+  protected Statement visitForNode(ForNode node) {
+    var ret = super.visitForNode(node);
+    if (node.getHtmlContext() == HtmlContext.HTML_PCDATA) {
+      return wrapInTemplateCloning(ret);
+    }
+    return ret;
   }
 
   @Override
@@ -531,31 +547,43 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
               .build();
       staticVarDeclarations.add(varDecl);
       var expr =
-          JsRuntime.IJ_DATA
-              .bracketAccess(Expressions.stringLiteral("inTemplateCloning"))
-              .and(
-                  SOY_IDOM_APPEND_CLONE.call(
+          SOY_IDOM_APPEND_CLONE.call(
+              id(varDecl.varName())
+                  .or(
                       id(varDecl.varName())
-                          .or(
-                              id(varDecl.varName())
-                                  .assign(
-                                      SOY_IDOM_COMPILE_TO_TEMPLATE.call(
-                                          JsRuntime.sanitizedContentOrdainerFunction(
-                                                  SanitizedContentKind.HTML)
-                                              .call(staticTemplate))),
-                              codeGenerator),
-                      Expressions.id(INCREMENTAL_DOM_PARAM_NAME)),
-                  codeGenerator);
+                          .assign(
+                              SOY_IDOM_COMPILE_TO_TEMPLATE.call(
+                                  JsRuntime.sanitizedContentOrdainerFunction(
+                                          SanitizedContentKind.HTML)
+                                      .call(staticTemplate))),
+                      codeGenerator),
+              Expressions.id(INCREMENTAL_DOM_PARAM_NAME));
       staticTemplate = oldStringBuilder;
-      return Statements.of(
-          JsRuntime.IJ_DATA
-              .and(IncrementalDomRuntime.USE_TEMPLATE_CLONING, codeGenerator)
-              .and(expr, codeGenerator)
-              .asStatement(),
-          stmt);
+      return Statements.of(useTemplateCloning(expr).asStatement(), stmt);
     }
     staticTemplate = oldStringBuilder;
     return stmt;
+  }
+
+  private Expression useTemplateCloning(Expression expr) {
+    var codeGenerator = templateTranslationContext.codeGenerator();
+    return JsRuntime.IJ_DATA
+        .and(IncrementalDomRuntime.USE_TEMPLATE_CLONING, codeGenerator)
+        .and(
+            JsRuntime.IJ_DATA.bracketAccess(Expressions.stringLiteral("inTemplateCloning")),
+            codeGenerator)
+        .and(expr, codeGenerator);
+  }
+
+  private Statement wrapInTemplateCloning(Statement stmt) {
+    if (!shouldCollectHtml) {
+      return stmt;
+    }
+    staticTemplate = Expressions.concat(staticTemplate, IncrementalDomRuntime.NODE_PART);
+    return Statements.of(
+        useTemplateCloning(INCREMENTAL_DOM.dotAccess("openNodePart").call()).asStatement(),
+        stmt,
+        useTemplateCloning(INCREMENTAL_DOM.dotAccess("closeNodePart").call()).asStatement());
   }
 
   /**
@@ -797,10 +825,8 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
               staticTemplate,
               Expressions.stringLiteral("<" + node.getTagName().getStaticTagName()));
     }
-    if (node.isDynamic()) {
-      return INCREMENTAL_DOM_OPEN.call(args);
-    }
-    return INCREMENTAL_DOM_OPEN_SIMPLE.call(args);
+    var openCall = node.isDynamic() ? INCREMENTAL_DOM_OPEN : INCREMENTAL_DOM_OPEN_SIMPLE;
+    return openCall.call(args);
   }
 
   private Optional<Expression> getApplyStaticAttributes(Map<String, Expression> staticAttributes) {
@@ -883,6 +909,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
     statements.add(openTagExpr.asStatement());
     statements.add(getAttributes(node));
     getClose(node).ifPresent(statements::add);
+
     return Statements.of(statements);
   }
 
@@ -1062,10 +1089,6 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
       case CSS:
         // fall through
       case HTML_PCDATA:
-        if (shouldCollectHtml) {
-          staticTemplate =
-              Expressions.concat(staticTemplate, Expressions.stringLiteral("<!-- -->"));
-        }
         if (node.numChildren() > 0
             && node.getChild(node.numChildren() - 1).getPrintDirective()
                 instanceof SanitizedContentOperator
@@ -1073,17 +1096,15 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
                         node.getChild(node.numChildren() - 1).getPrintDirective())
                     .getContentKind()
                 == SanitizedContent.ContentKind.HTML) {
-          return SOY_IDOM_PRINT
-              .call(INCREMENTAL_DOM, Expressions.concat(chunks), Expressions.LITERAL_TRUE)
-              .asStatement();
+          return wrapInTemplateCloning(
+              SOY_IDOM_PRINT
+                  .call(INCREMENTAL_DOM, Expressions.concat(chunks), Expressions.LITERAL_TRUE)
+                  .asStatement());
         } else {
-          return SOY_IDOM_PRINT.call(INCREMENTAL_DOM, Expressions.concat(chunks)).asStatement();
+          return wrapInTemplateCloning(
+              SOY_IDOM_PRINT.call(INCREMENTAL_DOM, Expressions.concat(chunks)).asStatement());
         }
       case HTML_RCDATA:
-        if (shouldCollectHtml) {
-          staticTemplate =
-              Expressions.concat(staticTemplate, Expressions.stringLiteral("<!-- -->"));
-        }
         return INCREMENTAL_DOM_TEXT
             .call(id("String").call(Expressions.concat(chunks)))
             .asStatement();

@@ -52,6 +52,7 @@ final class IncrementalDomRuntime {
       INCREMENTAL_DOM.dotAccess("keepGoing");
 
   public static final Expression USE_TEMPLATE_CLONING = SOY_IDOM.dotAccess("USE_TEMPLATE_CLONING");
+  public static final Expression NODE_PART = SOY_IDOM.dotAccess("NODE_PART");
 
   public static final Expression INCREMENTAL_DOM_ELEMENT_CLOSE =
       INCREMENTAL_DOM.dotAccess("elementClose");
@@ -121,6 +122,8 @@ final class IncrementalDomRuntime {
   public static final Expression SOY_IDOM_IS_TRUTHY = SOY_IDOM.dotAccess("$$isTruthy");
 
   public static final Expression SOY_IDOM_PRINT = SOY_IDOM.dotAccess("$$print");
+  public static final Expression SOY_IDOM_PRINT_WITH_NODE_PARTS =
+      SOY_IDOM.dotAccess("$$printWithNodeParts");
 
   public static final Expression INCREMENTAL_DOM_EVAL_LOG_FN =
       INCREMENTAL_DOM.dotAccess("evalLoggingFunction");
