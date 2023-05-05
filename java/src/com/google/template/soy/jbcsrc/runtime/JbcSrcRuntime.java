@@ -64,6 +64,7 @@ import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.SoyValueUnconverter;
 import com.google.template.soy.data.SoyVisualElementData;
+import com.google.template.soy.data.TemplateValue;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.internal.LazyProtoToSoyValueList;
 import com.google.template.soy.data.internal.ParamStore;
@@ -1172,11 +1173,11 @@ public final class JbcSrcRuntime {
     return LazyProtoToSoyValueList.forList(list.build(), protoFieldInterpreter);
   }
 
-  public static CompiledTemplate.TemplateValue bindTemplateParams(
-      CompiledTemplate.TemplateValue template, SoyRecord boundParams) {
-    return CompiledTemplate.TemplateValue.create(
-        template.getTemplateName(),
-        new PartiallyBoundTemplate(boundParams, template.getTemplate()));
+  public static TemplateValue bindTemplateParams(TemplateValue template, SoyRecord boundParams) {
+    var newTemplate =
+        new PartiallyBoundTemplate(boundParams, (CompiledTemplate) template.getCompiledTemplate());
+    return TemplateValue.createWithBoundParameters(
+        template.getTemplateName(), newTemplate.boundParams, newTemplate);
   }
 
   @Immutable

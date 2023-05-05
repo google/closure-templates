@@ -46,6 +46,7 @@ import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.SoyVisualElement;
 import com.google.template.soy.data.SoyVisualElementData;
+import com.google.template.soy.data.TemplateValue;
 import com.google.template.soy.data.internal.Converters;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
@@ -105,8 +106,7 @@ public final class BytecodeUtils {
   public static final Type LOGGING_ADVISING_BUILDER_TYPE =
       Type.getType(LoggingAdvisingAppendable.BufferingAppendable.class);
   public static final Type COMPILED_TEMPLATE_TYPE = Type.getType(CompiledTemplate.class);
-  public static final Type COMPILED_TEMPLATE_TEMPLATE_VALUE_TYPE =
-      Type.getType(CompiledTemplate.TemplateValue.class);
+  public static final Type TEMPLATE_VALUE_TYPE = Type.getType(TemplateValue.class);
   public static final Type CONTENT_KIND_TYPE = Type.getType(ContentKind.class);
   public static final Type CLOSEABLE_TYPE = Type.getType(Closeable.class);
   public static final Type DIR_TYPE = Type.getType(Dir.class);

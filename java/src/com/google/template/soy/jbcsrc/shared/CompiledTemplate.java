@@ -18,8 +18,9 @@ package com.google.template.soy.jbcsrc.shared;
 
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
-import com.google.template.soy.data.SoyAbstractValue;
 import com.google.template.soy.data.SoyRecord;
+import com.google.template.soy.data.TemplateValue;
+import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import java.io.IOException;
 
@@ -27,58 +28,16 @@ import java.io.IOException;
 @Immutable
 public interface CompiledTemplate {
 
-  // TODO(lukes): move to the runtime package?
-  /** A factory subtype for representing factories as SoyValues. */
-  final class TemplateValue extends SoyAbstractValue {
-    public static TemplateValue create(String templateName, CompiledTemplate template) {
-      return new TemplateValue(templateName, template);
-    }
-
-    private final String templateName;
-    private final CompiledTemplate delegate;
-
-    private TemplateValue(String templateName, CompiledTemplate delegate) {
-      this.templateName = templateName;
-      this.delegate = delegate;
-    }
-
-    public CompiledTemplate getTemplate() {
-      return delegate;
-    }
-
-    public String getTemplateName() {
-      return templateName;
-    }
-
-    @Override
-    public boolean coerceToBoolean() {
-      return true;
-    }
-
-    @Override
-    public String coerceToString() {
-      return String.format("** FOR DEBUGGING ONLY: %s **", templateName);
-    }
-
-    @Override
-    public void render(LoggingAdvisingAppendable appendable) {
-      throw new IllegalStateException("Printing template types is not allowed.");
-    }
-
-    @Override
-    public boolean equals(Object other) {
-      return this == other;
-    }
-
-    @Override
-    public int hashCode() {
-      return System.identityHashCode(this);
-    }
-
-    @Override
-    public String toString() {
-      return coerceToString();
-    }
+  @SuppressWarnings("Immutable")
+  public static CompiledTemplate createFromTemplateValue(TemplateValue templateValue) {
+    return (params, ij, appendable, context) ->
+        context
+            .getTemplate(templateValue.getTemplateName())
+            .render(
+                templateValue.getBoundParameters().orElseGet(() -> ParamStore.EMPTY_INSTANCE),
+                ij,
+                appendable,
+                context);
   }
 
   /**

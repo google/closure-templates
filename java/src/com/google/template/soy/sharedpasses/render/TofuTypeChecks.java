@@ -27,7 +27,7 @@ import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyProtoValue;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.TofuTemplateValue;
+import com.google.template.soy.data.TemplateValue;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
@@ -157,7 +157,7 @@ public final class TofuTypeChecks {
       case STRING:
         return CheckResult.fromBool(value instanceof StringData);
       case TEMPLATE:
-        return CheckResult.fromBool(value instanceof TofuTemplateValue);
+        return CheckResult.fromBool(value instanceof TemplateValue);
       case TRUSTED_RESOURCE_URI:
         return isSanitizedofKind(value, ContentKind.TRUSTED_RESOURCE_URI);
       case UNION:

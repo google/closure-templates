@@ -18,6 +18,10 @@ package com.google.template.soy.javagencode.javatypes;
 
 /** Represents a template type. */
 public final class TemplateJavaType extends JavaType {
+
+  private static final CodeGenUtils.Member AS_TEMPLATE_VALUE =
+      CodeGenUtils.castFunction("asTemplateValue");
+
   public TemplateJavaType() {
     this(/* isNullable= */ false);
   }
@@ -28,7 +32,7 @@ public final class TemplateJavaType extends JavaType {
 
   @Override
   public String toJavaTypeString() {
-    return "com.google.template.soy.testing.metadata.placeholdertypes.TemplatePlaceholderType";
+    return "com.google.template.soy.data.SoyTemplate";
   }
 
   @Override
@@ -43,6 +47,6 @@ public final class TemplateJavaType extends JavaType {
 
   @Override
   public String asInlineCast(String variable, int depth) {
-    throw new UnsupportedOperationException();
+    return AS_TEMPLATE_VALUE + "(" + variable + ")";
   }
 }
