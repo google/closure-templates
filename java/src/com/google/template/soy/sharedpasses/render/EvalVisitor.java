@@ -55,7 +55,7 @@ import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.SoyVisualElement;
 import com.google.template.soy.data.SoyVisualElementData;
-import com.google.template.soy.data.TemplateValue;
+import com.google.template.soy.data.TofuTemplateValue;
 import com.google.template.soy.data.internal.DictImpl;
 import com.google.template.soy.data.internal.ListImpl;
 import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
@@ -647,9 +647,9 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
           return ((SoyProtoValue) base)
               .getProtoFieldOrNull(BuiltinMethod.getProtoFieldNameFromMethodCall(methodNode));
         case BIND:
-          TemplateValue template = (TemplateValue) base;
+          TofuTemplateValue template = (TofuTemplateValue) base;
           SoyRecord params = (SoyRecord) visit(methodNode.getParams().get(0));
-          return TemplateValue.createWithBoundParameters(
+          return TofuTemplateValue.createWithBoundParameters(
               template.getTemplateName(),
               template.getBoundParameters().isPresent()
                   ? SoyRecords.merge(template.getBoundParameters().get(), params)
@@ -1081,7 +1081,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
 
   @Override
   protected SoyValue visitTemplateLiteralNode(TemplateLiteralNode node) {
-    return TemplateValue.create(node.getResolvedName());
+    return TofuTemplateValue.create(node.getResolvedName());
   }
 
   // -----------------------------------------------------------------------------------------------

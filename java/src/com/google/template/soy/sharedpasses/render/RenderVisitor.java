@@ -36,7 +36,7 @@ import com.google.template.soy.data.SoyRecords;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueProvider;
-import com.google.template.soy.data.TemplateValue;
+import com.google.template.soy.data.TofuTemplateValue;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.internal.Converters;
 import com.google.template.soy.data.internal.ParamStore;
@@ -533,7 +533,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
   @Override
   protected void visitCallBasicNode(CallBasicNode node) {
-    TemplateValue calleeExpr = (TemplateValue) eval(node.getCalleeExpr(), node);
+    TofuTemplateValue calleeExpr = (TofuTemplateValue) eval(node.getCalleeExpr(), node);
     TemplateNode callee = basicTemplates.get(calleeExpr.getTemplateName());
     if (callee == null) {
       throw RenderException.createWithSource(

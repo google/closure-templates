@@ -71,6 +71,7 @@ interface TemplateParameterLookup {
       public Expression getULocale() {
         return getRenderContext().getULocale();
       }
+
       @Override
       public Expression getAllRequiredCssNamespaces(SoyExpression template) {
         return getRenderContext().getAllRequiredCssNamespaces(template);

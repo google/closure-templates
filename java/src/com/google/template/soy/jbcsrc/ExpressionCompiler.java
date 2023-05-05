@@ -1654,14 +1654,14 @@ final class ExpressionCompiler {
 
     private static final String TEMPLATE_VALUE_SIGNATURE =
         Type.getMethodDescriptor(
-            BytecodeUtils.TEMPLATE_VALUE_TYPE, BytecodeUtils.RENDER_CONTEXT_TYPE);
+            BytecodeUtils.COMPILED_TEMPLATE_TEMPLATE_VALUE_TYPE, BytecodeUtils.RENDER_CONTEXT_TYPE);
 
     @Override
     protected SoyExpression visitTemplateLiteralNode(TemplateLiteralNode node) {
       Expression renderContext = parameters.getRenderContext();
       return SoyExpression.forSoyValue(
           node.getType(),
-          new Expression(BytecodeUtils.TEMPLATE_VALUE_TYPE) {
+          new Expression(BytecodeUtils.COMPILED_TEMPLATE_TEMPLATE_VALUE_TYPE) {
             @Override
             protected void doGen(CodeBuilder adapter) {
               renderContext.gen(adapter);

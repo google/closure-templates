@@ -48,10 +48,6 @@ import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
-import com.google.template.soy.jbcsrc.api.RenderResult;
-import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
-import com.google.template.soy.jbcsrc.shared.RenderContext;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.List;
@@ -233,7 +229,6 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
     protected static StringData asString(String s) {
       return StringData.forValue(s);
     }
-  
 
     protected static SoyValue asNullableString(@Nullable String s) {
       return s == null ? NullData.INSTANCE : asString(s);
@@ -410,37 +405,13 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
       return new SoyLegacyObjectMapImpl(builder.build());
     }
 
-    protected static <V> SoyValue asNullableLegacyObjectMap(
+    protected static <K, V> SoyValue asNullableLegacyObjectMap(
         @Nullable Map<?, V> map, Function<? super V, ? extends SoyValueProvider> valueMapper) {
       return map == null ? NullData.INSTANCE : asLegacyObjectMap(map, valueMapper);
     }
 
     protected static SoyValueProvider asSoyValue(@Nullable Object object) {
       return SoyValueConverter.INSTANCE.convert(object);
-    }
-
-    @SuppressWarnings({"unchecked", "Immutable"})
-    protected static SoyValueProvider asTemplateValue(SoyTemplate template) {
-      return TemplateValue.createFromTemplate(
-          template,
-          new CompiledTemplate() {
-            @Override
-            public RenderResult render(
-                SoyRecord params,
-                SoyRecord ij,
-                LoggingAdvisingAppendable appendable,
-                RenderContext context)
-                throws IOException {
-              return context
-                  .getTemplate(template.getTemplateName())
-                  .render(
-                      SoyRecordImpl.forProviderMap(
-                          (Map<String, SoyValueProvider>) template.getParamsAsMap()),
-                      ij,
-                      appendable,
-                      context);
-            }
-          });
     }
 
     @ForOverride
@@ -497,7 +468,7 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
   public abstract static class AbstractBuilderWithAccumulatorParameters<
           B extends AbstractBuilderWithAccumulatorParameters<?, T>, T extends SoyTemplate>
       extends AbstractBuilder<B, T> {
-    private final IdentityHashMap<SoyTemplateParam<?>, List<SoyValueProvider>> accummulatorData =
+    private final Map<SoyTemplateParam<?>, List<SoyValueProvider>> accummulatorData =
         new IdentityHashMap<>();
 
     protected AbstractBuilderWithAccumulatorParameters(int numParams) {
