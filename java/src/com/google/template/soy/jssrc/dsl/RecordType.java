@@ -38,7 +38,7 @@ public abstract class RecordType extends AbstractType {
     for (ParamDecl param : params()) {
       first = ctx.commaAfterFirst(first);
 
-      ctx.append(param.name() + (param.isOptional() ? "?" : ""));
+      ctx.append(param.name() + (param.optional() ? "?" : ""));
       if (param.type() != null) {
         ctx.noBreak().append(": ").appendOutputExpression(param.type());
       }

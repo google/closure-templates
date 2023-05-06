@@ -61,6 +61,9 @@ public abstract class ParamDecls extends Expression {
         first = ctx.commaAfterFirst(first);
 
         ctx.append(param.name());
+        if (param.alias() != null) {
+          ctx.noBreak().append(": " + param.alias());
+        }
         if (param.defaultValue() != null) {
           ctx.noBreak().append(" = ").appendOutputExpression(param.defaultValue());
         }

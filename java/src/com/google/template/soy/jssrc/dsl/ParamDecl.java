@@ -16,7 +16,6 @@
 package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
-import com.google.common.base.Preconditions;
 import com.google.errorprone.annotations.Immutable;
 import java.util.Objects;
 import java.util.stream.Stream;
@@ -34,27 +33,22 @@ public abstract class ParamDecl extends Expression {
   public abstract String name();
 
   @Nullable
+  public abstract String alias();
+
+  @Nullable
   abstract Expression type();
 
-  abstract boolean isOptional();
+  abstract boolean optional();
 
   @Nullable
   abstract Expression defaultValue();
 
   public static ParamDecl create(String name) {
-    return new AutoValue_ParamDecl(name, null, false, null);
+    return builder(name).build();
   }
 
   public static ParamDecl create(String name, Expression type) {
-    return new AutoValue_ParamDecl(name, type, false, null);
-  }
-
-  public static ParamDecl create(String name, Expression type, boolean isOptional) {
-    return new AutoValue_ParamDecl(name, type, isOptional, null);
-  }
-
-  public static ParamDecl create(String name, Expression type, Expression defaultValue) {
-    return new AutoValue_ParamDecl(name, type, true, Preconditions.checkNotNull(defaultValue));
+    return builder(name).setType(type).build();
   }
 
   @Override
@@ -65,11 +59,31 @@ public abstract class ParamDecl extends Expression {
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
     ctx.append(name());
-    if (isOptional()) {
+    if (optional()) {
       ctx.noBreak().append("?");
     }
     if (type() != null) {
       ctx.noBreak().append(": ").appendOutputExpression(type());
     }
+  }
+
+  public static Builder builder(String name) {
+    return new AutoValue_ParamDecl.Builder().setName(name).setOptional(false);
+  }
+
+  /** Builder. */
+  @AutoValue.Builder
+  public abstract static class Builder {
+    public abstract ParamDecl.Builder setName(String name);
+
+    public abstract ParamDecl.Builder setAlias(String alias);
+
+    public abstract ParamDecl.Builder setType(Expression type);
+
+    public abstract ParamDecl.Builder setOptional(boolean optional);
+
+    public abstract ParamDecl.Builder setDefaultValue(Expression defaultValue);
+
+    public abstract ParamDecl build();
   }
 }
