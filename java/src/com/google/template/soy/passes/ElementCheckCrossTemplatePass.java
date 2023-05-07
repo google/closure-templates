@@ -67,7 +67,10 @@ final class ElementCheckCrossTemplatePass implements CompilerFileSetPass {
           }
           SoyType type = maybeType.get();
           if (!type.isAssignableFromStrict(SoyTypes.removeNull(attr.type()))) {
-            errorReporter.report(attr.getSourceLocation(), WRONG_ATTRIBUTE_TYPE, type.toString());
+            errorReporter.report(
+                attr.getSourceLocation(),
+                WRONG_ATTRIBUTE_TYPE,
+                type.toString());
           }
         });
   }
