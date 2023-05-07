@@ -189,11 +189,11 @@ import * as simple from 'examples/simple.soy';
                                                             * 'name' and 'numWaffles'.
                                                             */
 
-  {if $persons.length() != 0}
+  {if $persons.length != 0}
     {for $person, $personIndex in $persons}
       {if $personIndex == 0}
         First,
-      {elseif $personIndex == $persons.length() - 1}
+      {elseif $personIndex == $persons.length - 1}
         Finally,
       {else}
         Then
@@ -392,36 +392,48 @@ import * as simple from 'examples/simple.soy';
  * Demo expressions.
  */
 {template demoExpressions}
-  {@param students: list<[name: string, major: string, year: number]>}  /** List of students. */
-  {@param currentYear: number}  /** The current year. */
+  {@param students: list<[name: string, major: string, year: number]>}    /** List of students. */
+  {@param currentYear: number}    /** The current year. */
 
-  First student's major: {$students[0].major}<br>
-  Last student's year: {$students[length($students) - 1].year}<br>
-  Random student's major: {$students[randomInt(length($students))].major}<br>
+  First student's major: {$students[0].major}
+  <br>
+  Last student's year: {$students[$students.length - 1].year}
+  <br>
+  Random student's major: {$students[randomInt($students.length)].major}
+  <br>
 
   {for $student, $studentIndex in $students}
     {$student.name}:
 
     {if $studentIndex == 0}
       {sp}First.
-    {elseif $studentIndex == $students.length() - 1}
-      {sp}Last.
-    // Note: must use floor() in next check since division is floating-point.
-    {elseif $studentIndex == ceiling(length($students) / 2) - 1}
+    {elseif $studentIndex == $students.length - 1}
+      {sp}
+      Last.
+      // Note: must use floor() in next check since division is floating-point.
+    {elseif $studentIndex == ceiling($students.length / 2) - 1}
       {sp}Middle.
     {/if}
 
     {if $studentIndex % 2 == 1} Even.
     {/if}
     {sp}{$student.major}.
-    {if $student.major == 'Physics' or $student.major == 'Biology'} Scientist.{/if}
-    {if $currentYear - $student.year < 10} Young.{/if}
+    {if $student.major == 'Physics' or $student.major == 'Biology'} Scientist.
+    {/if}
+    {if $currentYear - $student.year < 10} Young.
+    {/if}
 
     // The following print statement prints "70s", "80s", "90s", or "00s". Note that "00s" is a
     // special case since using the same expression would yield "0s", not "00s".
-    {sp}{$student.year < 2000 ? round($student.year - 1905, -1) + 's' : '00s'}.
+    {sp}
+    {$student.year < 2000 ? round($student.year - 1905, -1) + 's' : '00s'}.
     // Equivalent to previous line.
-    {sp}{if $student.year < 2000}{round($student.year - 1905, -1)}{else}00{/if}s.
+    {sp}
+    {if $student.year < 2000}
+      {round($student.year - 1905, -1)}
+    {else}
+      00
+    {/if}s.
 
     <br>
   {/for}
