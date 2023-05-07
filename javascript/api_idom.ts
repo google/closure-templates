@@ -8,6 +8,8 @@ import {toObjectForTesting} from 'google3/javascript/apps/jspb/debug';
 import {Message} from 'google3/javascript/apps/jspb/message';
 import * as soy from 'google3/javascript/template/soy/soyutils_usegoog';
 import {$$VisualElementData, ElementMetadata, Logger} from 'google3/javascript/template/soy/soyutils_velog';
+import {unwrapTrustedScriptURL} from 'google3/javascript/typescript/safevalues/safe_unwrappers';
+import {trustedResourceUrlFromStringKnownToSatisfyTypeContract} from 'google3/javascript/typescript/safevalues/unchecked_conversions';
 import * as incrementaldom from 'incrementaldom';  // from //third_party/javascript/incremental_dom:incrementaldom
 
 import {attributes} from './api_idom_attributes';
@@ -242,6 +244,14 @@ export class IncrementalDomRenderer implements IdomRendererApi {
   }
 
   attr(name: string, value: string) {
+    // The right hand side has already been sanitized by Soy.
+    if (name === 'src') {
+      incrementaldom.attr(
+          name,
+          unwrapTrustedScriptURL(
+              trustedResourceUrlFromStringKnownToSatisfyTypeContract(
+                  value, 'Value has been pre-sanitized by Soy.')));
+    }
     incrementaldom.attr(name, value);
   }
 
