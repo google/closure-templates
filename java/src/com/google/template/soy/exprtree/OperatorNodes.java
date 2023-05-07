@@ -316,6 +316,50 @@ public class OperatorNodes {
     }
   }
 
+  /** Node representing the '===' (strict equal) operator. */
+  public static final class StrictEqualOpNode extends AbstractOperatorNode {
+
+    public StrictEqualOpNode(SourceLocation sourceLocation, SourceLocation operatorLocation) {
+      super(sourceLocation, Operator.STRICT_EQUAL, operatorLocation);
+    }
+
+    private StrictEqualOpNode(StrictEqualOpNode orig, CopyState copyState) {
+      super(orig, copyState);
+    }
+
+    @Override
+    public Kind getKind() {
+      return Kind.STRICT_EQUAL_OP_NODE;
+    }
+
+    @Override
+    public StrictEqualOpNode copy(CopyState copyState) {
+      return new StrictEqualOpNode(this, copyState);
+    }
+  }
+
+  /** Node representing the '!==' (not equal) operator. */
+  public static final class NotStrictEqualOpNode extends AbstractOperatorNode {
+
+    public NotStrictEqualOpNode(SourceLocation sourceLocation, SourceLocation operatorLocation) {
+      super(sourceLocation, Operator.NOT_STRICT_EQUAL, operatorLocation);
+    }
+
+    private NotStrictEqualOpNode(NotStrictEqualOpNode orig, CopyState copyState) {
+      super(orig, copyState);
+    }
+
+    @Override
+    public Kind getKind() {
+      return Kind.NOT_STRICT_EQUAL_OP_NODE;
+    }
+
+    @Override
+    public NotStrictEqualOpNode copy(CopyState copyState) {
+      return new NotStrictEqualOpNode(this, copyState);
+    }
+  }
+
   /** Node representing the 'and' operator. */
   public static final class AndOpNode extends AbstractOperatorNode {
 
