@@ -540,6 +540,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
     var oldStringBuilder = staticTemplate;
     staticTemplate = EMPTY_STATIC_TEMPLATE;
     var stmt = function.get();
+    
     if (staticTemplate != EMPTY_STATIC_TEMPLATE) {
       var varDecl =
           VariableDeclaration.builder("statics_template_" + alias + "_" + staticsCounter++)
@@ -1141,12 +1142,13 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
   protected Statement visitVeLogNode(VeLogNode node) {
     List<Statement> statements = new ArrayList<>();
     VeLogStateHolder state = openVeLogNode(node);
-    var oldStaticTemplate = staticTemplate;
-    staticTemplate = EMPTY_STATIC_TEMPLATE;
     statements.add(state.enterStatement);
-    statements.addAll(visitChildren(node));
+    if (node.getLogonlyExpression() != null) {
+      statements.add(addStaticsContent(() -> Statements.of(visitChildren(node))));
+    } else {
+      statements.addAll(visitChildren(node));
+    }
     statements.add(exitVeLogNode(node, state.logOnlyConditional));
-    staticTemplate = oldStaticTemplate;
     return Statements.of(statements);
   }
 
