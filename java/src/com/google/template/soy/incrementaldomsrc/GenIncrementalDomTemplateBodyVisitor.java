@@ -568,12 +568,16 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
 
   private Expression useTemplateCloning(Expression expr) {
     var codeGenerator = templateTranslationContext.codeGenerator();
-    return JsRuntime.IJ_DATA
-        .and(IncrementalDomRuntime.USE_TEMPLATE_CLONING, codeGenerator)
-        .and(
-            JsRuntime.IJ_DATA.bracketAccess(Expressions.stringLiteral("inTemplateCloning")),
-            codeGenerator)
-        .and(expr, codeGenerator);
+    var baseExpression =
+        JsRuntime.IJ_DATA
+            .and(IncrementalDomRuntime.USE_TEMPLATE_CLONING, codeGenerator)
+            .and(
+                JsRuntime.IJ_DATA.bracketAccess(Expressions.stringLiteral("inTemplateCloning")),
+                codeGenerator);
+    if (expr != null) {
+      return baseExpression.and(expr, codeGenerator);
+    }
+    return baseExpression;
   }
 
   private Statement wrapInTemplateCloning(Statement stmt) {
@@ -1090,6 +1094,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
       case CSS:
         // fall through
       case HTML_PCDATA:
+        staticTemplate = Expressions.concat(staticTemplate, IncrementalDomRuntime.NODE_PART);
         if (node.numChildren() > 0
             && node.getChild(node.numChildren() - 1).getPrintDirective()
                 instanceof SanitizedContentOperator
@@ -1097,13 +1102,21 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
                         node.getChild(node.numChildren() - 1).getPrintDirective())
                     .getContentKind()
                 == SanitizedContent.ContentKind.HTML) {
-          return wrapInTemplateCloning(
-              SOY_IDOM_PRINT
-                  .call(INCREMENTAL_DOM, Expressions.concat(chunks), Expressions.LITERAL_TRUE)
-                  .asStatement());
+          return SOY_IDOM_PRINT
+              .call(
+                  INCREMENTAL_DOM,
+                  Expressions.concat(chunks),
+                  Expressions.LITERAL_TRUE,
+                  useTemplateCloning(null))
+              .asStatement();
         } else {
-          return wrapInTemplateCloning(
-              SOY_IDOM_PRINT.call(INCREMENTAL_DOM, Expressions.concat(chunks)).asStatement());
+          return SOY_IDOM_PRINT
+              .call(
+                  INCREMENTAL_DOM,
+                  Expressions.concat(chunks),
+                  Expressions.LITERAL_FALSE,
+                  useTemplateCloning(null))
+              .asStatement();
         }
       case HTML_RCDATA:
         return INCREMENTAL_DOM_TEXT
