@@ -17,13 +17,23 @@
 package com.google.template.soy.data;
 
 import com.google.common.util.concurrent.ListenableFuture;
+import java.util.Map;
 
 /**
  * An invocation of a Soy template, encapsulating both the template name and all the data parameters
  * passed to the template.
  *
  */
-public interface SoyTemplate extends TemplateInterface {
+public interface SoyTemplate {
+
+  /** Returns the name of the Soy template that this params object renders. */
+  String getTemplateName();
+
+  /**
+   * Returns the parameters as a map. This method is only intended to be called by the Soy
+   * framework.
+   */
+  Map<String, ?> getParamsAsMap();
 
   /**
    * The superclass of all generated builders.
@@ -38,13 +48,6 @@ public interface SoyTemplate extends TemplateInterface {
      * @throws IllegalStateException if any required, non-indirect parameter is unset.
      */
     T build();
-
-    /**
-     * Builds and returns a `SoyTemplate` that is partially filled. This can be passed into another
-     * template that can fill in the rest of the values, but cannot be used directly in an
-     * invocation.
-     */
-    PartialSoyTemplate<T> buildPartial();
 
     /**
      * Sets any template parameter of this builder. SoyTemplateParam ensures type safety.

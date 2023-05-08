@@ -69,7 +69,7 @@ import javax.annotation.Nullable;
  */
 public abstract class BaseSoyTemplateImpl implements SoyTemplate {
 
-  protected final ImmutableMap<String, SoyValueProvider> data;
+  private final ImmutableMap<String, SoyValueProvider> data;
 
   protected BaseSoyTemplateImpl(ImmutableMap<String, SoyValueProvider> data) {
     this.data = data;
@@ -141,31 +141,11 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
           buildDataMapWithChecks(/* checkRequired= */ true);
       return buildInternal(finalData);
     }
-    private static class PartialSoyTemplateImpl<T extends SoyTemplate>
-        implements PartialSoyTemplate<T> {
-      private final T soyTemplate;
 
-      PartialSoyTemplateImpl(T soyTemplate) {
-        this.soyTemplate = soyTemplate;
-      }
-
-      @Override
-      public String getTemplateName() {
-        return soyTemplate.getTemplateName();
-      }
-
-      @Override
-      @SuppressWarnings("unchecked")
-      public Map<String, SoyValueProvider> getParamsAsMap() {
-        return (Map<String, SoyValueProvider>) soyTemplate.getParamsAsMap();
-      }
-    }
-
-    @Override
-    public final PartialSoyTemplate<T> buildPartial() {
+    final T buildPartialForTests() {
       ImmutableMap<String, SoyValueProvider> finalData =
           buildDataMapWithChecks(/* checkRequired= */ false);
-      return new PartialSoyTemplateImpl<T>(buildInternal(finalData));
+      return buildInternal(finalData);
     }
 
     @ForOverride
@@ -440,7 +420,7 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
     }
 
     @SuppressWarnings({"unchecked", "Immutable"})
-    protected static SoyValueProvider asTemplateValue(TemplateInterface template) {
+    protected static SoyValueProvider asTemplateValue(SoyTemplate template) {
       return TemplateValue.createFromTemplate(
           template,
           new CompiledTemplate() {
@@ -454,10 +434,8 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
               return context
                   .getTemplate(template.getTemplateName())
                   .render(
-                      SoyRecords.merge(
-                          params,
-                          SoyRecordImpl.forProviderMap(
-                              (Map<String, SoyValueProvider>) template.getParamsAsMap())),
+                      SoyRecordImpl.forProviderMap(
+                          (Map<String, SoyValueProvider>) template.getParamsAsMap()),
                       ij,
                       appendable,
                       context);
