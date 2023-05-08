@@ -34,15 +34,12 @@ CODE_GENERATION = [
     "BaseSoyTemplateImpl.java",
 ]
 
-CODE_GEN_TEST_ONLY = [
-    "PartialTemplateBuilder.java",
-]
-
 TEMPLATE = [
     "CssParam.java",
     "SoyTemplate.java",
     "PartialSoyTemplate.java",
     "SoyTemplateParam.java",
+    "TemplateInterface.java",
 ]
 
 TEMPLATE_UTIL = [
@@ -92,7 +89,7 @@ java_library(
             "restricted/*.java",
             "internal/*.java",
         ],
-        exclude = LOCKED_DOWN + ACTUAL_INTERNAL + VE + CODE_GENERATION + TEMPLATE + TEMPLATE_UTIL + TEMPLATE_RESTRICTED_UTIL + CODE_GEN_TEST_ONLY,
+        exclude = LOCKED_DOWN + ACTUAL_INTERNAL + VE + CODE_GENERATION + TEMPLATE + TEMPLATE_UTIL + TEMPLATE_RESTRICTED_UTIL,
     ),
     visibility = ["//visibility:public"],
     exports = [

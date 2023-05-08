@@ -35,6 +35,7 @@ import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypes;
+import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.UnionType;
 import com.google.template.soy.types.UnknownType;
 import java.util.Iterator;
@@ -149,7 +150,7 @@ public final class JavaTypeUtils {
         types = trySimpleRecordType((RecordType) soyType, /* list= */ false, skipSoyTypes);
         break;
       case TEMPLATE:
-        types = ImmutableList.of(new TemplateJavaType());
+        types = ImmutableList.of(new TemplateJavaType((TemplateType) soyType));
         break;
       case VE:
         types = ImmutableList.of(new VeJavaType());
