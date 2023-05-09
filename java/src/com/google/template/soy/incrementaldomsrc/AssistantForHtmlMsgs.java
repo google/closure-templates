@@ -39,6 +39,7 @@ import com.google.template.soy.jssrc.internal.TemplateAliases;
 import com.google.template.soy.jssrc.internal.TranslationContext;
 import com.google.template.soy.soytree.HtmlContext;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
+import com.google.template.soy.soytree.MsgHtmlTagNode;
 import com.google.template.soy.soytree.MsgPlaceholderNode;
 import com.google.template.soy.soytree.VeLogNode;
 import java.util.ArrayList;
@@ -190,7 +191,12 @@ final class AssistantForHtmlMsgs extends GenJsCodeVisitorAssistantForMsgs {
     // to decide which branch to execute.
     SwitchBuilder switchBuilder = Statements.switchValue(item.bracketAccess(Expressions.number(1)));
     for (Map.Entry<String, MsgPlaceholderNode> ph : placeholderNames.entrySet()) {
-      Statement value = idomTemplateBodyVisitor.visit(ph.getValue());
+      // MsgHtmlTagNodes should be created manually and not use template cloning.
+      Statement value =
+          ph.getValue().getChildrenOfType(MsgHtmlTagNode.class).isEmpty()
+              ? idomTemplateBodyVisitor.addStaticsContent(
+                  () -> idomTemplateBodyVisitor.visit(ph.getValue()))
+              : idomTemplateBodyVisitor.visit(ph.getValue());
       MsgPlaceholderNode phNode = ph.getValue();
       if (phNode.getParent() instanceof VeLogNode) {
         VeLogNode parent = (VeLogNode) phNode.getParent();

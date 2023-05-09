@@ -241,7 +241,7 @@ function makeAttributes(
 
   Object.setPrototypeOf(fn, SanitizedHtmlAttribute.prototype);
   fn.invoke = (renderer: IncrementalDomRenderer = defaultIdomRenderer) =>
-      idomFn(renderer);
+      { idomFn(renderer); };
 
   if (stringContent) {
     fn.toString = toLazyFunction(stringContent);
@@ -590,7 +590,14 @@ function appendCloneToCurrent(
   if (!currentElement) {
     return;
   }
-  const currentPointer = renderer.currentPointer();
+  let currentPointer = renderer.currentPointer();
+  // We are at the inside of a node part created by a message. We should insert
+  // before the end of the node part.
+  if (currentPointer === null &&
+      currentElement.nodeType === Node.COMMENT_NODE &&
+      (currentElement as unknown as Comment).data === '?/child-node-part?') {
+    currentPointer = currentElement;
+  }
   const clone = content.cloneNode(true) as HTMLTemplateElement;
   if (currentPointer?.nodeType === Node.COMMENT_NODE) {
     if (clone.content) {

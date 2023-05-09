@@ -149,13 +149,9 @@ public final class HtmlOpenTagNode extends HtmlTagNode {
     if (isSelfClosing() || getTagName().isDefinitelyVoid()) {
       return false;
     }
-    var parent =
-        getParent() instanceof MsgHtmlTagNode ? getParent().getParent().getParent() : getParent();
+    var parent = getParent();
     var closeTag = getTaggedPairs().get(0);
-    var otherParent =
-        closeTag.getParent() instanceof MsgHtmlTagNode
-            ? closeTag.getParent().getParent().getParent()
-            : closeTag.getParent();
+    var otherParent = closeTag.getParent();
     return parent != otherParent;
   }
 

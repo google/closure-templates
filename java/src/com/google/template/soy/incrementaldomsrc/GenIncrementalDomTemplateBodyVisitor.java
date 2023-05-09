@@ -823,12 +823,14 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
       key = translateExpr(node.getKeyNode().getExpr());
     }
     args.add(key);
-    shouldCollectHtml = shouldCollectHtml && !node.hasUnpredictableTagLocation();
-    if (shouldCollectHtml) {
-      staticTemplate =
-          Expressions.concat(
-              staticTemplate,
-              Expressions.stringLiteral("<" + node.getTagName().getStaticTagName()));
+    if (!(node.getParent() instanceof MsgHtmlTagNode)) {
+      shouldCollectHtml = shouldCollectHtml && !node.hasUnpredictableTagLocation();
+      if (shouldCollectHtml) {
+        staticTemplate =
+            Expressions.concat(
+                staticTemplate,
+                Expressions.stringLiteral("<" + node.getTagName().getStaticTagName()));
+      }
     }
     var openCall = node.isDynamic() ? INCREMENTAL_DOM_OPEN : INCREMENTAL_DOM_OPEN_SIMPLE;
     return openCall.call(args);
@@ -926,7 +928,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
     // Whether or not it is valid for this tag to be self closing has already been validated by the
     // HtmlContextVisitor.  So we just need to output the close instructions if the node is self
     // closing or definitely void.
-    if (shouldCollectHtml) {
+    if (shouldCollectHtml && !(node.getParent() instanceof MsgHtmlTagNode)) {
       staticTemplate =
           Expressions.concat(
               staticTemplate,
@@ -946,7 +948,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
       statements.add(maybeApplyStatics.get().asStatement());
     }
     statements.add(getApplyAttrs(node).asStatement());
-    if (shouldCollectHtml) {
+    if (shouldCollectHtml && !(node.getParent() instanceof MsgHtmlTagNode)) {
       staticAttributes.forEach(
           (key, valueExpression) -> {
             staticTemplate =
@@ -1026,14 +1028,16 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
     if (!node.getTagName().isDefinitelyVoid()) {
       statements.add(close.call().asStatement());
     }
-    shouldCollectHtml =
-        shouldCollectHtml && node.getTaggedPairs().size() == 1 && node.getTagName().isStatic();
-    if (shouldCollectHtml) {
-      staticTemplate =
-          Expressions.concat(
-              staticTemplate,
-              Expressions.stringLiteral(
-                  String.format("</%s>", node.getTagName().getStaticTagName())));
+    if (!(node.getParent() instanceof MsgHtmlTagNode)) {
+      shouldCollectHtml =
+          shouldCollectHtml && node.getTaggedPairs().size() == 1 && node.getTagName().isStatic();
+      if (shouldCollectHtml) {
+        staticTemplate =
+            Expressions.concat(
+                staticTemplate,
+                Expressions.stringLiteral(
+                    String.format("</%s>", node.getTagName().getStaticTagName())));
+      }
     }
     return Statements.of(statements);
   }
@@ -1210,18 +1214,19 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
                 .setRhs(Expressions.objectLiteral(ImmutableMap.of()))
                 .build();
         staticVarDeclarations.add(staticDecl);
-        return new AssistantForHtmlMsgs(
-                /* idomTemplateBodyVisitor= */ this,
-                jsSrcOptions,
-                genCallCodeUtils,
-                isComputableAsJsExprsVisitor,
-                templateAliases,
-                genJsExprsVisitor,
-                templateTranslationContext,
-                errorReporter,
-                id,
-                outputVars)
-            .generateMsgGroupCode(node);
+        return wrapInTemplateCloning(
+            new AssistantForHtmlMsgs(
+                    /* idomTemplateBodyVisitor= */ this,
+                    jsSrcOptions,
+                    genCallCodeUtils,
+                    isComputableAsJsExprsVisitor,
+                    templateAliases,
+                    genJsExprsVisitor,
+                    templateTranslationContext,
+                    errorReporter,
+                    id,
+                    outputVars)
+                .generateMsgGroupCode(node));
         // Messages in attribute values are plain text. However, since the translated content
         // includes entities (because other Soy backends treat these messages as HTML source), we
         // must unescape the translations before passing them to the idom APIs.
