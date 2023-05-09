@@ -83,6 +83,9 @@ public abstract class TsxPrintNode extends Expression {
     return !(expr() instanceof Expression) || ((Expression) expr()).isCheap();
   }
 
+  public static final CommandChar NIL =
+      new AutoValue_TsxPrintNode_CommandChar(Optional.empty(), false);
+
   /**
    * Special handling for command chars, since we don't want to break lines within these print
    * nodes, and need to circumvent double escaping on the strings.
@@ -98,10 +101,6 @@ public abstract class TsxPrintNode extends Expression {
     public static CommandChar create(String charContents, boolean endLineAfterChar) {
       return new AutoValue_TsxPrintNode_CommandChar(
           Optional.of(StringLiteral.create(charContents)), endLineAfterChar);
-    }
-
-    public static CommandChar createNil() {
-      return new AutoValue_TsxPrintNode_CommandChar(Optional.empty(), false);
     }
 
     abstract Optional<Expression> expr();

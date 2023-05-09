@@ -42,6 +42,8 @@ abstract class Concatenation extends Operation {
     for (Expression part : parts) {
       if (part instanceof Concatenation) {
         partsBuilder.addAll(((Concatenation) part).parts());
+      } else if (part.equals(TsxPrintNode.NIL)) {
+        // Skip it.
       } else {
         partsBuilder.add(part);
       }
