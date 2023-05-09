@@ -378,6 +378,10 @@ public final class Expressions {
     return Group.create(e);
   }
 
+  public static Expression nullable(Expression e) {
+    return unionType(ImmutableList.of(e instanceof FunctionType ? group(e) : e, id("null")));
+  }
+
   /**
    * Builds a {@link Expression} that represents the concatenation of the given code chunks. The
    * {@code +} operator is used for concatenation.
