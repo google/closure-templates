@@ -813,7 +813,20 @@ public final class EscapingConventions {
     /** CSS functions are safe to call and allow through the escaper. */
     private static final ImmutableSet<String> ALLOWED_CSS_FUNCTIONS =
         ImmutableSet.of(
-            "rgb", "rgba", "hsl", "hsla", "calc", "max", "min", "cubic-bezier", "linear-gradient");
+            // go/keep-sorted started
+            "calc",
+            "cubic-bezier",
+            "hsl",
+            "hsla",
+            "hue-rotate",
+            "invert",
+            "linear-gradient",
+            "max",
+            "min",
+            "rgb",
+            "rgba"
+            // go/keep-sorted end
+            );
 
     private static final String ALLOWED_IN_FUNCTIONS = "[- \t,+.!#%_0-9a-zA-Z]";
 

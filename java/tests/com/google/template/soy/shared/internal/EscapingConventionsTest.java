@@ -139,6 +139,7 @@ public class EscapingConventionsTest {
         new String[] {
           "linear-gradient(180deg, rgba(0, 0, 0, 0) 55%, rgba(0, 0, 0, 0.5) 80%,rgba(0, 0, 0,"
               + " 0.75) 100%)",
+          "invert(1) hue-rotate(180deg)",
         };
 
     for (String uri : shouldReject) {
