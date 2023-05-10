@@ -16,28 +16,36 @@
 
 package com.google.template.soy.javagencode.javatypes;
 
+import com.google.template.soy.types.TemplateType;
+
 /** Represents a template type. */
 public final class TemplateJavaType extends JavaType {
 
   private static final CodeGenUtils.Member AS_TEMPLATE_VALUE =
       CodeGenUtils.castFunction("asTemplateValue");
 
-  public TemplateJavaType() {
-    this(/* isNullable= */ false);
+  private final TemplateType type;
+
+  public TemplateJavaType(TemplateType type) {
+    this(/* isNullable= */ false, type);
   }
 
-  public TemplateJavaType(boolean isNullable) {
+  public TemplateJavaType(boolean isNullable, TemplateType type) {
     super(isNullable);
+    this.type = type;
   }
 
   @Override
   public String toJavaTypeString() {
-    return "com.google.template.soy.data.SoyTemplate";
+    if (this.type.getParameters().isEmpty()) {
+      return "com.google.template.soy.data.SoyTemplate";
+    }
+    return "com.google.template.soy.data.PartialSoyTemplate";
   }
 
   @Override
   public JavaType asNullable() {
-    return new TemplateJavaType(/* isNullable= */ true);
+    return new TemplateJavaType(/* isNullable= */ true, type);
   }
 
   @Override

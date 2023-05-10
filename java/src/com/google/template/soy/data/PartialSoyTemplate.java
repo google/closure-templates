@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 package com.google.template.soy.data;
+
+
 /**
  * An invocation of a Soy template, encapsulating both the template name and some the data
  * parameters passed to the template. Note that this is allowed to have some of its parameters not
  * fully added, but it cannot be used for rendering.
  */
-public interface PartialSoyTemplate {}
+public interface PartialSoyTemplate extends TemplateInterface {}

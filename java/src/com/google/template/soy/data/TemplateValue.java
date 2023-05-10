@@ -44,7 +44,8 @@ public abstract class TemplateValue extends SoyAbstractValue {
         templateName, Optional.of(boundParameters), Optional.of(compiledTemplate));
   }
 
-  public static TemplateValue createFromTemplate(SoyTemplate template, Object compiledTemplate) {
+  public static TemplateValue createFromTemplate(
+      TemplateInterface template, Object compiledTemplate) {
     @SuppressWarnings("unchecked")
     SoyRecord record =
         SoyRecordImpl.forProviderMap((Map<String, SoyValueProvider>) template.getParamsAsMap());
