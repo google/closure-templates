@@ -468,8 +468,8 @@ function getOriginalSanitizedContent(el: Element) {
  */
 function print(
     incrementaldom: IncrementalDomRenderer, expr: unknown,
-    isSanitizedContent?: boolean|undefined, wrapInNodeParts?: boolean) {
-  if (USE_TEMPLATE_CLONING && wrapInNodeParts) {
+    isSanitizedContent?: boolean|undefined) {
+  if (USE_TEMPLATE_CLONING) {
     incrementaldom.openNodePart();
   }
   if (expr instanceof SanitizedHtml || isSanitizedContent ||
@@ -501,7 +501,7 @@ function print(
   } else if (expr !== undefined) {
     renderDynamicContent(incrementaldom, expr as IdomFunction);
   }
-  if (USE_TEMPLATE_CLONING && wrapInNodeParts) {
+  if (USE_TEMPLATE_CLONING) {
     incrementaldom.closeNodePart();
   }
 }

@@ -584,11 +584,16 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
     if (!shouldCollectHtml) {
       return stmt;
     }
+    var codeGenerator = templateTranslationContext.codeGenerator();
     staticTemplate = Expressions.concat(staticTemplate, IncrementalDomRuntime.NODE_PART);
     return Statements.of(
-        useTemplateCloning(INCREMENTAL_DOM.dotAccess("openNodePart").call()).asStatement(),
+        IncrementalDomRuntime.USE_TEMPLATE_CLONING
+            .and(INCREMENTAL_DOM.dotAccess("openNodePart").call(), codeGenerator)
+            .asStatement(),
         stmt,
-        useTemplateCloning(INCREMENTAL_DOM.dotAccess("closeNodePart").call()).asStatement());
+        IncrementalDomRuntime.USE_TEMPLATE_CLONING
+            .and(INCREMENTAL_DOM.dotAccess("closeNodePart").call(), codeGenerator)
+            .asStatement());
   }
 
   /**
@@ -1107,20 +1112,10 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
                     .getContentKind()
                 == SanitizedContent.ContentKind.HTML) {
           return SOY_IDOM_PRINT
-              .call(
-                  INCREMENTAL_DOM,
-                  Expressions.concat(chunks),
-                  Expressions.LITERAL_TRUE,
-                  useTemplateCloning(null))
+              .call(INCREMENTAL_DOM, Expressions.concat(chunks), Expressions.LITERAL_TRUE)
               .asStatement();
         } else {
-          return SOY_IDOM_PRINT
-              .call(
-                  INCREMENTAL_DOM,
-                  Expressions.concat(chunks),
-                  Expressions.LITERAL_FALSE,
-                  useTemplateCloning(null))
-              .asStatement();
+          return SOY_IDOM_PRINT.call(INCREMENTAL_DOM, Expressions.concat(chunks)).asStatement();
         }
       case HTML_RCDATA:
         return INCREMENTAL_DOM_TEXT
