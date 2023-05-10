@@ -60,12 +60,12 @@ function escapeHtml(value: unknown, renderer: IncrementalDomRenderer) {
  * the regular escaping directive.
  */
 function bidiUnicodeWrap(
-    bidiGlobalDir: number, value: unknown, renderer: IncrementalDomRenderer) {
+    value: unknown, bidiGlobalDir: number, renderer: IncrementalDomRenderer) {
   if (isIdomFunctionType(value, SanitizedContentKind.HTML)) {
     return soy.$$bidiUnicodeWrap(
-        bidiGlobalDir, ordainSanitizedHtml(value.toString(renderer)));
+        ordainSanitizedHtml(value.toString(renderer)), bidiGlobalDir);
   }
-  return soy.$$bidiUnicodeWrap(bidiGlobalDir, value);
+  return soy.$$bidiUnicodeWrap(value, bidiGlobalDir);
 }
 
 export {

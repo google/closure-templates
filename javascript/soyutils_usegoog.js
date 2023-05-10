@@ -1901,11 +1901,11 @@ const $$concatCssValues = function(l, r) {
  *     be coerced to a string.
  * @param {number} maxLen The maximum length of the string after truncation
  *     (including ellipsis, if applicable).
- * @param {boolean} doAddEllipsis Whether to add ellipsis if the string needs
+ * @param {boolean=} doAddEllipsis Whether to add ellipsis if the string needs
  *     truncation.
  * @return {string} The string after truncation.
  */
-const $$truncate = function(str, maxLen, doAddEllipsis) {
+const $$truncate = function(str, maxLen, doAddEllipsis = false) {
   str = String(str);
   if (str.length <= maxLen) {
     return str;  // no need to truncate
@@ -2283,13 +2283,13 @@ const $$bidiMarkAfter = function(bidiGlobalDir, text, isHtml) {
  * If text has a bidi.Dir-valued contentDir, this is used instead of
  * estimating the directionality.
  *
- * @param {number} bidiGlobalDir The global directionality context: 1 if ltr, -1
- *     if rtl, 0 if unknown.
  * @param {?} text The string to be wrapped. Can be other types, but the value
  *     will be coerced to a string.
+ * @param {number=} bidiGlobalDir The global directionality context: 1 if ltr,
+ *     -1 if rtl, 0 if unknown.
  * @return {string} The wrapped text.
  */
-const $$bidiSpanWrap = function(bidiGlobalDir, text) {
+const $$bidiSpanWrap = function(text, bidiGlobalDir = 0) {
   const formatter = getBidiFormatterInstance_(bidiGlobalDir);
 
   // We always treat the value as HTML, because span-wrapping is only useful
@@ -2325,13 +2325,14 @@ const $$bidiSpanWrap = function(bidiGlobalDir, text) {
  * If text has a bidi.Dir-valued contentDir, this is used instead of
  * estimating the directionality.
  *
- * @param {number} bidiGlobalDir The global directionality context: 1 if ltr, -1
- *     if rtl, 0 if unknown.
+
  * @param {?} text The string to be wrapped. Can be other types, but the value
  *     will be coerced to a string.
+ * @param {number=} bidiGlobalDir The global directionality context: 1 if ltr,
+ *     -1 if rtl, 0 if unknown.
  * @return {!SanitizedHtml|string} The wrapped string.
  */
-const $$bidiUnicodeWrap = function(bidiGlobalDir, text) {
+const $$bidiUnicodeWrap = function(text, bidiGlobalDir = 0) {
   const formatter = getBidiFormatterInstance_(bidiGlobalDir);
 
   // We treat the value as HTML if and only if it says it's HTML.
