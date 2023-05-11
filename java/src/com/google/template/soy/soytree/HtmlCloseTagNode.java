@@ -28,7 +28,7 @@ public final class HtmlCloseTagNode extends HtmlTagNode {
 
   public HtmlCloseTagNode(
       int id, StandaloneNode node, SourceLocation sourceLocation, TagExistence tagExistence) {
-    super(id, node, sourceLocation, tagExistence);
+    super(id, node, sourceLocation, tagExistence, false);
   }
 
   private HtmlCloseTagNode(HtmlCloseTagNode orig, CopyState copyState) {

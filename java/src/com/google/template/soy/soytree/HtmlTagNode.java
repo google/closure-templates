@@ -60,6 +60,12 @@ public abstract class HtmlTagNode extends AbstractParentSoyNode<StandaloneNode>
   private final TagExistence tagExistence;
 
   /**
+   * Whether or not the node is a self closing tag because it ends with {@code />} instead of {@code
+   * >}.
+   */
+  private final boolean selfClosing;
+
+  /**
    * Represents a list of tags that this HtmlTagNode might be paired with. For example, if we have
    * an element `<div></div>`, the HTMLOpenTagNode would have the HTMLCloseTagNode in its
    * taggedPairs (and vice versa). This is a list because an open tag node might have multiple close
@@ -68,13 +74,18 @@ public abstract class HtmlTagNode extends AbstractParentSoyNode<StandaloneNode>
   private final List<HtmlTagNode> taggedPairs = new ArrayList<>();
 
   protected HtmlTagNode(
-      int id, StandaloneNode node, SourceLocation sourceLocation, TagExistence tagExistence) {
+      int id,
+      StandaloneNode node,
+      SourceLocation sourceLocation,
+      TagExistence tagExistence,
+      boolean selfClosing) {
     super(id, sourceLocation);
     checkNotNull(node);
     checkState(node.getParent() == null);
     addChild(node);
     this.tagName = tagNameFromNode(node);
     this.tagExistence = tagExistence;
+    this.selfClosing = selfClosing;
   }
 
   protected HtmlTagNode(HtmlTagNode orig, CopyState copyState) {
@@ -94,6 +105,7 @@ public abstract class HtmlTagNode extends AbstractParentSoyNode<StandaloneNode>
     for (HtmlTagNode matchingNode : orig.taggedPairs) {
       copyState.registerRefListener(matchingNode, taggedPairs::add);
     }
+    this.selfClosing = orig.selfClosing;
   }
 
   @SuppressWarnings("unchecked")
@@ -116,6 +128,22 @@ public abstract class HtmlTagNode extends AbstractParentSoyNode<StandaloneNode>
     }
   }
 
+  public boolean hasUnpredictableTagLocation() {
+    if (!getTagName().isStatic()) {
+      return true;
+    }
+    if (isSelfClosing() || getTagName().isDefinitelyVoid()) {
+      return false;
+    }
+    if (getTaggedPairs().size() != 1 || getTaggedPairs().get(0).getTaggedPairs().size() != 1) {
+      return true;
+    }
+    var parent = getParent();
+    var closeTag = getTaggedPairs().get(0);
+    var otherParent = closeTag.getParent();
+    return parent != otherParent;
+  }
+
   /** Returns true if this node was inserted by the {@code StrictHtmlValidationPass}. */
   public boolean isSynthetic() {
     return tagExistence == TagExistence.SYNTHETIC;
@@ -135,6 +163,10 @@ public abstract class HtmlTagNode extends AbstractParentSoyNode<StandaloneNode>
       }
     }
     return null;
+  }
+
+  public boolean isSelfClosing() {
+    return selfClosing;
   }
 
   private static TagName tagNameFromNode(StandaloneNode rawTextOrPrintNode) {

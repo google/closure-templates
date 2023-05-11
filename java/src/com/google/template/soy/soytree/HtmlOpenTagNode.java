@@ -31,12 +31,6 @@ import com.google.template.soy.soytree.SoyNode.StandaloneNode;
  */
 public final class HtmlOpenTagNode extends HtmlTagNode {
 
-  /**
-   * Whether or not the node is a self closing tag because it ends with {@code />} instead of {@code
-   * >}.
-   */
-  private final boolean selfClosing;
-
   /** Whether or not this node is the root of a soy element. Populated by the SoyElementPass. */
   private boolean isElementRoot = false;
 
@@ -56,13 +50,11 @@ public final class HtmlOpenTagNode extends HtmlTagNode {
       SourceLocation sourceLocation,
       boolean selfClosing,
       TagExistence tagExistence) {
-    super(id, node, sourceLocation, tagExistence);
-    this.selfClosing = selfClosing;
+    super(id, node, sourceLocation, tagExistence, selfClosing);
   }
 
   private HtmlOpenTagNode(HtmlOpenTagNode orig, CopyState copyState) {
     super(orig, copyState);
-    this.selfClosing = orig.selfClosing;
     this.isElementRoot = orig.isElementRoot;
     this.keyId = orig.keyId;
     this.isSkipRoot = orig.isSkipRoot;
@@ -73,10 +65,6 @@ public final class HtmlOpenTagNode extends HtmlTagNode {
   @Override
   public Kind getKind() {
     return Kind.HTML_OPEN_TAG_NODE;
-  }
-
-  public boolean isSelfClosing() {
-    return selfClosing;
   }
 
   /** Returns true if this is an element root. */
@@ -139,22 +127,6 @@ public final class HtmlOpenTagNode extends HtmlTagNode {
     return null;
   }
 
-  public boolean hasUnpredictableTagLocation() {
-    if (!getTagName().isStatic()) {
-      return true;
-    }
-    if (getTaggedPairs().size() != 1 || getTaggedPairs().get(0).getTaggedPairs().size() != 1) {
-      return true;
-    }
-    if (isSelfClosing() || getTagName().isDefinitelyVoid()) {
-      return false;
-    }
-    var parent = getParent();
-    var closeTag = getTaggedPairs().get(0);
-    var otherParent = closeTag.getParent();
-    return parent != otherParent;
-  }
-
   @Override
   public HtmlOpenTagNode copy(CopyState copyState) {
     return new HtmlOpenTagNode(this, copyState);
@@ -171,7 +143,7 @@ public final class HtmlOpenTagNode extends HtmlTagNode {
       }
       sb.append(child.toSourceString());
     }
-    sb.append(selfClosing ? "/>" : ">");
+    sb.append(isSelfClosing() ? "/>" : ">");
     return sb.toString();
   }
 }

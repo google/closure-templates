@@ -544,7 +544,8 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
             fileSetMetadata,
             alias,
             node.getContentKind().isHtml());
-    Statement body = visitor.addStaticsContent(() -> Statements.of(visitor.visitChildren(node)));
+    Statement body =
+        visitor.addStaticsContent(() -> Statements.of(visitor.visitChildren(node)), true);
 
     if (isTextTemplate) {
       VariableDeclaration declare =

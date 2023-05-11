@@ -336,7 +336,13 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
     }
   }
 
-  protected Statement addStaticsContent(Supplier<Statement> function) {
+  /**
+   * When some portion of a template is unstable, the rest of the block should also be unstable.
+   * However, some content that's in Let/CallParamContent/Velog/Msg shouldn't. isSelfContainedBlock
+   * controls whether to let the "unstableness" of a block infect the rest of the template or not.
+   */
+  protected Statement addStaticsContent(
+      Supplier<Statement> function, boolean isSelfContainedBlock) {
     return function.get();
   }
 
@@ -357,7 +363,7 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
         // Convert body.
         Statement consequent =
             shouldAddStaticsContent
-                ? addStaticsContent(() -> Statements.of(visitChildren(condNode)))
+                ? addStaticsContent(() -> Statements.of(visitChildren(condNode)), false)
                 : Statements.of(visitChildren(condNode));
         // Add if-block to conditional.
         if (conditional == null) {
@@ -370,7 +376,7 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
         // Convert body.
         Statement trailingElse =
             shouldAddStaticsContent
-                ? addStaticsContent(() -> Statements.of(visitChildren((IfElseNode) child)))
+                ? addStaticsContent(() -> Statements.of(visitChildren((IfElseNode) child)), false)
                 : Statements.of(visitChildren((IfElseNode) child));
         // Add else-block to conditional.
         conditional.setElse(trailingElse);
@@ -428,7 +434,7 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
         }
         Statement body =
             shouldAddStaticsContent
-                ? addStaticsContent(() -> Statements.of(visitChildren(scn)))
+                ? addStaticsContent(() -> Statements.of(visitChildren(scn)), false)
                 : Statements.of(visitChildren(scn));
         switchBuilder.addCase(caseChunks.build(), body);
       } else if (child instanceof SwitchDefaultNode) {
@@ -619,7 +625,8 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
     // Generate the loop body.
     Statement foreachBody =
         shouldAddStaticsContent
-            ? addStaticsContent(() -> Statements.of(data, Statements.of(visitChildren(node))))
+            ? addStaticsContent(
+                () -> Statements.of(data, Statements.of(visitChildren(node))), false)
             : Statements.of(data, Statements.of(visitChildren(node)));
 
     // Create the entire for block.
