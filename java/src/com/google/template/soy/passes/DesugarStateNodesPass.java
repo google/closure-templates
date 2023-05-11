@@ -24,6 +24,7 @@ import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.basicdirectives.BasicDirectives;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.StringNode;
@@ -36,6 +37,7 @@ import com.google.template.soy.soytree.HtmlAttributeValueNode.Quotes;
 import com.google.template.soy.soytree.HtmlContext;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.LetValueNode;
+import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SkipNode;
@@ -172,6 +174,16 @@ final class DesugarStateNodesPass implements CompilerFileSetPass {
               /* expr= */ wrappedFn,
               /* attributes= */ ImmutableList.of(),
               ErrorReporter.exploding());
+      if (openTag.getKeyNode() != null) {
+        PrintDirectiveNode newPrintDirective =
+            PrintDirectiveNode.createSyntheticNode(
+                idGenerator.genId(),
+                Identifier.create(
+                    BasicDirectives.ESCAPE_HTML_ATTRIBUTE.getName(), printNode.getSourceLocation()),
+                printNode.getSourceLocation(),
+                BasicDirectives.ESCAPE_HTML_ATTRIBUTE);
+        printNode.addChild(newPrintDirective);
+      }
       printNode.getExpr().setType(wrappedFn.getType());
       printNode.setHtmlContext(HtmlContext.HTML_NORMAL_ATTR_VALUE);
       value.addChild(printNode);

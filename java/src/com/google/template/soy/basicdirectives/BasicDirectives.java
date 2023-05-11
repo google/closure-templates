@@ -22,6 +22,9 @@ import com.google.template.soy.shared.restricted.SoyPrintDirective;
 public final class BasicDirectives {
   private BasicDirectives() {}
 
+  public static SoyPrintDirective ESCAPE_HTML_ATTRIBUTE =
+      new BasicEscapeDirective.EscapeHtmlAttribute();
+
   public static ImmutableSet<SoyPrintDirective> directives() {
     return ImmutableSet.of(
 
@@ -30,7 +33,7 @@ public final class BasicDirectives {
         new BasicEscapeDirective.FilterCssValue(),
         new BasicEscapeDirective.NormalizeHtml(),
         new BasicEscapeDirective.EscapeHtmlRcdata(),
-        new BasicEscapeDirective.EscapeHtmlAttribute(),
+        ESCAPE_HTML_ATTRIBUTE,
         new BasicEscapeDirective.EscapeHtmlHtmlAttribute(),
         new BasicEscapeDirective.EscapeHtmlAttributeNospace(),
         new BasicEscapeDirective.FilterHtmlAttributes(),
