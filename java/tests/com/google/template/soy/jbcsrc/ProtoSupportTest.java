@@ -95,7 +95,7 @@ public final class ProtoSupportTest {
 
     CompiledTemplateSubject tester =
         assertThatTemplateBody(
-            "{@param proto : ProtoMap}", "{$proto.mapMessageFieldMap?[2390]?.field ?: 'bar'}");
+            "{@param proto : ProtoMap}", "{$proto.getMapMessageFieldMap()?[2390]?.field ?: 'bar'}");
     tester.rendersAs(
         "4837",
         ImmutableMap.of(
@@ -223,22 +223,6 @@ public final class ProtoSupportTest {
                         SomeEmbeddedMessage.newBuilder().setSomeEmbeddedString("k1"))
                     .addRepeatedEmbeddedMessage(
                         SomeEmbeddedMessage.newBuilder().setSomeEmbeddedString("k2"))));
-
-    // TODO(b/230787876): remove once we drop support for repeated proto field access
-    assertThatTemplateBody(
-            "{@param e : ExampleExtendable}",
-            "{for $m in $e.repeatedEmbeddedMessageList}",
-            "  {$m.someEmbeddedString}",
-            "{/for}")
-        .rendersAs(
-            "k1k2",
-            ImmutableMap.of(
-                "e",
-                ExampleExtendable.newBuilder()
-                    .addRepeatedEmbeddedMessage(
-                        SomeEmbeddedMessage.newBuilder().setSomeEmbeddedString("k1"))
-                    .addRepeatedEmbeddedMessage(
-                        SomeEmbeddedMessage.newBuilder().setSomeEmbeddedString("k2"))));
   }
 
   @Test
@@ -246,26 +230,6 @@ public final class ProtoSupportTest {
     assertThatTemplateBody(
             "{@param e : ExampleExtendable}",
             "{for $str in $e.someEmbeddedMessage.getSomeEmbeddedRepeatedStringList()}",
-            "  {$str}",
-            "{/for}")
-        .rendersAs(
-            "abc",
-            ImmutableMap.of(
-                "e",
-                ExampleExtendable.newBuilder()
-                    .setSomeEmbeddedMessage(
-                        SomeEmbeddedMessage.newBuilder()
-                            .addSomeEmbeddedRepeatedString("a")
-                            .addSomeEmbeddedRepeatedString("b")
-                            .addSomeEmbeddedRepeatedString("c"))))
-        .failsToRenderWith(
-            NullPointerException.class,
-            ImmutableMap.of("e", ExampleExtendable.getDefaultInstance()));
-
-    // TODO(b/230787876): remove once we drop support for repeated proto field access
-    assertThatTemplateBody(
-            "{@param e : ExampleExtendable}",
-            "{for $str in $e.someEmbeddedMessage.someEmbeddedRepeatedStringList}",
             "  {$str}",
             "{/for}")
         .rendersAs(
@@ -366,7 +330,7 @@ public final class ProtoSupportTest {
     // being parsed.
     assertThatTemplateBody(
             "{@param msg: Proto3Message}",
-            "{$msg.getAnEnum()} {$msg.anEnumsList}"
+            "{$msg.getAnEnum()} {$msg.getAnEnumsList()}"
             )
         .rendersAs(
             "11 [12, 13]"
@@ -443,9 +407,9 @@ public final class ProtoSupportTest {
     assertThatTemplateBody(
             "{let $p: ExampleExtendable(",
             "  repeatedLongWithInt52JsTypeList: [1000, 2000]) /}",
-            "{$p.repeatedLongWithInt52JsTypeList}{\\n}",
-            "{$p.repeatedLongWithInt52JsTypeList[0]}{\\n}",
-            "{$p.repeatedLongWithInt52JsTypeList[1]}")
+            "{$p.getRepeatedLongWithInt52JsTypeList()}{\\n}",
+            "{$p.getRepeatedLongWithInt52JsTypeList()[0]}{\\n}",
+            "{$p.getRepeatedLongWithInt52JsTypeList()[1]}")
         .rendersAs(JOINER.join("[1000, 2000]", "1000", "2000"));
   }
 
@@ -455,9 +419,9 @@ public final class ProtoSupportTest {
             "{@param l: list<int>}",
             "{let $p: ExampleExtendable(",
             "  repeatedLongWithInt52JsTypeList: $l) /}",
-            "{$p.repeatedLongWithInt52JsTypeList}{\\n}",
-            "{$p.repeatedLongWithInt52JsTypeList[0]}{\\n}",
-            "{$p.repeatedLongWithInt52JsTypeList[1]}")
+            "{$p.getRepeatedLongWithInt52JsTypeList()}{\\n}",
+            "{$p.getRepeatedLongWithInt52JsTypeList()[0]}{\\n}",
+            "{$p.getRepeatedLongWithInt52JsTypeList()[1]}")
         .rendersAs(
             JOINER.join("[1000, 2000]", "1000", "2000"),
             ImmutableMap.of("l", ImmutableList.of(1000, 2000)));
@@ -469,7 +433,7 @@ public final class ProtoSupportTest {
             "{@param? l: list<int>|null}",
             "{let $p: ExampleExtendable(",
             "  repeatedLongWithInt52JsTypeList: $l) /}",
-            "{$p.repeatedLongWithInt52JsTypeList}")
+            "{$p.getRepeatedLongWithInt52JsTypeList()}")
         .rendersAs("[]");
   }
 
@@ -478,7 +442,7 @@ public final class ProtoSupportTest {
     assertThatTemplateBody(
             "{@param l: ?}",
             "{let $p: ExampleExtendable(repeatedLongWithInt52JsTypeList: $l) /}",
-            "{$p.repeatedLongWithInt52JsTypeList}")
+            "{$p.getRepeatedLongWithInt52JsTypeList()}")
         .rendersAs("[]");
   }
 

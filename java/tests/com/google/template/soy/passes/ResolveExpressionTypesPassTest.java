@@ -775,7 +775,6 @@ public final class ResolveExpressionTypesPassTest {
                     "{assertType('example.SomeEmbeddedMessage', $proto.someEmbeddedMessage)}",
                     "{assertType('example.SomeEmbeddedMessage|null',"
                         + " $proto.getSomeEmbeddedMessage())}",
-                    "{assertType('list<int>', $proto.repeatedLongWithInt52JsTypeList)}",
                     "{assertType('list<int>', $proto.getRepeatedLongWithInt52JsTypeList())}",
                     "",
                     "{let $protoCorrect: Proto2ImplicitDefaults() /}",

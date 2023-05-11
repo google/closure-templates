@@ -2517,9 +2517,9 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
     private void checkProtoFieldAccess(
         SoyProtoType baseType, String fieldName, SourceLocation sourceLocation) {
       FieldDescriptor fd = baseType.getFieldDescriptor(fieldName);
-      if (!fd.hasPresence() && !fd.isRepeated()) {
-        // Scalar fields without presence are not allowed to be read using the field access
-        // syntax (only readable via getter method call). The field access syntax means
+      if (fd.isRepeated() || !fd.hasPresence()) {
+        // Repeated fields and scalar fields without presence are not allowed to be read using the
+        // field access syntax (only readable via getter method call). The field access syntax means
         // nullish return for scalar fields, which cannot be supported if there's no
         // presence semantics.
         errorReporter.report(
