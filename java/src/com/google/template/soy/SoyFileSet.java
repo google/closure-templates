@@ -96,6 +96,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -139,10 +140,7 @@ public final class SoyFileSet {
    */
   public static final class Builder {
     /** The SoyFileSuppliers collected so far in added order, as a set to prevent dupes. */
-    private final ImmutableMap.Builder<SourceFilePath, SoyFileSupplier> filesBuilder =
-        ImmutableMap.builder();
-
-    private boolean allowFileReplacements;
+    private final Map<SourceFilePath, SoyFileSupplier> filesBuilder = new LinkedHashMap<>();
 
     private final ImmutableList.Builder<CompilationUnitAndKind> compilationUnitsBuilder =
         ImmutableList.builder();
@@ -240,7 +238,7 @@ public final class SoyFileSet {
               .addAll(InternalPlugins.internalMethods())
               .addAll(sourceMethods.build())
               .build(),
-          allowFileReplacements ? filesBuilder.buildKeepingLast() : filesBuilder.buildOrThrow(),
+          ImmutableMap.copyOf(filesBuilder),
           compilationUnitsBuilder.build(),
           getGeneralOptions(),
           cache,
@@ -426,13 +424,12 @@ public final class SoyFileSet {
     }
 
     /**
-     * If called, then it is not an error to add the same file path multiple times to this builder
-     * and the last provided value will be used.
+     * Replaces a Soy file already in this builder with another file, returning the original file.
      */
     @CanIgnoreReturnValue
-    public Builder allowFileReplacements() {
-      allowFileReplacements = true;
-      return this;
+    public SoyFileSupplier clobberFile(SoyFileSupplier contents) {
+      SoyFileSupplier previous = filesBuilder.put(contents.getFilePath(), contents);
+      return Preconditions.checkNotNull(previous);
     }
 
     /**
@@ -541,7 +538,10 @@ public final class SoyFileSet {
 
     @CanIgnoreReturnValue
     private Builder addFile(SoyFileSupplier supplier) {
-      filesBuilder.put(supplier.getFilePath(), supplier);
+      SoyFileSupplier previous = filesBuilder.put(supplier.getFilePath(), supplier);
+      if (previous != null) {
+        throw new IllegalArgumentException("Duplicate path " + supplier.getFilePath());
+      }
       return this;
     }
 
