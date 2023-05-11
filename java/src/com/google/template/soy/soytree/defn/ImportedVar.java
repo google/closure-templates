@@ -17,6 +17,7 @@
 package com.google.template.soy.soytree.defn;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
@@ -136,6 +137,17 @@ public final class ImportedVar extends AbstractVarDefn implements Copyable<Impor
 
   public SourceFilePath getSourceFilePath() {
     return parent != null ? parent.getSourceFilePath() : filePath;
+  }
+
+  /** Returns a list of imported vars, fom the root imported symbol to the leaf symbol. */
+  public ImmutableList<ImportedVar> getChain() {
+    ImmutableList.Builder<ImportedVar> builder = ImmutableList.builder();
+    ImportedVar var = this;
+    do {
+      builder.add(var);
+      var = var.parent;
+    } while (var != null);
+    return builder.build().reverse();
   }
 
   /** Returns the location without any trailing "as Foo". */
