@@ -8,7 +8,7 @@ import {toObjectForTesting} from 'google3/javascript/apps/jspb/debug';
 import {Message} from 'google3/javascript/apps/jspb/message';
 import * as soy from 'google3/javascript/template/soy/soyutils_usegoog';
 import {$$VisualElementData, ElementMetadata, Logger} from 'google3/javascript/template/soy/soyutils_velog';
-import * as incrementaldom from 'incrementaldom';  // from //third_party/javascript/incremental_dom:incrementaldom
+import * as incrementaldom from 'incrementaldom'; // from //third_party/javascript/incremental_dom:incrementaldom
 
 import {attributes} from './api_idom_attributes';
 
@@ -17,7 +17,8 @@ export {IdomTemplate as Template} from './templates';
 
 declare global {
   interface Node {
-    __lastParams: string|undefined;
+    __lastParams: string | undefined;
+    __hasBeenRendered?: boolean;
   }
 }
 
@@ -147,14 +148,21 @@ export class IncrementalDomRenderer implements IdomRendererApi {
       maybeReportErrors(el, data);
     }
 
-    // If the element has already been rendered, tell the template to skip it.
-    // Caveat: if the element has only attributes, we will skip regardless.
-    if (!el || el.hasChildNodes()) {
+    // We want to skip if this element has already been rendered. In The
+    // client-side rendering use case, this is straight forward because
+    // we can tag the element. in SSR, we do best effort guessing using
+    // child nodes.
+    if (
+      !el ||
+      el.__hasBeenRendered ||
+      (!incrementaldom.inTemplateCloning() && el.hasChildNodes())
+    ) {
       this.skip();
       // And exit its node so that we will continue with the next node.
       this.close();
       return false;
     }
+    el.__hasBeenRendered = true;
 
     // Only set the marker attribute when actually populating the element.
     if (goog.DEBUG && el) {
@@ -381,7 +389,7 @@ export class NullRenderer extends IncrementalDomRenderer {
 
   /** Returns to the default renderer which will traverse the DOM. */
   override toDefaultRenderer() {
-    this.renderer!.setLogger(this.getLogger());
+    this.renderer.setLogger(this.getLogger());
     return this.renderer;
   }
 }
