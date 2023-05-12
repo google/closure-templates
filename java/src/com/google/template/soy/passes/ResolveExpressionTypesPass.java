@@ -1984,23 +1984,25 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
 
     @Override
     protected void visitFunctionNode(FunctionNode node) {
+      if (!node.hasStaticName()
+          && !node.allowedToInvokeAsFunction()
+          && (node.getNameExpr().getType() instanceof TemplateImportType
+              || node.getNameExpr().getType() instanceof TemplateType)) {
+        if (node.getParent() instanceof FunctionNode
+            && ((FunctionNode) node.getParent()).allowedToInvokeAsFunction()) {
+          // Recursively allow short form calls, e.g. {tmpl1(p: tmpl2())}
+          node.setAllowedToInvokeAsFunction(true);
+        } else {
+          node.setType(UnknownType.getInstance());
+          errorReporter.report(node.getSourceLocation(), MUST_USE_TEMPLATES_IMMEDIATELY);
+          // Suppress a followup error that this is unknown.
+          node.setAllowedToInvokeAsFunction(true);
+          visitChildren(node);
+          return;
+        }
+      }
       visitChildren(node);
       if (!node.hasStaticName()) {
-        if (!node.allowedToInvokeAsFunction()
-            && (node.getNameExpr().getType() instanceof TemplateImportType
-                || node.getNameExpr().getType() instanceof TemplateType)) {
-          if (node.getParent() instanceof FunctionNode
-              && ((FunctionNode) node.getParent()).allowedToInvokeAsFunction()) {
-            // Recursively allow short form calls, e.g. {tmpl1(p: tmpl2())}
-            node.setAllowedToInvokeAsFunction(true);
-          } else {
-            node.setType(UnknownType.getInstance());
-            errorReporter.report(node.getSourceLocation(), MUST_USE_TEMPLATES_IMMEDIATELY);
-            // Suppress a followup error that this is unknown.
-            node.setAllowedToInvokeAsFunction(true);
-            return;
-          }
-        }
         visit(node.getNameExpr());
         if (node.getNameExpr().getType().getKind() == Kind.TEMPLATE_TYPE) {
           node.setType(
