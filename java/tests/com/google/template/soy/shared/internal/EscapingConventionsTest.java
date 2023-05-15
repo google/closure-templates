@@ -140,6 +140,8 @@ public class EscapingConventionsTest {
           "linear-gradient(180deg, rgba(0, 0, 0, 0) 55%, rgba(0, 0, 0, 0.5) 80%,rgba(0, 0, 0,"
               + " 0.75) 100%)",
           "invert(1) hue-rotate(180deg)",
+          "translateY(-50%) translate(0) translate3d(-10px, 40px, 0)",
+          "rotateZ(180deg) rotate(90deg)",
         };
 
     for (String uri : shouldReject) {

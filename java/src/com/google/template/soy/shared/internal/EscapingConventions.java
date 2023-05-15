@@ -824,7 +824,12 @@ public final class EscapingConventions {
             "max",
             "min",
             "rgb",
-            "rgba"
+            "rgba",
+            "rotate",
+            "rotateZ",
+            "translate",
+            "translate3d",
+            "translateY"
             // go/keep-sorted end
             );
 
