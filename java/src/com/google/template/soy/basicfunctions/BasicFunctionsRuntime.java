@@ -358,6 +358,11 @@ public final class BasicFunctionsRuntime {
     return list.build();
   }
 
+  public static boolean strContainsFromIndex(String left, String right, NumberData index) {
+    int clampedStart = clampStrIndex(left, index);
+    return left.substring(clampedStart).contains(right);
+  }
+
   public static boolean strContains(SoyValue left, String right) {
     // TODO(b/74259210) -- Change the first param to String & avoid using stringValue().
     return left.stringValue().contains(right);
