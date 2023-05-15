@@ -99,14 +99,18 @@ abstract class Operation extends Expression {
    * </ul>
    */
   private boolean shouldProtect(Expression operand, OperandPosition operandPosition) {
-    if (operand instanceof Operation) {
-      Operation operation = (Operation) operand;
+    CodeChunk cc = operand;
+    if (cc instanceof TsxPrintNode) {
+      cc = ((TsxPrintNode) operand).expr();
+    }
+    if (cc instanceof Operation) {
+      Operation operation = (Operation) cc;
       return operation.precedence().lessThan(this.precedence())
           || (operation.precedence() == this.precedence()
               && operandPosition.shouldParenthesize(operation.associativity()));
-    } else if (operand instanceof Leaf) {
+    } else if (cc instanceof Leaf) {
       // JsExprs have precedence info, but not associativity. So at least check the precedence.
-      JsExpr expr = ((Leaf) operand).value();
+      JsExpr expr = ((Leaf) cc).value();
       return expr.getPrecedence() < this.precedence().toInt();
     } else {
       return false;
