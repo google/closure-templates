@@ -480,11 +480,8 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
     }
     // Only wrap in a node part if there are siblings within a template node. If all a template does
     // is delegate to another template, then there is no need to create a node part.
-    if (node.getHtmlContext() == HtmlContext.HTML_PCDATA
-        && !(node.getParent() instanceof TemplateNode
-            && node.getParent().getChildren().stream().filter(p -> !(p instanceof LetNode)).count()
-                == 1)) {
-      return wrapInTemplateCloning(Statements.of(statements));
+    if (node.getHtmlContext() == HtmlContext.HTML_PCDATA) {
+      return wrapInTemplateCloning(Statements.of(statements), node);
     }
     return Statements.of(statements);
   }
@@ -521,7 +518,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
   protected Statement visitIfNode(IfNode node) {
     if (!isTextContent(contentKind.peek())) {
       if (node.getHtmlContext() == HtmlContext.HTML_PCDATA) {
-        return wrapInTemplateCloning(super.generateNonExpressionIfNode(node));
+        return wrapInTemplateCloning(super.generateNonExpressionIfNode(node), node);
       }
       return super.generateNonExpressionIfNode(node);
     } else {
@@ -533,7 +530,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
   protected Statement visitForNode(ForNode node) {
     var ret = super.visitForNode(node);
     if (node.getHtmlContext() == HtmlContext.HTML_PCDATA) {
-      return wrapInTemplateCloning(ret);
+      return wrapInTemplateCloning(ret, node);
     }
     return ret;
   }
@@ -542,7 +539,7 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
   protected Statement visitSwitchNode(SwitchNode node) {
     var ret = super.visitSwitchNode(node);
     if (node.getHtmlContext() == HtmlContext.HTML_PCDATA) {
-      return wrapInTemplateCloning(ret);
+      return wrapInTemplateCloning(ret, node);
     }
     return ret;
   }
@@ -606,7 +603,10 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
     return baseExpression;
   }
 
-  private Statement wrapInTemplateCloning(Statement stmt) {
+  private Statement wrapInTemplateCloning(Statement stmt, SoyNode node) {
+    if (node.getParent().getChildren().stream().filter(p -> !(p instanceof LetNode)).count() == 1) {
+      return stmt;
+    }
     var codeGenerator = templateTranslationContext.codeGenerator();
     staticTemplate = Expressions.concat(staticTemplate, IncrementalDomRuntime.NODE_PART);
     return Statements.of(
@@ -1239,7 +1239,8 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
                     errorReporter,
                     id,
                     outputVars)
-                .generateMsgGroupCode(node));
+                .generateMsgGroupCode(node),
+            node);
         // Messages in attribute values are plain text. However, since the translated content
         // includes entities (because other Soy backends treat these messages as HTML source), we
         // must unescape the translations before passing them to the idom APIs.
