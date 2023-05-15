@@ -124,6 +124,7 @@ import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
+import com.google.template.soy.extrafunctions.SoyMergeFunction;
 import com.google.template.soy.internal.util.TopoSort;
 import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
@@ -355,6 +356,8 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
               + " names are not allowed.");
   private static final SoyErrorKind NOT_PROTO_MESSAGE =
       SoyErrorKind.of("Only proto messages may be instantiated.");
+  private static final SoyErrorKind MERGE_ARG_TYPES_DONT_MATCH =
+      SoyErrorKind.of("Both proto message arguments for merge() must be the same type.");
   private static final SoyErrorKind MUST_USE_TEMPLATES_IMMEDIATELY =
       SoyErrorKind.of(
           "Templates may only be called to initialize a '{'let'}', set a '{'param'}', or as the"
@@ -2786,6 +2789,13 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
      */
     private void visitInternalSoyFunction(Object fn, FunctionNode node) {
       // Here we have special handling for a variety of 'generic' function.
+      if (fn instanceof SoyMergeFunction) {
+        if (node.getChild(0).getType() != node.getChild(1).getType()) {
+          errorReporter.report(node.getChild(1).getSourceLocation(), MERGE_ARG_TYPES_DONT_MATCH);
+          return;
+        }
+        node.setType(node.getChild(0).getType());
+      }
       if (fn instanceof LegacyObjectMapToMapFunction) {
         // If argument type is incorrect, do not try to create a return type. Instead, set the
         // return type to unknown.
