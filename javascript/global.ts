@@ -27,6 +27,15 @@ interface ElementCtor<TElement extends SoyElement<{}|null, {}>> {
 }
 
 /**
+ * @define Whether to use template cloning. This adds a static amount of JS to
+ *     each template that can be used to cache initial renders.
+ */
+export const USE_TEMPLATE_CLONING = goog.define(
+  'soyidom.USE_TEMPLATE_CLONING',
+  goog.DEBUG
+);
+
+/**
  * Retrieves the Soy element in a type-safe way.
  *
  * <p>Requires that the node has been rendered by this element already. Will
