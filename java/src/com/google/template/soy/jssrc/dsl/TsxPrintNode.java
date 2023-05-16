@@ -83,8 +83,7 @@ public abstract class TsxPrintNode extends Expression {
     return !(expr() instanceof Expression) || ((Expression) expr()).isCheap();
   }
 
-  public static final CommandChar NIL =
-      new AutoValue_TsxPrintNode_CommandChar(Optional.empty(), false);
+  public static final CommandChar NIL = CommandChar.create("", false);
 
   /**
    * Special handling for command chars, since we don't want to break lines within these print
