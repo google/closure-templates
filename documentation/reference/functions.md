@@ -569,7 +569,7 @@ and `{velog}`. This can only be used within a `{const}` definition.
 
 `dataProtoType` should be a reference to an imported proto type, or `null`.
 
-`staticMetadata` should be a `soy.LoggableElementMetdata` proto instance.
+`staticMetadata` should be a `soy.LoggableElementMetadata` proto instance.
 
 ```soy
 {export const VeWithMetadata = ve_def(
