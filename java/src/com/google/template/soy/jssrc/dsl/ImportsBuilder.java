@@ -40,6 +40,17 @@ public class ImportsBuilder {
   // A map of imported file to imported symbol(s).
   private final SortedMap<String, ImportList> imports;
 
+  private boolean hasElementImport;
+  private boolean hasFragmentImport;
+
+  public boolean needsElm() {
+    return hasElementImport;
+  }
+
+  public boolean needsFrag() {
+    return hasFragmentImport;
+  }
+
   @AutoValue
   abstract static class ProtoImportData {
 
@@ -189,7 +200,11 @@ public class ImportsBuilder {
       statement.collectRequires(requires::add);
     }
     for (GoogRequire require : requires) {
-      if (require.chunk() instanceof Import) {
+      if (require == TsxFragmentElement.FRAGMENT) {
+        hasFragmentImport = true;
+      } else if (require == TsxFragmentElement.ELEMENT) {
+        hasElementImport = true;
+      } else if (require.chunk() instanceof Import) {
         Import i = (Import) require.chunk();
         ImportList list = imports.computeIfAbsent(i.path(), k -> new ImportList());
         for (String symbol : i.symbols()) {

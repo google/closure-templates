@@ -19,6 +19,7 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.internal.util.TreeStreams;
 import com.google.template.soy.jssrc.dsl.Expressions.DecoratedExpression;
@@ -32,7 +33,12 @@ import java.util.stream.Stream;
 /** Represents a tsx fragment elemenet, e.g.: "<>body</>". */
 @AutoValue
 @Immutable
-public abstract class TsxFragmentElement extends Expression {
+public abstract class TsxFragmentElement extends Expression implements CodeChunk.HasRequires {
+
+  /** Special import representing @jsx pragma. */
+  public static final GoogRequire ELEMENT = GoogRequire.create("__element__");
+  /** Special import representing @jsxFragment pragma. */
+  public static final GoogRequire FRAGMENT = GoogRequire.create("__fragment__");
 
   /**
    * If {@code body} is a TSX element or fragment, returns {@code body}, otherwise returns {@code
@@ -105,6 +111,11 @@ public abstract class TsxFragmentElement extends Expression {
     } else {
       return Stream.of(TsxPrintNode.wrap(chunk));
     }
+  }
+
+  @Override
+  public ImmutableSet<GoogRequire> googRequires() {
+    return ImmutableSet.of(ELEMENT, FRAGMENT);
   }
 
   abstract ImmutableList<? extends CodeChunk> body();

@@ -21,6 +21,7 @@ import static com.google.template.soy.jssrc.dsl.TsxFragmentElement.mergeLineComm
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Streams;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.jssrc.dsl.Expressions.DecoratedExpression;
@@ -33,7 +34,7 @@ import java.util.stream.Stream;
 /** Represents an {@code HtmlTagNode}. */
 @AutoValue
 @Immutable
-public abstract class HtmlTag extends Expression {
+public abstract class HtmlTag extends Expression implements CodeChunk.HasRequires {
 
   /** Tag type. */
   public enum Type {
@@ -136,5 +137,10 @@ public abstract class HtmlTag extends Expression {
   @Override
   Stream<? extends CodeChunk> childrenStream() {
     return Streams.concat(Stream.of(tagName()), attributes().stream());
+  }
+
+  @Override
+  public ImmutableSet<GoogRequire> googRequires() {
+    return ImmutableSet.of(TsxFragmentElement.ELEMENT);
   }
 }

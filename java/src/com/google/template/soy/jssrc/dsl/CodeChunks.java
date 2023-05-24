@@ -16,10 +16,8 @@
 
 package com.google.template.soy.jssrc.dsl;
 
-import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.google.common.collect.Iterables;
-import com.google.template.soy.internal.util.TreeStreams;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -113,9 +111,5 @@ public final class CodeChunks {
 
   public static Stream<CodeChunk> flatten(Stream<CodeChunk> chunk) {
     return chunk.flatMap(c -> c instanceof Concatenation ? c.childrenStream() : Stream.of(c));
-  }
-
-  public static Stream<? extends CodeChunk> breadthFirst(CodeChunk root) {
-    return TreeStreams.breadthFirst(root, n -> n.childrenStream().collect(toImmutableList()));
   }
 }
