@@ -84,8 +84,19 @@ public final class SoyTypes {
           .add(SoyType.Kind.BOOL)
           .build();
 
+  private static final ImmutableSet<SoyType.Kind> STRING_OR_NUMBER_UNION_KIND =
+      new ImmutableSet.Builder<SoyType.Kind>()
+          .add(SoyType.Kind.STRING)
+          .addAll(SoyTypes.NUMERIC_PRIMITIVES)
+          .build();
+
   public static boolean isIntFloatOrNumber(SoyType type) {
     return isKindOrUnionOfKinds(type, ARITHMETIC_PRIMITIVES);
+  }
+
+  public static boolean isStringNumberUnion(SoyType type) {
+    return (type.getKind() == SoyType.Kind.UNION
+        && isKindOrUnionOfKinds(type, STRING_OR_NUMBER_UNION_KIND));
   }
 
   /**
