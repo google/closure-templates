@@ -108,6 +108,10 @@ final class PerInputOutputFiles {
     this(null, fileJoiner);
   }
 
+  String getExtension() {
+    return extension == null ? outputExtension : extension;
+  }
+
   void validateFlags() {
     if (outputPathFormat != null && (!inputRoots.isEmpty() || outputDirectory != null)) {
       exitWithError("Must set either --outputPathFormat or --outputDirectory and --inputRoots.");
@@ -217,7 +221,7 @@ final class PerInputOutputFiles {
           fileName.substring(0, extensionLocation)
               + (transformedLocale != null ? "_" + transformedLocale : "")
               + "."
-              + (extension == null ? outputExtension : extension);
+              + getExtension();
       inputPath = inputPath.resolveSibling(fileName);
       inputPath = outputDirectory.resolve(inputPath);
       return inputPath;
