@@ -3774,7 +3774,11 @@ private CallParamNode CallParam() :
     }
   |
     try {
-      attr = Attribute()
+      (
+        attr = Attribute()
+      |
+        { attr = null; }
+      )
       tagBeginEnd = <CMD_END>
     } catch (ParseException e) {
       tagBeginEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END, CMD_SELF_CLOSE);
@@ -3784,10 +3788,6 @@ private CallParamNode CallParam() :
     tagClose = <CMD_CLOSE_PARAM>
 
     {
-      if (attr == null) {
-        return
-            new CallParamValueNode(-1, createSrcLoc(tagBegin, tagClose), key, errorExpr(tagBegin));
-      }
       CallParamContentNode node =
           new CallParamContentNode(
               nodeIdGen.genId(),

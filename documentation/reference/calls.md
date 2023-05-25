@@ -215,10 +215,13 @@ Syntax for rendering to string ("block form"):
 The first form is for arbitrary values and should be used in most cases.
 
 The second form renders the contents of the `param` block to a string, including
-applying autoescaping (based on the specified content `kind`). It is needed in
-some situations, but it's usually an error to use it when the first form would
-suffice. A common heuristic is that if you're using the second form with a
-`param` block that contains a single `print` tag:
+applying autoescaping based on the specified content `kind`. In some cases the
+`kind` does not need to be explicitly declared, e.g. when the param contains a
+single `{call}`.
+
+The second form is needed in some situations, but it's usually an error to use
+it when the first form would suffice. A common heuristic is that if you're using
+the second form with a `param` block that contains a single `print` tag:
 
 ```soy
 {param aaa kind="html"}{$bbb}{/param}

@@ -1469,7 +1469,7 @@ final class HtmlRewriter {
 
     @Override
     protected void visitCallParamContentNode(CallParamContentNode node) {
-      visitScopedBlock(node.getContentKind(), node, "param");
+      visitScopedBlock(node.isImplicitContentKind() ? null : node.getContentKind(), node, "param");
     }
 
     @Override

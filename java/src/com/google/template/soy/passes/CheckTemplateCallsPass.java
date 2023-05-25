@@ -29,7 +29,6 @@ import com.google.common.collect.Sets;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
-import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.TemplateContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -56,7 +55,6 @@ import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypes;
-import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.UnionType;
 import java.util.Collection;
@@ -119,6 +117,10 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
   private static final SoyErrorKind CANNOT_CALL_MODIFYING_TEMPLATE_DIRECTLY =
       SoyErrorKind.of(
           "Cannot call modifying templates directly. Call the main modifiable template instead.");
+  private static final SoyErrorKind CAN_OMIT_KIND_ONLY_FOR_SINGLE_CALL =
+      SoyErrorKind.of(
+          "The ''kind'' attribute can be omitted only if the param contains a single "
+              + "call command.");
 
   private static final SoyErrorKind INVALID_DATA_EXPR =
       SoyErrorKind.of("''data='' should be a record type, found ''{0}''.", StyleAllowance.NO_CAPS);
@@ -299,11 +301,24 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
           argType =
               RuntimeTypeCoercion.maybeCoerceType(node.getExpr().getRoot(), declaredParamTypes);
         } else if (callerParam.getKind() == SoyNode.Kind.CALL_PARAM_CONTENT_NODE) {
-          SanitizedContentKind contentKind = ((CallParamContentNode) callerParam).getContentKind();
-          argType =
-              contentKind == null
-                  ? StringType.getInstance()
-                  : SanitizedType.getTypeForContentKind(contentKind);
+          CallParamContentNode callParamContentNode = (CallParamContentNode) callerParam;
+          if (!callParamContentNode.isImplicitContentKind()) {
+            argType = SanitizedType.getTypeForContentKind(callParamContentNode.getContentKind());
+          } else {
+            if (!(callParamContentNode.numChildren() == 1
+                && callParamContentNode.getChild(0) instanceof CallBasicNode)) {
+              errorReporter.report(
+                  callParamContentNode.getSourceLocation(), CAN_OMIT_KIND_ONLY_FOR_SINGLE_CALL);
+              continue;
+            }
+            CallBasicNode callNode = (CallBasicNode) callParamContentNode.getChild(0);
+            TemplateType templateType = (TemplateType) callNode.getCalleeExpr().getType();
+            callParamContentNode.setContentKind(
+                templateType.getContentKind().getSanitizedContentKind());
+            argType =
+                SanitizedType.getTypeForContentKind(
+                    templateType.getContentKind().getSanitizedContentKind());
+          }
         } else {
           throw new AssertionError(); // CallParamNode shouldn't have any other kind of child
         }
