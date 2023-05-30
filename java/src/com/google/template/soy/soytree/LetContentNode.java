@@ -156,7 +156,7 @@ public final class LetContentNode extends LetNode
 
   @Override
   public ImmutableList<CommandTagAttribute> getAttributes() {
-    return ImmutableList.of(kindAttr);
+    return kindAttr == null ? ImmutableList.of() : ImmutableList.of(kindAttr);
   }
 
   @Override
