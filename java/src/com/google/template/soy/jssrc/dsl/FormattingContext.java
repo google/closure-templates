@@ -119,6 +119,9 @@ class FormattingContext implements AutoCloseable {
         } else {
           return append(content);
         }
+      case TSX:
+        // '>' is allowed in Soy but not in TSX.
+        return append(s.replace(">", "&gt;"));
       default:
         return append(s);
     }
