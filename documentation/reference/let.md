@@ -20,7 +20,13 @@ values are immutable there is no syntax for updating their values and defining
 multiple `let` values with the same name is a compilation error.
 
 The `kind` attribute specifies the
-[content kind](../dev/security.md#content_kinds).
+[content kind](../dev/security.md#content_kinds), but can be omitted if the
+`let` contains a single call, in which case the `kind` is inferred from the
+called template.
+
+```soy
+{let $<IDENTIFIER>}{call someTemplate /}{/let}
+```
 
 You might use `let` because you need to reuse the intermediate value multiple
 times, or you need to print a rendered value using a directive, or you feel it

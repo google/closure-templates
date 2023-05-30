@@ -30,7 +30,6 @@ import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallNode;
-import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.HtmlAttributeValueNode;
@@ -88,15 +87,9 @@ final class BasicHtmlValidationPass implements CompilerFilePass {
             });
     SoyTreeUtils.allNodesOfType(file, RenderUnitNode.class)
         .filter(
-            unit -> {
-              if (unit instanceof CallParamContentNode) {
-                CallParamContentNode callParamContentNode = (CallParamContentNode) unit;
-                if (callParamContentNode.isImplicitContentKind()) {
-                  return false;
-                }
-              }
-              return unit.getContentKind() == SanitizedContentKind.ATTRIBUTES;
-            })
+            unit ->
+                !unit.isImplicitContentKind()
+                    && unit.getContentKind() == SanitizedContentKind.ATTRIBUTES)
         .forEach(this::checkForDuplicateAttributes);
     SoyTreeUtils.allNodesOfType(file, HtmlAttributeNode.class)
         .forEach(this::warnOnIdAttributesMatchingJsIdentifiers);

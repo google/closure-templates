@@ -203,9 +203,13 @@ public interface SoyNode extends Node {
   interface RenderUnitNode extends BlockCommandNode {
 
     /**
-     * Returns the content kind for strict autoescape, or null if not specified or not applicable.
+     * Returns the content kind for strict autoescape. If not explicitly set, will throw an
+     * exception if not inferred yet.
      */
     SanitizedContentKind getContentKind();
+
+    /** Returns if the kind is not explicitly set and has not been inferred yet. */
+    boolean isImplicitContentKind();
   }
 
   // -----------------------------------------------------------------------------------------------

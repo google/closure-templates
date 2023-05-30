@@ -1206,11 +1206,6 @@ public final class TemplateParserTest {
     assertEquals(SanitizedContentKind.HTML, deltaNode.getContentKind());
 
     // Test error case.
-    assertThatTemplateContent("{let $alpha /}{/let}")
-        .causesError("parse error at '/}': expected identifier or ':'")
-        .at(1, 13);
-
-    // Test error case.
     assertThatTemplateContent("{let $alpha: $boo.foo}{/let}")
         .causesError(
             "parse error at '}': expected /}, ?, '?:', or, and, ^, &, ==, !=, <, >, <=, >=, +, -,"

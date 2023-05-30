@@ -29,6 +29,7 @@ import com.google.common.collect.Sets;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.TemplateContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -309,6 +310,8 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
                 && callParamContentNode.getChild(0) instanceof CallBasicNode)) {
               errorReporter.report(
                   callParamContentNode.getSourceLocation(), CAN_OMIT_KIND_ONLY_FOR_SINGLE_CALL);
+              // Avoid duplicate errors later.
+              callParamContentNode.setContentKind(SanitizedContentKind.HTML);
               continue;
             }
             CallBasicNode callNode = (CallBasicNode) callParamContentNode.getChild(0);

@@ -534,6 +534,11 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     return contentKind.getSanitizedContentKind();
   }
 
+  @Override
+  public boolean isImplicitContentKind() {
+    return false;
+  }
+
   /** Returns the template's content kind (e.g. "attributes", "element", "html", etc). */
   public TemplateContentKind getTemplateContentKind() {
     return contentKind;

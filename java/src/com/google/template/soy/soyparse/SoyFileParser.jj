@@ -3238,7 +3238,11 @@ private LetNode LetStmt() :
   |
     // Content block
     try {
-      attr = Attribute()
+      (
+        attr = Attribute()
+      |
+        { attr = null; }
+      )
       tagBeginEnd = <CMD_END>
     } catch (ParseException e) {
       tagBeginEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END, CMD_SELF_CLOSE);
@@ -3248,10 +3252,6 @@ private LetNode LetStmt() :
     tagClose = <CMD_CLOSE_LET>
 
     {
-      if (attr == null) {
-        SourceLocation loc = createSrcLoc(tagBegin, tagClose);
-        return new LetValueNode(-1, loc, "$error", loc, errorExpr(tagBegin));
-      }
       LetContentNode node =
           new LetContentNode(
               nodeIdGen.genId(),

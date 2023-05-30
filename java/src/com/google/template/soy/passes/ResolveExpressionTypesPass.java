@@ -48,6 +48,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.basicfunctions.ConcatListsFunction;
 import com.google.template.soy.basicfunctions.ConcatMapsMethod;
 import com.google.template.soy.basicfunctions.KeysFunction;
@@ -139,6 +140,7 @@ import com.google.template.soy.shared.restricted.SoySourceFunctionMethod;
 import com.google.template.soy.shared.restricted.TypedSoyFunction;
 import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
+import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.ConstNode;
@@ -379,6 +381,10 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       SoyErrorKind.of(
           "Spaces are not allowed in CSS class names. Either remove the space(s) or pass the"
               + " individual class names to multiple separate calls of the css() function.");
+  private static final SoyErrorKind CAN_OMIT_KIND_ONLY_FOR_SINGLE_CALL =
+      SoyErrorKind.of(
+          "The ''kind'' attribute can be omitted only if the let contains a single "
+              + "call command.");
 
   private final ErrorReporter errorReporter;
 
@@ -698,6 +704,17 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
     @Override
     protected void visitLetContentNode(LetContentNode node) {
       visitSoyNode(node);
+      if (node.isImplicitContentKind()) {
+        if (!(node.numChildren() == 1 && node.getChild(0) instanceof CallBasicNode)) {
+          errorReporter.report(node.getSourceLocation(), CAN_OMIT_KIND_ONLY_FOR_SINGLE_CALL);
+          // Avoid duplicate errors later.
+          node.setContentKind(SanitizedContentKind.HTML);
+          return;
+        }
+        CallBasicNode callNode = (CallBasicNode) node.getChild(0);
+        TemplateType templateType = (TemplateType) callNode.getCalleeExpr().getType();
+        node.setContentKind(templateType.getContentKind().getSanitizedContentKind());
+      }
       node.getVar()
           .setType(
               node.getContentKind() != null

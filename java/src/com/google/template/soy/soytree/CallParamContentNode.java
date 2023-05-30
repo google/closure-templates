@@ -18,11 +18,11 @@ package com.google.template.soy.soytree;
 
 import static com.google.template.soy.soytree.CommandTagAttribute.UNSUPPORTED_ATTRIBUTE_KEY_SINGLE;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.SanitizedContentKind;
+import com.google.template.soy.base.internal.SetOnce;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.MixinParentNode;
 import com.google.template.soy.basetree.Node;
@@ -44,8 +44,8 @@ public final class CallParamContentNode extends CallParamNode
   /** The mixin object that implements the ParentNode functionality. */
   private final MixinParentNode<StandaloneNode> parentMixin;
 
-  /** The param's content kind, or null if no 'kind' attribute was present. */
-  @Nullable private SanitizedContentKind contentKind;
+  /** The param's content kind. */
+  private final SetOnce<SanitizedContentKind> contentKind;
 
   private final SourceLocation openTagLocation;
   @Nullable private final CommandTagAttribute kindAttr;
@@ -59,10 +59,8 @@ public final class CallParamContentNode extends CallParamNode
       ErrorReporter errorReporter) {
     super(id, location, key);
     this.parentMixin = new MixinParentNode<>(this);
-
-    if (kindAttr == null) {
-      this.contentKind = null;
-    } else {
+    this.contentKind = new SetOnce<>();
+    if (kindAttr != null) {
       Optional<SanitizedContentKind> parsedKind = Optional.empty();
       if (!kindAttr.hasName("kind")) {
         errorReporter.report(
@@ -74,7 +72,7 @@ public final class CallParamContentNode extends CallParamNode
       } else {
         parsedKind = kindAttr.valueAsContentKind(errorReporter);
       }
-      this.contentKind = parsedKind.orElse(SanitizedContentKind.HTML);
+      this.contentKind.set(parsedKind.orElse(SanitizedContentKind.HTML));
     }
     this.kindAttr = kindAttr;
     this.openTagLocation = openTagLocation;
@@ -88,7 +86,7 @@ public final class CallParamContentNode extends CallParamNode
   private CallParamContentNode(CallParamContentNode orig, CopyState copyState) {
     super(orig, copyState);
     this.parentMixin = new MixinParentNode<>(orig.parentMixin, this, copyState);
-    this.contentKind = orig.contentKind;
+    this.contentKind = orig.contentKind.copy();
     this.openTagLocation = orig.openTagLocation;
     this.kindAttr = orig.kindAttr == null ? null : orig.kindAttr.copy(copyState);
   }
@@ -100,24 +98,26 @@ public final class CallParamContentNode extends CallParamNode
 
   @Override
   public SanitizedContentKind getContentKind() {
-    Preconditions.checkNotNull(contentKind);
-    return contentKind;
+    return contentKind.get();
   }
 
+  @Override
   public boolean isImplicitContentKind() {
-    return contentKind == null;
+    return !contentKind.isPresent();
   }
 
   public void setContentKind(SanitizedContentKind kind) {
-    Preconditions.checkState(this.contentKind == null);
-    this.contentKind = kind;
+    contentKind.set(kind);
   }
 
   @Override
   public String getCommandText() {
     return (contentKind == null)
         ? getKey().identifier()
-        : getKey().identifier() + " kind=\"" + contentKind.asAttributeValue() + "\"";
+        : getKey().identifier()
+            + (isImplicitContentKind()
+                ? ""
+                : " kind=\"" + contentKind.get().asAttributeValue() + "\"");
   }
 
   @Override

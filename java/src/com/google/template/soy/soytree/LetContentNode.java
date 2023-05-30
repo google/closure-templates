@@ -23,6 +23,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.base.internal.SanitizedContentKind;
+import com.google.template.soy.base.internal.SetOnce;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.MixinParentNode;
 import com.google.template.soy.basetree.Node;
@@ -61,11 +62,11 @@ public final class LetContentNode extends LetNode
   /** The mixin object that implements the ParentNode functionality. */
   private final MixinParentNode<StandaloneNode> parentMixin;
 
-  /** The let node's content kind, or null if no 'kind' attribute was present. */
-  private final SanitizedContentKind contentKind;
+  /** The let node's content kind. */
+  private final SetOnce<SanitizedContentKind> contentKind;
 
   private final SourceLocation openTagLocation;
-  private final CommandTagAttribute kindAttr;
+  @Nullable private final CommandTagAttribute kindAttr;
 
   public LetContentNode(
       int id,
@@ -73,25 +74,27 @@ public final class LetContentNode extends LetNode
       SourceLocation openTagLocation,
       String varName,
       SourceLocation varNameLocation,
-      CommandTagAttribute kindAttr,
+      @Nullable CommandTagAttribute kindAttr,
       ErrorReporter errorReporter) {
     super(id, location, varName, varNameLocation);
     this.parentMixin = new MixinParentNode<>(this);
     this.openTagLocation = openTagLocation;
-
-    Optional<SanitizedContentKind> parsedKind = Optional.empty();
-    if (!kindAttr.hasName("kind")) {
-      errorReporter.report(
-          kindAttr.getName().location(),
-          UNSUPPORTED_ATTRIBUTE_KEY_SINGLE,
-          kindAttr.getName().identifier(),
-          "let",
-          "kind");
-    } else {
-      parsedKind = kindAttr.valueAsContentKind(errorReporter);
+    this.contentKind = new SetOnce<>();
+    if (kindAttr != null) {
+      Optional<SanitizedContentKind> parsedKind = Optional.empty();
+      if (!kindAttr.hasName("kind")) {
+        errorReporter.report(
+            kindAttr.getName().location(),
+            UNSUPPORTED_ATTRIBUTE_KEY_SINGLE,
+            kindAttr.getName().identifier(),
+            "let",
+            "kind");
+      } else {
+        parsedKind = kindAttr.valueAsContentKind(errorReporter);
+      }
+      this.contentKind.set(parsedKind.orElse(SanitizedContentKind.HTML));
     }
     this.kindAttr = kindAttr;
-    this.contentKind = parsedKind.orElse(SanitizedContentKind.HTML);
   }
 
   private LetContentNode(
@@ -99,10 +102,11 @@ public final class LetContentNode extends LetNode
       SourceLocation location,
       String varName,
       SourceLocation varNameLocation,
-      @Nullable SanitizedContentKind contentKind) {
+      SanitizedContentKind contentKind) {
     super(id, location, varName, varNameLocation);
     this.parentMixin = new MixinParentNode<>(this);
-    this.contentKind = contentKind;
+    this.contentKind = new SetOnce<>();
+    this.contentKind.set(contentKind);
     this.openTagLocation = SourceLocation.UNKNOWN;
     this.kindAttr =
         new CommandTagAttribute(
@@ -121,7 +125,7 @@ public final class LetContentNode extends LetNode
   private LetContentNode(LetContentNode orig, CopyState copyState) {
     super(orig, copyState);
     this.parentMixin = new MixinParentNode<>(orig.parentMixin, this, copyState);
-    this.contentKind = orig.contentKind;
+    this.contentKind = orig.contentKind.copy();
     this.openTagLocation = orig.openTagLocation;
     this.kindAttr = orig.kindAttr == null ? null : orig.kindAttr.copy(copyState);
   }
@@ -133,7 +137,16 @@ public final class LetContentNode extends LetNode
 
   @Override
   public SanitizedContentKind getContentKind() {
-    return contentKind;
+    return contentKind.get();
+  }
+
+  @Override
+  public boolean isImplicitContentKind() {
+    return !contentKind.isPresent();
+  }
+
+  public void setContentKind(SanitizedContentKind kind) {
+    contentKind.set(kind);
   }
 
   @Override
@@ -150,7 +163,10 @@ public final class LetContentNode extends LetNode
   public String getCommandText() {
     return (contentKind == null)
         ? getVarRefName()
-        : getVarRefName() + " kind=\"" + contentKind.asAttributeValue() + "\"";
+        : getVarRefName()
+            + (isImplicitContentKind()
+                ? ""
+                : " kind=\"" + contentKind.get().asAttributeValue() + "\"");
   }
 
   @Override

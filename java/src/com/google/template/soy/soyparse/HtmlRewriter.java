@@ -1448,7 +1448,7 @@ final class HtmlRewriter {
 
     @Override
     protected void visitLetContentNode(LetContentNode node) {
-      visitScopedBlock(node.getContentKind(), node, "let");
+      visitScopedBlock(node.isImplicitContentKind() ? null : node.getContentKind(), node, "let");
       processNonPrintableNode(node);
     }
 

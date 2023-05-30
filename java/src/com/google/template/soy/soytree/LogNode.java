@@ -60,4 +60,9 @@ public final class LogNode extends AbstractBlockCommandNode
   public SanitizedContentKind getContentKind() {
     return SanitizedContentKind.TEXT;
   }
+
+  @Override
+  public boolean isImplicitContentKind() {
+    return false;
+  }
 }
