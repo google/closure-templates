@@ -201,8 +201,9 @@ final class ProtoUtils {
   private static final RepeatedFieldInterpreter REPEATED_FIELD_INTERPRETER =
       new RepeatedFieldInterpreter();
 
-  enum ScalarFieldMode {
+  enum SingularFieldAccessMode {
     DEFAULT_IF_UNSET,
+    DEFAULT_IF_UNSET_UNLESS_MESSAGE_VALUED,
     NULL_IF_UNSET,
   }
 
@@ -211,7 +212,7 @@ final class ProtoUtils {
       SoyExpression baseExpr,
       String fieldName,
       SoyType fieldType,
-      ScalarFieldMode mode,
+      SingularFieldAccessMode mode,
       LocalVariableManager varManager) {
     SoyType type = baseExpr.soyType();
     if (type.getKind() == SoyType.Kind.PROTO) {
@@ -238,7 +239,7 @@ final class ProtoUtils {
       SoyExpression baseExpr,
       String fieldName,
       SoyType fieldType,
-      ScalarFieldMode mode) {
+      SingularFieldAccessMode mode) {
     return new AccessorGenerator(protoType, baseExpr, fieldName, fieldType, mode).generate();
   }
 
@@ -273,11 +274,9 @@ final class ProtoUtils {
    * @param node The method operation.
    */
   static SoyExpression accessExtensionField(
-      SoyExpression baseExpr, MethodCallNode node, String fieldName) {
+      SoyExpression baseExpr, MethodCallNode node, String fieldName, SingularFieldAccessMode mode) {
     SoyProtoType protoType = (SoyProtoType) baseExpr.soyType();
-    return new AccessorGenerator(
-            protoType, baseExpr, fieldName, node.getType(), ScalarFieldMode.DEFAULT_IF_UNSET)
-        .generate();
+    return new AccessorGenerator(protoType, baseExpr, fieldName, node.getType(), mode).generate();
   }
 
   private static SoyExpression accessProtoUnionField(
@@ -332,13 +331,23 @@ final class ProtoUtils {
         SoyExpression baseExpr,
         String fieldName,
         SoyType fieldType,
-        ScalarFieldMode mode) {
+        SingularFieldAccessMode mode) {
       super(SoyRuntimeType.getUnboxedType(protoType).get(), baseExpr);
       this.fieldType = fieldType;
       this.descriptor = protoType.getFieldDescriptor(fieldName);
-      this.reinterpretAbsenceAsNullable =
-          (mode == ScalarFieldMode.NULL_IF_UNSET && descriptor.hasPresence())
-              || descriptor.getJavaType() == JavaType.MESSAGE;
+      switch (mode) {
+        case NULL_IF_UNSET:
+          reinterpretAbsenceAsNullable = descriptor.hasPresence();
+          break;
+        case DEFAULT_IF_UNSET_UNLESS_MESSAGE_VALUED:
+          reinterpretAbsenceAsNullable =
+              descriptor.hasPresence() && descriptor.getJavaType() == JavaType.MESSAGE;
+          break;
+        case DEFAULT_IF_UNSET:
+        default:
+          reinterpretAbsenceAsNullable = false;
+          break;
+      }
     }
 
     SoyExpression generate() {

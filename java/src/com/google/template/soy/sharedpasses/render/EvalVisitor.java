@@ -636,6 +636,9 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
         case GET_EXTENSION:
           return ((SoyProtoValue) base)
               .getProtoField(BuiltinMethod.getProtoExtensionIdFromMethodCall(methodNode));
+        case GET_READONLY_EXTENSION:
+          return ((SoyProtoValue) base)
+              .getReadonlyProtoField(BuiltinMethod.getProtoExtensionIdFromMethodCall(methodNode));
         case HAS_PROTO_FIELD:
           return BooleanData.forValue(
               ((SoyProtoValue) base)
@@ -643,6 +646,9 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
         case GET_PROTO_FIELD:
           return ((SoyProtoValue) base)
               .getProtoField(BuiltinMethod.getProtoFieldNameFromMethodCall(methodNode));
+        case GET_READONLY_PROTO_FIELD:
+          return ((SoyProtoValue) base)
+              .getReadonlyProtoField(BuiltinMethod.getProtoFieldNameFromMethodCall(methodNode));
         case GET_PROTO_FIELD_OR_UNDEFINED:
           return ((SoyProtoValue) base)
               .getProtoFieldOrNull(BuiltinMethod.getProtoFieldNameFromMethodCall(methodNode));

@@ -48,6 +48,7 @@ import com.google.template.soy.types.TemplateBindingUtil;
 import com.google.template.soy.types.UnknownType;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -58,7 +59,8 @@ public enum BuiltinMethod implements SoyMethod {
     @Override
     public boolean appliesToBase(SoyType baseType) {
       Preconditions.checkArgument(!SoyTypes.isNullable(baseType));
-      return baseType.getKind() == SoyType.Kind.PROTO;
+      return baseType.getKind() == SoyType.Kind.PROTO
+          && ((SoyProtoType) baseType).getDescriptor().isExtendable();
     }
 
     @Override
@@ -99,8 +101,36 @@ public enum BuiltinMethod implements SoyMethod {
         return UnknownType.getInstance();
       }
       // getExtension is incorrectly typed as non-nullable even though it can be null for singular
-      // fields.
+      // message fields.
       return SoyTypes.removeNull(protoType.getFieldType(fieldName));
+    }
+  },
+  GET_READONLY_EXTENSION("getReadonlyExtension", 1) {
+
+    @Override
+    public boolean appliesToBase(SoyType baseType) {
+      return GET_EXTENSION.appliesToBase(baseType);
+    }
+
+    @Override
+    public SoyType getReturnType(
+        String methodName,
+        SoyType baseType,
+        List<ExprNode> params,
+        SoyTypeRegistry soyTypeRegistry,
+        ErrorReporter errorReporter) {
+      // confusingly the type is correct as is, see comments in GET_EXTENSION.getReturnType
+      SoyType type =
+          GET_EXTENSION.getReturnType(methodName, baseType, params, soyTypeRegistry, errorReporter);
+      if (type.getKind() == SoyType.Kind.UNKNOWN) {
+        return type;
+      }
+      if (type.getKind() != SoyType.Kind.PROTO) {
+        errorReporter.report(
+            params.get(0).getSourceLocation(),
+            GET_READONLY_EXTENSION_MAY_ONLY_BE_CALLED_ON_MESSAGE_EXTENSIONS);
+      }
+      return type;
     }
   },
 
@@ -113,8 +143,9 @@ public enum BuiltinMethod implements SoyMethod {
 
     @Override
     public boolean appliesTo(String methodName, SoyType baseType) {
-      return matchesName(methodName)
-          && appliesToProto(methodName, baseType, this::acceptFieldDescriptor);
+      var fieldName = getHasserFieldName(methodName);
+      return fieldName.isPresent()
+          && appliesToProto(fieldName.get(), baseType, this::acceptFieldDescriptor);
     }
 
     private boolean acceptFieldDescriptor(FieldDescriptor fd) {
@@ -137,24 +168,14 @@ public enum BuiltinMethod implements SoyMethod {
       return BoolType.getInstance();
     }
 
-    boolean matchesName(String methodName) {
-      if (methodName.length() <= 3) {
-        return false;
-      }
-      if (!methodName.startsWith("has")) {
-        return false;
-      }
-      char firstChar = methodName.charAt(3);
-      return Ascii.isUpperCase(firstChar);
-    }
 
     @Override
     ImmutableCollection<String> expandMethodNames(SoyType baseType, List<SoyType> argTypes) {
-      return expandMethodNamesForProto(baseType, BuiltinMethod::fieldToHasMethodName);
+      return expandMethodNamesForProto(
+          baseType, this::acceptFieldDescriptor, BuiltinMethod::fieldToHasMethodName);
     }
   },
 
-  // TODO(b/230787876): Also add getReadonly[X] method for singular message fields.
   GET_PROTO_FIELD("get[X]", 0) {
     @Override
     public boolean appliesToBase(SoyType baseType) {
@@ -164,13 +185,14 @@ public enum BuiltinMethod implements SoyMethod {
 
     @Override
     public boolean appliesTo(String methodName, SoyType baseType) {
-      return matchesName(methodName)
-          && appliesToProto(methodName, baseType, this::acceptFieldDescriptor);
+      var fieldName = getGetterFieldName(methodName);
+      return fieldName.isPresent()
+          && appliesToProto(fieldName.get(), baseType, this::acceptFieldDescriptor);
     }
 
     private boolean acceptFieldDescriptor(FieldDescriptor fd) {
       if (fd.isExtension()) {
-        // should be impossibe
+        // should be impossible
         return false;
       }
       if (fd.getJavaType() == JavaType.MESSAGE) {
@@ -186,28 +208,14 @@ public enum BuiltinMethod implements SoyMethod {
         List<ExprNode> params,
         SoyTypeRegistry soyTypeRegistry,
         ErrorReporter errorReporter) {
-      String fieldName = methodToFieldName(methodName);
-      ImmutableList<SoyType> types =
-          SoyTypes.expandUnions(baseType).stream()
-              .map(type -> ((SoyProtoType) type).getFieldType(fieldName))
-              .collect(toImmutableList());
-      return SoyTypes.computeLowestCommonType(soyTypeRegistry, types);
-    }
-
-    boolean matchesName(String methodName) {
-      if (methodName.length() <= 3) {
-        return false;
-      }
-      if (!methodName.startsWith("get") || methodName.endsWith("OrUndefined")) {
-        return false;
-      }
-      char firstChar = methodName.charAt(3);
-      return Ascii.isUpperCase(firstChar);
+      String fieldName = getGetterFieldName(methodName).get();
+      return computeTypeForProtoFieldName(baseType, fieldName, soyTypeRegistry);
     }
 
     @Override
     ImmutableCollection<String> expandMethodNames(SoyType baseType, List<SoyType> argTypes) {
-      return expandMethodNamesForProto(baseType, BuiltinMethod::protoFieldToGetMethodName);
+      return expandMethodNamesForProto(
+          baseType, this::acceptFieldDescriptor, BuiltinMethod::protoFieldToGetMethodName);
     }
   },
 
@@ -220,8 +228,9 @@ public enum BuiltinMethod implements SoyMethod {
 
     @Override
     public boolean appliesTo(String methodName, SoyType baseType) {
-      return matchesName(methodName)
-          && appliesToProto(methodName, baseType, this::acceptFieldDescriptor);
+      var fieldName = getGetOrUndefinedFieldName(methodName);
+      return fieldName.isPresent()
+          && appliesToProto(fieldName.get(), baseType, this::acceptFieldDescriptor);
     }
 
     private boolean acceptFieldDescriptor(FieldDescriptor fd) {
@@ -243,27 +252,56 @@ public enum BuiltinMethod implements SoyMethod {
         SoyTypeRegistry soyTypeRegistry,
         ErrorReporter errorReporter) {
       return SoyTypes.makeNullable(
-          GET_PROTO_FIELD.getReturnType(
-              methodName, baseType, params, soyTypeRegistry, errorReporter));
-    }
-
-    boolean matchesName(String methodName) {
-      if (methodName.length() <= 14) {
-        return false;
-      }
-      if (!methodName.startsWith("get") || !methodName.endsWith("OrUndefined")) {
-        return false;
-      }
-      char firstChar = methodName.charAt(3);
-      return Ascii.isUpperCase(firstChar);
+          computeTypeForProtoFieldName(
+              baseType, getGetOrUndefinedFieldName(methodName).get(), soyTypeRegistry));
     }
 
     @Override
     ImmutableCollection<String> expandMethodNames(SoyType baseType, List<SoyType> argTypes) {
-      return expandMethodNamesForProto(baseType, BuiltinMethod::fieldToGetOrUndefinedMethodName);
+      return expandMethodNamesForProto(
+          baseType, this::acceptFieldDescriptor, BuiltinMethod::fieldToGetOrUndefinedMethodName);
     }
   },
 
+  GET_READONLY_PROTO_FIELD("getReadonly[X]", 0) {
+    @Override
+    public boolean appliesToBase(SoyType baseType) {
+      Preconditions.checkArgument(!SoyTypes.isNullable(baseType));
+      return SoyTypes.isKindOrUnionOfKind(baseType, SoyType.Kind.PROTO);
+    }
+
+    @Override
+    public boolean appliesTo(String methodName, SoyType baseType) {
+      var fieldName = getGetReadonlyFieldName(methodName);
+      return fieldName.isPresent()
+          && appliesToProto(fieldName.get(), baseType, this::acceptFieldDescriptor);
+    }
+
+    private boolean acceptFieldDescriptor(FieldDescriptor fd) {
+      if (fd.isExtension() || fd.isRepeated()) {
+        return false;
+      }
+      return fd.getJavaType() == JavaType.MESSAGE;
+    }
+
+    @Override
+    public SoyType getReturnType(
+        String methodName,
+        SoyType baseType,
+        List<ExprNode> params,
+        SoyTypeRegistry soyTypeRegistry,
+        ErrorReporter errorReporter) {
+      return SoyTypes.removeNull(
+          computeTypeForProtoFieldName(
+              baseType, getGetReadonlyFieldName(methodName).get(), soyTypeRegistry));
+    }
+
+    @Override
+    ImmutableCollection<String> expandMethodNames(SoyType baseType, List<SoyType> argTypes) {
+      return expandMethodNamesForProto(
+          baseType, this::acceptFieldDescriptor, BuiltinMethod::protoFieldToGetReadonlyMethodName);
+    }
+  },
   BIND("bind", 1) {
 
     @Override
@@ -301,6 +339,11 @@ public enum BuiltinMethod implements SoyMethod {
   private static final SoyErrorKind PROTO_EXTENSION_DOES_NOT_EXIST =
       SoyErrorKind.of(
           "Proto extension ''{0}'' does not extend ''{1}''.{2}", StyleAllowance.NO_PUNCTUATION);
+  private static final SoyErrorKind
+      GET_READONLY_EXTENSION_MAY_ONLY_BE_CALLED_ON_MESSAGE_EXTENSIONS =
+          SoyErrorKind.of(
+              "getReadonlyExtension may only be called on singular message extensions.",
+              StyleAllowance.NO_CAPS);
   private static final SoyErrorKind BIND_PARAMETER_MUST_BE_RECORD_LITERAL =
       SoyErrorKind.of("Parameter to bind() must be a record literal.");
 
@@ -326,7 +369,22 @@ public enum BuiltinMethod implements SoyMethod {
       };
 
   public static String getProtoFieldNameFromMethodCall(MethodCallNode node) {
-    return methodToFieldName(node.getMethodName().identifier());
+    var methodName = node.getMethodName().identifier();
+    switch (((BuiltinMethod) node.getSoyMethod())) {
+      case HAS_PROTO_FIELD:
+        return getHasserFieldName(methodName).get();
+      case GET_PROTO_FIELD:
+        return getGetterFieldName(methodName).get();
+      case GET_PROTO_FIELD_OR_UNDEFINED:
+        return getGetOrUndefinedFieldName(methodName).get();
+      case GET_READONLY_PROTO_FIELD:
+        return getGetReadonlyFieldName(methodName).get();
+      case GET_EXTENSION:
+      case GET_READONLY_EXTENSION:
+      case BIND:
+        break;
+    }
+    throw new AssertionError("not a proto getter: " + node.getSoyMethod());
   }
 
   public static String getProtoExtensionIdFromMethodCall(MethodCallNode node) {
@@ -335,7 +393,9 @@ public enum BuiltinMethod implements SoyMethod {
   }
 
   protected ImmutableCollection<String> expandMethodNamesForProto(
-      SoyType baseType, Function<String, String> fieldToMethodName) {
+      SoyType baseType,
+      Predicate<FieldDescriptor> acceptField,
+      Function<String, String> fieldToMethodName) {
     if (!appliesToBase(baseType)) {
       return ImmutableList.of();
     }
@@ -343,17 +403,16 @@ public enum BuiltinMethod implements SoyMethod {
     // appliesTo with the entire union baseType.
     SoyProtoType protoType = (SoyProtoType) SoyTypes.expandUnions(baseType).get(0);
     return protoType.getFieldNames().stream()
+        .filter(name -> acceptField.test(protoType.getFieldDescriptor(name)))
         .map(fieldToMethodName)
-        .filter(methodName -> appliesTo(methodName, baseType))
         .collect(toImmutableSet());
   }
 
   protected boolean appliesToProto(
-      String methodName, SoyType baseType, Predicate<FieldDescriptor> acceptField) {
+      String fieldName, SoyType baseType, Predicate<FieldDescriptor> acceptField) {
     if (!appliesToBase(baseType)) {
       return false;
     }
-    String fieldName = methodToFieldName(methodName);
     for (SoyType type : SoyTypes.expandUnions(baseType)) {
       SoyProtoType protoType = (SoyProtoType) type;
       if (!protoType.getFieldNames().contains(fieldName)
@@ -364,23 +423,16 @@ public enum BuiltinMethod implements SoyMethod {
     return true;
   }
 
-  private static String methodToFieldName(String methodName) {
-    Preconditions.checkArgument(
-        methodName.length() >= 4 && (methodName.startsWith("get") || methodName.startsWith("has")));
-    if (methodName.endsWith("OrUndefined")) {
-      methodName = methodName.substring(3, methodName.length() - "OrUndefined".length());
-    } else {
-      methodName = methodName.substring(3);
-    }
-    return CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_CAMEL, methodName);
-  }
-
   private static String fieldToHasMethodName(String fieldName) {
     return "has" + CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_CAMEL, fieldName);
   }
 
   public static String protoFieldToGetMethodName(String fieldName) {
     return "get" + CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_CAMEL, fieldName);
+  }
+
+  private static String protoFieldToGetReadonlyMethodName(String fieldName) {
+    return "getReadonly" + CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_CAMEL, fieldName);
   }
 
   private static String fieldToGetOrUndefinedMethodName(String fieldName) {
@@ -440,6 +492,7 @@ public enum BuiltinMethod implements SoyMethod {
   public List<String> getProtoDependencyTypes(MethodCallNode methodNode) {
     switch (this) {
       case GET_EXTENSION:
+      case GET_READONLY_EXTENSION:
         return ImmutableList.of(
             ProtoUtils.getQualifiedOuterClassname(
                 ((SoyProtoType) SoyTypes.removeNull(methodNode.getBaseExprChild().getType()))
@@ -447,9 +500,69 @@ public enum BuiltinMethod implements SoyMethod {
       case HAS_PROTO_FIELD:
       case GET_PROTO_FIELD:
       case GET_PROTO_FIELD_OR_UNDEFINED:
+      case GET_READONLY_PROTO_FIELD:
       case BIND:
         return ImmutableList.of();
     }
     throw new AssertionError(this);
+  }
+
+  private static Optional<String> getGetReadonlyFieldName(String methodName) {
+    // starts with getReadonly
+    if (!methodName.startsWith("getReadonly")) {
+      return Optional.empty();
+    }
+    // Followed by a capital
+    String suffix = methodName.substring("getReadonly".length());
+    if (suffix.length() > 0 && !Ascii.isUpperCase(suffix.charAt(0))) {
+      return Optional.empty();
+    }
+    return Optional.of(CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_CAMEL, suffix));
+  }
+
+  private static Optional<String> getHasserFieldName(String methodName) {
+    if (!methodName.startsWith("has")) {
+      return Optional.empty();
+    }
+    String suffix = methodName.substring(3);
+    if (suffix.length() > 0 && !Ascii.isUpperCase(suffix.charAt(0))) {
+      return Optional.empty();
+    }
+    return Optional.of(CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_CAMEL, suffix));
+  }
+
+  private static Optional<String> getGetterFieldName(String methodName) {
+    if (methodName.length() <= 3) {
+      return Optional.empty();
+    }
+
+    if (!methodName.startsWith("get") || methodName.endsWith("OrUndefined")) {
+      return Optional.empty();
+    }
+    String suffix = methodName.substring(3);
+    if (suffix.length() > 0 && !Ascii.isUpperCase(suffix.charAt(0))) {
+      return Optional.empty();
+    }
+    return Optional.of(CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_CAMEL, suffix));
+  }
+
+  private static Optional<String> getGetOrUndefinedFieldName(String methodName) {
+    if (!methodName.startsWith("get") || !methodName.endsWith("OrUndefined")) {
+      return Optional.empty();
+    }
+    String middle = methodName.substring(3, methodName.length() - "OrUndefined".length());
+    if (middle.length() > 0 && !Ascii.isUpperCase(middle.charAt(0))) {
+      return Optional.empty();
+    }
+    return Optional.of(CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_CAMEL, middle));
+  }
+
+  private static SoyType computeTypeForProtoFieldName(
+      SoyType baseType, String fieldName, SoyTypeRegistry soyTypeRegistry) {
+    ImmutableList<SoyType> types =
+        SoyTypes.expandUnions(baseType).stream()
+            .map(type -> ((SoyProtoType) type).getFieldType(fieldName))
+            .collect(toImmutableList());
+    return SoyTypes.computeLowestCommonType(soyTypeRegistry, types);
   }
 }

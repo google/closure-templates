@@ -390,6 +390,7 @@ final class NullSafeAccumulator {
     private enum Type {
       GET("get", ""),
       GET_OR_UNDEFINED("get", "OrUndefined"),
+      GET_READONLY("getReadonly", ""),
       HAS("has", "");
 
       private final String prefix;
@@ -442,6 +443,10 @@ final class NullSafeAccumulator {
       return accessor(fieldName, desc, Type.GET_OR_UNDEFINED);
     }
 
+    static ProtoCall getReadonlyField(String fieldName, FieldDescriptor desc) {
+      return accessor(fieldName, desc, Type.GET_READONLY);
+    }
+
     static ProtoCall hasField(String fieldName, FieldDescriptor desc) {
       return accessor(fieldName, desc, Type.HAS);
     }
@@ -459,12 +464,12 @@ final class NullSafeAccumulator {
           && ProtoUtils.getContainingOneof(desc) == null) {
         // JSPB doesn't have hassers for submessages.
         throw new IllegalArgumentException("Submessage hasser not implemented");
-      } else if (Type.GET.getPrefix().equals(type.getPrefix())) {
+      } else if (type == Type.GET || type == Type.GET_OR_UNDEFINED || type == Type.GET_READONLY) {
         unpackFunction = getUnpackFunction(desc);
       }
 
       if (desc.isExtension()) {
-        getter = type.getPrefix() + "Extension";
+        getter = type.getPrefix() + "Extension" + type.getSuffix();
         arg = extensionField(desc);
       } else {
         getter =

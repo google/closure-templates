@@ -625,13 +625,18 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
       SoyType baseType = methodCallNode.getBaseType(nullSafe);
       SourceLocation sourceLocation = methodCallNode.getAccessSourceLocation();
       switch (builtinMethod) {
+        case GET_READONLY_EXTENSION:
         case GET_EXTENSION:
           // Nullability has already been checked, but nonnull assertion operators are removed by
           // so the type may still appear nullable, in which case we can safely remove it.
           SoyProtoType protoBaseType = (SoyProtoType) SoyTypes.removeNull(baseType);
           String extName = BuiltinMethod.getProtoExtensionIdFromMethodCall(methodCallNode);
+          FieldDescriptor descriptor = protoBaseType.getFieldDescriptor(extName);
           return base.dotAccess(
-              ProtoCall.getField(extName, protoBaseType.getFieldDescriptor(extName)), nullSafe);
+              builtinMethod == BuiltinMethod.GET_READONLY_EXTENSION
+                  ? ProtoCall.getReadonlyField(extName, descriptor)
+                  : ProtoCall.getField(extName, descriptor),
+              nullSafe);
         case HAS_PROTO_FIELD:
           String fieldName = BuiltinMethod.getProtoFieldNameFromMethodCall(methodCallNode);
           FieldAccess fieldAccess =
@@ -663,6 +668,17 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
                   sourceLocation,
                   type ->
                       ProtoCall.getFieldOrUndefined(
+                          fieldName, ((SoyProtoType) type).getFieldDescriptor(fieldName)));
+          return base.dotAccess(fieldAccess, nullSafe);
+        case GET_READONLY_PROTO_FIELD:
+          fieldName = BuiltinMethod.getProtoFieldNameFromMethodCall(methodCallNode);
+          fieldAccess =
+              genCodeForMaybeUnion(
+                  baseType,
+                  fieldName,
+                  sourceLocation,
+                  type ->
+                      ProtoCall.getReadonlyField(
                           fieldName, ((SoyProtoType) type).getFieldDescriptor(fieldName)));
           return base.dotAccess(fieldAccess, nullSafe);
           // When adding new built-in methods it may be necessary to assert that the base expression

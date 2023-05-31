@@ -173,6 +173,18 @@ public final class SoyProtoValue extends SoyAbstractValue implements SoyLegacyOb
     return field.interpretField(proto);
   }
 
+  public SoyValue getReadonlyProtoField(String name) {
+    FieldWithInterpreter field = clazz().fields.get(name);
+    if (field == null) {
+      throw new IllegalArgumentException(
+          "Proto " + proto.getClass().getName() + " does not have a field of name " + name);
+    }
+    FieldDescriptor fd = field.getDescriptor();
+    if (fd.isRepeated() || fd.getJavaType() != JavaType.MESSAGE) {
+      throw new AssertionError("impossible");
+    }
+    return field.interpretField(proto);
+  }
   /**
    * Returns the value of the field, or null only if the field has presence semantics and is unset.
    * For fields with no presence semantics (i.e., there's no hasser method), the value is never

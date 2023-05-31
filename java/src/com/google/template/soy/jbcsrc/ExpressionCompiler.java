@@ -1254,7 +1254,7 @@ final class ExpressionCompiler {
             baseExpr,
             node.getFieldName(),
             node.getType(),
-            ProtoUtils.ScalarFieldMode.NULL_IF_UNSET,
+            ProtoUtils.SingularFieldAccessMode.NULL_IF_UNSET,
             varManager);
       }
       // Otherwise this must be a vanilla SoyRecord.  Box, call getField or getFieldProvider
@@ -1333,23 +1333,39 @@ final class ExpressionCompiler {
         switch (builtinMethod) {
           case GET_EXTENSION:
             return ProtoUtils.accessExtensionField(
-                baseExpr, node, BuiltinMethod.getProtoExtensionIdFromMethodCall(node));
+                baseExpr,
+                node,
+                BuiltinMethod.getProtoExtensionIdFromMethodCall(node),
+                ProtoUtils.SingularFieldAccessMode.DEFAULT_IF_UNSET_UNLESS_MESSAGE_VALUED);
+          case GET_READONLY_EXTENSION:
+            return ProtoUtils.accessExtensionField(
+                baseExpr,
+                node,
+                BuiltinMethod.getProtoExtensionIdFromMethodCall(node),
+                ProtoUtils.SingularFieldAccessMode.DEFAULT_IF_UNSET);
           case HAS_PROTO_FIELD:
             return ProtoUtils.hasserField(
                 baseExpr, BuiltinMethod.getProtoFieldNameFromMethodCall(node), varManager);
+          case GET_READONLY_PROTO_FIELD:
+            return ProtoUtils.accessField(
+                baseExpr,
+                BuiltinMethod.getProtoFieldNameFromMethodCall(node),
+                node.getType(),
+                ProtoUtils.SingularFieldAccessMode.DEFAULT_IF_UNSET,
+                varManager);
           case GET_PROTO_FIELD:
             return ProtoUtils.accessField(
                 baseExpr,
                 BuiltinMethod.getProtoFieldNameFromMethodCall(node),
                 node.getType(),
-                ProtoUtils.ScalarFieldMode.DEFAULT_IF_UNSET,
+                ProtoUtils.SingularFieldAccessMode.DEFAULT_IF_UNSET_UNLESS_MESSAGE_VALUED,
                 varManager);
           case GET_PROTO_FIELD_OR_UNDEFINED:
             return ProtoUtils.accessField(
                 baseExpr,
                 BuiltinMethod.getProtoFieldNameFromMethodCall(node),
                 node.getType(),
-                ProtoUtils.ScalarFieldMode.NULL_IF_UNSET,
+                ProtoUtils.SingularFieldAccessMode.NULL_IF_UNSET,
                 varManager);
           case BIND:
             return SoyExpression.forSoyValue(
