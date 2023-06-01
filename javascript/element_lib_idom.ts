@@ -12,7 +12,7 @@ import {SafeHtml} from 'google3/third_party/javascript/closure/html/safehtml';
 import {SanitizedContentKind} from 'google3/third_party/javascript/closure/soy/data';
 
 import {IncrementalDomRenderer, patchOuter} from './api_idom';
-import {isTaggedForSkip} from './global';
+import {isTaggedForSkip, USE_TEMPLATE_CLONING} from './global';
 import {IdomTemplate, IjData} from './templates';
 
 /**
@@ -116,6 +116,8 @@ export abstract class SoyElement<TData extends {}|null, TInterface extends {}>
             this as unknown as TInterface, this as unknown as TInterface);
       };
     }
+    USE_TEMPLATE_CLONING && this.ijData &&
+      delete (this.ijData as {[key: string]: unknown})['inTemplateCloning'];
     const origSyncState = this.syncState;
     this.syncState = false;
     // It is possible that this Soy element has a skip handler on it. When
