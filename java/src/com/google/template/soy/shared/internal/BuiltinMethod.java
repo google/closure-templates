@@ -27,6 +27,7 @@ import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor.JavaType;
 import com.google.template.soy.error.ErrorReporter;
@@ -58,9 +59,7 @@ public enum BuiltinMethod implements SoyMethod {
 
     @Override
     public boolean appliesToBase(SoyType baseType) {
-      Preconditions.checkArgument(!SoyTypes.isNullable(baseType));
-      return baseType.getKind() == SoyType.Kind.PROTO
-          && ((SoyProtoType) baseType).getDescriptor().isExtendable();
+      return isExtendableMessageType(baseType);
     }
 
     @Override
@@ -70,46 +69,21 @@ public enum BuiltinMethod implements SoyMethod {
         List<ExprNode> params,
         SoyTypeRegistry soyTypeRegistry,
         ErrorReporter errorReporter) {
-      Preconditions.checkArgument(!SoyTypes.isNullable(baseType));
-      Preconditions.checkArgument(params.size() == 1);
       SoyProtoType protoType = (SoyProtoType) baseType;
-      ExprNode param = params.get(0);
-
-      if (param.getType().getKind() != SoyType.Kind.PROTO_EXTENSION) {
-        if (param.getType().getKind() != SoyType.Kind.UNKNOWN) {
-          // Bad refs or typos are Kind=UNKNOWN and will be an error elsewhere.
-          errorReporter.report(param.getSourceLocation(), GET_EXTENSION_BAD_ARG);
-        }
-        return UnknownType.getInstance();
-      }
-
-      ProtoExtensionImportType extType = (ProtoExtensionImportType) param.getType();
-      // TODO(jcg): Have SoyProtoType understand ProtoExtensionImportType rather than looking up
-      //            on string representation.
-      ImmutableSet<String> fields = protoType.getExtensionFieldNames();
-      String fieldName = extType.getFieldName();
-      if (!fields.contains(fieldName)) {
-        String extraErrorMessage =
-            SoyErrors.getDidYouMeanMessageForProtoFields(
-                fields, protoType.getDescriptor(), fieldName);
-        errorReporter.report(
-            param.getSourceLocation(),
-            PROTO_EXTENSION_DOES_NOT_EXIST,
-            fieldName,
-            protoType.getDescriptor().getFullName(),
-            extraErrorMessage);
+      var extType = getExtensionType(protoType, Iterables.getOnlyElement(params), errorReporter);
+      if (extType.isEmpty()) {
         return UnknownType.getInstance();
       }
       // getExtension is incorrectly typed as non-nullable even though it can be null for singular
       // message fields.
-      return SoyTypes.removeNull(protoType.getFieldType(fieldName));
+      return SoyTypes.removeNull(protoType.getFieldType(extType.get().getFieldName()));
     }
   },
   GET_READONLY_EXTENSION("getReadonlyExtension", 1) {
 
     @Override
     public boolean appliesToBase(SoyType baseType) {
-      return GET_EXTENSION.appliesToBase(baseType);
+      return isExtendableMessageType(baseType);
     }
 
     @Override
@@ -119,18 +93,45 @@ public enum BuiltinMethod implements SoyMethod {
         List<ExprNode> params,
         SoyTypeRegistry soyTypeRegistry,
         ErrorReporter errorReporter) {
-      // confusingly the type is correct as is, see comments in GET_EXTENSION.getReturnType
-      SoyType type =
-          GET_EXTENSION.getReturnType(methodName, baseType, params, soyTypeRegistry, errorReporter);
-      if (type.getKind() == SoyType.Kind.UNKNOWN) {
-        return type;
+      SoyProtoType protoType = (SoyProtoType) baseType;
+      var extType = getExtensionType(protoType, Iterables.getOnlyElement(params), errorReporter);
+      if (extType.isEmpty()) {
+        return UnknownType.getInstance();
       }
-      if (type.getKind() != SoyType.Kind.PROTO) {
+      if (extType.get().getDescriptor().getJavaType() != FieldDescriptor.JavaType.MESSAGE
+          || extType.get().getDescriptor().isRepeated()) {
         errorReporter.report(
             params.get(0).getSourceLocation(),
             GET_READONLY_EXTENSION_MAY_ONLY_BE_CALLED_ON_MESSAGE_EXTENSIONS);
       }
-      return type;
+      return SoyTypes.removeNull(protoType.getFieldType(extType.get().getFieldName()));
+    }
+  },
+  HAS_EXTENSION("hasExtension", 1) {
+
+    @Override
+    public boolean appliesToBase(SoyType baseType) {
+      return isExtendableMessageType(baseType);
+    }
+
+    @Override
+    public SoyType getReturnType(
+        String methodName,
+        SoyType baseType,
+        List<ExprNode> params,
+        SoyTypeRegistry soyTypeRegistry,
+        ErrorReporter errorReporter) {
+      SoyProtoType protoType = (SoyProtoType) baseType;
+      var extType = getExtensionType(protoType, Iterables.getOnlyElement(params), errorReporter);
+      if (extType.isEmpty()) {
+        return UnknownType.getInstance();
+      }
+      if (extType.get().getDescriptor().isRepeated()) {
+        errorReporter.report(
+            params.get(0).getSourceLocation(),
+            HAS_EXTENSION_MAY_ONLY_BE_CALLED_ON_SINGULAR_EXTENSIONS);
+      }
+      return BoolType.getInstance();
     }
   },
 
@@ -150,9 +151,6 @@ public enum BuiltinMethod implements SoyMethod {
 
     private boolean acceptFieldDescriptor(FieldDescriptor fd) {
       if (fd.isExtension()) {
-        return false;
-      }
-      if (fd.getJavaType() == JavaType.MESSAGE && fd.getContainingOneof() == null) {
         return false;
       }
       return fd.hasPresence();
@@ -344,6 +342,9 @@ public enum BuiltinMethod implements SoyMethod {
           SoyErrorKind.of(
               "getReadonlyExtension may only be called on singular message extensions.",
               StyleAllowance.NO_CAPS);
+  private static final SoyErrorKind HAS_EXTENSION_MAY_ONLY_BE_CALLED_ON_SINGULAR_EXTENSIONS =
+      SoyErrorKind.of(
+          "hasExtension may only be called on singular extensions.", StyleAllowance.NO_CAPS);
   private static final SoyErrorKind BIND_PARAMETER_MUST_BE_RECORD_LITERAL =
       SoyErrorKind.of("Parameter to bind() must be a record literal.");
 
@@ -381,6 +382,7 @@ public enum BuiltinMethod implements SoyMethod {
         return getGetReadonlyFieldName(methodName).get();
       case GET_EXTENSION:
       case GET_READONLY_EXTENSION:
+      case HAS_EXTENSION:
       case BIND:
         break;
     }
@@ -492,6 +494,7 @@ public enum BuiltinMethod implements SoyMethod {
   public List<String> getProtoDependencyTypes(MethodCallNode methodNode) {
     switch (this) {
       case GET_EXTENSION:
+      case HAS_EXTENSION:
       case GET_READONLY_EXTENSION:
         return ImmutableList.of(
             ProtoUtils.getQualifiedOuterClassname(
@@ -564,5 +567,42 @@ public enum BuiltinMethod implements SoyMethod {
             .map(type -> ((SoyProtoType) type).getFieldType(fieldName))
             .collect(toImmutableList());
     return SoyTypes.computeLowestCommonType(soyTypeRegistry, types);
+  }
+
+  private static boolean isExtendableMessageType(SoyType baseType) {
+    Preconditions.checkArgument(!SoyTypes.isNullable(baseType));
+    return baseType.getKind() == SoyType.Kind.PROTO
+        && ((SoyProtoType) baseType).getDescriptor().isExtendable();
+  }
+
+  private static Optional<ProtoExtensionImportType> getExtensionType(
+      SoyProtoType protoType, ExprNode param, ErrorReporter errorReporter) {
+
+    if (param.getType().getKind() != SoyType.Kind.PROTO_EXTENSION) {
+      if (param.getType().getKind() != SoyType.Kind.UNKNOWN) {
+        // Bad refs or typos are Kind=UNKNOWN and will be an error elsewhere.
+        errorReporter.report(param.getSourceLocation(), GET_EXTENSION_BAD_ARG);
+      }
+      return Optional.empty();
+    }
+
+    ProtoExtensionImportType extType = (ProtoExtensionImportType) param.getType();
+    // TODO(jcg): Have SoyProtoType understand ProtoExtensionImportType rather than looking up
+    //            on string representation.
+    ImmutableSet<String> fields = protoType.getExtensionFieldNames();
+    String fieldName = extType.getFieldName();
+    if (!fields.contains(fieldName)) {
+      String extraErrorMessage =
+          SoyErrors.getDidYouMeanMessageForProtoFields(
+              fields, protoType.getDescriptor(), fieldName);
+      errorReporter.report(
+          param.getSourceLocation(),
+          PROTO_EXTENSION_DOES_NOT_EXIST,
+          fieldName,
+          protoType.getDescriptor().getFullName(),
+          extraErrorMessage);
+      return Optional.empty();
+    }
+    return Optional.of(extType);
   }
 }

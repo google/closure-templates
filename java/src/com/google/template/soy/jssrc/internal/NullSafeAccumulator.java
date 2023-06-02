@@ -456,15 +456,7 @@ final class NullSafeAccumulator {
       Expression arg;
       Expression unpackFunction = null;
 
-      if (desc.isExtension() && Type.HAS == type) {
-        // JSPB doesn't have hasExtension().
-        throw new IllegalArgumentException("hasExtension() not implemented");
-      } else if (Type.HAS == type
-          && desc.getType() == FieldDescriptor.Type.MESSAGE
-          && ProtoUtils.getContainingOneof(desc) == null) {
-        // JSPB doesn't have hassers for submessages.
-        throw new IllegalArgumentException("Submessage hasser not implemented");
-      } else if (type == Type.GET || type == Type.GET_OR_UNDEFINED || type == Type.GET_READONLY) {
+      if (type == Type.GET || type == Type.GET_OR_UNDEFINED || type == Type.GET_READONLY) {
         unpackFunction = getUnpackFunction(desc);
       }
 

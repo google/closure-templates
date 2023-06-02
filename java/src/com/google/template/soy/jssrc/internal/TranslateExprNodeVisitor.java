@@ -626,6 +626,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
       SourceLocation sourceLocation = methodCallNode.getAccessSourceLocation();
       switch (builtinMethod) {
         case GET_READONLY_EXTENSION:
+        case HAS_EXTENSION:
         case GET_EXTENSION:
           // Nullability has already been checked, but nonnull assertion operators are removed by
           // so the type may still appear nullable, in which case we can safely remove it.
@@ -635,7 +636,9 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
           return base.dotAccess(
               builtinMethod == BuiltinMethod.GET_READONLY_EXTENSION
                   ? ProtoCall.getReadonlyField(extName, descriptor)
-                  : ProtoCall.getField(extName, descriptor),
+                  : builtinMethod == BuiltinMethod.HAS_EXTENSION
+                      ? ProtoCall.hasField(extName, descriptor)
+                      : ProtoCall.getField(extName, descriptor),
               nullSafe);
         case HAS_PROTO_FIELD:
           String fieldName = BuiltinMethod.getProtoFieldNameFromMethodCall(methodCallNode);

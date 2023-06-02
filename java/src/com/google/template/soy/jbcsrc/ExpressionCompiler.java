@@ -1371,6 +1371,9 @@ final class ExpressionCompiler {
                 node,
                 BuiltinMethod.getProtoExtensionIdFromMethodCall(node),
                 ProtoUtils.SingularFieldAccessMode.DEFAULT_IF_UNSET);
+          case HAS_EXTENSION:
+            return ProtoUtils.hasExtensionField(
+                baseExpr, node, BuiltinMethod.getProtoExtensionIdFromMethodCall(node));
           case HAS_PROTO_FIELD:
             return ProtoUtils.hasserField(
                 baseExpr, BuiltinMethod.getProtoFieldNameFromMethodCall(node), varManager);

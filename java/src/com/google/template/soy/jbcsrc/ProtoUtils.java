@@ -140,7 +140,6 @@ final class ProtoUtils {
       MethodRef.create(ExtendableMessage.class, "getExtension", ExtensionLite.class)
           .asNonNullable()
           .asCheap();
-
   private static final MethodRef EXTENDABLE_MESSAGE_HAS_EXTENSION =
       MethodRef.create(ExtendableMessage.class, "hasExtension", ExtensionLite.class)
           .asNonNullable()
@@ -277,6 +276,19 @@ final class ProtoUtils {
       SoyExpression baseExpr, MethodCallNode node, String fieldName, SingularFieldAccessMode mode) {
     SoyProtoType protoType = (SoyProtoType) baseExpr.soyType();
     return new AccessorGenerator(protoType, baseExpr, fieldName, node.getType(), mode).generate();
+  }
+
+  /**
+   * Returns a {@link SoyExpression} for checking the presence of an extension field of a proto
+   * using the {@code hasExtension} method.
+   *
+   * @param baseExpr The proto being accessed.
+   * @param node The method operation.
+   */
+  static SoyExpression hasExtensionField(
+      SoyExpression baseExpr, MethodCallNode node, String fieldName) {
+    SoyProtoType protoType = (SoyProtoType) baseExpr.soyType();
+    return new HasserGenerator(protoType, baseExpr, fieldName).generate();
   }
 
   private static SoyExpression accessProtoUnionField(
@@ -819,10 +831,7 @@ final class ProtoUtils {
 
     SoyExpression generate() {
       SoyExpression typedBaseExpr = getTypedBaseExpression();
-
-      if (descriptor.isExtension()) {
-        throw new AssertionError("extensions don't have hassers: " + descriptor);
-      } else if (descriptor.isRepeated()) {
+      if (descriptor.isRepeated()) {
         throw new AssertionError("repeated fields don't have hassers: " + descriptor);
       } else {
         return handleNormalField(typedBaseExpr);
@@ -854,8 +863,15 @@ final class ProtoUtils {
                 },
                 fieldNumber));
       }
-      MethodRef hasMethodRef = getHasserMethod(descriptor);
-      return SoyExpression.forBool(typedBaseExpr.invoke(hasMethodRef));
+      if (descriptor.isExtension()) {
+        FieldRef extensionField = getExtensionField(descriptor);
+        final Expression extensionFieldAccessor = extensionField.accessor();
+        return SoyExpression.forBool(
+            typedBaseExpr.invoke(EXTENDABLE_MESSAGE_HAS_EXTENSION, extensionFieldAccessor));
+      } else {
+        MethodRef hasMethodRef = getHasserMethod(descriptor);
+        return SoyExpression.forBool(typedBaseExpr.invoke(hasMethodRef));
+      }
     }
   }
 

@@ -765,6 +765,7 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
               .asPyExpr()
               .getText();
         case GET_EXTENSION:
+        case HAS_EXTENSION:
         case GET_READONLY_EXTENSION:
         case HAS_PROTO_FIELD:
         case GET_PROTO_FIELD:
