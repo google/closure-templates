@@ -337,11 +337,14 @@ For example,
 
 *   `$foo < $bar`
 
-### Equality operators `==`, `!=`
+### Equality operators `==`, `!=`, `===`, `!==`
 
-Equality operators. Compares two values for equality. If one side is a `string`
-and the other side is not, then it will be coerced to a `string` for the
-comparison.
+Equality operators. Compares two values for equality. Mirrors the Javascript
+equality and strict equality operators.
+
+When the double equals is used, if one side is a `string` and the other side is
+not, then it will be coerced to a `string` for the comparison. When triple
+equals is used, strict equality will be used.
 
 For example,
 

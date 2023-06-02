@@ -35,6 +35,7 @@ import static com.google.template.soy.shared.internal.SharedRuntime.shiftLeft;
 import static com.google.template.soy.shared.internal.SharedRuntime.shiftRight;
 import static com.google.template.soy.shared.internal.SharedRuntime.soyServerKey;
 import static com.google.template.soy.shared.internal.SharedRuntime.times;
+import static com.google.template.soy.shared.internal.SharedRuntime.tripleEqual;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableTable;
@@ -110,6 +111,8 @@ import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ShiftLeftOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ShiftRightOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.TripleEqualOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.TripleNotEqualOpNode;
 import com.google.template.soy.exprtree.ProtoEnumValueNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
@@ -775,6 +778,16 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
   @Override
   protected SoyValue visitNotEqualOpNode(NotEqualOpNode node) {
     return convertResult(!equal(visit(node.getChild(0)), visit(node.getChild(1))));
+  }
+
+  @Override
+  protected SoyValue visitTripleEqualOpNode(TripleEqualOpNode node) {
+    return convertResult(tripleEqual(visit(node.getChild(0)), visit(node.getChild(1))));
+  }
+
+  @Override
+  protected SoyValue visitTripleNotEqualOpNode(TripleNotEqualOpNode node) {
+    return convertResult(!tripleEqual(visit(node.getChild(0)), visit(node.getChild(1))));
   }
 
   @Override

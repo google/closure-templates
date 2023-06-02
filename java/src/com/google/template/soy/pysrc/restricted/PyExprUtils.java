@@ -78,6 +78,8 @@ public final class PyExprUtils {
           .put(Operator.GREATER_THAN_OR_EQUAL, 5)
           .put(Operator.EQUAL, 5)
           .put(Operator.NOT_EQUAL, 5)
+          .put(Operator.TRIPLE_EQUAL, 5)
+          .put(Operator.TRIPLE_NOT_EQUAL, 5)
           .put(Operator.NOT, 4)
           .put(Operator.AND, 3)
           .put(Operator.OR, 2)

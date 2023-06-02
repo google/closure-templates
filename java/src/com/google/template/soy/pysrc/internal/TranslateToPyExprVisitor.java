@@ -53,6 +53,8 @@ import com.google.template.soy.exprtree.OperatorNodes.EqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.TripleEqualOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.TripleNotEqualOpNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
@@ -495,6 +497,24 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
             + operandPyExprs.get(1).getText()
             + ")",
         PyExprUtils.pyPrecedenceForOperator(Operator.NOT));
+  }
+
+  @Override
+  protected PyExpr visitTripleEqualOpNode(TripleEqualOpNode node) {
+    List<PyExpr> operandPyExprs = visitChildren(node);
+
+    return new PyExpr(
+        operandPyExprs.get(0).getText() + " == " + operandPyExprs.get(1).getText(),
+        PyExprUtils.pyPrecedenceForOperator(Operator.TRIPLE_EQUAL));
+  }
+
+  @Override
+  protected PyExpr visitTripleNotEqualOpNode(TripleNotEqualOpNode node) {
+    List<PyExpr> operandPyExprs = visitChildren(node);
+
+    return new PyExpr(
+        operandPyExprs.get(0).getText() + " != " + operandPyExprs.get(1).getText(),
+        PyExprUtils.pyPrecedenceForOperator(Operator.TRIPLE_NOT_EQUAL));
   }
 
   @Override

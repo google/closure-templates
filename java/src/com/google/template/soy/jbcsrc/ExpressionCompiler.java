@@ -84,6 +84,8 @@ import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ShiftLeftOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ShiftRightOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.TripleEqualOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.TripleNotEqualOpNode;
 import com.google.template.soy.exprtree.ProtoEnumValueNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
@@ -653,6 +655,32 @@ final class ExpressionCompiler {
       return SoyExpression.forBool(
           logicalNot(
               BytecodeUtils.compareSoyEquals(visit(node.getChild(0)), visit(node.getChild(1)))));
+    }
+
+    @Override
+    protected SoyExpression visitTripleEqualOpNode(TripleEqualOpNode node) {
+      if (node.getChild(0).getKind() == ExprNode.Kind.NULL_NODE) {
+        return SoyExpression.forBool(BytecodeUtils.isNull(visit(node.getChild(1))));
+      }
+      if (node.getChild(1).getKind() == ExprNode.Kind.NULL_NODE) {
+        return SoyExpression.forBool(BytecodeUtils.isNull(visit(node.getChild(0))));
+      }
+      return SoyExpression.forBool(
+          BytecodeUtils.compareSoyTripleEquals(visit(node.getChild(0)), visit(node.getChild(1))));
+    }
+
+    @Override
+    protected SoyExpression visitTripleNotEqualOpNode(TripleNotEqualOpNode node) {
+      if (node.getChild(0).getKind() == ExprNode.Kind.NULL_NODE) {
+        return SoyExpression.forBool(BytecodeUtils.isNonNull(visit(node.getChild(1))));
+      }
+      if (node.getChild(1).getKind() == ExprNode.Kind.NULL_NODE) {
+        return SoyExpression.forBool(BytecodeUtils.isNonNull(visit(node.getChild(0))));
+      }
+      return SoyExpression.forBool(
+          logicalNot(
+              BytecodeUtils.compareSoyTripleEquals(
+                  visit(node.getChild(0)), visit(node.getChild(1)))));
     }
 
     // binary comparison operators.  N.B. it is ok to coerce 'number' values to floats because that

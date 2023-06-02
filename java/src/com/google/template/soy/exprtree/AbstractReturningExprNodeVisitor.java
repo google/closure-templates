@@ -44,6 +44,8 @@ import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ShiftLeftOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ShiftRightOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.TripleEqualOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.TripleNotEqualOpNode;
 import java.util.List;
 
 /**
@@ -151,6 +153,10 @@ public abstract class AbstractReturningExprNodeVisitor<R>
         return visitEqualOpNode((EqualOpNode) node);
       case NOT_EQUAL_OP_NODE:
         return visitNotEqualOpNode((NotEqualOpNode) node);
+      case TRIPLE_EQUAL_OP_NODE:
+        return visitTripleEqualOpNode((TripleEqualOpNode) node);
+      case TRIPLE_NOT_EQUAL_OP_NODE:
+        return visitTripleNotEqualOpNode((TripleNotEqualOpNode) node);
       case AND_OP_NODE:
         return visitAndOpNode((AndOpNode) node);
       case OR_OP_NODE:
@@ -344,6 +350,14 @@ public abstract class AbstractReturningExprNodeVisitor<R>
   }
 
   protected R visitNotEqualOpNode(NotEqualOpNode node) {
+    return visitOperatorNode(node);
+  }
+
+  protected R visitTripleEqualOpNode(TripleEqualOpNode node) {
+    return visitOperatorNode(node);
+  }
+
+  protected R visitTripleNotEqualOpNode(TripleNotEqualOpNode node) {
     return visitOperatorNode(node);
   }
 

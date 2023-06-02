@@ -316,6 +316,49 @@ public class OperatorNodes {
     }
   }
 
+  /** Node representing the '===' (triple equal) operator. */
+  public static final class TripleEqualOpNode extends AbstractOperatorNode {
+
+    public TripleEqualOpNode(SourceLocation sourceLocation, SourceLocation operatorLocation) {
+      super(sourceLocation, Operator.TRIPLE_EQUAL, operatorLocation);
+    }
+
+    private TripleEqualOpNode(TripleEqualOpNode orig, CopyState copyState) {
+      super(orig, copyState);
+    }
+
+    @Override
+    public Kind getKind() {
+      return Kind.TRIPLE_EQUAL_OP_NODE;
+    }
+
+    @Override
+    public TripleEqualOpNode copy(CopyState copyState) {
+      return new TripleEqualOpNode(this, copyState);
+    }
+  }
+
+  /** Node representing the '!==' (not triple equal) operator. */
+  public static final class TripleNotEqualOpNode extends AbstractOperatorNode {
+
+    public TripleNotEqualOpNode(SourceLocation sourceLocation, SourceLocation operatorLocation) {
+      super(sourceLocation, Operator.TRIPLE_NOT_EQUAL, operatorLocation);
+    }
+
+    private TripleNotEqualOpNode(TripleNotEqualOpNode orig, CopyState copyState) {
+      super(orig, copyState);
+    }
+
+    @Override
+    public Kind getKind() {
+      return Kind.TRIPLE_NOT_EQUAL_OP_NODE;
+    }
+
+    @Override
+    public TripleNotEqualOpNode copy(CopyState copyState) {
+      return new TripleNotEqualOpNode(this, copyState);
+    }
+  }
   /** Node representing the 'and' operator. */
   public static final class AndOpNode extends AbstractOperatorNode {
 

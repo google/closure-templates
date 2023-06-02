@@ -621,7 +621,6 @@ public final class BytecodeUtils {
     };
   }
 
-  /** Compares two {@link SoyExpression}s for equality using soy == semantics. */
   public static Expression compareSoyEquals(final SoyExpression left, final SoyExpression right) {
     // We can special case when we know the types.
     // If either is a string, we run special logic so test for that first
@@ -649,6 +648,27 @@ public final class BytecodeUtils {
       return compare(Opcodes.IFEQ, left.coerceToDouble(), right.coerceToDouble());
     }
     return MethodRef.RUNTIME_EQUAL.invoke(left.box(), right.box());
+  }
+
+  /** Compares two {@link SoyExpression}s for equality using soy === semantics. */
+  public static Expression compareSoyTripleEquals(
+      final SoyExpression left, final SoyExpression right) {
+    SoyRuntimeType leftRuntimeType = left.soyRuntimeType();
+    SoyRuntimeType rightRuntimeType = right.soyRuntimeType();
+    if (leftRuntimeType.isKnownInt()
+        && rightRuntimeType.isKnownInt()
+        && left.isNonNullable()
+        && right.isNonNullable()) {
+      return compare(Opcodes.IFEQ, left.unboxAsLong(), right.unboxAsLong());
+    }
+    if (leftRuntimeType.isKnownNumber()
+        && rightRuntimeType.isKnownNumber()
+        && left.isNonNullable()
+        && right.isNonNullable()
+        && (leftRuntimeType.isKnownFloat() || rightRuntimeType.isKnownFloat())) {
+      return compare(Opcodes.IFEQ, left.coerceToDouble(), right.coerceToDouble());
+    }
+    return MethodRef.RUNTIME_TRIPLE_EQUAL.invoke(left.box(), right.box());
   }
 
   /**

@@ -339,6 +339,9 @@ public abstract class MethodRef {
   public static final MethodRef RUNTIME_EQUAL =
       create(SharedRuntime.class, "equal", SoyValue.class, SoyValue.class);
 
+  public static final MethodRef RUNTIME_TRIPLE_EQUAL =
+      create(SharedRuntime.class, "tripleEqual", SoyValue.class, SoyValue.class);
+
   public static final MethodRef RUNTIME_COMPARE_STRING =
       create(SharedRuntime.class, "compareString", String.class, SoyValue.class);
 

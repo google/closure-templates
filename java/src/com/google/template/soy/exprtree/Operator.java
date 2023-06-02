@@ -52,6 +52,8 @@ import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ShiftLeftOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ShiftRightOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.TripleEqualOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.TripleNotEqualOpNode;
 import java.util.List;
 import javax.annotation.Nullable;
 
@@ -164,6 +166,19 @@ public enum Operator {
     @Override
     public OperatorNode createNode(SourceLocation location, SourceLocation operatorLocation) {
       return new NotEqualOpNode(location, operatorLocation);
+    }
+  },
+
+  TRIPLE_EQUAL(ImmutableList.of(OPERAND_0, SP, new Token("==="), SP, OPERAND_1), 7, LEFT) {
+    @Override
+    public OperatorNode createNode(SourceLocation location, SourceLocation operatorLocation) {
+      return new TripleEqualOpNode(location, operatorLocation);
+    }
+  },
+  TRIPLE_NOT_EQUAL(ImmutableList.of(OPERAND_0, SP, new Token("!=="), SP, OPERAND_1), 7, LEFT) {
+    @Override
+    public OperatorNode createNode(SourceLocation location, SourceLocation operatorLocation) {
+      return new TripleNotEqualOpNode(location, operatorLocation);
     }
   },
 

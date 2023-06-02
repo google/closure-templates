@@ -1360,6 +1360,8 @@ TOKEN_MGR_DECLS: {
 | < BITWISE_AND: "&" >    // Precedence 6 operators
 | < DOUBLE_EQ: "==">      // Precedence 7 operators
 | < NOT_EQ: "!=" >
+| < TRIPLE_EQ: "===">
+| < TRIPLE_NOT_EQ: "!==">
 | < LANGLE: "<" >         // Precedence 8 operators
 | < RANGLE: ">" >
 | < LT_EQ: "<=" >
@@ -4244,6 +4246,10 @@ private ExprNode PrecExpr7(ExprState state) :
       op = <DOUBLE_EQ>
     |
       op = <NOT_EQ>
+    |
+      op = <TRIPLE_EQ>
+    |
+      op = <TRIPLE_NOT_EQ>
     )
     rightHand = PrecExpr8(state)
 

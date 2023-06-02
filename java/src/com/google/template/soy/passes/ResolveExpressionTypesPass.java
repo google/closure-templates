@@ -120,6 +120,8 @@ import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ShiftLeftOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ShiftRightOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.TripleEqualOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.TripleNotEqualOpNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
@@ -1807,6 +1809,16 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
 
     @Override
     protected void visitNotEqualOpNode(NotEqualOpNode node) {
+      visitEqualComparisonOpNode(node);
+    }
+
+    @Override
+    protected void visitTripleEqualOpNode(TripleEqualOpNode node) {
+      visitEqualComparisonOpNode(node);
+    }
+
+    @Override
+    protected void visitTripleNotEqualOpNode(TripleNotEqualOpNode node) {
       visitEqualComparisonOpNode(node);
     }
 

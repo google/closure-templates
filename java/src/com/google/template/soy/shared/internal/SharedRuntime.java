@@ -22,8 +22,10 @@ import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.internal.SoyMapImpl;
+import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
+import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.exprtree.MapLiteralFromListNode;
@@ -54,6 +56,25 @@ public final class SharedRuntime {
       return compareString(operand1.stringValue(), operand0);
     }
     return Objects.equals(operand0, operand1);
+  }
+
+  /**
+   * Custom strict equality operator that smooths out differences between different Soy runtimes.
+   */
+  public static boolean tripleEqual(SoyValue operand0, SoyValue operand1) {
+    if (operand0 instanceof BooleanData && operand1 instanceof BooleanData) {
+      return operand0.booleanValue() == operand1.booleanValue();
+    }
+    if (operand0 instanceof NumberData && operand1 instanceof NumberData) {
+      return operand0.numberValue() == operand1.numberValue();
+    }
+    if (operand0 instanceof StringData && operand1 instanceof StringData) {
+      return operand0.stringValue().equals(operand1.stringValue());
+    }
+    if (operand0 instanceof NullData && operand1 instanceof NullData) {
+      return true;
+    }
+    return operand0 == operand1;
   }
 
   /** Performs the {@code +} operator on the two values. */

@@ -44,6 +44,8 @@ import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ShiftLeftOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ShiftRightOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.TripleEqualOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.TripleNotEqualOpNode;
 
 /**
  * Abstract base class for all ExprNode visitors. A visitor is basically a function implemented for
@@ -176,6 +178,12 @@ public abstract class AbstractExprNodeVisitor<R> extends AbstractNodeVisitor<Exp
         break;
       case NOT_EQUAL_OP_NODE:
         visitNotEqualOpNode((NotEqualOpNode) node);
+        break;
+      case TRIPLE_EQUAL_OP_NODE:
+        visitTripleEqualOpNode((TripleEqualOpNode) node);
+        break;
+      case TRIPLE_NOT_EQUAL_OP_NODE:
+        visitTripleNotEqualOpNode((TripleNotEqualOpNode) node);
         break;
       case AND_OP_NODE:
         visitAndOpNode((AndOpNode) node);
@@ -397,6 +405,14 @@ public abstract class AbstractExprNodeVisitor<R> extends AbstractNodeVisitor<Exp
   }
 
   protected void visitNotEqualOpNode(NotEqualOpNode node) {
+    visitOperatorNode(node);
+  }
+
+  protected void visitTripleEqualOpNode(TripleEqualOpNode node) {
+    visitOperatorNode(node);
+  }
+
+  protected void visitTripleNotEqualOpNode(TripleNotEqualOpNode node) {
     visitOperatorNode(node);
   }
 

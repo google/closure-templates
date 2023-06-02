@@ -48,6 +48,8 @@ abstract class Operation extends Expression {
       case GREATER_THAN_OR_EQUAL:
       case EQUAL:
       case NOT_EQUAL:
+      case TRIPLE_EQUAL:
+      case TRIPLE_NOT_EQUAL:
       case BITWISE_AND:
       case BITWISE_XOR:
       case BITWISE_OR:

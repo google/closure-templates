@@ -66,6 +66,8 @@ public enum Precedence {
         return P9;
       case EQUAL:
       case NOT_EQUAL:
+      case TRIPLE_EQUAL:
+      case TRIPLE_NOT_EQUAL:
         return P8;
       case BITWISE_AND:
         return P7;
