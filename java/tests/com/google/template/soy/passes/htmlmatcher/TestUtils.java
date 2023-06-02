@@ -44,7 +44,7 @@ public final class TestUtils {
         idGenerator.genId(),
         new RawTextNode(idGenerator.genId(), "div", SourceLocation.UNKNOWN),
         SourceLocation.UNKNOWN,
-        /** selfClosing */
+        /* selfClosing */
         false,
         TagExistence.IN_TEMPLATE);
   }
