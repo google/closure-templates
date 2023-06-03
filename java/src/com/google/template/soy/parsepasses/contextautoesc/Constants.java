@@ -37,7 +37,7 @@ public final class Constants {
           "cite",
           "classid",
           "codebase",
-          /**
+          /*
            * TODO: content is only a URL sometimes depending on other parameters and existing
            * templates use content with non-URL values. Fix those templates or otherwise flag
            * interpolations into content.
