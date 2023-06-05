@@ -328,7 +328,9 @@ final class ElementAttributePass implements CompilerFileSetPass {
                   new HtmlAttributeValueNode(id.get(), unknown, Quotes.DOUBLE);
               newAttrNode.addChild(valueNode);
 
-              if (attrNode.getConcatenationDelimiter() == null && attr.isRequired()) {
+              boolean concatValues = attrNode.getConcatenationDelimiter() != null;
+
+              if (!concatValues && attr.isRequired()) {
                 // No concatenation, required param. incoming param is always non-null so use it.
                 // Generates: id="{$id}"
                 PrintNode printNode =
@@ -337,7 +339,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
                 printNode.getExpr().setType(attrExpr.getType());
                 valueNode.addChild(printNode);
                 replacementNode = newAttrNode;
-              } else if (attrNode.getConcatenationDelimiter() == null && attrNode.hasValue()) {
+              } else if (!concatValues && attrNode.hasValue()) {
                 // No concatenation, with a default value. Use if/else to use either the default or
                 // override. Generates: id="{$id != null ? $id : $idDefault}"
                 IfNode ifNode = buildPrintIfNotNull(attrExpr, id);
@@ -350,7 +352,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
                 // In these cases, we need to conditionally suppress the entire attribute. Either
                 // a concatenating attribute, or an attribute without a default.
                 final VarRefNode outputValueExpr;
-                if (attrNode.getConcatenationDelimiter() != null && attrNode.hasValue()) {
+                if (concatValues && attrNode.hasValue()) {
                   // Concatenating attribute, with a default. Concatenate the default and incoming
                   // values together.
                   outputValueExpr =
@@ -361,7 +363,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
                           SanitizedType.StyleType.getInstance()
                               .isAssignableFromStrict(SoyTypes.removeNull(attr.type())),
                           id,
-                          unknown);
+                          attrNode.getEqualsLocation());
                 } else {
                   // No default, use incoming parameter for the attribute value. Generates
                   // id="{$id}"
@@ -390,7 +392,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
                         unknown,
                         unknown,
                         "if",
-                        attrNode.getConcatenationDelimiter() == null
+                        !concatValues
                             ? buildNotNull(outputValueExpr)
                             : outputValueExpr.copy(new CopyState()));
                 ifCondNode.getExpr().setType(BoolType.getInstance());

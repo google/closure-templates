@@ -224,6 +224,11 @@ public final class PassManager {
       public boolean rewriteElementComposition() {
         return true;
       }
+
+      @Override
+      public boolean rewriteAttributeParams() {
+        return true;
+      }
     },
 
     /** All the AST rewrites. */
@@ -251,6 +256,10 @@ public final class PassManager {
     }
 
     public boolean rewriteElementComposition() {
+      return isAll();
+    }
+
+    public boolean rewriteAttributeParams() {
       return isAll();
     }
   }
@@ -547,7 +556,7 @@ public final class PassManager {
         // and before ResolveExpressionTypesPass (since we insert expressions).
         passes.add(new AddDebugAttributesPass());
       }
-      if (astRewrites.isAll()) {
+      if (astRewrites.rewriteAttributeParams()) {
         passes.add(
             new ElementAttributePass(
                 errorReporter, accumulatedState::registryFromDeps, desugarIdomFeatures));
