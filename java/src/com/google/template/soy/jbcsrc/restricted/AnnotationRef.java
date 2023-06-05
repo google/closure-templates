@@ -28,6 +28,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Objects;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
@@ -105,7 +106,12 @@ public final class AnnotationRef<T extends Annotation> {
 
   private void doWrite(T instance, AnnotationVisitor annVisitor) {
     for (Map.Entry<Method, FieldWriter> entry : writers.entrySet()) {
-      entry.getValue().write(annVisitor, invokeExplosively(instance, entry.getKey()));
+      entry
+          .getValue()
+          .write(
+              annVisitor,
+              invokeExplosively(instance, entry.getKey()),
+              entry.getKey().getDefaultValue());
     }
     annVisitor.visitEnd();
   }
@@ -124,14 +130,17 @@ public final class AnnotationRef<T extends Annotation> {
   }
 
   private interface FieldWriter {
-    void write(AnnotationVisitor visitor, Object value);
+    void write(AnnotationVisitor visitor, Object value, Object defaultValue);
   }
 
   /** Writes an annotation valued field to the writer. */
   private static <T extends Annotation> FieldWriter annotationFieldWriter(
       final String name, final AnnotationRef<T> ref) {
-    return (visitor, value) ->
+    return (visitor, value, defaultValue) -> {
+      if (!Objects.equals(value, defaultValue)) {
         ref.doWrite(ref.annType.cast(value), visitor.visitAnnotation(name, ref.typeDescriptor));
+      }
+    };
   }
 
   /**
@@ -140,7 +149,11 @@ public final class AnnotationRef<T extends Annotation> {
    * <p>See {@link AnnotationVisitor#visit(String, Object)} for the valid types.
    */
   private static FieldWriter simpleFieldWriter(final String name) {
-    return (visitor, value) -> visitor.visit(name, value);
+    return (visitor, value, defaultValue) -> {
+      if (!Objects.equals(value, defaultValue)) {
+        visitor.visit(name, value);
+      }
+    };
   }
 
   /**
@@ -150,33 +163,55 @@ public final class AnnotationRef<T extends Annotation> {
    */
   private static FieldWriter simpleEumFieldWriter(final String name, Class<?> enumType) {
     final String descriptor = Type.getDescriptor(enumType);
-    return (visitor, value) -> visitor.visitEnum(name, descriptor, ((Enum) value).name());
+    return (visitor, value, defaultValue) -> {
+      if (!Objects.equals(value, defaultValue)) {
+        visitor.visitEnum(name, descriptor, ((Enum) value).name());
+      }
+    };
+  }
+
+  private static boolean areEqualGenericArrays(Object a, Object b) {
+    int defaultLen = Array.getLength(a);
+    int len = Array.getLength(b);
+    if (defaultLen == len) {
+      for (int i = 0; i < len; i++) {
+        if (!Objects.equals(Array.get(a, i), Array.get(b, i))) {
+          return false;
+        }
+      }
+      return true;
+    }
+    return false;
   }
 
   /** Writes an simple array valued field to the annotation visitor. */
   private static FieldWriter simpleArrayFieldWriter(final String name) {
-    return (visitor, value) -> {
-      int len = Array.getLength(value);
-      AnnotationVisitor arrayVisitor = visitor.visitArray(name);
-      for (int i = 0; i < len; i++) {
-        arrayVisitor.visit(null, Array.get(value, i));
+    return (visitor, value, defaultValue) -> {
+      if (!areEqualGenericArrays(value, defaultValue)) {
+        int len = Array.getLength(value);
+        AnnotationVisitor arrayVisitor = visitor.visitArray(name);
+        for (int i = 0; i < len; i++) {
+          arrayVisitor.visit(null, Array.get(value, i));
+        }
+        arrayVisitor.visitEnd();
       }
-      arrayVisitor.visitEnd();
     };
   }
 
   /** Writes an annotation array valued field to the annotation visitor. */
   private static <T extends Annotation> FieldWriter annotationArrayFieldWriter(
       final String name, final AnnotationRef<T> ref) {
-    return (visitor, value) -> {
-      int len = Array.getLength(value);
-      AnnotationVisitor arrayVisitor = visitor.visitArray(name);
-      for (int i = 0; i < len; i++) {
-        ref.doWrite(
-            ref.annType.cast(Array.get(value, i)),
-            arrayVisitor.visitAnnotation(null, ref.typeDescriptor));
+    return (visitor, value, defaultValue) -> {
+      if (!areEqualGenericArrays(value, defaultValue)) {
+        int len = Array.getLength(value);
+        AnnotationVisitor arrayVisitor = visitor.visitArray(name);
+        for (int i = 0; i < len; i++) {
+          ref.doWrite(
+              ref.annType.cast(Array.get(value, i)),
+              arrayVisitor.visitAnnotation(null, ref.typeDescriptor));
+        }
+        arrayVisitor.visitEnd();
       }
-      arrayVisitor.visitEnd();
     };
   }
 }
