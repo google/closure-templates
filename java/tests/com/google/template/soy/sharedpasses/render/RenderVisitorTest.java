@@ -636,7 +636,7 @@ public class RenderVisitorTest {
 
   @Test
   public void testRenderPluralWithEmbeddedHtmlElements() throws Exception {
-    /**
+    /*
      * Link to open up the email options dialog.
      *
      * @param num {number} Number of people who will be notified via email.
