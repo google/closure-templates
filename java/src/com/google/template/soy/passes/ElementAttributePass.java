@@ -16,8 +16,10 @@
 
 package com.google.template.soy.passes;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static com.google.template.soy.base.SourceLocation.Point.UNKNOWN_POINT;
+import static com.google.template.soy.base.SourceLocation.UNKNOWN;
 import static com.google.template.soy.error.ErrorReporter.exploding;
 import static java.util.stream.Collectors.toMap;
 
@@ -39,9 +41,12 @@ import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.error.SoyErrors;
 import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.ExprNode.OperatorNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.NullNode;
+import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotEqualOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
@@ -76,15 +81,14 @@ import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.ast.NamedTypeNode;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 /**
@@ -328,7 +332,20 @@ final class ElementAttributePass implements CompilerFileSetPass {
                   new HtmlAttributeValueNode(id.get(), unknown, Quotes.DOUBLE);
               newAttrNode.addChild(valueNode);
 
+              // Whether we need to concatenate the passed value with the default value.
               boolean concatValues = attrNode.getConcatenationDelimiter() != null;
+
+              // Whether all nodes in the attribute value are simple raw text or print nodes. If
+              // so we can simplify the transformation to just prepend the passed value.
+              boolean canPrepend = false;
+              if (attrNode.hasValue()
+                  && attrNode.numChildren() == 2
+                  && attrNode.getChild(1) instanceof HtmlAttributeValueNode) {
+                HtmlAttributeValueNode attrVal = (HtmlAttributeValueNode) attrNode.getChild(1);
+                canPrepend =
+                    attrVal.getChildren().stream()
+                        .allMatch(val -> val instanceof RawTextNode || val instanceof PrintNode);
+              }
 
               if (!concatValues && attr.isRequired()) {
                 // No concatenation, required param. incoming param is always non-null so use it.
@@ -348,22 +365,36 @@ final class ElementAttributePass implements CompilerFileSetPass {
                 ifNode.addChild(ifElseNode);
                 copyChildren(attrNode, ifElseNode);
                 replacementNode = newAttrNode;
+              } else if (concatValues && canPrepend) {
+                // id="{$param ? $param + $delim : ''}default"
+                copyChildren(attrNode, valueNode);
+                OperatorNode ternary = new ConditionalOpNode(UNKNOWN, UNKNOWN);
+                ternary.addChild(attrExpr.copy(new CopyState()));
+                OperatorNode concat = new PlusOpNode(UNKNOWN, UNKNOWN);
+                concat.addChild(attrExpr.copy(new CopyState()));
+                concat.addChild(
+                    new StringNode(
+                        attrNode.getConcatenationDelimiter(), QuoteStyle.SINGLE, UNKNOWN));
+                ternary.addChild(concat);
+                ternary.addChild(new StringNode("", QuoteStyle.SINGLE, UNKNOWN));
+                valueNode.addChild(
+                    0,
+                    new PrintNode(
+                        id.get(), UNKNOWN, true, ternary, ImmutableList.of(), errorReporter));
+                replacementNode = newAttrNode;
               } else {
                 // In these cases, we need to conditionally suppress the entire attribute. Either
                 // a concatenating attribute, or an attribute without a default.
-                final VarRefNode outputValueExpr;
-                if (concatValues && attrNode.hasValue()) {
+                VarRefNode outputValueExpr;
+                if (attrNode.hasValue()) {
+                  boolean isCss =
+                      SanitizedType.StyleType.getInstance()
+                          .isAssignableFromStrict(SoyTypes.removeNull(attr.type()));
                   // Concatenating attribute, with a default. Concatenate the default and incoming
                   // values together.
                   outputValueExpr =
                       concatAttributeValues(
-                          openTagNode,
-                          attrNode,
-                          attrExpr,
-                          SanitizedType.StyleType.getInstance()
-                              .isAssignableFromStrict(SoyTypes.removeNull(attr.type())),
-                          id,
-                          attrNode.getEqualsLocation());
+                          openTagNode, attrNode, attrExpr, isCss, id, attrNode.getEqualsLocation());
                 } else {
                   // No default, use incoming parameter for the attribute value. Generates
                   // id="{$id}"
@@ -408,9 +439,9 @@ final class ElementAttributePass implements CompilerFileSetPass {
     TemplateParam keyParam =
         new TemplateParam(
             TemplateType.KEY_HIDDEN_ATTRIBUTE_NAME,
-            SourceLocation.UNKNOWN,
-            SourceLocation.UNKNOWN,
-            NamedTypeNode.create(SourceLocation.UNKNOWN, TemplateType.KEY_HIDDEN_ATTRIBUTE_NAME),
+            UNKNOWN,
+            UNKNOWN,
+            NamedTypeNode.create(UNKNOWN, TemplateType.KEY_HIDDEN_ATTRIBUTE_NAME),
             /* isInjected= */ false,
             /* isImplicit= */ true,
             /* optional= */ true,
@@ -420,8 +451,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
     templateNode.addParam(keyParam);
 
     if (desugarIdomPasses && openTagNode.getTagName().isStatic()) {
-      VarRefNode keyParamRef =
-          new VarRefNode("$" + keyParam.name(), SourceLocation.UNKNOWN, keyParam);
+      VarRefNode keyParamRef = new VarRefNode("$" + keyParam.name(), UNKNOWN, keyParam);
 
       // This produces the following code:
       // {if $ssk}ssk="{$ssk + xid('some-template-root')}"{/if}
@@ -431,32 +461,29 @@ final class ElementAttributePass implements CompilerFileSetPass {
       ifCondNode.getExpr().setType(BoolType.getInstance());
       ifNode.addChild(ifCondNode);
       HtmlAttributeNode htmlAttributeNode =
-          new HtmlAttributeNode(
-              id.get(), SourceLocation.UNKNOWN, SourceLocation.Point.UNKNOWN_POINT);
+          new HtmlAttributeNode(id.get(), UNKNOWN, SourceLocation.Point.UNKNOWN_POINT);
       htmlAttributeNode.addChild(
-          new RawTextNode(
-              id.get(), TemplateType.KEY_HIDDEN_ATTRIBUTE_NAME, SourceLocation.UNKNOWN));
+          new RawTextNode(id.get(), TemplateType.KEY_HIDDEN_ATTRIBUTE_NAME, UNKNOWN));
       HtmlAttributeValueNode valueNode =
-          new HtmlAttributeValueNode(id.get(), SourceLocation.UNKNOWN, Quotes.SINGLE);
+          new HtmlAttributeValueNode(id.get(), UNKNOWN, Quotes.SINGLE);
       String tplName =
           templateNode.getHtmlElementMetadata().getFinalCallee().isEmpty()
               ? templateNode.getTemplateName()
               : templateNode.getHtmlElementMetadata().getFinalCallee();
       FunctionNode wrappedFn =
           FunctionNode.newPositional(
-              Identifier.create(BuiltinFunction.SOY_SERVER_KEY.getName(), SourceLocation.UNKNOWN),
+              Identifier.create(BuiltinFunction.SOY_SERVER_KEY.getName(), UNKNOWN),
               BuiltinFunction.SOY_SERVER_KEY,
-              SourceLocation.UNKNOWN);
+              UNKNOWN);
       wrappedFn.setType(StringType.getInstance());
       ExprNode result;
       if (openTagNode.getKeyNode() == null) {
         FunctionNode funcNode =
             FunctionNode.newPositional(
-                Identifier.create(BuiltinFunction.XID.getName(), SourceLocation.UNKNOWN),
+                Identifier.create(BuiltinFunction.XID.getName(), UNKNOWN),
                 BuiltinFunction.XID,
-                SourceLocation.UNKNOWN);
-        funcNode.addChild(
-            new StringNode(tplName + "-root", QuoteStyle.SINGLE, SourceLocation.UNKNOWN));
+                UNKNOWN);
+        funcNode.addChild(new StringNode(tplName + "-root", QuoteStyle.SINGLE, UNKNOWN));
         funcNode.setType(StringType.getInstance());
         wrappedFn.addChild(funcNode);
         result = ExprNodes.plus(wrappedFn, keyParamRef);
@@ -491,17 +518,15 @@ final class ElementAttributePass implements CompilerFileSetPass {
       TemplateParam attrsParam =
           new TemplateParam(
               TemplateType.ATTRIBUTES_HIDDEN_PARAM_NAME,
-              SourceLocation.UNKNOWN,
-              SourceLocation.UNKNOWN,
-              NamedTypeNode.create(
-                  SourceLocation.UNKNOWN, TemplateType.ATTRIBUTES_HIDDEN_PARAM_NAME),
+              UNKNOWN,
+              UNKNOWN,
+              NamedTypeNode.create(UNKNOWN, TemplateType.ATTRIBUTES_HIDDEN_PARAM_NAME),
               /* isInjected= */ false,
               /* isImplicit= */ true,
               /* optional= */ true,
               /* desc= */ "Created by ElementAttributePass.",
               /* defaultValue= */ null);
-      VarRefNode extraAttributesRef =
-          new VarRefNode("$" + attrsParam.name(), SourceLocation.UNKNOWN, attrsParam);
+      VarRefNode extraAttributesRef = new VarRefNode("$" + attrsParam.name(), UNKNOWN, attrsParam);
       templateNode.addParam(attrsParam);
       attrsParam.setType(SoyTypes.makeNullable(SanitizedType.AttributesType.getInstance()));
       // This requires a different handling than SoyTreeUtils.printIfNotNull because we need to
@@ -599,8 +624,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
     letContentNode
         .getParent()
         .addChild(letContentNode.getParent().getChildIndex(letContentNode) + 1, letValueNode);
-    return new VarRefNode(
-        letValueNode.getVarRefName(), SourceLocation.UNKNOWN, letValueNode.getVar());
+    return new VarRefNode(letValueNode.getVarRefName(), UNKNOWN, letValueNode.getVar());
   }
 
   private void updateReservedAttributesForDelegateCalls(
@@ -608,14 +632,19 @@ final class ElementAttributePass implements CompilerFileSetPass {
 
     Map<String, String> templateFqnCall =
         templates.stream()
-            .collect(toMap(TemplateNode::getTemplateName, ElementAttributePass::getDelegateCall));
+            .collect(
+                toMap(
+                    TemplateNode::getTemplateName,
+                    ElementAttributePass::getDelegateCall,
+                    (a, b) -> b,
+                    HashMap::new));
 
     // Simple topological sort.
     while (!templateFqnCall.isEmpty()) {
-      List<Map.Entry<String, String>> leaves =
+      ImmutableList<Map.Entry<String, String>> leaves =
           templateFqnCall.entrySet().stream()
               .filter(e -> !templateFqnCall.containsKey(e.getValue()))
-              .collect(Collectors.toList());
+              .collect(toImmutableList());
       if (leaves.isEmpty()) {
         throw new IllegalArgumentException("Cyclical graph: " + templateFqnCall);
       }
@@ -653,7 +682,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
       }
 
       String tag = node.getHtmlElementMetadata().getTag();
-      if ("?".equals(tag) || expectedTagName.equals(tag)) {
+      if (tag.equals("?") || expectedTagName.equals(tag)) {
         continue;
       }
 
