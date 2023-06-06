@@ -287,7 +287,7 @@ public final class BytecodeCompiler {
           listener.onCompileTemplate(template.getTemplateName());
         }
 
-        /** For each function call in the template, trigger the function call listener. */
+        /* For each function call in the template, trigger the function call listener. */
         for (FunctionNode fnNode : SoyTreeUtils.getAllNodesOfType(template, FunctionNode.class)) {
           listener.onFunctionCallFound(fnNode);
         }
