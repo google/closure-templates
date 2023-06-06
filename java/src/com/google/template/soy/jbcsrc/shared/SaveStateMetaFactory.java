@@ -22,7 +22,6 @@ import static org.objectweb.asm.Opcodes.V1_8;
 
 import com.google.auto.value.AutoValue;
 import com.google.auto.value.extension.memoized.Memoized;
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import java.lang.invoke.CallSite;
 import java.lang.invoke.ConstantCallSite;
@@ -30,11 +29,6 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
-import java.security.ProtectionDomain;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -44,7 +38,6 @@ import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
-import sun.misc.Unsafe;
 
 /**
  * Bootstrap methods for handling our save/restore state logic.
@@ -61,80 +54,10 @@ import sun.misc.Unsafe;
  * </ul>
  */
 public final class SaveStateMetaFactory {
-  /** An abstraction for MethodHandles.Lookup.defineClass, since we may not always be using jdk9+ */
-  private interface ClassDefiner {
-    Class<?> doDefine(MethodHandles.Lookup lookup, String name, byte[] bytes)
-        throws IllegalAccessException, InvocationTargetException;
-
-    default Class<?> define(MethodHandles.Lookup lookup, String name, byte[] bytes) {
-      try {
-        return doDefine(lookup, name, bytes);
-      } catch (InvocationTargetException iae) {
-        Throwables.throwIfUnchecked(iae.getTargetException());
-        throw new AssertionError(iae);
-      } catch (IllegalAccessException iae) {
-        throw new AssertionError("MethodHandles.Lookup.defineClass is inaccessible?", iae);
-      }
-    }
-  }
 
   /** A map to ensure we only attempt to define a class for each FrameKey once. */
   private static final ConcurrentMap<FrameKey, Class<? extends StackFrame>> frameCache =
       new ConcurrentHashMap<>();
-
-  private static final ClassDefiner definer;
-
-  static {
-    // Polyfills!  JDK9 has exactly the method we want on the MethodHandles class but jdk9 isn't
-    // fully available yet.  So we use reflection to access it if available and otherwise we
-    // fallback to unsafe.  The other option would be to create a new classloader for these types,
-    // but that introduces weird issues in our bootstrap methods where cross classloader calls don't
-    // trivially work.
-    ClassDefiner impl;
-    try {
-      // try to find the defineClass method which is only defined in jdk9+
-      Method defineClass = MethodHandles.Lookup.class.getMethod("defineClass", byte[].class);
-      impl = (lookup, name, bytes) -> (Class<?>) defineClass.invoke(lookup, bytes);
-    } catch (NoSuchMethodException nsme) {
-      // must be pre jdk9 :( but in this case we can use Unsafe for similar purposes
-      try {
-        ProtectionDomain callerProtectionDomain =
-            AccessController.doPrivileged(
-                (PrivilegedAction<ProtectionDomain>) StackFrame.class::getProtectionDomain);
-        Field unsafeField = Unsafe.class.getDeclaredField("theUnsafe");
-        unsafeField.setAccessible(true);
-        Unsafe unsafeObject = (Unsafe) unsafeField.get(null);
-        Method defineClass =
-            Unsafe.class.getMethod(
-                "defineClass",
-                String.class,
-                byte[].class,
-                int.class,
-                int.class,
-                ClassLoader.class,
-                ProtectionDomain.class);
-
-        impl =
-            (lookup, name, bytes) ->
-                (Class<?>)
-                    defineClass.invoke(
-                        unsafeObject,
-                        name,
-                        bytes,
-                        0,
-                        bytes.length,
-                        StackFrame.class.getClassLoader(),
-                        callerProtectionDomain);
-      } catch (ReflectiveOperationException e) {
-        e.addSuppressed(nsme);
-        throw new AssertionError(
-            "failed to find both the MethodHandles.Lookup.defineClass method and the"
-                + " Unsafe.defineClass method, what jdk version is this?",
-            e);
-      }
-    }
-    definer = impl;
-  }
 
   private static final MethodType SAVE_STATE_TYPE =
       MethodType.methodType(void.class, StackFrame.class);
@@ -318,9 +241,9 @@ public final class SaveStateMetaFactory {
         V1_8,
         Opcodes.ACC_SUPER + Opcodes.ACC_PUBLIC + Opcodes.ACC_FINAL + Opcodes.ACC_SYNTHETIC,
         className,
-        /* signature=*/ null, // we don't use a generic type signature
-        /* extends= */ STACK_FRAME_TYPE.getInternalName(),
-        /* interfaces=*/ null);
+        /* signature= */ null, // we don't use a generic type signature
+        /* superName= */ STACK_FRAME_TYPE.getInternalName(),
+        /* interfaces= */ null);
     int counter = 0;
     // Define a field for every element,f_N in order
     List<Type> argTypes = new ArrayList<>(key.fieldTypes().size());
@@ -370,17 +293,14 @@ public final class SaveStateMetaFactory {
           Opcodes.PUTFIELD, generatedType.getInternalName(), "f_" + i, argType.getDescriptor());
     }
     constructor.visitInsn(Opcodes.RETURN);
-    constructor.visitMaxs(-1, -1); // neccessary for automatic stack frame calculation
+    constructor.visitMaxs(-1, -1); // necessary for automatic stack frame calculation
     constructor.visitEnd();
     cw.visitEnd();
-    return definer
-        // Use our own lookup to define the class.
-        // this essentially means that we leak StackFrame classes into our own classloader.
-        // This
-        // shouldn't be a concern, due to our interning map `frameCache` we should be generating
-        // only a few dozen such classes, and they are shareable across all child classloaders.
-        .define(MethodHandles.lookup(), className, cw.toByteArray())
-        .asSubclass(StackFrame.class);
+    try {
+      return MethodHandles.lookup().defineClass(cw.toByteArray()).asSubclass(StackFrame.class);
+    } catch (IllegalAccessException iae) {
+      throw new AssertionError(iae);
+    }
   }
 
   /**
