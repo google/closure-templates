@@ -7,7 +7,11 @@
 import {toObjectForTesting} from 'google3/javascript/apps/jspb/debug';
 import {Message} from 'google3/javascript/apps/jspb/message';
 import * as soy from 'google3/javascript/template/soy/soyutils_usegoog';
-import {$$VisualElementData, ElementMetadata, Logger} from 'google3/javascript/template/soy/soyutils_velog';
+import {
+  $$VisualElementData,
+  ElementMetadata,
+  Logger,
+} from 'google3/javascript/template/soy/soyutils_velog';
 import * as incrementaldom from 'incrementaldom'; // from //third_party/javascript/incremental_dom:incrementaldom
 
 import {attributes} from './api_idom_attributes';
@@ -23,12 +27,16 @@ declare global {
 }
 
 const patchConfig: incrementaldom.PatchConfig = {
-  matches:
-      (matchNode, nameOrCtor, expectedNameOrCtor, proposedKey,
-       currentPointerKey) => nameOrCtor === expectedNameOrCtor &&
-      isMatchingKey(proposedKey, currentPointerKey)
+  matches: (
+    matchNode,
+    nameOrCtor,
+    expectedNameOrCtor,
+    proposedKey,
+    currentPointerKey,
+  ) =>
+    nameOrCtor === expectedNameOrCtor &&
+    isMatchingKey(proposedKey, currentPointerKey),
 };
-
 
 /**
  * Wraps an idom `createPatch*<T>()` method to return a generic function instead
@@ -43,45 +51,54 @@ const patchConfig: incrementaldom.PatchConfig = {
  *     to a specific `<T>`
  */
 function wrapAsGeneric<R>(
-    fnCreator: <T>(patchConfig: incrementaldom.PatchConfig) =>
-        incrementaldom.PatchFunction<T, R>,
+  fnCreator: <T>(
     patchConfig: incrementaldom.PatchConfig,
-    ):
-    <T>(node: Element|DocumentFragment, template: (a: T|undefined) => void,
-        data?: T|undefined) => R {
+  ) => incrementaldom.PatchFunction<T, R>,
+  patchConfig: incrementaldom.PatchConfig,
+): <T>(
+  node: Element | DocumentFragment,
+  template: (a: T | undefined) => void,
+  data?: T | undefined,
+) => R {
   return fnCreator(patchConfig);
 }
 
 /** PatchInner using Soy-IDOM semantics. */
-export const patchInner =
-    wrapAsGeneric(incrementaldom.createPatchInner, patchConfig);
+export const patchInner = wrapAsGeneric(
+  incrementaldom.createPatchInner,
+  patchConfig,
+);
 /** PatchOuter using Soy-IDOM semantics. */
-export const patchOuter =
-    wrapAsGeneric(incrementaldom.createPatchOuter, patchConfig);
+export const patchOuter = wrapAsGeneric(
+  incrementaldom.createPatchOuter,
+  patchConfig,
+);
 /** PatchInner using Soy-IDOM semantics. */
 export const patch = patchInner;
 /** PatchInner using Soy-IDOM template cloning semantics. */
-export const create = wrapAsGeneric(
-    incrementaldom.createPatchInner, {inTemplateCloning: true, ...patchConfig});
+export const create = wrapAsGeneric(incrementaldom.createPatchInner, {
+  inTemplateCloning: true,
+  ...patchConfig,
+});
 
 interface IdomRendererApi {
-  open(nameOrCtor: string, key?: string): void|HTMLElement;
-  openSimple(nameOrCtor: string, key?: string): void|HTMLElement;
-  keepGoing(el: HTMLElement|void, data: unknown): boolean;
-  visit(el: void|HTMLElement): void;
+  open(nameOrCtor: string, key?: string): void | HTMLElement;
+  openSimple(nameOrCtor: string, key?: string): void | HTMLElement;
+  keepGoing(el: HTMLElement | void, data: unknown): boolean;
+  visit(el: void | HTMLElement): void;
   pushManualKey(key: incrementaldom.Key): void;
   popManualKey(): void;
   pushKey(key: string): string;
-  getNewKey(key: string|undefined): string;
+  getNewKey(key: string | undefined): string;
   popKey(oldKey: string): void;
   getCurrentKeyStack(): string;
-  elementClose(): void|Element;
-  close(): void|Element;
-  text(value: string): void|Text;
+  elementClose(): void | Element;
+  close(): void | Element;
+  text(value: string): void | Text;
   attr(name: string, value: string): void;
-  currentPointer(): Node|null;
+  currentPointer(): Node | null;
   skip(): void;
-  currentElement(): void|Element;
+  currentElement(): void | Element;
   skipNode(): void;
   applyAttrs(): void;
   applyStatics(statics: incrementaldom.Statics): void;
@@ -89,13 +106,16 @@ interface IdomRendererApi {
   exit(): void;
   toNullRenderer(): IdomRendererApi;
   toDefaultRenderer(): IdomRendererApi;
-  setLogger(logger: Logger|null): void;
-  getLogger(): Logger|null;
+  setLogger(logger: Logger | null): void;
+  getLogger(): Logger | null;
   verifyLogOnly(logOnly: boolean): boolean;
   openNodePart(): void;
   closeNodePart(): void;
-  evalLoggingFunction(name: string, args: Array<{}>, placeHolder: string):
-      string;
+  evalLoggingFunction(
+    name: string,
+    args: Array<{}>,
+    placeHolder: string,
+  ): string;
 }
 
 /**
@@ -116,19 +136,19 @@ export class IncrementalDomRenderer implements IdomRendererApi {
   // Note that for performance, the "stack" is implemented as a string with
   // the items being `${SIZE OF KEY}${DELIMITER}${KEY}`.
   private readonly keyStackHolder: string[] = [];
-  private logger: Logger|null = null;
+  private logger: Logger | null = null;
 
   /**
    * Pushes/pops the given key from `keyStack` (versus `Array#concat`)
    * to avoid allocating a new array for every element open.
    */
-  open(nameOrCtor: string, key: string|undefined): HTMLElement|void {
+  open(nameOrCtor: string, key: string | undefined): HTMLElement | void {
     const el = incrementaldom.open(nameOrCtor, this.getNewKey(key));
     this.visit(el);
     return el;
   }
 
-  openSimple(nameOrCtor: string, key: string|undefined): HTMLElement|void {
+  openSimple(nameOrCtor: string, key: string | undefined): HTMLElement | void {
     const el = incrementaldom.open(nameOrCtor, key);
     this.visit(el);
     return el;
@@ -142,7 +162,7 @@ export class IncrementalDomRenderer implements IdomRendererApi {
     incrementaldom.closeNodePart();
   }
 
-  keepGoing(el: HTMLElement|void, data: unknown) {
+  keepGoing(el: HTMLElement | void, data: unknown) {
     // `data` is only passed by {skip} elements that are roots of templates.
     if (!COMPILED && goog.DEBUG && el && data) {
       maybeReportErrors(el, data);
@@ -174,7 +194,7 @@ export class IncrementalDomRenderer implements IdomRendererApi {
   }
 
   // For users extending IncrementalDomRenderer
-  visit(el: HTMLElement|void) {}
+  visit(el: HTMLElement | void) {}
 
   /**
    * Called (from generated template render function) before OPENING
@@ -202,7 +222,7 @@ export class IncrementalDomRenderer implements IdomRendererApi {
     return oldKey;
   }
 
-  getNewKey(key: string|undefined) {
+  getNewKey(key: string | undefined) {
     const oldKey = this.getCurrentKeyStack();
     // This happens in the case where an element has a manual key. The very next
     // key should be undefined.
@@ -229,11 +249,11 @@ export class IncrementalDomRenderer implements IdomRendererApi {
     return this.keyStackHolder[this.keyStackHolder.length - 1] || '';
   }
 
-  close(): Element|void {
+  close(): Element | void {
     return incrementaldom.close();
   }
 
-  elementClose(): Element|void {
+  elementClose(): Element | void {
     const el = this.close();
     if (el && el.__soy_patch_handler) {
       el.__soy_patch_handler();
@@ -241,7 +261,7 @@ export class IncrementalDomRenderer implements IdomRendererApi {
     return el;
   }
 
-  text(value: string): Text|void {
+  text(value: string): Text | void {
     // This helps ensure that hydrations on the server are consistent with
     // client-side renders.
     if (value) {
@@ -253,7 +273,7 @@ export class IncrementalDomRenderer implements IdomRendererApi {
     incrementaldom.attr(name, value);
   }
 
-  currentPointer(): Node|null {
+  currentPointer(): Node | null {
     return incrementaldom.currentPointer();
   }
 
@@ -261,7 +281,7 @@ export class IncrementalDomRenderer implements IdomRendererApi {
     incrementaldom.skip();
   }
 
-  currentElement(): Element|void {
+  currentElement(): Element | void {
     return incrementaldom.currentElement();
   }
 
@@ -282,8 +302,9 @@ export class IncrementalDomRenderer implements IdomRendererApi {
    */
   enter(veData: $$VisualElementData, logOnly: boolean) {
     if (this.logger) {
-      this.logger.enter(new ElementMetadata(
-          veData.getVe().getId(), veData.getData(), logOnly));
+      this.logger.enter(
+        new ElementMetadata(veData.getVe().getId(), veData.getData(), logOnly),
+      );
     }
   }
 
@@ -307,11 +328,12 @@ export class IncrementalDomRenderer implements IdomRendererApi {
 
   toDefaultRenderer(): IncrementalDomRenderer {
     throw new Error(
-        'Cannot transition a default renderer to a default renderer');
+      'Cannot transition a default renderer to a default renderer',
+    );
   }
 
   /** Called by user code to configure logging */
-  setLogger(logger: Logger|null) {
+  setLogger(logger: Logger | null) {
     this.logger = logger;
   }
 
@@ -326,7 +348,8 @@ export class IncrementalDomRenderer implements IdomRendererApi {
   verifyLogOnly(logOnly: boolean) {
     if (!this.logger && logOnly) {
       throw new Error(
-          'Cannot set logonly="true" unless there is a logger configured');
+        'Cannot set logonly="true" unless there is a logger configured',
+      );
     }
     return logOnly;
   }
@@ -334,8 +357,11 @@ export class IncrementalDomRenderer implements IdomRendererApi {
   /*
    * Called when a logging function is evaluated.
    */
-  evalLoggingFunction(name: string, args: Array<{}>, placeHolder: string):
-      string {
+  evalLoggingFunction(
+    name: string,
+    args: Array<{}>,
+    placeHolder: string,
+  ): string {
     if (this.logger) {
       return this.logger.evalLoggingFunction(name, args);
     }
@@ -360,7 +386,7 @@ export class NullRenderer extends IncrementalDomRenderer {
     return undefined;
   }
 
-  override keepGoing(el: HTMLElement|void, data: unknown) {
+  override keepGoing(el: HTMLElement | void, data: unknown) {
     return false;
   }
 
@@ -406,7 +432,9 @@ export class NullRenderer extends IncrementalDomRenderer {
  *     proposedKey -> 1c1b, currentPointerKey -> 1d1c1b1a
  */
 export function isMatchingKey(
-    proposedKey: unknown, currentPointerKey: unknown) {
+  proposedKey: unknown,
+  currentPointerKey: unknown,
+) {
   // Using "==" instead of "===" is intentional. SSR serializes attributes
   // differently than the type that keys are. For example "0" == 0.
   // tslint:disable-next-line:triple-equals
@@ -415,10 +443,14 @@ export function isMatchingKey(
   }
   // This is always true in Soy-IDOM, but Incremental DOM believes that it may
   // be null or number.
-  if (typeof proposedKey === 'string' &&
-      typeof currentPointerKey === 'string') {
-    return proposedKey.startsWith(currentPointerKey) ||
-        currentPointerKey.startsWith(proposedKey);
+  if (
+    typeof proposedKey === 'string' &&
+    typeof currentPointerKey === 'string'
+  ) {
+    return (
+      proposedKey.startsWith(currentPointerKey) ||
+      currentPointerKey.startsWith(proposedKey)
+    );
   }
   return false;
 }
@@ -434,7 +466,7 @@ function maybeReportErrors(el: HTMLElement, data: unknown) {
   // tslint:disable-next-line:no-any Replace private function.
   const msgProto = Message.prototype as any;
   const msgProtoToJSON = msgProto['toJSON'];
-  msgProto['toJSON'] = function(this: Message) {
+  msgProto['toJSON'] = function (this: Message) {
     return toObjectForTesting(this);
   };
   const stringifiedParams = JSON.stringify(data, null, 2);
@@ -463,7 +495,7 @@ ${el.dataset['debugSoy'] || el.outerHTML}`);
  * is empty (if it's used in an `{if}` or conditional operator).
  */
 export class FalsinessRenderer implements IdomRendererApi {
-  visit(el: void|HTMLElement): void {}
+  visit(el: void | HTMLElement): void {}
   pushManualKey(key: incrementaldom.Key) {}
   openNodePart() {}
   closeNodePart() {}
@@ -471,7 +503,7 @@ export class FalsinessRenderer implements IdomRendererApi {
   pushKey(key: string): string {
     return '';
   }
-  getNewKey(key: string|undefined): string {
+  getNewKey(key: string | undefined): string {
     return '';
   }
   popKey(oldKey: string): void {}
@@ -486,15 +518,18 @@ export class FalsinessRenderer implements IdomRendererApi {
   toDefaultRenderer(): IdomRendererApi {
     return this;
   }
-  setLogger(logger: Logger|null): void {}
-  getLogger(): Logger|null {
+  setLogger(logger: Logger | null): void {}
+  getLogger(): Logger | null {
     return null;
   }
   verifyLogOnly(logOnly: boolean): boolean {
     return logOnly;
   }
-  evalLoggingFunction(name: string, args: Array<{}>, placeHolder: string):
-      string {
+  evalLoggingFunction(
+    name: string,
+    args: Array<{}>,
+    placeHolder: string,
+  ): string {
     return placeHolder;
   }
   private rendered = false;
@@ -513,7 +548,7 @@ export class FalsinessRenderer implements IdomRendererApi {
     return undefined;
   }
 
-  keepGoing(el: HTMLElement|void, data: unknown) {
+  keepGoing(el: HTMLElement | void, data: unknown) {
     return false;
   }
 

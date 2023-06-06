@@ -89,7 +89,7 @@ function upgrade<X extends {}, T extends TemplateAcceptor<X>>(
   acceptor: new () => T,
   template: IdomTemplate<X>,
   sync: IdomSyncState<X>,
-  init: (this: T) => void
+  init: (this: T) => void,
 ) {
   acceptor.prototype.init = init;
   acceptor.prototype.idomSyncFn = sync;
@@ -98,7 +98,7 @@ function upgrade<X extends {}, T extends TemplateAcceptor<X>>(
   acceptor.prototype.idomTemplate = template;
   acceptor.prototype.render = function (
     this: T,
-    renderer = new IncrementalDomRenderer()
+    renderer = new IncrementalDomRenderer(),
   ) {
     const self = this as TemplateAcceptor<X>;
     patchOuter(this as unknown as HTMLElement, () => {
@@ -149,7 +149,7 @@ function handleSoyElement<T extends TemplateAcceptor<{}>>(
   tagName: string,
   data: {},
   ijData: IjData,
-  template: IdomTemplate<unknown>
+  template: IdomTemplate<unknown>,
 ): T | null {
   // If we're just testing truthiness, record an element but don't do anythng.
   if (incrementaldom instanceof FalsinessRenderer) {
@@ -261,7 +261,7 @@ function makeHtml(idomFn: PatchFunction): IdomFunction {
  */
 function makeAttributes(
   idomFn: PatchFunction,
-  stringContent?: string | (() => string)
+  stringContent?: string | (() => string),
 ): IdomFunction & SanitizedHtmlAttribute {
   const fn = (() => {
     throw new Error('Should not be called directly');
@@ -295,7 +295,7 @@ function toLazyFunction<T extends string | number>(fn: T | (() => T)): () => T {
  */
 function htmlToString(
   fn: PatchFunction,
-  renderer: IncrementalDomRenderer = htmlToStringRenderer
+  renderer: IncrementalDomRenderer = htmlToStringRenderer,
 ) {
   const el = document.createElement('div');
   patch(el, () => {
@@ -329,8 +329,8 @@ function attributesToString(fn: PatchFunction): string {
     } else {
       s.push(
         `${el.attributes[i].name}='${soy.$$escapeHtmlAttribute(
-          el.attributes[i].value
-        )}'`
+          el.attributes[i].value,
+        )}'`,
       );
     }
   }
@@ -343,7 +343,7 @@ function attributesToString(fn: PatchFunction): string {
  */
 function renderDynamicContent(
   incrementaldom: IncrementalDomRenderer,
-  expr: IdomFunction
+  expr: IdomFunction,
 ) {
   // TODO(lukes): check content kind == html
   if (expr && expr.isInvokableFn) {
@@ -356,7 +356,7 @@ function renderDynamicContent(
 
 /** Determines whether the template is idom */
 function isIdom<TParams>(
-  template: Template<TParams>
+  template: Template<TParams>,
 ): template is IdomTemplate<TParams> {
   const contentKind = (template as IdomFunction).contentKind;
   return (
@@ -374,7 +374,7 @@ function callDynamicAttributes<TParams>(
   incrementaldom: IncrementalDomRenderer,
   expr: Template<TParams>,
   data: TParams,
-  ij: IjData
+  ij: IjData,
 ) {
   if (isIdom(expr)) {
     switch ((expr as IdomFunction).contentKind) {
@@ -388,7 +388,7 @@ function callDynamicAttributes<TParams>(
         const val = soy.$$filterHtmlAttributes(
           htmlToString(() => {
             expr(defaultIdomRenderer, data, ij);
-          })
+          }),
         );
         printDynamicAttr(incrementaldom, val);
         break;
@@ -410,7 +410,7 @@ function callDynamicAttributes<TParams>(
  */
 function printDynamicAttr(
   incrementaldom: IncrementalDomRenderer,
-  expr: SanitizedHtmlAttribute | string | boolean | IdomFunction
+  expr: SanitizedHtmlAttribute | string | boolean | IdomFunction,
 ) {
   if (
     (expr as IdomFunction).isInvokableFn &&
@@ -441,7 +441,7 @@ function callDynamicHTML<TParams>(
   expr: Template<TParams>,
   data: TParams,
   ij: IjData,
-  variant?: string
+  variant?: string,
 ) {
   if (isIdom(expr)) {
     switch ((expr as IdomFunction).contentKind) {
@@ -467,7 +467,7 @@ function callDynamicCss<TParams>(
   incrementaldom: IncrementalDomRenderer,
   expr: Template<TParams>,
   data: TParams,
-  ij: IjData
+  ij: IjData,
 ) {
   const val = callDynamicText<TParams>(expr, data, ij, soy.$$filterCssValue);
   incrementaldom.text(String(val));
@@ -477,7 +477,7 @@ function callDynamicJs<TParams>(
   incrementaldom: IncrementalDomRenderer,
   expr: Template<TParams>,
   data: TParams,
-  ij: IjData
+  ij: IjData,
 ) {
   const val = callDynamicText<TParams>(expr, data, ij, soy.$$escapeJsValue);
   return String(val);
@@ -492,7 +492,7 @@ function callDynamicText<TParams>(
   data: TParams,
   ij: IjData,
   escFn?: (i: string) => string,
-  variant?: string
+  variant?: string,
 ) {
   const transformFn = escFn ? escFn : (a: string) => a;
   if (isIdom(expr)) {
@@ -501,13 +501,13 @@ function callDynamicText<TParams>(
         return transformFn(
           htmlToString(() => {
             expr(defaultIdomRenderer, data, ij, variant);
-          })
+          }),
         );
       case SanitizedContentKind.ATTRIBUTES:
         return transformFn(
           attributesToString(() => {
             expr(defaultIdomRenderer, data, ij, variant);
-          })
+          }),
         );
       default:
         throw new Error('Bad content kind');
@@ -534,7 +534,7 @@ function getOriginalSanitizedContent(el: Element) {
 function print(
   incrementaldom: IncrementalDomRenderer,
   expr: unknown,
-  isSanitizedContent?: boolean | undefined
+  isSanitizedContent?: boolean | undefined,
 ) {
   if (USE_TEMPLATE_CLONING) {
     incrementaldom.openNodePart();
@@ -578,7 +578,7 @@ function print(
 
 function visitHtmlCommentNode(
   incrementaldom: IncrementalDomRenderer,
-  val: string
+  val: string,
 ) {
   const currNode = incrementaldom.currentElement();
   if (!currNode) {
@@ -603,7 +603,7 @@ function isTruthy(expr: unknown): boolean {
   if ((expr as IdomFunction).isInvokableFn) {
     const renderer = new FalsinessRenderer();
     (expr as IdomFunction).invoke(
-      renderer as unknown as IncrementalDomRenderer
+      renderer as unknown as IncrementalDomRenderer,
     );
     return renderer.didRender();
   }
@@ -634,7 +634,7 @@ class IdHolderForDebug implements IdHolder {
 Cannot read 'idHolder.id' until the element with the 'uniqueAttribute()' call is
 patched.  If you're trying to print {$idHolder.id} first, swap the usage around,
 so that the first element calls uniqueAttribute(), and the second element prints
-{$idHolder.id}.`.trim()
+{$idHolder.id}.`.trim(),
       );
     }
     return this.backing;
@@ -663,7 +663,7 @@ function compileToTemplate(content: SanitizedContent): HTMLTemplateElement {
 
 function appendCloneToCurrent(
   content: HTMLTemplateElement,
-  renderer: IncrementalDomRenderer
+  renderer: IncrementalDomRenderer,
 ) {
   const currentElement = renderer.currentElement();
   if (!currentElement) {
@@ -710,7 +710,7 @@ function appendCloneToCurrent(
  */
 function stableUniqueAttribute(
   attributeName: string,
-  idHolder?: IdHolder
+  idHolder?: IdHolder,
 ): IdomFunction & SanitizedHtmlAttribute {
   attributeName = soy.$$filterHtmlAttributes(attributeName);
 
@@ -735,15 +735,15 @@ function stableUniqueAttribute(
         ?.getAttribute(attributeName);
       idomRenderer.attr(
         attributeName,
-        passToIdHolder(existingId ?? `ucc-${uidCounter++}`, idHolder)
+        passToIdHolder(existingId ?? `ucc-${uidCounter++}`, idHolder),
       );
     },
     // Callback to generate a string for classic Soy:
     () => {
       return `${attributeName}="${soy.$$escapeHtmlAttribute(
-        passToIdHolder(`ucc-${uidCounter++}`, idHolder)
+        passToIdHolder(`ucc-${uidCounter++}`, idHolder),
       )}"`;
-    }
+    },
   );
 }
 
@@ -758,6 +758,7 @@ function stableUniqueAttributeIdHolder(): IdHolder {
   return goog.DEBUG ? new IdHolderForDebug() : {};
 }
 
+export {USE_TEMPLATE_CLONING} from './global';
 export {
   SoyTemplate as $SoyTemplate,
   SoyElement as $SoyElement,
@@ -782,7 +783,5 @@ export {
   defaultIdomRenderer as $$defaultIdomRenderer,
   compileToTemplate as $$compileToTemplate,
   appendCloneToCurrent as $$appendCloneToCurrent,
-  NODE_PART
+  NODE_PART,
 };
-
-export {USE_TEMPLATE_CLONING} from './global';

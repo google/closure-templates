@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import {ordainSanitizedHtml} from 'goog:soydata.VERY_UNSAFE';  // from //javascript/template/soy:soy_usegoog_js
+import {ordainSanitizedHtml} from 'goog:soydata.VERY_UNSAFE'; // from //javascript/template/soy:soy_usegoog_js
 import {isAttribute} from 'google3/javascript/template/soy/checks';
 import * as soy from 'google3/javascript/template/soy/soyutils_usegoog';
 import {SanitizedContentKind} from 'google3/third_party/javascript/closure/soy/data';
@@ -22,11 +22,15 @@ import {SanitizedContentKind} from 'google3/third_party/javascript/closure/soy/d
 import {IncrementalDomRenderer} from './api_idom';
 import {IdomFunction} from './element_lib_idom';
 
-
 function isIdomFunctionType(
-    value: unknown, type: SanitizedContentKind): value is IdomFunction {
-  return typeof value === 'function' && (value as IdomFunction).isInvokableFn &&
-      (value as IdomFunction).contentKind === type;
+  value: unknown,
+  type: SanitizedContentKind,
+): value is IdomFunction {
+  return (
+    typeof value === 'function' &&
+    (value as IdomFunction).isInvokableFn &&
+    (value as IdomFunction).contentKind === type
+  );
 }
 
 /**
@@ -35,8 +39,10 @@ function isIdomFunctionType(
  * the regular escaping directive.
  */
 function filterHtmlAttributes(value: unknown) {
-  if (isIdomFunctionType(value, SanitizedContentKind.ATTRIBUTES) ||
-      isAttribute(value)) {
+  if (
+    isIdomFunctionType(value, SanitizedContentKind.ATTRIBUTES) ||
+    isAttribute(value)
+  ) {
     return value;
   }
   return soy.$$filterHtmlAttributes(value);
@@ -60,10 +66,15 @@ function escapeHtml(value: unknown, renderer: IncrementalDomRenderer) {
  * the regular escaping directive.
  */
 function bidiUnicodeWrap(
-    bidiGlobalDir: number, value: unknown, renderer: IncrementalDomRenderer) {
+  bidiGlobalDir: number,
+  value: unknown,
+  renderer: IncrementalDomRenderer,
+) {
   if (isIdomFunctionType(value, SanitizedContentKind.HTML)) {
     return soy.$$bidiUnicodeWrap(
-        bidiGlobalDir, ordainSanitizedHtml(value.toString(renderer)));
+      bidiGlobalDir,
+      ordainSanitizedHtml(value.toString(renderer)),
+    );
   }
   return soy.$$bidiUnicodeWrap(bidiGlobalDir, value);
 }

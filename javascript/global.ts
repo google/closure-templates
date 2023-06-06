@@ -7,23 +7,26 @@
 
 import './skiphandler';
 
-import {assert, assertInstanceof} from 'google3/third_party/javascript/closure/asserts/asserts';
+import {
+  assert,
+  assertInstanceof,
+} from 'google3/third_party/javascript/closure/asserts/asserts';
 import {IjData} from 'google3/third_party/javascript/closure/soy/soy';
-import {isDataInitialized} from 'incrementaldom';  // from //third_party/javascript/incremental_dom:incrementaldom
+import {isDataInitialized} from 'incrementaldom'; // from //third_party/javascript/incremental_dom:incrementaldom
 
 import {SoyElement} from './element_lib_idom';
 
 declare global {
   interface Node {
     // tslint:disable-next-line: enforce-name-casing
-    __soy: SoyElement<{}, {}>|null;
+    __soy: SoyElement<{}, {}> | null;
     // tslint:disable-next-line: enforce-name-casing
     __soy_tagged_for_skip: boolean;
   }
 }
 
-interface ElementCtor<TElement extends SoyElement<{}|null, {}>> {
-  new(data: unknown, ijData: IjData): TElement;
+interface ElementCtor<TElement extends SoyElement<{} | null, {}>> {
+  new (data: unknown, ijData: IjData): TElement;
 }
 
 /**
@@ -32,7 +35,7 @@ interface ElementCtor<TElement extends SoyElement<{}|null, {}>> {
  */
 export const USE_TEMPLATE_CLONING = goog.define(
   'soyidom.USE_TEMPLATE_CLONING',
-  goog.DEBUG
+  goog.DEBUG,
 );
 
 /**
@@ -41,25 +44,39 @@ export const USE_TEMPLATE_CLONING = goog.define(
  * <p>Requires that the node has been rendered by this element already. Will
  * throw an Error if this is not true.
  */
-export function getSoy<TElement extends SoyElement<{}|null, {}>>(
-    node: Node, elementCtor: ElementCtor<TElement>,
-    message: string = ''): TElement {
-  assert(isDataInitialized(node), `${message}
+export function getSoy<TElement extends SoyElement<{} | null, {}>>(
+  node: Node,
+  elementCtor: ElementCtor<TElement>,
+  message: string = '',
+): TElement {
+  assert(
+    isDataInitialized(node),
+    `${message}
 
 The DOM node was not rendered by idom.  If it's in a Wiz Component, make sure to
 set 'use_incremental_dom = True'.  Otherwise, use IdomPatcherService or set up a
 hydration model.
-        `.trim());
+        `.trim(),
+  );
 
   const untypedEl = getSoyUntyped(node);
-  assert(untypedEl, `${message}
+  assert(
+    untypedEl,
+    `${message}
 
 Did not find an {element} on the idom-rendered DOM node. Make sure that the node
 is at the root of the {element}.
-      `.trim());
-  const soyEl = assertInstanceof(untypedEl, elementCtor, message && message + `
+      `.trim(),
+  );
+  const soyEl = assertInstanceof(
+    untypedEl,
+    elementCtor,
+    message &&
+      message +
+        `
 
-The DOM node has an {element} of type ${untypedEl!.constructor.name}.`);
+The DOM node has an {element} of type ${untypedEl!.constructor.name}.`,
+  );
   // We disable state syncing by default when elements are accessed on the
   // theory that the application wants to take control now.
   soyEl.setSyncState(false);
@@ -68,8 +85,10 @@ The DOM node has an {element} of type ${untypedEl!.constructor.name}.`);
 
 /** Retrieves the Soy element in a type-safe way, or null if it doesn't exist */
 export function getSoyOptional<TElement extends SoyElement<{}, {}>>(
-    node: Node, elementCtor: ElementCtor<TElement>, message?: string): TElement|
-    null {
+  node: Node,
+  elementCtor: ElementCtor<TElement>,
+  message?: string,
+): TElement | null {
   if (!node.__soy) return null;
   return getSoy(node, elementCtor, message);
 }

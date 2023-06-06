@@ -15,10 +15,10 @@ declare global {
   interface Node {
     // tslint:disable-next-line:enforce-name-casing
     __soy_skip_handler:
-        ((prev: UnknownSoyElement,
-          next: UnknownSoyElement) => boolean)|undefined;
+      | ((prev: UnknownSoyElement, next: UnknownSoyElement) => boolean)
+      | undefined;
     // tslint:disable-next-line:enforce-name-casing
-    __soy_patch_handler: (() => void)|undefined;
+    __soy_patch_handler: (() => void) | undefined;
   }
 }
 
@@ -32,8 +32,9 @@ declare global {
  * T should correspond to the corresponding interface for the Soy element.
  */
 export function setSkipHandler(
-    el: Element,
-    fn: (prev: UnknownSoyElement, next: UnknownSoyElement) => boolean) {
+  el: Element,
+  fn: (prev: UnknownSoyElement, next: UnknownSoyElement) => boolean,
+) {
   el.__soy_skip_handler = fn;
 }
 
