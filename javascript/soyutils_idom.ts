@@ -40,7 +40,7 @@ import {
 } from './api_idom';
 import {splitAttributes} from './attributes';
 import {IdomFunction, PatchFunction, SoyElement} from './element_lib_idom';
-import {getSoyUntyped} from './global';
+import {getSoyUntyped, USE_TEMPLATE_CLONING} from './global';
 import {
   IdomSyncState,
   IdomTemplate,
@@ -54,15 +54,6 @@ import {
 
 const defaultIdomRenderer = new IncrementalDomRenderer();
 const htmlToStringRenderer = new IncrementalDomRenderer();
-
-/**
- * @define Whether to use template cloning. This adds a static amount of JS to
- *     each template that can be used to cache initial renders.
- */
-const USE_TEMPLATE_CLONING = goog.define(
-  'soyutils_useidom.USE_TEMPLATE_CLONING',
-  goog.DEBUG
-);
 
 const NODE_PART = '<?child-node-part?><?/child-node-part?>';
 
@@ -216,6 +207,7 @@ function handleSoyElement<T extends TemplateAcceptor<{}>>(
   }
   const maybeSkip = soyElement.handleSoyElementRuntime(element, data);
   soyElement.template = template.bind(soyElement);
+  USE_TEMPLATE_CLONING && (soyElement.ijData = ijData);
   if (maybeSkip) {
     incrementaldom.skip();
     incrementaldom.close();
@@ -790,6 +782,7 @@ export {
   defaultIdomRenderer as $$defaultIdomRenderer,
   compileToTemplate as $$compileToTemplate,
   appendCloneToCurrent as $$appendCloneToCurrent,
-  USE_TEMPLATE_CLONING,
   NODE_PART
 };
+
+export {USE_TEMPLATE_CLONING} from './global';
