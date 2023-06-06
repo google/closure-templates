@@ -19,6 +19,7 @@ package com.google.template.soy.jbcsrc;
 
 import com.google.auto.value.AutoValue;
 import com.google.template.soy.data.SoyRecord;
+import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.TypeInfo;
@@ -26,8 +27,11 @@ import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.Names;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.soytree.CallBasicNode;
+import com.google.template.soy.soytree.SoyFileNode;
+import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.types.TemplateType;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -80,8 +84,24 @@ abstract class CompiledTemplateMetadata {
                 .toArray(Type[]::new)));
   }
 
+  static boolean isPrivateCall(CallBasicNode call) {
+    return call.getNearestAncestor(SoyFileNode.class).getTemplates().stream()
+        .anyMatch(
+            t ->
+                t.getVisibility() == Visibility.PRIVATE
+                    && t.getTemplateName().equals(call.getCalleeName()));
+  }
+
+  static boolean isPrivateReference(SoyNode callContext, TemplateLiteralNode call) {
+    return callContext.getNearestAncestor(SoyFileNode.class).getTemplates().stream()
+        .anyMatch(
+            t ->
+                t.getVisibility() == Visibility.PRIVATE
+                    && t.getTemplateName().equals(call.getResolvedName()));
+  }
+
   /** The {@link Method} signature of the {@code static CompiledTemplate template()} method. */
-  private static Method createTemplateMethod(String methodName) {
+  static Method createTemplateMethod(String methodName) {
     return new Method(methodName, Type.getMethodDescriptor(BytecodeUtils.COMPILED_TEMPLATE_TYPE));
   }
 

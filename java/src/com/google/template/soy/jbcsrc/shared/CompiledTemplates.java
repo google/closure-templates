@@ -18,6 +18,7 @@ package com.google.template.soy.jbcsrc.shared;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.lang.invoke.MethodType.methodType;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Splitter;
@@ -27,27 +28,54 @@ import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Sets;
 import com.google.errorprone.annotations.Immutable;
 import com.google.errorprone.annotations.concurrent.LazyInit;
+import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.data.SoyRecord;
+import com.google.template.soy.data.SoyValueProvider;
+import com.google.template.soy.data.TemplateValue;
+import com.google.template.soy.data.internal.ParamStore;
+import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.shared.TemplateMetadata.DelTemplateMetadata;
 import com.google.template.soy.shared.internal.DelTemplateSelector;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.lang.reflect.Method;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 /** The result of template compilation. */
 public class CompiledTemplates {
+  private static final AtomicInteger idGenerator = new AtomicInteger(0);
+
+  private static final MethodType RENDER_TYPE =
+      methodType(
+          RenderResult.class,
+          SoyRecord.class,
+          SoyRecord.class,
+          LoggingAdvisingAppendable.class,
+          RenderContext.class);
+
   private final ClassLoader loader;
   private final ConcurrentHashMap<String, TemplateData> templateNameToFactory =
       new ConcurrentHashMap<>();
-  private final ConcurrentHashMap<String, CompiledConstant> constantNameToMethod =
+
+  // A cache of resolved method handles for consts and externs.  This cache is not just an
+  // optimization but also necessary to hold strong references to the MethodHandles so that our
+  // generated callsites can use weak references.
+
+  private final ConcurrentHashMap<String, MethodHandle> constOrExternNameToMethod =
       new ConcurrentHashMap<>();
+
   final DelTemplateSelector<TemplateData> selector;
+  private final int id;
 
   /** Interface for constructor. */
   public interface Factory {
@@ -60,6 +88,7 @@ public class CompiledTemplates {
    * @param loader The classloader that contains the classes
    */
   public CompiledTemplates(ImmutableSet<String> delTemplateNames, ClassLoader loader) {
+    this.id = idGenerator.incrementAndGet();
     this.loader = checkNotNull(loader);
     // We need to build the deltemplate selector eagerly.
     DelTemplateSelector.Builder<TemplateData> builder = new DelTemplateSelector.Builder<>();
@@ -96,9 +125,28 @@ public class CompiledTemplates {
     return loader;
   }
 
+  int getId() {
+    return id;
+  }
+
   /** Returns a factory for the given fully qualified template name. */
   public CompiledTemplate getTemplate(String name) {
     return getTemplateData(name).template();
+  }
+
+  /** Returns a factory for the given fully qualified template name. */
+  TemplateValue getTemplateValue(String name) {
+    return getTemplateData(name).templateValue();
+  }
+
+  /** Returns a factory for the given fully qualified template name. */
+  MethodHandle getRenderMethod(String name) {
+    return getTemplateData(name).renderMethod();
+  }
+
+  /** Returns a factory for the given fully qualified template name. */
+  MethodHandle getPositionalRenderMethod(String name, int arity) {
+    return getTemplateData(name).positionalRenderMethod(arity);
   }
 
   /**
@@ -181,19 +229,33 @@ public class CompiledTemplates {
     return selectedTemplate.template();
   }
 
-  public CompiledConstant getConstMethod(String constantFqn) {
-    return constantNameToMethod.computeIfAbsent(
-        constantFqn,
+  private static final Splitter HASH_SPLITTER = Splitter.on('#');
+
+  /**
+   * Fetches and caches a method handle for the given fully qualified method reference.
+   *
+   * <p>The format is `clasName#methodName#descriptor` this allows for a simple value that can be
+   * cached and then unambiguously looked up.
+   */
+  MethodHandle getConstOrExternMethod(String fqn) {
+    return constOrExternNameToMethod.computeIfAbsent(
+        fqn,
         key -> {
+          var parts = HASH_SPLITTER.split(key).iterator();
+          var className = parts.next();
+          var methodName = parts.next();
+          var descriptor = parts.next();
+          checkArgument(!parts.hasNext(), "Expected FQN with exactly 2 hash characters: %s", key);
           try {
-            List<String> parts = Splitter.on("#").splitToList(constantFqn);
-            checkArgument(parts.size() == 2, "Expected constant FQN with a single hash character");
-            return (CompiledConstant)
-                Class.forName(parts.get(0), /* initialize= */ true, getClassLoader())
-                    .getMethod(parts.get(1))
-                    .invoke(null);
+            var ownerClass = Class.forName(className, /* initialize= */ true, getClassLoader());
+            return MethodHandles.publicLookup()
+                .findStatic(
+                    ownerClass,
+                    methodName,
+                    // parse the descriptor in the context of the callee
+                    MethodType.fromMethodDescriptorString(descriptor, ownerClass.getClassLoader()));
           } catch (ReflectiveOperationException e) {
-            throw new LinkageError("Could not invoke " + constantFqn, e);
+            throw new LinkageError("Could not invoke " + key, e);
           }
         });
   }
@@ -291,13 +353,29 @@ public class CompiledTemplates {
   public static final class TemplateData {
     @SuppressWarnings("Immutable")
     final Method templateMethod;
+    // These lazy caches are necessary for optimization and correctness.  The hard references stored
+    // here are only weakly referenced by the callsites.  Thus they live or die with this object.
+
+    @SuppressWarnings("Immutable")
+    @LazyInit
+    MethodHandle renderMethod;
+
+    @SuppressWarnings("Immutable")
+    @LazyInit
+    MethodHandle positionalRenderMethod;
 
     final String soyTemplateName;
     // lazily initialized since it is not always needed
     @LazyInit CompiledTemplate template;
 
+    // lazily initialized since it is not always needed
+    @SuppressWarnings("Immutable")
+    @LazyInit
+    TemplateValue templateValue;
+
     // many of these fields should probably be only lazily calculated
     final ContentKind kind;
+    final Optional<ImmutableList<String>> positionalParameters;
     final ImmutableSet<String> callees;
     final ImmutableSet<String> delCallees;
     final ImmutableSet<String> injectedParams;
@@ -314,18 +392,17 @@ public class CompiledTemplates {
     @LazyInit ImmutableSortedSet<String> transitiveIjParams;
 
     public TemplateData(Class<?> fileClass, String soyTemplateName) {
-      this(getTemplateMethod(fileClass, soyTemplateName), soyTemplateName);
-    }
-
-    @VisibleForTesting
-    public TemplateData(Method templateMethod, String soyTemplateName) {
-      this.templateMethod = templateMethod;
+      this.templateMethod = getTemplateMethod(fileClass, soyTemplateName);
       this.soyTemplateName = soyTemplateName;
 
-      // We pull the content kind off the templatemetadata eagerly since the parsing+reflection each
+      // We pull the content kind off the TemplateMetadata eagerly since the parsing+reflection each
       // time is expensive.
       TemplateMetadata annotation = templateMethod.getAnnotation(TemplateMetadata.class);
       this.kind = annotation.contentKind();
+      this.positionalParameters =
+          annotation.hasPositionalSignature()
+              ? Optional.of(ImmutableList.copyOf(annotation.positionalParams()))
+              : Optional.empty();
       this.callees = ImmutableSet.copyOf(annotation.callees());
       this.delCallees = ImmutableSet.copyOf(annotation.delCallees());
       this.injectedParams = ImmutableSet.copyOf(annotation.injectedParams());
@@ -345,6 +422,46 @@ public class CompiledTemplates {
       }
     }
 
+    // A constructor just used by the stubbing implementation
+    @VisibleForTesting
+    public TemplateData(TemplateData copy, CompiledTemplate template) {
+      this.template = template;
+      // Infer some of the state from the source
+      this.templateMethod = copy.templateMethod;
+      this.soyTemplateName = copy.soyTemplateName;
+      this.kind = copy.kind;
+      this.positionalParameters = copy.positionalParameters;
+      this.callees = ImmutableSet.of();
+      this.delCallees = ImmutableSet.of();
+      this.requiredCssNamespaces = ImmutableSet.of();
+      this.requiredCssPaths = ImmutableSet.of();
+      this.injectedParams = ImmutableSet.of();
+      this.delTemplateName = Optional.empty();
+      this.modName = Optional.empty();
+      this.variant = "";
+
+      // Pre-initialize our method handles based on the template
+      this.renderMethod = HandlesForTesting.COMPILED_TEMPLATE_RENDER.bindTo(template);
+      if (this.positionalParameters.isPresent()) {
+        // Build a method handle that redirects positional style calls to the template object.
+        var positionalParameters = this.positionalParameters.get();
+        MethodHandle positionalRenderMethod = this.renderMethod;
+        // Replace the initial SoyRecord argument with a call through positionalToRecord so the
+        // signature becomes (SoyValueProvider[],SoyRecord,LoggingAdvisingAppendable,RenderContext)
+        positionalRenderMethod =
+            MethodHandles.filterArguments(
+                positionalRenderMethod,
+                0,
+                MethodHandles.insertArguments(
+                    HandlesForTesting.POSITIONAL_TO_RECORD, 0, positionalParameters));
+        // Collect the positional parameters into an array in the first position to match the
+        // positional signature.
+        this.positionalRenderMethod =
+            positionalRenderMethod.asCollector(
+                0, SoyValueProvider[].class, positionalParameters.size());
+      }
+    }
+
     private static Method getTemplateMethod(Class<?> fileClass, String soyTemplateName) {
       String templateMethodName = Names.renderMethodNameFromSoyTemplateName(soyTemplateName);
       try {
@@ -358,6 +475,70 @@ public class CompiledTemplates {
         throw new IllegalArgumentException(
             "cannot find the " + templateMethodName + "() method for " + soyTemplateName, nsme);
       }
+    }
+
+    MethodHandle renderMethod() {
+      var renderMethod = this.renderMethod;
+      if (renderMethod == null) {
+        String templateMethodName = Names.renderMethodNameFromSoyTemplateName(soyTemplateName);
+        try {
+          renderMethod =
+              MethodHandles.publicLookup()
+                  .findStatic(
+                      this.templateMethod.getDeclaringClass(), templateMethodName, RENDER_TYPE);
+        } catch (ReflectiveOperationException e) {
+          // This may be caused by:
+          //   1. Trying to call a private template. The factory() method is package private and so
+          //      getMethod will fail.
+          //   2. Two Soy files with the same namespace, without the necessary exemption. You should
+          //      also see a build breakage related to go/java-one-version.
+          throw new IllegalArgumentException(
+              "cannot find the "
+                  + templateMethodName
+                  + "(SoyRecord,SoyRecord,LoggingAdvisingAppendable,RenderContext) method for "
+                  + soyTemplateName,
+              e);
+        }
+        this.renderMethod = renderMethod;
+      }
+      return renderMethod;
+    }
+
+    MethodHandle positionalRenderMethod(int arity) {
+      var positionalRenderMethod = this.positionalRenderMethod;
+      if (positionalRenderMethod == null) {
+        String templateMethodName = Names.renderMethodNameFromSoyTemplateName(soyTemplateName);
+        Class<?>[] paramTypes = new Class<?>[arity + 3];
+        Arrays.fill(paramTypes, 0, arity, SoyValueProvider.class);
+        paramTypes[paramTypes.length - 3] = SoyRecord.class; // ij
+        paramTypes[paramTypes.length - 2] = LoggingAdvisingAppendable.class;
+        paramTypes[paramTypes.length - 1] = RenderContext.class;
+        try {
+          positionalRenderMethod =
+              MethodHandles.publicLookup()
+                  .findStatic(
+                      this.templateMethod.getDeclaringClass(),
+                      templateMethodName,
+                      methodType(RenderResult.class, paramTypes));
+        } catch (ReflectiveOperationException e) {
+          // This may be caused by:
+          //   1. Trying to call a private template. The factory() method is package private and so
+          //      getMethod will fail.
+          //   2. Two Soy files with the same namespace, without the necessary exemption. You should
+          //      also see a build breakage related to go/java-one-version.
+          //   3. A unsupported change in class signatures
+          throw new IllegalArgumentException(
+              "cannot find the "
+                  + templateMethodName
+                  + "("
+                  + Arrays.toString(paramTypes)
+                  + ") method for "
+                  + soyTemplateName,
+              e);
+        }
+        this.positionalRenderMethod = positionalRenderMethod;
+      }
+      return positionalRenderMethod;
     }
 
     @VisibleForTesting
@@ -384,9 +565,12 @@ public class CompiledTemplates {
       }
     }
 
-    @VisibleForTesting
-    public void setTemplate(CompiledTemplate template) {
-      this.template = template;
+    TemplateValue templateValue() {
+      TemplateValue local = templateValue;
+      if (local == null) {
+        this.templateValue = local = TemplateValue.create(this.soyTemplateName, template());
+      }
+      return local;
     }
 
     public CompiledTemplate template() {
@@ -412,6 +596,39 @@ public class CompiledTemplates {
 
     String soyTemplateName() {
       return soyTemplateName;
+    }
+  }
+
+  private static final class HandlesForTesting {
+    private static final MethodHandle COMPILED_TEMPLATE_RENDER;
+    private static final MethodHandle POSITIONAL_TO_RECORD;
+
+    static {
+      try {
+        COMPILED_TEMPLATE_RENDER =
+            MethodHandles.publicLookup().findVirtual(CompiledTemplate.class, "render", RENDER_TYPE);
+
+        POSITIONAL_TO_RECORD =
+            MethodHandles.lookup()
+                .findStatic(
+                    HandlesForTesting.class,
+                    "positionalToRecord",
+                    methodType(SoyRecord.class, ImmutableList.class, SoyValueProvider[].class));
+      } catch (ReflectiveOperationException e) {
+        throw new LinkageError(e.getMessage(), e);
+      }
+    }
+
+    /** Adapts a set of positional parameters to a SoyRecord */
+    private static SoyRecord positionalToRecord(
+        ImmutableList<String> names, SoyValueProvider[] values) {
+      ParamStore paramStore = new ParamStore(names.size());
+      for (int i = 0; i < names.size(); i++) {
+        if (values[i] != null) {
+          paramStore.setField(names.get(i), values[i]);
+        }
+      }
+      return paramStore;
     }
   }
 }

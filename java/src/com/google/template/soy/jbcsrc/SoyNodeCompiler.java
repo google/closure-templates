@@ -34,6 +34,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
 import com.google.common.primitives.Ints;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
@@ -113,7 +114,6 @@ import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.VeLogNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.TemplateType;
-import com.google.template.soy.types.TemplateType.Parameter;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.util.ArrayList;
@@ -122,7 +122,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
@@ -1099,8 +1098,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
               MethodHandles.Lookup.class,
               String.class,
               MethodType.class,
-              String.class,
-              String[].class)
+              String.class)
           .asHandle();
 
   private static final Handle STATIC_TEMPLATE_HANDLE =
@@ -1126,11 +1124,16 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       // classloader setups to have {call} commands cross classloader boundaries.  It also enables
       // our stubbing library to intercept all calls.
       CompiledTemplateMetadata metadata = CompiledTemplateMetadata.create(node);
+      boolean isPrivateCall = CompiledTemplateMetadata.isPrivateCall(node);
+
       return renderCallNode(
           node,
           new CallGenerator() {
             @Override
             public Expression asCompiledTemplate() {
+              if (isPrivateCall) {
+                return metadata.templateMethod().invoke();
+              }
               Expression renderContext = parameterLookup.getRenderContext();
               return new Expression(BytecodeUtils.COMPILED_TEMPLATE_TYPE, Feature.NON_NULLABLE) {
                 @Override
@@ -1148,6 +1151,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
             @Override
             public Optional<DirectPositionalCallGenerator> asDirectPositionalCall() {
               if (metadata.hasPositionalSignature()) {
+                var positionalRenderMethod = metadata.positionalRenderMethod().get();
                 return Optional.of(
                     new DirectPositionalCallGenerator() {
                       @Override
@@ -1161,6 +1165,11 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
                           Expression ij,
                           AppendableExpression appendable,
                           RenderContextExpression renderContext) {
+                        if (isPrivateCall) {
+                          return positionalRenderMethod.invoke(
+                              Iterables.concat(
+                                  params, ImmutableList.of(ij, appendable, renderContext)));
+                        }
                         return new Expression(RENDER_RESULT_TYPE) {
                           @Override
                           protected void doGen(CodeBuilder adapter) {
@@ -1170,13 +1179,9 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
                             renderContext.gen(adapter);
                             adapter.visitInvokeDynamicInsn(
                                 "call",
-                                metadata.positionalRenderMethod().get().method().getDescriptor(),
+                                positionalRenderMethod.method().getDescriptor(),
                                 STATIC_CALL_HANDLE,
-                                Stream.concat(
-                                        Stream.of(node.getCalleeName()),
-                                        metadata.templateType().getActualParameters().stream()
-                                            .map(Parameter::getName))
-                                    .toArray(Object[]::new));
+                                node.getCalleeName());
                           }
                         };
                       }
@@ -1188,21 +1193,25 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
             @Override
             public Optional<DirectCallGenerator> asDirectCall() {
               return Optional.of(
-                  (params, ij, appendable, renderContext) ->
-                      new Expression(RENDER_RESULT_TYPE) {
-                        @Override
-                        protected void doGen(CodeBuilder adapter) {
-                          params.gen(adapter);
-                          ij.gen(adapter);
-                          appendable.gen(adapter);
-                          renderContext.gen(adapter);
-                          adapter.visitInvokeDynamicInsn(
-                              "call",
-                              metadata.renderMethod().method().getDescriptor(),
-                              STATIC_CALL_HANDLE,
-                              node.getCalleeName());
-                        }
-                      });
+                  (params, ij, appendable, renderContext) -> {
+                    if (isPrivateCall) {
+                      return metadata.renderMethod().invoke(params, ij, appendable, renderContext);
+                    }
+                    return new Expression(RENDER_RESULT_TYPE) {
+                      @Override
+                      protected void doGen(CodeBuilder adapter) {
+                        params.gen(adapter);
+                        ij.gen(adapter);
+                        appendable.gen(adapter);
+                        renderContext.gen(adapter);
+                        adapter.visitInvokeDynamicInsn(
+                            "call",
+                            metadata.renderMethod().method().getDescriptor(),
+                            STATIC_CALL_HANDLE,
+                            node.getCalleeName());
+                      }
+                    };
+                  });
             }
           });
     } else {
