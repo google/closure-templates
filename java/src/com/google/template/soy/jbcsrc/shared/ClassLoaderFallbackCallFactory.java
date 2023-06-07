@@ -82,83 +82,95 @@ public final class ClassLoaderFallbackCallFactory {
   @VisibleForTesting
   public interface AlwaysSlowPath {}
 
-  private static MethodHandle findLocalStaticOrDie(String name, MethodType type) {
-    try {
-      return MethodHandles.publicLookup()
-          .findStatic(ClassLoaderFallbackCallFactory.class, name, type);
-    } catch (ReflectiveOperationException e) {
-      throw new LinkageError(e.getMessage(), e);
+  /**
+   * Put all the handles in an inner class since they are only referenced when slowpaths are
+   * triggered which is rare.
+   */
+  static final class SlowPathHandles {
+    private static final MethodHandles.Lookup LOOKUP = MethodHandles.lookup();
+
+    private static MethodHandle findLocalStaticOrDie(String name, MethodType type) {
+      try {
+        return LOOKUP.findStatic(ClassLoaderFallbackCallFactory.class, name, type);
+      } catch (ReflectiveOperationException e) {
+        throw new LinkageError(e.getMessage(), e);
+      }
     }
-  }
 
-  private static final MethodHandle SLOWPATH_RENDER_RECORD =
-      findLocalStaticOrDie(
-          "slowPathRenderRecord",
-          methodType(
-              RenderResult.class,
-              SoyCallSite.class,
-              String.class,
-              SoyRecord.class,
-              SoyRecord.class,
-              LoggingAdvisingAppendable.class,
-              RenderContext.class));
+    private static final MethodHandle SLOWPATH_RENDER_RECORD =
+        findLocalStaticOrDie(
+            "slowPathRenderRecord",
+            methodType(
+                RenderResult.class,
+                SoyCallSite.class,
+                String.class,
+                SoyRecord.class,
+                SoyRecord.class,
+                LoggingAdvisingAppendable.class,
+                RenderContext.class));
 
-  private static final MethodHandle SLOWPATH_RENDER_POSITIONAL =
-      findLocalStaticOrDie(
-          "slowPathRenderPositional",
-          methodType(
-              RenderResult.class,
-              SoyCallSite.class,
-              String.class,
-              SoyValueProvider[].class,
-              SoyRecord.class,
-              LoggingAdvisingAppendable.class,
-              RenderContext.class));
+    private static final MethodHandle SLOWPATH_RENDER_POSITIONAL =
+        findLocalStaticOrDie(
+            "slowPathRenderPositional",
+            methodType(
+                RenderResult.class,
+                SoyCallSite.class,
+                String.class,
+                SoyValueProvider[].class,
+                SoyRecord.class,
+                LoggingAdvisingAppendable.class,
+                RenderContext.class));
 
-  private static final MethodHandle SLOWPATH_TEMPLATE =
-      findLocalStaticOrDie(
-          "slowPathTemplate",
-          methodType(CompiledTemplate.class, SoyCallSite.class, String.class, RenderContext.class));
+    private static final MethodHandle SLOWPATH_TEMPLATE =
+        findLocalStaticOrDie(
+            "slowPathTemplate",
+            methodType(
+                CompiledTemplate.class, SoyCallSite.class, String.class, RenderContext.class));
 
-  private static final MethodHandle SLOWPATH_TEMPLATE_VALUE =
-      findLocalStaticOrDie(
-          "slowPathTemplateValue",
-          methodType(TemplateValue.class, SoyCallSite.class, String.class, RenderContext.class));
-  private static final MethodHandle SLOWPATH_CONST =
-      findLocalStaticOrDie(
-          "slowPathConst",
-          methodType(Object.class, SoyCallSite.class, String.class, RenderContext.class));
-  private static final MethodHandle SLOWPATH_EXTERN =
-      findLocalStaticOrDie(
-          "slowPathExtern",
-          methodType(
-              Object.class, SoyCallSite.class, String.class, RenderContext.class, Object[].class));
+    private static final MethodHandle SLOWPATH_TEMPLATE_VALUE =
+        findLocalStaticOrDie(
+            "slowPathTemplateValue",
+            methodType(TemplateValue.class, SoyCallSite.class, String.class, RenderContext.class));
+    private static final MethodHandle SLOWPATH_CONST =
+        findLocalStaticOrDie(
+            "slowPathConst",
+            methodType(Object.class, SoyCallSite.class, String.class, RenderContext.class));
+    private static final MethodHandle SLOWPATH_EXTERN =
+        findLocalStaticOrDie(
+            "slowPathExtern",
+            methodType(
+                Object.class,
+                SoyCallSite.class,
+                String.class,
+                RenderContext.class,
+                Object[].class));
 
-  private static final MethodHandle IS_CACHE_VALID =
-      findLocalStaticOrDie(
-          "isCacheValid", methodType(boolean.class, int.class, RenderContext.class));
+    private static final MethodHandle IS_CACHE_VALID =
+        findLocalStaticOrDie(
+            "isCacheValid", methodType(boolean.class, int.class, RenderContext.class));
 
-  private static final MethodType RENDER_TYPE =
-      methodType(
-          RenderResult.class,
-          SoyRecord.class,
-          SoyRecord.class,
-          LoggingAdvisingAppendable.class,
-          RenderContext.class);
+    private static final MethodType RENDER_TYPE =
+        methodType(
+            RenderResult.class,
+            SoyRecord.class,
+            SoyRecord.class,
+            LoggingAdvisingAppendable.class,
+            RenderContext.class);
 
-  private static final MethodType TEMPLATE_ACCESSOR_TYPE = methodType(CompiledTemplate.class);
-  private static final MethodType METHOD_HANDLE_TYPE = methodType(MethodHandle.class);
+    private static final MethodType TEMPLATE_ACCESSOR_TYPE = methodType(CompiledTemplate.class);
+    private static final MethodType METHOD_HANDLE_TYPE = methodType(MethodHandle.class);
 
-  private static final MethodHandle WEAK_REF_GET;
+    private static final MethodHandle WEAK_REF_GET;
 
-  static {
-    try {
-      WEAK_REF_GET =
-          MethodHandles.publicLookup()
-              .findVirtual(WeakReference.class, "get", methodType(Object.class));
-    } catch (ReflectiveOperationException e) {
-      throw new LinkageError(e.getMessage(), e);
+    static {
+      try {
+        WEAK_REF_GET = LOOKUP.findVirtual(WeakReference.class, "get", methodType(Object.class));
+      } catch (ReflectiveOperationException e) {
+        throw new LinkageError(e.getMessage(), e);
+      }
     }
+
+    private SlowPathHandles() {}
   }
 
   private ClassLoaderFallbackCallFactory() {}
@@ -195,7 +207,7 @@ public final class ClassLoaderFallbackCallFactory {
         return new ConstantCallSite(getter);
       }
     }
-    MethodHandle slowPath = SLOWPATH_TEMPLATE;
+    MethodHandle slowPath = SlowPathHandles.SLOWPATH_TEMPLATE;
     slowPath = insertArguments(slowPath, 1, templateName);
     return new SoyCallSite(type, slowPath);
   }
@@ -232,7 +244,7 @@ public final class ClassLoaderFallbackCallFactory {
         return new ConstantCallSite(getter);
       }
     }
-    MethodHandle slowPath = SLOWPATH_TEMPLATE_VALUE;
+    MethodHandle slowPath = SlowPathHandles.SLOWPATH_TEMPLATE_VALUE;
     slowPath = insertArguments(slowPath, 1, templateName);
     return new SoyCallSite(type, slowPath);
   }
@@ -246,7 +258,7 @@ public final class ClassLoaderFallbackCallFactory {
     String methodName = Names.renderMethodNameFromSoyTemplateName(templateName);
 
     MethodHandle templateAccessor =
-        lookup.findStatic(templateClass, methodName, TEMPLATE_ACCESSOR_TYPE);
+        lookup.findStatic(templateClass, methodName, SlowPathHandles.TEMPLATE_ACCESSOR_TYPE);
     try {
       return (CompiledTemplate) templateAccessor.invokeExact();
     } catch (Throwable t) {
@@ -284,9 +296,11 @@ public final class ClassLoaderFallbackCallFactory {
     }
 
     MethodHandle slowPathRenderHandle =
-        type.equals(RENDER_TYPE) ? SLOWPATH_RENDER_RECORD : SLOWPATH_RENDER_POSITIONAL;
+        type.equals(SlowPathHandles.RENDER_TYPE)
+            ? SlowPathHandles.SLOWPATH_RENDER_RECORD
+            : SlowPathHandles.SLOWPATH_RENDER_POSITIONAL;
     slowPathRenderHandle = insertArguments(slowPathRenderHandle, 1, templateName);
-    if (!type.equals(RENDER_TYPE)) {
+    if (!type.equals(SlowPathHandles.RENDER_TYPE)) {
       // target type has a signature like (SVP,SVP,...SVP,SoyRecord,Appendable,RenderContext)
       // we want to collect the leading SVPs into an array at the end of the slowpath
       int numParams = type.parameterCount();
@@ -334,7 +348,7 @@ public final class ClassLoaderFallbackCallFactory {
       }
     }
 
-    MethodHandle slowPath = SLOWPATH_CONST;
+    MethodHandle slowPath = SlowPathHandles.SLOWPATH_CONST;
     slowPath =
         insertArguments(
             slowPath, 1, constClassName + '#' + constName + '#' + type.toMethodDescriptorString());
@@ -377,7 +391,7 @@ public final class ClassLoaderFallbackCallFactory {
         // Fall back to using the RenderContext class loader.
       }
     }
-    MethodHandle slowPath = SLOWPATH_EXTERN;
+    MethodHandle slowPath = SlowPathHandles.SLOWPATH_EXTERN;
     slowPath =
         insertArguments(
             slowPath,
@@ -531,7 +545,7 @@ public final class ClassLoaderFallbackCallFactory {
       // (int,..type.args,RenderContext,...args)boolean so we add dummy arguments to match
       this.test =
           MethodHandles.dropArgumentsToMatch(
-              IS_CACHE_VALID, 1, type.parameterList(), renderContextIndex);
+              SlowPathHandles.IS_CACHE_VALID, 1, type.parameterList(), renderContextIndex);
       // Always start calling directly to the slowpath
       setTarget(slowPath);
     }
@@ -548,7 +562,9 @@ public final class ClassLoaderFallbackCallFactory {
       newTarget =
           MethodHandles.foldArguments(
               MethodHandles.exactInvoker(newTarget.type()),
-              WEAK_REF_GET.bindTo(new WeakReference<>(newTarget)).asType(METHOD_HANDLE_TYPE));
+              SlowPathHandles.WEAK_REF_GET
+                  .bindTo(new WeakReference<>(newTarget))
+                  .asType(SlowPathHandles.METHOD_HANDLE_TYPE));
 
       this.setTarget(
           MethodHandles.guardWithTest(
@@ -558,7 +574,9 @@ public final class ClassLoaderFallbackCallFactory {
     void updateWithConstant(CompiledTemplates newTemplates, Class<?> type, Object value) {
       var fastPathHandle =
           MethodHandles.dropArgumentsToMatch(
-              WEAK_REF_GET.bindTo(new WeakReference<>(value)).asType(methodType(type)),
+              SlowPathHandles.WEAK_REF_GET
+                  .bindTo(new WeakReference<>(value))
+                  .asType(methodType(type)),
               0,
               type().parameterList(),
               0);
