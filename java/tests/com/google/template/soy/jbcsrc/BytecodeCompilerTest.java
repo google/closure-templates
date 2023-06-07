@@ -1232,14 +1232,6 @@ public class BytecodeCompilerTest {
             "com.google.template.soy.jbcsrc.gen.loader2");
   }
 
-  public static String extern1() {
-    return "EXTERN1";
-  }
-
-  public static String extern2() {
-    return "EXTERN2";
-  }
-
   @Test
   public void testRenderingWithMultipleCompilationStepsAndDynamicTemplateCalls() {
     SoyFileSetParser parser1 =
@@ -1251,10 +1243,6 @@ public class BytecodeCompilerTest {
                         "{namespace loader1}",
                         "import {publicTemplate2} from 'loader2.soy';",
                         "{export const CONST = 'CONST' /}",
-                        "{export extern extern: ()=>string}",
-                        "  {javaimpl class=\"" + BytecodeCompilerTest.class.getName() + "\"",
-                        "   method=\"extern1\" params=\"\" return=\"java.lang.String\" /}",
-                        "{/extern}",
                         "{template publicTemplate1}",
                         "L1T1",
                         "{sp}{call privateTemplate_ /}",
@@ -1287,10 +1275,6 @@ public class BytecodeCompilerTest {
                     .join(
                         "{namespace loader1}",
                         "{export const CONST = 'CONST RECOMPILED' /}",
-                        "{export extern extern: ()=>string}",
-                        "  {javaimpl class=\"" + BytecodeCompilerTest.class.getName() + "\"",
-                        "   method=\"extern2\" params=\"\" return=\"java.lang.String\" /}",
-                        "{/extern}",
                         "{template publicTemplate1}",
                         "L1T1 RECOMPILED",
                         "{/template}")));
@@ -1305,7 +1289,7 @@ public class BytecodeCompilerTest {
                 Joiner.on("\n")
                     .join(
                         "{namespace loader2}",
-                        "import {publicTemplate1, CONST, extern} from 'loader1.soy';",
+                        "import {publicTemplate1, CONST} from 'loader1.soy';",
                         "{template publicTemplate}",
                         "{@param renderTemplate: bool = true}",
                         "{let $tpl: $renderTemplate ? publicTemplate1 : dummyTemplate /}",
@@ -1313,7 +1297,6 @@ public class BytecodeCompilerTest {
                         "{sp}{call $tpl /}",
                         "{sp}{call $tpl /}",
                         "{sp}{CONST}",
-                        "{sp}{extern()}",
                         "{/template}",
                         "{template dummyTemplate visibility=\"private\"}dummy{/template}")),
             ImmutableList.of(dependency1));
@@ -1323,7 +1306,7 @@ public class BytecodeCompilerTest {
     DelegatingClassLoader delegatingClassLoader1 = new DelegatingClassLoader(loader1, loader2);
     SoySauce sauce = new SoySauceBuilder().withClassLoader(delegatingClassLoader1).build();
     assertThat(sauce.renderTemplate("loader2.publicTemplate").renderHtml().get().toString())
-        .isEqualTo("L2T L1T1 PVT L1T2 L1T1 PVT L1T2 CONST EXTERN1");
+        .isEqualTo("L2T L1T1 PVT L1T2 L1T1 PVT L1T2 CONST");
 
     assertThat(delegatingClassLoader1.loadedClasses()).containsNoDuplicates();
     assertThat(delegatingClassLoader1.loadedClasses().elementSet())
@@ -1335,10 +1318,10 @@ public class BytecodeCompilerTest {
         new DelegatingClassLoader(loader1Recompiled, loader2);
     SoySauce sauceReloaded = new SoySauceBuilder().withClassLoader(delegatingClassLoader2).build();
     assertThat(sauceReloaded.renderTemplate("loader2.publicTemplate").renderHtml().get().toString())
-        .isEqualTo("L2T L1T1 RECOMPILED L1T1 RECOMPILED CONST RECOMPILED EXTERN2");
+        .isEqualTo("L2T L1T1 RECOMPILED L1T1 RECOMPILED CONST RECOMPILED");
 
-    assertThat(delegatingClassLoader2.loadedClasses()).containsNoDuplicates();
-    assertThat(delegatingClassLoader2.loadedClasses().elementSet())
+    assertThat(delegatingClassLoader1.loadedClasses()).containsNoDuplicates();
+    assertThat(delegatingClassLoader1.loadedClasses().elementSet())
         .containsExactly(
             "com.google.template.soy.jbcsrc.gen.loader1",
             "com.google.template.soy.jbcsrc.gen.loader2");

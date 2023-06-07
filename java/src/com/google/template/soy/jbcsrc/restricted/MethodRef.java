@@ -518,8 +518,6 @@ public abstract class MethodRef {
 
   public static final MethodRef GET_COMPILED_TEMPLATE_FROM_VALUE =
       create(TemplateValue.class, "getCompiledTemplate");
-  public static final MethodRef CREATE_TEMPLATE_VALUE =
-      create(TemplateValue.class, "create", String.class, Object.class);
 
   public static final MethodRef SOY_VALUE_PROVIDER_RENDER_AND_RESOLVE =
       create(

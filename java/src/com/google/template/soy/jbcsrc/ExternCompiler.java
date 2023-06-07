@@ -34,6 +34,7 @@ import com.google.template.soy.jbcsrc.restricted.Statement;
 import com.google.template.soy.jbcsrc.restricted.TypeInfo;
 import com.google.template.soy.jbcsrc.shared.Names;
 import com.google.template.soy.plugin.java.restricted.MethodSignature;
+import com.google.template.soy.soytree.ConstNode;
 import com.google.template.soy.soytree.ExternNode;
 import com.google.template.soy.soytree.JavaImplNode;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -54,7 +55,7 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
 
-/** Compiles byte code for {@link ExternNode}s. */
+/** Compiles byte code for {@link ConstNode}s. */
 public final class ExternCompiler {
 
   private final ExternNode extern;

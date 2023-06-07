@@ -18,7 +18,6 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.base.Strings.nullToEmpty;
-import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.template.soy.soytree.SoyTreeUtils.allNodesOfType;
 import static java.util.stream.Collectors.toList;
@@ -241,12 +240,6 @@ final class TemplateCompiler {
   /** Writes a {@link TemplateMetadata} to the generated {@code template()} method. */
   private void generateTemplateMetadata(CodeBuilder builder) {
     ContentKind kind = Converters.toContentKind(templateNode.getContentKind());
-    List<String> positionalParams =
-        template.hasPositionalSignature()
-            ? template.templateType().getActualParameters().stream()
-                .map(Parameter::getName)
-                .collect(toImmutableList())
-            : ImmutableList.of();
 
     // using linked hash sets below for determinism
     Set<String> uniqueIjs =
@@ -305,15 +298,7 @@ final class TemplateCompiler {
 
     TemplateMetadata metadata =
         createTemplateMetadata(
-            kind,
-            template.hasPositionalSignature(),
-            positionalParams,
-            namespaces,
-            cssPaths,
-            uniqueIjs,
-            callees,
-            delCallees,
-            deltemplateMetadata);
+            kind, namespaces, cssPaths, uniqueIjs, callees, delCallees, deltemplateMetadata);
     TEMPLATE_METADATA_REF.write(metadata, builder);
   }
 
@@ -349,8 +334,6 @@ final class TemplateCompiler {
   @AutoAnnotation
   static TemplateMetadata createTemplateMetadata(
       ContentKind contentKind,
-      boolean hasPositionalSignature,
-      List<String> positionalParams,
       Set<String> requiredCssNames,
       Set<String> requiredCssPaths,
       Set<String> injectedParams,
@@ -359,8 +342,6 @@ final class TemplateCompiler {
       TemplateMetadata.DelTemplateMetadata deltemplateMetadata) {
     return new AutoAnnotation_TemplateCompiler_createTemplateMetadata(
         contentKind,
-        hasPositionalSignature,
-        positionalParams,
         requiredCssNames,
         requiredCssPaths,
         injectedParams,

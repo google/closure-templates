@@ -205,10 +205,6 @@ public final class RenderContext {
     return templates.getTemplate(calleeName);
   }
 
-  CompiledTemplates getTemplates() {
-    return templates;
-  }
-
   public CompiledTemplate getDelTemplate(String calleeName, String variant) {
     CompiledTemplate callee = templates.selectDelTemplate(calleeName, variant, activeModSelector);
     if (callee == null) {
@@ -335,6 +331,10 @@ public final class RenderContext {
     } catch (ReflectiveOperationException e) {
       throw new AssertionError(e);
     }
+  }
+
+  public CompiledConstant getConstMethod(String constantFqn) {
+    return templates.getConstMethod(constantFqn);
   }
 
   @Nullable

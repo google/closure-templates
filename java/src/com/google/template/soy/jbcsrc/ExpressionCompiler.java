@@ -1108,16 +1108,6 @@ final class ExpressionCompiler {
                 String.class,
                 String.class)
             .asHandle();
-    private static final Handle CALL_EXTERN_HANDLE =
-        MethodRef.create(
-                ClassLoaderFallbackCallFactory.class,
-                "bootstrapExternCall",
-                MethodHandles.Lookup.class,
-                String.class,
-                MethodType.class,
-                String.class,
-                String.class)
-            .asHandle();
 
     @Override
     SoyExpression visitImportedVar(VarRefNode varRef, ImportedVar importedVar) {
@@ -1637,30 +1627,7 @@ final class ExpressionCompiler {
                 (SoyExpression) args.get(i),
                 extern.signature().getParameters().get(i - 1).getType()));
       }
-      // Dispatch directly for locally defined externs
-      if (namespace.equals(context.getNearestAncestor(SoyFileNode.class).getNamespace())) {
-        return SoyExpression.forRuntimeType(soyReturnType, ref.invoke(args));
-      }
-
-      // For externs defined in other files use invoke dynamic so that we can support the
-      // classloader
-      // fallback.
-      Expression externCall =
-          new Expression(soyReturnType.runtimeType()) {
-            @Override
-            protected void doGen(CodeBuilder adapter) {
-              for (var arg : args) {
-                arg.gen(adapter);
-              }
-              adapter.visitInvokeDynamicInsn(
-                  "call",
-                  asmMethod.getDescriptor(),
-                  CALL_EXTERN_HANDLE,
-                  externOwner.className(),
-                  asmMethod.getName());
-            }
-          };
-      return SoyExpression.forRuntimeType(soyReturnType, externCall);
+      return SoyExpression.forRuntimeType(soyReturnType, ref.invoke(args));
     }
 
     private static Expression adaptExternArg(SoyExpression soyExpression, SoyType type) {
@@ -1739,21 +1706,6 @@ final class ExpressionCompiler {
     @Override
     protected SoyExpression visitTemplateLiteralNode(TemplateLiteralNode node) {
       Expression renderContext = parameters.getRenderContext();
-      if (CompiledTemplateMetadata.isPrivateReference(context, node)) {
-        Expression templateValue =
-            MethodRef.createStaticMethod(
-                    TypeInfo.createClass(
-                        Names.javaClassNameFromSoyTemplateName(node.getResolvedName())),
-                    CompiledTemplateMetadata.createTemplateMethod(
-                        Names.renderMethodNameFromSoyTemplateName(node.getResolvedName())))
-                .asCheap()
-                .asNonNullable()
-                .invoke();
-        return SoyExpression.forSoyValue(
-            node.getType(),
-            MethodRef.CREATE_TEMPLATE_VALUE.invoke(
-                constant(node.getResolvedName()), templateValue));
-      }
       return SoyExpression.forSoyValue(
           node.getType(),
           new Expression(BytecodeUtils.TEMPLATE_VALUE_TYPE) {
