@@ -126,6 +126,7 @@ java_library(
     srcs = VE,
     deps = [
         ":data",
+        "//java/src/com/google/template/soy/logging:public",
         "//src/main/protobuf:ve_metadata_java_proto",
         "@com_google_auto_value_auto_value",
         "@com_google_protobuf//:protobuf_java",

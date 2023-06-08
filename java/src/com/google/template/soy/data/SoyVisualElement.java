@@ -18,6 +18,7 @@ package com.google.template.soy.data;
 
 import com.google.auto.value.AutoValue;
 import com.google.template.soy.logging.LoggableElementMetadata;
+import com.google.template.soy.logging.SoyLogger;
 import java.io.IOException;
 
 /** Soy's runtime representation of objects of the Soy {@code ve} type. */
@@ -43,7 +44,7 @@ public abstract class SoyVisualElement extends SoyAbstractValue {
 
   @Override
   public boolean coerceToBoolean() {
-    return true;
+    return id() != SoyLogger.UNDEFINED_VE_ID;
   }
 
   String getDebugString() {
