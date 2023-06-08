@@ -27,15 +27,10 @@ declare global {
 }
 
 const patchConfig: incrementaldom.PatchConfig = {
-  matches: (
-    matchNode,
-    nameOrCtor,
-    expectedNameOrCtor,
-    proposedKey,
-    currentPointerKey,
-  ) =>
-    nameOrCtor === expectedNameOrCtor &&
-    isMatchingKey(proposedKey, currentPointerKey),
+  matches:
+      (matchNode, nameOrCtor, expectedNameOrCtor, proposedKey,
+       currentPointerKey) => nameOrCtor === expectedNameOrCtor &&
+      isMatchingKey(proposedKey, currentPointerKey)
 };
 
 /**
@@ -51,35 +46,31 @@ const patchConfig: incrementaldom.PatchConfig = {
  *     to a specific `<T>`
  */
 function wrapAsGeneric<R>(
-  fnCreator: <T>(
+    fnCreator: <T>(patchConfig: incrementaldom.PatchConfig) =>
+        incrementaldom.PatchFunction<T, R>,
     patchConfig: incrementaldom.PatchConfig,
-  ) => incrementaldom.PatchFunction<T, R>,
-  patchConfig: incrementaldom.PatchConfig,
-): <T>(
-  node: Element | DocumentFragment,
-  template: (a: T | undefined) => void,
-  data?: T | undefined,
-) => R {
+    ):
+    <T>(node: Element|DocumentFragment, template: (a: T|undefined) => void,
+        data?: T|undefined) => R {
   return fnCreator(patchConfig);
 }
 
 /** PatchInner using Soy-IDOM semantics. */
-export const patchInner = wrapAsGeneric(
-  incrementaldom.createPatchInner,
-  patchConfig,
-);
+export const patchInner =
+    wrapAsGeneric(incrementaldom.createPatchInner, patchConfig);
 /** PatchOuter using Soy-IDOM semantics. */
-export const patchOuter = wrapAsGeneric(
-  incrementaldom.createPatchOuter,
-  patchConfig,
-);
+export const patchOuter =
+    wrapAsGeneric(incrementaldom.createPatchOuter, patchConfig);
 /** PatchInner using Soy-IDOM semantics. */
 export const patch = patchInner;
 /** PatchInner using Soy-IDOM template cloning semantics. */
-export const create = wrapAsGeneric(incrementaldom.createPatchInner, {
-  inTemplateCloning: true,
-  ...patchConfig,
-});
+export const create = wrapAsGeneric(
+    incrementaldom.createPatchInner, {inTemplateCloning: true, ...patchConfig});
+/** PatchInner using Soy-IDOM DOM parts traversals. */
+export const createWithDomParts = wrapAsGeneric(
+  incrementaldom.createPatchInner,
+  {inTemplateCloning: true, onlyOperateInNodeParts: true, ...patchConfig}
+);
 
 interface IdomRendererApi {
   open(nameOrCtor: string, key?: string): void | HTMLElement;
@@ -109,13 +100,11 @@ interface IdomRendererApi {
   setLogger(logger: Logger | null): void;
   getLogger(): Logger | null;
   verifyLogOnly(logOnly: boolean): boolean;
-  openNodePart(): void;
-  closeNodePart(): void;
-  evalLoggingFunction(
-    name: string,
-    args: Array<{}>,
-    placeHolder: string,
-  ): string;
+  openChildNodePart(): void;
+  closeChildNodePart(): void;
+  nextNodePart(): void;
+  evalLoggingFunction(name: string, args: Array<{}>, placeHolder: string):
+      string;
 }
 
 /**
@@ -154,12 +143,16 @@ export class IncrementalDomRenderer implements IdomRendererApi {
     return el;
   }
 
-  openNodePart() {
-    incrementaldom.openNodePart();
+  openChildNodePart() {
+    incrementaldom.openChildNodePart();
   }
 
-  closeNodePart() {
-    incrementaldom.closeNodePart();
+  closeChildNodePart() {
+    incrementaldom.closeChildNodePart();
+  }
+
+  nextNodePart() {
+    return incrementaldom.nextNodePart();
   }
 
   keepGoing(el: HTMLElement | void, data: unknown) {
@@ -302,9 +295,8 @@ export class IncrementalDomRenderer implements IdomRendererApi {
    */
   enter(veData: $$VisualElementData, logOnly: boolean) {
     if (this.logger) {
-      this.logger.enter(
-        new ElementMetadata(veData.getVe().getId(), veData.getData(), logOnly),
-      );
+      this.logger.enter(new ElementMetadata(
+          veData.getVe().getId(), veData.getData(), logOnly));
     }
   }
 
@@ -328,8 +320,7 @@ export class IncrementalDomRenderer implements IdomRendererApi {
 
   toDefaultRenderer(): IncrementalDomRenderer {
     throw new Error(
-      'Cannot transition a default renderer to a default renderer',
-    );
+        'Cannot transition a default renderer to a default renderer');
   }
 
   /** Called by user code to configure logging */
@@ -348,8 +339,7 @@ export class IncrementalDomRenderer implements IdomRendererApi {
   verifyLogOnly(logOnly: boolean) {
     if (!this.logger && logOnly) {
       throw new Error(
-        'Cannot set logonly="true" unless there is a logger configured',
-      );
+          'Cannot set logonly="true" unless there is a logger configured');
     }
     return logOnly;
   }
@@ -357,11 +347,8 @@ export class IncrementalDomRenderer implements IdomRendererApi {
   /*
    * Called when a logging function is evaluated.
    */
-  evalLoggingFunction(
-    name: string,
-    args: Array<{}>,
-    placeHolder: string,
-  ): string {
+  evalLoggingFunction(name: string, args: Array<{}>, placeHolder: string):
+      string {
     if (this.logger) {
       return this.logger.evalLoggingFunction(name, args);
     }
@@ -432,9 +419,7 @@ export class NullRenderer extends IncrementalDomRenderer {
  *     proposedKey -> 1c1b, currentPointerKey -> 1d1c1b1a
  */
 export function isMatchingKey(
-  proposedKey: unknown,
-  currentPointerKey: unknown,
-) {
+    proposedKey: unknown, currentPointerKey: unknown) {
   // Using "==" instead of "===" is intentional. SSR serializes attributes
   // differently than the type that keys are. For example "0" == 0.
   // tslint:disable-next-line:triple-equals
@@ -497,8 +482,9 @@ ${el.dataset['debugSoy'] || el.outerHTML}`);
 export class FalsinessRenderer implements IdomRendererApi {
   visit(el: void | HTMLElement): void {}
   pushManualKey(key: incrementaldom.Key) {}
-  openNodePart() {}
-  closeNodePart() {}
+  openChildNodePart() {}
+  closeChildNodePart() {}
+  nextNodePart() {}
   popManualKey(): void {}
   pushKey(key: string): string {
     return '';
@@ -525,11 +511,8 @@ export class FalsinessRenderer implements IdomRendererApi {
   verifyLogOnly(logOnly: boolean): boolean {
     return logOnly;
   }
-  evalLoggingFunction(
-    name: string,
-    args: Array<{}>,
-    placeHolder: string,
-  ): string {
+  evalLoggingFunction(name: string, args: Array<{}>, placeHolder: string):
+      string {
     return placeHolder;
   }
   private rendered = false;

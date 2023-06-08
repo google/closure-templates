@@ -604,18 +604,19 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
   }
 
   private Statement wrapInTemplateCloning(Statement stmt, SoyNode node) {
-    if (node.getParent().getChildren().stream().filter(p -> !(p instanceof LetNode)).count() == 1) {
+    if (node.getParent().getChildren().stream().filter(p -> !(p instanceof LetNode)).count() == 1
+        || !shouldCollectHtml) {
       return stmt;
     }
     var codeGenerator = templateTranslationContext.codeGenerator();
     staticTemplate = Expressions.concat(staticTemplate, IncrementalDomRuntime.NODE_PART);
     return Statements.of(
         IncrementalDomRuntime.USE_TEMPLATE_CLONING
-            .and(INCREMENTAL_DOM.dotAccess("openNodePart").call(), codeGenerator)
+            .and(INCREMENTAL_DOM.dotAccess("openChildNodePart").call(), codeGenerator)
             .asStatement(),
         stmt,
         IncrementalDomRuntime.USE_TEMPLATE_CLONING
-            .and(INCREMENTAL_DOM.dotAccess("closeNodePart").call(), codeGenerator)
+            .and(INCREMENTAL_DOM.dotAccess("closeChildNodePart").call(), codeGenerator)
             .asStatement());
   }
 
