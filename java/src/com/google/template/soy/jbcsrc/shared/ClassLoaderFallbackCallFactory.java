@@ -15,27 +15,26 @@
  */
 package com.google.template.soy.jbcsrc.shared;
 
-import static java.lang.invoke.MethodHandles.collectArguments;
+import static com.google.common.base.Preconditions.checkState;
 import static java.lang.invoke.MethodHandles.constant;
 import static java.lang.invoke.MethodHandles.dropArguments;
 import static java.lang.invoke.MethodHandles.insertArguments;
 import static java.lang.invoke.MethodType.methodType;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ObjectArrays;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueProvider;
-import com.google.template.soy.data.SoyVisualElement;
 import com.google.template.soy.data.TemplateValue;
-import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.jbcsrc.api.RenderResult;
-import com.google.template.soy.logging.LoggableElementMetadata;
-import java.io.IOException;
 import java.lang.invoke.CallSite;
 import java.lang.invoke.ConstantCallSite;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
+import java.lang.invoke.MutableCallSite;
+import java.lang.ref.WeakReference;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Optional;
@@ -72,6 +71,10 @@ import java.util.Optional;
  * </ul>
  */
 public final class ClassLoaderFallbackCallFactory {
+  // A testing hook to force all bootstraps to take the slowpaths.
+  private static final boolean FORCE_SLOWPATH =
+      Boolean.getBoolean("soy_jbcsrc_take_classloader_fallback_slowpath");
+
   /**
    * A testonly marker interface that may be implemented by classloaders to force this class to
    * always select slowpaths.
@@ -79,41 +82,96 @@ public final class ClassLoaderFallbackCallFactory {
   @VisibleForTesting
   public interface AlwaysSlowPath {}
 
-  private static final MethodType SLOWPATH_RENDER_TYPE =
-      methodType(
-          RenderResult.class,
-          String.class,
-          SoyRecord.class,
-          SoyRecord.class,
-          LoggingAdvisingAppendable.class,
-          RenderContext.class);
-  private static final MethodType POSITIONAL_TO_RECORD_TYPE =
-      methodType(SoyRecord.class, String[].class, SoyValueProvider[].class);
+  /**
+   * Put all the handles in an inner class since they are only referenced when slowpaths are
+   * triggered which is rare.
+   */
+  private static final class SlowPathHandles {
+    private static final MethodHandles.Lookup LOOKUP = MethodHandles.lookup();
 
-  private static final MethodType SLOWPATH_TEMPLATE_TYPE =
-      methodType(CompiledTemplate.class, String.class, RenderContext.class);
+    private static MethodHandle findLocalStaticOrDie(String name, MethodType type) {
+      try {
+        return LOOKUP.findStatic(ClassLoaderFallbackCallFactory.class, name, type);
+      } catch (ReflectiveOperationException e) {
+        throw new LinkageError(e.getMessage(), e);
+      }
+    }
 
-  private static final MethodType SLOWPATH_TEMPLATE_VALUE_TYPE =
-      methodType(TemplateValue.class, String.class, RenderContext.class);
+    private static final MethodHandle SLOWPATH_RENDER_RECORD =
+        findLocalStaticOrDie(
+            "slowPathRenderRecord",
+            methodType(
+                RenderResult.class,
+                SoyCallSite.class,
+                String.class,
+                SoyRecord.class,
+                SoyRecord.class,
+                LoggingAdvisingAppendable.class,
+                RenderContext.class));
 
-  private static final MethodType SLOWPATH_CONST_TYPE =
-      methodType(Object.class, String.class, RenderContext.class);
+    private static final MethodHandle SLOWPATH_RENDER_POSITIONAL =
+        findLocalStaticOrDie(
+            "slowPathRenderPositional",
+            methodType(
+                RenderResult.class,
+                SoyCallSite.class,
+                String.class,
+                SoyValueProvider[].class,
+                SoyRecord.class,
+                LoggingAdvisingAppendable.class,
+                RenderContext.class));
 
-  private static final MethodType RENDER_TYPE =
-      methodType(
-          RenderResult.class,
-          SoyRecord.class,
-          SoyRecord.class,
-          LoggingAdvisingAppendable.class,
-          RenderContext.class);
+    private static final MethodHandle SLOWPATH_TEMPLATE =
+        findLocalStaticOrDie(
+            "slowPathTemplate",
+            methodType(
+                CompiledTemplate.class, SoyCallSite.class, String.class, RenderContext.class));
 
-  private static final MethodType VE_METADATA_SLOW_PATH_TYPE =
-      methodType(LoggableElementMetadata.class, String.class, RenderContext.class, long.class);
+    private static final MethodHandle SLOWPATH_TEMPLATE_VALUE =
+        findLocalStaticOrDie(
+            "slowPathTemplateValue",
+            methodType(TemplateValue.class, SoyCallSite.class, String.class, RenderContext.class));
+    private static final MethodHandle SLOWPATH_CONST =
+        findLocalStaticOrDie(
+            "slowPathConst",
+            methodType(Object.class, SoyCallSite.class, String.class, RenderContext.class));
+    private static final MethodHandle SLOWPATH_EXTERN =
+        findLocalStaticOrDie(
+            "slowPathExtern",
+            methodType(
+                Object.class,
+                SoyCallSite.class,
+                String.class,
+                RenderContext.class,
+                Object[].class));
 
-  private static final MethodType CREATE_VE_TYPE =
-      methodType(SoyVisualElement.class, long.class, String.class, LoggableElementMetadata.class);
+    private static final MethodHandle IS_CACHE_VALID =
+        findLocalStaticOrDie(
+            "isCacheValid", methodType(boolean.class, int.class, RenderContext.class));
 
-  private static final MethodType TEMPLATE_ACCESSOR_TYPE = methodType(CompiledTemplate.class);
+    private static final MethodType RENDER_TYPE =
+        methodType(
+            RenderResult.class,
+            SoyRecord.class,
+            SoyRecord.class,
+            LoggingAdvisingAppendable.class,
+            RenderContext.class);
+
+    private static final MethodType TEMPLATE_ACCESSOR_TYPE = methodType(CompiledTemplate.class);
+    private static final MethodType METHOD_HANDLE_TYPE = methodType(MethodHandle.class);
+
+    private static final MethodHandle WEAK_REF_GET;
+
+    static {
+      try {
+        WEAK_REF_GET = LOOKUP.findVirtual(WeakReference.class, "get", methodType(Object.class));
+      } catch (ReflectiveOperationException e) {
+        throw new LinkageError(e.getMessage(), e);
+      }
+    }
+
+    private SlowPathHandles() {}
+  }
 
   private ClassLoaderFallbackCallFactory() {}
 
@@ -139,19 +197,19 @@ public final class ClassLoaderFallbackCallFactory {
   public static CallSite bootstrapTemplateLookup(
       MethodHandles.Lookup lookup, String name, MethodType type, String templateName)
       throws NoSuchMethodException, IllegalAccessException {
-    Optional<Class<?>> templateClass = findTemplateClass(lookup, templateName);
-    if (templateClass.isPresent()) {
-      CompiledTemplate template = getTemplate(lookup, templateClass.get(), templateName);
-      // the initial renderContext is ignored in this case
-      MethodHandle getter = constant(CompiledTemplate.class, template);
-      getter = dropArguments(getter, 0, RenderContext.class);
-      return new ConstantCallSite(getter);
+    if (!FORCE_SLOWPATH) {
+      Optional<Class<?>> templateClass = findTemplateClass(lookup, templateName);
+      if (templateClass.isPresent()) {
+        CompiledTemplate template = getTemplate(lookup, templateClass.get(), templateName);
+        // the initial renderContext is ignored in this case
+        MethodHandle getter = constant(CompiledTemplate.class, template);
+        getter = dropArguments(getter, 0, RenderContext.class);
+        return new ConstantCallSite(getter);
+      }
     }
-    MethodHandle handle =
-        lookup.findStatic(
-            ClassLoaderFallbackCallFactory.class, "slowpathTemplate", SLOWPATH_TEMPLATE_TYPE);
-    handle = insertArguments(handle, 0, templateName);
-    return new ConstantCallSite(handle);
+    MethodHandle slowPath = SlowPathHandles.SLOWPATH_TEMPLATE;
+    slowPath = insertArguments(slowPath, 1, templateName);
+    return new SoyCallSite(type, slowPath);
   }
 
   /**
@@ -175,22 +233,20 @@ public final class ClassLoaderFallbackCallFactory {
   public static CallSite bootstrapTemplateValueLookup(
       MethodHandles.Lookup lookup, String name, MethodType type, String templateName)
       throws NoSuchMethodException, IllegalAccessException {
-    Optional<Class<?>> templateClass = findTemplateClass(lookup, templateName);
-    if (templateClass.isPresent()) {
-      CompiledTemplate template = getTemplate(lookup, templateClass.get(), templateName);
-      TemplateValue value = TemplateValue.create(templateName, template);
-      // the initial renderContext is ignored in this case
-      MethodHandle getter = constant(TemplateValue.class, value);
-      getter = dropArguments(getter, 0, RenderContext.class);
-      return new ConstantCallSite(getter);
+    if (!FORCE_SLOWPATH) {
+      Optional<Class<?>> templateClass = findTemplateClass(lookup, templateName);
+      if (templateClass.isPresent()) {
+        CompiledTemplate template = getTemplate(lookup, templateClass.get(), templateName);
+        TemplateValue value = TemplateValue.create(templateName, template);
+        // the initial renderContext is ignored in this case
+        MethodHandle getter = constant(TemplateValue.class, value);
+        getter = dropArguments(getter, 0, RenderContext.class);
+        return new ConstantCallSite(getter);
+      }
     }
-    MethodHandle handle =
-        lookup.findStatic(
-            ClassLoaderFallbackCallFactory.class,
-            "slowPathTemplateValue",
-            SLOWPATH_TEMPLATE_VALUE_TYPE);
-    handle = insertArguments(handle, 0, templateName);
-    return new ConstantCallSite(handle);
+    MethodHandle slowPath = SlowPathHandles.SLOWPATH_TEMPLATE_VALUE;
+    slowPath = insertArguments(slowPath, 1, templateName);
+    return new SoyCallSite(type, slowPath);
   }
 
   private static CompiledTemplate getTemplate(
@@ -202,7 +258,7 @@ public final class ClassLoaderFallbackCallFactory {
     String methodName = Names.renderMethodNameFromSoyTemplateName(templateName);
 
     MethodHandle templateAccessor =
-        lookup.findStatic(templateClass, methodName, TEMPLATE_ACCESSOR_TYPE);
+        lookup.findStatic(templateClass, methodName, SlowPathHandles.TEMPLATE_ACCESSOR_TYPE);
     try {
       return (CompiledTemplate) templateAccessor.invokeExact();
     } catch (Throwable t) {
@@ -224,54 +280,41 @@ public final class ClassLoaderFallbackCallFactory {
    *     invokeDynamic JVM infrastructure and currently unused.
    * @param type The type of the method being called. This will be the method signature of the
    *     callsite we produce. Provided automatically by invokeDynamic JVM infrastructure. For this
-   *     method it is always (RenderContext)->CompiledTemplate.
+   *     method it is either the main render signature or a positional signature
    * @param templateName A constant that is used for bootstrapping. this is the fully qualified soy
    *     template name of the template being referenced.
    */
   public static CallSite bootstrapCall(
-      MethodHandles.Lookup lookup,
-      String name,
-      MethodType type,
-      String templateName,
-      String... paramNames)
+      MethodHandles.Lookup lookup, String name, MethodType type, String templateName)
       throws IllegalAccessException, NoSuchMethodException {
-    Optional<Class<?>> templateClass = findTemplateClass(lookup, templateName);
-    String methodName = Names.renderMethodNameFromSoyTemplateName(templateName);
-    if (templateClass.isPresent()) {
-      return new ConstantCallSite(lookup.findStatic(templateClass.get(), methodName, type));
+    if (!FORCE_SLOWPATH) {
+      Optional<Class<?>> templateClass = findTemplateClass(lookup, templateName);
+      String methodName = Names.renderMethodNameFromSoyTemplateName(templateName);
+      if (templateClass.isPresent()) {
+        return new ConstantCallSite(lookup.findStatic(templateClass.get(), methodName, type));
+      }
     }
+
     MethodHandle slowPathRenderHandle =
-        lookup.findStatic(
-            ClassLoaderFallbackCallFactory.class, "slowPathRender", SLOWPATH_RENDER_TYPE);
-    slowPathRenderHandle = insertArguments(slowPathRenderHandle, 0, templateName);
+        type.equals(SlowPathHandles.RENDER_TYPE)
+            ? SlowPathHandles.SLOWPATH_RENDER_RECORD
+            : SlowPathHandles.SLOWPATH_RENDER_POSITIONAL;
+    slowPathRenderHandle = insertArguments(slowPathRenderHandle, 1, templateName);
+    if (!type.equals(SlowPathHandles.RENDER_TYPE)) {
+      // target type has a signature like (SVP,SVP,...SVP,SoyRecord,Appendable,RenderContext)
+      // we want to collect the leading SVPs into an array at the end of the slowpath
+      int numParams = type.parameterCount();
+      int numPositionalParams =
+          numParams - 3; // 4 for the CallSite,ij params, appenable and context
 
-    // This means we must be being called using positional style.  To satisfy a cross classloader
-    // call we will pack all arguments into a SoyRecord using the positionalToRecord helper and
-    // then pass along to the slowpathRender
-    // If we are interested in avoiding this overhead, we could take a number of approaches. For
-    // example,
-    // 1. we know in this case that the callee is using positional style, which means it is using
-    // the adapter generated by the MapToPositionalCallFactory.  So we can rely on it calling
-    // `getFieldProvider` in a particular order and create a SoyRecord that just returns values
-    // from the set of parameters
-    // 2. we could create a second method on CompileTemplate that accepts an Array/list
-
-    // However, this is of course the 'slowPath' so it probably isn't very important.
-    if (!type.equals(RENDER_TYPE)) {
-      MethodHandle positionalToRecordHandle =
-          lookup.findStatic(
-              ClassLoaderFallbackCallFactory.class,
-              "positionalToRecord",
-              POSITIONAL_TO_RECORD_TYPE);
-      positionalToRecordHandle = insertArguments(positionalToRecordHandle, 0, (Object) paramNames);
-      // collect trailing arguments into an array
-      positionalToRecordHandle =
-          positionalToRecordHandle.asCollector(SoyValueProvider[].class, paramNames.length);
+      // Turn slowPath from accepting a SoyValueProvider[] to a fixed number of
+      // SoyValueProvider arguments at position 1
       slowPathRenderHandle =
-          MethodHandles.collectArguments(slowPathRenderHandle, 0, positionalToRecordHandle);
+          slowPathRenderHandle.asCollector(1, SoyValueProvider[].class, numPositionalParams);
     }
-    return new ConstantCallSite(slowPathRenderHandle);
+    return new SoyCallSite(type, slowPathRenderHandle);
   }
+
   /**
    * A JVM bootstrap method for resolving references to constants..
    *
@@ -292,37 +335,33 @@ public final class ClassLoaderFallbackCallFactory {
       String constClassName,
       String constName)
       throws NoSuchMethodException, IllegalAccessException {
-    ClassLoader callerClassLoader = lookup.lookupClass().getClassLoader();
-    try {
-      Class<?> constClass = callerClassLoader.loadClass(constClassName);
-      MethodHandle handle =
-          lookup.findStatic(
-              constClass, constName, methodType(type.returnType(), RenderContext.class));
-      return new ConstantCallSite(handle);
-    } catch (ClassNotFoundException classNotFoundException) {
-      // Fall back to using the RenderContext class loader.
+    if (!FORCE_SLOWPATH) {
+      ClassLoader callerClassLoader = lookup.lookupClass().getClassLoader();
+      try {
+        Class<?> constClass = callerClassLoader.loadClass(constClassName);
+        MethodHandle handle =
+            lookup.findStatic(
+                constClass, constName, methodType(type.returnType(), RenderContext.class));
+        return new ConstantCallSite(handle);
+      } catch (ClassNotFoundException classNotFoundException) {
+        // Fall back to using the RenderContext class loader.
+      }
     }
-    MethodHandle handle =
-        lookup.findStatic(
-            ClassLoaderFallbackCallFactory.class, "slowPathConst", SLOWPATH_CONST_TYPE);
-    handle = insertArguments(handle, 0, String.format("%s#%s", constClassName, constName));
-    return new ConstantCallSite(handle.asType(type));
+
+    MethodHandle slowPath = SlowPathHandles.SLOWPATH_CONST;
+    slowPath =
+        insertArguments(
+            slowPath, 1, constClassName + '#' + constName + '#' + type.toMethodDescriptorString());
+    return new SoyCallSite(
+        // adapt the return type of the slowpath to the current constant type
+        type, slowPath.asType(slowPath.type().changeReturnType(type.returnType())));
   }
 
   /**
-   * The "slow path" for resolving constants. When the default class loader can't resolve the
-   * constant's static method, the bootstrap method returns this one instead. It delegates to
-   * RenderContext, which uses the CompiledTemplate's class loader to find the method.
-   */
-  public static Object slowPathConst(String constantFqn, RenderContext context) {
-    return context.getConstMethod(constantFqn).compute(context);
-  }
-
-  /**
-   * A JVM bootstrap method for creating VE objects with metadata.
+   * A JVM bootstrap method for resolving references to extern functions.
    *
-   * <p>Accesses the metadata static method directly if possible, otherwise dispatches through the
-   * given ClassLoader (via RenderContext).
+   * <p>This translates as a direct static call to the extern, if the callee class cannot be
+   * resolved we redispatch through a SoyCallSite to allow a cross classloader call.
    *
    * @param lookup An object that allows us to resolve classes/methods in the context of the
    *     callsite. Provided automatically by invokeDynamic JVM infrastructure
@@ -330,38 +369,68 @@ public final class ClassLoaderFallbackCallFactory {
    *     invokeDynamic JVM infrastructure and currently unused.
    * @param type The type of the method being called. This will be the method signature of the
    *     callsite we produce. Provided automatically by invokeDynamic JVM infrastructure. For this
-   *     method it is always (long, String, RenderContext)->SoyVisualElement.
-   * @param metadataClassName A constant that is used for bootstrapping. This is the name of the
-   *     class containing the VE metadata.
+   *     method it is always (RenderContext,...arguments)->return value according to the signature
+   *     of the extern function
+   * @param externName the name of the class that defines the extern
+   * @param externName the name of the extern
    */
-  public static CallSite bootstrapVeWithMetadata(
-      MethodHandles.Lookup lookup, String name, MethodType type, String metadataClassName)
+  public static CallSite bootstrapExternCall(
+      MethodHandles.Lookup lookup,
+      String name,
+      MethodType type,
+      String externClassName,
+      String externName)
       throws NoSuchMethodException, IllegalAccessException {
-    MethodHandle metadataGetter = getMetadataGetter(lookup, metadataClassName);
-    MethodHandle createVe = lookup.findStatic(SoyVisualElement.class, "create", CREATE_VE_TYPE);
-    // Pass the metadata (returned from metadataGetter) to createVe.
-    MethodHandle handle = collectArguments(createVe, 2, metadataGetter);
-    return new ConstantCallSite(handle);
+    if (!FORCE_SLOWPATH) {
+      ClassLoader callerClassLoader = lookup.lookupClass().getClassLoader();
+      try {
+        Class<?> constClass = callerClassLoader.loadClass(externClassName);
+        MethodHandle handle = lookup.findStatic(constClass, externName, type);
+        return new ConstantCallSite(handle);
+      } catch (ClassNotFoundException classNotFoundException) {
+        // Fall back to using the RenderContext class loader.
+      }
+    }
+    MethodHandle slowPath = SlowPathHandles.SLOWPATH_EXTERN;
+    slowPath =
+        insertArguments(
+            slowPath,
+            1,
+            externClassName + '#' + externName + '#' + type.toMethodDescriptorString());
+    // collect all arguments except the RenderContext into an array
+    slowPath = slowPath.asCollector(Object[].class, type.parameterCount() - 1);
+    return new SoyCallSite(type, slowPath.asType(type.insertParameterTypes(0, SoyCallSite.class)));
   }
 
-  private static MethodHandle getMetadataGetter(
-      MethodHandles.Lookup lookup, String metadataClassName)
-      throws NoSuchMethodException, IllegalAccessException {
-    ClassLoader callerClassLoader = lookup.lookupClass().getClassLoader();
-    try {
-      Class<?> metadataClass = callerClassLoader.loadClass(metadataClassName);
-      MethodHandle handle =
-          lookup.findStatic(
-              metadataClass, "getMetadata", methodType(LoggableElementMetadata.class, long.class));
-      // the initial renderContext is ignored in this case
-      return dropArguments(handle, 0, RenderContext.class);
-    } catch (ClassNotFoundException classNotFoundException) {
-      // expected, if this happens we need to resolve by dispatching through RenderContext
-    }
-    MethodHandle handle =
-        lookup.findStatic(
-            ClassLoaderFallbackCallFactory.class, "veMetadataSlowPath", VE_METADATA_SLOW_PATH_TYPE);
-    return insertArguments(handle, 0, metadataClassName);
+  /**
+   * The "slow path" for resolving constants. When the default class loader can't resolve the
+   * constant's static method, the bootstrap method returns this one instead. It delegates to
+   * RenderContext, which uses the CompiledTemplate's class loader to find the method.
+   */
+  public static Object slowPathConst(
+      SoyCallSite callSite, String constantFqn, RenderContext context) throws Throwable {
+    CompiledTemplates templates = context.getTemplates();
+    MethodHandle constMethod = templates.getConstOrExternMethod(constantFqn);
+    callSite.update(templates, constMethod);
+    return constMethod.invoke(context);
+  }
+
+  /**
+   * The "slow path" for resolving constants. When the default class loader can't resolve the
+   * constant's static method, the bootstrap method returns this one instead. It delegates to
+   * RenderContext, which uses the CompiledTemplate's class loader to find the method.
+   */
+  public static Object slowPathExtern(
+      SoyCallSite callSite, String externFqn, RenderContext context, Object[] args)
+      throws Throwable {
+    CompiledTemplates templates = context.getTemplates();
+    MethodHandle externMethod = templates.getConstOrExternMethod(externFqn);
+
+    callSite.update(templates, externMethod);
+
+    // use a slower dynamic call for the slowpath.  On subsequent calls the fastpath will be
+    // selected.
+    return externMethod.invokeWithArguments(ObjectArrays.concat(context, args));
   }
 
   private static Optional<Class<?>> findTemplateClass(
@@ -390,86 +459,134 @@ public final class ClassLoaderFallbackCallFactory {
   }
 
   /** The slow path for resolving template. */
-  public static CompiledTemplate slowPathTemplate(String templateName, RenderContext context) {
-    return context.getTemplate(templateName);
+  public static CompiledTemplate slowPathTemplate(
+      SoyCallSite callSite, String templateName, RenderContext context) {
+    CompiledTemplates templates = context.getTemplates();
+    CompiledTemplate template = templates.getTemplate(templateName);
+    callSite.updateWithConstant(templates, CompiledTemplate.class, template);
+    return template;
   }
 
-  /** The slow path for resolving template values. */
-  public static TemplateValue slowPathTemplateValue(String templateName, RenderContext context) {
-    return TemplateValue.create(templateName, slowPathTemplate(templateName, context));
+  /**
+   * The slow path for resolving template values, this is called whenever the set of compiled
+   * templates changes.
+   */
+  public static TemplateValue slowPathTemplateValue(
+      SoyCallSite callSite, String templateName, RenderContext context) {
+    CompiledTemplates templates = context.getTemplates();
+    TemplateValue value = templates.getTemplateValue(templateName);
+    callSite.updateWithConstant(templates, TemplateValue.class, value);
+    return value;
   }
 
-  private static class SaveRestoreState {
-    static final MethodHandle saveStateMethodHandle;
-    static final MethodHandle restoreTemplateHandle;
-
-    static {
-      MethodHandles.Lookup lookup = MethodHandles.lookup();
-      MethodType saveMethodType =
-          methodType(void.class, RenderContext.class, CompiledTemplate.class);
-      saveStateMethodHandle =
-          SaveStateMetaFactory.bootstrapSaveState(lookup, "saveState", saveMethodType, 1)
-              .getTarget();
-      restoreTemplateHandle =
-          SaveStateMetaFactory.bootstrapRestoreState(
-                  lookup,
-                  "restoreLocal",
-                  methodType(CompiledTemplate.class, StackFrame.class),
-                  saveMethodType,
-                  0)
-              .getTarget();
-    }
-  }
-
-  /** Adapts a set of positional parameters to a SoyRecord */
-  public static SoyRecord positionalToRecord(String[] names, SoyValueProvider[] values) {
-    ParamStore paramStore = new ParamStore(names.length);
-    for (int i = 0; i < names.length; i++) {
-      if (values[i] != null) {
-        paramStore.setField(names[i], values[i]);
-      }
-    }
-    return paramStore;
+  /** The slow path for a call using positional call style. */
+  public static RenderResult slowPathRenderPositional(
+      SoyCallSite callSite,
+      String templateName,
+      SoyValueProvider[] params,
+      SoyRecord ij,
+      LoggingAdvisingAppendable appendable,
+      RenderContext context)
+      throws Throwable {
+    CompiledTemplates templates = context.getTemplates();
+    MethodHandle renderMethod = templates.getPositionalRenderMethod(templateName, params.length);
+    // Set the target so future calls will go here directly
+    callSite.update(templates, renderMethod);
+    // NOTE: we don't need to handle any state since if we are detaching on the next re-attach we
+    // will call back into the same function directly
+    Object[] args =
+        ObjectArrays.concat(params, new Object[] {ij, appendable, context}, Object.class);
+    // This call style involves some boxing and should be equivalent to a reflective call in terms
+    // of speed.
+    return (RenderResult) renderMethod.invokeWithArguments(args);
   }
 
   /** The slow path for a call. */
-  public static RenderResult slowPathRender(
+  public static RenderResult slowPathRenderRecord(
+      SoyCallSite callSite,
       String templateName,
       SoyRecord params,
       SoyRecord ij,
       LoggingAdvisingAppendable appendable,
       RenderContext context)
-      throws IOException {
-    StackFrame frame = context.popFrame();
-    CompiledTemplate template;
-    switch (frame.stateNumber) {
-      case 0:
-        template = context.getTemplate(templateName);
-        break;
-      case 1:
-        try {
-          template = (CompiledTemplate) SaveRestoreState.restoreTemplateHandle.invokeExact(frame);
-        } catch (Throwable t) {
-          throw new AssertionError(t);
-        }
-        break;
-      default:
-        throw new AssertionError("unexpected state: " + frame);
-    }
-    RenderResult result = template.render(params, ij, appendable, context);
-    if (!result.isDone()) {
-      try {
-        SaveRestoreState.saveStateMethodHandle.invokeExact(context, template);
-      } catch (Throwable t) {
-        throw new AssertionError(t);
-      }
-    }
-    return result;
+      throws Throwable {
+    CompiledTemplates templates = context.getTemplates();
+    MethodHandle renderMethod = templates.getRenderMethod(templateName);
+    callSite.update(
+        templates,
+        // Set the target so future calls will go here directly
+        renderMethod);
+    // NOTE: we don't need to handle any state since if we are detaching on the next re-attach we
+    // will call back into the same function directly
+    return (RenderResult) renderMethod.invoke(params, ij, appendable, context);
   }
 
-  /** The slow path for resolving VE metadata. */
-  public static LoggableElementMetadata veMetadataSlowPath(
-      String metadataClassName, RenderContext renderContext, long veId) {
-    return renderContext.getVeMetadata(metadataClassName, veId);
+  /**
+   * A mutable callsite that we can update whenever we observe that the CompiledTemplates changes.
+   *
+   * <p>If there are multiple versions of CompiledTemplates being used concurrently then there might
+   * be some thrashing, however, the cost of that will just be some churn in methodhandle creation
+   * which should be cheap.
+   */
+  private static final class SoyCallSite extends MutableCallSite {
+
+    // The condition for the fast path
+    private final MethodHandle test;
+    private final MethodHandle slowPath;
+
+    SoyCallSite(MethodType type, MethodHandle slowPath) {
+      super(type);
+      checkState(slowPath.type().parameterType(0).equals(SoyCallSite.class));
+      slowPath = insertArguments(slowPath, 0, this);
+      int renderContextIndex = slowPath.type().parameterList().indexOf(RenderContext.class);
+      checkState(renderContextIndex != -1);
+      this.slowPath = slowPath;
+      // We want to adapt test to have the signature
+      // (int,..type.args,RenderContext,...args)boolean so we add dummy arguments to match
+      this.test =
+          MethodHandles.dropArgumentsToMatch(
+              SlowPathHandles.IS_CACHE_VALID, 1, type.parameterList(), renderContextIndex);
+      // Always start calling directly to the slowpath
+      setTarget(slowPath);
+    }
+
+    void update(CompiledTemplates newTemplates, MethodHandle newTarget) {
+      // rebuild the target to use the newTarget, we guard calls on the templates pointer still
+      // being correct.
+      // the gencode looks like
+      // newTemplates == context.getTemplates() ? newTarget(...) : slowPath(....)
+      // However, because newTarget by definition points at symbols in another classloader, we use
+      // weak references to preserve collectability.  This means that all instances of newTarget
+      // should be strongly referenced by CompiledTemplates so that when it goes away so do our
+      // weak references.
+      newTarget =
+          MethodHandles.foldArguments(
+              MethodHandles.exactInvoker(newTarget.type()),
+              SlowPathHandles.WEAK_REF_GET
+                  .bindTo(new WeakReference<>(newTarget))
+                  .asType(SlowPathHandles.METHOD_HANDLE_TYPE));
+
+      this.setTarget(
+          MethodHandles.guardWithTest(
+              insertArguments(this.test, 0, newTemplates.getId()), newTarget, slowPath));
+    }
+
+    void updateWithConstant(CompiledTemplates newTemplates, Class<?> type, Object value) {
+      var fastPathHandle =
+          MethodHandles.dropArgumentsToMatch(
+              SlowPathHandles.WEAK_REF_GET
+                  .bindTo(new WeakReference<>(value))
+                  .asType(methodType(type)),
+              0,
+              type().parameterList(),
+              0);
+      this.setTarget(
+          MethodHandles.guardWithTest(
+              insertArguments(this.test, 0, newTemplates.getId()), fastPathHandle, slowPath));
+    }
+  }
+
+  public static boolean isCacheValid(int currentTemplatesId, RenderContext context) {
+    return currentTemplatesId == context.getTemplates().getId();
   }
 }

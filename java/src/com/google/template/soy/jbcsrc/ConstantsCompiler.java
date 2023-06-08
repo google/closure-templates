@@ -33,23 +33,16 @@ import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
-import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyRuntimeType;
 import com.google.template.soy.jbcsrc.restricted.Statement;
 import com.google.template.soy.jbcsrc.restricted.TypeInfo;
-import com.google.template.soy.jbcsrc.shared.CompiledConstant;
 import com.google.template.soy.jbcsrc.shared.Names;
 import com.google.template.soy.soytree.ConstNode;
 import com.google.template.soy.soytree.PartialFileSetMetadata;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.SoyType;
-import java.lang.invoke.LambdaMetafactory;
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
-import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -184,47 +177,7 @@ public final class ConstantsCompiler {
         variableSet.generateTableEntries(adapter);
       }
     }.writeMethod(methodAccess(), method, writer);
-
-    referenceMethod(javaClassName, method)
-        .writeMethod(
-            methodAccess(),
-            new Method(
-                constant.getVar().name(), Type.getType(CompiledConstant.class), new Type[] {}),
-            writer);
   }
-
-  /** Returns the body of a function which returns a reference to the constant's static method. */
-  private static Statement referenceMethod(String javaClassName, Method method) {
-    return Statement.returnExpression(
-        new Expression(Type.getType(CompiledConstant.class)) {
-          @Override
-          protected void doGen(CodeBuilder cb) {
-            cb.visitInvokeDynamicInsn(
-                "compute",
-                Type.getMethodDescriptor(Type.getType(CompiledConstant.class)),
-                METAFACTORY_HANDLE,
-                COMPILED_CONSTANT_COMPUTE_DESCRIPTOR,
-                MethodRef.createStaticMethod(TypeInfo.createClass(javaClassName), method)
-                    .asHandle(),
-                COMPILED_CONSTANT_COMPUTE_DESCRIPTOR);
-          }
-        });
-  }
-
-  private static final Type COMPILED_CONSTANT_COMPUTE_DESCRIPTOR =
-      Type.getMethodType(Type.getType(Object.class), BytecodeUtils.RENDER_CONTEXT_TYPE);
-
-  private static final Handle METAFACTORY_HANDLE =
-      MethodRef.create(
-              LambdaMetafactory.class,
-              "metafactory",
-              MethodHandles.Lookup.class,
-              String.class,
-              MethodType.class,
-              MethodType.class,
-              MethodHandle.class,
-              MethodType.class)
-          .asHandle();
 
   private int methodAccess() {
     // Same issue as TemplateCompiler#methodAccess

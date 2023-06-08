@@ -37,6 +37,19 @@ public @interface TemplateMetadata {
   ContentKind contentKind();
 
   /**
+   * Whether or not the {@link #positionalParams} value is valid, to distinguish empty and absent.
+   *
+   * <p>For Testing only.
+   */
+  boolean hasPositionalSignature() default false;
+  /**
+   * Returns the list of params in order for templates with positional signatures.
+   *
+   * <p>For Testing only.
+   */
+  String[] positionalParams() default {};
+
+  /**
    * Returns the list of injected params, both {@code $ij.foo} variables and {@code @inject} params
    */
   String[] injectedParams() default {};
