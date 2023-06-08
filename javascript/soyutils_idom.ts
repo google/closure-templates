@@ -537,7 +537,7 @@ function print(
   isSanitizedContent?: boolean | undefined,
 ) {
   if (USE_TEMPLATE_CLONING) {
-    incrementaldom.openChildNodePart();
+    incrementaldom.openNodePart();
   }
   if (
     expr instanceof SanitizedHtml ||
@@ -572,7 +572,7 @@ function print(
     renderDynamicContent(incrementaldom, expr as IdomFunction);
   }
   if (USE_TEMPLATE_CLONING) {
-    incrementaldom.closeChildNodePart();
+    incrementaldom.closeNodePart();
   }
 }
 
