@@ -473,7 +473,7 @@ public class SoyTypesTest {
   @Test
   public void testGetSoyTypeForBinaryOperatorPlusOp() {
     SoyTypes.SoyTypeBinaryOperator plusOp = new SoyTypes.SoyTypePlusOperator();
-    /**
+    /*
      * This is largely the same as computeLowestCommonTypeArithmetic(), but this method is slightly
      * better. There is one difference: float + number will return float type, which is expected.
      * Since number is basically {int|float}; float + int returns float, and float + float returns
