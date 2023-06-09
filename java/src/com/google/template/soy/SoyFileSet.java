@@ -1256,6 +1256,10 @@ public final class SoyFileSet {
         .parse();
   }
 
+  ParseResult parseInEntryPoint() {
+    return entryPoint(this::parse);
+  }
+
   private PassManager.Builder passManagerBuilder() {
     return new PassManager.Builder()
         .setGeneralOptions(generalOptions)
