@@ -39,6 +39,34 @@ public final class TreeStreams {
   private TreeStreams() {}
 
   /**
+   * Implements an ancestor search of a tree data structure and returns the result as a Stream.
+   *
+   * @param <T> the type of node in the tree
+   */
+  public static <T> Stream<? extends T> ancestor(T root, Function<T, ? extends T> ancestor) {
+    return StreamSupport.stream(
+        new AbstractSpliterator<>(
+            // Our Baseclass says to pass MAX_VALUE for unsized streams
+            Long.MAX_VALUE,
+            // The order is meaningful and every item returned is unique.
+            Spliterator.ORDERED | Spliterator.DISTINCT) {
+
+          private T next = root;
+
+          @Override
+          public boolean tryAdvance(Consumer<? super T> action) {
+            if (next == null) {
+              return false;
+            }
+            action.accept(next);
+            next = ancestor.apply(next);
+            return true;
+          }
+        },
+        /* parallel= */ false);
+  }
+
+  /**
    * Implements a breadth-first search of a tree data structure and returns the result as a Stream.
    *
    * @param <T> the type of node in the tree

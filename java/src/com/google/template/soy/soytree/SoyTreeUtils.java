@@ -135,6 +135,11 @@ public final class SoyTreeUtils {
     long unused = allNodes(node, visitor).count();
   }
 
+  /** Returns a stream beginning with {@code root} and ending in root's most distant ancestor. */
+  public static Stream<? extends Node> ancestors(Node root) {
+    return TreeStreams.ancestor(root, Node::getParent);
+  }
+
   /** Returns a breadth-first stream traversal of the AST tree starting at {@code node}. */
   public static Stream<? extends Node> allNodes(Node node) {
     return allNodes(node, SoyTreeUtils::visitAll);
@@ -375,7 +380,9 @@ public final class SoyTreeUtils {
     /** The generator for new node ids. */
     private final IdGenerator nodeIdGen;
 
-    /** @param nodeIdGen The generator for new node ids. */
+    /**
+     * @param nodeIdGen The generator for new node ids.
+     */
     public GenNewIdsVisitor(IdGenerator nodeIdGen) {
       this.nodeIdGen = nodeIdGen;
     }
@@ -400,7 +407,9 @@ public final class SoyTreeUtils {
     /** The generator for new node ids. */
     private final IdGenerator nodeIdGen;
 
-    /** @param nodeIdGen The generator for new node ids. */
+    /**
+     * @param nodeIdGen The generator for new node ids.
+     */
     public GenNewIdsExprVisitor(IdGenerator nodeIdGen) {
       this.nodeIdGen = nodeIdGen;
     }
@@ -617,5 +626,4 @@ public final class SoyTreeUtils {
   public static Stream<? extends TypeNode> allTypeNodes(TypeNode root) {
     return TreeStreams.breadthFirst(root, next -> next.accept(TRAVERSING));
   }
-
 }
