@@ -37,6 +37,8 @@ import java.util.TreeSet;
  */
 public class ImportsBuilder {
 
+  public static final String NO_ALIAS = "";
+
   // A map of imported file to imported symbol(s).
   private final SortedMap<String, ImportList> imports;
 
@@ -109,7 +111,7 @@ public class ImportsBuilder {
    * proto name as it appears in Soy.
    */
   public void importProto(String file, String symbol, String fqn) {
-    protoImportData.put(fqn, ProtoImportData.create(file, symbol, ""));
+    protoImportData.put(fqn, ProtoImportData.create(file, symbol, NO_ALIAS));
   }
 
   /**
