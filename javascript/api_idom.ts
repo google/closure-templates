@@ -12,6 +12,7 @@ import {
   ElementMetadata,
   Logger,
 } from 'google3/javascript/template/soy/soyutils_velog';
+import {truncate} from 'google3/third_party/javascript/closure/string/string';
 import * as incrementaldom from 'incrementaldom'; // from //third_party/javascript/incremental_dom:incrementaldom
 
 import {attributes} from './api_idom_attributes';
@@ -485,7 +486,7 @@ Old parameters: ${el.__lastParams}
 New parameters: ${stringifiedParams}
 
 Element:
-${el.dataset['debugSoy'] || el.outerHTML}`);
+${el.dataset['debugSoy'] || truncate(el.outerHTML, 256)}`);
   }
 }
 
