@@ -425,6 +425,24 @@ public final class Expressions {
     return expr instanceof Leaf ? ((Leaf) expr).value().getText() : null;
   }
 
+  /**
+   * Returns the base expression, if the passed in expression is a method call with matching name.
+   */
+  @Nullable
+  public static Expression baseForMethodCall(Expression expr, String name) {
+    if (expr instanceof Call) {
+      Expression receiver = ((Call) expr).receiver();
+      if (receiver instanceof Dot) {
+        Expression dotKeyExpression = ((Dot) receiver).key();
+        if (dotKeyExpression instanceof Leaf
+            && ((Leaf) dotKeyExpression).value().getText().equals(name)) {
+          return ((Dot) receiver).receiver();
+        }
+      }
+    }
+    return null;
+  }
+
   @AutoValue
   abstract static class DecoratedExpression extends Expression {
 
