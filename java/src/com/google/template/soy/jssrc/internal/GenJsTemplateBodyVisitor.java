@@ -438,13 +438,18 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
                 : Statements.of(visitChildren(scn));
         switchBuilder.addCase(caseChunks.build(), body);
       } else if (child instanceof SwitchDefaultNode) {
-        Statement body = Statements.of(visitChildren((SwitchDefaultNode) child));
+        Statement body = visitSwitchDefaultNode((SwitchDefaultNode) child);
         switchBuilder.setDefault(body);
       } else {
         throw new AssertionError();
       }
     }
     return switchBuilder.build();
+  }
+
+  @Override
+  protected Statement visitSwitchDefaultNode(SwitchDefaultNode node) {
+    return Statements.of(visitChildren(node));
   }
 
   // js switch statements use === for comparing the switch expr to the cases.  In order to preserve

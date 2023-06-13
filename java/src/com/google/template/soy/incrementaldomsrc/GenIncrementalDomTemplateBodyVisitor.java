@@ -115,6 +115,8 @@ import com.google.template.soy.soytree.SkipNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
+import com.google.template.soy.soytree.SwitchCaseNode;
+import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TagName;
 import com.google.template.soy.soytree.TemplateNode;
@@ -542,6 +544,22 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
       return wrapInTemplateCloning(ret, node);
     }
     return ret;
+  }
+
+  @Override
+  protected Statement visitSwitchCaseNode(SwitchCaseNode node) {
+    if (((SwitchNode) node.getParent()).getHtmlContext() == HtmlContext.HTML_PCDATA) {
+      return addStaticsContent(() -> super.visitSwitchCaseNode(node), false);
+    }
+    return super.visitSwitchCaseNode(node);
+  }
+
+  @Override
+  protected Statement visitSwitchDefaultNode(SwitchDefaultNode node) {
+    if (((SwitchNode) node.getParent()).getHtmlContext() == HtmlContext.HTML_PCDATA) {
+      return addStaticsContent(() -> super.visitSwitchDefaultNode(node), false);
+    }
+    return super.visitSwitchDefaultNode(node);
   }
 
   @Override
