@@ -622,7 +622,8 @@ public final class GenIncrementalDomTemplateBodyVisitor extends GenJsTemplateBod
   }
 
   private Statement wrapInTemplateCloning(Statement stmt, SoyNode node) {
-    if (node.getParent().getChildren().stream().filter(p -> !(p instanceof LetNode)).count() == 1) {
+    if (node.getParent().getChildren().stream().filter(p -> !(p instanceof LetNode)).count() == 1
+        || !shouldCollectHtml) {
       return stmt;
     }
     var codeGenerator = templateTranslationContext.codeGenerator();
