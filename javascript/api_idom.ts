@@ -81,6 +81,11 @@ export const create = wrapAsGeneric(incrementaldom.createPatchInner, {
   inTemplateCloning: true,
   ...patchConfig,
 });
+/** PatchInner using Soy-IDOM DOM parts traversals. */
+export const createWithDomParts = wrapAsGeneric(
+  incrementaldom.createPatchInner,
+  {inTemplateCloning: true, onlyOperateInNodeParts: true, ...patchConfig}
+);
 
 interface IdomRendererApi {
   open(nameOrCtor: string, key?: string): void | HTMLElement;
@@ -112,6 +117,7 @@ interface IdomRendererApi {
   verifyLogOnly(logOnly: boolean): boolean;
   openChildNodePart(): void;
   closeChildNodePart(): void;
+  nextNodePart(): void;
   evalLoggingFunction(
     name: string,
     args: Array<{}>,
@@ -161,6 +167,10 @@ export class IncrementalDomRenderer implements IdomRendererApi {
 
   closeChildNodePart() {
     incrementaldom.closeChildNodePart();
+  }
+
+  nextNodePart() {
+    return incrementaldom.nextNodePart();
   }
 
   keepGoing(el: HTMLElement | void, data: unknown) {
@@ -500,6 +510,7 @@ export class FalsinessRenderer implements IdomRendererApi {
   pushManualKey(key: incrementaldom.Key) {}
   openChildNodePart() {}
   closeChildNodePart() {}
+  nextNodePart() {}
   popManualKey(): void {}
   pushKey(key: string): string {
     return '';

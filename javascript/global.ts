@@ -16,6 +16,8 @@ import {isDataInitialized} from 'incrementaldom'; // from //third_party/javascri
 
 import {SoyElement} from './element_lib_idom';
 
+export {USE_TEMPLATE_CLONING} from 'incrementaldom'; // from //third_party/javascript/incremental_dom:incrementaldom
+
 declare global {
   interface Node {
     // tslint:disable-next-line: enforce-name-casing
@@ -28,15 +30,6 @@ declare global {
 interface ElementCtor<TElement extends SoyElement<{} | null, {}>> {
   new (data: unknown, ijData: IjData): TElement;
 }
-
-/**
- * @define Whether to use template cloning. This adds a static amount of JS to
- *     each template that can be used to cache initial renders.
- */
-export const USE_TEMPLATE_CLONING = goog.define(
-  'soyidom.USE_TEMPLATE_CLONING',
-  goog.DEBUG,
-);
 
 /**
  * Retrieves the Soy element in a type-safe way.
