@@ -110,8 +110,8 @@ interface IdomRendererApi {
   setLogger(logger: Logger | null): void;
   getLogger(): Logger | null;
   verifyLogOnly(logOnly: boolean): boolean;
-  openNodePart(): void;
-  closeNodePart(): void;
+  openChildNodePart(): void;
+  closeChildNodePart(): void;
   evalLoggingFunction(
     name: string,
     args: Array<{}>,
@@ -155,12 +155,12 @@ export class IncrementalDomRenderer implements IdomRendererApi {
     return el;
   }
 
-  openNodePart() {
-    incrementaldom.openNodePart();
+  openChildNodePart() {
+    incrementaldom.openChildNodePart();
   }
 
-  closeNodePart() {
-    incrementaldom.closeNodePart();
+  closeChildNodePart() {
+    incrementaldom.closeChildNodePart();
   }
 
   keepGoing(el: HTMLElement | void, data: unknown) {
@@ -498,8 +498,8 @@ ${el.dataset['debugSoy'] || truncate(el.outerHTML, 256)}`);
 export class FalsinessRenderer implements IdomRendererApi {
   visit(el: void | HTMLElement): void {}
   pushManualKey(key: incrementaldom.Key) {}
-  openNodePart() {}
-  closeNodePart() {}
+  openChildNodePart() {}
+  closeChildNodePart() {}
   popManualKey(): void {}
   pushKey(key: string): string {
     return '';
