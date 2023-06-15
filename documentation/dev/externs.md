@@ -2,7 +2,7 @@
 
 go/soy-externs
 
-<div class="pg-default" data-polyglot="TypeScript"/>
+<div class="pg-default" data-polyglot="TypeScript"></div>
 
 [TOC]
 
