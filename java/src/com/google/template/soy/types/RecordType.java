@@ -61,7 +61,7 @@ public final class RecordType extends SoyType {
     this.members = ImmutableList.copyOf(members);
     this.memberIndex =
         Streams.stream(members)
-            .collect(ImmutableMap.toImmutableMap(Member::name, Member::declaredType));
+            .collect(ImmutableMap.toImmutableMap(Member::name, Member::checkedType));
   }
 
   /**
@@ -97,7 +97,7 @@ public final class RecordType extends SoyType {
           if (!mine.optional()) {
             return false;
           }
-        } else if (!mine.declaredType().isAssignableFromInternal(theirType, policy)) {
+        } else if (!mine.checkedType().isAssignableFromInternal(theirType, policy)) {
           return false;
         }
       }
