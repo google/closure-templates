@@ -77,7 +77,6 @@ import com.google.template.soy.jbcsrc.shared.LegacyFunctionAdapter;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.jbcsrc.shared.StackFrame;
 import com.google.template.soy.logging.LoggableElementMetadata;
-import com.google.template.soy.logging.SoyLogger;
 import com.google.template.soy.shared.internal.SharedRuntime;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import java.io.Closeable;
@@ -629,10 +628,6 @@ public abstract class MethodRef {
 
   public static final MethodRef SOY_VISUAL_ELEMENT_DATA_CREATE =
       MethodRef.create(SoyVisualElementData.class, "create", SoyVisualElement.class, Message.class);
-
-  public static final MethodRef FLUSH_LOGS_AND_RENDER =
-      MethodRef.create(
-          JbcSrcRuntime.class, "flushLogsAndRender", SoyValueProvider.class, SoyLogger.class);
 
   public static final MethodRef BOX_JAVA_MAP_AS_SOY_MAP =
       MethodRef.create(JbcSrcRuntime.class, "boxJavaMapAsSoyMap", Map.class);

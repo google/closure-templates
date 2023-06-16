@@ -53,7 +53,6 @@ import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendabl
 import com.google.template.soy.data.LoggingFunctionInvocation;
 import com.google.template.soy.data.ProtoFieldInterpreter;
 import com.google.template.soy.data.SanitizedContent;
-import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyLegacyObjectMap;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyProtoValue;
@@ -65,7 +64,6 @@ import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.SoyValueUnconverter;
 import com.google.template.soy.data.SoyVisualElementData;
 import com.google.template.soy.data.TemplateValue;
-import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.internal.LazyProtoToSoyValueList;
 import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.data.internal.SoyLegacyObjectMapImpl;
@@ -75,14 +73,12 @@ import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
-import com.google.template.soy.jbcsrc.api.OutputAppendable;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.LegacyFunctionAdapter;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.jbcsrc.shared.SaveStateMetaFactory;
 import com.google.template.soy.jbcsrc.shared.StackFrame;
-import com.google.template.soy.logging.SoyLogger;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPlaceholderPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPluralPart;
@@ -1090,21 +1086,6 @@ public final class JbcSrcRuntime {
 
   public static LogStatement createLogStatement(boolean logOnly, SoyVisualElementData veData) {
     return LogStatement.create(veData.ve().id(), veData.data(), logOnly);
-  }
-
-  public static SanitizedContent flushLogsAndRender(
-      SoyValueProvider valueProvider, SoyLogger logger) throws IOException {
-    StringBuilder output = new StringBuilder();
-    // Create our own OutputAppendable so we can use the current state of the SoyLogger, but render
-    // to our own StringBuilder to return the rendered content.
-    OutputAppendable appendable = OutputAppendable.create(output, logger);
-    valueProvider.renderAndResolve(appendable, false);
-
-    // The result is the same HTML that came in, except with logging statements removed. So it's
-    // safe to ordain as HTML (with an assert just to make sure).
-    checkState(appendable.getSanitizedContentKind() == ContentKind.HTML);
-    return UnsafeSanitizedContentOrdainer.ordainAsSafe(
-        output.toString(), ContentKind.HTML, appendable.getSanitizedContentDirectionality());
   }
 
   /** Asserts that all members of the list are resolved. */
