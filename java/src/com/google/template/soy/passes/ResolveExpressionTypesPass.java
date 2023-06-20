@@ -3130,6 +3130,13 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
     }
 
     @Override
+    protected void visitNullSafeAccessNode(NullSafeAccessNode node) {
+      ExprEquivalence.Wrapper wrappedExpr = exprEquivalence.wrap(node.getBase());
+      positiveTypeConstraints.put(wrappedExpr, tryRemoveNull(wrappedExpr.get().getType()));
+      // TODO(b/287448180): Nested null safe accesses (i.e. chain) are not handled.
+    }
+
+    @Override
     protected void visitNullCoalescingOpNode(NullCoalescingOpNode node) {
       // Don't make any inferences (don't visit children).
       // Note: It would be possible to support this case by expanding it into
