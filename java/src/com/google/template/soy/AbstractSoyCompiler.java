@@ -58,6 +58,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -394,7 +395,8 @@ public abstract class AbstractSoyCompiler {
       PrintStream err) {
     SetMultimap<String, CachedDescriptorSet> protoFileToDescriptor =
         MultimapBuilder.linkedHashKeys().linkedHashSetValues().build();
-    Map<File, CachedDescriptorSet> cachedDescriptors = new HashMap<>(protoFileDescriptors.size());
+    Map<File, CachedDescriptorSet> cachedDescriptors =
+        new LinkedHashMap<>(protoFileDescriptors.size());
     for (File protoFileDescriptor : protoFileDescriptors) {
       try {
         CachedDescriptorSet cachedDescriptor =
