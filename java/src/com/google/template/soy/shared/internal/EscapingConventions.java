@@ -829,6 +829,7 @@ public final class EscapingConventions {
             "rotateZ",
             "translate",
             "translate3d",
+            "translateX",
             "translateY"
             // go/keep-sorted end
             );

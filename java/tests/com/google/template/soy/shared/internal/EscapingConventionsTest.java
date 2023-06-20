@@ -141,6 +141,7 @@ public class EscapingConventionsTest {
               + " 0.75) 100%)",
           "invert(1) hue-rotate(180deg)",
           "translateY(-50%) translate(0) translate3d(-10px, 40px, 0)",
+          "translateX(calc(-10.55% - 8px))",
           "rotateZ(180deg) rotate(90deg)",
         };
 
