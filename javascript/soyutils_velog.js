@@ -403,6 +403,17 @@ class Logger {
 const UNDEFINED_VE_ID = -1;
 
 /**
+ * Function that takes two VisualElements and returns true if they have the
+ * same id
+ * @param {!$$VisualElement} ve1
+ * @param {!$$VisualElement} ve2
+ * @return {boolean}
+ */
+function $$veHasSameId(ve1, ve2) {
+  return ve1.hasSameId(ve2);
+}
+
+/**
  * Soy's runtime representation of objects of the Soy `ve` type.
  *
  * <p>This is for use only in Soy internal code and Soy generated JS. DO NOT use
@@ -426,6 +437,14 @@ class $$VisualElement {
         metadata || ImmutableLoggableElementMetadata.getDefaultInstance();
     /** @private @const {string|undefined} */
     this.name_ = name;
+  }
+  
+  /** 
+   * @param {!$$VisualElement} ve
+   * @return {boolean}
+   */
+  hasSameId(ve) {
+    return this.id_ === ve.getId();
   }
 
   /** @return {number} */
@@ -542,4 +561,5 @@ exports = {
   tearDownLogging,
   $$getMetadata,
   $$getVeMetadata,
+  $$veHasSameId,
 };

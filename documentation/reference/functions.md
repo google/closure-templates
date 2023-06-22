@@ -631,6 +631,8 @@ already bound to the template type may not be bound again.
 
 </section>
 
+### `ve.hasSameId(anotherVe)` {#ve-any_hasSameId}
+
 ### `uniqueAttribute(attributeName[, idHolder])` and `idHolder()` {#uniqueAttribute}
 
 This function generates an attribute with a stable, unique value:

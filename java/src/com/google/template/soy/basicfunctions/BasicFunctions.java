@@ -73,7 +73,8 @@ public class BasicFunctions {
         new StrToAsciiLowerCaseFunction(),
         new StrToAsciiUpperCaseFunction(),
         new StrTrimMethod(),
-        new StringListSortMethod());
+        new StringListSortMethod(),
+        new VeHasSameIdMethod());
     // go/keep-sorted end
   }
 }

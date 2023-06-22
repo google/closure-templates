@@ -41,6 +41,10 @@ public abstract class SoyVisualElement extends SoyAbstractValue {
 
   public abstract LoggableElementMetadata metadata();
 
+  public boolean hasSameId(SoyVisualElement ve) {
+    return this.id() == ve.id();
+  }
+
   @Override
   public boolean coerceToBoolean() {
     return true;

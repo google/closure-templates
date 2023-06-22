@@ -37,6 +37,7 @@ import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyMaps;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
+import com.google.template.soy.data.SoyVisualElement;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.internal.DictImpl;
 import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
@@ -56,6 +57,11 @@ import java.util.Map;
 /** static functions for implementing the basic functions for java. */
 public final class BasicFunctionsRuntime {
   private BasicFunctionsRuntime() {}
+
+  /** Checks if two Visual Elements ids are equivalent */
+  public static boolean veHasSameId(SoyVisualElement ve1, SoyVisualElement ve2) {
+    return ve1.hasSameId(ve2);
+  }
 
   /**
    * Returns the smallest (closest to negative infinity) integer value that is greater than or equal
