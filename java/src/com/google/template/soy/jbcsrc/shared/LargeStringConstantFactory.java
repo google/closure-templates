@@ -15,31 +15,24 @@
  */
 package com.google.template.soy.jbcsrc.shared;
 
-import java.lang.invoke.CallSite;
-import java.lang.invoke.ConstantCallSite;
 import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
 
 /**
- * An {@code invokedynamic} bootstrap for handling large string constants.
+ * An {@code constantdynamic} bootstrap for handling large string constants.
  *
  * <p>In soy it is not unreasonable for there to be very large string constants (>65k utf8 bytes),
  * for example, consider a very large {@code {literal}} inclusion, or an inline base64 encoded
  * image. These scenarios are problematic for the class file format since string constants are
  * limited to 65K bytes. This factory can help bridge the difference.
  *
- * <p>The benefit of using {@code invokedynamic} to concatenate strings as opposed to just
+ * <p>The benefit of using {@code constantdynamic} to concatenate strings as opposed to just
  * generating code that performs it inline is that we can ensure that the concatenation is only
  * performed once (and lazily) without needing to allocate {@code static final} fields to hold the
  * result.
  */
 public final class LargeStringConstantFactory {
-  // TODO(lukes): this should really be a constant dynamic bootstrap method, once java11 is fully
-  // available switch to that which should slightly simplify things (fewer unused parameters) and
-  // will possibly improve performance.
-
-  public static CallSite bootstrapLargeStringConstant(
-      MethodHandles.Lookup lookup, String name, MethodType type, String... parts) {
+  public static String bootstrapLargeStringConstant(
+      MethodHandles.Lookup lookup, String name, Class<?> type, String... parts) {
     int size = 0;
     for (String part : parts) {
       size += part.length();
@@ -50,7 +43,7 @@ public final class LargeStringConstantFactory {
     }
 
     // Return a constant method handle.  All future invocations will just return the string value.
-    return new ConstantCallSite(MethodHandles.constant(String.class, sb.toString()));
+    return sb.toString();
   }
 
   private LargeStringConstantFactory() {}

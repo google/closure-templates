@@ -17,7 +17,6 @@ package com.google.template.soy.jbcsrc.shared;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import java.lang.invoke.MethodHandle;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -27,13 +26,9 @@ public final class LargeStringConstantFactoryTest {
 
   @Test
   public void testConstant() throws Throwable {
-    MethodHandle concatHandle =
+    String constant =
         LargeStringConstantFactory.bootstrapLargeStringConstant(
-                null, null, null, "foo", "bar", "baz")
-            .getTarget();
-    String constant = (String) concatHandle.invokeExact();
+            null, null, null, "foo", "bar", "baz");
     assertThat(constant).isEqualTo("foobarbaz");
-    String again = (String) concatHandle.invokeExact();
-    assertThat(again).isSameInstanceAs(constant);
   }
 }

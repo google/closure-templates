@@ -30,20 +30,17 @@ import com.google.template.soy.msgs.restricted.SoyMsgPluralPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPluralRemainderPart;
 import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
 import com.google.template.soy.msgs.restricted.SoyMsgSelectPart;
-import java.lang.invoke.CallSite;
-import java.lang.invoke.ConstantCallSite;
 import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
 import java.util.function.Function;
 
 /**
- * An {@code invokedynamic} bootstrap for handling msg constant defaults
+ * A {@code constantdynamic} bootstrap for handling msg constant defaults
  *
  * <p>In soy it is not unreasonable for there to be a very large number of msgs. To support missing
  * translations we need to encode defaults in the class file. A naive approach generates a lot of
  * code just to construct these defaults and requires a lot of constant fields
  *
- * <p>The benefit of using {@code invokedynamic} to construct these defaults as opposed to just
+ * <p>The benefit of using {@code constantdynamic} to construct these defaults as opposed to just
  * generating code that performs it inline is that we can ensure that the construction is only
  * performed once (and lazily) without needing to allocate {@code static final} fields to hold the
  * result. This saves on instructions and fields.
@@ -60,8 +57,6 @@ public final class MsgDefaultConstantFactory {
   // This would allow us to encode the tags in a single slot (e.b. a String where each character is
   // a tag), which may be useful since there is a limit of 251 parameters
   // (https://docs.oracle.com/javase/7/docs/api/java/lang/invoke/package-summary.html).
-
-  // TODO(lukes): once JDK11 is released this should become a constantdynamic bootstrap.
 
   /** A marker object for parsing our constant bootstrap arguments. */
   private enum Tag {
@@ -174,13 +169,12 @@ public final class MsgDefaultConstantFactory {
    *     ()->ImmutableList<SoyMsgPart>}
    * @param rawParts The pieces of the message
    */
-  public static CallSite bootstrapMsgConstant(
-      MethodHandles.Lookup lookup, String name, MethodType type, Object... rawParts) {
+  public static ImmutableList<SoyMsgPart> bootstrapMsgConstant(
+      MethodHandles.Lookup lookup, String name, Class<?> type, Object... rawParts) {
     PeekingIterator<Object> itr = peekingIterator(forArray(rawParts));
     ImmutableList<SoyMsgPart> parts = parseParts(itr);
     checkState(!itr.hasNext()); // sanity
-    // Return a constant method handle.  All future invocations will just return the list.
-    return new ConstantCallSite(MethodHandles.constant(ImmutableList.class, parts));
+    return parts;
   }
 
   private static ImmutableList<SoyMsgPart> parseParts(PeekingIterator<Object> rawParts) {

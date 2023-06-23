@@ -27,7 +27,6 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
-import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.ConstructorRef;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.FieldRef;
@@ -49,10 +48,10 @@ import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.VeLogNode;
 import com.google.template.soy.types.StringType;
 import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.objectweb.asm.ConstantDynamic;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Type;
@@ -78,12 +77,9 @@ final class MsgCompiler {
               "bootstrapMsgConstant",
               MethodHandles.Lookup.class,
               String.class,
-              MethodType.class,
+              Class.class,
               Object[].class)
           .asHandle();
-
-  private static final String MSG_DEFAULT_DESCRIPTOR =
-      Type.getMethodDescriptor(IMMUTABLE_LIST_TYPE);
 
   /**
    * A helper interface that allows the MsgCompiler to interact with the SoyNodeCompiler in a
@@ -184,15 +180,16 @@ final class MsgCompiler {
    * java serialization, but just invoking the SoyMsgPart constructors isn't too hard.
    */
   private Expression compileDefaultMessagePartsConstant(MsgPartsAndIds partsAndId) {
-    List<Object> constantParts = MsgDefaultConstantFactory.msgToPartsList(partsAndId.parts);
-    return new Expression(
-        IMMUTABLE_LIST_TYPE, Expression.Feature.NON_NULLABLE, Expression.Feature.CHEAP) {
-      @Override
-      protected void doGen(CodeBuilder cb) {
-        cb.visitInvokeDynamicInsn(
-            "default", MSG_DEFAULT_DESCRIPTOR, MESSAGE_FACTORY_HANDLE, constantParts.toArray());
-      }
-    };
+    ImmutableList<Object> constantParts =
+        MsgDefaultConstantFactory.msgToPartsList(partsAndId.parts);
+    return constant(
+            IMMUTABLE_LIST_TYPE,
+            new ConstantDynamic(
+                "defaultMsg",
+                IMMUTABLE_LIST_TYPE.getDescriptor(),
+                MESSAGE_FACTORY_HANDLE,
+                constantParts.toArray()))
+        .asNonNullable();
   }
 
   /** Handles a translation consisting of a single raw text node. */

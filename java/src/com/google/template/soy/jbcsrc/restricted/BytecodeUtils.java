@@ -68,7 +68,6 @@ import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -78,6 +77,7 @@ import java.util.Map;
 import java.util.Optional;
 import javax.annotation.Nullable;
 import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.ConstantDynamic;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
@@ -274,11 +274,9 @@ public final class BytecodeUtils {
    *     will only be called for types that have a runtime on the compilers classpath.
    */
   public static Class<?> classFromAsmType(Type type) {
-    Optional<Class<?>> maybeClass = objectTypeToClassCache.getUnchecked(type);
-    if (!maybeClass.isPresent()) {
-      throw new IllegalArgumentException("Could not load: " + type);
-    }
-    return maybeClass.get();
+    return objectTypeToClassCache
+        .getUnchecked(type)
+        .orElseThrow(() -> new IllegalArgumentException("Could not load: " + type));
   }
 
   private static final Expression FALSE =
@@ -297,6 +295,20 @@ public final class BytecodeUtils {
         }
       };
 
+  /** Returns an {@link Expression} that can load the given constant. */
+  public static Expression constant(ConstantDynamic value) {
+    return constant(Type.getType(value.getDescriptor()), value);
+  }
+
+  /** Returns an {@link Expression} that can load the given constant. */
+  public static Expression constant(Type type, ConstantDynamic value) {
+    return new Expression(type, Feature.CHEAP) {
+      @Override
+      protected void doGen(CodeBuilder cb) {
+        cb.visitLdcInsn(value);
+      }
+    };
+  }
   /** Returns an {@link Expression} that can load the given boolean constant. */
   public static Expression constant(boolean value) {
     return value ? TRUE : FALSE;
@@ -377,20 +389,21 @@ public final class BytecodeUtils {
       index++;
     }
     stringConstants.add(value.substring(previousStart));
-    return new Expression(STRING_TYPE, Feature.CHEAP, Feature.NON_NULLABLE) {
-      @Override
-      protected void doGen(CodeBuilder cb) {
-        if (stringConstants.size() == 1) {
-          cb.pushString(stringConstants.get(0));
-        } else {
-          cb.visitInvokeDynamicInsn(
-              "constantString",
-              Type.getMethodDescriptor(STRING_TYPE),
-              LARGE_STRING_CONSTANT_HANDLE,
-              stringConstants.toArray());
+    return stringConstants.size() == 1
+        ? new Expression(STRING_TYPE, Feature.CHEAP, Feature.NON_NULLABLE) {
+          @Override
+          protected void doGen(CodeBuilder mv) {
+            mv.visitLdcInsn(stringConstants.get(0));
+          }
         }
-      }
-    };
+        : constant(
+                STRING_TYPE,
+                new ConstantDynamic(
+                    "largeString",
+                    STRING_TYPE.getDescriptor(),
+                    LARGE_STRING_CONSTANT_HANDLE,
+                    stringConstants.toArray()))
+            .asNonNullable();
   }
 
   /** Returns an {@link Expression} that evaluates to the given ContentKind, or null. */
@@ -422,7 +435,7 @@ public final class BytecodeUtils {
               "bootstrapLargeStringConstant",
               MethodHandles.Lookup.class,
               String.class,
-              MethodType.class,
+              Class.class,
               String[].class)
           .asHandle();
 

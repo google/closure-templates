@@ -109,7 +109,7 @@ public final class SoyClassWriter extends ClassVisitor {
     this.writer = writer;
     this.typeInfo = builder.type;
     super.visit(
-        Opcodes.V1_8,
+        Opcodes.V11,
         builder.access,
         builder.type.internalName(),
         null /* not generic */,
