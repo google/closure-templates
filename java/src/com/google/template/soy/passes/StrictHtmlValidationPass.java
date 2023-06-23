@@ -160,6 +160,7 @@ public final class StrictHtmlValidationPass implements CompilerFilePass {
     @Override
     protected void visitHtmlOpenTagNode(HtmlOpenTagNode node) {
       htmlMatcherGraph.addNode(new HtmlMatcherTagNode(node));
+      visitChildren(node);
     }
 
     @Override
