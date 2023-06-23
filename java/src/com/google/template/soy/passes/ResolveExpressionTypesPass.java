@@ -1323,16 +1323,24 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       if (nullSafeAccessNode.getBase().getKind() == ExprNode.Kind.ASSERT_NON_NULL_OP_NODE) {
         errorReporter.report(nullSafeAccessNode.getSourceLocation(), UNNECESSARY_NULL_SAFE_ACCESS);
       }
+
+      // Rebuild the normalized DataAcceessNode chain so that the type substitutions can be applied.
+      ExprNode nsBaseExpr = nullSafeAccessNode.asMergedBase();
+      SoyType maybeSubstitutedType = getTypeSubstitution(nsBaseExpr);
+      SoyType baseType =
+          maybeSubstitutedType != null
+              ? maybeSubstitutedType
+              : nullSafeAccessNode.getBase().getType();
+
       if (nullSafeAccessNode.getDataAccess().getKind() == ExprNode.Kind.NULL_SAFE_ACCESS_NODE) {
         NullSafeAccessNode dataAccess = (NullSafeAccessNode) nullSafeAccessNode.getDataAccess();
-        calculateAccessChainTypes(
-            nullSafeAccessNode.getBase().getType(), (DataAccessNode) dataAccess.getBase());
+        calculateAccessChainTypes(nsBaseExpr, baseType, (DataAccessNode) dataAccess.getBase());
         visitNullSafeAccessNodeRecurse(dataAccess);
       } else if (nullSafeAccessNode.getDataAccess() instanceof AccessChainComponentNode) {
         AccessChainComponentNode dataAccess =
             (AccessChainComponentNode) nullSafeAccessNode.getDataAccess();
         DataAccessNode childDataAccess = getDataAccessChild(dataAccess);
-        calculateAccessChainTypes(nullSafeAccessNode.getBase().getType(), childDataAccess);
+        calculateAccessChainTypes(nsBaseExpr, baseType, childDataAccess);
         finishAssertNonNullOpNodeChain(dataAccess);
       }
       // TODO(b/138252762): This should be nullable.
@@ -1356,16 +1364,35 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       }
     }
 
-    private void calculateAccessChainTypes(SoyType baseType, DataAccessNode dataAccess) {
+    /**
+     * Calculates the types for each node in an access chain that is a branch of a
+     * NullSafeAccessNode. `nsBaseExpr` and `baseType` is the merged base expression and type of the
+     * parent NullSafeAccessNode(s) (i.e., the nodes on the other side of the null safe access).
+     */
+    private void calculateAccessChainTypes(
+        ExprNode nsBaseExpr, SoyType baseType, DataAccessNode dataAccess) {
       boolean nullSafe = true;
       if (dataAccess.getBaseExprChild() instanceof DataAccessNode) {
-        calculateAccessChainTypes(baseType, (DataAccessNode) dataAccess.getBaseExprChild());
+        calculateAccessChainTypes(
+            nsBaseExpr, baseType, (DataAccessNode) dataAccess.getBaseExprChild());
         nullSafe = false;
-        baseType = dataAccess.getBaseExprChild().getType();
+
+        // Rebuild the normalized DataAcceessNode chain by combining this section of the base access
+        // with the merged bases of parent NullSafeAccessNodes.
+        SoyType maybeSubstitutedType =
+            getTypeSubstitution(
+                NullSafeAccessNode.copyAndGraftPlaceholders(
+                    (DataAccessNode) dataAccess.getBaseExprChild(), ImmutableList.of(nsBaseExpr)));
+        baseType =
+            maybeSubstitutedType != null
+                ? maybeSubstitutedType
+                : dataAccess.getBaseExprChild().getType();
+        ((DataAccessNode) dataAccess.getBaseExprChild()).setType(baseType);
+
       } else if (dataAccess.getBaseExprChild().getKind() == ExprNode.Kind.ASSERT_NON_NULL_OP_NODE) {
         AssertNonNullOpNode baseExpr = (AssertNonNullOpNode) dataAccess.getBaseExprChild();
         DataAccessNode childDataAccess = getDataAccessChild(baseExpr);
-        calculateAccessChainTypes(baseType, childDataAccess);
+        calculateAccessChainTypes(nsBaseExpr, baseType, childDataAccess);
         finishAssertNonNullOpNodeChain(baseExpr);
         nullSafe = false;
         baseType = dataAccess.getBaseExprChild().getType();
@@ -3127,6 +3154,14 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
         negativeTypeConstraints.put(wrappedExpr, NullType.getInstance());
       }
       // Otherwise don't make any inferences (don't visit children).
+    }
+
+    @Override
+    protected void visitNullSafeAccessNode(NullSafeAccessNode node) {
+      for (ExprNode nullSafeBase : node.asNullSafeBaseList()) {
+        positiveTypeConstraints.put(
+            exprEquivalence.wrap(nullSafeBase), tryRemoveNull(nullSafeBase.getType()));
+      }
     }
 
     @Override

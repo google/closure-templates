@@ -166,7 +166,7 @@ public class NullSafeAccessNodeTest {
                 "    GROUP_NODE: *.Foo: (null)",
                 "      NULL_NODE: null: null",
                 ""));
-    assertThat(buildAstStringWithPreview(((NullSafeAccessNode) expr).asDataAccessNode()))
+    assertThat(buildAstStringWithPreview(((NullSafeAccessNode) expr).asAccessChain()))
         .isEqualTo(
             NEWLINE.join(
                 "FIELD_ACCESS_NODE: string: $foo?.stringField", "  VAR_REF_NODE: *.Foo: $foo", ""));
@@ -196,7 +196,7 @@ public class NullSafeAccessNodeTest {
                 "        GROUP_NODE: *.Foo: (null)",
                 "          NULL_NODE: null: null",
                 ""));
-    assertThat(buildAstStringWithPreview(((NullSafeAccessNode) expr).asDataAccessNode()))
+    assertThat(buildAstStringWithPreview(((NullSafeAccessNode) expr).asAccessChain()))
         .isEqualTo(
             NEWLINE.join(
                 "FIELD_ACCESS_NODE: *.MessageField: $foo?.messageField?.foo?.messageField",
@@ -238,7 +238,7 @@ public class NullSafeAccessNodeTest {
                 "      GROUP_NODE: *.MessageField: (null)",
                 "        NULL_NODE: null: null",
                 ""));
-    assertThat(buildAstStringWithPreview(((NullSafeAccessNode) expr).asDataAccessNode()))
+    assertThat(buildAstStringWithPreview(((NullSafeAccessNode) expr).asAccessChain()))
         .isEqualTo(
             NEWLINE.join(
                 "FIELD_ACCESS_NODE: *.MessageField: $foo.messageField?.foo.messageField",
@@ -303,7 +303,7 @@ public class NullSafeAccessNodeTest {
                 "      GROUP_NODE: *.Foo: (null)",
                 "        NULL_NODE: null: null",
                 ""));
-    assertThat(buildAstStringWithPreview(((NullSafeAccessNode) expr).asDataAccessNode()))
+    assertThat(buildAstStringWithPreview(((NullSafeAccessNode) expr).asAccessChain()))
         .isEqualTo(
             NEWLINE.join(
                 "FIELD_ACCESS_NODE: string: $foo?.messageField.foo?.stringField",

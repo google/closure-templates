@@ -191,7 +191,7 @@ public final class NullSafeAccessNode extends AbstractParentExprNode {
    * <p>The returned view of the AST may make some calculations easier, at the cost of copying the
    * AST.
    */
-  public DataAccessNode asDataAccessNode() {
+  public AccessChainComponentNode asAccessChain() {
     // Clone entire branch so we can modify without worrying.
     NullSafeAccessNode nsan = (NullSafeAccessNode) this.copy(new CopyState());
 
@@ -217,11 +217,11 @@ public final class NullSafeAccessNode extends AbstractParentExprNode {
 
       base = node;
       // Walk up any direct ancestors that are data access nodes (not null safe nodes).
-      while (base.getParent() instanceof DataAccessNode) {
+      while (base.getParent() instanceof AccessChainComponentNode) {
         base = base.getParent();
       }
     }
-    return (DataAccessNode) base;
+    return (AccessChainComponentNode) base;
   }
 
   /**
@@ -236,8 +236,103 @@ public final class NullSafeAccessNode extends AbstractParentExprNode {
       case METHOD_CALL_NODE:
       case ITEM_ACCESS_NODE:
         return ImmutableList.of(((DataAccessNode) node).getBaseExprChild());
+      case ASSERT_NON_NULL_OP_NODE:
+        return ImmutableList.of(((AssertNonNullOpNode) node).getChild(0));
       default:
         return ImmutableList.of();
     }
+  }
+
+  /**
+   * Normalizes the access chain into a chain of AccessChainComponentNodes and setting all data
+   * accesses to be non-null safe. Then returns a list of pointers to copies of ExprNodes that are
+   * bases of every (originally) null-safe access in the chain.
+   */
+  public ImmutableList<ExprNode> asNullSafeBaseList() {
+    AccessChainComponentNode accessChainHead = this.asAccessChain();
+    AccessChainComponentNode accessChainTail = accessChainHead;
+    while (accessChainTail.getChild(0) instanceof AccessChainComponentNode) {
+      accessChainTail = (AccessChainComponentNode) accessChainTail.getChild(0);
+    }
+    ImmutableList.Builder<ExprNode> nullSafeBases = ImmutableList.builder();
+    while (true) {
+      if (accessChainTail instanceof DataAccessNode) {
+        DataAccessNode dataAccess = (DataAccessNode) accessChainTail;
+        if (dataAccess.isNullSafe()) {
+          dataAccess.setNullSafe(false);
+          nullSafeBases.add(dataAccess.getBaseExprChild());
+        }
+      }
+      if (accessChainTail == accessChainHead) {
+        break;
+      }
+      accessChainTail = (AccessChainComponentNode) accessChainTail.getParent();
+    }
+    return nullSafeBases.build();
+  }
+
+  /**
+   * Builds a copy of the data access chain starting with the root, and ending with the base
+   * expression of this NullSafeAccessNode. The chain is normalized converting NullSafeAccessNodes
+   * to DataAccessNodes. The "null-safe" bit on DataAccessNodes are not set (DataAccessNodes that
+   * are children of NullSafeAccessNodes already have the "null-safe" bit unset).
+   *
+   * <pre>
+   * For example:
+   * `a?.b.c?.d`
+   *
+   * Looks like this in the AST:
+   * NSAN(1)
+   * +-- VarRef ($a)
+   * +-- NSAN(2)
+   *     +-- FieldAccess (c)
+   *         +-- FieldAccess (b)
+   *             +-- GroupNode Placeholder (null)
+   *     +-- FieldAccess (d)
+   *
+   * Calling this method on NSAN(2) will result in `a.b.c`, eg:
+   * FieldAccess (c)
+   * +-- FieldAccess (b)
+   *     +-- VarRef ($a)
+   * </pre>
+   */
+  public ExprNode asMergedBase() {
+    if (!(this.getBase() instanceof AccessChainComponentNode)) {
+      return this.getBase().copy(new CopyState());
+    }
+    NullSafeAccessNode nsan = this;
+    ImmutableList.Builder<ExprNode> bases = ImmutableList.builder();
+    while (nsan.getParent() instanceof NullSafeAccessNode) {
+      nsan = (NullSafeAccessNode) nsan.getParent();
+      bases.add(nsan.getBase());
+    }
+    return copyAndGraftPlaceholders((AccessChainComponentNode) this.getBase(), bases.build());
+  }
+
+  /***
+   * If there are any elements in `bases`, the `head` access chain and every base except the last
+   * in the list must end in a null safe access placeholder. Each base is grafted onto the `head`
+   * or previous base's placeholder. All returned nodes are copies.
+   */
+  public static AccessChainComponentNode copyAndGraftPlaceholders(
+      AccessChainComponentNode head, ImmutableList<ExprNode> bases) {
+    AccessChainComponentNode copy = (AccessChainComponentNode) head.copy(new CopyState());
+    ExprNode curr = copy;
+    for (ExprNode base : bases) {
+      while (true) {
+        if (curr instanceof DataAccessNode) {
+          if (NullSafeAccessNode.isPlaceholder(((DataAccessNode) curr).getBaseExprChild())) {
+            break;
+          }
+          curr = ((DataAccessNode) curr).getBaseExprChild();
+        } else if (curr instanceof AssertNonNullOpNode) {
+          curr = ((AssertNonNullOpNode) curr).getChild(0);
+        } else {
+          throw new AssertionError("Found unexpected node " + curr.getKind());
+        }
+      }
+      ((DataAccessNode) curr).replaceChild(0, base.copy(new CopyState()));
+    }
+    return copy;
   }
 }
