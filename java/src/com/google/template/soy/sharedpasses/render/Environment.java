@@ -23,7 +23,6 @@ import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.exprtree.VarDefn;
-import com.google.template.soy.exprtree.VarDefn.Kind;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import java.util.IdentityHashMap;
@@ -114,12 +113,6 @@ public abstract class Environment {
 
     @Override
     SoyValueProvider getVarProvider(VarDefn var) {
-      if (var.kind() == Kind.UNDECLARED) {
-        // Special case for legacy templates with undeclared params.  Undeclared params aren't
-        // assigned indices in the local variable table.
-        SoyValueProvider provider = data.getFieldProvider(var.name());
-        return provider != null ? provider : UndefinedData.INSTANCE;
-      }
       Object o = localVariables.get(var);
       if (o instanceof LoopPosition) {
         return ((LoopPosition) o).item;

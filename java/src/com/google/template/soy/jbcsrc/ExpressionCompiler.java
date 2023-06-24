@@ -1803,7 +1803,6 @@ final class ExpressionCompiler {
         case CONST:
         case IMPORT_VAR:
           return false;
-        case UNDECLARED:
         case TEMPLATE:
         case EXTERN:
           break;

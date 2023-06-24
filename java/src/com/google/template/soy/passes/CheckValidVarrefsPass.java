@@ -36,8 +36,6 @@ final class CheckValidVarrefsPass implements CompilerFilePass {
           SoyType.Kind.TEMPLATE_MODULE,
           SoyType.Kind.PROTO_ENUM_TYPE,
           SoyType.Kind.PROTO_MODULE);
-  private static final ImmutableSet<VarDefn.Kind> BAD_VAR_DEFN_KINDS =
-      ImmutableSet.of(VarDefn.Kind.UNDECLARED);
 
   private static final SoyErrorKind ILLEGAL_TYPE_OF_VARIABLE =
       SoyErrorKind.of("Illegal use of symbol ''{0}''.");
@@ -56,8 +54,7 @@ final class CheckValidVarrefsPass implements CompilerFilePass {
   private void checkVarRef(VarRefNode varRef) {
     VarDefn defn = varRef.getDefnDecl();
     if (defn != null && defn.hasType()) {
-      if (BAD_SOY_TYPE_KINDS.contains(defn.type().getKind())
-          || BAD_VAR_DEFN_KINDS.contains(defn.kind())) {
+      if (BAD_SOY_TYPE_KINDS.contains(defn.type().getKind())) {
         errorReporter.report(
             varRef.getSourceLocation(), ILLEGAL_TYPE_OF_VARIABLE, varRef.toSourceString());
       }

@@ -360,7 +360,6 @@ final class LocalVariablesNodeVisitor {
         return "Template name";
       case EXTERN:
         return "Extern function";
-      case UNDECLARED:
       case CONST:
         return "Symbol";
     }
