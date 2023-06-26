@@ -131,7 +131,8 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     try {
       super.visit(node);
     } catch (RuntimeException e) {
-      throw new Error("error from : " + node.getKind() + " @ " + node.getSourceLocation(), e);
+      throw new AssertionError(
+          "error from : " + node.getKind() + " @ " + node.getSourceLocation(), e);
     }
   }
 
@@ -507,7 +508,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
                 .build());
       }
     }
-    List<Statement> assignments = stateReassignmentBuilder.build();
+    ImmutableList<Statement> assignments = stateReassignmentBuilder.build();
     Statement stateReassignments = Statements.of(assignments);
     return Statements.of(typeChecks, stateReassignments);
   }
@@ -631,6 +632,12 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
           Statements.assign(
               Expressions.THIS.dotAccess("syncStateFromData"),
               id(soyElementClassName + "SyncInternal")));
+    }
+    if (node.shouldAllowBrokenElementCollisions()) {
+      stateVarInitializations.add(
+          Statements.assign(
+              Expressions.THIS.dotAccess("allowBrokenElementCollisions"),
+              Expressions.LITERAL_TRUE));
     }
     // Build constructor method.
     Statement ctorBody =

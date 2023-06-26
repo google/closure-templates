@@ -46,6 +46,9 @@ public final class TemplateElementNodeBuilder
 
   private List<CommandTagAttribute> attrs = ImmutableList.of();
 
+  /** The "allowbrokenelementcollisions" attribute */
+  private boolean allowBrokenElementCollisions = false;
+
   /** @param soyFileHeaderInfo Info from the containing Soy file's header declarations. */
   public TemplateElementNodeBuilder(
       SoyFileHeaderInfo soyFileHeaderInfo, ErrorReporter errorReporter) {
@@ -60,8 +63,27 @@ public final class TemplateElementNodeBuilder
     this.cmdText = templateName.identifier() + " " + Joiner.on(' ').join(attrs);
     setCommonCommandValues(attrs);
 
+    for (CommandTagAttribute attribute : attrs) {
+      Identifier name = attribute.getName();
+      if (COMMON_ATTRIBUTE_NAMES.contains(name.identifier())) {
+        continue;
+      }
+      switch (name.identifier()) {
+        case "allowbrokenelementcollisions":
+          allowBrokenElementCollisions = attribute.valueAsEnabled(errorReporter);
+          break;
+        default:
+          // TODO(b/288355656): Implement the invalid attributes check to log the error
+          break;
+      }
+    }
+
     setTemplateNames(templateName, soyFileHeaderInfo.getNamespace());
     return this;
+  }
+
+  boolean shouldAllowBrokenElementCollisions() {
+    return allowBrokenElementCollisions;
   }
 
   @Override
