@@ -149,7 +149,7 @@ public abstract class MethodRef {
       create(RenderResult.class, "assertDone");
 
   public static final MethodRef IMMUTABLE_LIST_COPY_OF_COLLECTION =
-      create(ImmutableList.class, "copyOf", Collection.class);
+      create(ImmutableList.class, "copyOf", Collection.class).asNonNullable();
 
   /** a list of all the ImmutableList.of overloads, indexed by arity. */
   public static final ImmutableList<MethodRef> IMMUTABLE_LIST_OF;
@@ -186,7 +186,8 @@ public abstract class MethodRef {
   public static final MethodRef INTS_CHECKED_CAST =
       create(Ints.class, "checkedCast", long.class).asCheap();
 
-  public static final MethodRef MAP_PUT = create(Map.class, "put", Object.class, Object.class);
+  public static final MethodRef MAP_PUT =
+      create(Map.class, "put", Object.class, Object.class).asNonNullable();
 
   public static final MethodRef LIST_GET = create(List.class, "get", int.class).asCheap();
 
@@ -194,9 +195,9 @@ public abstract class MethodRef {
 
   public static final MethodRef MAP_SIZE = create(Map.class, "size").asCheap();
 
-  public static final MethodRef MAP_ENTRY_SET = create(Map.class, "entrySet");
+  public static final MethodRef MAP_ENTRY_SET = create(Map.class, "entrySet").asNonNullable();
 
-  public static final MethodRef GET_ITERATOR = create(Iterable.class, "iterator");
+  public static final MethodRef GET_ITERATOR = create(Iterable.class, "iterator").asNonNullable();
 
   public static final MethodRef ITERATOR_NEXT = create(Iterator.class, "next");
 
@@ -207,7 +208,7 @@ public abstract class MethodRef {
   public static final MethodRef MAP_GET_VALUE = create(Map.Entry.class, "getValue");
 
   public static final MethodRef LIST_IMPL_FOR_PROVIDER_LIST =
-      create(ListImpl.class, "forProviderList", List.class);
+      create(ListImpl.class, "forProviderList", List.class).asNonNullable();
 
   public static final MethodRef LONG_PARSE_LONG =
       create(Long.class, "parseLong", String.class).asCheap().asNonNullable();
@@ -220,28 +221,31 @@ public abstract class MethodRef {
   public static final MethodRef UNSIGNED_INTS_TO_LONG =
       create(UnsignedInts.class, "toLong", int.class).asCheap();
 
-  public static final MethodRef LONG_TO_STRING = create(Long.class, "toString", long.class);
+  public static final MethodRef LONG_TO_STRING =
+      create(Long.class, "toString", long.class).asNonNullable();
 
   public static final MethodRef NUMBER_DOUBLE_VALUE = create(Number.class, "doubleValue").asCheap();
   public static final MethodRef NUMBER_LONG_VALUE = create(Number.class, "longValue").asCheap();
   public static final MethodRef NUMBER_INT_VALUE = create(Number.class, "intValue").asCheap();
   public static final MethodRef NUMBER_FLOAT_VALUE = create(Number.class, "floatValue").asCheap();
 
-  public static final MethodRef OBJECT_TO_STRING = create(Object.class, "toString");
+  public static final MethodRef OBJECT_TO_STRING = create(Object.class, "toString").asNonNullable();
 
   public static final MethodRef OBJECTS_EQUALS =
       create(Objects.class, "equals", Object.class, Object.class);
 
   public static final MethodRef ORDAIN_AS_SAFE =
-      create(UnsafeSanitizedContentOrdainer.class, "ordainAsSafe", String.class, ContentKind.class);
+      create(UnsafeSanitizedContentOrdainer.class, "ordainAsSafe", String.class, ContentKind.class)
+          .asNonNullable();
 
   public static final MethodRef ORDAIN_AS_SAFE_DIR =
       create(
-          UnsafeSanitizedContentOrdainer.class,
-          "ordainAsSafe",
-          String.class,
-          ContentKind.class,
-          Dir.class);
+              UnsafeSanitizedContentOrdainer.class,
+              "ordainAsSafe",
+              String.class,
+              ContentKind.class,
+              Dir.class)
+          .asNonNullable();
 
   public static final MethodRef LIST_UNBOX_INTS =
       create(JbcSrcRuntime.class, "listUnboxInts", List.class);
@@ -278,7 +282,12 @@ public abstract class MethodRef {
 
   public static final MethodRef PARAM_STORE_SET_FIELD =
       create(
-          JbcSrcRuntime.class, "setField", ParamStore.class, String.class, SoyValueProvider.class);
+              JbcSrcRuntime.class,
+              "setField",
+              ParamStore.class,
+              String.class,
+              SoyValueProvider.class)
+          .asNonNullable();
 
   public static final MethodRef PRINT_STREAM_PRINTLN = create(PrintStream.class, "println");
 
@@ -298,10 +307,10 @@ public abstract class MethodRef {
       create(JbcSrcRuntime.class, "applyEscapers", CompiledTemplate.class, ImmutableList.class);
 
   public static final MethodRef RUNTIME_CHECK_RESOLVED_LIST =
-      create(JbcSrcRuntime.class, "checkResolved", List.class);
+      create(JbcSrcRuntime.class, "checkResolved", List.class).asNonNullable();
 
   public static final MethodRef RUNTIME_CHECK_RESOLVED_MAP =
-      create(JbcSrcRuntime.class, "checkResolved", Map.class);
+      create(JbcSrcRuntime.class, "checkResolved", Map.class).asNonNullable();
 
   public static final MethodRef SOY_SERVER_KEY =
       MethodRef.create(SharedRuntime.class, "soyServerKey", SoyValue.class).asCheap();
@@ -311,14 +320,16 @@ public abstract class MethodRef {
 
   public static final MethodRef RUNTIME_APPLY_PRINT_DIRECTIVE =
       create(
-          JbcSrcRuntime.class,
-          "applyPrintDirective",
-          SoyJavaPrintDirective.class,
-          SoyValue.class,
-          List.class);
+              JbcSrcRuntime.class,
+              "applyPrintDirective",
+              SoyJavaPrintDirective.class,
+              SoyValue.class,
+              List.class)
+          .asNonNullable();
 
   public static final MethodRef RUNTIME_BIND_TEMPLATE_PARAMS =
-      create(JbcSrcRuntime.class, "bindTemplateParams", TemplateValue.class, SoyRecord.class);
+      create(JbcSrcRuntime.class, "bindTemplateParams", TemplateValue.class, SoyRecord.class)
+          .asNonNullable();
 
   public static final MethodRef RUNTIME_CALL_LEGACY_FUNCTION =
       create(JbcSrcRuntime.class, "callLegacySoyFunction", LegacyFunctionAdapter.class, List.class);
@@ -400,7 +411,8 @@ public abstract class MethodRef {
       create(JbcSrcRuntime.class, "getSoyMapItem", SoyMap.class, SoyValue.class);
 
   public static final MethodRef RUNTIME_GET_MAP_ITEM_PROVIDER =
-      create(JbcSrcRuntime.class, "getSoyMapItemProvider", SoyMap.class, SoyValue.class);
+      create(JbcSrcRuntime.class, "getSoyMapItemProvider", SoyMap.class, SoyValue.class)
+          .asNonNullable();
 
   public static final MethodRef RUNTIME_LESS_THAN =
       create(SharedRuntime.class, "lessThan", SoyValue.class, SoyValue.class).asNonNullable();
@@ -447,7 +459,11 @@ public abstract class MethodRef {
 
   public static final MethodRef MSG_RENDERER_SET_PLACEHOLDER =
       create(
-          JbcSrcRuntime.MsgRenderer.class, "setPlaceholder", String.class, SoyValueProvider.class);
+              JbcSrcRuntime.MsgRenderer.class,
+              "setPlaceholder",
+              String.class,
+              SoyValueProvider.class)
+          .asNonNullable();
 
   public static final MethodRef HANDLE_BASIC_TRANSLATION =
       create(JbcSrcRuntime.class, "handleBasicTranslation", List.class).asNonNullable();
@@ -457,11 +473,12 @@ public abstract class MethodRef {
 
   public static final MethodRef MSG_RENDERER_SET_PLACEHOLDER_AND_ORDERING =
       create(
-          JbcSrcRuntime.MsgRenderer.class,
-          "setPlaceholderAndOrdering",
-          String.class,
-          SoyValueProvider.class,
-          String.class);
+              JbcSrcRuntime.MsgRenderer.class,
+              "setPlaceholderAndOrdering",
+              String.class,
+              SoyValueProvider.class,
+              String.class)
+          .asNonNullable();
 
   public static final MethodRef RUNTIME_STRING_EQUALS_AS_NUMBER =
       create(JbcSrcRuntime.class, "stringEqualsAsNumber", String.class, double.class)
@@ -513,12 +530,13 @@ public abstract class MethodRef {
       create(SoyValue.class, "stringValue").asCheap().asNonNullable();
 
   public static final MethodRef GET_COMPILED_TEMPLATE =
-      create(CompiledTemplate.class, "createFromTemplateValue", TemplateValue.class);
+      create(CompiledTemplate.class, "createFromTemplateValue", TemplateValue.class)
+          .asNonNullable();
 
   public static final MethodRef GET_COMPILED_TEMPLATE_FROM_VALUE =
-      create(TemplateValue.class, "getCompiledTemplate");
+      create(TemplateValue.class, "getCompiledTemplate").asNonNullable().asCheap();
   public static final MethodRef CREATE_TEMPLATE_VALUE =
-      create(TemplateValue.class, "create", String.class, Object.class);
+      create(TemplateValue.class, "create", String.class, Object.class).asNonNullable();
 
   public static final MethodRef SOY_VALUE_PROVIDER_RENDER_AND_RESOLVE =
       create(
@@ -529,21 +547,23 @@ public abstract class MethodRef {
           .asNonNullable();
 
   public static final MethodRef CONVERT_FUTURE_TO_SOY_VALUE_PROVIDER =
-      create(JbcSrcRuntime.class, "convertFutureToSoyValueProvider", Future.class);
+      create(JbcSrcRuntime.class, "convertFutureToSoyValueProvider", Future.class).asNonNullable();
   public static final MethodRef CONVERT_OBJECT_TO_SOY_VALUE_PROVIDER =
-      create(JbcSrcRuntime.class, "convertObjectToSoyValueProvider", Object.class);
+      create(JbcSrcRuntime.class, "convertObjectToSoyValueProvider", Object.class).asNonNullable();
   public static final MethodRef CONVERT_SAFE_URL_TO_SOY_VALUE_PROVIDER =
-      create(SanitizedContents.class, "fromSafeUrl", SafeUrl.class);
+      create(SanitizedContents.class, "fromSafeUrl", SafeUrl.class).asNonNullable();
   public static final MethodRef CONVERT_SAFE_URL_PROTO_TO_SOY_VALUE_PROVIDER =
-      create(SanitizedContents.class, "fromSafeUrlProto", SafeUrlProto.class);
+      create(SanitizedContents.class, "fromSafeUrlProto", SafeUrlProto.class).asNonNullable();
   public static final MethodRef CONVERT_TRUSTED_RESOURCE_URL_PROTO_TO_SOY_VALUE_PROVIDER =
-      create(SanitizedContents.class, "fromTrustedResourceUrlProto", TrustedResourceUrlProto.class);
+      create(SanitizedContents.class, "fromTrustedResourceUrlProto", TrustedResourceUrlProto.class)
+          .asNonNullable();
   public static final MethodRef CONVERT_SAFE_HTML_PROTO_TO_SOY_VALUE_PROVIDER =
-      create(SanitizedContents.class, "fromSafeHtmlProto", SafeHtmlProto.class);
+      create(SanitizedContents.class, "fromSafeHtmlProto", SafeHtmlProto.class).asNonNullable();
   public static final MethodRef CONVERT_SAFE_HTML_TO_SOY_VALUE_PROVIDER =
-      create(SanitizedContents.class, "fromSafeHtml", SafeHtml.class);
+      create(SanitizedContents.class, "fromSafeHtml", SafeHtml.class).asNonNullable();
   public static final MethodRef CONVERT_TRUSTED_RESOURCE_URL_TO_SOY_VALUE_PROVIDER =
-      create(SanitizedContents.class, "fromTrustedResourceUrl", TrustedResourceUrl.class);
+      create(SanitizedContents.class, "fromTrustedResourceUrl", TrustedResourceUrl.class)
+          .asNonNullable();
 
   public static final MethodRef SOY_VALUE_PROVIDER_RESOLVE =
       create(JbcSrcRuntime.class, "resolveSoyValueProvider", SoyValueProvider.class);

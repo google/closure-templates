@@ -107,7 +107,7 @@ public abstract class BytecodeProducer {
     // Consider trying to make use of (using the Label.info field? adding a custom NamedLabel
     // sub type?)
     Textifier textifier =
-        new Textifier(Opcodes.ASM7) {
+        new Textifier(Opcodes.ASM9) {
           {
             // reset tab sizes.  Since we don't care about formatting class names or method
             // signatures (only code). We only need to set the tab2,tab3 and ltab settings (tab is

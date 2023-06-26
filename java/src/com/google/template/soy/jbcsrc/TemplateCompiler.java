@@ -21,7 +21,6 @@ import static com.google.common.base.Strings.nullToEmpty;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.template.soy.soytree.SoyTreeUtils.allNodesOfType;
-import static java.util.stream.Collectors.toList;
 
 import com.google.auto.value.AutoAnnotation;
 import com.google.common.collect.ImmutableList;
@@ -249,13 +248,13 @@ final class TemplateCompiler {
             : ImmutableList.of();
 
     // using linked hash sets below for determinism
-    Set<String> uniqueIjs =
+    ImmutableSet<String> uniqueIjs =
         allNodesOfType(templateNode, VarRefNode.class)
             .filter(VarRefNode::isInjected)
             .map(VarRefNode::getNameWithoutLeadingDollar)
             .collect(toImmutableSet());
 
-    Set<String> callees =
+    ImmutableSet<String> callees =
         allNodesOfType(templateNode, TemplateLiteralNode.class)
             .map(TemplateLiteralNode::getResolvedName)
             .collect(toImmutableSet());
@@ -443,7 +442,7 @@ final class TemplateCompiler {
       paramNames.addAll(
           template.templateType().getActualParameters().stream()
               .map(Parameter::getName)
-              .collect(toList()));
+              .collect(toImmutableList()));
     } else {
       paramNames.add(StandardNames.PARAMS);
     }

@@ -141,7 +141,7 @@ public final class BytecodeUtils {
   public static final Type SOY_VISUAL_ELEMENT_TYPE = Type.getType(SoyVisualElement.class);
   public static final Type SOY_VISUAL_ELEMENT_DATA_TYPE = Type.getType(SoyVisualElementData.class);
   public static final Type CLASS_TYPE = Type.getType(Class.class);
-  public static final Type INTEGER_TYPE = Type.getType(Integer.class);
+  public static final Type BOXED_INTEGER_TYPE = Type.getType(Integer.class);
   public static final Type BOXED_LONG_TYPE = Type.getType(Long.class);
   public static final Type BOXED_BOOLEAN_TYPE = Type.getType(Boolean.class);
   public static final Type BOXED_DOUBLE_TYPE = Type.getType(Double.class);
@@ -746,7 +746,7 @@ public final class BytecodeUtils {
   public static Expression ternary(
       Expression condition, Expression trueBranch, Expression falseBranch) {
     // Choose the type of the ternary as the least specific of the two options.
-    // In theory we shold really choose the least common superclass which would cover more cases,
+    // In theory we should really choose the least common superclass which would cover more cases,
     // but this should be fine for now.  Mostly this is just turning (ImmutableList,List)->List.  If
     // this isn't possible, an error will be thrown and we can re-evaluate this approach.
     Type ternaryType;

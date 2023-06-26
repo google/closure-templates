@@ -29,6 +29,7 @@ import com.google.template.soy.jbcsrc.restricted.Expression.Feature;
 import com.google.template.soy.jbcsrc.restricted.Expression.Features;
 import com.google.template.soy.jbcsrc.runtime.JbcSrcRuntime;
 import com.google.template.soy.jbcsrc.shared.StackFrame;
+import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Opcodes;
@@ -56,7 +57,20 @@ public abstract class FieldRef {
 
   public static FieldRef create(
       TypeInfo owner, String name, Type type, int modifiers, boolean isNullable) {
-    checkArgument((Modifier.fieldModifiers() & modifiers) == modifiers, "invalid modifiers");
+    if ((Modifier.fieldModifiers() & modifiers) != modifiers) {
+      throw new IllegalArgumentException(
+          "invalid modifiers, expected: "
+              + Modifier.toString(Modifier.fieldModifiers())
+              + " ("
+              + Modifier.fieldModifiers()
+              + ")"
+              + " got: "
+              + Modifier.toString(modifiers)
+              + " ("
+              + modifiers
+              + ")");
+    }
+
     FieldRef ref = new AutoValue_FieldRef(owner, name, type);
     ref.accessFlags = modifiers;
     ref.isNullable = isNullable;
@@ -71,8 +85,9 @@ public abstract class FieldRef {
     Class<?> fieldType;
     int modifiers = 0;
     try {
-      java.lang.reflect.Field declaredField = owner.getDeclaredField(name);
-      modifiers = declaredField.getModifiers();
+      Field declaredField = owner.getDeclaredField(name);
+      // mask to remove jvm private bits
+      modifiers = declaredField.getModifiers() & Modifier.fieldModifiers();
       if (Modifier.isStatic(modifiers)) {
         throw new IllegalStateException("Field: " + declaredField + " is static");
       }
@@ -85,7 +100,7 @@ public abstract class FieldRef {
   }
 
   public static FieldRef staticFieldReference(Class<?> owner, String name) {
-    java.lang.reflect.Field declaredField;
+    Field declaredField;
     try {
       declaredField = owner.getDeclaredField(name);
     } catch (Exception e) {
@@ -94,7 +109,7 @@ public abstract class FieldRef {
     return staticFieldReference(declaredField);
   }
 
-  public static FieldRef staticFieldReference(java.lang.reflect.Field field) {
+  public static FieldRef staticFieldReference(Field field) {
     if (!Modifier.isStatic(field.getModifiers())) {
       throw new IllegalStateException("Field: " + field + " is not static");
     }
@@ -102,7 +117,8 @@ public abstract class FieldRef {
         TypeInfo.create(field.getDeclaringClass()),
         field.getName(),
         Type.getType(field.getType()),
-        Opcodes.ACC_STATIC,
+        // mask to remove jvm private bits
+        field.getModifiers() & Modifier.fieldModifiers(),
         /* isNullable= */ false);
   }
 
@@ -136,6 +152,10 @@ public abstract class FieldRef {
 
   public final boolean isStatic() {
     return (accessFlags & Opcodes.ACC_STATIC) != 0;
+  }
+
+  public final boolean isFinal() {
+    return (accessFlags & Opcodes.ACC_FINAL) != 0;
   }
 
   private static final int VISIBILITY_MASK =

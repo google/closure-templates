@@ -210,7 +210,7 @@ public final class ExternCompiler {
     // int needs special-casing for overflow, and because we can't unbox as int
     if (javaType.equals(Type.INT_TYPE)) {
       return MethodRef.LONG_TO_INT.invoke(actualParam);
-    } else if (javaType.equals(BytecodeUtils.INTEGER_TYPE)) {
+    } else if (javaType.equals(BytecodeUtils.BOXED_INTEGER_TYPE)) {
       if (soyTypeBoxed) {
         return MethodRef.SOY_VALUE_TO_BOXED_INTEGER.invoke(actualParam);
       }
@@ -355,7 +355,7 @@ public final class ExternCompiler {
   static Expression adaptReturnType(Type returnType, SoyType soyReturnType, Expression externCall) {
     Type externType = externCall.resultType();
 
-    if (externType.equals(BytecodeUtils.INTEGER_TYPE)) {
+    if (externType.equals(BytecodeUtils.BOXED_INTEGER_TYPE)) {
       return MethodRef.UNBOX_INTEGER.invoke(externCall);
     } else if (externType.equals(Type.INT_TYPE)) {
       return BytecodeUtils.numericConversion(externCall, Type.LONG_TYPE);

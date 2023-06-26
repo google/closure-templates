@@ -1756,7 +1756,7 @@ final class ExpressionCompiler {
       }
       return SoyExpression.forSoyValue(
           node.getType(),
-          new Expression(BytecodeUtils.TEMPLATE_VALUE_TYPE) {
+          new Expression(BytecodeUtils.TEMPLATE_VALUE_TYPE, Feature.NON_NULLABLE) {
             @Override
             protected void doGen(CodeBuilder adapter) {
               renderContext.gen(adapter);
@@ -1897,7 +1897,7 @@ final class ExpressionCompiler {
       // all the parameters are constants and we have an implementation that doesn't depend on the
       // render context.
       // TODO(lukes): if the plugin is annotated as @SoyPureFunction, but it accesses the context,
-      // then it isn't pure.  add logic in the vallidator?
+      // then it isn't pure.  add logic in the validator?
       if (node.getSoyFunction() instanceof SoyJavaSourceFunction) {
         try {
           PluginAnalyzer.PluginMetadata metadata =

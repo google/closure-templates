@@ -484,7 +484,7 @@ final class ProtoUtils {
     private static Type getKeyType(FieldDescriptor keyDescriptor) {
       switch (keyDescriptor.getJavaType()) {
         case INT:
-          return BytecodeUtils.INTEGER_TYPE;
+          return BytecodeUtils.BOXED_INTEGER_TYPE;
         case LONG:
           return BytecodeUtils.BOXED_LONG_TYPE;
         case BOOLEAN:
@@ -1606,7 +1606,8 @@ final class ProtoUtils {
     TypeInfo message = messageRuntimeType(descriptor);
     return MethodRef.createStaticMethod(
             message, new Method("getDefaultInstance", message.type(), MethodRef.NO_METHOD_ARGS))
-        .asNonNullable();
+        .asNonNullable()
+        .asCheap();
   }
   /** Returns the {@link MethodRef} for the generated put method for proto map. */
   private static MethodRef getPutMethod(FieldDescriptor descriptor) {
@@ -1841,4 +1842,6 @@ final class ProtoUtils {
       return ENUM_FROM_PROTO.accessor();
     }
   }
+
+  private ProtoUtils() {}
 }

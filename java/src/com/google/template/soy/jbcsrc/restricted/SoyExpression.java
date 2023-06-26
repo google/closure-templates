@@ -208,7 +208,7 @@ public final class SoyExpression extends Expression {
   /** Returns an Expression of a non-null {@link SoyValueProvider} providing this value. */
   public Expression boxAsSoyValueProvider() {
     if (soyType().equals(NullType.getInstance())) {
-      if (delegate == NULL || delegate == NULL_BOXED) {
+      if (this == NULL || this == NULL_BOXED) {
         return FieldRef.NULL_PROVIDER.accessor();
       }
       // otherwise this expression might have side effects,  evaluate it as a statement then return
