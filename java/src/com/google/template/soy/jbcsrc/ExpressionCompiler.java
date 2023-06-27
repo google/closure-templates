@@ -51,6 +51,7 @@ import com.google.template.soy.exprtree.FloatNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.FunctionNode.ExternRef;
 import com.google.template.soy.exprtree.GlobalNode;
+import com.google.template.soy.exprtree.GroupNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.ListComprehensionNode;
@@ -294,8 +295,8 @@ final class ExpressionCompiler {
    * Returns {@code true} if the value can be compiled to a constant expression in a static
    * initializer.
    */
-  static boolean canCompileToConstant(ExprRootNode expr) {
-    return CanCompileToConstantVisitor.INSTANCE.exec(expr);
+  static boolean canCompileToConstant(SoyNode context, ExprRootNode expr) {
+    return new CanCompileToConstantVisitor(context).exec(expr);
   }
 
   private final SoyNode context;
@@ -1738,7 +1739,6 @@ final class ExpressionCompiler {
 
     @Override
     protected SoyExpression visitTemplateLiteralNode(TemplateLiteralNode node) {
-      Expression renderContext = parameters.getRenderContext();
       if (CompiledTemplateMetadata.isPrivateReference(context, node)) {
         Expression templateValue =
             MethodRef.createStaticMethod(
@@ -1754,6 +1754,7 @@ final class ExpressionCompiler {
             MethodRef.CREATE_TEMPLATE_VALUE.invoke(
                 constant(node.getResolvedName()), templateValue));
       }
+      Expression renderContext = parameters.getRenderContext();
       return SoyExpression.forSoyValue(
           node.getType(),
           new Expression(BytecodeUtils.TEMPLATE_VALUE_TYPE, Feature.NON_NULLABLE) {
@@ -1780,7 +1781,11 @@ final class ExpressionCompiler {
 
   private static final class CanCompileToConstantVisitor
       extends AbstractReturningExprNodeVisitor<Boolean> {
-    static final CanCompileToConstantVisitor INSTANCE = new CanCompileToConstantVisitor();
+    private final SoyNode context;
+
+    CanCompileToConstantVisitor(SoyNode context) {
+      this.context = context;
+    }
 
     @Override
     protected Boolean visitExprRootNode(ExprRootNode node) {
@@ -1799,9 +1804,17 @@ final class ExpressionCompiler {
           return true;
         case PARAM:
         case LOCAL_VAR:
-        case STATE:
+          return false;
         case CONST:
+          // For consts we could allow references if they are in the same file and they themselves
+          // are constants.
+          return false;
+        case STATE:
+          // In jbcsrc all @state variables are compiled to constants so we can reference them
+          return true;
         case IMPORT_VAR:
+          // For things like proto extensions and constructors we could allow references. But it
+          // isn't clear that that is very useful.
           return false;
         case TEMPLATE:
         case EXTERN:
@@ -1818,11 +1831,9 @@ final class ExpressionCompiler {
 
     @Override
     protected Boolean visitTemplateLiteralNode(TemplateLiteralNode node) {
-      // This requires a RenderContext object to look up the template.
-      // Technically this could be conditional on whether or not the callee is in a SRC file, but
-      // this would require wiring through the CompiledTemplateRegistry to this class to calculate
-      // and probably isn't a big deal.
-      return false;
+      // If the literal is in the same file, we can statically bind to it, otherwise a RenderContext
+      // is required for dynamic cross file resolution.
+      return CompiledTemplateMetadata.isPrivateReference(context, node);
     }
 
     @Override
@@ -1859,7 +1870,8 @@ final class ExpressionCompiler {
 
     @Override
     protected Boolean visitMethodCallNode(MethodCallNode node) {
-      if (node.getMethodName().toString().equals("bind")) {
+      var method = node.getSoyMethod();
+      if (method == BuiltinMethod.BIND) {
         return areAllChildrenConstant(node);
       }
       return false;
@@ -1867,9 +1879,8 @@ final class ExpressionCompiler {
 
     @Override
     protected Boolean visitDataAccessNode(DataAccessNode node) {
-      // If this could be compiled to a constant expression, then the optimizer should have already
-      // evaluated it.  So don't bother.
-      return false;
+      // Most of these should have already been handled by the optimizer, but odd cases persist
+      return areAllChildrenConstant(node);
     }
 
     @Override
@@ -1884,10 +1895,23 @@ final class ExpressionCompiler {
 
     @Override
     protected Boolean visitFunctionNode(FunctionNode node) {
+      var function = node.getSoyFunction();
+      if (function == BuiltinFunction.VE_DEF) {
+        // VE_DEF is a special case because we simply don't generate code for the third parameter
+        // when present.
+        return visit(node.getChild(0))
+            && visit(node.getChild(1))
+            && (node.numChildren() != 4 || visit(node.getChild(3)));
+      }
       if (!areAllChildrenConstant(node)) {
         return false;
       }
-      if (node.getSoyFunction() == BuiltinFunction.PROTO_INIT) {
+      if (function == BuiltinFunction.PROTO_INIT
+          || function == BuiltinFunction.VE_DATA
+          || function == BuiltinFunction.CHECK_NOT_NULL
+          || function == BuiltinFunction.TO_FLOAT) {
+        // All of these are either constructing a data structure or performing some kind of simple
+        // coercion.
         return true;
       }
       if (!node.isPure()) {
@@ -1898,10 +1922,10 @@ final class ExpressionCompiler {
       // render context.
       // TODO(lukes): if the plugin is annotated as @SoyPureFunction, but it accesses the context,
       // then it isn't pure.  add logic in the validator?
-      if (node.getSoyFunction() instanceof SoyJavaSourceFunction) {
+      if (function instanceof SoyJavaSourceFunction) {
         try {
           PluginAnalyzer.PluginMetadata metadata =
-              PluginAnalyzer.analyze((SoyJavaSourceFunction) node.getSoyFunction());
+              PluginAnalyzer.analyze((SoyJavaSourceFunction) function);
           // the plugin can be generated as a constant expression if it doesn't access the context
           // or require an instance function.
           return metadata.pluginInstanceNames().isEmpty() && !metadata.accessesContext();
@@ -1913,6 +1937,12 @@ final class ExpressionCompiler {
       }
       // legacy functions are not OK.
       return false;
+    }
+
+    @Override
+    protected Boolean visitGroupNode(GroupNode node) {
+      // We can get here due to null safe access expressions on template literals for bind calls.
+      return areAllChildrenConstant(node);
     }
 
     private boolean areAllChildrenConstant(ParentExprNode node) {

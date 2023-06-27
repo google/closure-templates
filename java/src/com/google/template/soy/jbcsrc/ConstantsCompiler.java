@@ -67,6 +67,7 @@ public final class ConstantsCompiler {
       };
 
   private final ConstNode constant;
+  private final FieldManager fields;
   private final SoyClassWriter writer;
   private final JavaSourceFunctionCompiler javaSourceFunctionCompiler;
   private final PartialFileSetMetadata fileSetMetadata;
@@ -74,9 +75,11 @@ public final class ConstantsCompiler {
   ConstantsCompiler(
       ConstNode constant,
       SoyClassWriter writer,
+      FieldManager fields,
       JavaSourceFunctionCompiler javaSourceFunctionCompiler,
       PartialFileSetMetadata fileSetMetadata) {
     this.constant = constant;
+    this.fields = fields;
     this.writer = writer;
     this.javaSourceFunctionCompiler = javaSourceFunctionCompiler;
     this.fileSetMetadata = fileSetMetadata;
@@ -97,6 +100,7 @@ public final class ConstantsCompiler {
     String javaClassName =
         Names.javaClassNameFromSoyNamespace(
             constant.getNearestAncestor(SoyFileNode.class).getNamespace());
+    TypeInfo javaClass = TypeInfo.createClass(javaClassName);
     Method method = getConstantMethod(constant.getVar().name(), constant.getVar().type());
     Type methodType = method.getReturnType();
 
@@ -104,79 +108,110 @@ public final class ConstantsCompiler {
     Label end = new Label();
     TemplateVariableManager variableSet =
         new TemplateVariableManager(
-            TypeInfo.createClass(javaClassName).type(),
+            javaClass.type(),
             method,
             ImmutableList.of(StandardNames.RENDER_CONTEXT),
             start,
             end,
-            /*isStatic=*/ true);
+            /* isStatic= */ true);
     Expression renderContext = variableSet.getVariable(StandardNames.RENDER_CONTEXT);
     RenderContextExpression renderContextExpr = new RenderContextExpression(renderContext);
     TemplateParameterLookup variables = new ConstantVariables(variableSet, renderContextExpr);
 
-    BasicExpressionCompiler expressionCompiler =
-        ExpressionCompiler.createBasicCompiler(
-            constant,
-            ALL_RESOLVED,
-            variables,
-            variableSet,
-            javaSourceFunctionCompiler,
-            fileSetMetadata);
+    if (ExpressionCompiler.canCompileToConstant(constant, constant.getExpr())) {
+      BasicExpressionCompiler constantCompiler =
+          ExpressionCompiler.createConstantCompiler(
+              constant,
+              ALL_RESOLVED,
+              new SimpleLocalVariableManager(
+                  javaClass.type(),
+                  method,
+                  ImmutableList.of("renderContext"),
+                  start,
+                  end,
+                  /* isStatic= */ true),
+              javaSourceFunctionCompiler,
+              fileSetMetadata);
+      SoyExpression expression = constantCompiler.compile(constant.getExpr());
+      Expression value =
+          BytecodeUtils.isPrimitive(expression.resultType())
+              ? expression
+              : fields.addStaticField("const$" + constant.getVar().name(), expression).accessor();
 
-    SoyExpression buildConstValue = expressionCompiler.compile(constant.getExpr());
-    Preconditions.checkArgument(
-        isDefinitelyAssignableFrom(buildConstValue.soyRuntimeType().runtimeType(), methodType));
+      Preconditions.checkArgument(
+          isDefinitelyAssignableFrom(expression.soyRuntimeType().runtimeType(), methodType));
+      Statement.returnExpression(value)
+          .labelStart(start)
+          .labelEnd(end)
+          .writeMethod(methodAccess(), method, writer);
+    } else {
+      BasicExpressionCompiler expressionCompiler =
+          ExpressionCompiler.createBasicCompiler(
+              constant,
+              ALL_RESOLVED,
+              variables,
+              variableSet,
+              javaSourceFunctionCompiler,
+              fileSetMetadata);
 
-    String constKey = javaClassName + "#" + constant.getVar().name();
+      SoyExpression buildConstValue = expressionCompiler.compile(constant.getExpr());
+      Preconditions.checkArgument(
+          isDefinitelyAssignableFrom(buildConstValue.soyRuntimeType().runtimeType(), methodType));
 
-    boolean constIsPrimitive = BytecodeUtils.isPrimitive(methodType);
-    Variable tmpVar =
-        variableSet
-            .enterScope()
-            .create("tmp", renderContextExpr.getConst(constKey), SaveStrategy.STORE);
-    Statement storeLocal =
-        tmpVar
-            .local()
-            .store(
-                constIsPrimitive ? boxJavaPrimitive(methodType, buildConstValue) : buildConstValue);
-    Statement storeConst = renderContextExpr.storeConst(constKey, tmpVar.accessor());
-    Expression returnValue =
-        constIsPrimitive
-            ? unboxJavaPrimitive(methodType, tmpVar.accessor())
-            : tmpVar.accessor().checkedCast(method.getReturnType());
+      String constKey = javaClassName + "#" + constant.getVar().name();
 
-    // Implements a lazily initialized, memoized value. Memoization ensures that values appear
-    // constant even if their initializer is not idempotent. The value is memoized into the
-    // RenderContext, which is more or less request scoped. Request scoped storage (rather than Java
-    // static memory) is necessary because constants can be initialized via externs that depend on
-    // request scoped data (via type="instance").
-    new Statement() {
-      @Override
-      protected void doGen(CodeBuilder adapter) {
-        /*
-          public static T constant(RenderContext r) {
-            Object tmp = r.getConst("key");
-            if (tmp == null) {
-              goto END;
+      boolean constIsPrimitive = BytecodeUtils.isPrimitive(methodType);
+      Variable tmpVar =
+          variableSet
+              .enterScope()
+              .create("tmp", renderContextExpr.getConst(constKey), SaveStrategy.STORE);
+      Statement storeLocal =
+          tmpVar
+              .local()
+              .store(
+                  constIsPrimitive
+                      ? boxJavaPrimitive(methodType, buildConstValue)
+                      : buildConstValue);
+      Statement storeConst = renderContextExpr.storeConst(constKey, tmpVar.accessor());
+      Expression returnValue =
+          constIsPrimitive
+              ? unboxJavaPrimitive(methodType, tmpVar.accessor())
+              : tmpVar.accessor().checkedCast(method.getReturnType());
+
+      // Implements a lazily initialized, memoized value. Memoization ensures that values appear
+      // constant even if their initializer is not idempotent. The value is memoized into the
+      // RenderContext, which is more or less request scoped. Request scoped storage (rather than
+      // Java
+      // static memory) is necessary because constants can be initialized via externs that depend on
+      // request scoped data (via type="instance").
+      new Statement() {
+        @Override
+        protected void doGen(CodeBuilder adapter) {
+          /*
+            public static T constant(RenderContext r) {
+              Object tmp = r.getConst("key");
+              if (tmp == null) {
+                goto END;
+              }
+              tmp = ...;
+              r.storeConst("key", tmp);
+              END;
+              return (T) tmp;
             }
-            tmp = ...;
-            r.storeConst("key", tmp);
-            END;
-            return (T) tmp;
-          }
-        */
-        adapter.mark(start);
-        tmpVar.initializer().gen(adapter);
-        tmpVar.accessor().gen(adapter);
-        adapter.ifNonNull(end);
-        storeLocal.gen(adapter);
-        storeConst.gen(adapter);
-        adapter.mark(end);
-        returnValue.gen(adapter);
-        adapter.returnValue();
-        variableSet.generateTableEntries(adapter);
-      }
-    }.writeMethod(methodAccess(), method, writer);
+          */
+          adapter.mark(start);
+          tmpVar.initializer().gen(adapter);
+          tmpVar.accessor().gen(adapter);
+          adapter.ifNonNull(end);
+          storeLocal.gen(adapter);
+          storeConst.gen(adapter);
+          adapter.mark(end);
+          returnValue.gen(adapter);
+          adapter.returnValue();
+          variableSet.generateTableEntries(adapter);
+        }
+      }.writeMethod(methodAccess(), method, writer);
+    }
   }
 
   private int methodAccess() {

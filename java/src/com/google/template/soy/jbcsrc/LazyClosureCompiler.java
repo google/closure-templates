@@ -224,7 +224,7 @@ final class LazyClosureCompiler {
 
   LazyClosure compileLazyExpression(
       String namePrefix, SoyNode declaringNode, String varName, ExprRootNode exprNode) {
-    if (ExpressionCompiler.canCompileToConstant(exprNode)) {
+    if (ExpressionCompiler.canCompileToConstant(declaringNode, exprNode)) {
       SoyExpression expression = parent.constantCompiler.compile(exprNode);
       return LazyClosure.create(
           varName,

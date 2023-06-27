@@ -562,7 +562,7 @@ final class TemplateCompiler {
           headerVar.type(),
           BytecodeUtils.constantNull(SoyRuntimeType.getBoxedType(headerVar.type()).runtimeType()));
     } else {
-      if (ExpressionCompiler.canCompileToConstant(defaultValueNode)) {
+      if (ExpressionCompiler.canCompileToConstant(templateNode, defaultValueNode)) {
         SoyExpression defaultValue = constantCompiler.compile(defaultValueNode);
         if (!defaultValue.isCheap()) {
           FieldRef ref;

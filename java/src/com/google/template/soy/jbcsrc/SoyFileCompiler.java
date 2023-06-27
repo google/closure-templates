@@ -32,8 +32,6 @@ import com.google.template.soy.soytree.ExternNode;
 import com.google.template.soy.soytree.PartialFileSetMetadata;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.TemplateNode;
-import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.objectweb.asm.Opcodes;
 
@@ -73,7 +71,7 @@ final class SoyFileCompiler {
 
     // If the template is in a file whose namespace is not known to be unique, generate it into its
     // own class to avoid ODR violations.
-    List<TypeWriter> writers =
+    ImmutableList<TypeWriter> writers =
         fileNode.getTemplates().stream()
             .map(
                 templateNode -> {
@@ -88,7 +86,7 @@ final class SoyFileCompiler {
                       .compile();
                   return typeWriter;
                 })
-            .collect(Collectors.toList());
+            .collect(toImmutableList());
     return writers.stream().flatMap(TypeWriter::close).collect(toImmutableList());
   }
 
@@ -103,6 +101,7 @@ final class SoyFileCompiler {
                 new ConstantsCompiler(
                         (ConstNode) c,
                         typeWriter.writer(),
+                        typeWriter.fields(),
                         javaSourceFunctionCompiler,
                         fileSetMetadata)
                     .compile();
