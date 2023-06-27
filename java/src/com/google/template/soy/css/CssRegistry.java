@@ -38,6 +38,8 @@ public abstract class CssRegistry {
 
   abstract Optional<ImmutableListMultimap<String, String>> classMap();
 
+  public abstract ImmutableMap<String, ImmutableMap<String, String>> filePathToShortClassMap();
+
   abstract ImmutableMap<String, String> classToFilePathMap();
 
   abstract ImmutableMap<String, String> classToNamespaceMap();
@@ -73,13 +75,14 @@ public abstract class CssRegistry {
   public boolean containsClassMap() {
     return classMap().isPresent();
   }
-
+  
   public static CssRegistry createForLocalDevelopment(
       ImmutableSet<String> providedSymbols, ImmutableMap<String, String> filePathToSymbol) {
     return new AutoValue_CssRegistry(
         providedSymbols,
         filePathToSymbol,
         Optional.empty(),
+        ImmutableMap.of(),
         ImmutableMap.of(),
         ImmutableMap.of(),
         true /* skipCssReferenceCheck */);
@@ -91,6 +94,7 @@ public abstract class CssRegistry {
         providedSymbols,
         filePathToSymbol,
         Optional.empty(),
+        ImmutableMap.of(),
         ImmutableMap.of(),
         ImmutableMap.of(),
         false /* skipCssReferenceCheck */);
