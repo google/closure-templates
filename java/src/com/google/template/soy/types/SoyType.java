@@ -112,6 +112,8 @@ public abstract class SoyType {
     VE,
     VE_DATA,
     // Imported symbol types
+    CSS_TYPE,
+    CSS_MODULE,
     PROTO_TYPE,
     PROTO_ENUM_TYPE,
     PROTO_EXTENSION,

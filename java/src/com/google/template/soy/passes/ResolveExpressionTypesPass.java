@@ -2686,6 +2686,8 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
         case VE:
         case VE_DATA:
         case MESSAGE:
+        case CSS_TYPE:
+        case CSS_MODULE:
         case PROTO_TYPE:
         case PROTO_ENUM_TYPE:
         case PROTO_EXTENSION:

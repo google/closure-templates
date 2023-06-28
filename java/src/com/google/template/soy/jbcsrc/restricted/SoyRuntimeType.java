@@ -209,6 +209,8 @@ public abstract class SoyRuntimeType {
       case ANY:
         // no unique unboxed representation
         return null;
+      case CSS_TYPE:
+      case CSS_MODULE:
       case PROTO_TYPE:
       case PROTO_ENUM_TYPE:
       case PROTO_EXTENSION:

@@ -166,6 +166,8 @@ final class KeyCommandPass implements CompilerFilePass {
           isSupportedType = false;
           break;
         case UNION:
+        case CSS_TYPE:
+        case CSS_MODULE:
         case PROTO_TYPE:
         case PROTO_ENUM_TYPE:
         case PROTO_EXTENSION:

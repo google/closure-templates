@@ -632,6 +632,8 @@ public final class JsType {
           builder.setPredicate(GOOG_IS_FUNCTION);
           return builder.build();
         }
+      case CSS_TYPE:
+      case CSS_MODULE:
       case PROTO_TYPE:
       case PROTO_ENUM_TYPE:
       case PROTO_EXTENSION:
