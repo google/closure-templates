@@ -110,6 +110,8 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
         case VE_DEF:
           return visitVeDefNode(node);
         case MSG_WITH_ID:
+        case ID_HOLDER:
+        case UNIQUE_ATTRIBUTE:
         case REMAINDER:
           // should have been removed earlier in the compiler
         case UNKNOWN_JS_GLOBAL:

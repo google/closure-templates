@@ -51,6 +51,8 @@ public enum BuiltinFunction implements SoyFunction {
   DEBUG_SOY_TEMPLATE_INFO("$$debugSoyTemplateInfo"),
   PROTO_INIT("$$protoInit"),
   VE_DEF("ve_def"),
+  ID_HOLDER("idHolder"),
+  UNIQUE_ATTRIBUTE("uniqueAttribute"),
   ;
 
   public static ImmutableSet<String> names() {
@@ -94,10 +96,13 @@ public enum BuiltinFunction implements SoyFunction {
   public Set<Integer> getValidArgsSizes() {
     switch (this) {
       case CSS:
+      case UNIQUE_ATTRIBUTE:
+        return ImmutableSet.of(1, 2);
       case VE_DATA:
         return ImmutableSet.of(1, 2);
       case IS_PRIMARY_MSG_IN_USE:
         return ImmutableSet.of(3);
+      case ID_HOLDER:
       case DEBUG_SOY_TEMPLATE_INFO:
         return ImmutableSet.of(0);
       case IS_PARAM_SET:
@@ -135,6 +140,7 @@ public enum BuiltinFunction implements SoyFunction {
       case TO_FLOAT:
       case PROTO_INIT:
       case IS_PARAM_SET:
+      case UNIQUE_ATTRIBUTE:
         return true;
       case CSS: // implicitly depends on a renaming map or js compiler flag
       case XID: // implicitly depends on a renaming map or js compiler flag
@@ -144,6 +150,7 @@ public enum BuiltinFunction implements SoyFunction {
       case REMAINDER: // implicitly depends on a plural value
       case IS_PRIMARY_MSG_IN_USE: // implicitly depends on a message bundle
       case DEBUG_SOY_TEMPLATE_INFO: // implicitly depends on a renderer param or js compiler flag
+      case ID_HOLDER: // implicitly depends on UniqueAttributeFunctionRuntime to get unique id
       case VE_DEF:
         return false;
     }

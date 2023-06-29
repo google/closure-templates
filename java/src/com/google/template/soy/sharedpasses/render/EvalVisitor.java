@@ -886,6 +886,8 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
         case VE_DEF:
           return UNDEFINED_VE;
         case MSG_WITH_ID:
+        case ID_HOLDER:
+        case UNIQUE_ATTRIBUTE:
         case REMAINDER:
           // should have been removed earlier in the compiler
           throw new AssertionError();

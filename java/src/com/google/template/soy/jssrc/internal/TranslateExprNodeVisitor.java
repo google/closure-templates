@@ -1023,6 +1023,8 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
           return visitVeDefFunction(node);
         case LEGACY_DYNAMIC_TAG:
         case REMAINDER:
+        case ID_HOLDER:
+        case UNIQUE_ATTRIBUTE:
         case MSG_WITH_ID:
           // should have been removed earlier in the compiler
           throw new AssertionError();
@@ -1076,7 +1078,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     Expression e = visit(expr);
     return e.isDefinitelyNotNull() ? e : SOY_CHECK_NOT_NULL.call(e);
   }
-
+  
   private Expression visitIsSetFunction(FunctionNode node) {
     Expression expression = visit(node.getChild(0));
     return expression.tripleNotEquals(Expressions.LITERAL_UNDEFINED);
