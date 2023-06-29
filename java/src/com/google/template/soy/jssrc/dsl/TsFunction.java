@@ -23,26 +23,48 @@ import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 /**
- * Represents a TS arrow function expression.
+ * Represents an TS function expression, either an anonymous function or an arrow function.
  *
- * <p>Example:
+ * <p>Examples:
+ *
+ * <p><code>{@literal
+ * function (param: string): string { ... }
+ * }</code>
  *
  * <p><code>{@literal
  * (param: string): string => { ... }
  * }</code>
  */
 @AutoValue
-abstract class TsArrowFunction extends Expression implements Expression.InitialStatementsScope {
+abstract class TsFunction extends Expression implements Expression.InitialStatementsScope {
 
-  static TsArrowFunction create(ParamDecls params, List<Statement> statements) {
-    return new AutoValue_TsArrowFunction(params, null, ImmutableList.copyOf(statements));
+  public enum Format {
+    ANONYMOUS,
+    ARROW
   }
 
-  static TsArrowFunction create(
+  static TsFunction anonymous(
       ParamDecls params, Expression returnType, List<Statement> statements) {
-    return new AutoValue_TsArrowFunction(
-        params, Preconditions.checkNotNull(returnType), ImmutableList.copyOf(statements));
+    return new AutoValue_TsFunction(
+        Format.ANONYMOUS,
+        params,
+        Preconditions.checkNotNull(returnType),
+        ImmutableList.copyOf(statements));
   }
+
+  static TsFunction arrow(ParamDecls params, List<Statement> statements) {
+    return new AutoValue_TsFunction(Format.ARROW, params, null, ImmutableList.copyOf(statements));
+  }
+
+  static TsFunction arrow(ParamDecls params, Expression returnType, List<Statement> statements) {
+    return new AutoValue_TsFunction(
+        Format.ARROW,
+        params,
+        Preconditions.checkNotNull(returnType),
+        ImmutableList.copyOf(statements));
+  }
+
+  abstract Format format();
 
   abstract ParamDecls params();
 
@@ -72,13 +94,17 @@ abstract class TsArrowFunction extends Expression implements Expression.InitialS
 
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
-    ctx.append("(").appendOutputExpression(params()).append(")");
+    boolean anon = format() == Format.ANONYMOUS;
+    ctx.append(anon ? "function(" : "(").appendOutputExpression(params()).append(")");
     if (returnType() != null) {
       ctx.noBreak().append(": ");
       ctx.appendOutputExpression(returnType());
     }
-    ctx.noBreak().append(" => ");
-    Expression singleExpression = getSingleExpression();
+    Expression singleExpression = null;
+    if (!anon) {
+      ctx.noBreak().append(" => ");
+      singleExpression = getSingleExpression();
+    }
     if (singleExpression != null) {
       ctx.appendOutputExpression(singleExpression);
     } else {

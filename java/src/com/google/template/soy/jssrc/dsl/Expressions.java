@@ -104,17 +104,22 @@ public final class Expressions {
     return Leaf.create(expr, /* isCheap= */ false, requires);
   }
 
+  public static Expression tsFunction(
+      ParamDecls params, Expression returnType, List<Statement> bodyStmts) {
+    return TsFunction.anonymous(params, returnType, bodyStmts);
+  }
+
   public static Expression tsArrowFunction(List<Statement> bodyStmts) {
     return tsArrowFunction(ParamDecls.EMPTY, bodyStmts);
   }
 
   public static Expression tsArrowFunction(ParamDecls params, List<Statement> bodyStmts) {
-    return TsArrowFunction.create(params, bodyStmts);
+    return TsFunction.arrow(params, bodyStmts);
   }
 
   public static Expression tsArrowFunction(
       ParamDecls params, Expression returnType, List<Statement> bodyStmts) {
-    return TsArrowFunction.create(params, returnType, bodyStmts);
+    return TsFunction.arrow(params, returnType, bodyStmts);
   }
 
   public static Expression tsArrowFunction(Expression lambda) {
