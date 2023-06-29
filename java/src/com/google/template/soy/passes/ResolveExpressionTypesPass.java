@@ -1343,9 +1343,34 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
         calculateAccessChainTypes(nsBaseExpr, baseType, childDataAccess);
         finishAssertNonNullOpNodeChain(dataAccess);
       }
-      // TODO(b/138252762): This should be nullable.
-      nullSafeAccessNode.setType(nullSafeAccessNode.getDataAccess().getType());
+      SoyType type = nullSafeAccessNode.getDataAccess().getType();
+      if (SoyTypes.isNullable(nullSafeAccessNode.getBase().getType())
+          && !hasNonNullAssertion(nullSafeAccessNode.getDataAccess())) {
+        type = SoyTypes.makeNullable(type);
+      }
+      nullSafeAccessNode.setType(type);
       tryApplySubstitution(nullSafeAccessNode);
+    }
+
+    private ExprNode getTail(ExprNode expr) {
+      while (expr instanceof NullSafeAccessNode) {
+        expr = ((NullSafeAccessNode) expr).getDataAccess();
+      }
+      return expr;
+    }
+
+    private boolean hasNonNullAssertion(ExprNode expr) {
+      return hasNonNullAssertionRecurse(getTail(expr));
+    }
+
+    private boolean hasNonNullAssertionRecurse(ExprNode expr) {
+      if (expr instanceof AssertNonNullOpNode) {
+        return true;
+      }
+      if (!(expr instanceof DataAccessNode)) {
+        return false;
+      }
+      return hasNonNullAssertionRecurse(((DataAccessNode) expr).getBaseExprChild());
     }
 
     private DataAccessNode getDataAccessChild(AccessChainComponentNode expr) {
