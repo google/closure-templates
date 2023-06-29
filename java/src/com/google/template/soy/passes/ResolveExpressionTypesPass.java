@@ -185,6 +185,7 @@ import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.ProtoImportType;
 import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.SanitizedType;
+import com.google.template.soy.types.SanitizedType.AttributesType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
@@ -2796,6 +2797,12 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
           break;
         case PROTO_INIT:
           visitProtoInitFunction(node);
+          break;
+        case ID_HOLDER:
+          node.setType(MapType.ANY_MAP);
+          break;
+        case UNIQUE_ATTRIBUTE:
+          node.setType(AttributesType.getInstance());
           break;
       }
     }

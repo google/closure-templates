@@ -621,6 +621,8 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
       case VE_DEF:
         return NONE;
       case MSG_WITH_ID:
+      case ID_HOLDER:
+      case UNIQUE_ATTRIBUTE:
       case REMAINDER:
         // should have been removed earlier in the compiler
         throw new AssertionError();
