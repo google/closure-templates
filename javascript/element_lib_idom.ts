@@ -15,7 +15,7 @@ import {SafeHtml} from 'google3/third_party/javascript/closure/html/safehtml';
 import {SanitizedContentKind} from 'google3/third_party/javascript/closure/soy/data';
 
 import {IncrementalDomRenderer, patchOuter} from './api_idom';
-import {isTaggedForSkip, USE_TEMPLATE_CLONING} from './global';
+import {USE_TEMPLATE_CLONING, isTaggedForSkip} from './global';
 import {IdomTemplate, IjData} from './templates';
 
 /**
@@ -165,7 +165,15 @@ export abstract class SoyElement<TData extends {} | null, TInterface extends {}>
       return false;
     }
     this.node = node;
+
+    assert(
+      node.__soy === undefined ||
+        node.__soy === (this as unknown as SoyElement<{}, {}>),
+      `Cannot assign ${this.constructor.name} because the element already has a Soy Element ${node.__soy?.constructor.name} assigned to it`,
+    );
+
     node.__soy = this as unknown as SoyElement<{}, {}>;
+
     if (this.shouldSyncState()) {
       this.syncStateFromData(data);
     }
