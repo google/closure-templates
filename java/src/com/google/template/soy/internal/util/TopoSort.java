@@ -22,10 +22,12 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -33,7 +35,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-/** Basic opographical sort utility. */
+/** Basic topographical sort utility. */
 public final class TopoSort<T> {
 
   private ImmutableList<T> cyclicKeys;
@@ -42,6 +44,8 @@ public final class TopoSort<T> {
    * Topologically sorts {@code unsorted}.
    *
    * <p>Self edges are not allowed. All successors must appear in the input to sort.
+   *
+   * <p>Ordering is deterministic. Ordering is stable when there are no edges.
    *
    * @throws NoSuchElementException if a cycle is encountered
    */
@@ -70,13 +74,13 @@ public final class TopoSort<T> {
     List<T> reordered = new ArrayList<>(deps.size());
 
     Set<T> cleared = ImmutableSet.of();
-    Set<T> candidateLeaves =
-        deps.keySet().stream().filter(k -> deps.get(k).isEmpty()).collect(Collectors.toSet());
+    Collection<T> candidateLeaves =
+        deps.keySet().stream().filter(k -> deps.get(k).isEmpty()).collect(Collectors.toList());
 
     // Topological sort.
     while (!deps.isEmpty()) {
       Set<T> nextCleared = new HashSet<>();
-      Set<T> nextCandidateLeaves = new HashSet<>();
+      Set<T> nextCandidateLeaves = new LinkedHashSet<>();
 
       for (T possibleLeaf : candidateLeaves) {
         Set<T> leafDeps = deps.get(possibleLeaf);

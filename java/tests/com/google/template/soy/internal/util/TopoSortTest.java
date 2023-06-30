@@ -20,6 +20,8 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -57,6 +59,15 @@ public final class TopoSortTest {
                     .put(3, list(1))
                     .buildOrThrow()))
         .containsExactly(1, 3, 2);
+  }
+
+  @Test
+  public void testStable() {
+    List<Integer> big = new ArrayList<>(100);
+    for (int i = 0; i < 100; i++) {
+      big.add(i);
+    }
+    assertThat(new TopoSort<Integer>().sort(big, k -> ImmutableList.of())).isEqualTo(big);
   }
 
   private static <T> ImmutableList<T> list(T... items) {
