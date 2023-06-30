@@ -485,13 +485,18 @@ public final class PassManager {
             // Needs to come after ContentSecurityPolicyNonceInjectionPass.
             .add(new CheckEscapingSanityFilePass(errorReporter));
       }
-      passes
-          .add(
-              new ImportsPass(
-                  errorReporter,
-                  disableAllTypeChecking,
+
+      ImmutableList.Builder<ImportsPass.ImportProcessor> importProcessors =
+          new ImmutableList.Builder<ImportsPass.ImportProcessor>()
+              .add(
                   new ProtoImportProcessor(registry, errorReporter, disableAllTypeChecking),
-                  new TemplateImportProcessor(errorReporter, accumulatedState::registryFromDeps)))
+                  new TemplateImportProcessor(errorReporter, accumulatedState::registryFromDeps));
+      if (cssRegistry.isPresent()) {
+        importProcessors.add(new CssImportProcessor(cssRegistry.get(), errorReporter));
+      }
+      passes.add(new ImportsPass(errorReporter, disableAllTypeChecking, importProcessors.build()));
+
+      passes
           .add(new ResolveUseVariantTypePass(errorReporter))
           .add(
               new FileDependencyOrderPass(

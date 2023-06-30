@@ -50,8 +50,9 @@ public final class ImportNode extends AbstractSoyNode {
    */
   private SoyType moduleType;
 
-  /** Only Proto is supported right now. */
+  /** Only Proto and CSS are supported right now. */
   public enum ImportType {
+    CSS,
     PROTO,
     TEMPLATE,
     UNKNOWN
