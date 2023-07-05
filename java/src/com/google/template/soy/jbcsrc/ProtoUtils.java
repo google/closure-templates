@@ -312,20 +312,8 @@ final class ProtoUtils {
       this.baseExpr = baseExpr;
     }
 
-    SoyExpression getTypedBaseExpression() {
-      if (baseExpr.isBoxed()) {
-        return SoyExpression.forProto(
-            unboxedRuntimeType,
-            baseExpr
-                .invoke(MethodRef.SOY_PROTO_VALUE_GET_PROTO)
-                // this cast is required because getProto() is generic, so it basically returns
-                // 'Message'
-                .checkedCast(unboxedRuntimeType.runtimeType()));
-      } else if (baseExpr.soyRuntimeType().equals(unboxedRuntimeType)) {
-        return baseExpr;
-      } else {
-        throw new AssertionError("should be impossible");
-      }
+    Expression getTypedBaseExpression() {
+      return baseExpr.unboxAsMessageIgnoringNullishness(unboxedRuntimeType.runtimeType());
     }
   }
 
@@ -363,7 +351,7 @@ final class ProtoUtils {
     }
 
     SoyExpression generate() {
-      SoyExpression typedBaseExpr = getTypedBaseExpression();
+      Expression typedBaseExpr = getTypedBaseExpression();
       if (descriptor.isExtension()) {
         return handleExtension(typedBaseExpr);
       } else {
@@ -371,7 +359,7 @@ final class ProtoUtils {
       }
     }
 
-    private SoyExpression handleNormalField(final SoyExpression typedBaseExpr) {
+    private SoyExpression handleNormalField(final Expression typedBaseExpr) {
       // TODO(lukes): consider adding a cache for the method lookups.
       final MethodRef getMethodRef = getGetterMethod(descriptor);
 
@@ -468,7 +456,7 @@ final class ProtoUtils {
       }
     }
 
-    private SoyExpression handleMapField(SoyExpression typedBaseExpr, MethodRef getMethodRef) {
+    private SoyExpression handleMapField(Expression typedBaseExpr, MethodRef getMethodRef) {
       List<FieldDescriptor> mapFields = descriptor.getMessageType().getFields();
       FieldDescriptor keyDescriptor = mapFields.get(0);
       FieldDescriptor valueDescriptor = mapFields.get(1);
@@ -545,7 +533,7 @@ final class ProtoUtils {
       throw new AssertionError("unsupported field type: " + descriptor);
     }
 
-    private SoyExpression handleExtension(final SoyExpression typedBaseExpr) {
+    private SoyExpression handleExtension(final Expression typedBaseExpr) {
       // extensions are a little weird since we need to look up the extension object and then call
       // message.getExtension(Extension) and then cast and (maybe) unbox the result.
       // The reason we need to cast is because .getExtension is a generic api and that is just how
@@ -830,7 +818,7 @@ final class ProtoUtils {
     }
 
     SoyExpression generate() {
-      SoyExpression typedBaseExpr = getTypedBaseExpression();
+      Expression typedBaseExpr = getTypedBaseExpression();
       if (descriptor.isRepeated()) {
         throw new AssertionError("repeated fields don't have hassers: " + descriptor);
       } else {
@@ -838,7 +826,7 @@ final class ProtoUtils {
       }
     }
 
-    private SoyExpression handleNormalField(SoyExpression typedBaseExpr) {
+    private SoyExpression handleNormalField(Expression typedBaseExpr) {
       if (!descriptor.hasPresence()) {
         // There aren't hassers for fields without presence.
 
@@ -1197,7 +1185,7 @@ final class ProtoUtils {
       checkArgument(listArg.isNonNullable());
 
       // Unbox listArg as List<SoyValueProvider> and wait until all items are done
-      SoyExpression unboxed = listArg.unboxAsList();
+      SoyExpression unboxed = listArg.unboxAsListIgnoringNullishness();
       Expression resolved = detacher.resolveSoyValueProviderList(unboxed);
 
       // Enter new scope

@@ -155,12 +155,13 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
 
   @Override
   public Expression getAllRequiredCssNamespaces(SoyExpression template) {
-    return delegate.invoke(GET_ALL_REQUIRED_CSS_NAMESPACES, template.unboxAsString());
+    return delegate.invoke(
+        GET_ALL_REQUIRED_CSS_NAMESPACES, template.unboxAsStringIgnoringNullishness());
   }
 
   @Override
   public Expression getAllRequiredCssPaths(SoyExpression template) {
-    return delegate.invoke(GET_ALL_REQUIRED_CSS_PATHS, template.unboxAsString());
+    return delegate.invoke(GET_ALL_REQUIRED_CSS_PATHS, template.unboxAsStringIgnoringNullishness());
   }
 
   Expression getRenderCssHelper() {

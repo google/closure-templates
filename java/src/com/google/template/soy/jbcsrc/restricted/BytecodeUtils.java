@@ -641,11 +641,11 @@ public final class BytecodeUtils {
     SoyRuntimeType leftRuntimeType = left.soyRuntimeType();
     SoyRuntimeType rightRuntimeType = right.soyRuntimeType();
     if (leftRuntimeType.isKnownString()) {
-      return doEqualsString(left.unboxAsString(), right);
+      return doEqualsString(left.unboxAsStringPreservingNullishness(), right);
     }
     if (rightRuntimeType.isKnownString()) {
       // TODO(lukes): we are changing the order of evaluation here.
-      return doEqualsString(right.unboxAsString(), left);
+      return doEqualsString(right.unboxAsStringPreservingNullishness(), left);
     }
     if (leftRuntimeType.isKnownInt()
         && rightRuntimeType.isKnownInt()
@@ -696,9 +696,10 @@ public final class BytecodeUtils {
     SoyRuntimeType otherRuntimeType = other.soyRuntimeType();
     if (otherRuntimeType.isKnownStringOrSanitizedContent()) {
       if (stringExpr.isNonNullable()) {
-        return stringExpr.invoke(MethodRef.EQUALS, other.unboxAsString());
+        return stringExpr.invoke(MethodRef.EQUALS, other.unboxAsStringPreservingNullishness());
       } else {
-        return MethodRef.OBJECTS_EQUALS.invoke(stringExpr, other.unboxAsString());
+        return MethodRef.OBJECTS_EQUALS.invoke(
+            stringExpr, other.unboxAsStringPreservingNullishness());
       }
     }
     if (otherRuntimeType.isKnownNumber() && other.isNonNullable()) {

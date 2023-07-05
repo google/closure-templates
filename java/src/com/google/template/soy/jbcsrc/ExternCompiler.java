@@ -287,11 +287,12 @@ public final class ExternCompiler {
       }
       return MethodRef.BOX_LONG.invoke(actualParam.unboxAsLong());
     } else if (javaType.equals(BytecodeUtils.STRING_TYPE)) {
-      return actualParam.unboxAsString();
+      return actualParam.unboxAsStringPreservingNullishness();
     } else if (javaType.equals(BytecodeUtils.LIST_TYPE)
         || javaType.equals(BytecodeUtils.IMMUTIBLE_LIST_TYPE)) {
       SoyType elmType = ((ListType) soyType).getElementType();
-      SoyExpression unboxedList = actualParam.isBoxed() ? actualParam.unboxAsList() : actualParam;
+      SoyExpression unboxedList =
+          actualParam.isBoxed() ? actualParam.unboxAsListPreservingNullishness() : actualParam;
       switch (elmType.getKind()) {
         case INT:
           return MethodRef.LIST_UNBOX_INTS.invoke(unboxedList);

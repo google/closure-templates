@@ -481,7 +481,8 @@ final class ExpressionCompiler {
       // invocation, as we do for regular loops.
       ExprNode listExpr = node.getListExpr();
       SoyExpression soyList = visit(listExpr);
-      SoyExpression javaList = soyList.unboxAsList();
+      // Don't care about nullishness since we always dereference the list
+      SoyExpression javaList = soyList.unboxAsListIgnoringNullishness();
       ExprNode mapExpr = node.getListItemTransformExpr();
       ExprNode filterExpr = node.getFilterExpr();
 
@@ -628,7 +629,9 @@ final class ExpressionCompiler {
     protected SoyExpression visitMapLiteralFromListNode(MapLiteralFromListNode node) {
       return SoyExpression.forSoyValue(
           node.getType(),
-          MethodRef.CONSTRUCT_MAP_FROM_LIST.invoke(visit(node.getListExpr()).unboxAsList()));
+          MethodRef.CONSTRUCT_MAP_FROM_LIST.invoke(
+              // constructMapFromList doesn't support null list params
+              visit(node.getListExpr()).unboxAsListIgnoringNullishness()));
     }
 
     // Comparison operators
@@ -1324,7 +1327,7 @@ final class ExpressionCompiler {
       // Special case index lookups on lists to avoid boxing the int key.  Maps cannot be
       // optimized the same way because there is no real way to 'unbox' a SoyMap.
       if (baseExpr.soyRuntimeType().isKnownListOrUnionOfLists()) {
-        SoyExpression list = baseExpr.unboxAsList();
+        SoyExpression list = baseExpr.unboxAsListIgnoringNullishness();
         SoyExpression index = keyExpr.unboxAsLong();
         if (analysis.isResolved(node)) {
           soyValueProvider = MethodRef.RUNTIME_GET_LIST_ITEM.invoke(list, index);
@@ -1587,7 +1590,8 @@ final class ExpressionCompiler {
     @Override
     SoyExpression visitVeDataFunction(FunctionNode node) {
       SoyExpression ve = visit(node.getChild(0));
-      Expression data = visit(node.getChild(1)).unboxAsMessage();
+      Expression data =
+          visit(node.getChild(1)).unboxAsMessagePreservingNullishness(BytecodeUtils.MESSAGE_TYPE);
       return SoyExpression.forSoyValue(
           node.getType(), MethodRef.SOY_VISUAL_ELEMENT_DATA_CREATE.invoke(ve, data));
     }
@@ -1673,7 +1677,7 @@ final class ExpressionCompiler {
       } else if (javaType.equals(Type.LONG_TYPE)) {
         return soyExpression.unboxAsLong();
       } else if (javaType.equals(BytecodeUtils.STRING_TYPE)) {
-        return soyExpression.unboxAsString();
+        return soyExpression.unboxAsStringPreservingNullishness();
       } else if (javaType.equals(Type.DOUBLE_TYPE)) {
         return soyExpression.coerceToDouble().unboxAsDouble();
       } else if (javaType.getSort() == Type.OBJECT) {
@@ -1681,18 +1685,16 @@ final class ExpressionCompiler {
         if (nonNullableType.getKind() == Kind.ANY || nonNullableType.getKind() == Kind.UNKNOWN) {
           return soyExpression.box().checkedCast(BytecodeUtils.SOY_VALUE_TYPE);
         } else if (nonNullableType.getKind() == Kind.PROTO) {
-          return soyExpression
-              .unboxAsMessage()
-              .checkedCast(
-                  ProtoUtils.messageRuntimeType(((SoyProtoType) nonNullableType).getDescriptor())
-                      .type());
+          return soyExpression.unboxAsMessagePreservingNullishness(
+              ProtoUtils.messageRuntimeType(((SoyProtoType) nonNullableType).getDescriptor())
+                  .type());
         } else if (nonNullableType.getKind() == Kind.MESSAGE) {
-          return soyExpression.unboxAsMessage();
+          return soyExpression.unboxAsMessagePreservingNullishness(BytecodeUtils.MESSAGE_TYPE);
         } else if (type.getKind() == Kind.PROTO_ENUM) {
           // TODO(b/217186858): support nullable proto enum parameters.
           return soyExpression.unboxAsLong();
         } else if (nonNullableType.getKind() == Kind.LIST) {
-          return soyExpression.unboxAsList();
+          return soyExpression.unboxAsListPreservingNullishness();
         } else {
           return soyExpression.box().checkedCast(javaType);
         }

@@ -307,7 +307,10 @@ final class MsgCompiler {
         value = parameterLookup.getRenderContext().applyPrintDirective(directive, value);
       }
       render =
-          appendableExpression.appendString(value.unboxAsString()).toStatement().labelStart(start);
+          appendableExpression
+              .appendString(value.unboxAsStringIgnoringNullishness())
+              .toStatement()
+              .labelStart(start);
     }
     return Statement.concat(initMsgRenderer, render, scope.exitScope());
   }

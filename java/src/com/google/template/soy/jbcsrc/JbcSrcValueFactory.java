@@ -296,9 +296,9 @@ final class JbcSrcValueFactory extends JavaValueFactory {
     // For protos, we need to unbox as Message & then cast.
     if (Message.class.isAssignableFrom(expectedParamType)) {
       if (expectedParamType.equals(Message.class)) {
-        return actualParam.unboxAsMessage();
+        return actualParam.unboxAsMessagePreservingNullishness(BytecodeUtils.MESSAGE_TYPE);
       }
-      return actualParam.unboxAsMessage().checkedCast(expectedParamType);
+      return actualParam.unboxAsMessagePreservingNullishness(Type.getType(expectedParamType));
     }
     // For protocol enums, we need to call forNumber on the type w/ the param (as casted to an int).
     // This is because Soy internally stores enums as ints. We know this is safe because we
@@ -357,9 +357,9 @@ final class JbcSrcValueFactory extends JavaValueFactory {
     } else if (expectedParamType.equals(long.class)) {
       return actualParam.unboxAsLong();
     } else if (expectedParamType.equals(String.class)) {
-      return actualParam.unboxAsString();
+      return actualParam.unboxAsStringPreservingNullishness();
     } else if (expectedParamType.equals(List.class)) {
-      return actualParam.unboxAsList();
+      return actualParam.unboxAsListPreservingNullishness();
     }
 
     throw new AssertionError("Unable to convert parameter to " + expectedParamType);

@@ -486,6 +486,10 @@ public final class SoyExpression extends Expression {
     return forFloat(delegate.invoke(MethodRef.SOY_VALUE_FLOAT_VALUE));
   }
 
+  public SoyExpression unboxAsStringIgnoringNullishness() {
+    return this.asNonNullable().unboxAsStringPreservingNullishness();
+  }
+
   /**
    * Unboxes this to a {@link SoyExpression} with a String runtime type.
    *
@@ -494,7 +498,7 @@ public final class SoyExpression extends Expression {
    * it as its unboxed representation. If you simply want to 'coerce' the given value to a new type
    * consider {@link #coerceToString()} which is designed for that use case.
    */
-  public SoyExpression unboxAsString() {
+  public SoyExpression unboxAsStringPreservingNullishness() {
     if (alreadyUnboxed(String.class)) {
       return this;
     }
@@ -519,6 +523,10 @@ public final class SoyExpression extends Expression {
     return forString(unboxedString);
   }
 
+  public SoyExpression unboxAsListIgnoringNullishness() {
+    return this.asNonNullable().unboxAsListPreservingNullishness();
+  }
+
   /**
    * Unboxes this to a {@link SoyExpression} with a List runtime type.
    *
@@ -526,7 +534,7 @@ public final class SoyExpression extends Expression {
    * or other means) that the value does have the appropriate type but you prefer to interact with
    * it as its unboxed representation.
    */
-  public SoyExpression unboxAsList() {
+  public SoyExpression unboxAsListPreservingNullishness() {
     if (alreadyUnboxed(List.class)) {
       return this;
     }
@@ -566,6 +574,10 @@ public final class SoyExpression extends Expression {
     return forList(asListType, unboxedList);
   }
 
+  public Expression unboxAsMessageIgnoringNullishness(Type runtimeType) {
+    return this.asNonNullable().unboxAsMessagePreservingNullishness(runtimeType);
+  }
+
   /**
    * Unboxes this to a {@link SoyExpression} with a Message runtime type.
    *
@@ -573,23 +585,30 @@ public final class SoyExpression extends Expression {
    * or other means) that the value does have the appropriate type but you prefer to interact with
    * it as its unboxed representation.
    */
-  public Expression unboxAsMessage() {
+  public Expression unboxAsMessagePreservingNullishness(Type runtimeType) {
     if (soyType().getKind() == Kind.NULL) {
       // If this is a null literal, return a Messaged-typed null literal.
-      return BytecodeUtils.constantNull(BytecodeUtils.MESSAGE_TYPE);
+      return BytecodeUtils.constantNull(runtimeType);
     }
     // Attempting to unbox an unboxed proto
     // (We compare the non-nullable type because being null doesn't impact unboxability,
     //  and if we didn't remove null then isKnownProtoOrUnionOfProtos would fail.)
     if (soyRuntimeType.asNonNullable().isKnownProtoOrUnionOfProtos() && !isBoxed()) {
-      return this;
+      // Any unboxed proto must be either a concrete proto or a message.
+      // if we are unboxing to Message then there is no need to cast.
+      if (delegate.resultType().equals(runtimeType)
+          || runtimeType.equals(BytecodeUtils.MESSAGE_TYPE)) {
+        return this;
+      } else {
+        return this.delegate.checkedCast(runtimeType);
+      }
     }
     Expression protoDelegate = delegate.checkedCast(SoyProtoValue.class);
     if (delegate.isNonNullable()) {
-      return protoDelegate.invoke(MethodRef.SOY_PROTO_VALUE_GET_PROTO);
+      return protoDelegate.invoke(MethodRef.SOY_PROTO_VALUE_GET_PROTO).checkedCast(runtimeType);
     }
 
-    return new Expression(BytecodeUtils.MESSAGE_TYPE, features()) {
+    return new Expression(runtimeType, features()) {
       @Override
       protected void doGen(CodeBuilder adapter) {
         Label end = new Label();
@@ -597,6 +616,7 @@ public final class SoyExpression extends Expression {
         BytecodeUtils.nullCoalesce(adapter, end);
         MethodRef.SOY_PROTO_VALUE_GET_PROTO.invokeUnchecked(adapter);
         adapter.mark(end);
+        adapter.checkCast(runtimeType);
       }
     };
   }

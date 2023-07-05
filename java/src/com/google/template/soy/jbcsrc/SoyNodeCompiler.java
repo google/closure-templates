@@ -492,7 +492,9 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
               DERIVED);
     } else {
       SoyExpression expr =
-          exprCompiler.compileRootExpression(node.getExpr(), detachState).unboxAsList();
+          exprCompiler
+              .compileRootExpression(node.getExpr(), detachState)
+              .unboxAsListIgnoringNullishness();
       Variable listVar =
           scope.createSynthetic(SyntheticVarName.foreachLoopList(nonEmptyNode), expr, STORE);
       initializers.add(listVar.initializer());
