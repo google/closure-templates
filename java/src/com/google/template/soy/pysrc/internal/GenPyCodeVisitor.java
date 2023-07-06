@@ -797,6 +797,7 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
       pyCodeBuilder.appendLine("import collections");
       pyCodeBuilder.appendLine("import math");
+      pyCodeBuilder.appendLine("import numbers");
       pyCodeBuilder.appendLine("import random");
       pyCodeBuilder.appendLine("import sys");
 
