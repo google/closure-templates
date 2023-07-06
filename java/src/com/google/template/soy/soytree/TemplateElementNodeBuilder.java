@@ -65,16 +65,34 @@ public final class TemplateElementNodeBuilder
 
     for (CommandTagAttribute attribute : attrs) {
       Identifier name = attribute.getName();
-      if (COMMON_ATTRIBUTE_NAMES.contains(name.identifier())) {
-        continue;
-      }
       switch (name.identifier()) {
         case "allowbrokenelementcollisions":
           allowBrokenElementCollisions = attribute.valueAsEnabled(errorReporter);
           break;
-        default:
-          // TODO(b/288355656): Implement the invalid attributes check to log the error
+        case "kind":
+          if (!getContentKind().getSanitizedContentKind().isHtml()) {
+            errorReporter.report(attribute.getValueLocation(), INVALID_ELEMENT_KIND);
+          }
           break;
+        default:
+          if (BANNED_ATTRIBUTE_NAMES.contains(name.identifier())) {
+            this.errorReporter.report(
+                name.location(), BANNED_ATTRIBUTE_NAMES_ERROR, name.identifier());
+
+          } else if (!COMMON_ATTRIBUTE_NAMES.contains(name.identifier())) {
+            errorReporter.report(
+                name.location(),
+                CommandTagAttribute.UNSUPPORTED_ATTRIBUTE_KEY,
+                name.identifier(),
+                "element",
+                ImmutableList.builder()
+                    .add("allowbrokenelementcollisions")
+                    .addAll(
+                        COMMON_ATTRIBUTE_NAMES.stream()
+                            .filter(n -> !BANNED_ATTRIBUTE_NAMES.contains(n))
+                            .collect(ImmutableList.toImmutableList()))
+                    .build());
+          }
       }
     }
 
@@ -89,16 +107,6 @@ public final class TemplateElementNodeBuilder
   @Override
   public TemplateElementNode build() {
     Preconditions.checkState(id != null && cmdText != null);
-    for (CommandTagAttribute attr : attrs) {
-      if (attr.getName().identifier().equals("kind")) {
-        if (!getContentKind().getSanitizedContentKind().isHtml()) {
-          errorReporter.report(attr.getValueLocation(), INVALID_ELEMENT_KIND);
-        }
-      } else if (BANNED_ATTRIBUTE_NAMES.contains(attr.getName().identifier())) {
-        this.errorReporter.report(
-            attr.getName().location(), BANNED_ATTRIBUTE_NAMES_ERROR, attr.getName().identifier());
-      }
-    }
     return new TemplateElementNode(this, soyFileHeaderInfo, params);
   }
 
