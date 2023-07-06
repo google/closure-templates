@@ -141,6 +141,13 @@ public abstract class Expression extends BytecodeProducer {
       return new Features(newSet);
     }
 
+    public Features intersect(Features other) {
+      EnumSet<Feature> newSet = EnumSet.noneOf(Feature.class);
+      newSet.addAll(set);
+      newSet.retainAll(other.set);
+      return new Features(newSet);
+    }
+
     private EnumSet<Feature> copyFeatures() {
       // Can't use EnumSet.copyOf() because it throws on empty collections!
       EnumSet<Feature> newSet = EnumSet.noneOf(Feature.class);

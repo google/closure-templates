@@ -83,7 +83,6 @@ import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
-import org.objectweb.asm.util.Printer;
 
 /** A set of utilities for generating simple expressions in bytecode */
 public final class BytecodeUtils {
@@ -279,21 +278,8 @@ public final class BytecodeUtils {
         .orElseThrow(() -> new IllegalArgumentException("Could not load: " + type));
   }
 
-  private static final Expression FALSE =
-      new Expression(Type.BOOLEAN_TYPE, Feature.CHEAP) {
-        @Override
-        protected void doGen(CodeBuilder mv) {
-          mv.pushBoolean(false);
-        }
-      };
-
-  private static final Expression TRUE =
-      new Expression(Type.BOOLEAN_TYPE, Feature.CHEAP) {
-        @Override
-        protected void doGen(CodeBuilder mv) {
-          mv.pushBoolean(true);
-        }
-      };
+  private static final Expression FALSE = Branch.never().asBoolean();
+  private static final Expression TRUE = Branch.never().negate().asBoolean();
 
   /** Returns an {@link Expression} that can load the given constant. */
   public static Expression constant(ConstantDynamic value) {
@@ -554,86 +540,6 @@ public final class BytecodeUtils {
     mg.endMethod();
   }
 
-  // TODO(lukes): some of these branch operators are a little too branchy.  For example, the
-  // expression a == b || a == c, could be implemented by
-  // logicalOr(compare(Opcodes.IFEQ, a, b), compare(Opcodes.IFEQ, a, c)), but that is not optimal
-  // instead we could allow compare to take an expression for what to do when the comparison fails
-  // that way we could save a branch.  Maybe these operators are a failed abstraction?
-
-  /** Compares the two primitive valued expressions using the provided comparison operation. */
-  public static Expression compare(
-      final int comparisonOpcode, final Expression left, final Expression right) {
-    checkArgument(
-        left.resultType().equals(right.resultType()),
-        "left and right must have matching types, found %s and %s",
-        left.resultType(),
-        right.resultType());
-    checkIntComparisonOpcode(left.resultType(), comparisonOpcode);
-    Features features =
-        Expression.areAllCheap(left, right) ? Features.of(Feature.CHEAP) : Features.of();
-    return new Expression(Type.BOOLEAN_TYPE, features) {
-      @Override
-      protected void doGen(CodeBuilder mv) {
-        left.gen(mv);
-        right.gen(mv);
-        Label ifTrue = mv.newLabel();
-        Label end = mv.newLabel();
-        mv.ifCmp(left.resultType(), comparisonOpcode, ifTrue);
-        mv.pushBoolean(false);
-        mv.goTo(end);
-        mv.mark(ifTrue);
-        mv.pushBoolean(true);
-        mv.mark(end);
-      }
-    };
-  }
-
-  private static void checkIntComparisonOpcode(Type comparisonType, int opcode) {
-    switch (opcode) {
-      case Opcodes.IFEQ:
-      case Opcodes.IFNE:
-        return;
-      case Opcodes.IFGT:
-      case Opcodes.IFGE:
-      case Opcodes.IFLT:
-      case Opcodes.IFLE:
-        if (comparisonType.getSort() == Type.ARRAY || comparisonType.getSort() == Type.OBJECT) {
-          throw new IllegalArgumentException(
-              "Type: " + comparisonType + " cannot be compared via " + Printer.OPCODES[opcode]);
-        }
-        return;
-      default:
-        throw new IllegalArgumentException(
-            "Unsupported opcode for comparison operation: " + opcode);
-    }
-  }
-
-  /**
-   * Returns an expression that evaluates to the logical negation of the given boolean valued
-   * expression.
-   */
-  public static Expression logicalNot(final Expression baseExpr) {
-    baseExpr.checkAssignableTo(Type.BOOLEAN_TYPE);
-    checkArgument(baseExpr.resultType().equals(Type.BOOLEAN_TYPE), "not a boolean expression");
-    return new Expression(Type.BOOLEAN_TYPE, baseExpr.features()) {
-      @Override
-      protected void doGen(CodeBuilder mv) {
-        baseExpr.gen(mv);
-        // Surprisingly, java bytecode uses a branch (instead of 'xor 1' or something) to implement
-        // this. This is most likely useful for allowing true to be represented by any non-zero
-        // number.
-        Label ifTrue = mv.newLabel();
-        Label end = mv.newLabel();
-        mv.ifZCmp(Opcodes.IFNE, ifTrue); // if not 0 goto ifTrue
-        mv.pushBoolean(true);
-        mv.goTo(end);
-        mv.mark(ifTrue);
-        mv.pushBoolean(false);
-        mv.mark(end);
-      }
-    };
-  }
-
   public static Expression compareSoyEquals(final SoyExpression left, final SoyExpression right) {
     // We can special case when we know the types.
     // If either is a string, we run special logic so test for that first
@@ -651,14 +557,14 @@ public final class BytecodeUtils {
         && rightRuntimeType.isKnownInt()
         && left.isNonNullable()
         && right.isNonNullable()) {
-      return compare(Opcodes.IFEQ, left.unboxAsLong(), right.unboxAsLong());
+      return Branch.ifEqual(left.unboxAsLong(), right.unboxAsLong()).asBoolean();
     }
     if (leftRuntimeType.isKnownNumber()
         && rightRuntimeType.isKnownNumber()
         && left.isNonNullable()
         && right.isNonNullable()
         && (leftRuntimeType.isKnownFloat() || rightRuntimeType.isKnownFloat())) {
-      return compare(Opcodes.IFEQ, left.coerceToDouble(), right.coerceToDouble());
+      return Branch.ifEqual(left.coerceToDouble(), right.coerceToDouble()).asBoolean();
     }
     return MethodRef.RUNTIME_EQUAL.invoke(left.box(), right.box());
   }
@@ -672,14 +578,14 @@ public final class BytecodeUtils {
         && rightRuntimeType.isKnownInt()
         && left.isNonNullable()
         && right.isNonNullable()) {
-      return compare(Opcodes.IFEQ, left.unboxAsLong(), right.unboxAsLong());
+      return Branch.ifEqual(left.unboxAsLong(), right.unboxAsLong()).asBoolean();
     }
     if (leftRuntimeType.isKnownNumber()
         && rightRuntimeType.isKnownNumber()
         && left.isNonNullable()
         && right.isNonNullable()
         && (leftRuntimeType.isKnownFloat() || rightRuntimeType.isKnownFloat())) {
-      return compare(Opcodes.IFEQ, left.coerceToDouble(), right.coerceToDouble());
+      return Branch.ifEqual(left.coerceToDouble(), right.coerceToDouble()).asBoolean();
     }
     return MethodRef.RUNTIME_TRIPLE_EQUAL.invoke(left.box(), right.box());
   }
@@ -716,8 +622,14 @@ public final class BytecodeUtils {
    * {@code right} otherwise.
    */
   public static Expression firstNonNull(final Expression left, final Expression right) {
-    checkArgument(left.resultType().getSort() == Type.OBJECT);
-    checkArgument(right.resultType().getSort() == Type.OBJECT);
+    checkArgument(
+        left.resultType().getSort() == Type.OBJECT,
+        "Expected left to be an object, got: %s",
+        left.resultType());
+    checkArgument(
+        right.resultType().getSort() == Type.OBJECT,
+        "Expected right to be an object, got: %s",
+        right.resultType());
     Features features = Features.of();
     if (Expression.areAllCheap(left, right)) {
       features = features.plus(Feature.CHEAP);
@@ -811,73 +723,6 @@ public final class BytecodeUtils {
         mv.visitLabel(ifFalse);
         falseBranch.gen(mv); // eval false branch
         mv.visitLabel(end);
-      }
-    };
-  }
-
-  /**
-   * Implements the short circuiting logical or ({@code ||}) operator over the list of boolean
-   * expressions.
-   */
-  public static Expression logicalOr(Expression... expressions) {
-    return logicalOr(ImmutableList.copyOf(expressions));
-  }
-
-  /**
-   * Implements the short circuiting logical or ({@code ||}) operator over the list of boolean
-   * expressions.
-   */
-  public static Expression logicalOr(List<? extends Expression> expressions) {
-    return doShortCircuitingLogicalOperator(ImmutableList.copyOf(expressions), true);
-  }
-
-  /**
-   * Implements the short circuiting logical and ({@code &&}) operator over the list of boolean
-   * expressions.
-   */
-  public static Expression logicalAnd(Expression... expressions) {
-    return logicalAnd(ImmutableList.copyOf(expressions));
-  }
-
-  /**
-   * Implements the short circuiting logical and ({@code &&}) operator over the list of boolean
-   * expressions.
-   */
-  public static Expression logicalAnd(List<? extends Expression> expressions) {
-    return doShortCircuitingLogicalOperator(ImmutableList.copyOf(expressions), false);
-  }
-
-  private static Expression doShortCircuitingLogicalOperator(
-      final ImmutableList<? extends Expression> expressions, final boolean isOrOperator) {
-    checkArgument(!expressions.isEmpty());
-    for (Expression expr : expressions) {
-      expr.checkAssignableTo(Type.BOOLEAN_TYPE);
-    }
-    if (expressions.size() == 1) {
-      return expressions.get(0);
-    }
-
-    return new Expression(
-        Type.BOOLEAN_TYPE,
-        Expression.areAllCheap(expressions) ? Features.of(Feature.CHEAP) : Features.of()) {
-      @Override
-      protected void doGen(CodeBuilder adapter) {
-        Label end = new Label();
-        Label shortCircuit = new Label();
-        for (int i = 0; i < expressions.size(); i++) {
-          Expression expr = expressions.get(i);
-          expr.gen(adapter);
-          if (i == expressions.size() - 1) {
-            // if we are the last one, just goto end. Whatever the result of the last expression is
-            // determines the result of the whole expression (when all prior tests fail).
-            adapter.goTo(end);
-          } else {
-            adapter.ifZCmp(isOrOperator ? Opcodes.IFNE : Opcodes.IFEQ, shortCircuit);
-          }
-        }
-        adapter.mark(shortCircuit);
-        adapter.pushBoolean(isOrOperator); // default for || is true && is false
-        adapter.mark(end);
       }
     };
   }
@@ -1090,22 +935,8 @@ public final class BytecodeUtils {
       // TemplateAnalysis will correctly cause subsequent accesses to resolve immediately.
       return SoyExpression.forBool(expr.toStatement().then(BytecodeUtils.constant(true)));
     }
-    return SoyExpression.forBool(
-        new Expression(Type.BOOLEAN_TYPE, expr.features()) {
-          @Override
-          protected void doGen(CodeBuilder adapter) {
-            expr.gen(adapter);
-            Label isNull = new Label();
-            adapter.ifNull(isNull);
-            // non-null
-            adapter.pushBoolean(true);
-            Label end = new Label();
-            adapter.goTo(end);
-            adapter.mark(isNull);
-            adapter.pushBoolean(false);
-            adapter.mark(end);
-          }
-        });
+
+    return SoyExpression.forBool(Branch.ifNotNull(expr).asBoolean());
   }
 
   /** Returns a {@link SoyExpression} that evaluates to true if the expression evaluated to null. */
@@ -1115,23 +946,7 @@ public final class BytecodeUtils {
       // TemplateAnalysis will correctly cause subsequent accesses to resolve immediately.
       return SoyExpression.forBool(expr.toStatement().then(BytecodeUtils.constant(false)));
     }
-    // This is what javac generates for 'someObject == null'
-    return SoyExpression.forBool(
-        new Expression(Type.BOOLEAN_TYPE, expr.features()) {
-          @Override
-          protected void doGen(CodeBuilder adapter) {
-            expr.gen(adapter);
-            Label isNull = new Label();
-            adapter.ifNull(isNull);
-            // non-null
-            adapter.pushBoolean(false);
-            Label end = new Label();
-            adapter.goTo(end);
-            adapter.mark(isNull);
-            adapter.pushBoolean(true);
-            adapter.mark(end);
-          }
-        });
+    return SoyExpression.forBool(Branch.ifNotNull(expr).negate().asBoolean());
   }
 
   public static Type getTypeForClassName(String name) {

@@ -22,6 +22,7 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_LIST_T
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.STRING_TYPE;
 
+import com.google.errorprone.annotations.DoNotCall;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyProtoValue;
@@ -44,7 +45,6 @@ import com.google.template.soy.types.UnknownType;
 import java.util.ArrayList;
 import java.util.List;
 import org.objectweb.asm.Label;
-import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
 /**
@@ -57,8 +57,11 @@ import org.objectweb.asm.Type;
  * but depending on the type they may also support additional unboxing conversions.
  */
 public final class SoyExpression extends Expression {
-
+  
   public static SoyExpression forSoyValue(SoyType type, Expression delegate) {
+    if (delegate instanceof SoyExpression) {
+      return forSoyValue(type, ((SoyExpression) delegate).delegate);
+    }
     return new SoyExpression(SoyRuntimeType.getBoxedType(type), delegate);
   }
 
@@ -66,32 +69,73 @@ public final class SoyExpression extends Expression {
     return new SoyExpression(getUnboxedType(BoolType.getInstance()), delegate);
   }
 
+  @DoNotCall
+  public static SoyExpression forBool(SoyExpression delegate) {
+    throw new UnsupportedOperationException();
+  }
+
   public static SoyExpression forFloat(Expression delegate) {
     return new SoyExpression(getUnboxedType(FloatType.getInstance()), delegate);
+  }
+
+  @DoNotCall
+  public static SoyExpression forFloat(SoyExpression delegate) {
+    throw new UnsupportedOperationException();
   }
 
   public static SoyExpression forInt(Expression delegate) {
     return new SoyExpression(getUnboxedType(IntType.getInstance()), delegate);
   }
 
+  @DoNotCall
+  public static SoyExpression forInt(SoyExpression delegate) {
+    throw new UnsupportedOperationException();
+  }
+
   public static SoyExpression forString(Expression delegate) {
     return new SoyExpression(getUnboxedType(StringType.getInstance()), delegate);
+  }
+
+  @DoNotCall
+  public static SoyExpression forString(SoyExpression delegate) {
+    throw new UnsupportedOperationException();
   }
 
   public static SoyExpression forList(ListType listType, Expression delegate) {
     return new SoyExpression(getUnboxedType(listType), delegate);
   }
 
+  @DoNotCall
+  public static SoyExpression forList(ListType listType, SoyExpression delegate) {
+    throw new UnsupportedOperationException();
+  }
+
   public static SoyExpression forBoxedList(ListType listType, Expression delegate) {
     return new SoyExpression(SoyRuntimeType.getBoxedType(listType), delegate);
+  }
+
+  @DoNotCall
+  public static SoyExpression forBoxedList(ListType listType, SoyExpression delegate) {
+    throw new UnsupportedOperationException();
   }
 
   public static SoyExpression forLegacyObjectMap(LegacyObjectMapType mapType, Expression delegate) {
     return new SoyExpression(SoyRuntimeType.getBoxedType(mapType), delegate);
   }
 
+  @DoNotCall
+  public static SoyExpression forLegacyObjectMap(
+      LegacyObjectMapType mapType, SoyExpression delegate) {
+    throw new UnsupportedOperationException();
+  }
+
   public static SoyExpression forMap(MapType mapType, Expression delegate) {
     return new SoyExpression(SoyRuntimeType.getBoxedType(mapType), delegate);
+  }
+
+  @DoNotCall
+  public static SoyExpression forMap(MapType mapType, SoyExpression delegate) {
+    throw new UnsupportedOperationException();
   }
 
   public static SoyExpression forProto(SoyRuntimeType type, Expression delegate) {
@@ -99,8 +143,18 @@ public final class SoyExpression extends Expression {
     return new SoyExpression(type, delegate);
   }
 
+  @DoNotCall
+  public static SoyExpression forProto(SoyRuntimeType type, SoyExpression delegate) {
+    throw new UnsupportedOperationException();
+  }
+
   public static SoyExpression forRuntimeType(SoyRuntimeType type, Expression delegate) {
     return new SoyExpression(type, delegate);
+  }
+
+  @DoNotCall
+  public static SoyExpression forRuntimeType(SoyRuntimeType type, SoyExpression delegate) {
+    throw new UnsupportedOperationException();
   }
 
   /**
@@ -151,10 +205,11 @@ public final class SoyExpression extends Expression {
   }
 
   private final SoyRuntimeType soyRuntimeType;
-  private final Expression delegate;
+  final Expression delegate;
 
   private SoyExpression(SoyRuntimeType soyRuntimeType, Expression delegate) {
     super(delegate.resultType(), delegate.features());
+    checkState(!(delegate instanceof SoyExpression));
     checkArgument(
         BytecodeUtils.isPossiblyAssignableFrom(soyRuntimeType.runtimeType(), delegate.resultType()),
         "Expecting SoyExpression type of %s for soy type %s, found delegate with type of %s",
@@ -328,42 +383,45 @@ public final class SoyExpression extends Expression {
     return new SoyExpression(soyRuntimeType.box(), expr);
   }
 
-  /** Coerce this expression to a boolean value. */
-  public SoyExpression coerceToBoolean() {
+  /** Compiles this expression to be a boolean condition for a branch. */
+  public Branch compileToBranch() {
     // First deal with primitives which don't have to care about null.
     if (BytecodeUtils.isPrimitive(resultType())) {
-      return coercePrimitiveToBoolean();
+      if (resultType().equals(Type.BOOLEAN_TYPE)) {
+        return Branch.ifTrue(this);
+      } else if (resultType().equals(Type.DOUBLE_TYPE)) {
+        return Branch.ifTrue(MethodRef.RUNTIME_COERCE_DOUBLE_TO_BOOLEAN.invoke(delegate));
+      } else if (resultType().equals(Type.LONG_TYPE)) {
+        return Branch.ifNotZero(delegate);
+      } else {
+        throw new AssertionError(
+            "resultType(): " + resultType() + " is not a valid type for a SoyExpression");
+      }
     }
     if (soyType().equals(NullType.getInstance())) {
-      return FALSE;
+      return Branch.never();
     }
     if (isBoxed()) {
       // If we are boxed, just call the SoyValue method
       if (delegate.isNonNullable()) {
-        return forBool(delegate.invoke(MethodRef.SOY_VALUE_COERCE_TO_BOOLEAN));
+        return Branch.ifTrue(delegate.invoke(MethodRef.SOY_VALUE_COERCE_TO_BOOLEAN));
       } else {
-        return forBool(MethodRef.RUNTIME_COERCE_TO_BOOLEAN.invoke(delegate));
+        return Branch.ifTrue(MethodRef.RUNTIME_COERCE_TO_BOOLEAN.invoke(delegate));
       }
     }
     // unboxed non-primitive types.  This would be strings, protos or lists
     if (resultType().equals(STRING_TYPE)) {
-      return forBool(delegate.invoke(MethodRef.RUNTIME_COERCE_STRING_TO_BOOLEAN));
+      return isNonNullable()
+          ? Branch.ifTrue(delegate.invoke(MethodRef.STRING_IS_EMPTY)).negate()
+          : Branch.ifTrue(MethodRef.RUNTIME_COERCE_STRING_TO_BOOLEAN.invoke(delegate));
     }
     // All other types are always truthy unless null
-    return BytecodeUtils.isNonNull(delegate);
+    return Branch.ifNotNull(delegate);
   }
 
-  private SoyExpression coercePrimitiveToBoolean() {
-    if (resultType().equals(Type.BOOLEAN_TYPE)) {
-      return this;
-    } else if (resultType().equals(Type.DOUBLE_TYPE)) {
-      return forBool(MethodRef.RUNTIME_COERCE_DOUBLE_TO_BOOLEAN.invoke(delegate));
-    } else if (resultType().equals(Type.LONG_TYPE)) {
-      return forBool(BytecodeUtils.compare(Opcodes.IFNE, delegate, BytecodeUtils.constant(0L)));
-    } else {
-      throw new AssertionError(
-          "resultType(): " + resultType() + " is not a valid type for a SoyExpression");
-    }
+  /** Coerce this expression to a boolean value. */
+  public SoyExpression coerceToBoolean() {
+    return forBool(compileToBranch().asBoolean());
   }
 
   /** Coerce this expression to a string value. */

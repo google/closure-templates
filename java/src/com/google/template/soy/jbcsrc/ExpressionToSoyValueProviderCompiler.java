@@ -17,6 +17,7 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.isDefinitelyAssignableFrom;
 
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.exprtree.DataAccessNode;
@@ -27,6 +28,7 @@ import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.jbcsrc.ExpressionCompiler.BasicExpressionCompiler;
+import com.google.template.soy.jbcsrc.restricted.Branch;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.FieldRef;
@@ -197,11 +199,11 @@ final class ExpressionToSoyValueProviderCompiler {
           Expression left;
           if (maybeLeft.isPresent()) {
             // If left can be compiled to a SoyValueProvider, resolve it to check if it's null.
-            Expression leftSVP = maybeLeft.get();
+            Expression leftSvp = maybeLeft.get();
             left =
                 ExpressionCompiler.requiresDetach(analysis, node.getLeftChild())
-                    ? detacher.waitForSoyValueProvider(leftSVP)
-                    : leftSVP;
+                    ? detacher.waitForSoyValueProvider(leftSvp)
+                    : leftSvp;
           } else {
             // If left cannot be compiled to a SoyValueProvider, compile it to a SoyValue and box it
             // into a SoyValueProvider.
@@ -224,25 +226,30 @@ final class ExpressionToSoyValueProviderCompiler {
     @Override
     protected Optional<Expression> visitConditionalOpNode(ConditionalOpNode node) {
       if (allowsDetaches()) {
-        Optional<Expression> trueBranch = visit(node.getChild(1));
-        Optional<Expression> falseBranch = visit(node.getChild(2));
+        Optional<Expression> trueBranchOpt = visit(node.getChild(1));
+        Optional<Expression> falseBranchOpt = visit(node.getChild(2));
         // Compile to a SoyValueProvider if either side can be compiled to a SoyValueProvider. The
         // SoyValueProvider side(s) may have logging statements in them, so need to stay
         // SoyValueProviders, otherwise the logging statements will get dropped.
-        if (trueBranch.isPresent() || falseBranch.isPresent()) {
-          Expression condition = detachingExprCompiler.compile(node.getChild(0)).coerceToBoolean();
-          return Optional.of(
-              BytecodeUtils.ternary(
-                  condition,
-                  trueBranch.orElseGet(
-                      () -> compileToSoyValueProviderWithDetaching(node.getChild(1))),
-                  falseBranch.orElseGet(
-                      () -> compileToSoyValueProviderWithDetaching(node.getChild(2))),
-                  // The ternary gets its result type from the true branch, which could be a
-                  // SoyValue. Since at least one of the branches is a SoyValueProvider, force the
-                  // result type to SoyValueProvider so downstream code knows to resolve it before
-                  // using it.
-                  BytecodeUtils.SOY_VALUE_PROVIDER_TYPE));
+        if (trueBranchOpt.isPresent() || falseBranchOpt.isPresent()) {
+          Branch condition = detachingExprCompiler.compile(node.getChild(0)).compileToBranch();
+          Expression trueBranch =
+              trueBranchOpt.orElseGet(
+                  () -> compileToSoyValueProviderWithDetaching(node.getChild(1)));
+          Expression falseBranch =
+              falseBranchOpt.orElseGet(
+                  () -> compileToSoyValueProviderWithDetaching(node.getChild(2)));
+          // Use the actual types, SoyValue or SoyValueProvider
+          Type resultType =
+              trueBranch.resultType().equals(falseBranch.resultType())
+                  ? trueBranch.resultType()
+                  : (isDefinitelyAssignableFrom(
+                              BytecodeUtils.SOY_VALUE_TYPE, trueBranch.resultType())
+                          && isDefinitelyAssignableFrom(
+                              BytecodeUtils.SOY_VALUE_TYPE, falseBranch.resultType())
+                      ? BytecodeUtils.SOY_VALUE_TYPE
+                      : BytecodeUtils.SOY_VALUE_PROVIDER_TYPE);
+          return Optional.of(condition.ternary(resultType, trueBranch, falseBranch));
         } else {
           return Optional.empty();
         }

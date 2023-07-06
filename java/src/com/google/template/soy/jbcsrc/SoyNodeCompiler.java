@@ -54,6 +54,7 @@ import com.google.template.soy.jbcsrc.MsgCompiler.PlaceholderCompiler;
 import com.google.template.soy.jbcsrc.TemplateVariableManager.Scope;
 import com.google.template.soy.jbcsrc.TemplateVariableManager.Variable;
 import com.google.template.soy.jbcsrc.internal.InnerClasses;
+import com.google.template.soy.jbcsrc.restricted.Branch;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.ConstructorRef;
@@ -372,8 +373,8 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     for (SoyNode child : node.getChildren()) {
       if (child instanceof IfCondNode) {
         IfCondNode icn = (IfCondNode) child;
-        SoyExpression cond =
-            exprCompiler.compileRootExpression(icn.getExpr(), detachState).coerceToBoolean();
+        Branch cond =
+            exprCompiler.compileRootExpression(icn.getExpr(), detachState).compileToBranch();
         Statement block = visitChildrenInNewScope(icn);
         ifs.add(IfBlock.create(cond, block));
       } else {
@@ -412,18 +413,27 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     for (SoyNode child : children) {
       if (child instanceof SwitchCaseNode) {
         SwitchCaseNode caseNode = (SwitchCaseNode) child;
-        Label reattachPoint = new Label();
-        List<Expression> comparisons = new ArrayList<>();
+        Label reattachPoint = null;
+
+        List<Branch> comparisons = new ArrayList<>();
         for (ExprRootNode caseExpr : caseNode.getExprList()) {
-          comparisons.add(
+          boolean isFirst = reattachPoint == null;
+          if (isFirst) {
+            reattachPoint = new Label();
+          }
+          Expression compiledCase =
               compareSoyEquals(
                   switchVar,
                   exprCompiler.compileSubExpression(
-                      caseExpr, detachState.createExpressionDetacher(reattachPoint))));
+                      caseExpr, detachState.createExpressionDetacher(reattachPoint)));
+
+          if (isFirst) {
+            compiledCase = compiledCase.labelStart(reattachPoint);
+          }
+          comparisons.add(Branch.ifTrue(compiledCase));
         }
-        Expression condition = BytecodeUtils.logicalOr(comparisons).labelStart(reattachPoint);
         Statement block = visitChildrenInNewScope(caseNode);
-        cases.add(IfBlock.create(condition, block));
+        cases.add(IfBlock.create(Branch.or(comparisons), block));
       } else {
         SwitchDefaultNode defaultNode = (SwitchDefaultNode) child;
         defaultBlock = Optional.of(visitChildrenInNewScope(defaultNode));
@@ -829,7 +839,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
             MethodRef.SOY_VALUE_PROVIDER_RENDER_AND_RESOLVE,
             appendable,
             // the isLast param
-            // TODO(lukes): pass a real value here when we have expression use analysis.
+            // TODO(b/63530876): pass a real value here when we have expression use analysis.
             constant(false));
     Statement doCall =
         requiresDetachLogic
@@ -924,7 +934,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
                   : parameterLookup
                       .getRenderContext()
                       .usePrimaryMsgIfFallback(idAndParts.id, fallbackIdAndParts.id));
-      IfBlock ifAvailableRenderDefault = IfBlock.create(cond, renderDefault);
+      IfBlock ifAvailableRenderDefault = IfBlock.create(Branch.ifTrue(cond), renderDefault);
       return ControlFlow.ifElseChain(
           ImmutableList.of(ifAvailableRenderDefault),
           Optional.of(
@@ -943,7 +953,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     final Expression hasLogger = parameterLookup.getRenderContext().hasLogger();
     final Statement exitStatement =
         ControlFlow.IfBlock.create(
-                hasLogger, appendableExpression.exitLoggableElement().toStatement())
+                Branch.ifTrue(hasLogger), appendableExpression.exitLoggableElement().toStatement())
             .asStatement();
     if (node.getLogonlyExpression() != null) {
       final Expression logonlyExpression =
@@ -997,7 +1007,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     } else {
       final Statement enterStatement =
           ControlFlow.IfBlock.create(
-                  hasLogger,
+                  Branch.ifTrue(hasLogger),
                   appendableExpression
                       .enterLoggableElement(
                           MethodRef.CREATE_LOG_STATEMENT.invoke(
@@ -1531,7 +1541,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       }
       builder.put(child, valueExpr);
     }
-    return builder.build();
+    return builder.buildOrThrow();
   }
 
   /**

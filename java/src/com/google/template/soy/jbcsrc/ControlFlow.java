@@ -20,14 +20,12 @@ import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.jbcsrc.restricted.Branch;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
-import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.Statement;
 import java.util.List;
 import java.util.Optional;
 import org.objectweb.asm.Label;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
 
 /** Utilities for encoding control flow in terms of statements and expressions. */
 final class ControlFlow {
@@ -35,12 +33,11 @@ final class ControlFlow {
 
   @AutoValue
   abstract static class IfBlock {
-    static IfBlock create(Expression cond, Statement block) {
-      cond.checkAssignableTo(Type.BOOLEAN_TYPE);
+    static IfBlock create(Branch cond, Statement block) {
       return new AutoValue_ControlFlow_IfBlock(cond, block);
     }
 
-    abstract Expression condition();
+    abstract Branch condition();
 
     abstract Statement block();
 
@@ -69,8 +66,7 @@ final class ControlFlow {
           } else {
             next = new Label();
           }
-          curr.condition().gen(adapter);
-          adapter.ifZCmp(Opcodes.IFEQ, next);
+          curr.condition().negate().branchTo(adapter, next);
           curr.block().gen(adapter);
           if (end != next) {
             adapter.goTo(end);

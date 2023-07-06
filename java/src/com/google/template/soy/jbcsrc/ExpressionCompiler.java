@@ -20,12 +20,10 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.LIST_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.NULL_POINTER_EXCEPTION_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_PROVIDER_TYPE;
-import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.compare;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.firstNonNull;
-import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.logicalNot;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.numericConversion;
-import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.ternary;
+import static java.util.stream.Collectors.toCollection;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -93,6 +91,7 @@ import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.jbcsrc.ExpressionDetacher.BasicDetacher;
+import com.google.template.soy.jbcsrc.restricted.Branch;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.ConstructorRef;
@@ -133,7 +132,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Future;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import org.objectweb.asm.Handle;
@@ -347,7 +345,7 @@ final class ExpressionCompiler {
     Label reattachPoint = new Label();
     final SoyExpression exec =
         compileSubExpression(node, detacherFactory.createExpressionDetacher(reattachPoint));
-    return exec.withSource(exec.labelStart(reattachPoint));
+    return exec.labelStart(reattachPoint);
   }
 
   static boolean requiresDetach(TemplateAnalysis analysis, ExprNode node) {
@@ -520,7 +518,7 @@ final class ExpressionCompiler {
       // TODO: Consider compiling to a SoyValueProvider instead of boxing.
       Expression visitedMap = visit(mapExpr).boxAsSoyValueProvider();
 
-      SoyExpression visitedFilter = filterExpr != null ? visit(filterExpr).coerceToBoolean() : null;
+      Branch visitedFilter = filterExpr != null ? visit(filterExpr).compileToBranch() : null;
 
       Statement exitScope = scope.exitScope();
 
@@ -571,8 +569,9 @@ final class ExpressionCompiler {
               }
 
               if (visitedFilter != null) {
-                visitedFilter.gen(adapter);
-                adapter.ifZCmp(Opcodes.IFEQ, loopContinue); // if (!filter.test(a,i)) continue;
+                visitedFilter
+                    .negate()
+                    .branchTo(adapter, loopContinue); // if (!filter.test(a,i)) continue;
               }
 
               resultVar.gen(adapter);
@@ -639,10 +638,10 @@ final class ExpressionCompiler {
     @Override
     protected SoyExpression visitEqualOpNode(EqualOpNode node) {
       if (node.getChild(0).getKind() == ExprNode.Kind.NULL_NODE) {
-        return SoyExpression.forBool(BytecodeUtils.isNull(visit(node.getChild(1))));
+        return BytecodeUtils.isNull(visit(node.getChild(1)));
       }
       if (node.getChild(1).getKind() == ExprNode.Kind.NULL_NODE) {
-        return SoyExpression.forBool(BytecodeUtils.isNull(visit(node.getChild(0))));
+        return BytecodeUtils.isNull(visit(node.getChild(0)));
       }
       return SoyExpression.forBool(
           BytecodeUtils.compareSoyEquals(visit(node.getChild(0)), visit(node.getChild(1))));
@@ -651,23 +650,25 @@ final class ExpressionCompiler {
     @Override
     protected SoyExpression visitNotEqualOpNode(NotEqualOpNode node) {
       if (node.getChild(0).getKind() == ExprNode.Kind.NULL_NODE) {
-        return SoyExpression.forBool(BytecodeUtils.isNonNull(visit(node.getChild(1))));
+        return BytecodeUtils.isNonNull(visit(node.getChild(1)));
       }
       if (node.getChild(1).getKind() == ExprNode.Kind.NULL_NODE) {
-        return SoyExpression.forBool(BytecodeUtils.isNonNull(visit(node.getChild(0))));
+        return BytecodeUtils.isNonNull(visit(node.getChild(0)));
       }
       return SoyExpression.forBool(
-          logicalNot(
-              BytecodeUtils.compareSoyEquals(visit(node.getChild(0)), visit(node.getChild(1)))));
+          Branch.ifTrue(
+                  BytecodeUtils.compareSoyEquals(visit(node.getChild(0)), visit(node.getChild(1))))
+              .negate()
+              .asBoolean());
     }
 
     @Override
     protected SoyExpression visitTripleEqualOpNode(TripleEqualOpNode node) {
       if (node.getChild(0).getKind() == ExprNode.Kind.NULL_NODE) {
-        return SoyExpression.forBool(BytecodeUtils.isNull(visit(node.getChild(1))));
+        return BytecodeUtils.isNull(visit(node.getChild(1)));
       }
       if (node.getChild(1).getKind() == ExprNode.Kind.NULL_NODE) {
-        return SoyExpression.forBool(BytecodeUtils.isNull(visit(node.getChild(0))));
+        return BytecodeUtils.isNull(visit(node.getChild(0)));
       }
       return SoyExpression.forBool(
           BytecodeUtils.compareSoyTripleEquals(visit(node.getChild(0)), visit(node.getChild(1))));
@@ -676,15 +677,17 @@ final class ExpressionCompiler {
     @Override
     protected SoyExpression visitTripleNotEqualOpNode(TripleNotEqualOpNode node) {
       if (node.getChild(0).getKind() == ExprNode.Kind.NULL_NODE) {
-        return SoyExpression.forBool(BytecodeUtils.isNonNull(visit(node.getChild(1))));
+        return BytecodeUtils.isNonNull(visit(node.getChild(1)));
       }
       if (node.getChild(1).getKind() == ExprNode.Kind.NULL_NODE) {
-        return SoyExpression.forBool(BytecodeUtils.isNonNull(visit(node.getChild(0))));
+        return BytecodeUtils.isNonNull(visit(node.getChild(0)));
       }
       return SoyExpression.forBool(
-          logicalNot(
-              BytecodeUtils.compareSoyTripleEquals(
-                  visit(node.getChild(0)), visit(node.getChild(1)))));
+          Branch.ifTrue(
+                  BytecodeUtils.compareSoyTripleEquals(
+                      visit(node.getChild(0)), visit(node.getChild(1))))
+              .negate()
+              .asBoolean());
     }
 
     // binary comparison operators.  N.B. it is ok to coerce 'number' values to floats because that
@@ -696,11 +699,12 @@ final class ExpressionCompiler {
       SoyExpression right = visit(node.getChild(1));
       if (left.assignableToNullableInt() && right.assignableToNullableInt()) {
         return SoyExpression.forBool(
-            compare(Opcodes.IFLT, left.unboxAsLong(), right.unboxAsLong()));
+            Branch.compare(Opcodes.IFLT, left.unboxAsLong(), right.unboxAsLong()).asBoolean());
       }
       if (left.assignableToNullableNumber() && right.assignableToNullableNumber()) {
         return SoyExpression.forBool(
-            compare(Opcodes.IFLT, left.coerceToDouble(), right.coerceToDouble()));
+            Branch.compare(Opcodes.IFLT, left.coerceToDouble(), right.coerceToDouble())
+                .asBoolean());
       }
       if (left.assignableToNullableString() && right.assignableToNullableString()) {
         return createStringComparisonOperator(Opcodes.IFLT, left, right);
@@ -714,11 +718,12 @@ final class ExpressionCompiler {
       SoyExpression right = visit(node.getChild(1));
       if (left.assignableToNullableInt() && right.assignableToNullableInt()) {
         return SoyExpression.forBool(
-            compare(Opcodes.IFGT, left.unboxAsLong(), right.unboxAsLong()));
+            Branch.compare(Opcodes.IFGT, left.unboxAsLong(), right.unboxAsLong()).asBoolean());
       }
       if (left.assignableToNullableNumber() && right.assignableToNullableNumber()) {
         return SoyExpression.forBool(
-            compare(Opcodes.IFGT, left.coerceToDouble(), right.coerceToDouble()));
+            Branch.compare(Opcodes.IFGT, left.coerceToDouble(), right.coerceToDouble())
+                .asBoolean());
       }
       if (left.assignableToNullableString() && right.assignableToNullableString()) {
         return createStringComparisonOperator(Opcodes.IFGT, left, right);
@@ -733,11 +738,12 @@ final class ExpressionCompiler {
       SoyExpression right = visit(node.getChild(1));
       if (left.assignableToNullableInt() && right.assignableToNullableInt()) {
         return SoyExpression.forBool(
-            compare(Opcodes.IFLE, left.unboxAsLong(), right.unboxAsLong()));
+            Branch.compare(Opcodes.IFLE, left.unboxAsLong(), right.unboxAsLong()).asBoolean());
       }
       if (left.assignableToNullableNumber() && right.assignableToNullableNumber()) {
         return SoyExpression.forBool(
-            compare(Opcodes.IFLE, left.coerceToDouble(), right.coerceToDouble()));
+            Branch.compare(Opcodes.IFLE, left.coerceToDouble(), right.coerceToDouble())
+                .asBoolean());
       }
       if (left.assignableToNullableString() && right.assignableToNullableString()) {
         return createStringComparisonOperator(Opcodes.IFLE, left, right);
@@ -752,11 +758,12 @@ final class ExpressionCompiler {
       SoyExpression right = visit(node.getChild(1));
       if (left.assignableToNullableInt() && right.assignableToNullableInt()) {
         return SoyExpression.forBool(
-            compare(Opcodes.IFGE, left.unboxAsLong(), right.unboxAsLong()));
+            Branch.compare(Opcodes.IFGE, left.unboxAsLong(), right.unboxAsLong()).asBoolean());
       }
       if (left.assignableToNullableNumber() && right.assignableToNullableNumber()) {
         return SoyExpression.forBool(
-            compare(Opcodes.IFGE, left.coerceToDouble(), right.coerceToDouble()));
+            Branch.compare(Opcodes.IFGE, left.coerceToDouble(), right.coerceToDouble())
+                .asBoolean());
       }
       if (left.assignableToNullableString() && right.assignableToNullableString()) {
         return createStringComparisonOperator(Opcodes.IFGE, left, right);
@@ -769,10 +776,11 @@ final class ExpressionCompiler {
     private SoyExpression createStringComparisonOperator(
         int operator, SoyExpression left, SoyExpression right) {
       return SoyExpression.forBool(
-          compare(
-              operator,
-              left.coerceToString().invoke(MethodRef.STRING_COMPARE_TO, right.coerceToString()),
-              BytecodeUtils.constant(0)));
+          Branch.compare(
+                  operator,
+                  left.coerceToString().invoke(MethodRef.STRING_COMPARE_TO, right.coerceToString()),
+                  BytecodeUtils.constant(0))
+              .asBoolean());
     }
 
     // Binary operators
@@ -972,21 +980,23 @@ final class ExpressionCompiler {
     @Override
     protected SoyExpression visitNotOpNode(NotOpNode node) {
       // All values are convertible to boolean
-      return SoyExpression.forBool(logicalNot(visit(node.getChild(0)).coerceToBoolean()));
+      return SoyExpression.forBool(visit(node.getChild(0)).compileToBranch().negate().asBoolean());
     }
 
     @Override
     protected SoyExpression visitAndOpNode(AndOpNode node) {
-      SoyExpression left = visit(node.getChild(0)).coerceToBoolean();
-      SoyExpression right = visit(node.getChild(1)).coerceToBoolean();
-      return SoyExpression.forBool(BytecodeUtils.logicalAnd(left, right));
+      SoyExpression left = visit(node.getChild(0));
+      SoyExpression right = visit(node.getChild(1));
+      return SoyExpression.forBool(
+          Branch.and(left.compileToBranch(), right.compileToBranch()).asBoolean());
     }
 
     @Override
     protected SoyExpression visitOrOpNode(OrOpNode node) {
-      SoyExpression left = visit(node.getChild(0)).coerceToBoolean();
-      SoyExpression right = visit(node.getChild(1)).coerceToBoolean();
-      return SoyExpression.forBool(BytecodeUtils.logicalOr(left, right));
+      SoyExpression left = visit(node.getChild(0));
+      SoyExpression right = visit(node.getChild(1));
+      return SoyExpression.forBool(
+          Branch.or(left.compileToBranch(), right.compileToBranch()).asBoolean());
     }
 
     // Null coalescing operator
@@ -1017,7 +1027,7 @@ final class ExpressionCompiler {
         }
         return result;
       }
-      // Now we need to do some boxing conversions.  soy expression boxes null -> null so this is
+      // Now we need to do some boxing conversions.  SoyExpression boxes null -> null so this is
       // safe (and I assume that the jit can eliminate the resulting redundant branches)
       Type runtimeType = SoyRuntimeType.getBoxedType(node.getType()).runtimeType();
       return SoyExpression.forSoyValue(
@@ -1029,7 +1039,7 @@ final class ExpressionCompiler {
 
     @Override
     protected SoyExpression visitConditionalOpNode(ConditionalOpNode node) {
-      final SoyExpression condition = visit(node.getChild(0)).coerceToBoolean();
+      final Branch condition = visit(node.getChild(0)).compileToBranch();
       SoyExpression trueBranch = visit(node.getChild(1));
       SoyExpression falseBranch = visit(node.getChild(2));
       // If types are == and they are both boxed (or both not boxed) then we can just use them
@@ -1048,20 +1058,28 @@ final class ExpressionCompiler {
       //    cannot be trusted
       boolean typesEqual = trueBranch.soyType().equals(falseBranch.soyType());
       if (typesEqual) {
+        boolean bothUnboxed = !trueBranch.isBoxed() && !falseBranch.isBoxed();
+        // Always specify the runtime type below to allow for the branches to have distinct but
+        // related types like ListImpl vs LazyProtoSoyValueList.  This will drop the specialization
+        // and just choose SoyList
+        Type type =
+            (bothUnboxed
+                    ? SoyRuntimeType.getUnboxedType(trueBranch.soyType()).get()
+                    : SoyRuntimeType.getBoxedType(trueBranch.soyType()))
+                .runtimeType();
         if (trueBranch.isBoxed() == falseBranch.isBoxed()) {
-          return trueBranch.withSource(ternary(condition, trueBranch, falseBranch));
+          return trueBranch.withSource(condition.ternary(type, trueBranch, falseBranch));
         }
         SoyExpression boxedTrue = trueBranch.box();
-        return boxedTrue.withSource(ternary(condition, boxedTrue, falseBranch.box()));
+        return boxedTrue.withSource(condition.ternary(type, boxedTrue, falseBranch.box()));
       }
       Type boxedRuntimeType = SoyRuntimeType.getBoxedType(node.getType()).runtimeType();
       return SoyExpression.forSoyValue(
           node.getType(),
-          ternary(
-              condition,
+          condition.ternary(
+              boxedRuntimeType,
               trueBranch.box().checkedCast(boxedRuntimeType),
-              falseBranch.box().checkedCast(boxedRuntimeType),
-              boxedRuntimeType));
+              falseBranch.box().checkedCast(boxedRuntimeType)));
     }
 
     @Override
@@ -1634,7 +1652,7 @@ final class ExpressionCompiler {
           ExternCompiler.getRuntimeType(extern.signature().getReturnType());
       List<Expression> args =
           Streams.concat(Stream.of(parameters.getRenderContext()), params.stream().map(this::visit))
-              .collect(Collectors.toList());
+              .collect(toCollection(ArrayList::new));
       for (int i = 1; i < args.size(); i++) {
         args.set(
             i,

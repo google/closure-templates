@@ -27,7 +27,6 @@ import static com.google.template.soy.internal.proto.ProtoUtils.isUnsigned;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.MAP_ENTRY_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_PROVIDER_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.STRING_TYPE;
-import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.compare;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.isPrimitive;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.numericConversion;
@@ -168,7 +167,7 @@ final class ProtoUtils {
           .put(
               TrustedResourceUrlProto.getDescriptor().getFullName(),
               createSafeProtoToSanitizedContentFactoryMethod(TrustedResourceUrlProto.class))
-          .build();
+          .buildOrThrow();
 
   private static MethodRef createSafeProtoToSanitizedContentFactoryMethod(Class<?> clazz) {
     return MethodRef.create(SanitizedContents.class, "from" + clazz.getSimpleName(), clazz)
@@ -195,7 +194,7 @@ final class ProtoUtils {
           .put(
               TrustedResourceUrlProto.getDescriptor().getFullName(),
               MethodRef.create(SanitizedContent.class, "toTrustedResourceUrlProto"))
-          .build();
+          .buildOrThrow();
 
   private static final RepeatedFieldInterpreter REPEATED_FIELD_INTERPRETER =
       new RepeatedFieldInterpreter();
@@ -827,30 +826,6 @@ final class ProtoUtils {
     }
 
     private SoyExpression handleNormalField(Expression typedBaseExpr) {
-      if (!descriptor.hasPresence()) {
-        // There aren't hassers for fields without presence.
-
-        MethodRef getCaseRef = getOneOfCaseMethod(descriptor.getContainingOneof());
-        Expression fieldNumber = constant(descriptor.getNumber());
-        // this basically just calls getFooCase().getNumber() == field_number
-        return SoyExpression.forBool(
-            compare(
-                Opcodes.IFEQ,
-                new Expression(Type.INT_TYPE) {
-                  @Override
-                  protected void doGen(CodeBuilder adapter) {
-                    typedBaseExpr.gen(adapter);
-                    getCaseRef.invokeUnchecked(adapter);
-                    adapter.visitMethodInsn(
-                        Opcodes.INVOKEVIRTUAL,
-                        getCaseRef.returnType().getInternalName(),
-                        "getNumber",
-                        "()I",
-                        false /* not an interface */);
-                  }
-                },
-                fieldNumber));
-      }
       if (descriptor.isExtension()) {
         FieldRef extensionField = getExtensionField(descriptor);
         final Expression extensionFieldAccessor = extensionField.accessor();
