@@ -340,6 +340,16 @@ public final class BytecodeUtils {
     };
   }
 
+  /** Returns an {@link Expression} that can load the given double constant. */
+  public static Expression constant(final float value) {
+    return new Expression(Type.FLOAT_TYPE, Feature.CHEAP) {
+      @Override
+      protected void doGen(CodeBuilder mv) {
+        mv.pushFloat(value);
+      }
+    };
+  }
+
   /** Returns an {@link Expression} that can load the given String constant. */
   public static Expression constant(String value) {
     // string constants use a "modified UTF8" encoding

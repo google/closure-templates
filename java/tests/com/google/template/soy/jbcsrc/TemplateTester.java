@@ -400,7 +400,11 @@ public final class TemplateTester {
                     .map(TemplateMetadata::getTemplateName)
                     .collect(toImmutableSet()),
                 new MemoryClassLoader(classData));
-        this.template = compiledTemplates.getTemplate(templateName);
+        try {
+          this.template = compiledTemplates.getTemplate(templateName);
+        } catch (Error error) {
+          throw new RuntimeException("Failed to load class: " + classData, error);
+        }
         defaultContext =
             createDefaultBuilder(compiledTemplates)
                 .withPluginInstances(PluginInstances.of(pluginInstances.build()))

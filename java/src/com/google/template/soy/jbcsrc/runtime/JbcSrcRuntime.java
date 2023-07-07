@@ -40,8 +40,10 @@ import com.google.common.html.types.SafeUrls;
 import com.google.common.html.types.TrustedResourceUrl;
 import com.google.common.html.types.TrustedResourceUrlProto;
 import com.google.common.html.types.TrustedResourceUrls;
+import com.google.common.io.BaseEncoding;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.errorprone.annotations.Immutable;
+import com.google.protobuf.ByteString;
 import com.google.protobuf.ExtensionLite;
 import com.google.protobuf.GeneratedMessage.ExtendableMessage;
 import com.google.protobuf.Message;
@@ -1234,6 +1236,14 @@ public final class JbcSrcRuntime {
       throw new NullPointerException("'" + expression + "' evaluates to null");
     }
     return value;
+  }
+
+  public static String base64Encode(ByteString byteString) {
+    return BaseEncoding.base64().encode(byteString.toByteArray());
+  }
+
+  public static ByteString base64Decode(String base64) {
+    return ByteString.copyFrom(BaseEncoding.base64().decode(base64));
   }
 
   private JbcSrcRuntime() {}

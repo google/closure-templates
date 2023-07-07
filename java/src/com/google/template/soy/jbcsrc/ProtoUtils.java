@@ -41,12 +41,13 @@ import com.google.common.html.types.SafeStyleProto;
 import com.google.common.html.types.SafeStyleSheetProto;
 import com.google.common.html.types.SafeUrlProto;
 import com.google.common.html.types.TrustedResourceUrlProto;
-import com.google.common.io.BaseEncoding;
+import com.google.common.primitives.UnsignedInts;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.DescriptorProtos.FieldOptions.JSType;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.EnumDescriptor;
+import com.google.protobuf.Descriptors.EnumValueDescriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor.JavaType;
 import com.google.protobuf.Descriptors.FileDescriptor.Syntax;
@@ -62,10 +63,15 @@ import com.google.template.soy.data.ProtoFieldInterpreter;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContents;
 import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.FloatNode;
 import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.MethodCallNode;
+import com.google.template.soy.exprtree.ProtoEnumValueNode;
+import com.google.template.soy.exprtree.VarDefn;
+import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.internal.proto.FieldVisitor;
 import com.google.template.soy.internal.proto.JavaQualifiedNames;
 import com.google.template.soy.jbcsrc.restricted.BytecodeProducer;
@@ -80,6 +86,8 @@ import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyRuntimeType;
 import com.google.template.soy.jbcsrc.restricted.Statement;
 import com.google.template.soy.jbcsrc.restricted.TypeInfo;
+import com.google.template.soy.jbcsrc.runtime.JbcSrcRuntime;
+import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.MapType;
@@ -112,20 +120,10 @@ final class ProtoUtils {
 
   private static final Type[] ONE_INT_ARG = {Type.INT_TYPE};
 
-  private static final MethodRef BASE_ENCODING_BASE_64 =
-      MethodRef.create(BaseEncoding.class, "base64").asNonNullable().asCheap();
-
-  private static final MethodRef BASE_ENCODING_DECODE =
-      MethodRef.create(BaseEncoding.class, "decode", CharSequence.class).asNonNullable().asCheap();
-
-  private static final MethodRef BASE_ENCODING_ENCODE =
-      MethodRef.create(BaseEncoding.class, "encode", byte[].class).asNonNullable().asCheap();
-
-  private static final MethodRef BYTE_STRING_COPY_FROM =
-      MethodRef.create(ByteString.class, "copyFrom", byte[].class).asNonNullable();
-
-  private static final MethodRef BYTE_STRING_TO_BYTE_ARRAY =
-      MethodRef.create(ByteString.class, "toByteArray").asNonNullable();
+  private static final MethodRef BASE64_ENCODE =
+      MethodRef.create(JbcSrcRuntime.class, "base64Encode", ByteString.class).asNonNullable();
+  private static final MethodRef BASE64_DECODE =
+      MethodRef.create(JbcSrcRuntime.class, "base64Decode", String.class).asNonNullable();
 
   private static final MethodRef EXTENDABLE_BUILDER_ADD_EXTENSION =
       MethodRef.create(ExtendableBuilder.class, "addExtension", ExtensionLite.class, Object.class)
@@ -645,24 +643,7 @@ final class ProtoUtils {
     }
 
     private SoyExpression byteStringToBase64String(Expression byteString) {
-      byteString.checkAssignableTo(BYTE_STRING_TYPE);
-      final Expression byteArray = byteString.invoke(BYTE_STRING_TO_BYTE_ARRAY);
-      return SoyExpression.forString(
-          new Expression(STRING_TYPE, Feature.NON_NULLABLE) {
-            @Override
-            protected void doGen(CodeBuilder adapter) {
-              byteArray.gen(adapter);
-              BASE_ENCODING_BASE_64.invokeUnchecked(adapter);
-              // swap the two top items of the stack.
-              // This ensures that the base expression is gen'd at a stack depth of zero, which is
-              // important if it contains a conditional logic that branches out of the byteArray
-              // Expression
-              // TODO(lukes): fix this by changing the null checking logic in
-              // handle{Extension|Normal}Field.
-              adapter.swap();
-              BASE_ENCODING_ENCODE.invokeUnchecked(adapter);
-            }
-          });
+      return SoyExpression.forString(BASE64_ENCODE.invoke(byteString));
     }
 
     private SoyExpression messageToSoyExpression(Expression field) {
@@ -910,15 +891,29 @@ final class ProtoUtils {
       for (int i = 0; i < node.numChildren(); i++) {
         FieldDescriptor field = protoType.getFieldDescriptor(node.getParamName(i).identifier());
         ExprNode baseArg = node.getChild(i);
-
+        // Handle some special cases
+        // baseArg nulls are not common, but we can trivially skip
+        if (baseArg.getKind() == ExprNode.Kind.NULL_NODE) {
+          continue;
+        }
+        // linking to stateVar with null defaults are common, we can save a lot of code in this way.
+        if (baseArg.getKind() == ExprNode.Kind.VAR_REF_NODE) {
+          VarRefNode varRefNode = (VarRefNode) baseArg;
+          if (varRefNode.getDefnDecl().kind() == VarDefn.Kind.STATE) {
+            TemplateStateVar stateVarDefn = (TemplateStateVar) varRefNode.getDefnDecl();
+            if (stateVarDefn.defaultValue().getRoot().getKind() == ExprNode.Kind.NULL_NODE) {
+              continue;
+            }
+          }
+        }
         Statement setter;
         if (field.isRepeated()) {
           setter = handleRepeated(baseArg, field);
         } else {
           if (field.isExtension()) {
-            setter = handleExtension(compile(baseArg), field);
+            setter = handleExtension(baseArg, field, /* markNonNullable= */ false);
           } else {
-            setter = handleNormalSetter(compile(baseArg), field);
+            setter = handleNormalSetter(baseArg, field, /* markNonNullable= */ false);
           }
         }
         setters.add(setter);
@@ -936,9 +931,9 @@ final class ProtoUtils {
         @Override
         protected void doGen(CodeBuilder cb) {
           keyArg.gen(cb);
-          unboxAndCoerce(cb, keyArg, keyDescriptor);
+          unboxAndCoerce(cb, keyArg.soyRuntimeType(), keyDescriptor);
           valueArg.gen(cb);
-          unboxAndCoerce(cb, valueArg, valueDescriptor);
+          unboxAndCoerce(cb, valueArg.soyRuntimeType(), valueDescriptor);
           putMethod.invokeUnchecked(cb);
         }
       };
@@ -951,6 +946,58 @@ final class ProtoUtils {
      * at the top of the stack. After .gen() it is guaranteed to leave an instance of the builder at
      * the top of the stack, without changing stack heights.
      */
+    private Statement handleNormalSetter(
+        final ExprNode arg, final FieldDescriptor field, boolean markNonNullable) {
+      final MethodRef setterMethod = getSetOrAddMethod(field);
+      if (field.getJavaType() == JavaType.ENUM
+          && arg.getKind() == ExprNode.Kind.PROTO_ENUM_VALUE_NODE) {
+        // we compile proto enums to Soy ints, aka java longs which implies for enum literals we
+        // pushInt(val), L2I, invokeStatic Enum.forNumber
+        // it would be better to directly reference the enum constant, resulting in fewer
+        // instructions and a faster runtime.
+        var protoEnumValueNode = (ProtoEnumValueNode) arg;
+        Expression enumLiteral =
+            isOpenEnumField(field)
+                ? constant(protoEnumValueNode.getEnumValueDescriptor().getNumber())
+                : getEnum(protoEnumValueNode.getEnumValueDescriptor()).accessor();
+        return new Statement() {
+          @Override
+          protected void doGen(CodeBuilder cb) {
+            enumLiteral.gen(cb);
+            setterMethod.invokeUnchecked(cb);
+          }
+        };
+      }
+      if (field.getJavaType() == JavaType.INT && arg.getKind() == ExprNode.Kind.INTEGER_NODE) {
+        // similar to the above, we can avoid a L2I instruction or a method call
+        long value = ((IntegerNode) arg).getValue();
+        return new Statement() {
+          @Override
+          protected void doGen(CodeBuilder cb) {
+            if (isUnsigned(field)) {
+              cb.pushInt(UnsignedInts.saturatedCast(value));
+            } else {
+              cb.pushInt((int) value);
+            }
+            setterMethod.invokeUnchecked(cb);
+          }
+        };
+      }
+      if (field.getJavaType() == JavaType.FLOAT && arg.getKind() == ExprNode.Kind.FLOAT_NODE) {
+        float value = (float) ((FloatNode) arg).getValue();
+        return new Statement() {
+          @Override
+          protected void doGen(CodeBuilder cb) {
+            cb.pushFloat(value);
+            setterMethod.invokeUnchecked(cb);
+          }
+        };
+      }
+
+      SoyExpression baseArg = markNonNullable ? compile(arg).asNonNullable() : compile(arg);
+      return handleNormalSetter(baseArg, field);
+    }
+
     private Statement handleNormalSetter(final SoyExpression baseArg, final FieldDescriptor field) {
       final MethodRef setterMethod = getSetOrAddMethod(field);
       final boolean isNullable = !baseArg.isNonNullable();
@@ -971,7 +1018,7 @@ final class ProtoUtils {
 
           // arg is not null; unbox, coerce, set<Field>().
 
-          unboxAndCoerce(cb, baseArg, field);
+          unboxAndCoerce(cb, baseArg.soyRuntimeType(), field);
           setterMethod.invokeUnchecked(cb);
           if (isNullable) {
             cb.goTo(end);
@@ -990,7 +1037,6 @@ final class ProtoUtils {
       checkArgument(mapArg.isNonNullable());
       // Wait until all map values can be resolved. Since we don't box/unbox maps, directly call
       // mapArg.asJavaMap() that converts SoyMapImpl to a Map<String, SoyValueProvider>.
-      // TODO(lukes): handle map literals specially
       Expression resolved =
           detacher.resolveSoyValueProviderMap(mapArg.invoke(MethodRef.SOY_MAP_IMPL_AS_JAVA_MAP));
 
@@ -1087,11 +1133,10 @@ final class ProtoUtils {
         for (ExprNode element : list.getChildren()) {
           // it is an error to assign a null list element, so just assert non-null so that it will
           // fail with an NPE if it happens to be null
-          SoyExpression expression = compile(element).asNonNullable();
           additions.add(
               field.isExtension()
-                  ? handleExtension(expression, field)
-                  : handleNormalSetter(expression, field));
+                  ? handleExtension(element, field, /* markNonNullable= */ true)
+                  : handleNormalSetter(element, field, /* markNonNullable= */ true));
         }
         return Statement.concat(additions);
       }
@@ -1157,6 +1202,12 @@ final class ProtoUtils {
     }
 
     private Statement handleRepeatedNotNull(final SoyExpression listArg, FieldDescriptor field) {
+      // TODO(lukes): instead of inlining a loop we could
+      // 1. use invoke dyanamic and built the loop with method handles? might be simpler than the
+      //    stack management
+      // 2. generate code like `JbcsrcRuntime.addToBuilder(builder, Foo::addBar, $listExpr,
+      // SoyValue::intValue)`This would be simpler and generate smaller code.
+
       checkArgument(listArg.isNonNullable());
 
       // Unbox listArg as List<SoyValueProvider> and wait until all items are done
@@ -1196,12 +1247,9 @@ final class ProtoUtils {
       SoyExpression soyValue =
           SoyExpression.forSoyValue(elementType.soyType(), getAndResolve)
               // Set soyValue as a non-nullable, even though it is possible for templates to receive
-              // lists with null elements. Lists with null elements will result in a
+              // lists with null elements. Lists with null elements will simply result in a
               // NullPointerException thrown in .handleNormalSetter() / .handleExtension().
-              //
-              // Note: This is different from jspb implementation. Jspb will happily accept nulls as
-              // part of a repeated field, however said proto will error out at server-side
-              // deserialization time. Hence, here we throw an NPE rather than copying jspb.
+              // This is aligned with JSPB runtime behavior.
               .asNonNullable();
 
       // Call into .handleNormalSetter() or .handleExtension(), which will call add<Field>()
@@ -1244,7 +1292,68 @@ final class ProtoUtils {
       };
     }
 
-    private Statement handleExtension(final SoyExpression baseArg, final FieldDescriptor field) {
+    private Statement handleExtension(
+        final ExprNode arg, final FieldDescriptor field, boolean markNonNullable) {
+      final Expression extensionIdentifier = getExtensionField(field).accessor();
+
+      // Call .setExtension() for regular extensions, .addExtension() for repeated extensions
+      final MethodRef setterMethod =
+          field.isRepeated() ? EXTENDABLE_BUILDER_ADD_EXTENSION : EXTENDABLE_BUILDER_SET_EXTENSION;
+
+      final Type builderType = builderRuntimeType(descriptor).type();
+      // Handle some special cases
+      if (field.getJavaType() == JavaType.ENUM
+          && arg.getKind() == ExprNode.Kind.PROTO_ENUM_VALUE_NODE) {
+        // we compile proto enums to Soy ints, aka java longs which implies for enum literals we
+        // pushInt(val), L2I, invokeStatic Enum.forNumber
+        // it would be better to directly reference the enum constant, resulting in fewer
+        // instructions and a faster runtime.
+        Expression enumLiteral =
+            getEnum(((ProtoEnumValueNode) arg).getEnumValueDescriptor()).accessor();
+        return new Statement() {
+          @Override
+          protected void doGen(CodeBuilder cb) {
+            extensionIdentifier.gen(cb);
+            enumLiteral.gen(cb);
+            setterMethod.invokeUnchecked(cb);
+            cb.checkCast(builderType);
+          }
+        };
+      }
+      if (field.getJavaType() == JavaType.INT && arg.getKind() == ExprNode.Kind.INTEGER_NODE) {
+        // similar to the above, we can avoid a L2I instruction or a method call
+        long value = ((IntegerNode) arg).getValue();
+        int intValue = isUnsigned(field) ? UnsignedInts.saturatedCast(value) : (int) value;
+        Expression boxedInt = BytecodeUtils.boxJavaPrimitive(Type.INT_TYPE, constant(intValue));
+        return new Statement() {
+          @Override
+          protected void doGen(CodeBuilder cb) {
+            extensionIdentifier.gen(cb);
+            boxedInt.gen(cb);
+            setterMethod.invokeUnchecked(cb);
+            cb.checkCast(builderType);
+          }
+        };
+      }
+      if (field.getJavaType() == JavaType.FLOAT && arg.getKind() == ExprNode.Kind.FLOAT_NODE) {
+        float value = (float) ((FloatNode) arg).getValue();
+        Expression boxedFloat = BytecodeUtils.boxJavaPrimitive(Type.FLOAT_TYPE, constant(value));
+        return new Statement() {
+          @Override
+          protected void doGen(CodeBuilder cb) {
+            extensionIdentifier.gen(cb);
+            boxedFloat.gen(cb);
+            setterMethod.invokeUnchecked(cb);
+            cb.checkCast(builderType);
+          }
+        };
+      }
+
+      SoyExpression baseArg = markNonNullable ? compile(arg).asNonNullable() : compile(arg);
+      return handleExtension(baseArg, field);
+    }
+
+    private Statement handleExtension(SoyExpression baseArg, FieldDescriptor field) {
       // .setExtension() requires an extension identifier object
       final Expression extensionIdentifier = getExtensionField(field).accessor();
 
@@ -1253,7 +1362,6 @@ final class ProtoUtils {
           field.isRepeated() ? EXTENDABLE_BUILDER_ADD_EXTENSION : EXTENDABLE_BUILDER_SET_EXTENSION;
 
       final boolean isNullable = !baseArg.isNonNullable();
-
       return new Statement() {
         @Override
         protected void doGen(CodeBuilder cb) {
@@ -1271,7 +1379,7 @@ final class ProtoUtils {
           }
 
           // Arg is not null; unbox, coerce, run .valueOf(), add extension id, call .setExtension()
-          unboxAndCoerce(cb, baseArg, field);
+          unboxAndCoerce(cb, baseArg.soyRuntimeType(), field);
 
           // Put extension identifier on stack, swap to the right order
           extensionIdentifier.gen(cb);
@@ -1299,16 +1407,16 @@ final class ProtoUtils {
      * be compatible with the given field descriptor.
      */
     private static void unboxAndCoerce(
-        CodeBuilder cb, SoyExpression baseArg, FieldDescriptor field) {
+        CodeBuilder cb, SoyRuntimeType runtimeType, FieldDescriptor field) {
       Type currentType;
       if (!isSafeProto(field)) {
-        if (baseArg.isBoxed()) {
-          currentType = unboxUnchecked(cb, baseArg.soyRuntimeType(), classToUnboxTo(field));
+        if (runtimeType.isBoxed()) {
+          currentType = unboxUnchecked(cb, runtimeType, classToUnboxTo(field));
         } else {
-          currentType = baseArg.resultType();
+          currentType = runtimeType.runtimeType();
         }
       } else {
-        currentType = baseArg.resultType();
+        currentType = runtimeType.runtimeType();
       }
 
       coerce(cb, currentType, field);
@@ -1375,10 +1483,7 @@ final class ProtoUtils {
           }
           break;
         case BYTE_STRING:
-          BASE_ENCODING_BASE_64.invokeUnchecked(cb);
-          cb.swap();
-          BASE_ENCODING_DECODE.invokeUnchecked(cb);
-          BYTE_STRING_COPY_FROM.invokeUnchecked(cb);
+          BASE64_DECODE.invokeUnchecked(cb);
           break;
         case MESSAGE:
           coerceToMessage(cb, currentType, field);
@@ -1607,6 +1712,13 @@ final class ProtoUtils {
     return MethodRef.createInstanceMethod(
             builder, new Method("build", message.type(), MethodRef.NO_METHOD_ARGS))
         .asNonNullable();
+  }
+
+  /** Returns the {@link MethodRef} for the generated newBuilder method. */
+  private static FieldRef getEnum(EnumValueDescriptor descriptor) {
+    TypeInfo enumType = enumRuntimeType(descriptor.getType());
+    return FieldRef.createPublicStaticField(enumType, descriptor.getName(), enumType.type())
+        .asNonNull();
   }
 
   /** Returns the {@link MethodRef} for the generated forNumber method. */
