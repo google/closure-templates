@@ -32,50 +32,12 @@ const {shuffle} = goog.require('goog.array');
 goog.require('soy');
 
 /**
- * Structural interface for representing Soy `map`s in JavaScript.
- *
- * <p>The Soy `map` type was originally represented in JavaScript by plain
- * objects (`Object<K,V>`). However, plain object access syntax (`obj['key']`)
- * is incompatible with the ES6 Map and jspb.Map APIs, both of which use
- * `map.get('key')`. In order to allow the Soy `map` type to interoperate with
- * ES6 Maps and proto maps, Soy now uses this interface to represent the `map`
- * type. (The Soy `legacy_object_literal_map` type continues to use plain
- * objects for backwards compatibility.)
- *
- * <p>This is a structural interface -- ES6 Map and jspb.Map implicitly
- * implement it without declaring that they do.
- *
+ * An alias for ReadonlyMap
+ * @extends {ReadonlyMap<K, V>}
  * @record
  * @template K, V
  */
-class SoyMap {
-  constructor() {}
-
-  /**
-   * @param {K} k
-   * @return {V|undefined}
-   */
-  get(k) {}
-
-  /**
-   * @return {!IteratorIterable<K>} An iterator that contains the keys for each
-   *     element in this map.
-   */
-  keys() {}
-
-  /**
-   * @return {!IteratorIterable<V>} An iterator that contains the keys for each
-   *     element in this map.
-   */
-  values() {}
-
-  /**
-   * Returns an iterator over the [key, value] pair entries of this map.
-   *
-   * @return {!IteratorIterable<!Array<K|V>>}
-   */
-  entries() {}
-}
+class SoyMap {}
 
 /**
  * Converts an ES6 Map or jspb.Map into an equivalent legacy object map.
