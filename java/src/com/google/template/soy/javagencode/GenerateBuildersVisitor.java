@@ -195,7 +195,7 @@ public final class GenerateBuildersVisitor
     HashMap<String, String> filePathToNamespace = new HashMap<>();
     fileInfo
         .fileNode()
-        .getRequiredCssPaths()
+        .getAllRequiredCssPaths()
         .forEach(
             cssPath -> {
               if (cssPath.getNamespace() != null
@@ -221,7 +221,8 @@ public final class GenerateBuildersVisitor
     ImmutableList<String> namespaces =
         Streams.concat(
                 fileInfo.fileNode().getRequiredCssNamespaces().stream(),
-                fileInfo.fileNode().getRequiredCssPaths().stream().map(p -> p.resolvedPath().get()),
+                fileInfo.fileNode().getAllRequiredCssPaths().stream()
+                    .map(p -> p.resolvedPath().get()),
                 fileInfo.templates().stream()
                     .flatMap(
                         templateInfo ->

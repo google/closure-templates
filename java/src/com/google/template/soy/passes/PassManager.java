@@ -289,6 +289,7 @@ public final class PassManager {
         passContinuationRegistry = Maps.newHashMap();
     private boolean building;
     private boolean validateJavaMethods = true;
+    private boolean replaceCssVariables = true;
     private final AccumulatedState accumulatedState = new AccumulatedState();
 
     @CanIgnoreReturnValue
@@ -448,6 +449,11 @@ public final class PassManager {
       return this;
     }
 
+    public Builder setReplaceCssVariables(boolean replaceCssVariables) {
+      this.replaceCssVariables = replaceCssVariables;
+      return this;
+    }
+
     /**
      * Registers a pass continuation rule.
      *
@@ -536,7 +542,7 @@ public final class PassManager {
                   errorReporter))
           .add(new UnknownJsGlobalPass(allowUnknownJsGlobals, errorReporter))
           .add(new ResolveNamesPass(errorReporter))
-          .add(new ResolveDottedImportsPass(errorReporter, registry));
+          .add(new ResolveDottedImportsPass(errorReporter, registry, replaceCssVariables));
       if (!astRewrites.isNone()) {
         passes.add(new RewriteElementCompositionFunctionsPass(errorReporter));
       }

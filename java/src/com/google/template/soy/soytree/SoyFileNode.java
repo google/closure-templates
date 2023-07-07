@@ -188,10 +188,28 @@ public final class SoyFileNode extends AbstractParentSoyNode<SoyNode>
     return requiredCssPaths;
   }
 
+  /** Returns the CSS namespaces required by CSS imports in this file. */
+  public ImmutableList<CssPath> getRequiredCssImportPaths() {
+    return getImports().stream()
+        .map(ImportNode::getRequiredCssPath)
+        .filter(Optional::isPresent)
+        .map(Optional::get)
+        .collect(toImmutableList());
+  }
+
+  /** Return the CSS namespaces required (i.e. requirecsspath) and imported by this file. */
+  public ImmutableList<CssPath> getAllRequiredCssPaths() {
+    return ImmutableList.<CssPath>builder()
+        .addAll(getRequiredCssPaths())
+        .addAll(getRequiredCssImportPaths())
+        .build();
+  }
+
   public ImmutableList<String> getRequireCss() {
     return ImmutableList.<String>builder()
         .addAll(getRequiredCssNamespaces())
-        .addAll(getRequiredCssPaths().stream().map(CssPath::sourcePath).collect(toImmutableList()))
+        .addAll(
+            getAllRequiredCssPaths().stream().map(CssPath::sourcePath).collect(toImmutableList()))
         .build();
   }
 
