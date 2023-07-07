@@ -800,7 +800,7 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
           case TO_FLOAT:
           case VE_DATA:
           case XID:
-          case IS_PARAM_SET:
+            // visit children normally
             break;
           case UNKNOWN_JS_GLOBAL:
             throw new UnsupportedOperationException(

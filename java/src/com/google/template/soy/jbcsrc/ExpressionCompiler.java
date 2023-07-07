@@ -1520,13 +1520,6 @@ final class ExpressionCompiler {
     // Builtin functions
 
     @Override
-    SoyExpression visitIsSetFunction(FunctionNode node) {
-      VarRefNode varRef = (VarRefNode) node.getChild(0);
-      return SoyExpression.forBool(
-          MethodRef.IS_PARAM_SET.invoke(parameters.getParam((TemplateParam) varRef.getDefnDecl())));
-    }
-
-    @Override
     protected SoyExpression visitAssertNonNullOpNode(AssertNonNullOpNode node) {
       return visit(Iterables.getOnlyElement(node.getChildren()));
     }

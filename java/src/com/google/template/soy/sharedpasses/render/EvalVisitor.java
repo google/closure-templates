@@ -857,8 +857,6 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     if (soyFunction instanceof BuiltinFunction) {
       BuiltinFunction nonpluginFn = (BuiltinFunction) soyFunction;
       switch (nonpluginFn) {
-        case IS_PARAM_SET:
-          return visitIsSetFunction(node);
         case CHECK_NOT_NULL:
           return assertNotNull(node.getChild(0));
         case CSS:
@@ -1047,10 +1045,6 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       throw RenderException.create(
           "While computing function \"" + fnNode.toSourceString() + "\": " + e.getMessage(), e);
     }
-  }
-
-  private SoyValue visitIsSetFunction(FunctionNode node) {
-    return BooleanData.forValue(env.hasVar(((VarRefNode) node.getChild(0)).getDefnDecl()));
   }
 
   private SoyValue visitCssFunction(FunctionNode node) {

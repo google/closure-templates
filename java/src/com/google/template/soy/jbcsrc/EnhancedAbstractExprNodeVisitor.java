@@ -87,8 +87,6 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
     if (function instanceof BuiltinFunction) {
       BuiltinFunction builtinFn = (BuiltinFunction) function;
       switch (builtinFn) {
-        case IS_PARAM_SET:
-          return visitIsSetFunction(node);
         case CHECK_NOT_NULL:
           return visitCheckNotNullFunction(node);
         case CSS:
@@ -146,9 +144,6 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
     return visitExprNode(varRef);
   }
 
-  T visitIsSetFunction(FunctionNode node) {
-    return visitExprNode(node);
-  }
 
   T visitCheckNotNullFunction(FunctionNode node) {
     return visitExprNode(node);

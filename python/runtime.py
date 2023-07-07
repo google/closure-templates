@@ -538,19 +538,6 @@ def check_not_null(val):
   return val
 
 
-def is_set(field, container):
-  """A helper to implement the Soy Function isSet.
-
-  Args:
-    field (str): The field to test.
-    container (Dict[str, Any]): The container to test.
-
-  Returns:
-    True if the field is set in the container.
-  """
-  return field in container
-
-
 def parse_int(s, radix):
   """A function that attempts to convert the input string into an int.
 

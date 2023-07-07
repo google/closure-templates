@@ -995,8 +995,6 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
 
     if (soyFunction instanceof BuiltinFunction) {
       switch ((BuiltinFunction) soyFunction) {
-        case IS_PARAM_SET:
-          return visitIsSetFunction(node);
         case CHECK_NOT_NULL:
           return visitCheckNotNullFunction(node);
         case CSS:
@@ -1075,11 +1073,6 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
   private Expression assertNonNull(ExprNode expr) {
     Expression e = visit(expr);
     return e.isDefinitelyNotNull() ? e : SOY_CHECK_NOT_NULL.call(e);
-  }
-
-  private Expression visitIsSetFunction(FunctionNode node) {
-    Expression expression = visit(node.getChild(0));
-    return expression.tripleNotEquals(Expressions.LITERAL_UNDEFINED);
   }
 
   private Expression visitCssFunction(FunctionNode node) {

@@ -29,9 +29,6 @@ import javax.annotation.Nullable;
  */
 public enum BuiltinFunction implements SoyFunction {
   CHECK_NOT_NULL("checkNotNull"),
-  // TODO(b/144312362): try changing it to private $$isParamSet when hooking up with default value
-  // desugaring so that it can be tested implicitly.
-  IS_PARAM_SET("isParamSet"),
   /**
    * Function for substituting CSS class names according to a lookup map.
    *
@@ -100,7 +97,6 @@ public enum BuiltinFunction implements SoyFunction {
         return ImmutableSet.of(3);
       case DEBUG_SOY_TEMPLATE_INFO:
         return ImmutableSet.of(0);
-      case IS_PARAM_SET:
       case SOY_SERVER_KEY:
       case CHECK_NOT_NULL:
       case XID:
@@ -134,7 +130,6 @@ public enum BuiltinFunction implements SoyFunction {
       case VE_DATA:
       case TO_FLOAT:
       case PROTO_INIT:
-      case IS_PARAM_SET:
         return true;
       case CSS: // implicitly depends on a renaming map or js compiler flag
       case XID: // implicitly depends on a renaming map or js compiler flag

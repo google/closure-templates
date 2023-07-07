@@ -592,8 +592,6 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
 
   private PyExpr visitNonPluginFunction(FunctionNode node, BuiltinFunction nonpluginFn) {
     switch (nonpluginFn) {
-      case IS_PARAM_SET:
-        return visitIsSetFunction(node);
       case CHECK_NOT_NULL:
         return assertNotNull(node.getChild(0));
       case CSS:
@@ -629,11 +627,6 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
         return ERROR;
     }
     throw new AssertionError();
-  }
-
-  private PyExpr visitIsSetFunction(FunctionNode node) {
-    String varName = ((VarRefNode) node.getChild(0)).getNameWithoutLeadingDollar();
-    return new PyFunctionExprBuilder("runtime.is_set").addArg(varName).addArg(DATA).asPyExpr();
   }
 
   private PyExpr assertNotNull(ExprNode node) {

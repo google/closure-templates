@@ -152,12 +152,6 @@ public final class JbcSrcRuntime {
   /** Represents a provider for the value {@code null} in jbcsrc. */
   public static final SoyValueProvider NULL_PROVIDER = new NullProvider("NULL_PROVIDER");
 
-  /**
-   * Represents a provider for the value {@code null} in jbcsrc, but is a special value that can be
-   * used to tell if the value is null because the parameter was not passed.
-   */
-  private static final SoyValueProvider MISSING_PARAMETER = new NullProvider("MISSING_PARAMETER");
-
   public static AssertionError unexpectedStateError(StackFrame frame) {
     return new AssertionError("Unexpected state requested: " + frame.stateNumber);
   }
@@ -266,18 +260,13 @@ public final class JbcSrcRuntime {
     // returning null to interpret it as 'undefined'. http://b/20537225 describes the issues in Tofu
     if (provider == null) {
       if (defaultValue == null) {
-        return MISSING_PARAMETER;
+        return NULL_PROVIDER;
       }
       return defaultValue;
     } else if (provider instanceof NullData) {
       return NULL_PROVIDER;
     }
     return provider;
-  }
-
-  /** Returns true if the value is derived from a missing parameter */
-  public static boolean isParamSet(SoyValueProvider provider) {
-    return provider != MISSING_PARAMETER;
   }
 
   /** Returns true if the value is derived from a missing parameter */
