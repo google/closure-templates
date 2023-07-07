@@ -32,6 +32,7 @@ public class BasicFunctions {
         new ConcatMapsMethod(),
         new FloorFunction(),
         new HtmlToTextFunction(),
+        new IsFiniteFunction(),
         new JoinFunction(),
         new KeysFunction(),
         new LegacyObjectMapToMapFunction(),

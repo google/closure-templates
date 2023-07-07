@@ -217,6 +217,17 @@ final class PythonValueFactoryImpl extends PythonValueFactory {
               PyExprUtils.SUBSCRIPT_PRECEDENCE));
     }
 
+    @Override
+    public PythonValue and(PythonValue value) {
+      int andPrecedence = PyExprUtils.pyPrecedenceForOperator(Operator.AND);
+      return new PythonValueImpl(
+          new PyExpr(
+              maybeProtect(expr, andPrecedence).getText()
+                  + " and "
+                  + maybeProtect(unwrap(value), andPrecedence).getText(),
+              andPrecedence));
+    }
+
     private static PyExpr unwrap(PythonValue start) {
       return ((PythonValueImpl) start).expr;
     }
