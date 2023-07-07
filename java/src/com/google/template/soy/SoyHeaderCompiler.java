@@ -114,7 +114,7 @@ final class SoyHeaderCompiler extends AbstractSoyCompiler {
     Set<String> cssNamesFromPath = new LinkedHashSet<>();
     for (SoyFileNode file : fileSet.getChildren()) {
       requiredCssNames.addAll(file.getRequiredCssNamespaces());
-      for (SoyFileNode.CssPath cssPath : file.getRequiredCssPaths()) {
+      for (SoyFileNode.CssPath cssPath : file.getAllRequiredCssPaths()) {
         // This should always be present due to the ValidateRequiredCssPass, but that pass isn't
         // run in the open source release.
         cssPath

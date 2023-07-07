@@ -288,7 +288,7 @@ final class TemplateCompiler {
     Set<String> namespaces = Sets.newLinkedHashSet();
     // This ordering is critical to preserve css hierarchy.
     namespaces.addAll(templateNode.getParent().getRequiredCssNamespaces());
-    templateNode.getParent().getRequiredCssPaths().stream()
+    templateNode.getParent().getAllRequiredCssPaths().stream()
         .map(CssPath::getNamespace)
         .filter(Objects::nonNull)
         .forEach(namespaces::add);
@@ -296,7 +296,7 @@ final class TemplateCompiler {
 
     // Require paths.
     Set<String> cssPaths = Sets.newLinkedHashSet();
-    templateNode.getParent().getRequiredCssPaths().stream()
+    templateNode.getParent().getAllRequiredCssPaths().stream()
         // Temporary, to avoid double requesting w/ the above.
         .filter(p -> p.getNamespace() == null)
         .filter(p -> p.resolvedPath().isPresent())

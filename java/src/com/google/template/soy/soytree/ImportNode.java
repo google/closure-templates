@@ -29,6 +29,7 @@ import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.soytree.defn.ImportedVar;
 import com.google.template.soy.types.SoyType;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.BiConsumer;
 
 /**
@@ -50,6 +51,8 @@ public final class ImportNode extends AbstractSoyNode {
    */
   private SoyType moduleType;
 
+  private Optional<SoyFileNode.CssPath> requiredCssPath;
+
   /** Only Proto and CSS are supported right now. */
   public enum ImportType {
     CSS,
@@ -63,6 +66,7 @@ public final class ImportNode extends AbstractSoyNode {
     this.identifiers = ImmutableList.copyOf(defns);
     this.path = path;
     this.importType = ImportType.UNKNOWN;
+    this.requiredCssPath = Optional.empty();
 
     for (ImportedVar defn : identifiers) {
       defn.onParentInit(getSourceFilePath());
@@ -87,6 +91,7 @@ public final class ImportNode extends AbstractSoyNode {
             .collect(toImmutableList());
     this.path = orig.path.copy(copyState);
     this.importType = orig.importType;
+    this.requiredCssPath = orig.requiredCssPath;
     this.moduleType = orig.moduleType;
   }
 
@@ -102,6 +107,10 @@ public final class ImportNode extends AbstractSoyNode {
 
   public void setImportType(ImportType importType) {
     this.importType = importType;
+    if (importType == ImportType.CSS) {
+      String sourcePath = "google3/" + getPath().substring(0, getPath().length() - ".css".length());
+      this.requiredCssPath = Optional.of(new SoyFileNode.CssPath(sourcePath));
+    }
   }
 
   public ImportType getImportType() {
@@ -152,6 +161,10 @@ public final class ImportNode extends AbstractSoyNode {
 
   public ImmutableList<ImportedVar> getIdentifiers() {
     return identifiers;
+  }
+
+  public Optional<SoyFileNode.CssPath> getRequiredCssPath() {
+    return requiredCssPath;
   }
 
   @Override
