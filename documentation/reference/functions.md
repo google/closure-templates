@@ -106,10 +106,6 @@ Returns the square root of the number.
 Returns the value of the first argument raised to the power of the second
 argument.
 
-### `isFinite(number)` {#isFinite}
-
-Returns whether the number is finite (i.e., not `NaN` or `Infinity`).
-
 ## List Fields
 
 <span id="list-any_length"></span>

@@ -49,7 +49,6 @@ public final class GenPyCodeVisitorTest {
           + "from __future__ import division\n"
           + "import collections\n"
           + "import math\n"
-          + "import numbers\n"
           + "import random\n"
           + "import sys\n"
           + "from example.runtime import bidi\n"

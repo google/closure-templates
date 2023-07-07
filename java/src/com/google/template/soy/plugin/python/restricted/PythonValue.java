@@ -42,6 +42,4 @@ public interface PythonValue extends SoySourceValue {
   PythonValue in(PythonValue other);
 
   PythonValue getItem(PythonValue key);
-
-  PythonValue and(PythonValue value);
 }

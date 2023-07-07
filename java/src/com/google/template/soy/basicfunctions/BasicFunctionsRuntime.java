@@ -479,9 +479,4 @@ public final class BasicFunctionsRuntime {
     // Clamp upper bound
     return Math.min(str.length(), clampLowerBound);
   }
-
-  /** Returns whether the argument is a finite value (not NaN or Infinity). */
-  public static boolean isFinite(SoyValue arg) {
-    return arg instanceof NumberData && Double.isFinite(arg.numberValue());
-  }
 }
