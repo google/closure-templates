@@ -229,6 +229,11 @@ public final class PassManager {
       public boolean rewriteAttributeParams() {
         return true;
       }
+
+      @Override
+      public boolean rewriteCssVariables() {
+        return false;
+      }
     },
 
     /** All the AST rewrites. */
@@ -260,6 +265,10 @@ public final class PassManager {
     }
 
     public boolean rewriteAttributeParams() {
+      return isAll();
+    }
+
+    public boolean rewriteCssVariables() {
       return isAll();
     }
   }
@@ -536,7 +545,9 @@ public final class PassManager {
                   errorReporter))
           .add(new UnknownJsGlobalPass(allowUnknownJsGlobals, errorReporter))
           .add(new ResolveNamesPass(errorReporter))
-          .add(new ResolveDottedImportsPass(errorReporter, registry));
+          .add(
+              new ResolveDottedImportsPass(
+                  errorReporter, registry, astRewrites.rewriteCssVariables()));
       if (!astRewrites.isNone()) {
         passes.add(new RewriteElementCompositionFunctionsPass(errorReporter));
       }
