@@ -21,6 +21,7 @@ import static com.google.template.soy.jbcsrc.restricted.Expression.areAllCheap;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
+import com.google.common.base.VerifyException;
 import com.google.common.collect.ImmutableList;
 import com.google.common.html.types.SafeHtml;
 import com.google.common.html.types.SafeHtmlProto;
@@ -313,7 +314,9 @@ public abstract class MethodRef {
       create(JbcSrcRuntime.class, "checkResolved", Map.class).asNonNullable();
 
   public static final MethodRef SOY_SERVER_KEY =
-      MethodRef.create(SharedRuntime.class, "soyServerKey", SoyValue.class).asCheap();
+      MethodRef.create(SharedRuntime.class, "soyServerKey", SoyValue.class)
+          .asCheap()
+          .asNonNullable();
 
   public static final MethodRef RUNTIME_RANGE_LOOP_LENGTH =
       create(JbcSrcRuntime.class, "rangeLoopLength", int.class, int.class, int.class).asCheap();
@@ -691,7 +694,7 @@ public abstract class MethodRef {
       // Ensure that the method exists and is public.
       m = clazz.getMethod(methodName, params);
     } catch (Exception e) {
-      throw new RuntimeException(
+      throw new VerifyException(
           "Couldn't find the expected method among: " + Arrays.toString(clazz.getMethods()), e);
     }
     return create(m);

@@ -16,6 +16,7 @@
 
 package com.google.template.soy.passes;
 
+import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static com.google.template.soy.base.SourceLocation.UNKNOWN;
 import static java.util.stream.Collectors.toCollection;
 
@@ -64,7 +65,6 @@ import com.google.template.soy.soytree.TagName;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.AttrParam;
 import com.google.template.soy.soytree.defn.TemplateParam;
-import com.google.template.soy.treebuilder.ExprNodes;
 import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.SanitizedType.AttributesType;
 import com.google.template.soy.types.SanitizedType.StyleType;
@@ -72,7 +72,6 @@ import com.google.template.soy.types.SanitizedType.TrustedResourceUriType;
 import com.google.template.soy.types.SanitizedType.UriType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypes;
-import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.TemplateType.Parameter;
 import com.google.template.soy.types.UnionType;
@@ -84,7 +83,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 /**
@@ -157,11 +155,11 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
 
     Preconditions.checkState(tagNode.getTaggedPairs().size() <= 1);
     SourceLocation unknown = template.getSourceLocation().clearRange();
-    Map<String, AttrParam> attrs =
+    ImmutableMap<String, AttrParam> attrs =
         template.getAllParams().stream()
             .filter(AttrParam.class::isInstance)
             .map(AttrParam.class::cast)
-            .collect(Collectors.toMap(AttrParam::name, Function.identity()));
+            .collect(toImmutableMap(AttrParam::name, Function.identity()));
 
     SourceLocation location = tagNode.getSourceLocation();
     if (!tagNode.getTaggedPairs().isEmpty()) {
@@ -194,27 +192,24 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
         ExprNode expr;
         if (openTagNode.getKeyNode() == null) {
           if (keyParam.isPresent()) {
-            VarRefNode keyParamRef =
-                new VarRefNode("$" + keyParam.get().name(), SourceLocation.UNKNOWN, keyParam.get());
             expr =
-                ExprNodes.conditional(
-                    keyParamRef.copy(new CopyState()), keyParamRef, ExprNodes.nullLiteral());
-            ((ConditionalOpNode) expr)
-                .setType(UnionType.of(StringType.getInstance(), NullType.getInstance()));
+                new VarRefNode("$" + keyParam.get().name(), SourceLocation.UNKNOWN, keyParam.get());
           } else {
-            expr = ExprNodes.nullLiteral();
+            expr = null;
           }
         } else {
           expr = DesugarStateNodesPass.extractKeyFunctionFromHtmlTag(openTagNode);
         }
-
-        call.addChild(
-            new CallParamValueNode(
-                nodeIdGen.genId(),
-                openTagNode.getSourceLocation(),
-                Identifier.create(
-                    TemplateType.KEY_HIDDEN_ATTRIBUTE_NAME, openTagNode.getSourceLocation()),
-                expr));
+        // This is an optional parameter so there is no need to pass a literal null.
+        if (expr != null) {
+          call.addChild(
+              new CallParamValueNode(
+                  nodeIdGen.genId(),
+                  openTagNode.getSourceLocation(),
+                  Identifier.create(
+                      TemplateType.KEY_HIDDEN_ATTRIBUTE_NAME, openTagNode.getSourceLocation()),
+                  expr));
+        }
       }
     }
 
