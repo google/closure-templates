@@ -75,7 +75,20 @@ public abstract class CssRegistry {
   public boolean containsClassMap() {
     return classMap().isPresent();
   }
-  
+
+  public static CssRegistry createWithFilePathToShortClassMap(
+      ImmutableSet<String> providedSymbols,
+      ImmutableMap<String, ImmutableMap<String, String>> filePathToShortClassMap) {
+    return new AutoValue_CssRegistry(
+        providedSymbols,
+        ImmutableMap.of(),
+        Optional.empty(),
+        filePathToShortClassMap,
+        ImmutableMap.of(),
+        ImmutableMap.of(),
+        /* skipCssReferenceCheck= */ false);
+  }
+
   public static CssRegistry createForLocalDevelopment(
       ImmutableSet<String> providedSymbols, ImmutableMap<String, String> filePathToSymbol) {
     return new AutoValue_CssRegistry(
@@ -85,7 +98,7 @@ public abstract class CssRegistry {
         ImmutableMap.of(),
         ImmutableMap.of(),
         ImmutableMap.of(),
-        true /* skipCssReferenceCheck */);
+        /* skipCssReferenceCheck= */ true);
   }
 
   public static CssRegistry create(
@@ -97,6 +110,6 @@ public abstract class CssRegistry {
         ImmutableMap.of(),
         ImmutableMap.of(),
         ImmutableMap.of(),
-        false /* skipCssReferenceCheck */);
+        /* skipCssReferenceCheck= */ false);
   }
 }
