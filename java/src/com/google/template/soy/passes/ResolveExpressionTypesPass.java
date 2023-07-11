@@ -1535,7 +1535,8 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
                   : SoyTypes.makeNullable(getMapValuesType(baseType)));
           ExprNode arg = node.getParams().get(0);
           SoyType keyType = getMapKeysType(baseType);
-          if (!keyType.isAssignableFromStrict(arg.getType())) {
+          if (!keyType.isAssignableFromLoose(arg.getType())) {
+            // TypeScript allows get with 'any' typed key.
             errorReporter.report(
                 arg.getSourceLocation(),
                 METHOD_INVALID_PARAM_TYPES,
