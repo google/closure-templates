@@ -49,6 +49,10 @@ public abstract class ObjectLiteral extends Expression {
     return create(object, Expressions::id);
   }
 
+  static ObjectLiteral createRaw(Map<Expression, Expression> object) {
+    return new AutoValue_ObjectLiteral(ImmutableMap.copyOf(object));
+  }
+
   private static ObjectLiteral create(
       Map<String, Expression> object, Function<String, Expression> createKeyFn) {
     ImmutableMap.Builder<Expression, Expression> values = ImmutableMap.builder();

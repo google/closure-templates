@@ -344,6 +344,10 @@ public final class Expressions {
     return ObjectLiteral.create(object);
   }
 
+  public static Expression objectLiteralRaw(Map<Expression, Expression> object) {
+    return ObjectLiteral.createRaw(object);
+  }
+
   /**
    * Returns a unique key that can be used in the parameter passed to {@link #objectLiteral} to
    * cause the corresponding value to be interpreted as an object spread.
