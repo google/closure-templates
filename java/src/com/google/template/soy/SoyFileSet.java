@@ -160,7 +160,7 @@ public final class SoyFileSet {
 
     private ImmutableList<File> pluginRuntimeJars = ImmutableList.of();
 
-    private Optional<CssRegistry> cssRegistry = Optional.empty();
+    private CssRegistry cssRegistry = CssRegistry.EMPTY;
 
     private boolean skipPluginValidation = false;
 
@@ -569,7 +569,7 @@ public final class SoyFileSet {
 
     @CanIgnoreReturnValue
     public Builder setCssRegistry(CssRegistry cssRegistry) {
-      this.cssRegistry = Optional.of(cssRegistry);
+      this.cssRegistry = checkNotNull(cssRegistry);
       return this;
     }
 
@@ -597,7 +597,7 @@ public final class SoyFileSet {
 
   private final ValidatedConformanceConfig conformanceConfig;
   private final ImmutableList<File> pluginRuntimeJars;
-  private final Optional<CssRegistry> cssRegistry;
+  private final CssRegistry cssRegistry;
 
   private final ImmutableList<SoyFunction> soyFunctions;
   private final ImmutableList<SoyPrintDirective> printDirectives;
@@ -632,7 +632,7 @@ public final class SoyFileSet {
       boolean skipPluginValidation,
       boolean optimize,
       Set<SourceFilePath> generatedPathsToCheck,
-      Optional<CssRegistry> cssRegistry,
+      CssRegistry cssRegistry,
       MethodChecker javaMethodChecker) {
     this.scopedData = apiCallScopeProvider;
     this.typeRegistry = typeRegistry;
@@ -951,7 +951,7 @@ public final class SoyFileSet {
   }
 
   public CssRegistry getCssRegistry() {
-    return cssRegistry.get();
+    return cssRegistry;
   }
 
   /**
@@ -1159,7 +1159,7 @@ public final class SoyFileSet {
           // throw before accessing registry() to make sure it is definitely available.
           throwIfErrorsPresent();
           return new AutoValue_SoyFileSet_HeaderResult(
-              parseResult.fileSet(), parseResult.registry(), cssRegistry.get());
+              parseResult.fileSet(), parseResult.registry(), cssRegistry);
         });
   }
 

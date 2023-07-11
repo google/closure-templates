@@ -44,7 +44,6 @@ import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import javax.annotation.Nullable;
 
@@ -281,7 +280,7 @@ public final class PassManager {
     private ImmutableList<? extends SoyPrintDirective> soyPrintDirectives;
     private ErrorReporter errorReporter;
     private SoyGeneralOptions options;
-    private Optional<CssRegistry> cssRegistry = Optional.empty();
+    private CssRegistry cssRegistry = CssRegistry.EMPTY;
     private boolean allowUnknownGlobals;
     private boolean allowUnknownJsGlobals;
     private boolean disableAllTypeChecking;
@@ -326,7 +325,7 @@ public final class PassManager {
     }
 
     @CanIgnoreReturnValue
-    public Builder setCssRegistry(Optional<CssRegistry> registry) {
+    public Builder setCssRegistry(CssRegistry registry) {
       this.cssRegistry = registry;
       return this;
     }
@@ -495,17 +494,14 @@ public final class PassManager {
             .add(new CheckEscapingSanityFilePass(errorReporter));
       }
 
-      ImmutableList.Builder<ImportsPass.ImportProcessor> importProcessors =
-          new ImmutableList.Builder<ImportsPass.ImportProcessor>()
-              .add(
-                  new ProtoImportProcessor(registry, errorReporter, disableAllTypeChecking),
-                  new TemplateImportProcessor(errorReporter, accumulatedState::registryFromDeps));
-      if (cssRegistry.isPresent()) {
-        importProcessors.add(new CssImportProcessor(cssRegistry.get(), errorReporter));
-      }
-      passes.add(new ImportsPass(errorReporter, disableAllTypeChecking, importProcessors.build()));
-
       passes
+          .add(
+              new ImportsPass(
+                  errorReporter,
+                  disableAllTypeChecking,
+                  new ProtoImportProcessor(registry, errorReporter, disableAllTypeChecking),
+                  new TemplateImportProcessor(errorReporter, accumulatedState::registryFromDeps),
+                  new CssImportProcessor(cssRegistry, errorReporter)))
           .add(new ResolveUseVariantTypePass(errorReporter))
           .add(
               new FileDependencyOrderPass(

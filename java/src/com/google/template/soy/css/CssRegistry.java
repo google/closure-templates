@@ -32,6 +32,8 @@ import java.util.Optional;
 @Immutable
 @AutoValue
 public abstract class CssRegistry {
+  public static final CssRegistry EMPTY = create(ImmutableSet.of(), ImmutableMap.of());
+
   public abstract ImmutableSet<String> providedSymbols();
 
   abstract ImmutableMap<String, String> filePathToSymbol();

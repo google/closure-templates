@@ -85,12 +85,10 @@ final class ImportsPass implements CompilerFileSetPass {
   private final ImmutableList<ImportProcessor> processors;
 
   public ImportsPass(
-      ErrorReporter errorReporter,
-      boolean disableAllTypeChecking,
-      ImmutableList<ImportProcessor> processors) {
+      ErrorReporter errorReporter, boolean disableAllTypeChecking, ImportProcessor... processors) {
     this.errorReporter = errorReporter;
     this.disableAllTypeChecking = disableAllTypeChecking;
-    this.processors = processors;
+    this.processors = ImmutableList.copyOf(processors);
   }
 
   @Override

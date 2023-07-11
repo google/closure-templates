@@ -31,7 +31,6 @@ import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.types.SoyTypeRegistryBuilder;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import org.junit.Test;
@@ -45,8 +44,7 @@ public final class PassManagerTest {
         .setGeneralOptions(new SoyGeneralOptions())
         .setSoyPrintDirectives(ImmutableList.of())
         .setTypeRegistry(SoyTypeRegistryBuilder.create())
-        .setErrorReporter(ErrorReporter.exploding())
-        .setCssRegistry(Optional.empty());
+        .setErrorReporter(ErrorReporter.exploding());
   }
 
   private static class NoSuchPass implements CompilerPass {}
@@ -123,19 +121,19 @@ public final class PassManagerTest {
             DesugarHtmlNodesPass.class,
             DesugarStateNodesPass.class,
             EnforceExperimentalFeaturesPass.class,
+            IncrementalDomKeysPass.class,
             InsertMsgPlaceholderNodesPass.class,
             KeyCommandPass.class,
             NullSafeAccessPass.class,
             OptimizationPass.class,
             ResolveExpressionTypesPass.class,
-            RestoreGlobalsPass.class,
             ResolveNamesPass.class,
             ResolvePackageRelativeCssNamesPass.class,
             ResolveTemplateParamTypesPass.class,
+            RestoreGlobalsPass.class,
             RewriteGenderMsgsPass.class,
             UnknownJsGlobalPass.class,
             ValidateAliasesPass.class,
-            IncrementalDomKeysPass.class,
             VeLogRewritePass.class,
             VeLogValidationPass.class,
             VeRewritePass.class);

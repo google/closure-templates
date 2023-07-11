@@ -57,19 +57,15 @@ public abstract class SoyFileSetParser {
     /** The TemplateRegistry, which is guaranteed to be present if the error reporter is empty. */
     private final Optional<FileSetMetadata> registry;
 
-    private final Optional<CssRegistry> cssRegistry;
+    private final CssRegistry cssRegistry;
 
     static ParseResult create(
-        SoyFileSetNode soyTree,
-        Optional<FileSetMetadata> registry,
-        Optional<CssRegistry> cssRegistry) {
+        SoyFileSetNode soyTree, Optional<FileSetMetadata> registry, CssRegistry cssRegistry) {
       return new ParseResult(soyTree, registry, cssRegistry);
     }
 
     ParseResult(
-        SoyFileSetNode soyTree,
-        Optional<FileSetMetadata> registry,
-        Optional<CssRegistry> cssRegistry) {
+        SoyFileSetNode soyTree, Optional<FileSetMetadata> registry, CssRegistry cssRegistry) {
       this.soyTree = soyTree;
       this.registry = registry;
       this.cssRegistry = cssRegistry;
@@ -90,10 +86,7 @@ public abstract class SoyFileSetParser {
     }
 
     public final CssRegistry cssRegistry() {
-      return cssRegistry.orElseThrow(
-          () ->
-              new IllegalStateException(
-                  "No template registry, did you forget to check the error reporter?"));
+      return cssRegistry;
     }
 
     public final boolean hasRegistry() {
@@ -119,7 +112,7 @@ public abstract class SoyFileSetParser {
 
   public abstract SoyTypeRegistry typeRegistry();
 
-  public abstract Optional<CssRegistry> cssRegistry();
+  public abstract CssRegistry cssRegistry();
 
   /** Builder for {@link SoyFileSetParser}. */
   @AutoValue.Builder
@@ -138,7 +131,7 @@ public abstract class SoyFileSetParser {
 
     public abstract Builder setTypeRegistry(SoyTypeRegistry typeRegistry);
 
-    public abstract Builder setCssRegistry(Optional<CssRegistry> cssRegistry);
+    public abstract Builder setCssRegistry(CssRegistry cssRegistry);
 
     public abstract SoyFileSetParser build();
   }
@@ -200,7 +193,7 @@ public abstract class SoyFileSetParser {
     // If we couldn't parse all the files, we can't run the fileset passes or build the template
     // registry.
     if (filesWereSkipped) {
-      return ParseResult.create(soyTree, Optional.empty(), Optional.empty());
+      return ParseResult.create(soyTree, Optional.empty(), CssRegistry.EMPTY);
     }
 
     // Build the template registry for the file set & its dependencies.

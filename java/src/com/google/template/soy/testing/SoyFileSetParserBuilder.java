@@ -58,7 +58,6 @@ import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypeRegistryBuilder;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import javax.annotation.Nullable;
 
 /** Fluent builder for configuring {@link com.google.template.soy.SoyFileSetParser}s in tests. */
@@ -82,7 +81,7 @@ public final class SoyFileSetParserBuilder {
   private ValidatedConformanceConfig conformanceConfig = ValidatedConformanceConfig.EMPTY;
   private boolean desugarHtmlNodes = true;
   private boolean desugarIdomFeatures = true;
-  private Optional<CssRegistry> cssRegistry = Optional.empty();
+  private CssRegistry cssRegistry = CssRegistry.EMPTY;
   // TODO(lukes): disabled for compatibility with unit tests.  Fix tests relying on the
   // escaper not running and enable by default.  This configuration bit only really exists
   // for incrementaldomsrc, not tests.
@@ -287,7 +286,7 @@ public final class SoyFileSetParserBuilder {
 
   @CanIgnoreReturnValue
   public SoyFileSetParserBuilder cssRegistry(CssRegistry cssRegistry) {
-    this.cssRegistry = Optional.of(cssRegistry);
+    this.cssRegistry = cssRegistry;
     return this;
   }
 
@@ -433,6 +432,7 @@ public final class SoyFileSetParserBuilder {
         .setTypeRegistry(typeRegistry)
         .setPassManager(passManager.build())
         .setErrorReporter(errorReporter)
+        .setCssRegistry(cssRegistry)
         .build();
   }
 }
