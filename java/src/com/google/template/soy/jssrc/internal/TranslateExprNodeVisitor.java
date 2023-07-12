@@ -207,6 +207,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
   private final ErrorReporter errorReporter;
   private final CodeChunk.Generator codeGenerator;
   private final TemplateAliases templateAliases;
+
   /**
    * An expression that represents the data parameter to read params from. Defaults to {@code
    * OPT_DATA}.
@@ -556,6 +557,19 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     switch (dataAccessNode.getKind()) {
       case FIELD_ACCESS_NODE:
         FieldAccessNode fieldAccess = (FieldAccessNode) dataAccessNode;
+        SoySourceFunctionMethod sourceMethod = fieldAccess.getSoyMethod();
+        if (sourceMethod != null) {
+          return accumulator.functionCall(
+              nullSafe,
+              baseExpr ->
+                  javascriptValueFactory.applyFunction(
+                      fieldAccess.getSourceLocation(),
+                      fieldAccess.getFieldName(),
+                      (SoyJavaScriptSourceFunction) sourceMethod.getImpl(),
+                      ImmutableList.of(baseExpr),
+                      codeGenerator));
+        }
+
         FieldAccess access =
             genCodeForFieldAccess(
                 fieldAccess.getBaseExprChild().getType(),
