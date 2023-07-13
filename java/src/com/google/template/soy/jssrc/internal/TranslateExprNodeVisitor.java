@@ -858,7 +858,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     for (ExprNode c : node.getChildren()) {
       SoyType type = c.getType();
       if (type.getKind() == SoyType.Kind.NULL) {
-        // If either operand is null always use ===.
+        // If either operand is null always use ==.
         neverSoyEquals = true;
       } else if (!SoyTypes.isKindOrUnionOfKinds(type, CAN_USE_EQUALS)) {
         // If either operand is not a JS primitive (number, string, bool) then use soy.$$equals.
