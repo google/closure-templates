@@ -43,6 +43,7 @@ import com.google.common.collect.Iterables;
 import com.google.errorprone.annotations.ForOverride;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.internal.Identifier;
+import com.google.template.soy.basicfunctions.MapGetMethod;
 import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyLegacyObjectMap;
@@ -670,6 +671,11 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       }
     } else if (method instanceof SoySourceFunctionMethod) {
       SoySourceFunctionMethod sourceMethod = (SoySourceFunctionMethod) method;
+      if (sourceMethod.getImpl() instanceof MapGetMethod) {
+        SoyValue key = visit(methodNode.getParams().get(0));
+        SoyValue value = ((SoyMap) base).get(key);
+        return value != null ? value : NullData.INSTANCE;
+      }
       List<SoyValue> args = new ArrayList<>(methodNode.numParams() + 1);
       args.add(base);
       methodNode.getParams().forEach(n -> args.add(visit(n)));

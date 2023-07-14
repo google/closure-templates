@@ -99,7 +99,8 @@ public final class GenJsExprsVisitorTest {
   @Test
   public void testPrint_nonExpr() {
 
-    String soyNodeCode = JOINER.join("{@param boo : string}", "{map('a': 'b', $boo: 'c')[$boo]}");
+    String soyNodeCode =
+        JOINER.join("{@param boo : string}", "{map('a': 'b', $boo: 'c').get($boo)}");
     String expectedGenCode =
         "/** @type {!Map<string, string>} */ (new"
             + " Map()).set('a', 'b').set(soy.$$checkNotNull(opt_data.boo), 'c').get(opt_data.boo);";

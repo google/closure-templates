@@ -62,6 +62,7 @@ import com.google.common.collect.Sets;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.basicfunctions.MapGetMethod;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.AbstractReturningExprNodeVisitor;
@@ -709,6 +710,9 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
       throw new AssertionError(builtinMethod);
     } else if (soyMethod instanceof SoySourceFunctionMethod) {
       SoySourceFunctionMethod sourceMethod = (SoySourceFunctionMethod) soyMethod;
+      if (sourceMethod.getImpl() instanceof MapGetMethod) {
+        return base.mapGetAccess(visit(methodCallNode.getParams().get(0)), nullSafe);
+      }
 
       return base.functionCall(
           nullSafe,

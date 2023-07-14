@@ -30,6 +30,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Streams;
 import com.google.template.soy.base.internal.Identifier;
+import com.google.template.soy.basicfunctions.MapGetMethod;
 import com.google.template.soy.data.SoyLegacyObjectMap;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyRecord;
@@ -1355,15 +1356,7 @@ final class ExpressionCompiler {
                   MethodRef.RUNTIME_GET_LIST_ITEM_PROVIDER.invoke(list, index));
         }
       } else if (baseExpr.soyRuntimeType().isKnownMapOrUnionOfMaps()) {
-        Expression map = baseExpr.box().checkedCast(SoyMap.class);
-        SoyExpression index = keyExpr.box();
-        if (analysis.isResolved(node)) {
-          soyValueProvider = MethodRef.RUNTIME_GET_MAP_ITEM.invoke(map, index);
-        } else {
-          soyValueProvider =
-              detacher.resolveSoyValueProvider(
-                  MethodRef.RUNTIME_GET_MAP_ITEM_PROVIDER.invoke(map, index));
-        }
+        soyValueProvider = getMapGetExpression(baseExpr, node, keyExpr);
       } else {
         Expression map = baseExpr.box().checkedCast(SoyLegacyObjectMap.class);
         SoyExpression index = keyExpr.box();
@@ -1378,6 +1371,21 @@ final class ExpressionCompiler {
       return SoyExpression.forSoyValue(
           node.getType(),
           soyValueProvider.checkedCast(SoyRuntimeType.getBoxedType(node.getType()).runtimeType()));
+    }
+
+    private Expression getMapGetExpression(
+        SoyExpression baseExpr, DataAccessNode node, SoyExpression keyExpr) {
+      Expression soyValueProvider;
+      Expression map = baseExpr.box().checkedCast(SoyMap.class);
+      SoyExpression index = keyExpr.box();
+      if (analysis.isResolved(node)) {
+        soyValueProvider = MethodRef.RUNTIME_GET_MAP_ITEM.invoke(map, index);
+      } else {
+        soyValueProvider =
+            detacher.resolveSoyValueProvider(
+                MethodRef.RUNTIME_GET_MAP_ITEM_PROVIDER.invoke(map, index));
+      }
+      return soyValueProvider;
     }
 
     private SoyExpression visitMethodCall(SoyExpression baseExpr, MethodCallNode node) {
@@ -1437,6 +1445,12 @@ final class ExpressionCompiler {
         }
       } else if (function instanceof SoySourceFunctionMethod) {
         SoySourceFunctionMethod sourceMethod = (SoySourceFunctionMethod) function;
+        if (sourceMethod.getImpl() instanceof MapGetMethod) {
+          Expression expr = getMapGetExpression(baseExpr, node, visit(node.getParams().get(0)));
+          return SoyExpression.forSoyValue(
+              node.getType(),
+              expr.checkedCast(SoyRuntimeType.getBoxedType(node.getType()).runtimeType()));
+        }
         List<SoyExpression> args = new ArrayList<>(node.numParams() + 1);
         args.add(baseExpr);
         node.getParams().forEach(n -> args.add(visit(n)));

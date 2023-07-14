@@ -43,6 +43,7 @@ import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
+import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.NullSafeAccessNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
@@ -56,6 +57,7 @@ import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.sharedpasses.render.Environment;
 import com.google.template.soy.sharedpasses.render.RenderException;
+import java.util.function.BiFunction;
 import javax.annotation.Nullable;
 
 /**
@@ -190,17 +192,7 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
   // this code since it desugars into a record literal.
   @Override
   protected void visitFieldAccessNode(FieldAccessNode node) {
-    // simplify children first
-    visitExprNode(node);
-    if (node.getParent() == null) {
-      // must have already been optimized by visitExprNode and replaced in the AST
-      return;
-    }
-    ExprNode baseExpr = node.getChild(0);
-    ExprNode replacement = visitFieldAccessNode(node, baseExpr);
-    if (replacement != null) {
-      node.getParent().replaceChild(node, replacement);
-    }
+    this.visitDataAccessNodeInternal(node, SimplifyExprVisitor::visitFieldAccessNode);
   }
 
   @Nullable
@@ -220,13 +212,8 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
     // default value instead of `null`.
   }
 
-  // Optimize accessing map and list literals.  This covers expressions like [1,2,3][1] and
-  // map('a':1)['a']
-  // This is fairly unlikely to happen in practice, but is being done for consistency with the other
-  // aggregate literals above.  This might happen for things like pure functions that return
-  // collections
-  @Override
-  protected void visitItemAccessNode(ItemAccessNode node) {
+  private <T extends DataAccessNode> void visitDataAccessNodeInternal(
+      T node, BiFunction<T, ExprNode, ExprNode> delegate) {
     // simplify children first
     visitExprNode(node);
     if (node.getParent() == null) {
@@ -234,10 +221,20 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
       return;
     }
     ExprNode baseExpr = node.getChild(0);
-    ExprNode replacement = visitItemAccessNode(node, baseExpr);
+    ExprNode replacement = delegate.apply(node, baseExpr);
     if (replacement != null) {
       node.getParent().replaceChild(node, replacement);
     }
+  }
+
+  // Optimize accessing map and list literals.  This covers expressions like [1,2,3][1] and
+  // map('a':1)['a']
+  // This is fairly unlikely to happen in practice, but is being done for consistency with the other
+  // aggregate literals above.  This might happen for things like pure functions that return
+  // collections
+  @Override
+  protected void visitItemAccessNode(ItemAccessNode node) {
+    this.visitDataAccessNodeInternal(node, SimplifyExprVisitor::visitItemAccessNode);
   }
 
   private static ExprNode visitItemAccessNode(ItemAccessNode node, ExprNode baseExpr) {
@@ -252,6 +249,35 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
         return new NullNode(node.getSourceLocation());
       }
     } else if (baseExpr instanceof MapLiteralNode) {
+      MapLiteralNode mapLiteral = (MapLiteralNode) baseExpr;
+      boolean areAllKeysConstants = true;
+      ExprEquivalence exprEquivalence = new ExprEquivalence();
+      for (int i = 0; i < mapLiteral.numChildren(); i += 2) {
+        ExprNode key = mapLiteral.getChild(i);
+        ExprNode value = mapLiteral.getChild(i + 1);
+        if (exprEquivalence.equivalent(keyExpr, key)) {
+          return value;
+        }
+        areAllKeysConstants = areAllKeysConstants && isConstant(key);
+      }
+      if (isConstant(keyExpr) && areAllKeysConstants) {
+        // no matching key, and since everything was a bunch of constants, it should have matched.
+        // in this case we can evaluate at compile time.
+        return new NullNode(node.getSourceLocation());
+      }
+    }
+    return null;
+  }
+
+  @Override
+  protected void visitMethodCallNode(MethodCallNode node) {
+    this.visitDataAccessNodeInternal(node, SimplifyExprVisitor::visitMethodCallNode);
+  }
+
+  @Nullable
+  private static ExprNode visitMethodCallNode(MethodCallNode node, ExprNode baseExpr) {
+    if (baseExpr instanceof MapLiteralNode && node.getMethodName().identifier().equals("get")) {
+      ExprNode keyExpr = node.getParams().get(0);
       MapLiteralNode mapLiteral = (MapLiteralNode) baseExpr;
       boolean areAllKeysConstants = true;
       ExprEquivalence exprEquivalence = new ExprEquivalence();
@@ -322,6 +348,7 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
           }
         case FIELD_ACCESS_NODE:
         case ITEM_ACCESS_NODE:
+        case METHOD_CALL_NODE:
           {
             // This is the last null safe access in the chain, so the access details are stored
             // directly in the data access child of this null safe access.
@@ -347,9 +374,6 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
             }
             return;
           }
-        case METHOD_CALL_NODE:
-          // Can't optimize away a method call node.
-          return;
         default:
           throw new AssertionError(dataAccessChild.getKind());
       }
@@ -364,8 +388,7 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
       case ITEM_ACCESS_NODE:
         return visitItemAccessNode((ItemAccessNode) dataAccessChainBase, base);
       case METHOD_CALL_NODE:
-        // Can't optimize away a method call node.
-        return null;
+        return visitMethodCallNode((MethodCallNode) dataAccessChainBase, base);
       default:
         throw new AssertionError(dataAccessChainBase.getKind());
     }
