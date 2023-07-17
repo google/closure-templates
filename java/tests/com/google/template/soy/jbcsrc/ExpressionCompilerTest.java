@@ -356,7 +356,7 @@ public class ExpressionCompilerTest {
     tester.rendersAs("hello", ImmutableMap.<String, Object>of("p", "hello"));
     tester =
         assertThatTemplateBody(
-            "{@param? p : map<string, string>}", "{if $p}", "  {$p['key']}", "{/if}");
+            "{@param? p : map<string, string>}", "{if $p}", "  {$p.get('key')}", "{/if}");
     tester.rendersAs("", ImmutableMap.of());
     tester = assertThatTemplateBody("{@param? p : string}", "{$p ? $p : 1 }");
     tester.rendersAs("1", ImmutableMap.of());

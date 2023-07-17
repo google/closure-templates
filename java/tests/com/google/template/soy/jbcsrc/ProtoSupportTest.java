@@ -95,7 +95,8 @@ public final class ProtoSupportTest {
 
     CompiledTemplateSubject tester =
         assertThatTemplateBody(
-            "{@param proto : ProtoMap}", "{$proto.getMapMessageFieldMap()?[2390]?.field ?: 'bar'}");
+            "{@param proto : ProtoMap}",
+            "{$proto.getMapMessageFieldMap()?.get(2390)?.field ?: 'bar'}");
     tester.rendersAs(
         "4837",
         ImmutableMap.of(

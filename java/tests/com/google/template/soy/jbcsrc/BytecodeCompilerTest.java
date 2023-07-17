@@ -479,7 +479,7 @@ public class BytecodeCompilerTest {
     assertThatTemplateBody(
             "{@param map : map<string, int>}",
             "{for $key in $map.keys()}",
-            "  {$key} - {$map[$key]}{\\n}",
+            "  {$key} - {$map.get($key)}{\\n}",
             "{/for}")
         .rendersAs("a - 1\nb - 2\n", ImmutableMap.of("map", ImmutableMap.of("a", 1, "b", 2)));
   }
@@ -489,7 +489,7 @@ public class BytecodeCompilerTest {
     // The compiler should be rejected this :(
     assertThatTemplateBody(
             "{@param map : map<string, list<int>>}",
-            "{for $item in $map?['key']}",
+            "{for $item in $map?.get('key')!}",
             "  {$item}",
             "{/for}")
         .rendersAs(
@@ -1084,7 +1084,7 @@ public class BytecodeCompilerTest {
             "{@param b : bool}",
             // because one of these is a map<string,int> and the other is a map<string,string>
             // the overall type is a map<string,int>|map<string,string>
-            "{($b ? map('a': 1) : map('a': '2'))['a']}",
+            "{($b ? map('a': 1) : map('a': '2')).get('a')}",
             "");
     tester.rendersAs("1", ImmutableMap.of("b", true));
     tester.rendersAs("2", ImmutableMap.of("b", false));

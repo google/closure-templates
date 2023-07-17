@@ -47,7 +47,7 @@ public final class ExprEquivalenceTest {
     runTest("{assertReflexive(['a', 1.2, true, KvPair()])}");
     runTest("{assertReflexive(map('a': 1.2, 'b': true, 'c': KvPair()))}");
     runTest("{@param map: map<string, string>}", "{assertReflexive($map)}");
-    runTest("{@param map: map<string, string>}", "{assertReflexive($map['a'])}");
+    runTest("{@param map: map<string, string>}", "{assertReflexive($map.get('a'))}");
     runTest(
         "{@param legacy_map: legacy_object_map<string, string>}", "{assertReflexive($legacy_map)}");
     runTest(
