@@ -242,11 +242,6 @@ public final class BasicFunctionsRuntime {
     return list;
   }
 
-  /** Gets a single item of a map. */
-  public static SoyValue mapGet(SoyMap map, SoyValue value) {
-    return map.get(value);
-  }
-
   /** Returns a list of all the keys in the given map. */
   public static ImmutableList<SoyValue> mapKeys(SoyMap map) {
     return ImmutableList.copyOf(map.keys());

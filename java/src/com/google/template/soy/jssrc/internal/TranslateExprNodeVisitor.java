@@ -700,6 +700,8 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
           return base.dotAccess(fieldAccess, nullSafe);
           // When adding new built-in methods it may be necessary to assert that the base expression
           // is not null in order to prevent a method call on a null instance from ever succeeding.
+        case MAP_GET:
+          return base.mapGetAccess(visit(methodCallNode.getParams().get(0)), nullSafe);
         case BIND:
           return base.functionCall(
               nullSafe,

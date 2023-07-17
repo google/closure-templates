@@ -659,6 +659,10 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
         case GET_PROTO_FIELD_OR_UNDEFINED:
           return ((SoyProtoValue) base)
               .getProtoFieldOrNull(BuiltinMethod.getProtoFieldNameFromMethodCall(methodNode));
+        case MAP_GET:
+          SoyValue key = visit(methodNode.getParams().get(0));
+          SoyValue value = ((SoyMap) base).get(key);
+          return value != null ? value : NullData.INSTANCE;
         case BIND:
           TemplateValue template = (TemplateValue) base;
           SoyRecord params = (SoyRecord) visit(methodNode.getParams().get(0));

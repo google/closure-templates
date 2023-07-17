@@ -22,6 +22,8 @@ import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.common.collect.ImmutableSortedSet.toImmutableSortedSet;
 import static com.google.template.soy.passes.CheckTemplateCallsPass.ARGUMENT_TYPE_MISMATCH;
 import static com.google.template.soy.types.SoyTypes.SAFE_PROTO_TO_SANITIZED_TYPE;
+import static com.google.template.soy.types.SoyTypes.getMapKeysType;
+import static com.google.template.soy.types.SoyTypes.getMapValuesType;
 import static com.google.template.soy.types.SoyTypes.tryRemoveNull;
 import static java.util.Comparator.naturalOrder;
 import static java.util.stream.Collectors.joining;
@@ -58,7 +60,6 @@ import com.google.template.soy.basicfunctions.ListReverseMethod;
 import com.google.template.soy.basicfunctions.ListSliceMethod;
 import com.google.template.soy.basicfunctions.ListUniqMethod;
 import com.google.template.soy.basicfunctions.MapEntriesMethod;
-import com.google.template.soy.basicfunctions.MapGetMethod;
 import com.google.template.soy.basicfunctions.MapKeysFunction;
 import com.google.template.soy.basicfunctions.MapToLegacyObjectMapFunction;
 import com.google.template.soy.basicfunctions.MapValuesMethod;
@@ -1528,22 +1529,6 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
           node.setType(getGenericListType(node.getChildren()));
         } else if (sourceFunction instanceof ConcatMapsMethod) {
           node.setType(getGenericMapType(node.getChildren()));
-        } else if (sourceFunction instanceof MapGetMethod) {
-          node.setType(
-              baseType.equals(MapType.EMPTY_MAP)
-                  ? NullType.getInstance()
-                  : SoyTypes.makeNullable(getMapValuesType(baseType)));
-          ExprNode arg = node.getParams().get(0);
-          SoyType keyType = getMapKeysType(baseType);
-          if (!keyType.isAssignableFromLoose(arg.getType())) {
-            // TypeScript allows get with 'any' typed key.
-            errorReporter.report(
-                arg.getSourceLocation(),
-                METHOD_INVALID_PARAM_TYPES,
-                ((SoySourceFunctionMethod) method).getMethodName(),
-                arg.getType(),
-                keyType);
-          }
         } else if (sourceFunction instanceof MapKeysFunction) {
           if (baseType.equals(MapType.EMPTY_MAP)) {
             node.setType(ListType.EMPTY_LIST);
@@ -1618,28 +1603,6 @@ final class ResolveExpressionTypesPass implements CompilerFileSetPass.Topologica
       } else {
         throw new AssertionError();
       }
-    }
-
-    private SoyType getMapKeysType(SoyType type) {
-      if (type instanceof MapType) {
-        return ((MapType) type).getKeyType();
-      }
-      return UnionType.of(
-          ((UnionType) type)
-              .getMembers().stream()
-                  .map(t -> ((MapType) t).getKeyType())
-                  .collect(toImmutableSet()));
-    }
-
-    private SoyType getMapValuesType(SoyType type) {
-      if (type instanceof MapType) {
-        return ((MapType) type).getValueType();
-      }
-      return UnionType.of(
-          ((UnionType) type)
-              .getMembers().stream()
-                  .map(t -> ((MapType) t).getValueType())
-                  .collect(toImmutableSet()));
     }
 
     @Nullable

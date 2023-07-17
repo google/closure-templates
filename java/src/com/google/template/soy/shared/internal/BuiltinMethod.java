@@ -39,6 +39,8 @@ import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.internal.proto.ProtoUtils;
 import com.google.template.soy.shared.restricted.SoyMethod;
 import com.google.template.soy.types.BoolType;
+import com.google.template.soy.types.MapType;
+import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.ProtoExtensionImportType;
 import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.SoyProtoType;
@@ -300,6 +302,40 @@ public enum BuiltinMethod implements SoyMethod {
           baseType, this::acceptFieldDescriptor, BuiltinMethod::protoFieldToGetReadonlyMethodName);
     }
   },
+
+  /** Soy method that gets a single value of a map. */
+  MAP_GET("get", 1) {
+
+    @Override
+    public boolean appliesToBase(SoyType baseType) {
+      Preconditions.checkArgument(!SoyTypes.isNullable(baseType));
+      return SoyTypes.isKindOrUnionOfKind(baseType, SoyType.Kind.MAP);
+    }
+
+    @Override
+    public SoyType getReturnType(
+        String methodName,
+        SoyType baseType,
+        List<ExprNode> params,
+        SoyTypeRegistry soyTypeRegistry,
+        ErrorReporter errorReporter) {
+      Preconditions.checkArgument(!SoyTypes.isNullable(baseType));
+      SoyType keyType = SoyTypes.getMapKeysType(baseType);
+
+      ExprNode arg = params.get(0);
+      if (!keyType.isAssignableFromLoose(arg.getType())) {
+        // TypeScript allows get with 'any' typed key.
+        errorReporter.report(
+            arg.getSourceLocation(), METHOD_INVALID_PARAM_TYPES, "get", arg.getType(), keyType);
+      }
+
+      if (baseType.equals(MapType.EMPTY_MAP)) {
+        return NullType.getInstance();
+      }
+      return SoyTypes.makeNullable(SoyTypes.getMapValuesType(baseType));
+    }
+  },
+
   BIND("bind", 1) {
 
     @Override
@@ -347,6 +383,8 @@ public enum BuiltinMethod implements SoyMethod {
           "hasExtension may only be called on singular extensions.", StyleAllowance.NO_CAPS);
   private static final SoyErrorKind BIND_PARAMETER_MUST_BE_RECORD_LITERAL =
       SoyErrorKind.of("Parameter to bind() must be a record literal.");
+  public static final SoyErrorKind METHOD_INVALID_PARAM_TYPES =
+      SoyErrorKind.of("Method ''{0}'' called with parameter types ({1}) but expected ({2}).");
 
   public static final SoyMethod.Registry REGISTRY =
       new Registry() {
@@ -383,6 +421,7 @@ public enum BuiltinMethod implements SoyMethod {
       case GET_EXTENSION:
       case GET_READONLY_EXTENSION:
       case HAS_EXTENSION:
+      case MAP_GET:
       case BIND:
         break;
     }
@@ -504,6 +543,7 @@ public enum BuiltinMethod implements SoyMethod {
       case GET_PROTO_FIELD:
       case GET_PROTO_FIELD_OR_UNDEFINED:
       case GET_READONLY_PROTO_FIELD:
+      case MAP_GET:
       case BIND:
         return ImmutableList.of();
     }

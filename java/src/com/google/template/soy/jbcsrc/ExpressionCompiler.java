@@ -1355,15 +1355,7 @@ final class ExpressionCompiler {
                   MethodRef.RUNTIME_GET_LIST_ITEM_PROVIDER.invoke(list, index));
         }
       } else if (baseExpr.soyRuntimeType().isKnownMapOrUnionOfMaps()) {
-        Expression map = baseExpr.box().checkedCast(SoyMap.class);
-        SoyExpression index = keyExpr.box();
-        if (analysis.isResolved(node)) {
-          soyValueProvider = MethodRef.RUNTIME_GET_MAP_ITEM.invoke(map, index);
-        } else {
-          soyValueProvider =
-              detacher.resolveSoyValueProvider(
-                  MethodRef.RUNTIME_GET_MAP_ITEM_PROVIDER.invoke(map, index));
-        }
+        soyValueProvider = getMapGetExpression(baseExpr, node, keyExpr);
       } else {
         Expression map = baseExpr.box().checkedCast(SoyLegacyObjectMap.class);
         SoyExpression index = keyExpr.box();
@@ -1378,6 +1370,21 @@ final class ExpressionCompiler {
       return SoyExpression.forSoyValue(
           node.getType(),
           soyValueProvider.checkedCast(SoyRuntimeType.getBoxedType(node.getType()).runtimeType()));
+    }
+
+    private Expression getMapGetExpression(
+        SoyExpression baseExpr, DataAccessNode node, SoyExpression keyExpr) {
+      Expression soyValueProvider;
+      Expression map = baseExpr.box().checkedCast(SoyMap.class);
+      SoyExpression index = keyExpr.box();
+      if (analysis.isResolved(node)) {
+        soyValueProvider = MethodRef.RUNTIME_GET_MAP_ITEM.invoke(map, index);
+      } else {
+        soyValueProvider =
+            detacher.resolveSoyValueProvider(
+                MethodRef.RUNTIME_GET_MAP_ITEM_PROVIDER.invoke(map, index));
+      }
+      return soyValueProvider;
     }
 
     private SoyExpression visitMethodCall(SoyExpression baseExpr, MethodCallNode node) {
@@ -1430,6 +1437,11 @@ final class ExpressionCompiler {
                 node.getType(),
                 ProtoUtils.SingularFieldAccessMode.NULL_IF_UNSET,
                 varManager);
+          case MAP_GET:
+            Expression expr = getMapGetExpression(baseExpr, node, visit(node.getParams().get(0)));
+            return SoyExpression.forSoyValue(
+                node.getType(),
+                expr.checkedCast(SoyRuntimeType.getBoxedType(node.getType()).runtimeType()));
           case BIND:
             return SoyExpression.forSoyValue(
                 node.getType(),

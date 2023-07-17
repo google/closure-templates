@@ -757,6 +757,9 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
               .addArg(visit(methodCallNode.getChild(1)))
               .asPyExpr()
               .getText();
+        case MAP_GET:
+          PyExpr keyPyExpr = visit(methodCallNode.getParams().get(0));
+          return genCodeForKeyAccess(containerExpr, keyPyExpr, NotFoundBehavior.returnNone());
         case GET_EXTENSION:
         case HAS_EXTENSION:
         case GET_READONLY_EXTENSION:

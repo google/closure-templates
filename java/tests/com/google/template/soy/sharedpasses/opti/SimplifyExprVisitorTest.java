@@ -145,23 +145,23 @@ public final class SimplifyExprVisitorTest {
     assertThat(new ExpressionParser("[1,2,3][3]").parseForParentNode()).simplifiesTo("null");
     assertThat(new ExpressionParser("[1,2,3]?[3]").parseForParentNode()).simplifiesTo("null");
 
-    assertThat(new ExpressionParser("map('a':1, 'b':3)['a']").parseForParentNode())
+    assertThat(new ExpressionParser("map('a':1, 'b':3).get('a')").parseForParentNode())
         .simplifiesTo("1");
-    assertThat(new ExpressionParser("map('a':1, 'b':3)?['a']").parseForParentNode())
+    assertThat(new ExpressionParser("map('a':1, 'b':3)?.get('a')").parseForParentNode())
         .simplifiesTo("1");
 
-    assertThat(new ExpressionParser("map('a':1, 'b':3)['c']").parseForParentNode())
+    assertThat(new ExpressionParser("map('a':1, 'b':3).get('c')").parseForParentNode())
         .simplifiesTo("null");
-    assertThat(new ExpressionParser("map('a':1, 'b':3)?['c']").parseForParentNode())
+    assertThat(new ExpressionParser("map('a':1, 'b':3)?.get('c')").parseForParentNode())
         .simplifiesTo("null");
     // can't simplify unless all keys and indexes are constant
     assertThat(
-            new ExpressionParser("map('a': 1, 'b': 3)?[randomInt(10) ? 'a' : 'b']")
+            new ExpressionParser("map('a': 1, 'b': 3).get(randomInt(10) ? 'a' : 'b')")
                 .parseForParentNode())
         .doesntChange();
     // can simplify with dynamic values
     assertThat(
-            new ExpressionParser("map('a': randomInt(1), 'b': randomInt(1))?['b']")
+            new ExpressionParser("map('a': randomInt(1), 'b': randomInt(1))?.get('b')")
                 .parseForParentNode())
         .simplifiesTo("randomInt(1)");
 
@@ -339,7 +339,9 @@ public final class SimplifyExprVisitorTest {
   public void testDereferenceLiterals_null() {
     assertThat(new ExpressionParser("(true ? null : record(a:1, b:3))?.a").parseForParentNode())
         .simplifiesTo("null");
-    assertThat(new ExpressionParser("(true ? null : map('a':1, 'b':3))?['a']").parseForParentNode())
+    assertThat(
+            new ExpressionParser("(true ? null : map('a':1, 'b':3))?.get('a')")
+                .parseForParentNode())
         .simplifiesTo("null");
     assertThat(new ExpressionParser("(true ? null : [0, 1, 2])?[0]").parseForParentNode())
         .simplifiesTo("null");

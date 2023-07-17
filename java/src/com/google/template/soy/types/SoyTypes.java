@@ -16,6 +16,7 @@
 package com.google.template.soy.types;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -682,5 +683,25 @@ public final class SoyTypes {
   public static boolean hasProtoDep(SoyType type) {
     return Streams.stream(SoyTypes.getTypeTraverser(type, null))
         .anyMatch(t -> t.getKind() == Kind.PROTO || t.getKind() == Kind.PROTO_ENUM);
+  }
+
+  public static SoyType getMapKeysType(SoyType type) {
+    if (type instanceof MapType) {
+      return ((MapType) type).getKeyType();
+    }
+    return UnionType.of(
+        ((UnionType) type)
+            .getMembers().stream().map(t -> ((MapType) t).getKeyType()).collect(toImmutableSet()));
+  }
+
+  public static SoyType getMapValuesType(SoyType type) {
+    if (type instanceof MapType) {
+      return ((MapType) type).getValueType();
+    }
+    return UnionType.of(
+        ((UnionType) type)
+            .getMembers().stream()
+                .map(t -> ((MapType) t).getValueType())
+                .collect(toImmutableSet()));
   }
 }

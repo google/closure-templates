@@ -796,7 +796,7 @@ public class RenderVisitorTest {
             + "    {if $idx == 0}\n"
             + "      [\n"
             + "    {/if}\n"
-            + "    {$key}: {$myMap[$key]}\n"
+            + "    {$key}: {$myMap.get($key)}\n"
             + "    {if $idx == length($myMap.keys()) - 1}\n"
             + "      ]\n"
             + "    {else}\n"
